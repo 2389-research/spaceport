@@ -150,7 +150,7 @@
       "scenario": "Attach observers and writers with supported and unsupported resize features.",
       "expected": "Observers never type or seize size; confirmed RESIZE precedes subsequent paint/data.",
       "status": "not_run",
-      "evidence": ["evidence/t05-core-observer.md"]
+      "evidence": ["evidence/t05-core-observer.md", "evidence/t05-core-lifecycle.md"]
     },
     {
       "id": "A14",

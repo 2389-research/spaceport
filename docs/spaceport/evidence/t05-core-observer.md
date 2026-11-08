@@ -21,18 +21,21 @@ opt-in tests ignored. `just format-check`, `just check-file-size`,
 `just check-sorted`, and the Spaceport package check and 21 tool tests passed.
 
 This adds a real Core regression to the existing pure backend observer tests.
-A13 remains `not_run` as a complete acceptance case: confirmed RESIZE ordering
-with subsequent paint/data, remote observers, and native view behavior remain
-untested. It does not establish A11 or A12. T05 stays `in_progress`.
+At that point, confirmed RESIZE ordering with subsequent paint/data, remote
+observers, and native view behavior remained untested. The follow-on tests the
+local ordering path; A13 remains `not_run` as a complete acceptance case until
+remote, older-Core, and native view behavior is proved. It does not establish
+A11 or A12. T05 stays `in_progress`.
 
 The pinned Core `schema/README.md:84–101` defines an optional
 `resize_notifications` attach request and a confirmed reply. A capable observer
 must apply incoming RESIZE before later DATA; an older path uses separate size
-tracking. This client currently omits that request and reply field
-(`wire.rs::Attach` and `Attached`), ignores stream RESIZE in
-`connection.rs::Worker::dispatch`, and polls `terminal.list` every 500 ms in
-`backend/terminal.rs`. Therefore confirmed ordered resize is an **internal
-client implementation gap**, not evidence that Core lacks the route. The next
-cut must negotiate the feature, preserve RESIZE/DATA order in the bounded
-stream inbox, apply it before paint, and retain a tested polling fallback for
-an unconfirmed path. No Core source was changed.
+tracking. At source `64e9cb05`, this client omitted that request and reply
+field (`wire.rs::Attach` and `Attached`), ignored stream RESIZE in
+`connection.rs::Worker::dispatch`, and polled `terminal.list` every 500 ms in
+`backend/terminal.rs`. Confirmed ordered resize was an **internal client
+implementation gap**, not evidence that Core lacked the route. The subsequent
+`eb092a10` cut negotiates the feature, preserves RESIZE/DATA order in the
+bounded stream inbox, applies size before paint, and retains a polling
+fallback for an unconfirmed path. See the confirmed resize section of
+[t05-core-lifecycle.md](t05-core-lifecycle.md). No Core source was changed.
