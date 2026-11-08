@@ -46,7 +46,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T03 — Build one authoritative view projection
 
-Status: **not_started** · Prerequisites: T02
+Status: **in_progress** · Prerequisites: T02
 
 Migrate readers from legacy snapshots; implement namespaced versioned presentation documents and local view preferences.
 

@@ -24,6 +24,7 @@ mod split;
 mod tabs;
 mod view;
 mod worker;
+pub(crate) mod workspace_document;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]

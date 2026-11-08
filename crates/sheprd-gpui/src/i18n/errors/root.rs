@@ -215,6 +215,7 @@ impl Localize for Error {
             #[cfg(any(target_os = "macos", windows))]
             Self::WindowHandle(error) => fl!("error-window-handle", error = error.to_string()),
             Self::WorkspaceCheckoutChanged => fl!("error-workspace-checkout-changed"),
+            Self::WorkspaceDocument(error) => error.to_string(),
             Self::WorkspaceGroupChanged => fl!("error-workspace-group-changed"),
             Self::WorkspaceRepositoryChanged => fl!("error-workspace-repository-changed"),
             Self::WorktreeIdentity(error) => error.localize(),

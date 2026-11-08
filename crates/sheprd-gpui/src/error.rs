@@ -351,6 +351,8 @@ pub enum Error {
     WindowHandle(#[from] WindowHandleError),
     #[error("Checkout changed. Dismiss and reopen the menu.")]
     WorkspaceCheckoutChanged,
+    #[error(transparent)]
+    WorkspaceDocument(#[from] crate::core_terminals::workspace_document::Error),
     #[error("Workspace group changed. Dismiss and review the group again.")]
     WorkspaceGroupChanged,
     #[error("Repository changed. Dismiss and reopen the menu.")]

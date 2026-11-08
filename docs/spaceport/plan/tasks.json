@@ -150,8 +150,8 @@
         "docs/07-reconciliation.md"
       ],
       "deliverable": "Migrate readers from legacy snapshots; implement namespaced versioned presentation documents and local view preferences.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "in_progress",
+      "evidence": ["evidence/t03-workspace-document.md"],
       "must_close_gaps": []
     },
     {
