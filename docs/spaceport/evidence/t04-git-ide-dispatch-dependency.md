@@ -57,3 +57,17 @@ Core state or source-view file was touched.
 `git diff --check`, and
 `uv run --with jsonschema==4.26.0 python tools/spec.py check` passed after
 the last edit. The package check validates schema and links only.
+
+## Merged GitHub control verification
+
+At `dae90720`, the control protocol is version 20: `TabKind::Code` took version
+19 in the preceding source-view cut, and this GitHub route cut took 20.
+The merged control protocol library passed 54 tests. The all-feature app
+check passed with no new Rust code warnings, and the focused
+`removed_github` CLI test passed. Seventeen retained host/port server tests
+passed from the merged test binary. The merged i18n check passed with 5,181
+valid messages in 271 files; format, file-size and sorted-list checks passed.
+The GUI link still reported its existing macOS compact-unwind warning and
+Cargo still reported `block v0.1.6` future incompatibility. The later default
+app check at `8510b166` also passed after the independent phone-wire cut.
+Native GitHub UI and readers remain active, so A29/A30 are still `not_run`.

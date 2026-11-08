@@ -10,3 +10,9 @@ The cut removes only `ClientKind::Remote` and its phone comment. An old `"client
 - `CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/spaceport-t10-phone-wire-target cargo +1.99.0 test --locked -p sheprd-acp --bin sheprd-acp attach::tests::`: 11 passed, covering the retained attach server's hello, command and revision behavior with its private test socket. No old phone process ran.
 
 A31 remains `not_run`: a native process/package/network inventory and retained desktop CLI scenario are still required. RM-PHONE and T10 remain `in_progress`; this test does not claim native chat or remote Core parity.
+
+At merged revision `8510b166`, the chat protocol library passed all 68 tests,
+including old `remote` hello decoding as `Other`, and the phone source absence
+module passed all five tests. The default desktop app check passed with only
+Cargo's existing `block v0.1.6` future-compatibility notice. This is a merged
+macOS code check; the native A31 and remote chat gates stay open.
