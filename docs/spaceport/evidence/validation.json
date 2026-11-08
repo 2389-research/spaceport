@@ -42,11 +42,11 @@
     "plan/gaps.json": "36eb07bb503055e528229ff5d0676c3b32ea76a889ae775134c2d9b85e2b65d7",
     "plan/removals.json": "c6c224657b4756ec7999d9f103f233a86a6c644abbe36426a3cc1fe807ce31de",
     "plan/sources.json": "c614386b3b96c7e83462c8e86ffc65207b194c042912f1f96162bf6497f7b452",
-    "plan/tasks.json": "35b745054c1217415d33360ce11d79abf784b4c2fc893d02457ac5865a6d6b18",
+    "plan/tasks.json": "7f5d4ad6ce36603fdca0c9270aa8ed447682bfd4754a2f981ab249d0bf12216a",
     "tools/README.md": "dc87a5aaa0a9786e42d5296891a4bbe71ea59329859e2cd46fbef7652104d889",
     "tools/requirements.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
     "tools/spec.py": "cb935e63ff6076568fba9ceb72b88fde2ae103e9a2f42db001d308f7e1415002",
     "tools/test_spec.py": "45172ec5f47a57642575e82ccdba4474c405ec7e59f515e054f35d0882223f5f"
   },
-  "checked_at_utc": "2026-11-08T10:57:12.459528+00:00"
+  "checked_at_utc": "2026-11-08T11:03:55.623452+00:00"
 }
