@@ -7,8 +7,7 @@
 //! - `~/.local/share/PROGRAM/bin/VERSION/PROGRAM`, the build;
 //! - `~/.local/bin/PROGRAM`, a link to it.
 //!
-//! Automations copy `herdr-automate` this way, and remote control copies
-//! `herdr-remote-control`.
+//! Remote control copies `herdr-remote-control` this way.
 // i18n: migrated
 
 use sha2::{Digest, Sha256};
@@ -75,14 +74,6 @@ impl Platform {
             arch: std::env::consts::ARCH,
         }
     }
-
-    /// The target a build for this platform is made for.
-    pub(crate) fn triple(&self) -> String {
-        match self.os {
-            "macos" => format!("{}-apple-darwin", self.arch),
-            _ => format!("{}-unknown-linux-musl", self.arch),
-        }
-    }
 }
 
 impl std::fmt::Display for Platform {
@@ -94,39 +85,6 @@ impl std::fmt::Display for Platform {
         };
         write!(f, "{os} {}", self.arch)
     }
-}
-
-/// The build of `program` for `platform` this app ships: `bundled`, its own,
-/// when the host is this kind of computer, else `BUILDS/TRIPLE/PROGRAM`
-/// beside the executable.
-pub(crate) fn build_for(
-    platform: &Platform,
-    beside: &Path,
-    builds: &str,
-    program: &str,
-    bundled: Option<PathBuf>,
-) -> Option<PathBuf> {
-    let same = *platform == Platform::local();
-    if let Some(bundled) = bundled.filter(|_| same) {
-        return Some(bundled);
-    }
-    let dir = beside.join(builds).join(platform.triple());
-    if let Some(name) = program.strip_prefix("herdr-") {
-        let renamed = dir.join(format!("sheprd-{name}"));
-        if renamed.is_file() {
-            return Some(renamed);
-        }
-    }
-    let path = dir.join(program);
-    path.is_file().then_some(path)
-}
-
-/// The directory holding this app's executable.
-pub(crate) fn beside_app() -> PathBuf {
-    std::env::current_exe()
-        .ok()
-        .and_then(|exe| exe.parent().map(Path::to_path_buf))
-        .unwrap_or_default()
 }
 
 /// The file's size and SHA-256, read in pieces.
@@ -160,7 +118,6 @@ pub(crate) fn digest(program: &'static str, path: &Path) -> Result<(u64, String)
 /// place, exiting [`CHECKSUM_EXIT`] when the copy does not match `sha256`.
 pub(crate) fn copy_script(program: &str, version: &str, sha256: &str) -> String {
     let alias = match program {
-        "herdr-automate" => "sheprd-automate",
         "herdr-remote-control" => "sheprd-remote-control",
         other => other,
     };

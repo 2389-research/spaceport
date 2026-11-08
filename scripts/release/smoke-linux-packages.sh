@@ -30,20 +30,19 @@ set -euo pipefail
 test -f /usr/bin/herdr-gpui && test ! -L /usr/bin/herdr-gpui
 test "$(stat -c %u /usr/bin/herdr-gpui)" = 0
 cmp /usr/bin/sheprd /usr/bin/herdr-gpui
-for helper in acp automate remote-control nearby; do
+for helper in acp remote-control nearby; do
     test -f "/usr/bin/herdr-$helper" && test ! -L "/usr/bin/herdr-$helper"
     cmp "/usr/bin/sheprd-$helper" "/usr/bin/herdr-$helper"
 done
 /usr/bin/sheprd-acp --help >/dev/null
 /usr/bin/sheprd-remote-control --version >/dev/null
-/usr/bin/sheprd-automate --version >/dev/null
 /usr/bin/sheprd-nearby --version >/dev/null
 /usr/bin/herdr-core --version >/dev/null
 # Capture before matching: with pipefail, grep -q exiting early would fail the
 # writer with SIGPIPE and turn a present library into a false failure.
 # herdr-core is a static-pie binary with no libraries to find, so it is left
 # out: the ldd output for those differs between glibc releases.
-for program in sheprd herdr-gpui sheprd-acp sheprd-remote-control sheprd-automate sheprd-nearby; do
+for program in sheprd herdr-gpui sheprd-acp sheprd-remote-control sheprd-nearby; do
     linked=$(ldd "/usr/bin/$program")
     if grep "not found" <<<"$linked"; then exit 1; fi
 done
@@ -58,7 +57,7 @@ test -f /usr/share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt
 removed='
 for program in sheprd herdr-gpui herdr-core; do test ! -e "/usr/bin/$program"; done
 for prefix in sheprd herdr; do
-    for helper in acp automate remote-control nearby; do
+    for helper in acp remote-control nearby; do
         test ! -e "/usr/bin/$prefix-$helper"
     done
 done

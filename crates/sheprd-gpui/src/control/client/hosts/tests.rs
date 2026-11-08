@@ -1,7 +1,6 @@
 #![allow(clippy::unwrap_used)]
 use super::text;
 
-mod automation;
 mod gpu;
 mod quota;
 mod security;

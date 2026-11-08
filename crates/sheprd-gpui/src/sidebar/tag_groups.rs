@@ -88,8 +88,9 @@ impl SheprdWindow {
                     &endpoint.live
                 };
                 let target = &endpoint.connection.target;
-                let remote = crate::automations::Machine::of(target)
-                    .is_some_and(|machine| !machine.is_local());
+                let remote = matches!(target, sheprd_client::ConnectTarget::Ssh { .. });
+                #[cfg(feature = "cloud")]
+                let remote = remote || matches!(target, sheprd_client::ConnectTarget::Cloud { .. });
                 (endpoint.enabled && live.status.is_connected() && remote)
                     .then(|| (endpoint.id.clone(), Daemon::Remote(target.clone())))
             })

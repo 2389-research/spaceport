@@ -5,7 +5,7 @@
 #
 # It downloads the zip for this machine from GitHub Releases, checks it against
 # the release's published SHA-256, and installs sheprd.exe, sheprd-launcher.exe,
-# sheprd-acp.exe, sheprd-remote-control.exe, sheprd-automate.exe, sheprd-nearby.exe,
+# sheprd-acp.exe, sheprd-remote-control.exe, sheprd-nearby.exe,
 # and upstream herdr-core.exe, with legacy executable aliases. The directory
 # %LOCALAPPDATA%\Programs\Herdr UI and AppUserModelID so.pen.herdr-gpui remain
 # unchanged for compatibility. It adds the directory to the user PATH and a
@@ -49,29 +49,6 @@
     }
   }
   & $assertNotRunning
-  # The automation daemon the app starts keeps running after it quits, and
-  # Windows will not overwrite either automation binary while it runs. Ask
-  # the installed copy to stop once its runs finish, wait for it to exit, and
-  # say whether it was running so an update can start it again. A daemon
-  # started from anywhere else is left alone.
-  $automate = Join-Path $dest 'sheprd-automate.exe'
-  $stopAutomate = {
-    $stopped = $false
-    foreach ($name in @('sheprd-automate', 'herdr-automate')) {
-      $installedAutomate = Join-Path $dest "$name.exe"
-      $running = { Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $installedAutomate } }
-      if (-not (& $running)) { continue }
-      Write-Host "Stopping automation at $installedAutomate once its runs finish"
-      & $installedAutomate shutdown | Out-Null
-      if ($LASTEXITCODE -ne 0) { throw "The automation daemon at $installedAutomate did not stop. Finish its runs, then retry." }
-      $deadline = (Get-Date).AddSeconds(30)
-      while ((& $running) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200 }
-      if (& $running) { throw "The automation daemon at $installedAutomate is still running. Finish its runs, then retry." }
-      $stopped = $true
-    }
-    return $stopped
-  }
-
   # "Open in Sheprd" on a folder, and on the background inside one: the
   # launcher runs `sheprd open`, which opens the folder as Open Project
   # does and starts the app first when it is not running. Windows 11 lists it
@@ -92,7 +69,6 @@
   )
 
   if ($Uninstall) {
-    & $stopAutomate | Out-Null
     & $assertNotRunning
     # Over a Setup.exe installation its own uninstaller removes everything,
     # including its entry in Settings.
@@ -151,22 +127,14 @@
     if ($actual -ne $expected) { throw "Checksum mismatch for $name.zip" }
 
     Expand-Archive -Path $zip -DestinationPath $tmp
-    foreach ($required in @('sheprd.exe', 'sheprd-launcher.exe', 'herdr-gpui.exe', 'herdr-gpui-launcher.exe', 'sheprd-automate.exe')) {
+    foreach ($required in @('sheprd.exe', 'sheprd-launcher.exe', 'herdr-gpui.exe', 'herdr-gpui-launcher.exe')) {
       if (-not (Test-Path -LiteralPath (Join-Path $tmp "$name\$required") -PathType Leaf)) { throw "Release is missing $required" }
     }
-    & $assertNotRunning
-    $restartAutomate = & $stopAutomate
     & $assertNotRunning
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
     Copy-Item -Recurse -Force -Path (Join-Path $tmp "$name\*") -Destination $dest
   } finally {
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $tmp
-  }
-
-  # Restart only the new copy when an installed automation daemon was running.
-  if ($restartAutomate) {
-    & $automate start | Out-Null
-    if ($LASTEXITCODE -ne 0) { Write-Warning 'Could not start the automation daemon again; Sheprd starts it when it next opens.' }
   }
 
   $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')

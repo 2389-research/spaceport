@@ -25,7 +25,7 @@
     { id: "browser", name: "Browser & previews", blurb: "Pages beside the terminal, with notes for the agent." },
     { id: "usage", name: "Usage & system", blurb: "Plan limits and machine load where you can see them." },
     { id: "look", name: "Look & feel", blurb: "Themes, layouts, fonts and keyboard control." },
-    { id: "extend", name: "Mods, automations & CLI", blurb: "Extend the app; let agents drive it." },
+    { id: "extend", name: "CLI", blurb: "Control the app from a shell." },
     { id: "phone", name: "Phone, tablet & watch", blurb: "Answer your agents away from the desk." },
     { id: "trust", name: "Updates & trust", blurb: "Signed updates, keychain secrets, logs that stay local." }
   ];

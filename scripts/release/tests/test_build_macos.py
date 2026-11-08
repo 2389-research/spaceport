@@ -132,10 +132,10 @@ class BuildMacosTests(unittest.TestCase):
         # Each target's Rust build, then its Swift Bluetooth helper, then its
         # herdr-core, fetched right after that target's build.
         self.assertEqual(calls[-8:], [
-            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-automate --target aarch64-apple-darwin",
+            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control --target aarch64-apple-darwin",
             "nearby aarch64-apple-darwin",
             "fetch aarch64-apple-darwin target/aarch64-apple-darwin/release",
-            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-automate --target x86_64-apple-darwin",
+            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control --target x86_64-apple-darwin",
             "nearby x86_64-apple-darwin",
             "fetch x86_64-apple-darwin target/x86_64-apple-darwin/release",
             "package", "sign",

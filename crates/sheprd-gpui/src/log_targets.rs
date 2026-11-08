@@ -3,7 +3,6 @@
 
 pub(crate) const LOG_TARGETS: &[&str] = &[
     // keep-sorted start
-    "sheprd_automation",
     "sheprd_backend",
     "sheprd_chat_protocol",
     "sheprd_client",
@@ -15,7 +14,6 @@ pub(crate) const LOG_TARGETS: &[&str] = &[
     "sheprd_github",
     "sheprd_gpui",
     "sheprd_i18n",
-    "sheprd_luau",
     "sheprd_orchestrator",
     "sheprd_protocol",
     "sheprd_remote",

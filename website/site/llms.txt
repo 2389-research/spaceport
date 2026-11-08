@@ -18,7 +18,7 @@ Native ACP chat is on by default, and `[features] acp_chats = false` turns it of
 
 Manual downloads: https://github.com/sheprd-labs/sheprd/releases/latest. Assets use `Sheprd-VERSION-TARGET` with macOS `.dmg`, Linux `.tar.gz`, `.deb`, `.rpm`, `.pkg.tar.zst`, and Windows `.zip` or `-setup.exe` suffixes. Releases include SHA-256 checksums. Signed Windows installations can update through Check for Updates using the signed installer; unsigned copies require running the installation command or a newer installer again.
 
-Companion binaries use `sheprd-acp`, `sheprd-automate`, `sheprd-nearby`, and `sheprd-remote-control`. The bundled upstream terminal daemon keeps its `herdr-core` name. Stable configuration locations, environment keys and platform application identities are retained for compatibility.
+Companion binaries use `sheprd-acp`, `sheprd-nearby`, and `sheprd-remote-control`. The bundled upstream terminal daemon keeps its `herdr-core` name. Stable configuration locations, environment keys and platform application identities are retained for compatibility.
 
 ## Documentation
 

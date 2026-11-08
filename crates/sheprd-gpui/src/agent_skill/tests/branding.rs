@@ -8,7 +8,6 @@ fn installed_skill_identity_survives_rebranding() {
         )));
     }
     assert_eq!(NAME, "herdr-gpui-browser");
-    assert_eq!(AUTOMATIONS_NAME, "herdr-automations");
     assert_eq!(command(None), "sheprd");
 }
 

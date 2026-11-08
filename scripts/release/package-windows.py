@@ -7,8 +7,8 @@ Beside sheprd.exe, which is a console program because it is also the CLI,
 the zip carries sheprd-launcher.exe, the windowed launcher that starts it without a
 console window from Explorer or the Start menu, sheprd-acp.exe, which the app
 starts chats with, sheprd-remote-control.exe, the remote control daemon the
-app runs as a scheduled task, sheprd-automate.exe, the automation daemon,
-sheprd-nearby.exe, the Bluetooth helper for nearby pairing and presence, and
+app runs as a scheduled task, sheprd-nearby.exe, the Bluetooth helper for
+nearby pairing and presence, and
 herdr-core.exe, which runs Herdr 2 terminals; the build leaves them all
 beside sheprd.exe (herdr-core.exe fetched pinned).
 """
@@ -21,8 +21,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGETS = ("x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc")
-HELPERS = ("sheprd-acp.exe", "sheprd-remote-control.exe", "sheprd-automate.exe",
-           "sheprd-nearby.exe", "herdr-core.exe")
+HELPERS = ("sheprd-acp.exe", "sheprd-remote-control.exe", "sheprd-nearby.exe", "herdr-core.exe")
 # Existing shortcuts, startup entries and helper services must keep working.
 ALIASES = {"herdr-gpui.exe": "sheprd.exe", "herdr-gpui-launcher.exe": "sheprd-launcher.exe",
            **{name.replace("sheprd-", "herdr-", 1): name for name in HELPERS if name.startswith("sheprd-")}}

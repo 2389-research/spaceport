@@ -54,9 +54,6 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-diagnostics` | The app's log file and crash reports: the bounded capture of the crates the app names, the writer thread and rotation, the reader the log window tails, the panic hook, and Windows minidumps; no GPUI |
 | `crates/sheprd-i18n` | The languages the app shows (`docs/i18n.md`): `Locale`, `Direction`, the `language` setting and its negotiation with an `en-US` fallback, the Fluent catalog, and the `en-XA`/`en-XB` pseudo-locales; no GPUI (the app embeds `crates/sheprd-gpui/locales`, keeps the current locale, and checks `fl!`) |
 | `crates/sheprd-launcher` | Windows-only windowed launcher that starts `sheprd.exe` without a console window; std plus `MessageBoxW` for start failures |
-| `crates/sheprd-automation` | Automation scripts (`docs/automations.md`): the sandboxed Luau state, the step catalog, schedules, caps, and the plan a person approves; no GPUI or runtime |
-| `crates/sheprd-luau` | The sandboxed Luau state automations use: safe libraries, memory and interrupt budgets, sealed globals, and the `Policy` each user removes beyond them; no GPUI |
-| `crates/sheprd-automate` | The automation daemon and its command line: schedules approved scripts per host, runs their steps through the `herdr` CLI, keeps state in SQLite, and answers `--json` reports for Sheprd |
 | `crates/embed-resource` | No-op stand-in for GPUI's `embed-resource` build dependency, patched in so GPUI embeds no Windows manifest beside `crates/sheprd-gpui/windows.manifest`; not a production crate |
 | `crates/test-support/sandbox.rs` | Shared isolated process setup for opt-in integration tests; not a production crate |
 | `crates/test-support/pe.rs` | Windows executable (PE) reader for tests that check subsystem and resources; not a production crate |

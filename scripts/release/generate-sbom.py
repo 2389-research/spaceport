@@ -20,7 +20,6 @@ TARGETS = ("aarch64-apple-darwin", "x86_64-apple-darwin",
 # keep-sorted start
 SHIPPED = (
     "sheprd-acp",
-    "sheprd-automate",
     "sheprd-nearby",
     "sheprd-remote-control",
 )

@@ -1,7 +1,6 @@
 use super::*;
 use control::BrowserCommand;
 
-mod automation;
 mod browser_zoom;
 mod chat;
 mod cloud_batch;
@@ -16,6 +15,7 @@ mod open_command;
 mod px0;
 mod quota;
 mod remote;
+mod removed_automation;
 mod removed_mods;
 mod security;
 mod ui_panel;

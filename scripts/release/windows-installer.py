@@ -285,19 +285,14 @@ def smoke(installer, signed=False):
         subprocess.run([str(installer), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-",
                         "/TASKS=addtopath", f"/DIR={app}", f"/LOG={Path(temp) / 'setup.log'}"],
                        check=True, timeout=600)
-        # The automation daemon keeps its state here rather than in the
-        # runner's profile; Setup and the uninstaller pass it on to the
-        # daemon commands they run.
-        env = {**os.environ, "HERDR_AUTOMATE_HOME": str(Path(temp).resolve() / "automate")}
+        env = os.environ.copy()
         # Uninstall even when a check fails, so the user PATH and the
         # uninstall entry never point into the deleted scratch directory.
         try:
             check_installation(app, installer if signed else None)
-            daemon = start_automate(app, env)
             legacy_launcher = app / "herdr-gpui-launcher.exe"
             enable_startup(legacy_launcher)
             check_update_relaunches(installer, app, env)
-            check_automate_restarted(app, daemon)
             check_startup_preserved(legacy_launcher)
         finally:
             # The launched app started the bundled herdr-core, as it does
@@ -305,19 +300,13 @@ def smoke(installer, signed=False):
             # a core, whose terminals outlive the app; this scratch install's
             # cores are the test's own, so it ends them before uninstalling.
             stop_processes_at(app / "herdr-core.exe")
-            # With the daemon still running, so the uninstaller has to stop it.
-            try:
-                uninstall(app, env)
-            finally:
-                stop_processes_at(app / "sheprd-automate.exe")
-                stop_processes_at(app / "herdr-automate.exe")
+            uninstall(app, env)
 
 
 def check_installation(app, signed_installer):
     """`signed_installer` is the installer whose signatures to require along
     with the installed files', or None to skip signature checks."""
     exe, launcher = app / "sheprd.exe", app / "sheprd-launcher.exe"
-    acp, automate = app / "sheprd-acp.exe", app / "sheprd-automate.exe"
     remote_control = app / "sheprd-remote-control.exe"
     for path in [*(app / name for name in packaged_executables()), app / "licenses" / "THIRD-PARTY-NOTICES.txt"]:
         if not path.is_file():
@@ -325,8 +314,7 @@ def check_installation(app, signed_installer):
     # sheprd.exe is the command line, a console program (3); the launcher
     # opens it without a console window, so it is a GUI one (2), as is the
     # remote control daemon, which runs as a scheduled task with no console.
-    # The automation daemon is a command line program.
-    if (subsystem(exe), subsystem(launcher), subsystem(remote_control), subsystem(automate)) != (3, 2, 2, 3):
+    if (subsystem(exe), subsystem(launcher), subsystem(remote_control)) != (3, 2, 2):
         raise ValueError("Installed executables have the wrong subsystems")
     info = subprocess.run([str(exe), "--build-info"], capture_output=True, text=True,
                           check=True, timeout=60).stdout
@@ -366,34 +354,6 @@ def processes_at(path):
 def stop_processes_at(path):
     for pid in processes_at(path):
         subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, timeout=60)
-
-
-def start_automate(app, env):
-    """Start the installed automation daemon as the app does, and return its
-    process id."""
-    # Exercise the old service entry point during a renamed upgrade too.
-    automate = app / "herdr-automate.exe"
-    # Not through pipes: the detached daemon inherits this command's output
-    # handles, and a pipe it holds would never reach end of file.
-    subprocess.run([str(automate), "start"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                   check=True, timeout=60, env=env)
-    deadline = time.monotonic() + 60
-    while not (running := processes_at(automate)):
-        if time.monotonic() > deadline:
-            raise ValueError("sheprd-automate start did not leave the daemon running")
-        time.sleep(1)
-    return running[0]
-
-
-def check_automate_restarted(app, before):
-    """Setup replaced sheprd-automate.exe while its daemon ran: it stopped
-    that daemon and started the new copy."""
-    automate = app / "sheprd-automate.exe"
-    deadline = time.monotonic() + 60
-    while not (running := processes_at(automate)) or before in running:
-        if time.monotonic() > deadline:
-            raise ValueError(f"Setup did not restart the automation daemon: {running}, before {before}")
-        time.sleep(1)
 
 
 def check_update_relaunches(installer, app, env):

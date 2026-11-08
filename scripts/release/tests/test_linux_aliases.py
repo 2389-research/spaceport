@@ -77,7 +77,7 @@ class LinuxAliasTests(unittest.TestCase):
         hook = re.sub(r"\$\{lib\.[^}]+\}", "/fixture", hook)
         binaries = self.work / "bin"
         binaries.mkdir()
-        commands = ("sheprd", "sheprd-acp", "sheprd-automate", "sheprd-nearby", "sheprd-remote-control")
+        commands = ("sheprd", "sheprd-acp", "sheprd-nearby", "sheprd-remote-control")
         for command in commands:
             executable = binaries / command
             executable.write_text(f"#!/bin/sh\necho {command}\n")
@@ -95,7 +95,7 @@ wrapProgram() {
         subprocess.run(["bash", "-euc", stubs + hook], check=True,
                        env={**os.environ, "out": str(self.work)}, capture_output=True)
         aliases = {"herdr-gpui": "sheprd", **{f"herdr-{helper}": f"sheprd-{helper}"
-                   for helper in ("acp", "automate", "nearby", "remote-control")}}
+                   for helper in ("acp", "nearby", "remote-control")}}
         for alias, canonical in aliases.items():
             with self.subTest(alias=alias):
                 self.assertEqual(os.readlink(binaries / alias), canonical)

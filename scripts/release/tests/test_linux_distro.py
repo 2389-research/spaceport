@@ -54,7 +54,6 @@ class LinuxDistroTests(unittest.TestCase):
         self.binary.write_bytes(b"not executable\0HERDR_BUILD_IDENTITY_V1\nworktree=0\nbranch=\npr=\n\0")
         (self.work / "sheprd-acp").write_bytes(b"chat program")
         (self.work / "sheprd-remote-control").write_bytes(b"remote control daemon")
-        (self.work / "sheprd-automate").write_bytes(b"automation daemon")
         (self.work / "sheprd-nearby").write_bytes(b"bluetooth helper")
         (self.work / "herdr-core").write_bytes(b"herdr-core daemon")
         self.notices = self.work / "notices.txt"

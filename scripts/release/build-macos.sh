@@ -23,7 +23,7 @@ build_env=(env
 # Public configuration must be supplied before loading any local signing helper.
 "${build_env[@]}" python3 scripts/update-manifest.py validate-public-key
 for target in aarch64-apple-darwin x86_64-apple-darwin; do
-    "${build_env[@]}" cargo build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-automate --target "$target"
+    "${build_env[@]}" cargo build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control --target "$target"
     "${build_env[@]}" bash scripts/release/build-nearby.sh "$target" >/dev/null
     # Herdr 2 terminals run in the pinned herdr-core beside it.
     "${build_env[@]}" python3 scripts/release/fetch-herdr-core.py "$target" "target/$target/release"

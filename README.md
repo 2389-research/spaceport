@@ -22,8 +22,8 @@
 A native Rust/GPUI workspace for terminals and AI agents on macOS, Linux, and
 Windows. Organize repositories, worktrees, tabs and splits; chat with agents,
 review their changes, track pull requests and usage, and work across local,
-SSH and cloud machines. Browser previews, automations and phone remote
-control connect those workflows in one app.
+SSH and cloud machines. Browser previews and phone remote control connect
+those workflows in one app.
 
 Sheprd supports both an existing [Herdr](https://herdr.dev/) daemon and
 [herdr-core terminals](crates/sheprd-gpui/README.md#herdr-2-terminals). Releases

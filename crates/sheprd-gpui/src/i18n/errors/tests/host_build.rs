@@ -6,8 +6,8 @@ use std::{io, path::PathBuf};
 fn every_host_build_variant_has_a_message() {
     assert_localized(&[
         Error::Binary {
-            program: "herdr-automate",
-            path: PathBuf::from("/Applications/Herdr.app/herdr-automate"),
+            program: "herdr-remote-control",
+            path: PathBuf::from("/Applications/Herdr.app/herdr-remote-control"),
             source: io::Error::other("gone"),
         },
         Error::Checksum,

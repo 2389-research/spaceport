@@ -7,12 +7,11 @@ version_check "$1"
 [[ -f $2 && -f $3 && -d $4 ]] || fail 'Two binary files and an existing output directory required'
 [[ -f $5 && -s $5 ]] || fail 'Nonempty third-party notices file required'
 # The app starts chats with the sheprd-acp beside its executable, runs the
-# sheprd-remote-control beside it as a user service, runs automations in the
-# sheprd-automate there, starts sheprd-nearby (nearby pairing over Bluetooth)
+# sheprd-remote-control beside it as a user service, and starts sheprd-nearby (nearby pairing over Bluetooth)
 # while its pairing dialog is open, and runs Herdr 2 terminals in the
-# herdr-core there; each build leaves all five beside its sheprd
+# herdr-core there; each build leaves all four beside its sheprd
 # (herdr-core fetched pinned).
-companions=(sheprd-acp sheprd-remote-control sheprd-automate sheprd-nearby herdr-core)
+companions=(sheprd-acp sheprd-remote-control sheprd-nearby herdr-core)
 for companion in "${companions[@]}"; do
     [[ -f $(dirname -- "$2")/$companion && -f $(dirname -- "$3")/$companion ]] || fail "A $companion beside each binary required"
 done

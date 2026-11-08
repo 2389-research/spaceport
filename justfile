@@ -10,7 +10,7 @@ run *args:
         # daemon, starts Remote control with the sheprd-remote-control, and
         # Bluetooth pairing and presence with the sheprd-nearby, all beside
         # its own executable.
-        cargo build --locked --release -p sheprd-acp -p sheprd-automate -p sheprd-nearby -p sheprd-remote-control
+        cargo build --locked --release -p sheprd-acp -p sheprd-nearby -p sheprd-remote-control
         exec cargo run --locked --release -p sheprd-gpui -- {{args}}
     fi
     {{just_executable()}} bundle release
@@ -32,7 +32,7 @@ run-debug *args:
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "$(uname -s)" != Darwin ]; then
-        cargo build --locked -p sheprd-acp -p sheprd-automate -p sheprd-nearby -p sheprd-remote-control
+        cargo build --locked -p sheprd-acp -p sheprd-nearby -p sheprd-remote-control
         exec cargo run --locked -p sheprd-gpui -- {{args}}
     fi
     {{just_executable()}} bundle debug
@@ -123,14 +123,13 @@ mockup file="" feedback="" capture="":
     exec target/debug/sheprd "${args[@]}"
 
 build-release:
-    cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-automate -p sheprd-remote-control
+    cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control
 
 # Compile and install the release executable into Cargo's bin directory.
 [unix]
 install:
     cargo install --locked --force --path crates/sheprd-gpui --bin sheprd
     cargo install --locked --force --path crates/sheprd-acp
-    cargo install --locked --force --path crates/sheprd-automate
     cargo install --locked --force --path crates/sheprd-remote-control
 
 # Only installation bypasses the POSIX shell used by the other recipes.
@@ -141,7 +140,6 @@ install:
     cargo install --locked --force --path crates/sheprd-gpui --bin sheprd || exit /b 1
     cargo install --locked --force --path crates/sheprd-launcher || exit /b 1
     cargo install --locked --force --path crates/sheprd-acp || exit /b 1
-    cargo install --locked --force --path crates/sheprd-automate || exit /b 1
     cargo install --locked --force --path crates/sheprd-remote-control
 
 # Regenerate circular Linux artwork on any platform (Python standard library).
@@ -162,7 +160,7 @@ icons: icons-linux icons-windows
 check-artwork:
     PYTHONDONTWRITEBYTECODE=1 python3 assets/icons/test_artwork.py
 
-# Local, unsigned bundle with the automation daemon's binary beside the app.
+# Local, unsigned bundle with the app's companions beside it.
 # Never installs or starts a daemon.
 bundle profile="release" features="":
     #!/usr/bin/env bash
@@ -175,17 +173,14 @@ bundle profile="release" features="":
     esac
     app=target/{{profile}}/Sheprd.app
     cargo build --locked $flags --target-dir target -p sheprd-gpui --features "{{features}}"
-    cargo build --locked $flags --target-dir target -p sheprd-acp -p sheprd-automate -p sheprd-remote-control
+    cargo build --locked $flags --target-dir target -p sheprd-acp -p sheprd-remote-control
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
     # Replace the executables rather than rewrite them in place: macOS keeps
     # a signed file's old signature with its inode, so reading the rewritten
     # pages kills the reader, and a chat still running the old sheprd-acp
     # keeps its own copy.
-    rm -f "$app/Contents/MacOS/sheprd" "$app/Contents/MacOS/sheprd-acp" "$app/Contents/MacOS/sheprd-automate" "$app/Contents/MacOS/sheprd-remote-control" "$app/Contents/MacOS/sheprd-nearby"
+    rm -f "$app/Contents/MacOS/sheprd" "$app/Contents/MacOS/sheprd-acp" "$app/Contents/MacOS/sheprd-remote-control" "$app/Contents/MacOS/sheprd-nearby"
     cp target/{{profile}}/sheprd "$app/Contents/MacOS/sheprd"
-    # The automation daemon, found beside the app's executable.
-    cp target/{{profile}}/sheprd-automate "$app/Contents/MacOS/sheprd-automate"
-    codesign --force --sign - "$app/Contents/MacOS/sheprd-automate"
     # Chats the app starts run the sheprd-acp beside its executable.
     cp target/{{profile}}/sheprd-acp "$app/Contents/MacOS/sheprd-acp"
     # Remote control runs the sheprd-remote-control beside it as a user service.
@@ -206,7 +201,7 @@ bundle profile="release" features="":
         cp "$core" "$app/Contents/MacOS/herdr-core"
         codesign --force --sign - "$app/Contents/MacOS/herdr-core"
     fi
-    for helper in acp automate remote-control nearby; do
+    for helper in acp remote-control nearby; do
         rm -f "$app/Contents/MacOS/herdr-$helper"
         cp "$app/Contents/MacOS/sheprd-$helper" "$app/Contents/MacOS/herdr-$helper"
     done

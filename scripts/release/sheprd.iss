@@ -4,8 +4,8 @@
 ; also the command line terminals and agents run, sheprd-launcher.exe,
 ; which starts it without a console window, sheprd-acp.exe, which the app starts
 ; chats with, sheprd-remote-control.exe, the remote control daemon the app runs as
-; a scheduled task, sheprd-automate.exe, the automation daemon, sheprd-nearby.exe,
-; the Bluetooth helper for nearby pairing and presence, and the licenses.
+; a scheduled task, sheprd-nearby.exe, the Bluetooth helper for nearby pairing
+; and presence, and the licenses.
 ; Closing applications before replacing files also ends running chats, whose
 ; agents' sessions can be resumed, and Remote control, which the app starts
 ; again. It never installs, starts, or stops the Herdr daemon, and uninstalling
@@ -35,8 +35,6 @@
 #define StartupName "Herdr UI"
 #define AppExe "sheprd.exe"
 #define Launcher "sheprd-launcher.exe"
-; The automation daemon the app finds beside its executable.
-#define Automate "sheprd-automate.exe"
 ; The app's AppUserModelID (sheprd_updater::APP_ID), which each window carries with
 ; relaunch properties naming the launcher (src/taskbar.rs). Shortcuts carry it
 ; too, so a pinned shortcut and the window share one taskbar button.
@@ -104,14 +102,12 @@ Source: "{#SourceDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\{#Launcher}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\sheprd-acp.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\sheprd-remote-control.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SourceDir}\{#Automate}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\sheprd-nearby.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; Real compatibility copies keep saved shortcuts and service commands usable.
 Source: "{#SourceDir}\herdr-gpui.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\herdr-gpui-launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\herdr-acp.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\herdr-remote-control.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SourceDir}\herdr-automate.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\herdr-nearby.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; herdr-core keeps running Herdr 2 terminals after the app closes, and Setup
 ; never stops it: a running one is replaced when Windows next restarts.
@@ -171,15 +167,10 @@ Filename: "{app}\{#Launcher}"; Description: "{cm:LaunchProgram,{#AppName}}"; Fla
 ; The app's in-app update runs Setup silently with /RELAUNCH=1 and quits; this
 ; starts the updated app, through the launcher, once its files are in place.
 Filename: "{app}\{#Launcher}"; WorkingDir: "{app}"; Flags: nowait; Check: RelaunchRequested
-; The automation daemon Setup stopped to replace it, now the new copy.
-Filename: "{app}\{#Automate}"; Parameters: "start"; WorkingDir: "{app}"; Flags: runhidden nowait; Check: AutomateStopped
 
 [Code]
 const
   EnvironmentKey = 'Environment';
-
-var
-  StoppedAutomate: Boolean;
 
 { Set by the app's own updater, which has quit for the install. }
 function RelaunchRequested(): Boolean;
@@ -280,83 +271,6 @@ begin
   SetUserPath(Path);
   RenameLegacyShortcut(ExpandConstant('{userprograms}'));
   RenameLegacyShortcut(ExpandConstant('{userdesktop}'));
-end;
-
-{ Whether sheprd-automate.exe runs from Path. WQL strings escape backslashes
-  and quotes, and compare without case. }
-function AutomateRunsFrom(Path: String): Boolean;
-var
-  Locator, Service, Found: Variant;
-begin
-  StringChangeEx(Path, '\', '\\', True);
-  StringChangeEx(Path, '''', '\''', True);
-  try
-    Locator := CreateOleObject('WbemScripting.SWbemLocator');
-    Service := Locator.ConnectServer('.', 'root\CIMV2');
-    Found := Service.ExecQuery('SELECT ProcessId FROM Win32_Process WHERE ExecutablePath = ''' + Path + '''');
-    Result := Found.Count > 0;
-  except
-    Log('Could not list running automation daemons: ' + GetExceptionMessage);
-    Result := False;
-  end;
-end;
-
-{ The automation daemon the app starts keeps running after it quits, and
-  Windows will not replace or delete its executable while it runs. Restart
-  Manager would end it mid-run, or fail to, so ask the installed copy to stop
-  once its runs finish and wait for it to exit. A daemon started from anywhere
-  else is left alone. Returns an error message, or '' once it is not running. }
-function StopAutomateAt(Exe: String): String;
-var
-  Code, Waited: Integer;
-begin
-  Result := '';
-  if not FileExists(Exe) or not AutomateRunsFrom(Exe) then
-    exit;
-  if not Exec(Exe, 'shutdown', ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
-  begin
-    Result := FmtMessage(CustomMessage('AutomateDidNotStop'), [Exe]);
-    exit;
-  end;
-  Waited := 0;
-  while AutomateRunsFrom(Exe) do
-  begin
-    if Waited >= 30000 then
-    begin
-      Result := FmtMessage(CustomMessage('AutomateStillRunning'), [Exe]);
-      exit;
-    end;
-    Sleep(200);
-    Waited := Waited + 200;
-  end;
-  StoppedAutomate := True;
-end;
-
-function StopAutomate(): String;
-begin
-  Result := StopAutomateAt(ExpandConstant('{app}\herdr-automate.exe'));
-  if Result = '' then
-    Result := StopAutomateAt(ExpandConstant('{app}\{#Automate}'));
-end;
-
-function PrepareToInstall(var NeedsRestart: Boolean): String;
-begin
-  Result := StopAutomate();
-end;
-
-function AutomateStopped(): Boolean;
-begin
-  Result := StoppedAutomate;
-end;
-
-function InitializeUninstall(): Boolean;
-var
-  Problem: String;
-begin
-  Problem := StopAutomate();
-  Result := Problem = '';
-  if not Result then
-    SuppressibleMsgBox(Problem, mbError, MB_OK, IDOK);
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

@@ -38,7 +38,6 @@ impl Page {
             Self::AgentSkill => fl!("menu-page-install-the-agent-skill"),
             Self::Application => fl!("menu-page-menu"),
             Self::AppUpdate | Self::Update => fl!("menu-page-update"),
-            Self::Automation => fl!("menu-page-automations"),
             Self::CarryPane => fl!("menu-page-move-pane-to-another-device"),
             Self::Checkpoints => fl!("menu-page-checkpoints"),
             Self::CodeSearch => fl!("menu-page-go-to-symbol-or-file"),

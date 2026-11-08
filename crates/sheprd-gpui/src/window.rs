@@ -129,9 +129,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) app_update_notes_scroll: ScrollHandle,
     /// A tab torn off another window, waiting for its host to be listed.
     pub(crate) arrival: Option<tab_tear::TornTab>,
-    /// The activity bar's Automations section: every host's
-    /// `herdr-automate` scripts and runs.
-    pub(crate) automations: crate::automations::Automations,
     pub(crate) avatars: Option<avatars::Avatars>,
     /// The picture and platform appearance `[backdrop]` asks for.
     pub(crate) backdrop: backdrop::State,
@@ -708,7 +705,6 @@ impl SheprdWindow {
         self.poll_core_terminals(window, cx);
         self.poll_overview(cx);
         self.poll_security(cx);
-        self.poll_automations(cx);
         if self.update_system_load() {
             cx.notify();
         }

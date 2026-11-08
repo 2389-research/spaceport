@@ -6,7 +6,7 @@
 //! workspace's orchestrator on that list (see `orchestrator::section`),
 //! Security the Dependabot alerts of every repository (`crate::security`),
 //! listed only once GitHub reports them on for one, Automations the
-//! `herdr-automate` scripts and runs of every host (`crate::automations`),
+//! unavailable job feed (`crate::automations`),
 //! and Usage the plan limits of every host (`crate::usage::section`).
 //! `[sidebar] activity_bar = false` turns the bar off, and `[sidebar]
 //! automations = false` leaves Automations off it. With the bar on, the
@@ -447,10 +447,9 @@ impl SheprdWindow {
                 BarState::Idle
             };
             // Overview's icon pulses while agents work, as the sidebar's
-            // working dots do, and Automations' while a run goes on.
+            // working dots do.
             let busy = match panel {
                 ActivityPanel::Overview => self.overview_working() > 0,
-                ActivityPanel::Automations => self.automations.running() > 0,
                 _ => false,
             };
             let bubble = counts.of(panel).map(|count| Bubble {

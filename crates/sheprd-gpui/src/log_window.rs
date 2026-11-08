@@ -10,8 +10,6 @@ use gpui::{prelude::*, *};
 use std::{sync::Arc, time::Duration};
 use tracing::Level;
 
-mod source;
-
 const LEVELS: [Level; 5] = [
     Level::TRACE,
     Level::DEBUG,
@@ -126,12 +124,6 @@ struct LogWindow {
     scroll: ListState,
     selected: Option<Arc<Record>>,
     status: String,
-    /// What the status line says about the app's own log file.
-    app_status: String,
-    /// The log shown: the app's, or a host's automation daemon.
-    source: source::Source,
-    /// The host log being followed, while one is shown.
-    remote: Option<source::Remote>,
     exporting: bool,
     _search: Subscription,
     _poll: Task<()>,
@@ -246,21 +238,16 @@ impl LogWindow {
             let mut tail = diagnostics::path().map(diagnostics::Tail::new);
             loop {
                 let request = this.update(cx, |this, cx| {
-                    (this.source == source::Source::App)
-                        .then_some(())
-                        .filter(|()| {
-                            this.generation.is_none()
-                                || (this.following
-                                    && this.generation != Some(diagnostics::generation()))
-                        })
-                        .map(|()| {
-                            (
-                                this.search.read(cx).text().to_owned(),
-                                this.minimum,
-                                this.following,
-                                (!this.following).then(|| (this.retained.clone(), this.dropped)),
-                            )
-                        })
+                    (this.generation.is_none()
+                        || (this.following && this.generation != Some(diagnostics::generation())))
+                    .then(|| {
+                        (
+                            this.search.read(cx).text().to_owned(),
+                            this.minimum,
+                            this.following,
+                            (!this.following).then(|| (this.retained.clone(), this.dropped)),
+                        )
+                    })
                 });
                 let Ok(request) = request else { break };
                 if let Some((query, minimum, following, frozen)) = request {
@@ -295,8 +282,7 @@ impl LogWindow {
                     tail = returned;
                     if this
                         .update(cx, |this, cx| {
-                            if this.source != source::Source::App
-                                || this.search.read(cx).text() != query
+                            if this.search.read(cx).text() != query
                                 || this.minimum != minimum
                                 || this.following != following
                             {
@@ -358,10 +344,7 @@ impl LogWindow {
             following: true,
             scroll: ListState::new(0, ListAlignment::Top, px(100.)),
             selected: None,
-            status: app_status.clone(),
-            app_status,
-            source: source::Source::App,
-            remote: None,
+            status: app_status,
             exporting: false,
             _search: subscription,
             _poll: poll,
@@ -560,7 +543,6 @@ impl Render for LogWindow {
                             .text_size(px(config.ui.size + 4.))
                             .child(fl!("log-window-title")),
                     )
-                    .children(self.render_sources(cx))
                     .child(self.search.clone())
                     .child(
                         div()

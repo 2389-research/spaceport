@@ -22,7 +22,7 @@
 pub(crate) mod ask;
 pub(crate) mod install;
 
-use crate::{automations::Machine, host_build, teleport::Host};
+use crate::{host_build, teleport::Host};
 use sheprd_client::{ConnectTarget, ScriptLimits, shell_quote};
 use sheprd_remote_control::{
     app::enroll::{Apns, Input},
@@ -90,6 +90,30 @@ pub(crate) struct Known {
     pub(crate) target: ConnectTarget,
 }
 
+/// A remote machine across any of its client sessions.
+#[derive(PartialEq, Eq)]
+enum Machine {
+    Ssh(String),
+    #[cfg(feature = "cloud")]
+    Cloud(sheprd_client::CloudProvider, String, String),
+}
+
+impl Machine {
+    fn of(target: &ConnectTarget) -> Option<Self> {
+        match target {
+            ConnectTarget::Ssh { target, .. } => Some(Self::Ssh(target.clone())),
+            #[cfg(feature = "cloud")]
+            ConnectTarget::Cloud {
+                provider,
+                account,
+                id,
+                ..
+            } => Some(Self::Cloud(*provider, account.clone(), id.clone())),
+            _ => None,
+        }
+    }
+}
+
 /// The machines a phone may be paired with: every enabled SSH and cloud
 /// endpoint, once per machine however many sessions reach it, in the
 /// window's order. This computer, WSL, and custom sockets are not hosts of
@@ -100,7 +124,7 @@ pub(crate) fn known<'a>(
     let mut machines = Vec::new();
     let mut known = Vec::new();
     for (id, label, target, enabled) in endpoints {
-        let Some(machine) = Machine::of(target).filter(|machine| !machine.is_local()) else {
+        let Some(machine) = Machine::of(target) else {
             continue;
         };
         if !enabled || machines.contains(&machine) {

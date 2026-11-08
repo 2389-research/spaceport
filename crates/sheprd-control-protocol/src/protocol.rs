@@ -28,7 +28,7 @@ pub enum Placement {
 /// Raised whenever a request or reply changes shape, so `status` can tell
 /// an outdated app from a refused request. 3: `browser.open` placement.
 /// 4: `link`. 5: the `tab` family's `zoom`. 6: the `cloud` family. 7: `chat`.
-/// 8: `host` `automation_approve`. 9: `remote`. 10: `settings` `language`.
+/// 8: legacy `host` `automation_approve`. 9: `remote`. 10: `settings` `language`.
 /// 11: `mod`. 12: `status.core_catalog`.
 pub const PROTOCOL_VERSION: u32 = 12;
 

@@ -122,7 +122,7 @@ as arguments, so the runner must not have untrusted local users. No GUI executab
 is run, including for version probing. Signing works on a copy of the input app.
 
 The bundle holds `Contents/MacOS/sheprd`, the `sheprd-acp` chat runner,
-`sheprd-remote-control`, `sheprd-automate`, `sheprd-nearby`, and the pinned
+`sheprd-remote-control`, `sheprd-nearby`, and the pinned
 upstream `herdr-core`. Packaging takes the helpers from beside each architecture's
 `sheprd` and includes real legacy `herdr-*` helper copies for saved service paths.
 All helpers and their compatibility copies are signed first without the
@@ -148,7 +148,7 @@ the Windows target graphs, each the app's joined with those of the programs ship
 The caller must supply the matching release binary; packaging does not cross-build
 or resolve shared libraries. Output is `Sheprd-VERSION-TARGET.tar.gz`, with a
 same-named root containing `bin/sheprd`, `bin/sheprd-acp`,
-`bin/sheprd-remote-control`, `bin/sheprd-automate`, and `bin/sheprd-nearby`, the
+`bin/sheprd-remote-control` and `bin/sheprd-nearby`, the
 Bluetooth helper for nearby pairing and presence (all taken from beside the binary), a scalable SVG icon, desktop entry, license and
 notice under `share/`, plus `herdr-gpui -> sheprd` and real legacy helper copies.
 The relative main-command symlink follows standalone updates to `sheprd`.
@@ -199,8 +199,7 @@ zip tool) writes one `Sheprd-VERSION-TARGET.zip` per target with a same-named ro
 containing `sheprd.exe`, the windowed `sheprd-launcher.exe` that the
 installer's Start menu shortcut opens, `sheprd-acp.exe`, which the app starts
 chats with, `sheprd-remote-control.exe`, the remote control daemon it runs as a
-scheduled task, `sheprd-automate.exe`, the automation daemon, and
-`sheprd-nearby.exe`, the Bluetooth helper for nearby pairing and presence (all
+scheduled task, and `sheprd-nearby.exe`, the Bluetooth helper for nearby pairing and presence (all
 taken from beside `BINARY`), the pinned `herdr-core.exe`, real legacy executable
 and helper copies, and `licenses/` holding the same license
 and notice files as the Linux tree. Entries carry a fixed timestamp.
@@ -211,16 +210,14 @@ compiler (`install-iscc`, checked against its SHA-256), compiles
 `Sheprd-VERSION-TARGET-setup.exe` (`build`), and installs and uninstalls it on
 the runner (`smoke`), checking the files, their subsystems, `sheprd.exe`'s
 output, the Start menu shortcut's target (the launcher) and AppUserModelID,
-the user `PATH` entry, and the Settings entry, and that an update and the
-uninstaller stop a running automation daemon under either name (the update starts the
-new copy again) rather than failing to replace it. CI's `windows-package` job runs the same
+the user `PATH` and Settings entries, and the app relaunch after an update.
+CI's `windows-package` job runs the same
 optimized build, packaging, installer build, and install/uninstall check on
 `windows-2025` for any pull request that changes their inputs
 (`scripts/ci-changes.sh` lists them), and the required gate then requires it. The installer is per-user (no elevation),
 installs to `%LOCALAPPDATA%\Programs\Herdr UI` as `site/install.ps1` does, adds
 that directory to the user `PATH`, and creates the Start menu shortcut to the
-launcher. Both stop the installed automation daemon with `sheprd-automate
-shutdown`, which lets its runs finish, before replacing or removing its files.
+launcher.
 The smoke test seeds a disabled `Herdr UI` startup entry targeting the legacy
 launcher and requires the command and `StartupApproved` bytes to survive the
 upgrade unchanged. Setup renames only shortcuts targeting this installation;
@@ -256,7 +253,7 @@ fails instead of falling back to unsigned. When signing is on:
 2. `azure/login` signs in to Azure with the job's OIDC token, and
    `azure/artifact-signing-action` signs `sheprd.exe`,
    `sheprd-launcher.exe`, `sheprd-acp.exe`, `sheprd-remote-control.exe`,
-   `sheprd-automate.exe`, `sheprd-nearby.exe`, and `herdr-core.exe` with SHA-256 and an RFC 3161 timestamp from
+   `sheprd-nearby.exe`, and `herdr-core.exe` with SHA-256 and an RFC 3161 timestamp from
    `http://timestamp.acs.microsoft.com`.
 3. `windows-signing.py repack` refuses unless the tree holds exactly the zip's
    files and each executable differs from the tested one only by its appended

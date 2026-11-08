@@ -3,15 +3,6 @@ use super::*;
 
 mod branding;
 
-fn helper(path: &Path) {
-    std::fs::write(path, "").unwrap();
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
-    }
-}
-
 #[test]
 fn the_skill_is_marked_and_names_this_executable() {
     assert!(SKILL.starts_with("---\nname: herdr-gpui-browser\n"));
@@ -36,78 +27,42 @@ fn the_skill_is_marked_and_names_this_executable() {
 #[test]
 fn the_skill_description_is_a_quoted_scalar() {
     assert!(!description(SKILL).contains('"'));
-    assert!(!description(AUTOMATIONS).contains('"'));
 }
 
 #[test]
-fn the_automations_skill_is_marked_and_names_its_commands() {
-    assert!(AUTOMATIONS.starts_with("---\nname: herdr-automations\n"));
-    assert!(managed(AUTOMATIONS));
-    assert_eq!(automations_text(None), AUTOMATIONS);
-    let dir = tempfile::tempdir().unwrap();
-    let app = dir.path().join("Herdr");
-    std::fs::write(&app, "").unwrap();
-    let automate = dir.path().join(if cfg!(windows) {
-        "herdr-automate.exe"
-    } else {
-        "herdr-automate"
-    });
-    helper(&automate);
-    let text = automations_text(Some(&app));
-    assert!(text.contains(&format!(
-        "{} check FILE",
-        shell_word(automate.to_str().unwrap())
-    )));
-    assert!(text.contains(&format!(
-        "{} automation approve FILE",
-        shell_word(app.to_str().unwrap())
-    )));
-    assert!(!text.contains("herdr-gpui automation"));
-}
-
-/// A Windows install path lands in the description, and YAML reads a
-/// backslash in a double-quoted scalar as an escape (#868).
-#[test]
-fn a_backslashed_install_path_stays_valid_yaml() {
-    let dir = tempfile::tempdir().unwrap();
-    // One directory named with a backslash on Unix, two on Windows.
-    let install = dir.path().join(r"Programs\Herdr UI");
-    std::fs::create_dir_all(&install).unwrap();
-    let app = install.join("Herdr");
-    std::fs::write(&app, "").unwrap();
-    let automate = install.join(if cfg!(windows) {
-        "herdr-automate.exe"
-    } else {
-        "herdr-automate"
-    });
-    helper(&automate);
-    let text = automations_text(Some(&app));
-    let raw = description(&text);
-    assert!(!raw.replace(r"\\", "").contains('\\'), "{raw}");
-    let word = shell_word(automate.to_str().unwrap());
-    assert!(raw.replace(r"\\", r"\").contains(&format!("{word} check")));
-    // The body is Markdown, so its commands keep the path as it is.
-    assert!(text.contains(&format!("{word} check FILE")));
+fn installing_the_browser_skill_does_not_touch_an_existing_automation_skill() {
+    let home = tempfile::tempdir().unwrap();
+    let root = home.path().join(".claude");
+    let legacy = file(&root, "herdr-automations");
+    std::fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+    std::fs::write(&legacy, "my automation notes").unwrap();
+    install(home.path(), SKILL).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(&legacy).unwrap(),
+        "my automation notes"
+    );
+    remove(home.path()).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(&legacy).unwrap(),
+        "my automation notes"
+    );
 }
 
 #[test]
-fn browser_and_automation_skills_install_and_go_together() {
+fn browser_skill_installs_and_removes() {
     let home = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(home.path().join(".claude")).unwrap();
     let placed = install(home.path(), SKILL).unwrap();
     assert_eq!(placed.len(), 1);
-    let automations = file(&home.path().join(".claude"), AUTOMATIONS_NAME);
-    assert!(managed(&std::fs::read_to_string(&automations).unwrap()));
     let removed = remove(home.path()).unwrap();
-    assert!(removed.contains(&automations));
-    assert!(!automations.exists());
+    assert_eq!(removed, placed);
 }
 
 /// The Agent Skills format caps a description at 1,024 characters, and
 /// agents such as Pi refuse a skill over it.
 #[test]
 fn the_skill_description_fits_the_agent_skills_limit() {
-    for skill in [SKILL, AUTOMATIONS] {
+    for skill in [SKILL] {
         let length = description(skill).chars().count();
         assert!((1..=1024).contains(&length), "{length} characters");
     }
@@ -171,8 +126,7 @@ fn installing_keeps_to_existing_agent_directories_and_the_users_own_files() {
     install(home.path(), &newer).unwrap();
     assert_eq!(std::fs::read_to_string(&placed[0]).unwrap(), newer);
 
-    // Removing takes only the managed copies, the automations skill's
-    // too, and their now-empty folders.
+    // Removing takes only managed copies and their now-empty folders.
     let removed = remove(home.path()).unwrap();
     let browser = removed
         .iter()

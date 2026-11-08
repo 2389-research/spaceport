@@ -130,8 +130,8 @@ pub struct SidebarStyle {
     /// the sidebar and terminals, or an orchestrator section. On unless
     /// turned off.
     pub activity_bar: bool,
-    /// `automations`: the bar's Automations section, and Sheprd reading
-    /// and starting each host's `herdr-automate`. On unless turned off.
+    /// `automations`: show the unavailable Automation activity page.
+    /// On unless turned off.
     pub automations: bool,
     pub change_counts: ChangeCounts,
     pub device_footer: DeviceFooter,

@@ -16,7 +16,6 @@ impl Localize for Error {
             Self::AgentContext { operation, .. } => {
                 fl!("error-agent-context", operation = *operation)
             }
-            Self::Automations(error) => error.localize(),
             Self::Backdrop(error) => error.localize(),
             Self::BundleExists { path: file } => fl!("error-bundle-exists", path = path(file)),
             Self::BundleWrite { path: file, source } => fl!(

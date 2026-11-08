@@ -100,7 +100,7 @@ class RebrandCompatibility(unittest.TestCase):
         text = INSTALLER.SCRIPT.read_text()
         for name in PACKAGE.EXECUTABLES:
             definition = {"sheprd.exe": "{#AppExe}", "sheprd-launcher.exe": "{#Launcher}",
-                          "sheprd-automate.exe": "{#Automate}"}.get(name, name)
+                          }.get(name, name)
             self.assertIn(f'Source: "{{#SourceDir}}\\{definition}";', text)
 
     def test_native_smoke_preserves_a_disabled_legacy_startup_entry(self):

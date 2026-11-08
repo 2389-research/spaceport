@@ -9,7 +9,6 @@
 //! messages, and the app's feature modules are migrated on their own.
 // i18n: migrated
 
-mod automations;
 mod backdrop;
 mod caffeine;
 mod chat;

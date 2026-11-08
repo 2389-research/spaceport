@@ -12,9 +12,6 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 const SKILL: &str = include_str!("../../../skills/herdr-gpui-browser/SKILL.md");
-/// How agents write automations, installed beside the browser skill.
-const AUTOMATIONS: &str = include_str!("../../../skills/herdr-automations/SKILL.md");
-const AUTOMATIONS_NAME: &str = "herdr-automations";
 /// Marks a skill file this app manages.
 const MARKER: &str = "<!-- herdr-gpui-managed-skill v1";
 const NAME: &str = "herdr-gpui-browser";
@@ -79,47 +76,6 @@ fn substitute_command(text: &str, current: &str, legacy: &str, command: &str) ->
         .collect()
 }
 
-/// The automations skill, naming this executable and the `herdr-automate`
-/// that ships beside it; a bundle puts neither on `PATH`.
-pub(crate) fn automations_text(executable: Option<&Path>) -> String {
-    let automate = executable.and_then(|exe| {
-        crate::bundled::locate_in(
-            if cfg!(windows) {
-                "herdr-automate.exe"
-            } else {
-                "herdr-automate"
-            },
-            Some(exe),
-            None,
-        )
-    });
-    let mut text = AUTOMATIONS.to_owned();
-    if let Some(automate) = automate.as_deref().and_then(Path::to_str) {
-        text = substitute_command(
-            &text,
-            "sheprd-automate",
-            "herdr-automate",
-            &shell_word(automate),
-        );
-    }
-    if executable.and_then(Path::to_str).is_some() {
-        text = substitute_command(&text, "sheprd", "herdr-gpui", &command(executable));
-    }
-    escape_description(text)
-}
-
-/// The frontmatter's description is a double-quoted YAML scalar, where a
-/// Windows path's backslashes would read as escapes such as `\U`.
-fn escape_description(text: String) -> String {
-    let Some(line) = text
-        .lines()
-        .find(|line| line.starts_with("description: ") && line.contains('\\'))
-    else {
-        return text;
-    };
-    text.replacen(line, &line.replace('\\', r"\\"), 1)
-}
-
 fn managed(contents: &str) -> bool {
     contents.contains(MARKER)
 }
@@ -135,10 +91,9 @@ fn install_error(path: &Path) -> impl FnOnce(std::io::Error) -> crate::Error + '
     }
 }
 
-/// Writes `text` into each agent directory that exists under `home`, with
-/// the automations skill beside it. A file the user wrote there under the
-/// same name is left alone. Returns where the skill now is. Blocking; run
-/// off the UI thread.
+/// Writes `text` into each agent directory that exists under `home`.
+/// A file the user wrote there under the same name is left alone.
+/// Returns where the skill now is. Blocking; run off the UI thread.
 pub(crate) fn install(home: &Path, text: &str) -> crate::Result<Vec<PathBuf>> {
     let placed = place(home, NAME, text)?;
     if placed.is_empty() {
@@ -147,12 +102,6 @@ pub(crate) fn install(home: &Path, text: &str) -> crate::Result<Vec<PathBuf>> {
             source: std::io::ErrorKind::NotFound.into(),
         });
     }
-    let executable = executable();
-    place(
-        home,
-        AUTOMATIONS_NAME,
-        &automations_text(executable.as_deref()),
-    )?;
     Ok(placed)
 }
 
@@ -186,7 +135,7 @@ fn place(home: &Path, name: &str, text: &str) -> crate::Result<Vec<PathBuf>> {
 pub(crate) fn remove(home: &Path) -> crate::Result<Vec<PathBuf>> {
     let mut removed = Vec::new();
     for root in ROOTS.map(|root| home.join(root)) {
-        for name in [NAME, AUTOMATIONS_NAME] {
+        for name in [NAME] {
             let path = file(&root, name);
             let Ok(current) = std::fs::read_to_string(&path) else {
                 continue;

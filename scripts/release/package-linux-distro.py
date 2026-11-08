@@ -24,7 +24,7 @@ FORMATS = (("deb", "deb"), ("rpm", "rpm"), ("archlinux", "pkg.tar.zst"))
 TREE = {
     "bin/herdr-core", "bin/herdr-gpui", "bin/sheprd",
     *(f"bin/{prefix}-{helper}" for prefix in ("sheprd", "herdr")
-      for helper in ("acp", "automate", "nearby", "remote-control")),
+      for helper in ("acp", "nearby", "remote-control")),
     "share/applications/org.sheprd.Sheprd.desktop",
     "share/icons/hicolor/scalable/apps/sheprd.svg",
     *(f"share/licenses/herdr-gpui/{name}" for name in (

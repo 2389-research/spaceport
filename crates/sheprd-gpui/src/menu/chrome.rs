@@ -596,11 +596,6 @@ impl SheprdWindow {
                         .max_h((viewport.height - px(24.)).max(px(0.)))
                 },
             )
-            .when(self.automation_dialog_open(), |panel| {
-                panel
-                    .w((viewport.width - px(24.)).max(px(0.)).min(px(560.)))
-                    .max_h((viewport.height - px(24.)).max(px(0.)))
-            })
             .when(
                 matches!(
                     page,
@@ -780,8 +775,6 @@ impl SheprdWindow {
         } else if page == Page::OpenLink {
             panel = panel.child(self.render_open_link(cx));
         } else if let Some(body) = self.cloud_batch_page(cx) {
-            panel = panel.child(body);
-        } else if let Some(body) = self.automation_dialog_page(cx) {
             panel = panel.child(body);
         } else if let Some(body) = self.remote_page(cx) {
             panel = panel.child(body);

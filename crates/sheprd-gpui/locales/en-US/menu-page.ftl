@@ -8,7 +8,6 @@ menu-page-add-wsl-distribution = Add WSL distribution
 menu-page-install-the-agent-skill = Install the agent skill
 menu-page-menu = Menu
 menu-page-update = Update
-menu-page-automations = Automations
 menu-page-move-pane-to-another-device = Move pane to another device
 menu-page-checkpoints = Checkpoints
 menu-page-go-to-symbol-or-file = Go to symbol or file

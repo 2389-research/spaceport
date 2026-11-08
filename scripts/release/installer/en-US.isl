@@ -11,6 +11,3 @@ AddToPath=Add sheprd to PATH, for terminals and agents
 LinkName=%1 link
 ; The folder context menu's command; %1 is the app's name.
 OpenIn=Open in %1
-; %1 is the path of sheprd-automate.exe.
-AutomateDidNotStop=The automation daemon at %1 did not stop. Stop its runs with sheprd-automate stop, then run Setup again.
-AutomateStillRunning=The automation daemon at %1 is still running. Quit it, then run Setup again.

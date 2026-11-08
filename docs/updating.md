@@ -581,9 +581,8 @@ as `~/.local/bin/sheprd`, with safe ancestor permissions. Root, system locations
 symlinked paths, hard-linked binaries, and known package-container environments
 are refused. Supported archive targets are x86_64 GNU and aarch64 GNU Linux.
 The update replaces that executable only: the `sheprd-acp` beside it, which chats
-run, `sheprd-remote-control`, which Remote control runs, and `sheprd-automate`,
-which automations run in, stay as installed until the next manual archive
-install.
+run, and `sheprd-remote-control`, which Remote control runs, stay as
+installed until the next manual archive install.
 On macOS the app must be user-owned and its parent writable without elevation;
 the usual root/admin-owned `/Applications` parent is allowed. The installed and
 candidate bundles must have matching Developer ID teams, the stable `so.pen.herdr-gpui` bundle identifier,

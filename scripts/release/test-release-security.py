@@ -114,7 +114,7 @@ class ReleaseTargets(unittest.TestCase):
         self.assertNotIn("secrets.", package)
         # Bash, so "$TARGET" and friends expand on the Windows runner.
         self.assertIn("    defaults:\n      run:\n        shell: bash\n", package)
-        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp -p sheprd-remote-control -p sheprd-automate -p sheprd-nearby --target "$TARGET"',
+        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp -p sheprd-remote-control -p sheprd-nearby --target "$TARGET"',
                         'python scripts/release/package-windows.py "$VERSION" "$TARGET"',
                         'python scripts/release/windows-installer.py install-iscc',
                         'python scripts/release/windows-installer.py build "$VERSION" "$TARGET"',
@@ -155,11 +155,10 @@ class ReleaseTargets(unittest.TestCase):
         self.assertEqual(re.findall(r"- runner: (\S+)\n            target: (\S+)", linux), [
             ("ubuntu-24.04", "x86_64-unknown-linux-gnu"),
             ("ubuntu-24.04-arm", "aarch64-unknown-linux-gnu")])
-        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-automate -p sheprd-nearby --target "$TARGET"',
+        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-nearby --target "$TARGET"',
                         'python3 scripts/release/smoke-cli.py "target/$TARGET/release/sheprd"',
                         '"target/$TARGET/release/sheprd-acp" --help',
                         '"target/$TARGET/release/sheprd-remote-control" --version',
-                        '"target/$TARGET/release/sheprd-automate" --version',
                         '"target/$TARGET/release/sheprd-nearby" --version',
                         'python3 scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"',
                         '"target/$TARGET/release/herdr-core" --version',
@@ -178,7 +177,7 @@ class ReleaseTargets(unittest.TestCase):
         self.assertEqual(re.findall(r"- runner: (\S+)\n            target: (\S+)", windows), [
             ("windows-2025", "x86_64-pc-windows-msvc"),
             ("windows-11-arm", "aarch64-pc-windows-msvc")])
-        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp -p sheprd-remote-control -p sheprd-automate -p sheprd-nearby --target "$TARGET"',
+        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp -p sheprd-remote-control -p sheprd-nearby --target "$TARGET"',
                         'python scripts/release/smoke-cli.py "target/$TARGET/release/sheprd.exe"',
                         'python scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"',
                         '"target/$TARGET/release/herdr-core.exe" --version',
@@ -194,14 +193,10 @@ class ReleaseTargets(unittest.TestCase):
         self.assertIn("    runs-on: macos-15\n", macos)
         self.assertNotIn("intel", workflow)
         self.assertIn('python3 scripts/release/smoke-cli.py "target/$TARGET/release/sheprd"', macos)
-        self.assertIn('"target/$TARGET/release/sheprd-automate" --version', macos)
-        self.assertIn("target/${{ matrix.target }}/release/sheprd-automate\n", macos)
         self.assertIn('python3 scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"', macos)
         self.assertIn('"target/$TARGET/release/herdr-core" --version', macos)
         self.assertIn("target/${{ matrix.target }}/release/herdr-core\n", macos)
-        self.assertIn("binaries/arm64/sheprd-automate binaries/x86_64/sheprd-automate binaries/arm64/herdr-core binaries/x86_64/herdr-core ", jobs["sign"])
         self.assertIn("binaries/arm64/sheprd-nearby binaries/x86_64/sheprd-nearby\n", jobs["sign"])
-        self.assertIn('"target/$TARGET/release/sheprd-automate.exe" --version', jobs["windows"])
         self.assertIn('"target/$TARGET/release/sheprd-nearby.exe" --version', jobs["windows"])
         # The Swift helper ships on macOS; the Rust one only on Linux and Windows.
         self.assertNotIn("-p sheprd-nearby", macos)
@@ -401,7 +396,7 @@ class WindowsTrust(unittest.TestCase):
         for setting in ("timestamp-rfc3161: http://timestamp.acs.microsoft.com", "timestamp-digest: SHA256",
                         "file-digest: SHA256", "exclude-environment-credential: true",
                         "cache-dependencies: false", "name: windows-package-${{ matrix.target }}",
-                        "}}\\sheprd.exe\n", "}}\\sheprd-launcher.exe\n", "}}\\sheprd-acp.exe\n", "}}\\sheprd-remote-control.exe\n", "}}\\sheprd-automate.exe\n", "}}\\sheprd-nearby.exe\n", "}}\\herdr-core.exe\n",
+                        "}}\\sheprd.exe\n", "}}\\sheprd-launcher.exe\n", "}}\\sheprd-acp.exe\n", "}}\\sheprd-remote-control.exe\n", "}}\\sheprd-nearby.exe\n", "}}\\herdr-core.exe\n",
                         "name: windows-signed-${{ matrix.target }}"):
             self.assertIn(setting, sign)
         # Unpack, sign, check and repack, then sign the installer, then verify.

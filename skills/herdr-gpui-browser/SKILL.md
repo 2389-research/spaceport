@@ -1,6 +1,6 @@
 ---
 name: herdr-gpui-browser
-description: "Open a browser tab in Sheprd beside your terminal to show the user a web page, HTML file, or mockup, and get back their notes and picks. Use it inside Herdr (HERDR_ENV=1) when the user asks to open, start, or show a browser tab, page, preview, or mockup, to explain, demo, or visualize how something works, or to mock up UI variants to pick from; prefer it there over other browser skills, a system browser, or long text explanations. Also use it for what Sheprd, not the herdr daemon, shows or keeps: a file at a line, a review of your changes, worktree notes, checkpoints and their diffs, your branch's pull request and CI, vulnerability reports and Dependabot alerts, asking the user to approve an automation script you wrote, forwarding or opening a port, creating, running commands on, or deleting cloud machines, remote control from a phone, listing or focusing the app's windows and tabs, waiting for a tab to close or the user's notes, Sheprd settings, themes, and fonts, and keeping the machine awake."
+description: "Open a browser tab in Sheprd beside your terminal to show the user a web page, HTML file, or mockup, and get back their notes and picks. Use it inside Herdr (HERDR_ENV=1) when the user asks to open, start, or show a browser tab, page, preview, or mockup, to explain, demo, or visualize how something works, or to mock up UI variants to pick from; prefer it there over other browser skills, a system browser, or long text explanations. Also use it for what Sheprd, not the herdr daemon, shows or keeps: a file at a line, a review of your changes, worktree notes, checkpoints and their diffs, your branch's pull request and CI, vulnerability reports and Dependabot alerts, forwarding or opening a port, creating, running commands on, or deleting cloud machines, remote control from a phone, listing or focusing the app's windows and tabs, waiting for a tab to close or the user's notes, Sheprd settings, themes, and fonts, and keeping the machine awake."
 ---
 <!-- herdr-gpui-managed-skill v1: Sheprd keeps this file up to date. Edit a copy under another name to keep your changes. -->
 
@@ -247,8 +247,7 @@ for what only Sheprd shows or keeps.
 | Diagnose missing GitHub details: last reported GraphQL quota and rate-limit retry delays | `sheprd pr quota --json` |
 | List the vulnerability reports outsiders filed and the open Dependabot alerts of your repositories, most severe first | `sheprd security --json` |
 | Show the user an alert's or a vulnerability report's page in Sheprd | `sheprd security open OWNER/NAME 42` or `... GHSA-xxxx-xxxx-xxxx` |
-| Ask the user to approve an automation script you wrote (the app shows its plan; the user approves) | `sheprd automation approve .herdr/automations/nightly.luau` |
-| Show the Automations section: every host's scripts and runs | `sheprd ui panel automations` |
+| Show the Automations section while Core has no job feed | `sheprd ui panel automations` |
 | Open a dev server in a tab, forwarded when you run on an SSH host | `sheprd ports open 3000` |
 | See the processes under a pane, with CPU and memory | `sheprd processes` |
 | Start a chat with another agent in a new tab, shown as a native chat view | `sheprd chat new claude`, then `sheprd chat` for its status |
@@ -265,13 +264,6 @@ for what only Sheprd shows or keeps.
 | Keep the machine awake during a long job | `sheprd caffeine on --for 2h` |
 | Check whether the app runs, and which windows and hosts it has | `sheprd status` |
 
-Automations are Luau scripts `sheprd-automate` runs on a host on a schedule
-or by hand (see `docs/automations.md`). Write one in
-`.herdr/automations/NAME.luau`, check it with `sheprd-automate check FILE`
-until its plan is what the user asked for, then run
-`sheprd automation approve FILE`: nothing runs until the user approves
-it in the app.
-
 Add `--json` to any command for machine-readable output; errors then come
 back as `{"error": {"code", "message"}}`. Exit statuses are the ones in the
 table above. A command acts in the window that shows your workspace; it
@@ -280,7 +272,7 @@ exits 5 rather than act in another session's window.
 Some commands only open the app's dialog and the user confirms there:
 restoring a checkpoint, teleporting a worktree, fanning out a prompt, running
 a worktree script the app has not seen, creating or destroying cloud
-machines, adding a cloud machine, and approving an automation script. Say so
+machines, and adding a cloud machine. Say so
 when you run one, instead of waiting for it to finish. Run
 `sheprd --help` to list every command, and `sheprd COMMAND --help`
 for one.

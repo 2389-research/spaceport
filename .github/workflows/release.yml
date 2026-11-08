@@ -189,7 +189,7 @@ jobs:
       - name: Require Rosetta for the x86_64 executable
         if: matrix.arch == 'x86_64'
         run: arch -x86_64 /usr/bin/true || sudo softwareupdate --install-rosetta --agree-to-license
-      - run: cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-automate --target "$TARGET"
+      - run: cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control --target "$TARGET"
       # Nearby pairing's Bluetooth side, in Swift; the app starts it beside
       # its executable while the pairing dialog is open.
       - run: bash scripts/release/build-nearby.sh "$TARGET"
@@ -207,8 +207,6 @@ jobs:
       - run: '"target/$TARGET/release/sheprd-acp" --help'
       # Remote control runs the sheprd-remote-control beside it as a user service.
       - run: '"target/$TARGET/release/sheprd-remote-control" --version'
-      # Automations run in the sheprd-automate beside it.
-      - run: '"target/$TARGET/release/sheprd-automate" --version'
       - run: '"target/$TARGET/release/herdr-core" --version'
       - name: Install the notice generator
         uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
@@ -224,7 +222,6 @@ jobs:
             target/${{ matrix.target }}/release/sheprd
             target/${{ matrix.target }}/release/sheprd-acp
             target/${{ matrix.target }}/release/sheprd-remote-control
-            target/${{ matrix.target }}/release/sheprd-automate
             target/${{ matrix.target }}/release/sheprd-nearby
             target/${{ matrix.target }}/release/herdr-core
             target/${{ matrix.target }}/release/THIRD-PARTY-NOTICES.txt
@@ -265,7 +262,7 @@ jobs:
       - name: Require the declared native target
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$TARGET"
-      - run: cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-automate -p sheprd-nearby --target "$TARGET"
+      - run: cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-nearby --target "$TARGET"
       # Herdr 2 terminals run in the pinned herdr-core beside it, fetched
       # and checked against its checksum in herdr-core.json.
       - run: python3 scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"
@@ -274,8 +271,6 @@ jobs:
       - run: '"target/$TARGET/release/sheprd-acp" --help'
       # Remote control runs the sheprd-remote-control beside it as a user service.
       - run: '"target/$TARGET/release/sheprd-remote-control" --version'
-      # Automations run in the sheprd-automate beside it.
-      - run: '"target/$TARGET/release/sheprd-automate" --version'
       # Nearby pairing and presence run the sheprd-nearby beside it.
       - run: '"target/$TARGET/release/sheprd-nearby" --version'
       - run: '"target/$TARGET/release/herdr-core" --version'
@@ -361,14 +356,13 @@ jobs:
       - name: Require the declared native target
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$TARGET"
-      - run: cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp -p sheprd-remote-control -p sheprd-automate -p sheprd-nearby --target "$TARGET"
+      - run: cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp -p sheprd-remote-control -p sheprd-nearby --target "$TARGET"
       # Herdr 2 terminals run in the pinned herdr-core beside it; ARM64 gets
       # the x64 build, which Windows on ARM runs.
       - run: python scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"
       - run: python scripts/release/smoke-cli.py "target/$TARGET/release/sheprd.exe"
       - run: '"target/$TARGET/release/sheprd-acp.exe" --help'
       - run: '"target/$TARGET/release/sheprd-remote-control.exe" --version'
-      - run: '"target/$TARGET/release/sheprd-automate.exe" --version'
       - run: '"target/$TARGET/release/sheprd-nearby.exe" --version'
       - run: '"target/$TARGET/release/herdr-core.exe" --version'
       - name: Install the notice generator
@@ -457,14 +451,12 @@ jobs:
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\sheprd-launcher.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\sheprd-acp.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\sheprd-remote-control.exe
-            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\sheprd-automate.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\sheprd-nearby.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-core.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-gpui.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-gpui-launcher.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-acp.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-remote-control.exe
-            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-automate.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-nearby.exe
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
@@ -640,7 +632,7 @@ jobs:
       - name: Assemble without executing the downloaded binaries
         run: |
           mkdir dist
-          chmod +x binaries/arm64/sheprd binaries/x86_64/sheprd binaries/arm64/sheprd-acp binaries/x86_64/sheprd-acp binaries/arm64/sheprd-remote-control binaries/x86_64/sheprd-remote-control binaries/arm64/sheprd-automate binaries/x86_64/sheprd-automate binaries/arm64/herdr-core binaries/x86_64/herdr-core binaries/arm64/sheprd-nearby binaries/x86_64/sheprd-nearby
+          chmod +x binaries/arm64/sheprd binaries/x86_64/sheprd binaries/arm64/sheprd-acp binaries/x86_64/sheprd-acp binaries/arm64/sheprd-remote-control binaries/x86_64/sheprd-remote-control binaries/arm64/herdr-core binaries/x86_64/herdr-core binaries/arm64/sheprd-nearby binaries/x86_64/sheprd-nearby
           cmp binaries/arm64/THIRD-PARTY-NOTICES.txt binaries/x86_64/THIRD-PARTY-NOTICES.txt
           bash scripts/release/package-macos.sh "$VERSION" binaries/arm64/sheprd binaries/x86_64/sheprd dist binaries/arm64/THIRD-PARTY-NOTICES.txt
       - name: Sign and notarize app and DMG (never launch the app)
