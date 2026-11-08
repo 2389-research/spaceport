@@ -28,3 +28,9 @@ The legacy endpoint still owns other window state and `window list` still
 reports its legacy workspace/hosts. No native title check, Core process,
 Windows/Linux check or full app scenario ran. T05 stays `in_progress`; A09
 and A33 remain `not_run`.
+
+On integration commit `01cb4f46`, the exact focused Core title regression
+passed 1/1 with `cargo +1.99.0 test -p sheprd-gpui --bin spaceport
+--locked --offline selected_core_group_sets_title_from_fresh_exact_document`
+and `CARGO_INCREMENTAL=0` in the shared target. The pinned `block` notice and
+macOS compact-unwind linker warning remained. This is still a headless test.
