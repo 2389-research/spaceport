@@ -41,3 +41,17 @@ source/site tests; the Spaceport specification package check and
 verify live Netlify settings, current pages, native installs, signed update
 behavior or a published Spaceport artifact. G-RELEASE and G-PLATFORM remain
 open; T12 stays blocked and A42–A44 remain not run.
+
+## Fork source gate after this audit
+
+Commit `5bd5c020` changed only this fork's `website/netlify.toml` to
+`build.ignore = "exit 0"`, matching the paused root config. The revised site
+policy test failed first against `exit 1`; the focused site suite then passed
+20/20 and the full source/site suite passed 26/26. `website/README.md` now
+labels the site as inherited and records the paused Git build. This guards
+source-driven builds if a Netlify project were connected to the fork. It
+does not disconnect or inspect any hosting account, prevent an authorized
+manual deploy, change a live page, or supply a Spaceport domain or release
+identity. No push or deploy ran. The historical route table above describes
+the pre-gate source at `fd6a0809`; current source has both Netlify configs
+paused. T12 and A42–A44 remain open.
