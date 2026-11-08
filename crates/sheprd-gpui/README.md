@@ -2703,7 +2703,7 @@ modifier over text says that you mean to use it as a link, and only then is
 the text verified:
 
 - **An address** is verified when it is well formed. Plain text is read as one
-  for `http://`, `https://`, `mailto:`, and `vscode:`; any other scheme there
+  for `http://`, `https://`, and `mailto:`; any other scheme there
   is plain text.
 - **A file path** is verified when the file or folder exists, which the app
   checks in the background. Any printed word may be one, such as
@@ -2722,8 +2722,8 @@ click that opens it is the one that never left the half-cell it pressed in.
 An explicit hyperlink shows the hand cursor whenever the modifier is held, and
 its dashes turn solid once its target is verified:
 
-- **A web, `mailto:`, or `vscode:` address** opens: web addresses in your
-  default browser, the others in the application registered for them.
+- **A web or `mailto:` address** opens: web addresses in your default browser,
+  and mail links in the application registered for them.
 - **An address with any other scheme** first shows the whole address and asks
   whether to open it, because terminal output is untrusted and such an address
   starts another application.

@@ -430,7 +430,7 @@ fn check(
 #[cfg_attr(unix, test_case(Text::Osc8("https://example.com/something/"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("https://example.com/something/") ; "https address"))]
 #[cfg_attr(unix, test_case(Text::Osc8("http://example.com/something/"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("http://example.com/something/") ; "http address"))]
 #[cfg_attr(unix, test_case(Text::Osc8("mailto:name@example.com"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("mailto:name@example.com") ; "mailto address"))]
-#[cfg_attr(unix, test_case(Text::Osc8("vscode://file{work}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("vscode://file{work}/src/sample.rs") ; "vscode address"))]
+#[cfg_attr(unix, test_case(Text::Osc8("vscode://file{work}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Asks("vscode://file{work}/src/sample.rs") ; "vscode address requires confirmation"))]
 #[cfg_attr(unix, test_case(Text::Osc8("ssh://example.com"), DASHES, DASHES, SOLID_AND_HAND, Click::Asks("ssh://example.com") ; "another scheme"))]
 #[test_case(Text::Osc8("https://"), DASHES, DASHES, DASHES_AND_HAND, Click::Says(crate::Error::MalformedLink) ; "address that is not well formed")]
 // Plain text that may be a file path.
@@ -455,7 +455,7 @@ fn check(
 #[cfg_attr(unix, test_case(Text::Plain("http://example.com/something/"), NONE, NONE, SOLID_AND_HAND, Click::Address("http://example.com/something/") ; "http address"))]
 #[cfg_attr(unix, test_case(Text::Wrapped, NONE, NONE, SOLID_AND_HAND, Click::Address(WRAPPED) ; "https address that wraps onto more rows"))]
 #[cfg_attr(unix, test_case(Text::Plain("mailto:name@example.com"), NONE, NONE, SOLID_AND_HAND, Click::Address("mailto:name@example.com") ; "mailto address"))]
-#[cfg_attr(unix, test_case(Text::Plain("vscode://file{work}/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Address("vscode://file{work}/src/sample.rs") ; "vscode address"))]
+#[cfg_attr(unix, test_case(Text::Plain("vscode://file{work}/src/sample.rs"), NONE, NONE, NONE, Click::Nothing ; "vscode text stays plain"))]
 #[cfg_attr(unix, test_case(Text::Plain("ssh://example.com"), NONE, NONE, NONE, Click::Nothing ; "another scheme"))]
 #[cfg_attr(unix, test_case(Text::Plain("example.com/something/"), NONE, NONE, NONE, Click::Nothing ; "address with no scheme"))]
 fn link(text: Text, rest: Look, hover: Look, cmd_hover: Look, cmd_click: Click) {

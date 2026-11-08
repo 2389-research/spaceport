@@ -49,10 +49,10 @@ fn an_external_address_has_a_scheme_other_than_the_webs_and_file() {
 }
 
 #[test]
-fn only_mail_and_editor_addresses_open_without_asking() {
+fn only_mail_addresses_open_without_asking() {
     for (url, trusted) in [
         ("mailto:name@example.com", true),
-        ("vscode://file/tmp", true),
+        ("vscode://file/tmp", false),
         ("ssh://example.com", false),
         ("tel:+15550100", false),
         ("javascript:alert(1)", false),
@@ -93,10 +93,7 @@ fn plain_text_reads_only_the_defined_schemes() {
             "mailto:name@example.com",
             Some(external("mailto:name@example.com")),
         ),
-        (
-            "vscode://file/tmp/a.rs",
-            Some(external("vscode://file/tmp/a.rs")),
-        ),
+        ("vscode://file/tmp/a.rs", None),
         // Prose punctuation around an address is not part of it.
         (
             "(mailto:name@example.com).",

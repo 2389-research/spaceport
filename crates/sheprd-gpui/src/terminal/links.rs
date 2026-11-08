@@ -429,7 +429,7 @@ impl<'a> Plain<'a> {
 }
 
 /// The schemes read from plain text. Any other is plain text.
-const PLAIN_SCHEMES: [&str; 5] = ["http://", "https://", "file://", "mailto:", "vscode:"];
+const PLAIN_SCHEMES: [&str; 4] = ["http://", "https://", "file://", "mailto:"];
 
 /// Where an address with one of the plain schemes starts in `text`, in
 /// order. A scheme counts only at the start of a word, except the web's,
