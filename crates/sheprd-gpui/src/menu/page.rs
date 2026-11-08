@@ -34,7 +34,10 @@ pub(crate) enum Page {
     /// Go to Symbol and Go to File over the focused pane's checkout.
     CodeSearch,
     ConfirmClose,
+    CoreWorkspaceActions,
     CoreWorkspaceCreate,
+    CoreWorkspaceDelete,
+    CoreWorkspaceRename,
     /// Confirming new cloud machines a command asked for should be made.
     #[cfg(feature = "cloud")]
     CreateCloud,
@@ -169,6 +172,7 @@ impl Page {
         matches!(
             self,
             Self::Workspace
+                | Self::CoreWorkspaceActions
                 | Self::Tab
                 | Self::RenameTab
                 | Self::MoveTab

@@ -57,6 +57,10 @@ pub(super) struct Projection {
 }
 
 impl Projection {
+    pub(super) fn epoch(&self) -> u64 {
+        self.epoch
+    }
+
     pub fn begin(&mut self, epoch: u64) {
         self.epoch = epoch;
         self.freshness = Freshness::Synchronizing;
@@ -327,6 +331,19 @@ impl Observation {
     pub fn projection(&self) -> &Projection {
         &self.projection
     }
+}
+
+#[cfg(test)]
+pub(super) fn set_document_for_test(cx: &mut App, doc: Doc) {
+    if !cx.has_global::<Observation>() {
+        Observation::install(cx);
+    }
+    let observation = cx.global_mut::<Observation>();
+    let epoch = observation.projection.epoch + 1;
+    observation.projection.begin(epoch);
+    observation
+        .projection
+        .initial(epoch, vec![], Ok(VersionedDocument::read(doc).unwrap()));
 }
 
 #[cfg(test)]

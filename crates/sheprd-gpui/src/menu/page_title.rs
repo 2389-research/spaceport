@@ -18,6 +18,7 @@ impl Page {
             | Self::Menu
             | Self::Pane
             | Self::Tab
+            | Self::CoreWorkspaceActions
             | Self::Workspace => Role::Menu,
             _ => Role::Dialog,
         }
@@ -41,7 +42,10 @@ impl Page {
             Self::CarryPane => fl!("menu-page-move-pane-to-another-device"),
             Self::Checkpoints => fl!("menu-page-checkpoints"),
             Self::CodeSearch => fl!("menu-page-go-to-symbol-or-file"),
+            Self::CoreWorkspaceActions => fl!("core-workspace-actions"),
             Self::CoreWorkspaceCreate => fl!("menu-page-new-workspace"),
+            Self::CoreWorkspaceDelete => fl!("core-workspace-delete-title"),
+            Self::CoreWorkspaceRename => fl!("core-workspace-rename-title"),
             Self::ConfirmClose => fl!("menu-page-close"),
             #[cfg(feature = "cloud")]
             Self::CreateCloud => fl!("menu-page-create-cloud-machines"),

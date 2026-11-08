@@ -443,6 +443,7 @@ impl SheprdWindow {
                 matches!(
                     page,
                     Page::Tab
+                        | Page::CoreWorkspaceActions
                         | Page::RenameTab
                         | Page::MoveTab
                         | Page::Group
@@ -471,7 +472,9 @@ impl SheprdWindow {
                             .max_h((viewport.height - px(24.)).max(px(0.)));
                     }
                     panel
-                        .w(room.min(px(if forwards {
+                        .w(room.min(px(if page == Page::CoreWorkspaceActions {
+                            240.
+                        } else if forwards {
                             // Room for a forward's port, state, and actions.
                             260.
                         } else if page == Page::PaneProcesses {
@@ -706,7 +709,12 @@ impl SheprdWindow {
                 ));
         } else if let Page::Dialog(action) = page {
             panel = panel.child(self.render_workspace_dialog(action, cx));
-        } else if page == Page::CoreWorkspaceCreate {
+        } else if page == Page::CoreWorkspaceActions {
+            panel = panel.child(self.render_core_workspace_actions(cx));
+        } else if matches!(
+            page,
+            Page::CoreWorkspaceCreate | Page::CoreWorkspaceDelete | Page::CoreWorkspaceRename
+        ) {
             panel = panel.child(self.render_core_workspace_dialog(cx));
         } else if page == Page::CarryPane {
             panel = panel.child(self.render_carry(cx));
@@ -871,7 +879,7 @@ impl SheprdWindow {
                 // or the "…" at a strip's right end, which stays there
                 // because strips never mirror.
                 .anchor(match page {
-                    Page::Group => Anchor::TopRight,
+                    Page::Group | Page::CoreWorkspaceActions => Anchor::TopRight,
                     Page::RemoteDevices => crate::direction::anchor(Anchor::TopRight),
                     _ => crate::direction::anchor(Anchor::TopLeft),
                 })

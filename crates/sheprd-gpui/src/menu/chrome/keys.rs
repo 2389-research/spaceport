@@ -277,16 +277,32 @@ impl SheprdWindow {
             // to Force remove. Destructive consent requires a fresh press.
             "enter"
                 if event.is_held
-                    && matches!(
+                    && (matches!(
                         self.menu.page,
                         Some(Page::Dialog(
                             WorkspaceAction::Close | WorkspaceAction::DeleteWorktree
                         ))
-                    ) => {}
+                    ) || self.menu.page == Some(Page::CoreWorkspaceDelete)
+                        || self.core_workspace_delete_selected()) => {}
             "enter" if matches!(self.menu.page, Some(Page::Dialog(_))) => {
                 self.submit_workspace_dialog(window, cx)
             }
-            "enter" if self.menu.page == Some(Page::CoreWorkspaceCreate) => {
+            "up" | "down" if self.menu.page == Some(Page::CoreWorkspaceActions) => {
+                self.cycle_core_workspace_action(event.keystroke.key == "down", cx)
+            }
+            "enter" if self.menu.page == Some(Page::CoreWorkspaceActions) => {
+                self.activate_selected_core_workspace_action(window, cx)
+            }
+            "enter"
+                if matches!(
+                    self.menu.page,
+                    Some(
+                        Page::CoreWorkspaceCreate
+                            | Page::CoreWorkspaceDelete
+                            | Page::CoreWorkspaceRename
+                    )
+                ) =>
+            {
                 self.submit_core_workspace_dialog(cx)
             }
             "enter" if self.menu.page == Some(Page::GitCommit) => self.submit_git_commit(cx),

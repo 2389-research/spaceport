@@ -1,8 +1,10 @@
 //! Shows Core's watched Spaceport groups and edits one group from a dialog.
 //! The UI reads the shared observation and sends blocking CAS work to a worker.
 
+mod render;
+
 use super::{
-    Start, State as HubState, observation,
+    observation,
     workspace_document::{VersionedDocument, edit},
 };
 use crate::{SheprdWindow, dialog_input::DialogInput, i18n::fl, menu::Page, window::Flash};
@@ -15,7 +17,51 @@ use uuid::Uuid;
 
 #[derive(Default)]
 pub(super) struct State {
-    pending: Option<Receiver<edit::Result<()>>>,
+    dialog_generation: u64,
+    pending: Option<Pending>,
+    selected: MenuAction,
+    target: Option<DialogTarget>,
+}
+
+impl State {
+    fn open(&mut self, target: Option<DialogTarget>) {
+        self.dialog_generation = self.dialog_generation.wrapping_add(1);
+        self.selected = MenuAction::Rename;
+        self.target = target;
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum MenuAction {
+    #[default]
+    Rename,
+    Archive,
+    Delete,
+}
+
+impl MenuAction {
+    fn step(self, forward: bool) -> Self {
+        match (self, forward) {
+            (Self::Rename, true) | (Self::Delete, false) => Self::Archive,
+            (Self::Archive, true) => Self::Delete,
+            (Self::Archive, false) => Self::Rename,
+            (Self::Delete, true) => Self::Rename,
+            (Self::Rename, false) => Self::Delete,
+        }
+    }
+}
+
+struct Pending {
+    dialog_generation: u64,
+    dismiss_page: Option<Page>,
+    receiver: Receiver<edit::Result<()>>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct DialogTarget {
+    epoch: u64,
+    id: Uuid,
+    version: u64,
 }
 
 #[derive(Default)]
@@ -113,6 +159,11 @@ impl<'a> Access<'a> {
 }
 
 impl SheprdWindow {
+    fn core_workspace_epoch(cx: &App) -> Option<u64> {
+        cx.try_global::<observation::Observation>()
+            .map(|observation| observation.projection().epoch())
+    }
+
     fn core_workspace_access<'a>(&self, cx: &'a App) -> Access<'a> {
         Access::of(
             cx.try_global::<observation::Observation>()
@@ -129,31 +180,286 @@ impl SheprdWindow {
             return;
         }
         self.menu.page = Some(Page::CoreWorkspaceCreate);
+        self.core_terminals.workspace_ui.open(None);
         let mut input = DialogInput::new(String::new());
         input.label = Some(fl!("workspace-dialog-name").into());
         self.menu.input = Some(input);
         cx.notify();
     }
 
-    pub(crate) fn submit_core_workspace_dialog(&mut self, cx: &mut Context<Self>) {
-        if self.menu.page != Some(Page::CoreWorkspaceCreate)
-            || self.core_terminals.workspace_ui.pending.is_some()
-        {
-            return;
-        }
-        let Some(input) = self
-            .menu
-            .input
-            .as_ref()
-            .filter(|input| input.marked.is_none() && !input.text.trim().is_empty())
-        else {
-            return;
-        };
-        let label = input.text.trim().to_owned();
-        let base = match self.core_workspace_access(cx) {
-            Access::Ready(base) => base,
+    pub(crate) fn open_core_workspace_rename(
+        &mut self,
+        id: Uuid,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let (version, label) = match self.core_workspace_access(cx) {
+            Access::Ready(document) => {
+                match document.value.workspaces().iter().find(|row| row.id == id) {
+                    Some(row) => (document.version, row.label.clone()),
+                    None => return,
+                }
+            }
             Access::Error(_) | Access::Missing => return,
         };
+        let Some(epoch) = Self::core_workspace_epoch(cx) else {
+            return;
+        };
+        if !self.open_menu(window, cx) {
+            return;
+        }
+        self.menu.page = Some(Page::CoreWorkspaceRename);
+        self.core_terminals
+            .workspace_ui
+            .open(Some(DialogTarget { epoch, id, version }));
+        let mut input = DialogInput::new(label);
+        input.label = Some(fl!("workspace-dialog-name").into());
+        self.menu.input = Some(input);
+        cx.notify();
+    }
+
+    pub(crate) fn open_core_workspace_delete(
+        &mut self,
+        id: Uuid,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let version = match self.core_workspace_access(cx) {
+            Access::Ready(document)
+                if document.value.workspaces().iter().any(|row| row.id == id) =>
+            {
+                document.version
+            }
+            _ => return,
+        };
+        let Some(epoch) = Self::core_workspace_epoch(cx) else {
+            return;
+        };
+        if !self.open_menu(window, cx) {
+            return;
+        }
+        self.menu.page = Some(Page::CoreWorkspaceDelete);
+        self.core_terminals
+            .workspace_ui
+            .open(Some(DialogTarget { epoch, id, version }));
+        cx.notify();
+    }
+
+    pub(crate) fn open_core_workspace_actions(
+        &mut self,
+        id: Uuid,
+        anchor: Point<Pixels>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let version = match self.core_workspace_access(cx) {
+            Access::Ready(document)
+                if document.value.workspaces().iter().any(|row| row.id == id) =>
+            {
+                document.version
+            }
+            _ => return,
+        };
+        let Some(epoch) = Self::core_workspace_epoch(cx) else {
+            return;
+        };
+        if !self.open_menu(window, cx) {
+            return;
+        }
+        self.menu.anchor = anchor;
+        self.menu.page = Some(Page::CoreWorkspaceActions);
+        self.core_terminals
+            .workspace_ui
+            .open(Some(DialogTarget { epoch, id, version }));
+        cx.notify();
+    }
+
+    pub(crate) fn cycle_core_workspace_action(&mut self, forward: bool, cx: &mut Context<Self>) {
+        if self.menu.page != Some(Page::CoreWorkspaceActions) {
+            return;
+        }
+        let state = &mut self.core_terminals.workspace_ui;
+        state.selected = state.selected.step(forward);
+        cx.notify();
+    }
+
+    fn hover_core_workspace_action(
+        &mut self,
+        action: MenuAction,
+        hovered: bool,
+        cx: &mut Context<Self>,
+    ) {
+        if hovered && self.menu.page == Some(Page::CoreWorkspaceActions) {
+            self.core_terminals.workspace_ui.selected = action;
+            cx.notify();
+        }
+    }
+
+    pub(crate) fn core_workspace_delete_selected(&self) -> bool {
+        self.menu.page == Some(Page::CoreWorkspaceActions)
+            && self.core_terminals.workspace_ui.selected == MenuAction::Delete
+    }
+
+    pub(crate) fn activate_selected_core_workspace_action(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.activate_core_workspace_action(self.core_terminals.workspace_ui.selected, window, cx);
+    }
+
+    fn activate_core_workspace_action(
+        &mut self,
+        action: MenuAction,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.menu.page != Some(Page::CoreWorkspaceActions) {
+            return;
+        }
+        let Some(target) = self.core_terminals.workspace_ui.target else {
+            return;
+        };
+        let archived = match self.core_workspace_access(cx) {
+            Access::Ready(document)
+                if document.version == target.version
+                    && Self::core_workspace_epoch(cx) == Some(target.epoch) =>
+            {
+                match document
+                    .value
+                    .workspaces()
+                    .iter()
+                    .find(|row| row.id == target.id)
+                {
+                    Some(row) => row.archived,
+                    None => return,
+                }
+            }
+            _ => return,
+        };
+        match action {
+            MenuAction::Rename => self.open_core_workspace_rename(target.id, window, cx),
+            MenuAction::Archive => {
+                if self.core_terminals.workspace_ui.pending.is_some() {
+                    self.menu.error = Some(fl!("core-workspace-editing"));
+                    cx.notify();
+                    return;
+                }
+                self.toggle_core_workspace_archive(target.id, archived, cx);
+                if self.core_terminals.workspace_ui.pending.is_some() {
+                    self.dismiss_menu(window, cx);
+                }
+            }
+            MenuAction::Delete => self.open_core_workspace_delete(target.id, window, cx),
+        }
+    }
+
+    fn toggle_core_workspace_archive(
+        &mut self,
+        id: Uuid,
+        was_archived: bool,
+        cx: &mut Context<Self>,
+    ) {
+        let current = match self.core_workspace_access(cx) {
+            Access::Ready(document) => document
+                .value
+                .workspaces()
+                .iter()
+                .find(|row| row.id == id)
+                .map(|row| row.archived),
+            Access::Error(_) | Access::Missing => None,
+        };
+        if current != Some(was_archived) {
+            self.menu.error = Some(fl!("core-workspace-changed"));
+            cx.notify();
+            return;
+        }
+        self.submit_core_workspace_edit(
+            edit::Edit::Archive {
+                id,
+                archived: !was_archived,
+            },
+            cx,
+        );
+    }
+
+    pub(crate) fn submit_core_workspace_dialog(&mut self, cx: &mut Context<Self>) {
+        if self.core_terminals.workspace_ui.pending.is_some() {
+            return;
+        }
+        let edit = match self.menu.page {
+            Some(Page::CoreWorkspaceCreate | Page::CoreWorkspaceRename) => {
+                let Some(input) = self
+                    .menu
+                    .input
+                    .as_ref()
+                    .filter(|input| input.marked.is_none() && !input.text.trim().is_empty())
+                else {
+                    return;
+                };
+                let label = input.text.trim().to_owned();
+                if self.menu.page == Some(Page::CoreWorkspaceCreate) {
+                    edit::Edit::Create {
+                        id: Uuid::new_v4(),
+                        label,
+                    }
+                } else {
+                    let Some(target) = self.core_terminals.workspace_ui.target else {
+                        return;
+                    };
+                    edit::Edit::Rename {
+                        id: target.id,
+                        label,
+                    }
+                }
+            }
+            Some(Page::CoreWorkspaceDelete) => {
+                let Some(target) = self.core_terminals.workspace_ui.target else {
+                    return;
+                };
+                edit::Edit::Delete { id: target.id }
+            }
+            _ => return,
+        };
+        self.submit_core_workspace_edit(edit, cx);
+    }
+
+    fn submit_core_workspace_edit(&mut self, edit: edit::Edit, cx: &mut Context<Self>) {
+        if self.core_terminals.workspace_ui.pending.is_some() {
+            self.menu.error = Some(fl!("core-workspace-editing"));
+            cx.notify();
+            return;
+        }
+        let base = match self.core_workspace_access(cx) {
+            Access::Ready(base) => base,
+            Access::Error(error) => {
+                self.menu.error = Some(fl!(
+                    "core-workspace-error",
+                    reason = bounded(&error.to_string())
+                ));
+                cx.notify();
+                return;
+            }
+            Access::Missing => {
+                self.menu.error = Some(fl!("core-workspace-stale"));
+                cx.notify();
+                return;
+            }
+        };
+        if let Some(target) = self.core_terminals.workspace_ui.target
+            && matches!(edit, edit::Edit::Rename { .. } | edit::Edit::Delete { .. })
+            && (target.version != base.version
+                || Self::core_workspace_epoch(cx) != Some(target.epoch)
+                || !base
+                    .value
+                    .workspaces()
+                    .iter()
+                    .any(|row| row.id == target.id))
+        {
+            self.menu.error = Some(fl!("core-workspace-changed"));
+            cx.notify();
+            return;
+        }
         let version = base.version;
         let base = base.clone();
         let Some(backend) = self
@@ -163,17 +469,24 @@ impl SheprdWindow {
             .filter(|backend| !backend.core().is_lost())
             .cloned()
         else {
+            self.menu.error = Some(fl!("core-workspace-connect"));
+            cx.notify();
             return;
         };
         let (sender, receiver) = mpsc::sync_channel(1);
         let Some(guard) = EditGuard::begin(cx, version) else {
+            self.menu.error = Some(fl!("core-workspace-uncertain"));
+            cx.notify();
             return;
         };
-        let worker_guard = Arc::clone(&guard);
-        let edit = edit::Edit::Create {
-            id: Uuid::new_v4(),
-            label,
+        let dismiss_page = match &edit {
+            edit::Edit::Archive { .. } => None,
+            edit::Edit::Create { .. } => Some(Page::CoreWorkspaceCreate),
+            edit::Edit::Delete { .. } => Some(Page::CoreWorkspaceDelete),
+            edit::Edit::Rename { .. } => Some(Page::CoreWorkspaceRename),
         };
+        let dialog_generation = self.core_terminals.workspace_ui.dialog_generation;
+        let worker_guard = Arc::clone(&guard);
         match std::thread::Builder::new()
             .name("core-workspace-edit".into())
             .spawn(move || {
@@ -182,15 +495,24 @@ impl SheprdWindow {
                 let _ = sender.send(outcome);
             }) {
             Ok(_) => {
-                self.core_terminals.workspace_ui.pending = Some(receiver);
+                self.core_terminals.workspace_ui.pending = Some(Pending {
+                    dialog_generation,
+                    dismiss_page,
+                    receiver,
+                });
                 self.menu.error = None;
             }
             Err(error) => {
                 EditGuard::clear(&guard, version);
-                self.menu.error = Some(fl!(
-                    "core-workspace-worker-error",
-                    reason = bounded(&error.to_string())
-                ))
+                self.core_workspace_edit_error(
+                    fl!(
+                        "core-workspace-worker-error",
+                        reason = bounded(&error.to_string())
+                    ),
+                    dismiss_page,
+                    dialog_generation,
+                    cx,
+                );
             }
         }
         cx.notify();
@@ -200,18 +522,29 @@ impl SheprdWindow {
         let Some(pending) = self.core_terminals.workspace_ui.pending.as_ref() else {
             return;
         };
-        let outcome = match pending.try_recv() {
+        let dismiss_page = pending.dismiss_page;
+        let dialog_generation = pending.dialog_generation;
+        let outcome = match pending.receiver.try_recv() {
             Ok(result) => result,
             Err(TryRecvError::Empty) => return,
             Err(TryRecvError::Disconnected) => {
                 self.core_terminals.workspace_ui.pending = None;
-                self.core_workspace_edit_error(fl!("core-workspace-worker-lost"), cx);
+                self.core_workspace_edit_error(
+                    fl!("core-workspace-worker-lost"),
+                    dismiss_page,
+                    dialog_generation,
+                    cx,
+                );
                 return;
             }
         };
         self.core_terminals.workspace_ui.pending = None;
         match outcome {
-            Ok(()) if self.menu.page == Some(Page::CoreWorkspaceCreate) => {
+            Ok(())
+                if dismiss_page.is_some()
+                    && self.menu.page == dismiss_page
+                    && self.core_terminals.workspace_ui.dialog_generation == dialog_generation =>
+            {
                 self.dismiss_menu(window, cx)
             }
             Ok(()) => cx.notify(),
@@ -226,212 +559,30 @@ impl SheprdWindow {
                     } else {
                         bounded(&error.to_string())
                     },
+                    dismiss_page,
+                    dialog_generation,
                     cx,
                 );
             }
         }
     }
 
-    fn core_workspace_edit_error(&mut self, message: String, cx: &mut Context<Self>) {
-        if self.menu.page == Some(Page::CoreWorkspaceCreate) {
+    fn core_workspace_edit_error(
+        &mut self,
+        message: String,
+        dismiss_page: Option<Page>,
+        dialog_generation: u64,
+        cx: &mut Context<Self>,
+    ) {
+        if dismiss_page.is_some()
+            && self.menu.page == dismiss_page
+            && self.core_terminals.workspace_ui.dialog_generation == dialog_generation
+        {
             self.menu.error = Some(message);
             cx.notify();
         } else {
             self.show_flash(Flash::warning(message), cx);
         }
-    }
-
-    pub(crate) fn core_workspace_rows(&self, cx: &mut Context<Self>) -> AnyElement {
-        let theme = &self.theme;
-        let mut section = div()
-            .id("core-workspaces")
-            .debug_selector(|| "core-workspaces".into())
-            .flex()
-            .flex_col()
-            .mt_3()
-            .px_3()
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .justify_between()
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .truncate()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("core-workspace-section")),
-                    )
-                    .child(
-                        div()
-                            .id("core-workspace-new")
-                            .role(Role::Button)
-                            .aria_label(fl!("core-workspace-new"))
-                            .cursor_pointer()
-                            .text_color(rgb(theme.foreground))
-                            .child(fl!("core-workspace-new"))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                this.open_core_workspace_dialog(window, cx);
-                                this.core_terminals.hub.connect(Start::IfMissing);
-                            })),
-                    ),
-            );
-        match self.core_workspace_access(cx) {
-            Access::Ready(document) if document.value.workspaces().is_empty() => {
-                section = section.child(
-                    div()
-                        .text_color(rgb(theme.subtext()))
-                        .child(fl!("core-workspace-empty")),
-                );
-            }
-            Access::Ready(document) => {
-                for workspace in document.value.workspaces().iter().take(50) {
-                    let label = workspace.label.clone();
-                    section = section.child(
-                        div()
-                            .id(SharedString::from(format!(
-                                "core-workspace-{}",
-                                workspace.id
-                            )))
-                            .role(Role::ListItem)
-                            .py_1()
-                            .truncate()
-                            .text_color(rgb(if workspace.archived {
-                                theme.subtext()
-                            } else {
-                                theme.foreground
-                            }))
-                            .child(crate::sidebar::label_text(&label)),
-                    );
-                }
-                let remaining = document.value.workspaces().len().saturating_sub(50);
-                if remaining > 0 {
-                    section = section.child(
-                        div()
-                            .text_color(rgb(theme.subtext()))
-                            .child(fl!("core-workspace-more", count = remaining)),
-                    );
-                }
-            }
-            Access::Error(error) => {
-                section = section.child(div().text_color(rgb(theme.subtext())).child(fl!(
-                    "core-workspace-error",
-                    reason = bounded(&error.to_string())
-                )))
-            }
-            Access::Missing => {
-                let state = self.core_terminals.hub.state();
-                let joinable = matches!(state, HubState::Idle | HubState::Unavailable(_));
-                let message = match state {
-                    HubState::Idle => fl!("core-workspace-connect"),
-                    HubState::Connecting(_) | HubState::Ready(_) => fl!("core-workspace-loading"),
-                    HubState::Unavailable(error) => fl!(
-                        "core-workspace-join-error",
-                        reason = bounded(&error.to_string())
-                    ),
-                };
-                section = section.child(
-                    div()
-                        .id("core-workspace-status")
-                        .text_color(rgb(theme.subtext()))
-                        .truncate()
-                        .when(joinable, |row| {
-                            row.role(Role::Button)
-                                .aria_label(message.clone())
-                                .cursor_pointer()
-                                .on_click(cx.listener(|this, _, _, cx| {
-                                    this.core_terminals.hub.connect(Start::Join);
-                                    cx.notify();
-                                }))
-                        })
-                        .child(message),
-                );
-            }
-        }
-        section.into_any_element()
-    }
-
-    pub(crate) fn render_core_workspace_dialog(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
-        let status = if self.core_terminals.workspace_ui.pending.is_some() {
-            Some(fl!("core-workspace-creating"))
-        } else {
-            match self.core_workspace_access(cx) {
-                Access::Error(error) => Some(fl!(
-                    "core-workspace-error",
-                    reason = bounded(&error.to_string())
-                )),
-                Access::Missing => Some(fl!("core-workspace-stale")),
-                Access::Ready(document) if EditGuard::blocks(cx, document.version) => {
-                    Some(fl!("core-workspace-uncertain"))
-                }
-                Access::Ready(_)
-                    if !self
-                        .core_terminals
-                        .hub
-                        .backend()
-                        .is_some_and(|backend| !backend.core().is_lost()) =>
-                {
-                    Some(fl!("core-workspace-connect"))
-                }
-                Access::Ready(_) => None,
-            }
-        };
-        let armed = status.is_none()
-            && self
-                .menu
-                .input
-                .as_ref()
-                .is_some_and(|input| !input.text.trim().is_empty() && input.marked.is_none());
-        let mut body = div()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .p_4()
-            .child(
-                div()
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(fl!("menu-page-new-workspace")),
-            )
-            .child(self.render_dialog_input(cx));
-        if let Some(error) = &self.menu.error {
-            body = body.child(
-                div()
-                    .text_color(crate::menu::danger(theme))
-                    .child(error.clone()),
-            );
-        } else if let Some(status) = status {
-            body = body.child(div().text_color(rgb(theme.subtext())).child(status));
-        }
-        div().child(body).child(
-            div()
-                .flex()
-                .justify_end()
-                .gap_2()
-                .p_4()
-                .child(
-                    div()
-                        .id("core-workspace-cancel")
-                        .role(Role::Button)
-                        .aria_label(fl!("workspace-dialog-cancel"))
-                        .cursor_pointer()
-                        .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)))
-                        .child(fl!("workspace-dialog-cancel")),
-                )
-                .child(
-                    div()
-                        .id("core-workspace-create")
-                        .role(Role::Button)
-                        .aria_label(fl!("workspace-dialog-create"))
-                        .when(armed, |button| {
-                            button.cursor_pointer().on_click(
-                                cx.listener(|this, _, _, cx| this.submit_core_workspace_dialog(cx)),
-                            )
-                        })
-                        .child(fl!("workspace-dialog-create")),
-                ),
-        )
     }
 }
 
