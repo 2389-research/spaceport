@@ -227,6 +227,7 @@
       "deliverable": "Delete IDE/Git/GitHub/browser/cloud/Teleport/orchestration/mod/scheduler surfaces and dependencies in coherent units.",
       "status": "blocked",
       "evidence": [
+        "evidence/removal-reachability-7f15ad1a.md",
         "evidence/t04-terminal-annotations.md",
         "evidence/t04-client-mods.md",
         "evidence/t04-legacy-plugin-settings-removal.md",
@@ -628,7 +629,10 @@
       ],
       "deliverable": "Native platform, adversarial, resource and agent-usability evidence. Unproved requirements remain blocked.",
       "status": "not_started",
-      "evidence": ["evidence/t11-sidebar-activation-audit.md"],
+      "evidence": [
+        "evidence/removal-reachability-7f15ad1a.md",
+        "evidence/t11-sidebar-activation-audit.md"
+      ],
       "must_close_gaps": [
         "G-CHAT",
         "G-PORT",
