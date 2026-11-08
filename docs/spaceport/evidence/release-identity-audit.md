@@ -43,3 +43,9 @@ Quick checks for the earlier bundle-ID slice: `just --list` parsed the recipe, `
 ## Development macOS process-name correction
 
 The `app_icon::install` setter now reads `constants::WINDOW_TITLE` instead of a second literal `Sheprd`. The new source regression failed first on that literal, then `python3 -m unittest scripts/release/tests/test_app_name.py -v` passed all six tests after the fix. `CARGO_TARGET_DIR=/tmp/spaceport-t00-target CARGO_INCREMENTAL=0 cargo +1.99.0 check --locked -p sheprd-gpui --bin sheprd` passed on macOS, with the existing `block v0.1.6` future-compat notice. This source check and compilation do not prove a running bundle's Dock or process label. T12 stays blocked on G-RELEASE and G-PLATFORM; A42–A44 remain not_run.
+
+## External Core packaging cut
+
+At `13dc4573`, release and development package scripts no longer download, copy, sign, or install Herdr Core. The pinned fetch script and bundled Core license snapshot were removed; runtime discovery still selects a separately installed Core. `evidence/t12-external-core-package.md` records the bounded source and archive checks. A pre-existing installed package may still own a Core file, so migration must identify its owner before any cleanup. No installed file was changed.
+
+The combined release suite passed 188 tests with nine skips after a smoke CLI fixture was updated for the removed local `browser open` command. Release security passed 25 tests with one skip. The release build gate still rejects `HERDR_RELEASE_VERSION`; upstream production IDs, signing and update routes remain in source. No native signed package, side-by-side install, or update ran. G-RELEASE and G-PLATFORM remain open.

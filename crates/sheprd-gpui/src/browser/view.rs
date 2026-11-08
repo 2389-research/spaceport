@@ -7,8 +7,9 @@ use super::{
     Location, Scope, Store, TabId, WebUrl,
     groups::{GroupId, GroupIds, Layout, Pick, SavedLayout},
 };
-use crate::i18n::fl;
-use crate::{SheprdWindow, search_input::SearchInput, window::Flash};
+use crate::{SheprdWindow, search_input::SearchInput};
+#[cfg(test)]
+use crate::{i18n::fl, window::Flash};
 use gpui::{prelude::*, *};
 use std::collections::{HashMap, HashSet};
 
@@ -229,7 +230,8 @@ impl SheprdWindow {
         }
     }
 
-    /// Opens a tab in the focused workspace, or tells the user why not.
+    /// Opens a tab in the focused workspace for browser layout tests.
+    #[cfg(test)]
     pub(crate) fn open_browser_tab(
         &mut self,
         url: Option<WebUrl>,

@@ -34,9 +34,12 @@ elif args == ["--build-info"]:
 elif args == ["--socket"]:
     sys.stderr.write("--socket requires a path\n" + usage)
     sys.exit(2)
-elif args == ["browser", "open"]:
-    sys.stderr.write("browser open requires one URL\n" + usage)
-    sys.exit(2)
+elif args == ["browser", "open", "https://a.test/"]:
+    if broken == "browser-open":
+        print("Opened page")
+    else:
+        sys.stderr.write("Unknown browser command\n" + usage)
+        sys.exit(2)
 else:
     sys.stderr.write(f"Unknown option: {args[0]}\n" + usage)
     sys.exit(134 if broken == "abort" else 2)
@@ -61,7 +64,7 @@ class SmokeCliTests(unittest.TestCase):
         self.smoke()
 
     def test_each_broken_behavior_fails(self):
-        for broken in ("help", "feature", "build-info", "abort"):
+        for broken in ("help", "feature", "build-info", "abort", "browser-open"):
             with self.subTest(broken=broken), self.assertRaises(SMOKE.SmokeError):
                 self.smoke(broken)
 
