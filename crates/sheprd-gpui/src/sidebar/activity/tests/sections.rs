@@ -157,7 +157,9 @@ fn only_the_sections_view_opening_something_leaves_the_section(cx: &mut gpui::Te
 }
 
 #[gpui::test]
-fn a_link_leaves_the_section_only_for_a_page_tab(cx: &mut gpui::TestAppContext) {
+fn an_issue_link_opens_in_the_system_browser_without_leaving_the_section(
+    cx: &mut gpui::TestAppContext,
+) {
     let (view, cx) = local(cx);
     show(&view, cx, ActivityPanel::Issues);
     let mut event = |url: &str| {
@@ -173,12 +175,9 @@ fn a_link_leaves_the_section_only_for_a_page_tab(cx: &mut gpui::TestAppContext) 
     };
     // An address that is not a page opens nothing, so the list stays.
     assert_eq!(event("not a page"), ActivityPanel::Issues);
-    // A page tab shows in Workspaces; the system browser, where builds have
-    // no page tabs, leaves the list in place.
-    let expected = if crate::browser::EMBEDDED {
-        ActivityPanel::Workspaces
-    } else {
-        ActivityPanel::Issues
-    };
-    assert_eq!(event("https://example.com/issues/1"), expected);
+    assert_eq!(event("https://example.com/issues/1"), ActivityPanel::Issues);
+    assert_eq!(
+        cx.opened_url().as_deref(),
+        Some("https://example.com/issues/1")
+    );
 }
