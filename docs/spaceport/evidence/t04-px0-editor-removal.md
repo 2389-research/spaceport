@@ -7,3 +7,17 @@ The app no longer installs or polls a px0 launcher, discovers a workbench, opens
 Source and behavior tests: the negative route contract failed while CLI, Settings, catalog and wire entries were live, then passed 2/2. The GPUI default linked test and all-target/all-feature check passed. Focused linked binary tests passed: saved px0 1/1, Store 20/20, control tabs 8/8, retired CLI 1/1, stale config 1/1, Settings search 9/9, file opening 7/7, chat selection 17/17, group menu 29/29, chat file links 5/5, retained group tabs 13/13. The control-protocol suite passed 58/58 and command-catalog suite 25/25. Release policy tests passed 229 with 8 skipped. Package spec, format, file-size, sorted-region and diff checks passed. The GUI linker emitted the existing macOS `__eh_frame` warning and Rust reported future incompatibility in `block 0.1.6`; this cut added no check warnings. No native desktop or Windows check ran; platform CI must verify those gates.
 
 `site/assets/kit.js` and inherited `website/site` still show px0 in marketing mock content. Those are not qualified Spaceport product/runtime routes and need a separate T12 publication cut. T04 remains blocked by G-LINK, RM-IDE stays in progress, and A29/A30 remain not_run while other excluded IDE/Git paths remain reachable.
+
+## Integrated branch check
+
+Cherry-picked as `d85c8ff4` after the cloud cut and Core window-contract
+clarification. On the merged source, the default `sheprd-gpui --all-targets`
+check passed with `--locked --offline`; the focused saved-ID regression passed
+1/1 and the same linked binary's control-tab suite passed 8/8, including
+exact Core group/window targeting. The px0 source-absence guard passed 2/2;
+`just format-check`, file-size, sorted-region and package integrity checks
+passed (183 local links). The branch's all-feature app check and its focused
+command/protocol and retained-UI tests are recorded above; no integrated
+all-feature, no-default-feature, native or Windows run is claimed. The
+existing `block v0.1.6` future-compatibility notice and macOS
+compact-unwind linker warning remained.
