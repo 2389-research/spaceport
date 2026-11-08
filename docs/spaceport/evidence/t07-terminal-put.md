@@ -1,0 +1,7 @@
+# T07 Core terminal attachment subset
+
+Pinned Core `cd12ddd88bc11490228343291dc1096c9ed3bf77` advertises `terminal.put` for a live terminal on a named machine, with at most 8 MiB of raw bytes encoded as base64. Spaceport commit `be091da9` adds a typed client call that keeps the qualified terminal address, refuses oversized input before dispatch, and returns Core's staged path and byte count without typing into the terminal.
+
+The red compile test preceded the method implementation. `cargo +1.99.0 test --locked -p sheprd-core-client --lib` then passed 52 tests with 4 opt-in live tests ignored. Scripted peer tests assert the exact `lab/t7` target, payload `AP9B` for `[0, 255, 65]`, parsed result, size refusal and unsupported-method refusal. `just test-core /tmp/spaceport-t00-target/debug/herdr-core`, with `RUSTUP_TOOLCHAIN=1.99.0` and the private target directory, passed all 4 opt-in tests. Its two-Core relay fixture staged those three bytes in a remote fixture terminal and read them from Core's returned private path. `cargo +1.99.0 check --locked -p sheprd-gpui --bin sheprd`, formatting, file-size and sorted checks passed. The GUI check emitted only the pre-existing `block` future-compatibility notice.
+
+This is a local macOS Core-route result, not a real SSH, Windows/Linux, drag/drop or download result. A25/A26 remain not_run. G-FILE and G-PORT remain open under [the file route audit](t07-file-route.md).

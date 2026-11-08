@@ -306,7 +306,7 @@
       ],
       "deliverable": "Preserve host/file/service UX through verified Core routes; no public rebinding or parallel transport workaround.",
       "status": "blocked",
-      "evidence": ["evidence/external-core-dependencies.md", "evidence/t07-file-route.md"],
+      "evidence": ["evidence/external-core-dependencies.md", "evidence/t07-file-route.md", "evidence/t07-terminal-put.md"],
       "must_close_gaps": [
         "G-PORT",
         "G-FILE"
