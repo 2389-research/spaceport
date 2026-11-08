@@ -111,6 +111,9 @@ mockup = ["gpui_platform/test-support"]
 integration-test = [
   "sheprd-github/test-support",
   "objc2-app-kit/NSPasteboardItem",
+  "objc2-app-kit/NSRunningApplication",
+  "objc2-app-kit/NSWorkspace",
+  "objc2-app-kit/libc",
   "dep:cocoa",
   "dep:core-graphics",
   "dep:foreign-types",

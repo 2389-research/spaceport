@@ -1,0 +1,35 @@
+   Compiling objc2-app-kit v0.3.2
+   Compiling objc2-web-kit v0.3.2
+   Compiling gpui-pre-macos v0.3.10
+   Compiling lb-wry v0.53.3
+   Compiling gpui-pre-platform v0.3.10
+   Compiling sheprd-gpui v0.1.0 (/Users/harper/Public/src/2389/spaceport-t11-sidebar-activation/crates/sheprd-gpui)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sheprd-gpui` (bin "spaceport") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 28.07s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/live_gui.rs (/tmp/spaceport-t04-install-offer-target/debug/deps/live_gui-575c9305951f8bf3)
+
+running 1 test
+test native_pages ... PAGES native FAIL: the window never became active, and WebKit ignores the pointer in an inactive window: app_active=false, app_hidden=false, activation_policy=NSApplicationActivationPolicy(0), window_visible=true, fixture_pid=91989, frontmost_pid=Some(427)
+
+gui.log (last 40 lines, at most 600 chars each):
+PAGES native FAIL: the window never became active, and WebKit ignores the pointer in an inactive window: app_active=false, app_hidden=false, activation_policy=NSApplicationActivationPolicy(0), window_visible=true, fixture_pid=91989, frontmost_pid=Some(427)
+
+thread 'native_pages' (73049095) panicked at crates/sheprd-gpui/tests/live_gui.rs:184:5:
+native sidebar failed: exit status: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    native_pages
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 7.14s
+
+error: test failed, to rerun pass `-p sheprd-gpui --test live_gui`

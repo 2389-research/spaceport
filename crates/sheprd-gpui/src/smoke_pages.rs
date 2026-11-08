@@ -29,7 +29,10 @@ use objc2::{
     rc::Retained,
     runtime::{AnyObject, NSObjectProtocol as _},
 };
-use objc2_app_kit::{NSEvent, NSEventModifierFlags, NSEventType, NSTrackingAreaOptions, NSView};
+use objc2_app_kit::{
+    NSApplication, NSEvent, NSEventModifierFlags, NSEventType, NSTrackingAreaOptions, NSView,
+    NSWorkspace,
+};
 use objc2_foundation::{NSError, NSPoint, NSString};
 use objc2_web_kit::WKWebView;
 use wry::raw_window_handle::{HasWindowHandle, RawWindowHandle};
@@ -271,8 +274,19 @@ async fn hover(
     let deadline = Instant::now() + SETTLE;
     while !window.isKeyWindow() {
         if Instant::now() >= deadline {
+            let mtm = objc2::MainThreadMarker::new()
+                .context("native page activation check requires main thread")?;
+            let app = NSApplication::sharedApplication(mtm);
+            let frontmost_pid = NSWorkspace::sharedWorkspace()
+                .frontmostApplication()
+                .map(|app| app.processIdentifier());
             bail!(
-                "the window never became active, and WebKit ignores the pointer in an inactive window: rerun with no other app in use"
+                "the window never became active, and WebKit ignores the pointer in an inactive window: app_active={}, app_hidden={}, activation_policy={:?}, window_visible={}, fixture_pid={}, frontmost_pid={frontmost_pid:?}",
+                app.isActive(),
+                app.isHidden(),
+                app.activationPolicy(),
+                window.isVisible(),
+                std::process::id(),
             );
         }
         timer.timer(Duration::from_millis(50)).await;
