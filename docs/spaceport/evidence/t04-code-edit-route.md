@@ -36,3 +36,9 @@ checker verifies specification integrity, not application behavior.
 
 T04/RM-IDE remain in progress and A29 remains not run. This slice does not
 prove the absence of all IDE/Git behavior or native UI parity.
+
+After integration as `16ab27bb`, the combined branch passed the control
+protocol library 61/61 and production GUI binary check. The latter reported
+only the pre-existing `block v0.1.6` future-compatibility notice. The
+package-root specification integrity check passed; no native GUI or full
+workspace gate ran for this integration.
