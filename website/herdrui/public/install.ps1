@@ -11,14 +11,14 @@
 # Sheprd Start menu shortcut. It never starts or stops terminal daemons, changes
 # services or settings, or upgrades a personal Herdr installation. Signed copies
 # update through Check for Updates; rerunning this also updates. Explorer's
-# "Open in Sheprd" entry and both sheprd:// and herdr-gpui:// links are per-user.
+# "Open in Sheprd" entry is per-user.
 #
 # To uninstall, run it with -Uninstall:
 #
 #   & ([scriptblock]::Create((irm https://sheprd.org/install.ps1))) -Uninstall
 #
 # That removes what this script added: the files, the PATH entry, the Start
-# menu shortcut, the Explorer entry, and the link registration. Settings and
+# menu shortcut, and the Explorer entry. Settings and
 # daemon sessions are kept.
 & {
   param([switch]$Uninstall)
@@ -52,9 +52,6 @@
   # does and starts the app first when it is not running. Windows 11 lists it
   # under "Show more options". The Setup.exe installer writes the same keys.
   $verbs = 'HKCU:\Software\Classes\Directory\shell\HerdrUI', 'HKCU:\Software\Classes\Directory\Background\shell\HerdrUI'
-  # Keep Explorer's old key and the old link scheme alongside the new scheme
-  # so pinned links continue to work. Setup.exe writes these same keys.
-  $schemes = @('HKCU:\Software\Classes\sheprd', 'HKCU:\Software\Classes\herdr-gpui')
   $shell = New-Object -ComObject WScript.Shell
   $shortcutFolders = @([Environment]::GetFolderPath('Programs'), [Environment]::GetFolderPath('Desktop'))
   $ownedShortcuts = @(
@@ -81,9 +78,6 @@
       if ((Test-Path -LiteralPath $exe) -or (Test-Path -LiteralPath $legacyExe)) { throw "The Sheprd uninstaller left app files in $dest." }
     }
     foreach ($verb in $verbs) { Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $verb }
-    foreach ($scheme in $schemes) {
-      Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $scheme
-    }
     foreach ($path in $ownedShortcuts) { Remove-Item -Force -ErrorAction SilentlyContinue -LiteralPath $path }
     $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
     $kept = @($userPath -split ';' | Where-Object { $_ -and $_.TrimEnd([char]92) -ne $dest })
@@ -219,21 +213,6 @@ public static class HerdrShortcut {
     Set-Item -LiteralPath $verb -Value 'Open in Sheprd'
     Set-ItemProperty -LiteralPath $verb -Name 'Icon' -Value "`"$exe`",0"
     Set-Item -LiteralPath "$verb\command" -Value "`"$launcher`" open `"%V`""
-  }
-
-  # Links open through the launcher as well, so a release without it
-  # registers none, and loses one an earlier install left.
-  foreach ($scheme in $schemes) {
-    if ($hasLauncher) {
-      New-Item -Force -Path "$scheme\shell\open\command" | Out-Null
-      New-Item -Force -Path "$scheme\DefaultIcon" | Out-Null
-      Set-Item -LiteralPath $scheme -Value 'URL:Sheprd link'
-      Set-ItemProperty -LiteralPath $scheme -Name 'URL Protocol' -Value ''
-      Set-Item -LiteralPath "$scheme\DefaultIcon" -Value "`"$exe`",0"
-      Set-Item -LiteralPath "$scheme\shell\open\command" -Value "`"$launcher`" `"%1`""
-    } else {
-      Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -LiteralPath $scheme
-    }
   }
 
   if ($hasLauncher) {

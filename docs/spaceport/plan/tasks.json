@@ -540,7 +540,7 @@
       ],
       "deliverable": "Owner-controlled signed packages and updates; no publishing without authorization; all product gates reconciled.",
       "status": "blocked",
-      "evidence": ["evidence/release-identity-audit.md", "evidence/t12-external-core-package.md", "evidence/native-platform-results.md"],
+      "evidence": ["evidence/release-identity-audit.md", "evidence/t12-external-core-package.md", "evidence/native-platform-results.md", "evidence/t12-upstream-site-mirrors.md"],
       "must_close_gaps": [
         "G-RELEASE",
         "G-PLATFORM"

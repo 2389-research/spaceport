@@ -116,16 +116,13 @@ class WebsiteTests(unittest.TestCase):
         self.assertEqual(page.count('href="https://testflight.apple.com/join/6nZes3NY"'), 1)
 
     def test_the_testflight_invite_lives_only_on_its_page(self):
-        # A new invite link is changed in one file; every other link goes there.
+        # The desktop phone service is gone; this checks the historical site only.
         invite = "testflight.apple.com/join/"
         for path in WEBSITE.rglob("*"):
             if path.is_file() and path.suffix in (".html", ".js", ".txt"):
                 with self.subTest(file=str(path.relative_to(WEBSITE))):
                     count = path.read_text().count(invite)
                     self.assertEqual(count, 1 if path == WEBSITE / "testflight/index.html" else 0)
-        app = (ROOT / "crates/sheprd-gpui/src/remote/dialog.rs").read_text()
-        self.assertIn('"https://sheprd.org/testflight/"', app)
-        self.assertIn("https://sheprd.org/testflight/", (ROOT / "README.md").read_text())
 
     def test_hidden_attribute_beats_author_display_rules(self):
         for base in (WEBSITE, ROOT / "design/sheprd-website"):
