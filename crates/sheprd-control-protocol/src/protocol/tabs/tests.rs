@@ -3,6 +3,7 @@ use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
 mod removed_code_edit;
+mod removed_orchestrator;
 mod removed_review;
 
 fn round_trip(op: TabOp) {
@@ -40,9 +41,6 @@ fn tab_operations_round_trip() {
             change: ZoomChange::Reset,
         },
         TabOp::Devices,
-        TabOp::Orchestrator {
-            repo: Some("/src".into()),
-        },
     ] {
         round_trip(op);
     }

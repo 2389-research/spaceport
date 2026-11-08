@@ -55,11 +55,6 @@ impl Localize for Error {
             Self::EmptyTabName => fl!("error-empty-tab-name"),
             Self::EmptyWorkspaceLabel => fl!("error-empty-workspace-label"),
             Self::FileDrop(error) => error.localize(),
-            Self::GitCommonDir { path: dir, source } => fl!(
-                "error-git-common-dir",
-                path = path(dir),
-                error = source.to_string()
-            ),
             Self::GitHub(error) => error.localize(),
             Self::GitHubSecretInConfig(key) => fl!("error-github-secret-in-config", key = *key),
             Self::ImageAnimationResize => fl!("error-image-animation-resize"),
@@ -115,16 +110,10 @@ impl Localize for Error {
             Self::MissingStateRoot => fl!("error-missing-state-root"),
             Self::NoSnapshot => fl!("error-no-snapshot"),
             Self::NoTab => fl!("error-no-tab"),
-            Self::NotAGitRepository { path: dir } => {
-                fl!("error-not-a-git-repository", path = path(dir))
-            }
             Self::NotConnected => fl!("error-not-connected"),
             Self::NotificationMutes(error) => error.localize(),
             Self::NotInCheckout => fl!("error-not-in-checkout"),
             Self::Orchestrator(error) => error.localize(),
-            Self::OrchestratorItems(error) => {
-                fl!("error-orchestrator-items", error = error.localize())
-            }
             Self::Overview(error) => error.localize(),
             #[cfg(target_os = "macos")]
             Self::PageStack => fl!("error-page-stack"),

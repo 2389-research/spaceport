@@ -22,7 +22,7 @@ pub use settings::{
     SoundCommand, ThemeCommand, UpdateCommand,
 };
 use std::ffi::OsString;
-pub use tabs::{Items, OrchestratorCommand, TabCommand};
+pub use tabs::TabCommand;
 pub use work::{CheckpointCommand, FanOut, NotesCommand, WaitFor, WorktreeCommand};
 
 /// What to do, and how the answer is printed.
@@ -53,7 +53,6 @@ pub enum ControlCommand {
     Ui(UiCommand),
     Tab(TabCommand),
     Devices,
-    Orchestrator(OrchestratorCommand),
     Chat(ChatCommand),
     Px0,
     Notes(NotesCommand),
@@ -133,10 +132,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("ui", "Sidebar, status bar, and terminal font size"),
     ("tab", "List, focus, or close the app's own tabs"),
     ("devices", "Open the Devices overview"),
-    (
-        "orchestrator",
-        "A repository's issues, pull requests, and runs",
-    ),
     (
         "chat",
         "Native views of herdr-acp chats: start one, list them, show or hide one",
@@ -283,7 +278,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
             tabs::open_only(args)?;
             ControlCommand::Devices
         }
-        "orchestrator" => ControlCommand::Orchestrator(tabs::orchestrator(args)?),
         "chat" => ControlCommand::Chat(chat::chat(args)?),
         "px0" => {
             tabs::open_only(args)?;

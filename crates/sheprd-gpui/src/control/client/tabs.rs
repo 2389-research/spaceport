@@ -1,26 +1,14 @@
-//! `tab`, `devices`, and `orchestrator`.
-mod items;
+//! `tab` and `devices`.
 
 use super::{Context, Output, unexpected};
 use crate::{
-    cli::control::{OrchestratorCommand, TabCommand},
-    control::{
-        ErrorCode,
-        protocol::{
-            Request, Response,
-            tabs::{Reply, TabInfo, TabOp},
-        },
+    cli::control::TabCommand,
+    control::protocol::{
+        Request, Response,
+        tabs::{Reply, TabInfo, TabOp},
     },
 };
-use std::{fmt::Write as _, path::Path};
-
-fn rejected(code: ErrorCode, message: impl Into<String>) -> crate::Error {
-    crate::control::Error::Rejected {
-        code,
-        message: message.into(),
-    }
-    .into()
-}
+use std::fmt::Write as _;
 
 /// One line per tab: its ID, kind, title, what it shows, and where.
 fn describe(tabs: &[TabInfo]) -> String {
@@ -66,26 +54,6 @@ pub(super) fn tab(command: TabCommand, context: &Context) -> crate::Result<Outpu
     }
 }
 
-/// The folder `--repo` names, resolved here for the app.
-fn local_folder(path: &Path) -> crate::Result<String> {
-    let resolved = path.canonicalize().map_err(|error| {
-        rejected(
-            ErrorCode::NotFound,
-            format!("Cannot open {}: {error}", path.display()),
-        )
-    })?;
-    if !resolved.is_dir() {
-        return Err(rejected(
-            ErrorCode::InvalidRequest,
-            format!("{} is not a folder", resolved.display()),
-        ));
-    }
-    resolved
-        .into_os_string()
-        .into_string()
-        .map_err(|_| rejected(ErrorCode::InvalidRequest, "The path must be UTF-8"))
-}
-
 /// What `Opened` says, for a person.
 fn opened(what: &str, response: Response) -> crate::Result<Output> {
     match response {
@@ -108,20 +76,6 @@ pub(super) fn devices(context: &Context) -> crate::Result<Output> {
 
 pub(super) fn px0(context: &Context) -> crate::Result<Output> {
     opened("px0", context.call(Request::Tab, TabOp::Px0)?)
-}
-
-pub(super) fn orchestrator(
-    command: OrchestratorCommand,
-    context: &Context,
-) -> crate::Result<Output> {
-    match command {
-        OrchestratorCommand::Open { repo } => {
-            let repo = repo.as_deref().map(local_folder).transpose()?;
-            let response = context.call(Request::Tab, TabOp::Orchestrator { repo })?;
-            opened("the orchestrator", response)
-        }
-        OrchestratorCommand::Items { repo, items } => items::list(repo.as_deref(), items),
-    }
 }
 
 #[cfg(test)]

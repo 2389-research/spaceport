@@ -1,34 +1,11 @@
-//! `tab`, `devices`, and `orchestrator`.
+//! `tab` and `devices`.
 use super::{Args, CliError, unknown};
-use std::path::PathBuf;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TabCommand {
     List,
     Focus { id: u64 },
     Close { id: u64 },
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum Items {
-    #[default]
-    All,
-    Issues,
-    PullRequests,
-    Tasks,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum OrchestratorCommand {
-    Open {
-        repo: Option<PathBuf>,
-    },
-    /// The issues and pull requests the orchestrator last synced, read from
-    /// its local database.
-    Items {
-        repo: Option<PathBuf>,
-        items: Items,
-    },
 }
 
 fn id(args: &mut Args) -> Result<u64, CliError> {
@@ -56,30 +33,4 @@ pub(super) fn open_only(args: &mut Args) -> Result<(), CliError> {
         Some(verb) if verb == "open" => Ok(()),
         Some(verb) => Err(unknown(args.name(), verb)),
     }
-}
-
-pub(super) fn orchestrator(args: &mut Args) -> Result<OrchestratorCommand, CliError> {
-    // The option first, so `orchestrator --repo PATH` opens PATH.
-    let repo = args.option("--repo")?.map(PathBuf::from);
-    let verb = args.verb();
-    Ok(match verb.as_ref().and_then(|verb| verb.to_str()) {
-        None | Some("open") => OrchestratorCommand::Open { repo },
-        Some("items") => OrchestratorCommand::Items {
-            repo,
-            items: Items::All,
-        },
-        Some("issues") => OrchestratorCommand::Items {
-            repo,
-            items: Items::Issues,
-        },
-        Some("prs") => OrchestratorCommand::Items {
-            repo,
-            items: Items::PullRequests,
-        },
-        Some("tasks") => OrchestratorCommand::Items {
-            repo,
-            items: Items::Tasks,
-        },
-        _ => return Err(unknown("orchestrator", verb.unwrap_or_default())),
-    })
 }

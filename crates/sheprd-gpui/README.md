@@ -2426,7 +2426,7 @@ repository count once, and each repository syncs on its own, so up to 32 are
 listed. A row shows its project while several are listed. Under the search, a
 row of pills picks backends (GitHub, GitLab, Beads) and projects, each with its
 count; none picked lists all. The Issues row of a group's "…" menu or of a
-workspace's popover, the Show Issues command, and `sheprd orchestrator`
+workspace's popover, and the Show Issues command
 open the Issues section narrowed to that workspace's project. A repository
 without a GitHub remote has no GitHub source; the header says "no GitHub
 remote" when none of them has one.

@@ -78,12 +78,6 @@ pub enum Error {
     EmptyWorkspaceLabel,
     #[error(transparent)]
     FileDrop(#[from] crate::window::file_drop::Error),
-    #[error("Could not run git in {}: {source}", path.display())]
-    GitCommonDir {
-        path: PathBuf,
-        #[source]
-        source: io::Error,
-    },
     #[error(transparent)]
     GitHub(#[from] sheprd_github::Error),
     #[error(
@@ -183,8 +177,6 @@ pub enum Error {
     NoSnapshot,
     #[error("No tab selected.")]
     NoTab,
-    #[error("{} is not in a Git repository", path.display())]
-    NotAGitRepository { path: PathBuf },
     #[error("Not connected to a daemon.")]
     NotConnected,
     #[error(transparent)]
@@ -193,8 +185,6 @@ pub enum Error {
     NotInCheckout,
     #[error(transparent)]
     Orchestrator(#[from] crate::orchestrator::Error),
-    #[error("Could not read the orchestrator's database: {0}")]
-    OrchestratorItems(#[source] crate::orchestrator::Error),
     #[error(transparent)]
     Overview(#[from] crate::overview::Error),
     #[cfg(target_os = "macos")]

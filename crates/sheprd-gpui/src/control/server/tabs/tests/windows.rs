@@ -149,7 +149,7 @@ fn a_tab_for_another_workspace_waits_for_the_switch(cx: &mut gpui::TestAppContex
 }
 
 #[gpui::test]
-fn requests_for_unknown_workspaces_and_bad_repos_are_refused(cx: &mut gpui::TestAppContext) {
+fn requests_for_unknown_workspaces_are_refused(cx: &mut gpui::TestAppContext) {
     let (_view, cx) = window(cx);
     let address = socket::test_address();
     let server = socket::Server::bind(&address.path).unwrap();
@@ -158,22 +158,14 @@ fn requests_for_unknown_workspaces_and_bad_repos_are_refused(cx: &mut gpui::Test
         workspace_id: Some("w_missing".into()),
         ..Caller::default()
     };
-    for (op, caller, code) in [
-        (TabOp::Devices, missing, ErrorCode::WorkspaceNotFound),
-        (
-            TabOp::Orchestrator {
-                repo: Some("src".into()),
-            },
-            Caller::default(),
-            ErrorCode::InvalidRequest,
-        ),
-    ] {
-        let (call, incoming, waiting) = queued(&server, op, caller);
-        cx.cx.update(|cx| serve(call, incoming, &mut watches, cx));
-        assert!(matches!(
-            waiting.join().unwrap().unwrap(),
-            Response::Error { code: got, .. } if got == code
-        ));
-    }
+    let (call, incoming, waiting) = queued(&server, TabOp::Devices, missing);
+    cx.cx.update(|cx| serve(call, incoming, &mut watches, cx));
+    assert!(matches!(
+        waiting.join().unwrap().unwrap(),
+        Response::Error {
+            code: ErrorCode::WorkspaceNotFound,
+            ..
+        }
+    ));
     assert!(watches.0.is_empty());
 }

@@ -119,7 +119,7 @@ folder, so it stays the project's source and `bd` follows the redirect itself;
 projects sharing one are not deduplicated. When a project's source moves, as
 adding a redirect moves it, `Store::settle_beads` forgets the old source's rows
 and moves this app's runs to the new one once discovery confirms it, never from
-cached details, so tasks keep their runs and `orchestrator tasks` reads the same rows. A database this
+cached details, so tasks keep their runs and the UI reads the same rows. A database this
 build cannot write keeps the old rows, so `reload` still lists only the current
 source's.
 

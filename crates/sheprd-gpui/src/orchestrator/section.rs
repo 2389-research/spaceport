@@ -1,7 +1,7 @@
 //! The activity bar's Pull requests, Issues, and Tasks sections: one orchestrator
 //! view the window owns, listing every repository the connected hosts'
 //! workspaces hold, drawn across the window in place of its terminals on the
-//! list the section names. The menus and `sheprd orchestrator` open it
+//! list the section names. The menus and Show Issues command open it
 //! narrowed to one workspace's project.
 
 use super::{List, OrchestratorView, ViewId};

@@ -2,8 +2,6 @@
 use super::*;
 use crate::control::protocol::tabs::TabKind;
 
-mod items;
-
 #[test]
 fn tabs_are_listed_one_per_line() {
     let tabs = [
@@ -32,18 +30,6 @@ fn tabs_are_listed_one_per_line() {
          4\tdevices\tDevices\t(workspace w_2)"
     );
     assert_eq!(describe(&[]), "");
-}
-
-#[test]
-fn folders_are_resolved_before_they_are_sent() {
-    let folder = tempfile::tempdir().unwrap();
-    let file = folder.path().join("main.rs");
-    std::fs::write(&file, "fn main() {}\n").unwrap();
-    assert_eq!(
-        Path::new(&local_folder(folder.path()).unwrap()),
-        folder.path().canonicalize().unwrap()
-    );
-    assert!(local_folder(&file).is_err());
 }
 
 #[test]

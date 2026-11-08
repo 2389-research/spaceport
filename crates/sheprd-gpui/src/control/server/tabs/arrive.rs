@@ -1,11 +1,11 @@
-//! Tabs opened in the caller's workspace: Devices and the
-//! orchestrator. Each feature opens its tab in the focused
+//! Tabs opened in the caller's workspace: Devices and px0.
+//! Each feature opens its tab in the focused
 //! workspace, so the window first switches to the caller's, and the tab
 //! opens once a snapshot says the switch landed.
 use super::{busy, closed};
 use crate::{
     SheprdWindow,
-    browser::{Location, OrchestratorRepo, Store},
+    browser::{Location, Store},
     control::{
         protocol::{
             Caller, ErrorCode, Response,
@@ -165,45 +165,6 @@ pub(super) fn devices(
             opened(view, workspace, "the Devices overview", cx, |location| {
                 matches!(location, Location::Devices)
             })
-        },
-    );
-}
-
-/// The workspace's issues in the activity bar's Issues section, listing the
-/// repository of `repo`, or of the workspace's focused pane.
-pub(super) fn orchestrator(
-    caller: &Caller,
-    repo: Option<String>,
-    incoming: socket::Incoming,
-    watches: &mut Watches,
-    cx: &mut App,
-) {
-    if let Some(repo) = &repo
-        && OrchestratorRepo::new(repo.clone()).is_err()
-    {
-        return incoming.respond(Response::error(
-            ErrorCode::InvalidRequest,
-            "The repository must be an absolute path without control characters",
-        ));
-    }
-    open_there(
-        caller,
-        incoming,
-        watches,
-        cx,
-        |_| true,
-        move |view, workspace, window, cx| {
-            view.open_orchestrator_in(workspace.to_owned(), repo, window, cx);
-            if view.activity.panel == crate::sidebar::ActivityPanel::Issues
-                && view.activity_section().is_some()
-            {
-                Response::done(format!("Showing the issues of workspace {workspace}"))
-            } else {
-                Response::error(
-                    ErrorCode::Unsupported,
-                    "Issues show in the activity bar, which is turned off, or this host cannot list them",
-                )
-            }
         },
     );
 }

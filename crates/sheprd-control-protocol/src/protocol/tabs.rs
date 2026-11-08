@@ -1,5 +1,5 @@
-//! The app's own tabs: pages, reviews, the orchestrator, and the
-//! Devices overview, which Herdr does not know about.
+//! The app's own tabs: pages, reviews, and the Devices overview,
+//! which Herdr does not know about.
 use serde::{Deserialize, Serialize};
 
 /// How long a page may take to hand back its text or picture.
@@ -48,12 +48,6 @@ pub enum TabOp {
         change: ZoomChange,
     },
     Devices,
-    /// The orchestrator of the caller's workspace, or of the checkout at
-    /// `repo`.
-    Orchestrator {
-        #[serde(default)]
-        repo: Option<String>,
-    },
     Px0,
 }
 
@@ -61,7 +55,7 @@ impl TabOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
             Self::Text { .. } | Self::Screenshot { .. } => PAGE_WAIT_SECONDS,
-            Self::Devices | Self::Orchestrator { .. } | Self::Px0 => ARRIVE_WAIT_SECONDS,
+            Self::Devices | Self::Px0 => ARRIVE_WAIT_SECONDS,
             Self::List { .. }
             | Self::Focus { .. }
             | Self::Close { .. }

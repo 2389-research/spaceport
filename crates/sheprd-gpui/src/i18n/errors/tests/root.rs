@@ -42,10 +42,6 @@ fn every_own_variant_has_a_message() {
         Error::DetachedHead,
         Error::EmptyTabName,
         Error::EmptyWorkspaceLabel,
-        Error::GitCommonDir {
-            path: path.clone(),
-            source: io(),
-        },
         Error::GitHubSecretInConfig("token"),
         Error::ImageAnimationResize,
         Error::ImageDecode(image()),
@@ -86,7 +82,6 @@ fn every_own_variant_has_a_message() {
         Error::MissingStateRoot,
         Error::NoSnapshot,
         Error::NoTab,
-        Error::NotAGitRepository { path: path.clone() },
         Error::NotConnected,
         Error::NotInCheckout,
         Error::PaneImageDecode(image()),
