@@ -235,7 +235,7 @@ providers! {
         module: boxd,
         name: "boxd",
         icon: "icons/cloud/boxd.svg",
-        offer: "Create a boxd machine in Settings",
+        offer: "Manage boxd devices in Settings",
         noun: "machine",
         command: plain,
         deletion: Some(Deletion {
@@ -244,7 +244,7 @@ providers! {
             run: crate::boxd::destroy_saved,
         }),
         image: None,
-        provision: Some(crate::boxd::setup::provision),
+        provision: None,
     },
     "coder" Coder => {
         module: coder,

@@ -136,54 +136,6 @@ fn api(handler: impl Fn(&Call) -> Reply + Send + 'static) -> (Settings, Arc<Mute
 }
 
 #[test]
-fn creating_sends_the_key_name_and_labels_as_grpc_web() {
-    let (settings, log) = api(|call| match call.method.as_str() {
-        "CreateVm" => Reply::Message(
-            Message::default()
-                .string(1, "id-1")
-                .string(2, "sheprd-calm-otter")
-                .string(6, "running")
-                .into_bytes(),
-        ),
-        other => panic!("unexpected {other}"),
-    });
-    let key = SecretString::from("fixture-key");
-    let created = Request {
-        settings: &settings,
-        key: &key,
-    }
-    .create("sheprd-calm-otter")
-    .unwrap();
-    assert_eq!(
-        (created.id.as_str(), created.status.as_str()),
-        ("id-1", "running")
-    );
-    let log = log.lock().unwrap();
-    let head = log[0].head.to_ascii_lowercase();
-    assert!(head.starts_with("post /boxd.api.v1.boxdapi/createvm "));
-    assert!(head.contains("authorization: bearer fixture-key"));
-    assert!(head.contains("content-type: application/grpc-web+proto"));
-    assert_eq!(string_field(&log[0].message, 1), "sheprd-calm-otter");
-    let labels: Vec<(String, String)> = fields(&log[0].message)
-        .unwrap()
-        .into_iter()
-        .filter_map(|(number, field)| match field {
-            Field::Bytes(entry) if number == 14 => {
-                Some((string_field(entry, 1), string_field(entry, 2)))
-            }
-            _ => None,
-        })
-        .collect();
-    assert_eq!(
-        labels,
-        [
-            ("team".to_owned(), "web".to_owned()),
-            ("sheprd".to_owned(), "device".to_owned())
-        ]
-    );
-}
-
-#[test]
 fn listing_selects_the_device_label() {
     let (settings, log) = api(|_| {
         Reply::Message(
@@ -203,6 +155,9 @@ fn listing_selects_the_device_label() {
     assert_eq!(machines.len(), 2);
     let log = log.lock().unwrap();
     assert_eq!(log[0].method, "ListVms");
+    let head = log[0].head.to_ascii_lowercase();
+    assert!(head.starts_with("post /boxd.api.v1.boxdapi/listvms "));
+    assert!(head.contains("authorization: bearer k"));
     assert_eq!(string_field(&log[0].message, 3), "sheprd=device");
 }
 
@@ -308,5 +263,4 @@ fn refusals_become_typed_errors() {
         }))
     ));
     assert!(matches!(request.machine("../x"), Err(Error::Field(_))));
-    assert!(matches!(request.create("Bad Name"), Err(Error::Field(_))));
 }

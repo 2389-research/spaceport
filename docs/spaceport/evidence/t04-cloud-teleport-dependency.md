@@ -192,3 +192,37 @@ messages in 269 files). The package integrity check and 21 tool tests passed.
 The test link retained its macOS compact-unwind warning and Cargo retained
 the `block v0.1.6` notice. Smart Dispatch and provider backend creation remain
 reachable. A30 stays `not_run`; native GUI was not exercised.
+
+## Boxd Smart Dispatch creation removal
+
+At `38f808e3`, `dispatch_sandboxes` offered Boxd for a saved Boxd endpoint,
+and `Job::sandboxed` obtained its create callback from the provider registry.
+The new headless test first failed at that registered callback, before any
+worker or provider request started. With Boxd's registry `provision` set to
+`None`, it passes: the picker omits Boxd, retains Container, and a stale Boxd
+submission refuses before spawning a job. The provider's Add Device text no
+longer claims Settings can create a machine.
+The Container offer assertion runs on macOS/Linux, where host scripting is
+available; the Boxd absence and typed refusal assertions also run on Windows.
+
+The orphaned Boxd setup/create chain, `CreateVm` request/decoder, and tests
+specific to creation were removed. The retained Boxd API tests cover list,
+read, wake, delete, protocol framing, and exec relay. The opt-in live test that
+created and deleted a machine was retired with that route; the ignored live
+wrong-key test remains. A Boxd-only remote-crate test command exposed an
+existing test-feature coupling: cloud image tests refer to Container and
+Daytona variants without gating. With `boxd,container,daytona` features, the
+Boxd remote filter passed 36 tests (one ignored). The default app dispatch
+test passed 1, the retained Core catalog 3, manual Core Add Device 6, cloud
+provider picker 2, and Boxd Settings 3. The default production app check
+passed with no Rust code warnings. Test links reported the existing macOS
+unwind-size warning and Cargo reported `block v0.1.6` future incompatibility.
+
+Saved Boxd account and device configuration, including old `[boxd] labels`,
+is still parsed; this cut neither deletes nor migrates it. Saved Boxd devices
+can still connect, wake, be forgotten, or be explicitly deleted, and Boxd
+remains in the default feature set. Other providers still provision through
+Smart Dispatch. No real provider, personal credential, Core repository, or
+installed service was touched. T04 remains `in_progress`, A30 `not_run`, and
+native/live provider behavior unverified. Earlier sections have signed
+observations; this appended result needs a new observation after integration.

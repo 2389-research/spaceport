@@ -110,18 +110,6 @@ fn api_root(text: &str) -> Result<String> {
     Ok(url.as_str().trim_end_matches('/').to_owned())
 }
 
-/// boxd's rule for machine names: 1–63 lowercase letters, digits, and
-/// hyphens, starting with a letter and not ending with a hyphen.
-pub fn machine_name(value: &str) -> bool {
-    !value.is_empty()
-        && value.len() <= 63
-        && value.starts_with(|c: char| c.is_ascii_lowercase())
-        && !value.ends_with('-')
-        && value
-            .bytes()
-            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
-}
-
 /// A machine as an API call names it: its ID or its name. Plain ASCII only.
 pub fn machine_reference(value: &str) -> bool {
     !value.is_empty()

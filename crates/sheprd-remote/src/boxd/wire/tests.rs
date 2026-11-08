@@ -2,7 +2,7 @@
 use super::*;
 
 #[test]
-fn messages_leave_out_empty_fields_and_carry_map_entries() {
+fn messages_leave_out_empty_fields_and_keep_strings() {
     assert!(
         Message::default()
             .string(1, "")
@@ -10,23 +10,9 @@ fn messages_leave_out_empty_fields_and_carry_map_entries() {
             .into_bytes()
             .is_empty()
     );
-    let bytes = Message::default()
-        .string(1, "sheprd-calm-otter")
-        .entry(14, "sheprd", "device")
-        .into_bytes();
+    let bytes = Message::default().string(1, "4e50-id").into_bytes();
     let fields = fields(&bytes).unwrap();
-    assert_eq!(fields[0], (1, Field::Bytes(b"sheprd-calm-otter")));
-    let Field::Bytes(entry) = fields[1].1 else {
-        panic!("a map entry is a message");
-    };
-    assert_eq!(fields[1].0, 14);
-    assert_eq!(
-        super::fields(entry).unwrap(),
-        [
-            (1, Field::Bytes(&b"sheprd"[..])),
-            (2, Field::Bytes(&b"device"[..]))
-        ]
-    );
+    assert_eq!(fields, [(1, Field::Bytes(b"4e50-id"))]);
 }
 
 #[test]
@@ -46,15 +32,6 @@ fn a_machine_reads_its_fields_and_skips_the_rest() {
             name: "sheprd-calm-otter".into(),
             status: "running".into(),
         }
-    );
-    let created = Message::default()
-        .string(1, "id")
-        .string(2, "n")
-        .string(6, "starting")
-        .into_bytes();
-    assert_eq!(
-        Machine::decode_created(&created).unwrap().status,
-        "starting"
     );
     let list = Message::default()
         .bytes(1, &bytes)

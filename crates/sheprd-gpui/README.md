@@ -644,16 +644,15 @@ with `boxd auth keys create <name>`; a key belongs to one organization.
 Settings lists saved boxd devices and can forget one without deleting its
 machine. boxd machines are full Linux microVMs with a persistent disk.
 One that went to standby or hibernated after being idle, or was stopped, is
-resumed, woken, or started when Sheprd connects. Once a boxd device exists,
-Smart Dispatch's dialogs offer a new machine like **New container**.
+resumed, woken, or started when Sheprd connects.
 
 The app reaches a machine without SSH keys: it runs itself as a relay
 (`sheprd __boxd-exec`) over the API's `Exec` stream, which boxd serves as
 grpc-web over HTTP/1.1 in both directions at once, so stdin, stdout, stderr,
 end of input, and the exit code pass unchanged, without an async runtime. The
 API key stays on this computer and goes only to the configured API URL. boxd
-is unavailable on Windows, like every cloud device. Tested against the live
-boxd service and against a scripted exec stream.
+is unavailable on Windows, like every cloud device. The exec stream has
+scripted tests; live authentication testing is opt-in.
 
 ### OpenSandbox (experimental)
 

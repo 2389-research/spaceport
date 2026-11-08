@@ -1,4 +1,4 @@
-//! The boxd API calls this app makes: create, read, list, wake, and delete a
+//! The boxd API calls this app makes: read, list, wake, and delete a
 //! machine. Requests and replies are the few `api.proto` fields in
 //! [`wire`](super::wire).
 
@@ -6,7 +6,7 @@ use super::{
     Error, Result,
     error::{Code, Status},
     http::{NOT_FOUND, Request},
-    settings::{DEVICE_LABEL, machine_name, machine_reference},
+    settings::{DEVICE_LABEL, machine_reference},
     wire::{Machine, Message},
 };
 use crate::cloud::Value;
@@ -64,21 +64,6 @@ fn gone(id: &str) -> impl FnOnce(Error) -> Error + '_ {
 }
 
 impl Request<'_> {
-    /// Make the machine `name` with the configured labels and the device
-    /// label. boxd's own image is a full Ubuntu with a `boxd` user.
-    pub fn create(&self, name: &str) -> Result<Machine> {
-        if !machine_name(name) {
-            return Err(Error::Field(Value::BoxdMachine));
-        }
-        let mut request = Message::default().string(1, name);
-        for (key, value) in &self.settings.labels {
-            request = request.entry(14, key, value);
-        }
-        request = request.entry(14, DEVICE_LABEL.0, DEVICE_LABEL.1);
-        let reply = self.call("create machine", "CreateVm", &request.into_bytes())?;
-        Machine::decode_created(&reply)
-    }
-
     /// The machine `id` (or name), or [`Error::Gone`] when it no longer exists.
     pub fn machine(&self, id: &str) -> Result<Machine> {
         let request = Message::default().string(1, reference(id)?).into_bytes();

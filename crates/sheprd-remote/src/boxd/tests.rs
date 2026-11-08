@@ -107,21 +107,8 @@ fn labels_follow_boxd_rules_and_leave_the_device_label_alone() {
 }
 
 #[test]
-fn machine_names_and_references_stay_plain() {
-    use settings::{machine_name, machine_reference};
-    assert!(machine_name("sheprd-calm-otter-1a"));
-    for bad in [
-        "",
-        "1abc",
-        "-abc",
-        "abc-",
-        "Upper",
-        "a_b",
-        "a b",
-        &"x".repeat(64),
-    ] {
-        assert!(!machine_name(bad), "{bad}");
-    }
+fn machine_references_stay_plain() {
+    use settings::machine_reference;
     assert!(machine_reference("4e5084d5-7dca-4be4-aaa3-84a5fd11d63d"));
     for bad in ["", "a/b", "a b", "../x", "a\n"] {
         assert!(!machine_reference(bad), "{bad}");

@@ -47,15 +47,6 @@ impl Message {
         self
     }
 
-    /// One entry of a `map<string, string>` field.
-    pub fn entry(mut self, field: u32, key: &str, value: &str) -> Self {
-        let entry = Message::default().string(1, key).string(2, value).0;
-        self.key(field, LENGTH);
-        varint(&mut self.0, entry.len() as u64);
-        self.0.extend_from_slice(&entry);
-        self
-    }
-
     pub fn into_bytes(self) -> Vec<u8> {
         self.0
     }
@@ -134,7 +125,7 @@ fn text(value: &[u8]) -> Result<String> {
     String::from_utf8(value.to_vec()).map_err(|_| Error::Wire)
 }
 
-/// A machine as `GetVm`, `ListVms`, and `CreateVm` describe it.
+/// A machine as `GetVm` and `ListVms` describe it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Machine {
     pub id: String,
@@ -152,20 +143,6 @@ impl Machine {
                 (1, Field::Bytes(value)) => machine.id = text(value)?,
                 (2, Field::Bytes(value)) => machine.name = text(value)?,
                 (5, Field::Bytes(value)) => machine.status = text(value)?,
-                _ => {}
-            }
-        }
-        Ok(machine)
-    }
-
-    /// A `CreateVmResponse`, whose status is field 6 rather than 5.
-    pub fn decode_created(bytes: &[u8]) -> Result<Self> {
-        let mut machine = Self::default();
-        for (number, field) in fields(bytes)? {
-            match (number, field) {
-                (1, Field::Bytes(value)) => machine.id = text(value)?,
-                (2, Field::Bytes(value)) => machine.name = text(value)?,
-                (6, Field::Bytes(value)) => machine.status = text(value)?,
                 _ => {}
             }
         }
