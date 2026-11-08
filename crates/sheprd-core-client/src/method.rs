@@ -32,6 +32,7 @@ methods! {
     DocGet => "doc.get", true;
     DocSet => "doc.set", true;
     EventsSubscribe => "events.subscribe", true;
+    FileRead => "file.read", false;
     Hello => "hello", false;
     MachineAdd => "machine.add", false;
     MachineConnect => "machine.connect", false;

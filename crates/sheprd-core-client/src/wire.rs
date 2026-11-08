@@ -194,6 +194,30 @@ pub struct Doc {
     pub version: u64,
 }
 
+/// A text file on the local Core or a Core-owned machine.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct FileRead<'a> {
+    pub path: &'a str,
+    /// Pass `Machine.id` for a remote read; names can be reassigned.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cwd: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offset: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<usize>,
+}
+
+/// Whole UTF-8 lines and their position in Core's bounded response.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct FileReadResult {
+    pub text: String,
+    pub first: usize,
+    pub last: usize,
+    pub lines: usize,
+}
+
 /// Core routes an opaque document to `on` without changing its contents.
 #[derive(Serialize)]
 pub(crate) struct DocGet<'a> {

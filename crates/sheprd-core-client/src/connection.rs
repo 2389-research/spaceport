@@ -8,7 +8,9 @@ use crate::{
     frame::{Decoder, Frame, Kind},
     hello::{GENERATION, Hello},
     stream::{self, Attachment, End, Link, Route, Stream, Subscription},
-    wire::{self, Doc, DocGet, DocSet, DocWrite, List, Subscribed, Terminal},
+    wire::{
+        self, Doc, DocGet, DocSet, DocWrite, FileRead, FileReadResult, List, Subscribed, Terminal,
+    },
 };
 use base64::Engine as _;
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, TryRecvError};
@@ -306,6 +308,11 @@ impl Core {
 
     pub fn doc_get(&self, name: &str, on: Option<&str>) -> Result<Doc> {
         self.typed(Method::DocGet, &DocGet { name, on })
+    }
+
+    /// Reads bounded UTF-8 lines from Core's target machine, without modifying the file.
+    pub fn file_read(&self, read: &FileRead<'_>) -> Result<FileReadResult> {
+        self.typed(Method::FileRead, read)
     }
 
     /// Writes `value` over `version` (from `doc_get`) and returns the new

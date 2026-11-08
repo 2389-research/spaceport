@@ -16,6 +16,8 @@ use std::{
 #[cfg(all(unix, feature = "adapter-live-test"))]
 mod acp;
 #[cfg(unix)]
+mod file_read;
+#[cfg(unix)]
 mod lifecycle;
 #[cfg(unix)]
 mod machines;

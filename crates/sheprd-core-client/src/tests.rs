@@ -5,6 +5,7 @@ mod connection;
 mod document;
 mod endpoint;
 mod event;
+mod file_read;
 mod frame;
 mod hello;
 mod labels;
