@@ -151,3 +151,31 @@ files; format, file-size, sorted-list and specification tool checks passed.
 The test link still reported the existing macOS compact-unwind warning and
 Cargo's `block v0.1.6` notice. Smart Dispatch still provisions through Boxd,
 so this is one removed Settings route, with A30 still `not_run`.
+
+## Daytona Settings creation route removal
+
+At `53af09a1`, the Daytona Settings tab still rendered a New sandbox card and
+`create_daytona_sandbox` submitted `setup::add_device` through a main-window
+cloud job. The tab now keeps its account fields, key save/forget, saved-device
+list/forget, and sandbox image controls without that card, callback, or its
+install/setup toggles. Existing account errors render on the account card.
+The Daytona message catalog and crate README no longer claim creation from
+Settings.
+
+Two changed headless UI tests failed first because the New card still rendered
+for both an unconfigured account and a seeded usable account. The Daytona
+Settings filter then passed 5 tests, including narrow saved-device controls.
+Retained Core machine catalog and manual Core Add Device filters passed 3 and
+6 tests. The default production app check passed with no Rust code warnings;
+`just check-i18n` passed with 5,165 valid and used messages in 269 files.
+Format, file-size, and sorted-list checks passed. The test link emitted the
+existing macOS unwind-size warning, and Cargo emitted its existing `block
+v0.1.6` future-compatibility notice.
+
+This is a Settings entry-point cut. `crates/sheprd-gpui/Cargo.toml` still
+includes Daytona by default, `sheprd-remote` still owns its provider, and
+Smart Dispatch still reaches provider `provision`. No provider API, saved
+credential, Core repository, personal account, or installed service was
+touched. T04 remains `in_progress`; A30 remains `not_run`. Native GUI and full
+workspace CI were not run. Earlier sections have signed observations, so this
+appended result needs a new observation after integration.

@@ -553,12 +553,10 @@ not yet been exercised against a live Boat account.
 Settings > **Cloud devices** > **Daytona** holds a Daytona account: the API URL
 (`https://app.daytona.io/api` for Daytona's cloud), an optional organization,
 region, and snapshot, saved to `[daytona]`, and an API key saved to the
-credential store (`HERDR_DAYTONA_API_KEY` takes precedence). **Create sandbox**
-creates one with a generated name and, when the **Install Herdr** switch is on
-(the default), installs Herdr in it if it is missing; the device picker shows
-its progress and a toast says when it is ready. **Daytona** in **Add Device…**
-(its **Add provider** tile until configured) opens this tab. Removing a device leaves
-its sandbox in Daytona. A dispatch can also make a sandbox, from the
+credential store (`HERDR_DAYTONA_API_KEY` takes precedence). Settings lists
+saved Daytona devices and can forget one without deleting its sandbox.
+**Daytona** in **Add Device…** (its **Add provider** tile until configured)
+opens this tab. A dispatch can also make a sandbox, from the
 repository's [sandbox image](#sandbox-images) when it has one.
 
 Each connection starts a stopped sandbox, asks the API for a 10-minute SSH

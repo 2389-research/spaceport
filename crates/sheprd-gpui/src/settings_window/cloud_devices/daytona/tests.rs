@@ -53,7 +53,7 @@ fn choose_daytona(view: &Entity<SettingsWindow>, cx: &mut VisualTestContext) {
 }
 
 #[gpui::test]
-fn each_provider_has_a_tab_and_daytona_offers_its_cloud_by_default(cx: &mut TestAppContext) {
+fn daytona_keeps_its_account_tab_without_sandbox_creation(cx: &mut TestAppContext) {
     let (view, cx) = open(cx);
     cx.simulate_resize(size(px(960.), px(780.)));
     draw(cx);
@@ -68,14 +68,12 @@ fn each_provider_has_a_tab_and_daytona_offers_its_cloud_by_default(cx: &mut Test
     draw(cx);
     assert!(cx.debug_bounds("cloud-daytona-card").is_some());
     assert!(cx.debug_bounds("cloud-coder-card").is_none());
-    assert!(cx.debug_bounds("cloud-daytona-create").is_some());
+    assert!(cx.debug_bounds("cloud-daytona-save").is_some());
+    assert!(cx.debug_bounds("cloud-daytona-new").is_none());
+    assert!(cx.debug_bounds("cloud-daytona-create").is_none());
     view.read_with(cx, |view, cx| {
         let card = view.daytona_card.as_ref().unwrap();
         assert!(card.job.is_none(), "nothing to check without an account");
-        assert!(
-            card.install,
-            "installing Herdr is offered, and can be turned off"
-        );
         assert_eq!(
             card.values(cx),
             DaytonaFields {
@@ -88,7 +86,7 @@ fn each_provider_has_a_tab_and_daytona_offers_its_cloud_by_default(cx: &mut Test
 }
 
 #[gpui::test]
-fn a_usable_key_lists_devices_within_the_narrowest_width(cx: &mut TestAppContext) {
+fn a_usable_key_lists_devices_without_sandbox_creation_at_narrow_width(cx: &mut TestAppContext) {
     let (view, cx) = open(cx);
     choose_daytona(&view, cx);
     cx.update(|_, cx| {
@@ -115,17 +113,13 @@ fn a_usable_key_lists_devices_within_the_narrowest_width(cx: &mut TestAppContext
     draw(cx);
     let devices = cx.debug_bounds("cloud-daytona-devices").unwrap();
     assert!(devices.right() <= px(680.));
-    assert!(devices.top() >= cx.debug_bounds("cloud-daytona-new").unwrap().bottom());
+    assert!(devices.top() >= cx.debug_bounds("cloud-daytona-card").unwrap().bottom());
+    assert!(cx.debug_bounds("cloud-daytona-new").is_none());
+    assert!(cx.debug_bounds("cloud-daytona-create").is_none());
     for selector in ["cloud-daytona-remove-0", "cloud-daytona-remove-1"] {
         let remove = cx.debug_bounds(selector).unwrap();
         assert!(remove.left() >= devices.left() && remove.right() <= devices.right());
     }
-    // Turning the install approval off is the user's choice to make.
-    let switch = cx.debug_bounds("cloud-daytona-install").unwrap();
-    cx.simulate_click(switch.center(), gpui::Modifiers::none());
-    view.read_with(cx, |view, _| {
-        assert!(!view.daytona_card.as_ref().unwrap().install)
-    });
 }
 
 #[gpui::test]
