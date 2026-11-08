@@ -443,7 +443,7 @@
       ],
       "deliverable": "Remove all excluded reachable behavior and packaged services after necessary pure primitives are extracted.",
       "status": "in_progress",
-      "evidence": ["evidence/t04-phone-dependency.md", "evidence/t04-mobile-publication.md", "evidence/t10-ios-source.md", "evidence/t10-device-tags-dependency.md", "evidence/t10-phone-removal.md"],
+      "evidence": ["evidence/t04-phone-dependency.md", "evidence/t04-mobile-publication.md", "evidence/t10-ios-source.md", "evidence/t10-device-tags-dependency.md", "evidence/t10-phone-removal.md", "evidence/t10-phone-dependencies.md"],
       "must_close_gaps": []
     },
     {

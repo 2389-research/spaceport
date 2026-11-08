@@ -44,5 +44,10 @@ class PhoneAbsenceTests(unittest.TestCase):
             self.assertNotIn("sheprd-nearby", text)
             self.assertNotIn("host-manifest", text)
 
+    def test_phone_only_workspace_dependencies_are_absent(self):
+        workspace = (ROOT / "Cargo.toml").read_text()
+        for name in ("rcgen", "x509-parser", "roxmltree", "aes-gcm", "hkdf", "p256", "time"):
+            self.assertNotRegex(workspace, rf"(?m)^{name}\s*=", name)
+
 if __name__ == "__main__":
     unittest.main()
