@@ -37,8 +37,6 @@ impl Localize for Error {
             ),
             Self::Client(error) => error.localize(),
             Self::Clipboard(error) => error.localize(),
-            #[cfg(feature = "azure")]
-            Self::CloudHostUnsupported => fl!("error-cloud-host-unsupported"),
             Self::CloudSetup(error) => error.localize(),
             // A parser's own diagnostic, which names the line it stopped at.
             Self::ConfigFile { source, .. } => source.to_string(),

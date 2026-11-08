@@ -13,8 +13,6 @@ pub enum Error {
     /// The app's config could not be loaded; its own error is the source.
     #[error(transparent)]
     Config(crate::config::LoadError),
-    #[error(transparent)]
-    Credentials(#[from] sheprd_credentials::Error),
     #[error("{0}")]
     Io(#[from] std::io::Error),
     #[error("{0}")]

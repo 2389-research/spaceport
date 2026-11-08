@@ -2,14 +2,12 @@
 //! each cloud provider's, the shared cloud and sandbox image errors, and
 //! Teleport's, one file and one `error-remote-<part>.ftl` each.
 
-#[cfg(feature = "azure")]
-mod azure;
 #[cfg(feature = "cloud")]
 mod cloud;
 #[cfg(feature = "container")]
 mod container;
 mod teleport;
-#[cfg(any(feature = "azure", feature = "container"))]
+#[cfg(feature = "container")]
 mod value;
 
 use super::Localize;
@@ -33,7 +31,6 @@ impl Localize for Error {
             Self::Config(error) => error
                 .downcast_ref::<crate::Error>()
                 .map_or_else(|| error.to_string(), Localize::localize),
-            Self::Credentials(error) => error.localize(),
             // The system's own words, as `Json` is its parser's.
             Self::Io(error) => error.to_string(),
             Self::Json(error) => error.to_string(),

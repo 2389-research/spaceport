@@ -50,7 +50,7 @@ error-remote-cloud-unavailable = Cloud devices are unavailable on Windows.
 error-remote-cloud-image-busy = Another build of this image is running; wait for it to finish.
 error-remote-cloud-image-cancelled = Cancelled.
 error-remote-cloud-image-catalog = Could not update { $path }: { $error }
-# $provider is a cloud provider's name, such as Azure. COPY and ADD are
+# $provider is a cloud provider's name. COPY and ADD are
 # Dockerfile instructions.
 error-remote-cloud-image-context = { $provider } cannot copy files into an image yet: remove the recipe's COPY and ADD lines, or use a container.
 error-remote-cloud-image-devcontainer = The dev container definition is not valid JSON.
@@ -73,38 +73,15 @@ error-remote-cloud-image-unsupported-compose = This project's recipe uses a dev 
 error-remote-cloud-image-unsupported-no-build = This project's recipe uses a dev container with neither an image nor a Dockerfile, which sandbox images do not support.
 error-remote-cloud-image-unsupported-provider = This project's recipe uses a provider that does not hold images, which sandbox images do not support.
 
-# What a cloud provider refused, for every provider. $key is a setting such
-# as azure.subscription_id or an environment variable, as written. Each $value
-# branch is a whole sentence; Azure is a product name, and execd is a program.
+# What a cloud provider refused. $key is a setting or environment variable,
+# as written. Each $value branch is a whole sentence.
 error-remote-cloud-value-invalid-key = { $key } is not valid.
 error-remote-cloud-value-invalid = { $value ->
    *[account] Account is not valid.
-    [azure-access-token] Azure access token is not valid.
-    [azure-client-secret] Azure client secret is not valid.
-    [azure-device-account] Saved Azure device account is not valid.
-    [azure-sandbox-endpoint] Azure sandbox endpoint is not valid.
-    [azure-sandbox-id] Azure sandbox ID is not valid.
-    [azure-ssh-public-key] Azure SSH public key is not valid.
     [container-engine] Container engine is not valid.
     [exec-session-id] Exec session ID is not valid.
     [execd-endpoint] Execd endpoint is not valid.
     [remote-command] Remote command is not valid.
     [sandbox-id] Sandbox ID is not valid.
     [workspace-name] Workspace name is not valid.
-}
-error-remote-cloud-value-encoding-key = { $key } must be UTF-8.
-error-remote-cloud-value-encoding = { $value ->
-   *[account] Account must be UTF-8.
-    [azure-access-token] Azure access token must be UTF-8.
-    [azure-client-secret] Azure client secret must be UTF-8.
-    [azure-device-account] Saved Azure device account must be UTF-8.
-    [azure-sandbox-endpoint] Azure sandbox endpoint must be UTF-8.
-    [azure-sandbox-id] Azure sandbox ID must be UTF-8.
-    [azure-ssh-public-key] Azure SSH public key must be UTF-8.
-    [container-engine] Container engine must be UTF-8.
-    [exec-session-id] Exec session ID must be UTF-8.
-    [execd-endpoint] Execd endpoint must be UTF-8.
-    [remote-command] Remote command must be UTF-8.
-    [sandbox-id] Sandbox ID must be UTF-8.
-    [workspace-name] Workspace name must be UTF-8.
 }

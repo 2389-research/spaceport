@@ -40,10 +40,6 @@ pub enum Error {
     Client(#[from] sheprd_client::Error),
     #[error(transparent)]
     Clipboard(#[from] crate::window::clipboard::Error),
-    /// Only CPU and memory are sampled on an Azure machine so far.
-    #[cfg(feature = "azure")]
-    #[error("This is not available for cloud machines yet.")]
-    CloudHostUnsupported,
     #[error(transparent)]
     CloudSetup(#[from] crate::cloud_setup::Error),
     #[error("{source}")]

@@ -229,10 +229,6 @@ pub(crate) fn run() -> std::process::ExitCode {
     // The exec relay below reads its provider's table, so it needs the
     // loader too; setting it reads nothing yet.
     sheprd_remote::config::set_loader(Config::load_remote);
-    #[cfg(feature = "azure")]
-    if let Some(exit) = crate::azure::sandbox::relay::run_helper(&args) {
-        return exit;
-    }
     // A control command asked for JSON gets its usage errors as JSON too.
     let json_errors = cli::control::wants_json(&args);
     let LaunchOptions { target, mut mode } = match LaunchOptions::parse(&args) {

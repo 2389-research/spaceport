@@ -4,8 +4,6 @@ use sheprd_client::ConnectTarget;
 use std::sync::atomic::AtomicBool;
 
 // What every exec relay command shares.
-#[cfg(feature = "azure")]
-pub(crate) mod relay;
 
 #[test]
 fn every_provider_names_itself_and_its_machines() {
@@ -44,6 +42,4 @@ fn deleting_at_a_provider_names_the_machine_and_what_goes_with_it() {
             deletion.leftovers
         );
     }
-    #[cfg(feature = "azure")]
-    assert!(deletion(CloudProvider::Azure).is_some());
 }

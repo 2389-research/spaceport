@@ -41,8 +41,6 @@ impl Localize for ProviderError {
     fn localize(&self) -> String {
         // `*self`: with no provider feature on, the enum has no variants.
         match *self {
-            #[cfg(feature = "azure")]
-            Self::Azure(ref error) => error.localize(),
             #[cfg(feature = "container")]
             Self::Container(ref error) => error.localize(),
         }

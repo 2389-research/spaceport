@@ -1,6 +1,6 @@
 //! The `[cloud]` table: what a new cloud device runs the first time it
 //! connects (see `crate::cloud_setup`). `agents` and `setup` apply to every
-//! provider; a provider's own table, such as `[cloud.azure]`, replaces either
+//! provider; a provider's own table, such as `[cloud.container]`, replaces either
 //! key it sets, and an empty list or script there turns that part off.
 
 #[cfg(feature = "cloud")]
@@ -17,7 +17,6 @@ pub struct CloudConfig {
     // keep-sorted start
     /// Agent keys installed first, such as `claude` or `opencode`.
     pub agents: Option<Vec<String>>,
-    pub azure: CloudSetup,
     pub container: CloudSetup,
     /// Shell lines run after the agents, with `sh -e`.
     pub setup: Option<String>,
@@ -53,7 +52,7 @@ impl CloudConfig {
     }
 
     fn tables(&self) -> impl Iterator<Item = (&'static str, &CloudSetup)> {
-        [("azure", &self.azure), ("container", &self.container)].into_iter()
+        [("container", &self.container)].into_iter()
     }
 
     /// Drops agent names this build does not know, so a name a newer build
@@ -72,7 +71,6 @@ impl CloudConfig {
             }
         };
         retain("cloud.", &mut self.agents);
-        retain("cloud.azure.", &mut self.azure.agents);
         retain("cloud.container.", &mut self.container.agents);
         unknown
     }

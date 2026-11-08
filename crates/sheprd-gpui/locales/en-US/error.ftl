@@ -12,7 +12,6 @@ error-bundle-exists = { $path } already exists; choose a new file name
 error-bundle-write = Could not write { $path }: { $error }
 # $cleanup is why the half-written file could not be removed afterwards.
 error-cleanup = { $error }; removing { $path }: { $cleanup }
-error-cloud-host-unsupported = This is not available for cloud machines yet.
 error-connection-busy = Connection is busy. Try again.
 error-connection-not-ready = The connection is not ready. Try again.
 error-deletion-lookup = Checkout lookup failed. Dismiss and reopen the menu.

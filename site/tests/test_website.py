@@ -28,6 +28,11 @@ class Page(HTMLParser):
 
 
 class WebsiteTests(unittest.TestCase):
+    def test_retired_azure_cloud_provider_is_absent_from_published_copy(self):
+        for name in ("index.html", "assets/features.js"):
+            with self.subTest(file=name):
+                self.assertNotIn("Azure", (WEBSITE / name).read_text(), name)
+
     def test_retired_sprites_provider_is_absent_from_published_copy(self):
         for name in ("index.html", "assets/features.js"):
             with self.subTest(file=name):

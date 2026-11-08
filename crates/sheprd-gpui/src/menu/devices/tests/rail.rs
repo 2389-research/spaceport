@@ -32,8 +32,6 @@ fn page(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Option<Page>
 /// Each provider's entry in the rail, once it is in use.
 pub(super) fn rail_id(provider: CloudProvider) -> &'static str {
     match provider {
-        #[cfg(feature = "azure")]
-        CloudProvider::Azure => "add-device-source-azure",
         #[cfg(feature = "container")]
         CloudProvider::Container => "add-device-source-container",
     }
@@ -102,8 +100,6 @@ fn settings_only() -> Vec<(CloudProvider, &'static str)> {
     CloudProvider::ALL
         .iter()
         .filter_map(|&provider| match provider {
-            #[cfg(feature = "azure")]
-            CloudProvider::Azure => Some((provider, "add-device-source-azure")),
             #[cfg(feature = "container")]
             CloudProvider::Container => Some((provider, "add-device-source-container")),
         })

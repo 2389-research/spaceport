@@ -15,8 +15,6 @@ pub mod image;
 pub mod install;
 pub mod names;
 mod providers;
-#[cfg(feature = "azure")]
-pub(crate) mod relay;
 pub mod unsynced;
 mod value;
 mod worker;
@@ -25,8 +23,7 @@ pub use catalog::{FILE as CATALOG_FILE, SavedDevice, load, remove, rename, save}
 pub use command::with_command;
 pub use providers::ProviderError;
 pub use providers::{
-    Deletion, Shape, Spec, connect, deletion, icon, image as image_support, name, noun, offer,
-    provision,
+    Deletion, Spec, connect, deletion, icon, image as image_support, name, noun, offer, provision,
 };
 pub use sheprd_client::CloudProvider;
 pub use value::Value;
@@ -98,7 +95,6 @@ pub fn unavailable() -> Option<&'static str> {
 }
 
 /// What a job reports while it adds a machine, in words every provider shares.
-#[cfg_attr(not(feature = "azure"), allow(dead_code))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Step {
     Creating,

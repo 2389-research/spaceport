@@ -95,8 +95,6 @@ fn every_image_variant_has_a_message() {
 fn every_provider_delegates() {
     // `ProviderError` has a variant per provider feature turned on.
     let errors: Vec<ProviderError> = vec![
-        #[cfg(feature = "azure")]
-        sheprd_remote::azure::Error::Size.into(),
         #[cfg(feature = "container")]
         sheprd_remote::container::Error::NoEngine.into(),
     ];

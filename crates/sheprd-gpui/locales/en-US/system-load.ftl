@@ -15,9 +15,6 @@ system-load-waiting = CPU and memory…
 system-load-this-machine = This machine
 # $distro is the WSL distribution's name.
 system-load-wsl = WSL · { $distro }
-# $name is the Azure virtual machine's name.
-system-load-azure-vm = Azure VM · { $name }
-system-load-azure-sandbox = Azure sandbox
 # $percent is a whole number; $cores is 0 when the device did not say.
 system-load-tooltip-cpu =
     { $cores ->

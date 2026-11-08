@@ -13,23 +13,11 @@ fn no_cloud_table_runs_nothing() -> anyhow::Result<()> {
 fn every_provider_table_parses_in_every_build() -> anyhow::Result<()> {
     let config = Config::parse(
         "[cloud]\nagents = [\"claude\"]\nsetup = \"echo hi\"\n\
-         [cloud.azure]\nagents = [\"codex\"]\n[cloud.container]\nsetup = \"\"\n",
+         [cloud.container]\nsetup = \"\"\n",
     )?;
     assert_eq!(config.cloud.shared_agents(), [Agent::Claude]);
     assert_eq!(config.cloud.shared_setup(), Some("echo hi"));
     assert!(config.unknown_keys.is_empty(), "{:?}", config.unknown_keys);
-    Ok(())
-}
-
-#[cfg(feature = "azure")]
-#[test]
-fn azure_uses_its_own_table() -> anyhow::Result<()> {
-    use sheprd_client::CloudProvider;
-    let config =
-        Config::parse("[cloud]\nagents = [\"claude\"]\n[cloud.azure]\nagents = [\"codex\"]\n")?;
-    assert_eq!(config.cloud.agents(CloudProvider::Azure), [Agent::Codex]);
-    let config = Config::parse("[cloud]\nagents = [\"claude\"]\n[cloud.azure]\nagents = []\n")?;
-    assert_eq!(config.cloud.script(CloudProvider::Azure)?, None);
     Ok(())
 }
 
@@ -75,7 +63,7 @@ fn a_provider_table_replaces_each_shared_key_it_sets() -> anyhow::Result<()> {
     use sheprd_client::CloudProvider;
     let config = Config::parse(
         "[cloud]\nagents = [\"claude\"]\nsetup = \"echo shared\"\n\
-         [cloud.container]\nsetup = \"echo container\"\n[cloud.azure]\nagents = []\nsetup = \"\"\n",
+         [cloud.container]\nsetup = \"echo container\"\n",
     )?;
     for provider in CloudProvider::ALL.iter().copied() {
         let script = config.cloud.script(provider)?;
@@ -85,14 +73,13 @@ fn a_provider_table_replaces_each_shared_key_it_sets() -> anyhow::Result<()> {
                 assert!(script.contains("Claude Code") && script.contains("echo container"));
                 assert!(!script.contains("echo shared"));
             }
-            "azure" => assert_eq!(script, None),
             _ => {
                 let script = script.unwrap_or_default();
                 assert!(script.contains("Claude Code") && script.contains("echo shared"));
             }
         }
         let agents = config.cloud.agents(provider);
-        assert_eq!(agents.is_empty(), provider.key() == "azure");
+        assert!(!agents.is_empty());
     }
     Ok(())
 }

@@ -11,8 +11,6 @@ impl Localize for Error {
         match self {
             // keep-sorted start
             Self::Client(error) => error.localize(),
-            #[cfg(feature = "azure")]
-            Self::CloudHostUnsupported => fl!("error-usage-cloud-host-unsupported"),
             Self::Command(command) => fl!(
                 "error-usage-command",
                 kind = command_step(command),

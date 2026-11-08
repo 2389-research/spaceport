@@ -71,8 +71,6 @@ fn config_root(var: &impl Fn(&str) -> Option<OsString>) -> PathBuf {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CloudProvider {
-    #[cfg(feature = "azure")]
-    Azure,
     #[cfg(feature = "container")]
     Container,
 }
@@ -81,8 +79,6 @@ pub enum CloudProvider {
 impl CloudProvider {
     /// Every provider this build supports, in display order.
     pub const ALL: &[Self] = &[
-        #[cfg(feature = "azure")]
-        Self::Azure,
         #[cfg(feature = "container")]
         Self::Container,
     ];
@@ -90,8 +86,6 @@ impl CloudProvider {
     /// The stable key used in saved files and endpoint IDs.
     pub fn key(self) -> &'static str {
         match self {
-            #[cfg(feature = "azure")]
-            Self::Azure => "azure",
             #[cfg(feature = "container")]
             Self::Container => "container",
         }

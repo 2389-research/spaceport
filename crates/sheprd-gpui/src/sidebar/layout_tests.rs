@@ -32,8 +32,6 @@ mod device_footer;
 mod device_footer_setting;
 #[cfg(test)]
 mod device_multi_select;
-#[cfg(all(test, feature = "azure"))]
-mod device_removing;
 #[cfg(test)]
 mod device_sessions_unfold;
 #[cfg(test)]

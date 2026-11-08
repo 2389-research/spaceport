@@ -104,35 +104,6 @@ impl Render for SettingsHint {
 }
 
 impl SheprdWindow {
-    /// The cloud providers set up in the config or environment, in rail order.
-    #[cfg(feature = "cloud")]
-    pub(super) fn cloud_providers(&self) -> Vec<crate::cloud::CloudProvider> {
-        self.cloud_providers_with_env(|name| std::env::var_os(name))
-    }
-
-    #[cfg(feature = "cloud")]
-    // Providers that need no setting never read the environment.
-    #[cfg_attr(not(feature = "azure"), allow(unused_variables))]
-    fn cloud_providers_with_env(
-        &self,
-        var: impl Fn(&str) -> Option<std::ffi::OsString>,
-    ) -> Vec<crate::cloud::CloudProvider> {
-        if crate::cloud::unavailable().is_some() {
-            return Vec::new();
-        }
-        crate::cloud::CloudProvider::ALL
-            .iter()
-            .copied()
-            .filter(|provider| match provider {
-                #[cfg(feature = "azure")]
-                crate::cloud::CloudProvider::Azure => self.config.azure.configured(&var),
-                // A local engine has no account; it is set up in Settings.
-                #[cfg(feature = "container")]
-                crate::cloud::CloudProvider::Container => false,
-            })
-            .collect()
-    }
-
     /// Whether the open page is a cloud provider's pane of Add Device.
     pub(in crate::menu) fn cloud_dialog_open(&self) -> bool {
         #[cfg(feature = "cloud")]

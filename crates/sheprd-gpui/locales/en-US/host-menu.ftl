@@ -18,7 +18,7 @@ host-menu-github-left = Removed { $device }, but could not delete its GitHub sig
 # $session its Herdr session.
 host-menu-remove-title = Remove device
 host-menu-remove-ssh-note = Remove { $device } ({ $target } · { $session }) from this computer? Herdr keeps running on that host.
-# $provider is a cloud provider, such as Azure; $machine is what it calls a
+# $provider is a cloud provider, such as Container; $machine is what it calls a
 # machine, such as VM or workspace.
 host-menu-remove-cloud-note = Remove { $device } ({ $target }) from this computer? The { $provider } { $machine } itself is left as it is.
 host-menu-remove-github = Also delete its GitHub sign-in from this computer

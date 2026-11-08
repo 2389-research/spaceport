@@ -74,7 +74,6 @@ impl SheprdWindow {
             })
             .map(|(index, endpoint)| {
                 let snapshot = self.endpoint_snapshot(index);
-                // Of cloud machines, only Azure's load is probed to rank by.
                 let load = crate::usage::Host::load_of(&endpoint.connection.target)
                     .and_then(|host| self.system_load.get(&host))
                     .and_then(|reading| reading.latest())

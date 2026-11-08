@@ -1,7 +1,6 @@
 # Why an AI service's plan usage could not be read, shown in the status bar
 # and the usage panel. None of it carries account details.
 
-error-usage-cloud-host-unsupported = This is not available for cloud machines yet.
 # $kind is the step that failed. $command is a command line, such as
 # amp usage, or for a step not listed here its English description.
 error-usage-command = { $kind ->

@@ -1,7 +1,7 @@
 # Sandboxes
 
-How Sheprd gives agents isolated machines: containers on this computer and
-the existing Azure provider. User-facing behavior is in the crate README's
+How Sheprd gives agents isolated machines: containers on this computer.
+User-facing behavior is in the crate README's
 "Containers (Docker or Podman)" and "Smart Dispatch" sections; this page
 records the design and is for working on it.
 
@@ -32,13 +32,13 @@ Paths are in `crates/sheprd-remote/src/`, which has no GPUI, unless they name
 | --- | --- |
 | Provider registry, `SandboxProvider` | `cloud/providers.rs`: one `providers!` row per provider generates the name, logo, connector, background command, deletion, on-demand provisioning, and `cloud::ProviderError`. No async trait: everything blocks on workers. |
 | Session manager (PTY, reconnect) | The sandbox's own Herdr daemon, through `sheprd_client::connect_command`. |
-| Exec / attach | The provider's command: `docker exec -i`, `ssh`, or this app as a relay (`azure/sandbox/relay.rs`). |
+| Exec / attach | The provider's command: `docker exec -i` or `ssh`. |
 | Git sync | `teleport/`: `fresh.rs` (new worktree from a base commit, cloned or bundled), `carry.rs`, and Teleport itself, untracked files included. |
 | Workspace lifecycle | `crates/sheprd-gpui/src/cloud/jobs.rs` (create with progress), `cloud/catalog.rs` (saved devices), provider `setup.rs` (create, delete, roll back a failed create). |
 | Dirty-state warning before delete | `cloud/unsynced.rs`, shown by the sidebar's Remove dialog. |
 | Lane-to-sandbox | `crates/sheprd-gpui/src/dispatch/`: the **New container** tile; `dispatch/job.rs` provisions, then dispatches. |
 | Prebuilt environments | `cloud/image/`: a project's recipe (`.herdr/sandbox/Dockerfile`, else a dev container) read from its host, a key hashed from what the build reads, a catalog of built images, and one shared build registry; containers hold images (`container/image.rs`). |
-| Idle timers, quotas | `container/idle.rs`, `[container] max_containers`; Azure's `cleanup.rs`, each checked every minute by the app (`crates/sheprd-gpui/src/cloud.rs`). |
+| Idle timers, quotas | `container/idle.rs`, `[container] max_containers`, checked by the app (`crates/sheprd-gpui/src/cloud.rs`). |
 | Credential broker | `teleport/credentials.rs` sends the `gh` token to a host that cannot reach GitHub. No scoping or trust tiers yet (see below). |
 | Port proxy | `crates/sheprd-gpui/src/port_forward/`, SSH hosts only. |
 
@@ -72,7 +72,6 @@ stream to an arbitrary command exists.
 | --- | --- | --- |
 | Docker / Podman | Yes: `exec -i` without a TTY | Shipped. Live-tested with Docker (OrbStack). Podman follows the same CLI; not live-tested. |
 | E2B | Only through envd's Connect RPC (base64 JSON, one POST per stdin chunk); its CLI decodes output as text, which breaks binary data | Not built. |
-| Azure Container Apps sandboxes | Exec WebSocket on a terminal only | Already shipped, with a relay that works around the terminal. |
 
 Sources: [E2B process API](https://github.com/e2b-dev/infra/blob/main/packages/envd/spec/process/process.proto),
 [E2B CLI exec](https://docs.e2b.dev/cli/exec-command.md),
@@ -107,8 +106,6 @@ with until its recipe changes or it is reset.
   apart (no host files, no engine socket, no host network, an unprivileged
   user, `no-new-privileges`, CPU, memory, and process limits) but are not a
   boundary against hostile code. The card and README say so.
-- **Azure VMs** isolate the kernel. They do not
-  stop a credential deliberately given to them from leaving.
 - **Credentials**: a provider's API token stays on this computer; relays read
   it from the credential store and send it only to the configured API root.
   Teleport sends the `gh` token to a host that cannot reach GitHub, for every
@@ -128,5 +125,3 @@ with until its recipe changes or it is reset.
   the container unlisted. The Container card finds these by their
   `dev.herdr-gpui.device` label and offers to add them back.
 - **Ports** for containers: forwarding needs an SSH host.
-- **Images elsewhere.** Azure sandboxes start from registry images, so Azure needs a registry
-  setting to push to.

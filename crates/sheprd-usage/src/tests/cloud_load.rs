@@ -1,9 +1,9 @@
 use crate::Host;
 use sheprd_client::{CloudProvider, ConnectTarget};
 
-fn azure(id: &str) -> ConnectTarget {
+fn container(id: &str) -> ConnectTarget {
     ConnectTarget::Cloud {
-        provider: CloudProvider::Azure,
+        provider: CloudProvider::Container,
         account: "00000000-0000-0000-0000-000000000000".into(),
         id: id.into(),
         machine: "box".into(),
@@ -12,18 +12,11 @@ fn azure(id: &str) -> ConnectTarget {
 }
 
 #[test]
-fn an_azure_machine_has_a_load_host_but_no_usage_host() {
-    for id in ["herdr-vm", "sandbox.11111111-1111-1111-1111-111111111111"] {
-        let target = azure(id);
-        // Agent usage, ports, and checkpoints still skip it.
+fn a_container_has_no_load_or_usage_host() {
+    for id in ["one", "two"] {
+        let target = container(id);
         assert_eq!(Host::of(&target), None);
-        assert_eq!(
-            Host::load_of(&target),
-            Some(Host::Azure {
-                account: "00000000-0000-0000-0000-000000000000".into(),
-                id: id.into(),
-            })
-        );
+        assert_eq!(Host::load_of(&target), None);
     }
 }
 

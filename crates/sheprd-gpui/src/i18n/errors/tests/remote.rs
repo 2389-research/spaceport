@@ -2,8 +2,6 @@ use super::*;
 use sheprd_remote::Error;
 use std::io;
 
-#[cfg(feature = "azure")]
-mod azure;
 #[cfg(feature = "cloud")]
 mod cloud;
 #[cfg(feature = "container")]
@@ -28,22 +26,9 @@ fn remote() -> Box<Error> {
     Box::new(Error::NoConfig)
 }
 
-#[cfg(feature = "cloud")]
-fn network() -> ureq::Error {
-    ureq::Error::StatusCode(502)
-}
-
-#[cfg(feature = "cloud")]
-fn header() -> ureq::http::header::InvalidHeaderValue {
-    ureq::http::HeaderValue::from_str("\n").unwrap_err()
-}
-
 #[test]
 fn wrapped_errors_delegate() {
-    assert_localized(&[
-        Error::Client(client()),
-        Error::Credentials(sheprd_credentials::Error::Io(io())),
-    ]);
+    assert_localized(&[Error::Client(client())]);
 }
 
 #[test]
@@ -57,10 +42,6 @@ fn every_variant_has_a_message() {
         Error::Cloud(sheprd_remote::cloud::Error::Missing),
         #[cfg(feature = "cloud")]
         Error::SandboxImage(sheprd_remote::cloud::image::Error::Busy),
-        #[cfg(feature = "azure")]
-        Error::Provider(sheprd_remote::cloud::ProviderError::Azure(
-            sheprd_remote::azure::Error::Size,
-        )),
     ];
     assert_localized(&errors);
 }

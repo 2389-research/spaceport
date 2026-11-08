@@ -347,10 +347,10 @@ edits only the local catalog: the host's own Herdr keeps running. When the
 device has its own GitHub sign-in, the confirmation also offers to delete it,
 since its account panel goes away with the device. Local's menu offers neither.
 
-A cloud device's header (Azure or Container) has a menu too: **Rename…** changes the name the sidebar
+A container device's header has a menu too: **Rename…** changes the name the sidebar
 shows, falling back to the machine's name when left empty; **Cloud device
 settings…** opens its provider under Settings > Cloud devices; and **Remove
-device…** removes it from this computer. For an Azure machine or a container,
+device…** removes it from this computer. For a container,
 it deletes the machine at the provider by default, with **Remove from Herdr
 only** beside it. Before
 deleting, the dialog searches the machine's home directory for Git checkouts
@@ -449,7 +449,7 @@ launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
 Settings > **Cloud devices** holds accounts with providers that create machines
-to use as devices: Azure and Container.
+to use as devices: Container.
 Cloud devices are stored in the GUI's `cloud-devices.json` state file. Each
 entry names its provider, so adding another provider needs no new file.
 
@@ -493,7 +493,7 @@ Herdr** switch is on, and saves it as a device again.
 The image needs `curl` to install Herdr and `git` for checkouts; the default,
 `buildpack-deps:bookworm`, has both and common build tools. Containers share
 this computer's kernel: they keep honest agents apart, not hostile code, for
-which a VM provider such as Azure is the better choice. Containers are
+which a separately managed VM is the better choice. Containers are
 unavailable on Windows, like every cloud device. How sandboxes fit together, and which
 providers were evaluated, is in [docs/sandbox.md](../../docs/sandbox.md).
 
@@ -554,7 +554,7 @@ git config --global pull.rebase true
 """
 
 # Replaces either key for one provider; an empty list or script turns it off.
-[cloud.azure]
+[cloud.container]
 agents = []
 ```
 
@@ -576,7 +576,7 @@ memory only, at most eight at once; one that never ran, or a later run, is
 started from **Run setup script** in the device's sidebar menu.
 Reconnecting never runs it again by itself.
 
-Each provider is a Cargo feature of `herdr-gpui`; `azure` and `container` are on by default.
+Each provider is a Cargo feature of `herdr-gpui`; `container` is on by default.
 A build with `--no-default-features` has no Cloud
 Devices section and no provider rows in the device picker; it still accepts
 the `[cloud]` table, so one config file serves every build.

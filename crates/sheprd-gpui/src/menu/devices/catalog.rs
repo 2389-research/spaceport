@@ -1,5 +1,5 @@
 //! Add Device's **Add provider** pane. The rail lists only the cloud providers
-//! in use here, set up in Settings or holding a device, so a build with many
+//! in use here, holding a device, so a build with many
 //! providers stays short; the others wait here as tiles that each open their
 //! Settings tab.
 
@@ -10,13 +10,12 @@ use gpui::{prelude::*, *};
 use sheprd_client::ConnectTarget;
 
 impl SheprdWindow {
-    /// The providers the rail lists: configured here, or with a saved device.
+    /// The providers the rail lists because they have a saved device.
     pub(super) fn cloud_listed(&self) -> Vec<CloudProvider> {
-        let configured = self.cloud_providers();
         CloudProvider::ALL
             .iter()
             .copied()
-            .filter(|provider| configured.contains(provider) || self.has_cloud_device(*provider))
+            .filter(|provider| self.has_cloud_device(*provider))
             .collect()
     }
 

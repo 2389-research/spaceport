@@ -26,10 +26,8 @@ mod chat;
 mod cli;
 mod close_modal;
 // `cloud` is the machinery every provider shares; alone it offers nothing to add.
-#[cfg(all(feature = "cloud", not(any(feature = "azure", feature = "container"))))]
-compile_error!(
-    "the `cloud` feature is enabled through a provider feature, such as `azure` or `container`"
-);
+#[cfg(all(feature = "cloud", not(feature = "container")))]
+compile_error!("the `cloud` feature is enabled through a provider feature, such as `container`");
 #[cfg(feature = "cloud")]
 mod cloud;
 mod cloud_setup;
@@ -173,8 +171,6 @@ use sheprd_vcs::git;
 use sheprd_client::{local_path, login_env};
 // Cloud providers, host scripts, and Teleport's core; `cloud` and `teleport`
 // are the app's own modules, which add the jobs and views GPUI draws.
-#[cfg(feature = "azure")]
-use sheprd_remote::azure;
 #[cfg(feature = "container")]
 use sheprd_remote::container;
 

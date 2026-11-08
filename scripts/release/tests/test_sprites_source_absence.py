@@ -1,5 +1,5 @@
 """ABOUTME: Ensures the retired Sprites provider has no desktop route.
-ABOUTME: Keeps Azure relay and Core machine onboarding in the inventory.
+ABOUTME: Keeps the Container and Core machine routes in the inventory.
 """
 
 from pathlib import Path
@@ -36,7 +36,7 @@ class SpritesSourceAbsence(unittest.TestCase):
                 self.assertNotIn("sprite", path.read_text().lower(), path.name)
         self.assertNotIn("crate::sprites::relay::run_helper", (ROOT / "crates/sheprd-gpui/src/app.rs").read_text())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
-        self.assertTrue((ROOT / "crates/sheprd-remote/src/cloud/relay.rs").exists())
+        self.assertTrue((ROOT / "crates/sheprd-remote/src/container.rs").exists())
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::endpoint::tests::host;
-#[cfg(feature = "azure")]
+#[cfg(feature = "container")]
 use std::sync::Arc;
 
 #[test]
@@ -88,13 +88,13 @@ fn desired_selection_is_client_local_and_catalog_changes_cancel_stale_restore() 
     assert_eq!(second.desired, None);
 }
 
-#[cfg(feature = "azure")]
+#[cfg(feature = "container")]
 #[gpui::test]
 fn cloud_devices_follow_ssh_hosts_and_survive_an_unreadable_list(cx: &mut gpui::TestAppContext) {
     let workspace = |id: &str, enabled| crate::cloud::SavedDevice {
-        provider: crate::cloud::CloudProvider::Azure,
+        provider: crate::cloud::CloudProvider::Container,
         id: id.into(),
-        label: format!("Azure {id}"),
+        label: format!("Container {id}"),
         account: "00000000-0000-0000-0000-000000000000".into(),
         machine: format!("herdr-{id}"),
         session: "default".into(),
@@ -114,7 +114,7 @@ fn cloud_devices_follow_ssh_hosts_and_survive_an_unreadable_list(cx: &mut gpui::
             Some(vec![workspace("w1", false), workspace("w2", false)]),
             cx,
         );
-        assert_eq!(ids(view), [LOCAL, "ssh:a", "azure:w1", "azure:w2"]);
+        assert_eq!(ids(view), [LOCAL, "ssh:a", "container:w1", "container:w2"]);
         assert_eq!(
             view.endpoints[2].connection.target,
             workspace("w1", false).target()
@@ -122,12 +122,12 @@ fn cloud_devices_follow_ssh_hosts_and_survive_an_unreadable_list(cx: &mut gpui::
         let inbox = view.endpoints[2].connection.inbox.clone();
         // A failed cloud catalog read keeps its endpoints and connections.
         view.reconcile_catalog(vec![host("a", false)], Vec::new(), cx);
-        assert_eq!(ids(view), [LOCAL, "ssh:a", "azure:w1", "azure:w2"]);
+        assert_eq!(ids(view), [LOCAL, "ssh:a", "container:w1", "container:w2"]);
         assert!(Arc::ptr_eq(&inbox, &view.endpoints[2].connection.inbox));
         let mut moved = workspace("w1", false);
         moved.session = "work".into();
         view.reconcile_devices(vec![], Vec::new(), Some(vec![moved.clone()]), cx);
-        assert_eq!(ids(view), [LOCAL, "azure:w1"]);
+        assert_eq!(ids(view), [LOCAL, "container:w1"]);
         assert_eq!(view.endpoints[1].connection.target, moved.target());
         assert!(!Arc::ptr_eq(&inbox, &view.endpoints[1].connection.inbox));
         view.reconcile_devices(vec![], Vec::new(), Some(vec![]), cx);

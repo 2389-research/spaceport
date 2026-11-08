@@ -1,15 +1,11 @@
-//! The provider tables of Sheprd's config: `[azure]` and `[container]`.
+//! The provider tables of Sheprd's config: `[container]`.
 //! The app owns
 //! the config files, their layers, and their maintenance; it hands this crate
 //! a [`set_loader`] once at startup, and a provider job reads its table
 //! through it when it runs, so an edit since startup applies.
 
-mod azure;
 mod container;
 
-pub use azure::AzureConfig;
-#[cfg(feature = "azure")]
-pub use azure::AzureFields;
 pub use container::ContainerConfig;
 #[cfg(feature = "container")]
 pub use container::ContainerFields;
@@ -19,7 +15,6 @@ use std::sync::OnceLock;
 /// The provider tables, as the app's config last loaded them.
 #[derive(Clone, Debug, Default)]
 pub struct Sections {
-    pub azure: AzureConfig,
     pub container: ContainerConfig,
 }
 

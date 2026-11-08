@@ -9,8 +9,6 @@ use sheprd_client::HostProbe;
 
 #[cfg(feature = "cloud")]
 mod add_provider;
-#[cfg(feature = "cloud")]
-mod cloud_providers;
 mod core_catalog;
 mod core_remote_document;
 mod en_xa;

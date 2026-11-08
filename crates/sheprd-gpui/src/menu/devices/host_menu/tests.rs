@@ -2,8 +2,6 @@ use super::{Action, HostMenu, SSH_ACTIONS, Saved};
 use crate::{config::KeybindingSource, menu::Page, sidebar::layout_tests::fixture_window};
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px, size};
 
-#[cfg(feature = "azure")]
-mod azure_destroy;
 #[cfg(feature = "cloud")]
 mod cloud;
 mod device_theme;
@@ -12,7 +10,7 @@ mod forwards;
 mod menu_width;
 mod mute;
 mod tags;
-#[cfg(feature = "azure")]
+#[cfg(feature = "container")]
 mod unsynced;
 
 // Endpoint IDs carry the `ssh:` prefix; the profile ID is the rest.

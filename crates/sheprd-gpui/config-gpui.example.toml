@@ -559,14 +559,14 @@ size = 12
 # What a new cloud device runs the first time it connects, in a "setup" tab:
 # the agents listed (claude, codex, gemini, opencode), each skipped when already
 # installed, then these lines with sh -e. Settings > Cloud devices > New device
-# setup switches the agents. A provider's table, such as [cloud.azure], replaces
+# setup switches the agents. A provider's table, such as [cloud.container], replaces
 # either key for that provider; an empty list or script there turns it off.
 # [cloud]
 # agents = ["claude", "opencode"]
 # setup = """
 # git config --global pull.rebase true
 # """
-# [cloud.azure]
+# [cloud.container]
 # agents = []
 
 # What shows behind the main window, also under Settings > Theme > Window. At the

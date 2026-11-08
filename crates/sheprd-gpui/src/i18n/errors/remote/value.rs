@@ -13,26 +13,10 @@ pub(super) fn invalid(value: Value) -> String {
     }
 }
 
-/// `value` is not UTF-8. Every provider but containers reads text that
-/// may not be.
-#[cfg(feature = "azure")]
-pub(super) fn not_utf8(value: Value) -> String {
-    match value {
-        Value::Key(key) => fl!("error-remote-cloud-value-encoding-key", key = key),
-        value => fl!("error-remote-cloud-value-encoding", value = selector(value)),
-    }
-}
-
 /// The Fluent selector for each value but a key.
 fn selector(value: Value) -> &'static str {
     match value {
         Value::Account => "account",
-        Value::AzureAccessToken => "azure-access-token",
-        Value::AzureClientSecret => "azure-client-secret",
-        Value::AzureDeviceAccount => "azure-device-account",
-        Value::AzureSandboxEndpoint => "azure-sandbox-endpoint",
-        Value::AzureSandboxId => "azure-sandbox-id",
-        Value::AzureSshPublicKey => "azure-ssh-public-key",
         Value::ContainerEngine => "container-engine",
         Value::ExecSessionId => "exec-session-id",
         Value::ExecdEndpoint => "execd-endpoint",

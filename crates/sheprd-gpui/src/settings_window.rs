@@ -235,8 +235,6 @@ struct SettingsWindow {
     /// device removed from the sidebar leaves Settings too.
     #[cfg(feature = "cloud")]
     cloud_devices_seen: u64,
-    #[cfg(feature = "azure")]
-    azure_card: Option<cloud_devices::AzureCard>,
     #[cfg(feature = "container")]
     container_card: Option<cloud_devices::ContainerCard>,
     /// Sandbox images, for the cards of providers that hold them.
@@ -363,8 +361,6 @@ impl SettingsWindow {
             cloud_jobs_drawn: 0,
             #[cfg(feature = "cloud")]
             cloud_devices_seen: 0,
-            #[cfg(feature = "azure")]
-            azure_card: None,
             #[cfg(feature = "container")]
             container_card: None,
             #[cfg(feature = "container")]

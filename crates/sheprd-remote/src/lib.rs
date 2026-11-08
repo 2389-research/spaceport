@@ -7,15 +7,11 @@
 // sheprd_client::new_command.
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 
-#[cfg(feature = "azure")]
-pub mod azure;
 #[cfg(feature = "cloud")]
 pub mod cloud;
 pub mod config;
 #[cfg(feature = "container")]
 pub mod container;
-#[cfg(feature = "azure")]
-mod credentials;
 mod error;
 pub mod teleport;
 

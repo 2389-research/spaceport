@@ -275,6 +275,7 @@
         "evidence/t04-opensandbox-provider-removal.md",
         "evidence/t04-railway-provider-removal.md",
         "evidence/t04-sprites-provider-removal.md",
+        "evidence/t04-azure-provider-removal.md",
         "evidence/t04-checkpoint-cli-removal.md",
         "evidence/t04-checkpoint-ui-removal.md", "evidence/t04-checkpoint-worker-removal.md",
         "evidence/t04-security-section-removal.md",

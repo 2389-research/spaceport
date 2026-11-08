@@ -17,7 +17,7 @@ mod browser_cookies;
 mod claude_base_url;
 #[cfg(unix)]
 mod claude_keychain;
-#[cfg(feature = "azure")]
+#[cfg(feature = "container")]
 mod cloud_load;
 mod keychain_access;
 mod labels;

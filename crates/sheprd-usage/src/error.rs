@@ -9,9 +9,6 @@ pub enum Error {
     // keep-sorted start
     #[error("{0}")]
     Client(#[from] sheprd_client::Error),
-    #[cfg(feature = "azure")]
-    #[error("This is not available for cloud machines yet.")]
-    CloudHostUnsupported,
     #[error("Usage command failed: {0}.")]
     Command(&'static str),
     #[error("Could not reach the usage service from this host.")]

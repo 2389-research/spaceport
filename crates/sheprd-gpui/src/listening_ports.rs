@@ -127,8 +127,6 @@ fn open(host: &Host) -> Result<Shell> {
         Host::Ssh(target) => Shell::connect(target).map_err(crate::Error::from),
         // A distribution is scanned as a Linux host, with its own `ss`.
         Host::Wsl(distro) => Shell::connect_wsl(distro).map_err(crate::Error::from),
-        #[cfg(feature = "azure")]
-        Host::Azure { .. } => Err(crate::Error::CloudHostUnsupported),
     }
     .map_err(failed)
 }

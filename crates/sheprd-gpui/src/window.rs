@@ -683,8 +683,6 @@ impl SheprdWindow {
         if self.update_listening_ports() {
             cx.notify();
         }
-        #[cfg(feature = "azure")]
-        self.update_cloud_activity();
         self.announce_version_mismatch(window, cx);
         self.resize();
         self.refresh_palette(window, cx);

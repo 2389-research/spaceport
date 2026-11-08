@@ -14,10 +14,7 @@ base64.workspace                 = true
 chrono.workspace                 = true
 getrandom.workspace              = true
 sheprd-client.workspace           = true
-sheprd-control-protocol.workspace = true
-sheprd-credentials.workspace      = true
 percent-encoding.workspace       = true
-rustls                           = { optional = true, workspace = true }
 secrecy.workspace                = true
 serde.workspace                  = true
 serde_json.workspace             = true
@@ -26,11 +23,9 @@ tar.workspace                    = true
 tempfile.workspace               = true
 thiserror.workspace              = true
 tracing.workspace                = true
-tungstenite                      = { optional = true, workspace = true }
 ureq.workspace                   = true
 url.workspace                    = true
 uuid.workspace                   = true
-webpki-roots                     = { optional = true, workspace = true }
 zeroize.workspace                = true
 
 [target.'cfg(unix)'.dependencies]
@@ -46,8 +41,6 @@ toml.workspace = true
 # connector, and running scripts on them. Turned on by each provider below;
 # not useful alone.
 cloud = ["sheprd-client/cloud"]
-# Azure VMs and Container Apps sandboxes, reached over the data plane's exec stream.
-azure = ["cloud", "sheprd-client/azure", "dep:rustls", "dep:tungstenite", "dep:webpki-roots"]
 container = ["cloud", "sheprd-client/container"]
 # Shared fixtures (provider settings, a mock server) for the app's own tests.
 test-support = []

@@ -76,7 +76,6 @@ impl SheprdWindow {
         let endpoint_collapsed = endpoint.collapsed;
         let endpoint_label = endpoint.label.clone();
         let connected = endpoint.live.status.is_connected();
-        // Of cloud machines, only Azure's load is read so far.
         let host = crate::usage::Host::load_of(&endpoint.connection.target);
         let reading = host.as_ref().and_then(|host| self.system_load.get(host));
         let load = reading.filter(|_| self.config.show_system_load);
@@ -497,26 +496,8 @@ impl SheprdWindow {
 }
 
 impl SheprdWindow {
-    /// Whether `endpoint` is being removed: from the sidebar, or its machine
-    /// deleted at Azure from Settings or by auto-stop.
+    /// Whether `endpoint` is being removed from the sidebar.
     pub(crate) fn device_removing(&self, endpoint: &Endpoint) -> bool {
         self.menu.removing_devices.contains(&endpoint.id)
-            || destroying_at_azure(&endpoint.connection.target)
     }
-}
-
-/// Whether the machine behind `target` is being deleted at Azure, by Remove
-/// from here or Settings, or by auto-stop: its header pulses as for removal.
-fn destroying_at_azure(target: &sheprd_client::ConnectTarget) -> bool {
-    #[cfg(feature = "azure")]
-    if let sheprd_client::ConnectTarget::Cloud {
-        provider: sheprd_client::CloudProvider::Azure,
-        id,
-        ..
-    } = target
-    {
-        return crate::azure::destroy::destroying(id);
-    }
-    let _ = target;
-    false
 }

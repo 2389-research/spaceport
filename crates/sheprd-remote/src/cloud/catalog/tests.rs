@@ -295,3 +295,29 @@ fn retired_sprites_device_is_hidden_and_preserved_beside_active_device() {
     let saved: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
     assert_eq!(saved["devices"][0], retired);
 }
+
+#[test]
+fn retired_azure_device_is_hidden_and_preserved_beside_active_device() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(FILE);
+    let retired = serde_json::json!({
+        "provider": "azure",
+        "id": "vm-1",
+        "label": "Retired VM",
+        "account": "subscription-fixture",
+        "machine": "fixture-vm",
+        "session": "default",
+        "enabled": true,
+        "extra": {"kept": true}
+    });
+    fs::write(
+        &path,
+        serde_json::json!({"version": 1, "devices": [retired]}).to_string(),
+    )
+    .unwrap();
+    assert!(read(&path).unwrap().is_empty());
+    save_in(&path, device("active")).unwrap();
+    assert_eq!(read(&path).unwrap(), [device("active")]);
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(saved["devices"][0], retired);
+}

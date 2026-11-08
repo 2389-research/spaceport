@@ -97,13 +97,10 @@ test-case.workspace = true
 libc.workspace = true
 
 [features]
-default = ["azure", "container"]
+default = ["container"]
 # Machines from cloud providers as devices: the shared device list, background
 # jobs, and connector. Turned on by each provider below; not useful alone.
 cloud = ["sheprd-client/cloud", "sheprd-remote/cloud", "sheprd-usage/cloud"]
-# Azure VMs and Container Apps sandboxes as devices, with generic credentials
-# or local Azure CLI. Sandboxes are reached over the data plane's exec stream.
-azure = ["cloud", "sheprd-client/azure", "sheprd-remote/azure", "sheprd-usage/azure"]
 # Containers on this computer's Docker or Podman engine as devices.
 container = ["cloud", "sheprd-client/container", "sheprd-remote/container"]
 # Development only: `--mockup` shows UI variants from HERDR_MOCKUP_FILE side by

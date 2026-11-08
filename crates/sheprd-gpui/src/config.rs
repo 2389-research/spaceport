@@ -11,7 +11,6 @@ use crate::{
 mod accent;
 mod agent_skill;
 mod agents_placement;
-mod azure;
 pub(crate) mod backdrop;
 mod bitmap_fonts;
 pub(crate) mod chat;
@@ -42,7 +41,7 @@ pub(crate) mod status_bar;
 mod status_icons;
 mod tab_labels;
 pub(crate) mod tab_layout;
-#[cfg(any(feature = "azure", feature = "container"))]
+#[cfg(feature = "container")]
 mod table;
 pub(crate) use sidebar_style::parse_hex;
 mod theme;
@@ -86,9 +85,6 @@ pub use padding::Padding;
 pub(crate) use padding::{Axis, MAX_PADDING, Side, Sides};
 use serde::Deserialize;
 pub use sheprd_orchestrator::gitlab::Config as GitLabConfig;
-pub use sheprd_remote::config::AzureConfig;
-#[cfg(feature = "azure")]
-pub(crate) use sheprd_remote::config::AzureFields;
 pub use sheprd_remote::config::ContainerConfig;
 #[cfg(feature = "container")]
 pub(crate) use sheprd_remote::config::ContainerFields;
@@ -137,7 +133,6 @@ pub struct Config {
     /// Where the sidebar lists agents while `show_agents` is on.
     pub agents_placement: AgentsPlacement,
     /// What shows behind the main window's terminals and chrome.
-    pub azure: AzureConfig,
     pub backdrop: Backdrop,
     pub bell: BellConfig,
     /// What chats started from the app run with.
@@ -291,7 +286,6 @@ impl Default for Config {
             accent: Accent::default(),
             agent_skill: AgentSkillConfig::default(),
             agents_placement: AgentsPlacement::default(),
-            azure: AzureConfig::default(),
             backdrop: Backdrop::default(),
             bell: BellConfig::default(),
             chat: chat::ChatConfig::default(),
@@ -371,7 +365,6 @@ struct Settings {
     accent: Accent,
     agent_skill: AgentSkillConfig,
     agents_placement: AgentsPlacement,
-    azure: AzureConfig,
     backdrop: Backdrop,
     bell: BellConfig,
     chat: chat::ChatConfig,
@@ -462,7 +455,6 @@ impl Config {
     -> std::result::Result<sheprd_remote::config::Sections, sheprd_remote::config::LoadError> {
         let config = Self::load()?;
         Ok(sheprd_remote::config::Sections {
-            azure: config.azure,
             container: config.container,
         })
     }
@@ -686,9 +678,6 @@ impl Config {
         settings.github.check_accounts()?;
         config.github = settings.github;
         config.gitlab = settings.gitlab;
-        #[cfg(feature = "azure")]
-        settings.azure.check()?;
-        config.azure = settings.azure;
         settings.chat.check()?;
         config.chat = settings.chat;
         settings.cloud.check()?;

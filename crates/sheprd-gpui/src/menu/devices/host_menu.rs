@@ -438,10 +438,6 @@ impl SheprdWindow {
                         (deletion.run)(&id)?;
                         return Ok(Ok(()));
                     }
-                    #[cfg(feature = "azure")]
-                    if provider == sheprd_client::CloudProvider::Azure {
-                        crate::azure::forget_activity(&id);
-                    }
                     crate::cloud::remove(provider, &id)?;
                     Ok(Ok(()))
                 }

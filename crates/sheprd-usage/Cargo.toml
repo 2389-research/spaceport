@@ -38,7 +38,6 @@ toml.workspace     = true
 # `Usage::showing`, for the app's status bar and panel tests.
 test-support = []
 # Cloud machines are hosts too; their usage is not read yet. Turned on with
-# the app's `cloud` and `azure` features, which add the matching variants to
+# the app's `cloud` feature, which adds the matching variants to
 # sheprd-client's connect targets.
-azure = ["cloud", "sheprd-client/azure"]
 cloud = ["sheprd-client/cloud"]

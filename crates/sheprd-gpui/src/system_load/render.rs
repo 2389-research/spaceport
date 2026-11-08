@@ -374,13 +374,6 @@ pub(super) fn details(reading: &Reading, host: &Host) -> String {
         Host::Local => fl!("system-load-this-machine"),
         Host::Ssh(target) => target.clone(),
         Host::Wsl(distro) => fl!("system-load-wsl", distro = distro.as_str()),
-        #[cfg(feature = "azure")]
-        Host::Azure { id, .. } => match crate::azure::machine::Machine::parse(id) {
-            crate::azure::machine::Machine::Vm(name) => {
-                fl!("system-load-azure-vm", name = name.to_string())
-            }
-            crate::azure::machine::Machine::Sandbox(_) => fl!("system-load-azure-sandbox"),
-        },
     }];
     if let Some(sample) = reading.latest() {
         let percent = |value: f32| format!("{value:.0}");

@@ -9,16 +9,10 @@ use std::fmt;
 pub enum Value {
     // keep-sorted start
     Account,
-    AzureAccessToken,
-    AzureClientSecret,
-    AzureDeviceAccount,
-    AzureSandboxEndpoint,
-    AzureSandboxId,
-    AzureSshPublicKey,
     ContainerEngine,
     ExecdEndpoint,
     ExecSessionId,
-    /// A setting such as `azure.subscription_id` or an environment variable,
+    /// A setting or environment variable,
     /// shown as written in every language.
     Key(&'static str),
     RemoteCommand,
@@ -32,12 +26,6 @@ impl fmt::Display for Value {
         f.write_str(match self {
             // keep-sorted start
             Self::Account => "Account",
-            Self::AzureAccessToken => "Azure access token",
-            Self::AzureClientSecret => "Azure client secret",
-            Self::AzureDeviceAccount => "Saved Azure device account",
-            Self::AzureSandboxEndpoint => "Azure sandbox endpoint",
-            Self::AzureSandboxId => "Azure sandbox ID",
-            Self::AzureSshPublicKey => "Azure SSH public key",
             Self::ContainerEngine => "Container engine",
             Self::ExecdEndpoint => "Execd endpoint",
             Self::ExecSessionId => "Exec session ID",

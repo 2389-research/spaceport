@@ -23,8 +23,6 @@ fn every_variant_has_a_message() {
         Error::Unreachable,
         Error::WslHostUnsupported,
     ];
-    #[cfg(feature = "azure")]
-    errors.push(Error::CloudHostUnsupported);
     errors.extend(
         [
             "agy 1.1.11 or later is needed for usage reports",

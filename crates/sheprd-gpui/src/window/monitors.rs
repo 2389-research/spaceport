@@ -130,20 +130,4 @@ impl SheprdWindow {
             .get(self.selected_endpoint)
             .and_then(|endpoint| crate::usage::Host::load_of(&endpoint.connection.target))
     }
-
-    /// Update cloud activity timestamps for active cloud device connections.
-    #[cfg(feature = "azure")]
-    pub(super) fn update_cloud_activity(&mut self) {
-        for endpoint in &self.endpoints {
-            if let sheprd_client::ConnectTarget::Cloud {
-                provider: sheprd_client::CloudProvider::Azure,
-                id,
-                ..
-            } = &endpoint.connection.target
-                && endpoint.live.status.is_connected()
-            {
-                crate::azure::record_activity(id);
-            }
-        }
-    }
 }

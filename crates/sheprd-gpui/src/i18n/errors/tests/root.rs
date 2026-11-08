@@ -127,8 +127,6 @@ fn every_own_variant_has_a_message() {
             source: io(),
         }),
     );
-    #[cfg(feature = "azure")]
-    errors.push(Error::CloudHostUnsupported);
     #[cfg(target_os = "macos")]
     errors.extend([Error::PageStack, Error::PopupOpener]);
     assert_localized(&errors);

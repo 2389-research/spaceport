@@ -7,7 +7,6 @@
 
 use super::{CloudProvider, Error};
 use sheprd_client::{ConnectTarget, Transport};
-pub use sheprd_control_protocol::protocol::cloud::Shape;
 use std::{io, process::Command, sync::atomic::AtomicBool};
 
 /// Deleting a saved device's machine at its provider, which Remove offers as
@@ -34,8 +33,6 @@ pub struct Spec {
     pub image: Option<String>,
     /// Whether Herdr's installer may run on a machine that lacks Herdr.
     pub install: bool,
-    /// Azure: a VM or a Container Apps sandbox.
-    pub shape: Shape,
 }
 
 impl Default for Spec {
@@ -52,7 +49,6 @@ impl Spec {
             name: None,
             image: None,
             install: true,
-            shape: Shape::Machine,
         }
     }
 }
@@ -195,21 +191,6 @@ macro_rules! providers {
 
 providers! {
     // keep-sorted start
-    "azure" Azure => {
-        module: azure,
-        name: "Azure",
-        icon: "icons/cloud/azure.svg",
-        offer: "Create an Azure VM or sandbox in Settings",
-        noun: "machine",
-        command: plain,
-        deletion: Some(Deletion {
-            noun: |id| crate::azure::machine::Machine::parse(id).noun(),
-            leftovers: ", with its disk and IP,",
-            run: crate::azure::destroy::destroy_saved,
-        }),
-        image: None,
-        provision: Some(crate::azure::create::provision),
-    },
     "container" Container => {
         module: container,
         name: "Container",

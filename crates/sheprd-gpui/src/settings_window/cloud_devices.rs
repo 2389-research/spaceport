@@ -4,16 +4,12 @@
 //! tab and a card.
 // i18n: migrated
 
-#[cfg(feature = "azure")]
-mod azure;
 #[cfg(feature = "container")]
 mod container;
 #[cfg(feature = "container")]
 mod images;
 mod setup;
 
-#[cfg(feature = "azure")]
-pub(super) use azure::AzureCard;
 #[cfg(feature = "container")]
 pub(super) use container::ContainerCard;
 #[cfg(feature = "container")]
@@ -100,7 +96,7 @@ impl Hint {
 /// Follow a reloaded config in a card's inputs: a field still showing what
 /// was loaded last takes the new value, and one the user has edited keeps the
 /// edit, so a later Save neither writes stale values back nor drops typing.
-#[cfg(any(feature = "azure", feature = "container"))]
+#[cfg(feature = "container")]
 fn follow_config<const N: usize>(
     inputs: &[Entity<SearchInput>; N],
     previous: [&str; N],
@@ -141,8 +137,6 @@ impl SettingsWindow {
     pub(super) fn open_cloud_devices(&mut self, cx: &mut Context<Self>) {
         for &provider in CloudProvider::ALL {
             match provider {
-                #[cfg(feature = "azure")]
-                CloudProvider::Azure => self.open_azure_card(cx),
                 #[cfg(feature = "container")]
                 CloudProvider::Container => self.open_container_card(cx),
             }
@@ -154,8 +148,6 @@ impl SettingsWindow {
     pub(super) fn cloud_config_changed(&mut self, cx: &mut Context<Self>) {
         for &provider in CloudProvider::ALL {
             match provider {
-                #[cfg(feature = "azure")]
-                CloudProvider::Azure => self.azure_config_changed(cx),
                 #[cfg(feature = "container")]
                 CloudProvider::Container => self.container_config_changed(cx),
             }
@@ -213,8 +205,6 @@ impl SettingsWindow {
 
     pub(super) fn render_cloud_devices(&self, cx: &mut Context<Self>) -> Div {
         let card = match self.cloud_tab {
-            #[cfg(feature = "azure")]
-            CloudProvider::Azure => self.render_azure_card(cx),
             #[cfg(feature = "container")]
             CloudProvider::Container => self.render_container_card(cx),
         };
@@ -313,7 +303,7 @@ impl SettingsWindow {
     }
 
     /// A saved device's label and `detail`, with `actions` at the end.
-    #[cfg(any(feature = "azure", feature = "container"))]
+    #[cfg(feature = "container")]
     fn cloud_device_row_actions(
         &self,
         device: &crate::cloud::SavedDevice,

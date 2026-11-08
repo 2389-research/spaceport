@@ -6,14 +6,6 @@ use super::super::super::{Section, SettingsWindow};
 use crate::cloud::CloudProvider;
 use crate::i18n::leak_tests::{assert_translated, draw, under_en_xa};
 
-fn unconfigure(config: &mut crate::config::Config) {
-    #[cfg(feature = "azure")]
-    {
-        config.azure = Default::default();
-    }
-    let _ = config;
-}
-
 /// What the tabs show that is not a message: provider names, as tabs and
 /// as card titles, and the values fields show as their placeholders.
 fn data() -> Vec<String> {
@@ -25,14 +17,6 @@ fn data() -> Vec<String> {
         .map(str::to_owned)
         .chain(names.map(str::to_uppercase))
         .collect();
-    // Size names, architectures, and the auto-stop field's config value.
-    #[cfg(feature = "azure")]
-    data.extend(
-        crate::azure::sizes::VM_CHOICES
-            .iter()
-            .map(|&size| size.to_owned())
-            .chain(["Arm".into(), "x64".into(), "30m".into()]),
-    );
     #[cfg(feature = "container")]
     data.extend([
         crate::container::setup::DEFAULT_IMAGE.into(),
@@ -51,7 +35,6 @@ fn every_provider_tab_shows_only_messages_and_provider_names() {
         let (view, cx) = cx.add_window_view(|window, cx| {
             let mut view = SettingsWindow::new(weak, cx);
             // Unconfigured accounts read nothing from disk or the network.
-            unconfigure(&mut view.config);
             view.section = Section::CloudDevices;
             view.open_cloud_devices(cx);
             window.focus(&view.focus, cx);

@@ -56,24 +56,24 @@ fn tailnet_names_and_addresses_are_tailscale() {
     }
 }
 
-#[cfg(feature = "azure")]
+#[cfg(feature = "container")]
 #[test]
-fn azure_cloud_device_origin_and_icon() {
+fn container_cloud_device_origin_and_icon() {
     use crate::cloud::CloudProvider;
     use gpui::AssetSource;
     let saved = Origin::of(&ConnectTarget::Cloud {
-        provider: CloudProvider::Azure,
+        provider: CloudProvider::Container,
         account: "00000000-0000-0000-0000-000000000000".into(),
-        id: "herdr-test-vm".into(),
-        machine: "herdr-test-vm".into(),
+        id: "test-container".into(),
+        machine: "test-container".into(),
         session: "default".into(),
     });
-    assert_eq!(saved, Origin::Cloud(CloudProvider::Azure));
+    assert_eq!(saved, Origin::Cloud(CloudProvider::Container));
     assert_eq!(
         saved.describe(),
-        "\u{2068}Azure\u{2069} \u{2068}machine\u{2069}"
+        "\u{2068}Container\u{2069} \u{2068}container\u{2069}"
     );
-    assert_eq!(saved.icon(), "icons/cloud/azure.svg");
+    assert_eq!(saved.icon(), "icons/cloud/container.svg");
     assert!(
         crate::icons::Icons
             .load(saved.icon())

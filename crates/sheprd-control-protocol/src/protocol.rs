@@ -3,7 +3,6 @@
 //! `{"method", "caller", "op"}` and receive a family-specific reply.
 pub mod app;
 pub mod chat;
-pub mod cloud;
 pub mod events;
 pub mod hosts;
 pub mod settings;
