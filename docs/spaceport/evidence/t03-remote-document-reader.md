@@ -56,5 +56,21 @@ scrolling, and visual QA were not run. A53 remains `not_run`: this slice did not
 exercise a hub restart with a changed remote document while disconnected in
 the desktop UI, nor prove old sequence-number isolation end to end. T03 stays
 `in_progress`; remote terminal attach/action parity and other T03 gates remain.
-The previous T03 route evidence has a PACT observation; this new file needs
-its own observation after integration.
+The previous T03 route evidence has a PACT observation; this reader has
+separate integration evidence below.
+
+## Integrated branch verification
+
+Merged as `53ec1bfa` after the Boxd and checkpoint-worker cuts. Default and
+all-feature `sheprd-gpui --bin sheprd` production checks passed with
+`--locked`; only Cargo's existing `block v0.1.6` notice appeared. The
+merged GUI test binary passed six focused remote document tests (one opt-in
+case ignored), and the retained Core catalog filter passed 5/5. The opt-in
+selected remote document test passed 1/1 against the pinned Core binary in
+two private sandboxes, including notice/reconnect behavior. `just
+format-check`, file-size, sorted and i18n checks passed; i18n validated
+5,006 messages in 263 files. The test linker repeated its existing macOS
+compact-unwind warning. Package integrity and its 21 tooling tests passed.
+The integrated checks still do not include native picker input, full hub
+restart while the remote document changes, or Windows/Linux behavior; A53
+remains not_run.
