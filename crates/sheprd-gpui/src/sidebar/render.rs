@@ -659,6 +659,9 @@ impl SheprdWindow {
                 filtered |= snapshot.agent_view_label.is_some();
             }
         }
+        if !devices && search.is_none() {
+            spaces = spaces.child(self.core_workspace_rows(cx));
+        }
         if agents_panel {
             (agents, agent_count, highlighted[1]) =
                 self.append_agent_rows(agents, indicators, look, width, cx);

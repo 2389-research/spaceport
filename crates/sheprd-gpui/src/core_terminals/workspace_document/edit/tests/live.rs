@@ -2,8 +2,9 @@ use super::*;
 use sheprd_core_client::{Core, Endpoint};
 use std::{
     ffi::OsString,
+    io,
     path::PathBuf,
-    process::{Child, Command, Stdio},
+    process::{Child, Command, ExitStatus, Stdio},
     time::{Duration, Instant},
 };
 
@@ -46,6 +47,7 @@ impl Sandbox {
         command
             .env_clear()
             .env("HC_SESSION", "edit")
+            .env("HC_LAUNCHD_DIRECT", std::process::id().to_string())
             .env("HC_SOCKET", socket)
             .env("HOME", home)
             .env("XDG_CONFIG_HOME", home.join("config"))
@@ -72,21 +74,45 @@ impl Sandbox {
             }
         }
     }
+
+    fn wait_exact(child: &mut Child) -> io::Result<ExitStatus> {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if let Some(status) = child.try_wait()? {
+                return Ok(status);
+            }
+            if Instant::now() >= deadline {
+                child.kill()?;
+                child.wait()?;
+                return Err(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "private Core child did not exit",
+                ));
+            }
+            std::thread::sleep(Duration::from_millis(30));
+        }
+    }
 }
 
 impl Drop for Sandbox {
     fn drop(&mut self) {
-        let _ = Self::command(&self.binary, &self.home, &self.socket)
+        let stop = Self::command(&self.binary, &self.home, &self.socket)
             .args(["server", "stop"])
-            .output();
-        let deadline = Instant::now() + Duration::from_secs(10);
-        while self.child.try_wait().ok().flatten().is_none() {
-            if Instant::now() >= deadline {
-                let _ = self.child.kill();
-                let _ = self.child.wait();
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(30));
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .and_then(|mut child| Self::wait_exact(&mut child));
+        let stopped = matches!(&stop, Ok(status) if status.success());
+        if !stopped {
+            let _ = self.child.kill();
+        }
+        let served = Self::wait_exact(&mut self.child);
+        if !std::thread::panicking() {
+            assert!(stopped, "private Core server stop failed: {stop:?}");
+            assert!(
+                served.is_ok(),
+                "private Core serve child was not reaped: {served:?}"
+            );
         }
     }
 }

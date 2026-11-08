@@ -76,9 +76,9 @@
         "S04"
       ],
       "gaps": [],
-      "evidence_level": "design_required",
-      "runtime_test_status": "document_cas_and_notice_passed_private_two_core_macos; presentation_not_implemented",
-      "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md"]
+      "evidence_level": "scenario_verified_local_subset",
+      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_access_gate_and_create_dialog_headless_passed; rendered_list_and_native_ui_not_run",
+      "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md", "evidence/t03-workspace-document.md", "evidence/t03-observation.md", "evidence/t03-document-edits.md", "evidence/t03-workspace-ui.md"]
     },
     {
       "id": "CAP-CHAT",

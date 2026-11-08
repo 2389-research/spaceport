@@ -706,6 +706,8 @@ impl SheprdWindow {
                 ));
         } else if let Page::Dialog(action) = page {
             panel = panel.child(self.render_workspace_dialog(action, cx));
+        } else if page == Page::CoreWorkspaceCreate {
+            panel = panel.child(self.render_core_workspace_dialog(cx));
         } else if page == Page::CarryPane {
             panel = panel.child(self.render_carry(cx));
         } else if page == Page::Teleport {

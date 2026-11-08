@@ -63,5 +63,48 @@ fn timeout_is_not_a_conflict_to_retry() {
     }));
 }
 
+#[test]
+fn rebased_write_timeout_keeps_its_attempted_version() {
+    let base = VersionedDocument {
+        version: 3,
+        value: Document::read(serde_json::Value::Null).unwrap(),
+    };
+    let edit = Edit::Create {
+        id: id(1),
+        label: "One".into(),
+    };
+    let mut writes = Vec::new();
+    let result = apply_with(
+        base,
+        &edit,
+        || {
+            Ok(VersionedDocument {
+                version: 7,
+                value: Document::read(serde_json::Value::Null).unwrap(),
+            })
+        },
+        |_, version| {
+            writes.push(version);
+            if version == 3 {
+                Err(CoreError::Refused {
+                    method: Method::DocSet,
+                    kind: Some("conflict".into()),
+                    message: "stale version".into(),
+                })
+            } else {
+                Err(CoreError::Timeout(Method::DocSet))
+            }
+        },
+    );
+    assert_eq!(writes, vec![3, 7]);
+    assert!(matches!(
+        result,
+        Err(Error::WriteUnknown {
+            version: 7,
+            source: CoreError::Timeout(Method::DocSet)
+        })
+    ));
+}
+
 #[cfg(unix)]
 mod live;

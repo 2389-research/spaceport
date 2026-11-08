@@ -54,36 +54,67 @@ pub(in crate::core_terminals) fn read(core: &Core) -> Result<VersionedDocument> 
 }
 
 /// Commits one edit. A definite version conflict gets one disjoint rebase.
-/// All other Core errors, including timeouts, keep their unknown outcome.
+/// A timed-out write carries the version it tried, including after a rebase.
 pub(in crate::core_terminals) fn apply(
     core: &Core,
     base: VersionedDocument,
     edit: &Edit,
 ) -> Result<VersionedDocument> {
+    apply_with(
+        base,
+        edit,
+        || read(core),
+        |value, version| core.doc_set(NAME, value, version, None),
+    )
+}
+
+fn apply_with(
+    base: VersionedDocument,
+    edit: &Edit,
+    mut read_latest: impl FnMut() -> Result<VersionedDocument>,
+    mut write: impl FnMut(
+        &serde_json::Value,
+        u64,
+    ) -> std::result::Result<u64, sheprd_core_client::Error>,
+) -> Result<VersionedDocument> {
     let mut desired = base.value.clone();
     edit.change(&mut desired)?;
-    match core.doc_set(NAME, &desired.write()?, base.version, None) {
+    match write(&desired.write()?, base.version) {
         Ok(version) => Ok(VersionedDocument {
             version,
             value: desired,
         }),
         Err(error) if is_conflict(&error) => {
-            let latest = read(core)?;
+            let latest = read_latest()?;
             if !edit.disjoint(&base.value, &latest.value) {
                 return Err(Error::Changed(edit.id()));
             }
             let mut merged = latest.value;
             edit.change(&mut merged)?;
-            match core.doc_set(NAME, &merged.write()?, latest.version, None) {
+            match write(&merged.write()?, latest.version) {
                 Ok(version) => Ok(VersionedDocument {
                     version,
                     value: merged,
                 }),
                 Err(error) if is_conflict(&error) => Err(Error::Conflict),
-                Err(error) => Err(Error::Core(error)),
+                Err(error) => Err(write_error(latest.version, error)),
             }
         }
-        Err(error) => Err(Error::Core(error)),
+        Err(error) => Err(write_error(base.version, error)),
+    }
+}
+
+fn write_error(version: u64, error: sheprd_core_client::Error) -> Error {
+    if matches!(
+        error,
+        sheprd_core_client::Error::Timeout(_) | sheprd_core_client::Error::Lost
+    ) {
+        Error::WriteUnknown {
+            version,
+            source: error,
+        }
+    } else {
+        Error::Core(error)
     }
 }
 

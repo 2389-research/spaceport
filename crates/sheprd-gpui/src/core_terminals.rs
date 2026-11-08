@@ -26,6 +26,7 @@ mod tabs;
 mod view;
 mod worker;
 pub(crate) mod workspace_document;
+mod workspace_ui;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
@@ -164,6 +165,7 @@ pub(crate) struct CoreTerminals {
     /// A terminal to start once the hub connects: a shell, or the program
     /// its spawn names.
     wanted: Option<(Purpose, Spawn)>,
+    workspace_ui: workspace_ui::State,
 }
 
 impl CoreTerminals {
@@ -386,6 +388,7 @@ impl SheprdWindow {
         if changed {
             cx.notify();
         }
+        self.poll_core_workspace_edit(window, cx);
         if !cx.has_active_drag() {
             self.save_core_panes(cx);
         }

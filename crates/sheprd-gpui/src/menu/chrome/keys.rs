@@ -286,6 +286,9 @@ impl SheprdWindow {
             "enter" if matches!(self.menu.page, Some(Page::Dialog(_))) => {
                 self.submit_workspace_dialog(window, cx)
             }
+            "enter" if self.menu.page == Some(Page::CoreWorkspaceCreate) => {
+                self.submit_core_workspace_dialog(cx)
+            }
             "enter" if self.menu.page == Some(Page::GitCommit) => self.submit_git_commit(cx),
             "enter" if self.menu.page == Some(Page::PrComment) => self.submit_pr_comment(cx),
             "enter" if self.menu.page == Some(Page::PrMerge) => self.submit_pr_merge(cx),

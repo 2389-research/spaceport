@@ -116,12 +116,20 @@ impl Sandbox {
 
 impl Drop for Sandbox {
     fn drop(&mut self) {
-        if !self.stop_attempted {
-            let _ = self.stop();
-        }
+        let stopped = if self.stop_attempted {
+            Ok(())
+        } else {
+            self.stop()
+        };
         if self.child.try_wait().ok().flatten().is_none() {
             let _ = self.child.kill();
             let _ = self.child.wait();
+        }
+        if !std::thread::panicking() {
+            assert!(
+                stopped.is_ok(),
+                "private Core server stop failed: {stopped:?}"
+            );
         }
     }
 }

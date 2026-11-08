@@ -34,6 +34,7 @@ pub(crate) enum Page {
     /// Go to Symbol and Go to File over the focused pane's checkout.
     CodeSearch,
     ConfirmClose,
+    CoreWorkspaceCreate,
     /// Confirming new cloud machines a command asked for should be made.
     #[cfg(feature = "cloud")]
     CreateCloud,

@@ -1,5 +1,5 @@
 //! Workspace edit failures distinguish concurrent target changes from Core I/O.
-//! A timeout keeps its original Core error because its write outcome is unknown.
+//! A timed-out write keeps the attempted CAS version and Core error source.
 
 use uuid::Uuid;
 
@@ -16,5 +16,11 @@ pub enum Error {
     Core(#[from] sheprd_core_client::Error),
     #[error(transparent)]
     Document(#[from] super::super::Error),
+    #[error("Core did not confirm the document write against version {version}: {source}")]
+    WriteUnknown {
+        version: u64,
+        #[source]
+        source: sheprd_core_client::Error,
+    },
     // keep-sorted end
 }

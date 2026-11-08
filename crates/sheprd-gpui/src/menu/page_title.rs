@@ -41,6 +41,7 @@ impl Page {
             Self::CarryPane => fl!("menu-page-move-pane-to-another-device"),
             Self::Checkpoints => fl!("menu-page-checkpoints"),
             Self::CodeSearch => fl!("menu-page-go-to-symbol-or-file"),
+            Self::CoreWorkspaceCreate => fl!("menu-page-new-workspace"),
             Self::ConfirmClose => fl!("menu-page-close"),
             #[cfg(feature = "cloud")]
             Self::CreateCloud => fl!("menu-page-create-cloud-machines"),
