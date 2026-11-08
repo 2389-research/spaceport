@@ -88,7 +88,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T06 — Preserve native chat under the ownership contract
 
-Status: **not_started** · Prerequisites: T03, T05
+Status: **blocked** · Prerequisites: T03, T05
 
 Keep renderer/host adapter where valid; remove desktop-owned conversion/resume/config; prove route or record blocked parity.
 
@@ -102,7 +102,7 @@ Gates this task must close: G-CHAT
 
 ## T07 — Adapt hosts, transfers and service access
 
-Status: **not_started** · Prerequisites: T02, T03
+Status: **blocked** · Prerequisites: T02, T03
 
 Preserve host/file/service UX through verified Core routes; no public rebinding or parallel transport workaround.
 

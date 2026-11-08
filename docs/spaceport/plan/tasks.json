@@ -264,8 +264,8 @@
         "docs/02-agent-interface.md"
       ],
       "deliverable": "Keep renderer/host adapter where valid; remove desktop-owned conversion/resume/config; prove route or record blocked parity.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "blocked",
+      "evidence": ["evidence/external-core-dependencies.md"],
       "must_close_gaps": [
         "G-CHAT"
       ]
@@ -305,8 +305,8 @@
         "docs/06-security-and-resources.md"
       ],
       "deliverable": "Preserve host/file/service UX through verified Core routes; no public rebinding or parallel transport workaround.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "blocked",
+      "evidence": ["evidence/external-core-dependencies.md"],
       "must_close_gaps": [
         "G-PORT",
         "G-FILE"
