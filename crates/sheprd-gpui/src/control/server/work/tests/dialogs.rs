@@ -46,54 +46,6 @@ fn prompts_become_one_safe_line() {
 }
 
 #[gpui::test]
-fn restore_opens_the_checkpoints_dialog_with_the_checkpoint_chosen(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            connected(view);
-            let refused = flows::restore(view, &caller(Some("w4")), None, window, cx);
-            assert_eq!(
-                error_code(&refused),
-                Some(ErrorCode::InvalidRequest),
-                "{refused:?}: a custom socket's checkouts are not proven to be this machine's"
-            );
-            assert_eq!(view.menu.page, None);
-            view.endpoints[0].connection.target = sheprd_client::ConnectTarget::Local;
-            view.live.local_daemon_peer = true;
-            assert_eq!(
-                error_code(&flows::restore(
-                    view,
-                    &caller(Some("w4")),
-                    Some("../heads/main".into()),
-                    window,
-                    cx
-                )),
-                Some(ErrorCode::InvalidRequest)
-            );
-            let opened = flows::restore(
-                view,
-                &caller(Some("w4")),
-                Some("0001700000000000".into()),
-                window,
-                cx,
-            );
-            if !cfg!(any(target_os = "linux", target_os = "macos")) {
-                assert_eq!(error_code(&opened), Some(ErrorCode::InvalidRequest));
-                return;
-            }
-            assert!(matches!(opened, Response::Done { .. }), "{opened:?}");
-            assert_eq!(view.menu.page, Some(Page::Checkpoints));
-            let dialog = view.checkpoints.view.as_ref().unwrap();
-            assert_eq!(dialog.checkout.branch, "worktree/sidebar-child");
-            assert_eq!(dialog.checkout.repo_key, REPO_KEY);
-            assert_eq!(dialog.workspace_id, "w4");
-            assert_eq!(dialog.wanted.as_deref(), Some("0001700000000000"));
-            assert_eq!(dialog.confirming, None, "only chosen: the user confirms");
-        })
-    });
-}
-
-#[gpui::test]
 fn scripts_refuse_what_the_menu_does_not_offer(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(fixture_window);
     cx.update(|_, cx| {

@@ -24,7 +24,6 @@ for what only Sheprd shows or keeps.
 | Keep a note on this worktree (repository and branch) | `sheprd notes set waiting on CI` |
 | Silence this worktree's notifications | `sheprd worktree mute` |
 | Silence a whole host's notifications | `sheprd host mute studio` |
-| Save the working tree before a risky change, and compare later | `sheprd checkpoint create before refactor`, `sheprd checkpoint diff ID` |
 | Show the Automations section while Core has no job feed | `sheprd ui panel automations` |
 | Open a dev server in a tab, forwarded when you run on an SSH host | `sheprd ports open 3000` |
 | See the processes under a pane, with CPU and memory | `sheprd processes` |
@@ -44,8 +43,7 @@ table above. A command acts in the window that shows your workspace; it
 exits 5 rather than act in another session's window.
 
 Some commands only open the app's dialog and the user confirms there:
-restoring a checkpoint, fanning out a prompt, and running
-a worktree script the app has not seen. Say so
+fanning out a prompt and running a worktree script the app has not seen. Say so
 when you run one, instead of waiting for it to finish. Run
 `sheprd --help` to list every command, and `sheprd COMMAND --help`
 for one.

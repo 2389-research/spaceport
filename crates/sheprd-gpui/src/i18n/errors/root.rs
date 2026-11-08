@@ -49,7 +49,6 @@ impl Localize for Error {
             Self::Credentials(error) => error.localize(),
             Self::Daemon(error) => error.localize(),
             Self::DeletionLookup => fl!("error-deletion-lookup"),
-            Self::DetachedHead => fl!("error-detached-head"),
             Self::Devices(error) => error.localize(),
             Self::Dispatch(error) => error.localize(),
             Self::EmptyTabName => fl!("error-empty-tab-name"),

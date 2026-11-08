@@ -20,10 +20,7 @@ use super::{
 use super::{socket, socket_path};
 use crate::cli::control::{BrowserCommand, ControlCommand, Invocation};
 use serde::Serialize;
-use std::{
-    io::{IsTerminal as _, Write as _},
-    process::ExitCode,
-};
+use std::{io::IsTerminal as _, process::ExitCode};
 
 /// Exit statuses, the same for every command. 0 is done.
 pub(crate) mod exit {
@@ -50,9 +47,6 @@ pub(crate) struct Output {
     text: String,
     json: serde_json::Value,
     status: u8,
-    /// Output whose bytes matter, such as a patch: written unchanged into a
-    /// pipe or file, and shown from `text` on a terminal.
-    bytes: Option<Vec<u8>>,
     /// Text for standard error besides, which `--json` carries in `json` instead.
     stderr: String,
 }
@@ -65,7 +59,6 @@ impl Output {
             json: serde_json::json!({ "message": text }),
             text,
             status: 0,
-            bytes: None,
             stderr: String::new(),
         }
     }
@@ -76,18 +69,6 @@ impl Output {
             text: text.into(),
             json: serde_json::to_value(data)?,
             status: 0,
-            bytes: None,
-            stderr: String::new(),
-        })
-    }
-
-    /// `bytes` exactly, for a program reading a pipe; `data` for `--json`.
-    pub(crate) fn bytes(bytes: Vec<u8>, data: &impl Serialize) -> crate::Result<Self> {
-        Ok(Self {
-            text: String::from_utf8_lossy(&bytes).trim_end().to_owned(),
-            json: serde_json::to_value(data)?,
-            status: 0,
-            bytes: Some(bytes),
             stderr: String::new(),
         })
     }
@@ -314,10 +295,8 @@ pub(crate) fn printable(text: &str, limit: usize) -> String {
         .collect()
 }
 
-/// Successful output in full: a terminal gets it without controls, which
-/// could drive the terminal, and a pipe or file gets it unchanged, so a
-/// patch from `checkpoint diff` applies byte for byte. App answers are
-/// already bounded by the socket's message limit.
+/// A terminal gets text without controls, which could drive the terminal;
+/// a pipe gets the source text. App answers are bounded by the socket limit.
 fn for_terminal(text: &str, terminal: bool) -> std::borrow::Cow<'_, str> {
     if terminal {
         printable(text, usize::MAX).into()
@@ -361,16 +340,6 @@ fn finish(result: crate::Result<Output>, json: bool) -> ExitCode {
 
 /// Prints successful output as text; the exit status.
 fn print(output: &Output) -> u8 {
-    if let Some(bytes) = &output.bytes
-        && !std::io::stdout().is_terminal()
-    {
-        let mut stdout = std::io::stdout().lock();
-        if let Err(error) = stdout.write_all(bytes).and_then(|()| stdout.flush()) {
-            eprintln!("{error}");
-            return exit::REFUSED;
-        }
-        return output.status;
-    }
     if !output.text.is_empty() {
         if output.status == exit::NOTHING {
             eprintln!(
@@ -428,7 +397,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Notes(command) => work::notes(command, &context),
         ControlCommand::Worktree(command) => work::worktree(command, &context),
         ControlCommand::Feedback { wait } => browser::feedback(wait, &context),
-        ControlCommand::Checkpoint(command) => work::checkpoint(command, &context),
         ControlCommand::Scripts { kind } => work::scripts(kind, &context),
         ControlCommand::FanOut(fan_out) => work::fan_out(fan_out, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),

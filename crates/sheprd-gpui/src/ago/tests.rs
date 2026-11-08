@@ -3,19 +3,19 @@ use sheprd_i18n::{Locale, Pseudo};
 
 #[test]
 fn reads_in_the_largest_whole_unit() {
-    for (seconds, text) in [
-        (0, "just now"),
-        (59, "just now"),
-        (60, "1 min ago"),
-        (59 * 60, "59 min ago"),
-        (3600, "1 h ago"),
-        (23 * 3600, "23 h ago"),
-        (86_400, "yesterday"),
-        (2 * 86_400 - 1, "yesterday"),
-        (3 * 86_400, "3 days ago"),
-        (21 * 86_400, "21 days ago"),
+    for (seconds, expected) in [
+        (0, ("ago-now", None)),
+        (59, ("ago-now", None)),
+        (60, ("ago-minutes", Some(1))),
+        (59 * 60, ("ago-minutes", Some(59))),
+        (3600, ("ago-hours", Some(1))),
+        (23 * 3600, ("ago-hours", Some(23))),
+        (86_400, ("ago-days", Some(1))),
+        (2 * 86_400 - 1, ("ago-days", Some(1))),
+        (3 * 86_400, ("ago-days", Some(3))),
+        (21 * 86_400, ("ago-days", Some(21))),
     ] {
-        assert_eq!(english(seconds), text, "{seconds}");
+        assert_eq!(message(seconds), expected, "{seconds}");
     }
 }
 
@@ -23,7 +23,7 @@ fn reads_in_the_largest_whole_unit() {
 fn a_clock_ahead_reads_as_now() {
     assert_eq!(since(130, 100), 0);
     assert_eq!(since(0, 125), 125);
-    assert_eq!(english(since(100, 0)), "just now");
+    assert_eq!(message(since(100, 0)), ("ago-now", None));
 }
 
 #[test]

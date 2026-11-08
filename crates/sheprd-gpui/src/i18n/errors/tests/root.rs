@@ -39,7 +39,6 @@ fn every_own_variant_has_a_message() {
         Error::ConnectionBusy,
         Error::ConnectionNotReady,
         Error::DeletionLookup,
-        Error::DetachedHead,
         Error::EmptyTabName,
         Error::EmptyWorkspaceLabel,
         Error::GitHubSecretInConfig("token"),

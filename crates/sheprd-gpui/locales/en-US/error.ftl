@@ -16,7 +16,6 @@ error-cloud-host-unsupported = This is not available for cloud machines yet.
 error-connection-busy = Connection is busy. Try again.
 error-connection-not-ready = The connection is not ready. Try again.
 error-deletion-lookup = Checkout lookup failed. Dismiss and reopen the menu.
-error-detached-head = HEAD is detached. Check a branch out first.
 error-empty-tab-name = Enter a tab name.
 error-empty-workspace-label = Workspace label must not be empty.
 # $key is a config key, such as token.

@@ -66,8 +66,6 @@ pub enum Error {
     Daemon(#[from] crate::daemon::Error),
     #[error("Checkout lookup failed. Dismiss and reopen the menu.")]
     DeletionLookup,
-    #[error("HEAD is detached. Check a branch out first.")]
-    DetachedHead,
     #[error(transparent)]
     Devices(#[from] crate::menu::devices::Error),
     #[error(transparent)]

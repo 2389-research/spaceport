@@ -25,7 +25,8 @@ use serde::{Deserialize, Serialize};
 /// 21: removed review open control route.
 /// 22: removed orchestrator open control route.
 /// 23: removed the native review tab kind from tab listings.
-pub const PROTOCOL_VERSION: u32 = 23;
+/// 24: removed checkpoint restore from the work control route.
+pub const PROTOCOL_VERSION: u32 = 24;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.

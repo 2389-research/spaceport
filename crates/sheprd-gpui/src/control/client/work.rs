@@ -1,5 +1,4 @@
-//! `notes`, `worktree`, `checkpoint`, `scripts`, and `fan-out`.
-mod checkpoint;
+//! `notes`, `worktree`, `scripts`, and `fan-out`.
 mod here;
 mod scripts;
 #[cfg(test)]
@@ -16,7 +15,6 @@ use crate::{
         },
     },
 };
-pub(super) use checkpoint::checkpoint;
 use std::fmt::Write as _;
 
 /// The display boundary for errors of the commands this process runs itself:
@@ -24,14 +22,7 @@ use std::fmt::Write as _;
 fn rejected(error: impl Into<crate::Error>) -> crate::Error {
     let error = error.into();
     let code = match &error {
-        crate::Error::Vcs(sheprd_vcs::Error::Checkpoint(crate::checkpoint::Error::Missing)) => {
-            ErrorCode::NotFound
-        }
-        crate::Error::NotInCheckout
-        | crate::Error::DetachedHead
-        | crate::Error::Vcs(sheprd_vcs::Error::Checkpoint(
-            crate::checkpoint::Error::Checkout | crate::checkpoint::Error::Unborn,
-        )) => ErrorCode::InvalidRequest,
+        crate::Error::NotInCheckout => ErrorCode::InvalidRequest,
         _ => ErrorCode::Failed,
     };
     crate::control::Error::Rejected {

@@ -1,4 +1,4 @@
-//! `notes`, `checkpoint`, `scripts`, `fan-out`, and `wait`.
+//! `notes`, `scripts`, `fan-out`, and `wait`.
 use super::{Args, CliError, Script, unknown};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -15,23 +15,6 @@ pub enum NotesCommand {
     Get,
     Set(String),
     Clear,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum CheckpointCommand {
-    List,
-    Create {
-        label: Option<String>,
-    },
-    /// What changed from checkpoint `from` to `to`, or to the working tree.
-    Diff {
-        from: String,
-        to: Option<String>,
-    },
-    /// Open the checkpoints dialog with `id` chosen; the user confirms.
-    Restore {
-        id: Option<String>,
-    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -87,35 +70,6 @@ pub(super) fn notes(args: &mut Args) -> Result<NotesCommand, CliError> {
         )?)?),
         Some("clear") => NotesCommand::Clear,
         _ => return Err(unknown("notes", verb)),
-    })
-}
-
-/// A checkpoint ID as `checkpoint list` prints it: digits, as the app's
-/// own check accepts them.
-fn checkpoint_id(text: String) -> Result<String, CliError> {
-    let valid = !text.is_empty() && text.len() <= 32 && text.bytes().all(|b| b.is_ascii_digit());
-    valid
-        .then_some(text)
-        .ok_or(CliError::InvalidValue("CHECKPOINT"))
-}
-
-pub(super) fn checkpoint(args: &mut Args) -> Result<CheckpointCommand, CliError> {
-    let Some(verb) = args.verb() else {
-        return Ok(CheckpointCommand::List);
-    };
-    Ok(match verb.to_str() {
-        Some("list") => CheckpointCommand::List,
-        Some("create") => CheckpointCommand::Create {
-            label: args.words()?.map(bounded).transpose()?,
-        },
-        Some("diff") => CheckpointCommand::Diff {
-            from: checkpoint_id(args.required_text("CHECKPOINT")?)?,
-            to: args.optional_text()?.map(checkpoint_id).transpose()?,
-        },
-        Some("restore") => CheckpointCommand::Restore {
-            id: args.optional_text()?.map(checkpoint_id).transpose()?,
-        },
-        _ => return Err(unknown("checkpoint", verb)),
     })
 }
 

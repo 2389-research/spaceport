@@ -204,10 +204,7 @@
           <div class="panel-text">
             <p class="step-kicker">Keep a way back</p>
             <h3>A checkpoint at every agent turn. On by default.</h3>
-            <p>Each time an agent starts or finishes a turn, Sheprd snapshots the worktree into hidden Git refs, keeping the newest 50 per branch. Diff any two, or restore one from the workspace menu or the command line.</p>
-            <pre class="cmd"><code>sheprd checkpoint list
-sheprd checkpoint diff &lt;id&gt;
-sheprd checkpoint restore &lt;id&gt;   # opens the dialog; you confirm</code></pre>
+            <p>Each time an agent starts or finishes a turn, Sheprd snapshots the worktree into hidden Git refs, keeping the newest 50 per branch.</p>
             <p class="caveat">Checkpoints are unavailable from Windows clients for SSH hosts; WSL works.</p>
           </div>
           <figure class="panel-fig">
@@ -221,7 +218,7 @@ sheprd checkpoint restore &lt;id&gt;   # opens the dialog; you confirm</code></p
               </ol>
               <div class="mt-actions"><span class="mbtn">Diff</span><span class="mbtn mbtn-solid">Restore</span></div>
             </div>
-            <figcaption>Conceptual checkpoint timeline; the app restores from the workspace menu.</figcaption>
+            <figcaption>Conceptual checkpoint timeline.</figcaption>
           </figure>
         </section>
 

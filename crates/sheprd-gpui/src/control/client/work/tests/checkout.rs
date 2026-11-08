@@ -18,7 +18,7 @@ fn git(dir: &Path, args: &[&str]) {
 }
 
 #[test]
-fn the_current_checkout_is_named_as_the_daemon_names_it() {
+fn scripts_list_finds_the_current_checkout_root() {
     let temp = tempfile::tempdir().unwrap();
     let main = temp.path().join("main");
     fs::create_dir_all(main.join("src")).unwrap();
@@ -38,40 +38,24 @@ fn the_current_checkout_is_named_as_the_daemon_names_it() {
             linked.to_str().unwrap(),
         ],
     );
-    let common = fs::canonicalize(main.join(".git")).unwrap();
-    // From a subdirectory, and from a linked worktree: one repository.
-    let checkout = here::checkout(&main.join("src")).unwrap();
-    assert_eq!(checkout.repo_key, common.to_str().unwrap());
-    assert_eq!(checkout.branch, "main");
-    assert_eq!(checkout.host, crate::usage::Host::Local);
-    let checkout = here::checkout(&linked).unwrap();
-    assert_eq!(checkout.repo_key, common.to_str().unwrap());
-    assert_eq!(checkout.branch, "feature");
+    // From a subdirectory and a linked worktree, list scripts at each root.
     assert_eq!(
         here::root(&main.join("src")).unwrap(),
         fs::canonicalize(&main).unwrap()
     );
-    git(&linked, &["checkout", "-q", "--detach"]);
-    assert!(matches!(
-        here::checkout(&linked),
-        Err(crate::Error::DetachedHead)
-    ));
+    assert_eq!(
+        here::root(&linked).unwrap(),
+        fs::canonicalize(&linked).unwrap()
+    );
     let outside = tempfile::tempdir().unwrap();
     assert!(matches!(
-        here::checkout(outside.path()),
+        here::root(outside.path()),
         Err(crate::Error::NotInCheckout)
     ));
     assert!(matches!(
-        rejected(crate::Error::DetachedHead),
+        rejected(crate::Error::NotInCheckout),
         crate::Error::Control(crate::control::Error::Rejected {
             code: ErrorCode::InvalidRequest,
-            ..
-        })
-    ));
-    assert!(matches!(
-        rejected(sheprd_vcs::Error::from(crate::checkpoint::Error::Missing)),
-        crate::Error::Control(crate::control::Error::Rejected {
-            code: ErrorCode::NotFound,
             ..
         })
     ));

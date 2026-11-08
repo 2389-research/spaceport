@@ -10,6 +10,7 @@ mod links;
 mod open_command;
 mod px0;
 mod removed_automation;
+mod removed_checkpoint;
 mod removed_cloud;
 mod removed_code_edit;
 mod removed_github;

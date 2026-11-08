@@ -1,6 +1,5 @@
 //! How long ago something happened, in the largest whole unit: "just now",
-//! "5 min ago", "yesterday", "3 days ago". The command line's checkpoint
-//! list reads it from seconds elapsed.
+//! "5 min ago", "yesterday", "3 days ago" from seconds elapsed.
 // i18n: migrated
 
 use crate::i18n::{self, FluentValue};
@@ -27,12 +26,6 @@ fn args(count: Option<u64>) -> Vec<(&'static str, FluentValue<'static>)> {
 pub(crate) fn text(seconds: u64) -> String {
     let (id, count) = message(seconds);
     i18n::message(id, &args(count))
-}
-
-/// `seconds` ago in English, for command line output.
-pub(crate) fn english(seconds: u64) -> String {
-    let (id, count) = message(seconds);
-    i18n::english(id, &args(count))
 }
 
 /// Seconds from `then` to `now`, both Unix seconds, never negative.

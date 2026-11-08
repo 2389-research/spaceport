@@ -1,5 +1,5 @@
 //! Worktree notes, and the work flows that end in a dialog of the app's own:
-//! restoring a checkpoint, running a worktree script, and fanning a prompt
+//! running a worktree script and fanning a prompt
 //! out. A command points the flow at the caller's checkout; the user still
 //! confirms it in the app.
 use serde::{Deserialize, Serialize};
@@ -17,12 +17,6 @@ pub enum WorkOp {
     MuteStatus,
     /// Mute or unmute the caller's workspace.
     Mute { muted: bool },
-    /// Open the checkpoints of the caller's checkout, with `id` chosen to
-    /// restore once the user confirms.
-    Restore {
-        #[serde(default)]
-        id: Option<String>,
-    },
     /// Run one of the caller's repository's worktree scripts in a new tab.
     /// An untrusted script still asks the user first.
     Script { kind: Script },

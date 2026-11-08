@@ -1,4 +1,4 @@
-//! `notes`, `worktree`, `checkpoint restore`, `scripts`, and `fan-out`.
+//! `notes`, `worktree`, `scripts`, and `fan-out`.
 //!
 //! Every command acts on the caller's checkout: the workspace of the caller's
 //! pane on the caller's daemon, else the workspace the window focuses. A
@@ -29,9 +29,6 @@ pub(super) fn serve(call: Call<WorkOp>, incoming: socket::Incoming, _: &mut Watc
         WorkOp::MuteStatus => in_window(&caller, cx, |view, _, cx| mute::status(view, &caller, cx)),
         WorkOp::Mute { muted } => in_window(&caller, cx, |view, _, cx| {
             mute::set(view, &caller, muted, cx)
-        }),
-        WorkOp::Restore { id } => in_free_window(&caller, cx, |view, window, cx| {
-            flows::restore(view, &caller, id, window, cx)
         }),
         WorkOp::Script { kind } => in_window(&caller, cx, |view, _, cx| {
             flows::script(view, &caller, kind, cx)

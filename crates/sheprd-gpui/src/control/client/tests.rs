@@ -65,12 +65,3 @@ fn every_printed_event_starts_with_the_cursor_to_resume_after_it() {
     assert_eq!(events::line(&event, Some(77)), "77:3 tab_opened 12 w_1");
     assert_eq!(events::line(&event, None), "3 tab_opened 12 w_1");
 }
-
-#[test]
-fn an_empty_patch_is_empty_in_a_pipe_and_said_on_a_terminal() {
-    let mut output = Output::bytes(Vec::new(), &serde_json::json!({})).unwrap();
-    assert!(output.text.is_empty());
-    output.text = "No changes".into();
-    assert_eq!(output.bytes.as_deref(), Some(&[][..]));
-    assert_eq!(for_terminal(&output.text, true), "No changes");
-}

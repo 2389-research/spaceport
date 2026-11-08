@@ -4,7 +4,7 @@
 `herdr` CLI drives the daemon: workspaces, terminal tabs, panes, agents,
 worktrees, and notifications. `sheprd COMMAND` covers what only this
 client knows or draws: its windows, its own tabs (pages, code, reviews,
-Devices), the activity bar's sections, worktree notes, checkpoints, forwarded
+Devices), the activity bar's sections, worktree notes, forwarded
 ports, and its settings.
 
 Commands reach the app over a socket of its own,
@@ -117,10 +117,6 @@ and builds without embedded pages return exit 8. See [px0](../crates/sheprd-gpui
 | `notes get\|clear`, `notes set TEXT` | The note on your checkout (its repository and branch) |
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
 | `feedback [--wait S]` | Page notes the user sent your pane |
-| `checkpoint [list]` | Checkpoints of the current directory's checkout, newest first (no app needed) |
-| `checkpoint create [LABEL]` | Take one now (no app needed) |
-| `checkpoint diff A [B]` | What changed between two, or since one (no app needed) |
-| `checkpoint restore [ID]` | Open the checkpoints dialog; you confirm there |
 | `scripts [list]` | The repository's `.herdr/worktree.toml` scripts (no app needed) |
 | `scripts setup\|run` | Run one in a new tab; an unseen script still asks first. Archive removes the worktree, so it stays behind the app's delete dialog |
 | `fan-out PROMPT [--agent KIND[:N]]...` | Open the fan-out dialog prefilled; you start it there |
@@ -199,8 +195,8 @@ sheprd wait window            # also waits for the app to start
 
 ## What stays in the app
 
-Commands never bypass a confirmation. Restoring a checkpoint, fanning out
-a prompt, and running a worktree script the app has not seen open the app's
+Commands never bypass a confirmation. Fanning out a prompt and running a
+worktree script the app has not seen open the app's
 own dialog, pointed at your checkout; the user confirms there.
 Launching the app or requesting a new terminal can start the appropriate
 local daemon: installed Herdr 1, or a

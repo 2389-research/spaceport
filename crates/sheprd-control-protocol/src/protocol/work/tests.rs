@@ -2,6 +2,7 @@
 use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
+mod removed_checkpoint;
 mod removed_teleport;
 
 #[test]
@@ -28,10 +29,6 @@ fn work_requests_have_a_stable_wire_form() {
         WorkOp::Notes,
         WorkOp::Note,
         WorkOp::SetNote { text: "x".into() },
-        WorkOp::Restore { id: None },
-        WorkOp::Restore {
-            id: Some("0001700000000000".into()),
-        },
         WorkOp::Script { kind: Script::Run },
     ] {
         let request = Request::Work(Call {
@@ -41,21 +38,12 @@ fn work_requests_have_a_stable_wire_form() {
         let text = serde_json::to_string(&request).unwrap();
         assert_eq!(serde_json::from_str::<Request>(&text).unwrap(), request);
     }
-    let minimal: Request =
-        serde_json::from_str(r#"{"method":"work","caller":{},"op":{"op":"restore"}}"#).unwrap();
-    assert!(matches!(
-        minimal,
-        Request::Work(Call {
-            op: WorkOp::Restore { id: None },
-            ..
-        })
-    ));
 }
 
 #[test]
 fn malformed_work_requests_are_rejected() {
     for invalid in [
-        r#"{"method":"work","caller":{},"op":{"op":"restore","force":true}}"#,
+        r#"{"method":"work","caller":{},"op":{"op":"restore"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"script","kind":"deploy"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"set_note"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"fan_out","prompt":"x","agents":[["claude",300]]}}"#,

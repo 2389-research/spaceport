@@ -1,8 +1,8 @@
-//! The work flows that end in a dialog of the app's own: restoring a
-//! checkpoint, running a worktree script, and fanning out. Each
-//! opens the flow as the caller's workspace menu would, already pointed at
+//! The work flows that end in a dialog of the app's own: running a worktree
+//! script and fanning out. Each opens the flow as the caller's workspace
+//! menu would, already pointed at
 //! the caller's checkout, and leaves the consequential step to the user:
-//! restoring, launching, and trusting a script all wait for them.
+//! launching and trusting a script wait for them.
 use super::{find, repository, selected_workspace};
 use crate::{
     SheprdWindow,
@@ -57,52 +57,6 @@ fn open_menu(
         ));
     }
     Ok(workspace)
-}
-
-/// What the caller's workspace is checked out on, for messages.
-fn branch(view: &SheprdWindow, caller: &Caller) -> String {
-    find(view, caller)
-        .ok()
-        .and_then(|found| found.workspace.branch.clone())
-        .unwrap_or_else(|| "the checkout".to_owned())
-}
-
-pub(super) fn restore(
-    view: &mut SheprdWindow,
-    caller: &Caller,
-    id: Option<String>,
-    window: &mut Window,
-    cx: &mut Context<SheprdWindow>,
-) -> Response {
-    if id
-        .as_deref()
-        .is_some_and(|id| !crate::checkpoint::valid_id(id))
-    {
-        return invalid("Checkpoint IDs are the digits `sheprd checkpoint list` prints");
-    }
-    if let Err(response) = open_menu(view, caller, window, cx) {
-        return response;
-    }
-    if view.checkpoint_checkout().is_none() {
-        view.dismiss_menu(window, cx);
-        return invalid(
-            "Checkpoints need a Git checkout on a branch, on this machine or an SSH host",
-        );
-    }
-    let branch = branch(view, caller);
-    view.open_checkpoints(window, cx);
-    bring_forward(window, cx);
-    match id {
-        Some(id) => {
-            view.checkpoints.want(id.clone());
-            Response::done(format!(
-                "Opened the checkpoints of {branch}, asking to select {id}; confirm the restore in Sheprd (the dialog says if {id} is not there)"
-            ))
-        }
-        None => Response::done(format!(
-            "Opened the checkpoints of {branch}; choose one and confirm the restore in Sheprd"
-        )),
-    }
 }
 
 pub(super) fn script(

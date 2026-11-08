@@ -1,7 +1,7 @@
 use super::*;
 use control::{
-    AppCommand, CheckpointCommand, ConfigCommand, ControlCommand, FanOut, FontSize, Invocation,
-    NotesCommand, PortsCommand, Script, Size, Switch, UiCommand, WaitFor, WindowCommand,
+    AppCommand, ConfigCommand, ControlCommand, FanOut, FontSize, Invocation, NotesCommand,
+    PortsCommand, Script, Size, Switch, UiCommand, WaitFor, WindowCommand,
 };
 
 fn parse(args: &[&str]) -> Result<Invocation, CliError> {
@@ -106,17 +106,6 @@ fn work_commands() {
     assert_eq!(
         command(&["notes", "set", "waiting", "on", "review"]),
         ControlCommand::Notes(NotesCommand::Set("waiting on review".into()))
-    );
-    assert_eq!(
-        command(&["checkpoint", "diff", "0001700000000000"]),
-        ControlCommand::Checkpoint(CheckpointCommand::Diff {
-            from: "0001700000000000".into(),
-            to: None
-        })
-    );
-    assert_eq!(
-        parse(&["checkpoint", "restore", "../x"]).unwrap_err(),
-        CliError::InvalidValue("CHECKPOINT")
     );
     assert_eq!(
         command(&["scripts", "setup"]),
