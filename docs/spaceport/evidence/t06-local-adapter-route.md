@@ -39,3 +39,31 @@ binary; both ran only in the test's private sandbox. This rerun confirms the
 local subset survived integration. It adds no native GUI, real-agent, or remote
 chat claim. T06 and G-CHAT stay blocked/open; A14–A18 and A54–A55 stay
 `not_run`.
+
+## Pinned Core method clarification at `7440fad3`
+
+Read-only inspection of `/private/tmp/spaceport-core-reference` confirmed
+Core revision `cd12ddd88bc11490228343291dc1096c9ed3bf77`. Its generated
+`schema/hc.openrpc.json` has 32 methods and no chat or ACP method.
+`crates/herdr-core/src/api.rs` defines `terminal.attach` as a framed raw
+terminal stream. `remote.rs::route` includes that method for a named remote
+terminal, and `remote/viewers.rs::attach` relays its channel both ways and
+reattaches after a line loss. This is evidence for remote *terminal* viewing,
+not for structured adapter messages or permission answers.
+
+The adapter address comes from the endpoint label but resolves only to the
+client's local `herdr/acp` socket or Windows pipe
+(`sheprd-chat-protocol/src/endpoint.rs`). `chat/core_pane.rs::targets`
+rejects terminal IDs containing `/`; `chat/chats.rs::connect` uses that local
+address for Core targets. Its SSH process branch serves the legacy route and
+does not turn the Core raw stream into an authenticated adapter attach.
+`sheprd-acp/src/session/commands.rs::answer` rejects an unknown permission
+or option, as the prior private fixture exercised; no remote path was tested.
+
+The missing external contract is a Herdr-owned way for a remote Core
+terminal's adapter endpoint to be discovered with stable machine/terminal
+identity and reached over authenticated structured transport, including
+permission, reconnect and attach lifetime semantics. The method shape is
+unspecified; no Spaceport RPC or relay is proposed. This source audit ran no
+process, agent, GUI or network test and changes no application code. T06 and
+G-CHAT remain blocked/open; A14–A17 and A54–A55 remain `not_run`.

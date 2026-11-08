@@ -10,8 +10,8 @@
         "S06",
         "S03"
       ],
-      "issue": "The existing native Core chat path is documented local-only. A Herdr-owned remote structured-chat path has not been demonstrated; host adapter lifecycle and identity need audit.",
-      "required_evidence": "Exact attach/discovery/auth/permission route; local and remote reconnect/concurrent-view scenarios A14–A16/A54.",
+      "issue": "The private fixture proves a local Core-launched adapter and concurrent permission response, but the GUI lifecycle remains untested. Core relays raw remote terminal.attach streams, not the adapter's structured attach socket. Spaceport filters remote terminal labels and has no Core-owned remote structured-chat route.",
+      "required_evidence": "Herdr-owned remote adapter endpoint discovery and stable machine/terminal identity, authenticated structured attach transport, permission semantics, and local/remote reconnect and concurrent-view scenarios A14–A16/A54.",
       "forbidden_workaround": "A new Spaceport SSH relay, mobile server, automatic agent conversion/resume or claiming terminal fallback equals native chat."
     },
     {
