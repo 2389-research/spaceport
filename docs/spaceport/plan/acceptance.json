@@ -290,7 +290,7 @@
       "scenario": "Drag/drop a file and clipboard image to exact local/remote targets using supported Core routes.",
       "expected": "Bytes arrive at the intended machine; transferring and submitting a path remain distinct effects.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t07-terminal-put.md"]
     },
     {
       "id": "A26",
@@ -302,7 +302,7 @@
       "scenario": "Exercise retained upload/download, overwrite, cancellation, symlink and temporary-file scenarios.",
       "expected": "Parity is demonstrated through a verified route, or G-FILE remains open; no text-only API masquerades as full transfer.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t07-file-route.md", "evidence/t07-terminal-put.md"]
     },
     {
       "id": "A27",
@@ -314,7 +314,7 @@
       "scenario": "Open a service bound only to a fixture remote loopback address through the intended Herdr-owned route.",
       "expected": "Reachable in system browser without public rebinding, new Spaceport remote manager or mobile server; otherwise blocked.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/external-core-dependencies.md"]
     },
     {
       "id": "A28",

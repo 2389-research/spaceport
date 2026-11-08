@@ -113,7 +113,8 @@
         "G-FILE"
       ],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "terminal_put_binary_staging_passed_private_two_core_macos; full_file_ui_and_download_not_run"
+      "runtime_test_status": "terminal_put_local_binary_nonoverwrite_and_private_two_core_remote_staging_passed_macos; full_file_ui_download_cancel_symlink_not_run",
+      "runtime_evidence": ["evidence/t07-terminal-put.md", "evidence/t07-file-route.md"]
     },
     {
       "id": "CAP-PORTS",
@@ -126,7 +127,8 @@
         "G-PORT"
       ],
       "evidence_level": "integration_unproved",
-      "runtime_test_status": "not_run"
+      "runtime_test_status": "no_forwarding_route_in_pinned_live_discover; loopback_service_scenario_not_run",
+      "runtime_evidence": ["evidence/external-core-dependencies.md"]
     },
     {
       "id": "CAP-OBS",

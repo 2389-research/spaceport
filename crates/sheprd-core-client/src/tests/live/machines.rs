@@ -1,9 +1,46 @@
-//! Two private Core processes exercise Core-owned machine aggregation.
+//! Private Core processes exercise machine and terminal file routes.
 //! A test-only pipe command carries bytes without real SSH or user state.
 use super::*;
 use crate::{CoreBackend, event::Notice, wire::Run};
 use sheprd_backend::{Backend as _, Spawn};
 use std::os::unix::fs::PermissionsExt as _;
+
+#[test]
+#[ignore = "needs HERDR_CORE_TEST_BINARY"]
+fn a_real_core_stages_distinct_binary_files_for_one_terminal() {
+    let binary = std::env::var_os("HERDR_CORE_TEST_BINARY").expect("HERDR_CORE_TEST_BINARY");
+    let mut local = Sandbox::start(binary);
+    let core = local.connect();
+    let argv = ["sh".into(), "-c".into(), "sleep 20".into()];
+    let terminal = core
+        .run(&Run {
+            argv: &argv,
+            ..Run::default()
+        })
+        .unwrap();
+
+    let first_bytes = [0, 255, 65];
+    let second_bytes = [66, 0, 254];
+    let first = core
+        .terminal_put(&terminal.address, "report.bin", &first_bytes)
+        .unwrap();
+    let second = core
+        .terminal_put(&terminal.address, "report.bin", &second_bytes)
+        .unwrap();
+    assert_eq!(first.bytes, first_bytes.len());
+    assert_eq!(second.bytes, second_bytes.len());
+    assert_ne!(first.path, second.path);
+    assert_eq!(Path::new(&first.path).file_name().unwrap(), "report.bin");
+    assert_eq!(Path::new(&second.path).file_name().unwrap(), "report-2.bin");
+    for path in [&first.path, &second.path] {
+        assert!(Path::new(path).starts_with(local._dir.path()));
+    }
+    assert_eq!(std::fs::read(&first.path).unwrap(), first_bytes);
+    assert_eq!(std::fs::read(&second.path).unwrap(), second_bytes);
+
+    core.kill(&terminal.address).unwrap();
+    local.stop().unwrap();
+}
 
 #[test]
 #[ignore = "needs HERDR_CORE_TEST_BINARY"]
