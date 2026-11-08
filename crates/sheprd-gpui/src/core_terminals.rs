@@ -118,6 +118,7 @@ use crate::{
 use gpui::{prelude::*, *};
 use panes::{Axis, Panes};
 use sheprd_backend::{Backend as _, Spawn, TerminalId, TerminalInfo};
+use sheprd_client::ConnectTarget;
 use std::collections::HashMap;
 
 type Started = std::sync::mpsc::Receiver<Result<TerminalInfo, sheprd_core_client::Error>>;
@@ -359,9 +360,17 @@ impl SheprdWindow {
         }
     }
 
-    /// Runs every window tick: connects for restored tabs, places a started
-    /// terminal, gives each shown pane its view, and takes new screens.
+    /// Runs every window tick: joins Core for local metadata and restored tabs,
+    /// places a started terminal, gives each shown pane its view, and takes new screens.
     pub(crate) fn poll_core_terminals(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.endpoints.iter().any(|endpoint| {
+            endpoint.id == crate::endpoint::LOCAL
+                && matches!(endpoint.connection.target, ConnectTarget::Local)
+        }) {
+            // A plain local window reads an already-running Core's metadata.
+            // Joining cannot start a runtime or change the legacy endpoint.
+            self.core_terminals.hub.connect(Start::Join);
+        }
         let connected = self.core_terminals.hub.backend().is_some();
         if self.core_terminals.hub.poll() {
             // A lost connection ended every pane's worker. Their views go, so

@@ -96,6 +96,11 @@ impl Hub {
         self.state = State::Connecting(std::sync::mpsc::channel().1);
     }
 
+    #[cfg(test)]
+    pub(crate) fn set_join_for_test(&mut self, join: Join) {
+        self.join = join;
+    }
+
     /// Connects on a background thread unless already connected or trying.
     /// A join-only ask waits a moment after a failure; asking to start
     /// always tries, and upgrades a join-only attempt in flight.
