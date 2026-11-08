@@ -3,10 +3,6 @@ use control::BrowserCommand;
 
 mod browser_zoom;
 mod chat;
-mod cloud_batch;
-mod cloud_exec;
-mod cloud_images;
-mod cloud_setup;
 mod control_commands;
 mod development_links;
 mod language;
@@ -16,6 +12,7 @@ mod px0;
 mod quota;
 mod removed_automation;
 mod removed_code_edit;
+mod removed_cloud;
 mod removed_legacy_launch;
 mod removed_legacy_window_session;
 mod removed_mods;

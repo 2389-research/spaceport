@@ -30,11 +30,6 @@ impl Args {
         }
     }
 
-    /// What followed `--`, once; `None` when there was no `--`.
-    pub(crate) fn trailing(&mut self) -> Option<Vec<OsString>> {
-        self.trailing.take()
-    }
-
     pub(crate) fn name(&self) -> &'static str {
         self.command
     }
@@ -231,18 +226,19 @@ mod tests {
     }
 
     #[test]
-    fn everything_after_a_double_dash_is_left_as_it_is() {
+    fn double_dash_words_are_not_parsed_as_options() {
         let mut parsed = args(&["id", "--", "git", "log", "--json", "--"]);
         assert!(!parsed.flag("--json"));
         assert!(!parsed.wants_help());
         assert_eq!(parsed.required_text("ID").unwrap(), "id");
         assert_eq!(
-            parsed.trailing().unwrap(),
-            ["git", "log", "--json", "--"].map(OsString::from)
+            parsed.finish().unwrap_err(),
+            CliError::Unexpected {
+                command: "test",
+                argument: "--".into(),
+            }
         );
-        parsed.finish().unwrap();
         // A `--` no command reads is refused, like any other leftover.
         assert!(args(&["--", "x"]).finish().is_err());
-        assert_eq!(args(&["a"]).trailing(), None);
     }
 }

@@ -36,12 +36,6 @@ pub(crate) enum Page {
     CoreWorkspaceCreate,
     CoreWorkspaceDelete,
     CoreWorkspaceRename,
-    /// Confirming new cloud machines a command asked for should be made.
-    #[cfg(feature = "cloud")]
-    CreateCloud,
-    /// Confirming saved cloud devices a command named should be destroyed.
-    #[cfg(feature = "cloud")]
-    DestroyCloud,
     Devices,
     /// Groups a device by tag.
     DeviceTags,

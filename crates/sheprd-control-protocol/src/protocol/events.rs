@@ -48,8 +48,6 @@ pub enum EventKind {
     Note,
     /// A host's connection status changed.
     Host,
-    /// A batch of cloud machines moved on: asked, running, done, cancelled.
-    CloudBatch,
 }
 
 impl EventKind {
@@ -62,7 +60,6 @@ impl EventKind {
         Self::Feedback,
         Self::Note,
         Self::Host,
-        Self::CloudBatch,
     ];
 
     pub fn name(self) -> &'static str {
@@ -75,7 +72,6 @@ impl EventKind {
             Self::Feedback => "feedback",
             Self::Note => "note",
             Self::Host => "host",
-            Self::CloudBatch => "cloud_batch",
         }
     }
 }

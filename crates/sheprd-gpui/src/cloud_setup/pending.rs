@@ -66,7 +66,7 @@ fn gave_up(label: &str) -> Flash {
 
 impl SheprdWindow {
     /// Run the configured setup script again on the cloud device `id`, as
-    /// its menu and `sheprd cloud setup` ask: queue it, then show the
+    /// its menu asks: queue it, then show the
     /// device, whose tab opens as a new device's would.
     pub(crate) fn rerun_cloud_setup(
         &mut self,

@@ -46,10 +46,6 @@ impl Page {
             Self::CoreWorkspaceDelete => fl!("core-workspace-delete-title"),
             Self::CoreWorkspaceRename => fl!("core-workspace-rename-title"),
             Self::ConfirmClose => fl!("menu-page-close"),
-            #[cfg(feature = "cloud")]
-            Self::CreateCloud => fl!("menu-page-create-cloud-machines"),
-            #[cfg(feature = "cloud")]
-            Self::DestroyCloud => fl!("menu-page-destroy-cloud-devices"),
             Self::Devices => fl!("menu-page-devices"),
             Self::DeviceTags => fl!("device-tags-page"),
             Self::DeviceTheme => fl!("menu-page-device-theme"),

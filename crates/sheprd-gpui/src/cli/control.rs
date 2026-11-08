@@ -3,10 +3,8 @@
 //! CLI already drives workspaces, tabs, panes, agents, and notifications;
 //! these cover what only this client knows or draws.
 mod app;
-mod batch;
 mod browser;
 mod chat;
-mod exec;
 mod hosts;
 mod settings;
 mod tabs;
@@ -16,11 +14,9 @@ use super::CliError;
 pub(crate) use super::args::Args;
 pub use crate::control::{Cursor, EventKind, FontSize, Script, Size, Sound, Switch, ZoomChange};
 pub use app::{AppCommand, UiCommand, WindowCommand};
-pub use batch::BatchCommand;
 pub use browser::BrowserCommand;
 pub use chat::ChatCommand;
-pub use exec::ExecCommand;
-pub use hosts::{CloudCommand, HostCommand, PortsCommand, PrCommand, SecurityCommand};
+pub use hosts::{HostCommand, PortsCommand, PrCommand, SecurityCommand};
 pub use settings::{
     CaffeineCommand, ConfigCommand, IntegrationsCommand, KeybindsCommand, LanguageCommand,
     SoundCommand, ThemeCommand, UpdateCommand,
@@ -75,7 +71,6 @@ pub enum ControlCommand {
     FanOut(FanOut),
     Pr(PrCommand),
     Host(HostCommand),
-    Cloud(CloudCommand),
     Ports(PortsCommand),
     Processes {
         pane: Option<String>,
@@ -176,10 +171,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ),
     ("pr", "The pull request of the caller's branch"),
     ("host", "List the window's hosts, show one, or mute one"),
-    (
-        "cloud",
-        "Saved cloud machines: list, add, run a command, destroy",
-    ),
     (
         "ports",
         "Listening ports, and forwarding them to this machine",
@@ -329,7 +320,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
         "fan-out" => ControlCommand::FanOut(work::fan_out(args)?),
         "pr" => ControlCommand::Pr(hosts::pr(args)?),
         "host" => ControlCommand::Host(hosts::host(args)?),
-        "cloud" => ControlCommand::Cloud(hosts::cloud(args)?),
         "ports" => ControlCommand::Ports(hosts::ports(args)?),
         "processes" => ControlCommand::Processes {
             pane: args.text_option("--pane")?,

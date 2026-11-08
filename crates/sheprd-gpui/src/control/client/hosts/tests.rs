@@ -191,28 +191,3 @@ fn durations_and_sizes_keep_two_units_at_most() {
     assert_eq!(text::bytes(1536), "1.5 KiB");
     assert_eq!(text::bytes(3 << 30), "3.0 GiB");
 }
-
-#[cfg(feature = "cloud")]
-#[test]
-fn cloud_machines_read_one_per_line() {
-    use super::cloud::{Machine, text};
-    let machines = [Machine {
-        provider: "Daytona".into(),
-        id: "abc".into(),
-        label: "Sandbox".into(),
-        account: "team".into(),
-        session: "default".into(),
-        enabled: false,
-    }];
-    assert_eq!(
-        text(&machines),
-        "Daytona Sandbox (abc, team) session default, turned off"
-    );
-    assert!(text(&[]).contains("cloud add"));
-}
-
-#[test]
-fn cloud_help_describes_running_setup_again() {
-    let help = super::super::help::usage(Some("cloud"));
-    assert!(help.contains("sheprd cloud setup ID"), "{help}");
-}

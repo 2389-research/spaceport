@@ -97,19 +97,6 @@ impl Output {
         self.status = exit::NOTHING;
         self
     }
-
-    /// An answer that reports a failure, such as a batch where a device
-    /// failed: printed in full, exiting [`exit::REFUSED`].
-    pub(crate) fn failed(mut self) -> Self {
-        self.status = exit::REFUSED;
-        self
-    }
-
-    /// Also print `text` on standard error, unless `--json` asked.
-    pub(crate) fn with_stderr(mut self, text: impl Into<String>) -> Self {
-        self.stderr = text.into();
-        self
-    }
 }
 
 /// Who asks and where: the pane, workspace, and daemon Herdr set in the
@@ -448,7 +435,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::FanOut(fan_out) => work::fan_out(fan_out, &context),
         ControlCommand::Pr(command) => hosts::pr(command, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),
-        ControlCommand::Cloud(command) => hosts::cloud(command, &context),
         ControlCommand::Ports(command) => hosts::ports(command, &context),
         ControlCommand::Processes { pane } => local::processes(pane.as_deref()),
         ControlCommand::Usage => hosts::usage(&context),

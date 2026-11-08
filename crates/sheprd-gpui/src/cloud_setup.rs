@@ -17,7 +17,7 @@ mod pending;
 
 pub(crate) use agents::Agent;
 #[cfg(feature = "cloud")]
-pub(crate) use launch::{PROVIDER_ENV, Running};
+pub(crate) use launch::Running;
 #[cfg(feature = "cloud")]
 pub(crate) use pending::Pending;
 #[cfg(all(test, feature = "cloud"))]

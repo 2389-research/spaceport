@@ -60,18 +60,6 @@ pub enum HostOp {
         repository: String,
         item: String,
     },
-    /// Open the settings that add cloud machines.
-    Cloud,
-    /// Run the configured setup script again on the cloud device `id`, in a
-    /// new tab, showing the device first.
-    CloudSetup {
-        id: String,
-    },
-    /// Build the caller's repository's sandbox images, for `provider` (its
-    /// name or key) or every provider that holds images.
-    CloudImages {
-        provider: Option<String>,
-    },
 }
 
 impl HostOp {

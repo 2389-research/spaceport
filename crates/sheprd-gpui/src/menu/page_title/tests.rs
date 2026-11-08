@@ -84,7 +84,7 @@ fn every_page_title_is_a_message_under_en_xa() {
             .iter()
             .copied()
             .map(Page::AddCloud)
-            .chain([Page::AddProvider, Page::CreateCloud, Page::DestroyCloud]);
+            .chain([Page::AddProvider]);
         #[cfg(not(feature = "cloud"))]
         let cloud = std::iter::empty();
         #[cfg(feature = "coder")]

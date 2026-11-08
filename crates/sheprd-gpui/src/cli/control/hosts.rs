@@ -1,5 +1,5 @@
-//! `pr`, `host`, `cloud`, `ports`, and `security`.
-use super::{Args, BatchCommand, CliError, ExecCommand, batch, exec, unknown};
+//! `pr`, `host`, `ports`, and `security`.
+use super::{Args, CliError, unknown};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PrCommand {
@@ -24,26 +24,6 @@ pub enum HostCommand {
         id: String,
         tags: Vec<String>,
     },
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum CloudCommand {
-    /// Saved cloud machines, read from this machine's settings.
-    List,
-    /// Open the settings that add one; creating a machine costs money, so
-    /// the user chooses there.
-    Add,
-    /// Run the configured setup script on a saved machine again.
-    Setup(String),
-    /// Sandbox images, read from this machine's records.
-    Images,
-    /// Build the caller's repository's sandbox images, for one provider or
-    /// every one that holds images.
-    ImagesBuild(Option<String>),
-    /// Machines handled in batches: destroying them, and following that.
-    Batch(BatchCommand),
-    /// One command on a saved machine.
-    Exec(ExecCommand),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -110,34 +90,6 @@ pub(super) fn security(args: &mut Args) -> Result<SecurityCommand, CliError> {
             item: args.required_text("ALERT|GHSA")?,
         },
         _ => return Err(unknown("security", verb)),
-    })
-}
-
-pub(super) fn cloud(args: &mut Args) -> Result<CloudCommand, CliError> {
-    let Some(verb) = args.verb() else {
-        return Ok(CloudCommand::List);
-    };
-    if let Some(Some(command)) = verb
-        .to_str()
-        .map(|verb| batch::parse(verb, args))
-        .transpose()?
-    {
-        return Ok(CloudCommand::Batch(command));
-    }
-    Ok(match verb.to_str() {
-        Some("list") => CloudCommand::List,
-        Some("add") => CloudCommand::Add,
-        Some("setup") => CloudCommand::Setup(args.required_text("ID")?),
-        Some("images") => match args.verb() {
-            None => CloudCommand::Images,
-            Some(verb) => match verb.to_str() {
-                Some("list") => CloudCommand::Images,
-                Some("build") => CloudCommand::ImagesBuild(args.optional_text()?),
-                _ => return Err(unknown("cloud images", verb)),
-            },
-        },
-        Some("exec") => CloudCommand::Exec(exec::parse(args)?),
-        _ => return Err(unknown("cloud", verb)),
     })
 }
 

@@ -49,3 +49,52 @@ Cargo reported the existing `block v0.1.6` future-incompatibility
 notice; the production app check reported no new code warnings.
 T04 remains `in_progress`; A30, A33 and A34 remain
 `not_run`. This appended cut needs a new observation after integration.
+
+## Cloud command and control route removal
+
+The older audit and Teleport section above were already recorded in the evidence
+ledger. This section records a later bounded cut; it does not replace those
+observations. The `sheprd cloud` family, its `Request::Cloud` command, cloud
+host operations, batch event kind, server dispatch, client response handling,
+help, CLI docs, and managed-skill claims are removed together. Control protocol
+version 15 refuses the old wire forms. The app-local batch registry, its
+create/destroy confirmation pages, their error mapping, and the sole message
+file were orphaned by that route and removed. The provider-owned `Shape` enum
+remains in `sheprd-control-protocol::cloud` because the retained remote provider
+client still uses it. No provider API, saved credential, backend crate, Core
+machine catalog, Tailscale path, or service forward was changed.
+
+The new protocol test failed first because the old cloud request decoded;
+the new CLI test failed first because bare `cloud` parsed. They now reject
+the cloud family and old cloud host/event wire forms. The protocol test also
+round-trips a retained port-forward request with its exact daemon socket,
+window, and workspace ID. The CLI test retains explicit-window host list and
+port forward parsing. The existing host, Core catalog, event, cloud status,
+and menu title tests cover retained adjacent behavior. The old `--` parser
+already rejected unconsumed trailing words; its now-unused accessor was removed
+without changing that rule.
+
+With `CARGO_INCREMENTAL=0` and the isolated T03 target, the following passed:
+`cargo +1.99.0 test --locked -p sheprd-control-protocol --lib` (52 tests),
+`cargo +1.99.0 test --locked -p sheprd-gpui --bin sheprd removed_cloud`
+(1 test), `control::server::hosts::tests` (35), `core_catalog` (5),
+`control::server::events` (5), `cloud::status::tests` (2), and
+`menu::page_title::tests` (2). Default and `--all-features` production
+`cargo +1.99.0 check --locked -p sheprd-gpui --bin sheprd` passed with no
+new code warnings. `just format-check`, `just check-file-size`,
+`just check-sorted`, `just check-i18n`, `git diff --check`, and
+`uv run --with jsonschema==4.26.0 python tools/spec.py check` passed; the
+last command validates package integrity, not application behavior. The test
+link reported its existing macOS unwind-size warning, and Cargo reported the
+existing `block v0.1.6` future-compatibility notice. Native GUI and full
+workspace CI were not run locally.
+
+The first `just check-i18n` run found only messages left by the removed
+batch dialogs. Their two catalog files and two page labels were removed;
+the rerun passed with 5,296 valid, used messages.
+
+Cloud provider settings, device picker rows, provider jobs and their backend
+are still reachable. T04 stays `in_progress` and A30 stays `not_run`; this cut
+does not prove that excluded cloud provisioning has left the runtime. The
+earlier evidence was signed, so the new section needs its own observation
+after integration.

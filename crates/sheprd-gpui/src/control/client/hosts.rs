@@ -1,7 +1,4 @@
-//! `pr`, `host`, `cloud`, `ports`, `usage`, `system`, and `security`.
-mod batch;
-mod cloud;
-mod exec;
+//! `pr`, `host`, `ports`, `usage`, `system`, and `security`.
 mod text;
 
 pub(super) use text::bytes;
@@ -11,7 +8,7 @@ mod tests;
 
 use super::{Context, Output, unexpected};
 use crate::{
-    cli::control::{CloudCommand, HostCommand, PortsCommand, PrCommand, SecurityCommand},
+    cli::control::{HostCommand, PortsCommand, PrCommand, SecurityCommand},
     control::protocol::{
         Request, Response,
         hosts::{HostOp, Reply},
@@ -76,20 +73,6 @@ pub(super) fn host(command: HostCommand, context: &Context) -> crate::Result<Out
             reply: Reply::Hosts { hosts },
         } => Output::data(text::hosts(&hosts), &hosts),
         response => Err(unexpected(response)),
-    }
-}
-
-pub(super) fn cloud(command: CloudCommand, context: &Context) -> crate::Result<Output> {
-    match command {
-        CloudCommand::List => cloud::list(),
-        CloudCommand::Add => context.act(Request::Host, HostOp::Cloud),
-        CloudCommand::Setup(id) => context.act(Request::Host, HostOp::CloudSetup { id }),
-        CloudCommand::Images => cloud::images(),
-        CloudCommand::ImagesBuild(provider) => {
-            context.act(Request::Host, HostOp::CloudImages { provider })
-        }
-        CloudCommand::Batch(command) => batch::run(command, context),
-        CloudCommand::Exec(command) => exec::run(command, context),
     }
 }
 

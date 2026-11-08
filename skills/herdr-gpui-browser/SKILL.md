@@ -39,10 +39,6 @@ for what only Sheprd shows or keeps.
 | List or focus the app's windows and its own tabs | `sheprd window`, `sheprd tab`, `sheprd tab focus ID` |
 | Block until something happens in the app | `sheprd wait tab-closed ID --timeout 600`, `sheprd events --follow` |
 | Read or change a Sheprd setting | `sheprd config get KEY`, `sheprd config set KEY VALUE` |
-| Install agents or rerun the setup script on a saved cloud machine | `sheprd config set cloud.agents '["claude"]'`, `sheprd cloud setup ID` |
-| Get cloud machines of your own (the user confirms once), and wait until they are ready | `sheprd cloud create coder --count 3 --json`, `sheprd cloud wait BATCH --timeout 600 --json` |
-| Run a command on a saved cloud machine (clone, build, commit, push) | `sheprd cloud exec ID --cwd ~/code/app -- git status` |
-| Delete saved cloud machines you are done with, then follow it | `sheprd cloud destroy ID... --json`, `sheprd cloud wait BATCH --timeout 600 --json` |
 | Check remote control and its daemon-host network interfaces, or pair a phone (Tailscale preferred; optionally choose an origin from status) | `sheprd remote status`, `sheprd remote pair [--address HTTPS_ORIGIN]` |
 | Keep the machine awake during a long job | `sheprd caffeine on --for 2h` |
 | Check whether the app runs, and which windows and hosts it has | `sheprd status` |
@@ -53,9 +49,8 @@ table above. A command acts in the window that shows your workspace; it
 exits 5 rather than act in another session's window.
 
 Some commands only open the app's dialog and the user confirms there:
-restoring a checkpoint, fanning out a prompt, running
-a worktree script the app has not seen, creating or destroying cloud
-machines, and adding a cloud machine. Say so
+restoring a checkpoint, fanning out a prompt, and running
+a worktree script the app has not seen. Say so
 when you run one, instead of waiting for it to finish. Run
 `sheprd --help` to list every command, and `sheprd COMMAND --help`
 for one.

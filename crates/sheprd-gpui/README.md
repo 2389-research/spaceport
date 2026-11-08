@@ -360,10 +360,8 @@ only** beside it; a Railway VM is left as it is and expires on its own. Before
 deleting, the dialog searches the machine's home directory for Git checkouts
 with changed or untracked files or commits on no remote; when it finds some,
 it names them and the button becomes **Delete anyway**, and a machine it
-cannot reach is said to be unchecked. `sheprd cloud destroy` asks the same
-for several devices at once, and `sheprd cloud create` asks to make
-several (see `docs/cli.md`). Port forwards and server keybindings need a saved
-SSH host, so a cloud device does not offer them.
+cannot reach is said to be unchecked. Port forwards and server keybindings
+need a saved SSH host, so a cloud device does not offer them.
 
 **Forward port…** in the same menu forwards one of the host's ports, such as a
 dev server an agent started there, to this computer. Each forward has its own
@@ -748,9 +746,6 @@ builds it afresh. Builds keep running when Settings closes.
   runners. Uploading build context files is not supported yet, so a Daytona
   image's Dockerfile cannot `COPY` or `ADD` files from the project.
 
-`sheprd cloud images` lists the images, and `sheprd cloud images
-build [PROVIDER]` builds the current repository's.
-
 ### Setup scripts for new cloud devices
 
 A new cloud device can install coding agents and run your own setup the first
@@ -788,8 +783,8 @@ new, focused `setup` tab of the device's first workspace, like a worktree's
 setup script; nothing runs in the background. The script is yours, from this
 computer's config, so no trust question is asked. Waiting scripts are kept in
 memory only, at most eight at once; one that never ran, or a later run, is
-started from **Run setup script** in the device's sidebar menu or with
-`sheprd cloud setup ID`. Reconnecting never runs it again by itself.
+started from **Run setup script** in the device's sidebar menu.
+Reconnecting never runs it again by itself.
 
 Each provider is a Cargo feature of `herdr-gpui`, on by default: `boat`, `coder`,
 `daytona`, and `railway`. A build with `--no-default-features` has no Cloud

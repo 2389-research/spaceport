@@ -159,16 +159,6 @@ not take it either.
 | `usage`, `system` | Plan usage and load of the selected host: CPU, memory, disk, uptime, and its GPU and video memory when it has one and `show_gpu_load` or `show_sidebar_gpu_load` is on |
 | `security` | Private vulnerability reports in triage (titles and metadata only, never their descriptions) and open Dependabot alerts of the github.com repositories the window's workspaces hold, most severe first, as the Security section last read them. Exits 4 when there are none |
 | `security open REPOSITORY ALERT\|GHSA` | Show alert `ALERT` (its number) or private report `GHSA` (its GHSA ID) of `REPOSITORY` (`owner/name`) in the Security section, beside its list: the fix, the advisory, and the dependency for an alert; the report, its advisory draft, and its conversation for a report. Only items the section lists open; nothing on GitHub changes |
-| `cloud [list]` | Saved cloud machines (no app needed) |
-| `cloud add` | Open the settings that add one |
-| `cloud images [list]` | Sandbox images built from projects' recipes (no app needed) |
-| `cloud images build [PROVIDER]` | Build the current repository's sandbox images ahead of a dispatch |
-| `cloud setup ID` | Run the `[cloud]` setup script on a saved machine again, in a new tab once the window shows it. `ID` is the machine ID from `cloud list`, its host ID, or its label |
-| `cloud create PROVIDER [--count N] [--template T] [--preset P] [--sandbox] [--no-install] [--no-setup]` | Ask in the window to create up to 16 machines; the user confirms there, once for all of them. Prints the batch to follow (below) |
-| `cloud exec ID [--timeout S] [--cwd DIR] -- COMMAND...` | Run a command on a saved machine through the app's connection to it, and print its output (below) |
-| `cloud destroy ID... \| --batch BATCH` | Ask in the window to delete saved machines at their providers and forget them; the user confirms there, once for all of them. Prints the batch to follow (below) |
-| `cloud wait BATCH [--timeout S]` | Each machine of a batch once all are settled, or after S seconds (default 60, at most 600) |
-| `cloud batches` | The batches the app keeps, newest last; the oldest are left out when they would not fit in one answer |
 | `processes [--pane ID]` | The processes under a pane, with CPU and memory (no app needed) |
 | `search symbol\|file QUERY` | Go to Symbol or Go to File over the current checkout (no app needed) |
 
@@ -192,94 +182,6 @@ not take it either.
 | `logs [--lines N] [--path]` | The app's log (no app needed) |
 | `diagnostics bundle PATH` | A redacted report for a bug, with the newest crash reports (no app needed) |
 
-Boat's sandbox lifetime uses the existing config commands:
-
-```sh
-sheprd config set boat.auto_stop never
-sheprd config set boat.auto_stop '"7200"'  # seconds, stored as a string
-sheprd config get boat.auto_stop --json
-sheprd cloud add                         # open Cloud devices, then choose Boat
-```
-
-`never` is the default: billing continues until the sandbox is stopped in Boat.
-Numeric deadlines are fixed, even during active SSH work; trials require at
-most 7200 seconds. The setting applies on create and resume. In Boat settings,
-**Finish setup** extends a running sandbox from now or disables its deadline.
-
-**Recover creation** retries a persisted creation request with its original
-options and key; forgetting an unresolved request requires confirmation there.
-
-What a new cloud machine installs and runs when it first connects is set the
-same way, and `cloud setup` runs it again on one already saved:
-
-```sh
-sheprd config set cloud.agents '["claude", "opencode"]'
-sheprd config set cloud.setup '"git config --global pull.rebase true"'
-sheprd config set cloud.coder.agents '[]'   # nothing extra on Coder
-sheprd cloud setup herdr-tidy-lark-aa
-```
-
-An agent that needs machines of its own asks for them with `cloud create`,
-then follows the batch with `cloud wait` until each is ready:
-
-```sh
-sheprd cloud create coder --count 10 --template dev --json
-sheprd cloud wait 3 --timeout 600 --json   # again while it exits 4
-```
-
-The window asks once, saying how many machines of which provider, how they
-are made, and that the provider bills each until it is destroyed. Once
-confirmed, each machine is made on its own, saved as a device, given Herdr
-when it lacks it (unless `--no-install`), and has the `[cloud]` setup script
-run on it in a login shell from its home directory, without a terminal
-(unless `--no-setup`). Only then is it `ready`; `cloud wait` shows each
-machine's step meanwhile, and its device ID once saved. A failed setup script
-fails the machine with the end of its output, but the machine stays saved;
-destroy it like any other. Coder takes `--template` and `--preset` by name
-(without them, the deployment's only template and its default preset);
-Azure makes a Container Apps sandbox with `--sandbox`. Boat and Railway make
-their machines one at a time. Providers are named by key or name: azure,
-boat, boxd, coder, container, daytona, opensandbox, railway, sprites. The device
-list keeps at most 64 cloud devices, counting those being made.
-
-`cloud exec` runs one command on a saved cloud machine, named as for
-`cloud setup`, through the same authenticated command the app connects with
-(`coder ssh`, a provider's SSH gateway, and so on), so the agent needs no
-credentials of its own. Everything after `--` is the command, word for word;
-it gets no input. `--cwd` runs it in a directory, `~/` being the machine's
-home. `--timeout` (default 120 seconds, at most 600) counts everything,
-including waiting for a stopped machine to start; past it the command is
-stopped. Its stdout comes back on stdout and its stderr on stderr, each cut
-to its last 64 or 32 KiB and with terminal controls removed; `--json` gives
-`{"device", "status", "stdout", "stderr", "truncated"}`. It exits 0 when the
-command exited 0, and 1 otherwise. It asks nothing: like the agent's own
-shell, it acts on the user's machine at once. Git pushes from a machine need
-credentials there, such as Coder's external auth or a `gh auth login` in the
-`[cloud]` setup script.
-
-```sh
-sheprd cloud exec herdr-tidy-lark-aa --cwd ~/code -- git clone https://github.com/me/app
-sheprd cloud exec herdr-tidy-lark-aa --cwd ~/code/app -- sh -c 'git switch -c fix && make test'
-```
-
-An agent that worked on cloud machines removes them with `cloud destroy`,
-naming each by its machine ID, host ID, or label (a label two machines share
-is refused), or with `--batch` every machine a batch named. The window asks
-once, listing each machine and what happens to it: Azure, Boat, boxd, Coder,
-Container, Daytona, OpenSandbox, and Sprites delete the machine with what
-goes with it and then forget it here;
-Railway VMs cannot be deleted from this app, so they are only forgotten and
-expire on their own. A dialog already open refuses the request (exit 6).
-
-```sh
-sheprd cloud destroy coder:5d1c… herdr-tidy-lark-aa --json
-sheprd cloud wait 3 --timeout 600 --json
-```
-
-`cloud wait` exits 0 once every machine went as asked, 1 once the batch
-settled otherwise (a machine failed, with why, or the user said no), and 4
-while it is still waiting for the user or running. A batch keeps going if the
-command or the window that asked goes away; the app keeps the last 32.
 
 Focus-on-hover between split terminal panes is on by default. Disable it with
 `sheprd config set focus_follows_mouse false`.
@@ -292,9 +194,7 @@ run `sheprd config set tab_labels.agent_title true`.
 
 `events` prints what happened in the app: windows opening, closing, and
 gaining focus; the app's tabs opening and closing; notes kept for a pane;
-worktree notes changing; host status changes; and cloud batches moving on
-(`cloud_batch`, with the batch and its phase: `confirming`, `running`,
-`done`, or `cancelled`). Each event has a sequence
+worktree notes changing; and host status changes. Each event has a sequence
 number; pass back the `INSTANCE:SEQ` cursor a call prints with `--after` to
 get only newer events. A cursor from an earlier run of the app gets every
 event the new run has kept, so a restart never hides events.
@@ -308,17 +208,12 @@ sheprd wait window            # also waits for the app to start
 ## What stays in the app
 
 Commands never bypass a confirmation. Restoring a checkpoint, fanning out
-a prompt, running a worktree script the app has not seen, and creating or
-destroying cloud machines open the app's own dialog, already pointed at
-your checkout, the machines, or the device named, and the user
-confirms there.
-`cloud exec` asks nothing because it confirms nothing: it is the agent's own
-work, run on a machine the user saved. Launching the app or requesting a new
-terminal can start the appropriate local daemon: installed Herdr 1, or a
+a prompt, and running a worktree script the app has not seen open the app's
+own dialog, pointed at your checkout; the user confirms there.
+Launching the app or requesting a new terminal can start the appropriate
+local daemon: installed Herdr 1, or a
 user-installed/bundled herdr-core. Existing Herdr 1 sessions are not migrated,
-and no command upgrades a personal daemon. `update` never installs the app;
-`cloud create` installs Herdr only on the machines the user confirmed, as
-creating them in Settings does.
+and no command upgrades a personal daemon. `update` never installs the app.
 
 Adding an SSH or local network device has no command: the Add Device dialog
 runs it. Its setup workspace runs `sheprd __device-setup-attach SOCKET`,

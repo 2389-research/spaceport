@@ -17,20 +17,7 @@ fn steps() -> Vec<Step> {
 }
 
 #[test]
-fn steps_read_as_short_status_words() {
-    let shown: Vec<_> = steps().iter().map(english).collect();
-    assert_eq!(
-        shown,
-        [
-            "Creating…",
-            "Connecting…",
-            "Starting…",
-            "Building (pending)…",
-            "Checking for Herdr…",
-            "Building the image: Step 2 of 4: RUN make",
-            "Installing Herdr…",
-        ]
-    );
+fn image_progress_without_a_step_keeps_its_status() {
     let quiet = Progress {
         step: None,
         status: "building".into(),
@@ -49,20 +36,4 @@ fn every_step_is_a_message_under_en_xa() {
     for line in shown {
         assert!(sheprd_i18n::pseudo::is_marked(&line), "{line}");
     }
-}
-
-#[test]
-fn command_line_steps_stay_english_without_isolation_marks() {
-    i18n::show(&Pseudo::Accented.locale());
-    let shown: Vec<_> = steps().iter().map(english).collect();
-    i18n::show(&Locale::FALLBACK);
-    for line in shown {
-        assert!(!sheprd_i18n::pseudo::is_marked(&line), "{line}");
-        assert!(!line.contains(['\u{2068}', '\u{2069}']), "{line}");
-    }
-    let image = Step::Image(Progress {
-        step: Some((2, 4)),
-        status: "RUN make".into(),
-    });
-    assert!(step(&image).contains('\u{2068}'));
 }

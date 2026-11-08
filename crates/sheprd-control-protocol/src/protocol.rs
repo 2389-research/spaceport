@@ -19,7 +19,8 @@ use serde::{Deserialize, Serialize};
 /// 11: `mod`. 12: `status.core_catalog`. 13: removed phone control.
 /// 14: removed local `browser.open`. 15: removed named-session `window.new`.
 /// 16: removed `tab.code`. 17: removed `tab.edit`.
-pub const PROTOCOL_VERSION: u32 = 17;
+/// 18: removed cloud control routes.
+pub const PROTOCOL_VERSION: u32 = 18;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.
@@ -60,8 +61,6 @@ pub enum Request {
     Link(Call<LinkOp>),
     #[serde(rename = "chat")]
     Chat(Call<chat::ChatOp>),
-    #[serde(rename = "cloud")]
-    Cloud(Call<cloud::CloudOp>),
 }
 
 /// A `herdr-gpui://` link the shell started a second copy of the app with.
@@ -90,7 +89,6 @@ impl Request {
             Self::Tab(call) => call.op.wait_seconds(),
             Self::Host(call) => call.op.wait_seconds(),
             Self::Settings(call) => call.op.wait_seconds(),
-            Self::Cloud(call) => call.op.wait_seconds(),
             _ => 0,
         };
         wait.min(MAX_WAIT_SECONDS)
@@ -207,9 +205,6 @@ pub enum Response {
     },
     Chat {
         reply: chat::Reply,
-    },
-    Cloud {
-        reply: cloud::Reply,
     },
     Error {
         code: ErrorCode,

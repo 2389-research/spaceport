@@ -15,8 +15,6 @@ mod chat;
 mod chat_protocol;
 mod client;
 mod clipboard;
-#[cfg(feature = "cloud")]
-mod cloud_batch;
 mod cloud_setup;
 mod config;
 mod control;

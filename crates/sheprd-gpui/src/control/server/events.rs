@@ -32,8 +32,6 @@ struct Seen {
     notes: u64,
     /// `(window, host)` to status.
     hosts: BTreeMap<(u64, String), String>,
-    /// Cloud batches kept, by number, with their phase.
-    batches: BTreeMap<u64, crate::control::protocol::cloud::Phase>,
 }
 
 #[derive(Default)]
@@ -126,10 +124,6 @@ fn look(cx: &mut App) -> Seen {
             .collect();
     }
     seen.notes = crate::worktree_notes::Notes::of(cx).map_or(0, |notes| notes.revision());
-    #[cfg(feature = "cloud")]
-    if let Some(registry) = cx.try_global::<crate::cloud::batch::Registry>() {
-        seen.batches = registry.phases().into_iter().collect();
-    }
     seen
 }
 
@@ -179,15 +173,6 @@ fn compare(log: &mut Log, before: &Seen, now: &Seen) {
                 EventKind::Host,
                 host.clone(),
                 Some(format!("{status} (window {window})")),
-            );
-        }
-    }
-    for (id, phase) in &now.batches {
-        if before.batches.get(id) != Some(phase) {
-            log.push(
-                EventKind::CloudBatch,
-                id.to_string(),
-                Some(phase.name().to_owned()),
             );
         }
     }

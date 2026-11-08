@@ -16,11 +16,6 @@ pub(crate) fn step(step: &Step) -> String {
     say(step, i18n::message)
 }
 
-/// `step` in English, for command line output such as a batch's progress.
-pub(crate) fn english(step: &Step) -> String {
-    say(step, i18n::english)
-}
-
 fn say(step: &Step, say: impl Fn(&str, &[(&str, FluentValue<'_>)]) -> String) -> String {
     match step {
         Step::Creating => say("cloud-status-creating", &[]),

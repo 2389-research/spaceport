@@ -37,8 +37,6 @@ impl Localize for Error {
             ),
             Self::Client(error) => error.localize(),
             Self::Clipboard(error) => error.localize(),
-            #[cfg(feature = "cloud")]
-            Self::CloudBatch(error) => error.localize(),
             #[cfg(feature = "azure")]
             Self::CloudHostUnsupported => fl!("error-cloud-host-unsupported"),
             Self::CloudSetup(error) => error.localize(),
