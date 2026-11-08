@@ -37,3 +37,12 @@ The no-default GUI test emitted the same linker and dependency warnings as
 its red baseline. Native UI and actual provider network/service behavior were
 not run. T04 remains blocked on G-LINK, and A30 remains `not_run` while other
 excluded provider and runtime routes remain.
+
+On the integration branch at `05dadbf6`, the generated package report was
+recomputed after the only merge conflict. Default app and all-targets,
+all-features app checks passed; the existing `block v0.1.6` notice remained.
+The two mixed catalog tests passed 2/2, source absence passed 2/2, and the
+website suite passed 20/20. Format, file-size, sorted-list and i18n checks
+passed; i18n counted 4,761 used messages in 256 files after the separate
+Security cut. No native provider network or service test ran on the merged
+branch. The package report proves schema and link integrity only.
