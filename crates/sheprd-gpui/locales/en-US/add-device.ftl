@@ -22,7 +22,6 @@ add-device-providers-lead = Set up a provider in Settings, and Add Device lists 
 # SSH alias; $user is the login SSH resolved for it.
 add-device-target-placeholder = user@hostname or SSH alias
 add-device-label-placeholder = The SSH target
-add-device-intro = Sheprd checks the host over SSH and saves the device. If Herdr is missing or SSH needs your input, setup continues in a local workspace.
 add-device-core-intro = Add a machine that already runs Herdr Core. Core checks the SSH target without installing software or changing host-key trust.
 add-device-core-target-required = Enter an SSH target or alias.
 add-device-core-connecting = Connecting to the local Core before adding { $target }…
