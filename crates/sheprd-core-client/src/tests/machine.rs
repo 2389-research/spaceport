@@ -23,11 +23,11 @@ fn machine_list_reads_core_owned_catalog() {
     );
     let machines = call.join().unwrap().unwrap().machines;
     assert_eq!(machines.len(), 1);
-    assert_eq!(machines[0].name, "lab");
+    assert_eq!(machines[0].machine.name, "lab");
     assert_eq!(machines[0].state, "needs_login");
     assert_eq!(machines[0].since_ms, Some(42));
     assert_eq!(machines[0].why.as_deref(), Some("authentication required"));
-    assert!(machines[0].temporary);
+    assert!(machines[0].machine.temporary);
 }
 
 #[test]
@@ -55,4 +55,28 @@ fn terminal_get_preserves_the_qualified_core_target() {
     assert_eq!(request["params"], json!({"terminal": "lab/t7"}));
     core.answer(&request, super::terminal("lab/t7"));
     assert_eq!(call.join().unwrap().unwrap().address, "lab/t7");
+}
+
+#[test]
+fn machine_add_sends_only_a_core_ssh_target_without_install() {
+    let (client, mut core) = connected();
+    let call =
+        thread::spawn(move || client.machine_add("user@lab.invalid", Some("lab"), None, false));
+    let request = core.request();
+    assert_eq!(request["method"], "machine.add");
+    assert_eq!(
+        request["params"],
+        json!({"target": "user@lab.invalid", "name": "lab", "temporary": false})
+    );
+    core.answer(
+        &request,
+        json!({
+            "name": "lab", "target": "user@lab.invalid", "id": "core-2",
+            "host": "lab-host", "version": "0.1.18", "temporary": false,
+            "via": false, "session": null
+        }),
+    );
+    let machine = call.join().unwrap().unwrap();
+    assert_eq!(machine.name, "lab");
+    assert_eq!(machine.id, "core-2");
 }

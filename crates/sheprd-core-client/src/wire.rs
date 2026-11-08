@@ -106,23 +106,41 @@ pub struct MachineList {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct MachineView {
+    #[serde(flatten)]
+    pub machine: Machine,
+    #[serde(default)]
+    pub since_ms: Option<u64>,
+    /// Keep unknown Core states distinct instead of guessing a connection.
+    pub state: String,
+    #[serde(default)]
+    pub why: Option<String>,
+}
+
+/// Core's saved remote-machine identity, separate from its live connection line.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct Machine {
     pub host: String,
     pub id: String,
     pub name: String,
     #[serde(default)]
     pub session: Option<String>,
-    #[serde(default)]
-    pub since_ms: Option<u64>,
-    /// Keep unknown Core states distinct instead of guessing a connection.
-    pub state: String,
     pub target: String,
     #[serde(default)]
     pub temporary: bool,
     pub version: String,
     #[serde(default)]
     pub via: bool,
-    #[serde(default)]
-    pub why: Option<String>,
+}
+
+/// This RPC shape has no `install` field; the CLI-only flag is never sent.
+#[derive(Serialize)]
+pub(crate) struct MachineAdd<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session: Option<&'a str>,
+    pub target: &'a str,
+    pub temporary: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]

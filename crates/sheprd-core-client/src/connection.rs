@@ -184,6 +184,26 @@ impl Core {
         self.typed(Method::MachineList, &json!({}))
     }
 
+    /// Ask Core to add an existing remote Core through SSH. No install option
+    /// or alternate command transport is exposed by this call.
+    pub fn machine_add(
+        &self,
+        target: &str,
+        name: Option<&str>,
+        session: Option<&str>,
+        temporary: bool,
+    ) -> Result<wire::Machine> {
+        self.typed(
+            Method::MachineAdd,
+            &wire::MachineAdd {
+                name,
+                session,
+                target,
+                temporary,
+            },
+        )
+    }
+
     /// Every terminal now, and the events after it.
     pub fn subscribe(&self) -> Result<Subscription> {
         let reply = self.call(Method::EventsSubscribe, &json!({}))?;
