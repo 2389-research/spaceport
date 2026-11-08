@@ -31,8 +31,7 @@ MOCK_ISCC = """#!/usr/bin/env python3
 import pathlib, sys
 defines = dict(arg[2:].split("=", 1) for arg in sys.argv[1:] if arg.startswith("/D"))
 source = pathlib.Path(defines["SourceDir"])
-assert all((source / name).is_file() for name in ("sheprd.exe", "sheprd-launcher.exe", "sheprd-acp.exe",
-                                              "herdr-core.exe"))
+assert all((source / name).is_file() for name in ("sheprd.exe", "sheprd-launcher.exe", "sheprd-acp.exe"))
 assert sys.argv[-1].endswith("sheprd.iss")
 name = f"Sheprd-{defines['Version']}-{defines['Target']}-setup.exe"
 (pathlib.Path(defines["OutputDir"]) / name).write_bytes(b"setup " + defines["Architecture"].encode())
@@ -80,7 +79,6 @@ class InstallerTests(unittest.TestCase):
                for name in PACKAGE.ALIASES},
             "no launcher": [e for e in executables if not e.endswith("launcher.exe")],
             "no sheprd-acp": [e for e in executables if not e.endswith("sheprd-acp.exe")],
-            "no herdr-core": [e for e in executables if not e.endswith("herdr-core.exe")],
             "outside the root": [*executables, "other/x"],
             "escaping the root": [*executables, root + "../x"],
         }

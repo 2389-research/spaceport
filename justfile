@@ -66,11 +66,6 @@ test-live binary:
 test-core binary:
     HERDR_CORE_TEST_BINARY="{{binary}}" cargo test --locked -p sheprd-core-client live -- --ignored --nocapture
 
-# Download the pinned herdr-core release for `target` (macos-aarch64, ...),
-# check its checksum, and put the binary in `dir`.
-fetch-herdr-core target dir="target/herdr-core":
-    python3 scripts/release/fetch-herdr-core.py {{target}} {{dir}}
-
 # Opens a real native window; requires an active desktop. Uses an isolated daemon.
 test-gui binary:
     HERDR_TEST_BINARY="{{binary}}" cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored --nocapture --test-threads=1
@@ -178,18 +173,8 @@ bundle profile="release" features="":
     cp target/{{profile}}/sheprd "$app/Contents/MacOS/sheprd"
     # Chats the app starts run the sheprd-acp beside its executable.
     cp target/{{profile}}/sheprd-acp "$app/Contents/MacOS/sheprd-acp"
-    # Herdr 2 terminals run in the pinned herdr-core beside it, as releases
-    # bundle it. Fetched once per profile; an offline build goes on without.
-    core=target/{{profile}}/herdr-core
-    if [ ! -f "$core" ]; then
-        python3 scripts/release/fetch-herdr-core.py "$(rustc -vV | sed -n 's/^host: //p')" target/{{profile}} >/dev/null \
-            || echo "warning: no herdr-core bundled; Herdr 2 terminals need one on PATH" >&2
-    fi
+    # A stale development bundle must not keep a previously packaged Core.
     rm -f "$app/Contents/MacOS/herdr-core"
-    if [ -f "$core" ]; then
-        cp "$core" "$app/Contents/MacOS/herdr-core"
-        codesign --force --sign - "$app/Contents/MacOS/herdr-core"
-    fi
     for helper in acp; do
         rm -f "$app/Contents/MacOS/herdr-$helper"
         cp "$app/Contents/MacOS/sheprd-$helper" "$app/Contents/MacOS/herdr-$helper"

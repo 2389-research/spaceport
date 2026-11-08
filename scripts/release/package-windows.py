@@ -5,9 +5,8 @@ Pure standard library so the Windows runner needs no zip tool. The layout
 mirrors package-linux.sh: the executable plus the same license and notice files.
 Beside sheprd.exe, which is a console program because it is also the CLI,
 the zip carries sheprd-launcher.exe, the windowed launcher that starts it without a
-console window from Explorer or the Start menu, sheprd-acp.exe, which the app
-starts chats with, and herdr-core.exe, which runs Herdr 2 terminals; the build leaves them
-beside sheprd.exe (herdr-core.exe fetched pinned).
+console window from Explorer or the Start menu, and sheprd-acp.exe, which the app
+starts chats with.
 """
 import argparse
 from pathlib import Path
@@ -18,8 +17,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGETS = ("x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc")
-HELPERS = ("sheprd-acp.exe", "herdr-core.exe")
-# Existing shortcuts, startup entries and helper services must keep working.
+HELPERS = ("sheprd-acp.exe",)
+# Existing shortcuts, startup entries and chat helper paths keep their aliases.
 ALIASES = {"herdr-gpui.exe": "sheprd.exe", "herdr-gpui-launcher.exe": "sheprd-launcher.exe",
            **{name.replace("sheprd-", "herdr-", 1): name for name in HELPERS if name.startswith("sheprd-")}}
 EXECUTABLES = ("sheprd.exe", "sheprd-launcher.exe", *HELPERS, *ALIASES)
@@ -73,8 +72,6 @@ def package(version, target, binary, launcher, output_dir, notices):
             for source in LICENSES:
                 add(archive, f"{name}/licenses/{Path(source).name}", (ROOT / source).read_bytes())
             add(archive, f"{name}/licenses/THIRD-PARTY-NOTICES.txt", notices.read_bytes())
-            add(archive, f"{name}/licenses/HERDR-CORE-LICENSES.txt",
-                (ROOT / "scripts/release/herdr-core-licenses.txt").read_bytes())
         if output.exists() or output.is_symlink():
             raise ValueError(f"Output already exists: {output}")
         partial.replace(output)

@@ -4,7 +4,7 @@ A GPUI 0.3.10 (`gpui-pre`) workspace for terminals and AI agents on local,
 SSH, and cloud machines, with macOS support, Linux x86_64/ARM64 builds, and
 a Windows build with native CI coverage. See [Windows](#windows) for what is
 unavailable there. It supports existing Herdr 1 sessions and
-[herdr-core terminals](#herdr-2-terminals). Releases bundle a pinned herdr-core,
+[herdr-core terminals](#herdr-2-terminals). Herdr Core is installed separately,
 so a separate Herdr 1 installation is optional. Herdr 1 supplies terminal cells;
 herdr-core supplies raw output that `sheprd-terminal` emulates for the native view.
 The daemons own terminal processes, so closing Sheprd leaves sessions running.

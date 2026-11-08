@@ -53,7 +53,7 @@ class LinuxSmokeTests(unittest.TestCase):
                 checks = [args[args.index('-e') + 1][6:] for args in calls]
                 for check in checks:
                     self.assertEqual(check, checks[0])
-                    self.assertIn('/usr/bin/herdr-core --version', check)
+                    self.assertNotIn('/usr/bin/herdr-core --version', check)
                     self.assertIn('linked=$(ldd "/usr/bin/$program")', check)
                     self.assertIn('libvulkan.so.1 libwayland-client.so.0', check)
 

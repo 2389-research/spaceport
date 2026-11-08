@@ -121,9 +121,9 @@ SIGKILL/power loss cannot be cleaned up. Apple security tools receive passwords
 as arguments, so the runner must not have untrusted local users. No GUI executable
 is run, including for version probing. Signing works on a copy of the input app.
 
-The bundle holds `Contents/MacOS/sheprd`, the `sheprd-acp` chat runner,
-and the pinned upstream `herdr-core`. Packaging takes the helpers from beside
-each architecture's `sheprd` and includes the legacy `herdr-acp` helper copy.
+The bundle holds `Contents/MacOS/sheprd` and the `sheprd-acp` chat runner.
+Packaging takes the chat helper from beside each architecture's `sheprd` and
+includes the legacy `herdr-acp` helper copy. Herdr Core is separately installed.
 All helpers and their compatibility copies are signed first without the
 app's entitlements, then `sheprd`, then the bundle, all with hardened runtime and secure
 timestamps. The zipped app must receive JSON status `Accepted`, then the app is
@@ -146,8 +146,8 @@ the Windows target graphs, each the app's joined with those of the programs ship
 `generate-sbom.py`). No separate per-platform manifest or publication job is used.
 The caller must supply the matching release binary; packaging does not cross-build
 or resolve shared libraries. Output is `Sheprd-VERSION-TARGET.tar.gz`, with a
-same-named root containing `bin/sheprd`, `bin/sheprd-acp`, and `bin/herdr-core`
-(companions taken from beside the binary), a scalable SVG icon, desktop entry, license and
+same-named root containing `bin/sheprd` and `bin/sheprd-acp`
+(the companion taken from beside the binary), a scalable SVG icon, desktop entry, license and
 notice under `share/`, plus `herdr-gpui -> sheprd` and real legacy helper copies.
 The relative main-command symlink follows standalone updates to `sheprd`.
 Install that tree into a chosen prefix with its `bin` on
@@ -196,7 +196,7 @@ OUTPUT_DIR THIRD_PARTY_NOTICES` (standard-library Python, since the runner has n
 zip tool) writes one `Sheprd-VERSION-TARGET.zip` per target with a same-named root
 containing `sheprd.exe`, the windowed `sheprd-launcher.exe` that the
 installer's Start menu shortcut opens, `sheprd-acp.exe`, which the app starts
-chats with (taken from beside `BINARY`), the pinned `herdr-core.exe`, real legacy executable
+chats with (taken from beside `BINARY`), real legacy executable
 and helper copies, and `licenses/` holding the same license
 and notice files as the Linux tree. Entries carry a fixed timestamp.
 
@@ -248,15 +248,13 @@ fails instead of falling back to unsigned. When signing is on:
 1. `windows-signing.py unpack` extracts the tested zip without running anything.
 2. `azure/login` signs in to Azure with the job's OIDC token, and
    `azure/artifact-signing-action` signs `sheprd.exe`,
-   `sheprd-launcher.exe`, `sheprd-acp.exe`, and `herdr-core.exe`
+   `sheprd-launcher.exe` and `sheprd-acp.exe`
    with SHA-256 and an RFC 3161 timestamp from
    `http://timestamp.acs.microsoft.com`.
 3. `windows-signing.py repack` refuses unless the tree holds exactly the zip's
    files and each executable differs from the tested one only by its appended
    or replaced trailing signature (checksum, certificate table entry, alignment
-   padding). The pinned upstream `herdr-core.exe` already carries a signature;
-   replacing it must preserve the certificate table offset and every preceding
-   byte except the checksum and certificate table entry. The script then writes
+   padding). The script then writes
    the zip again with the same entry order and timestamps.
 4. `windows-installer.py build --sign` compiles the installer from the signed
    zip. ISCC calls `windows-sign-file.ps1` as its `SignTool`, with

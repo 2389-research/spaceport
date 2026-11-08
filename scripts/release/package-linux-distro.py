@@ -22,14 +22,14 @@ ARCHES = {"x86_64-unknown-linux-gnu": "amd64", "aarch64-unknown-linux-gnu": "arm
 # (nfpm packager, published extension)
 FORMATS = (("deb", "deb"), ("rpm", "rpm"), ("archlinux", "pkg.tar.zst"))
 TREE = {
-    "bin/herdr-core", "bin/herdr-gpui", "bin/sheprd",
+    "bin/herdr-gpui", "bin/sheprd",
     *(f"bin/{prefix}-{helper}" for prefix in ("sheprd", "herdr")
       for helper in ("acp",)),
     "share/applications/org.sheprd.Sheprd.desktop",
     "share/icons/hicolor/scalable/apps/sheprd.svg",
     *(f"share/licenses/herdr-gpui/{name}" for name in (
         "LICENSE", "NOTICE", "LICENSE-octicons", "LICENSE-APACHE", "NOTICE.md",
-        "SOUND-NOTICE.md", "THIRD-PARTY-NOTICES.txt", "HERDR-CORE-LICENSES.txt")),
+        "SOUND-NOTICE.md", "THIRD-PARTY-NOTICES.txt")),
 }
 # The release binary is built on Ubuntu 24.04 and requires GLIBC_2.39. It links
 # ALSA, FreeType, Fontconfig, xcb and xkbcommon, and dlopens the Vulkan loader and

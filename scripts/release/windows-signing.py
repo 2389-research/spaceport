@@ -4,8 +4,8 @@
   unpack ZIP DIRECTORY
       Extract the tested release zip that package-windows.py wrote
       into DIRECTORY, which must not exist, and print the tree root holding
-      sheprd.exe, sheprd-launcher.exe, sheprd-acp.exe,
-      and herdr-core.exe for the signing action.
+      sheprd.exe, sheprd-launcher.exe, and sheprd-acp.exe
+      for the signing action.
   repack ZIP TREE_DIRECTORY OUTPUT_DIR
       Write OUTPUT_DIR/ZIP's name from the signed tree. Refuses unless every
       file is the zip's own and each executable differs from the tested one
@@ -72,9 +72,8 @@ def certificate_table(data):
 def without_signature(signed, original):
     """Allow only an appended or replaced trailing Authenticode signature.
 
-    A pinned upstream companion can already be signed. Preserve its entire
-    prefix, including alignment padding, when replacing its certificate table.
-    Windows verifies the new signature and release identity separately.
+    Preserve the original prefix, including alignment padding, when replacing
+    a certificate table. Windows verifies the signature separately.
     """
     checksum, entry, old_offset, old_size = certificate_table(original)
     previously_signed = (old_offset, old_size) != (0, 0)

@@ -1,6 +1,6 @@
 //! With no Herdr 1 installed, the window's terminal is a herdr-core shell:
-//! the user's running core, else the user's `herdr-core`, else the copy
-//! bundled beside the app. The shell is named, so every launch comes back
+//! the user's running core, else the separately installed `herdr-core`.
+//! The shell is named, so every launch comes back
 //! to the same one instead of starting another. Only when herdr-core is
 //! unavailable too does the window ask the user to install Herdr.
 

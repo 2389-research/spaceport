@@ -58,8 +58,6 @@ class ReleaseTests(unittest.TestCase):
         binary.write_bytes(build_identity())
         acp = self.work / "sheprd-acp"
         acp.write_bytes(b"chat program")
-        core = self.work / "herdr-core"
-        core.write_bytes(b"herdr-core daemon")
         for target in ("x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"):
             with self.subTest(target=target):
                 result = self.run_script("package-linux.sh", "20260920.3", target, binary, self.work, self.notices)
@@ -68,7 +66,6 @@ class ReleaseTests(unittest.TestCase):
                     files = {m.name: m for m in archive.getmembers() if m.isfile()}
                     self.assertEqual(set(files), {base + p for p in [
                         "bin/sheprd", "bin/sheprd-acp", "bin/herdr-acp",
-                        "bin/herdr-core",
                         "share/applications/org.sheprd.Sheprd.desktop",
                         "share/icons/hicolor/scalable/apps/sheprd.svg",
                         "share/licenses/herdr-gpui/LICENSE-APACHE", "share/licenses/herdr-gpui/NOTICE.md",
@@ -76,7 +73,6 @@ class ReleaseTests(unittest.TestCase):
                         "share/licenses/herdr-gpui/LICENSE-octicons",
                         "share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt",
                         "share/licenses/herdr-gpui/SOUND-NOTICE.md",
-                        "share/licenses/herdr-gpui/HERDR-CORE-LICENSES.txt",
                     ]})
                     alias = archive.getmember(base + "bin/herdr-gpui")
                     self.assertTrue(alias.issym())
@@ -91,10 +87,6 @@ class ReleaseTests(unittest.TestCase):
                                          archive.extractfile(base + "bin/" + canonical).read())
                     self.assertEqual(files[base + "bin/sheprd-acp"].mode & 0o777, 0o755)
                     self.assertEqual(archive.extractfile(base + "bin/sheprd-acp").read(), acp.read_bytes())
-                    self.assertEqual(files[base + "bin/herdr-core"].mode & 0o777, 0o755)
-                    self.assertEqual(archive.extractfile(base + "bin/herdr-core").read(), core.read_bytes())
-                    self.assertEqual(archive.extractfile(base + "share/licenses/herdr-gpui/HERDR-CORE-LICENSES.txt").read(),
-                                     (SCRIPTS / "herdr-core-licenses.txt").read_bytes())
                     self.assertEqual(archive.extractfile(base + "share/icons/hicolor/scalable/apps/sheprd.svg").read(), (ROOT / "assets/icons/sheprd-linux.svg").read_bytes())
                     self.assertEqual(archive.extractfile(base + "share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt").read(), self.notices.read_bytes())
                     for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/NOTICE.md", "crates/sheprd-gpui/SOUND-NOTICE.md"):
@@ -123,10 +115,6 @@ class ReleaseTests(unittest.TestCase):
                                  self.notices, success=False)
         self.assertIn("A sheprd-acp beside the binary required", result.stderr)
         acp.write_bytes(b"chat program")
-        core.unlink()
-        result = self.run_script("package-linux.sh", "20260920.3", "x86_64-unknown-linux-gnu", binary, self.work,
-                                 self.notices, success=False)
-        self.assertIn("A herdr-core beside the binary required", result.stderr)
 
     def run_windows(self, *args, success=True):
         result = subprocess.run(["python3", str(SCRIPTS / "package-windows.py"), *map(str, args)],
@@ -141,8 +129,6 @@ class ReleaseTests(unittest.TestCase):
         launcher.write_bytes(b"windowed launcher")
         acp = self.work / "sheprd-acp.exe"
         acp.write_bytes(b"chat program")
-        core = self.work / "herdr-core.exe"
-        core.write_bytes(b"herdr-core daemon")
         target = "x86_64-pc-windows-msvc"
         output = Path(self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices).stdout.strip())
         self.assertEqual(output, self.work.resolve() / f"Sheprd-20260920.3-{target}.zip")
@@ -150,11 +136,11 @@ class ReleaseTests(unittest.TestCase):
         with zipfile.ZipFile(output) as archive:
             self.assertIsNone(archive.testzip())
             self.assertEqual(set(archive.namelist()), {base + p for p in [
-                "sheprd.exe", "sheprd-launcher.exe", "sheprd-acp.exe", "herdr-core.exe",
+                "sheprd.exe", "sheprd-launcher.exe", "sheprd-acp.exe",
                 "herdr-gpui.exe", "herdr-gpui-launcher.exe", "herdr-acp.exe",
                 "licenses/LICENSE", "licenses/NOTICE", "licenses/LICENSE-octicons",
                 "licenses/LICENSE-APACHE", "licenses/NOTICE.md", "licenses/SOUND-NOTICE.md",
-                "licenses/THIRD-PARTY-NOTICES.txt", "licenses/HERDR-CORE-LICENSES.txt",
+                "licenses/THIRD-PARTY-NOTICES.txt",
             ]})
             self.assertEqual({info.date_time for info in archive.infolist()}, {(1980, 1, 1, 0, 0, 0)})
             self.assertEqual(archive.read(base + "sheprd.exe"), binary.read_bytes())
@@ -165,9 +151,6 @@ class ReleaseTests(unittest.TestCase):
                                         for helper in ("acp",))]:
                 self.assertEqual(archive.read(base + legacy), archive.read(base + canonical))
             self.assertEqual(archive.read(base + "sheprd-acp.exe"), acp.read_bytes())
-            self.assertEqual(archive.read(base + "herdr-core.exe"), core.read_bytes())
-            self.assertEqual(archive.read(base + "licenses/HERDR-CORE-LICENSES.txt"),
-                             (SCRIPTS / "herdr-core-licenses.txt").read_bytes())
             self.assertEqual(archive.read(base + "licenses/THIRD-PARTY-NOTICES.txt"), self.notices.read_bytes())
             for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/LICENSE-APACHE",
                            "crates/sheprd-protocol/NOTICE.md", "crates/sheprd-gpui/SOUND-NOTICE.md"):
@@ -188,10 +171,6 @@ class ReleaseTests(unittest.TestCase):
         result = self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices, success=False)
         self.assertIn("A sheprd-acp.exe beside the binary required", result.stderr)
         acp.write_bytes(b"chat program")
-        core.unlink()
-        result = self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices, success=False)
-        self.assertIn("A herdr-core.exe beside the binary required", result.stderr)
-        core.write_bytes(b"herdr-core daemon")
         for args in [("20260920.03", target, binary, launcher, self.work, self.notices),
                      ("v20260920.3", target, binary, launcher, self.work, self.notices),
                      ("20260920.3", "x86_64-pc-windows-gnu", binary, launcher, self.work, self.notices),
@@ -241,7 +220,7 @@ class ReleaseTests(unittest.TestCase):
 
     def macos_builds(self, arm_worktree=False, intel_worktree=False):
         """Each architecture's build folder, as the build leaves it:
-        herdr-gpui, sheprd-acp, and fetched herdr-core beside it, in a folder
+        herdr-gpui and sheprd-acp beside it, in a folder
         the mock lipo reads the architecture from."""
         binaries = []
         for arch, worktree in (("arm64", arm_worktree), ("x86_64", intel_worktree)):
@@ -249,7 +228,6 @@ class ReleaseTests(unittest.TestCase):
             folder.mkdir(exist_ok=True)
             (folder / "herdr-gpui").write_bytes(build_identity(worktree))
             (folder / "sheprd-acp").write_bytes(b"chat program")
-            (folder / "herdr-core").write_bytes(b"herdr-core daemon")
             binaries.append(folder / "herdr-gpui")
         return binaries
 
@@ -259,7 +237,7 @@ class ReleaseTests(unittest.TestCase):
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices)
         app = self.work / "Sheprd.app"
         self.assertEqual({str(p.relative_to(app)) for p in app.rglob("*") if p.is_file()}, {
-            "Contents/MacOS/sheprd", "Contents/MacOS/sheprd-acp", "Contents/MacOS/herdr-core",
+            "Contents/MacOS/sheprd", "Contents/MacOS/sheprd-acp",
             "Contents/MacOS/herdr-acp",
             "Contents/Info.plist", "Contents/Resources/Sheprd.icns",
             "Contents/Resources/Assets.car",
@@ -267,7 +245,6 @@ class ReleaseTests(unittest.TestCase):
             "Contents/Resources/LICENSE", "Contents/Resources/NOTICE", "Contents/Resources/LICENSE-octicons",
             "Contents/Resources/THIRD-PARTY-NOTICES.txt",
             "Contents/Resources/SOUND-NOTICE.md",
-            "Contents/Resources/HERDR-CORE-LICENSES.txt",
         })
         self.assertEqual((app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").read_bytes(), self.notices.read_bytes())
         self.assertFalse((app / "Contents/MacOS/Herdr").exists())
@@ -275,8 +252,6 @@ class ReleaseTests(unittest.TestCase):
         for helper in ("acp",):
             self.assertEqual((app / f"Contents/MacOS/herdr-{helper}").read_bytes(),
                              (app / f"Contents/MacOS/sheprd-{helper}").read_bytes())
-        self.assertEqual((app / "Contents/Resources/HERDR-CORE-LICENSES.txt").read_bytes(),
-                         (SCRIPTS / "herdr-core-licenses.txt").read_bytes())
         self.assertEqual((app / "Contents/Resources/Sheprd.icns").read_bytes(), (ROOT / "assets/icons/Sheprd.icns").read_bytes())
         self.assertEqual((app / "Contents/Resources/Assets.car").read_bytes(), (ROOT / "assets/icons/Sheprd.car").read_bytes())
         for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/NOTICE.md", "crates/sheprd-gpui/SOUND-NOTICE.md"):
@@ -285,7 +260,7 @@ class ReleaseTests(unittest.TestCase):
 
     def test_assembly_requires_each_companion_beside_each_binary(self):
         self.mock_tools()
-        for companion in ("sheprd-acp", "herdr-core"):
+        for companion in ("sheprd-acp",):
             with self.subTest(companion=companion):
                 arm, intel = self.macos_builds()
                 (intel.parent / companion).unlink()
@@ -302,7 +277,7 @@ class ReleaseTests(unittest.TestCase):
                      "scripts/release/package-linux.sh", "scripts/release/build-icon.py",
                      "scripts/release/org.sheprd.Sheprd.desktop", "assets/macos/Info.plist",
                       "LICENSE", "NOTICE", "assets/icons/LICENSE-octicons",
-                      "crates/sheprd-gpui/SOUND-NOTICE.md", "scripts/release/herdr-core-licenses.txt",
+                      "crates/sheprd-gpui/SOUND-NOTICE.md",
                      "crates/sheprd-protocol/LICENSE-APACHE", "crates/sheprd-protocol/NOTICE.md"]:
             destination = fixture / path
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -337,7 +312,6 @@ class ReleaseTests(unittest.TestCase):
         (app / "Contents/MacOS/sheprd").write_text("never run")
         (app / "Contents/MacOS/sheprd").chmod(0o755)
         (app / "Contents/MacOS/sheprd-acp").write_text("never run")
-        (app / "Contents/MacOS/herdr-core").write_text("never run")
         for helper in ("acp",):
             (app / f"Contents/MacOS/herdr-{helper}").write_text("never run")
         (app / "Contents/Resources").mkdir()
@@ -375,7 +349,6 @@ class ReleaseTests(unittest.TestCase):
         (app / "Contents/MacOS/sheprd").write_text("never run")
         (app / "Contents/MacOS/sheprd").chmod(0o755)
         (app / "Contents/MacOS/sheprd-acp").write_text("never run")
-        (app / "Contents/MacOS/herdr-core").write_text("never run")
         for helper in ("acp",):
             (app / f"Contents/MacOS/herdr-{helper}").write_text("never run")
         (app / "Contents/Resources").mkdir()
@@ -443,10 +416,10 @@ class ReleaseTests(unittest.TestCase):
         signs = [c for c in calls if c[:2] == ["codesign", "--force"]]
         self.assertTrue(any(c[-1].endswith("/Contents/MacOS/sheprd") for c in signs))
         self.assertTrue(any(c[-1].endswith("/Sheprd.app") for c in signs))
-        # The nested sheprd-acp and herdr-core are signed before the app seals it,
+        # The nested sheprd-acp is signed before the app seals it,
         # without the app's entitlements.
         targets = [c[-1].rsplit("/", 1)[-1] for c in signs]
-        for nested in ("sheprd-acp", "herdr-core"):
+        for nested in ("sheprd-acp",):
             self.assertLess(targets.index(nested), targets.index("Sheprd.app"))
             self.assertFalse(any("--entitlements" in c for c in signs if c[-1].endswith(f"/{nested}")))
         self.assertTrue(all("--timestamp" in c for c in signs))

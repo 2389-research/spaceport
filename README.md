@@ -25,8 +25,8 @@ review their changes, track pull requests and usage, and work across local,
 SSH and cloud machines.
 
 Sheprd supports both an existing [Herdr](https://herdr.dev/) daemon and
-[herdr-core terminals](crates/sheprd-gpui/README.md#herdr-2-terminals). Releases
-bundle a pinned herdr-core, so a separate Herdr 1 installation is optional.
+[herdr-core terminals](crates/sheprd-gpui/README.md#herdr-2-terminals). Herdr Core
+must be installed separately.
 Herdr 1 supplies terminal cells; herdr-core supplies raw output that
 `sheprd-terminal` emulates for the native view. The daemons own terminal
 processes, so closing Sheprd leaves sessions running.
@@ -141,11 +141,9 @@ symbol, file, or printed `path:line` in your terminal editor,
 
 ## Install
 
-Release builds include a pinned herdr-core for local terminals. If Herdr 1 is
-not installed, Sheprd opens a herdr-core shell; no separate daemon installation
-is required. It joins an existing core first, otherwise starts your own
-`herdr-core` or the bundled companion. Source builds need a usable herdr-core
-binary for this path.
+Herdr Core must be installed separately for local terminals. The app joins
+an existing Core first, otherwise starts the installed `herdr-core`. If Herdr 1
+is absent, it opens a Core shell.
 
 If you already use [Herdr 1](https://herdr.dev/), Sheprd connects to its sessions
 and may start your installed `herdr server` when the target session is absent.
@@ -449,7 +447,7 @@ flowchart LR
     end
 
     core_client <-->|"framed JSON-RPC<br/>and raw output"| core
-    subgraph local["Local herdr-core: existing, user-installed or bundled"]
+    subgraph local["Local separately installed herdr-core"]
         core["herdr-core / hc"] --> core_terms["persistent terminal processes"]
     end
 ```

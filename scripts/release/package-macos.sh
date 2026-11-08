@@ -6,9 +6,8 @@ version_check "$1"
 [[ $(uname -s) == Darwin ]] || fail 'macOS required'
 [[ -f $2 && -f $3 && -d $4 ]] || fail 'Two binary files and an existing output directory required'
 [[ -f $5 && -s $5 ]] || fail 'Nonempty third-party notices file required'
-# The app starts chats with sheprd-acp and runs Herdr 2 terminals in
-# herdr-core; each build leaves both beside sheprd.
-companions=(sheprd-acp herdr-core)
+# The app starts chats with sheprd-acp beside its executable.
+companions=(sheprd-acp)
 for companion in "${companions[@]}"; do
     [[ -f $(dirname -- "$2")/$companion && -f $(dirname -- "$3")/$companion ]] || fail "A $companion beside each binary required"
 done
@@ -68,6 +67,5 @@ cp "$release_root/crates/sheprd-protocol/NOTICE.md" "$app/Contents/Resources/"
 cp "$release_root/LICENSE" "$release_root/NOTICE" "$release_root/assets/icons/LICENSE-octicons" "$app/Contents/Resources/"
 cp "$5" "$app/Contents/Resources/THIRD-PARTY-NOTICES.txt"
 cp "$release_root/crates/sheprd-gpui/SOUND-NOTICE.md" "$app/Contents/Resources/"
-cp "$release_root/scripts/release/herdr-core-licenses.txt" "$app/Contents/Resources/HERDR-CORE-LICENSES.txt"
 mv "$app" "$out"
 printf '%s\n' "$out"

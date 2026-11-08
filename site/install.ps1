@@ -5,8 +5,7 @@
 #
 # It downloads the zip for this machine from GitHub Releases, checks it against
 # the release's published SHA-256, and installs sheprd.exe, sheprd-launcher.exe,
-# sheprd-acp.exe,
-# and upstream herdr-core.exe, with legacy executable aliases. The directory
+# sheprd-acp.exe, with legacy executable aliases. The directory
 # %LOCALAPPDATA%\Programs\Herdr UI and AppUserModelID so.pen.herdr-gpui remain
 # unchanged for compatibility. It adds the directory to the user PATH and a
 # Sheprd Start menu shortcut. It never starts or stops terminal daemons, changes
@@ -40,7 +39,7 @@
     # Only exact installed paths are relevant. Never kill by process name or
     # touch a daemon/helper from another checkout or installation.
     $names = @('sheprd', 'sheprd-launcher', 'herdr-gpui', 'herdr-gpui-launcher',
-      'sheprd-acp', 'herdr-acp', 'herdr-core')
+      'sheprd-acp', 'herdr-acp')
     foreach ($name in $names) {
       $path = Join-Path $dest "$name.exe"
       $running = Get-Process -Name $name -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $path }

@@ -158,8 +158,6 @@ class ReleaseTargets(unittest.TestCase):
         for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-acp --target "$TARGET"',
                         'python3 scripts/release/smoke-cli.py "target/$TARGET/release/sheprd"',
                         '"target/$TARGET/release/sheprd-acp" --help',
-                        'python3 scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"',
-                        '"target/$TARGET/release/herdr-core" --version',
                         'test "$(rustc -vV | sed -n \'s/^host: //p\')" = "$TARGET"',
                         'name: linux-package-${{ matrix.target }}',
                         'bash scripts/release/package-linux.sh "$VERSION" "$TARGET"',
@@ -177,8 +175,6 @@ class ReleaseTargets(unittest.TestCase):
             ("windows-11-arm", "aarch64-pc-windows-msvc")])
         for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp --target "$TARGET"',
                         'python scripts/release/smoke-cli.py "target/$TARGET/release/sheprd.exe"',
-                        'python scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"',
-                        '"target/$TARGET/release/herdr-core.exe" --version',
                         'test "$(rustc -vV | sed -n \'s/^host: //p\')" = "$TARGET"',
                         'python scripts/release/generate-notices.py',
                         'python scripts/release/package-windows.py "$VERSION" "$TARGET"',
@@ -191,9 +187,7 @@ class ReleaseTargets(unittest.TestCase):
         self.assertIn("    runs-on: macos-15\n", macos)
         self.assertNotIn("intel", workflow)
         self.assertIn('python3 scripts/release/smoke-cli.py "target/$TARGET/release/sheprd"', macos)
-        self.assertIn('python3 scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"', macos)
-        self.assertIn('"target/$TARGET/release/herdr-core" --version', macos)
-        self.assertIn("target/${{ matrix.target }}/release/herdr-core\n", macos)
+        self.assertNotIn('fetch-herdr-core.py', workflow)
         self.assertNotIn("sheprd-nearby", workflow)
         self.assertNotIn("sheprd-remote-control", workflow)
         for name in ("macos-build", "linux", "windows"):
@@ -388,7 +382,7 @@ class WindowsTrust(unittest.TestCase):
         for setting in ("timestamp-rfc3161: http://timestamp.acs.microsoft.com", "timestamp-digest: SHA256",
                         "file-digest: SHA256", "exclude-environment-credential: true",
                         "cache-dependencies: false", "name: windows-package-${{ matrix.target }}",
-                        "}}\\sheprd.exe\n", "}}\\sheprd-launcher.exe\n", "}}\\sheprd-acp.exe\n", "}}\\herdr-core.exe\n",
+                        "}}\\sheprd.exe\n", "}}\\sheprd-launcher.exe\n", "}}\\sheprd-acp.exe\n",
                         "name: windows-signed-${{ matrix.target }}"):
             self.assertIn(setting, sign)
         # Unpack, sign, check and repack, then sign the installer, then verify.

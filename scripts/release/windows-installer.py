@@ -295,11 +295,6 @@ def smoke(installer, signed=False):
             check_update_relaunches(installer, app, env)
             check_startup_preserved(legacy_launcher)
         finally:
-            # The launched app started the bundled herdr-core, as it does
-            # without Herdr 1 installed. Setup and the uninstaller never stop
-            # a core, whose terminals outlive the app; this scratch install's
-            # cores are the test's own, so it ends them before uninstalling.
-            stop_processes_at(app / "herdr-core.exe")
             uninstall(app, env)
 
 

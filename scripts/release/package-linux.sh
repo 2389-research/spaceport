@@ -6,9 +6,8 @@ version_check "$1"
 case $2 in x86_64-unknown-linux-gnu|aarch64-unknown-linux-gnu) ;; *) fail 'Unsupported Linux target';; esac
 [[ -f $3 && -d $4 ]] || fail 'Binary file and existing output directory required'
 [[ -f $5 && -s $5 ]] || fail 'Nonempty third-party notices file required'
-# The app starts chats with sheprd-acp beside its executable and runs
-# Herdr 2 terminals in herdr-core. The build leaves both beside sheprd.
-companions=(sheprd-acp herdr-core)
+# The app starts chats with sheprd-acp beside its executable.
+companions=(sheprd-acp)
 for companion in "${companions[@]}"; do
     [[ -f $(dirname -- "$3")/$companion ]] || fail "A $companion beside the binary required"
 done
@@ -44,7 +43,6 @@ cp "$release_root/crates/sheprd-protocol/LICENSE-APACHE" "$release_root/crates/s
 cp "$release_root/LICENSE" "$release_root/NOTICE" "$release_root/assets/icons/LICENSE-octicons" "$root/share/licenses/herdr-gpui/"
 cp "$5" "$root/share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt"
 cp "$release_root/crates/sheprd-gpui/SOUND-NOTICE.md" "$root/share/licenses/herdr-gpui/"
-cp "$release_root/scripts/release/herdr-core-licenses.txt" "$root/share/licenses/herdr-gpui/HERDR-CORE-LICENSES.txt"
 COPYFILE_DISABLE=1 tar -C "$tmp" -czf "$tmp/archive.tar.gz" "$name"
 mv "$tmp/archive.tar.gz" "$out"
 printf '%s\n' "$out"

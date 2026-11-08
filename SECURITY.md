@@ -20,7 +20,7 @@ a week; this is a small project without a paid on-call rotation.
 Sheprd's native GUI is a **client** of Herdr 1 and herdr-core. It connects over
 local sockets or Windows named pipes, and to supported remote hosts through
 noninteractive SSH. It may start an installed Herdr 1 daemon, or a user-installed
-or bundled pinned herdr-core when needed. The daemons own terminal processes;
+herdr-core when needed. The daemons own terminal processes;
 closing the GUI leaves their sessions running. The repository also includes
 local control/attach endpoints for app and agent integrations.
 

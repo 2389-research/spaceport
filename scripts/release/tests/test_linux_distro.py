@@ -53,7 +53,6 @@ class LinuxDistroTests(unittest.TestCase):
         # package-linux.sh reads the release build identity the binary embeds.
         self.binary.write_bytes(b"not executable\0HERDR_BUILD_IDENTITY_V1\nworktree=0\nbranch=\npr=\n\0")
         (self.work / "sheprd-acp").write_bytes(b"chat program")
-        (self.work / "herdr-core").write_bytes(b"herdr-core daemon")
         self.notices = self.work / "notices.txt"
         self.notices.write_text("Third-party license text\n")
 

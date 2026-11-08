@@ -344,8 +344,8 @@ binary "#{appdir}/Sheprd.app/Contents/MacOS/sheprd"
 
 **The old path.** A move leaves `Herdr.app` as a relative symlink to `Sheprd.app`,
 hidden from Finder but listed by `ls`. Paths outside the app keep resolving: a
-core started from the old bundle outlives the app, and scripts and shell profiles
-may name it. The app rewrites the paths it owns when it next starts, such as
+the separately installed Core outlives the app, and scripts and shell profiles
+may name the old path. The app rewrites the paths it owns when it next starts, such as
 the agent skills. A Homebrew move only gets the
 link when the app itself restarts after the upgrade, so a `brew upgrade` run in a
 terminal leaves no link. Nothing removes the link later.

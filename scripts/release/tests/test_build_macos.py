@@ -28,8 +28,6 @@ class BuildMacosTests(unittest.TestCase):
         shutil.copyfile(SCRIPTS.parent / "update-manifest.py", scripts.parent / "update-manifest.py")
         (scripts / "package-macos.sh").write_text(
             'set -eu\n[[ ! -e sourced && $# == 5 && -s $5 ]]\n'
-            # The fetched herdr-core must sit beside each architecture's binary.
-            '[[ -f ${2%/*}/herdr-core && -f ${3%/*}/herdr-core ]]\n'
             'printf "package\\n" >> calls\nmkdir "$4/Sheprd.app"\n'
             '[[ ${FAIL_PACKAGE:-0} == 0 ]]\n'
         )
@@ -39,17 +37,6 @@ class BuildMacosTests(unittest.TestCase):
             'assert not pathlib.Path("sourced").exists()\n'
             'if os.environ.get("FAIL_NOTICES"): sys.exit(1)\n'
             'pathlib.Path(sys.argv[1]).write_text("test notices")\n'
-        )
-        # Stands in for the pinned download, so the test never reaches the
-        # network: records its arguments and leaves a placeholder herdr-core.
-        (scripts / "fetch-herdr-core.py").write_text(
-            'import os, pathlib, sys\n'
-            f'assert not any(name in os.environ for name in {SECRETS!r})\n'
-            'assert not pathlib.Path("sourced").exists()\n'
-            'with open("calls", "a") as calls: calls.write("fetch " + " ".join(sys.argv[1:]) + "\\n")\n'
-            'if os.environ.get("FAIL_FETCH"): sys.exit(1)\n'
-            'pathlib.Path(sys.argv[2]).mkdir(parents=True, exist_ok=True)\n'
-            '(pathlib.Path(sys.argv[2]) / "herdr-core").write_text("placeholder herdr-core")\n'
         )
         tools = self.root / "tools"
         tools.mkdir()
@@ -127,12 +114,10 @@ class BuildMacosTests(unittest.TestCase):
         self.env["FAIL_BUILD"] = "0"
         self.run_build(success=True)
         calls = (self.root / "calls").read_text().splitlines()
-        # Each target's Rust build and fetched herdr-core precede packaging.
-        self.assertEqual(calls[-6:], [
+        # Each target's Rust build precedes packaging.
+        self.assertEqual(calls[-4:], [
             "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp --target aarch64-apple-darwin",
-            "fetch aarch64-apple-darwin target/aarch64-apple-darwin/release",
             "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp --target x86_64-apple-darwin",
-            "fetch x86_64-apple-darwin target/x86_64-apple-darwin/release",
             "package", "sign",
         ])
         self.assertIn("Output already exists", self.run_build())
@@ -144,19 +129,6 @@ class BuildMacosTests(unittest.TestCase):
         self.assertIn("HERDR_UPDATE_PUBLIC_KEY", self.run_build())
         self.assertFalse((self.root / "calls").exists())
         self.assertFalse((self.root / "sourced").exists())
-
-    def test_fetch_failure_prevents_packaging_and_signing(self):
-        self.config()
-        self.env["FAIL_FETCH"] = "1"
-        self.run_build()
-        calls = (self.root / "calls").read_text().splitlines()
-        self.assertEqual(calls[-1], "fetch aarch64-apple-darwin target/aarch64-apple-darwin/release")
-        self.assertNotIn("package", calls)
-        self.assertNotIn("sign", calls)
-        self.assertFalse((self.root / "sourced").exists())
-        self.assertFalse((self.root / "target/distribution/20260920.3").exists())
-        del self.env["FAIL_FETCH"]
-        self.run_build(success=True)
 
     def test_notice_failure_prevents_packaging_and_signing(self):
         self.config()

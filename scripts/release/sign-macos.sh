@@ -82,16 +82,13 @@ ditto "$2" "$app"
 [[ $(plutil -extract LSMinimumSystemVersion raw "$app/Contents/Info.plist") == 14.2 ]] || fail 'App minimum OS mismatch'
 [[ $(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist") == sheprd ]] || fail 'App executable mismatch'
 [[ $(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist") == so.pen.herdr-gpui ]] || fail 'App signing identity mismatch'
-helpers=(sheprd-acp herdr-core herdr-acp)
+helpers=(sheprd-acp herdr-acp)
 for executable in sheprd "${helpers[@]}"; do
     for arch in arm64 x86_64; do
         lipo "$app/Contents/MacOS/$executable" -verify_arch "$arch"
     done
 done
-# Nested code is signed before the app that seals it. sheprd-acp, a command
-# line program, and herdr-core, the Herdr 2 daemon (fetched
-# pinned, re-signed here so the bundle notarizes), need none of the app's
-# entitlements.
+# Nested chat helpers need no app entitlements and are signed before the app.
 for executable in "${helpers[@]}"; do
     codesign --force --sign "$MACOS_SIGNING_IDENTITY" --keychain "$keychain" --options runtime --timestamp "$app/Contents/MacOS/$executable"
 done

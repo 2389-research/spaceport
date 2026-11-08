@@ -6,7 +6,7 @@
 //! sit side by side across groups.
 //!
 //! Everything that waits runs off the UI thread: the hub connects (and may
-//! start the bundled core), each shown pane has a worker that owns its
+//! start an installed core), each shown pane has a worker that owns its
 //! `sheprd_backend::Terminal`, and terminal details are listed on a thread.
 //! The window reads their mailboxes on its tick and renders the prepared
 //! screens.
@@ -307,7 +307,7 @@ impl SheprdWindow {
 
     /// The `new_core_terminal` command: starts a shell in herdr-core and
     /// shows it in a tab of the focused workspace. With no core running, the
-    /// user's own `herdr-core` or the bundled one starts. Refused on another
+    /// separately installed `herdr-core` starts. Refused on another
     /// host, where the shell would run on this computer instead.
     pub(crate) fn new_core_terminal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if self.selected_is_remote() {
