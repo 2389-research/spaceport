@@ -2,6 +2,18 @@ use super::*;
 use crate::config::theme::theme_key;
 use std::collections::HashSet;
 
+#[test]
+fn spaceport_config_path_is_independent_of_upstream() {
+    let root = Path::new("/private/config");
+    let path = app_config_path(root);
+    assert_eq!(path, root.join("spaceport/config.toml"));
+    assert_ne!(path, root.join("herdr/config-gpui.toml"));
+    assert_eq!(
+        path.with_extension("local.toml"),
+        root.join("spaceport/config.local.toml")
+    );
+}
+
 #[cfg(windows)]
 #[test]
 fn shared_windows_config_path_matches_upstream_roaming_layout() {

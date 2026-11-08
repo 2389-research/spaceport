@@ -584,16 +584,18 @@ pub(crate) fn home() -> Result<PathBuf> {
     sheprd_client::local_path::home_dir().ok_or(crate::Error::MissingHome)
 }
 
-/// The directory holding this app's `herdr` configuration directory. Upstream
-/// Herdr puts it under `%APPDATA%` on Windows, and the GUI config lives beside
-/// the daemon's, so the same root has to be used on both sides, including the
-/// login shell's `XDG_CONFIG_HOME` for a launch that did not inherit it.
+/// The platform configuration root, including the login shell's
+/// `XDG_CONFIG_HOME` for a desktop launch that did not inherit it.
 fn config_root() -> Result<PathBuf> {
     use sheprd_client::local_path::PathError;
     sheprd_client::local_path::config_root().map_err(|error| match error {
         PathError::MissingHome => crate::Error::MissingHome,
         PathError::RelativeConfigRoot => crate::Error::RelativeConfigRoot,
     })
+}
+
+fn app_config_path(root: &Path) -> PathBuf {
+    root.join("spaceport/config.toml")
 }
 
 impl Config {
@@ -621,14 +623,12 @@ impl Config {
     }
 
     pub fn path() -> Result<PathBuf> {
-        Ok(config_root()?.join("herdr/config-gpui.toml"))
+        Ok(app_config_path(&config_root()?))
     }
 
-    /// Where mods live, one folder each (`docs/mods-plan.md`). Beside this
-    /// app's config rather than at Herdr's top level, so a folder Herdr adds
-    /// later cannot collide with it.
+    /// Where mods live until the removed mod feature is retired.
     pub fn mods_dir() -> Result<PathBuf> {
-        Ok(config_root()?.join("herdr/gpui-mods"))
+        Ok(config_root()?.join("spaceport/mods"))
     }
 
     pub fn local_path() -> Result<PathBuf> {
