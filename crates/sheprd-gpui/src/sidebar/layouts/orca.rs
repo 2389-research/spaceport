@@ -8,7 +8,7 @@ use super::{
     super::{
         cell::{AgentRow, RowContext, RowLayout, RowState, WorkspaceRow},
         line_height,
-        row::{Elbow, RowBadge, RowKind, RowTree, TokenLook, guide, left_behind, token_column},
+        row::{Elbow, RowBadge, RowKind, RowTree, TokenLook, guide, token_column},
         scaled,
         tokens::ResolvedToken,
         wash::HostMark,
@@ -178,7 +178,6 @@ impl RowLayout for Orca {
         let branch = branch.filter(|branch| *branch != label);
         let pr = badge.as_ref().and_then(|badge| badge.pr.as_ref());
         let dirty = badge.as_ref().is_some_and(|badge| badge.dirty);
-        let teleported = badge.as_ref().is_some_and(|badge| badge.teleported);
         let muted = badge.as_ref().is_some_and(|badge| badge.muted);
         let dirty_size = (line * 0.7).round();
         let worktree = parts::worktree(label, &icon, dirty_size);
@@ -213,7 +212,6 @@ impl RowLayout for Orca {
                             kind: RowKind::Workspace,
                             status,
                             focused: state.selected,
-                            teleported,
                         },
                         width,
                         cx,
@@ -226,10 +224,6 @@ impl RowLayout for Orca {
                 .when_some(primary, |text, primary| {
                     let width = (7. * glyph).ceil() + 10.;
                     text.fixed(width, parts::first_line(width, primary.w(px(width)), cx))
-                })
-                .when(teleported, |text| {
-                    let mark = parts::teleported(label, dirty_size, theme);
-                    text.fixed(dirty_size, parts::first_line(dirty_size, mark, cx))
                 })
                 .when(dirty, |text| {
                     let mark = parts::dirty(label, dirty_size, theme);
@@ -258,11 +252,7 @@ impl RowLayout for Orca {
                 div()
                     .debug_selector(|| format!("name-{label}"))
                     .h(px(line))
-                    .text_color(rgb(if teleported {
-                        left_behind(theme.foreground, theme)
-                    } else {
-                        theme.foreground
-                    }))
+                    .text_color(rgb(theme.foreground))
                     .when(state.selected, |title| {
                         title.font_weight(FontWeight::SEMIBOLD)
                     }),
@@ -292,9 +282,6 @@ impl RowLayout for Orca {
             })
             .when_some(upstream, |line, upstream| {
                 line.fixed(upstream.width(glyph), upstream.element(label, glyph, theme))
-            })
-            .when(teleported, |line| {
-                line.fixed(dirty_size, parts::teleported(label, dirty_size, theme))
             })
             .when(dirty, |line| {
                 line.fixed(dirty_size, parts::dirty(label, dirty_size, theme))
@@ -358,7 +345,6 @@ impl RowLayout for Orca {
                     kind: RowKind::Agent(agent.icon),
                     status: agent.status,
                     focused: state.selected,
-                    teleported: false,
                 },
                 inner(cx, 0.) - icon - GAP + room,
                 cx,

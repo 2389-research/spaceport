@@ -101,8 +101,8 @@ regenerates these and the installer images. It needs Python and `rsvg-convert`
 ## Interface and service marks
 
 `plus.svg`, `close.svg`, `pencil.svg`, `trash.svg`, `chevron-up.svg`,
-`chevron-down.svg`, `git-branch.svg`, `sessions.svg`, `file.svg`, `teleport.svg`,
-`teleport-back.svg`, `zoom.svg`, the `window-*.svg` controls, `pull-request.svg`,
+`chevron-down.svg`, `git-branch.svg`, `sessions.svg`, `file.svg`,
+`zoom.svg`, the `window-*.svg` controls, `pull-request.svg`,
 `issue.svg`, `beads.svg`, `user.svg`, `cpu.svg`, and `brain.svg` are original
 interface artwork.
 GPUI renders these as masks tinted by the current theme.

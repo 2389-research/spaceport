@@ -34,7 +34,7 @@ with `ssh HOST` in a terminal: the app reuses that master connection while it li
 Otherwise, on macOS and Linux, the app's own short commands on a host (Git reads,
 avatars, usage, scripts) share one SSH login per host instead of a login each, so
 hosts that rate-limit new SSH connections (a firewall `limit` rule, sshd's
-`MaxStartups`) are not flooded; large transfers such as Teleport get a second
+`MaxStartups`) are not flooded; large host transfers get a second
 login of their own, and terminals keep their own connection. These shared logins
 are the app's private children: their sockets are in a directory only the app
 can open, they never touch a master of yours, and they end with the app, even
@@ -743,8 +743,8 @@ New tab and New Workspace follow the shared `ui.prompt_new_tab_name` (default
 on) and `ui.prompt_new_workspace_name` (default off). When set, every button,
 menu item, shortcut, and palette entry first asks for a name, proposing the next
 tab number or the workspace's folder; Enter creates, Escape cancels, and an empty
-or unchanged name lets the daemon choose it, as in the TUI. Teleport, worktree
-creation, and browser tabs never prompt.
+or unchanged name lets the daemon choose it, as in the TUI. Worktree creation
+does not prompt.
 
 Sound uses the dedicated Rodio backend, shared global/per-agent settings and
 custom local paths, with Herdr's bundled sounds as fallbacks. The Sound tab sets
@@ -1717,9 +1717,9 @@ Note opens the focused checkout's note. Neither has a default shortcut;
 
 A note is one line of at most 500 characters. Notes stay in this client, in
 `worktree-notes.json` in its state directory: they never reach the daemon or the
-repository, and every window shows the same ones. Like teleport marks they
-belong to a host, repository and branch, so a note survives a daemon restart
-and follows its branch, and it does not travel with a teleported worktree.
+repository, and every window shows the same ones. They belong to a host,
+repository and branch, so a note survives a daemon restart and follows its
+branch.
 
 ## Telling Worktrees Apart
 
@@ -1776,8 +1776,8 @@ tab's focused pane and puts the moved pane on its right. The terminal keeps
 running, and the move asks Herdr to focus the pane where it lands.
 
 Herdr does not offer `pane.move` to GUI clients, so the move runs `herdr
-[--session NAME] pane move` on the endpoint's host, locally or over SSH, the way
-Teleport does, on a background thread. The menu says **Moving pane…** until
+[--session NAME] pane move` on the endpoint's host, locally or over SSH, on a
+background thread. The menu says **Moving pane…** until
 Herdr answers and closes when the move succeeds. Herdr's refusals appear in the
 menu: it will not move a pane out of or into a zoomed tab, and a missing `herdr`
 CLI is named as such. A failure that arrives after the menu was closed appears
@@ -1796,7 +1796,7 @@ a remote, and refuses a repository matching only by name. The review lists the
 branch, the unpushed commits and changed files, and what the pane will run
 there; Enter starts the move.
 
-The move works like Teleport, for one pane: the checkout's commits and its
+The move copies one pane's work: the checkout's commits and its
 staged, unstaged and untracked changes go to a new worktree there, on the same
 branch when that device can take it, otherwise on a new branch from the same
 commit. A space takes them only if nothing there would be overwritten: its
@@ -1836,114 +1836,18 @@ changed since, for example after it reports its session. If a repository move fa
 before the pane runs there, a new worktree is removed again, and if it cannot
 be, the error says where it was left; in a space, the tab made for the pane
 closes and the copied changes stay in its checkout. Closing the menu abandons a
-review but not a move under way, whose result then appears as a flash. The same
-hosts as Teleport can be reached, so neither device may be a custom socket, WSL
-or development (`--dev`) endpoint.
+review but not a move under way, whose result then appears as a flash. Both
+devices must be scriptable hosts; neither may be a custom socket or WSL
+endpoint.
 
 ## Teleport
 
-Right-click a linked worktree and choose Teleport... to move it to another
-connected host: its branch and commits, staged, unstaged and untracked changes,
-tabs and splits, the programs running in them, and agent sessions. It is offered
-on Linux and macOS clients when the worktree's host is the local session or a
-saved SSH host or cloud device; custom socket and
-WSL endpoints are not scripted. Neither is a
-development (`--dev`) session: the `herdr` CLI names sessions of the release
-installation only, so Teleport, fan-out, and dispatch are not offered there,
-and an orchestrator action that drives that session through the CLI reports an
-error instead of reaching the release session of the same name.
-
-Cloud devices use the same saved account and machine identity as their sidebar
-connection, in either direction.
-Teleport does not create a new
-cloud device or install Herdr. Cloud authentication and command preparation run
-only after a host is chosen, on the background worker.
-
-1. **Choose a host.** Every other enabled supported host is listed at once, connected or
-   not; nothing is probed until one is chosen. The review then finds where the
-   worktree goes there: the checkout it once left (see below), else the
-   repository if it is open, matched by normalized Git remote (`origin` first,
-   then any remote) or, only when this repository has no remotes, by name.
-   Otherwise Teleport sets it up: a checkout of the same repository at the same
-   place under the home directory (`~/code/app`) is opened as a space; failing
-   that, the repository is cloned there from `origin` without prompting, or,
-   when that host cannot reach `origin`, copied from this machine with its
-   branches and tags and `origin` restored. A different repository already at
-   that place is left alone and the copy goes to `<place>-teleport`.
-2. **Review.** The dialog lists the branch, unpushed commits, changed and
-   untracked files, and what each pane becomes. The destination's branch must be
-   absent or an ancestor of this one, and must not be checked out there.
-3. **Teleport.** Closing the dialog does not stop a move in progress; its result
-   arrives as a flash, and success switches to the new workspace on the
-   destination, waiting for that host to connect and list it if need be.
-
-Commits travel as a Git bundle holding only what the destination lacks. The
-uncommitted work travels as two temporary commits, built through a temporary
-index so the source checkout, index and branch are not modified. The branch is
-set to the source's commit, fast-forwarding a branch already there but never
-overwriting one that diverged. The destination's `herdr worktree create` checks
-it out under the same name, then the staged index and working tree are restored exactly, binary files
-included. Ignored files such as `.env` and build output stay behind, and so do
-submodule contents.
-
-When `origin` is on GitHub and the destination cannot reach it by itself (no
-SSH key there, or an unknown host key), the review says so and the move lends
-it this machine's `gh auth token`. The token travels over the script's stdin
-and is stored in the repository's Git directory, `.git/herdr/github-token` (mode
-600), so no working tree or commit ever holds it. A repository-local credential
-helper answers `https://github.com` from that file, `git@github.com:` URLs are
-rewritten to HTTPS for that repository, and `.envrc` gains an `export GH_TOKEN`
-that reads the file, for `gh` under direnv; it is excluded locally, and a
-repository that tracks its own `.envrc` is left untouched. Replace the file to
-rotate the token. If `gh` is not signed in here, the review warns that pull
-and push will not work there.
-
-Tabs, split directions and ratios, and custom tab and workspace labels are
-rebuilt. Each pane starts in the same directory relative to the checkout.
-Running commands start again with their arguments, with paths under the
-checkout moved to the new checkout. Environment variables, shell history,
-background jobs and unsaved editor buffers do not carry over.
-
-Agent sessions move in each agent's own format, so the full history resumes:
-
-| Agent | Moved as | Resumed with |
-| --- | --- | --- |
-| Claude Code | transcript into the new cwd's `~/.claude/projects` directory | `claude --resume <id>` |
-| Codex | rollout under `~/.codex/sessions` | `codex resume <id>` |
-| opencode | `opencode export`, then `opencode import` | `opencode --session <id>` |
-| pi, omp | session file into the new cwd's session directory | `pi --session <file>`, `omp --resume=<file>` |
-| GitHub Copilot CLI | session directory under `~/.copilot/session-state` (`$COPILOT_HOME`) | `copilot --resume=<id>` |
-| Letta Code | nothing: conversations stay on the Letta server, which the destination must be signed in to | `letta --conversation <id>` |
-
-The checkout path is rewritten inside each moved session. Model and permission
-flags from the original command line are kept for the agents above except Letta.
-Initial prompts are dropped. An agent the destination lacks, or one with no
-reported session, is asked first to write a handoff note to
-`.herdr/teleport/handoff-N.md`. The note travels with the changes, even where
-`.herdr` is ignored. The same agent, or else the first installed of Claude Code,
-Codex, opencode and pi, then starts with that note. Anything nothing can continue
-is listed as skipped.
-
-Herdr can resume Devin, Droid, Kimi, Mastra Code, Hermes, Qoder, Qwen Code, Kilo,
-Cursor Agent, Antigravity and Grok sessions too, but only on the host that
-stores them. Teleport does not yet know where these agents store their
-sessions, so a destination that has the agent runs its original command line again
-without a handoff note.
-
-Once the destination worktree, changes and tabs exist, the source workspace's
-programs stop: its tabs are replaced by one idle `teleported` shell tab, and the
-workspace and checkout stay. Herdr has no moved or disabled state, so this
-client remembers the move (`teleported.json` in its state directory) and marks
-the row with a teleport icon. Its menu offers Go to teleported copy and Clear
-teleported mark instead of Teleport. The copy on the destination offers
-Teleport back, which opens Teleport already aimed at the host the work came
-from. Teleporting the work back picks that checkout as the destination: its current state, committed or not, is saved to
-`refs/herdr-teleport/backup/...` first, then it takes the returning branch and
-changes, its tabs are rebuilt, and the mark is cleared.
-Everything runs as noninteractive scripts calling Git and the `herdr` CLI on
-each host. Remote hosts use the terminal's SSH trust and authentication policy,
-and the UI thread never blocks. The GUI connection's API does not expose layouts,
-process details or agent sessions, which is why Teleport uses the CLI.
+Spaceport no longer offers worktree Teleport in the workspace menu. It does
+not start a migration or read and write `teleported.json`; existing files stay
+untouched. The shared host scripts remain while pane carry, fan-out, dispatch,
+cloud image work and legacy rich-chat paths still use them. See the
+[Spaceport removal evidence](../../docs/spaceport/evidence/t04-native-teleport-removal.md)
+for the exact remaining routes and open checks.
 
 ## Where A New Worktree Opens
 
@@ -1980,9 +1884,8 @@ its room, and each of the repository's last eight new checkouts that went
 there adds half a core, up to three. The ranking follows the samples for a few
 seconds, then holds still so the tiles do not move under the pointer.
 
-Choosing another host creates the checkout there through the same scripts as
-Teleport: the repository is found by remote (or opened, or cloned, as Teleport
-does), the base commit is resolved here and shipped as a Git bundle only when
+Choosing another host creates the checkout there through shared host
+scripts: the repository is found by remote, opened, or cloned, the base commit is resolved here and shipped as a Git bundle only when
 that host lacks it, and that host's own daemon creates the worktree from it.
 Closing the dialog does not stop it; the result arrives as a flash, and the
 window switches to the new workspace. Once it is shown, a new worktree runs the
@@ -2023,8 +1926,7 @@ daemons, and a restored lane is finished or removed only once its connected
 host shows its workspace on its branch. Only the first running copy of the app saves and restores fan-outs.
 
 Where new checkouts went is kept in `dispatch-history.json` in the state
-directory, by repository name and host. Like Teleport, dispatch needs a Linux
-or macOS client and the local session or a saved SSH host on both ends.
+directory, by repository name and host. Dispatch needs a Linux or macOS client and the local session or a saved SSH host on both ends.
 
 ## Activity bar
 
@@ -3984,8 +3886,7 @@ Where this differs from macOS and Linux:
   the host still opens, through its own `ssh -N -L` child.
 - **Uploads.** Files and images dropped or pasted on an SSH host's pane are
   not uploaded yet.
-- **Steps that also run here.** Teleport, fan-out, process
-  lists, and pane moves also run this machine's `/bin/sh` and stay
+- **Steps that also run here.** Fan-out, process lists, and pane moves also run this machine's `/bin/sh` and stay
   unavailable from Windows.
 
 CPU and memory, plan usage, listening ports, and the agent skill's install run
@@ -4045,11 +3946,7 @@ named in the error and nothing is pasted.
 
 Ports need no forwarding: a distribution's device menu offers none, and
 `spaceport ports forward` refuses with that reason, since WSL already forwards
-its `localhost` ports to Windows. Teleport is not offered. It runs only on
-Linux and macOS clients, which cannot reach a distribution, and a Windows
-client cannot script its own checkouts, so the only move left would be between
-two distributions on the same machine.
-
+its `localhost` ports to Windows.
 ### Window chrome on Windows
 
 Every window keeps the title bar Windows draws, so its buttons, double-click,

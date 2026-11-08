@@ -21,12 +21,10 @@ fn counts(
     git: &Git,
     mode: ChangeCounts,
 ) -> Option<(String, String)> {
-    let marks = crate::teleport::Marks::detached();
     workspace_badge(
         workspace,
         Some((cache, &crate::pull_request::View::default())),
         (Some(git), mode),
-        (&marks, crate::endpoint::LOCAL),
         (None, false),
         &Theme::default(),
     )?
@@ -70,13 +68,11 @@ fn a_row_shows_only_the_change_counts_the_setting_picks() {
     );
     assert_eq!(counts(head, &cache, &git, ChangeCounts::PullRequest), None);
     assert_eq!(counts(head, &cache, &git, ChangeCounts::Local), None);
-    let marks = crate::teleport::Marks::detached();
     let badge = |workspace, git| {
         workspace_badge(
             workspace,
             None,
             (git, ChangeCounts::Local),
-            (&marks, crate::endpoint::LOCAL),
             (None, false),
             &Theme::default(),
         )
@@ -99,12 +95,10 @@ fn pr_slot(
     cache: &crate::pull_request::Cache,
     git: &Git,
 ) -> Option<String> {
-    let marks = crate::teleport::Marks::detached();
     workspace_badge(
         workspace,
         Some((cache, &crate::pull_request::View::default())),
         (Some(git), ChangeCounts::PullRequest),
-        (&marks, crate::endpoint::LOCAL),
         (None, false),
         &Theme::default(),
     )?

@@ -2,7 +2,7 @@
 //! built-in name and detail lines.
 
 use super::{
-    RowIcon, RowKind, agent_icon_size, agent_mark, label_text, left_behind, place_line, row_text,
+    RowIcon, RowKind, agent_icon_size, agent_mark, label_text, place_line, row_text,
     shared_label_text,
 };
 use crate::{
@@ -25,8 +25,6 @@ pub(in crate::sidebar) struct TokenLook {
     pub(in crate::sidebar) kind: RowKind,
     pub(in crate::sidebar) status: AgentStatus,
     pub(in crate::sidebar) focused: bool,
-    /// A teleported checkout fades its name, as the native rows do.
-    pub(in crate::sidebar) teleported: bool,
 }
 
 fn token_appearance(kind: &TokenKind, look: TokenLook, cx: &RowContext<'_>) -> (u32, FontWeight) {
@@ -35,9 +33,6 @@ fn token_appearance(kind: &TokenKind, look: TokenLook, cx: &RowContext<'_>) -> (
     match kind {
         TokenKind::StateIcon | TokenKind::Text(_, TextRole::Status) => {
             (cx.indicators.color(look.status), FontWeight::NORMAL)
-        }
-        TokenKind::Text(_, TextRole::Workspace) if look.teleported => {
-            (left_behind(name, theme), weight)
         }
         TokenKind::Text(_, TextRole::Workspace) => (name, weight),
         TokenKind::Text(_, TextRole::Secondary | TextRole::Agent) => {
@@ -297,6 +292,3 @@ pub(super) fn configured_lines(
     }
     column
 }
-
-#[cfg(test)]
-mod tests;

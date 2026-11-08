@@ -212,7 +212,7 @@ impl SheprdWindow {
                     );
                     self.queue_dispatch_setup(setup, cx);
                 }
-                self.teleport_follow = Some(crate::teleport::Follow::new(
+                self.target_follow = Some(crate::window::target_follow::Follow::new(
                     created.endpoint_id,
                     created.workspace_id,
                 ));

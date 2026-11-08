@@ -12,7 +12,7 @@ fn tile(action: WorkspaceMenuAction, label: Label, enabled: bool) -> Tile {
 #[test]
 fn every_slot_keeps_its_place_and_grays_what_is_unavailable() {
     use WorkspaceMenuAction::*;
-    // A plain checkout: no worktree, fan-out, or teleport to offer.
+    // A plain checkout has no worktree or fan-out action to offer.
     let items = [
         (Dialog(WorkspaceAction::Rename), Label::RENAME),
         (Dialog(WorkspaceAction::Close), Label::CLOSE),
@@ -28,8 +28,6 @@ fn every_slot_keeps_its_place_and_grays_what_is_unavailable() {
             ),
             tile(FanOut, Label::FAN_OUT, false),
             tile(Dialog(WorkspaceAction::Rename), Label::RENAME, true),
-            tile(Teleport, Label::TELEPORT, false),
-            tile(TeleportBack, Label::TELEPORT_BACK, false),
             tile(Dialog(WorkspaceAction::Close), Label::CLOSE, true),
         ]
     );
@@ -42,8 +40,6 @@ fn rows_and_the_destructive_action_follow_the_grid_in_order() {
     let items = [
         (Dialog(WorkspaceAction::NewWorktree), Label::NEW_WORKTREE),
         (Dialog(WorkspaceAction::Rename), Label::RENAME),
-        (Teleport, Label::TELEPORT),
-        (TeleportBack, Label::TELEPORT_BACK),
         (Dialog(WorkspaceAction::Close), Label::CLOSE_GROUP),
         (Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE),
         (Collapse, Label::COLLAPSE_GROUP),
@@ -53,9 +49,8 @@ fn rows_and_the_destructive_action_follow_the_grid_in_order() {
         ),
     ];
     let (tiles, rest) = layout(&items);
-    assert!(tiles[3].enabled && tiles[4].enabled);
-    assert_eq!(tiles[4].action, TeleportBack);
-    assert_eq!(tiles[5].label, Label::CLOSE_GROUP);
+    assert!(tiles[0].enabled && tiles[2].enabled && tiles[3].enabled);
+    assert_eq!(tiles[3].label, Label::CLOSE_GROUP);
     assert_eq!(
         rest,
         [
@@ -67,27 +62,6 @@ fn rows_and_the_destructive_action_follow_the_grid_in_order() {
             ),
         ]
     );
-}
-
-#[test]
-fn a_teleported_checkout_swaps_its_teleport_tiles_in_place() {
-    use WorkspaceMenuAction::*;
-    let items = [
-        (Dialog(WorkspaceAction::Rename), Label::RENAME),
-        (GoToTeleported, Label::GO_TO_TELEPORTED),
-        (ClearTeleported, Label::CLEAR_TELEPORTED),
-        (Dialog(WorkspaceAction::Close), Label::CLOSE),
-    ];
-    let (tiles, rest) = layout(&items);
-    assert_eq!(
-        tiles[3],
-        tile(GoToTeleported, Label::GO_TO_TELEPORTED, true)
-    );
-    assert_eq!(
-        tiles[4],
-        tile(ClearTeleported, Label::CLEAR_TELEPORTED, true)
-    );
-    assert!(rest.is_empty());
 }
 
 #[gpui::test]

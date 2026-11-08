@@ -16,7 +16,6 @@ mod host;
 pub mod job;
 pub mod launch;
 mod layout;
-pub mod marks;
 pub mod provision;
 pub mod remote;
 mod sessions;
@@ -32,7 +31,6 @@ pub use {
     host::{Host, installed_programs_script},
     job::{HostRepositories, Place, Retired, Source, open_repositories},
     launch::AgentKind,
-    marks::{Mark, Marks},
     snapshot::{
         Envelope, HostSnapshot, PaneInfoResult, ProcessInfo, ProcessInfoResult, SnapshotResult,
         WorkspaceCreated, WorktreeCreated,
@@ -44,7 +42,6 @@ pub use {
     git::SourceState,
     job::{Repository, plan::TabPlan},
     layout::Node,
-    marks::Destination as MarkDestination,
 };
 
 /// The host Teleport, fan-out, and dispatch script for an endpoint, if they

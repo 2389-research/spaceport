@@ -105,10 +105,6 @@ impl SheprdWindow {
             self.carry_key(event, window, cx);
             return;
         }
-        if self.menu.page == Some(Page::Teleport) {
-            self.teleport_key(event, window, cx);
-            return;
-        }
         if self.menu.page == Some(Page::FanOut) {
             self.fan_out_key(event, window, cx);
             return;

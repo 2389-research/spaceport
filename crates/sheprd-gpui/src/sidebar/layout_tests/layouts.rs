@@ -31,18 +31,6 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
         pr.deletions = 567;
         view.seed_pr(input.clone(), pr, now);
         view.git.seed_probe(input, true, now);
-        // Its work was teleported away, so the row carries that mark too.
-        view.teleport_marks.add(crate::teleport::Mark {
-            endpoint: crate::endpoint::LOCAL.into(),
-            repo_key: REPO_KEY.into(),
-            branch: "worktree/sidebar-child".into(),
-            destination: crate::teleport::MarkDestination {
-                endpoint: "ssh:box".into(),
-                label: "box".into(),
-                repo_key: "/home/me/agent-launcher/.git".into(),
-                workspace_id: "w9".into(),
-            },
-        });
         // And a note, marked and read under the row.
         crate::worktree_notes::Notes::update(cx, |notes| {
             notes.set(
@@ -153,13 +141,6 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
                         .is_none(),
                     "{context}"
                 );
-                // Every layout, Minimal included, marks a teleported checkout.
-                let row = cx.debug_bounds("row-sidebar-child").unwrap();
-                let teleported = cx
-                    .debug_bounds("teleported-sidebar-child")
-                    .unwrap_or_else(|| panic!("{context}: no teleported mark"));
-                assert!(teleported.right() <= row.right(), "{context}");
-                assert!(cx.debug_bounds("teleported-herdr").is_none(), "{context}");
                 // Only the focused workspace draws a selection mark in the
                 // layouts whose highlight exists only while selected.
                 assert!(cx.debug_bounds("highlight-herdr").is_some() || mode == LayoutMode::Orca);

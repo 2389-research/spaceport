@@ -455,7 +455,6 @@ impl SheprdWindow {
                                 (endpoint_index == 0).then_some(&self.git),
                                 self.config.sidebar_style.change_counts,
                             ),
-                            (&self.teleport_marks, &endpoint.id),
                             (note.as_deref(), muted),
                             theme,
                         ),

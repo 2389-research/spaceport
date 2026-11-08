@@ -172,7 +172,7 @@ fn a_move_that_finished_with_a_warning_flashes_only_messages_under_en_xa() {
             assert_translated(&surface, &uncut(recorder.take()), &announcement);
             cx.update(|_, cx| {
                 view.update(cx, |v, _| {
-                    v.teleport_follow = None;
+                    v.target_follow = None;
                 })
             });
         }

@@ -1,5 +1,5 @@
 //! The trailing badges a row reserves room for: its pull request, change
-//! counts, dirty, note, teleported, and muted marks, and the upstream drift
+//! counts, dirty, note, and muted marks, and the upstream drift
 //! counts.
 
 use super::label_text;
@@ -17,8 +17,6 @@ pub(in crate::sidebar) struct RowBadge {
     pub(in crate::sidebar) pr: Option<PrBadge>,
     pub(in crate::sidebar) counts: Option<Counts>,
     pub(in crate::sidebar) dirty: bool,
-    /// The work moved to another host; this checkout stays behind.
-    pub(in crate::sidebar) teleported: bool,
     /// The user keeps a note on this checkout. Card layouts leave it to the
     /// note's own line under the row, which leads with the same icon, rather
     /// than squeeze their pull request number out of a narrow card.
@@ -31,7 +29,7 @@ impl RowBadge {
     /// Whether it says anything about the checkout, beyond the workspace's
     /// mute, which card layouts put on the name's line instead.
     pub(in crate::sidebar) fn checkout_marks(&self) -> bool {
-        self.pr.is_some() || self.counts.is_some() || self.dirty || self.teleported || self.noted
+        self.pr.is_some() || self.counts.is_some() || self.dirty || self.noted
     }
 
     pub(in crate::sidebar) fn lines(&self, layout: &SidebarMetrics) -> usize {
@@ -44,20 +42,16 @@ impl RowBadge {
         pr: Option<PrBadge>,
         counts: Option<Counts>,
         dirty: bool,
-        teleported: bool,
         noted: bool,
         muted: bool,
     ) -> Option<Self> {
-        (pr.is_some() || counts.is_some() || dirty || teleported || noted || muted).then_some(
-            Self {
-                pr,
-                counts,
-                dirty,
-                teleported,
-                noted,
-                muted,
-            },
-        )
+        (pr.is_some() || counts.is_some() || dirty || noted || muted).then_some(Self {
+            pr,
+            counts,
+            dirty,
+            noted,
+            muted,
+        })
     }
 
     /// The whole column's width: its first line or the counts line under
@@ -93,15 +87,10 @@ impl RowBadge {
         let pr = (glyph * number as f32).ceil();
         // Reserve the icon and the gap before the PR number, even at small fonts.
         let mark = line_height(font) + glyph;
-        let marks = [
-            self.dirty && !self.chipped(layout),
-            self.teleported,
-            self.noted,
-            self.muted,
-        ]
-        .into_iter()
-        .filter(|mark| *mark)
-        .count();
+        let marks = [self.dirty && !self.chipped(layout), self.noted, self.muted]
+            .into_iter()
+            .filter(|mark| *mark)
+            .count();
         pr + mark * marks as f32
     }
 
@@ -126,7 +115,6 @@ impl RowBadge {
             pr,
             counts,
             dirty,
-            teleported,
             noted,
             muted,
         } = self;
@@ -153,20 +141,13 @@ impl RowBadge {
                                 .debug_selector(|| format!("muted-{key}")),
                         )
                     })
-                    // Uncommitted work, marked the way the titlebar
-                    // button marks it.
-                    .when(teleported, |line| {
-                        line.child(
-                            crate::icons::teleported(theme, (line_height(font) * 0.75).round())
-                                .debug_selector(|| format!("teleported-{key}")),
-                        )
-                    })
                     .when(noted, |line| {
                         line.child(
                             crate::icons::note(theme, (line_height(font) * 0.75).round())
                                 .debug_selector(|| format!("note-{key}")),
                         )
                     })
+                    // Uncommitted work uses the titlebar button's mark.
                     .when(dirty && !chipped, |line| {
                         line.child(
                             // Well under the line height, so marks on

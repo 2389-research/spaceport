@@ -350,11 +350,6 @@ pub(super) fn first_line(width: f32, element: impl IntoElement, cx: &RowContext<
         .child(element)
 }
 
-/// Uncommitted work, marked as the titlebar marks it.
-pub(super) fn teleported(key: &str, size: f32, theme: &Theme) -> Div {
-    crate::icons::teleported(theme, size).debug_selector(|| format!("teleported-{key}"))
-}
-
 /// A workspace whose notifications the user muted.
 pub(super) fn muted(key: &str, size: f32, theme: &Theme) -> Div {
     crate::icons::muted(theme, size).debug_selector(|| format!("muted-{key}"))

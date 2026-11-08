@@ -70,7 +70,6 @@ fn every_page_title_is_a_message_under_en_xa() {
             Page::RenamePane,
             Page::RenameTab,
             Page::Tab,
-            Page::Teleport,
             Page::Themes,
             Page::Update,
             Page::VersionMismatch,

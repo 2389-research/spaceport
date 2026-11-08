@@ -13,11 +13,11 @@ use crate::{
     menu::Page,
     progress::{self, Progress},
     teleport::{
-        Follow, HostRepositories, Place, Step,
+        HostRepositories, Place, Step,
         carry::{self, Carried, Choice, Landing, Origin, Review},
         host_for, text,
     },
-    window::Flash,
+    window::{Flash, target_follow::Follow},
 };
 pub(super) use availability::{Availability, PaneState};
 use gpui::{prelude::*, *};
@@ -413,7 +413,7 @@ impl SheprdWindow {
             )),
         };
         self.show_flash(flash, cx);
-        self.teleport_follow = Some(Follow::pane(
+        self.target_follow = Some(Follow::pane(
             carried.endpoint_id,
             carried.workspace_id,
             carried.pane_id,

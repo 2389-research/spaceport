@@ -82,7 +82,6 @@ impl Page {
             Self::RenamePane => fl!("menu-page-rename-pane"),
             Self::RenameTab => fl!("menu-page-rename-tab"),
             Self::Tab => fl!("menu-page-tab"),
-            Self::Teleport => fl!("menu-page-teleport"),
             Self::Themes => fl!("menu-page-themes"),
             Self::Usage(provider) => fl!("menu-page-usage", provider = provider.name()),
             Self::VersionMismatch => fl!("menu-page-version-mismatch"),

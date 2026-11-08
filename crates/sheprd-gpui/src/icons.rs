@@ -233,29 +233,6 @@ pub(crate) fn muted(theme: &crate::config::Theme, size: f32) -> gpui::Div {
         )
 }
 
-/// A checkout whose work was teleported to another host.
-pub(super) fn teleported(theme: &crate::config::Theme, size: f32) -> gpui::Div {
-    use gpui::{Rgba, div, prelude::*, px, svg};
-    let color = crate::menu::teleported(theme);
-    let faded = |a: f32| Rgba { a, ..color };
-    div()
-        .size(px(size))
-        .flex_none()
-        .flex()
-        .items_center()
-        .justify_center()
-        .rounded(px(crate::config::corners::SMALL))
-        .bg(faded(0.22))
-        .border_1()
-        .border_color(faded(0.7))
-        .child(
-            svg()
-                .path("icons/teleport.svg")
-                .size(px(size - 4.))
-                .text_color(color),
-        )
-}
-
 /// Declares each embedded UI icon once, so loading and listing cannot drift.
 macro_rules! embedded_icons {
     ($($path:literal,)+) => {
@@ -331,8 +308,6 @@ embedded_icons! {
     "status-orca-blocked.svg",
     "status-orca-working.svg",
     "tabs.svg",
-    "teleport-back.svg",
-    "teleport.svg",
     "terminal.svg",
     "theme.svg",
     "trash.svg",

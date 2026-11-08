@@ -229,29 +229,6 @@ fn upstream_counts_show_only_drift_and_size_to_what_they_print() {
 }
 
 #[test]
-fn teleported_names_fade_but_stay_legible() {
-    use crate::config::Theme;
-    use crate::contrast::{Contrast, ratio};
-    for name in Theme::BUILTIN_NAMES {
-        for contrast in [Contrast::Standard, Contrast::High] {
-            let theme = Theme::builtin(name).unwrap().with_contrast(contrast);
-            for color in [theme.foreground, theme.subtext()] {
-                let faded = super::super::row::left_behind(color, &theme);
-                let context = format!("{name} {contrast:?} {color:06x} -> {faded:06x}");
-                assert!(
-                    ratio(faded, theme.background) < ratio(color, theme.background),
-                    "{context}: not faded"
-                );
-                assert!(
-                    ratio(faded, theme.background) >= Contrast::Standard.mark_ratio() - 0.01,
-                    "{context}: unreadable"
-                );
-            }
-        }
-    }
-}
-
-#[test]
 fn text_fallback_skips_missing_and_blank_metadata() {
     assert_eq!(first_text([None, Some(" \t"), Some(" main ")], ""), "main");
     assert_eq!(first_text([None, Some("")], ""), "");

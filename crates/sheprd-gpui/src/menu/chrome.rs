@@ -687,8 +687,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_core_workspace_dialog(cx));
         } else if page == Page::CarryPane {
             panel = panel.child(self.render_carry(cx));
-        } else if page == Page::Teleport {
-            panel = panel.child(self.render_teleport(cx));
         } else if page == Page::FanOut {
             panel = panel.child(self.render_fan_out(cx));
         } else if page == Page::Git {

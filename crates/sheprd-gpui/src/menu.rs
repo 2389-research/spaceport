@@ -24,7 +24,6 @@ mod shortcut_editor;
 #[cfg(all(feature = "integration-test", target_os = "linux"))]
 pub(crate) use shortcut_editor::verify_native as verify_shortcut_editor;
 mod state;
-mod teleport;
 mod version_mismatch;
 mod whats_new;
 mod workspace;
@@ -55,7 +54,7 @@ mod worktree_tests;
 #[cfg(any(windows, test, feature = "integration-test"))]
 pub(crate) use state::Cover;
 pub(crate) use {
-    colors::{accent, danger, online, teleported, tint},
+    colors::{accent, danger, online, tint},
     page::{Page, WorkspaceAction},
     state::{MenuState, Removal},
     version_mismatch::Notice as VersionNotice,

@@ -17,8 +17,8 @@ use crate::{
     icons::AgentIcon,
     menu::Page,
     progress::{self, Progress as Bar},
-    teleport::{Follow, host_for},
-    window::Flash,
+    teleport::host_for,
+    window::{Flash, target_follow::Follow},
 };
 use gpui::{prelude::*, *};
 use sheprd_client::protocol::ClientShellSnapshot;
@@ -135,7 +135,7 @@ impl SheprdWindow {
                 self.dismiss_menu(window, cx);
             }
             self.show_flash(Flash::success(fl!("fan-out-kept")), cx);
-            self.teleport_follow = Some(Follow::new(endpoint, workspace));
+            self.target_follow = Some(Follow::new(endpoint, workspace));
             return;
         }
         if changed {
@@ -251,7 +251,7 @@ impl SheprdWindow {
         };
         let follow = Follow::new(checkout.endpoint_id.clone(), checkout.workspace_id.clone());
         self.dismiss_menu(window, cx);
-        self.teleport_follow = Some(follow);
+        self.target_follow = Some(follow);
     }
 
     pub(crate) fn render_fan_out(&self, cx: &mut Context<Self>) -> Div {

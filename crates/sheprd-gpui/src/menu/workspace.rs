@@ -47,8 +47,8 @@ pub(super) enum Source {
     Workspace,
     /// By directory, which the daemon resolves to its repository. Herdr keeps
     /// the repository a workspace was first given while its directory, and the
-    /// label drawn from it, follow the shell: a workspace Teleport opened on
-    /// one repository whose shell then moved into another would otherwise
+    /// label drawn from it, follow the shell: a workspace opened on one
+    /// repository whose shell then moved into another would otherwise
     /// branch the first one under the second one's name.
     Directory(String),
     /// A repository's main checkout directory, for a linked checkout whose
@@ -631,18 +631,6 @@ impl SheprdWindow {
             items.push((WorkspaceMenuAction::FanOut, label));
         }
         items.push((Dialog(WorkspaceAction::Rename), Label::RENAME));
-        if self.teleport_mark().is_some() {
-            items.push((WorkspaceMenuAction::GoToTeleported, Label::GO_TO_TELEPORTED));
-            items.push((
-                WorkspaceMenuAction::ClearTeleported,
-                Label::CLEAR_TELEPORTED,
-            ));
-        } else if self.can_teleport() {
-            items.push((WorkspaceMenuAction::Teleport, Label::TELEPORT));
-            if self.teleport_origin().is_some() {
-                items.push((WorkspaceMenuAction::TeleportBack, Label::TELEPORT_BACK));
-            }
-        }
         items.push((Dialog(WorkspaceAction::Close), target.close_label()));
         if self.note_checkout().is_some() {
             items.push((Dialog(WorkspaceAction::Note), Label::NOTE));
@@ -883,10 +871,6 @@ impl SheprdWindow {
                 self.dismiss_menu(window, cx);
             }
             WorkspaceMenuAction::PullRequest => self.open_workspace_pr(cx),
-            WorkspaceMenuAction::Teleport => self.open_teleport(window, cx),
-            WorkspaceMenuAction::GoToTeleported => self.go_to_teleported(window, cx),
-            WorkspaceMenuAction::TeleportBack => self.teleport_back(window, cx),
-            WorkspaceMenuAction::ClearTeleported => self.clear_teleport_mark(window, cx),
             WorkspaceMenuAction::FanOut => self.open_fan_out(window, cx),
             WorkspaceMenuAction::Script(kind) => self.run_workspace_script(kind, window, cx),
             #[cfg(feature = "cloud")]

@@ -13,12 +13,6 @@ worktree-popover-fan-out = Fan out prompt...
 # Opens the comparison of a fan-out already launched.
 worktree-popover-fan-out-comparison = Fan-out comparison...
 worktree-popover-rename = Rename
-# Focuses the copy this workspace was teleported to.
-worktree-popover-go-to-teleported = Go to teleported copy
-worktree-popover-clear-teleported = Clear teleported mark
-worktree-popover-teleport = Teleport...
-# Moves the work back to the host it was teleported from.
-worktree-popover-teleport-back = Teleport back
 worktree-popover-close = Close
 # Closes the workspace with the linked worktrees it heads.
 worktree-popover-close-group = Close group
@@ -36,10 +30,6 @@ worktree-popover-tile-new-worktree = New worktree
 worktree-popover-tile-fan-out = Fan out
 worktree-popover-tile-comparison = Comparison
 worktree-popover-tile-rename = Rename
-worktree-popover-tile-go-to-teleported = Go to copy
-worktree-popover-tile-clear-teleported = Clear mark
-worktree-popover-tile-teleport = Teleport
-worktree-popover-tile-teleport-back = Teleport back
 worktree-popover-tile-close = Close
 worktree-popover-tile-close-group = Close group
 

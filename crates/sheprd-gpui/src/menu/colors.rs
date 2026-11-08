@@ -23,13 +23,6 @@ pub(crate) fn accent(theme: &crate::config::Theme) -> Rgba {
     tint(theme, 4)
 }
 
-/// The theme's cyan, lifted toward the foreground: the teleported mark, which
-/// must read on dark surfaces and stay distinct from the yellow uncommitted
-/// mark and the green online dot.
-pub(crate) fn teleported(theme: &crate::config::Theme) -> Rgba {
-    tint(theme, 6)
-}
-
 /// The theme's bright red, as destructive actions and errors use it. Many
 /// themes' normal red is too dark to lift without turning a dusty grey-pink on
 /// dark surfaces, and errors are text, so this keeps the WCAG text minimum
@@ -122,28 +115,5 @@ mod tests {
         // The dark normal red it replaces read as a dim grey-pink.
         let theme = crate::config::Theme::default();
         assert!(contrast(danger(&theme), rgb(theme.surface)) > 6.);
-    }
-
-    #[test]
-    fn the_teleported_mark_reads_on_every_theme() {
-        let themes = crate::config::Theme::BUILTIN_NAMES
-            .iter()
-            .map(|name| {
-                let theme = crate::config::Theme::builtin(name)
-                    .unwrap_or_else(|| panic!("missing theme {name}"));
-                (*name, theme)
-            })
-            .chain([("default", crate::config::Theme::default())]);
-        for (name, theme) in themes {
-            let mark = teleported(&theme);
-            for background in [theme.background, theme.surface, theme.active] {
-                // 3:1 is the WCAG minimum for meaningful graphics.
-                let ratio = contrast(mark, rgb(background));
-                assert!(ratio >= 3., "{name}: {ratio:.2} against {background:06x}");
-            }
-        }
-        // The raw palette blue it replaces did not read on the default theme.
-        let theme = crate::config::Theme::default();
-        assert!(contrast(rgb(theme.palette[4]), rgb(theme.background)) < 3.);
     }
 }

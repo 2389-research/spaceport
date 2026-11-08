@@ -1,8 +1,6 @@
-//! Teleport: `sheprd_remote::teleport`, plus its review and progress view.
+//! Shared host scripts and pane-move text still used by legacy routes.
 
 // i18n: migrated
 pub(crate) mod text;
-mod ui;
 
 pub(crate) use sheprd_remote::teleport::{snapshot::SessionKind, *};
-pub(crate) use ui::{Follow, Teleport};

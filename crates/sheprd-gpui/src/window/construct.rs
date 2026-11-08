@@ -86,8 +86,6 @@ impl SheprdWindow {
         gui_config_diagnostic.sync_own(config.diagnostic().as_deref());
         let catalog = endpoint::Catalog::new(&target);
         let menu = menu::MenuState::new(cx);
-        // Starts the thread that reads and saves the marks file.
-        let teleport_marks = crate::teleport::Marks::start();
         let sidebar_search = sidebar::SidebarSearch::new(cx);
         let surface_signal = cx.new(|_| SurfaceSignal);
         let sidebar_invalidation = Self::invalidate_sidebar(cx);
@@ -285,9 +283,7 @@ impl SheprdWindow {
             surface_signal,
             system_load: Default::default(),
             tab_drag: None,
-            teleport: None,
-            teleport_follow: None,
-            teleport_marks,
+            target_follow: None,
             terminal_mouse: None,
             theme,
             theme_light: crate::app::light_appearance(cx),

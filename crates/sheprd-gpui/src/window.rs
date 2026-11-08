@@ -53,6 +53,7 @@ mod tab_float;
 mod tab_ghost;
 mod tab_strip;
 mod tab_tear;
+pub(crate) mod target_follow;
 mod toasts;
 mod transfers;
 pub(crate) mod wsl_drop;
@@ -355,12 +356,8 @@ pub(crate) struct SheprdWindow {
     pub(crate) system_load: crate::system_load::SystemLoad,
     /// A press on a tab that may lift it for reordering.
     pub(crate) tab_drag: Option<tab_drag::TabDrag>,
-    /// A teleport being set up or under way; a move outlives its dialog.
-    pub(crate) teleport: Option<crate::teleport::Teleport>,
-    /// The workspace a finished teleport keeps steering to until focused.
-    pub(crate) teleport_follow: Option<crate::teleport::Follow>,
-    /// Checkouts this client teleported away from, marked in the sidebar.
-    pub(crate) teleport_marks: crate::teleport::Marks,
+    /// The exact destination of a completed operation, until it is focused.
+    pub(crate) target_follow: Option<target_follow::Follow>,
     pub(crate) terminal_mouse: Option<mouse::Gesture>,
     pub(crate) theme: config::Theme,
     /// The system appearance `theme` was loaded for, which is what Herdr is
@@ -615,7 +612,7 @@ impl SheprdWindow {
         self.cancel_stale_image();
         self.poll_file_transfer(cx);
         self.update_workspace_dialog(window, cx);
-        self.poll_teleport(window, cx);
+        self.follow_target(cx);
         self.poll_carry(window, cx);
         crate::link::follow::poll(self, window, cx);
         #[cfg(windows)]

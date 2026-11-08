@@ -95,7 +95,7 @@ pub(super) fn visible_workspace_entries(
         .collect()
 }
 
-/// Cached pull request, change counts, dirty, note, and teleported marks for a worktree row, if
+/// Cached pull request, change counts, dirty, and note marks for a worktree row, if
 /// the prefetch and the Git probe already have them. Rendering only reads: a missing entry
 /// simply shows nothing, never a stale or guessed state. `git` carries which counts to show:
 /// the pull request's, or the checkout's uncommitted lines, never both. Its cache is `None`
@@ -107,7 +107,6 @@ pub(super) fn workspace_badge(
     workspace: &ClientShellWorkspace,
     pr: Option<(&crate::pull_request::Cache, &crate::pull_request::View)>,
     git: (Option<&crate::git::Git>, ChangeCounts),
-    marks: (&crate::teleport::Marks, &str),
     (note, muted): (Option<&str>, bool),
     theme: &Theme,
 ) -> Option<RowBadge> {
@@ -117,9 +116,9 @@ pub(super) fn workspace_badge(
         .map(|tree| tree.key.as_str())
         .zip(workspace.branch.as_deref());
     let Some((key, branch)) = checkout else {
-        return RowBadge::new(None, None, false, false, false, muted);
+        return RowBadge::new(None, None, false, false, muted);
     };
-    let ((marks, endpoint), (git, counts)) = (marks, git);
+    let (git, counts) = git;
     let ahead = git.and_then(|git| git.ahead(key, branch));
     // Commits past a merged pull request need a new one, so its number and
     // counts give way rather than read as covering them.
@@ -144,7 +143,6 @@ pub(super) fn workspace_badge(
             .or_else(|| unopened.then(|| PrBadge::unopened(theme))),
         counts,
         git.and_then(|git| git.dirty(key, branch)).unwrap_or(false),
-        marks.find(endpoint, key, branch).is_some(),
         note.is_some(),
         muted,
     )

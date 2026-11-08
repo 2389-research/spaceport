@@ -78,8 +78,6 @@ pub(crate) enum Page {
     RenamePane,
     RenameTab,
     Tab,
-    /// Moving a linked worktree to another host.
-    Teleport,
     Themes,
     Update,
     /// Plan usage details for one agent on the selected host.
@@ -116,13 +114,6 @@ pub(crate) enum WorkspaceMenuAction {
     Collapse,
     Expand,
     PullRequest,
-    Teleport,
-    /// Teleport the work back to the host it came from.
-    TeleportBack,
-    /// Focus the copy the work was teleported to.
-    GoToTeleported,
-    /// Forget that this checkout's work was teleported away.
-    ClearTeleported,
     /// Send one prompt to several agents, or reopen their comparison.
     FanOut,
     /// Run one of the repository's worktree scripts in a new tab.
@@ -203,9 +194,6 @@ impl WorkspaceMenuAction {
             }
             Self::Collapse => "icons/chevron-up.svg",
             Self::Expand => "icons/chevron-down.svg",
-            Self::Teleport | Self::GoToTeleported => "icons/teleport.svg",
-            Self::TeleportBack => "icons/teleport-back.svg",
-            Self::ClearTeleported => "icons/x.svg",
             Self::FanOut => "icons/fan-out.svg",
             Self::Orchestrator => "icons/github.svg",
             #[cfg(feature = "cloud")]

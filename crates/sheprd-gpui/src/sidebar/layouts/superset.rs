@@ -11,7 +11,7 @@ use super::{
         line_height,
         row::{
             Elbow, RowIcon, RowKind, RowLift, RowTree, TokenLook, configured_status_style, guide,
-            leading_status, left_behind, removing_dot, token_column,
+            leading_status, removing_dot, token_column,
         },
         scaled,
         tokens::ResolvedToken,
@@ -254,7 +254,6 @@ impl RowLayout for Superset {
         let pr = badge.as_ref().and_then(|badge| badge.pr.as_ref());
         let changes = badge.as_ref().and_then(|badge| badge.counts.as_ref());
         let dirty = badge.as_ref().is_some_and(|badge| badge.dirty);
-        let teleported = badge.as_ref().is_some_and(|badge| badge.teleported);
         let muted = badge.as_ref().is_some_and(|badge| badge.muted);
         let dirty_size = (line_height(cx.font) * 0.75).round();
         let size = m.icon * GLYPH;
@@ -295,11 +294,7 @@ impl RowLayout for Superset {
             line.fill(
                 div()
                     .debug_selector(|| format!("name-{label}"))
-                    .text_color(rgb(if teleported {
-                        left_behind(text_color(state, theme), theme)
-                    } else {
-                        text_color(state, theme)
-                    })),
+                    .text_color(rgb(text_color(state, theme))),
                 label,
             )
             // Configured rows show the counts only through `git_status`.
@@ -316,7 +311,6 @@ impl RowLayout for Superset {
                         kind: RowKind::Workspace,
                         status,
                         focused: state.selected,
-                        teleported,
                     },
                     width,
                     cx,
@@ -326,9 +320,6 @@ impl RowLayout for Superset {
         let line = line
             .when(muted, |line| {
                 line.fixed(dirty_size, parts::muted(label, dirty_size, theme))
-            })
-            .when(teleported, |line| {
-                line.fixed(dirty_size, parts::teleported(label, dirty_size, theme))
             })
             // Local counts take the dirty mark's place, in a chip of its hue.
             .when(
@@ -382,7 +373,6 @@ impl RowLayout for Superset {
                         kind: RowKind::Agent(agent.icon),
                         status: agent.status,
                         focused: state.selected,
-                        teleported: false,
                     },
                     width,
                     cx,

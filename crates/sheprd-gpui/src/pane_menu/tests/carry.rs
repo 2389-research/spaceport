@@ -151,13 +151,13 @@ fn the_window_follows_to_the_moved_pane_not_only_its_space(cx: &mut TestAppConte
         view
     });
     let follow = |view: &mut SheprdWindow| {
-        view.teleport_follow = Some(crate::teleport::Follow::pane(
+        view.target_follow = Some(crate::window::target_follow::Follow::pane(
             crate::endpoint::LOCAL.into(),
             "w1".into(),
             "inactive".into(),
         ));
     };
-    cx.update(|window, cx| {
+    cx.update(|_, cx| {
         view.update(cx, |v, cx| {
             // The space is focused, but another of its panes is.
             assert_eq!(
@@ -170,15 +170,15 @@ fn the_window_follows_to_the_moved_pane_not_only_its_space(cx: &mut TestAppConte
                 Some("w1")
             );
             follow(v);
-            v.poll_teleport(window, cx);
-            assert!(v.teleport_follow.is_some());
+            v.follow_target(cx);
+            assert!(v.target_follow.is_some());
 
             let mut landed = snapshot();
             landed.focused_pane_id = Some("inactive".into());
             v.live.snapshot = Some(Arc::new(landed));
             follow(v);
-            v.poll_teleport(window, cx);
-            assert!(v.teleport_follow.is_none());
+            v.follow_target(cx);
+            assert!(v.target_follow.is_none());
         });
     });
 }

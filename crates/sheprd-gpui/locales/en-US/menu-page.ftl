@@ -45,7 +45,6 @@ menu-page-rename-device = Rename device
 menu-page-rename-pane = Rename pane
 menu-page-rename-tab = Rename tab
 menu-page-tab = Tab
-menu-page-teleport = Teleport
 menu-page-themes = Themes
 menu-page-version-mismatch = Version mismatch
 menu-page-workspace = Workspace

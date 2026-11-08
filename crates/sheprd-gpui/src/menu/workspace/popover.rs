@@ -18,7 +18,6 @@ pub(crate) struct Label(&'static str);
 
 impl Label {
     // keep-sorted start
-    pub(crate) const CLEAR_TELEPORTED: Self = Self::new("worktree-popover-clear-teleported");
     pub(crate) const CLOSE: Self = Self::new("worktree-popover-close");
     pub(crate) const CLOSE_GROUP: Self = Self::new("worktree-popover-close-group");
     pub(crate) const COLLAPSE_GROUP: Self = Self::new("worktree-popover-collapse-group");
@@ -26,7 +25,6 @@ impl Label {
     pub(crate) const EXPAND_GROUP: Self = Self::new("worktree-popover-expand-group");
     pub(crate) const FAN_OUT: Self = Self::new("worktree-popover-fan-out");
     pub(crate) const FAN_OUT_COMPARISON: Self = Self::new("worktree-popover-fan-out-comparison");
-    pub(crate) const GO_TO_TELEPORTED: Self = Self::new("worktree-popover-go-to-teleported");
     pub(crate) const MUTE: Self = Self::new("worktree-popover-mute");
     pub(crate) const NEW_WORKTREE: Self = Self::new("worktree-popover-new-worktree");
     pub(crate) const NOTE: Self = Self::new("worktree-popover-note");
@@ -35,8 +33,6 @@ impl Label {
     pub(crate) const RENAME: Self = Self::new("worktree-popover-rename");
     pub(crate) const RUN_SCRIPT: Self = Self::new("worktree-popover-run-script");
     pub(crate) const RUN_SETUP_SCRIPT: Self = Self::new("worktree-popover-run-setup-script");
-    pub(crate) const TELEPORT: Self = Self::new("worktree-popover-teleport");
-    pub(crate) const TELEPORT_BACK: Self = Self::new("worktree-popover-teleport-back");
     pub(crate) const UNMUTE: Self = Self::new("worktree-popover-unmute");
     // keep-sorted end
     #[cfg(feature = "cloud")]
@@ -75,7 +71,7 @@ impl Label {
 /// The grid's fixed slots, row by row: working on the checkout, then moving
 /// or leaving it. A slot lists the actions it can show, first available
 /// first, and the action it shows grayed when none is.
-const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 6] = {
+const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 4] = {
     use WorkspaceAction::*;
     use WorkspaceMenuAction::*;
     [
@@ -86,17 +82,11 @@ const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 6] = {
         ),
         (&[FanOut], FanOut, Label::FAN_OUT),
         (&[Dialog(Rename)], Dialog(Rename), Label::RENAME),
-        (&[GoToTeleported, Teleport], Teleport, Label::TELEPORT),
-        (
-            &[ClearTeleported, TeleportBack],
-            TeleportBack,
-            Label::TELEPORT_BACK,
-        ),
         (&[Dialog(Close)], Dialog(Close), Label::CLOSE),
     ]
 };
 
-const COLUMNS: usize = 3;
+const COLUMNS: usize = 2;
 
 /// The rows under the grid share one icon column and one label column: the
 /// same inset, a fixed icon slot each icon centres in whatever its size, and
@@ -145,10 +135,6 @@ impl Tile {
             Label::FAN_OUT => fl!("worktree-popover-tile-fan-out"),
             Label::FAN_OUT_COMPARISON => fl!("worktree-popover-tile-comparison"),
             Label::RENAME => fl!("worktree-popover-tile-rename"),
-            Label::GO_TO_TELEPORTED => fl!("worktree-popover-tile-go-to-teleported"),
-            Label::CLEAR_TELEPORTED => fl!("worktree-popover-tile-clear-teleported"),
-            Label::TELEPORT => fl!("worktree-popover-tile-teleport"),
-            Label::TELEPORT_BACK => fl!("worktree-popover-tile-teleport-back"),
             Label::CLOSE => fl!("worktree-popover-tile-close"),
             Label::CLOSE_GROUP => fl!("worktree-popover-tile-close-group"),
             label => label.spoken(),
@@ -160,7 +146,7 @@ impl Tile {
 /// for the rows beneath it, except what the header draws.
 pub(in crate::menu) fn layout(
     items: &[(WorkspaceMenuAction, Label)],
-) -> ([Tile; 6], Vec<(WorkspaceMenuAction, Label)>) {
+) -> ([Tile; 4], Vec<(WorkspaceMenuAction, Label)>) {
     let tiles = SLOTS.map(|(choices, fallback, label)| {
         choices
             .iter()
@@ -201,7 +187,7 @@ const TILE_INSET: f32 = 8.;
 const TILE_GAP: f32 = 6.;
 
 impl SheprdWindow {
-    /// The popover's width: 340, or as wide as three of the longest caption
+    /// The popover's width: 340, or as wide as two of the longest caption
     /// need in a longer language, and never wider than `room`. Captions are
     /// short and few, and GPUI caches each shaped line, so measuring them as
     /// the popover draws costs no more than drawing them.
