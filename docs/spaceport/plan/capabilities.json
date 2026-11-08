@@ -36,8 +36,8 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "private_two_core_aggregation_restart_backend_spawn_and_refusal_passed_macos; real_ssh_not_run",
-      "runtime_evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t02-remote-fixture.md", "evidence/t02-remote-fixture.log"]
+      "runtime_test_status": "private_two_core_aggregation_restart_backend_spawn_refusal_rename_and_rm_passed_macos; gui_and_real_ssh_not_run",
+      "runtime_evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t02-remote-fixture.md", "evidence/t02-remote-fixture.log", "evidence/t02-machine-catalog-edits.md"]
     },
     {
       "id": "CAP-TERMINAL",
@@ -77,8 +77,8 @@
       ],
       "gaps": [],
       "evidence_level": "design_required",
-      "runtime_test_status": "document_cas_primitive_passed_local_fixture",
-      "runtime_evidence": ["evidence/t00-core-test.log"]
+      "runtime_test_status": "document_cas_and_notice_passed_private_two_core_macos; presentation_not_implemented",
+      "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md"]
     },
     {
       "id": "CAP-CHAT",
