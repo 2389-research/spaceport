@@ -216,7 +216,7 @@ bundle profile="release" features="":
     done
     # LaunchServices and the Dock cache icons by bundle ID, so every worktree
     # build sharing the release ID competed with the installed app's icon.
-    plutil -replace CFBundleIdentifier -string so.pen.herdr-gpui.dev "$app/Contents/Info.plist"
+    plutil -replace CFBundleIdentifier -string spaceport.development "$app/Contents/Info.plist"
     icons=$(python3 scripts/release/build-icon.py macos "$app/Contents/MacOS/sheprd")
     cp "${icons%$'\n'*}" "$app/Contents/Resources/Sheprd.icns"
     cp "${icons##*$'\n'}" "$app/Contents/Resources/Assets.car"
@@ -224,7 +224,7 @@ bundle profile="release" features="":
     # The linker's ad-hoc signature names the bare executable and binds no
     # Info.plist, so services that trust the bundle ID refuse the app:
     # notification authorization fails without a prompt. Ad-hoc sign the
-    # assembled bundle so its identity is so.pen.herdr-gpui.dev.
+    # assembled bundle so its identity is spaceport.development.
     codesign --force --sign - "$app"
 
 # Link the actual optimized application and exercise its CLI without a desktop.

@@ -309,7 +309,7 @@ just run
 
 `just run` uses the optimized release build;
 `just run-debug` is notably slower with a dense terminal on screen.
-On macOS both build a local bundle identified as `so.pen.herdr-gpui.dev`, so
+On macOS both build a local bundle identified as `spaceport.development`, so
 it never shares a Dock tile or icon cache with an installed release.
 Without `just`: `cargo run --locked --release -p sheprd-gpui --bin sheprd`.
 

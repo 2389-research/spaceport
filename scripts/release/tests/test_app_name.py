@@ -12,6 +12,16 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class AppNameTests(unittest.TestCase):
+    def test_development_bundle_uses_running_app_identity(self):
+        constants = (ROOT / "crates/sheprd-gpui/src/constants.rs").read_text()
+        app_id = re.search(r'pub\(crate\) const APP_ID: &str = "([^"]+)"', constants)
+        self.assertIsNotNone(app_id)
+        justfile = (ROOT / "justfile").read_text()
+        bundle_id = re.search(r'plutil -replace CFBundleIdentifier -string (\S+)', justfile)
+        self.assertIsNotNone(bundle_id)
+        self.assertEqual(bundle_id[1], app_id[1])
+        self.assertNotIn("herdr-gpui", bundle_id[1])
+
     def test_bundle_plist_names_the_app_sheprd(self):
         info = plistlib.loads((ROOT / "assets/macos/Info.plist").read_bytes())
         for key in ("CFBundleName", "CFBundleDisplayName", "CFBundleExecutable"):
