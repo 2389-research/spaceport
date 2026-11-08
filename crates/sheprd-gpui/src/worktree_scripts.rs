@@ -20,7 +20,6 @@ mod trust;
 
 pub(crate) use config::{Config, PATH as CONFIG_PATH, read as read_config};
 pub(crate) use error::Error;
-#[cfg(feature = "cloud")]
 pub(crate) use launch::{Checkout, command_line, created_tab, main_checkout};
 pub(crate) use trust::{Grant, Trust};
 
