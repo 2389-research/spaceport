@@ -281,7 +281,7 @@ providers! {
         module: daytona,
         name: "Daytona",
         icon: "icons/cloud/daytona.svg",
-        offer: "Create a Daytona sandbox in Settings",
+        offer: "Manage Daytona devices in Settings",
         noun: "sandbox",
         command: gateway,
         deletion: Some(Deletion {
@@ -290,7 +290,7 @@ providers! {
             run: crate::daytona::destroy::destroy_saved,
         }),
         image: Some(&crate::daytona::image::SUPPORT),
-        provision: Some(crate::daytona::create::provision),
+        provision: None,
     },
     "opensandbox" OpenSandbox => {
         module: opensandbox,

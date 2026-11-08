@@ -26,11 +26,10 @@ fn sandbox(state: &str) -> String {
 }
 
 #[test]
-fn creating_sends_the_key_organization_snapshot_and_label() {
+fn listing_sends_the_key_and_organization() {
     let (settings, log) =
         account(
             |request| match (request.method.as_str(), request.target.as_str()) {
-                ("POST", "/api/sandbox") => (200, sandbox("creating")),
                 ("GET", "/api/sandbox?limit=100") => (
                     200,
                     format!(r#"{{"items":[{}],"nextCursor":null}}"#, sandbox("started")),
@@ -43,25 +42,15 @@ fn creating_sends_the_key_organization_snapshot_and_label() {
         settings: &settings,
         key: &key,
     };
-    let created = request.create("herdr-calm-otter").unwrap();
-    assert_eq!(created.id, "s1");
     assert_eq!(request.sandboxes().unwrap().len(), 1);
     let log = log.lock().unwrap();
-    let create = &log[0];
-    assert_eq!(create.authorization.as_deref(), Some("Bearer dtn_fixture"));
+    let list = &log[0];
+    assert_eq!(list.authorization.as_deref(), Some("Bearer dtn_fixture"));
+    assert!(list.body.is_empty());
     assert!(
-        create
-            .headers
+        list.headers
             .to_ascii_lowercase()
             .contains("x-daytona-organization-id: org-1")
-    );
-    let body: serde_json::Value = serde_json::from_str(&create.body).unwrap();
-    assert_eq!(body["name"], "herdr-calm-otter");
-    assert_eq!(body["snapshot"], "daytonaio/sandbox:0.4.3");
-    assert_eq!(body["labels"]["herdr.dev/device"], "true");
-    assert!(
-        body.get("target").is_none(),
-        "unset values are left to Daytona"
     );
 }
 

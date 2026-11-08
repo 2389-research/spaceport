@@ -12,11 +12,7 @@
 
 use super::{Error, Result, api::SshAccess};
 use secrecy::{ExposeSecret, SecretString};
-use std::{
-    io::Write,
-    path::Path,
-    process::{Command, Stdio},
-};
+use std::{io::Write, path::Path, process::Command};
 
 /// The host alias the temporary config defines.
 const ALIAS: &str = "herdr-daytona-gateway";
@@ -147,19 +143,6 @@ impl Gateway {
             _config: config,
         })
     }
-}
-
-/// Fail before anything is created when `ssh` cannot run: a sandbox made for
-/// a device that can never connect keeps running, and may be billed.
-pub fn check_ssh() -> Result<()> {
-    sheprd_client::new_command("ssh")
-        .arg("-V")
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map(drop)
-        .map_err(Error::SshMissing)
 }
 
 /// The GUI's own record of the gateway's host key.

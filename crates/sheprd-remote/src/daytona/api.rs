@@ -1,15 +1,12 @@
-//! The Daytona REST calls this app makes, typed: list, read, create, and
+//! The Daytona REST calls this app makes, typed: list, read, and
 //! start sandboxes, and issue a short-lived SSH token for one. Readiness maps
-//! Daytona's sandbox states onto what adding or connecting needs to know.
+//! Daytona's sandbox states onto what connecting needs to know.
 
 use super::{Error, Result, http::Request};
 use crate::cloud::Value;
 use secrecy::SecretString;
-use serde::{Deserialize, Serialize};
-use std::{
-    collections::BTreeMap,
-    time::{Duration, Instant},
-};
+use serde::Deserialize;
+use std::time::{Duration, Instant};
 
 const START_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const POLL: Duration = Duration::from_secs(3);
@@ -17,8 +14,6 @@ const LIST_LIMIT: usize = 100;
 /// How long an SSH token stays usable. It is only needed to open the
 /// connection; an open session outlives it.
 const SSH_TOKEN_MINUTES: u32 = 10;
-/// The label that marks sandboxes this app created.
-const LABEL: &str = "herdr.dev/device";
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -68,16 +63,6 @@ enum List {
     All(Vec<Sandbox>),
 }
 
-#[derive(Serialize)]
-struct Create<'a> {
-    name: &'a str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    snapshot: Option<&'a str>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    target: Option<&'a str>,
-    labels: BTreeMap<&'a str, &'a str>,
-}
-
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SshAccess {
@@ -115,20 +100,6 @@ impl Request<'_> {
                 Error::Status(super::Status { code: 404, .. }) => Error::Deleted,
                 error => error,
             })
-    }
-
-    pub fn create(&self, name: &str) -> Result<Sandbox> {
-        let settings = self.settings;
-        self.post(
-            "create_sandbox",
-            "/sandbox",
-            &Create {
-                name,
-                snapshot: settings.snapshot.as_deref(),
-                target: settings.target.as_deref(),
-                labels: BTreeMap::from([(LABEL, "true")]),
-            },
-        )
     }
 
     pub fn start(&self, id: &str) -> Result<()> {

@@ -1,4 +1,4 @@
-//! Daytona, a `cloud` provider whose sandboxes become devices: an API key
+//! Daytona, a `cloud` provider whose saved sandboxes appear as devices: an API key
 //! against a configured API root, bounded REST calls, sandbox readiness, and
 //! an `ssh` command through Daytona's SSH gateway, authorized by a short-lived
 //! token the API issues for one sandbox. Everything here blocks, so it runs on
@@ -6,7 +6,6 @@
 
 mod api;
 mod connect;
-pub mod create;
 pub mod destroy;
 mod error;
 mod gateway;
