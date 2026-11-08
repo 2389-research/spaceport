@@ -138,3 +138,16 @@ was accessed in these tests. T04 remains `in_progress`; A30 remains `not_run`.
 Native GUI and full workspace CI were not run. The earlier sections have
 signed observations, so this appended result needs a new observation after
 integration.
+
+## Merged Boxd Settings verification
+
+At `53af09a1`, the Boxd Settings creation card and callback removal was
+combined with the preceding editor and CLI cuts. The merged default and
+all-feature app checks passed without new code warnings. Three Boxd Settings
+tests passed, including configured and unconfigured account states. The
+retained Core catalog passed five focused tests and manual Core Add Device
+passed three. The merged i18n check passed with 5,166 valid messages in 269
+files; format, file-size, sorted-list and specification tool checks passed.
+The test link still reported the existing macOS compact-unwind warning and
+Cargo's `block v0.1.6` notice. Smart Dispatch still provisions through Boxd,
+so this is one removed Settings route, with A30 still `not_run`.
