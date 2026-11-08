@@ -53,6 +53,13 @@ use std::{
 /// relaunch reopens the bundle by it.
 pub const APP_ID: &str = "so.pen.herdr-gpui";
 
+// A release cannot use the inherited app ID, package targets or update source.
+// Replace this gate only after the independent identities have been verified.
+const _: () = assert!(
+    option_env!("HERDR_RELEASE_VERSION").is_none(),
+    "Spaceport release identity is not configured"
+);
+
 /// Release builds embed the same calendar version (YYYYMMDD.COUNTER) used for
 /// the tag, the bundle, and the downloadable artifacts. Local builds are not
 /// releases, so they carry no version the updater or an issue report could

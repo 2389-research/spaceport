@@ -12,3 +12,7 @@ T12 is blocked. This is a source audit of the current development branch, not a 
 | Release workflow | `scripts/release/dispatch.sh` requires the upstream repository; `.github/workflows/promote.yml` targets the Sheprd release and tap. | Configure an owner-controlled Spaceport release route; keep publishing gated by explicit authorization. |
 
 The production app and package IDs, signing identity, update key/channel, release repository, and final icon are not supplied or validated. G-RELEASE remains open. The source currently fails A42–A44 as a complete product claim; no native side-by-side or signed-update test has run. This inventory sets targets for later bounded changes, not permission to reuse Sheprd credentials, keys or endpoints.
+
+## Release build gate
+
+`sheprd-updater/src/lib.rs` now rejects any build with `HERDR_RELEASE_VERSION` set. Before the gate, a check with a fake version and fake public key compiled successfully while `APP_ID` and release URLs still named upstream. With the gate, that same check fails at compile time with `Spaceport release identity is not configured`; a normal development check passes. The updater library suite passed 140 tests with three ignored. This is an intentional release block until the independent identity and update contract are implemented and tested; it does not make the current packages safe to ship. The existing release workflow will fail rather than produce a package with Sheprd's identity.
