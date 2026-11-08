@@ -1,7 +1,8 @@
 //! Two private Core processes exercise Core-owned machine aggregation.
 //! A test-only pipe command carries bytes without real SSH or user state.
 use super::*;
-use crate::wire::Run;
+use crate::{CoreBackend, wire::Run};
+use sheprd_backend::{Backend as _, Spawn};
 use std::os::unix::fs::PermissionsExt as _;
 
 #[test]
@@ -74,6 +75,16 @@ fn a_real_core_aggregates_a_fixture_machine() {
         1
     );
     core.kill(&started.address).unwrap();
+    let backend = CoreBackend::new(local.connect(), 1000);
+    let spawned = backend
+        .spawn(&Spawn {
+            argv: argv.to_vec(),
+            machine: Some("lab".into()),
+            ..Spawn::default()
+        })
+        .unwrap();
+    assert!(spawned.id.as_str().starts_with("lab/"));
+    backend.kill(&spawned.id).unwrap();
     remote.child.kill().unwrap();
     remote.child.wait().unwrap();
     let restarted = remote.connect();

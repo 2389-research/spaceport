@@ -46,3 +46,23 @@ fn a_spawn_without_labels_sends_none() {
     .unwrap();
     assert!(info.labels.is_empty());
 }
+
+#[test]
+fn a_spawn_preserves_the_core_machine_target() {
+    let (core, mut mock) = connected();
+    let backend = CoreBackend::new(core, 1000);
+    let spawn = Spawn {
+        machine: Some("lab".into()),
+        ..Spawn::default()
+    };
+    let info = thread::scope(|scope| {
+        let run = scope.spawn(|| backend.spawn(&spawn));
+        let request = mock.request();
+        assert_eq!(request["method"], "terminal.run");
+        assert_eq!(request["params"]["on"], "lab");
+        mock.answer(&request, terminal("lab/t6"));
+        run.join().unwrap()
+    })
+    .unwrap();
+    assert_eq!(info.id.as_str(), "lab/t6");
+}

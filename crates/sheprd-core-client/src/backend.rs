@@ -88,6 +88,7 @@ impl sheprd_backend::Backend for CoreBackend {
                 .map(|(name, value)| (name.as_str(), value.as_str()))
                 .collect(),
             name: spawn.name.as_deref(),
+            on: spawn.machine.as_deref(),
             ..Run::default()
         };
         info(&self.core.run(&run)?)

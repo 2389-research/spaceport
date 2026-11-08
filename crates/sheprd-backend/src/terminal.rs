@@ -146,6 +146,8 @@ pub struct Spawn {
     pub env: Vec<(String, String)>,
     /// Kept with the terminal and shown in its [`TerminalInfo`].
     pub labels: BTreeMap<String, String>,
+    /// Core's saved machine name; absent means this computer.
+    pub machine: Option<String>,
     pub name: Option<String>,
 }
 
