@@ -347,6 +347,20 @@ pub(super) fn set_machines_for_test(cx: &mut App, machines: Option<Vec<MachineVi
     }
 }
 
+#[cfg(test)]
+pub(super) fn set_machine_error_for_test(cx: &mut App, error: sheprd_core_client::Error) {
+    if !cx.has_global::<Observation>() {
+        Observation::install(cx);
+    }
+    let observation = cx.global_mut::<Observation>();
+    let epoch = observation.projection.epoch + 1;
+    observation.projection.begin(epoch);
+    observation.projection.freshness = Freshness::Fresh;
+    observation
+        .projection
+        .refresh_machines(epoch, Err(Error::Core(error)));
+}
+
 fn run(
     backend: CoreBackend,
     epoch: u64,

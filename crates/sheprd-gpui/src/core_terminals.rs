@@ -65,6 +65,11 @@ pub(crate) fn set_machine_catalog_for_test(
     observation::set_machines_for_test(cx, machines);
 }
 
+#[cfg(test)]
+pub(crate) fn set_machine_catalog_error_for_test(cx: &mut App, error: sheprd_core_client::Error) {
+    observation::set_machine_error_for_test(cx, error);
+}
+
 use crate::{
     SheprdWindow,
     browser::{Location, Scope, Store, TabId},

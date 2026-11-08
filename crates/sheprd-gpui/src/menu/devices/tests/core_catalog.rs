@@ -1,6 +1,7 @@
 use super::*;
 use gpui::{VisualTestContext, px, size};
 use sheprd_core_client::wire::{Machine, MachineView};
+use sheprd_core_client::{Error as CoreError, Method};
 
 fn machine() -> MachineView {
     MachineView {
@@ -66,4 +67,37 @@ fn core_machine_labels_have_a_unicode_safe_limit() {
     assert_eq!(shown.chars().count(), 161);
     assert!(shown.ends_with('…'));
     assert_eq!(super::super::core_catalog::short("lab"), "lab");
+}
+
+#[gpui::test]
+fn device_picker_bounds_core_refusal_but_keeps_the_typed_cause(cx: &mut gpui::TestAppContext) {
+    let long = "🙂".repeat(1_000);
+    let (view, cx) = cx.add_window_view(fixture_window);
+    cx.simulate_resize(size(px(900.), px(700.)));
+    cx.update(|_, cx| {
+        crate::core_terminals::set_machine_catalog_error_for_test(
+            cx,
+            CoreError::Refused {
+                method: Method::MachineList,
+                kind: Some("fixture".into()),
+                message: long.clone(),
+            },
+        );
+    });
+    view.update_in(cx, |view, window, cx| {
+        assert!(view.open_menu(window, cx));
+        view.menu.page = Some(Page::Devices);
+    });
+    draw(cx);
+    assert!(cx.debug_bounds("core-machines-unavailable").is_some());
+    let (shown, stored) = cx.update(|_, cx| {
+        let error = crate::core_terminals::machine_catalog_error(cx).unwrap();
+        (
+            super::super::core_catalog::unavailable_reason(Some(error)),
+            error.to_string(),
+        )
+    });
+    assert!(shown.chars().count() <= 161);
+    assert!(shown.ends_with('…'));
+    assert!(stored.ends_with(&long));
 }

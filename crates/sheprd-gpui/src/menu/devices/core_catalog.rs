@@ -3,17 +3,50 @@
 
 use crate::{SheprdWindow, core_terminals, i18n::fl};
 use gpui::{prelude::*, *};
+use std::fmt::{self, Display};
 
 const MAX_DISPLAY_MACHINES: usize = 50;
 const MAX_DISPLAY_CHARS: usize = 160;
 
-pub(super) fn short(text: &str) -> String {
-    let mut chars = text.chars();
-    let mut shown: String = chars.by_ref().take(MAX_DISPLAY_CHARS).collect();
-    if chars.next().is_some() {
-        shown.push('…');
+struct LimitedText {
+    text: String,
+    remaining: usize,
+    truncated: bool,
+}
+
+impl fmt::Write for LimitedText {
+    fn write_str(&mut self, value: &str) -> fmt::Result {
+        for character in value.chars() {
+            if self.remaining == 0 {
+                self.truncated = true;
+                break;
+            }
+            self.text.push(character);
+            self.remaining -= 1;
+        }
+        Ok(())
     }
-    shown
+}
+
+pub(super) fn short(value: impl Display) -> String {
+    let mut shown = LimitedText {
+        text: String::new(),
+        remaining: MAX_DISPLAY_CHARS,
+        truncated: false,
+    };
+    if fmt::write(&mut shown, format_args!("{value}")).is_err() {
+        return fl!("core-terminals-machine-not-current").to_string();
+    }
+    if shown.truncated {
+        shown.text.push('…');
+    }
+    shown.text
+}
+
+pub(super) fn unavailable_reason(error: Option<&impl Display>) -> String {
+    error
+        .map(short)
+        .unwrap_or_else(|| fl!("core-terminals-machine-not-current").to_string())
 }
 
 impl SheprdWindow {
@@ -95,9 +128,7 @@ impl SheprdWindow {
                 );
             }
         } else {
-            let reason = error
-                .map(ToString::to_string)
-                .unwrap_or_else(|| fl!("core-terminals-machine-not-current").to_string());
+            let reason = unavailable_reason(error);
             section = section.child(
                 div()
                     .id("core-machines-unavailable")
