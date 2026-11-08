@@ -1,0 +1,86 @@
+// ABOUTME: Checks restoration of saved tabs after VS Code editor tabs retire.
+// ABOUTME: Keeps other tab IDs and reserves IDs from discarded entries.
+use super::*;
+
+#[test]
+fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
+    let mut old = Store::default();
+    let scope = Scope::endpoint("local");
+    let page = old
+        .open(scope.clone(), "w1", url("https://example.test/"), None)
+        .unwrap();
+    let px0 = old
+        .open_editor_tab(scope.clone(), "w1", Editor::Px0, None)
+        .unwrap();
+    let core = old
+        .open(
+            scope.clone(),
+            "w1",
+            Some(Location::CoreTerminal {
+                panes: crate::core_terminals::panes::Panes::single(
+                    sheprd_backend::TerminalId::try_from("t1".to_owned()).unwrap(),
+                ),
+                observe: false,
+            }),
+            None,
+        )
+        .unwrap();
+    let source = old
+        .open(
+            scope.clone(),
+            "w1",
+            Some(Location::Code {
+                file: crate::code_view::CodeFile {
+                    path: std::env::current_dir()
+                        .unwrap()
+                        .join("main.rs")
+                        .to_string_lossy()
+                        .into_owned(),
+                    line: Some(42),
+                },
+            }),
+            None,
+        )
+        .unwrap();
+    let code = old
+        .open_editor_tab(scope.clone(), "w1", Editor::VsCode, None)
+        .unwrap();
+    let code_group = old
+        .open_editor_tab(scope.clone(), "w2", Editor::VsCode, None)
+        .unwrap();
+
+    let mut saved = serde_json::to_value(Saved {
+        tabs: old.tabs.clone(),
+    })
+    .unwrap();
+    for tab in saved["tabs"].as_array_mut().unwrap() {
+        if tab["id"] == u64::from(code_group) {
+            tab["place"] = "code_group".into();
+        }
+    }
+    let bytes = serde_json::to_vec(&saved).unwrap();
+    let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
+    assert_eq!(
+        restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
+        [page, px0, core, source]
+    );
+    assert!(restored.get(code).is_none());
+    assert!(restored.get(code_group).is_none());
+    assert_eq!(restored.px0_tab(&scope, "w1").map(|tab| tab.id), Some(px0));
+
+    let next = restored.open(scope, "w1", None, None).unwrap();
+    assert!(u64::from(next) > u64::from(code_group));
+}
+
+#[test]
+fn discarded_max_id_cannot_wrap_to_a_new_tab() {
+    let scope = Scope::endpoint("local");
+    let mut old = Store::default();
+    old.open_editor_tab(scope.clone(), "w1", Editor::VsCode, None)
+        .unwrap();
+    old.tabs[0].id = TabId::test(u64::MAX);
+    let bytes = serde_json::to_vec(&Saved { tabs: old.tabs }).unwrap();
+    let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
+    assert!(restored.tabs().next().is_none());
+    assert!(restored.open(scope, "w1", None, None).is_none());
+}

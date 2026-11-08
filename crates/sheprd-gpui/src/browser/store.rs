@@ -262,10 +262,19 @@ impl Store {
     }
 
     fn with_tabs(mut tabs: Vec<Tab>, writer: Option<state_file::Writer<Saved>>) -> Self {
+        // Saved group picks may still name a discarded tab. Never assign its
+        // ID to a new tab or that old pick could show unrelated content.
+        let next = tabs
+            .iter()
+            .map(|tab| tab.id.0.saturating_add(1))
+            .max()
+            .unwrap_or(0);
         // Earlier builds hosted the orchestrator in a tab; its sections now
-        // own it, so such tabs are dropped rather than restored.
-        tabs.retain(|tab| !matches!(tab.location, Some(Location::Orchestrator { .. })));
-        let next = tabs.iter().map(|tab| tab.id.0 + 1).max().unwrap_or(0);
+        // own it. Saved VS Code tabs must not start their server on restore.
+        tabs.retain(|tab| {
+            tab.place != Place::Editor(Editor::VsCode)
+                && !matches!(tab.location, Some(Location::Orchestrator { .. }))
+        });
         Self {
             tabs,
             next,
@@ -411,8 +420,9 @@ impl Store {
         if self.tabs.len() >= MAX_TABS {
             return None;
         }
+        let following = self.next.checked_add(1)?;
         let id = TabId(self.next);
-        self.next += 1;
+        self.next = following;
         tab.id = id;
         self.tabs.push(tab);
         self.save();

@@ -4,6 +4,7 @@ use super::*;
 mod editors;
 mod orchestrator_tabs;
 mod px0;
+mod retired_vs_code;
 
 fn url(value: &str) -> Option<Location> {
     Some(Location::Web {
@@ -208,10 +209,9 @@ fn a_workspace_has_one_vs_code_tab_listed_in_its_strips() {
     assert!(store.code_tab(&remote, "w_1").is_some());
 }
 
-/// Development builds saved the tab as in a side panel (`code`) or moved
-/// to the groups (`code_group`); both restore as the VS Code tab.
+/// Old VS Code spellings still parse so they cannot discard other saved tabs.
 #[test]
-fn saved_vs_code_tabs_round_trip_and_older_places_still_read() {
+fn saved_vs_code_tabs_parse_but_do_not_restore() {
     let mut store = Store::default();
     let scope = Scope::endpoint("local");
     store
@@ -230,8 +230,9 @@ fn saved_vs_code_tabs_round_trip_and_older_places_still_read() {
     })
     .unwrap();
     let restored = Store::with_tabs(parse(&bytes).unwrap(), None);
-    assert_eq!(restored.tabs, store.tabs);
-    assert!(restored.code_tab(&scope, "w_1").is_some());
+    assert_eq!(restored.tabs.len(), 1);
+    assert_eq!(restored.tabs[0].id, store.tabs[0].id);
+    assert!(restored.code_tab(&scope, "w_1").is_none());
     let old =
         r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":null,"title":""}]}"#;
     let tabs = parse(old.as_bytes()).unwrap();

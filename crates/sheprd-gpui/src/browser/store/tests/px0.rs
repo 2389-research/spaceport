@@ -42,5 +42,6 @@ fn px0_is_a_separate_singleton_per_daemon_and_workspace() {
     assert!(tab.place.is_editor());
     assert!(tab.origin.is_none());
     assert_eq!(tab.title, "px0");
-    assert_eq!(restored.code_tab(&local, "w1").unwrap().id, code);
+    assert!(restored.code_tab(&local, "w1").is_none());
+    assert!(restored.next > u64::from(code));
 }
