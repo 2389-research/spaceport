@@ -90,6 +90,7 @@ fn rebased_write_timeout_keeps_its_attempted_version() {
                     method: Method::DocSet,
                     kind: Some("conflict".into()),
                     message: "stale version".into(),
+                    hint: None,
                 })
             } else {
                 Err(CoreError::Timeout(Method::DocSet))
@@ -134,6 +135,7 @@ fn malformed_set_success_is_unknown_but_unsent_errors_are_definite() {
                 method: Method::DocSet,
                 kind: Some("internal".into()),
                 message: "save failed".into(),
+                hint: None,
             }
         ),
         Error::WriteUnknown {
