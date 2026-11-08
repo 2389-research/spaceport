@@ -111,8 +111,8 @@
       "gaps": [
         "G-FILE"
       ],
-      "evidence_level": "partial_source_coverage",
-      "runtime_test_status": "not_run"
+      "evidence_level": "scenario_verified_local_subset",
+      "runtime_test_status": "terminal_put_binary_staging_passed_private_two_core_macos; full_file_ui_and_download_not_run"
     },
     {
       "id": "CAP-PORTS",

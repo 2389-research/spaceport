@@ -10,6 +10,7 @@ use crate::{
     stream::{self, Attachment, End, Link, Route, Stream, Subscription},
     wire::{self, Doc, DocGet, DocSet, DocWrite, List, Subscribed, Terminal},
 };
+use base64::Engine as _;
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, TryRecvError};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -39,6 +40,8 @@ const MAX_IN_FLIGHT: usize = 64;
 const MAX_OUTBOUND: usize = 1024;
 /// Frames written before the worker reads again.
 const WRITE_BATCH: usize = 64;
+/// Core's raw byte ceiling for `terminal.put`; base64 stays within our frame limit.
+pub const MAX_PUT_BYTES: usize = 8 << 20;
 
 struct Reply {
     result: std::result::Result<Value, Refusal>,
@@ -251,6 +254,31 @@ impl Core {
 
     pub fn kill(&self, terminal: &str) -> Result<Terminal> {
         self.typed(Method::TerminalKill, &json!({"terminal": terminal}))
+    }
+
+    /// Stage bytes for a live terminal on its exact Core-owned machine.
+    /// This does not submit the returned path to the terminal.
+    pub fn terminal_put(
+        &self,
+        terminal: &str,
+        name: &str,
+        bytes: &[u8],
+    ) -> Result<wire::PutResult> {
+        if bytes.len() > MAX_PUT_BYTES {
+            return Err(Error::PutTooLarge {
+                size: bytes.len(),
+                limit: MAX_PUT_BYTES,
+            });
+        }
+        let data = base64::engine::general_purpose::STANDARD.encode(bytes);
+        self.typed(
+            Method::TerminalPut,
+            &wire::Put {
+                data: &data,
+                name,
+                terminal,
+            },
+        )
     }
 
     pub fn doc_get(&self, name: &str, on: Option<&str>) -> Result<Doc> {

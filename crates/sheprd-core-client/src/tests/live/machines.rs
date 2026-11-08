@@ -162,6 +162,12 @@ fn a_real_core_aggregates_a_fixture_machine() {
         })
         .unwrap();
     assert!(resumed.address.starts_with("lab/"), "{}", resumed.address);
+    let bytes = [0, 255, 65];
+    let staged = core
+        .terminal_put(&resumed.address, "binary.png", &bytes)
+        .unwrap();
+    assert_eq!(staged.bytes, bytes.len());
+    assert_eq!(std::fs::read(&staged.path).unwrap(), bytes);
     let local_address = resumed.address.strip_prefix("lab/").unwrap();
     let renamed = core.machine_rename("lab", "work").unwrap();
     assert_eq!(renamed.id, added.id);

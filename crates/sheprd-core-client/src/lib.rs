@@ -19,7 +19,7 @@ pub mod wire;
 mod tests;
 
 pub use backend::{CoreBackend, CoreChanges, CoreTerminal};
-pub use connection::Core;
+pub use connection::{Core, MAX_PUT_BYTES};
 pub use endpoint::Endpoint;
 pub use error::{Error, Result, Violation};
 pub use method::Method;

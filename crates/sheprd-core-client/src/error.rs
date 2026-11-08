@@ -32,6 +32,8 @@ pub enum Error {
     NoHome,
     #[error("herdr-core broke the protocol: {0}")]
     Protocol(#[from] Violation),
+    #[error("{size}-byte terminal attachment is over the {limit}-byte limit")]
+    PutTooLarge { size: usize, limit: usize },
     /// `kind` and `message` are the core's own words, kept for diagnostics.
     #[error("herdr-core refused {method}: {message}")]
     Refused {

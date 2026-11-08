@@ -154,6 +154,21 @@ pub(crate) struct MachineRemoved {
     pub removed: String,
 }
 
+/// Bytes staged in a terminal's private state directory on its exact machine.
+#[derive(Serialize)]
+pub(crate) struct Put<'a> {
+    pub data: &'a str,
+    pub name: &'a str,
+    pub terminal: &'a str,
+}
+
+/// Core's staging result; `path` belongs to the target machine.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct PutResult {
+    pub bytes: usize,
+    pub path: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Subscribed {
     #[serde(default)]
