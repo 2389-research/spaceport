@@ -107,9 +107,9 @@ fn the_cloud_panes_show_only_messages_under_en_xa() {
             }))
             .chain(["default".into()])
             .collect();
-        // Every provider's pane shares one message, so the first one shows
-        // what the others would.
-        for page in [Page::AddProvider, Page::AddCloud(CloudProvider::ALL[0])] {
+        // The provider pane shares its header and Settings button with the
+        // catalog. Draw it first so its messages are shaped for this check.
+        for page in [Page::AddCloud(CloudProvider::ALL[0]), Page::AddProvider] {
             view.update_in(cx, |view, window, cx| {
                 view.dismiss_menu(window, cx);
                 view.open_add_device(window, cx);
