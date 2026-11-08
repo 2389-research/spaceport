@@ -10,3 +10,10 @@ The focused test runs the actual arm64 macOS `sheprd` executable built by Cargo,
 - `just check-file-size`, `just check-sorted`, and `git diff --check` passed. `just format-check` initially found formatting in the new test; `cargo +1.99.0 fmt --all` corrected it and the check then passed.
 
 A31 stays `not_run`: a native running-app process and network inventory, inspection of built release artifacts, and a private local IPC request answered by the real desktop app remain. T10 and RM-PHONE stay `in_progress`. No personal installed service was queried, stopped, or removed.
+
+## Merged verification
+
+At `38f808e3`, the actual desktop CLI scenario passed 1/1 after integration.
+The phone/Core-external release source suite passed 8/8. The all-feature app
+check, format, file-size, sorted-list and i18n checks passed. This does not
+change the A31 limits above.

@@ -179,3 +179,16 @@ credential, Core repository, personal account, or installed service was
 touched. T04 remains `in_progress`; A30 remains `not_run`. Native GUI and full
 workspace CI were not run. Earlier sections have signed observations, so this
 appended result needs a new observation after integration.
+
+## Merged Daytona Settings verification
+
+At `38f808e3`, the Daytona Settings cut is combined with the review control,
+source-index and private phone CLI cuts. The merged default-feature GUI test
+filter `daytona` passed 10 tests, including the New sandbox card absence and
+retained account/image controls. Five Core catalog and twelve Add Device
+focused tests passed. The all-feature app check passed without new Rust code
+warnings. Format, file-size, sorted-list and i18n checks passed (5,163 used
+messages in 269 files). The package integrity check and 21 tool tests passed.
+The test link retained its macOS compact-unwind warning and Cargo retained
+the `block v0.1.6` notice. Smart Dispatch and provider backend creation remain
+reachable. A30 stays `not_run`; native GUI was not exercised.

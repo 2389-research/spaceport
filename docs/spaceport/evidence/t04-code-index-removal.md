@@ -5,3 +5,13 @@ At base `53af09a1`, the CLI `search symbol|file` route and native source picker 
 This cut deletes the source file and symbol scanner, its change list and error type, the VCS export and error variant, and the GPUI localized error messages and tests that only described that scanner. It removes dead `count changes` and `list files` Git failure labels while retaining `list untracked files`, which `git.rs` and review loading still use. It keeps the `sheprd-vcs` crate and its Git/checkpoint APIs. No checkout or user state is changed by the deletion.
 
 The `compile_fail` doctest for `use sheprd_vcs::code_index` failed first because the public export still compiled. After removing the module, it passed. The retained VCS suite passed 47/47 Git and checkpoint tests plus the doctest. The production GPUI check and three focused VCS error localization tests passed. `just format-check`, `just check-file-size`, `just check-sorted`, `just check-i18n`, and the Spaceport render/check plus 21 package tests passed. Cargo retained its existing `block v0.1.6` future-compatibility notice, and the GPUI test link emitted the existing compact-unwind warning. No native UI, Windows/Linux build, personal checkout, daemon, account or service was exercised. T04/RM-IDE and A29/A30 remain open for the broader Git/review and other excluded feature graphs.
+
+## Merged verification
+
+At `38f808e3`, the source-index cut is combined with the review control,
+Daytona Settings and private phone CLI cuts. The all-feature app check and
+retained VCS library suite (47/47) passed. The merged app test binary passed
+three VCS error localization tests. Format, file-size, sorted-list and i18n
+checks passed (5,163 used messages in 269 files). The package integrity check
+and its 21 tool tests passed. Native review UI and Git workers are still
+reachable; A29 remains `not_run`.
