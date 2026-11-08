@@ -186,7 +186,7 @@
       ],
       "deliverable": "Delete IDE/Git/GitHub/browser/cloud/Teleport/orchestration/mod/scheduler surfaces and dependencies in coherent units.",
       "status": "in_progress",
-      "evidence": ["evidence/t04-terminal-annotations.md", "evidence/t04-client-mods.md", "evidence/t04-legacy-plugin-dependency.md", "evidence/t04-phone-dependency.md", "evidence/t04-device-discovery.md"],
+      "evidence": ["evidence/t04-terminal-annotations.md", "evidence/t04-client-mods.md", "evidence/t04-legacy-plugin-dependency.md", "evidence/t04-phone-dependency.md", "evidence/t04-device-discovery.md", "evidence/t04-automation-dependency.md"],
       "must_close_gaps": []
     },
     {
@@ -352,7 +352,7 @@
       ],
       "deliverable": "Existing timeline and notifications consume authoritative data; usage/job gaps explicit; no background service.",
       "status": "not_started",
-      "evidence": [],
+      "evidence": ["evidence/t04-automation-dependency.md"],
       "must_close_gaps": [
         "G-OBS"
       ]

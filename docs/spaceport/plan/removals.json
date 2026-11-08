@@ -140,7 +140,7 @@
         "S09"
       ],
       "constraint": "Passive authoritative visibility remains a capability gate; do not retain scheduler as hidden dependency.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-MODS",
