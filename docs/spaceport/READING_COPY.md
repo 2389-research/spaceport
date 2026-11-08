@@ -1090,7 +1090,7 @@ Gates this task must close: G-PORT, G-FILE, G-MACHINE
 
 ## T08 — Preserve activity and attention without collectors
 
-Status: **not_started** · Prerequisites: T03, T06
+Status: **blocked** · Prerequisites: T03, T06
 
 Existing timeline and notifications consume authoritative data; usage/job gaps explicit; no background service.
 

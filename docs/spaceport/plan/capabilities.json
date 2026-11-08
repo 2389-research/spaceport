@@ -133,7 +133,7 @@
     {
       "id": "CAP-OBS",
       "title": "Read-only activity/usage/automation",
-      "methods": [],
+      "methods": ["terminal.list", "terminal.get", "events.subscribe"],
       "sources": [
         "S03",
         "S09"
@@ -141,8 +141,9 @@
       "gaps": [
         "G-OBS"
       ],
-      "evidence_level": "partial_source_coverage",
-      "runtime_test_status": "not_run"
+      "evidence_level": "scenario_verified_local_status_only",
+      "runtime_test_status": "private_macos_status_and_unreported_terminal_passed; usage_jobs_history_unavailable; native_notifications_not_run",
+      "runtime_evidence": ["evidence/t08-observability.md"]
     },
     {
       "id": "CAP-CLIENT",

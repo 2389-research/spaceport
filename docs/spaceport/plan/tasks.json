@@ -351,8 +351,8 @@
         "docs/05-verification.md"
       ],
       "deliverable": "Existing timeline and notifications consume authoritative data; usage/job gaps explicit; no background service.",
-      "status": "not_started",
-      "evidence": ["evidence/t04-automation-dependency.md"],
+      "status": "blocked",
+      "evidence": ["evidence/t04-automation-dependency.md", "evidence/t08-observability.md"],
       "must_close_gaps": [
         "G-OBS"
       ]

@@ -37,16 +37,16 @@
     "examples/unknown-outcome.json": "06a3dcb9b16e9596f79a25050eef3e99fbb9bb36ee055c6a5fe38a9e73374f42",
     "notes/HANDOFF_TEMPLATE.md": "505137a430a8db4587354998f4d23b1b964c3357b9cfc117c12da28fcfbcc470",
     "plan/acceptance.json": "c9fef0b32863dd3e9b6997b74d87ffc11f0deadaec47b2d1e086eaba715285ae",
-    "plan/capabilities.json": "d0de7f379c68690e386da6ccd4edd8fd428939eb352302273cffc8a21cf14185",
+    "plan/capabilities.json": "1710d54838da722a92b2386618634478657a6d1fcf42632901e92a42011ad1ce",
     "plan/decisions.json": "2d854e1b2107f75cb8124f83cf650b5c1a3b1c7d445ac66136b7279c5374be21",
     "plan/gaps.json": "39af1806743c5c0b882b0610c5d48343a4fb8ce1a43e766cef9cfd6dc9f4563f",
     "plan/removals.json": "ce10cea1c5abff0e34c6e5ca79f2ac57e6640eef6355e2448182f63bb572ddb2",
     "plan/sources.json": "c614386b3b96c7e83462c8e86ffc65207b194c042912f1f96162bf6497f7b452",
-    "plan/tasks.json": "2be4b9d7e4ba4d799d15b868dca5e561f31c058d9eebd32c55364461dc23e351",
+    "plan/tasks.json": "b6cdaf70e2a095d3970a17eab6190ecad4d8973006e9932244e69ae787766a01",
     "tools/README.md": "dc87a5aaa0a9786e42d5296891a4bbe71ea59329859e2cd46fbef7652104d889",
     "tools/requirements.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
     "tools/spec.py": "cb935e63ff6076568fba9ceb72b88fde2ae103e9a2f42db001d308f7e1415002",
     "tools/test_spec.py": "45172ec5f47a57642575e82ccdba4474c405ec7e59f515e054f35d0882223f5f"
   },
-  "checked_at_utc": "2026-11-08T05:25:31.394307+00:00"
+  "checked_at_utc": "2026-11-08T05:27:33.837789+00:00"
 }

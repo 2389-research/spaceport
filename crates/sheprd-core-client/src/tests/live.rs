@@ -17,6 +17,8 @@ use std::{
 mod lifecycle;
 #[cfg(unix)]
 mod machines;
+#[cfg(unix)]
+mod observation;
 
 struct Sandbox {
     _dir: tempfile::TempDir,
