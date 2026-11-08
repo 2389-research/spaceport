@@ -219,7 +219,7 @@
         "S09"
       ],
       "constraint": "Preserve only reported values and generic primitives independently needed by kept features.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-ANNOTATION",
