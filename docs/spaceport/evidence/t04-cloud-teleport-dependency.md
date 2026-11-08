@@ -226,3 +226,16 @@ Smart Dispatch. No real provider, personal credential, Core repository, or
 installed service was touched. T04 remains `in_progress`, A30 `not_run`, and
 native/live provider behavior unverified. Earlier sections have signed
 observations; this appended result needs a new observation after integration.
+
+## Merged Boxd Dispatch verification
+
+At `7b802b30`, the Boxd Dispatch cut is combined with the orchestration CLI
+and legacy plugin Settings cuts. The retained Boxd remote tests passed 36
+with one ignored under `boxd,container,daytona` features. The merged app test
+binary passed Boxd Dispatch 1, Boxd Settings 3, Core catalog 3 and manual
+Core Add Device 6; the control protocol passed 56/56. Default and all-feature
+app checks passed without new Rust code warnings. Format, file-size,
+sorted-list and i18n checks passed (5,138 used messages in 268 files); the
+package integrity check and 21 tool tests passed. No native GUI, live
+provider endpoint or release package was exercised. Other provider creation
+routes remain, so A30 stays `not_run`.

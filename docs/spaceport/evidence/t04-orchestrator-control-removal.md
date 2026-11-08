@@ -10,3 +10,14 @@ This cut removes the whole `sheprd orchestrator` family: parser/help/dispatch, t
 - `just format-check`, `just check-file-size`, `just check-sorted`, and `git diff --check` passed. Package-root `uv run --with jsonschema==4.26.0 python tools/spec.py check` passed specification integrity checks; `tools/test_spec.py` passed 21 tests. Cargo emitted the existing macOS `__eh_frame` linker and `block v0.1.6` future-compatibility notices. Full native UI and cross-platform suites were not run.
 
 T04 and RM-DISPATCH stay `in_progress`. A30 stays `not_run`: native orchestration UI/backend and other excluded routes still exist, and no fake provider endpoint or installed service inventory ran.
+
+## Merged verification
+
+At `7b802b30`, the route is combined with the legacy plugin Settings and
+Boxd Dispatch cuts. Protocol version 22 passed 56/56 library tests. The
+focused parser test and real desktop CLI private-state scenario passed 1/1
+each; retained server tab tests passed 8/8. Default and all-feature app checks
+passed without new Rust code warnings. Format, file-size, sorted-list and
+i18n checks passed (5,138 used messages in 268 files); the package integrity
+check and 21 tool tests passed. Native orchestration UI and the backend
+remain, so A30 stays `not_run`.
