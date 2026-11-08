@@ -3,6 +3,7 @@
 
 use super::{Page, setup};
 
+pub(super) mod core;
 mod offer;
 
 use crate::i18n::fl;
@@ -37,6 +38,13 @@ pub(in crate::menu) struct Setup {
 /// that was submitted, not to whatever the fields hold now.
 pub(super) enum Step {
     Form,
+    CoreConnecting(core::Request),
+    CoreAdding {
+        request: core::Request,
+        reply: core::Reply,
+    },
+    CoreWaiting(core::Request),
+    CoreUnknown,
     Checking(setup::Request),
     /// macOS refused the host check the local network; waiting for the user
     /// to allow Herdr, then checking again (see `local_network`).
@@ -84,6 +92,7 @@ impl SheprdWindow {
 
     /// Show an empty Add Device form with the target field focused.
     pub(in crate::menu) fn open_add_device(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        core::Gate::install(cx);
         let fields = std::array::from_fn(|index| {
             let input = cx.new(SearchInput::new);
             input.update(cx, |input, cx| {
@@ -111,13 +120,24 @@ impl SheprdWindow {
             }
             cx.notify();
         });
+        let (step, error) = match cx.global::<core::Gate>().state() {
+            core::State::Idle => (Step::Form, None),
+            core::State::InFlight(request) => (Step::CoreWaiting(request), None),
+            core::State::Unknown(request) => {
+                let error = fl!(
+                    "add-device-core-unknown",
+                    target = sheprd_client::text::safe_text(&request.target, 160)
+                );
+                (Step::CoreUnknown, Some(error))
+            }
+        };
         self.menu.device_setup = Some(Setup {
             fields,
-            step: Step::Form,
+            step,
             claim: None,
             task: None,
             _edits: vec![target_edits],
-            error: None,
+            error,
             host_keys: HostKeys::Verify,
         });
         self.menu.page = Some(Page::AddDevice);
@@ -141,6 +161,18 @@ impl SheprdWindow {
             // The completed form has no editable fields or further setup action.
             return true;
         }
+        if matches!(
+            form.step,
+            Step::CoreConnecting(_)
+                | Step::CoreAdding { .. }
+                | Step::CoreWaiting(_)
+                | Step::CoreUnknown
+        ) {
+            if event.keystroke.key == "escape" {
+                self.dismiss_menu(window, cx);
+            }
+            return true;
+        }
         if form
             .fields
             .iter()
@@ -160,7 +192,7 @@ impl SheprdWindow {
                 let next = (index + if modifiers.shift { 2 } else { 1 }) % 3;
                 window.focus(&form.fields[next].read(cx).focus.clone(), cx);
             }
-            "enter" => self.submit_device_setup(cx),
+            "enter" => self.submit_device_setup(window, cx),
             "escape" => self.dismiss_menu(window, cx),
             _ => return false,
         }
@@ -202,7 +234,7 @@ impl SheprdWindow {
                 div()
                     .flex_none()
                     .text_color(rgb(theme.subtext()))
-                    .child(fl!("add-device-intro")),
+                    .child(fl!("add-device-core-intro")),
             );
         for (label, field) in [
             fl!("add-device-target"),
@@ -212,17 +244,23 @@ impl SheprdWindow {
         .into_iter()
         .zip(&setup.fields)
         {
-            body = body.child(
-                div()
-                    .flex_none()
-                    .flex()
-                    .flex_col()
-                    .gap(px(6.))
-                    .child(label)
-                    .child(field.clone()),
+            let row = div().flex_none().flex().flex_col().gap(px(6.)).child(label);
+            let core_pending = matches!(
+                setup.step,
+                Step::CoreConnecting(_)
+                    | Step::CoreAdding { .. }
+                    | Step::CoreWaiting(_)
+                    | Step::CoreUnknown
             );
+            body = body.child(if core_pending {
+                row.child(sheprd_client::text::safe_text(field.read(cx).text(), 160))
+            } else {
+                row.child(field.clone())
+            });
         }
-        body = body.child(self.render_host_key_choice(setup, cx));
+        if matches!(setup.step, Step::Confirm(..) | Step::TrustKey(..)) {
+            body = body.child(self.render_host_key_choice(setup, cx));
+        }
         if let Some(error) = &setup.error {
             body = body.child(
                 div()
@@ -233,6 +271,19 @@ impl SheprdWindow {
         }
         let status = match &setup.step {
             Step::Form => None,
+            Step::CoreConnecting(request) => Some(fl!(
+                "add-device-core-connecting",
+                target = sheprd_client::text::safe_text(&request.target, 160)
+            )),
+            Step::CoreAdding { request, .. } => Some(fl!(
+                "add-device-core-adding",
+                target = sheprd_client::text::safe_text(&request.target, 160)
+            )),
+            Step::CoreWaiting(request) => Some(fl!(
+                "add-device-core-waiting",
+                target = sheprd_client::text::safe_text(&request.target, 160)
+            )),
+            Step::CoreUnknown => None,
             Step::Checking(request) => Some(fl!("add-device-checking", target = request.target())),
             Step::AwaitingLocalNetwork(request) => {
                 Some(super::local_network::waiting_status(request.target()))
@@ -324,7 +375,9 @@ impl SheprdWindow {
                         .into(),
                         ready,
                     )
-                    .on_click(cx.listener(|this, _, _, cx| this.submit_device_setup(cx))),
+                    .on_click(
+                        cx.listener(|this, _, window, cx| this.submit_device_setup(window, cx)),
+                    ),
                 )
             }
         };
@@ -340,10 +393,8 @@ impl SheprdWindow {
         )
     }
 
-    /// Refuse a host already in the catalog. Checked again before each step
-    /// that saves, since another window or the CLI can add it meanwhile. A
-    /// device is matched by its saved entry: the sessions list may have attached
-    /// it to another session, and that does not add one to the catalog.
+    /// The old catalog's duplicate rule, retained for its transition tests.
+    #[cfg(test)]
     pub(super) fn ensure_new_device(&self, request: &setup::Request) -> crate::Result<()> {
         match self.endpoints.iter().find(|endpoint| {
             endpoint
@@ -355,52 +406,8 @@ impl SheprdWindow {
         }
     }
 
-    fn submit_device_setup(&mut self, cx: &mut Context<Self>) {
-        let Some(form) = &mut self.menu.device_setup else {
-            return;
-        };
-        match &form.step {
-            Step::Form => {}
-            // Windows offers no terminal setup; the question says what to run.
-            Step::Confirm(..) if cfg!(windows) => return,
-            Step::Confirm(..) => return self.open_setup_space(cx),
-            _ => return,
-        }
-        let request = setup::Request::new(
-            form.fields[0].read(cx).text(),
-            form.fields[1].read(cx).text(),
-            form.fields[2].read(cx).text(),
-        )
-        .map(|request| request.with_host_keys(form.host_keys));
-        let request = match request.and_then(|request| {
-            self.ensure_new_device(&request)?;
-            Ok(request)
-        }) {
-            Ok(request) => request,
-            Err(error) => {
-                tracing::info!(category = "device_setup", "Device form refused");
-                self.set_device_error(Some(error.to_string()));
-                cx.notify();
-                return;
-            }
-        };
-        let Some(form) = &mut self.menu.device_setup else {
-            return;
-        };
-        tracing::info!(category = "device_setup", "Checking device");
-        form.step = Step::Checking(request.clone());
-        form.error = None;
-        // Claim before probing: a second add of this host, from any window of
-        // this process, is refused from here on rather than after a slow probe.
-        let background = cx.background_executor().spawn(async move {
-            let claim = setup::claim(&request)?;
-            Ok::<_, crate::Error>((claim, request.probe()))
-        });
-        form.task = Some(cx.spawn(async move |this, cx| {
-            let result = background.await;
-            let _ = this.update(cx, |this, cx| this.device_probed(result, cx));
-        }));
-        cx.notify();
+    fn submit_device_setup(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.submit_core_device(window, cx);
     }
 
     /// Return to the form when the host is already saved or being added:
@@ -771,6 +778,7 @@ impl SheprdWindow {
     /// shows it. The command is typed into the pane's shell: the endpoint API
     /// has no method that starts a command in a pane.
     pub(crate) fn poll_device_setup(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.poll_core_device(window, cx);
         if self.poll_saved_device(window, cx) {
             return;
         }

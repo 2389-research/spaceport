@@ -12,7 +12,7 @@
     "requirements": 26
   },
   "strict_json_files": 10,
-  "local_file_links_checked": 37,
+  "local_file_links_checked": 41,
   "schema_validation": "passed",
   "schema_examples": 2,
   "application_scenarios_executed": 4,
@@ -36,17 +36,17 @@
     "examples/observation.json": "c62b06ed37236b7fc7e1ace848d8643ef3553c70570a2952186f6bb3172da184",
     "examples/unknown-outcome.json": "06a3dcb9b16e9596f79a25050eef3e99fbb9bb36ee055c6a5fe38a9e73374f42",
     "notes/HANDOFF_TEMPLATE.md": "505137a430a8db4587354998f4d23b1b964c3357b9cfc117c12da28fcfbcc470",
-    "plan/acceptance.json": "dbe9a5d950c02cb10ee4d64dcf52baa17abadccdda59f71fe19ef6f9e0f45ec5",
-    "plan/capabilities.json": "6892a8c13056e7cfd6d803593715e41bb4eeb9e3a72ddf234f34a68438bdd2e3",
+    "plan/acceptance.json": "738982144634d0bb4946f6bd214e02412cbbb35fd572abec9e38b3b3fd5fd4d7",
+    "plan/capabilities.json": "20954dc5c50280d26f4788a013c528e618e14637ec3f8d94d9533fc5be14eeda",
     "plan/decisions.json": "2d854e1b2107f75cb8124f83cf650b5c1a3b1c7d445ac66136b7279c5374be21",
     "plan/gaps.json": "39af1806743c5c0b882b0610c5d48343a4fb8ce1a43e766cef9cfd6dc9f4563f",
     "plan/removals.json": "ce10cea1c5abff0e34c6e5ca79f2ac57e6640eef6355e2448182f63bb572ddb2",
     "plan/sources.json": "c614386b3b96c7e83462c8e86ffc65207b194c042912f1f96162bf6497f7b452",
-    "plan/tasks.json": "812c0cff13bfc9da4d9daada0b8fea4c7e314d3dc6d404cc7c87c7aa229ec630",
+    "plan/tasks.json": "dc73117e3b54a3cf7b03a576f19a96408c2d75e943d981ef5a78bde9a64dd5b0",
     "tools/README.md": "dc87a5aaa0a9786e42d5296891a4bbe71ea59329859e2cd46fbef7652104d889",
     "tools/requirements.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
     "tools/spec.py": "cb935e63ff6076568fba9ceb72b88fde2ae103e9a2f42db001d308f7e1415002",
     "tools/test_spec.py": "45172ec5f47a57642575e82ccdba4474c405ec7e59f515e054f35d0882223f5f"
   },
-  "checked_at_utc": "2026-11-08T05:10:05.577251+00:00"
+  "checked_at_utc": "2026-11-08T05:10:58.443920+00:00"
 }

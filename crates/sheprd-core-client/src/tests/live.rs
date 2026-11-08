@@ -7,8 +7,9 @@ use crate::{
 };
 use std::{
     ffi::OsString,
+    io,
     path::Path,
-    process::{Child, Command, Stdio},
+    process::{Child, Command, ExitStatus, Stdio},
     time::{Duration, Instant},
 };
 
@@ -20,6 +21,7 @@ struct Sandbox {
     binary: OsString,
     child: Child,
     vars: Vec<(&'static str, OsString)>,
+    stop_attempted: bool,
 }
 
 impl Sandbox {
@@ -35,11 +37,19 @@ impl Sandbox {
             .unwrap();
         let at = |name: &str| dir.path().join(name).into_os_string();
         let mut vars = vec![
+            (
+                "HC_LAUNCHD_DIRECT",
+                OsString::from(std::process::id().to_string()),
+            ),
             ("HC_SESSION", OsString::from("live")),
             ("HC_SOCKET", at("c.sock")),
             ("HOME", at("home")),
             ("PATH", std::env::var_os("PATH").unwrap_or_default()),
+            ("TMPDIR", dir.path().as_os_str().to_owned()),
+            ("XDG_CACHE_HOME", at("cache")),
             ("XDG_CONFIG_HOME", at("config")),
+            ("XDG_DATA_HOME", at("data")),
+            ("XDG_RUNTIME_DIR", dir.path().as_os_str().to_owned()),
             ("XDG_STATE_HOME", at("state")),
         ];
         vars.extend(extra);
@@ -54,6 +64,7 @@ impl Sandbox {
             binary,
             child,
             vars,
+            stop_attempted: false,
         }
     }
 
@@ -86,23 +97,68 @@ impl Sandbox {
             }
         }
     }
+
+    fn restart(&mut self) {
+        assert!(
+            self.child.try_wait().unwrap().is_some(),
+            "private Core still runs"
+        );
+        self.child = Self::command(&self.binary, &self.vars)
+            .arg("serve")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+    }
+
+    fn wait_exact(child: &mut Child) -> io::Result<ExitStatus> {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if let Some(status) = child.try_wait()? {
+                return Ok(status);
+            }
+            if Instant::now() >= deadline {
+                child.kill()?;
+                child.wait()?;
+                return Err(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    "private Core child did not exit",
+                ));
+            }
+            std::thread::sleep(Duration::from_millis(30));
+        }
+    }
+
+    fn stop(&mut self) -> io::Result<()> {
+        self.stop_attempted = true;
+        let mut stopper = Self::command(&self.binary, &self.vars)
+            .args(["server", "stop"])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()?;
+        let stop_status = Self::wait_exact(&mut stopper);
+        if !matches!(stop_status, Ok(ref status) if status.success()) {
+            let _ = self.child.kill();
+        }
+        let serve_status = Self::wait_exact(&mut self.child);
+        if !stop_status?.success() {
+            return Err(io::Error::other("private Core server stop failed"));
+        }
+        serve_status?;
+        Ok(())
+    }
 }
 
 impl Drop for Sandbox {
     fn drop(&mut self) {
-        // Ends this sandbox's own core and the programs it holds, through its
-        // private socket, then reaps the exact child this test started.
-        let _ = Self::command(&self.binary, &self.vars)
-            .args(["server", "stop"])
-            .output();
-        let deadline = Instant::now() + Duration::from_secs(10);
-        while self.child.try_wait().ok().flatten().is_none() {
-            if Instant::now() >= deadline {
-                let _ = self.child.kill();
-                let _ = self.child.wait();
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(50));
+        if !self.stop_attempted
+            && let Err(error) = self.stop()
+        {
+            eprintln!("private Core cleanup failed: {error}");
+        }
+        if self.child.try_wait().ok().flatten().is_none() {
+            let _ = self.child.kill();
+            let _ = self.child.wait();
         }
     }
 }
@@ -111,7 +167,7 @@ impl Drop for Sandbox {
 #[ignore = "needs HERDR_CORE_TEST_BINARY"]
 fn a_real_core_runs_streams_and_stores() {
     let binary = std::env::var_os("HERDR_CORE_TEST_BINARY").expect("HERDR_CORE_TEST_BINARY");
-    let sandbox = Sandbox::start(binary);
+    let mut sandbox = Sandbox::start(binary);
     let core = sandbox.connect();
     assert_eq!(core.hello().generation, 1);
     assert!(core.machine_list().unwrap().machines.is_empty());
@@ -177,6 +233,7 @@ fn a_real_core_runs_streams_and_stores() {
     assert!(version > 0);
 
     core.kill(&started.address).unwrap();
+    sandbox.stop().unwrap();
 }
 
 #[test]
@@ -187,7 +244,7 @@ fn a_real_core_through_the_backend_traits() {
     };
 
     let binary = std::env::var_os("HERDR_CORE_TEST_BINARY").expect("HERDR_CORE_TEST_BINARY");
-    let sandbox = Sandbox::start(binary);
+    let mut sandbox = Sandbox::start(binary);
     let backend = crate::CoreBackend::new(sandbox.connect(), 1000);
     // A chat's terminal carries its endpoint as a label every client lists.
     let spawn = Spawn {
@@ -263,4 +320,5 @@ fn a_real_core_through_the_backend_traits() {
         }
     }
     backend.kill(&info.id).unwrap();
+    sandbox.stop().unwrap();
 }

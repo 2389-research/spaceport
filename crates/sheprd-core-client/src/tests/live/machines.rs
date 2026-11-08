@@ -17,7 +17,7 @@ fn a_real_core_aggregates_a_fixture_machine() {
     )
     .unwrap();
     std::fs::set_permissions(&relay, std::fs::Permissions::from_mode(0o700)).unwrap();
-    let local = Sandbox::start_with(
+    let mut local = Sandbox::start_with(
         binary.clone(),
         vec![
             ("HC_SSH", relay.into_os_string()),
@@ -139,6 +139,7 @@ fn a_real_core_aggregates_a_fixture_machine() {
     backend.kill(&spawned.id).unwrap();
     remote.child.kill().unwrap();
     remote.child.wait().unwrap();
+    remote.restart();
     let restarted = remote.connect();
     assert_eq!(restarted.hello().core.id, added.id);
     let deadline = Instant::now() + Duration::from_secs(10);
@@ -190,6 +191,8 @@ fn a_real_core_aggregates_a_fixture_machine() {
             .any(|terminal| terminal.address == local_address)
     );
     remote_core.kill(local_address).unwrap();
+    local.stop().unwrap();
+    remote.stop().unwrap();
 }
 
 #[test]
@@ -208,11 +211,23 @@ fn a_real_core_does_not_save_a_refused_machine() {
     )
     .unwrap();
     std::fs::set_permissions(&relay, std::fs::Permissions::from_mode(0o700)).unwrap();
-    let local = Sandbox::start_with(binary, vec![("HC_SSH", relay.into_os_string())]);
+    let mut local = Sandbox::start_with(binary, vec![("HC_SSH", relay.into_os_string())]);
     let core = local.connect();
+    assert!(
+        local.child.try_wait().unwrap().is_none(),
+        "private Core detached"
+    );
     match core.machine_add("fixture-host", Some("lab"), None, false) {
-        Err(Error::Refused { kind, .. }) => assert_eq!(kind.as_deref(), Some("unreachable")),
+        Err(Error::Refused {
+            kind,
+            hint: Some(hint),
+            ..
+        }) => {
+            assert_eq!(kind.as_deref(), Some("unreachable"));
+            assert!(hint.as_str().contains("ssh fixture-host"));
+        }
         other => panic!("expected Core refusal, got {other:?}"),
     }
     assert!(core.machine_list().unwrap().machines.is_empty());
+    local.stop().unwrap();
 }

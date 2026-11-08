@@ -262,6 +262,7 @@ pub(super) struct Request {
 }
 
 impl Request {
+    #[cfg(test)]
     pub(super) fn new(target: &str, label: &str, session: &str) -> Result<Self> {
         let target = target.trim();
         let label = label.trim();
@@ -300,6 +301,7 @@ impl Request {
         })
     }
 
+    #[cfg(test)]
     pub(super) fn with_host_keys(self, host_keys: HostKeys) -> Self {
         Self { host_keys, ..self }
     }
@@ -314,6 +316,7 @@ impl Request {
 
     /// Whether a saved device connects the same way: Herdr's `machine add` saves
     /// a new profile every time, so the same host would otherwise appear twice.
+    #[cfg(test)]
     pub(super) fn same_host(&self, target: &str, session: &str) -> bool {
         target == self.target && session == self.session
     }

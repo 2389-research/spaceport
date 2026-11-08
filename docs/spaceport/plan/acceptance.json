@@ -46,7 +46,7 @@
       "scenario": "Add a fixture machine through Core and observe its terminals; interrupt its connection.",
       "expected": "Core owns catalog/retry; Spaceport has no parallel remote connector or duplicate terminal.",
       "status": "blocked",
-      "evidence": ["evidence/t02-machine-ui.md", "evidence/t02-machine-identity-gap.md"]
+      "evidence": ["evidence/t02-machine-ui.md", "evidence/t02-machine-identity-gap.md", "evidence/t02-core-add-ui.md"]
     },
     {
       "id": "A05",
@@ -58,7 +58,7 @@
       "scenario": "Use unknown/changed host keys and authentication-required fixture hosts.",
       "expected": "No silent trust, password capture, key import or installation; actionable refusal preserves the host.",
       "status": "not_run",
-      "evidence": ["evidence/t02-refusal-hint.md"]
+      "evidence": ["evidence/t02-refusal-hint.md", "evidence/t02-core-add-ui.md"]
     },
     {
       "id": "A06",
