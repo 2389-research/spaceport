@@ -13,6 +13,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(all(unix, feature = "adapter-live-test"))]
+mod acp;
 #[cfg(unix)]
 mod lifecycle;
 #[cfg(unix)]

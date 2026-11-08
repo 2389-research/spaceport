@@ -9,6 +9,10 @@ version.workspace      = true
 [lints]
 workspace = true
 
+[features]
+# Opt-in process test; the normal private Core suite needs no adapter binary.
+adapter-live-test = []
+
 [dependencies]
 base64.workspace          = true
 crossbeam-channel.workspace = true
@@ -25,5 +29,6 @@ tracing.workspace           = true
 rustix.workspace = true
 
 [dev-dependencies]
+sheprd-chat-protocol.workspace = true
 sheprd-protocol.workspace = true
 tempfile.workspace       = true
