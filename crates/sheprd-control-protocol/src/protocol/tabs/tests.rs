@@ -36,10 +36,6 @@ fn tab_operations_round_trip() {
             id: 3,
             change: ZoomChange::Reset,
         },
-        TabOp::Code {
-            path: "/src/main.rs".into(),
-            line: Some(42),
-        },
         TabOp::Edit {
             path: "/src/main.rs".into(),
             line: None,
@@ -57,7 +53,7 @@ fn tab_operations_round_trip() {
 #[test]
 fn tab_requests_have_a_stable_wire_form() {
     let request: Request = serde_json::from_str(
-        r#"{"method":"tab","caller":{"workspace_id":"w_1"},"op":{"op":"code","path":"/a.rs"}}"#,
+        r#"{"method":"tab","caller":{"workspace_id":"w_1"},"op":{"op":"edit","path":"/a.rs"}}"#,
     )
     .unwrap();
     let Request::Tab(call) = request else {
@@ -65,7 +61,7 @@ fn tab_requests_have_a_stable_wire_form() {
     };
     assert_eq!(
         call.op,
-        TabOp::Code {
+        TabOp::Edit {
             path: "/a.rs".into(),
             line: None
         }
@@ -92,6 +88,15 @@ fn tab_requests_have_a_stable_wire_form() {
     ] {
         assert!(serde_json::from_str::<TabOp>(invalid).is_err(), "{invalid}");
     }
+}
+
+#[test]
+fn removed_code_open_wire_operation_is_rejected() {
+    assert!(serde_json::from_str::<TabOp>(r#"{"op":"code","path":"/a.rs"}"#).is_err());
+    round_trip(TabOp::Edit {
+        path: "/a.rs".into(),
+        line: Some(42),
+    });
 }
 
 #[test]

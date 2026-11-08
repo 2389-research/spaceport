@@ -66,8 +66,8 @@ pub(super) fn tab(command: TabCommand, context: &Context) -> crate::Result<Outpu
     }
 }
 
-/// The app reads the file itself, so it gets an absolute, resolved path to
-/// a regular file, checked here where the caller's directory is known.
+/// Resolve a local regular file where the caller's directory is known before
+/// sending its path to the window that opens the terminal editor.
 fn local_file(path: &Path) -> crate::Result<String> {
     let resolved = path.canonicalize().map_err(|error| {
         rejected(
@@ -124,17 +124,6 @@ fn opened(what: &str, response: Response) -> crate::Result<Output> {
 
 pub(super) fn code(command: CodeCommand, context: &Context) -> crate::Result<Output> {
     match command {
-        CodeCommand::Open(FileAt { path, line }) => {
-            let path = local_file(&path)?;
-            let response = context.call(
-                Request::Tab,
-                TabOp::Code {
-                    path: path.clone(),
-                    line,
-                },
-            )?;
-            opened(&path, response)
-        }
         CodeCommand::Edit(FileAt { path, line }) => {
             let path = local_file(&path)?;
             context.act(Request::Tab, TabOp::Edit { path, line })

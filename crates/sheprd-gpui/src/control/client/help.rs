@@ -59,7 +59,7 @@ fn family(name: &str) -> &'static str {
             "sheprd tab [list]\n    The app's own tabs: pages, code, reviews, Devices.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nsheprd tab focus|close ID\n    Show a tab, switching to its workspace, or close it."
         }
         "code" => {
-            "sheprd code open FILE[:LINE]\n    Show a local file read-only in a code tab, at LINE.\nsheprd code edit FILE[:LINE]\n    Open it in your terminal editor ($VISUAL, $EDITOR) in a new pane."
+            "sheprd code edit FILE[:LINE]\n    Open it in your terminal editor ($VISUAL, $EDITOR) in a new pane."
         }
         "devices" => {
             "sheprd devices [open]\n    Open the Devices overview tab in the caller's workspace."

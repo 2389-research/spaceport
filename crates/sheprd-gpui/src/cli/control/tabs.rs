@@ -39,8 +39,6 @@ impl From<OsString> for FileAt {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CodeCommand {
-    /// A read-only code tab beside the terminals.
-    Open(FileAt),
     /// The user's terminal editor, in a new pane.
     Edit(FileAt),
 }
@@ -88,10 +86,9 @@ pub(super) fn tab(args: &mut Args) -> Result<TabCommand, CliError> {
 pub(super) fn code(args: &mut Args) -> Result<CodeCommand, CliError> {
     let verb = args.verb().ok_or(CliError::MissingArgument {
         command: "code",
-        what: "open|edit",
+        what: "edit",
     })?;
     Ok(match verb.to_str() {
-        Some("open") => CodeCommand::Open(args.required("FILE[:LINE]")?.into()),
         Some("edit") => CodeCommand::Edit(args.required("FILE[:LINE]")?.into()),
         _ => return Err(unknown("code", verb)),
     })

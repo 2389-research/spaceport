@@ -150,10 +150,7 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ),
     ("ui", "Sidebar, status bar, and terminal font size"),
     ("tab", "List, focus, or close the app's own tabs"),
-    (
-        "code",
-        "Show a file in a code tab or open it in your editor",
-    ),
+    ("code", "Open a local file in your terminal editor"),
     ("devices", "Open the Devices overview"),
     (
         "orchestrator",

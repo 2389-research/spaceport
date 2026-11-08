@@ -1,6 +1,5 @@
-//! `tab`, `code`, `devices`, `orchestrator`, `review`, and the page commands
-//! of `browser`: the app's own tabs, which the `browser::Store` keeps for
-//! every window.
+//! `tab`, `code edit`, `devices`, `orchestrator`, `review`, and page requests.
+//! The Store keeps app tabs; `code edit` instead starts a terminal editor.
 mod arrive;
 mod page;
 
@@ -39,7 +38,6 @@ pub(super) fn serve(
         TabOp::Text { id } => page::text(caller, id, incoming, watches, cx),
         TabOp::Screenshot { id, path } => page::screenshot(caller, id, path, incoming, watches, cx),
         TabOp::Zoom { id, change } => incoming.respond(page::zoom(&caller, id, change, cx)),
-        TabOp::Code { path, line } => arrive::code(&caller, &path, line, incoming, watches, cx),
         TabOp::Edit { path, line } => arrive::edit(&caller, &path, line, incoming, watches, cx),
         TabOp::Devices => arrive::devices(&caller, incoming, watches, cx),
         TabOp::Orchestrator { repo } => arrive::orchestrator(&caller, repo, incoming, watches, cx),

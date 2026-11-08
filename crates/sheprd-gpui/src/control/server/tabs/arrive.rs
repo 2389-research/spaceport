@@ -1,4 +1,4 @@
-//! Tabs opened in the caller's workspace: code, the editor, Devices, the
+//! Tabs opened in the caller's workspace: the editor, Devices, the
 //! orchestrator, and the review. Each feature opens its tab in the focused
 //! workspace, so the window first switches to the caller's, and the tab
 //! opens once a snapshot says the switch landed.
@@ -175,38 +175,6 @@ fn opened(
             format!("Could not open {what}; the window says why"),
         ),
     }
-}
-
-pub(super) fn code(
-    caller: &Caller,
-    path: &str,
-    line: Option<u32>,
-    incoming: socket::Incoming,
-    watches: &mut Watches,
-    cx: &mut App,
-) {
-    let target = match editor_target(path, line) {
-        Ok(target) => target,
-        Err(response) => return incoming.respond(response),
-    };
-    let path = path.to_owned();
-    open_there(
-        caller,
-        incoming,
-        watches,
-        cx,
-        |_| true,
-        move |view, workspace, window, cx| {
-            view.open_code_view(&target, window, cx);
-            opened(
-                view,
-                workspace,
-                &path,
-                cx,
-                |location| matches!(location, Location::Code { file } if file.path == path),
-            )
-        },
-    );
 }
 
 /// Opens the file in the user's editor, in a pane split beside the

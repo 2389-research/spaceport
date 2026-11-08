@@ -212,14 +212,13 @@ fn browser_commands_answer_without_a_window() {
     let name = exe.file_name().unwrap().to_str().unwrap();
     let command = skill
         .lines()
-        .find(|line| line.contains(" code open src/main.rs:42"))
+        .find(|line| line.contains("Check whether the app runs"))
         .unwrap_or_else(|| panic!("{skill}"));
     assert!(
-        command.contains(&format!("{name} code open"))
-            || command.contains(&format!("{name}' code open")),
+        command.contains(&format!("{name} status")) || command.contains(&format!("{name}' status")),
         "{command}"
     );
-    assert!(!command.starts_with("sheprd code"), "{command}");
+    assert!(!command.starts_with("sheprd status"), "{command}");
 
     usage_error(&["browser", "open"], "Unknown browser command: open");
     usage_error(&["browser", "eval"], "Unknown browser command: eval");
@@ -237,6 +236,23 @@ fn browser_open_is_rejected_before_socket_lookup() {
         );
         assert!(output.stdout.is_empty(), "{output:?}");
     }
+}
+
+#[test]
+fn code_open_is_rejected_before_socket_lookup() {
+    let state = tempfile::tempdir().unwrap();
+    let file = state.path().join("main.rs");
+    std::fs::write(&file, "fn main() {}\n").unwrap();
+    let output = cli_in(
+        &["code", "open", file.to_str().unwrap()],
+        Some(state.path()),
+    );
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("Unknown code command: open"),
+        "{output:?}"
+    );
+    assert!(output.stdout.is_empty(), "{output:?}");
 }
 
 #[test]

@@ -15,9 +15,9 @@ fn the_skill_is_marked_and_names_this_executable() {
     assert!(!bundled.contains("herdr-gpui browser"));
     // Every command, not only the browser's, names the executable.
     assert!(!bundled.contains("herdr-gpui "));
-    assert!(bundled.contains("/Applications/Herdr.app/Contents/MacOS/Herdr code open"));
+    assert!(bundled.contains("/Applications/Herdr.app/Contents/MacOS/Herdr status"));
     let spaced = text(Some(Path::new("/Users/a b/it's/Herdr")));
-    assert!(spaced.contains(r"'/Users/a b/it'\''s/Herdr' code open"));
+    assert!(spaced.contains(r"'/Users/a b/it'\''s/Herdr' status"));
 }
 
 /// Agent Skills reads the description as YAML. Keep it a quoted scalar so
@@ -87,7 +87,11 @@ fn the_skill_does_not_promise_local_page_open() {
     assert!(!SKILL.contains("SSH host with the installed shim"));
     assert!(!SKILL.contains("sheprd browser open ./"));
     assert!(!SKILL.contains("HerdrKit.scenario("));
-    assert!(SKILL.contains("`sheprd code open src/main.rs:42`"));
+}
+
+#[test]
+fn the_skill_does_not_promise_code_open() {
+    assert!(!SKILL.contains("sheprd code open"));
 }
 
 #[test]

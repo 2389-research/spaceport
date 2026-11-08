@@ -47,12 +47,6 @@ pub enum TabOp {
         id: u64,
         change: ZoomChange,
     },
-    /// A read-only code tab on a local file, at a 1-based line.
-    Code {
-        path: String,
-        #[serde(default)]
-        line: Option<u32>,
-    },
     /// The file in the user's terminal editor, in a new pane.
     Edit {
         path: String,
@@ -75,8 +69,7 @@ impl TabOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
             Self::Text { .. } | Self::Screenshot { .. } => PAGE_WAIT_SECONDS,
-            Self::Code { .. }
-            | Self::Edit { .. }
+            Self::Edit { .. }
             | Self::Devices
             | Self::Orchestrator { .. }
             | Self::Review

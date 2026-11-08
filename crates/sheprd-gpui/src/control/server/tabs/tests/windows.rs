@@ -158,10 +158,23 @@ fn requests_for_unknown_workspaces_and_bad_paths_are_refused(cx: &mut gpui::Test
         workspace_id: Some("w_missing".into()),
         ..Caller::default()
     };
+    let absolute = std::env::current_dir()
+        .unwrap()
+        .join("example.rs")
+        .to_string_lossy()
+        .into_owned();
     for (op, caller, code) in [
-        (TabOp::Review, missing, ErrorCode::WorkspaceNotFound),
+        (TabOp::Review, missing.clone(), ErrorCode::WorkspaceNotFound),
         (
-            TabOp::Code {
+            TabOp::Edit {
+                path: absolute,
+                line: Some(42),
+            },
+            missing,
+            ErrorCode::WorkspaceNotFound,
+        ),
+        (
+            TabOp::Edit {
                 path: "relative.rs".into(),
                 line: None,
             },

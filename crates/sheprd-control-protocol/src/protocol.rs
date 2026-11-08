@@ -18,7 +18,8 @@ use serde::{Deserialize, Serialize};
 /// 8: legacy `host` `automation_approve`. 9: `remote`. 10: `settings` `language`.
 /// 11: `mod`. 12: `status.core_catalog`. 13: removed phone control.
 /// 14: removed local `browser.open`. 15: removed named-session `window.new`.
-pub const PROTOCOL_VERSION: u32 = 15;
+/// 16: removed `tab.code`.
+pub const PROTOCOL_VERSION: u32 = 16;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.
