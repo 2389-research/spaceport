@@ -15,7 +15,6 @@ workspace = true
 cloud = []
 azure = ["cloud"]
 boat = ["cloud"]
-boxd = ["cloud"]
 coder = ["cloud"]
 container = ["cloud"]
 daytona = ["cloud"]

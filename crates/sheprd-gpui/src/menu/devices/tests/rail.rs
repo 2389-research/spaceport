@@ -50,8 +50,6 @@ pub(super) fn rail_id(provider: CloudProvider) -> &'static str {
         CloudProvider::Azure => "add-device-source-azure",
         #[cfg(feature = "boat")]
         CloudProvider::Boat => "add-device-source-boat",
-        #[cfg(feature = "boxd")]
-        CloudProvider::Boxd => "add-device-source-boxd",
         #[cfg(feature = "coder")]
         CloudProvider::Coder => "add-device-source-coder",
         #[cfg(feature = "container")]
@@ -149,8 +147,6 @@ fn settings_only() -> Vec<(CloudProvider, &'static str)> {
             CloudProvider::Azure => Some((provider, "add-device-source-azure")),
             #[cfg(feature = "boat")]
             CloudProvider::Boat => Some((provider, "add-device-source-boat")),
-            #[cfg(feature = "boxd")]
-            CloudProvider::Boxd => Some((provider, "add-device-source-boxd")),
             #[cfg(feature = "coder")]
             CloudProvider::Coder => None,
             #[cfg(feature = "container")]

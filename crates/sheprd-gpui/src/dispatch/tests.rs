@@ -1,7 +1,5 @@
 use super::*;
 
-#[cfg(feature = "boxd")]
-mod boxd;
 mod history;
 mod picker;
 mod rank;

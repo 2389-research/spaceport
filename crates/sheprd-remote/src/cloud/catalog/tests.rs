@@ -121,3 +121,27 @@ fn another_builds_providers_are_kept_but_not_offered() {
         "written back unchanged"
     );
 }
+
+#[test]
+fn retired_boxd_device_is_hidden_and_preserved_on_catalog_write() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(FILE);
+    let retired = serde_json::json!({
+        "provider": "boxd",
+        "id": "boxd-1",
+        "label": "Retired machine",
+        "account": "fixture-account",
+        "machine": "fixture-machine",
+        "session": "default",
+        "enabled": true
+    });
+    fs::write(
+        &path,
+        serde_json::json!({"version": 1, "devices": [retired]}).to_string(),
+    )
+    .unwrap();
+    assert!(read(&path).unwrap().is_empty());
+    save_in(&path, device("active")).unwrap();
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(saved["devices"][0], retired);
+}

@@ -260,6 +260,7 @@
         "evidence/t04-automation-removal.md",
         "evidence/t04-provider-dependency.md",
         "evidence/t04-daytona-dispatch-removal.md",
+        "evidence/t04-boxd-provider-removal.md",
         "evidence/t04-checkpoint-cli-removal.md",
         "evidence/t04-checkpoint-ui-removal.md",
         "evidence/t05-core-default-observation.md"

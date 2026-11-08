@@ -3,8 +3,7 @@
 //! scripts use (see `sprites::relay` and `opensandbox::relay`): TLS with the
 //! bundled web roots, or plain TCP to a loopback or `ws` endpoint, bounded
 //! messages, and a reader that feeds this process's stdin to the relay.
-//! [`connect`] alone is the same TLS or TCP stream without the WebSocket, for
-//! a relay that speaks HTTP itself (`boxd::relay`).
+//! [`connect`] alone opens the same TLS or TCP stream without the WebSocket.
 
 use std::{
     io::{self, Read, Write},

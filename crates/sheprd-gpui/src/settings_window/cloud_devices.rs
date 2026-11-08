@@ -8,8 +8,6 @@
 mod azure;
 #[cfg(feature = "boat")]
 mod boat;
-#[cfg(feature = "boxd")]
-mod boxd;
 #[cfg(feature = "coder")]
 mod coder;
 #[cfg(feature = "container")]
@@ -30,8 +28,6 @@ mod sprites;
 pub(super) use azure::AzureCard;
 #[cfg(feature = "boat")]
 pub(super) use boat::BoatCard;
-#[cfg(feature = "boxd")]
-pub(super) use boxd::BoxdCard;
 #[cfg(feature = "coder")]
 pub(super) use coder::CoderCard;
 #[cfg(feature = "container")]
@@ -141,7 +137,6 @@ impl Hint {
 #[cfg(any(
     feature = "azure",
     feature = "boat",
-    feature = "boxd",
     feature = "coder",
     feature = "container",
     feature = "daytona",
@@ -192,8 +187,6 @@ impl SettingsWindow {
                 CloudProvider::Azure => self.open_azure_card(cx),
                 #[cfg(feature = "boat")]
                 CloudProvider::Boat => self.open_boat_card(cx),
-                #[cfg(feature = "boxd")]
-                CloudProvider::Boxd => self.open_boxd_card(cx),
                 #[cfg(feature = "coder")]
                 CloudProvider::Coder => self.open_coder_card(cx),
                 #[cfg(feature = "container")]
@@ -219,8 +212,6 @@ impl SettingsWindow {
                 CloudProvider::Azure => self.azure_config_changed(cx),
                 #[cfg(feature = "boat")]
                 CloudProvider::Boat => self.boat_config_changed(cx),
-                #[cfg(feature = "boxd")]
-                CloudProvider::Boxd => self.boxd_config_changed(cx),
                 #[cfg(feature = "coder")]
                 CloudProvider::Coder => self.coder_config_changed(cx),
                 #[cfg(feature = "container")]
@@ -292,8 +283,6 @@ impl SettingsWindow {
             CloudProvider::Azure => self.render_azure_card(cx),
             #[cfg(feature = "boat")]
             CloudProvider::Boat => self.render_boat_card(cx),
-            #[cfg(feature = "boxd")]
-            CloudProvider::Boxd => self.render_boxd_card(cx),
             #[cfg(feature = "coder")]
             CloudProvider::Coder => self.render_coder_card(cx),
             #[cfg(feature = "container")]
@@ -375,7 +364,6 @@ impl SettingsWindow {
     /// itself untouched at the provider.
     #[cfg(any(
         feature = "boat",
-        feature = "boxd",
         feature = "coder",
         feature = "container",
         feature = "daytona",
@@ -398,7 +386,6 @@ impl SettingsWindow {
     /// `cloud_device_row` with provider `actions` before its Remove button.
     #[cfg(any(
         feature = "boat",
-        feature = "boxd",
         feature = "coder",
         feature = "container",
         feature = "daytona",
@@ -437,7 +424,6 @@ impl SettingsWindow {
     #[cfg(any(
         feature = "azure",
         feature = "boat",
-        feature = "boxd",
         feature = "coder",
         feature = "container",
         feature = "daytona",

@@ -78,8 +78,6 @@ impl Source {
             Self::Cloud(crate::cloud::CloudProvider::Azure) => "add-device-source-azure",
             #[cfg(feature = "boat")]
             Self::Cloud(crate::cloud::CloudProvider::Boat) => "add-device-source-boat",
-            #[cfg(feature = "boxd")]
-            Self::Cloud(crate::cloud::CloudProvider::Boxd) => "add-device-source-boxd",
             #[cfg(feature = "coder")]
             Self::Cloud(crate::cloud::CloudProvider::Coder) => "add-device-source-coder",
             #[cfg(feature = "container")]
@@ -390,7 +388,7 @@ impl SheprdWindow {
                         .size(px(14.))
                         .text_color(rgb(theme.foreground)),
                 );
-            let trailing = match Self::source_state(source) {
+            let trailing: Option<Div> = match Self::source_state(source) {
                 State::None => None,
                 #[cfg(feature = "cloud")]
                 State::Ready => Some(
