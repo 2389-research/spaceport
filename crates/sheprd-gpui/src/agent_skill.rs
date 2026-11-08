@@ -1,4 +1,4 @@
-//! The agent skill that tells agents about browser tabs and page notes.
+//! The managed skill that tells agents about the app's client commands.
 //! Agents only use what they know about, so the app offers once to install
 //! it where Claude Code and other agents look for skills, and, once the user
 //! agrees, keeps it current on every start: the skill names this app's
@@ -179,7 +179,7 @@ pub(crate) struct AgentSkill {
     /// Asked at most once per run, by the first window ready to.
     ask: bool,
     /// What the settings allow; unknown until they load, so nothing is
-    /// offered, refreshed, or sent to a host against a setting not yet read.
+    /// offered or refreshed against a setting not yet read.
     install: Option<SkillInstall>,
     path: Option<PathBuf>,
     /// Rewrite the installed skill once the settings allow it.
@@ -227,7 +227,7 @@ impl AgentSkill {
         Self {
             choice: None,
             ask: true,
-            install: Some(SkillInstall::Ask),
+            install: Some(SkillInstall::Local),
             path: None,
             refresh: false,
         }
@@ -268,14 +268,6 @@ impl AgentSkill {
 
     pub(crate) fn choice(cx: &App) -> Option<Choice> {
         cx.try_global::<Self>().and_then(|skill| skill.choice)
-    }
-
-    /// The choice to apply on saved SSH hosts, when the settings let the app
-    /// touch them.
-    pub(crate) fn remote_choice(cx: &App) -> Option<Choice> {
-        cx.try_global::<Self>()
-            .filter(|skill| skill.install == Some(SkillInstall::Ask))
-            .and_then(|skill| skill.choice)
     }
 
     /// Whether this window should ask now; claims the question so no other

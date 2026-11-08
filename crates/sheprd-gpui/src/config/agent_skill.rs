@@ -7,12 +7,10 @@ use serde::Deserialize;
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SkillInstall {
-    /// Offer it once; the answer covers this machine and saved SSH hosts.
+    /// Offer it once on this machine; saved SSH hosts are not touched.
     #[default]
-    Ask,
-    /// As `ask`, but saved SSH hosts are never touched.
     Local,
-    /// Never offer, refresh, or remove it here or on SSH hosts. Installing
+    /// Never offer, refresh, or remove it here. Installing
     /// from Settings or the palette still works, once.
     Off,
 }

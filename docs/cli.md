@@ -10,11 +10,8 @@ ports, and its settings.
 Commands reach the app over a socket of its own,
 `$XDG_STATE_HOME/herdr/gpui/control.sock` (default `~/.local/state/`), which
 only your user can open; on Windows, over a named pipe (see
-[Windows](#windows)). An agent on an SSH host has no path to it; there,
-the app's shim at `~/.local/state/herdr/gpui/bin/sheprd` offers
-`browser open` and `browser reload` through Herdr workspace metadata (see
-[remote agents](../crates/sheprd-gpui/README.md#remote-ssh-page-requests)),
-and every other command exits 8. A few commands work from files alone and
+[Windows](#windows)). An agent on an SSH host has no path to this socket.
+A few commands work from files alone and
 need no running app; they say so below.
 
 On Windows, `sheprd.exe` is a console program, so a shell waits for it and

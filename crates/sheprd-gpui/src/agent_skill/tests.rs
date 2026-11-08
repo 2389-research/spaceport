@@ -84,6 +84,7 @@ fn description(skill: &str) -> &str {
 #[test]
 fn the_skill_does_not_promise_local_page_open() {
     assert!(SKILL.contains("The local `sheprd browser open` command has been removed"));
+    assert!(!SKILL.contains("SSH host with the installed shim"));
     assert!(!SKILL.contains("sheprd browser open ./"));
     assert!(!SKILL.contains("HerdrKit.scenario("));
     assert!(SKILL.contains("`sheprd code open src/main.rs:42`"));

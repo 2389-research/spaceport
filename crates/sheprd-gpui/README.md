@@ -3242,58 +3242,6 @@ the titlebar's Git menu where its button would.
   250,000 lines a file, 5,000 untracked files; links and binaries are not
   read). Only the local daemon's checkouts can be reviewed.
 
-### Remote SSH Page Requests
-
-Local `sheprd browser open` has been removed. The SSH host shim still sends
-page requests through Herdr workspace metadata until the embedded browser
-path is removed.
-
-Agents on a saved SSH host open pages another way, since that host cannot
-reach this machine. The app writes a small `herdr-gpui` shim there, at
-`~/.local/state/herdr/gpui/bin/herdr-gpui`; it needs only `sh`, `cut`, and
-`sed`. The shim leaves the request on the caller's Herdr workspace as metadata
-tokens (`herdr workspace report-metadata`, named `herdr-gpui-*`), which expire
-after 30 seconds. A window connected to that host sees them in its snapshot
-and opens the page in that workspace, once per request:
-
-```sh
-~/.local/state/herdr/gpui/bin/sheprd browser open localhost:3000
-~/.local/state/herdr/gpui/bin/sheprd browser open --no-focus https://example.com/docs
-~/.local/state/herdr/gpui/bin/sheprd browser reload
-```
-
-- An address on the host's own loopback (`localhost`, `127.0.0.1`, `[::1]`,
-  `0.0.0.0`) is forwarded first, as `sheprd ports open` does, and the tab
-  shows the forwarded `127.0.0.1` port with the same path and query.
-- Only `browser open` and `browser reload` work from a host; every other
-  command exits 8. Files on the host are not shown: serve their folder (for
-  example `python3 -m http.server 8000`) and open its port. Addresses are
-  limited to 960 characters.
-- Notes you send on such a page are typed into the agent's pane once it is
-  idle, as for a local agent; `browser feedback` cannot reach the app from
-  the host.
-- Anything on the host that can run `herdr` can set the same tokens, so a
-  request can do no more than open an http or https page in the workspace
-  that carries it, or reload the tabs its pane opened. A bad address is
-  refused with a notice in the window.
-- Every Sheprd connected to the host acts on the request, and a request
-  made while no window is connected is dropped when its tokens expire. Each
-  request names its own tokens, so requests made together from several panes
-  all open; a workspace holds at most 32 tokens, so a burst of long addresses
-  can be refused until earlier ones expire.
-
-A local file opened from a pane goes beside that pane's terminal, since it is
-usually a mockup or explainer the agent wrote for you to read while you talk
-to it; a web address takes a tab of the group in use. `--beside` and `--tab`
-choose instead. Beside means an editor group next to the group showing the
-caller's terminal: the group the page already belongs to, the group beside
-the terminal when the window is split, or a new group split off to its
-right. The terminal's group stays in use and keeps the keyboard, so you can
-keep typing to the agent. A workspace the window is not showing, or a
-terminal the user has switched away from, gets an ordinary tab instead, and
-the command says so: splitting beside another terminal would leave the
-agent hidden and the keyboard with someone else.
-
 #### Explainer Kit
 
 Local pages can load a small kit the app serves at `/.herdr/kit.css` and
@@ -3324,18 +3272,11 @@ removed; a skill of the same name you wrote yourself is left alone.
   palette's **Install Browser Skill for Agents**.
 - Only release builds offer or refresh the skill. A development build never
   points your agents at itself unless you install from it explicitly.
-- Once you agree, the app also puts the shim and a copy of the skill naming
-  it on each saved SSH host it connects to, once per run, over the same
-  noninteractive SSH. The copy goes only into the host's existing `~/.claude`
-  or `~/.agents`. As here, a shim or skill file without the app's marker is
-  left alone. A host without a POSIX shell is skipped. Removing the skill
-  takes the shim and those copies off each host again, the next time a
-  window connects to it.
-- `[agent_skill] install` in `config-gpui.local.toml` wins over that saved
-  answer, so it can travel with your dotfiles. `"ask"`, the default, works as
-  above; `"local"` never touches saved SSH hosts; `"off"` never offers,
-  refreshes, or removes the skill anywhere. Installing from Preferences or the
-  palette still works, but the app then leaves that copy as it is.
+- `[agent_skill] install` in `config-gpui.local.toml` wins over the saved
+  answer. `"local"`, the default, offers and refreshes the skill on this
+  computer only. `"off"` never offers or refreshes it. Installing from
+  Preferences or the palette still works when you choose to. An older
+  `install = "ask"` entry must be changed to `"local"` or `"off"`.
 
 `sheprd browser skill` prints the same text, for example to install it
 elsewhere:

@@ -16,6 +16,7 @@ mod en_xa_input;
 mod en_xa_notices;
 mod follow_focus;
 mod padding;
+mod removed_remote_browser;
 mod report_issue;
 mod rtl;
 mod sound_volume;

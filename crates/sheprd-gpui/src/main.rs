@@ -119,7 +119,6 @@ mod progress;
 mod pull_request;
 mod px0;
 mod release_notes;
-mod remote_browser;
 mod reorder;
 mod repo_items;
 mod restart_manager;

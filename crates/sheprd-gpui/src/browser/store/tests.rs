@@ -146,7 +146,7 @@ fn saved_tabs_round_trip_and_invalid_files_are_rejected() {
 }
 
 #[test]
-fn an_agent_reopening_its_page_reuses_the_tab() {
+fn pane_origin_selects_only_its_tabs() {
     let mut store = Store::default();
     let scope = Scope::endpoint("local");
     let page = url("https://a.test/");
@@ -156,22 +156,10 @@ fn an_agent_reopening_its_page_reuses_the_tab() {
     let theirs = store
         .open(scope.clone(), "w_1", page.clone(), Some("w_1:p2".into()))
         .unwrap();
-    let page = page.unwrap();
-    assert_eq!(
-        store.opened_before(&scope, "w_1", Some("w_1:p1"), &page),
-        Some(mine)
-    );
-    assert_eq!(
-        store.opened_before(&scope, "w_1", Some("w_1:p2"), &page),
-        Some(theirs)
-    );
-    assert_eq!(store.opened_before(&scope, "w_1", None, &page), None);
-    assert_eq!(
-        store.opened_before(&scope, "w_2", Some("w_1:p1"), &page),
-        None
-    );
     let ids: Vec<_> = store.opened_by("w_1:p1").map(|tab| tab.id).collect();
     assert_eq!(ids, [mine]);
+    let other_ids: Vec<_> = store.opened_by("w_1:p2").map(|tab| tab.id).collect();
+    assert_eq!(other_ids, [theirs]);
 }
 
 /// A workspace's VS Code tab is listed in its strips like any tab, and is
@@ -214,9 +202,6 @@ fn a_workspace_has_one_vs_code_tab_listed_in_its_strips() {
         .map(|tab| tab.id)
         .collect();
     assert_eq!(listed, [strip, code]);
-    // An agent showing the same page gets a tab of its own.
-    let page = page.unwrap();
-    assert_eq!(store.opened_before(&local, "w_1", None, &page), None);
     // It goes with its workspace.
     assert!(store.forget_workspaces(&local, &["w_1".to_owned()]));
     assert!(store.code_tab(&local, "w_1").is_none());

@@ -1,6 +1,6 @@
 ---
 name: herdr-gpui-browser
-description: "Use Sheprd client commands for native chat, files, notes, settings, and window state inside Herdr. An SSH host can still request a page through its temporary shim; the local browser open command has been removed."
+description: "Use Sheprd client commands for native chat, files, notes, settings, and window state inside Herdr. The browser page-open command has been removed; share a URL or file path for the user to open."
 ---
 <!-- herdr-gpui-managed-skill v1: Sheprd keeps this file up to date. Edit a copy under another name to keep your changes. -->
 
@@ -9,10 +9,6 @@ description: "Use Sheprd client commands for native chat, files, notes, settings
 The local `sheprd browser open` command has been removed. Share a web URL or
 file path with the user for their system handler. Native chat supports Markdown,
 Mermaid, and the fixed `herdr-ui` control catalog.
-
-An SSH host with the installed shim can still request a web page through
-Herdr workspace metadata with `sheprd browser open URL`. That path is
-transitional while embedded browser support is removed.
 
 ## More of Sheprd from the command line
 

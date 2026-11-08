@@ -301,8 +301,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) pressed_terminal_link: Option<PressedLink>,
     /// The terminal grid's cached regions; see `regions`.
     pub(crate) regions: Vec<regions::RegionLayers>,
-    /// Pages remote agents asked for, waiting for their port's forward.
-    pub(crate) remote_browser: Vec<crate::remote_browser::Forwarding>,
     /// A `worktree.remove` queued after its dialog closed.
     pub(crate) removal: Option<menu::Removal>,
     /// Herdr's resize mode: direction keys resize the focused pane until
@@ -629,7 +627,6 @@ impl SheprdWindow {
         self.sync_host_theme();
         self.save_group_layouts(cx);
         self.poll_browser(window, cx);
-        self.poll_remote_browser(window, cx);
         self.poll_chats(window, cx);
         self.offer_browser_skill(window, cx);
         self.poll_sessions(cx);

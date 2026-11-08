@@ -11,29 +11,25 @@ fn installed() -> AgentSkill {
 }
 
 #[gpui::test]
-fn nothing_is_offered_or_sent_to_hosts_before_the_setting_loads(cx: &mut gpui::TestAppContext) {
+fn nothing_is_offered_before_the_setting_loads(cx: &mut gpui::TestAppContext) {
     cx.update(|cx| {
         cx.set_global(installed());
-        assert_eq!(AgentSkill::remote_choice(cx), None);
         assert!(!AgentSkill::take_ask(cx));
         // The setting arrives: asking is allowed again, once.
-        AgentSkill::allow(cx, SkillInstall::Ask);
-        assert_eq!(AgentSkill::remote_choice(cx), Some(Choice::Installed));
+        AgentSkill::allow(cx, SkillInstall::Local);
         assert!(AgentSkill::take_ask(cx));
         assert!(!AgentSkill::take_ask(cx));
     });
 }
 
 #[gpui::test]
-fn local_keeps_ssh_hosts_out_and_off_also_stops_the_offer(cx: &mut gpui::TestAppContext) {
+fn local_allows_the_offer_and_off_stops_it(cx: &mut gpui::TestAppContext) {
     cx.update(|cx| {
         cx.set_global(installed());
         AgentSkill::allow(cx, SkillInstall::Local);
-        assert_eq!(AgentSkill::remote_choice(cx), None);
         assert_eq!(AgentSkill::choice(cx), Some(Choice::Installed));
 
         AgentSkill::allow(cx, SkillInstall::Off);
-        assert_eq!(AgentSkill::remote_choice(cx), None);
         assert!(!AgentSkill::take_ask(cx), "off never asks");
         // Turning it back on later still asks, as the question was not taken.
         AgentSkill::allow(cx, SkillInstall::Local);
@@ -66,7 +62,7 @@ fn removing_the_skill_cancels_the_refresh_off_held_back(cx: &mut gpui::TestAppCo
         AgentSkill::choose(Choice::Declined, cx);
         assert!(!cx.global::<AgentSkill>().refresh);
         // So allowing it again rewrites nothing.
-        AgentSkill::allow(cx, SkillInstall::Ask);
+        AgentSkill::allow(cx, SkillInstall::Local);
         assert_eq!(AgentSkill::choice(cx), Some(Choice::Declined));
     });
 }

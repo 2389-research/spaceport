@@ -1,73 +1,9 @@
-//! Tabs an agent asks for, from this machine's control socket or a remote
-//! host's request, and the workspace switch that shows them.
+//! Workspace navigation and page reload for retained tab commands.
 
-use super::{scope, store};
-use crate::{
-    NavigationTarget, SheprdWindow,
-    browser::{Location, Store, TabId},
-};
-use gpui::*;
+use crate::{NavigationTarget, SheprdWindow, browser::TabId};
+use gpui::Context;
 
 impl SheprdWindow {
-    /// Opens `location` in a tab of `workspace` on endpoint `index` for the
-    /// agent in pane `origin`, as a control request or a remote host's
-    /// request asks. `None` when too many tabs are open.
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn open_agent_tab(
-        &mut self,
-        index: usize,
-        workspace: &str,
-        origin: Option<&str>,
-        location: &Location,
-        focus: bool,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Option<TabId> {
-        let scope = scope(&self.endpoints[index]);
-        // An agent showing the same page again gets its tab back, reloaded,
-        // rather than another tab for every revision.
-        let before =
-            store(cx).and_then(|store| store.opened_before(&scope, workspace, origin, location));
-        let id = match before {
-            Some(id) => {
-                #[cfg(any(target_os = "macos", windows))]
-                self.browser.pages.reload(id);
-                id
-            }
-            None => {
-                let opened = Store::update(cx, |store| {
-                    store.open(
-                        scope,
-                        workspace,
-                        Some(location.clone()),
-                        origin.map(str::to_owned),
-                    )
-                });
-                opened?
-            }
-        };
-        if focus {
-            self.show_agent_tab(index, workspace, id, window, cx);
-        }
-        cx.notify();
-        Some(id)
-    }
-
-    /// Goes to `workspace` of endpoint `index` and shows tab `id` there.
-    pub(crate) fn show_agent_tab(
-        &mut self,
-        index: usize,
-        workspace: &str,
-        id: TabId,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.go_to_workspace(index, workspace, cx);
-        // Recorded against the workspace, so the tab shows once the
-        // navigation lands even if it is still in flight.
-        self.show_browser_tab(id, window, cx);
-    }
-
     /// Reloads this window's pages for `tabs`, as an agent asks after
     /// editing a page it showed.
     pub(crate) fn reload_browser_tabs(&mut self, tabs: &[TabId]) {

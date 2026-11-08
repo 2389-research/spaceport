@@ -20,6 +20,21 @@ fn layout(text: &str) -> anyhow::Result<SidebarLayout> {
 }
 
 #[test]
+fn legacy_page_request_tokens_stay_out_of_sidebar_values() -> anyhow::Result<()> {
+    let mut snapshot = snapshot()?;
+    snapshot.workspaces[0].tokens = vec![
+        ("herdr-gpui-17-42".into(), "open p1".into()),
+        ("herdr-gpui-17-42_0".into(), "https://a.test/".into()),
+        ("ci".into(), "green".into()),
+    ];
+    let report = host_report("Local", &snapshot);
+    assert_eq!(report.reported.len(), 1);
+    assert_eq!(report.reported[0].name, "ci");
+    assert_eq!(report.reported[0].sample, "green");
+    Ok(())
+}
+
+#[test]
 fn reports_one_safe_bounded_sample_per_scope_and_name() -> anyhow::Result<()> {
     let mut snapshot = snapshot()?;
     assert_eq!(

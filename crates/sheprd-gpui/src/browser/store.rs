@@ -419,28 +419,6 @@ impl Store {
         Some(id)
     }
 
-    /// The tab one agent, or the user when `origin` is None, already opened
-    /// on this page, which showing the page again reuses rather than stacking
-    /// another tab.
-    pub(crate) fn opened_before(
-        &self,
-        scope: &Scope,
-        workspace_id: &str,
-        origin: Option<&str>,
-        location: &Location,
-    ) -> Option<TabId> {
-        self.tabs
-            .iter()
-            .find(|tab| {
-                tab.place == Place::Group
-                    && &tab.scope == scope
-                    && tab.workspace_id == workspace_id
-                    && tab.origin.as_deref() == origin
-                    && tab.location.as_ref() == Some(location)
-            })
-            .map(|tab| tab.id)
-    }
-
     /// The tabs a pane's agent opened.
     pub(crate) fn opened_by<'a>(&'a self, pane_id: &'a str) -> impl Iterator<Item = &'a Tab> + 'a {
         self.tabs

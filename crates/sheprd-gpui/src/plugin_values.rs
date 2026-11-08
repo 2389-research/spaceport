@@ -63,11 +63,10 @@ pub(crate) fn host_report(host: &str, snapshot: &ClientShellSnapshot) -> HostRep
         .iter()
         .map(|workspace| (SidebarScope::Spaces, &workspace.tokens));
     for (scope, tokens) in agents.chain(spaces) {
-        // Remote browser requests are this app's own traffic, not values a
-        // plugin reported for display.
+        // Legacy page-request metadata is not a sidebar value.
         let reported_tokens = tokens
             .iter()
-            .filter(|(name, _)| !crate::remote_browser::is_request_token(name));
+            .filter(|(name, _)| !name.starts_with("herdr-gpui-"));
         for (name, value) in reported_tokens {
             let full = reported.len() >= MAX_REPORTED;
             if let (Entry::Vacant(new), Some(value)) =

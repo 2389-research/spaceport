@@ -196,7 +196,7 @@ fn browser_commands_answer_without_a_window() {
     let output = cli(&["browser", "--help"]);
     assert!(output.status.success(), "{output:?}");
     let help = String::from_utf8(output.stdout).unwrap();
-    assert!(help.contains("browser open URL"), "{help}");
+    assert!(!help.contains("browser open URL"), "{help}");
     assert!(help.contains("3 Sheprd not running"), "{help}");
 
     let output = cli(&["browser", "skill"]);
@@ -212,84 +212,37 @@ fn browser_commands_answer_without_a_window() {
     let name = exe.file_name().unwrap().to_str().unwrap();
     let command = skill
         .lines()
-        .find(|line| line.contains(" browser open http"))
+        .find(|line| line.contains(" code open src/main.rs:42"))
         .unwrap_or_else(|| panic!("{skill}"));
     assert!(
-        command.contains(&format!("{name} browser open"))
-            || command.contains(&format!("{name}' browser open")),
+        command.contains(&format!("{name} code open"))
+            || command.contains(&format!("{name}' code open")),
         "{command}"
     );
-    assert!(!command.starts_with("sheprd browser"), "{command}");
+    assert!(!command.starts_with("sheprd code"), "{command}");
 
-    usage_error(&["browser", "open"], "browser open requires one URL");
+    usage_error(&["browser", "open"], "Unknown browser command: open");
     usage_error(&["browser", "eval"], "Unknown browser command: eval");
 }
 
 #[test]
-fn browser_open_reports_a_missing_app_and_a_refused_address() {
-    // Short, because the control socket inside must fit a Unix socket path.
-    let parent = if cfg!(unix) {
-        std::path::PathBuf::from("/tmp")
-    } else {
-        std::env::temp_dir()
-    };
-    let state = tempfile::Builder::new()
-        .prefix("hgs")
-        .tempdir_in(parent)
-        .unwrap();
-    let output = cli_in(
-        &["browser", "open", "file:///etc/passwd"],
-        Some(state.path()),
-    );
-    assert_eq!(output.status.code(), Some(2), "{output:?}");
-    assert!(
-        String::from_utf8_lossy(&output.stderr).contains("http and https"),
-        "{output:?}"
-    );
-    let output = cli_in(&["browser", "open", "localhost:3000"], Some(state.path()));
-    assert_eq!(output.status.code(), Some(3), "{output:?}");
-    assert!(
-        String::from_utf8_lossy(&output.stderr).contains("not running"),
-        "{output:?}"
-    );
-    assert!(output.stdout.is_empty(), "{output:?}");
+fn browser_open_is_rejected_before_socket_lookup() {
+    let state = tempfile::tempdir().unwrap();
+    for target in ["file:///etc/passwd", "localhost:3000"] {
+        let output = cli_in(&["browser", "open", target], Some(state.path()));
+        assert_eq!(output.status.code(), Some(2), "{output:?}");
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("Unknown browser command: open"),
+            "{output:?}"
+        );
+        assert!(output.stdout.is_empty(), "{output:?}");
+    }
 }
 
 #[test]
-fn local_pages_and_feedback_need_the_app_and_a_plain_folder() {
-    let parent = if cfg!(unix) {
-        std::path::PathBuf::from("/tmp")
-    } else {
-        std::env::temp_dir()
-    };
-    let state = tempfile::Builder::new()
-        .prefix("hgs")
-        .tempdir_in(&parent)
-        .unwrap();
-    let site = tempfile::Builder::new()
-        .prefix("hgp")
-        .tempdir_in(&parent)
-        .unwrap();
-    let page = site.path().join("mockup.html");
-    std::fs::write(&page, "<h1>draft</h1>").unwrap();
-    let hidden = site.path().join(".drafts");
-    std::fs::create_dir(&hidden).unwrap();
-    std::fs::write(hidden.join("secret.html"), "x").unwrap();
-    let page = page.to_str().unwrap();
-    let hidden_page = hidden.join("secret.html");
-
-    // A plain file is accepted and only the missing app stops it.
-    let output = cli_in(&["browser", "open", page], Some(state.path()));
-    assert_eq!(output.status.code(), Some(3), "{output:?}");
-
-    // A file in a hidden folder is never served.
-    let output = cli_in(
-        &["browser", "open", hidden_page.to_str().unwrap()],
-        Some(state.path()),
-    );
-    assert_eq!(output.status.code(), Some(2), "{output:?}");
-
-    // Feedback belongs to the pane that opened the page.
+fn feedback_needs_the_app_and_a_pane() {
+    let state = tempfile::tempdir().unwrap();
+    // Feedback belongs to the pane receiving the notes.
     let output = cli_in(&["browser", "feedback"], Some(state.path()));
     assert_eq!(output.status.code(), Some(1), "{output:?}");
     assert!(
