@@ -1,6 +1,8 @@
 # T12 release identity audit: source state
 
 T12 is blocked. This is a source audit of the current development branch, not a package or update test. No release or user installation was changed.
+The [native platform results](native-platform-results.md) record the macOS
+fixture failures and the unrun Windows/Linux gates.
 
 | Surface | Current source state | Required Spaceport change |
 | --- | --- | --- |

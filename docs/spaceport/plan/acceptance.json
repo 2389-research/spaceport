@@ -565,7 +565,7 @@
       "scenario": "Run retained UX/Core/lifecycle/clipboard/notifications/packaging/updater on a native supported macOS fixture.",
       "expected": "Measured behavior matches contract; actual OS/architecture coverage is recorded.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/native-platform-results.md"]
     },
     {
       "id": "A50",
@@ -579,7 +579,7 @@
       "scenario": "Run named-pipe, launcher, input/clipboard, lifetime, notifications and package/update scenarios natively.",
       "expected": "Actual Windows behavior passes; a cross-compile alone is insufficient.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/native-platform-results.md"]
     },
     {
       "id": "A51",
@@ -593,7 +593,7 @@
       "scenario": "Run socket/input/clipboard/lifetime/notification/package scenarios on the window systems actually supported.",
       "expected": "Actual Linux runtime coverage is recorded with no unsupported platform inference.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/native-platform-results.md"]
     },
     {
       "id": "A52",
