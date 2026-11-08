@@ -19,7 +19,7 @@
         "S09"
       ],
       "constraint": "Preserve plain source-code rendering and external file opening.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-GIT",
@@ -36,7 +36,7 @@
         "S09"
       ],
       "constraint": "Extract necessary shared pure utilities; no hidden Git polling.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-GITHUB",
@@ -52,7 +52,7 @@
         "S09"
       ],
       "constraint": "Keep profile shell only; no token/account migration.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-DISPATCH",
@@ -70,7 +70,7 @@
         "S09"
       ],
       "constraint": "Audit generic cache/private-file helpers before removing crate.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-BROWSER",
