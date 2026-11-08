@@ -184,7 +184,8 @@
         "evidence/t03-document-edits.md",
         "evidence/t03-workspace-ui.md",
         "evidence/t03-remote-document-route.md",
-        "evidence/t03-remote-document-reader.md"
+        "evidence/t03-remote-document-reader.md",
+        "evidence/t03-remote-terminal-parity.md"
       ],
       "must_close_gaps": []
     },
@@ -315,7 +316,8 @@
         "evidence/t05-core-lifecycle.md",
         "evidence/t05-core-observer.md",
         "evidence/t05-core-default-observation.md",
-        "evidence/t05-explicit-termination.md"
+        "evidence/t05-explicit-termination.md",
+        "evidence/t03-remote-terminal-parity.md"
       ],
       "must_close_gaps": []
     },

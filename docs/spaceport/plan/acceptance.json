@@ -105,7 +105,7 @@
       "scenario": "Quit and reopen with surviving, missing and renamed remote terminal/workspace references.",
       "expected": "Fresh authoritative state wins; surviving processes reattach; missing agents never restart.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t03-remote-terminal-parity.md"]
     },
     {
       "id": "A10",

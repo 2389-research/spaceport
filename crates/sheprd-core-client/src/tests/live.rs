@@ -26,6 +26,8 @@ mod observer;
 #[cfg(unix)]
 mod remote_document;
 #[cfg(unix)]
+mod remote_terminal;
+#[cfg(unix)]
 mod resize;
 #[cfg(unix)]
 mod termination;
