@@ -188,7 +188,8 @@
         "evidence/t03-workspace-ui.md",
         "evidence/t03-remote-document-route.md",
         "evidence/t03-remote-document-reader.md",
-        "evidence/t03-remote-terminal-parity.md"
+        "evidence/t03-remote-terminal-parity.md",
+        "evidence/t03-typed-group-key-dependency.md"
       ],
       "must_close_gaps": []
     },
