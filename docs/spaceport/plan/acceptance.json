@@ -45,8 +45,8 @@
       "title": "Core-owned remote machines",
       "scenario": "Add a fixture machine through Core and observe its terminals; interrupt its connection.",
       "expected": "Core owns catalog/retry; Spaceport has no parallel remote connector or duplicate terminal.",
-      "status": "not_run",
-      "evidence": ["evidence/t02-machine-ui.md"]
+      "status": "blocked",
+      "evidence": ["evidence/t02-machine-ui.md", "evidence/t02-machine-identity-gap.md"]
     },
     {
       "id": "A05",

@@ -32,7 +32,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T02 — Adapt the verified Core capability boundary
 
-Status: **in_progress** · Prerequisites: T00
+Status: **blocked** · Prerequisites: T00
 
 Typed Core calls/streams/capabilities with no legacy fallback or parallel remote manager.
 
@@ -40,9 +40,9 @@ Requirements: SP-003, SP-004, SP-005, SP-006, SP-019, SP-020
 
 Acceptance: A02, A03, A04, A05, A53
 
-Gates to investigate: none additional
+Gates to investigate: G-MACHINE
 
-Gates this task must close: none; record findings without claiming full parity
+Gates this task must close: G-MACHINE
 
 ## T03 — Build one authoritative view projection
 
@@ -110,9 +110,9 @@ Requirements: SP-006, SP-014, SP-019, SP-026
 
 Acceptance: A04, A05, A25, A26, A27, A28
 
-Gates to investigate: G-PORT, G-FILE
+Gates to investigate: G-PORT, G-FILE, G-MACHINE
 
-Gates this task must close: G-PORT, G-FILE
+Gates this task must close: G-PORT, G-FILE, G-MACHINE
 
 ## T08 — Preserve activity and attention without collectors
 

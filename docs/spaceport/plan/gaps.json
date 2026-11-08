@@ -39,6 +39,19 @@
       "forbidden_workaround": "Treating text file methods as full transfer parity or installing a new host file service."
     },
     {
+      "id": "G-MACHINE",
+      "title": "Core machine actions with exact target identity",
+      "status": "open",
+      "sources": [
+        "S01",
+        "S03",
+        "S12"
+      ],
+      "issue": "Core machine.list and mutation results expose a permanent machine ID, but machine.connect, machine.rename and machine.rm accept only the mutable local name. A selected name can be reassigned to another Core before an action arrives, so the current RPCs cannot guarantee that a GUI action reaches the selected machine.",
+      "required_evidence": "A Core-owned ID target or atomic expected-ID guard on connect, rename and remove; schema/client updates and a private concurrent rename/name-reuse test that refuses a changed target without acting on another machine; then GUI A04.",
+      "forbidden_workaround": "Treating a preflight machine.list or post-action ID comparison as atomic, silently acting by name, or routing the action through legacy SSH/Herdr 1 state."
+    },
+    {
       "id": "G-OBS",
       "title": "Authoritative usage/automation visibility",
       "status": "open",
