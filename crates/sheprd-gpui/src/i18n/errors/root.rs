@@ -118,7 +118,6 @@ impl Localize for Error {
             Self::MissingDeletion => fl!("error-missing-deletion"),
             Self::MissingHome => fl!("error-missing-home"),
             Self::MissingStateRoot => fl!("error-missing-state-root"),
-            Self::Nearby(error) => error.localize(),
             Self::NoSnapshot => fl!("error-no-snapshot"),
             Self::NoTab => fl!("error-no-tab"),
             Self::NotAGitRepository { path: dir } => {
@@ -153,7 +152,6 @@ impl Localize for Error {
             Self::RemoteAgentTools(source) => {
                 fl!("error-remote-agent-tools", error = source.localize())
             }
-            Self::RemoteControl(error) => error.localize(),
             Self::Request { method, source } => fl!(
                 "error-request",
                 method = method.to_string(),

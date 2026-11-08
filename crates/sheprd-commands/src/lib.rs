@@ -97,8 +97,6 @@ pub enum Command {
     SplitEditor,
     OpenCode,
     OpenPx0,
-    /// The remote control pairing dialog.
-    RemotePair,
     ToggleFullScreen,
     CycleWindows,
     /// Closes the window it runs in, leaving the daemon and its terminals.
@@ -738,11 +736,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-open-px0",
     },
     CommandInfo {
-        command: Command::RemotePair,
-        name: "remote_pair",
-        message: "commands-remote-pair",
-    },
-    CommandInfo {
         command: Command::ToggleFullScreen,
         name: "toggle_full_screen",
         message: "commands-toggle-full-screen",
@@ -939,7 +932,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::SplitEditor
         | Command::OpenCode
         | Command::OpenPx0
-        | Command::RemotePair
         | Command::ToggleFullScreen
         | Command::CycleWindows
         | Command::CloseWindow

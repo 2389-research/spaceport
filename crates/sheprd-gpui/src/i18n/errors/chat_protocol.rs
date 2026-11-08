@@ -1,5 +1,5 @@
 //! The chat attach protocol's failures, from `error-chat-protocol.ftl`:
-//! frames a chat or a phone's remote control connection cannot use. IDs are
+//! frames a chat connection cannot use. IDs are
 //! placeables, written as the protocol's `Display` writes them.
 
 use super::Localize;

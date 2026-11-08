@@ -40,7 +40,6 @@ mod opensandbox;
 mod option_as_alt;
 mod padding;
 pub(crate) mod preferences;
-pub(crate) use sheprd_remote_control::app::config as remote;
 pub(crate) mod sidebar;
 mod sidebar_style;
 mod sprites;
@@ -100,7 +99,6 @@ use notifications::{ClipboardToastSettings, NotificationSettings};
 pub use option_as_alt::{OptionAsAlt, OptionKeys};
 pub use padding::Padding;
 pub(crate) use padding::{Axis, MAX_PADDING, Side, Sides};
-pub use remote::RemoteConfig;
 use serde::Deserialize;
 pub use sheprd_orchestrator::gitlab::Config as GitLabConfig;
 pub use sheprd_remote::config::AzureConfig;
@@ -253,8 +251,6 @@ pub struct Config {
     /// reason.
     pub(crate) pane_keys: PaneKeys,
     pub(crate) px0: crate::px0::Config,
-    /// Remote control from a phone, through the `herdr-remote-control` daemon.
-    pub remote: RemoteConfig,
     /// Whether a linked worktree whose pull request is merged is removed, and
     /// its workspace closed, without asking. The focused workspace still asks.
     pub remove_merged_worktrees: bool,
@@ -456,7 +452,6 @@ impl Default for Config {
             palette: crate::palette::PaletteConfig::default(),
             pane_keys: PaneKeys::new(),
             px0: crate::px0::Config::default(),
-            remote: RemoteConfig::default(),
             remove_merged_worktrees: false,
             show_agents: true,
             show_agents_header: true,
@@ -542,7 +537,6 @@ struct Settings {
     palette: crate::palette::PaletteConfig,
     pane_keys: PaneKeys,
     px0: crate::px0::Config,
-    remote: RemoteConfig,
     remove_merged_worktrees: Option<bool>,
     show_agents: Option<bool>,
     show_agents_header: Option<bool>,
@@ -957,8 +951,6 @@ impl Config {
         config.code = settings.code;
         settings.px0.check()?;
         config.px0 = settings.px0;
-        settings.remote.check()?;
-        config.remote = settings.remote;
         config.open_files_in = settings.open_files_in;
         config.editor_command = settings.editor_command;
         config.keep_selection_after_copy = settings.keep_selection_after_copy.unwrap_or(true);

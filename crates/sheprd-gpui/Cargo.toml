@@ -39,8 +39,6 @@ sheprd-github.workspace         = true
 sheprd-i18n.workspace           = true
 sheprd-orchestrator.workspace   = true
 sheprd-remote.workspace         = true
-# Remote control without its server: the control protocol and `app`.
-sheprd-remote-control.workspace         = true
 sheprd-updater.workspace        = true
 sheprd-usage.workspace          = true
 sheprd-vcs.workspace            = true

@@ -15,7 +15,6 @@ mod layouts;
 mod navigation;
 mod pages;
 pub(crate) use layouts::{apply_loaded_layout, layout_load_revision};
-pub(crate) use pages::remote_control::open as open_remote;
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 mod native;
 mod persistence;
@@ -169,7 +168,6 @@ struct SettingsWindow {
     code: controls::code::CodeSettings,
     px0: controls::px0::Px0Settings,
     chat_env: controls::chat_env::ChatEnvSettings,
-    remote: pages::remote_control::RemoteSettings,
     /// The open override dropdown, if any; its list renders inside its button.
     dropdown: Option<ui::Dropdown>,
     /// The number field being typed into, if any.
@@ -336,7 +334,6 @@ impl SettingsWindow {
             code: Default::default(),
             px0: Default::default(),
             chat_env: Default::default(),
-            remote: Default::default(),
             dropdown: None,
             number_edit: None,
             number_preview: None,
@@ -707,11 +704,6 @@ impl SettingsWindow {
         if section == Section::General {
             self.open_chat_env_settings(cx);
         }
-        if section == Section::RemoteControl {
-            self.open_remote_control(cx);
-        } else {
-            self.close_remote_control();
-        }
         self.body_scroll.set_offset(Point::default());
         window.focus(&self.focus, cx);
         if section == Section::Integrations {
@@ -746,7 +738,6 @@ impl Render for SettingsWindow {
                 Section::Integrations => self.render_integration_controls(cx),
                 Section::Plugins => self.render_plugin_controls(cx),
                 Section::Code => self.render_code_controls(window, cx),
-                Section::RemoteControl => self.render_remote_control(cx),
                 #[cfg(feature = "cloud")]
                 Section::CloudDevices => self.render_cloud_devices(cx),
                 _ => self.render_controls(window, cx),

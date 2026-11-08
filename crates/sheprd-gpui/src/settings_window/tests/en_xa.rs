@@ -162,6 +162,5 @@ pages! {
     plugins: Plugins, plugin_preview;
     #[cfg(feature = "cloud")]
     cloud_devices: CloudDevices, cloud_devices_data;
-    remote_control: RemoteControl, none;
     configuration: Configuration, configuration_data;
 }

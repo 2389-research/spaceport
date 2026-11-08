@@ -1,5 +1,5 @@
-//! Finding the programs that ship with this app, such as `herdr-acp` and
-//! `herdr-remote-control`: beside its executable, as the bundle and `cargo build`
+//! Finding the programs that ship with this app, such as `herdr-acp`:
+//! beside its executable, as the bundle and `cargo build`
 //! lay them out, else on the login shell's `PATH`.
 
 use std::{
@@ -43,7 +43,7 @@ pub(crate) fn locate_in(
     let renamed = program.strip_prefix("herdr-").and_then(|name| {
         matches!(
             name.strip_suffix(".exe").unwrap_or(name),
-            "acp" | "automate" | "nearby" | "remote-control"
+            "acp" | "automate"
         )
         .then(|| format!("sheprd-{name}"))
     });

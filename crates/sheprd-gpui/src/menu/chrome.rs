@@ -565,13 +565,6 @@ impl SheprdWindow {
                 panel.h(px(rail::HEIGHT * (font.size / 12.))
                     .min((viewport.height - px(32.)).max(px(0.))))
             })
-            .when(page == Page::RemoteDevices, |panel| {
-                panel
-                    .w((viewport.width - px(24.))
-                        .max(px(0.))
-                        .min(px(crate::remote::MENU_WIDTH)))
-                    .shadow_lg()
-            })
             .when(matches!(page, Page::GitHub | Page::GitLab), |panel| {
                 panel
                     .w((viewport.width - px(32.)).max(px(0.)).min(px(400.)))
@@ -588,8 +581,7 @@ impl SheprdWindow {
                         | Page::VersionMismatch
                         | Page::OpenCheckout
                         | Page::OpenLink
-                ) || self.cloud_batch_open()
-                    || self.remote_dialog_open(),
+                ) || self.cloud_batch_open(),
                 |panel| {
                     panel
                         .w((viewport.width - px(24.)).max(px(0.)).min(px(420.)))
@@ -692,8 +684,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_github_auth(cx));
         } else if page == Page::GitLab {
             panel = panel.child(self.render_gitlab_page(cx));
-        } else if page == Page::RemoteDevices {
-            panel = panel.child(self.render_remote_menu(cx));
         } else if page == Page::Workspace {
             // The PR card's text width: the panel's inset and border, and the
             // card's own margin, border, and padding.
@@ -775,8 +765,6 @@ impl SheprdWindow {
         } else if page == Page::OpenLink {
             panel = panel.child(self.render_open_link(cx));
         } else if let Some(body) = self.cloud_batch_page(cx) {
-            panel = panel.child(body);
-        } else if let Some(body) = self.remote_page(cx) {
             panel = panel.child(body);
         } else if page == Page::OpenCheckout {
             panel = panel.child(self.render_open_checkout(cx));
@@ -868,12 +856,10 @@ impl SheprdWindow {
             anchored()
                 .position(position)
                 // A menu hangs toward the end from the pointer, and toward
-                // the start from a button at the end: the remote indicator,
-                // or the "…" at a strip's right end, which stays there
-                // because strips never mirror.
+                // the start from the "…" at a strip's right end, which
+                // stays there because strips never mirror.
                 .anchor(match page {
                     Page::Group | Page::CoreWorkspaceActions => Anchor::TopRight,
-                    Page::RemoteDevices => crate::direction::anchor(Anchor::TopRight),
                     _ => crate::direction::anchor(Anchor::TopLeft),
                 })
                 .snap_to_window_with_margin(Edges::all(px(12.)))

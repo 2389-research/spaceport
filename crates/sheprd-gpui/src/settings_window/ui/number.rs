@@ -42,8 +42,6 @@ pub(in crate::settings_window) struct Number {
 /// What the value counts, written after it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::settings_window) enum Unit {
-    /// A bare count, with nothing after it.
-    None,
     Percent,
     Pixels,
     Seconds,
@@ -52,7 +50,6 @@ pub(in crate::settings_window) enum Unit {
 impl Unit {
     fn label(self) -> String {
         match self {
-            Self::None => String::new(),
             Self::Percent => fl!("settings-unit-percent"),
             Self::Pixels => fl!("settings-unit-pixels"),
             Self::Seconds => fl!("settings-unit-seconds"),

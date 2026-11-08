@@ -6,7 +6,7 @@ fn bundled_helpers_precede_path_copies_for_both_name_generations() {
     let external = tempfile::tempdir().unwrap();
     let exe = bundle.path().join("sheprd");
     let path = std::env::join_paths([external.path()]).unwrap();
-    for name in ["acp", "automate", "nearby", "remote-control"] {
+    for name in ["acp", "automate"] {
         for extension in ["", ".exe"] {
             let legacy = format!("herdr-{name}{extension}");
             let renamed = format!("sheprd-{name}{extension}");

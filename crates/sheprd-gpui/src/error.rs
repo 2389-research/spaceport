@@ -188,8 +188,6 @@ pub enum Error {
     MissingHome,
     #[error("neither XDG_STATE_HOME nor HOME is set")]
     MissingStateRoot,
-    #[error(transparent)]
-    Nearby(#[from] crate::remote::nearby::Error),
     #[error("No current daemon snapshot.")]
     NoSnapshot,
     #[error("No tab selected.")]
@@ -246,8 +244,6 @@ pub enum Error {
     Remote(sheprd_remote::Error),
     #[error("Could not install the agent tools on the SSH host: {0}")]
     RemoteAgentTools(#[source] sheprd_client::Error),
-    #[error(transparent)]
-    RemoteControl(#[from] crate::remote::Error),
     #[error("{method}: {source}")]
     Request {
         method: sheprd_client::Method,

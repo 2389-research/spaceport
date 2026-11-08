@@ -1,24 +1,17 @@
 //! What a closing popup draws from while it goes. Closing resets the menu's
 //! state in the same frame; a page that animates out has the fields it reads
 //! taken out first, and drawn again from here until it is gone. Taking them
-//! out ends their effect as closing always has: a pairing is cancelled at
-//! the daemon then, not when the motion ends.
+//! out ends their effect before the leaving animation finishes.
 
 use super::super::{MenuState, Page, git};
 use crate::dialog_input::DialogInput;
 
 /// Whether `page` animates out after it closes: All Devices into the
-/// footer, the titlebar's Git popover and its pull request dialogs, and the
-/// phone pairing dialog.
+/// footer and the titlebar's Git popover and pull request dialogs.
 pub(in crate::menu) fn leaves(page: Page) -> bool {
     matches!(
         page,
-        Page::Devices
-            | Page::Git
-            | Page::PrReview
-            | Page::PrComment
-            | Page::PrMerge
-            | Page::RemoteControl
+        Page::Devices | Page::Git | Page::PrReview | Page::PrComment | Page::PrMerge
     )
 }
 
@@ -30,7 +23,6 @@ pub(in crate::menu) struct Kept {
     input: Option<DialogInput>,
     merge_method: Option<crate::pull_request::MergeMethod>,
     merge_target: Option<crate::pr_actions::Target>,
-    remote_pairing: Option<crate::remote::PairingDialog>,
     /// The device All Devices showed unfolded, so it leaves as it was.
     unfolded_device: Option<String>,
 }
@@ -40,9 +32,6 @@ impl Kept {
     pub(in crate::menu) fn take(menu: &mut MenuState) -> Self {
         let mut kept = Self::default();
         kept.swap(menu);
-        if let Some(pairing) = &mut kept.remote_pairing {
-            pairing.close();
-        }
         kept
     }
 
@@ -54,7 +43,6 @@ impl Kept {
         std::mem::swap(&mut self.input, &mut menu.input);
         std::mem::swap(&mut self.merge_method, &mut menu.merge_method);
         std::mem::swap(&mut self.merge_target, &mut menu.merge_target);
-        std::mem::swap(&mut self.remote_pairing, &mut menu.remote_pairing);
         std::mem::swap(&mut self.unfolded_device, &mut menu.unfolded_device);
     }
 }

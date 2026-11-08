@@ -1,6 +1,6 @@
 //! How long ago something happened, in the largest whole unit: "just now",
-//! "5 min ago", "yesterday", "3 days ago". Checkpoints, paired phones, and
-//! the command line's checkpoint list read it from seconds elapsed.
+//! "5 min ago", "yesterday", "3 days ago". The command line's checkpoint
+//! list reads it from seconds elapsed.
 // i18n: migrated
 
 use crate::i18n::{self, FluentValue};

@@ -127,7 +127,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (SplitEditor, &["cmd-\\"]),
         (OpenCode, &[]),
         (OpenPx0, &[]),
-        (RemotePair, &[]),
         (ToggleFullScreen, &["ctrl-cmd-f"]),
         (CycleWindows, &["cmd-`"]),
         (CloseWindow, &["cmd-alt-shift-w"]),

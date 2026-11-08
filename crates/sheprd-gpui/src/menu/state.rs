@@ -103,12 +103,6 @@ pub(crate) struct MenuState {
         Option<crate::cloud::batch::Pending<Vec<crate::cloud::batch::Target>>>,
     #[cfg(feature = "coder")]
     pub(super) coder: Option<super::devices::coder::Wizard>,
-    /// The open pairing dialog. Dropping it cancels its pairing.
-    pub(crate) remote_pairing: Option<crate::remote::PairingDialog>,
-    /// The device the revoke question is about.
-    pub(crate) remote_revoke: Option<crate::remote::Revoke>,
-    /// A phone's request for another machine, waiting for the user.
-    pub(crate) remote_host_ask: Option<crate::remote::links::ask::HostAsk>,
     pub(super) devices_scroll: ScrollHandle,
     /// The picker line to scroll into view once the list has been laid out:
     /// on the frame it first appears, GPUI drops a scroll request unapplied.
@@ -375,9 +369,6 @@ impl MenuState {
             cloud_destroy: None,
             #[cfg(feature = "coder")]
             coder: None,
-            remote_pairing: None,
-            remote_revoke: None,
-            remote_host_ask: None,
             devices_scroll: ScrollHandle::new(),
             devices_reveal: std::cell::Cell::new(None),
             usage_scroll: ScrollHandle::new(),
@@ -462,9 +453,6 @@ impl MenuState {
         {
             self.coder = None;
         }
-        self.remote_pairing = None;
-        self.remote_revoke = None;
-        self.remote_host_ask = None;
         self.devices_scroll.set_offset(Point::default());
         self.devices_reveal.set(None);
         self.usage_scroll.set_offset(Point::default());

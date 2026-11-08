@@ -5,10 +5,9 @@
 //! rename field, keeps it still: only a popup that is new to the eye moves.
 //!
 //! All Devices instead rises out of the sidebar footer that opened it and
-//! sinks back into it when it closes. It, the titlebar's Git popover with
-//! its pull request dialogs, and the phone pairing dialog are drawn again
-//! after closing, from what [`kept::Kept`] took out before the reset, as
-//! they go.
+//! sinks back into it when it closes. It and the titlebar's Git popover with
+//! its pull request dialogs are drawn again after closing, from what
+//! [`kept::Kept`] took out before the reset, as they go.
 
 mod kept;
 

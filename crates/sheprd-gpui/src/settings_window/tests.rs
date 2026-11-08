@@ -23,7 +23,6 @@ mod navigation_scroll;
 mod page_messages;
 mod pages_behaviour;
 mod quit_saves;
-mod remote_control;
 mod remote_history_reload;
 mod rtl;
 mod save_now;

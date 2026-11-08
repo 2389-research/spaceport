@@ -17,7 +17,6 @@ pub(crate) const LOG_TARGETS: &[&str] = &[
     "sheprd_orchestrator",
     "sheprd_protocol",
     "sheprd_remote",
-    "sheprd_remote_control",
     "sheprd_terminal",
     "sheprd_updater",
     "sheprd_usage",

@@ -9,7 +9,6 @@ mod help;
 mod hosts;
 mod local;
 mod open;
-mod remote;
 mod settings;
 mod tabs;
 mod work;
@@ -54,8 +53,7 @@ pub(crate) struct Output {
     /// Output whose bytes matter, such as a patch: written unchanged into a
     /// pipe or file, and shown from `text` on a terminal.
     bytes: Option<Vec<u8>>,
-    /// Text for standard error besides, such as a remote command's, which
-    /// `--json` carries in `json` instead.
+    /// Text for standard error besides, which `--json` carries in `json` instead.
     stderr: String,
 }
 
@@ -460,7 +458,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Usage => hosts::usage(&context),
         ControlCommand::System => hosts::system(&context),
         ControlCommand::Security(command) => hosts::security(command, &context),
-        ControlCommand::Remote(command) => remote::remote(command, &context),
         ControlCommand::Search {
             files,
             query,

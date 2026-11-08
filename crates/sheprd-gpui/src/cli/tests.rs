@@ -14,9 +14,9 @@ mod links;
 mod open_command;
 mod px0;
 mod quota;
-mod remote;
 mod removed_automation;
 mod removed_mods;
+mod removed_phone;
 mod security;
 mod ui_panel;
 

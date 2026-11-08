@@ -85,21 +85,12 @@ pub(crate) enum Page {
     PrMerge,
     /// The open pull request's checks and review conversation.
     PrReview,
-    /// Pairing a phone for remote control: the QR, then the approval.
-    RemoteControl,
-    /// The title bar's list of paired phones, to disconnect one or pair
-    /// another.
-    RemoteDevices,
-    /// Confirming a phone may be paired with another machine it asked for.
-    RemoteHostAsk,
     RemoveDevice,
     /// Confirming a saved WSL distribution should be forgotten.
     RemoveWsl,
     RenameDevice,
     RenamePane,
     RenameTab,
-    /// Confirming a paired remote control device should be revoked.
-    RevokeDevice,
     Tab,
     /// Moving a linked worktree to another host.
     Teleport,
@@ -186,7 +177,6 @@ impl Page {
                 | Self::RemoveWsl
                 | Self::Git
                 | Self::GitCommit
-                | Self::RemoteDevices
                 | Self::PrReview
                 | Self::PrComment
                 | Self::PrMerge

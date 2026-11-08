@@ -9,7 +9,6 @@ mod cloud;
 mod events;
 mod hosts;
 mod links;
-mod remote;
 mod settings;
 mod tabs;
 mod work;
@@ -246,7 +245,6 @@ fn named_window(request: &Request) -> Option<u64> {
         Request::Link(call) => call.caller.window,
         Request::Chat(call) => call.caller.window,
         Request::Cloud(call) => call.caller.window,
-        Request::Remote(call) => call.caller.window,
     }
 }
 
@@ -259,7 +257,6 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
             | Request::Settings(_)
             | Request::Events(_)
             | Request::Cloud(_)
-            | Request::Remote(_)
     );
     if let Some(id) = named_window(&incoming.request)
         && !main_windows(cx)
@@ -294,7 +291,6 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
         Request::Link(call) => incoming.respond(links::serve(call, cx)),
         Request::Chat(call) => incoming.respond(chat::serve(call, cx)),
         Request::Cloud(call) => cloud::serve(call, incoming, &mut state.watches, cx),
-        Request::Remote(call) => remote::serve(call, incoming, &mut state.watches, cx),
     }
 }
 

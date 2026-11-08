@@ -156,7 +156,7 @@ not take it either.
 | --- | --- |
 | `host [list]`, `host select ID` | The window's hosts, with their tags; show another one |
 | `host mute\|unmute [HOST]` | Silence a host's notifications as a whole, or let them through again, by ID or label; absent, your host. Works while it is offline |
-| `host tag ID [TAG...]` | Replace the tags that group a host in the sidebar and on paired phones; with no tags, clear them. Each computer's daemon keeps its own tags, so a host away gets the edit once it is back |
+| `host tag ID [TAG...]` | Replace the local tags that group a host in the sidebar; with no tags, clear them |
 | `pr [status]\|checks\|comments\|open` | Your branch's pull request, on the window's selected host. `comments` needs your workspace focused |
 | `pr quota` | Last reported GraphQL points used, limit, and remaining, plus rate-limit retry delays for the window's GitHub accounts. `--json` returns records merged by login: known observations are preferred, then the latest reset window and greatest usage within it; retry delays retain the longest pause. Usage is never summed across credentials. Unavailable quotas are `null`. No network request is made. |
 | `ports [list]` | Ports your workspace listens on, and forwards |
@@ -294,30 +294,6 @@ The change applies live; `config get focus_follows_mouse` reads it back.
 An unnamed tab shows its number. To show its agent's terminal title instead,
 run `sheprd config set tab_labels.agent_title true`.
 
-### Remote control
-
-| Command | What it does |
-| --- | --- |
-| `remote [status]` | Whether remote control is on and its daemon runs: its port, version, the addresses it serves with network labels and daemon-host interface names, its certificate authority fingerprint, and paired and connected devices. JSON includes optional `status.address_details` keyed by origin; older daemons omit it |
-| `remote devices` | The paired devices with their IDs, when each was last seen, whether it gets notifications, and the other machines it was paired with from here or is being paired with. JSON includes each device's optional `via` (the computer that vouched for it) and `hosts`, each with a `state` of `offered`, `allowed`, `asking`, `pending`, `paired`, or `failed`. Exits 4 when there are none |
-| `remote pair [--address HTTPS_ORIGIN]` | Open the pairing dialog, preferring Tailscale by default. Choose an address in the dialog, or pass an exact origin from `remote status` (for example `https://100.101.102.103:7443`). The QR and its token show only there, and the user approves the phone there. An unavailable address is reported in the dialog |
-| `remote restart` | Restart the daemon from the binary beside the app, as after a rebuild or update; phones reconnect on their own. Exits 6 while the service is already changing |
-| `remote revoke DEVICE` | Ask in the window to revoke a paired device, named by its ID from `remote devices` or its name (a name two devices share is refused); the user confirms there |
-
-Remote control is turned on in Settings > Remote control, or with
-`config set remote.enabled true`; the app then installs the `sheprd-remote-control`
-daemon as a user service and keeps it in line with the `[remote]` settings.
-While it is off, `remote status` says so and exits 0; `pair`, `devices`,
-`revoke`, and `restart` exit 1. A dialog already open in the window refuses `pair` and
-`revoke` (exit 6). `--json` gives `{"enabled", "running", "status", "error"}`
-for `status`, where `status` is the daemon's own report, and
-`{"devices": [...]}` for `devices`.
-
-```sh
-sheprd remote status --json
-sheprd remote revoke d_6f1c
-```
-
 ### Events
 
 `events` prints what happened in the app: windows opening, closing, and
@@ -339,9 +315,8 @@ sheprd wait window            # also waits for the app to start
 
 Commands never bypass a confirmation. Restoring a checkpoint, teleporting a
 worktree, fanning out a prompt, running a worktree script the app has not
-seen, creating or destroying cloud machines, adding a cloud machine, pairing
-a phone for remote control, and revoking one open the app's own dialog
-(archiving a worktree and approving a phone have no command at all), already
+seen, and creating or destroying cloud machines open the app's own dialog,
+already
 pointed at your checkout, the machines, or the device named, and the user
 confirms there.
 `cloud exec` asks nothing because it confirms nothing: it is the agent's own

@@ -7,7 +7,6 @@ pub mod chat;
 pub mod cloud;
 pub mod events;
 pub mod hosts;
-pub mod remote;
 pub mod settings;
 pub mod tabs;
 pub mod work;
@@ -29,8 +28,8 @@ pub enum Placement {
 /// an outdated app from a refused request. 3: `browser.open` placement.
 /// 4: `link`. 5: the `tab` family's `zoom`. 6: the `cloud` family. 7: `chat`.
 /// 8: legacy `host` `automation_approve`. 9: `remote`. 10: `settings` `language`.
-/// 11: `mod`. 12: `status.core_catalog`.
-pub const PROTOCOL_VERSION: u32 = 12;
+/// 11: `mod`. 12: `status.core_catalog`. 13: removed phone control.
+pub const PROTOCOL_VERSION: u32 = 13;
 
 /// Older apps and clients know only tabs, so a tab is left off the wire.
 fn is_tab(placement: &Placement) -> bool {
@@ -80,8 +79,6 @@ pub enum Request {
     Chat(Call<chat::ChatOp>),
     #[serde(rename = "cloud")]
     Cloud(Call<cloud::CloudOp>),
-    #[serde(rename = "remote")]
-    Remote(Call<remote::RemoteOp>),
 }
 
 /// A `herdr-gpui://` link the shell started a second copy of the app with.
@@ -111,7 +108,6 @@ impl Request {
             Self::Host(call) => call.op.wait_seconds(),
             Self::Settings(call) => call.op.wait_seconds(),
             Self::Cloud(call) => call.op.wait_seconds(),
-            Self::Remote(call) => call.op.wait_seconds(),
             _ => 0,
         };
         wait.min(MAX_WAIT_SECONDS)
@@ -269,9 +265,6 @@ pub enum Response {
     Cloud {
         reply: cloud::Reply,
     },
-    Remote {
-        reply: remote::Reply,
-    },
     Error {
         code: ErrorCode,
         message: String,
@@ -297,6 +290,8 @@ impl Response {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    mod removed_phone;
 
     #[test]
     fn requests_have_a_stable_wire_form() {
