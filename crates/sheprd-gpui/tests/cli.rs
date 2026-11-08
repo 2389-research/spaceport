@@ -234,7 +234,19 @@ fn code_open_is_rejected_before_socket_lookup() {
     );
     assert_eq!(output.status.code(), Some(2), "{output:?}");
     assert!(
-        String::from_utf8_lossy(&output.stderr).contains("Unknown code command: open"),
+        String::from_utf8_lossy(&output.stderr).contains("Unknown option: code"),
+        "{output:?}"
+    );
+    assert!(output.stdout.is_empty(), "{output:?}");
+}
+
+#[test]
+fn code_edit_is_rejected_before_socket_lookup() {
+    let state = tempfile::tempdir().unwrap();
+    let output = cli_in(&["code", "edit", "main.rs:42"], Some(state.path()));
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("Unknown option: code"),
         "{output:?}"
     );
     assert!(output.stdout.is_empty(), "{output:?}");

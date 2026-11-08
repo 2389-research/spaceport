@@ -26,7 +26,7 @@ pub use settings::{
     SoundCommand, ThemeCommand, UpdateCommand,
 };
 use std::ffi::OsString;
-pub use tabs::{CodeCommand, FileAt, Items, OrchestratorCommand, TabCommand};
+pub use tabs::{Items, OrchestratorCommand, TabCommand};
 pub use work::{CheckpointCommand, FanOut, NotesCommand, WaitFor, WorktreeCommand};
 
 /// What to do, and how the answer is printed.
@@ -56,7 +56,6 @@ pub enum ControlCommand {
     Window(WindowCommand),
     Ui(UiCommand),
     Tab(TabCommand),
-    Code(CodeCommand),
     Devices,
     Orchestrator(OrchestratorCommand),
     Review,
@@ -146,7 +145,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ),
     ("ui", "Sidebar, status bar, and terminal font size"),
     ("tab", "List, focus, or close the app's own tabs"),
-    ("code", "Open a local file in your terminal editor"),
     ("devices", "Open the Devices overview"),
     (
         "orchestrator",
@@ -305,7 +303,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
         "window" => ControlCommand::Window(app::window(args)?),
         "ui" => ControlCommand::Ui(app::ui(args)?),
         "tab" => ControlCommand::Tab(tabs::tab(args)?),
-        "code" => ControlCommand::Code(tabs::code(args)?),
         "devices" => {
             tabs::open_only(args)?;
             ControlCommand::Devices

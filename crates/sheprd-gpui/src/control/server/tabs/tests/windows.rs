@@ -149,7 +149,7 @@ fn a_tab_for_another_workspace_waits_for_the_switch(cx: &mut gpui::TestAppContex
 }
 
 #[gpui::test]
-fn requests_for_unknown_workspaces_and_bad_paths_are_refused(cx: &mut gpui::TestAppContext) {
+fn requests_for_unknown_workspaces_and_bad_repos_are_refused(cx: &mut gpui::TestAppContext) {
     let (_view, cx) = window(cx);
     let address = socket::test_address();
     let server = socket::Server::bind(&address.path).unwrap();
@@ -158,29 +158,8 @@ fn requests_for_unknown_workspaces_and_bad_paths_are_refused(cx: &mut gpui::Test
         workspace_id: Some("w_missing".into()),
         ..Caller::default()
     };
-    let absolute = std::env::current_dir()
-        .unwrap()
-        .join("example.rs")
-        .to_string_lossy()
-        .into_owned();
     for (op, caller, code) in [
-        (TabOp::Review, missing.clone(), ErrorCode::WorkspaceNotFound),
-        (
-            TabOp::Edit {
-                path: absolute,
-                line: Some(42),
-            },
-            missing,
-            ErrorCode::WorkspaceNotFound,
-        ),
-        (
-            TabOp::Edit {
-                path: "relative.rs".into(),
-                line: None,
-            },
-            Caller::default(),
-            ErrorCode::InvalidRequest,
-        ),
+        (TabOp::Review, missing, ErrorCode::WorkspaceNotFound),
         (
             TabOp::Orchestrator {
                 repo: Some("src".into()),

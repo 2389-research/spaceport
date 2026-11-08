@@ -90,8 +90,9 @@ fn the_skill_does_not_promise_local_page_open() {
 }
 
 #[test]
-fn the_skill_does_not_promise_code_open() {
+fn the_skill_does_not_promise_code_commands() {
     assert!(!SKILL.contains("sheprd code open"));
+    assert!(!SKILL.contains("sheprd code edit"));
 }
 
 #[test]

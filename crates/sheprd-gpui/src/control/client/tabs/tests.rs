@@ -35,27 +35,10 @@ fn tabs_are_listed_one_per_line() {
 }
 
 #[test]
-fn files_and_folders_are_resolved_before_they_are_sent() {
+fn folders_are_resolved_before_they_are_sent() {
     let folder = tempfile::tempdir().unwrap();
     let file = folder.path().join("main.rs");
     std::fs::write(&file, "fn main() {}\n").unwrap();
-    let resolved = local_file(&file).unwrap();
-    assert!(Path::new(&resolved).is_absolute());
-    assert_eq!(Path::new(&resolved), file.canonicalize().unwrap());
-    assert!(matches!(
-        local_file(folder.path()),
-        Err(crate::Error::Control(crate::control::Error::Rejected {
-            code: ErrorCode::InvalidRequest,
-            ..
-        }))
-    ));
-    assert!(matches!(
-        local_file(&folder.path().join("missing.rs")),
-        Err(crate::Error::Control(crate::control::Error::Rejected {
-            code: ErrorCode::NotFound,
-            ..
-        }))
-    ));
     assert_eq!(
         Path::new(&local_folder(folder.path()).unwrap()),
         folder.path().canonicalize().unwrap()

@@ -1,5 +1,5 @@
-//! `tab`, `code edit`, `devices`, `orchestrator`, `review`, and page requests.
-//! The Store keeps app tabs; `code edit` instead starts a terminal editor.
+//! `tab`, `devices`, `orchestrator`, `review`, and page requests.
+//! The Store keeps app tabs; caller targets still select their workspace.
 mod arrive;
 mod page;
 
@@ -38,7 +38,6 @@ pub(super) fn serve(
         TabOp::Text { id } => page::text(caller, id, incoming, watches, cx),
         TabOp::Screenshot { id, path } => page::screenshot(caller, id, path, incoming, watches, cx),
         TabOp::Zoom { id, change } => incoming.respond(page::zoom(&caller, id, change, cx)),
-        TabOp::Edit { path, line } => arrive::edit(&caller, &path, line, incoming, watches, cx),
         TabOp::Devices => arrive::devices(&caller, incoming, watches, cx),
         TabOp::Orchestrator { repo } => arrive::orchestrator(&caller, repo, incoming, watches, cx),
         TabOp::Review => arrive::review(&caller, incoming, watches, cx),

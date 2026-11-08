@@ -99,7 +99,6 @@ Sheprd** entry, which both Windows installers add, runs this command through
 | `browser zoom ID +\|-\|reset\|PERCENT` | Zoom a page tab a step, back to 100%, or to 50-300%; the tab keeps it |
 | `browser text ID` | The page's visible text |
 | `browser screenshot ID PATH` | A PNG of the visible page, at most 2000 px a side (macOS) |
-| `code edit FILE[:LINE]` | Your terminal editor, in a new pane beside yours |
 | `devices` | The Devices overview |
 | `orchestrator [--repo PATH]` | Show the Issues section narrowed to your checkout's project, or PATH's |
 | `orchestrator items\|issues\|prs\|tasks` | What it last synced, from its local database (no app needed); `tasks` is the repository's Beads tasks, with each one's assignee, priority, and blockers in `--json` |

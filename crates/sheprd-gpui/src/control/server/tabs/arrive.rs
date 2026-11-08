@@ -1,4 +1,4 @@
-//! Tabs opened in the caller's workspace: the editor, Devices, the
+//! Tabs opened in the caller's workspace: Devices, the
 //! orchestrator, and the review. Each feature opens its tab in the focused
 //! workspace, so the window first switches to the caller's, and the tab
 //! opens once a snapshot says the switch landed.
@@ -13,38 +13,9 @@ use crate::{
         },
         server::{Watches, socket, target, window_for},
     },
-    editor::EditorTarget,
 };
 use gpui::{App, Context, Window, WindowHandle};
-use std::{path::Path, time::Duration};
-
-/// The longest path a request may name.
-const MAX_PATH: usize = 4096;
-
-/// A local file a request names: absolute, bounded, and printable. Whether
-/// it exists is for the window's own reading to find, off the UI thread.
-fn editor_target(path: &str, line: Option<u32>) -> Result<EditorTarget, Response> {
-    let valid = !path.is_empty()
-        && path.len() <= MAX_PATH
-        && !path.chars().any(char::is_control)
-        && Path::new(path).is_absolute();
-    if !valid {
-        return Err(Response::error(
-            ErrorCode::InvalidRequest,
-            "The file must be an absolute path without control characters",
-        ));
-    }
-    if line == Some(0) {
-        return Err(Response::error(
-            ErrorCode::InvalidRequest,
-            "Lines are counted from 1",
-        ));
-    }
-    Ok(EditorTarget {
-        path: path.into(),
-        line,
-    })
-}
+use std::time::Duration;
 
 /// The window, endpoint, and workspace a request's tab goes to.
 struct Destination {
@@ -177,43 +148,6 @@ fn opened(
     }
 }
 
-/// Opens the file in the user's editor, in a pane split beside the
-/// caller's, when the window shows it, else beside the focused pane. The
-/// editor reports its failures in the window.
-pub(super) fn edit(
-    caller: &Caller,
-    path: &str,
-    line: Option<u32>,
-    incoming: socket::Incoming,
-    watches: &mut Watches,
-    cx: &mut App,
-) {
-    let target = match editor_target(path, line) {
-        Ok(target) => target,
-        Err(response) => return incoming.respond(response),
-    };
-    let pane = caller.pane_id.clone();
-    let path = path.to_owned();
-    open_there(
-        caller,
-        incoming,
-        watches,
-        cx,
-        |_| true,
-        move |view, _, _, cx| {
-            let beside = pane.as_deref().filter(|pane| {
-                view.live.snapshot.as_ref().is_some_and(|snapshot| {
-                    snapshot.panes.iter().any(|shown| shown.pane_id == *pane)
-                })
-            });
-            view.open_in_editor(&target, beside, cx);
-            Response::done(format!(
-                "Opening {path} in your editor; a problem would show in the window"
-            ))
-        },
-    );
-}
-
 pub(super) fn devices(
     caller: &Caller,
     incoming: socket::Incoming,
@@ -312,9 +246,6 @@ pub(super) fn review(
         },
     );
 }
-
-#[cfg(test)]
-mod tests;
 
 pub(super) fn px0(
     caller: &Caller,

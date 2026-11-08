@@ -47,12 +47,6 @@ pub enum TabOp {
         id: u64,
         change: ZoomChange,
     },
-    /// The file in the user's terminal editor, in a new pane.
-    Edit {
-        path: String,
-        #[serde(default)]
-        line: Option<u32>,
-    },
     Devices,
     /// The orchestrator of the caller's workspace, or of the checkout at
     /// `repo`.
@@ -69,11 +63,9 @@ impl TabOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
             Self::Text { .. } | Self::Screenshot { .. } => PAGE_WAIT_SECONDS,
-            Self::Edit { .. }
-            | Self::Devices
-            | Self::Orchestrator { .. }
-            | Self::Review
-            | Self::Px0 => ARRIVE_WAIT_SECONDS,
+            Self::Devices | Self::Orchestrator { .. } | Self::Review | Self::Px0 => {
+                ARRIVE_WAIT_SECONDS
+            }
             Self::List { .. }
             | Self::Focus { .. }
             | Self::Close { .. }

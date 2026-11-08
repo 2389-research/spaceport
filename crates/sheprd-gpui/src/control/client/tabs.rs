@@ -1,9 +1,9 @@
-//! `tab`, `code`, `devices`, `orchestrator`, and `review`.
+//! `tab`, `devices`, `orchestrator`, and `review`.
 mod items;
 
 use super::{Context, Output, unexpected};
 use crate::{
-    cli::control::{CodeCommand, FileAt, OrchestratorCommand, TabCommand},
+    cli::control::{OrchestratorCommand, TabCommand},
     control::{
         ErrorCode,
         protocol::{
@@ -66,27 +66,6 @@ pub(super) fn tab(command: TabCommand, context: &Context) -> crate::Result<Outpu
     }
 }
 
-/// Resolve a local regular file where the caller's directory is known before
-/// sending its path to the window that opens the terminal editor.
-fn local_file(path: &Path) -> crate::Result<String> {
-    let resolved = path.canonicalize().map_err(|error| {
-        rejected(
-            ErrorCode::NotFound,
-            format!("Cannot open {}: {error}", path.display()),
-        )
-    })?;
-    if !resolved.is_file() {
-        return Err(rejected(
-            ErrorCode::InvalidRequest,
-            format!("{} is not a regular file", resolved.display()),
-        ));
-    }
-    resolved
-        .into_os_string()
-        .into_string()
-        .map_err(|_| rejected(ErrorCode::InvalidRequest, "The path must be UTF-8"))
-}
-
 /// The folder `--repo` names, resolved here for the app.
 fn local_folder(path: &Path) -> crate::Result<String> {
     let resolved = path.canonicalize().map_err(|error| {
@@ -119,15 +98,6 @@ fn opened(what: &str, response: Response) -> crate::Result<Output> {
         },
         Response::Done { message } => Ok(Output::message(message)),
         response => Err(unexpected(response)),
-    }
-}
-
-pub(super) fn code(command: CodeCommand, context: &Context) -> crate::Result<Output> {
-    match command {
-        CodeCommand::Edit(FileAt { path, line }) => {
-            let path = local_file(&path)?;
-            context.act(Request::Tab, TabOp::Edit { path, line })
-        }
     }
 }
 

@@ -14,3 +14,6 @@ After merge with the named-window change, the combined protocol suite passed
 flag expectations; those tests were corrected and rerun green in the same
 bounded follow-up. This is parser and control-route evidence, not native UI
 proof that all code views have been removed.
+
+The subsequent `code edit` CLI and control route removal is recorded in
+`t04-code-edit-route.md`. The editor's separate UI callers remain.

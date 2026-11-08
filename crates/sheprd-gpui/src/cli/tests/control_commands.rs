@@ -1,8 +1,7 @@
 use super::*;
 use control::{
-    AppCommand, CheckpointCommand, CodeCommand, ConfigCommand, ControlCommand, FanOut, FileAt,
-    FontSize, Invocation, NotesCommand, PortsCommand, Script, Size, Switch, UiCommand, WaitFor,
-    WindowCommand,
+    AppCommand, CheckpointCommand, ConfigCommand, ControlCommand, FanOut, FontSize, Invocation,
+    NotesCommand, PortsCommand, Script, Size, Switch, UiCommand, WaitFor, WindowCommand,
 };
 
 fn parse(args: &[&str]) -> Result<Invocation, CliError> {
@@ -95,37 +94,11 @@ fn app_window_and_ui_commands() {
 }
 
 #[test]
-fn files_take_an_optional_line() {
-    assert_eq!(
-        command(&["code", "edit", "src/main.rs:42"]),
-        ControlCommand::Code(CodeCommand::Edit(FileAt {
-            path: "src/main.rs".into(),
-            line: Some(42)
-        }))
-    );
-    for plain in ["src/main.rs", "a:b", "x:0", ":3"] {
-        let ControlCommand::Code(CodeCommand::Edit(file)) = command(&["code", "edit", plain])
-        else {
-            panic!("{plain}");
-        };
-        assert_eq!(file.path, std::path::PathBuf::from(plain), "{plain}");
-        assert_eq!(file.line, None, "{plain}");
-    }
-}
-
-#[test]
 fn removed_code_open_command_is_rejected() {
     assert_eq!(
         parse(&["code", "open", "src/main.rs:42"]).unwrap_err(),
-        CliError::UnknownCommand {
-            family: "code",
-            command: "open".into(),
-        }
+        CliError::UnknownOption("code".into())
     );
-    assert!(matches!(
-        command(&["code", "edit", "src/main.rs:42"]),
-        ControlCommand::Code(CodeCommand::Edit(FileAt { line: Some(42), .. }))
-    ));
 }
 
 #[test]

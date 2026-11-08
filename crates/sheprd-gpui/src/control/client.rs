@@ -435,7 +435,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Run { name } => app::run_command(&name, &context),
         ControlCommand::Commands => local::commands(),
         ControlCommand::Tab(command) => tabs::tab(command, &context),
-        ControlCommand::Code(command) => tabs::code(command, &context),
         ControlCommand::Devices => tabs::devices(&context),
         ControlCommand::Orchestrator(command) => tabs::orchestrator(command, &context),
         ControlCommand::Review => tabs::review(&context),

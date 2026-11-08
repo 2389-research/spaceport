@@ -1,46 +1,12 @@
-//! `tab`, `code`, `devices`, `orchestrator`, and `review`.
+//! `tab`, `devices`, `orchestrator`, and `review`.
 use super::{Args, CliError, unknown};
-use std::{ffi::OsString, path::PathBuf};
+use std::path::PathBuf;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TabCommand {
     List,
     Focus { id: u64 },
     Close { id: u64 },
-}
-
-/// `FILE[:LINE]`. A trailing `:N` is a line, as compilers and `grep -n`
-/// print them; a file whose name really ends that way needs `./` and a line.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct FileAt {
-    pub path: PathBuf,
-    pub line: Option<u32>,
-}
-
-impl From<OsString> for FileAt {
-    fn from(value: OsString) -> Self {
-        let split = value.to_str().and_then(|text| {
-            let (path, line) = text.rsplit_once(':')?;
-            let line = line.parse::<u32>().ok().filter(|line| *line > 0)?;
-            (!path.is_empty()).then(|| (PathBuf::from(path), line))
-        });
-        match split {
-            Some((path, line)) => Self {
-                path,
-                line: Some(line),
-            },
-            None => Self {
-                path: value.into(),
-                line: None,
-            },
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum CodeCommand {
-    /// The user's terminal editor, in a new pane.
-    Edit(FileAt),
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -80,17 +46,6 @@ pub(super) fn tab(args: &mut Args) -> Result<TabCommand, CliError> {
         Some("focus") => TabCommand::Focus { id: id(args)? },
         Some("close") => TabCommand::Close { id: id(args)? },
         _ => return Err(unknown("tab", verb)),
-    })
-}
-
-pub(super) fn code(args: &mut Args) -> Result<CodeCommand, CliError> {
-    let verb = args.verb().ok_or(CliError::MissingArgument {
-        command: "code",
-        what: "edit",
-    })?;
-    Ok(match verb.to_str() {
-        Some("edit") => CodeCommand::Edit(args.required("FILE[:LINE]")?.into()),
-        _ => return Err(unknown("code", verb)),
     })
 }
 

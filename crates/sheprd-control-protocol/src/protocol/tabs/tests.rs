@@ -2,6 +2,8 @@
 use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
+mod removed_code_edit;
+
 fn round_trip(op: TabOp) {
     let request = Request::Tab(Call {
         caller: Caller::default(),
@@ -36,10 +38,6 @@ fn tab_operations_round_trip() {
             id: 3,
             change: ZoomChange::Reset,
         },
-        TabOp::Edit {
-            path: "/src/main.rs".into(),
-            line: None,
-        },
         TabOp::Devices,
         TabOp::Orchestrator {
             repo: Some("/src".into()),
@@ -53,19 +51,13 @@ fn tab_operations_round_trip() {
 #[test]
 fn tab_requests_have_a_stable_wire_form() {
     let request: Request = serde_json::from_str(
-        r#"{"method":"tab","caller":{"workspace_id":"w_1"},"op":{"op":"edit","path":"/a.rs"}}"#,
+        r#"{"method":"tab","caller":{"workspace_id":"w_1"},"op":{"op":"devices"}}"#,
     )
     .unwrap();
     let Request::Tab(call) = request else {
         panic!("not a tab request");
     };
-    assert_eq!(
-        call.op,
-        TabOp::Edit {
-            path: "/a.rs".into(),
-            line: None
-        }
-    );
+    assert_eq!(call.op, TabOp::Devices);
     assert_eq!(
         serde_json::from_str::<TabOp>(r#"{"op":"list"}"#).unwrap(),
         TabOp::List { pages: false }
@@ -93,10 +85,6 @@ fn tab_requests_have_a_stable_wire_form() {
 #[test]
 fn removed_code_open_wire_operation_is_rejected() {
     assert!(serde_json::from_str::<TabOp>(r#"{"op":"code","path":"/a.rs"}"#).is_err());
-    round_trip(TabOp::Edit {
-        path: "/a.rs".into(),
-        line: Some(42),
-    });
 }
 
 #[test]
