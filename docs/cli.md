@@ -58,7 +58,7 @@ Every command accepts:
 | `status` | Whether the app runs, its version and control protocol, windows and hosts, plus the observed Core machine catalog's state, epoch and count |
 | `app focus\|hide\|quit` | Bring the app forward, hide it, or quit it (Herdr keeps running) |
 | `window [list]` | Windows with their IDs, size, workspace, and hosts |
-| `window new [--session NAME]` | Another window, of your own Herdr session or a named local session |
+| `window new` | Another window on the target selected by `--window`, the caller's host, or the frontmost/default target |
 | `window focus ID` | Bring a window forward |
 | `window fullscreen [on\|off\|toggle]` | |
 | `window size [WIDTHxHEIGHT]` | Print or set the window's size; windows cannot be moved |

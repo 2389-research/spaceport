@@ -114,7 +114,7 @@ pub(super) fn app(command: AppCommand, context: &Context) -> crate::Result<Outpu
 pub(super) fn window(command: WindowCommand, context: &Context) -> crate::Result<Output> {
     let op = match command {
         WindowCommand::List => WindowOp::List,
-        WindowCommand::New { session } => WindowOp::New { session },
+        WindowCommand::New => WindowOp::New {},
         WindowCommand::Focus { id } => {
             let context = Context {
                 json: context.json,

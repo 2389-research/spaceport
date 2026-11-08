@@ -14,7 +14,7 @@ mod tabs;
 mod work;
 
 use super::{
-    Target, main_windows, plain,
+    Target, main_windows,
     protocol::{Caller, ErrorCode, MAX_WAIT_SECONDS, Request, Response},
     socket, socket_path, valid_caller,
 };

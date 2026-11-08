@@ -238,21 +238,10 @@ pub(super) fn window(call: Call<WindowOp>, cx: &mut App) -> Response {
                 windows: windows(cx),
             },
         },
-        WindowOp::New { session } => {
-            let target = match session {
-                Some(name) => {
-                    if !super::plain(&name, 128) {
-                        return Response::error(ErrorCode::InvalidRequest, "Invalid session name");
-                    }
-                    ConnectTarget::Session {
-                        name,
-                        development: false,
-                    }
-                }
-                None => match new_window_target(caller, cx) {
-                    Ok(target) => target,
-                    Err(response) => return response,
-                },
+        WindowOp::New {} => {
+            let target = match new_window_target(caller, cx) {
+                Ok(target) => target,
+                Err(response) => return response,
             };
             crate::open_additional_window(target, cx);
             // Opened after this answer; a failure is only logged.

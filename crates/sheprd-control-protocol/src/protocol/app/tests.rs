@@ -3,6 +3,7 @@ use super::*;
 use crate::protocol::{Call, Caller, Request};
 
 mod core_catalog;
+mod removed_legacy_window_session;
 
 #[test]
 fn open_carries_its_folder_and_refuses_extra_fields() {

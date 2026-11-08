@@ -89,12 +89,8 @@ pub enum AppOp {
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum WindowOp {
     List,
-    /// Another window of the first window's launch target, or of a named
-    /// local session.
-    New {
-        #[serde(default)]
-        session: Option<String>,
-    },
+    /// Another window on the caller-selected launch target.
+    New {},
     Focus,
     Fullscreen {
         switch: Switch,

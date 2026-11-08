@@ -11,9 +11,7 @@ pub enum AppCommand {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WindowCommand {
     List,
-    New {
-        session: Option<String>,
-    },
+    New,
     Focus {
         id: u64,
     },
@@ -52,9 +50,7 @@ pub(super) fn window(args: &mut Args) -> Result<WindowCommand, CliError> {
     };
     Ok(match verb.to_str() {
         Some("list") => WindowCommand::List,
-        Some("new") => WindowCommand::New {
-            session: args.text_option("--session")?,
-        },
+        Some("new") => WindowCommand::New,
         Some("focus") => WindowCommand::Focus {
             id: args
                 .required_text("ID")?
