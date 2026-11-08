@@ -184,6 +184,11 @@ impl Core {
         self.typed(Method::MachineList, &json!({}))
     }
 
+    /// Ask Core to dial one saved machine now and report its own line.
+    pub fn machine_connect(&self, machine: &str) -> Result<wire::MachineView> {
+        self.typed(Method::MachineConnect, &json!({"machine": machine}))
+    }
+
     /// Ask Core to add an existing remote Core through SSH. No install option
     /// or alternate command transport is exposed by this call.
     pub fn machine_add(

@@ -34,6 +34,7 @@ methods! {
     EventsSubscribe => "events.subscribe", true;
     Hello => "hello", false;
     MachineAdd => "machine.add", false;
+    MachineConnect => "machine.connect", false;
     MachineList => "machine.list", false;
     TerminalAttach => "terminal.attach", true;
     TerminalGet => "terminal.get", false;

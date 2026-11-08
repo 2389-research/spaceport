@@ -80,3 +80,40 @@ fn machine_add_sends_only_a_core_ssh_target_without_install() {
     assert_eq!(machine.name, "lab");
     assert_eq!(machine.id, "core-2");
 }
+
+#[test]
+fn machine_connect_requests_one_saved_name_and_returns_cores_line() {
+    let (client, mut core) = connected();
+    let call = thread::spawn(move || client.machine_connect("lab"));
+    let request = core.request();
+    assert_eq!(request["method"], "machine.connect");
+    assert_eq!(request["params"], json!({"machine": "lab"}));
+    core.answer(
+        &request,
+        json!({
+            "name": "lab", "target": "user@lab.invalid", "id": "core-2",
+            "host": "lab-host", "version": "0.1.18", "state": "needs_login",
+            "why": "authentication required"
+        }),
+    );
+    let line = call.join().unwrap().unwrap();
+    assert_eq!(line.machine.name, "lab");
+    assert_eq!(line.state, "needs_login");
+    assert_eq!(line.why.as_deref(), Some("authentication required"));
+}
+
+#[test]
+fn absent_machine_connect_is_unsupported() {
+    let (client, server) = pair();
+    let methods: Vec<&str> = every_method()
+        .into_iter()
+        .filter(|name| *name != "machine.connect")
+        .collect();
+    let core = thread::spawn(move || MockCore::accept(server, &hello_reply("0.1.18", &methods)));
+    let client = Core::over(client).unwrap();
+    let (_core, _) = core.join().unwrap();
+    assert!(matches!(
+        client.machine_connect("lab"),
+        Err(Error::Unsupported(Method::MachineConnect))
+    ));
+}

@@ -44,6 +44,9 @@ fn a_real_core_aggregates_a_fixture_machine() {
         assert!(Instant::now() < deadline, "fixture machine did not connect");
         std::thread::sleep(Duration::from_millis(30));
     }
+    let line = core.machine_connect("lab").unwrap();
+    assert_eq!(line.machine.id, added.id);
+    assert_eq!(line.state, "connected");
     let argv = [
         "sh".into(),
         "-c".into(),
