@@ -35,7 +35,6 @@ macro_rules! remote_errors {
 remote_errors! {
     // keep-sorted start
     #[cfg(feature = "azure")] sheprd_remote::azure::Error,
-    #[cfg(feature = "boat")] sheprd_remote::boat::Error,
     #[cfg(feature = "cloud")] sheprd_remote::cloud::Error,
     #[cfg(feature = "cloud")] sheprd_remote::cloud::ProviderError,
     #[cfg(feature = "cloud")] sheprd_remote::cloud::image::Error,

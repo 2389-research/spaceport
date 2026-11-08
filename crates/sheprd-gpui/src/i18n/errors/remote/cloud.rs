@@ -43,8 +43,6 @@ impl Localize for ProviderError {
         match *self {
             #[cfg(feature = "azure")]
             Self::Azure(ref error) => error.localize(),
-            #[cfg(feature = "boat")]
-            Self::Boat(ref error) => error.localize(),
             #[cfg(feature = "container")]
             Self::Container(ref error) => error.localize(),
             #[cfg(feature = "opensandbox")]

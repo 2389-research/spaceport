@@ -112,7 +112,7 @@ impl SheprdWindow {
 
     #[cfg(feature = "cloud")]
     // Providers that need no setting never read the environment.
-    #[cfg_attr(not(any(feature = "azure", feature = "boat")), allow(unused_variables))]
+    #[cfg_attr(not(feature = "azure"), allow(unused_variables))]
     fn cloud_providers_with_env(
         &self,
         var: impl Fn(&str) -> Option<std::ffi::OsString>,
@@ -126,10 +126,6 @@ impl SheprdWindow {
             .filter(|provider| match provider {
                 #[cfg(feature = "azure")]
                 crate::cloud::CloudProvider::Azure => self.config.azure.configured(&var),
-                #[cfg(feature = "boat")]
-                crate::cloud::CloudProvider::Boat => {
-                    self.config.boat.api_url.is_some() || var("HERDR_BOAT_API_URL").is_some()
-                }
                 #[cfg(feature = "opensandbox")]
                 crate::cloud::CloudProvider::OpenSandbox => {
                     self.config.opensandbox.api_url.is_some()

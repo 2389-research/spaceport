@@ -9,19 +9,12 @@
 
 #[cfg(feature = "azure")]
 pub mod azure;
-#[cfg(feature = "boat")]
-pub mod boat;
 #[cfg(feature = "cloud")]
 pub mod cloud;
 pub mod config;
 #[cfg(feature = "container")]
 pub mod container;
-#[cfg(any(
-    feature = "azure",
-    feature = "boat",
-    feature = "opensandbox",
-    feature = "sprites"
-))]
+#[cfg(any(feature = "azure", feature = "opensandbox", feature = "sprites"))]
 mod credentials;
 mod error;
 #[cfg(feature = "opensandbox")]

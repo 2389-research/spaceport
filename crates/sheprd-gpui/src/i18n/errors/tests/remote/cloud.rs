@@ -97,8 +97,6 @@ fn every_provider_delegates() {
     let errors: Vec<ProviderError> = vec![
         #[cfg(feature = "azure")]
         sheprd_remote::azure::Error::Size.into(),
-        #[cfg(feature = "boat")]
-        sheprd_remote::boat::Error::Size.into(),
         #[cfg(feature = "container")]
         sheprd_remote::container::Error::NoEngine.into(),
         #[cfg(feature = "opensandbox")]

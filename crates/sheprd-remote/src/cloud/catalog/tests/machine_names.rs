@@ -9,13 +9,8 @@ fn machine_names_follow_each_providers_argument_contract() {
             let mut saved = device("w");
             saved.provider = provider;
             saved.machine = name.into();
-            #[cfg(feature = "boat")]
-            let display_only = provider == CloudProvider::Boat;
-            #[cfg(not(feature = "boat"))]
-            let display_only = false;
-            assert_eq!(
-                write(&path, vec![Entry::Known(saved)]).is_ok(),
-                display_only,
+            assert!(
+                write(&path, vec![Entry::Known(saved)]).is_err(),
                 "{provider:?}: {name:?}"
             );
         }

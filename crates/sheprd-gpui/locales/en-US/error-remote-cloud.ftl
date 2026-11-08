@@ -50,7 +50,7 @@ error-remote-cloud-unavailable = Cloud devices are unavailable on Windows.
 error-remote-cloud-image-busy = Another build of this image is running; wait for it to finish.
 error-remote-cloud-image-cancelled = Cancelled.
 error-remote-cloud-image-catalog = Could not update { $path }: { $error }
-# $provider is a cloud provider's name, such as Boat. COPY and ADD are
+# $provider is a cloud provider's name, such as Azure. COPY and ADD are
 # Dockerfile instructions.
 error-remote-cloud-image-context = { $provider } cannot copy files into an image yet: remove the recipe's COPY and ADD lines, or use a container.
 error-remote-cloud-image-devcontainer = The dev container definition is not valid JSON.
@@ -82,8 +82,8 @@ error-remote-cloud-socket-header-name = Invalid exec stream header name.
 error-remote-cloud-socket-closed = The exec stream closed before the command finished.
 
 # What a cloud provider refused, for every provider. $key is a setting such
-# as boat.api_url or an environment variable, as written. Each $value
-# branch is a whole sentence; Azure, Boat, OpenSandbox,
+# as azure.subscription_id or an environment variable, as written. Each $value
+# branch is a whole sentence; Azure, OpenSandbox,
 # and Sprites are product names, and execd is a program's name.
 error-remote-cloud-value-invalid-key = { $key } is not valid.
 error-remote-cloud-value-invalid = { $value ->
@@ -94,14 +94,6 @@ error-remote-cloud-value-invalid = { $value ->
     [azure-sandbox-endpoint] Azure sandbox endpoint is not valid.
     [azure-sandbox-id] Azure sandbox ID is not valid.
     [azure-ssh-public-key] Azure SSH public key is not valid.
-    [boat-api-key] Boat API key is not valid.
-    [boat-auto-stop] boat.auto_stop (never or 1–2592000 seconds) is not valid.
-    [boat-pending] Boat pending creation is not valid.
-    [boat-pending-path] Boat pending path is not valid.
-    [boat-pending-size] Boat pending creation size is not valid.
-    [boat-sandbox-id] Boat sandbox ID is not valid.
-    [boat-ssh-private-key] Boat SSH private key is not valid.
-    [boat-ssh-public-key] Boat SSH public key is not valid.
     [container-engine] Container engine is not valid.
     [exec-session-id] Exec session ID is not valid.
     [execd-endpoint] Execd endpoint is not valid.
@@ -122,14 +114,6 @@ error-remote-cloud-value-encoding = { $value ->
     [azure-sandbox-endpoint] Azure sandbox endpoint must be UTF-8.
     [azure-sandbox-id] Azure sandbox ID must be UTF-8.
     [azure-ssh-public-key] Azure SSH public key must be UTF-8.
-    [boat-api-key] Boat API key must be UTF-8.
-    [boat-auto-stop] boat.auto_stop (never or 1–2592000 seconds) must be UTF-8.
-    [boat-pending] Boat pending creation must be UTF-8.
-    [boat-pending-path] Boat pending path must be UTF-8.
-    [boat-pending-size] Boat pending creation size must be UTF-8.
-    [boat-sandbox-id] Boat sandbox ID must be UTF-8.
-    [boat-ssh-private-key] Boat SSH private key must be UTF-8.
-    [boat-ssh-public-key] Boat SSH public key must be UTF-8.
     [container-engine] Container engine must be UTF-8.
     [exec-session-id] Exec session ID must be UTF-8.
     [execd-endpoint] Execd endpoint must be UTF-8.

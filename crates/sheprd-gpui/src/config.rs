@@ -14,7 +14,6 @@ mod agents_placement;
 mod azure;
 pub(crate) mod backdrop;
 mod bitmap_fonts;
-mod boat;
 pub(crate) mod chat;
 mod cjk_fonts;
 mod cloud;
@@ -47,7 +46,6 @@ mod tab_labels;
 pub(crate) mod tab_layout;
 #[cfg(any(
     feature = "azure",
-    feature = "boat",
     feature = "container",
     feature = "opensandbox",
     feature = "sprites"
@@ -98,9 +96,6 @@ pub use sheprd_orchestrator::gitlab::Config as GitLabConfig;
 pub use sheprd_remote::config::AzureConfig;
 #[cfg(feature = "azure")]
 pub(crate) use sheprd_remote::config::AzureFields;
-pub use sheprd_remote::config::BoatConfig;
-#[cfg(feature = "boat")]
-pub(crate) use sheprd_remote::config::BoatFields;
 pub use sheprd_remote::config::ContainerConfig;
 #[cfg(feature = "container")]
 pub(crate) use sheprd_remote::config::ContainerFields;
@@ -158,7 +153,6 @@ pub struct Config {
     pub azure: AzureConfig,
     pub backdrop: Backdrop,
     pub bell: BellConfig,
-    pub boat: BoatConfig,
     /// What chats started from the app run with.
     pub chat: chat::ChatConfig,
     /// Only the keys this GUI's own file sets, so Settings can tell an
@@ -317,7 +311,6 @@ impl Default for Config {
             azure: AzureConfig::default(),
             backdrop: Backdrop::default(),
             bell: BellConfig::default(),
-            boat: BoatConfig::default(),
             chat: chat::ChatConfig::default(),
             clipboard_overrides: ClipboardToastSettings::default(),
             clipboard_toast: ClipboardToast::default(),
@@ -400,7 +393,6 @@ struct Settings {
     azure: AzureConfig,
     backdrop: Backdrop,
     bell: BellConfig,
-    boat: BoatConfig,
     chat: chat::ChatConfig,
     clipboard_toast: ClipboardToastSettings,
     cloud: CloudConfig,
@@ -492,7 +484,6 @@ impl Config {
         let config = Self::load()?;
         Ok(sheprd_remote::config::Sections {
             azure: config.azure,
-            boat: config.boat,
             container: config.container,
             opensandbox: config.opensandbox,
             sprites: config.sprites,
@@ -721,9 +712,6 @@ impl Config {
         #[cfg(feature = "azure")]
         settings.azure.check()?;
         config.azure = settings.azure;
-        #[cfg(feature = "boat")]
-        settings.boat.settings_with(|_| None)?;
-        config.boat = settings.boat;
         settings.chat.check()?;
         config.chat = settings.chat;
         settings.cloud.check()?;

@@ -73,8 +73,6 @@ fn config_root(var: &impl Fn(&str) -> Option<OsString>) -> PathBuf {
 pub enum CloudProvider {
     #[cfg(feature = "azure")]
     Azure,
-    #[cfg(feature = "boat")]
-    Boat,
     #[cfg(feature = "container")]
     Container,
     #[cfg(feature = "opensandbox")]
@@ -91,8 +89,6 @@ impl CloudProvider {
     pub const ALL: &[Self] = &[
         #[cfg(feature = "railway")]
         Self::Railway,
-        #[cfg(feature = "boat")]
-        Self::Boat,
         #[cfg(feature = "azure")]
         Self::Azure,
         #[cfg(feature = "container")]
@@ -108,8 +104,6 @@ impl CloudProvider {
         match self {
             #[cfg(feature = "azure")]
             Self::Azure => "azure",
-            #[cfg(feature = "boat")]
-            Self::Boat => "boat",
             #[cfg(feature = "container")]
             Self::Container => "container",
             #[cfg(feature = "opensandbox")]

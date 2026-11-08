@@ -210,21 +210,6 @@ providers! {
         image: None,
         provision: Some(crate::azure::create::provision),
     },
-    "boat" Boat => {
-        module: boat,
-        name: "Boat",
-        icon: "icons/terminal.svg",
-        offer: "Create a Boat sandbox in Settings",
-        noun: "sandbox",
-        command: gateway,
-        deletion: Some(Deletion {
-            noun: |_| "sandbox",
-            leftovers: ", with its snapshots,",
-            run: crate::boat::destroy::destroy_saved,
-        }),
-        image: None,
-        provision: Some(crate::boat::create::provision),
-    },
     "container" Container => {
         module: container,
         name: "Container",

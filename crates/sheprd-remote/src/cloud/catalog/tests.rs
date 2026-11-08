@@ -4,9 +4,6 @@ use super::*;
 mod machine_names;
 mod rename;
 
-#[cfg(feature = "boat")]
-mod boat_names;
-
 fn device(id: &str) -> SavedDevice {
     SavedDevice {
         provider: CloudProvider::ALL[0],
@@ -182,6 +179,32 @@ fn retired_coder_device_is_hidden_and_preserved_beside_active_device() {
         "machine": "fixture-machine",
         "session": "default",
         "enabled": true
+    });
+    fs::write(
+        &path,
+        serde_json::json!({"version": 1, "devices": [retired]}).to_string(),
+    )
+    .unwrap();
+    assert!(read(&path).unwrap().is_empty());
+    save_in(&path, device("active")).unwrap();
+    assert_eq!(read(&path).unwrap(), [device("active")]);
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(saved["devices"][0], retired);
+}
+
+#[test]
+fn retired_boat_device_is_hidden_and_preserved_beside_active_device() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(FILE);
+    let retired = serde_json::json!({
+        "provider": "boat",
+        "id": "bx_12345678",
+        "label": "Retired sandbox",
+        "account": "https://boat.example.com/api/v1#team",
+        "machine": "Sandbox 2026-05-31 12:00",
+        "session": "default",
+        "enabled": true,
+        "extra": {"kept": true}
     });
     fs::write(
         &path,

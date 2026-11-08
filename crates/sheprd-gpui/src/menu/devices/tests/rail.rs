@@ -34,8 +34,6 @@ pub(super) fn rail_id(provider: CloudProvider) -> &'static str {
     match provider {
         #[cfg(feature = "azure")]
         CloudProvider::Azure => "add-device-source-azure",
-        #[cfg(feature = "boat")]
-        CloudProvider::Boat => "add-device-source-boat",
         #[cfg(feature = "container")]
         CloudProvider::Container => "add-device-source-container",
         #[cfg(feature = "railway")]
@@ -112,8 +110,6 @@ fn settings_only() -> Vec<(CloudProvider, &'static str)> {
         .filter_map(|&provider| match provider {
             #[cfg(feature = "azure")]
             CloudProvider::Azure => Some((provider, "add-device-source-azure")),
-            #[cfg(feature = "boat")]
-            CloudProvider::Boat => Some((provider, "add-device-source-boat")),
             #[cfg(feature = "container")]
             CloudProvider::Container => Some((provider, "add-device-source-container")),
             #[cfg(feature = "railway")]

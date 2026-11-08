@@ -11,10 +11,6 @@ fn unconfigure(config: &mut crate::config::Config) {
     {
         config.azure = Default::default();
     }
-    #[cfg(feature = "boat")]
-    {
-        config.boat = Default::default();
-    }
     #[cfg(feature = "opensandbox")]
     {
         config.opensandbox = Default::default();
@@ -45,13 +41,6 @@ fn data() -> Vec<String> {
             .map(|&size| size.to_owned())
             .chain(["Arm".into(), "x64".into(), "30m".into()]),
     );
-    // The auto-stop field shows its config value.
-    #[cfg(feature = "boat")]
-    data.extend([
-        crate::boat::DEFAULT_API_URL.into(),
-        "boat_…".into(),
-        "never".into(),
-    ]);
     #[cfg(feature = "container")]
     data.extend([
         crate::container::setup::DEFAULT_IMAGE.into(),

@@ -18,19 +18,14 @@ settings-cloud-install-herdr = Install Herdr when missing
 settings-cloud-install-herdr-in-it = Install Herdr in it when missing
 settings-cloud-new-sandbox = New sandbox
 settings-cloud-create-sandbox = Create sandbox
-settings-cloud-finish-setup = Finish setup
 # A job the main window runs; $name is the new device's name.
 settings-cloud-creating = Creating { $name }. The device picker shows its progress.
-settings-cloud-setting-up =Setting up { $name }. The device picker shows its progress.
 settings-cloud-no-window-sandbox = Open a main Sheprd window to create a sandbox.
 # An account's API key or token, kept in the credential store.
 settings-cloud-api-key = API key
 settings-cloud-forget-key = Forget key
 settings-cloud-key-saved = Saved. Type a new key to replace it.
 settings-cloud-key-missing = No API key saved.
-settings-cloud-key-unreadable = The API key could not be read: { $error }
-settings-cloud-key-unusable = The API key could not be used: { $error }
-settings-cloud-key-store-unavailable = Credential storage is unavailable. Saved devices can still be removed.
 # The default among size or image choices; $choice is its name.
 settings-cloud-default-choice = { $choice } (default)
 # Deleting a device's machine at its provider; $name is the device's name.
@@ -42,7 +37,7 @@ settings-cloud-delete-failed = Could not delete { $name }: { $error }
 ## New device setup.
 
 settings-cloud-setup-run = Run the setup script when it connects
-settings-cloud-setup-note = Runs once, in a setup tab, the first time a new cloud device connects: the agents switched on here, then the setup script from [cloud] in the config file. A provider's table, such as [cloud.boat], replaces either.
+settings-cloud-setup-note = Runs once, in a setup tab, the first time a new cloud device connects: the agents switched on here, then the setup script from [cloud] in the config file. A provider's table, such as [cloud.azure], replaces either.
 # $agent is the agent's product name, such as Claude Code.
 settings-cloud-setup-install = Install { $agent }
 settings-cloud-setup-none = No setup script of your own.

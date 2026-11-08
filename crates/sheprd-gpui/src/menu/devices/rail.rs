@@ -74,8 +74,6 @@ impl Source {
             Self::Wsl => "add-device-source-wsl",
             #[cfg(feature = "azure")]
             Self::Cloud(crate::cloud::CloudProvider::Azure) => "add-device-source-azure",
-            #[cfg(feature = "boat")]
-            Self::Cloud(crate::cloud::CloudProvider::Boat) => "add-device-source-boat",
             #[cfg(feature = "container")]
             Self::Cloud(crate::cloud::CloudProvider::Container) => "add-device-source-container",
             #[cfg(feature = "railway")]

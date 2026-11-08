@@ -6,8 +6,6 @@ fn setting(view: &mut SheprdWindow, provider: CloudProvider) -> Option<&mut Opti
     match provider {
         #[cfg(feature = "azure")]
         CloudProvider::Azure => Some(&mut view.config.azure.subscription_id),
-        #[cfg(feature = "boat")]
-        CloudProvider::Boat => Some(&mut view.config.boat.api_url),
         #[cfg(feature = "container")]
         CloudProvider::Container => None,
         #[cfg(feature = "opensandbox")]
@@ -30,8 +28,6 @@ fn account(provider: CloudProvider) -> Option<(&'static str, &'static str)> {
             "HERDR_AZURE_SUBSCRIPTION_ID",
             "00000000-0000-0000-0000-000000000000",
         )),
-        #[cfg(feature = "boat")]
-        CloudProvider::Boat => Some(("HERDR_BOAT_API_URL", "https://boat.dev/api/v1")),
         #[cfg(feature = "container")]
         CloudProvider::Container => None,
         #[cfg(feature = "opensandbox")]

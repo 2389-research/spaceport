@@ -41,8 +41,6 @@ fn right_clicking_a_cloud_device_offers_rename_settings_setup_and_removal(cx: &m
     let header = match provider() {
         #[cfg(feature = "azure")]
         CloudProvider::Azure => "host-azure:w1",
-        #[cfg(feature = "boat")]
-        CloudProvider::Boat => "host-boat:w1",
         #[cfg(feature = "container")]
         CloudProvider::Container => "host-container:w1",
         #[cfg(feature = "opensandbox")]

@@ -13,7 +13,7 @@ fn no_cloud_table_runs_nothing() -> anyhow::Result<()> {
 fn every_provider_table_parses_in_every_build() -> anyhow::Result<()> {
     let config = Config::parse(
         "[cloud]\nagents = [\"claude\"]\nsetup = \"echo hi\"\n\
-         [cloud.azure]\nagents = [\"codex\"]\n[cloud.boat]\nsetup = \"\"\n\
+         [cloud.azure]\nagents = [\"codex\"]\n[cloud.container]\nsetup = \"\"\n\
          [cloud.railway]\nsetup = \"echo rail\"\n",
     )?;
     assert_eq!(config.cloud.shared_agents(), [Agent::Claude]);
@@ -37,12 +37,12 @@ fn azure_uses_its_own_table() -> anyhow::Result<()> {
 #[test]
 fn an_unknown_agent_is_reported_and_skipped() -> anyhow::Result<()> {
     let config = Config::parse(
-        "[cloud]\nagents = [\"claude\", \"someday\"]\n[cloud.boat]\nagents = [\"later\"]\n",
+        "[cloud]\nagents = [\"claude\", \"someday\"]\n[cloud.container]\nagents = [\"later\"]\n",
     )?;
     assert_eq!(config.cloud.shared_agents(), [Agent::Claude]);
     assert_eq!(
         config.unknown_keys,
-        ["cloud.agents.someday", "cloud.boat.agents.later"]
+        ["cloud.agents.someday", "cloud.container.agents.later"]
     );
     Ok(())
 }
@@ -76,14 +76,14 @@ fn a_provider_table_replaces_each_shared_key_it_sets() -> anyhow::Result<()> {
     use sheprd_client::CloudProvider;
     let config = Config::parse(
         "[cloud]\nagents = [\"claude\"]\nsetup = \"echo shared\"\n\
-         [cloud.boat]\nsetup = \"echo boat\"\n[cloud.azure]\nagents = []\nsetup = \"\"\n",
+         [cloud.container]\nsetup = \"echo container\"\n[cloud.azure]\nagents = []\nsetup = \"\"\n",
     )?;
     for provider in CloudProvider::ALL.iter().copied() {
         let script = config.cloud.script(provider)?;
         match provider.key() {
-            "boat" => {
+            "container" => {
                 let script = script.unwrap_or_default();
-                assert!(script.contains("Claude Code") && script.contains("echo boat"));
+                assert!(script.contains("Claude Code") && script.contains("echo container"));
                 assert!(!script.contains("echo shared"));
             }
             "azure" => assert_eq!(script, None),

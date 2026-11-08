@@ -71,7 +71,7 @@
     ["hosts", "WSL distributions", "WSL distributions as devices, with load, usage, ports and checkpoints.", "shipped", "Windows"],
     ["hosts", "Containers per agent", "Isolated Docker or Podman containers with limits and idle auto-stop, built from your project's image.", "shipped", "macOS and Linux clients"],
     ["hosts", "Azure cloud devices", "Create Azure VMs or Container Apps sandboxes as devices.", "shipped", "macOS and Linux clients"],
-    ["hosts", "More cloud sandboxes", "Fly Sprites, Boat, Railway and self-hosted OpenSandbox.", "experimental", "macOS and Linux clients"],
+    ["hosts", "More cloud sandboxes", "Fly Sprites, Railway and self-hosted OpenSandbox.", "experimental", "macOS and Linux clients"],
     ["browser", "Browser tabs", "Web pages beside your terminals; agents open their previews there with one command.", "shipped", "macOS and Windows"],
     ["browser", "Page annotations and picks", "Pin notes to elements, text or regions and send them to the agent; mockups return the variant you pick.", "shipped", "macOS and Windows"],
     ["browser", "VS Code and px0 tabs", "VS Code for the Web and the px0 review workbench as tabs in a space.", "shipped", "macOS and Windows"],

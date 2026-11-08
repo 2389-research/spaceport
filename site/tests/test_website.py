@@ -28,6 +28,11 @@ class Page(HTMLParser):
 
 
 class WebsiteTests(unittest.TestCase):
+    def test_retired_boat_provider_is_absent_from_published_copy(self):
+        for name in ("index.html", "assets/features.js"):
+            with self.subTest(file=name):
+                self.assertNotIn("Boat", (WEBSITE / name).read_text())
+
     def test_retired_coder_provider_is_absent_from_published_copy(self):
         for name in ("index.html", "assets/features.js"):
             with self.subTest(file=name):

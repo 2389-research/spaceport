@@ -101,7 +101,7 @@ pub fn unavailable() -> Option<&'static str> {
 
 /// What a job reports while it adds a machine, in words every provider shares.
 // Railway reports only the steps it has; the rest belong to the others.
-#[cfg_attr(not(any(feature = "azure", feature = "boat")), allow(dead_code))]
+#[cfg_attr(not(feature = "azure"), allow(dead_code))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Step {
     Creating,

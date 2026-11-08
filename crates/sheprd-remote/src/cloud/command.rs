@@ -23,6 +23,3 @@ pub fn with_command<T>(
     }
     super::providers::run_command(provider, account, id, cancelled, run)
 }
-
-#[cfg(test)]
-mod tests;

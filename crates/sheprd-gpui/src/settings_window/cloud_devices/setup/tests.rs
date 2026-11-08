@@ -16,7 +16,6 @@ fn open(cx: &mut TestAppContext) -> (Entity<SettingsWindow>, &mut VisualTestCont
     // Unconfigured accounts read nothing from disk or the network.
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
-            view.config.boat = Default::default();
             view.config.cloud = Default::default();
             view.select_section(Section::CloudDevices, window, cx);
         })

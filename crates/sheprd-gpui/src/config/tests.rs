@@ -47,6 +47,7 @@ mod removed_checkpoints;
 mod removed_mods;
 mod removed_phone;
 mod repository_icons;
+mod retired_boat;
 mod retired_boxd;
 mod retired_coder;
 mod retired_daytona;

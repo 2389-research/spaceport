@@ -30,7 +30,6 @@ mod close_modal;
     feature = "cloud",
     not(any(
         feature = "azure",
-        feature = "boat",
         feature = "container",
         feature = "opensandbox",
         feature = "railway",
@@ -38,7 +37,7 @@ mod close_modal;
     ))
 ))]
 compile_error!(
-    "the `cloud` feature is enabled through a provider feature, such as `azure`, `boat`, `container`, `opensandbox`, `railway`, or `sprites`"
+    "the `cloud` feature is enabled through a provider feature, such as `azure`, `container`, `opensandbox`, `railway`, or `sprites`"
 );
 #[cfg(feature = "cloud")]
 mod cloud;
@@ -185,8 +184,6 @@ use sheprd_client::{local_path, login_env};
 // are the app's own modules, which add the jobs and views GPUI draws.
 #[cfg(feature = "azure")]
 use sheprd_remote::azure;
-#[cfg(feature = "boat")]
-use sheprd_remote::boat;
 #[cfg(feature = "container")]
 use sheprd_remote::container;
 #[cfg(feature = "opensandbox")]

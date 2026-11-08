@@ -6,8 +6,6 @@
 
 #[cfg(feature = "azure")]
 mod azure;
-#[cfg(feature = "boat")]
-mod boat;
 #[cfg(feature = "container")]
 mod container;
 #[cfg(feature = "container")]
@@ -22,8 +20,6 @@ mod sprites;
 
 #[cfg(feature = "azure")]
 pub(super) use azure::AzureCard;
-#[cfg(feature = "boat")]
-pub(super) use boat::BoatCard;
 #[cfg(feature = "container")]
 pub(super) use container::ContainerCard;
 #[cfg(feature = "container")]
@@ -96,14 +92,14 @@ fn input(
 
 /// A field's placeholder: a message, or a value shown as it is, such as a
 /// default URL or image.
-#[cfg(any(feature = "boat", feature = "container"))]
+#[cfg(feature = "container")]
 #[derive(Clone, Copy, Debug)]
 enum Hint {
     Message(&'static str),
     Value(&'static str),
 }
 
-#[cfg(any(feature = "boat", feature = "container"))]
+#[cfg(feature = "container")]
 impl Hint {
     fn text(self) -> String {
         match self {
@@ -118,7 +114,6 @@ impl Hint {
 /// edit, so a later Save neither writes stale values back nor drops typing.
 #[cfg(any(
     feature = "azure",
-    feature = "boat",
     feature = "container",
     feature = "opensandbox",
     feature = "sprites"
@@ -165,8 +160,6 @@ impl SettingsWindow {
             match provider {
                 #[cfg(feature = "azure")]
                 CloudProvider::Azure => self.open_azure_card(cx),
-                #[cfg(feature = "boat")]
-                CloudProvider::Boat => self.open_boat_card(cx),
                 #[cfg(feature = "container")]
                 CloudProvider::Container => self.open_container_card(cx),
                 #[cfg(feature = "railway")]
@@ -186,8 +179,6 @@ impl SettingsWindow {
             match provider {
                 #[cfg(feature = "azure")]
                 CloudProvider::Azure => self.azure_config_changed(cx),
-                #[cfg(feature = "boat")]
-                CloudProvider::Boat => self.boat_config_changed(cx),
                 #[cfg(feature = "container")]
                 CloudProvider::Container => self.container_config_changed(cx),
                 #[cfg(feature = "railway")]
@@ -253,8 +244,6 @@ impl SettingsWindow {
         let card = match self.cloud_tab {
             #[cfg(feature = "azure")]
             CloudProvider::Azure => self.render_azure_card(cx),
-            #[cfg(feature = "boat")]
-            CloudProvider::Boat => self.render_boat_card(cx),
             #[cfg(feature = "container")]
             CloudProvider::Container => self.render_container_card(cx),
             #[cfg(feature = "railway")]
@@ -331,7 +320,6 @@ impl SettingsWindow {
     /// A saved device with its Remove button; removal leaves the machine
     /// itself untouched at the provider.
     #[cfg(any(
-        feature = "boat",
         feature = "container",
         feature = "opensandbox",
         feature = "railway",
@@ -351,7 +339,6 @@ impl SettingsWindow {
 
     /// `cloud_device_row` with provider `actions` before its Remove button.
     #[cfg(any(
-        feature = "boat",
         feature = "container",
         feature = "opensandbox",
         feature = "railway",
@@ -387,7 +374,6 @@ impl SettingsWindow {
     /// A saved device's label and `detail`, with `actions` at the end.
     #[cfg(any(
         feature = "azure",
-        feature = "boat",
         feature = "container",
         feature = "opensandbox",
         feature = "railway",

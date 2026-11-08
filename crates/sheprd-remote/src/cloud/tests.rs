@@ -3,9 +3,6 @@ use super::*;
 use sheprd_client::ConnectTarget;
 use std::sync::atomic::AtomicBool;
 
-// A loopback API for the providers that have one; Railway is reached over SSH.
-#[cfg(feature = "boat")]
-pub mod server;
 // What every exec relay command shares.
 #[cfg(any(feature = "azure", feature = "opensandbox", feature = "sprites"))]
 pub(crate) mod relay;

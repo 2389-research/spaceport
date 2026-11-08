@@ -4,8 +4,6 @@ use std::io;
 
 #[cfg(feature = "azure")]
 mod azure;
-#[cfg(feature = "boat")]
-mod boat;
 #[cfg(feature = "cloud")]
 mod cloud;
 #[cfg(feature = "container")]

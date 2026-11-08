@@ -535,20 +535,6 @@ size = 12
 # uses Sheprd's own application unless one is set here.
 # applications = { "gitlab.example.com" = "<application id>" }
 
-# Boat sandboxes as devices (experimental). Settings > Cloud devices > Boat
-# edits this table and saves the API key to the credential store; the
-# environment variable HERDR_BOAT_API_KEY takes precedence.
-#
-# [boat]
-# api_url = "https://boat.dev/api/v1"
-# organization = "" # Optional organization ID or name; active wallet if empty.
-# machine_type = "" # Optional: small, default, large, or xlarge.
-# environment = ""  # Optional named environment; account default if empty.
-# auto_stop = "never" # Or seconds as a string, e.g. "7200". Trials require 1–7200.
-# # Linux without Secret Service may opt into a private credential file. The key
-# # is saved in its own 0600 boat-api-key file. Default is false.
-# allow_plaintext_credentials = false
-
 # Containers on this computer's Docker or Podman engine as devices. Settings >
 # Cloud devices > Container edits this table. Each container gets its own home
 # volume and runs agents as an unprivileged "herdr" user, with the limits below,
@@ -596,14 +582,14 @@ size = 12
 # What a new cloud device runs the first time it connects, in a "setup" tab:
 # the agents listed (claude, codex, gemini, opencode), each skipped when already
 # installed, then these lines with sh -e. Settings > Cloud devices > New device
-# setup switches the agents. A provider's table, such as [cloud.boat], replaces
+# setup switches the agents. A provider's table, such as [cloud.azure], replaces
 # either key for that provider; an empty list or script there turns it off.
 # [cloud]
 # agents = ["claude", "opencode"]
 # setup = """
 # git config --global pull.rebase true
 # """
-# [cloud.boat]
+# [cloud.azure]
 # agents = []
 
 # What shows behind the main window, also under Settings > Theme > Window. At the

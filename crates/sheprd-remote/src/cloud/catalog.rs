@@ -117,12 +117,6 @@ impl SavedDevice {
     }
 
     fn valid_machine(&self) -> bool {
-        // Boat names are display text, including its timestamped default name.
-        // Its connector passes only the stable sandbox ID to the API.
-        #[cfg(feature = "boat")]
-        if self.provider == CloudProvider::Boat {
-            return display_name(&self.machine, NAME_LIMIT);
-        }
         plain(&self.machine, NAME_LIMIT)
     }
 

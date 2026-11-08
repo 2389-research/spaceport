@@ -347,12 +347,12 @@ edits only the local catalog: the host's own Herdr keeps running. When the
 device has its own GitHub sign-in, the confirmation also offers to delete it,
 since its account panel goes away with the device. Local's menu offers neither.
 
-A cloud device's header (Azure, Boat, Container,
+A cloud device's header (Azure, Container,
 OpenSandbox, Railway, or Sprites) has a menu too: **Rename…** changes the name the sidebar
 shows, falling back to the machine's name when left empty; **Cloud device
 settings…** opens its provider under Settings > Cloud devices; and **Remove
-device…** removes it from this computer. For an Azure machine, a Boat or
-OpenSandbox sandbox, a container, or a sprite,
+device…** removes it from this computer. For an Azure machine, an OpenSandbox sandbox,
+a container, or a sprite,
 it deletes the machine at the provider by default, with **Remove from Herdr
 only** beside it; a Railway VM is left as it is and expires on its own. Before
 deleting, the dialog searches the machine's home directory for Git checkouts
@@ -451,52 +451,9 @@ launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
 Settings > **Cloud devices** holds accounts with providers that create machines
-to use as devices: Azure, Boat, Container, OpenSandbox, Railway, and Sprites.
+to use as devices: Azure, Container, OpenSandbox, Railway, and Sprites.
 Cloud devices are stored in the GUI's `cloud-devices.json` state file. Each
 entry names its provider, so adding another provider needs no new file.
-
-### Boat sandboxes (experimental)
-
-Settings > **Cloud devices** > **Boat** holds a Boat account: the API URL
-(`https://boat.dev/api/v1` for Boat's cloud), an optional organization wallet,
-machine type, and environment, saved to `[boat]`, and an API key saved to the
-credential store (`HERDR_BOAT_API_KEY` takes precedence). The key needs
-`sandbox.create`, `sandbox.read`, `sandbox.update`, `sandbox.resume`, and `ssh`
-actions. **Create sandbox** creates one with a generated name and, when the
-**Install Herdr** switch is on (the default), installs Herdr if it is missing.
-The device picker shows progress and a toast says when it is ready. The device
-is saved as soon as Boat returns its ID, before waiting for readiness or
-installing Herdr. If setup fails or is cancelled, **Finish setup** beside the
-saved device retries that same sandbox, using the **Install Herdr** switch
-above. It does not create a replacement. If saving the device itself fails,
-the error includes its sandbox ID so it can still be found in Boat. Removing
-a device leaves its sandbox in Boat.
-
-**Auto-stop after** defaults to `never`: the sandbox keeps running and billing
-until you stop it in Boat. To set a deadline, enter 1–2592000 seconds (30 days);
-trial accounts require a deadline of at most 7200 seconds. This is a fixed
-deadline, not an idle timeout: SSH activity does not extend it. The setting is
-sent explicitly on creation and resume. To extend a running sandbox from now,
-or disable its deadline, save the setting and click **Finish setup**. The config
-key is `[boat] auto_stop = "never"` (or, for example, `"7200"`).
-
-If creation's reply is lost, **Recover creation** retries the persisted
-idempotency key and original request, including its original machine options,
-even after restarting the app. It cannot create a replacement with a new key.
-Recovery is available for 23 hours; afterwards the app refuses to replay the
-request because Boat expires idempotency keys after 24 hours. Check the Boat
-dashboard before using **Forget pending request…** and its confirmation: the
-original sandbox may already exist and still be billed. Forgetting removes
-only the local recovery record. Credential or API errors retain that record.
-
-Each connection resumes an archived sandbox, authorizes a GUI-owned Ed25519
-public key through Boat's API, and runs Herdr's remote bridge with OpenSSH. The
-private key stays in the GUI state directory. Boat returns the current machine's
-host key over the authenticated API connection; the app pins that exact key, so
-a resume onto a different machine remains strict without trusting a first SSH
-connection. Boat devices need `ssh` and `ssh-keygen` on PATH and are unavailable
-on Windows. The API path is covered by tests against a scripted server, but has
-not yet been exercised against a live Boat account.
 
 ### Containers (Docker or Podman)
 
@@ -661,7 +618,7 @@ git config --global pull.rebase true
 """
 
 # Replaces either key for one provider; an empty list or script turns it off.
-[cloud.boat]
+[cloud.azure]
 agents = []
 ```
 
@@ -674,8 +631,7 @@ are skipped with a note when it is missing (a system Node may also need root
 for `npm install -g`). Open a new tab afterwards to pick up PATH changes.
 
 Each provider's form has a **Run the setup script when it connects** switch,
-shown when a script is configured. Boat's **Finish setup** on a saved
-sandbox does not run it again. When the device is ready the script
+shown when a script is configured. When the device is ready the script
 waits, for up to 30 minutes, until a window shows that device, then runs in a
 new, focused `setup` tab of the device's first workspace, like a worktree's
 setup script; nothing runs in the background. The script is yours, from this
@@ -684,12 +640,10 @@ memory only, at most eight at once; one that never ran, or a later run, is
 started from **Run setup script** in the device's sidebar menu.
 Reconnecting never runs it again by itself.
 
-Each provider is a Cargo feature of `herdr-gpui`; `azure`, `boat`,
-`container`, `opensandbox`, `railway`, and `sprites` are on by default.
+Each provider is a Cargo feature of `herdr-gpui`; `azure`, `container`, `opensandbox`, `railway`, and `sprites` are on by default.
 A build with `--no-default-features` has no Cloud
 Devices section and no provider rows in the device picker; it still accepts
-the `[boat]` and `[cloud]` tables, so one config file serves every
-build, but never reads them.
+the `[cloud]` table, so one config file serves every build.
 
 Switching revokes the old host's focus before releasing its surface, then resizes
 and activates the selected host. Input waits for the activation acknowledgement
@@ -4399,8 +4353,7 @@ Windows but never roam to other computers in a domain, and other Windows users
 cannot read them. They are listed under **Windows Credentials** in Control
 Panel's Credential Manager; signing out in the app removes them. All windows
 share one credential through the same in-process lock as elsewhere, so a
-single-use refresh token is rotated once. Boat sign-in uses
-the same store under their own service names. A secret larger than Credential
+single-use refresh token is rotated once. A secret larger than Credential
 Manager's 2,560-byte limit is refused with an error rather than truncated. There
 is no private-file store here, so `allow_plaintext_credentials` changes nothing,
 and `GH_TOKEN` / `GITHUB_TOKEN` still take precedence for the main account. The
