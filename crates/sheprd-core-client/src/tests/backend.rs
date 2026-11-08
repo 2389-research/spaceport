@@ -135,6 +135,26 @@ fn a_missed_snapshot_replaces_everything_and_fences_older_events() {
 }
 
 #[test]
+fn a_document_event_fences_older_terminal_changes() {
+    let (backend, mut mock) = backend();
+    let mut changes = watching(&backend, &mut mock);
+    let bytes = [
+        line(json!({"method": "event", "params": {
+            "seq": 12, "type": "doc", "machine": "lab",
+            "data": {"name": "spaceport", "version": 1}
+        }})),
+        event(11, "title", "t1", json!({"title": "stale"})),
+        event(13, "title", "t1", json!({"title": "fresh"})),
+    ]
+    .concat();
+    mock.send(3, Kind::Data, &bytes);
+    let all = changes.next(WAIT).unwrap();
+    assert!(
+        matches!(all.as_slice(), [Change::Upsert(info)] if info.title.as_deref() == Some("fresh"))
+    );
+}
+
+#[test]
 fn a_lost_kept_terminal_reads_as_lost() {
     let (backend, mut mock) = backend();
     let mut changes = watching(&backend, &mut mock);

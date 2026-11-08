@@ -1,7 +1,7 @@
 //! Two private Core processes exercise Core-owned machine aggregation.
 //! A test-only pipe command carries bytes without real SSH or user state.
 use super::*;
-use crate::{CoreBackend, wire::Run};
+use crate::{CoreBackend, event::Notice, wire::Run};
 use sheprd_backend::{Backend as _, Spawn};
 use std::os::unix::fs::PermissionsExt as _;
 
@@ -48,6 +48,7 @@ fn a_real_core_aggregates_a_fixture_machine() {
     let line = core.machine_connect("lab").unwrap();
     assert_eq!(line.machine.id, added.id);
     assert_eq!(line.state, "connected");
+    let mut events = core.subscribe().unwrap();
     assert_eq!(core.doc_get("spaceport", Some("lab")).unwrap().version, 0);
     assert_eq!(
         core.doc_set(
@@ -59,6 +60,24 @@ fn a_real_core_aggregates_a_fixture_machine() {
         .unwrap(),
         1
     );
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let document = loop {
+        let notices = events.next(Duration::from_millis(100)).unwrap();
+        if let Some(document) = notices
+            .into_iter()
+            .find(|notice| matches!(notice, Notice::Document { name, .. } if name == "spaceport"))
+        {
+            break document;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "remote document event did not arrive"
+        );
+    };
+    assert!(matches!(
+        document,
+        Notice::Document { machine: Some(machine), version: 1, .. } if machine == "lab"
+    ));
     assert_eq!(
         remote.connect().doc_get("spaceport", None).unwrap().value,
         serde_json::json!({"scope": "remote"})

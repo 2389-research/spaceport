@@ -98,6 +98,33 @@ fn heartbeats_and_missed_snapshots_parse() {
 }
 
 #[test]
+fn document_events_have_a_machine_but_no_terminal() {
+    assert_eq!(
+        notice(json!({"method": "event", "params": {
+            "seq": 12, "type": "doc", "machine": "lab",
+            "data": {"name": "spaceport", "version": 3}
+        }})),
+        Some(Notice::Document {
+            seq: 12,
+            machine: Some("lab".into()),
+            name: "spaceport".into(),
+            version: 3,
+        })
+    );
+    assert_eq!(
+        notice(json!({"method": "event", "params": {
+            "seq": 13, "type": "doc", "data": {"name": "spaceport", "version": 4}
+        }})),
+        Some(Notice::Document {
+            seq: 13,
+            machine: None,
+            name: "spaceport".into(),
+            version: 4,
+        })
+    );
+}
+
+#[test]
 fn lines_join_across_frames_and_stay_bounded() {
     let mut lines = Lines::default();
     assert!(lines.push(b"{\"a\":").unwrap().is_empty());

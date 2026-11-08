@@ -114,6 +114,8 @@ impl sheprd_backend::Changes for CoreChanges {
         let mut changes = Vec::new();
         for notice in self.subscription.next(timeout)? {
             match notice {
+                Notice::Document { seq, .. } if seq > self.seq => self.seq = seq,
+                Notice::Document { .. } => {}
                 Notice::Heartbeat { .. } => {}
                 Notice::Missed { seq, terminals } => {
                     self.seq = seq;

@@ -13,6 +13,13 @@ pub const MAX_LINE: usize = crate::frame::MAX_PAYLOAD;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Notice {
+    /// A namespaced document changed; readers refetch its current value.
+    Document {
+        seq: u64,
+        machine: Option<String>,
+        name: String,
+        version: u64,
+    },
     Event(Event),
     Heartbeat {
         seq: u64,
@@ -92,6 +99,20 @@ struct RawEvent {
 }
 
 #[derive(Deserialize)]
+struct RawDocument {
+    data: DocumentData,
+    #[serde(default)]
+    machine: Option<String>,
+    seq: u64,
+}
+
+#[derive(Deserialize)]
+struct DocumentData {
+    name: String,
+    version: u64,
+}
+
+#[derive(Deserialize)]
 struct Seq {
     seq: u64,
 }
@@ -147,6 +168,19 @@ struct TitleData {
 pub fn parse(line: &[u8]) -> Result<Option<Notice>> {
     let message: Message = serde_json::from_slice(line)?;
     Ok(Some(match message.method.as_str() {
+        "event" if message.params["type"] == "doc" => {
+            let RawDocument {
+                data: DocumentData { name, version },
+                machine,
+                seq,
+            } = serde_json::from_value(message.params)?;
+            Notice::Document {
+                seq,
+                machine,
+                name,
+                version,
+            }
+        }
         "event" => Notice::Event(event(serde_json::from_value(message.params)?)?),
         "heartbeat" => {
             let Seq { seq } = serde_json::from_value(message.params)?;
