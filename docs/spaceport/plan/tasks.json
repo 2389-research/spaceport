@@ -667,7 +667,8 @@
         "evidence/t12-readme-correction.md",
         "evidence/t12-release-guide-banner.md",
         "evidence/native-platform-results.md",
-        "evidence/t12-upstream-site-mirrors.md"
+        "evidence/t12-upstream-site-mirrors.md",
+        "evidence/t12-site-publication-ownership.md"
       ],
       "must_close_gaps": [
         "G-RELEASE",
