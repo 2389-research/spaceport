@@ -343,6 +343,7 @@
         "evidence/t05-core-lifecycle.md",
         "evidence/t05-core-observer.md",
         "evidence/t05-core-default-observation.md",
+        "evidence/t05-core-window-title.md",
         "evidence/t05-explicit-termination.md",
         "evidence/t03-remote-terminal-parity.md"
       ],

@@ -39,6 +39,11 @@ pub(crate) fn set_document_for_test_as(
 }
 
 #[cfg(test)]
+pub(crate) fn set_document_stale_for_test(cx: &mut App) {
+    observation::set_document_stale_for_test(cx);
+}
+
+#[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests;
 

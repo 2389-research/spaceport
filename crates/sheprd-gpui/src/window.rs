@@ -669,6 +669,6 @@ impl SheprdWindow {
         self.resize();
         self.refresh_palette(window, cx);
         self.report_focus();
-        self.sync_window_title(window);
+        self.sync_window_title(window, cx);
     }
 }

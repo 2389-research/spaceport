@@ -6,7 +6,7 @@
 use super::SheprdWindow;
 use crate::i18n::{Localize, fl};
 use crate::{WINDOW_TITLE, sidebar, state::LiveState};
-use gpui::{Context, Pixels, Point, Window};
+use gpui::{App, Context, Pixels, Point, Window};
 use serde_json::json;
 use sheprd_client::Method;
 use std::time::{Duration, Instant};
@@ -167,12 +167,17 @@ impl SheprdWindow {
         .detach();
     }
 
-    /// The daemon's title for the selected connection wins: an agent's
-    /// `client.window_title.set` or Herdr's rendered `ui.window_title`.
-    /// Otherwise macOS lists every window in the Window menu by title, and
-    /// windows onto the same daemon are told apart by the space each shows.
-    pub(crate) fn sync_window_title(&mut self, window: &mut Window) {
-        let title = window_title(&self.live);
+    /// The selected Core group uses its fresh presentation label. Legacy
+    /// connections keep their daemon title or focused workspace label.
+    pub(crate) fn sync_window_title(&mut self, window: &mut Window, cx: &App) {
+        let title = if self.selected_core_group().is_some() {
+            self.selected_core_workspace_label(cx).map_or_else(
+                || WINDOW_TITLE.to_owned(),
+                |label| format!("{WINDOW_TITLE} \u{2014} {label}"),
+            )
+        } else {
+            window_title(&self.live)
+        };
         if self.title != title {
             window.set_window_title(&title);
             self.title = title;

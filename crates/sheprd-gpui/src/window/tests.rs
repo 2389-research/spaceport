@@ -11,6 +11,7 @@ use std::sync::Arc;
 mod backdrop;
 mod close_window;
 mod core_join;
+mod core_title;
 mod core_unavailable;
 mod detach;
 mod en_xa;
@@ -78,7 +79,7 @@ fn window_title_follows_the_focused_space_of_that_window(cx: &mut gpui::TestAppC
             snapshot.focused_workspace_id = Some("w0".into());
             view.live.snapshot = Some(Arc::new(snapshot));
         });
-        view.update(cx, |view, _| view.sync_window_title(window));
+        view.update(cx, |view, cx| view.sync_window_title(window, cx));
     });
     assert_eq!(
         view.read_with(cx, |view, _| view.title.clone()),
@@ -86,9 +87,9 @@ fn window_title_follows_the_focused_space_of_that_window(cx: &mut gpui::TestAppC
     );
     // An unknown focus falls back to the bare product name.
     cx.update(|window, cx| {
-        view.update(cx, |view, _| {
+        view.update(cx, |view, cx| {
             view.live.snapshot = None;
-            view.sync_window_title(window);
+            view.sync_window_title(window, cx);
         });
     });
     assert_eq!(

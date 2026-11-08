@@ -138,7 +138,7 @@ fn bell_and_window_title_follow_the_selected_endpoint(cx: &mut gpui::TestAppCont
                 view.endpoints[1].live.window_title.as_deref(),
                 Some("remote]0;x host")
             );
-            view.sync_window_title(window);
+            view.sync_window_title(window, cx);
             assert_eq!(view.title, "local");
         });
     });
@@ -161,7 +161,7 @@ fn bell_and_window_title_follow_the_selected_endpoint(cx: &mut gpui::TestAppCont
             view.selected_endpoint = 1;
             view.reset_selected(cx);
             view.live = view.endpoints[1].live.clone();
-            view.sync_window_title(window);
+            view.sync_window_title(window, cx);
             assert_eq!(view.title, "remote]0;x host");
         });
     });
@@ -176,7 +176,7 @@ fn bell_and_window_title_follow_the_selected_endpoint(cx: &mut gpui::TestAppCont
             project_until(view, cx, "cleared title", |view| {
                 view.live.window_title.is_none()
             });
-            view.sync_window_title(window);
+            view.sync_window_title(window, cx);
             assert!(view.title.starts_with(crate::WINDOW_TITLE));
         });
     });

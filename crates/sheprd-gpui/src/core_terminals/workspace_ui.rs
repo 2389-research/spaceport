@@ -6,7 +6,7 @@ mod render;
 use super::{
     observation,
     panes::Panes,
-    workspace_document::{VersionedDocument, edit},
+    workspace_document::{VersionedDocument, Workspace as CoreWorkspace, edit},
 };
 use crate::{
     SheprdWindow,
@@ -222,15 +222,23 @@ impl SheprdWindow {
     }
 
     pub(crate) fn core_group_available(&self, key: &CoreGroupKey, cx: &App) -> bool {
+        self.core_group_workspace(key, cx).is_some()
+    }
+
+    fn core_group_workspace<'a>(
+        &self,
+        key: &CoreGroupKey,
+        cx: &'a App,
+    ) -> Option<&'a CoreWorkspace> {
         let Some(observation) = cx.try_global::<observation::Observation>() else {
-            return false;
+            return None;
         };
         let projection = observation.projection();
         if !projection.fresh() {
-            return false;
+            return None;
         }
         let Some(core_id) = projection.core_id() else {
-            return false;
+            return None;
         };
         if CoreGroupKey::new(
             core_id,
@@ -241,14 +249,26 @@ impl SheprdWindow {
         .as_ref()
             != Some(key)
         {
-            return false;
+            return None;
         }
         if self.core_terminals.hub.backend().is_some_and(|backend| {
             backend.core().is_lost() || backend.core().hello().core.id != key.hub_core_id()
         }) {
-            return false;
+            return None;
         }
-        matches!(self.core_workspace_access(cx), Access::Ready(doc) if doc.value.workspaces().iter().any(|row| row.id == key.group_id()))
+        let Access::Ready(doc) = self.core_workspace_access(cx) else {
+            return None;
+        };
+        doc.value
+            .workspaces()
+            .iter()
+            .find(|row| row.id == key.group_id())
+    }
+
+    pub(crate) fn selected_core_workspace_label<'a>(&self, cx: &'a App) -> Option<&'a str> {
+        let key = self.selected_core_group()?;
+        self.core_group_workspace(key, cx)
+            .map(|row| row.label.as_str())
     }
 
     pub(crate) fn show_core_group(&mut self, key: &CoreGroupKey, cx: &mut Context<Self>) -> bool {
