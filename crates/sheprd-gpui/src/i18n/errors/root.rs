@@ -18,7 +18,6 @@ impl Localize for Error {
             }
             Self::Automations(error) => error.localize(),
             Self::Backdrop(error) => error.localize(),
-            Self::Bonjour(error) => fl!("error-bonjour", error = error.to_string()),
             Self::BundleExists { path: file } => fl!("error-bundle-exists", path = path(file)),
             Self::BundleWrite { path: file, source } => fl!(
                 "error-bundle-write",
@@ -109,11 +108,7 @@ impl Localize for Error {
                 fl!("error-link-on-another-host", host = host.as_str())
             }
             Self::ListeningPorts(error) => error.localize(),
-            Self::LocalAddresses(source) => {
-                fl!("error-local-addresses", error = source.to_string())
-            }
             Self::LocalGit(_) => fl!("error-local-git"),
-            Self::LocalNetworkDenied => fl!("error-local-network-denied"),
             Self::LocalWorktreeNote => fl!("error-local-worktree-note"),
             Self::LogRead { path: file, source } => fl!(
                 "error-log-read",
@@ -186,11 +181,6 @@ impl Localize for Error {
                 error = source.to_string()
             ),
             Self::Sound(error) => error.localize(),
-            Self::SshConfig { path: file, source } => fl!(
-                "error-ssh-config",
-                path = path(file),
-                error = source.to_string()
-            ),
             Self::SshHosts(error) => error.localize(),
             Self::StaleCloseTarget => fl!("error-stale-close-target"),
             Self::StaleConnection => fl!("error-stale-connection"),

@@ -10,7 +10,6 @@ mod catalog;
 pub(super) mod coder;
 mod core_catalog;
 pub(crate) use add_device::enter;
-mod discover;
 mod error;
 mod host_key;
 mod host_key_choice;

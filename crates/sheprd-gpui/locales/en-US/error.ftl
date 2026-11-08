@@ -8,7 +8,6 @@ error-agent-context = { $operation ->
     [create] Could not create the agent context note for the new checkout.
    *[write] Could not write the agent context note for the new checkout.
 }
-error-bonjour = Searching the local network failed: { $error }
 error-bundle-exists = { $path } already exists; choose a new file name
 error-bundle-write = Could not write { $path }: { $error }
 # $cleanup is why the half-written file could not be removed afterwards.
@@ -57,9 +56,7 @@ error-invalid-worktree-notes = Invalid saved worktree notes
 error-linked-file-missing = File not found: { $path }
 # $host is the computer a terminal link names.
 error-link-on-another-host = This link names a file on another computer, { $host }. It is not opened from here.
-error-local-addresses = Could not list this machine's network addresses: { $error }
 error-local-git = Git could not run
-error-local-network-denied = macOS has not allowed Sheprd on your local network. Turn on Sheprd in System Settings › Privacy & Security › Local Network, then search again
 error-local-worktree-note = Worktree notes stay in this app and are never sent to the daemon
 error-log-read = Could not read the log { $path }: { $error }
 error-malformed-link = This link's address is not valid, so it opens nothing.
@@ -93,7 +90,6 @@ error-selection-size = Selection is too large to copy.
 error-selection-stale = The selected pane is no longer on screen.
 error-settings-save = Could not finish saving Settings: { $error }
 error-skill-install = Could not install the agent skill at { $path }: { $error }
-error-ssh-config = Could not read { $path }: { $error }
 error-stale-close-target = The original target changed or no longer exists. Cancel and try again.
 error-stale-connection = The selected connection changed or is not ready. Cancel and try again.
 error-stale-pane = The original pane changed or no longer exists. Cancel and try again.

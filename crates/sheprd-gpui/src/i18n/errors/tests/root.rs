@@ -26,7 +26,6 @@ fn every_own_variant_has_a_message() {
             operation: "write",
             source: io(),
         },
-        Error::Bonjour(mdns_sd::Error::Msg("no interface".into())),
         Error::BundleExists { path: path.clone() },
         Error::BundleWrite {
             path: path.clone(),
@@ -76,9 +75,7 @@ fn every_own_variant_has_a_message() {
         Error::LinkOnAnotherHost {
             host: "build-box".into(),
         },
-        Error::LocalAddresses(io()),
         Error::LocalGit(io()),
-        Error::LocalNetworkDenied,
         Error::LocalWorktreeNote,
         Error::LogRead {
             path: path.clone(),
@@ -111,10 +108,6 @@ fn every_own_variant_has_a_message() {
         Error::SelectionStale,
         Error::SettingsSave(Arc::new(Error::NotConnected)),
         Error::SkillInstall {
-            path: path.clone(),
-            source: io(),
-        },
-        Error::SshConfig {
             path: path.clone(),
             source: io(),
         },

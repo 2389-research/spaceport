@@ -20,6 +20,7 @@ mod host_key;
 mod host_key_choice;
 mod key_login;
 mod local_network;
+mod manual_entry;
 #[cfg(feature = "cloud")]
 mod rail;
 mod scope;
@@ -66,11 +67,7 @@ fn open_form(view: &mut SheprdWindow, step: Step, cx: &mut Context<SheprdWindow>
         step,
         claim: None,
         task: None,
-        discovery: None,
-        suggested_label: None,
         _edits: Vec::new(),
-        highlight: None,
-        suggestion_scroll: gpui::ScrollHandle::new(),
         error: None,
         host_keys: sheprd_client::HostKeys::Verify,
     });

@@ -19,8 +19,6 @@ pub enum Error {
     Automations(#[from] crate::automations::Error),
     #[error(transparent)]
     Backdrop(#[from] crate::backdrop::Error),
-    #[error("Searching the local network failed: {0}")]
-    Bonjour(#[from] mdns_sd::Error),
     #[error("{} already exists; choose a new file name", path.display())]
     BundleExists { path: PathBuf },
     #[error("Could not write {}: {source}", path.display())]
@@ -174,16 +172,8 @@ pub enum Error {
     LinkOnAnotherHost { host: String },
     #[error(transparent)]
     ListeningPorts(#[from] crate::listening_ports::Error),
-    #[error("Could not list this machine's network addresses: {0}")]
-    LocalAddresses(#[source] io::Error),
     #[error("Git could not run")]
     LocalGit(#[source] io::Error),
-    /// The search waited for the permission and macOS still refused it.
-    /// Turning it on applies to the next search; the app need not restart.
-    #[error(
-        "macOS has not allowed Sheprd on your local network. Turn on Sheprd in System Settings › Privacy & Security › Local Network, then search again"
-    )]
-    LocalNetworkDenied,
     #[error("Worktree notes stay in this app and are never sent to the daemon")]
     LocalWorktreeNote,
     #[error("Could not read the log {}: {source}", path.display())]
@@ -299,12 +289,6 @@ pub enum Error {
     },
     #[error(transparent)]
     Sound(#[from] crate::sound::Error),
-    #[error("Could not read {}: {source}", path.display())]
-    SshConfig {
-        path: PathBuf,
-        #[source]
-        source: io::Error,
-    },
     #[error(transparent)]
     SshHosts(#[from] crate::config::ssh_hosts::Error),
     #[error("The original target changed or no longer exists. Cancel and try again.")]

@@ -330,33 +330,8 @@ released after two minutes. Another client adding the host while a terminal
 setup runs can still create a duplicate. A host refused as already being added
 is still in another Add Device dialog or in a running "Set up" workspace.
 
-Under the SSH target, **Nearby devices** suggests hosts to add. Opening the
-dialog starts one search, shown by a sliding bar, which lasts about ten seconds;
-**Search again** repeats it. Suggestions come from three places, and a machine
-two of them name is listed once:
-
-- **SSH config**: concrete `Host` aliases in `~/.ssh/config` and the files it
-  `Include`s. Patterns, `Match` blocks, and git hosting services are skipped.
-- **Tailscale**: online peers from the local `tailscale status --json`, by their
-  MagicDNS name, on Linux, macOS, and BSD peers. Phones, TVs, and Windows peers
-  are left out. Tailscale not being installed is not an error.
-- **Bonjour**: hosts that advertise `_ssh._tcp` on the local network, such as a
-  Mac with Remote Login on or a Linux host whose Avahi publishes SSH. This
-  machine is skipped.
-
-Choosing a suggestion fills in the target with the user's own alias when there
-is one, then the Tailscale name, then the Bonjour host. Devices already saved
-are not suggested. Nothing is scanned: a host that runs SSH without announcing
-it, or that is on another subnet, appears only through SSH config or Tailscale.
-On macOS 15 and later the first search asks for Local Network access; see
-[Local Network access](#local-network-access).
-
-Typing in the SSH target filters the suggestions by name or target, those that
-start with what was typed first. When a target extends what was typed, the rest
-is drawn dimmed after the cursor and **Tab** fills it in, along with an empty
-label. **Up** and **Down** pick any row, and **Tab** or **Enter** then fills it.
-A typed `user@` is kept. **Enter** otherwise adds exactly what the field shows:
-a row that matches only by the name a host announces is never chosen for you.
+Enter an SSH target or alias and label directly. The form does not search for
+hosts or suggest targets. **Enter** adds exactly what the target field shows.
 
 Each device's header in the Spaces list starts with a mark for where it runs:
 a monitor for this machine, the provider's logo for a cloud device, and a

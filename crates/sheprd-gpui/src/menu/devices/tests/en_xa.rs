@@ -59,10 +59,6 @@ fn the_ssh_form_shows_only_messages_at_each_step_under_en_xa() {
         recorder.take();
         view.update_in(cx, |view, window, cx| {
             view.open_add_device(window, cx);
-            // What this machine's network and SSH config hold is not drawn.
-            if let Some(setup) = &mut view.menu.device_setup {
-                setup.discovery = None;
-            }
         });
         draw(cx);
         let data: Vec<String> = sources().into_iter().chain(["default".into()]).collect();
@@ -117,9 +113,6 @@ fn the_cloud_panes_show_only_messages_under_en_xa() {
             view.update_in(cx, |view, window, cx| {
                 view.dismiss_menu(window, cx);
                 view.open_add_device(window, cx);
-                if let Some(setup) = &mut view.menu.device_setup {
-                    setup.discovery = None;
-                }
                 view.menu.page = Some(page);
             });
             draw(cx);

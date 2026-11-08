@@ -47,10 +47,8 @@ sheprd-remote-control.workspace         = true
 sheprd-updater.workspace        = true
 sheprd-usage.workspace          = true
 sheprd-vcs.workspace            = true
-if-addrs.workspace             = true
 image                          = { features = ["bmp", "tiff"], workspace = true }
 keepawake.workspace            = true
-mdns-sd.workspace              = true
 mermaid-rs-renderer.workspace  = true
 nucleo-matcher.workspace       = true
 percent-encoding.workspace     = true

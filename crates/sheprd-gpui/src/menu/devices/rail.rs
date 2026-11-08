@@ -13,7 +13,7 @@ pub(in crate::menu) const COMPACT_BELOW: f32 = 560.;
 /// The dialog's width when there is room: the rail and a form beside it.
 pub(in crate::menu) const WIDTH: f32 = 640.;
 /// The dialog's height, the same for every source so switching never
-/// resizes it: room for the SSH form with its nearby list. A form taller
+/// resizes it: room for the SSH form and setup prompts. A form taller
 /// than that scrolls inside.
 pub(in crate::menu) const HEIGHT: f32 = 620.;
 
@@ -111,8 +111,6 @@ impl Source {
 /// What a rail entry says about its source, at its trailing edge.
 enum State {
     None,
-    /// Hosts found nearby and not saved yet.
-    Nearby(usize),
     /// In use here: an account is configured, or a device was made.
     #[cfg(feature = "cloud")]
     Ready,
@@ -155,19 +153,9 @@ impl SheprdWindow {
         sources
     }
 
-    fn source_state(&self, source: Source, cx: &App) -> State {
+    fn source_state(source: Source) -> State {
         match source {
-            Source::Host => self
-                .menu
-                .device_setup
-                .as_ref()
-                .filter(|setup| setup.discovery.is_some())
-                .map(|setup| {
-                    let text = setup.fields[0].read(cx).text();
-                    self.device_completion(setup, text).unsaved
-                })
-                .filter(|count| *count > 0)
-                .map_or(State::None, State::Nearby),
+            Source::Host => State::None,
             Source::Wsl => State::None,
             // The rail lists only providers in use.
             #[cfg(feature = "cloud")]
@@ -402,17 +390,8 @@ impl SheprdWindow {
                         .size(px(14.))
                         .text_color(rgb(theme.foreground)),
                 );
-            let trailing = match self.source_state(source, cx) {
+            let trailing = match Self::source_state(source) {
                 State::None => None,
-                State::Nearby(count) => Some(
-                    div()
-                        .px(px(6.))
-                        .rounded_full()
-                        .bg(rgb(theme.active))
-                        .text_size(px(self.config.ui.size * 0.85))
-                        .text_color(rgb(theme.subtext()))
-                        .child(count.to_string()),
-                ),
                 #[cfg(feature = "cloud")]
                 State::Ready => Some(
                     div()

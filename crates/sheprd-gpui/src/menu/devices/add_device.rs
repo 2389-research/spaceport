@@ -1,7 +1,7 @@
 //! The Add Device dialog: its form, the host check and save that run off the
 //! UI thread, and the local workspace that carries a setup needing prompts.
 
-use super::{Page, discover::Discovery, setup};
+use super::{Page, setup};
 
 mod offer;
 
@@ -24,22 +24,11 @@ pub(in crate::menu) struct Setup {
     /// until the device is saved or the dialog closes.
     pub(super) claim: Option<setup::Claim>,
     pub(super) task: Option<Task<()>>,
-    /// The search for hosts to suggest, from when the form opens.
-    pub(super) discovery: Option<Discovery>,
-    /// The label a suggestion filled in, until the user edits it. Only that
-    /// label is replaced when another suggestion is chosen.
-    pub(super) suggested_label: Option<String>,
-    /// Clears `suggested_label` once the label field holds anything else, and
-    /// refilters the suggestions as the target changes.
+    /// Withdraws a pending offer when the target changes.
     pub(super) _edits: Vec<Subscription>,
-    /// The suggestion Up and Down moved to, by the names and addresses that
-    /// identify its machine, with the target text it was chosen for: typing
-    /// anything else drops it.
-    pub(super) highlight: Option<(String, Vec<String>)>,
     /// Why the last check or save failed. Each source of Add Device keeps
     /// its own, so a job finishing while another source shows stays here.
     pub(super) error: Option<String>,
-    pub(super) suggestion_scroll: ScrollHandle,
     /// Whether the host's key is checked; see `host_key_choice`.
     pub(super) host_keys: HostKeys,
 }
@@ -109,13 +98,6 @@ impl SheprdWindow {
             input
         });
         window.focus(&fields[0].read(cx).focus.clone(), cx);
-        let label_edits = cx.subscribe(&fields[1], |this, field, _: &Changed, cx| {
-            if let Some(setup) = &mut this.menu.device_setup
-                && setup.suggested_label.as_deref() != Some(field.read(cx).text())
-            {
-                setup.suggested_label = None;
-            }
-        });
         // An offer runs for the target that was checked, so changing the
         // target withdraws it: the next submit checks the new target.
         let target_edits = cx.subscribe(&fields[0], |this, field, _: &Changed, cx| {
@@ -134,16 +116,11 @@ impl SheprdWindow {
             step: Step::Form,
             claim: None,
             task: None,
-            discovery: None,
-            suggested_label: None,
-            _edits: vec![label_edits, target_edits],
-            highlight: None,
-            suggestion_scroll: ScrollHandle::new(),
+            _edits: vec![target_edits],
             error: None,
             host_keys: HostKeys::Verify,
         });
         self.menu.page = Some(Page::AddDevice);
-        self.start_device_discovery(cx);
     }
 
     /// Route a key to the Add Device form. Returns `false` when the key is
@@ -173,14 +150,6 @@ impl SheprdWindow {
         }
         let key = event.keystroke.key.as_str();
         let modifiers = event.keystroke.modifiers;
-        let in_target = form.fields[0].read(cx).focus.is_focused(window);
-        let plain = !(modifiers.shift || modifiers.platform || modifiers.control || modifiers.alt);
-        if in_target && plain && self.complete_device_target(key, window, cx) {
-            return true;
-        }
-        let Some(form) = &self.menu.device_setup else {
-            return false;
-        };
         match key {
             "tab" => {
                 let index = form
@@ -219,13 +188,6 @@ impl SheprdWindow {
         if let Step::SavedWarning(warning) = setup.step {
             return frame(self.render_device_saved_warning(warning, cx), cx);
         }
-        let ghost = matches!(setup.step, Step::Form)
-            .then(|| {
-                let text = setup.fields[0].read(cx).text().to_owned();
-                self.device_completion(setup, &text).ghost(&text)
-            })
-            .flatten();
-        setup.fields[0].update(cx, |field, cx| field.set_completion(ghost, cx));
         let mut body = div()
             .id("device-setup-body")
             .debug_selector(|| "device-setup-body".into())
@@ -242,14 +204,13 @@ impl SheprdWindow {
                     .text_color(rgb(theme.subtext()))
                     .child(fl!("add-device-intro")),
             );
-        for (index, (label, field)) in [
+        for (label, field) in [
             fl!("add-device-target"),
             fl!("add-device-label"),
             fl!("add-device-session"),
         ]
         .into_iter()
         .zip(&setup.fields)
-        .enumerate()
         {
             body = body.child(
                 div()
@@ -260,14 +221,6 @@ impl SheprdWindow {
                     .child(label)
                     .child(field.clone()),
             );
-            // Suggestions fill the target, so they sit right under it, and
-            // only while the form can still take one.
-            if index == 0
-                && matches!(setup.step, Step::Form)
-                && let Some(discovery) = &setup.discovery
-            {
-                body = body.child(self.render_device_suggestions(setup, discovery, cx));
-            }
         }
         body = body.child(self.render_host_key_choice(setup, cx));
         if let Some(error) = &setup.error {

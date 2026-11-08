@@ -1,4 +1,4 @@
-# Why adding, saving, removing, or discovering a device failed.
+# Why adding, saving, or removing a device failed.
 # $status is how Herdr's command exited, in the system's words; $detail is
 # what it printed.
 
@@ -20,5 +20,3 @@ error-devices-setup-state-directory = Sheprd has no state directory.
 error-devices-setup-paths = The setup paths must be UTF-8.
 error-devices-setup-windows = Setting up a device in a terminal is unavailable on Windows.
 error-devices-setup-timeout = Saving the device timed out
-error-devices-tailscale-json = Tailscale returned an unreadable status: { $error }
-error-devices-tailscale-timeout = Tailscale did not answer in time
