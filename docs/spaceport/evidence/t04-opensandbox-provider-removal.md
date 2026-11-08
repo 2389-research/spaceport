@@ -40,3 +40,14 @@ existing `block v0.1.6` future-compatibility notice.
 
 Native GUI and real provider network/service behavior were not run. T04 stays
 blocked on G-LINK while other excluded routes remain. A30 stays `not_run`.
+
+## Integrated branch verification
+
+After cherry-picking this cut onto `wip/spaceport-t00` at `33600841`, the
+default and all-feature `cargo +1.99.0 check --locked --all-targets -p
+sheprd-gpui` commands passed. The targeted `retired_opensandbox` catalog test
+passed 1/1. Source absence passed 2/2, the combined site suite passed 28/28,
+and `just format-check`, `just check-file-size`, `just check-sorted`, and
+`just check-i18n` passed. The package report was regenerated and its 21 tool
+tests passed. Cargo reported the existing `block v0.1.6` future compatibility
+notice. These checks do not cover native windows or provider network behavior.
