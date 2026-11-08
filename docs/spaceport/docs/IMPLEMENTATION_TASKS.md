@@ -74,7 +74,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T05 — Prove terminal and lifecycle parity
 
-Status: **not_started** · Prerequisites: T03
+Status: **in_progress** · Prerequisites: T03
 
 Local/remote Core terminal attach, input and window lifecycle through retained renderer; process survival proved.
 

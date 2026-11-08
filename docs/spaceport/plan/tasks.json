@@ -225,8 +225,8 @@
         "docs/05-verification.md"
       ],
       "deliverable": "Local/remote Core terminal attach, input and window lifecycle through retained renderer; process survival proved.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "in_progress",
+      "evidence": ["evidence/t05-core-lifecycle.md"],
       "must_close_gaps": []
     },
     {

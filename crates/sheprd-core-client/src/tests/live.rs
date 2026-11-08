@@ -14,6 +14,8 @@ use std::{
 };
 
 #[cfg(unix)]
+mod lifecycle;
+#[cfg(unix)]
 mod machines;
 
 struct Sandbox {
