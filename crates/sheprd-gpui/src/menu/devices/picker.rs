@@ -323,12 +323,6 @@ impl SheprdWindow {
             }
         }
         view = self.unfolded_sessions(view, &mut unfolded);
-        // Workspaces still being added: progress only, not selectable rows,
-        // so keyboard navigation keeps its indices.
-        #[cfg(feature = "cloud")]
-        {
-            view = self.cloud_job_rows(view);
-        }
         view = view.children(self.render_core_machine_catalog(cx));
         // The card stays put above the list, which scrolls on its own.
         div()

@@ -131,7 +131,6 @@ pub(crate) enum WorkspaceMenuAction {
     Orchestrator,
     /// Build the repository's sandbox images ahead of a dispatch.
     #[cfg(feature = "cloud")]
-    SandboxImages,
     /// Silence the workspace's notifications, or let them through again.
     /// Drawn as the toggle in the popover's header rather than as a row, and
     /// applied at once: the mute belongs to this client, never the daemon.
@@ -210,7 +209,6 @@ impl WorkspaceMenuAction {
             Self::FanOut => "icons/fan-out.svg",
             Self::Orchestrator => "icons/github.svg",
             #[cfg(feature = "cloud")]
-            Self::SandboxImages => "icons/cloud/container.svg",
             Self::Script(crate::worktree_scripts::ScriptKind::Setup) => "icons/refresh.svg",
             Self::Script(_) => "icons/play.svg",
             Self::Mute => crate::icons::MUTED,

@@ -1,11 +1,9 @@
-//! The setup script new cloud devices run (see `crate::cloud_setup`): a card
-//! choosing the agents every provider installs, with a preview of the user's
-//! own lines, and the switch each provider's card shows to skip it once.
+//! The shared cloud setup script settings card: selected agents and the
+//! user's own lines for an explicit rerun on an existing device.
 // i18n: migrated
 
 use super::super::SettingsWindow;
 use crate::{
-    cloud::CloudProvider,
     cloud_setup::Agent,
     config::{Config, corners},
     i18n::fl,
@@ -16,45 +14,6 @@ use gpui::{prelude::*, *};
 const PREVIEW_LINES: usize = 6;
 
 impl SettingsWindow {
-    /// The script a new device from `provider` runs, when the card's switch
-    /// leaves it on. A loaded config already composed every provider's.
-    pub(super) fn cloud_setup_script(&self, provider: CloudProvider, run: bool) -> Option<String> {
-        run.then(|| self.config.cloud.script(provider).ok().flatten())
-            .flatten()
-    }
-
-    /// The switch that runs the setup script on the next device a provider's
-    /// card makes; nothing when no script is configured for it.
-    pub(super) fn cloud_setup_switch(
-        &self,
-        provider: CloudProvider,
-        on: bool,
-        enabled: bool,
-        toggle: impl Fn(&mut Self) + 'static,
-        cx: &mut Context<Self>,
-    ) -> Option<Div> {
-        self.cloud_setup_script(provider, true)?;
-        let id = format!("cloud-{}-setup", provider.key());
-        Some(
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(4.))
-                .child(
-                    self.control_switch(id, fl!("settings-cloud-setup-run"), on, enabled)
-                        .when(enabled, |row| {
-                            row.on_click(cx.listener(move |this, _, _, cx| {
-                                toggle(this);
-                                cx.notify();
-                            }))
-                        }),
-                )
-                .child(
-                    self.control_note(crate::cloud_setup::summary(&self.config.cloud, provider)),
-                ),
-        )
-    }
-
     /// The card choosing what every new cloud device runs.
     pub(super) fn render_cloud_setup(&self, cx: &mut Context<Self>) -> Div {
         let picked = self.config.cloud.shared_agents();

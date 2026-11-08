@@ -2,7 +2,7 @@
 //! and the host chosen. The ranking follows the samples only until they
 //! settle, so the tiles do not reshuffle under the pointer.
 
-use super::{Candidate, Destination, Sandbox, rank, spread};
+use super::{Candidate, Destination, rank, spread};
 use std::time::{Duration, Instant};
 
 /// Hosts shown as tiles; the rest are listed behind the "Other" field.
@@ -34,10 +34,6 @@ pub(crate) struct Picker {
     chosen: String,
     /// The host list open below a field or lane, if any.
     open: Option<Slot>,
-    /// Providers that can make a new machine for the dialog.
-    sandboxes: Vec<Sandbox>,
-    /// The dialog's choice of a new machine instead of a host.
-    sandbox: Option<Sandbox>,
 }
 
 impl Picker {
@@ -50,41 +46,11 @@ impl Picker {
             opened: now,
             chosen: current.to_owned(),
             open: None,
-            sandboxes: Vec::new(),
-            sandbox: None,
         }
-    }
-
-    /// Offer a new machine from each of `sandboxes` beside the hosts.
-    pub(crate) fn offer_sandboxes(&mut self, sandboxes: Vec<Sandbox>) {
-        if self
-            .sandbox
-            .is_some_and(|sandbox| !sandboxes.contains(&sandbox))
-        {
-            self.sandbox = None;
-        }
-        self.sandboxes = sandboxes;
-    }
-
-    pub(crate) fn sandboxes(&self) -> &[Sandbox] {
-        &self.sandboxes
-    }
-
-    /// Choose a new machine from `sandbox`, if it is offered.
-    pub(crate) fn choose_sandbox(&mut self, sandbox: Sandbox) -> bool {
-        self.open = None;
-        if !self.sandboxes.contains(&sandbox) || self.sandbox == Some(sandbox) {
-            return false;
-        }
-        self.sandbox = Some(sandbox);
-        true
     }
 
     /// Where the dialog's choice sends the new checkout.
     pub(crate) fn destination(&self) -> Destination<'_> {
-        if let Some(sandbox) = self.sandbox {
-            return Destination::Sandbox(sandbox);
-        }
         self.dispatched()
             .map_or(Destination::Here, Destination::Host)
     }
@@ -167,10 +133,9 @@ impl Picker {
         self.candidates.iter().find(|c| c.current)
     }
 
-    /// Whether there is any other host, or a new machine, to choose: one
-    /// host alone is no choice.
+    /// One host alone is no choice.
     pub(crate) fn offers_choice(&self) -> bool {
-        !self.sandboxes.is_empty() || self.candidates.iter().filter(|c| c.online).count() > 1
+        self.candidates.iter().filter(|c| c.online).count() > 1
     }
 
     pub(crate) fn chosen(&self) -> Option<&Candidate> {
@@ -180,14 +145,12 @@ impl Picker {
     /// The chosen host when it is not the current one and no new machine
     /// was chosen instead.
     pub(crate) fn dispatched(&self) -> Option<&Candidate> {
-        self.chosen()
-            .filter(|chosen| !chosen.current && self.sandbox.is_none())
+        self.chosen().filter(|chosen| !chosen.current)
     }
 
-    /// The host the dialog's choice shows as picked: none while a new
-    /// machine is.
+    /// The host the dialog's choice shows as picked.
     pub(crate) fn picked(&self) -> Option<&Candidate> {
-        self.chosen().filter(|_| self.sandbox.is_none())
+        self.chosen()
     }
 
     /// Choose `endpoint_id`, if it is online. Closes any open list.
@@ -196,8 +159,7 @@ impl Picker {
         if !self.get(endpoint_id).is_some_and(|c| c.online) {
             return false;
         }
-        let changed = self.chosen != endpoint_id || self.sandbox.is_some();
-        self.sandbox = None;
+        let changed = self.chosen != endpoint_id;
         endpoint_id.clone_into(&mut self.chosen);
         changed
     }

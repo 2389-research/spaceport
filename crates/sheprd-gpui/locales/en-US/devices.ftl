@@ -32,9 +32,6 @@ devices-add = Add Device…
 # The chip on a device row that unfolds its sessions. $device is the device's name.
 devices-sessions-toggle = Sessions on { $device }
 # The heading over cloud machines still being created.
-devices-adding = ADDING
-
-# The activity card above the picker's list: agents over the last two hours.
 devices-activity-heading = AGENT ACTIVITY · 2 H
 # Opens the Devices overview.
 devices-activity-overview = Overview

@@ -226,11 +226,9 @@ struct SettingsWindow {
     cloud_tab: crate::cloud::CloudProvider,
     /// The main window's finished cloud jobs when the cards last read them.
     #[cfg(feature = "cloud")]
-    cloud_jobs_seen: u64,
     /// The cloud jobs' revision last drawn, so a job's progress redraws
     /// Cloud devices without every change to the main window doing so.
     #[cfg(feature = "cloud")]
-    cloud_jobs_drawn: u64,
     /// The main window's cloud devices when the cards last read them, so a
     /// device removed from the sidebar leaves Settings too.
     #[cfg(feature = "cloud")]
@@ -239,7 +237,6 @@ struct SettingsWindow {
     container_card: Option<cloud_devices::ContainerCard>,
     /// Sandbox images, for the cards of providers that hold them.
     #[cfg(feature = "container")]
-    sandbox_images: cloud_devices::SandboxImages,
     theme_loading: bool,
     theme_waiting: bool,
     theme_light: bool,
@@ -356,15 +353,12 @@ impl SettingsWindow {
             #[cfg(feature = "cloud")]
             cloud_tab: cloud_devices::first_tab(),
             #[cfg(feature = "cloud")]
-            cloud_jobs_seen: 0,
             #[cfg(feature = "cloud")]
-            cloud_jobs_drawn: 0,
             #[cfg(feature = "cloud")]
             cloud_devices_seen: 0,
             #[cfg(feature = "container")]
             container_card: None,
             #[cfg(feature = "container")]
-            sandbox_images: Default::default(),
             theme_loading: false,
             theme_waiting: false,
             theme_light: false,

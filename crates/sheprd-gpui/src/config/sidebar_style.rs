@@ -90,10 +90,10 @@ impl DeviceFooter {
         }
     }
 
-    pub(crate) fn shown(self, devices: usize, adding: usize) -> bool {
+    pub(crate) fn shown(self, devices: usize) -> bool {
         match self {
             Self::Always => true,
-            Self::Auto => devices > 1 || adding > 0,
+            Self::Auto => devices > 1,
             Self::Never => false,
         }
     }

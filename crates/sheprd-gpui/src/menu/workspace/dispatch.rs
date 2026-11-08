@@ -1,5 +1,5 @@
 //! Submitting a new worktree or workspace dialog whose host picker chose
-//! another host, or a new machine: the work runs as a dispatch job instead of
+//! another host: the work runs as a dispatch job instead of
 //! a daemon request.
 
 use super::chosen_label;
@@ -25,7 +25,6 @@ impl SheprdWindow {
         match self.menu.dispatch.as_ref()?.destination() {
             Destination::Here => None,
             Destination::Host(host) => Some(Target::Host(host.endpoint_id.clone())),
-            Destination::Sandbox(sandbox) => Some(Target::Sandbox(sandbox)),
         }
     }
 
@@ -37,10 +36,8 @@ impl SheprdWindow {
         target: &Target,
         name: Option<String>,
     ) -> crate::Result<()> {
-        let endpoint_id = match target {
-            Target::Host(endpoint_id) => endpoint_id.as_str(),
-            Target::Sandbox(sandbox) => return self.submit_sandboxed(action, *sandbox, name),
-        };
+        let Target::Host(endpoint_id) = target;
+        let endpoint_id = endpoint_id.as_str();
         if self.dispatch_job.is_some() {
             return Err(crate::dispatch::Error::Busy.into());
         }
@@ -109,45 +106,5 @@ impl SheprdWindow {
                 label: chosen_label(text, self.menu.suggested_name.as_deref()).map(str::to_owned),
             }
         })
-    }
-
-    /// Start making a new machine from `sandbox`, then creating there.
-    fn submit_sandboxed(
-        &mut self,
-        action: WorkspaceAction,
-        sandbox: crate::dispatch::Sandbox,
-        name: Option<String>,
-    ) -> crate::Result<()> {
-        if self.dispatch_job.is_some() {
-            return Err(crate::dispatch::Error::Busy.into());
-        }
-        let target = self
-            .menu
-            .target
-            .as_ref()
-            .ok_or(crate::Error::StaleWorkspace)?;
-        let tree = target
-            .worktree
-            .as_ref()
-            .ok_or(crate::Error::WorkspaceRepositoryChanged)?;
-        let origin = self
-            .dispatch_origin(&target.id, &tree.key, &tree.label)
-            .ok_or_else(|| {
-                crate::dispatch::Error::HostUnavailable(
-                    self.endpoints[self.selected_endpoint].label.clone(),
-                )
-            })?;
-        let then = self.dispatch_then(action, name)?;
-        #[cfg(feature = "cloud")]
-        {
-            self.dispatch_job = Some(Job::sandboxed(sandbox, origin, then)?);
-            self.menu.error = None;
-            Ok(())
-        }
-        #[cfg(not(feature = "cloud"))]
-        {
-            let _ = (origin, then);
-            match sandbox {}
-        }
     }
 }

@@ -18,9 +18,7 @@ mod naming;
 mod pull_requests;
 mod removed_checkpoints;
 #[cfg(all(feature = "container", any(target_os = "linux", target_os = "macos")))]
-mod sandbox_dispatch;
 #[cfg(all(feature = "container", any(target_os = "linux", target_os = "macos")))]
-mod sandbox_images;
 mod scripts;
 mod targets;
 mod tiles;

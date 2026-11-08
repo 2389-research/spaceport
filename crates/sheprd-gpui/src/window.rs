@@ -141,9 +141,7 @@ pub(crate) struct SheprdWindow {
     pub(crate) chats: crate::chat::Chats,
     /// The chrome region whose controls take Tab; see `chrome_focus`.
     pub(crate) chrome_region: Option<chrome_focus::Region>,
-    /// Cloud machines being added; see `cloud::Jobs`.
     #[cfg(feature = "cloud")]
-    pub(crate) cloud_jobs: crate::cloud::Jobs,
     /// A new cloud device's setup script whose tab is being opened.
     #[cfg(feature = "cloud")]
     pub(crate) cloud_setup: Option<crate::cloud_setup::Running>,
@@ -294,7 +292,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) resize_mode: bool,
     /// Sandbox images this window was asked to build ahead of a dispatch.
     #[cfg(feature = "cloud")]
-    pub(crate) sandbox_image_builds: crate::cloud::image::Prebuilds,
     pub(crate) scrollbar_drag: Option<mouse::ScrollbarDrag>,
     pub(crate) selected_endpoint: usize,
     pub(crate) selected_generation: u64,

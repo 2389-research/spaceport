@@ -10,7 +10,6 @@ mod connect;
 mod engine;
 mod error;
 pub mod idle;
-pub mod image;
 pub mod lifecycle;
 mod machine;
 mod settings;

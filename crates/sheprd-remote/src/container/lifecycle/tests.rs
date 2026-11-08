@@ -172,7 +172,7 @@ fn a_reconnect_waits_for_a_stop_queued_behind_an_earlier_start() {
 }
 
 #[test]
-fn adding_a_stopped_container_back_clears_its_stop() {
+fn reconnecting_a_stopped_container_clears_its_stop() {
     let target = ConnectTarget::Cloud {
         provider: CloudProvider::Container,
         account: "docker".into(),
@@ -182,7 +182,7 @@ fn adding_a_stopped_container_back_clears_its_stop() {
     };
     stop(Engine::Docker, "herdr-test-adopt-after-stop", || Ok(())).unwrap();
     assert!(suspended(&target));
-    resume_device(Engine::Docker, "herdr-test-adopt-after-stop");
+    resume(&target);
     assert!(!suspended(&target));
     start(Engine::Docker, "herdr-test-adopt-after-stop", || Ok(())).unwrap();
 }

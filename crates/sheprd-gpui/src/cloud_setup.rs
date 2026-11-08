@@ -1,4 +1,4 @@
-//! The setup script a new cloud device runs the first time it connects: the
+//! The setup script an existing cloud device can rerun on request: the
 //! coding agents the user picked (see [`agents`]), then their own script, both
 //! from `[cloud]` in this client's config or a provider's table under it.
 //!
@@ -66,35 +66,6 @@ pub(crate) fn compose(
         return Err(Error::ScriptTooLong { limit: MAX_SCRIPT });
     }
     Ok(Some(script))
-}
-
-/// What a provider's next device installs and runs, for the switch that
-/// runs it.
-#[cfg(feature = "cloud")]
-pub(crate) fn summary(
-    cloud: &crate::config::CloudConfig,
-    provider: sheprd_client::CloudProvider,
-) -> String {
-    let agents: Vec<&str> = cloud
-        .agents(provider)
-        .into_iter()
-        .map(Agent::label)
-        .collect();
-    let lines = cloud
-        .custom(provider)
-        .map_or(0, |script| script.trim().lines().count());
-    // Agent names are product names, listed as they are.
-    let agents = agents.join(", ");
-    match (agents.is_empty(), lines) {
-        (true, 0) => crate::i18n::fl!("cloud-setup-summary-nothing"),
-        (true, _) => crate::i18n::fl!("cloud-setup-summary-runs", lines = lines),
-        (false, 0) => crate::i18n::fl!("cloud-setup-summary-installs", agents = agents),
-        (false, _) => crate::i18n::fl!(
-            "cloud-setup-summary-installs-runs",
-            agents = agents,
-            lines = lines
-        ),
-    }
 }
 
 #[cfg(test)]

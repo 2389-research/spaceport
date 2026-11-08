@@ -448,133 +448,19 @@ how the daemon's processes are judged; that needs a change to how Herdr
 launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
-Settings > **Cloud devices** holds accounts with providers that create machines
-to use as devices: Container.
-Cloud devices are stored in the GUI's `cloud-devices.json` state file. Each
-entry names its provider, so adding another provider needs no new file.
+Settings > **Cloud devices** still shows saved Container devices during the
+Spaceport migration. It can read engine state and save the engine and idle
+stop preference. New Container creation, adoption, dispatch provisioning and
+sandbox image builds are removed. The saved-device connector can still start
+a stopped container when asked to connect, and the Stop, Remove and idle
+paths remain pending the full T04/RM-CLOUD cut. No migration step deletes a
+container, its volume, an image, or a saved row.
 
-### Containers (Docker or Podman)
-
-Settings > **Cloud devices** > **Container** makes containers on this
-computer's Docker or Podman engine and uses each as a device: a private Linux
-machine with its own Herdr daemon, so agents in it work on their own checkout
-(Teleport, Fan-out, and dispatch reach it like any other device) without seeing
-this computer's files or each other's. The card edits `[container]` (engine,
-image, CPUs, memory) and shows which engine is running. **Create container**
-pulls the image if needed, pins it to its digest, and creates a container with
-a generated name, its own `<name>-home` volume, an init process,
-`no-new-privileges`, and CPU, memory, and process limits; agents run as an
-unprivileged `herdr` user. It then installs Herdr when the **Install Herdr**
-switch is on (the default) and saves the device; a failure removes whatever
-was made. A connection starts a stopped container and runs Herdr's bridge
-through `docker exec` or `podman exec`. **Stop** in the card stops a container
-and keeps its files, and no window reconnects to it on its own until you
-reconnect the device yourself or restart the app. **Remove** there only
-forgets a device; deleting a container with its volume is **Remove device…**
-in its sidebar menu, which checks it for unpushed work first.
-
-`[container] auto_stop`, such as `30m`, stops a running container once none of
-its agents has worked or waited for input that long. A closed window does not
-count: agents keep working without one, so each minute the container's own
-Herdr lists its agents, and one working, waiting for input, or in a state
-Herdr cannot tell keeps the container, as does a list that cannot be read. A
-container the app has not watched since launch starts its timeout rather than
-stopping. Other processes, such as a dev server in a plain shell, do not
-count, so leave `auto_stop` unset where those matter. Its files stay in its
-volume; as with **Stop**, reconnecting the device starts it again.
-`[container] max_containers` (8 unless set) refuses a new container, from
-Settings or a dispatch, once that many are saved or being made. A container is
-never created over, or deleted from, a name the app did not label as that
-device's. A container the app made but has no device for, such as one left
-when the app quit while making it, is listed under **Not saved here** with
-**Add**, which starts it, installs Herdr when it is missing and the **Install
-Herdr** switch is on, and saves it as a device again.
-
-The image needs `curl` to install Herdr and `git` for checkouts; the default,
-`buildpack-deps:bookworm`, has both and common build tools. Containers share
-this computer's kernel: they keep honest agents apart, not hostile code, for
-which a separately managed VM is the better choice. Containers are
-unavailable on Windows, like every cloud device. How sandboxes fit together, and which
-providers were evaluated, is in [docs/sandbox.md](../../docs/sandbox.md).
-
-### Sandbox images
-
-A project can describe the machine its agents need, so a new container for it
-starts with its tools and Herdr already installed.
-Commit a Dockerfile as `.herdr/sandbox/Dockerfile`, with that folder as its
-build context:
-
-```dockerfile
-FROM rust:1.90-bookworm
-RUN apt-get update && apt-get install -y --no-install-recommends ripgrep
-COPY setup.sh /usr/local/bin/project-setup
-```
-
-Without one, a dev container is used: `.devcontainer/devcontainer.json` (or
-`.devcontainer.json`) and the Dockerfile and context its `build` names, or the
-`image` it names. Only the image is built: dev container features, lifecycle
-scripts, and Docker Compose definitions are not.
-
-Sheprd adds a last layer that installs Herdr in `/usr/local/bin` (the image
-needs `curl`), then gives the image back the user its last stage chose. Each
-image is filed by project, so clones and worktrees of one repository share
-it, and by provider, under a key hashed from everything the build reads: the
-Dockerfile, the files its `COPY` and `ADD` lines name, `.dockerignore`, and
-the platform. Files are read from the checkout's host with Git, so ignored
-files and symbolic links never leave it. While the key matches, new machines
-reuse the image; any change builds a new one, which replaces the old. A base
-image tag that moves upstream does not change the key: pin a digest, or use
-**Reset**.
-
-A dispatch to a new container or sandbox builds the image first when it is
-missing, and the dialog shows the build's steps. **Build sandbox images** in a
-workspace's menu builds ahead, for every provider you have a device from that
-holds images. Settings > **Cloud devices** > **Container** lists
-each project's image there with its progress while it builds, **Log**,
-**Build now**, and **Reset**, which deletes the image so the next machine
-builds it afresh. Builds keep running when Settings closes.
-
-- **Containers** build with `docker build` or `podman build` on this
-  computer, tagged `herdr-<project>:<key>` and labelled
-  `dev.herdr-gpui.image`; only labelled images are ever deleted.
-
-### Setup scripts for new cloud devices
-
-A new cloud device can install coding agents and run your own setup the first
-time it connects. Settings > **Cloud devices** > **New device setup** has one
-switch per agent (Claude Code, Codex, Gemini CLI, OpenCode), saved to
-`[cloud] agents`, and previews your own lines from `[cloud] setup`, which
-**Edit setup script in config file** opens:
-
-```toml
-[cloud]
-agents = ["claude", "opencode"]
-setup = """
-git config --global pull.rebase true
-"""
-
-# Replaces either key for one provider; an empty list or script turns it off.
-[cloud.container]
-agents = []
-```
-
-The script is the agents' installs, in that order and each skipped when the
-tool is already on the machine, then your lines, run with `sh -e` so the first
-failing command stops it. Claude Code and OpenCode use their official
-installers, downloaded before they run so a failed download stops the script;
-Codex and Gemini CLI need `npm` on the device and
-are skipped with a note when it is missing (a system Node may also need root
-for `npm install -g`). Open a new tab afterwards to pick up PATH changes.
-
-Each provider's form has a **Run the setup script when it connects** switch,
-shown when a script is configured. When the device is ready the script
-waits, for up to 30 minutes, until a window shows that device, then runs in a
-new, focused `setup` tab of the device's first workspace, like a worktree's
-setup script; nothing runs in the background. The script is yours, from this
-computer's config, so no trust question is asked. Waiting scripts are kept in
-memory only, at most eight at once; one that never ran, or a later run, is
-started from **Run setup script** in the device's sidebar menu.
-Reconnecting never runs it again by itself.
+The old `[container]` creation keys remain in the config file when Settings
+saves the remaining fields. The explicit **Run setup script** action on an
+existing device still uses `[cloud]` agents and setup text. It runs in a
+focused setup tab for the selected saved device.
+The historical sandbox design is in [docs/sandbox.md](../../docs/sandbox.md).
 
 Each provider is a Cargo feature of `herdr-gpui`; `container` is on by default.
 A build with `--no-default-features` has no Cloud
@@ -2104,19 +1990,6 @@ repository's setup script there, asking for trust as a local creation does.
 Setups of several such worktrees wait their turn; one whose host is not shown
 within two minutes is given up on, with a warning. A
 new workspace opens the repository's main checkout on that host.
-
-Once you have a container device (see [Containers](#containers-docker-or-podman)),
-the dialogs also offer a **New container** tile, even with one
-host connected. A container starts from the repository's
-[sandbox image](#sandbox-images) when it has a recipe, building it first if
-needed.
-Creating with it makes a container with the `[container]` settings and Herdr
-installed, starts Herdr's server in it, saves it as a device, then creates the
-checkout there as above, cloning the repository first; the dialog shows each
-step. The container stays a device if a later step fails, so you can retry on
-it or remove it. It runs the cloud setup script once it is shown, like one made
-in Settings. Fan-out lanes are not offered new containers yet: a new container
-has no signed-in agent to start.
 
 The fan-out dialog offers Spread agents across hosts. Each lane then goes to
 the host with the most room left, a lane counting as a core, and its host chip

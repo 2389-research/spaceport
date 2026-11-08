@@ -665,7 +665,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         devices_overview: Default::default(),
         port_forwards: Default::default(),
         #[cfg(feature = "cloud")]
-        cloud_jobs: Default::default(),
         #[cfg(feature = "cloud")]
         cloud_setup: None,
         listening_ports: Default::default(),
@@ -723,7 +722,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         links: Default::default(),
         terminal_mouse: None,
         #[cfg(feature = "cloud")]
-        sandbox_image_builds: Default::default(),
         scrollbar_drag: None,
         split_drag: None,
         split_cursor: None,

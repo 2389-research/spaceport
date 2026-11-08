@@ -12,17 +12,11 @@ fn data() -> Vec<String> {
     let names = CloudProvider::ALL
         .iter()
         .map(|&provider| crate::cloud::name(provider));
-    let mut data: Vec<String> = names
+    let data: Vec<String> = names
         .clone()
         .map(str::to_owned)
         .chain(names.map(str::to_uppercase))
         .collect();
-    #[cfg(feature = "container")]
-    data.extend([
-        crate::container::setup::DEFAULT_IMAGE.into(),
-        crate::container::setup::DEFAULT_CPUS.into(),
-        crate::container::setup::DEFAULT_MEMORY.into(),
-    ]);
     data
 }
 

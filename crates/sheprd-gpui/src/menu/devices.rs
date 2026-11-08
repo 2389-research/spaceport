@@ -134,14 +134,6 @@ impl SheprdWindow {
         None
     }
 
-    /// How many cloud machines are still being added.
-    fn cloud_jobs_pending(&self) -> usize {
-        #[cfg(feature = "cloud")]
-        return self.cloud_jobs.len();
-        #[cfg(not(feature = "cloud"))]
-        0
-    }
-
     pub(crate) fn device_visible(&self, id: &str) -> bool {
         self.device_filter.shows(id) && self.device_tag_visible(id)
     }
@@ -188,7 +180,7 @@ impl SheprdWindow {
         self.config
             .sidebar_style
             .device_footer
-            .shown(self.endpoints.len(), self.cloud_jobs_pending())
+            .shown(self.endpoints.len())
     }
 
     /// Where the Sessions shortcut opens the picker while the footer is
@@ -282,57 +274,30 @@ impl SheprdWindow {
                     .rounded(px(crate::config::corners::CONTROL))
                     .cursor_pointer()
                     .hover(|s| s.bg(rgb(self.theme.active)))
-                    .child(
-                        div()
-                            .relative()
-                            .flex_none()
-                            .map(|icon| {
-                                if bar {
-                                    icon.child(
-                                        div()
-                                            .debug_selector(|| "device-footer-initials".into())
-                                            .size(px(22.))
-                                            .rounded_full()
-                                            .flex()
-                                            .items_center()
-                                            .justify_center()
-                                            .bg(rgb(self.theme.active))
-                                            .text_size(px(10.))
-                                            .font_weight(FontWeight::SEMIBOLD)
-                                            .child(initials),
-                                    )
-                                } else {
-                                    icon.child(
-                                        svg()
-                                            .path("icons/devices.svg")
-                                            .size(px(16.))
-                                            .text_color(rgb(self.theme.foreground)),
-                                    )
-                                }
-                            })
-                            // How many cloud machines are still being added,
-                            // on the icon's corner so the label keeps its room.
-                            .when(self.cloud_jobs_pending() > 0, |icon| {
-                                icon.child(
-                                    div()
-                                        .debug_selector(|| "device-footer-adding".into())
-                                        .absolute()
-                                        .top(px(-6.))
-                                        .right(px(-8.))
-                                        .min_w(px(13.))
-                                        .h(px(13.))
-                                        .px(px(3.))
-                                        .rounded_full()
-                                        .flex()
-                                        .items_center()
-                                        .justify_center()
-                                        .text_size(px(9.))
-                                        .bg(colors::accent(&self.theme))
-                                        .text_color(rgb(self.theme.background))
-                                        .child(self.cloud_jobs_pending().to_string()),
-                                )
-                            }),
-                    )
+                    .child(div().relative().flex_none().map(|icon| {
+                        if bar {
+                            icon.child(
+                                div()
+                                    .debug_selector(|| "device-footer-initials".into())
+                                    .size(px(22.))
+                                    .rounded_full()
+                                    .flex()
+                                    .items_center()
+                                    .justify_center()
+                                    .bg(rgb(self.theme.active))
+                                    .text_size(px(10.))
+                                    .font_weight(FontWeight::SEMIBOLD)
+                                    .child(initials),
+                            )
+                        } else {
+                            icon.child(
+                                svg()
+                                    .path("icons/devices.svg")
+                                    .size(px(16.))
+                                    .text_color(rgb(self.theme.foreground)),
+                            )
+                        }
+                    }))
                     .child(div().flex_1().min_w_0().truncate().child(label.to_owned()))
                     .when(bar && hosts > 1, |picker| {
                         picker.child(
@@ -415,56 +380,6 @@ impl SheprdWindow {
                         })),
                 )
             })
-    }
-
-    /// Machines still being added: progress only, not selectable rows, so
-    /// keyboard navigation keeps its indices.
-    #[cfg(feature = "cloud")]
-    fn cloud_job_rows(&self, mut view: Stateful<Div>) -> Stateful<Div> {
-        if !self.cloud_jobs.is_empty() {
-            view = view.child(
-                div()
-                    .p(px(8.))
-                    .text_color(rgb(self.theme.muted))
-                    .child(fl!("devices-adding")),
-            );
-        }
-        for (index, provision) in self.cloud_jobs.iter().enumerate() {
-            view = view.child(
-                div()
-                    .debug_selector(move || format!("device-adding-{index}"))
-                    .p(px(8.))
-                    .flex_none()
-                    .flex()
-                    .items_center()
-                    .gap(px(8.))
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .child(div().truncate().child(provision.name.clone()))
-                            .child(
-                                div()
-                                    .truncate()
-                                    .text_size(px(self.config.ui.size * 0.85))
-                                    .text_color(rgb(self.theme.muted))
-                                    .child(format!(
-                                        "{} · {}",
-                                        crate::cloud::name(provision.provider),
-                                        provision.status
-                                    )),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .size(px(7.))
-                            .flex_none()
-                            .rounded_full()
-                            .bg(colors::accent(&self.theme)),
-                    ),
-            );
-        }
-        view
     }
 
     /// Shared by the picker and overview, including isolated-window guards.

@@ -61,9 +61,6 @@ impl ContainerConfig {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ContainerFields {
     pub engine: String,
-    pub image: String,
-    pub cpus: String,
-    pub memory: String,
     pub auto_stop: String,
 }
 
@@ -73,21 +70,12 @@ impl ContainerFields {
         let text = |value: &Option<String>| value.clone().unwrap_or_default();
         Self {
             engine: text(&config.engine),
-            image: text(&config.image),
-            cpus: text(&config.cpus),
-            memory: text(&config.memory),
             auto_stop: text(&config.auto_stop),
         }
     }
 
-    pub fn entries(&self) -> [(&'static str, &str); 5] {
-        [
-            ("engine", &self.engine),
-            ("image", &self.image),
-            ("cpus", &self.cpus),
-            ("memory", &self.memory),
-            ("auto_stop", &self.auto_stop),
-        ]
+    pub fn entries(&self) -> [(&'static str, &str); 2] {
+        [("engine", &self.engine), ("auto_stop", &self.auto_stop)]
     }
 
     /// The checks loading applies, so a save cannot leave a config that then
@@ -99,9 +87,6 @@ impl ContainerFields {
         };
         ContainerConfig {
             engine: value(&self.engine),
-            image: value(&self.image),
-            cpus: value(&self.cpus),
-            memory: value(&self.memory),
             auto_stop: value(&self.auto_stop),
             ..existing.clone()
         }

@@ -90,25 +90,6 @@ impl CloudConfig {
         self.script_with(self.table(provider))
     }
 
-    /// The agents `provider` installs, for its card's summary.
-    pub(crate) fn agents(&self, provider: sheprd_client::CloudProvider) -> Vec<Agent> {
-        known(
-            self.table(provider)
-                .agents
-                .as_deref()
-                .or(self.agents.as_deref()),
-        )
-    }
-
-    /// The user's own lines `provider` runs after its agents.
-    pub(crate) fn custom(&self, provider: sheprd_client::CloudProvider) -> Option<&str> {
-        self.table(provider)
-            .setup
-            .as_deref()
-            .or(self.setup.as_deref())
-            .filter(|script| !script.trim().is_empty())
-    }
-
     fn table(&self, provider: sheprd_client::CloudProvider) -> &CloudSetup {
         const NONE: &CloudSetup = &CloudSetup {
             agents: None,

@@ -6,14 +6,10 @@
 
 #[cfg(feature = "container")]
 mod container;
-#[cfg(feature = "container")]
-mod images;
 mod setup;
 
 #[cfg(feature = "container")]
 pub(super) use container::ContainerCard;
-#[cfg(feature = "container")]
-pub(super) use images::SandboxImages;
 
 use super::SettingsWindow;
 use crate::direction::Logical;
@@ -74,22 +70,18 @@ fn input(
     input
 }
 
-/// A field's placeholder: a message, or a value shown as it is, such as a
-/// default URL or image.
+/// A field's placeholder message.
 #[cfg(feature = "container")]
 #[derive(Clone, Copy, Debug)]
 enum Hint {
     Message(&'static str),
-    Value(&'static str),
 }
 
 #[cfg(feature = "container")]
 impl Hint {
     fn text(self) -> String {
-        match self {
-            Self::Message(id) => crate::i18n::message(id, &[]),
-            Self::Value(value) => value.to_owned(),
-        }
+        let Self::Message(id) = self;
+        crate::i18n::message(id, &[])
     }
 }
 
@@ -154,8 +146,7 @@ impl SettingsWindow {
         }
     }
 
-    /// A cloud job finishing in the main window may have saved a device, so
-    /// the cards read the device list and account again.
+    /// Keep the cards in sync with the window's saved device list.
     pub(super) fn cloud_source_changed(
         &mut self,
         source: &Entity<crate::SheprdWindow>,
@@ -163,23 +154,10 @@ impl SettingsWindow {
     ) {
         let window = source.read(cx);
         let devices = cloud_devices(window);
-        let jobs = &window.cloud_jobs;
-        let (finished, revision) = (jobs.finished(), jobs.revision());
         if devices != self.cloud_devices_seen {
             self.cloud_devices_seen = devices;
             self.cloud_config_changed(cx);
         }
-        if revision != self.cloud_jobs_drawn {
-            self.cloud_jobs_drawn = revision;
-            if self.section == super::Section::CloudDevices {
-                cx.notify();
-            }
-        }
-        if finished == self.cloud_jobs_seen {
-            return;
-        }
-        self.cloud_jobs_seen = finished;
-        self.cloud_config_changed(cx);
     }
 
     fn cloud_tabs(&self, cx: &mut Context<Self>) -> Div {

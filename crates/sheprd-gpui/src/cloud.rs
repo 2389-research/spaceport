@@ -1,14 +1,9 @@
 //! Cloud machines as devices: `sheprd_remote::cloud`, plus what the window
-//! drives here: the background jobs that add machines with their progress
-//! and toasts, and the sandbox image builds.
+//! drives here: existing device reads and idle checks.
 // i18n: migrated
 
-pub(crate) mod image;
-mod jobs;
-pub(crate) mod status;
 pub(crate) mod worker;
 
-pub(crate) use jobs::Jobs;
 pub(crate) use sheprd_remote::cloud::*;
 
 /// Stop idle containers. Each reads its table as the first frame does, with no

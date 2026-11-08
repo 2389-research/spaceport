@@ -224,52 +224,6 @@ fn running_setup_again_needs_a_cloud_device_and_a_script(cx: &mut gpui::TestAppC
 }
 
 #[gpui::test]
-fn a_finished_job_queues_its_script_and_a_failed_one_does_not(cx: &mut gpui::TestAppContext) {
-    if crate::cloud::unavailable().is_some() {
-        return;
-    }
-    let (view, cx) = cx.add_window_view(fixture_window);
-    let device = |id: &str| crate::cloud::SavedDevice {
-        provider: provider(),
-        id: id.into(),
-        label: format!("Box {id}"),
-        account: "https://cloud.example.com".into(),
-        machine: id.into(),
-        session: "default".into(),
-        enabled: true,
-    };
-    cx.update(|_, cx| {
-        view.update(cx, |view, cx| {
-            let (made, plain) = (device("made"), device("plain"));
-            for (name, saved, script) in [
-                ("made", Ok(made), Some("echo made".to_owned())),
-                ("plain", Ok(plain), None),
-                (
-                    "failed",
-                    Err(crate::Error::from(crate::cloud::Error::Cancelled)),
-                    Some("echo no".to_owned()),
-                ),
-            ] {
-                view.start_cloud_job(provider(), name.into(), script, move |_, _| saved, cx)
-                    .unwrap();
-            }
-        })
-    });
-    // The jobs' workers finish at once; their results arrive on the drain.
-    for _ in 0..200 {
-        cx.executor().advance_clock(Duration::from_millis(100));
-        cx.run_until_parked();
-        if view.read_with(cx, |view, _| view.cloud_jobs.is_empty()) {
-            break;
-        }
-        std::thread::sleep(Duration::from_millis(5));
-    }
-    view.read_with(cx, |view, _| assert!(view.cloud_jobs.is_empty()));
-    let waiting = cx.update(|_, cx| PendingSetups::waiting(cx));
-    assert_eq!(waiting, [format!("{}:made", provider().key())]);
-}
-
-#[gpui::test]
 fn a_script_waits_for_the_devices_first_surface(cx: &mut gpui::TestAppContext) {
     let peer = MockPeer::advertising(&["tab.create"]);
     let (view, cx) = cx.add_window_view(fixture_window);

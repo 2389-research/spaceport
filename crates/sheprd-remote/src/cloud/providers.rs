@@ -195,7 +195,7 @@ providers! {
         module: container,
         name: "Container",
         icon: "icons/cloud/container.svg",
-        offer: "Create a Docker or Podman container in Settings",
+        offer: "Manage existing containers in Settings",
         noun: "container",
         command: plain,
         deletion: Some(Deletion {
@@ -203,8 +203,8 @@ providers! {
             leftovers: ", with its home volume,",
             run: crate::container::destroy_saved,
         }),
-        image: Some(&crate::container::image::SUPPORT),
-        provision: Some(crate::container::setup::provision),
+        image: None,
+        provision: None,
     },
     // keep-sorted end
 }

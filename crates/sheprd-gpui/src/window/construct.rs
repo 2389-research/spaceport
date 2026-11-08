@@ -157,7 +157,6 @@ impl SheprdWindow {
             chats: Default::default(),
             chrome_region: None,
             #[cfg(feature = "cloud")]
-            cloud_jobs: Default::default(),
             #[cfg(feature = "cloud")]
             cloud_setup: None,
             collapsed_repos: Default::default(),
@@ -250,7 +249,6 @@ impl SheprdWindow {
             removal: None,
             resize_mode: false,
             #[cfg(feature = "cloud")]
-            sandbox_image_builds: Default::default(),
             scrollbar_drag: None,
             selected_endpoint: 0,
             selected_generation: 0,

@@ -1,9 +1,9 @@
 # Sandboxes
 
-How Sheprd gives agents isolated machines: containers on this computer.
-User-facing behavior is in the crate README's
-"Containers (Docker or Podman)" and "Smart Dispatch" sections; this page
-records the design and is for working on it.
+Historical Sheprd sandbox design. Spaceport has removed new Container creation,
+adoption, dispatch provisioning, and image build entry points. The existing
+saved Container connector, stop/idle paths, and this older design remain
+subject to T04/RM-CLOUD; this page does not describe a Spaceport release.
 
 ## Decision: a sandbox is a device
 
@@ -70,7 +70,7 @@ stream to an arbitrary command exists.
 
 | Provider | Stream | Status here |
 | --- | --- | --- |
-| Docker / Podman | Yes: `exec -i` without a TTY | Shipped. Live-tested with Docker (OrbStack). Podman follows the same CLI; not live-tested. |
+| Docker / Podman | Yes: `exec -i` without a TTY | Historical Sheprd implementation; new provisioning removed from Spaceport. |
 | E2B | Only through envd's Connect RPC (base64 JSON, one POST per stdin chunk); its CLI decodes output as text, which breaks binary data | Not built. |
 
 Sources: [E2B process API](https://github.com/e2b-dev/infra/blob/main/packages/envd/spec/process/process.proto),

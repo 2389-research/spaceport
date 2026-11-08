@@ -65,41 +65,6 @@ fn values_the_engine_could_misread_are_refused() {
 }
 
 #[test]
-fn containers_run_with_limits_and_never_with_host_access() {
-    let settings = Settings::resolve(&ContainerConfig::default()).unwrap();
-    let args = machine::run_args("herdr-calm-otter-1a", "debian@sha256:abc", &settings);
-    let joined = args.join(" ");
-    for wanted in [
-        "--init",
-        "--security-opt no-new-privileges",
-        "--cpus 4",
-        "--memory 8g",
-        "--pids-limit 4096",
-        "--label dev.herdr-gpui.device=herdr-calm-otter-1a",
-        "--volume herdr-calm-otter-1a-home:/home/herdr",
-    ] {
-        assert!(joined.contains(wanted), "{wanted} in {joined}");
-    }
-    for refused in [
-        "--privileged",
-        "docker.sock",
-        "--network host",
-        "--pid host",
-        "/Users",
-        "$HOME",
-    ] {
-        assert!(!joined.contains(refused), "{refused} in {joined}");
-    }
-    // The image comes last but for the command, so nothing after it is an
-    // option, and the keep-alive replaces any entrypoint the image names.
-    assert_eq!(
-        &args[args.len() - 3..],
-        ["sleep", "debian@sha256:abc", "infinity"]
-    );
-    assert_eq!(args[args.len() - 4], "--entrypoint");
-}
-
-#[test]
 fn engines_are_saved_by_key() {
     for engine in Engine::ALL {
         assert_eq!(Engine::from_key(engine.key()), Some(engine));

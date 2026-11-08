@@ -4,25 +4,6 @@
 # A new cloud machine the provider makes first, used inside sentences such
 # as "Create in a new container". $noun is a key naming what the provider
 # calls its machines; translate each variant, not the keys.
-dispatch-new-machine = a new { $noun ->
-        [VM] VM
-        [container] container
-        [sandbox] sandbox
-        [workspace] workspace
-       *[machine] machine
-    }
-# A tile for such a machine.
-dispatch-new-sandbox = New { $noun ->
-        [VM] VM
-        [container] container
-        [sandbox] sandbox
-        [workspace] workspace
-       *[machine] machine
-    }
-dispatch-sandbox-own = Its own files and limits
-dispatch-sandbox-made = Made when you create
-
-# A host tile's facts.
 dispatch-cores-free =
     { $count ->
         [one] { $count } core free
@@ -56,7 +37,6 @@ dispatch-more-hosts =
 
 # The job's status line. $host is a device's name or a dispatch-new-machine
 # phrase; $step is what it is doing.
-dispatch-making = Making { $host }: { $step }
 dispatch-starting = Starting on { $host }...
 dispatch-step = On { $host }: { $step }...
 # Brief notices over the terminal. $error says why.

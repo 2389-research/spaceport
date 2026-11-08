@@ -25,14 +25,14 @@ fn device_footer_is_named_and_defaults_to_always() -> anyhow::Result<()> {
 }
 
 #[test]
-fn auto_device_footer_needs_a_second_device_or_one_being_added() {
-    for (devices, adding, shown) in [(1, 0, false), (2, 0, true), (1, 1, true), (0, 0, false)] {
+fn auto_device_footer_needs_a_second_device() {
+    for (devices, shown) in [(1, false), (2, true), (0, false)] {
         assert_eq!(
-            DeviceFooter::Auto.shown(devices, adding),
+            DeviceFooter::Auto.shown(devices),
             shown,
-            "{devices} devices, {adding} adding"
+            "{devices} devices"
         );
-        assert!(DeviceFooter::Always.shown(devices, adding));
-        assert!(!DeviceFooter::Never.shown(devices, adding));
+        assert!(DeviceFooter::Always.shown(devices));
+        assert!(!DeviceFooter::Never.shown(devices));
     }
 }

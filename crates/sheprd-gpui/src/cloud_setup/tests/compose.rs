@@ -37,22 +37,3 @@ fn a_nul_or_oversized_script_is_refused() {
         Err(Error::ScriptTooLong { limit: MAX_SCRIPT })
     ));
 }
-
-#[cfg(feature = "cloud")]
-#[test]
-fn a_summary_names_the_agents_and_counts_the_users_lines() {
-    let provider = sheprd_client::CloudProvider::ALL[0];
-    let mut cloud = crate::config::CloudConfig::default();
-    assert_eq!(summary(&cloud, provider), "Nothing to run.");
-    cloud.setup = Some("echo one\n".into());
-    assert_eq!(
-        summary(&cloud, provider),
-        "Runs \u{2068}1\u{2069} line of your own."
-    );
-    cloud.agents = Some(vec!["opencode".into(), "claude".into()]);
-    cloud.setup = Some("a\nb\n".into());
-    assert_eq!(
-        summary(&cloud, provider),
-        "Installs \u{2068}Claude Code, OpenCode\u{2069}, then runs \u{2068}2\u{2069} lines of your own."
-    );
-}

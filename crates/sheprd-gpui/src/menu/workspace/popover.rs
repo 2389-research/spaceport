@@ -40,7 +40,6 @@ impl Label {
     pub(crate) const UNMUTE: Self = Self::new("worktree-popover-unmute");
     // keep-sorted end
     #[cfg(feature = "cloud")]
-    pub(crate) const SANDBOX_IMAGES: Self = Self::new("worktree-popover-sandbox-images");
 
     /// Checked against the English files as it compiles, as `fl!` is.
     const fn new(id: &'static str) -> Self {

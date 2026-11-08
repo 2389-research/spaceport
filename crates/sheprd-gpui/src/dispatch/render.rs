@@ -171,74 +171,6 @@ impl SheprdWindow {
             )
     }
 
-    /// A new machine from `sandbox`, made when the dialog creates.
-    fn sandbox_tile(
-        &self,
-        sandbox: super::Sandbox,
-        chosen: bool,
-        cx: &mut Context<Self>,
-    ) -> Stateful<Div> {
-        let theme = &self.theme;
-        let size = self.config.ui.size;
-        let (provider, noun) = sandbox_names(sandbox);
-        let selector = format!("dispatch-sandbox-{provider}");
-        let muted = rgb(theme.subtext());
-        div()
-            .id(SharedString::from(selector.clone()))
-            .debug_selector(move || selector.clone())
-            .flex_1()
-            .min_w_0()
-            .flex()
-            .flex_col()
-            .gap(px(3.))
-            .p(px(8.))
-            .rounded(px(corners::CONTROL))
-            .border_1()
-            .border_dashed()
-            .border_color(rgb(if chosen {
-                theme.primary()
-            } else {
-                theme.active
-            }))
-            .when(chosen, |tile| tile.bg(rgb(theme.primary_wash())))
-            .cursor_pointer()
-            .on_click(cx.listener(move |this, _, _, cx| {
-                cx.stop_propagation();
-                if let Some(picker) = this.menu.dispatch.as_mut()
-                    && picker.choose_sandbox(sandbox)
-                {
-                    cx.notify();
-                }
-            }))
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(6.))
-                    .child(radio(theme, size, chosen))
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .truncate()
-                            .child(fl!("dispatch-new-sandbox", noun = noun)),
-                    ),
-            )
-            .child(div().truncate().text_color(muted).child(provider))
-            .child(
-                div()
-                    .truncate()
-                    .text_color(muted)
-                    .child(fl!("dispatch-sandbox-own")),
-            )
-            .child(
-                div()
-                    .truncate()
-                    .text_color(muted)
-                    .child(fl!("dispatch-sandbox-made")),
-            )
-    }
-
     /// One host as a list row, choosing it for `slot` when clicked.
     fn dispatch_row(
         &self,
@@ -357,10 +289,6 @@ impl SheprdWindow {
                 candidate.endpoint_id == chosen,
                 cx,
             ));
-        }
-        for &sandbox in picker.sandboxes() {
-            let picked = picker.destination() == super::Destination::Sandbox(sandbox);
-            tiles = tiles.child(self.sandbox_tile(sandbox, picked, cx));
         }
         let mut picker_view = div()
             .debug_selector(|| "dispatch-picker".into())
@@ -498,12 +426,4 @@ impl SheprdWindow {
         });
         (chip, list)
     }
-}
-
-/// The provider's name and what it calls a machine, for a sandbox tile.
-fn sandbox_names(sandbox: super::Sandbox) -> (&'static str, &'static str) {
-    #[cfg(feature = "cloud")]
-    return (crate::cloud::name(sandbox), crate::cloud::noun(sandbox));
-    #[cfg(not(feature = "cloud"))]
-    match sandbox {}
 }

@@ -78,8 +78,6 @@ fn a_provider_table_replaces_each_shared_key_it_sets() -> anyhow::Result<()> {
                 assert!(script.contains("Claude Code") && script.contains("echo shared"));
             }
         }
-        let agents = config.cloud.agents(provider);
-        assert!(!agents.is_empty());
     }
     Ok(())
 }

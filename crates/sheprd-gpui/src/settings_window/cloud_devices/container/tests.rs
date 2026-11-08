@@ -54,23 +54,16 @@ fn set_overview(view: &Entity<SettingsWindow>, cx: &mut VisualTestContext, overv
 }
 
 #[gpui::test]
-fn the_card_offers_the_defaults_and_waits_for_an_engine(cx: &mut TestAppContext) {
+fn the_card_keeps_existing_device_controls_without_creation(cx: &mut TestAppContext) {
     let (view, cx) = open(cx);
     draw(cx);
     assert!(cx.debug_bounds("cloud-container-card").is_some());
-    assert!(cx.debug_bounds("cloud-container-create").is_some());
+    assert!(cx.debug_bounds("cloud-container-create").is_none());
+    assert!(cx.debug_bounds("cloud-container-adopt-0").is_none());
     view.read_with(cx, |view, cx| {
         let card = view.container_card.as_ref().unwrap();
-        assert!(card.install);
         assert!(card.overview.is_none(), "tests never ask the real engine");
         assert_eq!(card.values(cx), ContainerFields::default());
-    });
-    // Without an engine, Create does nothing.
-    let create = cx.debug_bounds("cloud-container-create").unwrap().center();
-    cx.simulate_click(create, Default::default());
-    view.read_with(cx, |view, cx| {
-        let main = view.source.upgrade().unwrap();
-        assert!(main.read(cx).cloud_jobs.is_empty());
     });
 }
 
@@ -92,23 +85,18 @@ fn a_running_container_can_be_stopped_and_a_missing_engine_is_explained(cx: &mut
                     state: Some(State::Stopped),
                 },
             ],
-            unsaved: vec!["herdr-lost-fern-3c".into()],
         },
     );
     draw(cx);
     assert!(cx.debug_bounds("cloud-container-stop-0").is_some());
     assert!(cx.debug_bounds("cloud-container-remove-1").is_some());
-    assert!(
-        cx.debug_bounds("cloud-container-adopt-0").is_some(),
-        "an unsaved container can be added back"
-    );
+    assert!(cx.debug_bounds("cloud-container-adopt-0").is_none());
     set_overview(
         &view,
         cx,
         Overview {
             engine: Err("Neither docker nor podman was found.".into()),
             devices: Vec::new(),
-            unsaved: Vec::new(),
         },
     );
     draw(cx);

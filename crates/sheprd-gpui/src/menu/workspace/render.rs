@@ -71,13 +71,6 @@ impl SheprdWindow {
             crate::dispatch::Destination::Host(host) => Some(host),
             _ => None,
         };
-        // A new machine the provider makes first, where the checkout goes.
-        let sandbox = match destination {
-            crate::dispatch::Destination::Sandbox(sandbox) => {
-                Some(crate::dispatch::sandbox_words(sandbox))
-            }
-            _ => None,
-        };
         // Until the daemon names the checkout there is nothing to confirm, and a
         // request already in flight leaves nothing to press either.
         let armed = (action != WorkspaceAction::DeleteWorktree
@@ -192,11 +185,6 @@ impl SheprdWindow {
                         } else {
                             fl!("workspace-dialog-opens-on", host = host_name)
                         })
-                }))
-                .children(sandbox.clone().map(|machine| {
-                    div()
-                        .text_color(rgb(theme.subtext()))
-                        .child(fl!("workspace-dialog-opens-in", machine = machine))
                 })),
             WorkspaceAction::Close => {
                 body.child(div().text_color(rgb(theme.subtext())).child(fl!(
@@ -260,23 +248,18 @@ impl SheprdWindow {
                             )
                         }),
                 )
-                .child(match (dispatched, &sandbox) {
-                    (Some(host), _) if clones(host) => fl!(
+                .child(match dispatched {
+                    Some(host) if clones(host) => fl!(
                         "workspace-dialog-creates-on-clone",
                         base = target.base_label(),
                         host = host.label.as_str(),
                     ),
-                    (Some(host), _) => fl!(
+                    Some(host) => fl!(
                         "workspace-dialog-creates-on",
                         base = target.base_label(),
                         host = host.label.as_str(),
                     ),
-                    (None, Some(machine)) => fl!(
-                        "workspace-dialog-creates-in",
-                        machine = machine.as_str(),
-                        base = target.base_label(),
-                    ),
-                    (None, None) => {
+                    None => {
                         fl!("workspace-dialog-creates-here", base = target.base_label())
                     }
                 })
@@ -287,12 +270,11 @@ impl SheprdWindow {
                         .bg(rgb(theme.active))
                         .px(px(10.))
                         .py(px(6.))
-                        .child(match (dispatched, &sandbox) {
-                            (Some(host), _) => {
+                        .child(match dispatched {
+                            Some(host) => {
                                 fl!("workspace-dialog-host-chooses", host = host.label.as_str())
                             }
-                            (None, Some(_)) => fl!("workspace-dialog-its-daemon-chooses"),
-                            (None, None) => self.checkout_preview(),
+                            None => self.checkout_preview(),
                         }),
                 )
             }
@@ -582,11 +564,6 @@ fn create_label(destination: crate::dispatch::Destination<'_>) -> SharedString {
         crate::dispatch::Destination::Host(host) => {
             fl!("workspace-dialog-create-on", host = host.label.as_str()).into()
         }
-        crate::dispatch::Destination::Sandbox(sandbox) => fl!(
-            "workspace-dialog-create-in",
-            machine = crate::dispatch::sandbox_words(sandbox)
-        )
-        .into(),
     }
 }
 

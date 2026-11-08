@@ -23,7 +23,6 @@ workspace-dialog-remove = Remove
 workspace-dialog-create = Create
 # Creates the worktree or workspace on another host.
 workspace-dialog-create-on = Create on { $host }
-workspace-dialog-create-in = Create in { $machine }
 workspace-dialog-cancel = Cancel
 # The submit button while the daemon works.
 workspace-dialog-waiting = Waiting...
@@ -33,8 +32,6 @@ workspace-dialog-waiting-spoken = Waiting
 # New workspace on another host.
 workspace-dialog-opens-on = Opens the repository's main checkout on { $host }.
 workspace-dialog-opens-on-clone = Opens the repository's main checkout on { $host }, cloning the repository there first.
-workspace-dialog-opens-in = Makes { $machine }, clones the repository there, and opens it.
-
 workspace-dialog-close-note = { $count ->
         [one] Closes { $count } workspace and terminates its running terminals. Checkout files and branches are not deleted.
        *[other] Closes { $count } workspaces and terminates their running terminals. Checkout files and branches are not deleted.
@@ -47,15 +44,11 @@ workspace-dialog-branch = Branch
 workspace-dialog-lands-in = Opens in
 workspace-dialog-creates-on = Creates a worktree from { $base } on { $host }, without granting repository trust:
 workspace-dialog-creates-on-clone = Creates a worktree from { $base } on { $host }, cloning the repository there first, without granting repository trust:
-workspace-dialog-creates-in = Makes { $machine } and creates a worktree from { $base } there, cloning the repository first, without granting repository trust:
 workspace-dialog-creates-here = Creates this folder from { $base }, without granting repository trust:
 # Where the checkout goes, before a branch is typed or when no folder is known.
 workspace-dialog-daemon-names = The daemon names the checkout.
 workspace-dialog-daemon-chooses = The daemon chooses the checkout.
 workspace-dialog-host-chooses = { $host }'s daemon chooses the checkout.
-workspace-dialog-its-daemon-chooses = Its daemon chooses the checkout.
-
-# Delete worktree checkout.
 workspace-dialog-merged = Pull request #{ $number } was merged.
 workspace-dialog-force-removes = This force removes the checkout folder:
 workspace-dialog-removes = This removes the checkout folder:

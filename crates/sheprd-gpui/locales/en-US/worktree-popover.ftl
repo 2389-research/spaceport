@@ -25,7 +25,6 @@ worktree-popover-close-group = Close group
 worktree-popover-note = Note...
 worktree-popover-orchestrator = Issues and pull requests
 worktree-popover-open-worktree = Open worktree...
-worktree-popover-sandbox-images = Build sandbox images
 worktree-popover-run-script = Run script
 worktree-popover-run-setup-script = Run setup script
 worktree-popover-expand-group = Expand group
@@ -60,10 +59,3 @@ worktree-popover-main-checkout = Only a linked worktree can be removed, not a ma
 worktree-popover-note-unavailable = Notes are kept on Git checkouts with a branch
 
 # Building the repository's cloud sandbox images.
-worktree-popover-images-no-checkout = This repository has no checkout to build an image from
-worktree-popover-images-failed = Not built: { $error }
-# $repository is the repository's name; $providers names the cloud providers,
-# such as "Docker and Podman".
-worktree-popover-images-building = Building { $repository }'s images for { $providers }; Settings > Cloud devices shows their progress
-# Two names in a list.
-worktree-popover-and = { $first } and { $second }

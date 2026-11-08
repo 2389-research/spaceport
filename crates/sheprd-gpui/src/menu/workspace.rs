@@ -8,7 +8,6 @@ pub(super) mod popover;
 mod render;
 mod requests;
 #[cfg(feature = "cloud")]
-mod sandbox_images;
 mod scripts;
 
 use super::{Page, WorkspaceAction, WorkspaceMenuAction, state::Deletion};
@@ -655,9 +654,6 @@ impl SheprdWindow {
             items.push((Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE));
         }
         #[cfg(feature = "cloud")]
-        if target.worktree.is_some() && !self.sandbox_image_providers().is_empty() {
-            items.push((WorkspaceMenuAction::SandboxImages, Label::SANDBOX_IMAGES));
-        }
         // Whether the checkout defines scripts is only known once its file is
         // read, so every Git checkout offers them and an absent one says so.
         if target.worktree.is_some() {
@@ -804,7 +800,6 @@ impl SheprdWindow {
             crate::dispatch::Picker::opened(
                 &self.endpoints[self.selected_endpoint].id,
                 self.dispatch_candidates(&repo, cx),
-                self.dispatch_sandboxes(),
             )
         });
         self.menu.pr.clear();
@@ -895,7 +890,6 @@ impl SheprdWindow {
             WorkspaceMenuAction::FanOut => self.open_fan_out(window, cx),
             WorkspaceMenuAction::Script(kind) => self.run_workspace_script(kind, window, cx),
             #[cfg(feature = "cloud")]
-            WorkspaceMenuAction::SandboxImages => self.build_workspace_sandbox_images(window, cx),
             WorkspaceMenuAction::Orchestrator => {
                 if let Some(target) = &self.menu.target {
                     let workspace = target.id.clone();
