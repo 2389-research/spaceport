@@ -1785,8 +1785,8 @@ Herdr 1 tabs, and nothing moves from one to the other.
   workspace on an SSH, WSL, or cloud host stays a Herdr tab on that host, and
   **New Herdr 2 Terminal** is refused there.
 - **Starting herdr-core:** the app joins a core that already runs. Otherwise
-  it starts the user's own `herdr-core`, or the pinned one every release
-  bundles beside the app, and only when a Herdr 2 terminal is asked for.
+  it may start a separately installed, trusted `herdr-core` when a Core
+  terminal is requested. Spaceport release packages do not include Core.
   Restored tabs only rejoin. Closing the app leaves herdr-core and its
   terminals running; `herdr-core ls` lists them.
 - **Splits:** **Split Right** and **Split Down** split the focused pane, the

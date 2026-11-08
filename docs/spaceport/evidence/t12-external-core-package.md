@@ -55,3 +55,16 @@ does not inspect, replace, start as a test, or delete an installed file. T12
 and A42–A44 remain blocked or unproved. The earlier signed observation covers
 the prior evidence digest; this appended result needs a new observation after
 integration.
+
+## Active repository guidance correction
+
+At `d592725f`, root `AGENTS.md` still instructed an app-bundled pinned Core
+from release files that this fork has deleted. The native GUI README repeated
+that release claim. Both now describe a separately installed Core and retain
+the no-surprise daemon lifecycle rule. The root guidance explicitly labels
+Herdr 1 startup and inherited socket semantics as migration work. Source
+search confirmed the removed pin and license paths no longer appear in those
+two paragraphs, and the specification link resolves. `git diff --check`
+passed. This was documentation review only; no binary, native installer or
+release test ran for this correction. `docs/cli.md` and inherited Sheprd site
+material still need a separate consistency pass. T12/A42–A44 remain open.
