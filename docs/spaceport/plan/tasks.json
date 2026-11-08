@@ -113,8 +113,8 @@
         "docs/06-security-and-resources.md"
       ],
       "deliverable": "Typed Core calls/streams/capabilities with no legacy fallback or parallel remote manager.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "in_progress",
+      "evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log"],
       "must_close_gaps": []
     },
     {

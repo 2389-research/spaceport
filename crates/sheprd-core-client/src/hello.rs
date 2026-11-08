@@ -49,6 +49,10 @@ fn names(methods: &[Method]) -> String {
 }
 
 impl Hello {
+    pub fn supports(&self, method: Method) -> bool {
+        self.methods.iter().any(|name| name == method.as_str())
+    }
+
     pub fn check(&self) -> Result<(), Mismatch> {
         if self.generation > GENERATION {
             return Err(Mismatch::Newer(self.generation));
@@ -61,9 +65,7 @@ impl Hello {
         let missing: Vec<Method> = Method::ALL
             .iter()
             .copied()
-            .filter(|method| {
-                method.required() && !self.methods.iter().any(|name| name == method.as_str())
-            })
+            .filter(|method| method.required() && !self.supports(*method))
             .collect();
         if missing.is_empty() {
             Ok(())

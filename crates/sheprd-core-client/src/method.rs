@@ -33,6 +33,7 @@ methods! {
     DocSet => "doc.set", true;
     EventsSubscribe => "events.subscribe", true;
     Hello => "hello", false;
+    MachineList => "machine.list", false;
     TerminalAttach => "terminal.attach", true;
     TerminalKill => "terminal.kill", true;
     TerminalList => "terminal.list", true;

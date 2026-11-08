@@ -1,0 +1,10 @@
+HERDR_CORE_TEST_BINARY="/tmp/spaceport-t00-target/debug/herdr-core" cargo test --locked -p sheprd-core-client live -- --ignored --nocapture
+   Compiling sheprd-core-client v0.1.0 (/Users/harper/Public/src/2389/spaceport-t00/crates/sheprd-core-client)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.57s
+     Running unittests src/lib.rs (/tmp/spaceport-t00-target/debug/deps/sheprd_core_client-f6d8324a399a77c1)
+
+running 2 tests
+test tests::live::a_real_core_through_the_backend_traits ... ok
+test tests::live::a_real_core_runs_streams_and_stores ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 36 filtered out; finished in 0.41s

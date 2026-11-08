@@ -106,6 +106,7 @@ fn a_real_core_runs_streams_and_stores() {
     let sandbox = Sandbox::start(binary);
     let core = sandbox.connect();
     assert_eq!(core.hello().generation, 1);
+    assert!(core.machine_list().unwrap().machines.is_empty());
 
     let argv = [
         "sh".to_owned(),

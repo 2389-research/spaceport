@@ -35,8 +35,9 @@
         "S03"
       ],
       "gaps": [],
-      "evidence_level": "source_observed",
-      "runtime_test_status": "not_run"
+      "evidence_level": "scenario_verified_local_subset",
+      "runtime_test_status": "machine_list_passed_local_fixture; remote_aggregation_not_run",
+      "runtime_evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log"]
     },
     {
       "id": "CAP-TERMINAL",

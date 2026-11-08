@@ -54,6 +54,8 @@ pub enum Error {
     StartTimeout(std::time::Duration),
     #[error("herdr-core did not answer {0} in time")]
     Timeout(Method),
+    #[error("herdr-core does not support {0}")]
+    Unsupported(Method),
     // keep-sorted end
 }
 

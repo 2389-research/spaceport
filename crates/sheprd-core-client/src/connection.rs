@@ -174,6 +174,11 @@ impl Core {
         self.typed(Method::TerminalList, &json!({"all": all}))
     }
 
+    /// Read Core's machine catalog and connection states without owning retries.
+    pub fn machine_list(&self) -> Result<wire::MachineList> {
+        self.typed(Method::MachineList, &json!({}))
+    }
+
     /// Every terminal now, and the events after it.
     pub fn subscribe(&self) -> Result<Subscription> {
         let reply = self.call(Method::EventsSubscribe, &json!({}))?;
@@ -234,6 +239,9 @@ impl Core {
     fn call(&self, method: Method, params: &impl Serialize) -> Result<Answer> {
         if self.is_lost() {
             return Err(Error::Lost);
+        }
+        if !self.hello.supports(method) {
+            return Err(Error::Unsupported(method));
         }
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let (reply, answer) = crossbeam_channel::bounded(1);

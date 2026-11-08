@@ -1006,7 +1006,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T02 — Adapt the verified Core capability boundary
 
-Status: **not_started** · Prerequisites: T00
+Status: **in_progress** · Prerequisites: T00
 
 Typed Core calls/streams/capabilities with no legacy fallback or parallel remote manager.
 

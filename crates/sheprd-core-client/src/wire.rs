@@ -98,6 +98,33 @@ pub struct List {
     pub terminals: Vec<Terminal>,
 }
 
+/// The current machine catalog and Core-owned connection line.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct MachineList {
+    pub machines: Vec<MachineView>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct MachineView {
+    pub host: String,
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub session: Option<String>,
+    #[serde(default)]
+    pub since_ms: Option<u64>,
+    /// Keep unknown Core states distinct instead of guessing a connection.
+    pub state: String,
+    pub target: String,
+    #[serde(default)]
+    pub temporary: bool,
+    pub version: String,
+    #[serde(default)]
+    pub via: bool,
+    #[serde(default)]
+    pub why: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Subscribed {
     #[serde(default)]
