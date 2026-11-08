@@ -4,7 +4,7 @@
 settings-sidebar-section-layout = Layout
 settings-sidebar-section-spacing = Spacing
 settings-sidebar-activity-bar-title = Show activity bar
-settings-sidebar-activity-bar-hint = The icon column at the window's left edge that switches between workspaces, overview, pull requests, issues, security, automations and usage.
+settings-sidebar-activity-bar-hint = The icon column at the window's left edge that switches between workspaces, overview, pull requests, issues, tasks, automations and usage.
 settings-sidebar-automations-title = Show automations
 settings-sidebar-automations-hint = Show the activity page. Job and run data is unavailable until Core offers a supported feed.
 settings-sidebar-agents-header-hint = The Agents title row with the sort toggle. Hidden, the order follows Herdr's ui.agent_panel_sort unless a plugin sets the agent view, which keeps the row.

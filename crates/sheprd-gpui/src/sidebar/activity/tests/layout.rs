@@ -51,6 +51,7 @@ fn the_bar_leads_the_expanded_sidebar_and_widens_its_column(cx: &mut gpui::TestA
     );
     // Settings moves to the bar; the footer keeps the picker.
     assert!(cx.debug_bounds("activity-settings").is_some());
+    assert!(cx.debug_bounds("activity-security").is_none());
     assert!(cx.debug_bounds("device-settings").is_none());
     assert!(cx.debug_bounds("device-footer-initials").is_some());
 }

@@ -8,7 +8,6 @@ sidebar-activity-workspaces = Workspaces
 sidebar-activity-pull-requests = Pull requests
 sidebar-activity-issues = Issues
 sidebar-activity-tasks = Tasks
-sidebar-activity-security = Security
 sidebar-activity-automations = Automations
 sidebar-activity-usage = Usage
 sidebar-activity-settings = Settings

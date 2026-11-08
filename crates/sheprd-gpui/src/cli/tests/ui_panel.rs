@@ -36,4 +36,8 @@ fn ui_panel_refuses_a_missing_or_unknown_panel() {
         "{refused:?}"
     );
     assert!(parse(&["ui", "panel"]).is_err());
+    assert!(matches!(
+        parse(&["ui", "panel", "security"]),
+        Err(CliError::InvalidValue(_))
+    ));
 }

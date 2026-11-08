@@ -1,5 +1,5 @@
-//! One item's page, in the pane beside a section's list: a header like a
-//! security alert's (crumbs, stepping, tags, title, tabs), the status box
+//! One item's page, in the pane beside a section's list: a header
+//! (crumbs, stepping, tags, title, tabs), the status box
 //! (`status`) over its conversation or description, its runs, and its raw
 //! details.
 

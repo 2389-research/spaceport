@@ -4,9 +4,7 @@
 //! title bar, and status bar: Overview what needs the user on every host
 //! (`crate::overview`), Orchestrator, Pull requests, and Issues the focused
 //! workspace's orchestrator on that list (see `orchestrator::section`),
-//! Security the Dependabot alerts of every repository (`crate::security`),
-//! listed only once GitHub reports them on for one, Automations the
-//! unavailable job feed (`crate::automations`),
+//! Automations the unavailable job feed (`crate::automations`),
 //! and Usage the plan limits of every host (`crate::usage::section`).
 //! `[sidebar] activity_bar = false` turns the bar off, and `[sidebar]
 //! automations = false` leaves Automations off it. With the bar on, the
@@ -52,7 +50,6 @@ fn label(panel: ActivityPanel) -> SharedString {
         ActivityPanel::PullRequests => fl!("sidebar-activity-pull-requests"),
         ActivityPanel::Issues => fl!("sidebar-activity-issues"),
         ActivityPanel::Tasks => fl!("sidebar-activity-tasks"),
-        ActivityPanel::Security => fl!("sidebar-activity-security"),
         ActivityPanel::Automations => fl!("sidebar-activity-automations"),
         ActivityPanel::Usage => fl!("sidebar-activity-usage"),
     }
@@ -66,7 +63,6 @@ fn icon(panel: ActivityPanel) -> &'static str {
         ActivityPanel::PullRequests => "icons/pull-request.svg",
         ActivityPanel::Issues => "icons/issue.svg",
         ActivityPanel::Tasks => "icons/beads.svg",
-        ActivityPanel::Security => "icons/shield.svg",
         ActivityPanel::Automations => "icons/automations.svg",
         ActivityPanel::Usage => "icons/chart.svg",
     }
@@ -302,12 +298,7 @@ impl SheprdWindow {
         }
         self.sync_activity_section(cx);
         match self.activity_section() {
-            Some(
-                ActivityPanel::Overview
-                | ActivityPanel::Security
-                | ActivityPanel::Automations
-                | ActivityPanel::Usage,
-            ) => {
+            Some(ActivityPanel::Overview | ActivityPanel::Automations | ActivityPanel::Usage) => {
                 let focus = self
                     .activity
                     .section_focus
@@ -322,15 +313,10 @@ impl SheprdWindow {
     }
 
     /// The shown section across the window's body, or `None` in Workspaces.
-    pub(crate) fn render_activity_section(
-        &self,
-        window: &Window,
-        cx: &mut Context<Self>,
-    ) -> Option<AnyElement> {
+    pub(crate) fn render_activity_section(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
         let section = match self.activity_section()? {
             ActivityPanel::Workspaces => return None,
             ActivityPanel::Overview => self.render_overview(cx),
-            ActivityPanel::Security => self.render_security_section(window, cx),
             ActivityPanel::Automations => self.render_automations_section(cx),
             ActivityPanel::Usage => self.render_usage_section(cx),
             ActivityPanel::PullRequests | ActivityPanel::Issues | ActivityPanel::Tasks => {
@@ -713,7 +699,6 @@ fn panel_selector(panel: ActivityPanel) -> &'static str {
         ActivityPanel::PullRequests => "activity-pull-requests",
         ActivityPanel::Issues => "activity-issues",
         ActivityPanel::Tasks => "activity-tasks",
-        ActivityPanel::Security => "activity-security",
         ActivityPanel::Automations => "activity-automations",
         ActivityPanel::Usage => "activity-usage",
     }

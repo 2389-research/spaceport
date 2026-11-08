@@ -14,7 +14,7 @@ fn last_opened_times_round_trip_and_damaged_ones_are_forgotten() {
     let chrome = Chrome {
         activity_last_opened: [
             (ActivityPanel::PullRequests, at("2026-10-19T08:30:00Z")),
-            (ActivityPanel::Security, at("2026-10-18T22:00:00.250Z")),
+            (ActivityPanel::Tasks, at("2026-10-18T22:00:00.250Z")),
         ]
         .into(),
         ..Chrome::default()
@@ -30,7 +30,7 @@ fn last_opened_times_round_trip_and_damaged_ones_are_forgotten() {
             "issues": "2026-10-19T10:00:00+02:00",
             "dashboard": "2026-10-19T10:00:00Z",
             "overview": "yesterday",
-            "security": 3
+            "security": "2026-10-19T10:00:00Z"
         }}"#,
     )
     .unwrap();
@@ -59,7 +59,7 @@ fn visits_stored_before_a_save_that_raced_the_load_are_saved_again(cx: &mut Test
     write_chrome(
         &path,
         Chrome {
-            activity_last_opened: [(ActivityPanel::Security, stored)].into(),
+            activity_last_opened: [(ActivityPanel::Tasks, stored)].into(),
             sidebar_width: Some(250.),
             ..Chrome::default()
         },
@@ -81,7 +81,7 @@ fn visits_stored_before_a_save_that_raced_the_load_are_saved_again(cx: &mut Test
         let read = read_chrome(&path).ok();
         let last_opened = read.as_ref().map(|chrome| &chrome.activity_last_opened);
         if last_opened.is_some_and(|last_opened| {
-            last_opened.get(&ActivityPanel::Security) == Some(&stored)
+            last_opened.get(&ActivityPanel::Tasks) == Some(&stored)
                 && last_opened.contains_key(&ActivityPanel::Issues)
         }) {
             assert_eq!(read.unwrap().sidebar_width, Some(250.));

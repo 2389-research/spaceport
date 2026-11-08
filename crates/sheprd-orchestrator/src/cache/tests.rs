@@ -4,25 +4,28 @@ use super::*;
 fn an_entry_reads_back_until_replaced_or_removed() {
     let dir = tempfile::tempdir().unwrap();
     let cache = Cache::open_at(&path_in(dir.path())).unwrap();
-    assert_eq!(cache.get::<Vec<u32>>(Kind::Security, "a").unwrap(), None);
-    cache.put(Kind::Security, "a", &vec![1, 2]).unwrap();
-    let entry = cache.get::<Vec<u32>>(Kind::Security, "a").unwrap().unwrap();
-    assert_eq!(entry.value, vec![1, 2]);
-    // Kinds keep their own keys.
     assert_eq!(cache.get::<Vec<u32>>(Kind::Repository, "a").unwrap(), None);
-    cache.put(Kind::Security, "a", &vec![3]).unwrap();
+    cache.put(Kind::Repository, "a", &vec![1, 2]).unwrap();
+    let entry = cache
+        .get::<Vec<u32>>(Kind::Repository, "a")
+        .unwrap()
+        .unwrap();
+    assert_eq!(entry.value, vec![1, 2]);
+    // Entries with another key do not share the first value.
+    assert_eq!(cache.get::<Vec<u32>>(Kind::Repository, "b").unwrap(), None);
+    cache.put(Kind::Repository, "a", &vec![3]).unwrap();
     // Another connection, as another window opens one, sees the write.
     let other = Cache::open_at(&path_in(dir.path())).unwrap();
     assert_eq!(
         other
-            .get::<Vec<u32>>(Kind::Security, "a")
+            .get::<Vec<u32>>(Kind::Repository, "a")
             .unwrap()
             .unwrap()
             .value,
         vec![3]
     );
-    cache.remove(Kind::Security, "a").unwrap();
-    assert_eq!(other.get::<Vec<u32>>(Kind::Security, "a").unwrap(), None);
+    cache.remove(Kind::Repository, "a").unwrap();
+    assert_eq!(other.get::<Vec<u32>>(Kind::Repository, "a").unwrap(), None);
 }
 
 #[test]

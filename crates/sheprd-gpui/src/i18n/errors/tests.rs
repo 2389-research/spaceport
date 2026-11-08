@@ -39,7 +39,6 @@ mod protocol;
 mod px0;
 mod remote;
 mod root;
-mod security;
 #[cfg(unix)]
 mod setup_relay;
 mod sound;

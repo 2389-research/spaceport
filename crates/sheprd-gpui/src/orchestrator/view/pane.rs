@@ -1,6 +1,6 @@
 //! The details pane beside a list: its width bounds, the handle on its left
-//! edge, and what dragging that handle asks for. The Pull requests, Issues,
-//! and Security sections share it, so their panes open and resize alike.
+//! edge, and what dragging that handle asks for. Pull requests and Issues
+//! share it, so their panes open and resize alike.
 
 use crate::config::Theme;
 use gpui::{prelude::*, *};

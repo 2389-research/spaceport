@@ -296,10 +296,6 @@ pub(crate) struct SheprdWindow {
     #[cfg(feature = "cloud")]
     pub(crate) sandbox_image_builds: crate::cloud::image::Prebuilds,
     pub(crate) scrollbar_drag: Option<mouse::ScrollbarDrag>,
-    /// The activity bar's Security section: Dependabot alerts.
-    pub(crate) security: crate::security::Security,
-    /// The Security section's search field and pills.
-    pub(crate) security_search: crate::security::SecuritySearch,
     pub(crate) selected_endpoint: usize,
     pub(crate) selected_generation: u64,
     /// The terminal cells the pointer is choosing. A release copies them and
@@ -675,7 +671,6 @@ impl SheprdWindow {
         self.poll_devices_overview(cx);
         self.poll_core_terminals(window, cx);
         self.poll_overview(cx);
-        self.poll_security(cx);
         if self.update_system_load() {
             cx.notify();
         }

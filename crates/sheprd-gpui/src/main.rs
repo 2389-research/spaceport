@@ -117,7 +117,6 @@ mod repo_items;
 mod restart_manager;
 mod scrollback;
 mod search_input;
-mod security;
 mod sessions;
 mod settings_panel;
 mod settings_window;
@@ -173,9 +172,8 @@ use sheprd_updater as updater;
 // GitHub's pull request actions; `github` and `pull_request` are the app's
 // own modules, which add the avatars, the shared store, and badge colors.
 use sheprd_github::pr_actions;
-// The orchestrator's records, readers, and worker, and the app's cache
-// database; `orchestrator` is the app's own module, which adds the views.
-use sheprd_orchestrator::cache;
+// The orchestrator's records, readers, and worker are reached through
+// the app's `orchestrator` module, which adds the views.
 // The command catalog and its default shortcuts, without GPUI.
 use sheprd_commands as controls;
 // The log file and crash reports, without GPUI.

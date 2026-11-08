@@ -12,7 +12,6 @@ pub enum ActivityPanel {
     PullRequests,
     Issues,
     Tasks,
-    Security,
     Automations,
     Usage,
 }
@@ -24,7 +23,6 @@ impl ActivityPanel {
         Self::PullRequests,
         Self::Issues,
         Self::Tasks,
-        Self::Security,
         Self::Automations,
         Self::Usage,
     ];
@@ -37,7 +35,6 @@ impl ActivityPanel {
             Self::PullRequests => "pull-requests",
             Self::Issues => "issues",
             Self::Tasks => "tasks",
-            Self::Security => "security",
             Self::Automations => "automations",
             Self::Usage => "usage",
         }

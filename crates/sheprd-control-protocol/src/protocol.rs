@@ -26,7 +26,8 @@ use serde::{Deserialize, Serialize};
 /// 22: removed orchestrator open control route.
 /// 23: removed the native review tab kind from tab listings.
 /// 24: removed checkpoint restore from the work control route.
-pub const PROTOCOL_VERSION: u32 = 24;
+/// 25: removed the Security activity panel and its UI control destination.
+pub const PROTOCOL_VERSION: u32 = 25;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.

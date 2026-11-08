@@ -1,10 +1,8 @@
 //! The app's cache database, `cache/cache.sqlite3` in its state directory,
 //! in a folder of its own that only this user may enter: what
-//! the last run found that spans repositories or comes before one is known,
-//! such as which repository a checkout holds and the Security section's
-//! read, so a restart shows it at once while the sections' own timers read
-//! it again. Each kind keeps one JSON value per key; a value that no longer
-//! decodes is a miss, not a failure. Every call blocks on disk I/O, so it
+//! the last run found before a repository is known, such as which repository
+//! a checkout holds. Each entry keeps one JSON value per key. A value that
+//! no longer decodes is a miss, not a failure. Every call blocks on disk I/O, so it
 //! runs on a worker or background thread, never on the UI thread.
 
 use rusqlite::{Connection, OptionalExtension, params};
@@ -45,15 +43,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Kind {
     /// A checkout's repository, keyed by its host and folder.
     Repository,
-    /// The Security section's read, keyed by the logins it was read as.
-    Security,
 }
 
 impl Kind {
     fn name(self) -> &'static str {
         match self {
             Self::Repository => "repository",
-            Self::Security => "security",
         }
     }
 }

@@ -256,22 +256,6 @@ impl SheprdWindow {
         })
     }
 
-    /// Opens `path` with the system's default application under the same
-    /// rule as a clicked path: a document itself, and otherwise the folder
-    /// holding it, so an executable or a bundle is never launched. Checked
-    /// on the background executor.
-    pub(crate) fn open_in_system_app(&self, path: PathBuf, cx: &mut Context<Self>) {
-        let found = cx
-            .background_executor()
-            .spawn(async move { url::Url::from_file_path(opened(&path)?).ok() });
-        cx.spawn(async move |_, cx| {
-            if let Some(url) = found.await {
-                cx.update(|cx| cx.open_url(url.as_str()));
-            }
-        })
-        .detach();
-    }
-
     /// Opens a clicked file with the system's default application, or the
     /// folder holding it when the file is not a known document.
     pub(crate) fn open_file_link(&mut self, link: FileLink, cx: &mut Context<Self>) {

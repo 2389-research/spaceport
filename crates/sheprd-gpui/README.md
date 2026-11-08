@@ -3630,7 +3630,7 @@ Ctrl+Shift+U is left unbound for
   once every 30 seconds. Switching accounts or opening an approval link also
   schedules that check. Optional security permissions (`repository_advisories`,
   `security_events`, `vulnerability_alerts`) do not raise the core repository
-  access warning; the Security section reports unavailable access separately.
+  access warning.
   Tokens from the GitHub CLI, `GH_TOKEN`, an OAuth App, or a personal access
   token are not checked.
   The compact native macOS titlebar design

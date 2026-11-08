@@ -1,4 +1,4 @@
-//! An item's status box, which leads its page the way a security alert's
+//! An item's status box, which leads its page the way a pull request's
 //! callout does: one row per thing that decides what happens next (checks,
 //! review, merge, blockers, the newest run), then the actions they call
 //! for. Under it, the facts fold into one quiet line.

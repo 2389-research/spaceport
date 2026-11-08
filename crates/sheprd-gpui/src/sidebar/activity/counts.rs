@@ -1,7 +1,6 @@
 //! The bar's count bubbles: what needs the user, as the Overview counted it
 //! on the last tick, and from the orchestrator views the window holds, open
-//! pull requests, open issues, and open beads, the open critical and high Dependabot
-//! alerts. An item two views list, such as one repository open in two
+//! pull requests, open issues, and open beads. An item two views list, such as one repository open in two
 //! workspaces, counts once. Each count keeps when its newest item last
 //! changed, which the bar compares with when the section was last open.
 
@@ -20,7 +19,6 @@ pub(super) struct Counts {
     pull_requests: Count,
     issues: Count,
     tasks: Count,
-    security: Count,
 }
 
 /// How many items a bubble counts, and when the newest of them changed.
@@ -62,7 +60,6 @@ impl Counts {
             ActivityPanel::PullRequests => Some(self.pull_requests),
             ActivityPanel::Issues => Some(self.issues),
             ActivityPanel::Tasks => Some(self.tasks),
-            ActivityPanel::Security => Some(self.security),
             ActivityPanel::Automations => None,
         }
     }
@@ -90,10 +87,6 @@ impl SheprdWindow {
             needs: Count {
                 items: self.overview_needing(),
                 latest: self.overview_needing_since().map(DateTime::from),
-            },
-            security: Count {
-                items: self.security.urgent(),
-                latest: self.security.urgent_since(),
             },
             ..Counts::default()
         };

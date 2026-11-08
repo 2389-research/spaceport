@@ -11,8 +11,7 @@ mod view;
 pub(crate) use host::{LiveCache, Orchestrator, ViewId};
 pub(crate) use sheprd_orchestrator::*;
 pub(crate) use view::{
-    Event, GitLabRead, List, LiveAgent, Look, OrchestratorView, RepoSpec, key_label, pane,
-    without_html,
+    Event, GitLabRead, List, LiveAgent, Look, OrchestratorView, RepoSpec, key_label,
 };
 
 #[cfg(test)]

@@ -729,8 +729,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         #[cfg(feature = "cloud")]
         sandbox_image_builds: Default::default(),
         scrollbar_drag: None,
-        security: Default::default(),
-        security_search: crate::security::SecuritySearch::new(cx),
         split_drag: None,
         split_cursor: None,
         pending_images: Vec::new(),
