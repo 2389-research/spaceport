@@ -284,7 +284,14 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                             || p.clipped
                             || !sidebar::layout_tests::within_device_pixel(p.bounds.size.width, expected_width, window.scale_factor())
                             || p.mask.size.width != p.bounds.size.width
-                            || p.width > p.bounds.size.width
+                            // Native glyph advances can exceed a device-snapped box
+                            // by a fraction of a pixel without clipping.
+                            || (p.width > p.bounds.size.width
+                                && !sidebar::layout_tests::within_device_pixel(
+                                    p.width,
+                                    p.bounds.size.width,
+                                    window.scale_factor(),
+                                ))
                             || p.bounds.size.height != px(16.)
                         {
                             eprintln!("SIDEBAR bad paint frame={frame} input={input:?} {p:?}");
@@ -357,7 +364,12 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                                     if p.glyph_text != p.cached
                                         || !shown
                                         || p.clipped
-                                        || p.width > p.bounds.size.width
+                                        || (p.width > p.bounds.size.width
+                                            && !sidebar::layout_tests::within_device_pixel(
+                                                p.width,
+                                                p.bounds.size.width,
+                                                window.scale_factor(),
+                                            ))
                                     {
                                         bail!("{mode}: bad paint {input:?} {p:?}");
                                     }

@@ -22,13 +22,17 @@ its two untracked spec input files throughout the worktree setup.
 | `cargo +1.99.0 build --locked -p sheprd-gpui --bin sheprd` | Passed in both checkouts; linker compact-unwind warning and `block` future-compatibility notice were already present | [fork build](t00-app-build.log), [upstream build](t00-upstream-build.log) |
 | `cargo +1.99.0 build --locked -p herdr-core` | Passed after populating the pinned submodule | [Core build log](t00-core-build.log) |
 | `just test-core /tmp/spaceport-t00-target/debug/herdr-core` with pinned toolchain | 2 passed: real stream/store and backend-trait tests, private Core homes/sockets | [Core test log](t00-core-test.log) |
-| `just test-sidebar` with pinned toolchain | Native windows launched in both checkouts; each had 2 fixture tests pass and `native_sidebar` fail: child label width 127px vs 179px | [fork native log](t00-native-sidebar.log), [upstream native log](t00-upstream-native-sidebar.log) |
+| `just test-sidebar` with pinned toolchain | Native windows launched in both checkouts; each had 2 fixture tests pass and `native_sidebar` fail: Orca's unclipped `Claude Code` glyph advance was 79.47071 px in a 79 px snapped box | [fork native log](t00-native-sidebar.log), [upstream native log](t00-upstream-native-sidebar.log) |
 | Spec `check --write-report`, `test_spec.py`, `ready`, `context T00` | Package validation passed, 21 tool tests passed; application scenarios were not checked by these tools | [validation](validation.json) |
 
 The native sidebar failure reproduces at the **unmodified pinned upstream**
-revision as well as the fork checkout. The failing probe and other native
-output are preserved in both logs. It must not be attributed to Spaceport
-code, which had not changed. No Windows or Linux native run occurred.
+revision as well as the fork checkout. The 127 px versus 179 px `sidebar-child`
+message came from the separate `native_sidebar_probe_failure_exits_without_aborting`
+test, which deliberately sets an invalid width and **passed** by detecting its
+controlled failure. The Orca glyph was not clipped; the strict width assertion
+rejected a 0.47071 px advance beyond the snapped box. The logs preserve both
+results. Neither failure can be attributed to Spaceport code at this baseline.
+No Windows or Linux native run occurred.
 
 The fixture's `hello` returned Core `0.1.18`, wire generation `1`, seven
 features (`framed`, `attach`, `events`, `status`, `shell`,
