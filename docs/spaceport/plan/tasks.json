@@ -484,7 +484,8 @@
       "evidence": [
         "evidence/t04-automation-dependency.md",
         "evidence/t08-observability.md",
-        "evidence/t04-usage-tail-dependency.md"
+        "evidence/t04-usage-tail-dependency.md",
+        "evidence/t08-devices-overview-boundary.md"
       ],
       "must_close_gaps": [
         "G-OBS"
