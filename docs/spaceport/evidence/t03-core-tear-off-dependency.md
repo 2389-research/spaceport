@@ -58,17 +58,26 @@ The final window launch needs the expected persistent local Core hub ID, and
 an ephemeral observation epoch for a delayed handoff. The full
 hub/machine/document/group key and `TabId` stay with `TornTab` and the Store.
 The existing per-window Hub can join with `Start::Join`, which never starts
-Core, but a blank Core-first window needs an explicit join kickoff. Before
+Core. An additional window with an exact expected hub ID must use this
+attach-only path and refuse a different hub. The initial plain window may
+use `Start::IfMissing` to start a separately installed Core; neither path
+may start Herdr 1. A blank Core-first window needs an explicit kickoff. Before
 changing hidden maps or layout, arrival must compare the joined hub ID and a
 fresh observation's epoch, group and tab identity. A failed open or stale
 handoff must return the tab to its source window. UI New Window and CLI
 `window new --window` need the same launch identity and exact refusal;
 `window list` must report the Core target truthfully, with a control-protocol
 version bump if its response changes. Tests must cover no legacy connection
-or start on Core window construction, join-only attachment, stale handoff
+or start on Core window construction, exact-hub join-only attachment, stale handoff
 rollback, tab return on close, CLI targeting, and native drag/focus.
 
 ## Verification limit
+
+The first constructor regression should open an exact-hub additional window
+with a private connector, then tick/render/close it. It must observe one
+join-only Core attempt, no legacy endpoint or bridge, and no Herdr 1 start.
+The current constructor cannot pass its no-endpoint assertion. This test has
+not been written or run; the preceding source review did not touch the app.
 
 The red test used an isolated headless window and the warm Cargo target with
 `CARGO_INCREMENTAL=0`. The existing macOS compact-unwind linker warning and
