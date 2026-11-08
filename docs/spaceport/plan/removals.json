@@ -104,7 +104,7 @@
         "S09"
       ],
       "constraint": "Keep generic Core machines even if provisioned elsewhere; no provider APIs.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-TELEPORT",
@@ -122,7 +122,7 @@
         "S09"
       ],
       "constraint": "No automatic agent move/resume to preserve a view.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-AUTOMATION",
