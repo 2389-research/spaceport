@@ -14,8 +14,8 @@ pub(crate) fn locate(program: &str) -> Option<PathBuf> {
     locate_in(program, exe.as_deref(), crate::login_env::path().as_deref())
 }
 
-/// Find an installed Core on the configured PATH, excluding the GUI's own
-/// directory even when that directory also appears on PATH.
+/// Find an installed Core on the configured PATH. A Core inside the GUI's
+/// macOS app bundle is app-owned, even when that directory appears on PATH.
 pub(crate) fn locate_installed(program: &str) -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
     locate_installed_in(program, Some(&exe), crate::login_env::path().as_deref())
@@ -23,6 +23,13 @@ pub(crate) fn locate_installed(program: &str) -> Option<PathBuf> {
 
 fn locate_installed_in(program: &str, exe: Option<&Path>, path: Option<&OsStr>) -> Option<PathBuf> {
     let app_dir = exe?.canonicalize().ok()?.parent()?.to_owned();
+    let in_app_bundle = app_dir.file_name() == Some(OsStr::new("MacOS"))
+        && app_dir.parent().and_then(Path::file_name) == Some(OsStr::new("Contents"))
+        && app_dir
+            .parent()
+            .and_then(Path::parent)
+            .and_then(Path::extension)
+            == Some(OsStr::new("app"));
     path.into_iter()
         .flat_map(std::env::split_paths)
         .filter(|dir| dir.is_absolute())
@@ -30,7 +37,7 @@ fn locate_installed_in(program: &str, exe: Option<&Path>, path: Option<&OsStr>) 
         .filter(|candidate| runnable(candidate))
         .find_map(|candidate| {
             let real = candidate.canonicalize().ok()?;
-            (real.parent() != Some(app_dir.as_path())).then_some(real)
+            (!in_app_bundle || real.parent() != Some(app_dir.as_path())).then_some(real)
         })
 }
 

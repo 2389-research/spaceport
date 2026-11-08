@@ -29,3 +29,29 @@ upgrade of that file was added. Owner-safe cleanup is a separate migration gate.
 The upstream production identities, signing keys and update source remain in
 the release code. The compile-time release gate stays closed; this slice does
 not satisfy A42–A44 or authorize publishing.
+
+## Installed Core beside a standalone GUI
+
+At parent `1461ce7a`, runtime lookup rejected any Core executable with the
+same canonical parent directory as the GUI. That also rejected a separately
+installed Core beside a standalone `sheprd` executable in one `bin` directory.
+The new co-installed-bin regression first failed with `None` where the exact
+Core path was expected. Lookup now excludes a Core beside the GUI only when
+the GUI resolves inside a macOS `.app/Contents/MacOS` bundle. The retained
+negative test places Core inside that bundle and confirms it is skipped even
+when the bundle directory is on `PATH`.
+
+Focused `bundled::tests::core` passed 2/2, and the surrounding
+`bundled::tests` suite passed 6/6. Production `cargo +1.99.0 check
+--locked -p sheprd-gpui --bin sheprd` passed with no code warnings; Cargo
+reported its existing `block v0.1.6` future-compat notice. The focused test
+link reported the existing macOS compact-unwind warning. `just format-check`,
+`just check-file-size` and `just check-sorted` passed. The first specification
+check lacked its validator dependency; the rerun through `uv` with pinned
+`jsonschema==4.26.0` passed package integrity and schema validation. No native
+install or Windows runtime was exercised. Windows package ownership and safe
+cleanup of an older package's co-located Core remain unresolved; this change
+does not inspect, replace, start as a test, or delete an installed file. T12
+and A42–A44 remain blocked or unproved. The earlier signed observation covers
+the prior evidence digest; this appended result needs a new observation after
+integration.
