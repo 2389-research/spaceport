@@ -48,6 +48,8 @@ class PhoneAbsenceTests(unittest.TestCase):
         workspace = (ROOT / "Cargo.toml").read_text()
         for name in ("rcgen", "x509-parser", "roxmltree", "aes-gcm", "hkdf", "p256", "time"):
             self.assertNotRegex(workspace, rf"(?m)^{name}\s*=", name)
+        desktop = (ROOT / "crates/sheprd-gpui/Cargo.toml").read_text()
+        self.assertNotIn('features = ["system"]', desktop)
 
 if __name__ == "__main__":
     unittest.main()

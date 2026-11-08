@@ -136,8 +136,7 @@ integration-test = [
 ]
 
 [target.'cfg(unix)'.dependencies]
-# `system`: the host name nearby pairing advertises over Bluetooth.
-rustix = { features = ["system"], workspace = true }
+rustix.workspace = true
 
 # wry has no working GPUI child-view backend on Linux yet; browser tabs there
 # open in the system browser instead.
