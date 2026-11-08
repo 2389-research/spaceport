@@ -1217,8 +1217,8 @@ or a crash lets go too. Closing a laptop lid still sleeps the machine.
 
 Workspaces that run a server show the TCP ports it listens on, as `:3000`
 chips on a line under the workspace's sidebar row and, for the focused
-workspace, in the status bar. Clicking one opens the page in a browser tab of
-that workspace (`http://localhost:<port>` on this machine). A port belongs to
+workspace, in the status bar. Clicking one opens the page with the system URL
+handler (`http://localhost:<port>` on this machine). A port belongs to
 a workspace when its process inherited the `HERDR_WORKSPACE_ID` Herdr sets in
 every pane, so system services and servers started outside Herdr never show,
 and its `HERDR_SOCKET_PATH` names the same daemon, so two sessions on one

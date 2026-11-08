@@ -25,17 +25,9 @@ fn a_caller_naming_its_daemon_never_reaches_another_sessions_workspace(cx: &mut 
 fn a_page_request_succeeds_only_when_a_page_opened() {
     let done = || "Opened port 3000".to_owned();
     assert!(matches!(
-        page_answer(Some(PageOpened::Tab), done),
-        Response::Done { .. }
-    ));
-    assert!(matches!(
         page_answer(Some(PageOpened::SystemBrowser), done),
         Response::Done { .. }
     ));
-    assert_eq!(
-        error_code(&page_answer(Some(PageOpened::Full), done)),
-        Some(ErrorCode::TabLimit)
-    );
     assert_eq!(
         error_code(&page_answer(Some(PageOpened::Unreachable), done)),
         Some(ErrorCode::Failed)

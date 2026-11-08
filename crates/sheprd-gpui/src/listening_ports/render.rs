@@ -1,5 +1,5 @@
 //! Drawing a workspace's listening ports: a globe and `:3000 :5173` after
-//! it, each number opening its page in a browser tab of that workspace.
+//! it, each number opening its page with the system URL handler.
 
 use super::{
     Link, Port,
@@ -60,7 +60,7 @@ impl SheprdWindow {
         Some((endpoint.id.as_str(), workspace, listed))
     }
 
-    /// Opens a port's page in a browser tab of `workspace`, through a tunnel
+    /// Opens a port's page with the system handler, through a tunnel
     /// when the port is on a remote host.
     pub(crate) fn open_port_link(
         &mut self,

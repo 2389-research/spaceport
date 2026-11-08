@@ -30,7 +30,7 @@ pub(crate) use model::{Alert, Alerts, Repo, Severity};
 pub(crate) use page::{Item, Tab};
 pub(crate) use reports::{Report, Reports};
 
-use crate::{SheprdWindow, browser::WebUrl, sidebar::ActivityPanel};
+use crate::{SheprdWindow, browser::WebUrl};
 use gpui::{prelude::*, *};
 use std::{
     collections::HashMap,
@@ -326,8 +326,7 @@ impl SheprdWindow {
         logins
     }
 
-    /// Shows `url`, an alert's or repository's page, in a browser tab of the
-    /// focused workspace, and the terminals behind it; Back returns here.
+    /// Opens an alert's or repository's page with the system URL handler.
     fn open_security_page(&mut self, url: &str, window: &mut Window, cx: &mut Context<Self>) {
         let Ok(url) = WebUrl::try_from(url) else {
             return;
@@ -340,13 +339,7 @@ impl SheprdWindow {
             return;
         };
         let endpoint = self.endpoints[self.selected_endpoint].id.clone();
-        let opened = self.open_workspace_page(&endpoint, &workspace, url, window, cx);
-        // The system browser leaves the section shown; a tab is behind it.
-        if opened == crate::browser::PageOpened::Tab {
-            self.activity.pick(ActivityPanel::Workspaces);
-            self.activity.return_to = Some(ActivityPanel::Security);
-            self.save_chrome();
-        }
+        self.open_workspace_page(&endpoint, &workspace, url, window, cx);
         cx.notify();
     }
 }

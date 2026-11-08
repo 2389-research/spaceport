@@ -523,13 +523,7 @@ impl SheprdWindow {
                 Ok(url) => {
                     if let Some((_, workspace)) = self.browser_key() {
                         let endpoint = self.endpoints[self.selected_endpoint].id.clone();
-                        // Only a page tab shows behind the section; the system
-                        // browser, or a page that did not open, leaves it be.
-                        let opened =
-                            self.open_workspace_page(&endpoint, &workspace, url, window, cx);
-                        if opened == crate::browser::PageOpened::Tab {
-                            self.leave_activity_section(id, cx);
-                        }
+                        self.open_workspace_page(&endpoint, &workspace, url, window, cx);
                     }
                 }
                 Err(_) => self.tell_orchestrator(id, super::Error::NotWebAddress, cx),

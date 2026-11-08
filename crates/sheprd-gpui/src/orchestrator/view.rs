@@ -74,7 +74,7 @@ pub(crate) enum Event {
     OpenProject {
         repo: String,
     },
-    /// Open a web address, such as an issue's page, in a browser tab.
+    /// Open a web address, such as an issue's page, with the system handler.
     OpenUrl(String),
     /// Sign in to the provider the view needs to list a repository: the
     /// account menu's GitHub or GitLab page.

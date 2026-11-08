@@ -8,7 +8,7 @@ use super::{
     groups::{GroupId, GroupIds, Layout, Pick, SavedLayout},
 };
 use crate::i18n::fl;
-use crate::{NavigationTarget, SheprdWindow, search_input::SearchInput, window::Flash};
+use crate::{SheprdWindow, search_input::SearchInput, window::Flash};
 use gpui::{prelude::*, *};
 use std::collections::{HashMap, HashSet};
 
@@ -178,13 +178,9 @@ pub(super) fn store(cx: &App) -> Option<&Store> {
 /// What [`SheprdWindow::open_workspace_page`] did.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum PageOpened {
-    /// In a tab of the workspace, shown once its navigation lands.
-    Tab,
-    /// In the system browser, on a build without page tabs.
+    /// In the system browser.
     SystemBrowser,
-    /// Not opened: too many tabs are open.
-    Full,
-    /// Not opened: the window has no such host, or cannot go to the workspace.
+    /// Not opened: the window has no such host.
     Unreachable,
 }
 
@@ -258,46 +254,21 @@ impl SheprdWindow {
         }
     }
 
-    /// Opens `url` in a tab of one endpoint's workspace and shows it there,
-    /// as clicking a listening port does. The page's tab is reused when the
-    /// workspace already has one on that address. Builds that cannot embed a
-    /// page hand it to the system browser.
+    /// Opens a service or repository URL in the system handler without changing
+    /// the workspace's tabs. The endpoint must still name this window's host.
     pub(crate) fn open_workspace_page(
         &mut self,
         endpoint: &str,
-        workspace: &str,
+        _workspace: &str,
         url: WebUrl,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> PageOpened {
-        if !super::EMBEDDED {
-            cx.open_url(url.as_str());
-            return PageOpened::SystemBrowser;
-        }
-        let Some(index) = self.endpoints.iter().position(|e| e.id == endpoint) else {
-            return PageOpened::Unreachable;
-        };
-        let scope = scope(&self.endpoints[index]);
-        let location = Location::Web { url };
-        let before =
-            store(cx).and_then(|store| store.opened_before(&scope, workspace, None, &location));
-        let opened = before.or_else(|| {
-            Store::update(cx, |store| {
-                store.open(scope, workspace, Some(location), None)
-            })
-        });
-        let Some(id) = opened else {
-            self.show_flash(Flash::warning(fl!("browser-too-many-tabs")), cx);
-            return PageOpened::Full;
-        };
-        if !self.navigate_endpoint(endpoint, NavigationTarget::Workspace(workspace), cx) {
+        if !self.endpoints.iter().any(|entry| entry.id == endpoint) {
             return PageOpened::Unreachable;
         }
-        // Recorded against the workspace, so the tab shows once the
-        // navigation lands even if it is still in flight.
-        self.show_browser_tab(id, window, cx);
-        cx.notify();
-        PageOpened::Tab
+        cx.open_url(url.as_str());
+        PageOpened::SystemBrowser
     }
 
     /// Applies page reports, drops tabs other windows closed, and forgets the

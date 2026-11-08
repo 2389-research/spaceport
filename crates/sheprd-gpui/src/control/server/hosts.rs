@@ -494,19 +494,14 @@ fn cloud_images(
     Response::error(ErrorCode::Unsupported, "This build has no cloud providers")
 }
 
-/// The answer to a request that opened a page: done when a tab (or, on a
-/// build without tabs, the system browser) shows it, refused otherwise.
+/// The answer to a request that opened a URL with the system handler.
 /// `None` is a page that opens later, through a tunnel still connecting.
 pub(super) fn page_answer(how: Option<PageOpened>, done: impl FnOnce() -> String) -> Response {
     match how {
-        Some(PageOpened::Tab | PageOpened::SystemBrowser) => Response::done(done()),
+        Some(PageOpened::SystemBrowser) => Response::done(done()),
         None => Response::done(format!("{}, once its tunnel connects", done())),
-        Some(PageOpened::Full) => {
-            Response::error(ErrorCode::TabLimit, "Too many browser tabs are open")
+        Some(PageOpened::Unreachable) => {
+            Response::error(ErrorCode::Failed, "This window does not show that host")
         }
-        Some(PageOpened::Unreachable) => Response::error(
-            ErrorCode::Failed,
-            "The window could not go to that workspace",
-        ),
     }
 }
