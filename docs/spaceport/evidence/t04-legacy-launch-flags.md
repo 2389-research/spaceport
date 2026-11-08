@@ -25,6 +25,14 @@ the existing macOS `__eh_frame` warning and Cargo's existing `block v0.1.6`
 future-compat notice. Native desktop, Windows/Linux, and full workspace
 checks were not run.
 
+The combined real-binary CLI suite then exposed four stale integration tests:
+they still expected `--session` and `--dev` help and option behavior after the
+parser cut. The initial run passed 11 tests and failed those four. The tests
+now require both flags to be absent from help and rejected with usage status
+before startup, while retaining socket and native-test option checks. The
+rerun passed all 15 real-binary CLI tests. The combined format, file-size and
+sorted checks passed; linker and `block` notices remain as above.
+
 RM-LEGACY remains in progress. The default Herdr 1 bridge and startup,
 explicit socket route, in-app named-session UI, `window new --session`
 control command, and legacy snapshot consumers remain reachable. They need

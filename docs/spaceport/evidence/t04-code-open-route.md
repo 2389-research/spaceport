@@ -7,3 +7,10 @@ At parent `1461ce7a`, `crates/sheprd-gpui/src/cli/control/tabs.rs::code` accepte
 The parser and wire absence tests were red against `1461ce7a`. The wire's retained `Edit` round trip and server's invalid-path and missing-workspace tests keep the shared path and target checks. T04/RM-IDE stay in progress and A29 remains not run; this slice does not claim all code navigation or editor behavior is gone. No Core, personal daemon, real editor, user file or network service was touched.
 
 Verification: `cargo +1.99.0 test -p sheprd-control-protocol --locked` passed 58 tests. Focused GPUI parser, skill, client tab, server target, terminal file-link and editor media tests passed; the real-binary CLI test rejected `code open` before socket lookup. `just format-check`, `just check-file-size`, `just check-sorted`, and the Spaceport package render/check/test commands passed. Native editor and cross-platform CI checks remain open. The build reported the existing macOS compact-unwind linker warning and Cargo's `block v0.1.6` future-compatibility notice.
+
+After merge with the named-window change, the combined protocol suite passed
+59 tests and the real-binary CLI suite passed all 15 tests, including the
+`code open` refusal. The first combined CLI run failed four old Herdr 1 launch
+flag expectations; those tests were corrected and rerun green in the same
+bounded follow-up. This is parser and control-route evidence, not native UI
+proof that all code views have been removed.

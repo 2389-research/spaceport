@@ -93,14 +93,11 @@ fn help_succeeds_and_documents_connection_options() {
         assert!(output.status.success(), "{output:?}");
         assert!(output.stderr.is_empty(), "{output:?}");
         let help = String::from_utf8(output.stdout).unwrap();
-        for option in [
-            "--socket CLIENT_SOCKET",
-            "--session NAME",
-            "--dev",
-            "--build-info",
-        ] {
+        for option in ["--socket CLIENT_SOCKET", "--build-info"] {
             assert!(help.contains(option), "missing {option}: {help}");
         }
+        assert!(!help.contains("--session"), "{help}");
+        assert!(!help.contains("--dev"), "{help}");
         assert_eq!(
             help.contains("--integration-test"),
             cfg!(feature = "integration-test"),
@@ -128,10 +125,7 @@ fn build_info_is_pure_and_matches_compile_identity() {
 #[test]
 fn missing_option_values_are_usage_errors() {
     usage_error(&["--socket"], "--socket requires a path");
-    usage_error(&["--session"], "--session requires a name");
-    usage_error(&["--dev", "--session"], "--session requires a name");
     usage_error(&["--socket", "--help"], "--socket requires a path");
-    usage_error(&["--session", "--dev"], "--session requires a name");
 }
 
 #[test]
@@ -139,10 +133,6 @@ fn duplicate_options_are_usage_errors() {
     usage_error(
         &["--socket", "a", "--socket", "b"],
         "--socket may only be specified once",
-    );
-    usage_error(
-        &["--session", "a", "--session", "b"],
-        "--session may only be specified once",
     );
 }
 
@@ -154,14 +144,13 @@ fn unknown_flags_and_positional_arguments_are_usage_errors() {
 }
 
 #[test]
-fn explicit_socket_conflicts_with_session_and_development() {
-    for args in [
-        vec!["--socket", "/unused.sock", "--session", "test"],
-        vec!["--session", "test", "--socket", "/unused.sock"],
-        vec!["--socket", "/unused.sock", "--dev"],
-        vec!["--dev", "--socket", "/unused.sock"],
-    ] {
-        usage_error(&args, "--socket cannot be combined with --session or --dev");
+fn legacy_connection_flags_are_rejected_before_startup() {
+    for flag in ["--session", "--dev"] {
+        usage_error(&[flag], &format!("Unknown option: {flag}"));
+        usage_error(
+            &["--socket", "/unused.sock", flag],
+            &format!("Unknown option: {flag}"),
+        );
     }
 }
 
@@ -180,15 +169,11 @@ fn native_test_flag_is_rejected_in_normal_builds() {
 
 #[cfg(feature = "integration-test")]
 #[test]
-fn native_test_flag_requires_explicit_socket_not_session_discovery() {
-    for args in [
-        vec!["--integration-test"],
-        vec!["--integration-test", "--session", "test"],
-        vec!["--dev", "--integration-test"],
-        vec!["--session", "test", "--dev", "--integration-test"],
-    ] {
-        usage_error(&args, "--integration-test requires an explicit --socket");
-    }
+fn native_test_flag_requires_explicit_socket() {
+    usage_error(
+        &["--integration-test"],
+        "--integration-test requires an explicit --socket",
+    );
 }
 
 #[test]
