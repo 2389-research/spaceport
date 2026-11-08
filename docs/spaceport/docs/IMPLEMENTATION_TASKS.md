@@ -172,7 +172,7 @@ Gates this task must close: G-CHAT, G-PORT, G-FILE, G-OBS, G-PLATFORM
 
 ## T12 — Complete release identity and verified updates
 
-Status: **not_started** · Prerequisites: T01, T10, T11
+Status: **blocked** · Prerequisites: T01, T10, T11
 
 Owner-controlled signed packages and updates; no publishing without authorization; all product gates reconciled.
 

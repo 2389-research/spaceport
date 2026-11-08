@@ -537,8 +537,8 @@
         "docs/05-verification.md"
       ],
       "deliverable": "Owner-controlled signed packages and updates; no publishing without authorization; all product gates reconciled.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "blocked",
+      "evidence": ["evidence/release-identity-audit.md"],
       "must_close_gaps": [
         "G-RELEASE",
         "G-PLATFORM"
