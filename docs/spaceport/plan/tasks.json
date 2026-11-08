@@ -560,7 +560,8 @@
         "evidence/t10-phone-dependencies.md",
         "evidence/t10-phone-fixtures.md",
         "evidence/t10-phone-wire.md",
-        "evidence/t10-a31-native-inventory.md"
+        "evidence/t10-a31-native-inventory.md",
+        "evidence/t10-managed-skill-phone-claim.md"
       ],
       "must_close_gaps": []
     },

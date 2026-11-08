@@ -33,7 +33,6 @@ for what only Sheprd shows or keeps.
 | List or focus the app's windows and its own tabs | `sheprd window`, `sheprd tab`, `sheprd tab focus ID` |
 | Block until something happens in the app | `sheprd wait tab-closed ID --timeout 600`, `sheprd events --follow` |
 | Read or change a Sheprd setting | `sheprd config get KEY`, `sheprd config set KEY VALUE` |
-| Check remote control and its daemon-host network interfaces, or pair a phone (Tailscale preferred; optionally choose an origin from status) | `sheprd remote status`, `sheprd remote pair [--address HTTPS_ORIGIN]` |
 | Keep the machine awake during a long job | `sheprd caffeine on --for 2h` |
 | Check whether the app runs, and which windows and hosts it has | `sheprd status` |
 

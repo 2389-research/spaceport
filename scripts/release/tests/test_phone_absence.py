@@ -61,5 +61,11 @@ class PhoneAbsenceTests(unittest.TestCase):
         self.assertIn("Gui,", wire)
         self.assertIn("Cli,", wire)
 
+    def test_managed_skill_omits_removed_phone_commands(self):
+        skill = (ROOT / "skills/herdr-gpui-browser/SKILL.md").read_text()
+        self.assertNotIn("sheprd remote status", skill)
+        self.assertNotIn("sheprd remote pair", skill)
+        self.assertIn("sheprd status", skill)
+
 if __name__ == "__main__":
     unittest.main()
