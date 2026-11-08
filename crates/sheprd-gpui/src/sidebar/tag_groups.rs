@@ -5,7 +5,7 @@ use super::{HOST_ARROW_WIDTH, label_text, layout::SidebarLook, line_height, scal
 use crate::{
     SheprdWindow,
     config::corners,
-    device_tags::{Daemon, DeviceTags, Tags},
+    device_tags::{self, DeviceTags, Tags},
     i18n::fl,
 };
 use gpui::{prelude::*, *};
@@ -28,16 +28,14 @@ fn fold_key(section: Option<&str>) -> Option<String> {
 /// Whether two devices list together: `work` and `Work` are one section.
 pub(super) fn same_section(one: Option<&str>, other: Option<&str>) -> bool {
     match (one, other) {
-        (Some(one), Some(other)) => sheprd_remote_control::control::tags::same(one, other),
+        (Some(one), Some(other)) => device_tags::same(one, other),
         (None, None) => true,
         _ => false,
     }
 }
 
 fn in_use(tags: &Tags, tag: &str) -> bool {
-    tags.all()
-        .iter()
-        .any(|known| sheprd_remote_control::control::tags::same(known, tag))
+    tags.all().iter().any(|known| device_tags::same(known, tag))
 }
 
 /// Whether the switch shows: with one tag, its sections already say it all.
@@ -69,33 +67,6 @@ impl SheprdWindow {
                 .retain(|fold| fold.as_deref().is_none_or(|tag| in_use(&tags, tag)));
             cx.notify();
         })
-    }
-
-    /// Tells the tags which devices this window can reach now: this computer,
-    /// and the machines connected, so no exchange waits on one that is away.
-    pub(crate) fn reach_device_tags(&self, cx: &mut Context<Self>) {
-        let reachable = self
-            .endpoints
-            .iter()
-            .enumerate()
-            .filter_map(|(index, endpoint)| {
-                if endpoint.id == crate::endpoint::LOCAL {
-                    return Some((endpoint.id.clone(), Daemon::Local));
-                }
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
-                let target = &endpoint.connection.target;
-                let remote = matches!(target, sheprd_client::ConnectTarget::Ssh { .. });
-                #[cfg(feature = "cloud")]
-                let remote = remote || matches!(target, sheprd_client::ConnectTarget::Cloud { .. });
-                (endpoint.enabled && live.status.is_connected() && remote)
-                    .then(|| (endpoint.id.clone(), Daemon::Remote(target.clone())))
-            })
-            .collect();
-        DeviceTags::reach(cx, reachable);
     }
 
     /// Lists only `tag`'s devices, from the top, as a device scope does.

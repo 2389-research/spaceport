@@ -144,7 +144,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T10 — Delete legacy/mobile remnants and finalize dependencies
 
-Status: **not_started** · Prerequisites: T04, T05, T06, T07, T08, T09
+Status: **in_progress** · Prerequisites: T04, T05, T06, T07, T08, T09
 
 Remove all excluded reachable behavior and packaged services after necessary pure primitives are extracted.
 

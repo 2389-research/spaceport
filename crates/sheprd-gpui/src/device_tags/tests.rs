@@ -1,5 +1,7 @@
 use super::*;
 
+mod local;
+
 fn tagged(records: &[(&str, &[&str])]) -> Tags {
     Tags::tagged(records)
 }
@@ -51,35 +53,9 @@ fn toggling_adds_and_removes_one_tag() {
 fn an_edit_that_changes_nothing_is_not_an_edit() {
     let mut tags = tagged(&[("a", &["work"])]);
     assert!(!tags.edit("a", vec!["work".into()], 50));
-    assert_eq!(tags.offer("a").updated_ms, 10);
+    assert_eq!(tags.records["a"].updated_ms, 10);
     assert!(tags.edit("a", vec!["lab".into()], 50));
-    assert_eq!(tags.offer("a").updated_ms, 50);
-}
-
-#[test]
-fn the_answer_replaces_the_copy_it_was_offered_for() {
-    let mut tags = tagged(&[("a", &["work"])]);
-    let stood = ComputerTags::new(["personal"], 20);
-    assert!(tags.settle("a", 10, stood.clone()));
-    assert_eq!(tags.offer("a"), stood);
-    assert!(!tags.settle("a", 20, stood));
-}
-
-#[test]
-fn an_edit_made_during_an_exchange_survives_its_answer() {
-    let mut tags = tagged(&[("a", &["work"])]);
-    tags.edit("a", vec!["lab".into()], 30);
-    assert!(!tags.settle("a", 10, ComputerTags::new(["work"], 10)));
-    assert_eq!(tags.of("a"), ["lab"]);
-}
-
-#[test]
-fn a_device_never_tagged_takes_its_daemons_tags_but_records_no_blank() {
-    let mut tags = Tags::default();
-    assert!(!tags.settle("a", 0, ComputerTags::default()));
-    assert!(tags.records.is_empty());
-    assert!(tags.settle("a", 0, ComputerTags::new(["work"], 5)));
-    assert_eq!(tags.of("a"), ["work"]);
+    assert_eq!(tags.records["a"].updated_ms, 50);
 }
 
 #[test]
@@ -97,23 +73,6 @@ fn the_saved_copy_reads_back_bounded() {
 
     std::fs::write(&file, b"not json").unwrap();
     assert_eq!(read(&file), Tags::default());
-}
-
-#[test]
-fn a_host_with_no_daemon_prints_nothing_and_bad_answers_are_refused() {
-    assert_eq!(sync::parse(b"").unwrap(), None);
-    assert_eq!(sync::parse(b" \n").unwrap(), None);
-    assert_eq!(
-        sync::parse(br#"{"tags":["work","WORK"],"updated_ms":4}"#).unwrap(),
-        Some(ComputerTags::new(["work"], 4))
-    );
-    assert!(matches!(sync::parse(b"nope"), Err(Error::Answer(_))));
-}
-
-#[test]
-fn the_script_needs_no_install_and_reads_all_its_input() {
-    assert!(sync::SCRIPT.contains("tags --offer"));
-    assert!(sync::SCRIPT.contains("cat >/dev/null"));
 }
 
 #[test]

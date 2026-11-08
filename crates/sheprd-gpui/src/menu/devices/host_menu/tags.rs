@@ -1,7 +1,6 @@
 //! Grouping a device from its menu. Move to picks the section it lists under;
 //! Also tagged adds the tags it carries besides. A new name in the field
-//! makes a new group. Both save through `device_tags`, which sends the change
-//! on to the device's own daemon.
+//! makes a new group. Both save through the local `device_tags` preference.
 use super::HostMenu;
 use crate::{
     SheprdWindow,
@@ -10,8 +9,8 @@ use crate::{
     menu::Page,
     search_input::SearchInput,
 };
+use device_tags::normalized;
 use gpui::{prelude::*, *};
-use sheprd_remote_control::control::tags::normalized;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Mode {
@@ -186,9 +185,7 @@ impl SheprdWindow {
         let mut list = div().flex().flex_col();
         for (index, tag) in picker.rows.iter().enumerate() {
             let ticked = match picker.mode {
-                Mode::MoveTo => {
-                    section.is_some_and(|own| sheprd_remote_control::control::tags::same(own, tag))
-                }
+                Mode::MoveTo => section.is_some_and(|own| device_tags::same(own, tag)),
                 Mode::AlsoTagged => self.device_tags.has(&host.id, tag),
             };
             list = list.child(row(index, tag.clone(), ticked, cx));
