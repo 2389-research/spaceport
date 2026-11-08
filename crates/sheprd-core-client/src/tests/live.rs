@@ -20,6 +20,8 @@ mod machines;
 #[cfg(unix)]
 mod observation;
 #[cfg(unix)]
+mod observer;
+#[cfg(unix)]
 mod remote_document;
 
 struct Sandbox {

@@ -226,7 +226,7 @@
       ],
       "deliverable": "Local/remote Core terminal attach, input and window lifecycle through retained renderer; process survival proved.",
       "status": "in_progress",
-      "evidence": ["evidence/t05-core-lifecycle.md"],
+      "evidence": ["evidence/t05-core-lifecycle.md", "evidence/t05-core-observer.md"],
       "must_close_gaps": []
     },
     {
