@@ -75,8 +75,8 @@
         "docs/06-security-and-resources.md"
       ],
       "deliverable": "Separate names/state/control endpoint from upstream; preserve compatibility and attribution. Production values remain gated.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "in_progress",
+      "evidence": ["evidence/t01-identity.md"],
       "must_close_gaps": []
     },
     {

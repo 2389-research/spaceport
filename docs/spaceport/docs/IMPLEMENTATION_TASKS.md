@@ -18,7 +18,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T01 — Isolate Spaceport development identity
 
-Status: **not_started** · Prerequisites: T00
+Status: **in_progress** · Prerequisites: T00
 
 Separate names/state/control endpoint from upstream; preserve compatibility and attribution. Production values remain gated.
 

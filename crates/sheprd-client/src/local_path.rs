@@ -1,6 +1,6 @@
 //! Where this user's files and tools live, for an app started from the
 //! desktop rather than a shell: the home directory, the configuration root,
-//! Sheprd's state directory, and a `PATH` with the directories a GUI launch
+//! Spaceport's state directory, and a `PATH` with the directories a GUI launch
 //! leaves out.
 use std::{ffi::OsString, path::PathBuf};
 
@@ -67,7 +67,7 @@ pub fn home_dir() -> Option<PathBuf> {
         .map(PathBuf::from)
 }
 
-/// Sheprd's own state directory, shared by its preferences, logs, and
+/// Spaceport's own state directory, shared by its preferences, logs, and
 /// saved devices.
 pub fn state_dir() -> Option<PathBuf> {
     state_dir_with(|name| std::env::var_os(name))
@@ -76,8 +76,8 @@ pub fn state_dir() -> Option<PathBuf> {
 fn state_dir_with(var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
     let var = |name| var(name).filter(|value| !value.is_empty());
     let root = var("XDG_STATE_HOME").map(PathBuf::from).or_else(|| {
-        // Existing Windows installations with HOME already store preferences
-        // here. Keep selecting the same directory after an upgrade.
+        // HOME takes precedence on every platform; the app-specific suffix
+        // keeps this fork's state separate from upstream installations.
         if let Some(home) = var("HOME") {
             return Some(PathBuf::from(home).join(".local").join("state"));
         }
@@ -92,7 +92,7 @@ fn state_dir_with(var: impl Fn(&str) -> Option<OsString>) -> Option<PathBuf> {
         }
         None
     });
-    root.map(|root| root.join("herdr").join("gpui"))
+    root.map(|root| root.join("spaceport"))
 }
 
 /// GUI launches omit directories commonly used by user-installed tools.
