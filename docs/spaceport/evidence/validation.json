@@ -12,7 +12,7 @@
     "requirements": 26
   },
   "strict_json_files": 10,
-  "local_file_links_checked": 171,
+  "local_file_links_checked": 174,
   "schema_validation": "passed",
   "schema_examples": 2,
   "application_scenarios_executed": 4,
@@ -42,11 +42,11 @@
     "plan/gaps.json": "f564fd783525c01a692b6c420f002015ccdbd12e05d5be7ea9115b24dadacb1b",
     "plan/removals.json": "c6c224657b4756ec7999d9f103f233a86a6c644abbe36426a3cc1fe807ce31de",
     "plan/sources.json": "c614386b3b96c7e83462c8e86ffc65207b194c042912f1f96162bf6497f7b452",
-    "plan/tasks.json": "8e50f7b75ef8846dd531185c8f301da69600fec1e5fbff32f6327c44e687c93e",
+    "plan/tasks.json": "567400143582000aa5c581273baf3c9ab64e06027e2822a56400fab59213ba29",
     "tools/README.md": "dc87a5aaa0a9786e42d5296891a4bbe71ea59329859e2cd46fbef7652104d889",
     "tools/requirements.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
     "tools/spec.py": "cb935e63ff6076568fba9ceb72b88fde2ae103e9a2f42db001d308f7e1415002",
     "tools/test_spec.py": "45172ec5f47a57642575e82ccdba4474c405ec7e59f515e054f35d0882223f5f"
   },
-  "checked_at_utc": "2026-11-08T14:15:55.492741+00:00"
+  "checked_at_utc": "2026-11-08T16:00:19.748365+00:00"
 }
