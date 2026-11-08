@@ -17,7 +17,6 @@ pub(super) enum Section {
     Px0,
     Notifications,
     Integrations,
-    Plugins,
     #[cfg(feature = "cloud")]
     CloudDevices,
     Configuration,
@@ -79,7 +78,6 @@ impl Section {
         Self::Px0,
         Self::Notifications,
         Self::Integrations,
-        Self::Plugins,
         #[cfg(feature = "cloud")]
         Self::CloudDevices,
         Self::Configuration,
@@ -102,7 +100,6 @@ impl Section {
             Self::Px0 => "settings-section-px0",
             Self::Notifications => "settings-section-notifications",
             Self::Integrations => "settings-section-integrations",
-            Self::Plugins => "settings-section-plugins",
             #[cfg(feature = "cloud")]
             Self::CloudDevices => "settings-section-cloud-devices",
             Self::Configuration => "settings-section-configuration",
@@ -118,7 +115,6 @@ impl Section {
             Self::StatusBar => "settings-lead-status-bar",
             Self::Px0 => "settings-lead-px0",
             Self::Integrations => "settings-lead-integrations",
-            Self::Plugins => "settings-lead-plugins",
             #[cfg(feature = "cloud")]
             Self::CloudDevices => "settings-lead-cloud-devices",
             Self::Configuration => "settings-lead-configuration",
@@ -136,7 +132,7 @@ impl Section {
                 Some(Group::Appearance)
             }
             Self::Tabs | Self::Px0 | Self::Notifications => Some(Group::Behaviour),
-            Self::Integrations | Self::Plugins => Some(Group::Connect),
+            Self::Integrations => Some(Group::Connect),
             #[cfg(feature = "cloud")]
             Self::CloudDevices => Some(Group::Connect),
             Self::Configuration => Some(Group::Advanced),
@@ -155,7 +151,6 @@ impl Section {
             Self::Px0 => "icons/code.svg",
             Self::Notifications => "icons/bell.svg",
             Self::Integrations => "icons/agent-generic.svg",
-            Self::Plugins => "icons/plug.svg",
             #[cfg(feature = "cloud")]
             Self::CloudDevices => "icons/globe.svg",
             Self::Configuration => "icons/file.svg",

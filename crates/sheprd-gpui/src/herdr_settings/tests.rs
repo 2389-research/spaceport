@@ -14,7 +14,6 @@ mod reading;
 mod save_safety;
 // Saving is Unix-only; Windows refuses every shared edit.
 #[cfg(unix)]
-mod sidebar_rows;
 #[cfg(unix)]
 mod symlinks;
 mod theme_palettes;

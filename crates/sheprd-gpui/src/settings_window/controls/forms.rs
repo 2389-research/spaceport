@@ -1,5 +1,5 @@
-//! Form pieces for the pages that hold forms rather than setting rows (Code,
-//! Plugins, Cloud devices): a titled block under the shared section heading,
+//! Form pieces for pages that hold forms rather than setting rows (px0 and
+//! Cloud devices): a titled block under the shared section heading,
 //! and a labelled switch row. Both follow the row system's look.
 // i18n: migrated
 use super::*;

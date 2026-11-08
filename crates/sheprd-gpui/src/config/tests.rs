@@ -66,7 +66,6 @@ mod terminal_padding;
 mod theme_files;
 mod themes;
 mod update_channel;
-mod usage_inline;
 mod worktrees;
 mod zen;
 

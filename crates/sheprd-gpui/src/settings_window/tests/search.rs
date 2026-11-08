@@ -54,7 +54,6 @@ fn every_catalog_id_is_unique_and_belongs_to_its_section() {
             Section::StatusBar => "status-",
             Section::Px0 => "px0-",
             Section::Integrations => "integrations-",
-            Section::Plugins => "plugins-",
             #[cfg(feature = "cloud")]
             Section::CloudDevices => "cloud-",
             Section::Configuration => "config-",

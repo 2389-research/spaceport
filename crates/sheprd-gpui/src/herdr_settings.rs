@@ -17,7 +17,6 @@ mod persistence;
 #[path = "herdr_settings/persistence_windows.rs"]
 mod persistence;
 mod remote;
-mod sidebar;
 #[cfg(test)]
 mod tests;
 
@@ -88,8 +87,6 @@ pub(crate) enum Error {
     Theme(String),
     #[error("cannot edit non-table config field {0}")]
     Table(&'static str),
-    #[error("invalid sidebar token")]
-    SidebarToken(#[from] crate::config::SidebarConfigError),
     #[error("could not reach the host's Herdr config")]
     Remote(#[source] sheprd_client::Error),
     #[error("the host's Herdr config changed; reload before saving")]
@@ -245,13 +242,6 @@ pub(crate) enum Edit {
     TabBarPosition(TabBarPosition),
     HideSingleTabBar(bool),
     PaneHistory(bool),
-    /// Adds `token` (config spelling, such as `$summary`) as its own row of
-    /// `[ui.sidebar.<scope>].rows`, or removes every occurrence of it there.
-    SidebarToken {
-        scope: crate::config::SidebarScope,
-        token: String,
-        shown: bool,
-    },
 }
 
 /// Debug is derived: the original document's text, which may hold private
@@ -498,7 +488,6 @@ impl Settings {
                 .as_deref()
                 .unwrap_or("")
                 .parse::<DocumentMut>()?;
-            let sidebar_edit = matches!(edit, Edit::SidebarToken { .. });
             match edit {
                 Edit::Theme(name) => {
                     let name =
@@ -526,11 +515,6 @@ impl Settings {
                     &["ui", "hide_tab_bar_when_single_tab"],
                     hide.into(),
                 )?,
-                Edit::SidebarToken {
-                    scope,
-                    token,
-                    shown,
-                } => sidebar::edit(&mut document, scope, &token, shown)?,
                 Edit::PaneHistory(enabled) => set(
                     &mut document,
                     &["experimental", "pane_history"],
@@ -577,13 +561,6 @@ impl Settings {
                 }
             }
             let text = document.to_string();
-            // Validate before performing any writes, including directory creation.
-            // The GUI falls back to default rows on a layout it cannot read, so
-            // a sidebar edit must leave one both it and Herdr accept. Other
-            // edits never touch the layout and must not fail on it.
-            if sidebar_edit {
-                crate::config::SidebarLayout::from_daemon_config(&text.parse::<toml::Table>()?)?;
-            }
             let mut snapshot = self.original.clone();
             snapshot.text = Some(text.clone());
             let mut next = Self::parse(self.path.clone(), snapshot)?;

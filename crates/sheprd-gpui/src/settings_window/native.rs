@@ -244,15 +244,6 @@ pub(crate) async fn verify_native(
                 verify_fonts(settings, source, expected, cx).await?;
             }
             #[cfg(feature = "mockup")]
-            if section == Section::Plugins {
-                let extension = if expected.width == px(960.) {
-                    "plugins.png"
-                } else {
-                    "plugins-narrow.png"
-                };
-                capture_settings(settings, extension, cx).await?;
-            }
-            #[cfg(feature = "mockup")]
             if std::env::var_os("HERDR_TEST_SETTINGS_CAPTURE").is_some()
                 && matches!(section, Section::Sidebar | Section::General)
             {

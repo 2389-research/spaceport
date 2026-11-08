@@ -5,7 +5,6 @@ pub(super) mod chat_env;
 mod fonts;
 mod forms;
 pub(super) mod indicators;
-pub(super) mod plugins;
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 pub(super) use fonts::native_probe;
 pub(super) use fonts::{face_font, face_message, family_label};
@@ -190,8 +189,6 @@ impl SettingsWindow {
         self.nav_search.update(cx, |input, cx| {
             input.set_appearance(self.config.ui.clone(), self.theme.clone(), cx);
         });
-        self.plugins
-            .refresh_appearance(&self.config, &self.theme, cx);
         self.sync_px0_field(cx);
         self.sync_chat_env_field(cx);
         if let Some(edit) = &self.number_edit {
@@ -296,7 +293,7 @@ impl SettingsWindow {
             Section::Tabs => self.render_tabs(cx),
             Section::Notifications => self.render_notifications(cx),
             Section::Configuration => self.render_configuration(cx),
-            Section::Theme | Section::Integrations | Section::Plugins | Section::Px0 => div(),
+            Section::Theme | Section::Integrations | Section::Px0 => div(),
             #[cfg(feature = "cloud")]
             Section::CloudDevices => div(),
         };

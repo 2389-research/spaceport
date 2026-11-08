@@ -5,44 +5,33 @@ fn layout(text: &str) -> anyhow::Result<SidebarLayout> {
 }
 
 #[test]
-fn scope_defaults_spell_the_typed_defaults() -> anyhow::Result<()> {
-    let rows = |scope: SidebarScope| {
-        let rows: Vec<String> = scope
-            .default_rows()
-            .iter()
-            .map(|row| format!("{row:?}"))
-            .collect();
-        format!(
-            "[ui.sidebar.{}]\nrows = [{}]\n",
-            scope.key(),
-            rows.join(", ")
-        )
-    };
-    let text = format!(
-        "{}{}",
-        rows(SidebarScope::Agents),
-        rows(SidebarScope::Spaces)
-    );
-    assert_eq!(layout(&text)?, SidebarLayout::default());
+fn configured_default_rows_match_typed_defaults() -> anyhow::Result<()> {
+    let text = "[ui.sidebar.agents]\nrows = [[\"state_icon\", \"machine\", \"workspace\", \"tab\"], [\"agent\"]]\n\
+                [ui.sidebar.spaces]\nrows = [[\"state_icon\", \"workspace\"], [\"branch\", \"git_status\"]]\n";
+    assert_eq!(layout(text)?, SidebarLayout::default());
     Ok(())
 }
 
 #[test]
-fn shows_reads_only_the_default_rows_of_its_scope() -> anyhow::Result<()> {
+fn scoped_rows_keep_custom_styles_and_agent_overrides() -> anyhow::Result<()> {
     let layout = layout(
         "[ui.sidebar.agents]\nrows = [[{ token = \"$model\", bold = true }]]\n\
          [ui.sidebar.agents.rows_by_agent]\nclaude = [[\"$summary\"]]\n\
          [ui.sidebar.spaces]\nrows = [[\"state_text\"]]\n",
     )?;
-    assert!(layout.shows(SidebarScope::Agents, "$model"));
-    assert!(!layout.shows(SidebarScope::Agents, "$summary"));
-    assert!(!layout.shows(SidebarScope::Agents, "state_text"));
-    assert!(layout.shows(SidebarScope::Spaces, "state_text"));
-    assert!(!layout.shows(SidebarScope::Spaces, "$model"));
-    assert!(!layout.shows(SidebarScope::Agents, "$bad name"));
-    assert!(SidebarScope::Agents.check("terminal_title").is_ok());
-    assert!(SidebarScope::Spaces.check("terminal_title").is_err());
-    assert!(SidebarScope::Spaces.check("$x y").is_err());
-    assert!(SidebarScope::Agents.check("summary").is_err());
+    assert_eq!(
+        layout.agents.rows[0][0].token,
+        "$model".parse::<AgentToken>()?
+    );
+    assert_eq!(
+        layout.agents.rows_by_agent["claude"][0][0].token,
+        "$summary".parse::<AgentToken>()?
+    );
+    assert_eq!(
+        layout.spaces.rows[0][0].token,
+        "state_text".parse::<SpaceToken>()?
+    );
+    assert!("terminal_title".parse::<SpaceToken>().is_err());
+    assert!("$bad name".parse::<AgentToken>().is_err());
     Ok(())
 }

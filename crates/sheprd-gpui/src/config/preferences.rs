@@ -54,8 +54,6 @@ pub(crate) enum Preference {
     /// `[sound] volume`, in percent.
     SoundVolume(u8),
     StatusBar(status_bar::Edit),
-    /// `[usage] inline`: whether the sidebar draws the daemon's configured rows.
-    UsageInline(bool),
     /// `[updates] channel`: whether the updater also offers beta releases.
     UpdateChannel(UpdateChannel),
     /// One `[features]` flag.
@@ -307,7 +305,6 @@ impl Config {
                     }
                     (Some("sound"), "volume", Some(i64::from(value).into()))
                 }
-                Preference::UsageInline(value) => (Some("usage"), "inline", Some(value.into())),
                 Preference::UpdateChannel(channel) => {
                     (Some("updates"), "channel", Some(channel.as_str().into()))
                 }

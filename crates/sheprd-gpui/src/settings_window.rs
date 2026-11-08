@@ -164,7 +164,6 @@ struct SettingsWindow {
     nav_search: Entity<crate::search_input::SearchInput>,
     themes: themes::ThemeBrowser,
     controls: controls::Controls,
-    plugins: controls::plugins::Plugins,
     px0: controls::px0::Px0Settings,
     chat_env: controls::chat_env::ChatEnvSettings,
     /// The open override dropdown, if any; its list renders inside its button.
@@ -329,7 +328,6 @@ impl SettingsWindow {
             nav_search,
             themes: themes::ThemeBrowser::new(cx),
             controls: controls::Controls::new(cx),
-            plugins: controls::plugins::Plugins::new(cx),
             px0: Default::default(),
             chat_env: Default::default(),
             dropdown: None,
@@ -448,7 +446,7 @@ impl SettingsWindow {
         self.cloud_source_changed(&source, cx);
         #[cfg(not(feature = "cloud"))]
         let _ = source;
-        if matches!(self.section, Section::Integrations | Section::Plugins) {
+        if self.section == Section::Integrations {
             cx.notify();
         }
         if matches!(self.section, Section::General | Section::Tabs) {
@@ -727,7 +725,6 @@ impl Render for SettingsWindow {
             None => match self.section {
                 Section::Theme => self.render_theme(window, cx),
                 Section::Integrations => self.render_integration_controls(cx),
-                Section::Plugins => self.render_plugin_controls(cx),
                 Section::Px0 => self.render_px0_controls(cx),
                 #[cfg(feature = "cloud")]
                 Section::CloudDevices => self.render_cloud_devices(cx),

@@ -24,6 +24,7 @@ mod page_messages;
 mod pages_behaviour;
 mod quit_saves;
 mod remote_history_reload;
+mod removed_plugins;
 mod rtl;
 mod save_now;
 mod scrollbars;

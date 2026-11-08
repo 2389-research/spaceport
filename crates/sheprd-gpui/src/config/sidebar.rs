@@ -48,54 +48,6 @@ impl SidebarLayout {
     }
 }
 
-impl SidebarLayout {
-    /// Whether `token`, spelled as in config, is in `scope`'s default `rows`.
-    /// Per-agent overrides are not counted: Settings only edits `rows`.
-    pub(crate) fn shows(&self, scope: SidebarScope, token: &str) -> bool {
-        match scope {
-            SidebarScope::Agents => token
-                .parse::<AgentToken>()
-                .is_ok_and(|token| self.agents.rows.iter().flatten().any(|t| t.token == token)),
-            SidebarScope::Spaces => token
-                .parse::<SpaceToken>()
-                .is_ok_and(|token| self.spaces.rows.iter().flatten().any(|t| t.token == token)),
-        }
-    }
-}
-
-/// Which `[ui.sidebar]` layout a token belongs to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum SidebarScope {
-    Agents,
-    Spaces,
-}
-
-impl SidebarScope {
-    pub(crate) fn key(self) -> &'static str {
-        match self {
-            Self::Agents => "agents",
-            Self::Spaces => "spaces",
-        }
-    }
-
-    /// Upstream's `rows` when the key is absent, spelled as in config. The
-    /// typed defaults must stay equal to these.
-    pub(crate) fn default_rows(self) -> &'static [&'static [&'static str]] {
-        match self {
-            Self::Agents => &[&["state_icon", "machine", "workspace", "tab"], &["agent"]],
-            Self::Spaces => &[&["state_icon", "workspace"], &["branch", "git_status"]],
-        }
-    }
-
-    /// Rejects a token this layout would refuse when Herdr loads it.
-    pub(crate) fn check(self, token: &str) -> Result<(), SidebarConfigError> {
-        match self {
-            Self::Agents => token.parse::<AgentToken>().map(drop),
-            Self::Spaces => token.parse::<SpaceToken>().map(drop),
-        }
-    }
-}
-
 pub type Rows<T> = Vec<Vec<ConfiguredToken<T>>>;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]

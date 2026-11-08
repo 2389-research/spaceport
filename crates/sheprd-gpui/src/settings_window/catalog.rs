@@ -487,12 +487,6 @@ pub(super) const CATALOG: &[Entry] = &[
         "settings-integrations-search",
         "settings-integrations-search-description",
     ),
-    entry(
-        Section::Plugins,
-        "plugins-values",
-        "settings-plugins-values",
-        "settings-plugins-values-description",
-    ),
     #[cfg(feature = "cloud")]
     entry(
         Section::CloudDevices,
