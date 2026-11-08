@@ -1,5 +1,5 @@
-//! The daemon's own `config.toml`: where herdr keeps it, and the few keys the
-//! app honors from it.
+//! Spaceport's private view settings path and the few inherited keys the app
+//! still reads while its configuration is consolidated.
 
 use std::{
     env, fs,
@@ -8,16 +8,12 @@ use std::{
 
 use super::{ClipboardToast, DaemonKeys, SidebarLayout};
 
-/// The daemon's config is read for a handful of keys, so a file far larger
-/// than any hand-written config is skipped rather than parsed on every load.
+/// Only a handful of view keys are read, so an oversized file is skipped.
 pub(super) const MAX_DAEMON_CONFIG_BYTES: u64 = 1 << 20;
 
-/// The daemon's own config file, resolved exactly as herdr resolves it. Every
-/// GUI reader of those settings shares this one answer.
-pub(crate) fn daemon_config_path(get: impl Fn(&str) -> Option<std::ffi::OsString>) -> PathBuf {
-    if let Some(path) = get("HERDR_CONFIG_PATH") {
-        return path.into();
-    }
+/// The view settings file belongs to Spaceport, even when Herdr's config path
+/// is overridden for a separate runtime.
+pub(crate) fn view_settings_path(get: impl Fn(&str) -> Option<std::ffi::OsString>) -> PathBuf {
     let root = get("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|| {
@@ -39,11 +35,10 @@ pub(crate) fn daemon_config_path(get: impl Fn(&str) -> Option<std::ffi::OsString
                 .map(|home| home.join(".config"))
                 .unwrap_or_else(env::temp_dir)
         });
-    // Share production TUI settings even in a debug GUI build or SSH session.
-    root.join("herdr/config.toml")
+    root.join("spaceport/view.toml")
 }
 
-/// What the GUI honors from the daemon's own config.
+/// The view keys the GUI still merges with its main config.
 #[derive(Clone, Debug, Default)]
 pub(super) struct Daemon {
     pub(super) clipboard_toast: ClipboardToast,
@@ -51,9 +46,8 @@ pub(super) struct Daemon {
     pub(super) sidebar_layout: SidebarLayout,
 }
 
-/// A config file the GUI does not own can hold anything, including settings
-/// from a newer herdr, so only the keys read here matter and anything
-/// unreadable, oversized, malformed, or unrecognized leaves the defaults alone.
+/// Only the inherited view keys matter; anything unreadable, oversized,
+/// malformed, or unrecognized leaves the defaults alone.
 pub(super) fn daemon_settings(path: &Path) -> Daemon {
     if fs::metadata(path).is_ok_and(|data| data.len() > MAX_DAEMON_CONFIG_BYTES) {
         return Daemon::default();

@@ -4,7 +4,7 @@
 use super::{Context, Output, not_running, refused, settings};
 use crate::{
     cli::control::ConfigCommand,
-    config::{Config, Layer, daemon_config_path, parse_value},
+    config::{Config, Layer, parse_value, view_settings_path},
     control::{
         ErrorCode,
         protocol::{
@@ -15,7 +15,7 @@ use crate::{
 };
 use serde_json::json;
 
-const LOCAL: &str = "config-gpui.local.toml";
+const LOCAL: &str = "spaceport/config.local.toml";
 
 pub(in crate::control::client) fn config(
     command: ConfigCommand,
@@ -45,18 +45,18 @@ pub(in crate::control::client) fn config(
 fn paths() -> crate::Result<Output> {
     let managed = Config::path()?;
     let local = Config::local_path()?;
-    let herdr = daemon_config_path(sheprd_client::local_var);
+    let view = view_settings_path(sheprd_client::local_var);
     Output::data(
         format!(
-            "{}\n    your settings, which Sheprd also saves its choices to\n{}\n    the defaults, rewritten by each version\n{}\n    Herdr's own config, of which Sheprd honors a few keys",
+            "{}\n    your Spaceport settings\n{}\n    the defaults, rewritten by each version\n{}\n    additional Spaceport view settings",
             local.display(),
             managed.display(),
-            herdr.display(),
+            view.display(),
         ),
         &json!({
             "local": local.display().to_string(),
             "managed": managed.display().to_string(),
-            "herdr": herdr.display().to_string(),
+            "view": view.display().to_string(),
         }),
     )
 }
@@ -65,7 +65,7 @@ fn get(key: &str) -> crate::Result<Output> {
     let Some((value, layer)) = Config::effective_value(key)? else {
         return Err(refused(
             ErrorCode::NotFound,
-            format!("{key} is not set; config-gpui.toml lists every setting"),
+            format!("{key} is not set; spaceport/config.toml lists every setting"),
         ));
     };
     let source = match layer {

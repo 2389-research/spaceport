@@ -9,7 +9,7 @@ mod redact;
 mod tests;
 
 use super::{Output, logs};
-use crate::config::{Config, daemon_config_path};
+use crate::config::{Config, view_settings_path};
 use redact::Redactor;
 use std::{
     fmt::Write as _,
@@ -58,7 +58,7 @@ fn gather() -> String {
     let files: [(&str, crate::Result<PathBuf>); 3] = [
         ("local", Config::local_path()),
         ("managed", Config::path()),
-        ("herdr", Ok(daemon_config_path(sheprd_client::local_var))),
+        ("view", Ok(view_settings_path(sheprd_client::local_var))),
     ];
     for (name, path) in &files {
         match path {
@@ -86,7 +86,7 @@ fn gather() -> String {
             let _ = writeln!(text, "{error}");
         }
     }
-    text.push_str("\n== config-gpui.local.toml ==\n");
+    text.push_str("\n== spaceport/config.local.toml ==\n");
     match &files[0].1 {
         Ok(path) => text.push_str(&overrides(path)),
         Err(error) => {

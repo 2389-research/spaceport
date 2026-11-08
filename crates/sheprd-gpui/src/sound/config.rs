@@ -1,4 +1,4 @@
-use crate::{Error, Result, config::daemon_config_path as config_path};
+use crate::{Error, Result, config::view_settings_path as config_path};
 use serde::Deserialize;
 use sheprd_client::protocol::SemanticNotificationSound as Sound;
 use std::{

@@ -16,4 +16,10 @@ The existing path test was changed to require the independent directory. It fail
 
 The Windows pipe name now begins `\\.\pipe\spaceport-control-`, retains the user SID and the deterministic explicit-state-root hash, and uses the existing owner, DACL, first-instance, and remote-client refusal policy. A cross-platform pure test failed to compile before the naming function existed, then passed with the new name and path spelling cases. The Windows listener and client checks have not run on Windows.
 
-The separate daemon settings reader still resolves upstream `herdr/config.toml` and can influence the GUI. The updater still has upstream app and release identities. No side-by-side or native identity acceptance has been claimed.
+## Private view settings
+
+The GUI's inherited view settings reader now resolves `<config root>/spaceport/view.toml`; `HERDR_CONFIG_PATH` cannot redirect it to upstream. Its callers for config loading, sound, settings persistence, CLI paths and diagnostics share that path. The new test failed to compile before the path existed, then passed. The adjacent config and sound suite passed 275 tests with one ignored after one old sound-path assertion was updated. A macOS test binary emitted the same compact-unwind linker warning seen at baseline. Windows path expectations were updated but have not run on Windows.
+
+The built development CLI, run with `XDG_CONFIG_HOME=/tmp/spaceport-cli-config-fixture`, returned `local`, `managed`, and `view` JSON paths all under that root's `spaceport/` directory. The path command did not create the fixture root. Its text, help and `docs/cli.md` were updated to describe the Spaceport paths. The executable and common CLI help footer still say Sheprd; those identity changes remain open. The legacy remote Herdr settings module still has its own remote `herdr/config.toml` path and must be removed with the Herdr 1 feature unit.
+
+The updater still has upstream app and release identities; a separate compile-time gate now blocks release-version builds until those identities are replaced and verified. No side-by-side or native identity acceptance has been claimed.

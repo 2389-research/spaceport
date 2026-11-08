@@ -34,14 +34,14 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Reloads when the GUI overrides change, or the daemon's config whose
-    /// `[keys]`, clipboard toast, and `[ui.sidebar]` rows the GUI also honors.
+    /// Reloads when the GUI overrides or the private view settings change.
+    /// The latter still holds `[keys]`, clipboard toast, and `[ui.sidebar]`.
     /// Reads the theme again when a theme file changes in place.
     pub(crate) fn watch_gui_config(&mut self, cx: &mut Context<Self>) {
         let Ok(path) = Config::local_path() else {
             return;
         };
-        let daemon = crate::config::daemon_config_path(sheprd_client::local_var);
+        let daemon = crate::config::view_settings_path(sheprd_client::local_var);
         let executor = cx.background_executor().clone();
         let mut theme = self.config.theme.clone();
         self.config_watch = Some(cx.spawn(async move |this, cx| {

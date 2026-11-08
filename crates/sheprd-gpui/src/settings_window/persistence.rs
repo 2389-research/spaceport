@@ -26,7 +26,7 @@ fn watched_paths() -> Option<[std::path::PathBuf; 2]> {
     let local = Config::local_path().ok()?;
     Some([
         local,
-        crate::config::daemon_config_path(sheprd_client::local_var),
+        crate::config::view_settings_path(sheprd_client::local_var),
     ])
 }
 

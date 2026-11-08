@@ -14,9 +14,26 @@ fn spaceport_config_path_is_independent_of_upstream() {
     );
 }
 
+#[test]
+fn spaceport_view_settings_ignore_upstream_config_override() {
+    let vars = [
+        ("XDG_CONFIG_HOME", "/private/spaceport-config"),
+        ("HERDR_CONFIG_PATH", "/private/upstream/herdr/config.toml"),
+    ];
+    let path = view_settings_path(|key| {
+        vars.iter()
+            .find(|(name, _)| *name == key)
+            .map(|(_, value)| (*value).into())
+    });
+    assert_eq!(
+        path,
+        PathBuf::from("/private/spaceport-config/spaceport/view.toml")
+    );
+}
+
 #[cfg(windows)]
 #[test]
-fn shared_windows_config_path_matches_upstream_roaming_layout() {
+fn windows_view_settings_use_spaceport_roaming_layout() {
     let vars = [
         ("USERPROFILE", r"C:\Users\test"),
         ("APPDATA", r"C:\Roaming"),
@@ -24,13 +41,13 @@ fn shared_windows_config_path_matches_upstream_roaming_layout() {
         ("HERDR_CONFIG_PATH", r"C:\explicit.toml"),
     ];
     for (count, expected) in [
-        (1, r"C:\Users\test\AppData\Roaming\herdr\config.toml"),
-        (2, r"C:\Roaming\herdr\config.toml"),
-        (3, r"C:\xdg\herdr\config.toml"),
-        (4, r"C:\explicit.toml"),
+        (1, r"C:\Users\test\AppData\Roaming\spaceport\view.toml"),
+        (2, r"C:\Roaming\spaceport\view.toml"),
+        (3, r"C:\xdg\spaceport\view.toml"),
+        (4, r"C:\xdg\spaceport\view.toml"),
     ] {
         assert_eq!(
-            daemon_config_path(|key| vars[..count]
+            view_settings_path(|key| vars[..count]
                 .iter()
                 .find(|(name, _)| *name == key)
                 .map(|(_, value)| (*value).into())),

@@ -1,10 +1,10 @@
 use super::*;
 
 #[test]
-fn shared_config_path_precedence_is_independent_of_gui_build() {
+fn view_config_path_stays_with_spaceport() {
     assert_eq!(
         config_path(|_| None),
-        std::env::temp_dir().join("herdr/config.toml")
+        std::env::temp_dir().join("spaceport/view.toml")
     );
     let vars = [
         ("HOME", "/home/test"),
@@ -15,13 +15,13 @@ fn shared_config_path_precedence_is_independent_of_gui_build() {
         (
             1,
             if cfg!(windows) {
-                "/home/test/AppData/Roaming/herdr/config.toml"
+                "/home/test/AppData/Roaming/spaceport/view.toml"
             } else {
-                "/home/test/.config/herdr/config.toml"
+                "/home/test/.config/spaceport/view.toml"
             },
         ),
-        (2, "/xdg/herdr/config.toml"),
-        (3, "/explicit/settings.toml"),
+        (2, "/xdg/spaceport/view.toml"),
+        (3, "/xdg/spaceport/view.toml"),
     ] {
         assert_eq!(
             config_path(|key| vars[..count]

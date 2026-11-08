@@ -1,7 +1,7 @@
 //! `[github]` in the config files: adding and removing the additional
 //! accounts the GitHub page lists. The table itself lives in `herdr-github`.
 
-use super::{Config, daemon_config_path};
+use super::{Config, view_settings_path};
 use crate::{Error, Result};
 use sheprd_github::AccountsError;
 pub(crate) use sheprd_github::config::MAX_ACCOUNTS;
@@ -14,7 +14,7 @@ impl Config {
     /// under the config lock so two windows adding at once both land.
     /// Blocks on the file: call it from a background thread.
     pub(crate) fn add_github_account(account: &GitHubAccount) -> Result<()> {
-        let daemon = daemon_config_path(sheprd_client::local_var);
+        let daemon = view_settings_path(sheprd_client::local_var);
         let (_lock, local) = Self::prepare_files(&Self::path()?)?;
         Self::add_github_account_at(&local, &daemon, account)
     }
@@ -22,7 +22,7 @@ impl Config {
     /// Removes the account `id` from `[github] accounts`, leaving every other
     /// entry as written. Blocks on the file: call it from a background thread.
     pub(crate) fn remove_github_account(id: &str) -> Result<()> {
-        let daemon = daemon_config_path(sheprd_client::local_var);
+        let daemon = view_settings_path(sheprd_client::local_var);
         let (_lock, local) = Self::prepare_files(&Self::path()?)?;
         Self::remove_github_account_at(&local, &daemon, id)
     }

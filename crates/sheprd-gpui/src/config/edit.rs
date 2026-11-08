@@ -3,7 +3,7 @@
 //! the way loading checks the file before it is written, so a value the app
 //! would refuse never reaches the disk.
 use super::Error;
-use super::{Config, DEFAULT_CONFIG, daemon_config_path, daemon_settings, files::write_config};
+use super::{Config, DEFAULT_CONFIG, daemon_settings, files::write_config, view_settings_path};
 use crate::Result;
 use std::path::Path;
 use toml_edit::{Item, TableLike};
@@ -11,9 +11,9 @@ use toml_edit::{Item, TableLike};
 /// Where a setting's effective value comes from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Layer {
-    /// `config-gpui.local.toml`, the user's overrides.
+    /// `spaceport/config.local.toml`, the user's overrides.
     Local,
-    /// `config-gpui.toml`, the managed defaults.
+    /// `spaceport/config.toml`, the managed defaults.
     Default,
 }
 
@@ -64,7 +64,7 @@ impl Config {
     pub(crate) fn check_files() -> Result<Self> {
         Self::check_files_at(
             &Self::path()?,
-            &daemon_config_path(sheprd_client::local_var),
+            &view_settings_path(sheprd_client::local_var),
         )
     }
 
@@ -77,14 +77,14 @@ impl Config {
 
     /// Sets `key` in the local overrides file, keeping everything else in it.
     pub(crate) fn set_key(key: &str, value: toml_edit::Value) -> Result<()> {
-        let daemon = daemon_config_path(sheprd_client::local_var);
+        let daemon = view_settings_path(sheprd_client::local_var);
         let (_lock, local) = Self::prepare_files(&Self::path()?)?;
         Self::edit_key_at(&local, &daemon, key, Some(value)).map(drop)
     }
 
     /// Removes `key` from the local overrides file; false when it was not set.
     pub(crate) fn unset_key(key: &str) -> Result<bool> {
-        let daemon = daemon_config_path(sheprd_client::local_var);
+        let daemon = view_settings_path(sheprd_client::local_var);
         let (_lock, local) = Self::prepare_files(&Self::path()?)?;
         Self::edit_key_at(&local, &daemon, key, None)
     }

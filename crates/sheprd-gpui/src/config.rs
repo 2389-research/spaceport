@@ -1,7 +1,6 @@
-//! GUI settings. The daemon's own config is read only where the GUI honors a
-//! preference the user already expressed there, never written and never used
-//! to change daemon behavior. Managed defaults are refreshed from the binary;
-//! `config-gpui.local.toml` holds persistent user overrides.
+//! GUI settings. Spaceport owns its managed defaults, local overrides and
+//! private view settings. `spaceport/config.local.toml` holds persistent user
+//! overrides; no local reader uses Herdr's own config file.
 // i18n: migrated
 use crate::{
     Result,
@@ -76,7 +75,7 @@ pub use chat::{ChatLauncher, ChatLayoutMode};
 pub use cloud::CloudConfig;
 #[cfg(test)]
 use daemon::MAX_DAEMON_CONFIG_BYTES;
-pub(crate) use daemon::daemon_config_path;
+pub(crate) use daemon::view_settings_path;
 use daemon::{Daemon, daemon_settings};
 use devices::MAX_DEVICES;
 pub(crate) use devices::{DeviceSettings, KeybindingSource};
@@ -290,7 +289,7 @@ pub struct Config {
     /// When true the window needs no title bar from the window manager.
     pub show_window_controls: bool,
     pub sidebar: FontConfig,
-    /// Daemon sidebar rows, falling back to defaults when invalid.
+    /// Sidebar rows from private view settings, with defaults when invalid.
     pub sidebar_layout: SidebarLayout,
     /// Spacing overrides, host colours, and selection marking for the sidebar.
     pub sidebar_style: SidebarStyle,
@@ -688,7 +687,7 @@ impl Config {
     pub fn load() -> Result<Self> {
         Self::load_path(
             &Self::path()?,
-            &daemon_config_path(sheprd_client::local_var),
+            &view_settings_path(sheprd_client::local_var),
         )
     }
 
@@ -697,7 +696,7 @@ impl Config {
     pub(crate) fn load_startup() -> Result<Self> {
         Self::load_startup_path(
             &Self::path()?,
-            &daemon_config_path(sheprd_client::local_var),
+            &view_settings_path(sheprd_client::local_var),
         )
     }
 

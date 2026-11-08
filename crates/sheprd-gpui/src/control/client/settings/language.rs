@@ -22,7 +22,7 @@ pub(in crate::control::client) fn language(
         LanguageCommand::Set(language) => {
             Config::set_key("language", toml_edit::Value::from(language.to_string()))?;
             Ok(Output::message(format!(
-                "language = \"{language}\" in config-gpui.local.toml; Sheprd applies it at once"
+                "language = \"{language}\" in spaceport/config.local.toml; Spaceport applies it at once"
             )))
         }
     }

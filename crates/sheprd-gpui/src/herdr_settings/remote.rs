@@ -20,9 +20,8 @@ const LIMITS: ScriptLimits = ScriptLimits {
     idle: Duration::from_secs(20),
 };
 
-/// The path Herdr's release build reads, as the SSH login environment
-/// resolves it, matching the local `daemon_config_path`. A daemon started with
-/// a different `HERDR_CONFIG_PATH` than SSH sessions get is not reachable.
+/// The remote Herdr backend owns this path; Spaceport's local settings never
+/// read it.
 const PATH: &str =
     r#"path=${HERDR_CONFIG_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/herdr/config.toml}"#;
 

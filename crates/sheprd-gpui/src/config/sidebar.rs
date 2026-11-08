@@ -1,4 +1,4 @@
-//! Daemon `[ui.sidebar]` layouts and token rules.
+//! Private `[ui.sidebar]` view layouts and token rules.
 use serde::Deserialize;
 use std::{collections::BTreeMap, str::FromStr};
 
