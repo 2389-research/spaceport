@@ -33,3 +33,11 @@ This cut removes `Command::OpenCode`, the titlebar and group menu entries, the n
 The saved-tab parser still accepts `"code"` and `"code_group"` as `Place::RetiredVsCode`, validates them as editor records, and drops them before restore while reserving their IDs. It never rewrites a person's file. Old `[code]` and `keybindings.open_code` settings become reported unknown keys; a private parse test confirms they cannot configure the removed route while `[px0]` still loads. No existing `vscode-token` file or user process was touched. `group_shows_page` moved to the group view and the centered waiting placeholder moved to px0 because both were retained helpers in VS Code-named files. `WebUrl` helpers used only by the removed server path and their direct helper test were removed; the actual listening-port/system-open routes remain.
 
 Verification on macOS: `cargo +1.99.0 check -p sheprd-gpui --bin sheprd --locked` passed with no code warnings; GPUI test binary compiled with the existing compact-unwind linker warning and `block v0.1.6` future-compatibility notice. `cargo +1.99.0 test -p sheprd-commands --locked` passed 24/24. Focused GPUI filters passed: Store 16, px0 tabs 3, editor group 1, system-open 2, px0 settings 4, Settings search 9, navigation 2, tab control 9, group menu 30, rich-chat code 3, terminal external links 5, window links 41, read-only source view 7, and stale IDE config 1. No native UI, Windows build, actual editor, SSH host, Core daemon, user service, or personal config was exercised. `code edit` terminal-editor action, `Location::Code` read-only source view, Git/review paths, and other excluded IDE work remain reachable; T04/RM-IDE stay in progress and A29/A30 remain not run.
+
+After integration as `77d415ee`, the combined branch passed the production
+GUI check, command catalog 24/24, retired-state/config filters 7/7, Core
+join 2/2, removed Teleport CLI 1/1, group menu 30/30, and px0 Settings
+4/4. `just check-i18n` passed 5,257 messages in 276 files; the historical
+site suite passed 24/24, the specification tool tests 21/21, and formatting,
+file-size, and sorted-list checks passed. These are source/headless results;
+there is no native VS Code absence or full desktop parity claim.
