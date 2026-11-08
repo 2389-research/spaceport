@@ -612,7 +612,7 @@
       ],
       "deliverable": "Native platform, adversarial, resource and agent-usability evidence. Unproved requirements remain blocked.",
       "status": "not_started",
-      "evidence": [],
+      "evidence": ["evidence/t11-sidebar-activation-audit.md"],
       "must_close_gaps": [
         "G-CHAT",
         "G-PORT",

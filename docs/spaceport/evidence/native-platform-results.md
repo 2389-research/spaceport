@@ -15,3 +15,6 @@ processes and local/fixture remote methods, but they do not open the final
 Spaceport desktop UI. A49–A51 remain `not_run` as complete acceptance cases;
 G-PLATFORM remains open. The current branch has ongoing source removals, so
 these earlier native results do not qualify the later code revisions.
+The [decoy activation audit](t11-sidebar-activation-audit.md) narrows the
+later failure to an inactive AppKit test process and records the missing
+upstream comparison; it does not classify the cause or close A49.
