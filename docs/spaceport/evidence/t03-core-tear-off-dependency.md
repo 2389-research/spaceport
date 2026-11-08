@@ -44,6 +44,30 @@ check fails, and preserve the existing legacy tear-off tests in
 `window/tab_strip/tests/tear_off.rs`. A local Core tab is not a remote
 machine mapping; no guessed alias or new Core RPC is required.
 
+## Core-first cut order for review
+
+The source review at `aa95cb07` recommends migrating retained window readers
+and commands to Core before removing the Herdr 1 constructor/bridge, then
+implementing tear-off through the sole Core window path. A temporary dual
+launch enum would keep the legacy reconnect path alive while more than 500
+endpoint/selected-index references across the app still assume it. The
+specification already requires Core as the only runtime owner; this note does
+not authorize a smaller view or a fabricated endpoint.
+
+The final window launch needs the expected persistent local Core hub ID, and
+an ephemeral observation epoch for a delayed handoff. The full
+hub/machine/document/group key and `TabId` stay with `TornTab` and the Store.
+The existing per-window Hub can join with `Start::Join`, which never starts
+Core, but a blank Core-first window needs an explicit join kickoff. Before
+changing hidden maps or layout, arrival must compare the joined hub ID and a
+fresh observation's epoch, group and tab identity. A failed open or stale
+handoff must return the tab to its source window. UI New Window and CLI
+`window new --window` need the same launch identity and exact refusal;
+`window list` must report the Core target truthfully, with a control-protocol
+version bump if its response changes. Tests must cover no legacy connection
+or start on Core window construction, join-only attachment, stale handoff
+rollback, tab return on close, CLI targeting, and native drag/focus.
+
 ## Verification limit
 
 The red test used an isolated headless window and the warm Cargo target with
