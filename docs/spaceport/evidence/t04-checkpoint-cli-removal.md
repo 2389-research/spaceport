@@ -33,3 +33,14 @@ that package check does not prove application conformance.
 T04 and RM-GIT remain `in_progress`; A29/A30 remain `not_run`. This route
 removal does not prove absence of native checkpoint UI, worktree/Git controls
 or client VCS internals.
+
+## Merged branch verification
+
+Cherry-pick `365d2884` resolved the task-evidence list against the concurrent
+Daytona cut and regenerated the package report. On the combined branch, the
+control protocol passed 57/57; the removed CLI route 1/1, retained work client
+4/4, work server 8/8, CLI parser 9/9 and native checkpoint menu 7/7 passed.
+The inherited site suite passed 24/24. Default and all-feature production app
+checks, format, file-size, sorted and i18n checks passed (5,066 messages in
+266 files), as did all 21 specification-tool tests. No native app window or
+other platform was exercised; A29 remains `not_run`.

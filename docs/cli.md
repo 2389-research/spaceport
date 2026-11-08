@@ -1,14 +1,19 @@
 # Command line
 
-`sheprd` is also a command line for the running Sheprd app. Herdr's own
+This development branch still builds the `sheprd` executable while Spaceport's
+independent command identity is in progress. The commands below describe the
+current build; the [Spaceport task graph](spaceport/plan/tasks.json) tracks
+routes that must still be removed or changed.
+
+`sheprd` is also a command line for the running app. Herdr's own
 `herdr` CLI drives the daemon: workspaces, terminal tabs, panes, agents,
 worktrees, and notifications. `sheprd COMMAND` covers what only this
-client knows or draws: its windows, its own tabs (pages, code, reviews,
-Devices), the activity bar's sections, worktree notes, forwarded
+client knows or draws: its windows, its own tabs (pages, Devices and Core
+terminals), the activity bar's sections, worktree notes, forwarded
 ports, and its settings.
 
 Commands reach the app over a socket of its own,
-`$XDG_STATE_HOME/herdr/gpui/control.sock` (default `~/.local/state/`), which
+`$XDG_STATE_HOME/spaceport/control.sock` (default `~/.local/state/spaceport/`), which
 only your user can open; on Windows, over a named pipe (see
 [Windows](#windows)). An agent on an SSH host has no path to this socket.
 A few commands work from files alone and
@@ -198,10 +203,10 @@ sheprd wait window            # also waits for the app to start
 Commands never bypass a confirmation. Fanning out a prompt and running a
 worktree script the app has not seen open the app's
 own dialog, pointed at your checkout; the user confirms there.
-Launching the app or requesting a new terminal can start the appropriate
-local daemon: installed Herdr 1, or a
-user-installed/bundled herdr-core. Existing Herdr 1 sessions are not migrated,
-and no command upgrades a personal daemon. `update` never installs the app.
+The development build still has an inherited Herdr 1 startup path; removing it
+is an open Spaceport task. The Core path may start only a separately installed,
+trusted Core when needed. Spaceport packages do not bundle or upgrade Core.
+`update` never installs the app.
 
 Adding an SSH or local network device has no command: the Add Device dialog
 runs it. Its setup workspace runs `sheprd __device-setup-attach SOCKET`,
