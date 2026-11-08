@@ -385,10 +385,6 @@ impl SheprdWindow {
         let Ok(terminal) = TerminalId::new(terminal_id.to_owned()) else {
             return;
         };
-        if self.selected_is_remote() {
-            self.show_flash(Flash::warning(fl!("core-terminals-local-only")), cx);
-            return;
-        }
         let Some(core_id) = cx
             .try_global::<observation::Observation>()
             .and_then(|observation| observation.projection().core_id())

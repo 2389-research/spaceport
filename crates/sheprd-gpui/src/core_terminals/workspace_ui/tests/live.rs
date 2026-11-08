@@ -13,6 +13,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod remote_selection;
+
 struct Sandbox {
     _dir: tempfile::TempDir,
     binary: OsString,

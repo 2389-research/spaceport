@@ -376,7 +376,7 @@ impl SheprdWindow {
     /// separately installed `herdr-core` starts. Refused on another
     /// host, where the shell would run on this computer instead.
     pub(crate) fn new_core_terminal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if self.selected_is_remote() {
+        if self.selected_core_group().is_none() && self.selected_is_remote() {
             self.show_flash(Flash::warning(fl!("core-terminals-local-only")), cx);
             return;
         }

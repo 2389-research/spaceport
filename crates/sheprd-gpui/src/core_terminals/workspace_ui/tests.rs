@@ -85,6 +85,7 @@ fn a_closed_core_page_reopens_in_its_exact_group(cx: &mut gpui::TestAppContext) 
 
 #[cfg(unix)]
 mod live;
+mod remote_selection;
 
 #[gpui::test]
 fn selecting_a_group_shows_exact_member_identity_without_changing_the_document(

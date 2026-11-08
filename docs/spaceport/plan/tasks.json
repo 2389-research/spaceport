@@ -191,7 +191,8 @@
         "evidence/t03-remote-terminal-parity.md",
         "evidence/t03-typed-group-key-dependency.md",
         "evidence/t03-typed-group-key.md",
-        "evidence/t03-core-tear-off-dependency.md"
+        "evidence/t03-core-tear-off-dependency.md",
+        "evidence/t03-local-core-selection.md"
       ],
       "must_close_gaps": []
     },
