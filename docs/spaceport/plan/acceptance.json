@@ -115,8 +115,8 @@
       "title": "Terminal parser continuity",
       "scenario": "Replay retained fixtures across arbitrary byte splits and resize/alternate-screen transitions.",
       "expected": "Frame/input semantics match the retained baseline, including Unicode and escape boundaries.",
-      "status": "not_run",
-      "evidence": []
+      "status": "passed",
+      "evidence": ["evidence/t05-terminal-parser.md"]
     },
     {
       "id": "A11",

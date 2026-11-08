@@ -15,7 +15,7 @@
   "local_file_links_checked": 35,
   "schema_validation": "passed",
   "schema_examples": 2,
-  "application_scenarios_executed": 3,
+  "application_scenarios_executed": 4,
   "input_sha256": {
     "AGENTS.md": "6bb7effed751eff235334be33ca78e38e4f469ad540d58037b0fd6c54de80646",
     "BOOTSTRAP_PROMPT.md": "6018757e5a860ef5063df6f09dd192081958eb63f0d6a2a82de2bbb11bc413ea",
@@ -36,8 +36,8 @@
     "examples/observation.json": "c62b06ed37236b7fc7e1ace848d8643ef3553c70570a2952186f6bb3172da184",
     "examples/unknown-outcome.json": "06a3dcb9b16e9596f79a25050eef3e99fbb9bb36ee055c6a5fe38a9e73374f42",
     "notes/HANDOFF_TEMPLATE.md": "505137a430a8db4587354998f4d23b1b964c3357b9cfc117c12da28fcfbcc470",
-    "plan/acceptance.json": "3bc541763c019402c9c45554c6d04f93443afd0b3b2dab150e5401c35c112999",
-    "plan/capabilities.json": "e8d8b6389b32b0bc4cb05a7c2b16a79109f3c1a1d17fa7bd5a901e84fe8744dd",
+    "plan/acceptance.json": "0287996da7fa95c579757544054fcd8a16cbc0b8d0a88bcbc3a437738179e1d4",
+    "plan/capabilities.json": "2ba5ba0bb1548e90644f5264250e7910c62761883a9ba519290807825cad90f7",
     "plan/decisions.json": "2d854e1b2107f75cb8124f83cf650b5c1a3b1c7d445ac66136b7279c5374be21",
     "plan/gaps.json": "61101d8788b54aff0962035fc7ca17ad856955f14aedaf4749f7a3975c330703",
     "plan/removals.json": "e7424355333ebd64d89e8c6bfae26c5c740d3e6612153f94bbf01954f6cc317a",
@@ -48,5 +48,5 @@
     "tools/spec.py": "cb935e63ff6076568fba9ceb72b88fde2ae103e9a2f42db001d308f7e1415002",
     "tools/test_spec.py": "45172ec5f47a57642575e82ccdba4474c405ec7e59f515e054f35d0882223f5f"
   },
-  "checked_at_utc": "2026-11-08T03:37:18.203672+00:00"
+  "checked_at_utc": "2026-11-08T03:39:09.931058+00:00"
 }

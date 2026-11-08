@@ -61,8 +61,8 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "partial_local_fixture",
-      "runtime_evidence": ["evidence/t00-core-runtime.json", "evidence/t00-core-test.log", "evidence/t02-core-boundary.md", "evidence/t02-live-core.log"]
+      "runtime_test_status": "partial_local_fixture; unchanged_parser_matches_pinned_reference_71_tests_each_macos; live_native_gates_open",
+      "runtime_evidence": ["evidence/t00-core-runtime.json", "evidence/t00-core-test.log", "evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t05-terminal-parser.md"]
     },
     {
       "id": "CAP-WORKSPACE",
