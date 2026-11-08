@@ -26,11 +26,10 @@ production release identity still have [open gates](docs/spaceport/plan/gaps.jso
 ## Work on the fork
 
 Use the pinned Rust toolchain in `rust-toolchain.toml`. From the repository
-root, the current development executable is still named `sheprd` while the
-rebrand proceeds:
+root, the current development executable is named `spaceport`:
 
 ```sh
-cargo +1.99.0 check --locked -p sheprd-gpui --bin sheprd
+cargo +1.99.0 check --locked -p sheprd-gpui --bin spaceport
 ```
 
 Install the validator dependency as described in
