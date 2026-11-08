@@ -73,18 +73,9 @@ error-remote-cloud-image-unsupported-compose = This project's recipe uses a dev 
 error-remote-cloud-image-unsupported-no-build = This project's recipe uses a dev container with neither an image nor a Dockerfile, which sandbox images do not support.
 error-remote-cloud-image-unsupported-provider = This project's recipe uses a provider that does not hold images, which sandbox images do not support.
 
-error-remote-cloud-socket-url = The exec stream's address is not valid.
-error-remote-cloud-socket-connect = Could not reach the exec stream.
-error-remote-cloud-socket-tls = TLS setup for the exec stream failed.
-error-remote-cloud-socket-stream = The exec stream failed.
-error-remote-cloud-socket-header = Invalid exec stream header.
-error-remote-cloud-socket-header-name = Invalid exec stream header name.
-error-remote-cloud-socket-closed = The exec stream closed before the command finished.
-
 # What a cloud provider refused, for every provider. $key is a setting such
 # as azure.subscription_id or an environment variable, as written. Each $value
-# branch is a whole sentence; Azure,
-# and Sprites are product names, and execd is a program's name.
+# branch is a whole sentence; Azure is a product name, and execd is a program.
 error-remote-cloud-value-invalid-key = { $key } is not valid.
 error-remote-cloud-value-invalid = { $value ->
    *[account] Account is not valid.
@@ -99,9 +90,6 @@ error-remote-cloud-value-invalid = { $value ->
     [execd-endpoint] Execd endpoint is not valid.
     [remote-command] Remote command is not valid.
     [sandbox-id] Sandbox ID is not valid.
-    [sprite-name] Sprite name is not valid.
-    [sprite-prefix] Sprite prefix is not valid.
-    [sprites-api-token] Sprites API token is not valid.
     [workspace-name] Workspace name is not valid.
 }
 error-remote-cloud-value-encoding-key = { $key } must be UTF-8.
@@ -118,8 +106,5 @@ error-remote-cloud-value-encoding = { $value ->
     [execd-endpoint] Execd endpoint must be UTF-8.
     [remote-command] Remote command must be UTF-8.
     [sandbox-id] Sandbox ID must be UTF-8.
-    [sprite-name] Sprite name must be UTF-8.
-    [sprite-prefix] Sprite prefix must be UTF-8.
-    [sprites-api-token] Sprites API token must be UTF-8.
     [workspace-name] Workspace name must be UTF-8.
 }

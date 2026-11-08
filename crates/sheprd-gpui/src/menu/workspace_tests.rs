@@ -21,7 +21,7 @@ mod removed_checkpoints;
 mod sandbox_dispatch;
 #[cfg(all(
     feature = "container",
-    feature = "sprites",
+    feature = "azure",
     any(target_os = "linux", target_os = "macos")
 ))]
 mod sandbox_images;

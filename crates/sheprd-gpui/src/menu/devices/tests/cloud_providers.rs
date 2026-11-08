@@ -8,8 +8,6 @@ fn setting(view: &mut SheprdWindow, provider: CloudProvider) -> Option<&mut Opti
         CloudProvider::Azure => Some(&mut view.config.azure.subscription_id),
         #[cfg(feature = "container")]
         CloudProvider::Container => None,
-        #[cfg(feature = "sprites")]
-        CloudProvider::Sprites => Some(&mut view.config.sprites.api_url),
     }
 }
 
@@ -23,8 +21,6 @@ fn account(provider: CloudProvider) -> Option<(&'static str, &'static str)> {
         )),
         #[cfg(feature = "container")]
         CloudProvider::Container => None,
-        #[cfg(feature = "sprites")]
-        CloudProvider::Sprites => Some(("HERDR_SPRITES_API_URL", "https://api.sprites.dev")),
     }
 }
 

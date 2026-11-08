@@ -10,12 +10,9 @@ settings-cloud-none-yet = None yet.
 ## Shared by the provider cards.
 
 settings-cloud-checking = Checking…
-# A provider card's title, for a provider still being tried out.
-settings-cloud-experimental = { $provider } (experimental)
 settings-cloud-save = Save
 settings-cloud-cancel = Cancel
 settings-cloud-install-herdr = Install Herdr when missing
-settings-cloud-install-herdr-in-it = Install Herdr in it when missing
 # A job the main window runs; $name is the new device's name.
 settings-cloud-creating = Creating { $name }. The device picker shows its progress.
 # The default among size or image choices; $choice is its name.

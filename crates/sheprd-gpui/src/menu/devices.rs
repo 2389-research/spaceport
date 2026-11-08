@@ -126,10 +126,6 @@ impl SheprdWindow {
             .filter(|provider| match provider {
                 #[cfg(feature = "azure")]
                 crate::cloud::CloudProvider::Azure => self.config.azure.configured(&var),
-                #[cfg(feature = "sprites")]
-                crate::cloud::CloudProvider::Sprites => {
-                    self.config.sprites.api_url.is_some() || var("HERDR_SPRITES_API_URL").is_some()
-                }
                 // A local engine has no account; it is set up in Settings.
                 #[cfg(feature = "container")]
                 crate::cloud::CloudProvider::Container => false,

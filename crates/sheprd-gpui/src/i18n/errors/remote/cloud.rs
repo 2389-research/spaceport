@@ -45,8 +45,6 @@ impl Localize for ProviderError {
             Self::Azure(ref error) => error.localize(),
             #[cfg(feature = "container")]
             Self::Container(ref error) => error.localize(),
-            #[cfg(feature = "sprites")]
-            Self::Sprites(ref error) => error.localize(),
         }
     }
 }
@@ -129,21 +127,6 @@ impl Localize for install::Failure {
             // What the machine printed, in its own words.
             Self::Output(output) => fl!("error-remote-cloud-install", detail = output.as_str()),
             Self::Unreachable => fl!("error-remote-cloud-install-unreachable"),
-        }
-    }
-}
-
-#[cfg(feature = "sprites")]
-impl Localize for sheprd_remote::cloud::socket::Error {
-    fn localize(&self) -> String {
-        match self {
-            Self::Url => fl!("error-remote-cloud-socket-url"),
-            Self::Connect(_) => fl!("error-remote-cloud-socket-connect"),
-            Self::Tls(_) => fl!("error-remote-cloud-socket-tls"),
-            Self::Stream(_) => fl!("error-remote-cloud-socket-stream"),
-            Self::Header(_) => fl!("error-remote-cloud-socket-header"),
-            Self::HeaderName(_) => fl!("error-remote-cloud-socket-header-name"),
-            Self::Closed => fl!("error-remote-cloud-socket-closed"),
         }
     }
 }

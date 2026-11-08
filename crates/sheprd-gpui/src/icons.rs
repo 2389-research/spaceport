@@ -289,7 +289,6 @@ embedded_icons! {
     "close.svg",
     "cloud/azure.svg",
     "cloud/container.svg",
-    "cloud/sprites.svg",
     "code.svg",
     "coffee-full.svg",
     "coffee.svg",

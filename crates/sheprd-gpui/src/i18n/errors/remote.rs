@@ -8,10 +8,8 @@ mod azure;
 mod cloud;
 #[cfg(feature = "container")]
 mod container;
-#[cfg(feature = "sprites")]
-mod sprites;
 mod teleport;
-#[cfg(any(feature = "azure", feature = "container", feature = "sprites"))]
+#[cfg(any(feature = "azure", feature = "container"))]
 mod value;
 
 use super::Localize;

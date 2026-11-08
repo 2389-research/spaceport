@@ -242,8 +242,6 @@ struct SettingsWindow {
     /// Sandbox images, for the cards of providers that hold them.
     #[cfg(feature = "container")]
     sandbox_images: cloud_devices::SandboxImages,
-    #[cfg(feature = "sprites")]
-    sprites_card: Option<cloud_devices::SpritesCard>,
     theme_loading: bool,
     theme_waiting: bool,
     theme_light: bool,
@@ -371,8 +369,6 @@ impl SettingsWindow {
             container_card: None,
             #[cfg(feature = "container")]
             sandbox_images: Default::default(),
-            #[cfg(feature = "sprites")]
-            sprites_card: None,
             theme_loading: false,
             theme_waiting: false,
             theme_light: false,

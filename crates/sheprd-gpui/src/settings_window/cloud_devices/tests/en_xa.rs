@@ -11,10 +11,6 @@ fn unconfigure(config: &mut crate::config::Config) {
     {
         config.azure = Default::default();
     }
-    #[cfg(feature = "sprites")]
-    {
-        config.sprites = Default::default();
-    }
     let _ = config;
 }
 
@@ -43,8 +39,6 @@ fn data() -> Vec<String> {
         crate::container::setup::DEFAULT_CPUS.into(),
         crate::container::setup::DEFAULT_MEMORY.into(),
     ]);
-    #[cfg(feature = "sprites")]
-    data.push(crate::sprites::DEFAULT_API_URL.into());
     data
 }
 

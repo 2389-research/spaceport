@@ -15,7 +15,6 @@ workspace = true
 cloud = []
 azure = ["cloud"]
 container = ["cloud"]
-sprites = ["cloud"]
 # `login_env::probe_for_tests`, for the app's tests that start from a bare
 # desktop environment.
 test-support = []

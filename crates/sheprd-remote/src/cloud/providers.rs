@@ -225,20 +225,5 @@ providers! {
         image: Some(&crate::container::image::SUPPORT),
         provision: Some(crate::container::setup::provision),
     },
-    "sprites" Sprites => {
-        module: sprites,
-        name: "Sprites",
-        icon: "icons/cloud/sprites.svg",
-        offer: "Create a Fly sprite in Settings",
-        noun: "sprite",
-        command: plain,
-        deletion: Some(Deletion {
-            noun: |_| "sprite",
-            leftovers: ", with its files and checkpoints,",
-            run: crate::sprites::destroy_saved,
-        }),
-        image: None,
-        provision: Some(crate::sprites::setup::provision),
-    },
     // keep-sorted end
 }

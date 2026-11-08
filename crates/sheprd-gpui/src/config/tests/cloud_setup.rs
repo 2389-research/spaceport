@@ -13,8 +13,7 @@ fn no_cloud_table_runs_nothing() -> anyhow::Result<()> {
 fn every_provider_table_parses_in_every_build() -> anyhow::Result<()> {
     let config = Config::parse(
         "[cloud]\nagents = [\"claude\"]\nsetup = \"echo hi\"\n\
-         [cloud.azure]\nagents = [\"codex\"]\n[cloud.container]\nsetup = \"\"\n\
-         [cloud.sprites]\nsetup = \"echo sprite\"\n",
+         [cloud.azure]\nagents = [\"codex\"]\n[cloud.container]\nsetup = \"\"\n",
     )?;
     assert_eq!(config.cloud.shared_agents(), [Agent::Claude]);
     assert_eq!(config.cloud.shared_setup(), Some("echo hi"));

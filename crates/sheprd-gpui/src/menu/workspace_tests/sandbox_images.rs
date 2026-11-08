@@ -43,8 +43,8 @@ fn images_are_offered_only_where_a_provider_holds_them(cx: &mut gpui::TestAppCon
     let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
     cx.update(|_, cx| view.update(cx, |view, _| local(view)));
     assert!(!offered(&view, cx), "no cloud device yet");
-    // Sprites make new machines for a dispatch, but hold no images.
-    cx.update(|_, cx| view.update(cx, |view, _| add_device(view, CloudProvider::Sprites, "s1")));
+    // Azure machines can be dispatched, but hold no project images.
+    cx.update(|_, cx| view.update(cx, |view, _| add_device(view, CloudProvider::Azure, "a1")));
     assert!(!offered(&view, cx));
     cx.update(|_, cx| {
         view.update(cx, |view, _| {

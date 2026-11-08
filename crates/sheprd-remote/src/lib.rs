@@ -14,11 +14,9 @@ pub mod cloud;
 pub mod config;
 #[cfg(feature = "container")]
 pub mod container;
-#[cfg(any(feature = "azure", feature = "sprites"))]
+#[cfg(feature = "azure")]
 mod credentials;
 mod error;
-#[cfg(feature = "sprites")]
-pub mod sprites;
 pub mod teleport;
 
 pub use error::{Error, Result};

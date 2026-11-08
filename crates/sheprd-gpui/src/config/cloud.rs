@@ -21,7 +21,6 @@ pub struct CloudConfig {
     pub container: CloudSetup,
     /// Shell lines run after the agents, with `sh -e`.
     pub setup: Option<String>,
-    pub sprites: CloudSetup,
     // keep-sorted end
 }
 
@@ -54,12 +53,7 @@ impl CloudConfig {
     }
 
     fn tables(&self) -> impl Iterator<Item = (&'static str, &CloudSetup)> {
-        [
-            ("azure", &self.azure),
-            ("container", &self.container),
-            ("sprites", &self.sprites),
-        ]
-        .into_iter()
+        [("azure", &self.azure), ("container", &self.container)].into_iter()
     }
 
     /// Drops agent names this build does not know, so a name a newer build
@@ -80,7 +74,6 @@ impl CloudConfig {
         retain("cloud.", &mut self.agents);
         retain("cloud.azure.", &mut self.azure.agents);
         retain("cloud.container.", &mut self.container.agents);
-        retain("cloud.sprites.", &mut self.sprites.agents);
         unknown
     }
 

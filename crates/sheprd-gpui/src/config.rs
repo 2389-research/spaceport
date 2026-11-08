@@ -37,13 +37,12 @@ mod padding;
 pub(crate) mod preferences;
 pub(crate) mod sidebar;
 mod sidebar_style;
-mod sprites;
 pub(crate) mod ssh_hosts;
 pub(crate) mod status_bar;
 mod status_icons;
 mod tab_labels;
 pub(crate) mod tab_layout;
-#[cfg(any(feature = "azure", feature = "container", feature = "sprites"))]
+#[cfg(any(feature = "azure", feature = "container"))]
 mod table;
 pub(crate) use sidebar_style::parse_hex;
 mod theme;
@@ -93,9 +92,6 @@ pub(crate) use sheprd_remote::config::AzureFields;
 pub use sheprd_remote::config::ContainerConfig;
 #[cfg(feature = "container")]
 pub(crate) use sheprd_remote::config::ContainerFields;
-pub use sheprd_remote::config::SpritesConfig;
-#[cfg(feature = "sprites")]
-pub(crate) use sheprd_remote::config::SpritesFields;
 pub(crate) use sidebar::{
     AgentLayout, AgentToken, Rows, SidebarLayout, SpaceLayout, SpaceToken, TokenStyle,
 };
@@ -246,8 +242,6 @@ pub struct Config {
     pub smooth_scroll: bool,
     /// How loud agent notification sounds play.
     pub sound: SoundConfig,
-    /// The Fly Sprites account whose sprites are devices.
-    pub sprites: SpritesConfig,
     /// SSH hosts whose host keys the user chose not to verify.
     pub ssh: SshConfig,
     /// Which status bar items show, and how compactly.
@@ -348,7 +342,6 @@ impl Default for Config {
             sidebar_style: SidebarStyle::default(),
             smooth_scroll: true,
             sound: SoundConfig::default(),
-            sprites: SpritesConfig::default(),
             ssh: SshConfig::default(),
             status_bar: StatusBar::default(),
             status_icons: StatusIcons::default(),
@@ -421,7 +414,6 @@ struct Settings {
     sidebar: sidebar_style::SidebarSettings,
     smooth_scroll: Option<bool>,
     sound: SoundConfig,
-    sprites: SpritesConfig,
     ssh: SshConfig,
     status_bar: StatusBar,
     status_icons: Option<status_icons::SavedIcons>,
@@ -472,7 +464,6 @@ impl Config {
         Ok(sheprd_remote::config::Sections {
             azure: config.azure,
             container: config.container,
-            sprites: config.sprites,
         })
     }
 
@@ -705,9 +696,6 @@ impl Config {
         #[cfg(feature = "container")]
         settings.container.settings()?;
         config.container = settings.container;
-        #[cfg(feature = "sprites")]
-        settings.sprites.settings_with(|_| None)?;
-        config.sprites = settings.sprites;
         config.favorite_themes = settings.favorite_themes;
         // A hand-edited list may name a theme twice; it is starred once.
         let mut starred = std::collections::HashSet::new();

@@ -63,7 +63,7 @@ worktree-popover-note-unavailable = Notes are kept on Git checkouts with a branc
 worktree-popover-images-no-checkout = This repository has no checkout to build an image from
 worktree-popover-images-failed = Not built: { $error }
 # $repository is the repository's name; $providers names the cloud providers,
-# such as "Docker and Sprites".
+# such as "Docker and Azure".
 worktree-popover-images-building = Building { $repository }'s images for { $providers }; Settings > Cloud devices shows their progress
 # Two names in a list.
 worktree-popover-and = { $first } and { $second }

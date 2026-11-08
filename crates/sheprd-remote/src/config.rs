@@ -1,12 +1,11 @@
-//! The provider tables of Sheprd's config: `[azure]`, `[container]`,
-//! and `[sprites]`. The app owns
+//! The provider tables of Sheprd's config: `[azure]` and `[container]`.
+//! The app owns
 //! the config files, their layers, and their maintenance; it hands this crate
 //! a [`set_loader`] once at startup, and a provider job reads its table
 //! through it when it runs, so an edit since startup applies.
 
 mod azure;
 mod container;
-mod sprites;
 
 pub use azure::AzureConfig;
 #[cfg(feature = "azure")]
@@ -14,9 +13,6 @@ pub use azure::AzureFields;
 pub use container::ContainerConfig;
 #[cfg(feature = "container")]
 pub use container::ContainerFields;
-pub use sprites::SpritesConfig;
-#[cfg(feature = "sprites")]
-pub use sprites::SpritesFields;
 
 use std::sync::OnceLock;
 
@@ -25,7 +21,6 @@ use std::sync::OnceLock;
 pub struct Sections {
     pub azure: AzureConfig,
     pub container: ContainerConfig,
-    pub sprites: SpritesConfig,
 }
 
 /// Why the app could not load its config. The app's own error, kept whole as

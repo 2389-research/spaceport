@@ -99,23 +99,6 @@ fn every_provider_delegates() {
         sheprd_remote::azure::Error::Size.into(),
         #[cfg(feature = "container")]
         sheprd_remote::container::Error::NoEngine.into(),
-        #[cfg(feature = "sprites")]
-        sheprd_remote::sprites::Error::Size.into(),
     ];
     assert_localized(&errors);
-}
-
-/// `Tls` and `Stream` hold `rustls` and `tungstenite` errors, which this
-/// crate does not depend on, so they cannot be built here.
-#[cfg(feature = "sprites")]
-#[test]
-fn every_socket_variant_has_a_message() {
-    use sheprd_remote::cloud::socket::Error;
-    assert_localized(&[
-        Error::Url,
-        Error::Connect(io()),
-        Error::Header(header()),
-        Error::HeaderName(ureq::http::HeaderName::from_bytes(b"\n").unwrap_err()),
-        Error::Closed,
-    ]);
 }

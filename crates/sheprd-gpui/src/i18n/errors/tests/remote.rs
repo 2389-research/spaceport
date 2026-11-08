@@ -8,8 +8,6 @@ mod azure;
 mod cloud;
 #[cfg(feature = "container")]
 mod container;
-#[cfg(feature = "sprites")]
-mod sprites;
 mod teleport;
 
 fn io() -> io::Error {

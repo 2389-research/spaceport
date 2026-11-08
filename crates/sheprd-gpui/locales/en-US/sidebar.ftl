@@ -67,7 +67,6 @@ sidebar-origin-cloud = { $provider } { $noun ->
         [VM] VM
         [container] container
         [sandbox] sandbox
-        [sprite] sprite
        *[machine] machine
     }
 

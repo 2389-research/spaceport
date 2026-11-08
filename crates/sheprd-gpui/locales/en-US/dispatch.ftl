@@ -8,7 +8,6 @@ dispatch-new-machine = a new { $noun ->
         [VM] VM
         [container] container
         [sandbox] sandbox
-        [sprite] sprite
         [workspace] workspace
        *[machine] machine
     }
@@ -17,7 +16,6 @@ dispatch-new-sandbox = New { $noun ->
         [VM] VM
         [container] container
         [sandbox] sandbox
-        [sprite] sprite
         [workspace] workspace
        *[machine] machine
     }

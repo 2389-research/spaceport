@@ -347,10 +347,10 @@ edits only the local catalog: the host's own Herdr keeps running. When the
 device has its own GitHub sign-in, the confirmation also offers to delete it,
 since its account panel goes away with the device. Local's menu offers neither.
 
-A cloud device's header (Azure, Container, or Sprites) has a menu too: **Rename…** changes the name the sidebar
+A cloud device's header (Azure or Container) has a menu too: **Rename…** changes the name the sidebar
 shows, falling back to the machine's name when left empty; **Cloud device
 settings…** opens its provider under Settings > Cloud devices; and **Remove
-device…** removes it from this computer. For an Azure machine, a container, or a sprite,
+device…** removes it from this computer. For an Azure machine or a container,
 it deletes the machine at the provider by default, with **Remove from Herdr
 only** beside it. Before
 deleting, the dialog searches the machine's home directory for Git checkouts
@@ -449,7 +449,7 @@ launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
 Settings > **Cloud devices** holds accounts with providers that create machines
-to use as devices: Azure, Container, and Sprites.
+to use as devices: Azure and Container.
 Cloud devices are stored in the GUI's `cloud-devices.json` state file. Each
 entry names its provider, so adding another provider needs no new file.
 
@@ -496,26 +496,6 @@ this computer's kernel: they keep honest agents apart, not hostile code, for
 which a VM provider such as Azure is the better choice. Containers are
 unavailable on Windows, like every cloud device. How sandboxes fit together, and which
 providers were evaluated, is in [docs/sandbox.md](../../docs/sandbox.md).
-
-### Fly Sprites (experimental)
-
-Settings > **Cloud devices** > **Sprites** holds a Fly Sprites account: the API
-URL (`https://api.sprites.dev` for Fly's service), saved to `[sprites]`, and an
-API token saved to the credential store (`HERDR_SPRITES_TOKEN` takes
-precedence, and `HERDR_SPRITES_API_URL` replaces the URL). **Create sprite**
-makes a sprite with a generated name, installs Herdr in it when the **Install
-Herdr** switch is on (the default), registers `herdr server` as the sprite's
-service so it is running again whenever the sprite wakes, and saves the device;
-a failure deletes the sprite again. Sprites sleep when idle and wake on the
-next command, keeping their files. Once a sprite device exists, Smart
-Dispatch's dialogs offer **New sprite** like **New container**.
-
-A sprite has no SSH server, so the app runs itself as a relay
-(`spaceport __sprites-exec`) between Herdr's bridge and the API's exec stream,
-a WebSocket whose binary frames carry stdin, stdout, stderr, and the exit code
-unchanged. The token stays on this computer. Sprites are unavailable on
-Windows, like every cloud device. This provider is tested against a scripted
-exec stream and API replies, but not yet against a live Sprites account.
 
 ### Sandbox images
 
@@ -596,7 +576,7 @@ memory only, at most eight at once; one that never ran, or a later run, is
 started from **Run setup script** in the device's sidebar menu.
 Reconnecting never runs it again by itself.
 
-Each provider is a Cargo feature of `herdr-gpui`; `azure`, `container`, and `sprites` are on by default.
+Each provider is a Cargo feature of `herdr-gpui`; `azure` and `container` are on by default.
 A build with `--no-default-features` has no Cloud
 Devices section and no provider rows in the device picker; it still accepts
 the `[cloud]` table, so one config file serves every build.
@@ -2125,9 +2105,8 @@ Setups of several such worktrees wait their turn; one whose host is not shown
 within two minutes is given up on, with a warning. A
 new workspace opens the repository's main checkout on that host.
 
-Once you have a container device (see [Containers](#containers-docker-or-podman))
-or a sprite, the dialogs also offer
-a **New container** or **New sprite** tile, even with one
+Once you have a container device (see [Containers](#containers-docker-or-podman)),
+the dialogs also offer a **New container** tile, even with one
 host connected. A container starts from the repository's
 [sandbox image](#sandbox-images) when it has a recipe, building it first if
 needed.

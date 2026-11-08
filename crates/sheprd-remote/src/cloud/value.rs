@@ -23,9 +23,6 @@ pub enum Value {
     Key(&'static str),
     RemoteCommand,
     SandboxId,
-    SpriteName,
-    SpritePrefix,
-    SpritesApiToken,
     WorkspaceName,
     // keep-sorted end
 }
@@ -47,9 +44,6 @@ impl fmt::Display for Value {
             Self::Key(key) => key,
             Self::RemoteCommand => "Remote command",
             Self::SandboxId => "Sandbox ID",
-            Self::SpriteName => "Sprite name",
-            Self::SpritePrefix => "Sprite prefix",
-            Self::SpritesApiToken => "Sprites API token",
             Self::WorkspaceName => "Workspace name",
             // keep-sorted end
         })

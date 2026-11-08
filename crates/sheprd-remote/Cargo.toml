@@ -49,7 +49,5 @@ cloud = ["sheprd-client/cloud"]
 # Azure VMs and Container Apps sandboxes, reached over the data plane's exec stream.
 azure = ["cloud", "sheprd-client/azure", "dep:rustls", "dep:tungstenite", "dep:webpki-roots"]
 container = ["cloud", "sheprd-client/container"]
-# Fly Sprites, with this app as their exec relay.
-sprites = ["cloud", "sheprd-client/sprites", "dep:rustls", "dep:tungstenite", "dep:webpki-roots"]
 # Shared fixtures (provider settings, a mock server) for the app's own tests.
 test-support = []

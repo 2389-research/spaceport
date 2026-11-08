@@ -7,7 +7,6 @@ cloud-jobs-ready = { $provider } { $noun ->
         [VM] VM
         [container] container
         [sandbox] sandbox
-        [sprite] sprite
         [workspace] workspace
        *[machine] machine
     } ready
@@ -21,7 +20,6 @@ cloud-jobs-failed = { $provider } { $noun ->
         [VM] VM
         [container] container
         [sandbox] sandbox
-        [sprite] sprite
         [workspace] workspace
        *[machine] machine
     } setup failed

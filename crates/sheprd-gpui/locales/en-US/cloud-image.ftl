@@ -9,7 +9,6 @@ cloud-image-ready-detail = New { $noun ->
         [VM] VMs
         [container] containers
         [sandbox] sandboxes
-        [sprite] sprites
         [workspace] workspaces
        *[machine] machines
     } for { $checkout } start from it.

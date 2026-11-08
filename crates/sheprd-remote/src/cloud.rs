@@ -15,10 +15,8 @@ pub mod image;
 pub mod install;
 pub mod names;
 mod providers;
-#[cfg(any(feature = "azure", feature = "sprites"))]
+#[cfg(feature = "azure")]
 pub(crate) mod relay;
-#[cfg(feature = "sprites")]
-pub mod socket;
 pub mod unsynced;
 mod value;
 mod worker;
