@@ -26,7 +26,6 @@ pub(super) fn defaults(command: Command) -> &'static [&'static str] {
         FindNext => &["cmd-g"],
         FindPrevious => &["cmd-shift-g"],
         CopyMode => &["cmd-shift-c"],
-        AnnotateSelection => &["cmd-shift-a"],
         ClosePane => &["cmd-w"],
         CloseTab => &["cmd-shift-w"],
         ReopenClosedTab => &["cmd-shift-t"],

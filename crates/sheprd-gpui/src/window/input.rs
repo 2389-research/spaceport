@@ -312,13 +312,9 @@ impl SheprdWindow {
         // A new press goes wherever this decides; only the pane branch at the
         // end holds it again for its release.
         self.held_keys.forget(&event.keystroke.key);
-        // A keystroke bubbling out of the find field, the terminal note field,
-        // or the copy-mode search prompt is the field's: an unhandled one is
-        // still on its way to the field's IME.
-        if self.find_focused(window, cx)
-            || self.terminal_note_focused(window, cx)
-            || self.copy_search_focused(window, cx)
-        {
+        // A keystroke bubbling out of the find or copy-mode search field
+        // still belongs to that field while on its way to the IME.
+        if self.find_focused(window, cx) || self.copy_search_focused(window, cx) {
             return;
         }
         if self.chat_focused(window, cx) {

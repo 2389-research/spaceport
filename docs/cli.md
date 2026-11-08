@@ -124,7 +124,7 @@ and builds without embedded pages return exit 8. See [px0](../crates/sheprd-gpui
 | `notes [list]` | Every worktree note |
 | `notes get\|clear`, `notes set TEXT` | The note on your checkout (its repository and branch) |
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
-| `feedback [--wait S]` | Notes the user sent your pane from pages, reviews, or terminals |
+| `feedback [--wait S]` | Page and review notes the user sent your pane |
 | `checkpoint [list]` | Checkpoints of the current directory's checkout, newest first (no app needed) |
 | `checkpoint create [LABEL]` | Take one now (no app needed) |
 | `checkpoint diff A [B]` | What changed between two, or since one (no app needed) |

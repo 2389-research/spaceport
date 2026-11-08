@@ -1034,7 +1034,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T04 — Remove excluded product feature families
 
-Status: **not_started** · Prerequisites: T01, T03
+Status: **in_progress** · Prerequisites: T01, T03
 
 Delete IDE/Git/GitHub/browser/cloud/Teleport/orchestration/mod/scheduler surfaces and dependencies in coherent units.
 

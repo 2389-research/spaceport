@@ -306,7 +306,6 @@ impl SheprdWindow {
             teleport_follow: None,
             teleport_marks,
             terminal_mouse: None,
-            terminal_notes: Default::default(),
             theme,
             theme_light: crate::app::light_appearance(cx),
             title: WINDOW_TITLE.to_owned(),

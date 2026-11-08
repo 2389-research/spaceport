@@ -19,7 +19,7 @@
     { key: 'watch', title: 'Watch', line: 'Agent status, host load, ports and recent activity. Local and SSH devices, Coder workspaces on macOS/Linux, and WSL on Windows.' },
     { key: 'review', title: 'Review', line: 'Read an agent’s changes side by side, pin line notes and send them back. Checkpoint every turn and rewind a worktree. Review and merge PRs.' },
     { key: 'move', title: 'Move', line: 'Teleport a worktree, its uncommitted work, tabs and running agents to another machine. Forward ports. Pick up where you left off.' },
-    { key: 'work', title: 'Work', line: 'GPU-painted terminals, VS Code and browser tabs in editor groups, Go to File and Symbol, annotations on pages and terminal text.' },
+    { key: 'work', title: 'Work', line: 'GPU-painted terminals, VS Code and browser tabs in editor groups, Go to File and Symbol, annotations on pages.' },
   ];
 
   const CHAPTERS = [
@@ -44,7 +44,7 @@
     { id: 'teleport', pillar: 'move', title: 'Teleport', cap: 'Move a worktree and its agent sessions to another machine.', spec: 'Teleport review: branch, 3 unpushed commits, 5 files, panes and agent sessions, destination build-box.' },
     { id: 'ports', pillar: 'move', title: 'Ports and tunnels', cap: 'Each workspace’s listening ports, opened locally through SSH.', spec: 'Ports popover: :3000 vite, :5432 postgres on build-box, "Open in tab" via tunnel.' },
     { id: 'vscode', pillar: 'work', title: 'VS Code in an editor group', cap: 'Beside the agent, in the same window.', spec: 'Editor groups: VS Code tab left, Claude terminal right, Go to Symbol palette open.' },
-    { id: 'annotate', pillar: 'work', title: 'Annotate pages and terminal text', cap: 'Pin notes on a page or a terminal selection; the agent gets them.', spec: 'Browser tab with 3 pins + terminal selection with a note bubble.' },
+    { id: 'annotate', pillar: 'work', title: 'Annotate pages', cap: 'Pin notes on a page; the agent gets them.', spec: 'Browser tab with 3 pins and a notes panel.' },
     { id: 'cells', pillar: 'work', title: 'GPU-painted cells', cap: 'Pixel-aligned terminal glyphs, joined box drawing and smooth scrolling.', spec: 'Macro crop at 2x: terminal borders and Cmd-F find bar.' },
     { id: 'usage', pillar: 'watch', title: 'Usage in the status bar', cap: 'Claude, Codex, ChatGPT and more, before an agent stalls.', spec: 'Status bar meters + provider popover with several Claude accounts.' },
   ];

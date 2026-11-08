@@ -579,10 +579,6 @@ impl SheprdWindow {
                 self.enter_copy_mode(window, cx);
                 return;
             }
-            Command::AnnotateSelection => {
-                self.annotate_selection(window, cx);
-                return;
-            }
             Command::EditScrollback if !self.live.supports_edit_scrollback => {
                 self.show_flash(
                     Flash::warning(fl!("window-notices-scrollback-needs-newer")),

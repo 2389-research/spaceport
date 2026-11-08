@@ -1888,23 +1888,6 @@ shows the `copied to clipboard` flash described under
 [Configuration](#configuration). Selection is client-local: it reads the surface
 the client already has, and asks the daemon only for rows scrolled out of view.
 
-To annotate terminal text, hold **Shift** while starting a selection in a pane.
-Releasing the mouse shows a small, borderless **Annotate** pill beside the
-selection. Copying still follows your normal settings, and the terminal keeps
-keyboard focus. Click **Annotate** to open a compact, borderless note field
-beside the selected text. Its **Message to agent…** field accepts comments,
-questions, or requests.
-Press **Enter** to send the note, **Shift+Enter** to queue it and select more text,
-or **Escape** to dismiss the field; the popover also has Send, Queue, and close
-buttons. Typing in the terminal or clicking elsewhere dismisses the pill.
-The whole selection must be visible on screen.
-This also works with copying on selection disabled or the highlight set to clear
-after copying. For an existing selection, use **Annotate Selection for the Agent**
-in the command palette (Cmd+Shift+A on macOS, Ctrl+Alt+Shift+A on Linux and
-Windows).
-Notes go to the agent in that pane, falling back to the first agent in its
-workspace; with no agent, they are copied to the clipboard.
-
 A program that copies with OSC 52 — many editors and agent CLIs do, especially
 when they own the mouse — is honored too: the daemon forwards the bytes to this
 client, which writes them to the same system clipboard and shows the same flash.
@@ -4355,21 +4338,6 @@ Ctrl+Shift+U is left unbound for
   neither, as does `q`. While a motion or search is still waiting for the
   daemon, Escape drops it and the keys typed after it, and `q` leaves at
   once. Leaving scrolls the pane back to where it was.
-- Cmd-Shift-A (`annotate_selection`, also in the command palette) writes a
-  note on the text selected in a pane for an agent to act on, the way
-  Annotate does for a page. A field opens over the pane: Enter adds the note
-  and sends every queued one, Shift-Enter only queues it (up to 20), and
-  Escape drops it. Enter on an empty field sends the queue, including when
-  all 20 slots are full. Notes go to the agent running in that pane, else to the
-  first agent in its workspace, as one prompt per agent: where the text was
-  (workspace and tab), the text fenced and marked as quoted data with its
-  control characters removed, and your note. They are delivered as page
-  notes are (see [Annotating A Page](#annotating-a-page)), and copied when no
-  agent is found. Queued notes remember their original device and daemon;
-  if that daemon is no longer selected when you send or while delivery waits
-  for a busy agent, those notes are copied instead. The whole selection must
-  be on screen. Clipboard fallbacks from one Send are combined, including
-  batches that fail later, so one agent's notes cannot replace another's.
 - A mouse selection dragged past a pane's top or bottom edge scrolls the
   pane, and the selection stays with its text as the pane moves. A selection
   that reaches rows off the screen is copied through `pane.selection.read`;

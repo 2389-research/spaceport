@@ -287,7 +287,6 @@ impl Render for SheprdWindow {
             })
             .map(|(slot, _)| *slot);
         let find_bar = self.render_find_bar(surface.as_deref(), cx);
-        let terminal_note = self.render_terminal_note(surface.as_deref(), cx);
         let copy_badge = self.render_copy_mode_badge(surface.as_deref(), cx);
         let chats = self.render_chats(surface.as_deref(), cx);
         let terminal = padding
@@ -380,12 +379,7 @@ impl Render for SheprdWindow {
                     // A press on a link may still turn into a drag across it,
                     // so the selection starts either way; the click that opens
                     // the link is the one that never left its half-cell.
-                    this.begin_selection(
-                        event.position,
-                        event.click_count,
-                        event.modifiers.shift,
-                        cx,
-                    );
+                    this.begin_selection(event.position, event.click_count, cx);
                     if this.pressed_terminal_link.is_some() {
                         cx.stop_propagation();
                         return;
@@ -636,7 +630,6 @@ impl Render for SheprdWindow {
                     .children(chats)
                     .children(self.render_reconnecting(cx))
                     .when_some(find_bar, |terminal, bar| terminal.child(bar))
-                    .when_some(terminal_note, |terminal, note| terminal.child(note))
                     .when_some(copy_badge, |terminal, badge| terminal.child(badge))
                     // Direct feedback for the user's own gesture, not a daemon notice:
                     // it sits over the cells it copied and needs no dismissing.

@@ -109,8 +109,8 @@ fn reload() -> crate::Result<Output> {
     }
 }
 
-/// The user's notes for this pane: page, review, and terminal notes alike
-/// are kept for it whenever they could not be typed into the pane.
+/// The user's page and review notes for this pane are kept for it whenever
+/// they could not be typed into the pane.
 pub(super) fn feedback(wait: u64, _: &Context) -> crate::Result<Output> {
     let pane_id = super::env_id("HERDR_PANE_ID").ok_or(crate::control::Error::Rejected {
         code: ErrorCode::InvalidRequest,

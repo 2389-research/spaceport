@@ -4,7 +4,6 @@
 //! because every one of them describes this window's own presentation state.
 
 mod accessibility;
-mod annotate;
 mod announcement;
 mod backdrop;
 pub(crate) mod chrome_focus;
@@ -396,8 +395,6 @@ pub(crate) struct SheprdWindow {
     /// Checkouts this client teleported away from, marked in the sidebar.
     pub(crate) teleport_marks: crate::teleport::Marks,
     pub(crate) terminal_mouse: Option<mouse::Gesture>,
-    /// Notes on selected terminal text, written or queued.
-    pub(crate) terminal_notes: annotate::TerminalNotes,
     pub(crate) theme: config::Theme,
     /// The system appearance `theme` was loaded for, which is what Herdr is
     /// told. It trails the system while the theme for a new appearance
@@ -649,7 +646,6 @@ impl SheprdWindow {
         self.flush_scrollbar(cx);
         self.flush_split(cx);
         self.poll_find(window, cx);
-        self.follow_terminal_note(window, cx);
         self.follow_selection(cx);
         self.poll_copy_mode(window, cx);
         #[cfg(windows)]

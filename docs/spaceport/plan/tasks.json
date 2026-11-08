@@ -185,8 +185,8 @@
         "docs/06-security-and-resources.md"
       ],
       "deliverable": "Delete IDE/Git/GitHub/browser/cloud/Teleport/orchestration/mod/scheduler surfaces and dependencies in coherent units.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "in_progress",
+      "evidence": ["evidence/t04-terminal-annotations.md"],
       "must_close_gaps": []
     },
     {

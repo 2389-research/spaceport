@@ -168,7 +168,7 @@ fn editor_controls_fit_narrow_windows(cx: &mut TestAppContext) {
         cx.simulate_resize(size(px(width), px(600.)));
         view.update_in(cx, |view, window, cx| {
             view.open_keybinds(window, cx);
-            view.edit_shortcut(info(Command::AnnotateSelection), window, cx);
+            view.edit_shortcut(info(Command::CopyMode), window, cx);
         });
         cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
         let body = cx.debug_bounds("keybinds-body").unwrap();

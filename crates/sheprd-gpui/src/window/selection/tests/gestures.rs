@@ -96,7 +96,11 @@ fn application_mouse_takes_precedence_shift_keeps_copy_and_the_link_modifier_lin
         Some(url.into())
     );
     assert!(cx.opened_url().is_none());
-    assert!(!view.read_with(cx, |view, _| view.terminal_notes.composing()));
+    cx.update(|window, cx| {
+        window.refresh();
+        window.draw(cx).clear(cx);
+    });
+    assert!(cx.debug_bounds("terminal-annotate").is_none());
     // Shift selects and never opens; the link modifier claims a click on a
     // link from the application and opens it.
     cx.simulate_click(at(1.), shift);
@@ -167,7 +171,7 @@ fn a_menu_page_holds_the_gesture(cx: &mut TestAppContext) {
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
             view.menu.page = Some(crate::menu::Page::Menu);
-            view.begin_selection(at(0.), 1, true, cx);
+            view.begin_selection(at(0.), 1, cx);
             assert!(view.selection.is_none());
             assert!(!view.extend_selection(at(6.), cx));
             assert!(!view.release_selection(cx));

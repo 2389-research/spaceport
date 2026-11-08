@@ -335,7 +335,6 @@ impl SheprdWindow {
                 | Command::FindNext
                 | Command::FindPrevious
                 | Command::CopyMode
-                | Command::AnnotateSelection
                 | Command::EditScrollback
                 | Command::ClosePane
                 | Command::CloseTab

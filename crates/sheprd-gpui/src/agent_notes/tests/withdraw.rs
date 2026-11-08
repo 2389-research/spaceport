@@ -41,7 +41,7 @@ fn withdrawing_one_batch_keeps_the_others_queued_in_order() {
     deliveries.queue.push(delivery("p1", send(&mut first).1));
     let (withdrawn, pending) = send(&mut second);
     deliveries.queue.push(delivery("p2", pending));
-    // A terminal note's batch has no tab to withdraw it.
+    // A delivery without a tab cannot be withdrawn through tab notes.
     deliveries.queue.push(delivery("p3", None));
     deliveries.queue.push(delivery("p4", send(&mut third).1));
     assert_eq!(second.queued(&deliveries, None), Some(Queued::UntilIdle));

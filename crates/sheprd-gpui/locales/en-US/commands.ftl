@@ -3,7 +3,6 @@
 # `$number` is the workspace, tab, or agent a numbered command focuses.
 
 commands-about = About Sheprd
-commands-annotate-selection = Annotate Selection for the Agent
 commands-back = Back
 commands-clear-pane = Clear Pane
 commands-close-pane = Close Pane

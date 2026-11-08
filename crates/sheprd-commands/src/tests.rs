@@ -68,7 +68,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (FindNext, &["cmd-g"]),
         (FindPrevious, &["cmd-shift-g"]),
         (CopyMode, &["cmd-shift-c"]),
-        (AnnotateSelection, &["cmd-shift-a"]),
         (EditScrollback, &[]),
         (ClosePane, &["cmd-w"]),
         (CloseTab, &["cmd-shift-w"]),
@@ -192,7 +191,6 @@ fn gui_commands_never_send_daemon_requests() {
         Command::FindNext,
         Command::FindPrevious,
         Command::CopyMode,
-        Command::AnnotateSelection,
         Command::ToggleSidebar,
         Command::ToggleStatusBar,
         Command::ToggleZenMode,
@@ -581,3 +579,4 @@ fn tab_moves_wrap_and_stay_in_workspace() {
 }
 
 mod messages;
+mod terminal_annotations;

@@ -147,7 +147,6 @@ mod tab_menu;
 mod taskbar;
 mod teleport;
 mod terminal;
-mod terminal_notes;
 mod terminal_painter;
 mod text_editing;
 mod theme_picker;

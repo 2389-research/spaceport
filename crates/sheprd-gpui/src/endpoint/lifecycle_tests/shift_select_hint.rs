@@ -55,7 +55,7 @@ fn drag(
         assert!(view.terminal_mouse_up(&up, cx));
         return true;
     }
-    view.begin_selection(down.position, 1, modifiers.shift, cx);
+    view.begin_selection(down.position, 1, cx);
     view.extend_selection(to, cx);
     view.release_selection(cx);
     false

@@ -30,7 +30,6 @@ pub(super) fn defaults(command: Command) -> &'static [&'static str] {
         FindNext => &["ctrl-shift-g"],
         FindPrevious => &["ctrl-alt-shift-g"],
         CopyMode => &["ctrl-alt-shift-c"],
-        AnnotateSelection => &["ctrl-alt-shift-a"],
         ClosePane => &["ctrl-shift-w"],
         CloseTab => &["ctrl-alt-shift-w"],
         // Ctrl-Shift-T is New Tab here, so its partner gains Alt.

@@ -60,6 +60,7 @@ mod status_icons;
 mod system_themes;
 mod tab_labels;
 mod tab_layout;
+mod terminal_annotations;
 mod terminal_padding;
 mod theme_files;
 mod themes;
