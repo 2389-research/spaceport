@@ -139,8 +139,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) cell_width: f32,
     /// Native views of the `herdr-acp` chats in this daemon's panes.
     pub(crate) chats: crate::chat::Chats,
-    /// Snapshots of checkouts taken at agent turns, and the dialog listing them.
-    pub(crate) checkpoints: crate::checkpoint::Checkpoints,
     /// The chrome region whose controls take Tab; see `chrome_focus`.
     pub(crate) chrome_region: Option<chrome_focus::Region>,
     /// Cloud machines being added; see `cloud::Jobs`.
@@ -686,7 +684,6 @@ impl SheprdWindow {
             self.network_quality_seen = network_quality;
             cx.notify();
         }
-        self.update_checkpoints(cx);
         self.update_port_forwards(cx);
         if self.update_listening_ports() {
             cx.notify();

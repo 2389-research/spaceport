@@ -12,7 +12,6 @@ workspace = true
 [dependencies]
 sheprd-client.workspace = true
 sheprd-github.workspace = true
-sheprd-usage.workspace  = true
 secrecy.workspace      = true
 serde_json.workspace   = true
 thiserror.workspace    = true
@@ -23,9 +22,4 @@ sheprd-github = { features = ["test-support"], workspace = true }
 tempfile.workspace = true
 
 [features]
-# Cloud machines as connections, which checkpoints do not run on.
-cloud = ["sheprd-client/cloud"]
-# Azure machines as checkpoint hosts, which only refuse checkpoints so far.
-azure = ["cloud", "sheprd-usage/azure"]
-# A view of queued checkpoints for the app's own tests.
 test-support = []

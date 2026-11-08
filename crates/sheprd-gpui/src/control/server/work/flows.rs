@@ -85,7 +85,7 @@ pub(super) fn script(
         Err(crate::Error::WorktreeScripts(crate::worktree_scripts::Error::Busy)) => {
             Response::error(ErrorCode::Busy, "Another worktree script is still starting")
         }
-        Err(error) => Response::error(ErrorCode::Failed, crate::checkpoint::describe(&error)),
+        Err(error) => Response::error(ErrorCode::Failed, crate::control::describe_error(&error)),
     }
 }
 

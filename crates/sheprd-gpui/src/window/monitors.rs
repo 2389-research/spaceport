@@ -1,10 +1,9 @@
 //! The background monitors the window polls as it ticks: plan usage, system
-//! load, listening ports, agent checkpoints, and port forwards, each on the
+//! load, listening ports, and port forwards, each on the
 //! hosts it watches.
 // i18n: migrated
 
 use super::{Flash, SheprdWindow};
-use crate::checkpoint;
 use gpui::Context;
 
 impl SheprdWindow {
@@ -96,36 +95,6 @@ impl SheprdWindow {
             })
             .filter_map(|(_, endpoint)| host(&endpoint.connection.target))
             .collect()
-    }
-
-    /// Agent turns are watched on every enabled, connected host this client
-    /// may run Git on.
-    pub(super) fn update_checkpoints(&mut self, cx: &mut Context<Self>) {
-        let enabled = self.config.agent_checkpoints;
-        let mut watched = Vec::new();
-        for (index, endpoint) in self.endpoints.iter().enumerate() {
-            let live = if index == self.selected_endpoint {
-                &self.live
-            } else {
-                &endpoint.live
-            };
-            let (true, true, Some(host), Some(snapshot)) = (
-                enabled,
-                endpoint.enabled && live.status.is_connected(),
-                checkpoint::host_for(&endpoint.connection.target, live.local_daemon_peer),
-                live.latest_snapshot(),
-            ) else {
-                continue;
-            };
-            self.checkpoints.observe(&endpoint.id, &host, snapshot);
-            watched.push(endpoint.id.as_str());
-        }
-        self.checkpoints
-            .retain_endpoints(|endpoint| watched.contains(&endpoint));
-        let (changed, _) = self.checkpoints.poll();
-        if changed {
-            cx.notify();
-        }
     }
 
     /// Forwards outlive a dropped connection, since SSH may still reach the

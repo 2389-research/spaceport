@@ -43,6 +43,7 @@ mod notification_settings;
 mod omarchy_theme;
 mod preferences;
 mod px0;
+mod removed_checkpoints;
 mod removed_mods;
 mod removed_phone;
 mod repository_icons;

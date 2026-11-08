@@ -77,20 +77,6 @@ impl SettingsWindow {
             .child(
                 ui::row(
                     theme,
-                    "general-checkpoints",
-                    fl!("settings-general-checkpoints"),
-                )
-                .description(fl!("settings-general-checkpoints-description"))
-                .switch(self.preference_toggle(
-                    "general-checkpoints-toggle",
-                    self.config.agent_checkpoints,
-                    Preference::AgentCheckpoints(!self.config.agent_checkpoints),
-                    cx,
-                )),
-            )
-            .child(
-                ui::row(
-                    theme,
                     "general-smooth-scroll",
                     fl!("settings-general-smooth-scroll"),
                 )

@@ -1,38 +1,17 @@
-//! `sheprd_vcs`'s errors from `error-vcs.ftl`: Git commands and checkpoints.
+//! `sheprd_vcs`'s errors from `error-vcs.ftl`: Git commands.
 //! GitHub failures go through `sheprd_github`'s mapping. Git's own output
 //! stays a placeable.
 
 use super::Localize;
 use crate::i18n::fl;
-use sheprd_vcs::{Error, checkpoint, git};
+use sheprd_vcs::{Error, git};
 
 impl Localize for Error {
     fn localize(&self) -> String {
         match self {
             // keep-sorted start
-            Self::Checkpoint(error) => error.localize(),
-            #[cfg(feature = "azure")]
-            Self::CloudHostUnsupported => fl!("error-vcs-cloud-host-unsupported"),
             Self::Git(error) => error.localize(),
             Self::GitHub(error) => error.localize(),
-            // keep-sorted end
-        }
-    }
-}
-
-impl Localize for checkpoint::Error {
-    fn localize(&self) -> String {
-        match self {
-            // keep-sorted start
-            Self::Branch => fl!("error-vcs-checkpoint-branch"),
-            Self::Busy => fl!("error-vcs-checkpoint-busy"),
-            Self::Checkout => fl!("error-vcs-checkpoint-checkout"),
-            Self::Missing => fl!("error-vcs-checkpoint-missing"),
-            Self::Output => fl!("error-vcs-checkpoint-output"),
-            Self::Script(_) => fl!("error-vcs-checkpoint-script"),
-            Self::Thread(_) => fl!("error-vcs-checkpoint-thread"),
-            Self::Unborn => fl!("error-vcs-checkpoint-unborn"),
-            Self::Worker => fl!("error-vcs-checkpoint-worker"),
             // keep-sorted end
         }
     }

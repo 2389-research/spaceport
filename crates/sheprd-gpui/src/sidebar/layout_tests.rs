@@ -667,7 +667,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         system_load: Default::default(),
         network_quality_seen: 0,
         devices_overview: Default::default(),
-        checkpoints: Default::default(),
         port_forwards: Default::default(),
         #[cfg(feature = "cloud")]
         cloud_jobs: Default::default(),

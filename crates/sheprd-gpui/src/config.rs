@@ -160,9 +160,6 @@ pub struct Config {
     // keep-sorted start
     /// Where the app's own accent color comes from.
     pub accent: Accent,
-    /// Snapshot a checkout's files each time one of its agents starts or
-    /// finishes a turn, so they can be rolled back.
-    pub agent_checkpoints: bool,
     /// Where the managed agent skill may go on its own.
     pub agent_skill: AgentSkillConfig,
     /// Where the sidebar lists agents while `show_agents` is on.
@@ -327,7 +324,6 @@ impl Default for Config {
         Self {
             // keep-sorted start
             accent: Accent::default(),
-            agent_checkpoints: true,
             agent_skill: AgentSkillConfig::default(),
             agents_placement: AgentsPlacement::default(),
             azure: AzureConfig::default(),
@@ -413,7 +409,6 @@ impl Default for Config {
 struct Settings {
     // keep-sorted start
     accent: Accent,
-    agent_checkpoints: Option<bool>,
     agent_skill: AgentSkillConfig,
     agents_placement: AgentsPlacement,
     azure: AzureConfig,
@@ -815,7 +810,6 @@ impl Config {
             config.theme = theme;
         }
         // keep-sorted start
-        config.agent_checkpoints = settings.agent_checkpoints.unwrap_or(true);
         config.confirm_close_pane = settings.confirm_close_pane.unwrap_or(true);
         config.confirm_close_tab = settings.confirm_close_tab.unwrap_or(true);
         config.confirm_close_workspace = settings.confirm_close_workspace.unwrap_or(true);

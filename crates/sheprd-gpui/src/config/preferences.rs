@@ -23,7 +23,6 @@ pub(crate) enum Preference {
     ShowNetworkQuality(bool),
     ShowGpuLoad(bool),
     ShowSidebarGpuLoad(bool),
-    AgentCheckpoints(bool),
     ShowListeningPorts(bool),
     ShowAgentsHeader(bool),
     /// `herdr_2_terminals`: new tabs on this computer run in herdr-core.
@@ -149,9 +148,6 @@ impl Config {
                 Preference::ShowGpuLoad(value) => (None, "show_gpu_load", Some(value.into())),
                 Preference::ShowSidebarGpuLoad(value) => {
                     (None, "show_sidebar_gpu_load", Some(value.into()))
-                }
-                Preference::AgentCheckpoints(value) => {
-                    (None, "agent_checkpoints", Some(value.into()))
                 }
                 Preference::ShowListeningPorts(value) => {
                     (None, "show_listening_ports", Some(value.into()))

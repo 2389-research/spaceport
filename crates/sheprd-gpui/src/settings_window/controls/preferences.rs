@@ -133,11 +133,6 @@ mod tests {
             ),
             (
                 Section::General,
-                "general-checkpoints-toggle",
-                Preference::AgentCheckpoints(false),
-            ),
-            (
-                Section::General,
                 "general-smooth-scroll-toggle",
                 Preference::SmoothScroll(false),
             ),

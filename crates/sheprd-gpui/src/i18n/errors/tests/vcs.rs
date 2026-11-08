@@ -1,5 +1,5 @@
 use super::*;
-use sheprd_vcs::{Error, checkpoint, git};
+use sheprd_vcs::{Error, git};
 use std::io;
 
 fn io() -> io::Error {
@@ -9,26 +9,8 @@ fn io() -> io::Error {
 #[test]
 fn every_variant_has_a_message() {
     assert_localized(&[
-        Error::Checkpoint(checkpoint::Error::Busy),
-        #[cfg(feature = "azure")]
-        Error::CloudHostUnsupported,
         Error::Git(git::Error::Busy),
         Error::GitHub(sheprd_github::Error::Query),
-    ]);
-}
-
-#[test]
-fn every_checkpoint_variant_has_a_message() {
-    assert_localized(&[
-        checkpoint::Error::Branch,
-        checkpoint::Error::Busy,
-        checkpoint::Error::Checkout,
-        checkpoint::Error::Missing,
-        checkpoint::Error::Output,
-        checkpoint::Error::Script(sheprd_client::Error::Disconnected),
-        checkpoint::Error::Thread(io()),
-        checkpoint::Error::Unborn,
-        checkpoint::Error::Worker,
     ]);
 }
 

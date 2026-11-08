@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 /// Whether the daemon behind `target` runs on this machine as this user, so
 /// its panes' chat endpoints are this user's own: the trust boundary local Git
-/// and checkpoints use. A socket given by path may be a forward from another
+/// uses too. A socket given by path may be a forward from another
 /// host, and every remote or cloud daemon's programs listen elsewhere.
 ///
 /// Windows cannot verify the daemon's peer, so there the check falls to the

@@ -325,12 +325,6 @@ pub(super) const CATALOG: &[Entry] = &[
     ),
     entry(
         Section::General,
-        "general-checkpoints",
-        "settings-general-checkpoints",
-        "settings-general-checkpoints-description",
-    ),
-    entry(
-        Section::General,
         "general-smooth-scroll",
         "settings-general-smooth-scroll",
         "settings-general-smooth-scroll-description",

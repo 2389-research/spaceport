@@ -1,19 +1,5 @@
-# Git on the checkouts the app shows: commits, pushes, and checkpoints.
+# Git on the checkouts the app shows: commits and pushes.
 # Git's own output stays as it is in $details.
-
-error-vcs-cloud-host-unsupported = This is not available for cloud machines yet.
-
-## Checkpoints, kept as Git refs on each host.
-
-error-vcs-checkpoint-branch = That checkpoint was taken on another branch. Check that branch out to restore it.
-error-vcs-checkpoint-busy = A merge, rebase, cherry-pick, or revert is in progress. Finish or abort it first.
-error-vcs-checkpoint-checkout = No checkout of this branch was found on its host.
-error-vcs-checkpoint-missing = That checkpoint no longer exists.
-error-vcs-checkpoint-output = Checkpoint output was not understood.
-error-vcs-checkpoint-script = Checkpoint Git commands failed
-error-vcs-checkpoint-thread = Could not start the checkpoint worker
-error-vcs-checkpoint-unborn = This checkout has no commit yet, so it has no checkpoints.
-error-vcs-checkpoint-worker = The checkpoint worker stopped.
 
 ## Git commands. "git commit" and "git push" name Git's own commands.
 

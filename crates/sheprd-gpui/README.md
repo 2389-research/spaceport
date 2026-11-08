@@ -904,9 +904,9 @@ Settings groups its pages: Appearance (Theme, Sidebar, Fonts, Status bar),
 Behaviour (General, Tabs & panes, Code, Notifications), Connect (Integrations,
 Plugins, Cloud devices) and Advanced (Configuration), with a search box above
 them that finds any row. Every row shows whether it is shared with Herdr or
-local to this app. General has **Show listening ports**, **Checkpoint agent
-turns**, **Smooth scrolling**, the clipboard notification overrides, **Remove
-worktrees of merged PRs**, the browser skill and **Install beta releases**.
+local to this app. General has **Show listening ports**, **Smooth scrolling**,
+the clipboard notification overrides, **Remove worktrees of merged PRs**,
+the browser skill and **Install beta releases**.
 Tabs & panes has the tab bar, **Confirm before closing** a tab, pane or
 workspace, **Focus follows mouse** and session restore. Notifications has
 delivery, **Finished notifications**, the in-app toast overrides (a 0-3600
@@ -4158,8 +4158,8 @@ ordered events into a bounded latest-state cache. The UI samples changed state
 at most once per 16 ms without blocking. A metadata-only snapshot is staged
 while the displayed snapshot and surface stay coherent, so input keeps flowing;
 a boot, focus, pane-layout, zoom, keybinding, or command change invalidates the
-surface, and input waits for a coherent one. Notices, sounds, and agent
-checkpoints judge agent status from the staged metadata, so a status change
+surface, and input waits for a coherent one. Notices and sounds judge agent
+status from the staged metadata, so a status change
 that arrives before its surface still counts. Reconnect replaces the cache, so
 late events from an old connection cannot affect the UI.
 
@@ -4296,7 +4296,7 @@ Where this differs from macOS and Linux:
   the host still opens, through its own `ssh -N -L` child.
 - **Uploads.** Files and images dropped or pasted on an SSH host's pane are
   not uploaded yet.
-- **Steps that also run here.** Agent checkpoints, teleport, fan-out, process
+- **Steps that also run here.** Teleport, fan-out, process
   lists, and pane moves also run this machine's `/bin/sh` and stay
   unavailable from Windows.
 
@@ -4336,11 +4336,6 @@ Listening ports are scanned with the distribution's own `ss` (or `lsof`)
 through another `wsl.exe` shell. WSL forwards a distribution's `localhost`
 ports to Windows, so a port opens at `http://localhost:<port>` on this machine
 with no tunnel.
-
-Agent checkpoints run Git inside the distribution, one `wsl.exe --exec
-/bin/sh -c SCRIPT` per step under the same output and idle limits as on an SSH
-host, so its checkouts are snapshotted and restored as an SSH host's are.
-Stopping a step kills its `wsl.exe`, which ends the shell it started.
 
 Files dropped onto a distribution's pane, or copied in Explorer and pasted
 there, paste as the distribution's own paths for them, as its `wslpath -u`

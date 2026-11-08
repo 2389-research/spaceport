@@ -48,11 +48,6 @@ fn behaviour_pages_route_every_row_to_its_preference(cx: &mut TestAppContext) {
             Preference::ShowListeningPorts(false),
         ),
         (
-            Section::General,
-            "general-checkpoints-toggle",
-            Preference::AgentCheckpoints(false),
-        ),
-        (
             Section::Tabs,
             "tabs-confirm-tab-toggle",
             Preference::ConfirmCloseTab(false),

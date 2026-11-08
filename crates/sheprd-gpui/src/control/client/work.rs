@@ -27,7 +27,7 @@ fn rejected(error: impl Into<crate::Error>) -> crate::Error {
     };
     crate::control::Error::Rejected {
         code,
-        message: crate::checkpoint::describe(&error),
+        message: crate::control::describe_error(&error),
     }
     .into()
 }
