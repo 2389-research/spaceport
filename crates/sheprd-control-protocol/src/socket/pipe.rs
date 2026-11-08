@@ -34,7 +34,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-const PREFIX: &str = r"\\.\pipe\";
 /// How long an idle read first sleeps before peeking again. The sleep
 /// doubles up to [`MAX_RETRY`]: an answer usually comes within
 /// milliseconds, but a caller may wait minutes for the user.
@@ -62,24 +61,7 @@ pub(super) fn address(state: &Path) -> crate::Result<PathBuf> {
 }
 
 pub(super) fn name(sid: &str, isolated: Option<&Path>) -> PathBuf {
-    let mut name = format!("{PREFIX}herdr-gpui-control-{sid}");
-    if let Some(state) = isolated {
-        // One directory, however a shell spells it: Git Bash passes
-        // `C:/state`, PowerShell `C:\state`, and Windows ignores case.
-        let state = state
-            .to_string_lossy()
-            .replace('/', r"\")
-            .trim_end_matches('\\')
-            .to_lowercase();
-        // FNV-1a: stable across builds, unlike the standard hasher.
-        let mut hash = 0xcbf2_9ce4_8422_2325_u64;
-        for byte in state.as_bytes() {
-            hash ^= u64::from(*byte);
-            hash = hash.wrapping_mul(0x0100_0000_01b3);
-        }
-        name.push_str(&format!("-{hash:016x}"));
-    }
-    PathBuf::from(name)
+    super::windows_pipe_name(sid, isolated)
 }
 
 pub(super) struct Listener(PipeListener<pipe_mode::Bytes, pipe_mode::Bytes>);

@@ -5,6 +5,7 @@ use test_support::{Address, address};
 
 mod cancellation;
 mod framing;
+mod identity;
 #[cfg(windows)]
 mod pipe;
 #[cfg(unix)]

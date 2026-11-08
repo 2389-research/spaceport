@@ -12,4 +12,8 @@ The existing path test was changed to require the independent directory. It fail
 
 `Config::path()` now derives `<config root>/spaceport/config.toml`, with local overrides at `<config root>/spaceport/config.local.toml`. The temporary mod path also resolves under the Spaceport root until that excluded feature is removed. The path test failed to compile before `app_config_path` was added, then passed. Ten existing config loading tests passed. The test link showed the same compact-unwind warning seen in T00 and the `block` future-compatibility notice; this change added no new warning.
 
+## Windows control pipe name
+
+The Windows pipe name now begins `\\.\pipe\spaceport-control-`, retains the user SID and the deterministic explicit-state-root hash, and uses the existing owner, DACL, first-instance, and remote-client refusal policy. A cross-platform pure test failed to compile before the naming function existed, then passed with the new name and path spelling cases. The Windows listener and client checks have not run on Windows.
+
 The separate daemon settings reader still resolves upstream `herdr/config.toml` and can influence the GUI. The updater still has upstream app and release identities. No side-by-side or native identity acceptance has been claimed.

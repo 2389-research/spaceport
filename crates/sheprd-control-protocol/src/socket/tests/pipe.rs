@@ -8,7 +8,7 @@ fn the_pipe_is_named_for_the_user_and_an_explicit_state_directory() {
     let plain = transport::name("S-1-5-21-1", None);
     assert_eq!(
         plain,
-        PathBuf::from(r"\\.\pipe\herdr-gpui-control-S-1-5-21-1")
+        PathBuf::from(r"\\.\pipe\spaceport-control-S-1-5-21-1")
     );
     assert_ne!(transport::name("S-1-5-21-2", None), plain);
     let state = Path::new(r"C:\state\a");

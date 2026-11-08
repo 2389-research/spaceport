@@ -41,6 +41,27 @@ pub fn address(state: &Path) -> crate::Result<PathBuf> {
     transport::address(state)
 }
 
+#[cfg(any(windows, test))]
+fn windows_pipe_name(sid: &str, isolated: Option<&Path>) -> PathBuf {
+    let mut name = format!(r"\\.\pipe\spaceport-control-{sid}");
+    if let Some(state) = isolated {
+        // Normalize Windows path spelling before hashing an explicit state root.
+        let state = state
+            .to_string_lossy()
+            .replace('/', r"\")
+            .trim_end_matches('\\')
+            .to_lowercase();
+        // FNV-1a stays stable across processes and builds.
+        let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+        for byte in state.as_bytes() {
+            hash ^= u64::from(*byte);
+            hash = hash.wrapping_mul(0x0100_0000_01b3);
+        }
+        name.push_str(&format!("-{hash:016x}"));
+    }
+    PathBuf::from(name)
+}
+
 /// How long the UI may take to answer `request`: one that waits for the
 /// user, a page, or an event on purpose gets as long as it asked for.
 fn answer_timeout(request: &Request) -> Duration {
