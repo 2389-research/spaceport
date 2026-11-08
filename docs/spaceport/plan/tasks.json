@@ -265,7 +265,7 @@
       ],
       "deliverable": "Keep renderer/host adapter where valid; remove desktop-owned conversion/resume/config; prove route or record blocked parity.",
       "status": "blocked",
-      "evidence": ["evidence/external-core-dependencies.md"],
+      "evidence": ["evidence/external-core-dependencies.md", "evidence/t06-local-adapter-route.md"],
       "must_close_gaps": [
         "G-CHAT"
       ]
