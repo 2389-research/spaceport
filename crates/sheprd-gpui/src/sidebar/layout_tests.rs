@@ -662,8 +662,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         network_quality_seen: 0,
         devices_overview: Default::default(),
         port_forwards: Default::default(),
-        #[cfg(feature = "cloud")]
-        #[cfg(feature = "cloud")]
         listening_ports: Default::default(),
         tunnels: Default::default(),
         sidebar_visible: true,
@@ -718,7 +716,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         link_complaint: None,
         links: Default::default(),
         terminal_mouse: None,
-        #[cfg(feature = "cloud")]
         scrollbar_drag: None,
         split_drag: None,
         split_cursor: None,

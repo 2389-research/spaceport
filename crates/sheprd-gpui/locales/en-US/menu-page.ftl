@@ -2,7 +2,6 @@
 
 menu-page-about-herdr-ui = About Sheprd
 menu-page-add-device = Add device
-menu-page-add-cloud-provider = Add cloud provider
 menu-page-add-wsl-distribution = Add WSL distribution
 menu-page-install-the-agent-skill = Install the agent skill
 menu-page-menu = Menu

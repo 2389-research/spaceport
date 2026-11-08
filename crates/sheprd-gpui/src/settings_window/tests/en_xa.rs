@@ -87,16 +87,6 @@ fn fonts_page(view: &SettingsWindow, _: &App) -> Vec<String> {
         .collect()
 }
 
-/// Cloud devices on its first provider's tab: the provider names on the
-/// tabs; `cloud_devices/tests/en_xa.rs` opens every card.
-#[cfg(feature = "cloud")]
-fn cloud_devices_data(_: &SettingsWindow, _: &App) -> Vec<String> {
-    crate::cloud::CloudProvider::ALL
-        .iter()
-        .map(|&provider| crate::cloud::name(provider).to_owned())
-        .collect()
-}
-
 macro_rules! pages {
     ($($(#[$attr:meta])* $name:ident: $section:ident, $data:expr;)+) => {
         $(
@@ -119,7 +109,5 @@ pages! {
     tabs: Tabs, tabs_data;
     notifications: Notifications, none;
     integrations: Integrations, none;
-    #[cfg(feature = "cloud")]
-    cloud_devices: CloudDevices, cloud_devices_data;
     configuration: Configuration, configuration_data;
 }

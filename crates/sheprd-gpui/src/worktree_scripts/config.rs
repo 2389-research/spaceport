@@ -92,7 +92,7 @@ impl Config {
 ///
 /// Local, named-session, and socket endpoints share this machine's files; an
 /// SSH endpoint's checkout is read with `cat` over the endpoint's SSH policy.
-/// A WSL distribution or a cloud machine has no script host here yet, so it
+/// A WSL distribution has no script host here yet, so it
 /// is refused rather than guessed at.
 pub(crate) fn read(
     target: &ConnectTarget,
@@ -105,8 +105,6 @@ pub(crate) fn read(
             read_local(&Path::new(checkout).join(PATH))?
         }
         ConnectTarget::Wsl { .. } => return Err(Error::UnsupportedHost.into()),
-        #[cfg(feature = "cloud")]
-        ConnectTarget::Cloud { .. } => return Err(Error::UnsupportedHost.into()),
     };
     bytes.as_deref().map(Config::parse).transpose()
 }

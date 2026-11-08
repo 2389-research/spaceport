@@ -16,9 +16,6 @@ pub(crate) enum Origin {
     Tailscale,
     /// A WSL distribution on this Windows machine.
     Wsl,
-    /// A machine a cloud provider created.
-    #[cfg(feature = "cloud")]
-    Cloud(crate::cloud::CloudProvider),
 }
 
 impl Origin {
@@ -28,8 +25,6 @@ impl Origin {
                 Self::Local
             }
             ConnectTarget::Wsl { .. } => Self::Wsl,
-            #[cfg(feature = "cloud")]
-            ConnectTarget::Cloud { provider, .. } => Self::Cloud(*provider),
             ConnectTarget::Ssh { target, .. } => Self::of_ssh(&host_name(target)),
         }
     }
@@ -48,25 +43,16 @@ impl Origin {
             // Add Device marks SSH hosts and WSL distributions this way too.
             Self::Ssh | Self::Wsl => "icons/terminal.svg",
             Self::Tailscale => "icons/network/tailscale.svg",
-            #[cfg(feature = "cloud")]
-            Self::Cloud(provider) => crate::cloud::icon(provider),
         }
     }
 
-    /// What the mark stands for, as its tooltip says it. A cloud provider's
-    /// noun is a key the message selects its translated word by.
+    /// What the mark stands for, as its tooltip says it.
     pub(crate) fn describe(self) -> String {
         match self {
             Self::Local => fl!("sidebar-origin-local"),
             Self::Ssh => fl!("sidebar-origin-ssh"),
             Self::Tailscale => fl!("sidebar-origin-tailscale"),
             Self::Wsl => fl!("sidebar-origin-wsl"),
-            #[cfg(feature = "cloud")]
-            Self::Cloud(provider) => fl!(
-                "sidebar-origin-cloud",
-                provider = crate::cloud::name(provider),
-                noun = crate::cloud::noun(provider)
-            ),
         }
     }
 }

@@ -27,11 +27,7 @@ impl Page {
     pub(crate) fn accessible_name(self) -> SharedString {
         SharedString::from(match self {
             Self::About => fl!("menu-page-about-herdr-ui"),
-            #[cfg(feature = "cloud")]
-            Self::AddCloud(_) => fl!("menu-page-add-device"),
             Self::AddDevice => fl!("menu-page-add-device"),
-            #[cfg(feature = "cloud")]
-            Self::AddProvider => fl!("menu-page-add-cloud-provider"),
             Self::AddWsl => fl!("menu-page-add-wsl-distribution"),
             Self::AgentSkill => fl!("menu-page-install-the-agent-skill"),
             Self::Application => fl!("menu-page-menu"),

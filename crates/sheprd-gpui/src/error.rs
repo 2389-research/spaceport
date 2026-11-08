@@ -211,10 +211,9 @@ pub enum Error {
     Px0(#[from] crate::px0::Error),
     #[error("XDG_CONFIG_HOME must be an absolute path")]
     RelativeConfigRoot,
-    /// A cloud machine, provider, sandbox image, or teleport failure from
-    /// `herdr-remote`; see `error/remote.rs` for why it is not `#[from]`.
+    /// A remote host script or Teleport failure.
     #[error(transparent)]
-    Remote(sheprd_remote::Error),
+    Remote(#[from] sheprd_remote::Error),
     #[error("Could not install the agent tools on the SSH host: {0}")]
     RemoteAgentTools(#[source] sheprd_client::Error),
     #[error("{method}: {source}")]

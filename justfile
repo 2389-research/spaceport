@@ -41,8 +41,7 @@ format:
 format-check:
     cargo fmt --all -- --check
 
-# Every feature, then none: cloud providers are default features, and a build
-# without them must not keep code only they use.
+# Check both feature sets so optional test and platform code stays honest.
 lint:
     cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
     cargo clippy --locked --workspace --all-targets --no-default-features -- -D warnings

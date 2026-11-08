@@ -2,7 +2,6 @@
 use super::*;
 use sheprd_client::{ClientEvent, SavedHost};
 
-#[cfg(feature = "container")]
 mod en_xa;
 mod follow_focus;
 

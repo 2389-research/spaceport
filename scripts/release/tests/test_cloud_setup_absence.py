@@ -1,5 +1,5 @@
 """ABOUTME: Guards against the excluded cloud setup worker and UI route.
-ABOUTME: Keeps the saved Container connector visible until its full cut.
+ABOUTME: Checks that retired provider settings and connector code are absent.
 """
 
 from pathlib import Path
@@ -23,12 +23,13 @@ class CloudSetupAbsence(unittest.TestCase):
     def test_menu_and_settings_do_not_offer_setup_execution(self):
         self.assertFalse("RunSetup" in source("crates/sheprd-gpui/src/menu/devices/host_menu.rs"))
         self.assertFalse("RunSetup" in source("crates/sheprd-gpui/src/menu/devices/host_menu/actions.rs"))
-        self.assertFalse("render_cloud_setup" in source("crates/sheprd-gpui/src/settings_window/cloud_devices.rs"))
-        self.assertFalse("script_with" in source("crates/sheprd-gpui/src/config/cloud.rs"))
+        self.assertFalse((ROOT / "crates/sheprd-gpui/src/settings_window/cloud_devices.rs").exists())
+        self.assertFalse((ROOT / "crates/sheprd-gpui/src/config/cloud.rs").exists())
+        self.assertFalse((ROOT / "crates/sheprd-gpui/src/config/container.rs").exists())
 
-    def test_saved_connector_remains_for_separate_coherent_cut(self):
-        self.assertTrue((ROOT / "crates/sheprd-remote/src/container/connect.rs").exists())
-        self.assertTrue((ROOT / "crates/sheprd-remote/src/cloud/catalog.rs").exists())
+    def test_saved_connector_is_also_absent(self):
+        self.assertFalse((ROOT / "crates/sheprd-remote/src/container/connect.rs").exists())
+        self.assertFalse((ROOT / "crates/sheprd-remote/src/cloud/catalog.rs").exists())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/endpoint/catalog.rs").exists())
 
 

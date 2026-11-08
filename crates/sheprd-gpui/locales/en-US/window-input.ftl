@@ -38,7 +38,6 @@ window-input-paste-menu = Paste not sent: a menu is open
 window-input-paste-focus = Paste not sent: the window was taking focus
 window-input-files-menu = Files not pasted: a menu is open
 window-input-files-nowhere = Files not pasted: nothing under the drop point
-window-input-files-cloud = Files not pasted: file drops are not supported on cloud devices yet.
 window-input-files-busy = Files not pasted: another copy is running
 window-input-files-failed = Files not pasted: { $error }
 # A pasted or dropped image, or a paste whose clipboard is read in the

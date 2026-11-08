@@ -35,8 +35,6 @@ impl Label {
     pub(crate) const RUN_SETUP_SCRIPT: Self = Self::new("worktree-popover-run-setup-script");
     pub(crate) const UNMUTE: Self = Self::new("worktree-popover-unmute");
     // keep-sorted end
-    #[cfg(feature = "cloud")]
-
     /// Checked against the English files as it compiles, as `fl!` is.
     const fn new(id: &'static str) -> Self {
         i18n::check(id, &[]);

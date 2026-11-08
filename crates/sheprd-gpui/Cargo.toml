@@ -97,12 +97,7 @@ test-case.workspace = true
 libc.workspace = true
 
 [features]
-default = ["container"]
-# Machines from cloud providers as devices: the shared device list, background
-# jobs, and connector. Turned on by each provider below; not useful alone.
-cloud = ["sheprd-client/cloud", "sheprd-remote/cloud", "sheprd-usage/cloud"]
-# Containers on this computer's Docker or Podman engine as devices.
-container = ["cloud", "sheprd-client/container", "sheprd-remote/container"]
+default = []
 # Development only: `--mockup` shows UI variants from HERDR_MOCKUP_FILE side by
 # side in a native window. Never enabled in release builds. GPUI's test support
 # provides `Window::render_to_image`, so `--capture` needs no screen-recording

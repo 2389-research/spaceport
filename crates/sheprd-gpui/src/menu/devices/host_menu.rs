@@ -1,6 +1,6 @@
 // i18n: migrated
-//! The sidebar host header's context menu. Saved SSH devices and cloud devices
-//! have this one, each with the actions its kind supports; a WSL
+//! The sidebar host header's context menu. Saved SSH devices
+//! have this one; a WSL
 //! distribution's only offers its removal (see `wsl`). Local is always
 //! present, so it offers only its grouping and mute, and an explicit socket is
 //! not in the catalog.
@@ -13,8 +13,6 @@ use crate::{
     menu::Page,
     search_input::SearchInput,
 };
-#[cfg(feature = "cloud")]
-use actions::CLOUD_ACTIONS;
 use actions::{Action, LOCAL_ACTIONS, SSH_ACTIONS};
 use gpui::{prelude::*, *};
 use sheprd_client::ConnectTarget;
@@ -26,12 +24,6 @@ enum Saved {
     Local,
     /// A catalog profile, which the `herdr machine` commands name.
     Ssh { profile: String },
-    /// A machine in the GUI's cloud device list, keyed by its provider's ID.
-    #[cfg(feature = "cloud")]
-    Cloud {
-        provider: crate::cloud::CloudProvider,
-        id: String,
-    },
 }
 
 pub(crate) struct HostMenu {
@@ -39,8 +31,7 @@ pub(crate) struct HostMenu {
     id: String,
     saved: Saved,
     label: String,
-    /// What the device is reached by: the SSH target, or the cloud machine's
-    /// name. An empty new name falls back to it.
+    /// The SSH target. An empty new name falls back to it.
     target: String,
     session: String,
     selected: Option<usize>,
@@ -62,23 +53,18 @@ impl HostMenu {
         match self.saved {
             Saved::Local => LOCAL_ACTIONS,
             Saved::Ssh { .. } => SSH_ACTIONS,
-            #[cfg(feature = "cloud")]
-            Saved::Cloud { .. } => CLOUD_ACTIONS,
         }
     }
 
-    /// The catalog profile `[devices.<profile>]` settings are keyed by; a
-    /// cloud device has none.
+    /// The catalog profile `[devices.<profile>]` settings are keyed by.
     fn profile(&self) -> Option<&str> {
         match &self.saved {
             Saved::Ssh { profile } => Some(profile),
             Saved::Local => None,
-            #[cfg(feature = "cloud")]
-            Saved::Cloud { .. } => None,
         }
     }
 
-    /// The SSH target port forwards are keyed by; a cloud device has none.
+    /// The SSH target port forwards are keyed by.
     fn ssh_target(&self) -> Option<&str> {
         matches!(self.saved, Saved::Ssh { .. }).then_some(self.target.as_str())
     }
@@ -147,21 +133,6 @@ impl SheprdWindow {
                     session.as_str(),
                 )
             }
-            #[cfg(feature = "cloud")]
-            ConnectTarget::Cloud {
-                provider,
-                id: machine_id,
-                machine,
-                session,
-                ..
-            } => (
-                Saved::Cloud {
-                    provider: *provider,
-                    id: machine_id.clone(),
-                },
-                machine.as_str(),
-                session.as_str(),
-            ),
             _ => {
                 tracing::info!(
                     category = "device_remove",
@@ -243,17 +214,6 @@ impl SheprdWindow {
             Action::ServerKeybindings => self.toggle_server_keybindings(cx),
             Action::Theme => self.open_device_theme(window, cx),
             Action::Tags(mode) => self.open_device_tags(mode, window, cx),
-            #[cfg(feature = "cloud")]
-            Action::ProviderSettings => {
-                if let Some(HostMenu {
-                    saved: Saved::Cloud { provider, .. },
-                    ..
-                }) = self.menu.host
-                {
-                    self.open_provider_settings(provider, window, cx);
-                }
-                return;
-            }
             #[cfg(unix)]
             Action::ForwardPort => {
                 let input = cx.new(SearchInput::new);
@@ -390,13 +350,7 @@ impl SheprdWindow {
                         Some(account) => crate::github::forget(store, &account).map_err(Into::into),
                         None => Ok(()),
                     })
-                }
-                // Forget only the exact saved row; leave the machine running.
-                #[cfg(feature = "cloud")]
-                Saved::Cloud { provider, id } => {
-                    crate::cloud::remove(provider, &id)?;
-                    Ok(Ok(()))
-                }
+                } // Forget only the exact saved row; leave the machine running.
             }
         });
         self.menu.removing_devices.insert(id.clone());
@@ -768,20 +722,17 @@ impl SheprdWindow {
     }
 }
 
-/// Rename the saved entry: through `herdr machine rename` for an SSH profile,
-/// in the GUI's own list for a cloud device. Blocks; run on a worker.
+/// Rename the saved SSH profile through `herdr machine rename` on a worker.
 fn rename(saved: &Saved, label: &str) -> crate::Result<()> {
     match saved {
         // Offers no Rename.
         Saved::Local => Ok(()),
         Saved::Ssh { profile } => setup::rename(profile, label),
-        #[cfg(feature = "cloud")]
-        Saved::Cloud { provider, id } => Ok(crate::cloud::rename(*provider, id, label)?),
     }
 }
 
 /// What removal does, as the confirmation says it: an SSH device leaves its
-/// host's Herdr running, a cloud device leaves its machine at the provider.
+/// host's Herdr running.
 fn removal_note(host: &HostMenu) -> String {
     match host.saved {
         Saved::Local => String::new(),
@@ -790,14 +741,6 @@ fn removal_note(host: &HostMenu) -> String {
             device = host.label.as_str(),
             target = host.target.as_str(),
             session = host.session.as_str(),
-        ),
-        #[cfg(feature = "cloud")]
-        Saved::Cloud { provider, .. } => fl!(
-            "host-menu-remove-cloud-note",
-            device = host.label.as_str(),
-            target = host.target.as_str(),
-            provider = crate::cloud::name(provider),
-            machine = crate::cloud::noun(provider),
         ),
     }
 }

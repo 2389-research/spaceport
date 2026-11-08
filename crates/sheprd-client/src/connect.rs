@@ -65,7 +65,7 @@ impl From<Bridge> for Transport {
 }
 
 /// Connect using application-specific setup on the I/O worker. SSH and WSL
-/// targets always use the built-in remote bridge; local and cloud targets use
+/// targets always use the built-in remote bridge; local targets use
 /// the connector. The connector should observe `stop` during waits so detach
 /// cancels setup.
 pub fn connect_with_connector<T: Into<Transport>>(
@@ -81,10 +81,6 @@ pub fn connect_with_connector<T: Into<Transport>>(
             session_socket(std::path::Path::new(""), session)?;
         }
         ConnectTarget::Wsl { distro, session } => wsl::validate(distro, session)?,
-        #[cfg(feature = "cloud")]
-        ConnectTarget::Cloud { session, .. } => {
-            session_socket(std::path::Path::new(""), session)?;
-        }
         _ => {}
     }
     let (commands, rx) = queue::channel(COMMAND_CAPACITY)?;
@@ -99,8 +95,6 @@ pub fn connect_with_connector<T: Into<Transport>>(
             let transport = match target {
                 ConnectTarget::Ssh { .. } => "ssh",
                 ConnectTarget::Wsl { .. } => "wsl",
-                #[cfg(feature = "cloud")]
-                ConnectTarget::Cloud { provider, .. } => provider.key(),
                 _ => "local",
             };
             let span = tracing::info_span!("connection", transport);

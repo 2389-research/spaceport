@@ -3,8 +3,6 @@ use super::*;
 mod history;
 mod picker;
 mod rank;
-#[cfg(feature = "container")]
-
 /// An online host with `cores` cores of which `busy` are taken.
 pub(super) fn host(id: &str, cores: u32, busy: f32) -> Candidate {
     Candidate {

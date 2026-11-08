@@ -287,8 +287,6 @@ pub(crate) struct SheprdWindow {
     /// Herdr's resize mode: direction keys resize the focused pane until
     /// Escape, Enter, or the mode's own shortcut ends it.
     pub(crate) resize_mode: bool,
-    /// Sandbox images this window was asked to build ahead of a dispatch.
-    #[cfg(feature = "cloud")]
     pub(crate) scrollbar_drag: Option<mouse::ScrollbarDrag>,
     pub(crate) selected_endpoint: usize,
     pub(crate) selected_generation: u64,

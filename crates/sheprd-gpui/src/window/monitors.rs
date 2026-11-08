@@ -47,8 +47,7 @@ impl SheprdWindow {
     }
 
     /// The hosts `host` finds for the enabled endpoints `watched_hosts` would
-    /// watch. A cloud machine is only reached while it is connected, so a
-    /// stopped one is never woken by a monitor.
+    /// watch. Only connected hosts are sampled by a monitor.
     fn connected_hosts(
         &self,
         host: fn(&sheprd_client::ConnectTarget) -> Option<crate::usage::Host>,

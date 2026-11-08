@@ -1,12 +1,6 @@
 //! Independent native preferences window. Disk work never owns a window or a socket.
 // i18n: migrated
 mod catalog;
-#[cfg(feature = "cloud")]
-mod cloud_devices;
-#[cfg(feature = "cloud")]
-// Add Device records the request instead in unit tests.
-#[cfg_attr(test, allow(dead_code, unused_imports))]
-pub(crate) use cloud_devices::open as open_cloud;
 mod controls;
 mod inputs;
 #[cfg(windows)]
@@ -221,22 +215,6 @@ struct SettingsWindow {
     #[cfg(test)]
     layout_io: Option<layouts::LayoutIo>,
     remote_history: remote_history::RemoteHistory,
-    /// The provider whose tab Cloud devices shows.
-    #[cfg(feature = "cloud")]
-    cloud_tab: crate::cloud::CloudProvider,
-    /// The main window's finished cloud jobs when the cards last read them.
-    #[cfg(feature = "cloud")]
-    /// The cloud jobs' revision last drawn, so a job's progress redraws
-    /// Cloud devices without every change to the main window doing so.
-    #[cfg(feature = "cloud")]
-    /// The main window's cloud devices when the cards last read them, so a
-    /// device removed from the sidebar leaves Settings too.
-    #[cfg(feature = "cloud")]
-    cloud_devices_seen: u64,
-    #[cfg(feature = "container")]
-    container_card: Option<cloud_devices::ContainerCard>,
-    /// Sandbox images, for the cards of providers that hold them.
-    #[cfg(feature = "container")]
     theme_loading: bool,
     theme_waiting: bool,
     theme_light: bool,
@@ -350,15 +328,6 @@ impl SettingsWindow {
             #[cfg(test)]
             layout_io: None,
             remote_history: Default::default(),
-            #[cfg(feature = "cloud")]
-            cloud_tab: cloud_devices::first_tab(),
-            #[cfg(feature = "cloud")]
-            #[cfg(feature = "cloud")]
-            #[cfg(feature = "cloud")]
-            cloud_devices_seen: 0,
-            #[cfg(feature = "container")]
-            container_card: None,
-            #[cfg(feature = "container")]
             theme_loading: false,
             theme_waiting: false,
             theme_light: false,
@@ -404,9 +373,6 @@ impl SettingsWindow {
     }
 
     fn source_changed(&mut self, source: Entity<SheprdWindow>, cx: &mut Context<Self>) {
-        #[cfg(feature = "cloud")]
-        self.cloud_source_changed(&source, cx);
-        #[cfg(not(feature = "cloud"))]
         let _ = source;
         if self.section == Section::Integrations {
             cx.notify();
@@ -665,10 +631,6 @@ impl SettingsWindow {
         if matches!(section, Section::General | Section::Tabs) {
             self.sync_remote_history(false, cx);
         }
-        #[cfg(feature = "cloud")]
-        if section == Section::CloudDevices {
-            self.open_cloud_devices(cx);
-        }
         cx.notify();
     }
 }
@@ -688,8 +650,6 @@ impl Render for SettingsWindow {
                 Section::Theme => self.render_theme(window, cx),
                 Section::Integrations => self.render_integration_controls(cx),
                 Section::Px0 => self.render_px0_controls(cx),
-                #[cfg(feature = "cloud")]
-                Section::CloudDevices => self.render_cloud_devices(cx),
                 _ => self.render_controls(window, cx),
             },
         };

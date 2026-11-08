@@ -84,9 +84,6 @@ fn the_host_menu_and_its_pages_show_only_messages_under_en_xa() {
 
 #[test]
 fn every_action_names_a_message() {
-    #[cfg(feature = "cloud")]
-    let actions = SSH_ACTIONS.iter().chain(super::super::CLOUD_ACTIONS);
-    #[cfg(not(feature = "cloud"))]
     let actions = SSH_ACTIONS.iter();
     for &(action, message) in actions {
         assert_eq!(

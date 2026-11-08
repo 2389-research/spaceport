@@ -171,10 +171,6 @@ impl SettingsWindow {
         } else if pending.is_empty() {
             match self.section {
                 // Its account fields are a form with their own Save button.
-                #[cfg(feature = "cloud")]
-                Section::CloudDevices => {
-                    fl!("settings-saved-cloud")
-                }
                 _ => fl!("settings-saved"),
             }
         } else {

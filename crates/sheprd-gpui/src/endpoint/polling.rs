@@ -66,9 +66,6 @@ impl SheprdWindow {
             match result {
                 Ok(update) => {
                     self.catalog.accept(&update);
-                    #[cfg(feature = "cloud")]
-                    self.reconcile_devices(update.hosts, update.wsl, update.cloud, cx);
-                    #[cfg(not(feature = "cloud"))]
                     self.reconcile_devices(update.hosts, update.wsl, cx);
                 }
                 Err(error) => {

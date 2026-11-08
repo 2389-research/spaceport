@@ -25,11 +25,6 @@ mod caret;
 mod chat;
 mod cli;
 mod close_modal;
-// `cloud` is the machinery every provider shares; alone it offers nothing to add.
-#[cfg(all(feature = "cloud", not(feature = "container")))]
-compile_error!("the `cloud` feature is enabled through a provider feature, such as `container`");
-#[cfg(feature = "cloud")]
-mod cloud;
 mod config;
 mod config_diagnostic;
 mod connection;
@@ -168,10 +163,7 @@ use sheprd_diagnostics::{self as diagnostics, crash};
 use sheprd_vcs::git;
 // Shared with herdr-client's own SSH and probe children.
 use sheprd_client::{local_path, login_env};
-// Cloud providers, host scripts, and Teleport's core; `cloud` and `teleport`
-// are the app's own modules, which add the jobs and views GPUI draws.
-#[cfg(feature = "container")]
-use sheprd_remote::container;
+// Host scripts and Teleport's core.
 
 pub(crate) use {
     actions::{

@@ -1,6 +1,6 @@
 //! The order the window lists devices in. The catalogs list them as each was
-//! saved: SSH hosts as upstream keeps them, then WSL distributions, then
-//! cloud devices. Dragging a device's header reorders them for this client
+//! saved: SSH hosts as upstream keeps them, then WSL distributions.
+//! Dragging a device's header reorders them for this client
 //! only, by endpoint ID, so upstream's catalog is never rewritten and a
 //! device saved later simply lists after the ones the user arranged.
 //!

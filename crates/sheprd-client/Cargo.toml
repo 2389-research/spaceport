@@ -10,10 +10,6 @@ version.workspace      = true
 workspace = true
 
 [features]
-# `ConnectTarget::Cloud`: machines a cloud provider created, reached through an
-# application-built command. Each provider adds its `CloudProvider` variant.
-cloud = []
-container = ["cloud"]
 # `login_env::probe_for_tests`, for the app's tests that start from a bare
 # desktop environment.
 test-support = []

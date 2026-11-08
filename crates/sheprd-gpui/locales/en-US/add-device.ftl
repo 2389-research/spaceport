@@ -2,20 +2,11 @@
 
 add-device-title = Add Device
 add-device-close = Close
-# The rail's entries. Cloud providers and WSL keep their own names.
+# The rail's entries. WSL keeps its own name.
 add-device-source-host = SSH host
-add-device-source-catalog = Add provider
-# The heading over the rail's cloud providers.
-add-device-cloud-heading = CLOUD
 # The device picker's line under "Add Device…": what this build can add.
-add-device-offer-ssh-wsl-cloud = An SSH host, a WSL distribution, or a cloud machine
 add-device-offer-ssh-wsl = An SSH host or a WSL distribution
-add-device-offer-ssh-cloud = An SSH host or a cloud machine
 add-device-offer-ssh = Set up a remote host over SSH
-add-device-open-settings = Open Settings…
-# The Add provider pane's lead, over tiles of providers not set up yet.
-add-device-providers-all-set = Every cloud provider is set up and listed beside SSH.
-add-device-providers-lead = Set up a provider in Settings, and Add Device lists it beside SSH.
 
 # The SSH form. $target is what the user typed, such as user@host or an
 # SSH alias; $user is the login SSH resolved for it.

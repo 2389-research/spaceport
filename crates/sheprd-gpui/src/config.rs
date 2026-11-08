@@ -15,8 +15,6 @@ pub(crate) mod backdrop;
 mod bitmap_fonts;
 pub(crate) mod chat;
 mod cjk_fonts;
-mod cloud;
-mod container;
 mod daemon;
 mod devices;
 mod edit;
@@ -41,8 +39,6 @@ pub(crate) mod status_bar;
 mod status_icons;
 mod tab_labels;
 pub(crate) mod tab_layout;
-#[cfg(feature = "container")]
-mod table;
 pub(crate) use sidebar_style::parse_hex;
 mod theme;
 mod updates;
@@ -55,7 +51,6 @@ pub use agent_skill::{AgentSkillConfig, SkillInstall};
 pub use agents_placement::AgentsPlacement;
 pub use backdrop::{Backdrop, Material};
 pub use chat::{ChatLauncher, ChatLayoutMode};
-pub use cloud::CloudConfig;
 #[cfg(test)]
 use daemon::MAX_DAEMON_CONFIG_BYTES;
 pub(crate) use daemon::view_settings_path;
@@ -85,9 +80,6 @@ pub use padding::Padding;
 pub(crate) use padding::{Axis, MAX_PADDING, Side, Sides};
 use serde::Deserialize;
 pub use sheprd_orchestrator::gitlab::Config as GitLabConfig;
-pub use sheprd_remote::config::ContainerConfig;
-#[cfg(feature = "container")]
-pub(crate) use sheprd_remote::config::ContainerFields;
 pub(crate) use sidebar::{
     AgentLayout, AgentToken, Rows, SidebarLayout, SpaceLayout, SpaceToken, TokenStyle,
 };
@@ -141,15 +133,11 @@ pub struct Config {
     /// override from the Herdr value it shadows.
     pub(crate) clipboard_overrides: ClipboardToastSettings,
     pub clipboard_toast: ClipboardToast,
-    /// What a new cloud device runs the first time it connects.
-    pub cloud: CloudConfig,
     pub confirm_close_pane: bool,
     pub confirm_close_tab: bool,
     /// Whether a workspace close shows its dialog when the check finds no
     /// unpublished work. Uncommitted or unpushed work always asks.
     pub confirm_close_workspace: bool,
-    /// How new containers on this computer's Docker or Podman engine are made.
-    pub container: ContainerConfig,
     /// How far the app's own marks and labels stand off its chrome.
     pub contrast: Contrast,
     /// Per saved device, by catalog profile ID.
@@ -291,11 +279,9 @@ impl Default for Config {
             chat: chat::ChatConfig::default(),
             clipboard_overrides: ClipboardToastSettings::default(),
             clipboard_toast: ClipboardToast::default(),
-            cloud: CloudConfig::default(),
             confirm_close_pane: true,
             confirm_close_tab: true,
             confirm_close_workspace: true,
-            container: ContainerConfig::default(),
             contrast: Contrast::default(),
             devices: BTreeMap::new(),
             edge_rail: false,
@@ -369,11 +355,9 @@ struct Settings {
     bell: BellConfig,
     chat: chat::ChatConfig,
     clipboard_toast: ClipboardToastSettings,
-    cloud: CloudConfig,
     confirm_close_pane: Option<bool>,
     confirm_close_tab: Option<bool>,
     confirm_close_workspace: Option<bool>,
-    container: ContainerConfig,
     contrast: Contrast,
     devices: BTreeMap<String, DeviceSettings>,
     edge_rail: Option<bool>,
@@ -448,15 +432,6 @@ impl Config {
     /// both off no GPU tool runs on any host.
     pub(crate) fn gpu_sampled(&self) -> bool {
         self.show_gpu_load || self.show_sidebar_gpu_load
-    }
-
-    /// The provider tables `herdr-remote` reads, from a full load.
-    pub(crate) fn load_remote()
-    -> std::result::Result<sheprd_remote::config::Sections, sheprd_remote::config::LoadError> {
-        let config = Self::load()?;
-        Ok(sheprd_remote::config::Sections {
-            container: config.container,
-        })
     }
 
     pub fn path() -> Result<PathBuf> {
@@ -679,10 +654,6 @@ impl Config {
         config.gitlab = settings.gitlab;
         settings.chat.check()?;
         config.chat = settings.chat;
-        config.cloud = settings.cloud;
-        #[cfg(feature = "container")]
-        settings.container.settings()?;
-        config.container = settings.container;
         config.favorite_themes = settings.favorite_themes;
         // A hand-edited list may name a theme twice; it is starred once.
         let mut starred = std::collections::HashSet::new();

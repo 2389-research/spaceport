@@ -182,16 +182,6 @@ impl SheprdWindow {
             self.devices_key(event, window, cx);
             return;
         }
-        #[cfg(feature = "cloud")]
-        if let Some(Page::AddCloud(provider)) = self.menu.page {
-            self.add_cloud_key(provider, event, window, cx);
-            return;
-        }
-        #[cfg(feature = "cloud")]
-        if self.menu.page == Some(Page::AddProvider) {
-            self.add_provider_key(event, window, cx);
-            return;
-        }
         if self.menu.page == Some(Page::Palette) {
             self.palette_key(event, window, cx);
             return;

@@ -81,7 +81,7 @@ pub enum Error {
         source: serde_json::Error,
     },
     #[error(
-        "Teleport needs a local session, SSH host, or cloud device; custom socket and WSL endpoints are unsupported"
+        "Teleport needs a local session or SSH host; custom socket and WSL endpoints are unsupported"
     )]
     UnsupportedHost,
     /// The `herdr` CLI addresses only the release installation's sessions,

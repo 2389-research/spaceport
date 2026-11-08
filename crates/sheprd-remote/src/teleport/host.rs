@@ -21,12 +21,6 @@ const QUERY_IDLE: Duration = Duration::from_secs(60);
 enum Route {
     Local,
     Ssh(String),
-    #[cfg(feature = "cloud")]
-    Cloud {
-        provider: sheprd_client::CloudProvider,
-        account: String,
-        id: String,
-    },
 }
 
 /// Largest bundle, session, or archive Teleport will carry.
@@ -62,12 +56,6 @@ impl Host {
         let route = match &self.route {
             Route::Local => "local".to_owned(),
             Route::Ssh(target) => format!("ssh:{target}"),
-            #[cfg(feature = "cloud")]
-            Route::Cloud {
-                provider,
-                account,
-                id,
-            } => format!("cloud:{provider:?}:{account}:{id}"),
         };
         let session = self.session.as_deref().unwrap_or_default();
         let installation = if self.development { "dev" } else { "release" };
@@ -100,24 +88,6 @@ impl Host {
                 env: Vec::new(),
             }),
             ConnectTarget::Socket(_) | ConnectTarget::Wsl { .. } => Err(Error::UnsupportedHost),
-            #[cfg(feature = "cloud")]
-            ConnectTarget::Cloud {
-                provider,
-                account,
-                id,
-                session,
-                ..
-            } => Ok(Self {
-                route: Route::Cloud {
-                    provider: *provider,
-                    account: account.clone(),
-                    id: id.clone(),
-                },
-                session: Some(session.clone()),
-                development: false,
-                #[cfg(any(test, feature = "test-support"))]
-                env: Vec::new(),
-            }),
         }
     }
 
@@ -203,33 +173,6 @@ export PATH
         let host = match &self.route {
             Route::Local => ScriptHost::Local,
             Route::Ssh(target) => ScriptHost::Ssh(target, lane),
-            #[cfg(feature = "cloud")]
-            Route::Cloud {
-                provider,
-                account,
-                id,
-            } => {
-                if !cfg!(any(target_os = "linux", target_os = "macos")) {
-                    return Err(sheprd_client::Error::ScriptUnsupported);
-                }
-                return crate::cloud::with_command(
-                    *provider,
-                    account,
-                    id,
-                    cancelled,
-                    |mut command| {
-                        command.arg(format!("/bin/sh -c {}", shell_quote(&script_text)));
-                        sheprd_client::run_script_command(command, input, output, limits, cancelled)
-                    },
-                )
-                .map_err(|error| {
-                    if cancelled.load(std::sync::atomic::Ordering::Acquire) {
-                        sheprd_client::Error::ScriptCancelled
-                    } else {
-                        sheprd_client::Error::ScriptConnect(error)
-                    }
-                })?;
-            }
         };
         run_script(host, &script_text, input, output, limits, cancelled)
     }
@@ -505,9 +448,6 @@ done
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
-
-    #[cfg(feature = "cloud")]
-    mod cloud;
 
     #[test]
     fn hosts_follow_their_endpoint_target() {

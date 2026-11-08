@@ -7,7 +7,6 @@ mod dispatch;
 pub(super) mod popover;
 mod render;
 mod requests;
-#[cfg(feature = "cloud")]
 mod scripts;
 
 use super::{Page, WorkspaceAction, WorkspaceMenuAction, state::Deletion};
@@ -641,7 +640,6 @@ impl SheprdWindow {
         if target.can_create() {
             items.push((Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE));
         }
-        #[cfg(feature = "cloud")]
         // Whether the checkout defines scripts is only known once its file is
         // read, so every Git checkout offers them and an absent one says so.
         if target.worktree.is_some() {
@@ -873,7 +871,6 @@ impl SheprdWindow {
             WorkspaceMenuAction::PullRequest => self.open_workspace_pr(cx),
             WorkspaceMenuAction::FanOut => self.open_fan_out(window, cx),
             WorkspaceMenuAction::Script(kind) => self.run_workspace_script(kind, window, cx),
-            #[cfg(feature = "cloud")]
             WorkspaceMenuAction::Orchestrator => {
                 if let Some(target) = &self.menu.target {
                     let workspace = target.id.clone();

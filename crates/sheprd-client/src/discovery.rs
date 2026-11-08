@@ -64,34 +64,6 @@ fn config_root(var: &impl Fn(&str) -> Option<OsString>) -> PathBuf {
         .unwrap_or_else(env::temp_dir)
 }
 
-/// A provider that creates machines used as endpoints. Closed: supporting
-/// another provider adds a variant behind its own feature, and every match
-/// that cares says so.
-#[cfg(feature = "cloud")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum CloudProvider {
-    #[cfg(feature = "container")]
-    Container,
-}
-
-#[cfg(feature = "cloud")]
-impl CloudProvider {
-    /// Every provider this build supports, in display order.
-    pub const ALL: &[Self] = &[
-        #[cfg(feature = "container")]
-        Self::Container,
-    ];
-
-    /// The stable key used in saved files and endpoint IDs.
-    pub fn key(self) -> &'static str {
-        match self {
-            #[cfg(feature = "container")]
-            Self::Container => "container",
-        }
-    }
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum ConnectTarget {
     /// Environment overrides, then HERDR_SESSION in the release config directory.
@@ -103,20 +75,6 @@ pub enum ConnectTarget {
     Socket(PathBuf),
     /// Noninteractive SSH attachment to an installed remote Herdr (POSIX hosts).
     Ssh { target: String, session: String },
-    /// A machine a cloud provider created, reached through the application's
-    /// connector, which holds the provider's credential and builds the command
-    /// that runs the bridge there. `account` names the provider account or
-    /// deployment; `id` is the provider's stable ID for the machine, which the
-    /// connector reaches it by. `machine` is its name when saved, for display:
-    /// a machine can be renamed, or deleted and its name reused.
-    #[cfg(feature = "cloud")]
-    Cloud {
-        provider: CloudProvider,
-        account: String,
-        id: String,
-        machine: String,
-        session: String,
-    },
     /// A WSL distribution on this Windows machine, attached through `wsl.exe`
     /// running the same bridge an SSH host runs.
     Wsl { distro: String, session: String },
@@ -155,14 +113,12 @@ pub fn session_socket(config_dir: &Path, name: &str) -> Result<PathBuf> {
 }
 
 impl ConnectTarget {
-    /// Whether the daemon runs on another machine, on a cloud provider's
-    /// machine, or inside a WSL distribution, so its paths, processes, and files are not
+    /// Whether the daemon runs on another machine or inside a WSL distribution,
+    /// so its paths, processes, and files are not
     /// this machine's.
     pub fn is_remote(&self) -> bool {
         match self {
             Self::Ssh { .. } | Self::Wsl { .. } => true,
-            #[cfg(feature = "cloud")]
-            Self::Cloud { .. } => true,
             _ => false,
         }
     }
@@ -171,8 +127,6 @@ impl ConnectTarget {
     pub fn remote_session(&self) -> Option<&str> {
         match self {
             Self::Ssh { session, .. } | Self::Wsl { session, .. } => Some(session),
-            #[cfg(feature = "cloud")]
-            Self::Cloud { session, .. } => Some(session),
             _ => None,
         }
     }

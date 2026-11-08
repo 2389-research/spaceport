@@ -15,8 +15,8 @@ pub(in crate::menu) struct WslSetup {
     session: Entity<SearchInput>,
     step: Step,
     task: Option<Task<()>>,
-    /// Why the last check failed, kept with this form while a cloud
-    /// source of Add Device shows.
+    /// Why the last check failed, kept with this form when another Add Device
+    /// source is shown.
     error: Option<String>,
 }
 
@@ -186,7 +186,7 @@ impl SheprdWindow {
                 setup.task = None;
                 match outcome {
                     // The catalog poll shows the device; nothing is left to
-                    // say. While a cloud source shows, only this form goes.
+                    // say. If another source is shown, only this form goes.
                     Outcome::Saved if this.menu.page != Some(Page::AddWsl) => {
                         this.menu.wsl_setup = None;
                         cx.notify();

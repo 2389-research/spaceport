@@ -226,9 +226,6 @@ pub(crate) fn run() -> std::process::ExitCode {
     if let Some(exit) = crate::setup_relay::run_helper(&args) {
         return exit;
     }
-    // The exec relay below reads its provider's table, so it needs the
-    // loader too; setting it reads nothing yet.
-    sheprd_remote::config::set_loader(Config::load_remote);
     // A control command asked for JSON gets its usage errors as JSON too.
     let json_errors = cli::control::wants_json(&args);
     let LaunchOptions { target, mut mode } = match LaunchOptions::parse(&args) {

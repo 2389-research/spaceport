@@ -39,7 +39,7 @@ error-remote-teleport-decode = { $step ->
     [sessions] moving agent sessions failed: unexpected output
    *[launch] starting programs failed: unexpected output
 }
-error-remote-teleport-unsupported-host = Teleport needs a local session, SSH host, or cloud device; custom socket and WSL endpoints are unsupported
+error-remote-teleport-unsupported-host = Teleport needs a local session or SSH host; custom socket and WSL endpoints are unsupported
 error-remote-teleport-development-session = Host scripts cannot reach a development (--dev) session
 error-remote-teleport-workspace-gone = The workspace is no longer open on its host
 error-remote-teleport-pane-gone = The pane is no longer open on its host

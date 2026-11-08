@@ -1,7 +1,7 @@
 # Sheprd Native Workspace
 
 A GPUI 0.3.10 (`gpui-pre`) workspace for terminals and AI agents on local,
-SSH, and cloud machines, with macOS support, Linux x86_64/ARM64 builds, and
+and SSH machines, with macOS support, Linux x86_64/ARM64 builds, and
 a Windows build with native CI coverage. See [Windows](#windows) for what is
 unavailable there. It supports existing Herdr 1 sessions and
 [herdr-core terminals](#herdr-2-terminals). Herdr Core is installed separately,
@@ -292,15 +292,8 @@ Remote hosts need an installed Herdr supporting the session commands and
 noninteractive SSH authentication. The GUI does not install or update it.
 
 **Add Device…** opens one dialog for every kind of device. A rail on its left
-lists SSH hosts (then WSL distributions on Windows) and, under **Cloud**, the
-cloud providers in use here, shown by their logos with a green dot: those whose
-account is configured, and those with a saved device. **Add provider** follows
-while any provider is left out; its pane shows the rest as tiles, each opening
-that provider's Settings tab, and **Open Settings…** opens Cloud devices. Once
-set up, a provider joins the rail. Each entry keeps
-its own form, so switching between them keeps what was typed. **Ctrl-Tab** and
-**Ctrl-Shift-Tab** move through the rail from any field. In a narrow window the
-rail shows only the logos.
+lists SSH hosts and WSL distributions on Windows. **Ctrl-Tab** and
+**Ctrl-Shift-Tab** move through the rail from any field.
 
 The SSH form accepts an SSH target, label, and optional remote session (default:
 `default`). **Skip host key verification (dangerous)**, off by default,
@@ -331,8 +324,8 @@ Enter an SSH target or alias and label directly. The form does not search for
 hosts or suggest targets. **Enter** adds exactly what the target field shows.
 
 Each device's header in the Spaces list starts with a mark for where it runs:
-a monitor for this machine, the provider's logo for a cloud device, and a
-terminal for an SSH host or WSL distribution. An SSH host shows the
+a monitor for this machine and a terminal for an SSH host or WSL
+distribution. An SSH host shows the
 Tailscale logo when it is a `*.ts.net` name or a Tailscale address
 (`100.64.0.0/10` or `fd7a:115c:a1e0::/48`). Hover the mark to see what it means.
 Orca and Minimal draw no icons on their rows and draw no mark either. Set
@@ -346,18 +339,6 @@ an empty name falls back to the SSH target, as when adding. Removal runs the ins
 edits only the local catalog: the host's own Herdr keeps running. When the
 device has its own GitHub sign-in, the confirmation also offers to delete it,
 since its account panel goes away with the device. Local's menu offers neither.
-
-A container device's header has a menu too: **Rename…** changes the name the sidebar
-shows, falling back to the machine's name when left empty; **Cloud device
-settings…** opens its provider under Settings > Cloud devices; and **Remove
-device…** removes it from this computer. For a container,
-it deletes the machine at the provider by default, with **Remove from Herdr
-only** beside it. Before
-deleting, the dialog searches the machine's home directory for Git checkouts
-with changed or untracked files or commits on no remote; when it finds some,
-it names them and the button becomes **Delete anyway**, and a machine it
-cannot reach is said to be unchecked. Port forwards and server keybindings
-need a saved SSH host, so a cloud device does not offer them.
 
 **Forward port…** in the same menu forwards one of the host's ports, such as a
 dev server an agent started there, to this computer. Each forward has its own
@@ -448,22 +429,10 @@ how the daemon's processes are judged; that needs a change to how Herdr
 launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
-Settings > **Cloud devices** still shows saved Container devices during the
-Spaceport migration. It can read engine state, save the engine, and forget an
-exact saved row. New Container creation, adoption, dispatch provisioning,
-sandbox image builds, Stop, provider destroy, and idle stopping are removed.
-The saved-device connector can still start a stopped container when asked to
-connect. No migration step deletes a container, volume, image, or saved row.
-
-The old `[container]` creation keys and `[cloud]` setup keys remain in the
-config file when Settings saves the engine. They cannot launch setup scripts
-or install agents.
-The historical sandbox design is in [docs/sandbox.md](../../docs/sandbox.md).
-
-Each provider is a Cargo feature of `herdr-gpui`; `container` is on by default.
-A build with `--no-default-features` has no Cloud
-Devices section and no provider rows in the device picker; it still accepts
-the `[cloud]` table, so one config file serves every build.
+Old `cloud-devices.json` Container rows and `[container]` / `[cloud]`
+configuration data remain untouched. The client no longer offers those devices,
+connects to their engines, or starts provider jobs. Core machines remain visible
+through the Core catalog. See the historical [sandbox design](../../docs/sandbox.md).
 
 Switching revokes the old host's focus before releasing its surface, then resizes
 and activates the selected host. Input waits for the activation acknowledgement
@@ -1461,7 +1430,7 @@ Herdr 1 tabs, and nothing moves from one to the other.
   `spaceport run new_core_terminal`. With `herdr_2_terminals = true`
   (**Settings > Tabs > New terminals use Herdr 2**), every new tab on this
   computer is one. herdr-core runs only on this computer, so a new tab in a
-  workspace on an SSH, WSL, or cloud host stays a Herdr tab on that host, and
+  workspace on an SSH or WSL host stays a Herdr tab on that host, and
   **New Herdr 2 Terminal** is refused there.
 - **Starting herdr-core:** the app joins a core that already runs. Otherwise
   it may start a separately installed, trusted `herdr-core` when a Core
@@ -1843,7 +1812,7 @@ endpoint.
 Spaceport no longer offers worktree Teleport in the workspace menu. It does
 not start a migration or read and write `teleported.json`; existing files stay
 untouched. The shared host scripts remain while pane carry, fan-out, dispatch,
-cloud image work and legacy rich-chat paths still use them. See the
+legacy rich-chat paths still use them. See the
 [Spaceport removal evidence](../../docs/spaceport/evidence/t04-native-teleport-removal.md)
 for the exact remaining routes and open checks.
 
@@ -2371,8 +2340,7 @@ at least five seconds beyond monotonic elapsed time is treated like sleep;
 backward adjustments do not rewind or pause the history. CPU, memory, disk, and uptime
 come from the same sampling as the status bar's load, and every enabled host
 is sampled while an overview tab is open, even with the status bar's load
-hidden. A cloud machine has no host to sample, so its load columns stay
-empty.
+hidden.
 
 ## Editor Groups
 
@@ -2699,8 +2667,7 @@ on Windows reachable by this user alone. A chat on a saved SSH host attaches
 through `sheprd-acp connect` run on that host over SSH, using the `sheprd-acp`
 (or an older host's `herdr-acp`) found in `~/.herdr/bin`, `~/.cargo/bin`,
 `~/.local/bin`, a Mac's installed app, or the host's `PATH`; without one its
-pane keeps the program's terminal view. The view is not offered for WSL or
-cloud hosts. See `crates/sheprd-acp/README.md` for the program itself.
+pane keeps the program's terminal view. The view is not offered for WSL hosts. See `crates/sheprd-acp/README.md` for the program itself.
 
 ## px0
 

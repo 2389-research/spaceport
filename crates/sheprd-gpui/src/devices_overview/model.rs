@@ -113,7 +113,7 @@ pub(crate) struct Device {
     pub agents: Vec<AgentLine>,
     /// Agent and workspace names, lowercased, for the search.
     names: Vec<String>,
-    /// Where load samples come from; None for a cloud machine.
+    /// Where load samples come from.
     pub host: Option<Host>,
 }
 
@@ -241,10 +241,6 @@ pub(crate) fn address(target: &ConnectTarget) -> String {
         ConnectTarget::Ssh { target, .. } => {
             fl!("devices-overview-ssh", target = target.as_str())
         }
-        #[cfg(feature = "cloud")]
-        ConnectTarget::Cloud {
-            provider, machine, ..
-        } => format!("{} · {machine}", provider.key()),
         ConnectTarget::Wsl { distro, .. } => {
             fl!("devices-overview-wsl", distro = distro.as_str())
         }

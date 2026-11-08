@@ -6,14 +6,7 @@
 pub(crate) enum Page {
     // keep-sorted start
     About,
-    /// A cloud provider in the Add Device rail whose machines are set up in
-    /// Settings rather than in the dialog.
-    #[cfg(feature = "cloud")]
-    AddCloud(crate::cloud::CloudProvider),
     AddDevice,
-    /// Add Device's tiles of the cloud providers its rail leaves out.
-    #[cfg(feature = "cloud")]
-    AddProvider,
     /// Picking a WSL distribution to save as a device.
     AddWsl,
     /// The one-time offer to install the agent skill for browser tabs.
@@ -120,8 +113,6 @@ pub(crate) enum WorkspaceMenuAction {
     Script(crate::worktree_scripts::ScriptKind),
     /// Show the repository's issues in the activity bar.
     Orchestrator,
-    /// Build the repository's sandbox images ahead of a dispatch.
-    #[cfg(feature = "cloud")]
     /// Silence the workspace's notifications, or let them through again.
     /// Drawn as the toggle in the popover's header rather than as a row, and
     /// applied at once: the mute belongs to this client, never the daemon.
@@ -196,7 +187,6 @@ impl WorkspaceMenuAction {
             Self::Expand => "icons/chevron-down.svg",
             Self::FanOut => "icons/fan-out.svg",
             Self::Orchestrator => "icons/github.svg",
-            #[cfg(feature = "cloud")]
             Self::Script(crate::worktree_scripts::ScriptKind::Setup) => "icons/refresh.svg",
             Self::Script(_) => "icons/play.svg",
             Self::Mute => crate::icons::MUTED,

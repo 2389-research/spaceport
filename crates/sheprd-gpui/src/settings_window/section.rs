@@ -17,8 +17,6 @@ pub(super) enum Section {
     Px0,
     Notifications,
     Integrations,
-    #[cfg(feature = "cloud")]
-    CloudDevices,
     Configuration,
 }
 
@@ -78,8 +76,6 @@ impl Section {
         Self::Px0,
         Self::Notifications,
         Self::Integrations,
-        #[cfg(feature = "cloud")]
-        Self::CloudDevices,
         Self::Configuration,
     ];
 
@@ -100,8 +96,6 @@ impl Section {
             Self::Px0 => "settings-section-px0",
             Self::Notifications => "settings-section-notifications",
             Self::Integrations => "settings-section-integrations",
-            #[cfg(feature = "cloud")]
-            Self::CloudDevices => "settings-section-cloud-devices",
             Self::Configuration => "settings-section-configuration",
         }
     }
@@ -115,8 +109,6 @@ impl Section {
             Self::StatusBar => "settings-lead-status-bar",
             Self::Px0 => "settings-lead-px0",
             Self::Integrations => "settings-lead-integrations",
-            #[cfg(feature = "cloud")]
-            Self::CloudDevices => "settings-lead-cloud-devices",
             Self::Configuration => "settings-lead-configuration",
             Self::General | Self::Tabs | Self::Notifications => return None,
         };
@@ -133,8 +125,6 @@ impl Section {
             }
             Self::Tabs | Self::Px0 | Self::Notifications => Some(Group::Behaviour),
             Self::Integrations => Some(Group::Connect),
-            #[cfg(feature = "cloud")]
-            Self::CloudDevices => Some(Group::Connect),
             Self::Configuration => Some(Group::Advanced),
         }
     }
@@ -151,8 +141,6 @@ impl Section {
             Self::Px0 => "icons/code.svg",
             Self::Notifications => "icons/bell.svg",
             Self::Integrations => "icons/agent-generic.svg",
-            #[cfg(feature = "cloud")]
-            Self::CloudDevices => "icons/globe.svg",
             Self::Configuration => "icons/file.svg",
         }
     }

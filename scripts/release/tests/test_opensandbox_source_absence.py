@@ -29,7 +29,7 @@ class OpenSandboxSourceAbsence(unittest.TestCase):
         for path in (ROOT / "website/site/index.html", ROOT / "website/site/assets/features.js"):
             self.assertFalse("OpenSandbox" in path.read_text(), str(path))
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
-        self.assertTrue((ROOT / "crates/sheprd-remote/src/cloud/socket.rs").exists())
+        self.assertFalse((ROOT / "crates/sheprd-remote/src/cloud/socket.rs").exists())
 
 
 if __name__ == "__main__":

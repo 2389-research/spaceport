@@ -47,5 +47,3 @@ worktree-popover-open-main-closed = Open this repository's main checkout to open
 worktree-popover-main-checkout = Only a linked worktree can be removed, not a main checkout
 
 worktree-popover-note-unavailable = Notes are kept on Git checkouts with a branch
-
-# Building the repository's cloud sandbox images.

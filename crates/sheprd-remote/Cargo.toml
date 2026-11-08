@@ -10,37 +10,22 @@ version.workspace      = true
 workspace = true
 
 [dependencies]
-base64.workspace                 = true
-chrono.workspace                 = true
-getrandom.workspace              = true
 sheprd-client.workspace           = true
-percent-encoding.workspace       = true
-secrecy.workspace                = true
 serde.workspace                  = true
 serde_json.workspace             = true
-sha2.workspace                   = true
 tar.workspace                    = true
 tempfile.workspace               = true
 thiserror.workspace              = true
 tracing.workspace                = true
-ureq.workspace                   = true
 url.workspace                    = true
-uuid.workspace                   = true
-zeroize.workspace                = true
 
 [target.'cfg(unix)'.dependencies]
 nix.workspace    = true
-rustix.workspace = true
 
 [dev-dependencies]
 sheprd-client = { features = ["test-support"], workspace = true }
 toml.workspace = true
 
 [features]
-# Machines from cloud providers as devices: the saved device list, the
-# connector, and running scripts on them. Turned on by each provider below;
-# not useful alone.
-cloud = ["sheprd-client/cloud"]
-container = ["cloud", "sheprd-client/container"]
-# Shared fixtures (provider settings, a mock server) for the app's own tests.
+# Shared fixtures for the app's own tests.
 test-support = []

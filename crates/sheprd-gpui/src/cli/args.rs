@@ -6,7 +6,7 @@ use std::{collections::VecDeque, ffi::OsString};
 pub(crate) struct Args {
     rest: VecDeque<OsString>,
     /// Everything after a `--`, taken as it is: no flag there is this
-    /// program's, as in `cloud exec ID -- git log --json`.
+    /// program's.
     trailing: Option<Vec<OsString>>,
     /// The command being parsed, named in errors.
     command: &'static str,

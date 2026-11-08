@@ -1,5 +1,5 @@
 """ABOUTME: Checks that Container has no new machine or image entry route.
-ABOUTME: Keeps saved device and Core machine paths visible for later cuts.
+ABOUTME: Keeps retained Core machine paths visible after the full cloud cut.
 """
 
 from pathlib import Path
@@ -15,15 +15,15 @@ def source(path):
 
 class ContainerProvisioningAbsence(unittest.TestCase):
     def test_container_creation_and_adoption_are_unreachable(self):
-        settings = source("crates/sheprd-gpui/src/settings_window/cloud_devices/container.rs")
+        settings = source("crates/sheprd-gpui/src/settings_window.rs")
         for name in ("create_container", "adopt_container", "cloud-container-new", "cloud-container-adopt"):
             with self.subTest(name=name):
                 self.assertFalse(name in settings, name)
         self.assertNotIn(
             "provision: Some(crate::container::setup::provision)",
-            source("crates/sheprd-remote/src/cloud/providers.rs"),
+            source("crates/sheprd-remote/src/lib.rs"),
         )
-        setup = source("crates/sheprd-remote/src/container/setup.rs")
+        setup = source("crates/sheprd-remote/src/lib.rs")
         for name in ("pub fn add_device(", "pub fn adopt(", "pub fn provision("):
             with self.subTest(name=name):
                 self.assertFalse(name in setup, name)
@@ -31,23 +31,23 @@ class ContainerProvisioningAbsence(unittest.TestCase):
         self.assertNotIn("Destination::Sandbox", source("crates/sheprd-gpui/src/menu/workspace/dispatch.rs"))
 
     def test_container_image_entry_points_are_unreachable(self):
-        settings = source("crates/sheprd-gpui/src/settings_window/cloud_devices/container.rs")
+        settings = source("crates/sheprd-gpui/src/settings_window.rs")
         self.assertNotIn("render_sandbox_images", settings)
         for name in ("settings-cloud-container-image", "settings-cloud-container-cpus", "settings-cloud-container-memory"):
             with self.subTest(name=name):
                 self.assertFalse(name in settings, name)
         self.assertNotIn(
             "image: Some(&crate::container::image::SUPPORT)",
-            source("crates/sheprd-remote/src/cloud/providers.rs"),
+            source("crates/sheprd-remote/src/lib.rs"),
         )
         self.assertNotIn(
             "build_workspace_sandbox_images(window, cx)",
             source("crates/sheprd-gpui/src/menu/workspace.rs"),
         )
 
-    def test_saved_device_and_core_paths_remain(self):
-        self.assertIn("CloudProvider::$variant => crate::$module::connect", source("crates/sheprd-remote/src/cloud/providers.rs"))
-        self.assertIn("pub fn connect(", source("crates/sheprd-remote/src/container/connect.rs"))
+    def test_core_paths_remain_without_saved_provider_connector(self):
+        self.assertFalse((ROOT / "crates/sheprd-remote/src/cloud/providers.rs").exists())
+        self.assertFalse((ROOT / "crates/sheprd-remote/src/container/connect.rs").exists())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/core_catalog.rs").exists())
 

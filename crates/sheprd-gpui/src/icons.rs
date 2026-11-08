@@ -264,7 +264,6 @@ embedded_icons! {
     "chevron-right.svg",
     "chevron-up.svg",
     "close.svg",
-    "cloud/container.svg",
     "code.svg",
     "coffee-full.svg",
     "coffee.svg",

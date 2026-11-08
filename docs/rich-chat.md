@@ -196,7 +196,7 @@ id as `pi --session`; what it does with an id it does not have is up to Pi.
 Limitations:
 
 - Only Herdr 1 on this machine, on macOS and Linux, where the `herdr` CLI
-  answers `pane process-info`. Windows, SSH hosts, WSL, cloud machines, and a
+  answers `pane process-info`. Windows, SSH hosts, WSL, and a
   daemon behind a custom socket are not continued.
 - Herdr 2 (herdr-core) is not continued yet. Its chats run `sheprd-acp` as the
   terminal's own program, which records nothing there, and herdr-core shows no

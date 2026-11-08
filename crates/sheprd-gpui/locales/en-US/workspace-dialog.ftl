@@ -1,7 +1,6 @@
 # The dialogs a workspace row's popover opens: rename, new and open
 # worktree, new tab and workspace, note, close, and delete. $workspace,
-# $host, and $branch are names; $machine is a new cloud machine, such as
-# "a new Docker sandbox".
+# $host, and $branch are names.
 
 workspace-dialog-rename-title = Rename workspace
 workspace-dialog-rename = Rename

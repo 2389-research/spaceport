@@ -1,8 +1,7 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::endpoint::tests::host;
-#[cfg(feature = "container")]
-use std::sync::Arc;
+use std::process::Command;
 
 #[test]
 fn explicit_socket_never_reads_shared_catalog() {
@@ -52,8 +51,6 @@ fn desired_selection_is_client_local_and_catalog_changes_cancel_stale_restore() 
         hosts: vec![host("a", enabled)],
         wsl: Vec::new(),
         selection,
-        #[cfg(feature = "cloud")]
-        cloud: None,
     };
     let mut first = Catalog::new(&ConnectTarget::Local);
     let mut second = Catalog::new(&ConnectTarget::Local);
@@ -82,24 +79,17 @@ fn desired_selection_is_client_local_and_catalog_changes_cancel_stale_restore() 
         hosts: vec![],
         wsl: Vec::new(),
         selection: None,
-        #[cfg(feature = "cloud")]
-        cloud: None,
     });
     assert_eq!(second.desired, None);
 }
 
-#[cfg(feature = "container")]
 #[gpui::test]
-fn cloud_devices_follow_ssh_hosts_and_survive_an_unreadable_list(cx: &mut gpui::TestAppContext) {
-    let workspace = |id: &str, enabled| crate::cloud::SavedDevice {
-        provider: crate::cloud::CloudProvider::Container,
-        id: id.into(),
-        label: format!("Container {id}"),
-        account: "00000000-0000-0000-0000-000000000000".into(),
-        machine: format!("herdr-{id}"),
-        session: "default".into(),
-        enabled,
-    };
+fn old_container_catalog_stays_foreign_to_startup_devices(cx: &mut gpui::TestAppContext) {
+    let state = tempfile::tempdir().unwrap();
+    let path = state.path().join("cloud-devices.json");
+    let bytes =
+        br#"{"version":1,"devices":[{"provider":"container","account":"local","id":"old","machine":"saved-machine","session":"saved-session","label":"Old Container","unknown":{"keep":true}}]}"#;
+    std::fs::write(&path, bytes).unwrap();
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     view.update(cx, |view, cx| {
         let ids = |view: &SheprdWindow| {
@@ -108,31 +98,57 @@ fn cloud_devices_follow_ssh_hosts_and_survive_an_unreadable_list(cx: &mut gpui::
                 .map(|e| e.id.clone())
                 .collect::<Vec<_>>()
         };
-        view.reconcile_devices(
-            vec![host("a", false)],
-            Vec::new(),
-            Some(vec![workspace("w1", false), workspace("w2", false)]),
-            cx,
-        );
-        assert_eq!(ids(view), [LOCAL, "ssh:a", "container:w1", "container:w2"]);
+        view.reconcile_devices(vec![host("a", false)], Vec::new(), cx);
+        assert_eq!(ids(view), [LOCAL, "ssh:a"]);
         assert_eq!(
-            view.endpoints[2].connection.target,
-            workspace("w1", false).target()
+            view.endpoints[1].connection.target,
+            ConnectTarget::Ssh {
+                target: "user@a".into(),
+                session: "default".into()
+            }
         );
-        let inbox = view.endpoints[2].connection.inbox.clone();
-        // A failed cloud catalog read keeps its endpoints and connections.
-        view.reconcile_catalog(vec![host("a", false)], Vec::new(), cx);
-        assert_eq!(ids(view), [LOCAL, "ssh:a", "container:w1", "container:w2"]);
-        assert!(Arc::ptr_eq(&inbox, &view.endpoints[2].connection.inbox));
-        let mut moved = workspace("w1", false);
-        moved.session = "work".into();
-        view.reconcile_devices(vec![], Vec::new(), Some(vec![moved.clone()]), cx);
-        assert_eq!(ids(view), [LOCAL, "container:w1"]);
-        assert_eq!(view.endpoints[1].connection.target, moved.target());
-        assert!(!Arc::ptr_eq(&inbox, &view.endpoints[1].connection.inbox));
-        view.reconcile_devices(vec![], Vec::new(), Some(vec![]), cx);
+        view.reconcile_devices(vec![], Vec::new(), cx);
         assert_eq!(ids(view), [LOCAL]);
     });
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+}
+
+#[test]
+fn startup_catalog_leaves_private_old_container_file_byte_for_byte() {
+    if let Some(path) = std::env::var_os("SPACEPORT_OLD_CONTAINER_FIXTURE") {
+        let update = load(false, true).unwrap();
+        assert!(update.hosts.is_empty());
+        assert!(update.wsl.is_empty());
+        assert_eq!(update.selection, Some(None));
+        assert_eq!(devices(update.hosts, update.wsl).len(), 0);
+        assert!(std::fs::metadata(path).unwrap().is_file());
+        return;
+    }
+    let home = tempfile::tempdir().unwrap();
+    let state = home.path().join("state").join("spaceport");
+    std::fs::create_dir_all(&state).unwrap();
+    let path = state.join("cloud-devices.json");
+    let bytes =
+        br#"{"version":1,"devices":[{"provider":"container","account":"local","id":"old","machine":"saved-machine","session":"saved-session","label":"Old Container","unknown":{"keep":true}}]}"#;
+    std::fs::write(&path, bytes).unwrap();
+    let test = format!(
+        "{}::startup_catalog_leaves_private_old_container_file_byte_for_byte",
+        module_path!()
+    );
+    let output = Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", &test, "--nocapture"])
+        .env("HOME", home.path())
+        .env("XDG_CONFIG_HOME", home.path().join("config"))
+        .env("XDG_STATE_HOME", home.path().join("state"))
+        .env("SPACEPORT_OLD_CONTAINER_FIXTURE", &path)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
 }
 
 mod storage_warning;

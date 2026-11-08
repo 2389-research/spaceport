@@ -223,10 +223,6 @@ impl SheprdWindow {
         // beside it.
         match target {
             ConnectTarget::Ssh { target, .. } => target.clone(),
-            #[cfg(feature = "cloud")]
-            ConnectTarget::Cloud {
-                provider, machine, ..
-            } => format!("{} {machine}", crate::cloud::name(*provider)),
             // i18n: data
             ConnectTarget::Wsl { distro, .. } => format!("WSL {distro}"),
             ConnectTarget::Socket(path) => path.display().to_string(),
@@ -448,10 +444,8 @@ impl SheprdWindow {
             ),
             _ => (
                 fl!("devices-add"),
-                self.device_setup_unavailable().map_or_else(
-                    || add_device_offer(self.cloud_offered()),
-                    SetupUnavailable::text,
-                ),
+                self.device_setup_unavailable()
+                    .map_or_else(|| add_device_offer(), SetupUnavailable::text),
                 false,
                 self.device_setup_unavailable().is_none(),
             ),

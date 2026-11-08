@@ -60,13 +60,6 @@ pub(crate) struct MenuState {
     #[cfg(any(windows, test, feature = "integration-test"))]
     pub(crate) cover: std::rc::Rc<std::cell::Cell<Cover>>,
     pub(super) device_setup: Option<super::devices::Setup>,
-    /// The provider whose Settings tab Add Device last asked for. Unit tests
-    /// record it rather than open a Settings window, which reads the disk.
-    #[cfg(all(test, feature = "cloud"))]
-    pub(super) settings_opened: Option<crate::cloud::CloudProvider>,
-    /// Whether Add provider asked for Settings > Cloud devices itself.
-    #[cfg(all(test, feature = "cloud"))]
-    pub(super) cloud_settings_opened: bool,
     pub(super) wsl_setup: Option<super::devices::WslSetup>,
     /// The saved distribution the removal confirmation names.
     pub(super) wsl_remove: Option<String>,
@@ -336,10 +329,6 @@ impl MenuState {
             #[cfg(any(windows, test, feature = "integration-test"))]
             cover: Default::default(),
             device_setup: None,
-            #[cfg(all(test, feature = "cloud"))]
-            settings_opened: None,
-            #[cfg(all(test, feature = "cloud"))]
-            cloud_settings_opened: false,
             wsl_setup: None,
             wsl_remove: None,
             session_edit: None,

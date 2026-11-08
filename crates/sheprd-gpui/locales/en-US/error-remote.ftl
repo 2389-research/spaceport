@@ -1,5 +1,4 @@
-# Why a cloud machine, a script run on a host, or a Teleport move could not
+# Why a script run on a host or a Teleport move could not
 # finish, shown in a window, a dialog, or a notification.
 
-error-remote-no-config = Sheprd's config is not available to cloud providers.
 error-remote-preferences-path = preferences path has no parent

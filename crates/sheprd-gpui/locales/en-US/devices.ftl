@@ -31,7 +31,7 @@ devices-row-detail = { $place } · { $state }
 devices-add = Add Device…
 # The chip on a device row that unfolds its sessions. $device is the device's name.
 devices-sessions-toggle = Sessions on { $device }
-# The heading over cloud machines still being created.
+# The heading over passive agent activity.
 devices-activity-heading = AGENT ACTIVITY · 2 H
 # Opens the Devices overview.
 devices-activity-overview = Overview

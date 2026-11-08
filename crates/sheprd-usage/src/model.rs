@@ -23,15 +23,11 @@ pub enum Host {
 }
 
 impl Host {
-    /// The host whose sign-ins a device's usage comes from, or `None` for a
-    /// cloud machine: it is reached only through its provider's command, and reading
-    /// this machine's sign-ins instead would misreport them as the workspace's.
+    /// The host whose sign-ins a device's usage comes from.
     pub fn of(target: &ConnectTarget) -> Option<Self> {
         match target {
             ConnectTarget::Ssh { target, .. } => Some(Self::Ssh(target.clone())),
             ConnectTarget::Wsl { distro, .. } => Some(Self::Wsl(distro.clone())),
-            #[cfg(feature = "cloud")]
-            ConnectTarget::Cloud { .. } => None,
             ConnectTarget::Local | ConnectTarget::Session { .. } | ConnectTarget::Socket(_) => {
                 Some(Self::Local)
             }

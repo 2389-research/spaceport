@@ -235,7 +235,7 @@ fn system(view: &SheprdWindow) -> Response {
         return Response::Host {
             reply: Reply::System {
                 load: None,
-                note: Some(format!("Load is not sampled on {label}, a cloud machine")),
+                note: Some(format!("Load is not available on {label}")),
             },
         };
     };

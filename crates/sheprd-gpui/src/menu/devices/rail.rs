@@ -1,6 +1,5 @@
 //! The Add Device dialog's frame: one title, a rail of what can be added (this
-//! platform's own hosts, then the cloud providers in use here and **Add
-//! provider** for the rest), and the chosen source's form beside it. Each source keeps its own form state,
+//! platform's own hosts), and the chosen source's form beside it. Each source keeps its own form state,
 //! so switching back and forth does not lose what was typed.
 
 use super::super::Page;
@@ -24,11 +23,6 @@ pub(in crate::menu) enum Source {
     Host,
     /// WSL distributions on this machine, listed only on Windows.
     Wsl,
-    #[cfg(feature = "cloud")]
-    Cloud(crate::cloud::CloudProvider),
-    /// The providers the rail leaves out, as tiles opening their Settings.
-    #[cfg(feature = "cloud")]
-    Catalog,
 }
 
 impl Source {
@@ -37,10 +31,6 @@ impl Source {
         match page {
             Page::AddDevice => Some(Self::Host),
             Page::AddWsl => Some(Self::Wsl),
-            #[cfg(feature = "cloud")]
-            Page::AddCloud(provider) => Some(Self::Cloud(provider)),
-            #[cfg(feature = "cloud")]
-            Page::AddProvider => Some(Self::Catalog),
             _ => None,
         }
     }
@@ -50,10 +40,6 @@ impl Source {
             Self::Host => fl!("add-device-source-host"),
             // A product's name.
             Self::Wsl => "WSL".to_owned(), // i18n: data
-            #[cfg(feature = "cloud")]
-            Self::Cloud(provider) => crate::cloud::name(provider).to_owned(),
-            #[cfg(feature = "cloud")]
-            Self::Catalog => fl!("add-device-source-catalog"),
         }
     }
 
@@ -61,10 +47,6 @@ impl Source {
         match self {
             Self::Host => "icons/terminal.svg",
             Self::Wsl => "icons/computer.svg",
-            #[cfg(feature = "cloud")]
-            Self::Cloud(provider) => crate::cloud::icon(provider),
-            #[cfg(feature = "cloud")]
-            Self::Catalog => "icons/plus.svg",
         }
     }
 
@@ -72,77 +54,27 @@ impl Source {
         match self {
             Self::Host => "add-device-source-host",
             Self::Wsl => "add-device-source-wsl",
-            #[cfg(feature = "container")]
-            Self::Cloud(crate::cloud::CloudProvider::Container) => "add-device-source-container",
-            #[cfg(feature = "cloud")]
-            Self::Catalog => "add-device-source-catalog",
         }
     }
-
-    /// Whether this source starts the rail's cloud section.
-    fn is_cloud(self) -> bool {
-        #[cfg(feature = "cloud")]
-        return matches!(self, Self::Cloud(_) | Self::Catalog);
-        #[cfg(not(feature = "cloud"))]
-        false
-    }
-}
-
-/// What a rail entry says about its source, at its trailing edge.
-enum State {
-    None,
-    /// In use here: an account is configured, or a device was made.
-    #[cfg(feature = "cloud")]
-    Ready,
 }
 
 /// The Devices picker's line under "Add Device…".
-pub(super) fn add_device_offer(cloud: bool) -> String {
-    match (cfg!(windows), cloud) {
-        (true, true) => fl!("add-device-offer-ssh-wsl-cloud"),
-        (true, false) => fl!("add-device-offer-ssh-wsl"),
-        (false, true) => fl!("add-device-offer-ssh-cloud"),
-        (false, false) => fl!("add-device-offer-ssh"),
+pub(super) fn add_device_offer() -> String {
+    if cfg!(windows) {
+        fl!("add-device-offer-ssh-wsl")
+    } else {
+        fl!("add-device-offer-ssh")
     }
 }
 
 impl SheprdWindow {
-    /// Whether Add Device lists cloud providers: built in and able to connect.
-    pub(super) fn cloud_offered(&self) -> bool {
-        #[cfg(feature = "cloud")]
-        return crate::cloud::unavailable().is_none()
-            && !crate::cloud::CloudProvider::ALL.is_empty();
-        #[cfg(not(feature = "cloud"))]
-        false
-    }
-
-    /// This platform's own hosts first, then the cloud providers in use here,
-    /// then **Add provider** while any is left out.
+    /// This platform's own hosts.
     pub(in crate::menu) fn rail_sources(&self) -> Vec<Source> {
         let mut sources = vec![Source::Host];
         if cfg!(windows) {
             sources.push(Source::Wsl);
         }
-        #[cfg(feature = "cloud")]
-        if self.cloud_offered() {
-            sources.extend(self.cloud_listed().into_iter().map(Source::Cloud));
-            if !self.cloud_unlisted().is_empty() {
-                sources.push(Source::Catalog);
-            }
-        }
         sources
-    }
-
-    fn source_state(source: Source) -> State {
-        match source {
-            Source::Host => State::None,
-            Source::Wsl => State::None,
-            // The rail lists only providers in use.
-            #[cfg(feature = "cloud")]
-            Source::Cloud(_) => State::Ready,
-            #[cfg(feature = "cloud")]
-            Source::Catalog => State::None,
-        }
     }
 
     /// Show `source`'s form, reopening the one it had if it is still there.
@@ -173,10 +105,6 @@ impl SheprdWindow {
                 }
                 None => self.open_add_device(window, cx),
             },
-            #[cfg(feature = "cloud")]
-            Source::Cloud(provider) => self.open_cloud_source(provider, window, cx),
-            #[cfg(feature = "cloud")]
-            Source::Catalog => self.open_add_provider(window, cx),
         }
         cx.notify();
     }
@@ -216,17 +144,6 @@ impl SheprdWindow {
         };
         self.open_source(source, window, cx);
         true
-    }
-
-    #[cfg(feature = "cloud")]
-    fn open_cloud_source(
-        &mut self,
-        provider: crate::cloud::CloudProvider,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.menu.page = Some(Page::AddCloud(provider));
-        window.focus(&self.menu.focus.clone(), cx);
     }
 
     /// The whole dialog: the shared header, the rail, and `pane`, which draws
@@ -307,14 +224,6 @@ impl SheprdWindow {
         let current = self.menu.page.and_then(Source::of);
         // A provider's pane opened from elsewhere belongs under Add provider
         // while the rail omits it.
-        #[cfg(feature = "cloud")]
-        let current = current.map(|shown| {
-            if sources.contains(&shown) {
-                shown
-            } else {
-                Source::Catalog
-            }
-        });
         let mut rail = div()
             .debug_selector(|| "add-device-rail".into())
             .flex_none()
@@ -327,21 +236,7 @@ impl SheprdWindow {
             .gap(px(2.))
             .border_r_1()
             .border_color(rgb(theme.active));
-        for (index, &source) in sources.iter().enumerate() {
-            if source.is_cloud() && index > 0 && !sources[index - 1].is_cloud() {
-                rail = if compact {
-                    rail.child(div().my(px(6.)).h(px(1.)).bg(rgb(theme.active)))
-                } else {
-                    rail.child(
-                        div()
-                            .px(px(8.))
-                            .pt(px(10.))
-                            .pb(px(4.))
-                            .text_color(rgb(theme.muted))
-                            .child(fl!("add-device-cloud-heading")),
-                    )
-                };
-            }
+        for &source in sources {
             let on = current == Some(source);
             let id = source.id();
             let icon = div()
@@ -358,17 +253,6 @@ impl SheprdWindow {
                         .size(px(14.))
                         .text_color(rgb(theme.foreground)),
                 );
-            let trailing: Option<Div> = match Self::source_state(source) {
-                State::None => None,
-                #[cfg(feature = "cloud")]
-                State::Ready => Some(
-                    div()
-                        .debug_selector(move || format!("{id}-ready"))
-                        .size(px(7.))
-                        .rounded_full()
-                        .bg(rgb(super::super::colors::online(theme))),
-                ),
-            };
             rail = rail.child(
                 div()
                     .id(id)
@@ -391,7 +275,6 @@ impl SheprdWindow {
                                 .truncate()
                                 .child(source.name()),
                         )
-                        .children(trailing.map(|trailing| div().flex_none().child(trailing)))
                     })
                     .on_click(cx.listener(move |this, _, window, cx| {
                         this.open_source(source, window, cx);
@@ -399,103 +282,5 @@ impl SheprdWindow {
             );
         }
         rail
-    }
-
-    /// A cloud provider whose machines are set up in Settings: what it
-    /// offers, and a button that opens its Settings tab.
-    #[cfg(feature = "cloud")]
-    pub(super) fn render_add_cloud(
-        &self,
-        provider: crate::cloud::CloudProvider,
-        compact: bool,
-        cx: &mut Context<Self>,
-    ) -> Div {
-        let theme = &self.theme;
-        let name = crate::cloud::name(provider);
-        let text = format!("{}.", crate::cloud::offer(provider)); // i18n: data
-        let pane = div()
-            .flex_1()
-            .min_h_0()
-            .flex()
-            .flex_col()
-            .child(
-                div()
-                    .flex_1()
-                    .min_h_0()
-                    .p(px(16.))
-                    .flex()
-                    .flex_col()
-                    .gap(px(12.))
-                    .child(
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap(px(10.))
-                            .child(
-                                svg()
-                                    .flex_none()
-                                    .path(crate::cloud::icon(provider))
-                                    .size(px(24.))
-                                    .text_color(rgb(theme.foreground)),
-                            )
-                            .child(div().font_weight(FontWeight::SEMIBOLD).child(name)),
-                    )
-                    .child(div().text_color(rgb(theme.subtext())).child(text))
-                    .children(self.menu.error.clone().map(|error| {
-                        div()
-                            .debug_selector(|| "cloud-setup-error".into())
-                            .text_color(super::super::danger(theme))
-                            .child(error)
-                    })),
-            )
-            .child(
-                div()
-                    .flex_none()
-                    .p(px(16.))
-                    .border_t_1()
-                    .border_color(rgb(theme.active))
-                    .flex()
-                    .justify_end()
-                    .child(
-                        self.settings_button("cloud-setup-settings")
-                            .on_click(cx.listener(move |this, _, window, cx| {
-                                this.open_provider_settings(provider, window, cx);
-                            })),
-                    ),
-            );
-        self.add_device_frame("cloud-setup-dialog", "cloud-setup-close", compact, pane, cx)
-    }
-
-    /// A pane's **Open Settings…** button, waiting for its click handler.
-    #[cfg(feature = "cloud")]
-    pub(super) fn settings_button(&self, id: &'static str) -> Stateful<Div> {
-        let theme = &self.theme;
-        div()
-            .id(id)
-            .debug_selector(move || id.into())
-            .p(px(8.))
-            .rounded(px(crate::config::corners::CONTROL))
-            .bg(rgb(theme.active))
-            .cursor_pointer()
-            .hover(|s| s.bg(rgb(theme.active).blend(rgba((theme.foreground << 8) | 0x20))))
-            .child(fl!("add-device-open-settings"))
-    }
-
-    /// Enter opens the provider's Settings; Escape closes the dialog.
-    #[cfg(feature = "cloud")]
-    pub(in crate::menu) fn add_cloud_key(
-        &mut self,
-        provider: crate::cloud::CloudProvider,
-        event: &KeyDownEvent,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        match event.keystroke.key.as_str() {
-            "enter" => self.open_provider_settings(provider, window, cx),
-            "escape" => self.dismiss_menu(window, cx),
-            _ => return,
-        }
-        cx.stop_propagation();
-        window.prevent_default();
     }
 }

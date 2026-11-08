@@ -1,24 +1,24 @@
 use super::*;
 
 #[test]
-fn retired_cloud_setup_values_load_as_inert_data() {
+fn retired_cloud_tables_do_not_block_other_settings() {
     let config = Config::parse(
-        "[cloud]\nagents = ['claude', 'future-agent']\nsetup = 'echo old'\n\
-         [cloud.container]\nagents = ['codex']\nsetup = 'echo container'\n",
+        "show_device_icons = false\n[cloud]\nagents = ['claude']\nsetup = 'echo old'\n\
+         [container]\nengine = 'podman'\n",
     )
     .unwrap();
 
-    assert_eq!(
-        config.cloud.agents.as_deref(),
-        Some(&["claude".into(), "future-agent".into()][..])
+    assert!(!config.show_device_icons);
+    assert!(
+        config
+            .unknown_keys
+            .iter()
+            .any(|key| key.starts_with("cloud"))
     );
-    assert_eq!(config.cloud.setup.as_deref(), Some("echo old"));
-    assert_eq!(
-        config.cloud.container.agents.as_deref(),
-        Some(&["codex".into()][..])
-    );
-    assert_eq!(
-        config.cloud.container.setup.as_deref(),
-        Some("echo container")
+    assert!(
+        config
+            .unknown_keys
+            .iter()
+            .any(|key| key.starts_with("container"))
     );
 }

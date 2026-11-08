@@ -56,33 +56,6 @@ fn tailnet_names_and_addresses_are_tailscale() {
     }
 }
 
-#[cfg(feature = "container")]
-#[test]
-fn container_cloud_device_origin_and_icon() {
-    use crate::cloud::CloudProvider;
-    use gpui::AssetSource;
-    let saved = Origin::of(&ConnectTarget::Cloud {
-        provider: CloudProvider::Container,
-        account: "00000000-0000-0000-0000-000000000000".into(),
-        id: "test-container".into(),
-        machine: "test-container".into(),
-        session: "default".into(),
-    });
-    assert_eq!(saved, Origin::Cloud(CloudProvider::Container));
-    assert_eq!(
-        saved.describe(),
-        "\u{2068}Container\u{2069} \u{2068}container\u{2069}"
-    );
-    assert_eq!(saved.icon(), "icons/cloud/container.svg");
-    assert!(
-        crate::icons::Icons
-            .load(saved.icon())
-            .ok()
-            .flatten()
-            .is_some()
-    );
-}
-
 #[test]
 fn every_mark_is_an_embedded_icon() {
     use gpui::AssetSource;
@@ -105,19 +78,4 @@ fn host_names_drop_user_port_scheme_and_brackets() {
     assert_eq!(host_name("me@host:2222"), "host");
     assert_eq!(host_name("[::1]:22"), "::1");
     assert_eq!(host_name("fe80::1"), "fe80::1");
-}
-
-/// Each provider's noun is a key the catalog selects a translated word by,
-/// so every key needs its own variant rather than the fallback's `machine`.
-#[cfg(feature = "cloud")]
-#[test]
-fn every_cloud_noun_has_its_own_translation() {
-    for &provider in crate::cloud::CloudProvider::ALL {
-        let noun = crate::cloud::noun(provider);
-        let text = Origin::Cloud(provider).describe();
-        assert!(
-            text.ends_with(&format!(" \u{2068}{noun}\u{2069}")),
-            "{provider:?}: {text}"
-        );
-    }
 }

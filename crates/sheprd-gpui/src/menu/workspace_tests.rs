@@ -17,8 +17,7 @@ mod mute;
 mod naming;
 mod pull_requests;
 mod removed_checkpoints;
-#[cfg(all(feature = "container", any(target_os = "linux", target_os = "macos")))]
-#[cfg(all(feature = "container", any(target_os = "linux", target_os = "macos")))]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 mod scripts;
 mod targets;
 mod tiles;

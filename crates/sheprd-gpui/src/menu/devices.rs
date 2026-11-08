@@ -4,8 +4,6 @@
 //! state; connection ownership stays in `endpoint`.
 mod activity_card;
 mod add_device;
-#[cfg(feature = "cloud")]
-mod catalog;
 mod core_catalog;
 pub(crate) use add_device::enter;
 mod error;
@@ -104,36 +102,6 @@ impl Render for SettingsHint {
 }
 
 impl SheprdWindow {
-    /// Whether the open page is a cloud provider's pane of Add Device.
-    pub(in crate::menu) fn cloud_dialog_open(&self) -> bool {
-        #[cfg(feature = "cloud")]
-        if matches!(self.menu.page, Some(Page::AddCloud(_) | Page::AddProvider)) {
-            return true;
-        }
-        false
-    }
-
-    /// The open cloud provider's pane of Add Device, if one is open.
-    pub(in crate::menu) fn render_cloud_dialog(
-        &self,
-        compact: bool,
-        cx: &mut Context<Self>,
-    ) -> Option<AnyElement> {
-        #[cfg(feature = "cloud")]
-        if self.menu.page == Some(Page::AddProvider) {
-            return Some(self.render_add_provider(compact, cx).into_any_element());
-        }
-        #[cfg(feature = "cloud")]
-        if let Some(Page::AddCloud(provider)) = self.menu.page {
-            return Some(
-                self.render_add_cloud(provider, compact, cx)
-                    .into_any_element(),
-            );
-        }
-        let _ = (compact, cx);
-        None
-    }
-
     pub(crate) fn device_visible(&self, id: &str) -> bool {
         self.device_filter.shows(id) && self.device_tag_visible(id)
     }
@@ -391,23 +359,6 @@ impl SheprdWindow {
         tracing::info!(category = "device_setup", "Opening Add Device");
         self.open_add_device(window, cx);
         cx.notify();
-    }
-
-    /// Opens Settings > Cloud devices on `provider`'s tab.
-    #[cfg(feature = "cloud")]
-    pub(super) fn open_provider_settings(
-        &mut self,
-        provider: crate::cloud::CloudProvider,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.dismiss_menu(window, cx);
-        #[cfg(not(test))]
-        crate::settings_window::open_cloud(cx.weak_entity(), Some(provider), cx);
-        #[cfg(test)]
-        {
-            self.menu.settings_opened = Some(provider);
-        }
     }
 }
 

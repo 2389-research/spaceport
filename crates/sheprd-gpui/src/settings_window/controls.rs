@@ -294,8 +294,6 @@ impl SettingsWindow {
             Section::Notifications => self.render_notifications(cx),
             Section::Configuration => self.render_configuration(cx),
             Section::Theme | Section::Integrations | Section::Px0 => div(),
-            #[cfg(feature = "cloud")]
-            Section::CloudDevices => div(),
         };
         div().flex().flex_col().min_w_0().child(content)
     }

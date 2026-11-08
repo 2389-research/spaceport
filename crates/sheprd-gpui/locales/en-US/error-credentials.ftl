@@ -1,4 +1,4 @@
-# Failures reading or saving a sign-in (GitHub, a cloud provider) in the
+# Failures reading or saving a GitHub sign-in in the
 # system keyring or the private credential file. Keep config keys and
 # values (allow_plaintext_credentials = true, [github]) and the
 # environment variables GH_TOKEN and GITHUB_TOKEN as they are.

@@ -7,8 +7,6 @@ use crate::{SheprdWindow, search_input::SearchInput, sidebar::layout_tests::fixt
 use gpui::{AppContext, Context};
 use sheprd_client::HostProbe;
 
-#[cfg(feature = "cloud")]
-mod add_provider;
 mod core_catalog;
 mod core_remote_document;
 mod en_xa;
@@ -18,7 +16,6 @@ mod host_key_choice;
 mod key_login;
 mod local_network;
 mod manual_entry;
-#[cfg(feature = "cloud")]
 mod rail;
 mod scope;
 mod selection;

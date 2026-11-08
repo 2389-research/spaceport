@@ -15,9 +15,7 @@ pub(super) enum Action {
     Theme,
     /// Picks the section the device lists under, or the tags it also carries.
     Tags(Mode),
-    /// Opens Settings > Cloud devices on the device's provider.
-    #[cfg(feature = "cloud")]
-    ProviderSettings,
+    /// Forgets the saved device without stopping its host.
     Remove,
 }
 
@@ -32,18 +30,6 @@ pub(super) const SSH_ACTIONS: &[(Action, &str)] = &[
     #[cfg(unix)]
     (Action::ForwardPort, "host-menu-forward-port"),
     (Action::Theme, "host-menu-theme"),
-    (Action::Remove, "host-menu-remove"),
-];
-
-/// Port forwards, server keybindings, and the terminal theme go through the
-/// SSH profile, which a cloud device does not have.
-#[cfg(feature = "cloud")]
-pub(super) const CLOUD_ACTIONS: &[(Action, &str)] = &[
-    (Action::Rename, "host-menu-rename"),
-    (Action::Tags(Mode::MoveTo), "device-tags-move-to"),
-    (Action::Tags(Mode::AlsoTagged), "device-tags-also-tagged"),
-    (Action::Mute, "host-menu-mute"),
-    (Action::ProviderSettings, "host-menu-cloud-settings"),
     (Action::Remove, "host-menu-remove"),
 ];
 

@@ -290,8 +290,6 @@ impl SettingsWindow {
         self.drive_theme_intent(cx);
         if valid {
             self.publish_appearance(cx);
-            #[cfg(feature = "cloud")]
-            self.cloud_config_changed(cx);
         }
         cx.notify();
     }

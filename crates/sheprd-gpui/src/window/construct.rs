@@ -243,7 +243,6 @@ impl SheprdWindow {
             regions: Vec::new(),
             removal: None,
             resize_mode: false,
-            #[cfg(feature = "cloud")]
             scrollbar_drag: None,
             selected_endpoint: 0,
             selected_generation: 0,

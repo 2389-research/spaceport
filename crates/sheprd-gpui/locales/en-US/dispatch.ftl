@@ -1,9 +1,6 @@
 # Sending new work to another device: the host picker in the new workspace
 # dialog, and the notices while a checkout is made there.
 
-# A new cloud machine the provider makes first, used inside sentences such
-# as "Create in a new container". $noun is a key naming what the provider
-# calls its machines; translate each variant, not the keys.
 dispatch-cores-free =
     { $count ->
         [one] { $count } core free

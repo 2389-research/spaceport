@@ -177,17 +177,6 @@ impl SheprdWindow {
         if paths.is_empty() {
             return Some(Delivery::Queued);
         }
-        // Local paths mean nothing on a cloud machine, and file copies
-        // there would need the provider's own transfer; refuse rather than paste dead paths.
-        #[cfg(feature = "cloud")]
-        if matches!(
-            self.endpoints[self.selected_endpoint].connection.target,
-            sheprd_client::ConnectTarget::Cloud { .. }
-        ) {
-            self.local_error = Some(fl!("window-input-files-cloud"));
-            cx.notify();
-            return None;
-        }
         // Where the pane runs decides local paths versus bridging, never its
         // readiness: a local path names nothing on another host. Readiness can
         // lapse while Cmd-V reads the clipboard (a resize, say), so a remote

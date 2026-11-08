@@ -32,9 +32,6 @@ pub(super) struct CatalogUpdate {
     pub(super) wsl: Vec<WslHost>,
     /// The endpoint ID the stored selection names, read only at startup.
     selection: Option<Option<String>>,
-    /// The GUI's saved cloud devices, or `None` when that list could not be read.
-    #[cfg(feature = "cloud")]
-    pub(super) cloud: Option<Vec<crate::cloud::SavedDevice>>,
 }
 
 impl CatalogUpdate {
@@ -53,20 +50,6 @@ impl CatalogUpdate {
 
 /// Load both catalogs. A WSL distribution chosen last wins over upstream's
 /// selection, which cannot name one and so says Local whenever it was chosen.
-/// The GUI's saved cloud devices; `None` when they cannot be read, so the
-/// current cloud endpoints are kept rather than dropped.
-#[cfg(feature = "cloud")]
-fn cloud_devices() -> Option<Vec<crate::cloud::SavedDevice>> {
-    // Devices saved on another system stay in the file but are not offered.
-    if crate::cloud::unavailable().is_some() {
-        return Some(Vec::new());
-    }
-    crate::cloud::load()
-        .inspect_err(|error| {
-            tracing::warn!(category = "cloud_catalog", %error, "Cannot read saved cloud devices");
-        })
-        .ok()
-}
 
 fn load(development: bool, startup: bool) -> Result<CatalogUpdate> {
     // Only Windows has distributions; elsewhere the file is never read.
@@ -80,8 +63,6 @@ fn load(development: bool, startup: bool) -> Result<CatalogUpdate> {
             hosts: sheprd_client::load_saved_hosts(development)?,
             wsl: wsl.hosts,
             selection: None,
-            #[cfg(feature = "cloud")]
-            cloud: cloud_devices(),
         });
     }
     let (hosts, selected) = sheprd_client::load_saved_host_selection(development)?;
@@ -93,8 +74,6 @@ fn load(development: bool, startup: bool) -> Result<CatalogUpdate> {
         hosts,
         wsl: wsl.hosts,
         selection: Some(selection),
-        #[cfg(feature = "cloud")]
-        cloud: cloud_devices(),
     })
 }
 
@@ -243,8 +222,7 @@ impl SheprdWindow {
         }
     }
 
-    /// SSH hosts and WSL distributions only, keeping the current cloud
-    /// endpoints; for fixtures.
+    /// SSH hosts and WSL distributions only; for fixtures.
     #[cfg(test)]
     pub(crate) fn reconcile_catalog(
         &mut self,
@@ -252,48 +230,17 @@ impl SheprdWindow {
         wsl: Vec<WslHost>,
         cx: &mut Context<Self>,
     ) {
-        #[cfg(feature = "cloud")]
-        self.reconcile_devices(hosts, wsl, None, cx);
-        #[cfg(not(feature = "cloud"))]
         self.reconcile_devices(hosts, wsl, cx);
     }
 
-    /// Replace the remote endpoints with every saved device. `None` keeps the
-    /// current cloud endpoints, so a failed read of the GUI's own list never
-    /// drops their connections.
+    /// Replace the remote endpoints with every saved SSH and WSL device.
     pub(super) fn reconcile_devices(
         &mut self,
         hosts: Vec<SavedHost>,
         wsl: Vec<WslHost>,
-        #[cfg(feature = "cloud")] cloud: Option<Vec<crate::cloud::SavedDevice>>,
         cx: &mut Context<Self>,
     ) {
         let mut devices = devices(hosts, wsl);
-        #[cfg(feature = "cloud")]
-        match cloud {
-            Some(cloud) => devices.extend(cloud.into_iter().map(|saved| Device {
-                id: saved.endpoint_id(),
-                target: saved.target(),
-                label: saved.label,
-                enabled: saved.enabled,
-            })),
-            None => devices.extend(
-                self.endpoints
-                    .iter()
-                    .filter(|endpoint| {
-                        matches!(endpoint.connection.target, ConnectTarget::Cloud { .. })
-                    })
-                    .map(|endpoint| Device {
-                        id: endpoint.id.clone(),
-                        label: endpoint.label.clone(),
-                        target: endpoint
-                            .saved
-                            .clone()
-                            .unwrap_or_else(|| endpoint.connection.target.clone()),
-                        enabled: endpoint.enabled,
-                    }),
-            ),
-        }
         devices.sort_by_key(|device| super::order::rank(&self.device_order, &device.id));
         let selected = &self.endpoints[self.selected_endpoint];
         let selected_id = selected.id.clone();

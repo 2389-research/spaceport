@@ -76,19 +76,10 @@ fn every_page_title_is_a_message_under_en_xa() {
             Page::Workspace,
             Page::WorktreeScript,
         ];
-        #[cfg(feature = "cloud")]
-        let cloud = crate::cloud::CloudProvider::ALL
-            .iter()
-            .copied()
-            .map(Page::AddCloud)
-            .chain([Page::AddProvider]);
-        #[cfg(not(feature = "cloud"))]
-        let cloud = std::iter::empty();
         let leaks: Vec<_> = pages
             .into_iter()
             .chain(dialogs)
             .chain(crate::usage::registry::all().map(Page::Usage))
-            .chain(cloud)
             .map(Page::accessible_name)
             .filter(|name| !sheprd_i18n::pseudo::is_marked(name))
             .collect();
