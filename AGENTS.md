@@ -40,7 +40,7 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-core-client` | herdr-core (`hc`, Herdr 2): endpoint discovery, the framed JSON-RPC connection worker, credit-flowed terminal and event streams, starting a core, and its `sheprd-backend` implementation; no GPUI |
 | `crates/sheprd-terminal` | The terminal emulator for herdr-core's raw byte streams (alacritty_terminal): bytes in, `sheprd-protocol` cells and damage out, and semantic input encoded for the program's modes; no GPUI or I/O |
 | `crates/sheprd-gpui` | Native UI, connection bridge, presentation state, semantic input, geometry, and painting |
-| `crates/sheprd-control-protocol` | The control socket between `sheprd <command>` and the running app: request and response types, bounds, and the Unix socket or named pipe; no GPUI |
+| `crates/sheprd-control-protocol` | The control socket between `spaceport <command>` and the running app: request and response types, bounds, and the Unix socket or named pipe; no GPUI |
 | `crates/sheprd-commands` | The command catalog: each command's name, default shortcuts per platform, and the daemon request it becomes against a snapshot; no GPUI (the app binds the keys and runs window commands) |
 | `crates/sheprd-usage` | Plan usage of AI services on a host: the providers, their probes and sign-ins, the registry, and the read worker; no GPUI (the app draws the status bar and panel) |
 | `crates/sheprd-credentials` | Where saved sign-ins live: the store policy, the macOS Keychain, Linux Secret Service, Windows Credential Manager, and the private `0600` file; GitHub and the cloud providers keep their secrets here; no GPUI |
@@ -119,10 +119,10 @@ at the same spot, or both bumping one hard-coded count.
 
 ## Command Line
 
-`sheprd COMMAND` drives the running app over its control socket, so
+`spaceport COMMAND` drives the running app over its control socket, so
 agents in Herdr panes can use what only this client shows or keeps
 (`docs/cli.md`). Agents learn about it from the managed skill in
-`skills/herdr-gpui-browser/SKILL.md`, which the app installs and refreshes.
+`skills/spaceport/SKILL.md`, which the app installs and refreshes.
 
 - When a feature adds something an agent or script could reasonably ask for
   (open or focus a view, read state the app holds, change a setting, wait for

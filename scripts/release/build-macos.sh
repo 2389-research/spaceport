@@ -34,8 +34,8 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 "${build_env[@]}" python3 scripts/release/generate-notices.py "$stage/THIRD-PARTY-NOTICES.txt"
 bash scripts/release/package-macos.sh "$version" \
-    target/aarch64-apple-darwin/release/sheprd \
-    target/x86_64-apple-darwin/release/sheprd "$stage" "$stage/THIRD-PARTY-NOTICES.txt" >&2
+    target/aarch64-apple-darwin/release/spaceport \
+    target/x86_64-apple-darwin/release/spaceport "$stage" "$stage/THIRD-PARTY-NOTICES.txt" >&2
 set +x
 (
     source ./.envrc

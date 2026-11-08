@@ -1,4 +1,4 @@
-//! `herdr-gpui-launcher.exe` is a windowed program, so Explorer and the Start menu open it
+//! `spaceport-launcher.exe` is a windowed program, so Explorer and the Start menu open it
 //! without a console, and it carries the Herdr icon as resource 1 and the same manifest as
 //! herdr-gpui.
 #![cfg(windows)]
@@ -15,7 +15,7 @@ const ICON_RESOURCE_ID: u32 = 1;
 const MANIFEST_RESOURCE_ID: u32 = 1;
 
 fn executable() -> &'static Path {
-    Path::new(env!("CARGO_BIN_EXE_sheprd-launcher"))
+    Path::new(env!("CARGO_BIN_EXE_spaceport-launcher"))
 }
 
 #[test]

@@ -1,4 +1,4 @@
-# Failures reaching or serving the control socket that `sheprd <command>`
+# Failures reaching or serving the control socket that `spaceport <command>`
 # uses to drive the running app. $path is the socket or named pipe; $error
 # is the system's own words.
 

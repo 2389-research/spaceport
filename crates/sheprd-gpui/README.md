@@ -122,14 +122,14 @@ or other device. For named-session and other recovery guidance, see the
 
 For split terminal panes within a tab, **Focus follows mouse** is on by default.
 Disable it in **Settings > Tabs & panes > Panes**, or run
-`sheprd config set focus_follows_mouse false`.
+`spaceport config set focus_follows_mouse false`.
 Hovering a pane focuses it when the window is active and
 terminal input has keyboard focus. Held mouse buttons, modifiers, dragging,
 IME composition, menus, and terminal popups suppress hover focus.
 
 A tab with no name of its own shows its number. To tell agent sessions apart,
 turn on **Show agent titles on tabs** in **Settings > Tabs & panes > Layout**,
-or run `sheprd config set tab_labels.agent_title true`. An unnamed tab then
+or run `spaceport config set tab_labels.agent_title true`. An unnamed tab then
 shows its first agent's terminal title, cut after 28 columns. A tab you named
 keeps its name, a tab without an agent or a title keeps its number, and the
 rename and close dialogs keep the daemon's label. The phone keeps the
@@ -406,7 +406,7 @@ never installs or starts anything while checking:
 Accepting creates a new workspace on this device's Herdr and shows the setup
 there. The setup itself, `herdr machine add` (after `ssh-copy-id` when the host
 refused every key), runs as a child of this app on a terminal the app owns; the
-workspace's shell only runs `sheprd __device-setup-attach SOCKET`, which
+workspace's shell only runs `spaceport __device-setup-attach SOCKET`, which
 relays the pane's keys and size to it over a private, single-use socket in the
 app's state directory. It runs with your login `PATH` and agent, so it uses
 your own `ssh` (Homebrew's or any other), SSH config, and security key, exactly
@@ -511,7 +511,7 @@ next command, keeping their files. Once a sprite device exists, Smart
 Dispatch's dialogs offer **New sprite** like **New container**.
 
 A sprite has no SSH server, so the app runs itself as a relay
-(`sheprd __sprites-exec`) between Herdr's bridge and the API's exec stream,
+(`spaceport __sprites-exec`) between Herdr's bridge and the API's exec stream,
 a WebSocket whose binary frames carry stdin, stdout, stderr, and the exit code
 unchanged. The token stays on this computer. Sprites are unavailable on
 Windows, like every cloud device. This provider is tested against a scripted
@@ -866,7 +866,7 @@ the picker, previews the hovered one on the terminal while that device is
 selected, and saves it in `config-gpui.local.toml` as
 `[devices.<id>] theme = "NAME"`; **Same as app** removes it. Any `theme` value
 works, `light:NAME,dark:NAME` included, and
-`sheprd config set devices.<id>.theme NAME` sets it from a script (`host
+`spaceport config set devices.<id>.theme NAME` sets it from a script (`host
 list` shows the IDs). Only the terminal area changes: the sidebar, titlebar,
 and menus keep the app theme. Local and explicit sockets always use the app
 theme. A device theme file that cannot be read leaves that device on the app
@@ -1077,7 +1077,7 @@ finished = true
 attention" and custom notifications, for example when an agent hook posts its
 own summary with `herdr notification show`. It does not change sounds, which
 follow the sound settings, and QA previews still appear. Settings > Notifications
-has the same switch, and `sheprd config set notifications.finished false`
+has the same switch, and `spaceport config set notifications.finished false`
 writes it.
 
 Delivery defaults off, matching upstream. The delay accepts integer seconds from
@@ -1099,8 +1099,8 @@ while it is muted), and the tab menu has **Mute Notifications**. Muting a
 device silences everything on it, in every session, and muting a workspace
 silences every tab in it, including tabs opened later; a tab can also be muted
 on its own. While a workspace's or device's mute covers a tab, the tab's menu
-offers **Unmute Workspace** or **Unmute Device** instead. `sheprd host mute`
-and `sheprd worktree mute` do the same from a pane. Nothing from a muted device, workspace,
+offers **Unmute Workspace** or **Unmute Device** instead. `spaceport host mute`
+and `spaceport worktree mute` do the same from a pane. Nothing from a muted device, workspace,
 or tab asks for you: no toast, no OS
 notification, no notification sound, and its agents leave the Dock badge,
 the Windows taskbar overlay, and the Overview's count in the activity bar.
@@ -1594,7 +1594,7 @@ and Herdr 2 run side by side: Herdr 2 tabs open in the same workspaces as
 Herdr 1 tabs, and nothing moves from one to the other.
 
 - **Opening one:** **New Herdr 2 Terminal** in the command palette, or
-  `sheprd run new_core_terminal`. With `herdr_2_terminals = true`
+  `spaceport run new_core_terminal`. With `herdr_2_terminals = true`
   (**Settings > Tabs > New terminals use Herdr 2**), every new tab on this
   computer is one. herdr-core runs only on this computer, so a new tab in a
   workspace on an SSH, WSL, or cloud host stays a Herdr tab on that host, and
@@ -1894,7 +1894,7 @@ tint = "#7aa2f7"
 apply_to = ["sidebar", "terminal"]
 ```
 
-`sheprd config set worktrees.apply_to '[]'` sets it from a script.
+`spaceport config set worktrees.apply_to '[]'` sets it from a script.
 
 ## Moving Panes
 
@@ -2180,7 +2180,7 @@ An icon column at the window's left edge picks what the window shows. Every
 section but Workspaces takes the window's body, keeping the title bar and the
 status bar; zen mode keeps the terminals. **Settings > Sidebar > Show
 activity bar** (or `[sidebar] activity_bar = false`) turns it off in every
-window at once, and `sheprd ui panel NAME` shows a section.
+window at once, and `spaceport ui panel NAME` shows a section.
 
 - **Workspaces** is the sidebar beside the terminals. Clicking it while shown
   folds the sidebar to its rail.
@@ -2708,7 +2708,7 @@ come back after a restart; closing a workspace in Herdr removes its tabs.
   so the page cannot take them for itself. Each tab keeps its own zoom, saved with it, and every window's
   page for the tab follows it. A zoomed page's toolbar shows its zoom;
   clicking it returns to 100%. An agent zooms a tab with
-  `sheprd browser zoom`.
+  `spaceport browser zoom`.
 - Close Tab and Close Pane close the browser tab being shown, without asking.
   Clicking a Herdr tab, or switching Herdr tabs in the workspace, shows its
   terminal again. Next Tab, Previous Tab, and the tab numbers count browser
@@ -2829,11 +2829,11 @@ outcome, placeholders, and mockup variants with **Pick** buttons that call
 page matches the app and follows a theme change on its next load. Dotted
 paths are never read from the page's folder, so these cannot hide a file of
 the page's own. Opened elsewhere, the kit falls back to its own light and
-dark colors. `sheprd browser example` prints a complete page built on it.
+dark colors. `spaceport browser example` prints a complete page built on it.
 The kit inserts every text as text, never as HTML.
 
 Agents only use what they know about, so the app offers, once, to install a
-`herdr-gpui-browser` skill that teaches them these commands. It goes into
+`spaceport` skill that teaches them these commands. It goes into
 `~/.claude/skills/` and `~/.agents/skills/`, for whichever of `~/.claude` and
 `~/.agents` exists, and names this app's executable. Claude Code reads
 `~/.claude/skills/`; Codex reads `~/.agents/skills/`; opencode reads both, as
@@ -2855,12 +2855,12 @@ removed; a skill of the same name you wrote yourself is left alone.
   Preferences or the palette still works when you choose to. An older
   `install = "ask"` entry must be changed to `"local"` or `"off"`.
 
-`sheprd browser skill` prints the same text, for example to install it
+`spaceport browser skill` prints the same text, for example to install it
 elsewhere:
 
 ```sh
-mkdir -p ~/.claude/skills/herdr-gpui-browser
-sheprd browser skill > ~/.claude/skills/herdr-gpui-browser/SKILL.md
+mkdir -p ~/.claude/skills/spaceport
+spaceport browser skill > ~/.claude/skills/spaceport/SKILL.md
 ```
 
 ## Chats
@@ -2875,7 +2875,7 @@ so the Herdr TUI, a plain terminal, and every app window see one conversation.
 **Starting one.** A group's **…** menu lists **New Chat** with one row per
 agent `sheprd-acp` knows (Claude, Codex, Copilot, Gemini, OpenCode, Pi). A row
 opens a tab named after the agent in the focused workspace, in the focused
-pane's folder, and runs the program there; `sheprd chat new AGENT` does
+pane's folder, and runs the program there; `spaceport chat new AGENT` does
 the same from a pane. The rows show once the app has found `sheprd-acp`,
 first beside its own executable (the app bundle, `cargo build`'s target
 directory, or where `just install` puts both) and then on the login shell's
@@ -2893,7 +2893,7 @@ to the right, or to the left when the window has no room there, `beside` keeps t
 the tabs, `trailing` at the strip's right end, and `button` shows one named
 button for the agent last started, the others sliding out beside it; `off`
 hides them. Settings > General picks one while ACP chats are on, and
-`sheprd config set chat.launcher beside` sets it from a script.
+`spaceport config set chat.launcher beside` sets it from a script.
 
 **Company endpoints.** Variables in `[chat.env]` go into the environment of
 every chat's tab, on this machine or an SSH host: `GH_HOST` for Copilot on
@@ -2907,7 +2907,7 @@ reasoning, tool calls with their diffs, the plan, permission requests to
 answer, queued prompts, and a prompt box. The header shows how long the
 running turn has taken, how full the context window is (yellow past 75%, red
 past 90%) and what the session has cost when the agent reports it, stops a
-turn, and switches back to the pane's terminal (`sheprd chat
+turn, and switches back to the pane's terminal (`spaceport chat
 show|hide|toggle`). Under it, a button per setting the agent offers picks its
 model, thinking level, and mode; the gear lists the rest, such as toggles.
 Each finished turn leaves a line with its duration and tokens, and an agent
@@ -2937,7 +2937,7 @@ as Claude's app does, `terminal` draws it as Claude Code's own screen in the
 terminal font, `document` makes each prompt a heading with the reply as prose
 under it, and `cards` puts each turn in one card. The button in a chat's
 header steps through them, Settings > General picks one while ACP chats are
-on, and `sheprd config set chat.layout cards` sets it from a script.
+on, and `spaceport config set chat.layout cards` sets it from a script.
 What a chat does is the same in every layout.
 
 Both views stay live: a prompt or an answer from either
@@ -2985,7 +2985,7 @@ the app started and its children; attaching to an existing workbench never gives
 Sheprd ownership of it. Closing a tab leaves the workbench available for other
 tabs. px0 manages its own per-checkout children and idle cleanup.
 
-Agents can use `sheprd px0 open --json` to open or focus their workspace's
+Agents can use `spaceport px0 open --json` to open or focus their workspace's
 tab. Success reports the tab ID and workspace; it means the tab opened, while
 server startup continues in the tab. The existing `--window` targeting applies.
 This integration currently supports local workspaces on macOS and Windows;
@@ -3105,7 +3105,7 @@ thread's stack and registers but not the heap. A thread started at launch writes
 it, because the crashing thread may have no stack left. Windows Error Reporting
 still runs afterwards. Only the five newest reports and three newest dumps are
 kept. On macOS and Linux a signal such as `SIGSEGV` leaves no report here. Crash
-files never leave the machine. `sheprd diagnostics bundle PATH` includes the
+files never leave the machine. `spaceport diagnostics bundle PATH` includes the
 three newest reports, redacted like the log records, and lists dumps by name and
 size without including them: they hold the app's memory, so attach one only
 when asked.
@@ -4064,17 +4064,17 @@ CLI-tests the optimized executable natively for each architecture, publishes
 `Herdr-VERSION-x86_64-pc-windows-msvc.zip` and
 `Herdr-VERSION-aarch64-pc-windows-msvc.zip`, and installs and uninstalls both
 signed installers. Each zip also holds
-`sheprd-launcher.exe` (`crates/sheprd-launcher`), a windowed program
-that starts the console-subsystem `sheprd.exe` from its own directory with
+`spaceport-launcher.exe` (`crates/sheprd-launcher`), a windowed program
+that starts the console-subsystem `spaceport.exe` from its own directory with
 `CREATE_NO_WINDOW` and exits. The GUI then shows no console window, and console
 programs it starts (git, gh, `wsl.exe`) share its hidden console instead of
-each opening one. `sheprd.exe` stays a console program so the command line
+each opening one. `spaceport.exe` stays a console program so the command line
 keeps its output, exit codes, and a shell that waits for it. When the GUI
 cannot be started, the launcher shows the error in a message box. When the
 launcher sits beside it, every Herdr window carries the AppUserModelID
 `so.pen.herdr-gpui` and relaunch properties naming the launcher
 (`src/taskbar.rs`), so pinning a running window to the taskbar pins
-`sheprd-launcher.exe` as **Sheprd**, and the pin and the running window
+`spaceport-launcher.exe` as **Sheprd**, and the pin and the running window
 share one taskbar button. The properties are cleared as each window closes. Local
 connections use the named pipe the Windows
 daemon binds, derived from the same socket path string upstream uses, so
@@ -4085,7 +4085,7 @@ as on macOS and Linux. Configuration and state
 follow upstream's Windows layout: `%APPDATA%\herdr` and `%LOCALAPPDATA%\herdr`,
 still overridden by `XDG_CONFIG_HOME` / `XDG_STATE_HOME` when they are set.
 
-`sheprd COMMAND` and the managed agent skill reach the running app over
+`spaceport COMMAND` and the managed agent skill reach the running app over
 `\\.\pipe\herdr-gpui-control-SID`, named for the Windows user. The app creates
 it owned by that user with a DACL granting only that user's SID, as the first
 instance, and with remote clients rejected; the command line opens it at
@@ -4192,7 +4192,7 @@ cannot reach, such as another distribution's or one on a network share, is
 named in the error and nothing is pasted.
 
 Ports need no forwarding: a distribution's device menu offers none, and
-`sheprd ports forward` refuses with that reason, since WSL already forwards
+`spaceport ports forward` refuses with that reason, since WSL already forwards
 its `localhost` ports to Windows. Teleport is not offered. It runs only on
 Linux and macOS clients, which cannot reach a distribution, and a Windows
 client cannot script its own checkouts, so the only move left would be between
@@ -4343,7 +4343,7 @@ leaves a minidump and a report beside the log; see [crash reports](#crash-report
 
 **Settings > General > Launch at login**, off by default, writes
 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Sheprd`, naming the
-`sheprd-launcher.exe` beside the running app, so it opens without a console
+`spaceport-launcher.exe` beside the running app, so it opens without a console
 window when you sign in; turning it off removes the value. The registry is the
 setting, so nothing goes in the config file, and the switch shows what Windows
 will do: it is read when Settings opens and each time it comes to the front. A copy with no launcher beside it
@@ -4372,7 +4372,7 @@ their own either: every child is built with `sheprd_client::new_command`, which
 sets `CREATE_NO_WINDOW` on Windows, and clippy's `disallowed_methods`
 (`clippy.toml`) rejects `Command::new` elsewhere outside tests and the build
 script. Started by the launcher, they would share its hidden console anyway;
-run as `sheprd.exe` from Explorer or another app, they still open none.
+run as `spaceport.exe` from Explorer or another app, they still open none.
 
 The build script embeds the Herdr icon as icon resource 1, which GPUI loads for
 its windows, and version information that Explorer and Task Manager show as

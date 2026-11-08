@@ -12,7 +12,7 @@
       request builds leave it out and stay unsigned.
   smoke [--signed] INSTALLER
       On Windows: install silently into a scratch directory with the PATH
-      task, check the files, their subsystems, sheprd.exe's output, the
+      task, check the files, their subsystems, spaceport.exe's output, the
       app's name, the Start menu shortcut's AppUserModelID and target (the
       launcher), the user PATH, and the entry Settings lists under Installed
       apps; run it again as the in-app update does and check it starts the
@@ -301,11 +301,11 @@ def smoke(installer, signed=False):
 def check_installation(app, signed_installer):
     """`signed_installer` is the installer whose signatures to require along
     with the installed files', or None to skip signature checks."""
-    exe, launcher = app / "sheprd.exe", app / "sheprd-launcher.exe"
+    exe, launcher = app / "spaceport.exe", app / "spaceport-launcher.exe"
     for path in [*(app / name for name in packaged_executables()), app / "licenses" / "THIRD-PARTY-NOTICES.txt"]:
         if not path.is_file():
             raise ValueError(f"Installer did not install {path}")
-    # sheprd.exe is the command line, a console program (3); the launcher
+    # spaceport.exe is the command line, a console program (3); the launcher
     # opens it without a console window, so it is a GUI one (2).
     if (subsystem(exe), subsystem(launcher)) != (3, 2):
         raise ValueError("Installed executables have the wrong subsystems")
@@ -313,7 +313,7 @@ def check_installation(app, signed_installer):
                           check=True, timeout=60).stdout
     # Printed through a pipe, as an agent's shell reads it.
     if not info.startswith("worktree="):
-        raise ValueError(f"Installed sheprd.exe printed no build info:\n{info}")
+        raise ValueError(f"Installed spaceport.exe printed no build info:\n{info}")
     identity = shell_identity(exe)
     if identity != ("Sheprd", app_user_model_id(), str(launcher)):
         raise ValueError(f"Installed app or shortcut has the wrong identity: {identity}")
@@ -352,7 +352,7 @@ def stop_processes_at(path):
 def check_update_relaunches(installer, app, env):
     """Run Setup over the installation as the app's in-app update does
     (sheprd-updater/src/windows.rs), and require it to start the app again."""
-    gui = app / "sheprd.exe"
+    gui = app / "spaceport.exe"
     if processes_at(gui):
         raise ValueError("A silent install started the app without /RELAUNCH=1")
     subprocess.run([str(installer), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART",

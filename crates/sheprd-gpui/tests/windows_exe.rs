@@ -17,7 +17,7 @@ const MANIFEST_RESOURCE_ID: u32 = 1;
 const MANIFEST: &str = include_str!("../windows.manifest");
 
 fn executable() -> &'static Path {
-    Path::new(env!("CARGO_BIN_EXE_sheprd"))
+    Path::new(env!("CARGO_BIN_EXE_spaceport"))
 }
 
 #[test]

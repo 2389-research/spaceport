@@ -65,7 +65,7 @@ class ReleaseTests(unittest.TestCase):
                     base = f"Sheprd-20260920.3-{target}/"
                     files = {m.name: m for m in archive.getmembers() if m.isfile()}
                     self.assertEqual(set(files), {base + p for p in [
-                        "bin/sheprd", "bin/sheprd-acp", "bin/herdr-acp",
+                        "bin/spaceport", "bin/sheprd-acp",
                         "share/applications/org.sheprd.Sheprd.desktop",
                         "share/icons/hicolor/scalable/apps/sheprd.svg",
                         "share/licenses/herdr-gpui/LICENSE-APACHE", "share/licenses/herdr-gpui/NOTICE.md",
@@ -74,17 +74,6 @@ class ReleaseTests(unittest.TestCase):
                         "share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt",
                         "share/licenses/herdr-gpui/SOUND-NOTICE.md",
                     ]})
-                    alias = archive.getmember(base + "bin/herdr-gpui")
-                    self.assertTrue(alias.issym())
-                    self.assertEqual(alias.linkname, "sheprd")
-                    self.assertEqual(archive.extractfile(base + "bin/herdr-gpui").read(), binary.read_bytes())
-                    for legacy, canonical in [(f"herdr-{helper}", f"sheprd-{helper}")
-                                              for helper in ("acp",)]:
-                        for name in (legacy, canonical):
-                            self.assertTrue(files[base + "bin/" + name].isreg())
-                            self.assertEqual(files[base + "bin/" + name].mode & 0o777, 0o755)
-                        self.assertEqual(archive.extractfile(base + "bin/" + legacy).read(),
-                                         archive.extractfile(base + "bin/" + canonical).read())
                     self.assertEqual(files[base + "bin/sheprd-acp"].mode & 0o777, 0o755)
                     self.assertEqual(archive.extractfile(base + "bin/sheprd-acp").read(), acp.read_bytes())
                     self.assertEqual(archive.extractfile(base + "share/icons/hicolor/scalable/apps/sheprd.svg").read(), (ROOT / "assets/icons/sheprd-linux.svg").read_bytes())
@@ -93,13 +82,10 @@ class ReleaseTests(unittest.TestCase):
                         self.assertEqual(archive.extractfile(base + "share/licenses/herdr-gpui/" + Path(source).name).read(), (ROOT / source).read_bytes())
                     installed = self.work / f"installed-{target}"
                     archive.extractall(installed, filter="data")
-                    canonical = installed / base / "bin/sheprd"
+                    canonical = installed / base / "bin/spaceport"
                     replacement = canonical.with_name("replacement")
                     replacement.write_bytes(b"updated executable")
                     replacement.replace(canonical)
-                    legacy = canonical.with_name("herdr-gpui")
-                    self.assertEqual(legacy.resolve(), canonical.resolve())
-                    self.assertEqual(legacy.read_bytes(), b"updated executable")
                 # The updater ships the same binary, without changing the manual tree.
                 update = self.work / f"sheprd-20260920.3-{target}-update.tar.gz"
                 subprocess.run(["python3", str(ROOT / "scripts/update-manifest.py"), "package-linux",
@@ -131,25 +117,22 @@ class ReleaseTests(unittest.TestCase):
         acp.write_bytes(b"chat program")
         target = "x86_64-pc-windows-msvc"
         output = Path(self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices).stdout.strip())
+        with zipfile.ZipFile(output) as archive:
+            executables = {Path(name).name for name in archive.namelist() if name.endswith(".exe")}
+            self.assertEqual(executables, {"spaceport.exe", "spaceport-launcher.exe", "sheprd-acp.exe"})
         self.assertEqual(output, self.work.resolve() / f"Sheprd-20260920.3-{target}.zip")
         base = f"Sheprd-20260920.3-{target}/"
         with zipfile.ZipFile(output) as archive:
             self.assertIsNone(archive.testzip())
             self.assertEqual(set(archive.namelist()), {base + p for p in [
-                "sheprd.exe", "sheprd-launcher.exe", "sheprd-acp.exe",
-                "herdr-gpui.exe", "herdr-gpui-launcher.exe", "herdr-acp.exe",
+                "spaceport.exe", "spaceport-launcher.exe", "sheprd-acp.exe",
                 "licenses/LICENSE", "licenses/NOTICE", "licenses/LICENSE-octicons",
                 "licenses/LICENSE-APACHE", "licenses/NOTICE.md", "licenses/SOUND-NOTICE.md",
                 "licenses/THIRD-PARTY-NOTICES.txt",
             ]})
             self.assertEqual({info.date_time for info in archive.infolist()}, {(1980, 1, 1, 0, 0, 0)})
-            self.assertEqual(archive.read(base + "sheprd.exe"), binary.read_bytes())
-            self.assertEqual(archive.read(base + "sheprd-launcher.exe"), launcher.read_bytes())
-            for legacy, canonical in [("herdr-gpui.exe", "sheprd.exe"),
-                                      ("herdr-gpui-launcher.exe", "sheprd-launcher.exe"),
-                                      *((f"herdr-{helper}.exe", f"sheprd-{helper}.exe")
-                                        for helper in ("acp",))]:
-                self.assertEqual(archive.read(base + legacy), archive.read(base + canonical))
+            self.assertEqual(archive.read(base + "spaceport.exe"), binary.read_bytes())
+            self.assertEqual(archive.read(base + "spaceport-launcher.exe"), launcher.read_bytes())
             self.assertEqual(archive.read(base + "sheprd-acp.exe"), acp.read_bytes())
             self.assertEqual(archive.read(base + "licenses/THIRD-PARTY-NOTICES.txt"), self.notices.read_bytes())
             for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/LICENSE-APACHE",
@@ -237,8 +220,7 @@ class ReleaseTests(unittest.TestCase):
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices)
         app = self.work / "Sheprd.app"
         self.assertEqual({str(p.relative_to(app)) for p in app.rglob("*") if p.is_file()}, {
-            "Contents/MacOS/sheprd", "Contents/MacOS/sheprd-acp",
-            "Contents/MacOS/herdr-acp",
+            "Contents/MacOS/spaceport", "Contents/MacOS/sheprd-acp",
             "Contents/Info.plist", "Contents/Resources/Sheprd.icns",
             "Contents/Resources/Assets.car",
             "Contents/Resources/LICENSE-APACHE", "Contents/Resources/NOTICE.md",
@@ -248,10 +230,7 @@ class ReleaseTests(unittest.TestCase):
         })
         self.assertEqual((app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").read_bytes(), self.notices.read_bytes())
         self.assertFalse((app / "Contents/MacOS/Herdr").exists())
-        self.assertFalse((app / "Contents/MacOS/sheprd").is_symlink())
-        for helper in ("acp",):
-            self.assertEqual((app / f"Contents/MacOS/herdr-{helper}").read_bytes(),
-                             (app / f"Contents/MacOS/sheprd-{helper}").read_bytes())
+        self.assertFalse((app / "Contents/MacOS/spaceport").is_symlink())
         self.assertEqual((app / "Contents/Resources/Sheprd.icns").read_bytes(), (ROOT / "assets/icons/Sheprd.icns").read_bytes())
         self.assertEqual((app / "Contents/Resources/Assets.car").read_bytes(), (ROOT / "assets/icons/Sheprd.car").read_bytes())
         for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/NOTICE.md", "crates/sheprd-gpui/SOUND-NOTICE.md"):
@@ -309,8 +288,8 @@ class ReleaseTests(unittest.TestCase):
         self.mock_tools()
         app = self.work / "unsigned.app"
         (app / "Contents/MacOS").mkdir(parents=True)
-        (app / "Contents/MacOS/sheprd").write_text("never run")
-        (app / "Contents/MacOS/sheprd").chmod(0o755)
+        (app / "Contents/MacOS/spaceport").write_text("never run")
+        (app / "Contents/MacOS/spaceport").chmod(0o755)
         (app / "Contents/MacOS/sheprd-acp").write_text("never run")
         for helper in ("acp",):
             (app / f"Contents/MacOS/herdr-{helper}").write_text("never run")
@@ -346,8 +325,8 @@ class ReleaseTests(unittest.TestCase):
         self.mock_tools()
         app = self.work / "unsigned.app"
         (app / "Contents/MacOS").mkdir(parents=True)
-        (app / "Contents/MacOS/sheprd").write_text("never run")
-        (app / "Contents/MacOS/sheprd").chmod(0o755)
+        (app / "Contents/MacOS/spaceport").write_text("never run")
+        (app / "Contents/MacOS/spaceport").chmod(0o755)
         (app / "Contents/MacOS/sheprd-acp").write_text("never run")
         for helper in ("acp",):
             (app / f"Contents/MacOS/herdr-{helper}").write_text("never run")
@@ -371,7 +350,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(update.exists(), accepted)
                 self.assertFalse(list(self.work.glob(".herdr-sign.*")))
         with tarfile.open(update) as archive:
-            self.assertEqual(archive.extractfile("Sheprd.app/Contents/MacOS/sheprd").read(), b"never run")
+            self.assertEqual(archive.extractfile("Sheprd.app/Contents/MacOS/spaceport").read(), b"never run")
             self.assertEqual(archive.extractfile("Sheprd.app/Contents/_CodeSignature/CodeResources").read(), b"mock code signature")
             self.assertEqual(archive.extractfile("Sheprd.app/Contents/CodeResources").read(), b"mock stapled ticket")
             self.assertEqual(archive.extractfile("Sheprd.app/Contents/Resources/THIRD-PARTY-NOTICES.txt").read(), self.notices.read_bytes())
@@ -414,7 +393,7 @@ class ReleaseTests(unittest.TestCase):
             )
         )
         signs = [c for c in calls if c[:2] == ["codesign", "--force"]]
-        self.assertTrue(any(c[-1].endswith("/Contents/MacOS/sheprd") for c in signs))
+        self.assertTrue(any(c[-1].endswith("/Contents/MacOS/spaceport") for c in signs))
         self.assertTrue(any(c[-1].endswith("/Sheprd.app") for c in signs))
         # The nested sheprd-acp is signed before the app seals it,
         # without the app's entitlements.

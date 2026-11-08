@@ -1,5 +1,5 @@
-//! **Launch at login** on Windows: the existing `Herdr UI` value under the current
-//! user's `Run` key, naming `sheprd-launcher.exe` so the app opens without
+//! **Launch at login** on Windows: the `Spaceport` value under the current
+//! user's `Run` key, naming `spaceport-launcher.exe` so the app opens without
 //! a console window. The registry is the setting: nothing is kept in the
 //! config file, so a value removed by an uninstall, or by hand, reads as off.
 //!
@@ -14,10 +14,10 @@ use std::path::{Path, PathBuf};
 use windows_registry::{CURRENT_USER, Key};
 
 /// The value name, which Task Manager shows (with the launcher's icon).
-const VALUE: &str = "Herdr UI";
+const VALUE: &str = "Spaceport";
 const RUN: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 const APPROVED: &str = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-const LAUNCHER: &str = "sheprd-launcher.exe";
+const LAUNCHER: &str = "spaceport-launcher.exe";
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -56,7 +56,7 @@ impl State {
 }
 
 /// The `Run` value for a launcher: its path, quoted because it usually has a
-/// space (`Programs\Herdr UI`).
+/// space (`Programs\Spaceport`).
 fn command_line(launcher: &Path) -> String {
     format!("\"{}\"", launcher.display())
 }
@@ -67,12 +67,7 @@ fn launcher_beside(exe: &Path) -> Result<PathBuf, Error> {
     if path.is_file() {
         Ok(path)
     } else {
-        let legacy = exe.with_file_name("herdr-gpui-launcher.exe");
-        if legacy.is_file() {
-            Ok(legacy)
-        } else {
-            Err(Error::NoLauncher { path })
-        }
+        Err(Error::NoLauncher { path })
     }
 }
 

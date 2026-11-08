@@ -54,7 +54,7 @@ pub(crate) fn run_helper(args: &[OsString]) -> Option<ExitCode> {
 }
 
 fn usage(helper: &str, arguments: &str) -> ExitCode {
-    eprintln!("Usage: sheprd {helper} {arguments}"); // i18n: data
+    eprintln!("Usage: spaceport {helper} {arguments}"); // i18n: data
     ExitCode::from(2)
 }
 

@@ -177,7 +177,7 @@ pub(super) fn run_command(name: &str, context: &Context) -> crate::Result<Output
     {
         return Err(crate::control::Error::Rejected {
             code: crate::control::ErrorCode::NotFound,
-            message: format!("No command is named {name}; `sheprd commands` lists them"),
+            message: format!("No command is named {name}; `spaceport commands` lists them"),
         }
         .into());
     }

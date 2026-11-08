@@ -34,7 +34,7 @@ class AppNameTests(unittest.TestCase):
     def test_bundle_plist_names_the_app_sheprd(self):
         info = plistlib.loads((ROOT / "assets/macos/Info.plist").read_bytes())
         for key in ("CFBundleName", "CFBundleDisplayName", "CFBundleExecutable"):
-            self.assertEqual(info[key], "sheprd" if key == "CFBundleExecutable" else "Sheprd", key)
+            self.assertEqual(info[key], "spaceport" if key == "CFBundleExecutable" else "Sheprd", key)
 
     @unittest.skipUnless(sys.platform == "darwin", "assetutil requires macOS")
     def test_asset_catalogs_contain_the_plist_icon_name(self):
@@ -69,7 +69,7 @@ class AppNameTests(unittest.TestCase):
                 self.assertIn("{{just_executable()}} bundle release\n", body.group(1))
                 self.assertIn("--release -p sheprd-gpui -- {{args}}", body.group(1))
             else:
-                launch = f"exec target/{profile}/Sheprd.app/Contents/MacOS/sheprd {{{{args}}}}"
+                launch = f"exec target/{profile}/Sheprd.app/Contents/MacOS/spaceport {{{{args}}}}"
                 self.assertIn(launch, body.group(1))
 
     def test_bundle_recipe_installs_the_executable_and_icon_as_sheprd(self):
@@ -78,7 +78,7 @@ class AppNameTests(unittest.TestCase):
         self.assertIsNotNone(body)
         for expected in (
             'cargo build --locked $flags --target-dir target -p sheprd-gpui --features "{{features}}"',
-            'cp target/{{profile}}/sheprd "$app/Contents/MacOS/sheprd"',
+            'cp target/{{profile}}/spaceport "$app/Contents/MacOS/spaceport"',
             'cp assets/macos/Info.plist "$app/Contents/Info.plist"',
             '"$app/Contents/Resources/Sheprd.icns"',
             '"$app/Contents/Resources/Assets.car"',

@@ -5,14 +5,14 @@ mod branding;
 
 #[test]
 fn the_skill_is_marked_and_names_this_executable() {
-    assert!(SKILL.starts_with("---\nname: herdr-gpui-browser\n"));
+    assert!(SKILL.starts_with("---\nname: spaceport\n"));
     assert!(managed(SKILL));
-    assert!(SKILL.contains("local `sheprd browser open` command has been removed"));
+    assert!(SKILL.contains("local `spaceport browser open` command has been removed"));
     assert_eq!(text(None), SKILL);
     let bundled = text(Some(Path::new(
         "/Applications/Herdr.app/Contents/MacOS/Herdr",
     )));
-    assert!(!bundled.contains("herdr-gpui browser"));
+    assert!(!bundled.contains("spaceport browser"));
     // Every command, not only the browser's, names the executable.
     assert!(!bundled.contains("herdr-gpui "));
     assert!(bundled.contains("/Applications/Herdr.app/Contents/MacOS/Herdr status"));
@@ -83,9 +83,9 @@ fn description(skill: &str) -> &str {
 
 #[test]
 fn the_skill_does_not_promise_local_page_open() {
-    assert!(SKILL.contains("The local `sheprd browser open` command has been removed"));
+    assert!(SKILL.contains("The local `spaceport browser open` command has been removed"));
     assert!(!SKILL.contains("SSH host with the installed shim"));
-    assert!(!SKILL.contains("sheprd browser open ./"));
+    assert!(!SKILL.contains("spaceport browser open ./"));
     assert!(!SKILL.contains("HerdrKit.scenario("));
 }
 

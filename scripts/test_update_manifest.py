@@ -26,7 +26,7 @@ class PackagingTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.app = self.root / "Sheprd.app"
         self.app.mkdir()
-        self.binary = self.app / "Contents/MacOS/sheprd"
+        self.binary = self.app / "Contents/MacOS/spaceport"
         self.binary.parent.mkdir(parents=True)
         self.binary.write_bytes(b"synthetic executable")
         self.binary.chmod(0o755)
@@ -51,16 +51,16 @@ class PackagingTests(unittest.TestCase):
                              f"sheprd-20260920.3-{target}-update.tar.gz")
 
     def test_macos_ustar_permissions_symlinks_and_stable_bytes(self):
-        (self.app / "link").symlink_to("Contents/MacOS/sheprd")
+        (self.app / "link").symlink_to("Contents/MacOS/spaceport")
         updater.package_macos(self.app, self.archive)
         raw = gzip.decompress(self.archive.read_bytes())
         self.assertEqual(raw[257:265], b"ustar\x0000")
         with tarfile.open(self.archive) as archive:
             members = archive.getmembers()
             self.assertEqual([m.name for m in members], ["Sheprd.app", "Sheprd.app/Contents",
-                             "Sheprd.app/Contents/MacOS", "Sheprd.app/Contents/MacOS/sheprd", "Sheprd.app/link"])
-            self.assertEqual(archive.getmember("Sheprd.app/Contents/MacOS/sheprd").mode, 0o755)
-            self.assertEqual(archive.getmember("Sheprd.app/link").linkname, "Contents/MacOS/sheprd")
+                             "Sheprd.app/Contents/MacOS", "Sheprd.app/Contents/MacOS/spaceport", "Sheprd.app/link"])
+            self.assertEqual(archive.getmember("Sheprd.app/Contents/MacOS/spaceport").mode, 0o755)
+            self.assertEqual(archive.getmember("Sheprd.app/link").linkname, "Contents/MacOS/spaceport")
             self.assertTrue(archive.getmember("Sheprd.app/link").issym())
             for member in members:
                 self.assertEqual((member.uid, member.gid, member.uname, member.gname, member.mtime), (0, 0, "", "", 0))
@@ -72,7 +72,7 @@ class PackagingTests(unittest.TestCase):
             updater.package_macos(self.app, second)
 
     def test_unsafe_entries_and_destinations(self):
-        for target in ("../escape", "/etc/passwd", "a/../../escape", "bad\\path", "../Sheprd.app/Contents/MacOS/sheprd"):
+        for target in ("../escape", "/etc/passwd", "a/../../escape", "bad\\path", "../Sheprd.app/Contents/MacOS/spaceport"):
             link = self.app / "link"
             link.symlink_to(target)
             with self.subTest(target=target), self.assertRaises((ValueError, OSError)):

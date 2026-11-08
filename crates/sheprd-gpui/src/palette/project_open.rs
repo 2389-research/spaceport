@@ -9,7 +9,7 @@ use sheprd_client::{Method, protocol::ClientShellSnapshot};
 use std::{path::PathBuf, sync::Arc};
 
 impl SheprdWindow {
-    /// `sheprd open DIR`: opens the palette on its projects and opens
+    /// `spaceport open DIR`: opens the palette on its projects and opens
     /// `path` there as if it had been chosen, so the folder's workspace is
     /// focused, or created, exactly as Open Project does. Refused, with the
     /// palette closed again, while the window has no local Herdr to open it

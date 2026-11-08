@@ -24,18 +24,11 @@ trap 'exit 143' TERM
 name=Sheprd-$1-$2
 root=$tmp/$name
 mkdir -p "$root/bin" "$root/share/applications" "$root/${icon_path%/*}" "$root/share/licenses/herdr-gpui"
-cp "$3" "$root/bin/sheprd"
-chmod 755 "$root/bin/sheprd"
-# Standalone updates replace the resolved executable, so both commands must
-# follow that same file. Distro packaging materializes its required real copy.
-ln -s sheprd "$root/bin/herdr-gpui"
+cp "$3" "$root/bin/spaceport"
+chmod 755 "$root/bin/spaceport"
 for companion in "${companions[@]}"; do
     cp "$(dirname -- "$3")/$companion" "$root/bin/$companion"
     chmod 755 "$root/bin/$companion"
-    if [[ $companion == sheprd-* ]]; then
-        cp "$root/bin/$companion" "$root/bin/herdr-${companion#sheprd-}"
-        chmod 755 "$root/bin/herdr-${companion#sheprd-}"
-    fi
 done
 cp "$icon" "$root/$icon_path"
 cp "$release_root/scripts/release/org.sheprd.Sheprd.desktop" "$root/share/applications/"

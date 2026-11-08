@@ -22,7 +22,7 @@ run *args:
     while IFS= read -r variable; do
         env_args+=(--env "$variable")
     done < <(env | grep -E '^(RUST_LOG|RUST_BACKTRACE|HERDR_[A-Z0-9_]*)=' || true)
-    trap 'pkill -f "^$app/Contents/MacOS/sheprd" || true' INT TERM
+    trap 'pkill -f "^$app/Contents/MacOS/spaceport" || true' INT TERM
     open -n -W --stdout "$out" --stderr "$out" ${env_args[@]+"${env_args[@]}"} "$app" --args {{args}}
 
 run-debug *args:
@@ -33,7 +33,7 @@ run-debug *args:
         exec cargo run --locked -p sheprd-gpui -- {{args}}
     fi
     {{just_executable()}} bundle debug
-    exec target/debug/Sheprd.app/Contents/MacOS/sheprd {{args}}
+    exec target/debug/Sheprd.app/Contents/MacOS/spaceport {{args}}
 
 format:
     cargo fmt --all
@@ -92,7 +92,7 @@ test-sidebar:
 # Native hover/scroll CPU scene budget in milliseconds, calibrated for this machine.
 test-perf budget="30":
     cargo build --locked --release -p sheprd-gpui --features integration-test
-    HERDR_PERF_P95_MS="{{budget}}" target/release/sheprd --performance-test
+    HERDR_PERF_P95_MS="{{budget}}" target/release/spaceport --performance-test
 
 # Compare UI variants written as GPUI code in `file` (the built-in demo when
 # empty) in a native window. "Send to agent" types the notes into the calling
@@ -112,7 +112,7 @@ mockup file="" feedback="" capture="":
     args=(--mockup)
     if [ -n "$feedback" ]; then args+=(--feedback "$feedback"); fi
     if [ -n "$capture" ]; then args+=(--capture "$capture"); fi
-    exec target/debug/sheprd "${args[@]}"
+    exec target/debug/spaceport "${args[@]}"
 
 build-release:
     cargo build --locked --release -p sheprd-gpui -p sheprd-acp
@@ -120,7 +120,7 @@ build-release:
 # Compile and install the release executable into Cargo's bin directory.
 [unix]
 install:
-    cargo install --locked --force --path crates/sheprd-gpui --bin sheprd
+    cargo install --locked --force --path crates/sheprd-gpui --bin spaceport
     cargo install --locked --force --path crates/sheprd-acp
 
 # Only installation bypasses the POSIX shell used by the other recipes.
@@ -128,7 +128,7 @@ install:
 [extension(".cmd")]
 install:
     #!cmd.exe /c
-    cargo install --locked --force --path crates/sheprd-gpui --bin sheprd || exit /b 1
+    cargo install --locked --force --path crates/sheprd-gpui --bin spaceport || exit /b 1
     cargo install --locked --force --path crates/sheprd-launcher || exit /b 1
     cargo install --locked --force --path crates/sheprd-acp || exit /b 1
 
@@ -169,16 +169,12 @@ bundle profile="release" features="":
     # a signed file's old signature with its inode, so reading the rewritten
     # pages kills the reader, and a chat still running the old sheprd-acp
     # keeps its own copy.
-    rm -f "$app/Contents/MacOS/sheprd" "$app/Contents/MacOS/sheprd-acp"
-    cp target/{{profile}}/sheprd "$app/Contents/MacOS/sheprd"
+    rm -f "$app/Contents/MacOS/spaceport" "$app/Contents/MacOS/sheprd" "$app/Contents/MacOS/herdr-gpui" "$app/Contents/MacOS/sheprd-acp" "$app/Contents/MacOS/herdr-acp"
+    cp target/{{profile}}/spaceport "$app/Contents/MacOS/spaceport"
     # Chats the app starts run the sheprd-acp beside its executable.
     cp target/{{profile}}/sheprd-acp "$app/Contents/MacOS/sheprd-acp"
     # A stale development bundle must not keep a previously packaged Core.
     rm -f "$app/Contents/MacOS/herdr-core"
-    for helper in acp; do
-        rm -f "$app/Contents/MacOS/herdr-$helper"
-        cp "$app/Contents/MacOS/sheprd-$helper" "$app/Contents/MacOS/herdr-$helper"
-    done
     cp assets/macos/Info.plist "$app/Contents/Info.plist"
     for lproj in assets/macos/*.lproj; do
         if [[ -d "$lproj" ]]; then cp -R "$lproj" "$app/Contents/Resources/"; fi
@@ -186,7 +182,7 @@ bundle profile="release" features="":
     # LaunchServices and the Dock cache icons by bundle ID, so every worktree
     # build sharing the release ID competed with the installed app's icon.
     plutil -replace CFBundleIdentifier -string spaceport.development "$app/Contents/Info.plist"
-    icons=$(python3 scripts/release/build-icon.py macos "$app/Contents/MacOS/sheprd")
+    icons=$(python3 scripts/release/build-icon.py macos "$app/Contents/MacOS/spaceport")
     cp "${icons%$'\n'*}" "$app/Contents/Resources/Sheprd.icns"
     cp "${icons##*$'\n'}" "$app/Contents/Resources/Assets.car"
     plutil -lint "$app/Contents/Info.plist"

@@ -11,5 +11,5 @@ cask "herdr-gpui" do
 
   # The deployed updater reopens this path after upgrading the legacy cask.
   app "Sheprd.app", target: "Herdr.app"
-  binary "#{appdir}/Herdr.app/Contents/MacOS/sheprd"
+  binary "#{appdir}/Herdr.app/Contents/MacOS/spaceport"
 end

@@ -313,7 +313,7 @@ jobs:
           HERDR_PERF_P95_MS: '100'
         run: |
           cargo build --locked --release -p sheprd-gpui --features integration-test
-          target/release/sheprd.exe --performance-test
+          target/release/spaceport.exe --performance-test
 
   # The optimized Windows build, its zip, and its installer, made and installed
   # as the release workflow does, so a packaging or installer mistake fails the
@@ -358,13 +358,13 @@ jobs:
       - name: Build optimized Windows executables
         run: cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp --target "$TARGET"
       - name: Smoke-test the optimized executable as the release does
-        run: python scripts/release/smoke-cli.py "target/$TARGET/release/sheprd.exe"
+        run: python scripts/release/smoke-cli.py "target/$TARGET/release/spaceport.exe"
       # The release job passes generated third-party notices; any nonempty
       # file exercises the same packaging.
       - name: Package the Windows zip
         run: |
           mkdir dist
-          python scripts/release/package-windows.py "$VERSION" "$TARGET" "target/$TARGET/release/sheprd.exe" "target/$TARGET/release/sheprd-launcher.exe" dist LICENSE
+          python scripts/release/package-windows.py "$VERSION" "$TARGET" "target/$TARGET/release/spaceport.exe" "target/$TARGET/release/spaceport-launcher.exe" dist LICENSE
       - name: Install the pinned Inno Setup compiler
         run: python scripts/release/windows-installer.py install-iscc "$RUNNER_TEMP/inno-setup" > "$RUNNER_TEMP/iscc-path"
       - name: Build the Windows installer
@@ -516,7 +516,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           cargo test --locked --release -p sheprd-gpui --test cli --target "$TARGET" --no-run
-          "target/$TARGET/release/sheprd" --build-info
+          "target/$TARGET/release/spaceport" --build-info
       - name: Exercise release executable without opening a window
         env:
           TARGET: ${{ matrix.target }}

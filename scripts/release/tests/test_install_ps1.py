@@ -70,7 +70,7 @@ class InstallScriptTests(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell.exe"), "needs Windows PowerShell")
     def test_shortcut_and_explorer_entry_leave_other_link_schemes_alone(self):
-        # Releases up to 20261016.1 ship sheprd.exe alone (#632): there
+        # Releases up to 20261016.1 ship spaceport.exe alone (#632): there
         # the shortcut opens it and an existing Explorer entry goes away.
         for has_launcher in (False, True):
             key = rf"Software\HerdrInstallPs1Test-{os.getpid()}-{has_launcher}"
@@ -78,8 +78,8 @@ class InstallScriptTests(unittest.TestCase):
                     tempfile.TemporaryDirectory(prefix="herdr-install-ps1-") as temp:
                 dest = Path(temp) / "Sheprd"
                 dest.mkdir()
-                launcher = dest / "sheprd-launcher.exe"
-                (dest / "sheprd.exe").write_bytes(b"")
+                launcher = dest / "spaceport-launcher.exe"
+                (dest / "spaceport.exe").write_bytes(b"")
                 if has_launcher:
                     launcher.write_bytes(b"")
                 script = Path(temp) / "check.ps1"
@@ -87,8 +87,8 @@ class InstallScriptTests(unittest.TestCase):
                     "$ErrorActionPreference = 'Stop'",
                     "$version = '20000101.1'",
                     "$dest = $env:HERDR_TEST_DEST",
-                    "$exe = Join-Path $dest 'sheprd.exe'",
-                    "$launcher = Join-Path $dest 'sheprd-launcher.exe'",
+                    "$exe = Join-Path $dest 'spaceport.exe'",
+                    "$launcher = Join-Path $dest 'spaceport-launcher.exe'",
                     rf"$verbs = 'HKCU:\{key}\Directory', 'HKCU:\{key}\Background'",
                     rf"$scheme = 'HKCU:\{key}\Scheme'",
                     rf"$schemes = @('HKCU:\{key}\Scheme', 'HKCU:\{key}\LegacyScheme')",
@@ -120,7 +120,7 @@ class InstallScriptTests(unittest.TestCase):
                 schemes = [line[len("scheme="):] for line in lines if line.startswith("scheme=")]
                 # samefile, since Windows can hand back the temp directory
                 # as an 8.3 short path.
-                self.assertTrue(os.path.samefile(target, launcher if has_launcher else dest / "sheprd.exe"),
+                self.assertTrue(os.path.samefile(target, launcher if has_launcher else dest / "spaceport.exe"),
                                 target)
                 if has_launcher:
                     self.assertEqual(len(verbs), 2, result.stdout)
@@ -128,7 +128,7 @@ class InstallScriptTests(unittest.TestCase):
                         program, rest = verb[1:].split('"', 1)
                         self.assertTrue(os.path.samefile(program, launcher), verb)
                         self.assertEqual(rest, ' open "%V"')
-                    self.assertIn("sheprd-launcher.exe", message)
+                    self.assertIn("spaceport-launcher.exe", message)
                     self.assertIn("Open in Sheprd", message)
                 else:
                     self.assertEqual(verbs, [], result.stdout)

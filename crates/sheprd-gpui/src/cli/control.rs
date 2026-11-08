@@ -1,4 +1,4 @@
-//! `sheprd <command> ...`: commands answered by the running app, or by
+//! `spaceport <command> ...`: commands answered by the running app, or by
 //! this process from the app's own files, without starting GPUI. Herdr's own
 //! CLI already drives workspaces, tabs, panes, agents, and notifications;
 //! these cover what only this client knows or draws.
@@ -112,7 +112,7 @@ pub enum ControlCommand {
 pub const FAMILIES: &[(&str, &str)] = &[
     (
         "status",
-        "Whether Sheprd runs, its version, windows, and hosts",
+        "Whether Spaceport runs, its version, windows, and hosts",
     ),
     ("skill", "Print the agent skill describing these commands"),
     (
@@ -122,7 +122,7 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("app", "Bring the app forward, hide it, or quit it"),
     (
         "open",
-        "Open a folder in Sheprd, starting the app if needed",
+        "Open a folder in Spaceport, starting the app if needed",
     ),
     (
         "window",
@@ -133,7 +133,7 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("devices", "Open the Devices overview"),
     (
         "chat",
-        "Native views of herdr-acp chats: start one, list them, show or hide one",
+        "Native views of sheprd-acp chats: start one, list them, show or hide one",
     ),
     ("px0", "Open px0 on the caller's local checkout"),
     ("notes", "Notes kept on worktrees"),
@@ -158,10 +158,13 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("processes", "The processes running under a pane"),
     ("usage", "AI plan usage on the selected host"),
     ("system", "The selected host's load"),
-    ("config", "Sheprd settings: path, get, set, reload, check"),
+    (
+        "config",
+        "Spaceport settings: path, get, set, reload, check",
+    ),
     ("theme", "List or choose a color theme"),
     ("font", "List or choose the terminal font"),
-    ("language", "The language Sheprd shows, or choose one"),
+    ("language", "The language Spaceport shows, or choose one"),
     ("keybinds", "List shortcuts and check them for conflicts"),
     ("caffeine", "Keep the machine awake"),
     ("sound", "List or play notification sounds"),

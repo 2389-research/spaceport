@@ -106,7 +106,7 @@ pub(super) fn font(
         {
             return Response::error(
                 ErrorCode::NotFound,
-                format!("No installed font is named {name}; `sheprd font list` lists them"),
+                format!("No installed font is named {name}; `spaceport font list` lists them"),
             );
         }
         match Config::save_all_font_families(name.as_deref()) {

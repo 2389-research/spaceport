@@ -7,22 +7,22 @@ connect to, start, stop, or send input to a Herdr daemon.
 
 ```sh
 cargo build --release -p sheprd-gpui --features integration-test
-target/release/sheprd --performance-test
+target/release/spaceport --performance-test
 
 # Reference algorithm: per-cell shaping and per-cell backgrounds, same harness.
-HERDR_PERF_UNCACHED=1 target/release/sheprd --performance-test
+HERDR_PERF_UNCACHED=1 target/release/spaceport --performance-test
 
 # Debug timings, representative of an unoptimized development build.
 cargo build -p sheprd-gpui --features integration-test
-target/debug/sheprd --performance-test
-HERDR_PERF_UNCACHED=1 HERDR_PERF_P95_MS=5000 target/debug/sheprd --performance-test
+target/debug/spaceport --performance-test
+HERDR_PERF_UNCACHED=1 HERDR_PERF_P95_MS=5000 target/debug/spaceport --performance-test
 
 # Explicit native regression test with subprocess timeout and exit-status checks.
 cargo test -p sheprd-gpui --features integration-test --test performance_gui -- --ignored --nocapture
 
 # Pure/cache correctness tests and the existing native label-width check.
 cargo test -p sheprd-gpui --bin sheprd --features integration-test
-target/release/sheprd --sidebar-test
+target/release/spaceport --sidebar-test
 cargo clippy -p sheprd-gpui --all-targets --features integration-test -- -D warnings
 ```
 
@@ -89,7 +89,7 @@ executable. Its text backend is still native, but GPUI adds synchronous redraws
 after event dispatch. The harness reports `paints` and validates per-paint budgets
 so these additional draws cannot hide work. Their time is included, making the
 Cargo test slower than the standalone binary. Rebuild after `cargo test` before
-benchmarking `target/debug/sheprd` again.
+benchmarking `target/debug/spaceport` again.
 
 ## Results
 

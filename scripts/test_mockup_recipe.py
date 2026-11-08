@@ -17,7 +17,7 @@ class MockupRecipeTests(unittest.TestCase):
             invocation.mkdir()
             bin_dir = root / "bin"
             bin_dir.mkdir()
-            app = root / "target/debug/sheprd"
+            app = root / "target/debug/spaceport"
             app.parent.mkdir(parents=True)
             cargo = bin_dir / "cargo"
             cargo.write_text(

@@ -201,7 +201,7 @@ pub(crate) fn open_additional_window_then(
                 });
             }
             Err(_) => {
-                tracing::error!("Unable to open an additional Sheprd window");
+                tracing::error!("Unable to open an additional Spaceport window");
                 failed(cx);
             }
         }
@@ -251,7 +251,7 @@ pub(crate) fn run() -> std::process::ExitCode {
         Err(error) => {
             eprintln!(
                 // i18n: data
-                "{error}\nUsage: sheprd [--socket CLIENT_SOCKET]\n       sheprd COMMAND ... (see sheprd --help)"
+                "{error}\nUsage: spaceport [--socket CLIENT_SOCKET]\n       spaceport COMMAND ... (see spaceport --help)"
             );
             return std::process::ExitCode::from(2);
         }
@@ -297,7 +297,7 @@ pub(crate) fn run() -> std::process::ExitCode {
     if mode == LaunchMode::Help {
         println!(
             // i18n: data
-            "sheprd [--socket CLIENT_SOCKET]\nConnects to Local and saved SSH hosts; never installs remote software.\nStarts the local Herdr daemon if needed; never stops it.\nExplicit --socket targets are attach-only and isolate the GUI to one existing daemon."
+            "spaceport [--socket CLIENT_SOCKET]\nConnects to Local and saved SSH hosts; never installs remote software.\nStarts the local Herdr daemon if needed; never stops it.\nExplicit --socket targets are attach-only and isolate the GUI to one existing daemon."
         );
         println!(
             // i18n: data
@@ -558,7 +558,7 @@ pub(crate) fn run() -> std::process::ExitCode {
                 Err(error) => {
                     tracing::error!("Unable to open main window");
                     // i18n: data
-                    eprintln!("Unable to open Sheprd window: {error}");
+                    eprintln!("Unable to open Spaceport window: {error}");
                     failed.set(true);
                     #[cfg(feature = "integration-test")]
                     if performance_test {

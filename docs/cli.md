@@ -1,13 +1,12 @@
 # Command line
 
-This development branch still builds the `sheprd` executable while Spaceport's
-independent command identity is in progress. The commands below describe the
-current build; the [Spaceport task graph](spaceport/plan/tasks.json) tracks
-routes that must still be removed or changed.
+This development branch builds one `spaceport` GUI and CLI executable. The
+[Spaceport task graph](spaceport/plan/tasks.json) tracks routes that still
+need work.
 
-`sheprd` is also a command line for the running app. Herdr's own
+`spaceport` is also a command line for the running app. Herdr's own
 `herdr` CLI drives the daemon: workspaces, terminal tabs, panes, agents,
-worktrees, and notifications. `sheprd COMMAND` covers what only this
+worktrees, and notifications. `spaceport COMMAND` covers what only this
 client knows or draws: its windows, its own tabs (pages, Devices and Core
 terminals), the activity bar's sections, worktree notes, forwarded
 ports, and its settings.
@@ -19,14 +18,14 @@ only your user can open; on Windows, over a named pipe (see
 A few commands work from files alone and
 need no running app; they say so below.
 
-On Windows, `sheprd.exe` is a console program, so a shell waits for it and
+On Windows, `spaceport.exe` is a console program, so a shell waits for it and
 sees its exit code; the installers put its directory on `PATH`. The Start menu
-opens `sheprd-launcher.exe` instead, which starts it without a console
+opens `spaceport-launcher.exe` instead, which starts it without a console
 window.
 
 ```sh
-sheprd --help              # every command
-sheprd COMMAND --help      # one command
+spaceport --help              # every command
+spaceport COMMAND --help      # one command
 ```
 
 ## Options and output
@@ -47,7 +46,7 @@ Every command accepts:
 | 0 | Done |
 | 1 | Refused or failed |
 | 2 | Invalid arguments, or an address or file that cannot be shown |
-| 3 | Sheprd is not running |
+| 3 | Spaceport is not running |
 | 4 | Nothing yet: no notes, no event, no pull request, condition not met |
 | 5 | The window, workspace, tab, host, or file is not there |
 | 6 | A dialog is open in the window, or the app is busy |
@@ -84,12 +83,12 @@ rooted in it or starts one, on the window's local Herdr, and brings the window
 forward. A dialog open in the window refuses it (exit 6); the palette shows
 anything that goes wrong after that, such as the folder disappearing.
 
-When no Sheprd is running and no `--window` is given, `open` starts the app,
-as a plain `sheprd` would, then asks again every quarter second until the
+When no Spaceport is running and no `--window` is given, `open` starts the app,
+as a plain `spaceport` would, then asks again every quarter second until the
 window has connected to the local Herdr and accepts the folder. It waits at
 most 20 seconds after starting the app, then exits 7. Explorer's **Open in
-Sheprd** entry, which both Windows installers add, runs this command through
-`sheprd-launcher.exe`, so no console window appears.
+Spaceport** entry, which both Windows installers add, runs this command through
+`spaceport-launcher.exe`, so no console window appears.
 
 ### The app's own tabs
 
@@ -136,7 +135,7 @@ A focus asked for on a connected host the window is not showing, such as
 `herdr --machine Homelab agent focus NAME`, switches the window to that host
 when it moves the host to another tab. The daemon reports nothing when the
 target is already its focused tab, or when the focus only moves between panes
-of one tab, so a script that must end up on the host runs `sheprd host select`
+of one tab, so a script that must end up on the host runs `spaceport host select`
 as well. A focus waits until you stop typing or composing, so keys meant for
 one host do not reach another, and choosing a host yourself in the meantime
 cancels it. It leaves the host restored at the next launch as it was.
@@ -165,7 +164,7 @@ not take it either.
 | `config reload` | Reread Spaceport's settings files |
 | `theme [list]`, `theme set NAME` | The app theme. A device's terminal theme is `config set devices.ID.theme NAME`, with the ID from `host list` minus its `ssh:` prefix |
 | `font [list]`, `font set NAME`, `font reset` | |
-| `language [status]`, `language list`, `language set system\|TAG` | The language set and the locale Sheprd shows, the languages there are, each with its name in itself as Settings > General lists it, or save the `language` setting (a BCP 47 tag; `en-XA` and `en-XB` are pseudo-locales). Only `status` asks the app, and without it reports what it would show |
+| `language [status]`, `language list`, `language set system\|TAG` | The language set and the locale Spaceport shows, the languages there are, each with its name in itself as Settings > General lists it, or save the `language` setting (a BCP 47 tag; `en-XA` and `en-XB` are pseudo-locales). Only `status` asks the app, and without it reports what it would show |
 | `keybinds [list]`, `keybinds check` | Shortcuts and reachable non-plugin custom Herdr commands |
 | `caffeine [status]`, `caffeine on\|off\|toggle [--for 30m]` | Keep the machine awake |
 | `sound [list]`, `sound play [done\|request]`, `bell` | Sounds play at `sound.volume` percent (`config set sound.volume 30`) |
@@ -177,11 +176,11 @@ not take it either.
 
 
 Focus-on-hover between split terminal panes is on by default. Disable it with
-`sheprd config set focus_follows_mouse false`.
+`spaceport config set focus_follows_mouse false`.
 The change applies live; `config get focus_follows_mouse` reads it back.
 
 An unnamed tab shows its number. To show its agent's terminal title instead,
-run `sheprd config set tab_labels.agent_title true`.
+run `spaceport config set tab_labels.agent_title true`.
 
 ### Events
 
@@ -193,9 +192,9 @@ get only newer events. A cursor from an earlier run of the app gets every
 event the new run has kept, so a restart never hides events.
 
 ```sh
-sheprd events --follow --kind tab_closed
-sheprd wait tab-closed 12 --timeout 600
-sheprd wait window            # also waits for the app to start
+spaceport events --follow --kind tab_closed
+spaceport wait tab-closed 12 --timeout 600
+spaceport wait window            # also waits for the app to start
 ```
 
 ## What stays in the app
@@ -209,7 +208,7 @@ trusted Core when needed. Spaceport packages do not bundle or upgrade Core.
 `update` never installs the app.
 
 Adding an SSH or local network device has no command: the Add Device dialog
-runs it. Its setup workspace runs `sheprd __device-setup-attach SOCKET`,
+runs it. Its setup workspace runs `spaceport __device-setup-attach SOCKET`,
 an internal helper that shows the setup the app runs (see the Native Shell
 README's "Local Network access"); it is not a command to call yourself, and
 the socket it names is single use.
@@ -220,7 +219,7 @@ do them.
 
 ## Links
 
-`sheprd URL`, with a `spaceport://` link as the only argument, hands the
+`spaceport URL`, with a `spaceport://` link as the only argument, hands the
 link to the running app, or starts the app and follows it once it is
 connected. The development build does not register an OS-wide handler; its
 Windows jump-list entries launch the executable with the link directly.
@@ -266,7 +265,7 @@ has. Pipe names are shared by all users of the machine, so:
   (`PIPE_REJECT_REMOTE_CLIENTS`), so it never joins a pipe someone else made
   and nothing off this machine can reach it. If another user made the name
   first, the app does not listen, and logs why.
-- `sheprd COMMAND` opens the pipe at identification level, so the server
+- `spaceport COMMAND` opens the pipe at identification level, so the server
   can learn who called but cannot act as you, and checks that the pipe's
   owner is you before it sends anything. A pipe someone else owns is refused
   with exit 1.
@@ -282,7 +281,7 @@ Native chat views are on by default: turn off **ACP chats** in Settings >
 General (`acp_chats = false` under `[features]`) to go without them. While it
 is off, chat panes show their terminal and `chat new` exits 8.
 
-Set the reading width with `sheprd config set chat.max_width 1200`, or use
+Set the reading width with `spaceport config set chat.max_width 1200`, or use
 `0` for the full available width. Bounded widths range from 320 to 4000 logical
 pixels; the default is 800. Settings > General offers the same width slider and
 **Full-width chat** switch.

@@ -43,9 +43,9 @@ class ExternalCorePackages(unittest.TestCase):
         self.assertFalse(any("herdr-core" in name.lower() for name in names))
 
     def test_windows_archive_needs_no_core_and_contains_no_core(self):
-        launcher = self.work / "sheprd-launcher.exe"
+        launcher = self.work / "spaceport-launcher.exe"
         launcher.write_bytes(b"launcher")
-        binary = self.work / "sheprd.exe"
+        binary = self.work / "spaceport.exe"
         binary.write_bytes(self.binary.read_bytes())
         (self.work / "sheprd-acp.exe").write_bytes(b"chat companion")
         result = subprocess.run(

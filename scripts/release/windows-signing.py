@@ -4,7 +4,7 @@
   unpack ZIP DIRECTORY
       Extract the tested release zip that package-windows.py wrote
       into DIRECTORY, which must not exist, and print the tree root holding
-      sheprd.exe, sheprd-launcher.exe, and sheprd-acp.exe
+      spaceport.exe, spaceport-launcher.exe, and sheprd-acp.exe
       for the signing action.
   repack ZIP TREE_DIRECTORY OUTPUT_DIR
       Write OUTPUT_DIR/ZIP's name from the signed tree. Refuses unless every

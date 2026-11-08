@@ -78,7 +78,7 @@ pub fn run_helper(args: &[OsString]) -> Option<ExitCode> {
         return None;
     }
     let [account, sandbox, remote @ ..] = rest else {
-        eprintln!("Usage: sheprd {HELPER} ACCOUNT SANDBOX [COMMAND...]");
+        eprintln!("Usage: spaceport {HELPER} ACCOUNT SANDBOX [COMMAND...]");
         return Some(ExitCode::from(2));
     };
     Some(match run(account, sandbox, remote) {

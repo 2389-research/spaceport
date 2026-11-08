@@ -19,7 +19,7 @@ MOCK = r'''
 import os, sys, time
 args, broken = sys.argv[1:], os.environ.get("MOCK_BREAK", "")
 assert "HERDR_PANE_ID" not in os.environ
-usage = "Usage: sheprd [OPTIONS]\n"
+usage = "Usage: spaceport [OPTIONS]\n"
 if broken == "hang":
     time.sleep(60)
 if args in (["--help"], ["-h"]):

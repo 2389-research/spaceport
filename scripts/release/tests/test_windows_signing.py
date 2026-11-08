@@ -103,11 +103,9 @@ class RepackTests(unittest.TestCase):
         self.acp = executable(length=0x305)
         self.archive = self.work / f"{ROOT}.zip"
         with zipfile.ZipFile(self.archive, "w") as release:
-            PACKAGE.add(release, f"{ROOT}/sheprd.exe", self.app)
-            PACKAGE.add(release, f"{ROOT}/sheprd-launcher.exe", self.launcher)
+            PACKAGE.add(release, f"{ROOT}/spaceport.exe", self.app)
+            PACKAGE.add(release, f"{ROOT}/spaceport-launcher.exe", self.launcher)
             PACKAGE.add(release, f"{ROOT}/sheprd-acp.exe", self.acp)
-            for alias, canonical in PACKAGE.ALIASES.items():
-                PACKAGE.add(release, f"{ROOT}/{alias}", release.read(f"{ROOT}/{canonical}"))
             PACKAGE.add(release, f"{ROOT}/licenses/LICENSE", b"license")
         self.output = self.work / "signed"
         self.output.mkdir()
@@ -115,11 +113,9 @@ class RepackTests(unittest.TestCase):
     def signed_tree(self):
         root = SIGNING.unpack(self.archive, self.work / "tree")
         self.assertEqual(root, (self.work / "tree" / ROOT).resolve())
-        (root / "sheprd.exe").write_bytes(sign(self.app))
-        (root / "sheprd-launcher.exe").write_bytes(sign(self.launcher))
+        (root / "spaceport.exe").write_bytes(sign(self.app))
+        (root / "spaceport-launcher.exe").write_bytes(sign(self.launcher))
         (root / "sheprd-acp.exe").write_bytes(sign(self.acp))
-        for alias, canonical in PACKAGE.ALIASES.items():
-            (root / alias).write_bytes((root / canonical).read_bytes())
         return root
 
     def test_repacks_the_signed_tree_in_the_zips_order(self):
@@ -129,20 +125,18 @@ class RepackTests(unittest.TestCase):
         with zipfile.ZipFile(self.archive) as unsigned, zipfile.ZipFile(output) as signed:
             self.assertEqual(signed.namelist(), unsigned.namelist())
             self.assertEqual([i.date_time for i in signed.infolist()], [PACKAGE.TIMESTAMP] * len(unsigned.infolist()))
-            self.assertEqual(signed.read(f"{ROOT}/sheprd.exe"), sign(self.app))
-            self.assertEqual(signed.read(f"{ROOT}/sheprd-launcher.exe"), sign(self.launcher))
+            self.assertEqual(signed.read(f"{ROOT}/spaceport.exe"), sign(self.app))
+            self.assertEqual(signed.read(f"{ROOT}/spaceport-launcher.exe"), sign(self.launcher))
             self.assertEqual(signed.read(f"{ROOT}/sheprd-acp.exe"), sign(self.acp))
             self.assertEqual(signed.read(f"{ROOT}/licenses/LICENSE"), b"license")
-            for alias, canonical in PACKAGE.ALIASES.items():
-                self.assertEqual(signed.read(f"{ROOT}/{alias}"), signed.read(f"{ROOT}/{canonical}"))
         with self.assertRaisesRegex(ValueError, "Output already exists"):
             SIGNING.repack(self.archive, self.work / "tree", self.output)
 
     def test_refuses_a_tree_that_is_not_the_signed_zip(self):
         root = self.signed_tree()
         for name, change, undo in [
-            ("unsigned launcher", lambda: (root / "sheprd-launcher.exe").write_bytes(self.launcher),
-             lambda: (root / "sheprd-launcher.exe").write_bytes(sign(self.launcher))),
+            ("unsigned launcher", lambda: (root / "spaceport-launcher.exe").write_bytes(self.launcher),
+             lambda: (root / "spaceport-launcher.exe").write_bytes(sign(self.launcher))),
             ("unsigned sheprd-acp", lambda: (root / "sheprd-acp.exe").write_bytes(self.acp),
              lambda: (root / "sheprd-acp.exe").write_bytes(sign(self.acp))),
             ("changed license", lambda: (root / "licenses/LICENSE").write_bytes(b"other"),

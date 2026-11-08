@@ -1,5 +1,5 @@
 # The windowed Windows launcher; Explorer and the Start menu open it so
-# starting the console-subsystem `sheprd.exe` shows no console window.
+# starting the console-subsystem `spaceport.exe` shows no console window.
 [package]
 edition.workspace      = true
 license.workspace      = true
@@ -7,6 +7,10 @@ name                   = "sheprd-launcher"
 publish.workspace      = true
 rust-version.workspace = true
 version.workspace      = true
+
+[[bin]]
+name = "spaceport-launcher"
+path = "src/main.rs"
 
 [lints]
 workspace = true

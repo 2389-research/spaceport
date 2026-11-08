@@ -2,10 +2,10 @@
 //! Update that closes it to replace files, or a restart with **Restart apps**
 //! (Settings > Accounts > Sign-in options) turned on, opens it again.
 //!
-//! Windows restarts the exact program that registered, and `herdr-gpui.exe`
+//! Windows restarts the exact program that registered, and `spaceport.exe`
 //! is a console program: started on its own it opens a console window. So it
 //! registers [`RESTARTED`] as its only argument, and a process started that
-//! way hands off to `herdr-gpui-launcher.exe` beside it, which opens the app
+//! way hands off to `spaceport-launcher.exe` beside it, which opens the app
 //! without one, then exits. Its console may still flash on that rare path. The
 //! app reopens as its Start menu entry starts it: a session or socket chosen
 //! on the command line is not carried over. It is never restarted after a
@@ -49,7 +49,7 @@ pub(crate) fn hand_off(args: &mut Vec<OsString>) -> Option<ExitCode> {
     args.clear();
     let executable = std::env::current_exe().ok()?;
     let directory = executable.parent()?;
-    let launcher = ["sheprd-launcher.exe", "herdr-gpui-launcher.exe"]
+    let launcher = ["spaceport-launcher.exe", "spaceport-launcher.exe"]
         .into_iter()
         .map(|name| directory.join(name))
         .find(|path| path.is_file())?;

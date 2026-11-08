@@ -1,8 +1,8 @@
 # Why launch at login could not be turned on or off (Windows).
-# sheprd-launcher.exe is a file name.
+# spaceport-launcher.exe is a file name.
 
 # $path is where the launcher should be.
-error-launch-at-login-no-launcher = Launch at login needs sheprd-launcher.exe beside the app, at { $path }
+error-launch-at-login-no-launcher = Launch at login needs spaceport-launcher.exe beside the app, at { $path }
 error-launch-at-login-current-exe = Could not find the running executable
 # $operation is what failed on the startup entry in the registry.
 error-launch-at-login-registry = { $operation ->

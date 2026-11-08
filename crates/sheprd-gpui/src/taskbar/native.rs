@@ -76,14 +76,14 @@ enum Error {
 
 /// Sets `relaunch` on `window` and returns its handle, so the properties can
 /// be cleared before it closes. A failure is logged and leaves the window
-/// with the default identity, so a pin opens `herdr-gpui.exe` as before.
+/// with the default identity, so a pin opens `spaceport.exe` as before.
 pub(super) fn apply(window: &Window, relaunch: &Relaunch) -> Option<Hwnd> {
     let hwnd = match hwnd(window) {
         Ok(hwnd) => hwnd,
         Err(error) => {
             warn(
                 &error,
-                "Unable to find the window's Win32 handle; pinning it pins herdr-gpui.exe", // i18n: data
+                "Unable to find the window's Win32 handle; pinning it pins spaceport.exe", // i18n: data
             );
             return None;
         }
@@ -91,7 +91,7 @@ pub(super) fn apply(window: &Window, relaunch: &Relaunch) -> Option<Hwnd> {
     if let Err(error) = set(hwnd, relaunch) {
         warn(
             &error,
-            "Unable to set the window's taskbar relaunch properties; pinning it pins herdr-gpui.exe", // i18n: data
+            "Unable to set the window's taskbar relaunch properties; pinning it pins spaceport.exe", // i18n: data
         );
     }
     Some(hwnd)

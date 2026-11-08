@@ -2,7 +2,7 @@
 """Repackage the manual Linux archive as .deb, .rpm, and Arch packages.
 
 The packages install the files of Sheprd-VERSION-TARGET.tar.gz under /usr,
-materializing its main command alias for the deployed privileged updater.
+with one app command in each package.
 Every Linux format ships the same bytes. nfpm (pinned by
 install-nfpm.sh) writes each format from one generated configuration.
 """
@@ -22,9 +22,7 @@ ARCHES = {"x86_64-unknown-linux-gnu": "amd64", "aarch64-unknown-linux-gnu": "arm
 # (nfpm packager, published extension)
 FORMATS = (("deb", "deb"), ("rpm", "rpm"), ("archlinux", "pkg.tar.zst"))
 TREE = {
-    "bin/herdr-gpui", "bin/sheprd",
-    *(f"bin/{prefix}-{helper}" for prefix in ("sheprd", "herdr")
-      for helper in ("acp",)),
+    "bin/spaceport", "bin/sheprd-acp",
     "share/applications/org.sheprd.Sheprd.desktop",
     "share/icons/hicolor/scalable/apps/sheprd.svg",
     *(f"share/licenses/herdr-gpui/{name}" for name in (
@@ -64,7 +62,7 @@ def check_version(version):
 
 
 def extract(archive, prefix, destination):
-    """Extract regular files and materialize the sole permitted command symlink."""
+    """Extract the package's regular files after validating its tree."""
     with tarfile.open(archive) as source:
         members = source.getmembers()
         files = {}
@@ -77,19 +75,14 @@ def extract(archive, prefix, destination):
             if relative in seen:
                 raise ValueError(f"Duplicate archive entry: {member.name}")
             seen.add(relative)
-            if member.isfile() or (member.issym() and relative == "bin/herdr-gpui"
-                                   and member.linkname == "sheprd"):
+            if member.isfile():
                 files[relative] = member
             elif not member.isdir():
                 raise ValueError(f"Archive entry is not a regular file or directory: {member.name}")
         if set(files) != TREE:
             raise ValueError("Archive does not contain the expected Linux tree")
-        # Never extract a link. The validated canonical entry must be regular;
-        # copy its bytes only after the entire archive has passed validation.
-        source.extractall(destination, members=[m for m in files.values() if m.isfile()], filter="data")
+        source.extractall(destination, members=files.values(), filter="data")
     root = destination / prefix
-    if files["bin/herdr-gpui"].issym():
-        shutil.copy2(root / "bin/sheprd", root / "bin/herdr-gpui")
     return root
 
 

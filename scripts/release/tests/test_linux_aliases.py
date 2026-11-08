@@ -1,4 +1,4 @@
-"""Standalone alias safety, distro materialization, and Nix command aliases."""
+"""The Linux package and Nix wrapper expose one app command."""
 import importlib.util
 import io
 import os
@@ -28,40 +28,29 @@ class LinuxAliasTests(unittest.TestCase):
             for relative in sorted(DISTRO.TREE):
                 entry = tarfile.TarInfo("release/" + relative)
                 entry.mode = 0o755 if relative.startswith("bin/") else 0o644
-                kind, link = changes.get(relative, (tarfile.SYMTYPE, "sheprd")
-                                         if relative == "bin/herdr-gpui" else (tarfile.REGTYPE, ""))
-                entry.type, entry.linkname = kind, link
-                data = b"canonical executable" if relative == "bin/sheprd" else b"fixture"
+                entry.type, entry.linkname = changes.get(relative, (tarfile.REGTYPE, ""))
+                data = b"canonical executable" if relative == "bin/spaceport" else b"fixture"
                 entry.size = len(data) if entry.isfile() else 0
                 output.addfile(entry, io.BytesIO(data) if entry.isfile() else None)
-                if duplicate and relative == "bin/herdr-gpui":
-                    output.addfile(entry)
+                if duplicate and relative == "bin/spaceport":
+                    output.addfile(entry, io.BytesIO(data))
         return archive
 
-    def test_distro_materializes_main_alias_as_a_regular_executable(self):
+    def test_distro_keeps_only_one_app_executable(self):
         root = DISTRO.extract(self.archive(), "release", self.work / "tree")
-        canonical, legacy = root / "bin/sheprd", root / "bin/herdr-gpui"
-        self.assertFalse(legacy.is_symlink())
-        self.assertTrue(legacy.is_file())
-        self.assertEqual(legacy.stat().st_mode & 0o777, 0o755)
-        self.assertEqual(legacy.read_bytes(), canonical.read_bytes())
+        canonical = root / "bin/spaceport"
+        self.assertTrue(canonical.is_file())
+        self.assertFalse((root / "bin/herdr-gpui").exists())
         config = DISTRO.config("20261103.1", "x86_64-unknown-linux-gnu", root, "2026-11-03T00:00:00Z")
-        entry = next(entry for entry in config["contents"] if entry["dst"] == "/usr/bin/herdr-gpui")
+        entry = next(entry for entry in config["contents"] if entry["dst"] == "/usr/bin/spaceport")
         self.assertEqual(entry["type"], "file")
         self.assertEqual((entry["file_info"]["owner"], entry["file_info"]["group"]), ("root", "root"))
 
-    def test_only_exact_relative_main_symlink_is_accepted(self):
-        cases = [
-            {"bin/herdr-gpui": (tarfile.SYMTYPE, target)}
-            for target in ("/usr/bin/sheprd", "../bin/sheprd", "../../outside", "./sheprd",
-                           "herdr-gpui", "sheprd-acp", "subdir/sheprd", "..\\sheprd")
-        ]
-        cases += [
-            {"bin/herdr-gpui": (tarfile.LNKTYPE, "release/bin/sheprd")},
-            {"bin/sheprd": (tarfile.SYMTYPE, "sheprd-acp")},
-            {"bin/herdr-acp": (tarfile.SYMTYPE, "sheprd-acp")},
-            {"bin/sheprd": (tarfile.DIRTYPE, "")},
-        ]
+    def test_distro_rejects_symlinks_and_duplicate_app_entries(self):
+        cases = [{"bin/spaceport": (tarfile.SYMTYPE, target)}
+                 for target in ("/usr/bin/spaceport", "../bin/spaceport", "../../outside", "./sheprd")]
+        cases += [{"bin/spaceport": (tarfile.LNKTYPE, "release/bin/spaceport")},
+                  {"bin/spaceport": (tarfile.DIRTYPE, "")}]
         for changes in cases:
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 DISTRO.extract(self.archive(changes), "release", self.work / "tree")
@@ -69,16 +58,16 @@ class LinuxAliasTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Duplicate archive entry"):
             DISTRO.extract(self.archive(duplicate=True), "release", self.work / "tree")
 
-    def test_nix_aliases_invoke_final_wrapper_and_owned_helpers(self):
-        # Execute the actual postFixup shell with stand-ins for Nix's wrapper
-        # and patchelf. The Linux Nix workflow also checks the built output.
+    def test_nix_wraps_only_the_spaceport_command(self):
         text = (ROOT / "flake.nix").read_text()
+        flags = re.search(r"cargoBuildFlags = \[([^]]+)\];", text)[1]
+        packages = re.findall(r'"([^"]+)"', flags)
+        self.assertEqual(packages, ["-p", "sheprd-gpui", "-p", "sheprd-acp"])
         hook = re.search(r"postFixup = ''\n(.*?)\n\s*'';", text, re.S)[1]
         hook = re.sub(r"\$\{lib\.[^}]+\}", "/fixture", hook)
         binaries = self.work / "bin"
         binaries.mkdir()
-        commands = ("sheprd", "sheprd-acp")
-        for command in commands:
+        for command in ("spaceport", "sheprd-acp"):
             executable = binaries / command
             executable.write_text(f"#!/bin/sh\necho {command}\n")
             executable.chmod(0o755)
@@ -94,12 +83,7 @@ wrapProgram() {
 '''
         subprocess.run(["bash", "-euc", stubs + hook], check=True,
                        env={**os.environ, "out": str(self.work)}, capture_output=True)
-        aliases = {"herdr-gpui": "sheprd", **{f"herdr-{helper}": f"sheprd-{helper}"
-                   for helper in ("acp",)}}
-        for alias, canonical in aliases.items():
-            with self.subTest(alias=alias):
-                self.assertEqual(os.readlink(binaries / alias), canonical)
-                output = subprocess.check_output([str(binaries / alias)], text=True).strip()
-                self.assertEqual(output, "wrapped:sheprd" if canonical == "sheprd" else canonical)
+        self.assertEqual(subprocess.check_output([str(binaries / "spaceport")], text=True).strip(), "wrapped:spaceport")
+        self.assertFalse((binaries / "sheprd").exists())
+        self.assertFalse((binaries / "herdr-gpui").exists())
         self.assertEqual(core.read_bytes(), b"upstream unchanged")
-        self.assertFalse(core.is_symlink())

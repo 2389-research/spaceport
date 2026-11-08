@@ -11,10 +11,10 @@ use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-const SKILL: &str = include_str!("../../../skills/herdr-gpui-browser/SKILL.md");
+const SKILL: &str = include_str!("../../../skills/spaceport/SKILL.md");
 /// Marks a skill file this app manages.
-const MARKER: &str = "<!-- herdr-gpui-managed-skill v1";
-const NAME: &str = "herdr-gpui-browser";
+const MARKER: &str = "<!-- spaceport-managed-skill v1";
+const NAME: &str = "spaceport";
 /// Agent configuration directories under the home directory, whose
 /// `skills/` subdirectory agents read.
 const ROOTS: [&str; 2] = [".claude", ".agents"];
@@ -33,7 +33,7 @@ fn shell_word(path: &str) -> String {
 }
 
 /// The executable agents are told to run: this one. On Windows that is the
-/// console program `herdr-gpui.exe`, which a shell waits for, never its
+/// console program `spaceport.exe`, which a shell waits for, never its
 /// windowed launcher. Call it off the UI thread.
 pub(crate) fn executable() -> Option<PathBuf> {
     std::env::current_exe().ok()
@@ -44,7 +44,7 @@ pub(crate) fn executable() -> Option<PathBuf> {
 pub(crate) fn command(executable: Option<&Path>) -> String {
     executable
         .and_then(Path::to_str)
-        .map_or_else(|| "sheprd".to_owned(), shell_word)
+        .map_or_else(|| "spaceport".to_owned(), shell_word)
 }
 
 /// The skill, naming `executable` in its commands.
@@ -58,18 +58,15 @@ pub(crate) fn text(executable: Option<&Path>) -> String {
 /// The skill, naming `command` in its commands, as one shell word.
 pub(crate) fn text_naming(command: &str) -> String {
     // Every command line in the skill starts with the executable's name.
-    substitute_command(SKILL, "sheprd", "herdr-gpui", command)
+    substitute_command(SKILL, "spaceport", command)
 }
 
-fn substitute_command(text: &str, current: &str, legacy: &str, command: &str) -> String {
-    // Replace both spellings in one pass: the installed path may itself end
-    // in a command name, and must not be substituted for a second time.
+fn substitute_command(text: &str, name: &str, command: &str) -> String {
+    // The installed path may itself end in the command name, so replace once.
     text.split_inclusive(' ')
         .map(|part| {
-            for name in [current, legacy] {
-                if let Some(prefix) = part.strip_suffix(&format!("{name} ")) {
-                    return format!("{prefix}{command} ");
-                }
+            if let Some(prefix) = part.strip_suffix(&format!("{name} ")) {
+                return format!("{prefix}{command} ");
             }
             part.to_owned()
         })

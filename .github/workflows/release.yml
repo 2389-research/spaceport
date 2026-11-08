@@ -195,8 +195,8 @@ jobs:
       # CI does, so the smoke test finds it translated.
       - name: Translate the x86_64 executable once
         if: matrix.arch == 'x86_64'
-        run: '"target/$TARGET/release/sheprd" --build-info'
-      - run: python3 scripts/release/smoke-cli.py "target/$TARGET/release/sheprd"
+        run: '"target/$TARGET/release/spaceport" --build-info'
+      - run: python3 scripts/release/smoke-cli.py "target/$TARGET/release/spaceport"
       # The app starts chats with the sheprd-acp beside its executable.
       - run: '"target/$TARGET/release/sheprd-acp" --help'
       - name: Install the notice generator
@@ -210,7 +210,7 @@ jobs:
         with:
           name: macos-${{ matrix.arch }}
           path: |
-            target/${{ matrix.target }}/release/sheprd
+            target/${{ matrix.target }}/release/spaceport
             target/${{ matrix.target }}/release/sheprd-acp
             target/${{ matrix.target }}/release/THIRD-PARTY-NOTICES.txt
           if-no-files-found: error
@@ -248,7 +248,7 @@ jobs:
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$TARGET"
       - run: cargo build --locked --release -p sheprd-gpui -p sheprd-acp --target "$TARGET"
-      - run: python3 scripts/release/smoke-cli.py "target/$TARGET/release/sheprd"
+      - run: python3 scripts/release/smoke-cli.py "target/$TARGET/release/spaceport"
       # The app starts chats with the sheprd-acp beside its executable.
       - run: '"target/$TARGET/release/sheprd-acp" --help'
       - name: Install the notice generator
@@ -261,8 +261,8 @@ jobs:
       - name: Package Linux executable
         run: |
           mkdir dist
-          bash scripts/release/package-linux.sh "$VERSION" "$TARGET" "target/$TARGET/release/sheprd" dist "target/$TARGET/release/THIRD-PARTY-NOTICES.txt"
-          python3 scripts/update-manifest.py package-linux "target/$TARGET/release/sheprd" "$TARGET" "$VERSION" \
+          bash scripts/release/package-linux.sh "$VERSION" "$TARGET" "target/$TARGET/release/spaceport" dist "target/$TARGET/release/THIRD-PARTY-NOTICES.txt"
+          python3 scripts/update-manifest.py package-linux "target/$TARGET/release/spaceport" "$TARGET" "$VERSION" \
             "dist/sheprd-$VERSION-$TARGET-update.tar.gz"
       # The .deb, .rpm and Arch packages repackage the manual archive's exact
       # files under /usr, so every Linux format ships the same binary.
@@ -328,7 +328,7 @@ jobs:
         run: |
           test "$(rustc -vV | sed -n 's/^host: //p')" = "$TARGET"
       - run: cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp --target "$TARGET"
-      - run: python scripts/release/smoke-cli.py "target/$TARGET/release/sheprd.exe"
+      - run: python scripts/release/smoke-cli.py "target/$TARGET/release/spaceport.exe"
       - run: '"target/$TARGET/release/sheprd-acp.exe" --help'
       - name: Install the notice generator
         uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
@@ -341,7 +341,7 @@ jobs:
       - name: Package Windows executable
         run: |
           mkdir dist
-          python scripts/release/package-windows.py "$VERSION" "$TARGET" "target/$TARGET/release/sheprd.exe" "target/$TARGET/release/sheprd-launcher.exe" dist "target/$TARGET/release/THIRD-PARTY-NOTICES.txt"
+          python scripts/release/package-windows.py "$VERSION" "$TARGET" "target/$TARGET/release/spaceport.exe" "target/$TARGET/release/spaceport-launcher.exe" dist "target/$TARGET/release/THIRD-PARTY-NOTICES.txt"
       - name: Install the pinned Inno Setup compiler
         run: python scripts/release/windows-installer.py install-iscc "$RUNNER_TEMP/inno-setup" > "$RUNNER_TEMP/iscc-path"
       - name: Build the Windows installer
@@ -358,7 +358,7 @@ jobs:
           retention-days: 7
 
   # Signs the tested build without running it: unpack the zip, sign both
-  # executables (sheprd.exe and its windowed launcher), check
+  # executables (spaceport.exe and its windowed launcher), check
   # nothing else changed, repack, then rebuild the installer with ISCC signing
   # its uninstaller and Setup.exe. Azure Artifact Signing trusts only this
   # repository's OIDC token for the protected release environment, so the
@@ -412,12 +412,9 @@ jobs:
           signing-account-name: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
           certificate-profile-name: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
           files: |
-            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\sheprd.exe
-            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\sheprd-launcher.exe
+            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\spaceport.exe
+            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\spaceport-launcher.exe
             ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\sheprd-acp.exe
-            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-gpui.exe
-            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-gpui-launcher.exe
-            ${{ runner.temp }}\signing\Sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}\herdr-acp.exe
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256

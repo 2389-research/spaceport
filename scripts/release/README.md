@@ -32,7 +32,7 @@ Linux architectures and both macOS slices work on the packaging host. macOS
 inputs must have identical identities (branch and PR included). Missing, malformed,
 or conflicting records fail closed; older binaries must be rebuilt.
 
-`sheprd --build-info` prints three newline-terminated `key=value` lines:
+`spaceport --build-info` prints three newline-terminated `key=value` lines:
 `worktree=0|1`, `branch=...`, and `pr=...`, before any GUI or daemon startup.
 The same record is retained in optimized binaries for packaging. This metadata is
 an identity hint, not a signature or proof of provenance; supply trusted binaries.
@@ -129,11 +129,10 @@ SIGKILL/power loss cannot be cleaned up. Apple security tools receive passwords
 as arguments, so the runner must not have untrusted local users. No GUI executable
 is run, including for version probing. Signing works on a copy of the input app.
 
-The bundle holds `Contents/MacOS/sheprd` and the `sheprd-acp` chat runner.
-Packaging takes the chat helper from beside each architecture's `sheprd` and
-includes the legacy `herdr-acp` helper copy. Herdr Core is separately installed.
-All helpers and their compatibility copies are signed first without the
-app's entitlements, then `sheprd`, then the bundle, all with hardened runtime and secure
+The bundle holds `Contents/MacOS/spaceport` and the `sheprd-acp` chat runner.
+Packaging takes the chat helper from beside each architecture's `spaceport`.
+Herdr Core is separately installed. The helper is signed first without the
+app's entitlements, then `spaceport`, then the bundle, all with hardened runtime and secure
 timestamps. The zipped app must receive JSON status `Accepted`, then the app is
 stapled and validated. The DMG contains `Sheprd.app` and an `/Applications` symlink;
 it is signed, separately notarized, stapled, and checked with codesign and
@@ -154,7 +153,7 @@ the Windows target graphs, each the app's joined with those of the programs ship
 `generate-sbom.py`). No separate per-platform manifest or publication job is used.
 The caller must supply the matching release binary; packaging does not cross-build
 or resolve shared libraries. Output is `Sheprd-VERSION-TARGET.tar.gz`, with a
-same-named root containing `bin/sheprd` and `bin/sheprd-acp`
+same-named root containing `bin/spaceport` and `bin/sheprd-acp`
 (the companion taken from beside the binary), a scalable SVG icon, desktop entry, license and
 notice under `share/`, plus `herdr-gpui -> sheprd` and real legacy helper copies.
 The relative main-command symlink follows standalone updates to `sheprd`.
@@ -183,7 +182,7 @@ and verification and appear in both checksum manifests. Sharing the signatures
 of identical bytes keeps the release below deployed updaters' 128-asset limit.
 `scripts/release/smoke-linux-packages.sh VERSION TARGET DIST_DIR` then installs
 each package into digest-pinned Ubuntu 24.04, Debian 13 and Fedora 42 containers,
-plus Arch Linux on x86_64 (no official ARM64 image exists), runs both `sheprd --help` and `herdr-gpui --help`
+plus Arch Linux on x86_64 (no official ARM64 image exists), runs `spaceport --help`
 and the shipped programs' `--help` or `--version`,
 fails if `ldd` reports a missing library or a dlopened loader is absent, and removes
 the package again. When packaged dependencies change, update `DEPENDS` in
@@ -202,7 +201,7 @@ The Windows targets are `x86_64-pc-windows-msvc` and
 there. `scripts/release/package-windows.py VERSION TARGET BINARY LAUNCHER
 OUTPUT_DIR THIRD_PARTY_NOTICES` (standard-library Python, since the runner has no
 zip tool) writes one `Sheprd-VERSION-TARGET.zip` per target with a same-named root
-containing `sheprd.exe`, the windowed `sheprd-launcher.exe` that the
+containing `spaceport.exe`, the windowed `spaceport-launcher.exe` that the
 installer's Start menu shortcut opens, `sheprd-acp.exe`, which the app starts
 chats with (taken from beside `BINARY`), real legacy executable
 and helper copies, and `licenses/` holding the same license
@@ -212,7 +211,7 @@ and notice files as the Linux tree. Entries carry a fixed timestamp.
 compiler (`install-iscc`, checked against its SHA-256), compiles
 `sheprd.iss` over the extracted zip tree into
 `Sheprd-VERSION-TARGET-setup.exe` (`build`), and installs and uninstalls it on
-the runner (`smoke`), checking the files, their subsystems, `sheprd.exe`'s
+the runner (`smoke`), checking the files, their subsystems, `spaceport.exe`'s
 output, the Start menu shortcut's target (the launcher) and AppUserModelID,
 the user `PATH` and Settings entries, and the app relaunch after an update.
 CI's `windows-package` job runs the same
@@ -255,8 +254,8 @@ fails instead of falling back to unsigned. When signing is on:
 
 1. `windows-signing.py unpack` extracts the tested zip without running anything.
 2. `azure/login` signs in to Azure with the job's OIDC token, and
-   `azure/artifact-signing-action` signs `sheprd.exe`,
-   `sheprd-launcher.exe` and `sheprd-acp.exe`
+   `azure/artifact-signing-action` signs `spaceport.exe`,
+   `spaceport-launcher.exe` and `sheprd-acp.exe`
    with SHA-256 and an RFC 3161 timestamp from
    `http://timestamp.acs.microsoft.com`.
 3. `windows-signing.py repack` refuses unless the tree holds exactly the zip's
@@ -367,29 +366,24 @@ Actions deploy job.
 
 The compatibility exceptions are intentional:
 
-- macOS bundles are `Sheprd.app`, with **only** `Contents/MacOS/sheprd` as the
+- macOS bundles are `Sheprd.app`, with **only** `Contents/MacOS/spaceport` as the
   main executable. Keep signing ID `so.pen.herdr-gpui` (and `.dev` locally),
   Developer ID team and all signing keys. There is no `Herdr` executable alias.
   The updater replaces the existing bundle directory in place.
 - Homebrew publishes `sheprd-labs/tap/sheprd` for new installs. For existing ones,
   `penso/tap/herdr-gpui` installs `Sheprd.app` to
   **`Herdr.app`**, so an old running updater can reopen it. The cask exposes
-  `sheprd` on PATH. Moving that target or cask token needs a separate migration.
+  `spaceport` on PATH. Moving that target or cask token needs a separate migration.
 - Linux packages retain package ownership **`herdr-gpui`**, version `VERSION-1`,
-  and a real root-owned `/usr/bin/herdr-gpui`. The desktop ID is
+  but ship one app command at `/usr/bin/spaceport`. The desktop ID is
   `org.sheprd.Sheprd`, matching the app's Wayland app ID and X11 `WM_CLASS`.
-  They also install `/usr/bin/sheprd` and both names of each owned helper.
-  These are regular copies, not shell shims or symlinks.
-  Distro packaging accepts only the standalone tree's exact `bin/herdr-gpui ->
-  sheprd` symlink and materializes it as a regular file; other archive links
-  are rejected. Signed single-executable update archives still reject symlinks.
-  Nix provides legacy main/helper command symlinks in `$out/bin`, with the main
-  alias targeting the final wrapped `sheprd`; Nix owns updates to those paths.
+  The chat helper remains `sheprd-acp`. Distro packaging and signed update
+  archives reject symlinks. Nix wraps the same `spaceport` command.
 - Windows retains AppId `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`,
   `%LOCALAPPDATA%\Programs\Herdr UI`, AppUserModelID `so.pen.herdr-gpui`,
   winget `Penso.HerdrUI`, publisher `Herdr UI`, and the configured Authenticode
-  subject. ZIPs and installers ship both `sheprd.exe` / `sheprd-launcher.exe`
-  and the legacy executable/helper copies; **all copies are signed**. Shortcuts
+  subject. ZIPs and installers ship `spaceport.exe` / `spaceport-launcher.exe`
+  and `sheprd-acp.exe`; **all executables are signed**. Shortcuts
   and Explorer text show Sheprd. The installer registers neither inherited
   `sheprd://` nor `herdr-gpui://` scheme.
   Setup gracefully stops automation running under either executable name.

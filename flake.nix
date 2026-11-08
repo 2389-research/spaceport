@@ -51,7 +51,7 @@
           ];
         in
         rustPlatform.buildRustPackage {
-          pname = "sheprd";
+          pname = "spaceport";
           version = "0-unstable-${lib.substring 0 8 (self.lastModifiedDate or "19700101")}";
           src = lib.fileset.toSource {
             root = ./.;
@@ -73,7 +73,6 @@
             "sheprd-gpui"
             "-p"
             "sheprd-acp"
-            "-p"
           ];
           # The optimized CLI suite CI's main-branch build runs; the rest of
           # the workspace suite needs a desktop or a live daemon.
@@ -105,20 +104,15 @@
               $out/share/icons/hicolor/scalable/apps/sheprd.svg
           '';
           postFixup = ''
-            patchelf --add-rpath ${lib.makeLibraryPath runtimeLibraries} $out/bin/sheprd
-            wrapProgram $out/bin/sheprd \
+            patchelf --add-rpath ${lib.makeLibraryPath runtimeLibraries} $out/bin/spaceport
+            wrapProgram $out/bin/spaceport \
               --prefix PATH : ${lib.makeBinPath [ pkgs.wl-clipboard pkgs.xclip ]}
-            # Point at the final wrapper, including its clipboard PATH setup.
-            ln -s sheprd $out/bin/herdr-gpui
-            for helper in acp; do
-              ln -s "sheprd-$helper" "$out/bin/herdr-$helper"
-            done
           '';
           meta = {
             description = "Native GPUI client for an existing local Herdr daemon";
             homepage = "https://sheprd.org";
             license = lib.licenses.asl20;
-            mainProgram = "sheprd";
+            mainProgram = "spaceport";
             platforms = systems;
           };
         };
@@ -126,12 +120,10 @@
     {
       packages = forAllSystems (pkgs: {
         default = package pkgs;
-        sheprd = package pkgs;
-        herdr-gpui = package pkgs;
+        spaceport = package pkgs;
       });
       overlays.default = final: _prev: {
-        sheprd = self.packages.${final.stdenv.hostPlatform.system}.default;
-        herdr-gpui = self.packages.${final.stdenv.hostPlatform.system}.default;
+        spaceport = self.packages.${final.stdenv.hostPlatform.system}.default;
       };
     };
 }

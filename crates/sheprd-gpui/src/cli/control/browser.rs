@@ -2,7 +2,7 @@
 use super::{Args, CliError, ZoomChange};
 use std::ffi::OsString;
 
-/// `sheprd browser ...`, answered by the running app.
+/// `spaceport browser ...`, answered by the running app.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BrowserCommand {
     Reload,

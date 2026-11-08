@@ -1,7 +1,7 @@
 //! Lets processes on this machine, such as an agent in a Herdr pane, drive
 //! the parts of the app Herdr cannot: hear back page notes, open the app's own tabs, and read or change
 //! state only this client keeps. Herdr itself has no way to reach a client,
-//! so the app listens on a socket of its own and `sheprd <command> ...`
+//! so the app listens on a socket of its own and `spaceport <command> ...`
 //! talks to it. Only this user's local processes can reach it: an agent on
 //! an SSH host has no path to this machine's socket.
 

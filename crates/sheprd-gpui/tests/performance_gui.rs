@@ -10,7 +10,7 @@ use std::{
 #[test]
 #[ignore = "opens native fixture window; run explicitly on a macOS desktop"]
 fn dense_terminal_sidebar_performance() -> Result<()> {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_sheprd"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_spaceport"))
         .arg("--performance-test")
         .env_remove("HERDR_PERF_UNCACHED")
         .stdout(Stdio::inherit())

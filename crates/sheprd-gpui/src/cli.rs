@@ -27,7 +27,7 @@ pub enum LaunchMode {
     Performance,
 }
 
-/// `sheprd --mockup [--feedback PATH] [--capture PATH]`: never connects
+/// `spaceport --mockup [--feedback PATH] [--capture PATH]`: never connects
 /// to a daemon.
 #[cfg(feature = "mockup")]
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

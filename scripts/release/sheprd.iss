@@ -1,7 +1,7 @@
 ; Per-user Windows installer for Sheprd, compiled by
 ; `windows-installer.py build`, which passes the defines below. It installs the
-; release zip's tree unchanged: sheprd.exe, a console program because it is
-; also the command line terminals and agents run, sheprd-launcher.exe,
+; release zip's tree unchanged: spaceport.exe, a console program because it is
+; also the command line terminals and agents run, spaceport-launcher.exe,
 ; which starts it without a console window, sheprd-acp.exe, which the app starts
 ; chats with, and the licenses.
 ; Closing applications before replacing files also ends running chats, whose
@@ -30,8 +30,8 @@
 
 #define AppName "Sheprd"
 #define StartupName "Herdr UI"
-#define AppExe "sheprd.exe"
-#define Launcher "sheprd-launcher.exe"
+#define AppExe "spaceport.exe"
+#define Launcher "spaceport-launcher.exe"
 ; The app's AppUserModelID (sheprd_updater::APP_ID), which each window carries with
 ; relaunch properties naming the launcher (src/taskbar.rs). Shortcuts carry it
 ; too, so a pinned shortcut and the window share one taskbar button.
@@ -98,10 +98,6 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#SourceDir}\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\{#Launcher}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\sheprd-acp.exe"; DestDir: "{app}"; Flags: ignoreversion
-; Real compatibility copies keep saved shortcuts and service commands usable.
-Source: "{#SourceDir}\herdr-gpui.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SourceDir}\herdr-gpui-launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SourceDir}\herdr-acp.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion
 
 ; Uninstall removes only directories Setup created. Over an install.ps1 copy
@@ -124,9 +120,9 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: 
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"; ValueName: "{#StartupName}"; Flags: uninsdeletevalue dontcreatekey
 
 ; "Open in Sheprd" on a folder, and on the background inside one, for this
-; user only. The launcher runs `sheprd open`, which opens the folder as
+; user only. The launcher runs `spaceport open`, which opens the folder as
 ; Open Project does and starts the app first when it is not running; running
-; sheprd.exe directly would flash a console window on every click.
+; spaceport.exe directly would flash a console window on every click.
 ; Windows 11 lists these under "Show more options": its compact menu only shows
 ; commands of packaged apps. Removed on uninstall.
 Root: HKCU; Subkey: "Software\Classes\Directory\shell\HerdrUI"; ValueType: string; ValueName: ""; ValueData: "{cm:OpenIn,{#AppName}}"; Flags: uninsdeletekey

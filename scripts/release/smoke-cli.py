@@ -66,7 +66,7 @@ def check_usage_error(executable, state, args, message):
     result = run(executable, args, state)
     stderr = text(result.stderr)
     # An abort or a window failing to open is not a parser rejection.
-    if result.returncode != 2 or result.stdout or message not in stderr or "Usage: sheprd" not in stderr:
+    if result.returncode != 2 or result.stdout or message not in stderr or "Usage: spaceport" not in stderr:
         raise SmokeError(f"{args}: exit {result.returncode}, expected usage error {message!r}: {stderr}")
 
 

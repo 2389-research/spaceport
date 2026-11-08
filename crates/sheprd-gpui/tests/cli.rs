@@ -32,7 +32,7 @@ fn cli(args: &[&str]) -> Output {
 /// a Herdr pane would set, so no running app or daemon is ever reached.
 fn cli_in(args: &[&str], state: Option<&std::path::Path>) -> Output {
     warm_up();
-    let mut command = Command::new(env!("CARGO_BIN_EXE_sheprd"));
+    let mut command = Command::new(env!("CARGO_BIN_EXE_spaceport"));
     if let Some(state) = state {
         command
             .env("XDG_STATE_HOME", state)
@@ -54,7 +54,7 @@ fn cli_in(args: &[&str], state: Option<&std::path::Path>) -> Output {
 /// Launches the executable once, so later deadlines time only commands.
 fn warm_up() {
     FIRST_LAUNCH.call_once(|| {
-        let child = Command::new(env!("CARGO_BIN_EXE_sheprd"))
+        let child = Command::new(env!("CARGO_BIN_EXE_spaceport"))
             .arg("--help")
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
@@ -87,7 +87,7 @@ fn usage_error(args: &[&str], message: &str) {
     assert!(output.stdout.is_empty(), "{args:?}: {output:?}");
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(stderr.contains(message), "{args:?}: {stderr}");
-    assert!(stderr.contains("Usage: sheprd"), "{stderr}");
+    assert!(stderr.contains("Usage: spaceport"), "{stderr}");
 }
 
 #[test]
@@ -97,6 +97,11 @@ fn help_succeeds_and_documents_connection_options() {
         assert!(output.status.success(), "{output:?}");
         assert!(output.stderr.is_empty(), "{output:?}");
         let help = String::from_utf8(output.stdout).unwrap();
+        assert!(
+            help.starts_with("spaceport [--socket CLIENT_SOCKET]"),
+            "{help}"
+        );
+        assert!(!help.contains("sheprd COMMAND"), "{help}");
         for option in ["--socket CLIENT_SOCKET", "--build-info"] {
             assert!(help.contains(option), "missing {option}: {help}");
         }
@@ -186,18 +191,15 @@ fn browser_commands_answer_without_a_window() {
     assert!(output.status.success(), "{output:?}");
     let help = String::from_utf8(output.stdout).unwrap();
     assert!(!help.contains("browser open URL"), "{help}");
-    assert!(help.contains("3 Sheprd not running"), "{help}");
+    assert!(help.contains("3 Spaceport not running"), "{help}");
 
     let output = cli(&["browser", "skill"]);
     assert!(output.status.success(), "{output:?}");
     let skill = String::from_utf8(output.stdout).unwrap();
-    assert!(
-        skill.starts_with("---\nname: herdr-gpui-browser\n"),
-        "{skill}"
-    );
+    assert!(skill.starts_with("---\nname: spaceport\n"), "{skill}");
     // The skill names this very executable, which need not be on PATH. The
     // path may be shell-quoted, as Windows paths always are.
-    let exe = std::path::Path::new(env!("CARGO_BIN_EXE_sheprd"));
+    let exe = std::path::Path::new(env!("CARGO_BIN_EXE_spaceport"));
     let name = exe.file_name().unwrap().to_str().unwrap();
     let command = skill
         .lines()
@@ -276,13 +278,13 @@ fn feedback_needs_the_app_and_a_pane() {
 fn control_commands_list_and_explain_themselves_without_the_app() {
     let output = cli(&["--help"]);
     let help = String::from_utf8(output.stdout).unwrap();
-    for family in ["status", "window", "checkpoint", "events", "diagnostics"] {
+    for family in ["status", "window", "events", "diagnostics"] {
         assert!(help.contains(&format!("  {family} ")), "{family}: {help}");
     }
     let output = cli(&["notes", "--help"]);
     assert!(output.status.success(), "{output:?}");
     let usage = String::from_utf8(output.stdout).unwrap();
-    assert!(usage.contains("sheprd notes set TEXT"), "{usage}");
+    assert!(usage.contains("spaceport notes set TEXT"), "{usage}");
     assert!(usage.contains("Exit status:"), "{usage}");
     let output = cli(&["commands", "--json"]);
     assert!(output.status.success(), "{output:?}");

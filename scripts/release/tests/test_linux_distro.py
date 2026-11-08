@@ -34,7 +34,8 @@ for entry in config["contents"]:
     open(entry["src"], "rb").close()
     assert not Path(entry["src"]).is_symlink(), entry
 sources = {entry["dst"]: Path(entry["src"]) for entry in config["contents"]}
-assert sources["/usr/bin/herdr-gpui"].read_bytes() == sources["/usr/bin/sheprd"].read_bytes()
+assert "/usr/bin/spaceport" in sources
+assert "/usr/bin/herdr-gpui" not in sources
 open(args[args.index("--target") + 1], "w").write(packager)
 """
 

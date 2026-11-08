@@ -118,11 +118,11 @@ def package_macos(app, destination):
         raise ValueError("app must be a real Sheprd.app directory")
     if Path(destination).resolve().is_relative_to(app.resolve()):
         raise ValueError("archive destination must be outside the app")
-    executable = app / "Contents/MacOS/sheprd"
+    executable = app / "Contents/MacOS/spaceport"
     legacy = app / "Contents/MacOS/Herdr"
     if (executable.is_symlink() or not executable.is_file()
             or not executable.stat().st_mode & 0o111 or legacy.exists() or legacy.is_symlink()):
-        raise ValueError("Sheprd.app must have a sole regular executable Contents/MacOS/sheprd")
+        raise ValueError("Sheprd.app must have a sole regular executable Contents/MacOS/spaceport")
 
     def entries(directory):
         yield directory, directory.relative_to(app.parent).as_posix()

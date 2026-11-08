@@ -82,7 +82,8 @@
       "deliverable": "Separate names/state/control endpoint from upstream; preserve compatibility and attribution. Production values remain gated.",
       "status": "in_progress",
       "evidence": [
-        "evidence/t01-identity.md"
+        "evidence/t01-identity.md",
+        "evidence/t01-command-identity-cut.md"
       ],
       "must_close_gaps": []
     },
@@ -512,7 +513,8 @@
       "deliverable": "One catalog for existing GUI/CLI; exact targets, bounded observations, honest outcomes and preserved confirmations.",
       "status": "in_progress",
       "evidence": [
-        "evidence/t09-core-catalog-status.md"
+        "evidence/t09-core-catalog-status.md",
+        "evidence/t01-command-identity-cut.md"
       ],
       "must_close_gaps": []
     },

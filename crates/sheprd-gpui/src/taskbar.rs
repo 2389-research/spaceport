@@ -1,6 +1,6 @@
-//! The taskbar identity of Herdr's windows on Windows. Herdr starts through
-//! `herdr-gpui-launcher.exe`, but its windows belong to the console-subsystem
-//! `herdr-gpui.exe`, so a pinned window would reopen with a console. Each
+//! The taskbar identity of Spaceport's windows on Windows. Spaceport starts through
+//! `spaceport-launcher.exe`, but its windows belong to the console-subsystem
+//! `spaceport.exe`, so a pinned window would reopen with a console. Each
 //! top-level window instead carries an explicit AppUserModelID and relaunch
 //! properties that point a pin at the launcher. Other platforms set nothing.
 //! The button's badge and progress bar live in [`button`].
@@ -14,11 +14,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// The windowed launcher, installed beside `herdr-gpui.exe`.
+/// The windowed launcher, installed beside `spaceport.exe`.
 #[cfg(any(windows, test))]
-const LAUNCHER_EXE: &str = "sheprd-launcher.exe";
+const LAUNCHER_EXE: &str = "spaceport-launcher.exe";
 
-/// The name a pinned Herdr shows on the taskbar and in its Jump List.
+/// The name a pinned Spaceport shows on the taskbar and in its Jump List.
 #[cfg(any(windows, test))]
 const DISPLAY_NAME: &str = crate::constants::WINDOW_TITLE; // i18n: data
 
@@ -33,15 +33,11 @@ pub(crate) struct Relaunch {
     launcher: PathBuf,
 }
 
-/// The relaunch properties for the `herdr-gpui.exe` at `gui`, or `None` when
+/// The relaunch properties for the `spaceport.exe` at `gui`, or `None` when
 /// it has no parent directory. Touches no filesystem.
 #[cfg(any(windows, test))]
 fn relaunch(gui: &Path) -> Option<Relaunch> {
-    let launcher = gui.parent()?.join(if gui.file_name()? == "herdr-gpui.exe" {
-        "herdr-gpui-launcher.exe"
-    } else {
-        LAUNCHER_EXE
-    });
+    let launcher = gui.parent()?.join(LAUNCHER_EXE);
     let mut command = OsString::from("\"");
     command.push(&launcher);
     command.push("\"");
@@ -78,7 +74,7 @@ impl Taskbar {
         let gui = match std::env::current_exe() {
             Ok(gui) => gui,
             Err(error) => {
-                tracing::warn!(%error, "Unable to locate herdr-gpui.exe; a pinned window will open it directly");
+                tracing::warn!(%error, "Unable to locate spaceport.exe; a pinned window will open it directly");
                 return Self::default();
             }
         };

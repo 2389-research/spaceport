@@ -65,7 +65,7 @@ fn ui_automation_names_the_chrome_and_f6_reaches_it() {
     let socket = running.sandbox.socket();
     let gui = running
         .sandbox
-        .command(env!("CARGO_BIN_EXE_sheprd"), "gui.log")
+        .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log")
         .arg("--socket")
         .arg(&socket)
         .spawn();

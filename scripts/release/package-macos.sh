@@ -29,11 +29,11 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 app=$tmp/Sheprd.app
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-lipo -create "$2" "$3" -output "$app/Contents/MacOS/sheprd"
+lipo -create "$2" "$3" -output "$app/Contents/MacOS/spaceport"
 for companion in "${companions[@]}"; do
     lipo -create "$(dirname -- "$2")/$companion" "$(dirname -- "$3")/$companion" -output "$app/Contents/MacOS/$companion"
 done
-for executable in sheprd "${companions[@]}"; do
+for executable in spaceport "${companions[@]}"; do
     for arch in arm64 x86_64; do
         lipo "$app/Contents/MacOS/$executable" -verify_arch "$arch"
     done
@@ -42,14 +42,6 @@ for executable in sheprd "${companions[@]}"; do
         codesign --remove-signature "$app/Contents/MacOS/$executable"
     fi
     chmod 755 "$app/Contents/MacOS/$executable"
-done
-# Saved service definitions still address the legacy helper filenames. Never
-# alias the main executable: the deployed bridge rejects two app executables.
-for companion in "${companions[@]}"; do
-    if [[ $companion == sheprd-* ]]; then
-        cp "$app/Contents/MacOS/$companion" "$app/Contents/MacOS/herdr-${companion#sheprd-}"
-        chmod 755 "$app/Contents/MacOS/herdr-${companion#sheprd-}"
-    fi
 done
 cp "$release_root/assets/macos/Info.plist" "$app/Contents/Info.plist"
 # Each translation's InfoPlist.strings (docs/i18n.md); English is Info.plist itself.

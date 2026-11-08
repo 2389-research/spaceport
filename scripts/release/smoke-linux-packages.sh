@@ -25,19 +25,15 @@ arch=archlinux:latest@sha256:f3691b4dde62ba4c4b6f0ae2c1fbf28e8c0c8c4b9a35c7e06dc
 # shellcheck disable=SC2016
 check='
 set -euo pipefail
-/usr/bin/sheprd --help >/dev/null
-/usr/bin/herdr-gpui --help >/dev/null
-test -f /usr/bin/herdr-gpui && test ! -L /usr/bin/herdr-gpui
-test "$(stat -c %u /usr/bin/herdr-gpui)" = 0
-cmp /usr/bin/sheprd /usr/bin/herdr-gpui
-for helper in acp; do
-    test -f "/usr/bin/herdr-$helper" && test ! -L "/usr/bin/herdr-$helper"
-    cmp "/usr/bin/sheprd-$helper" "/usr/bin/herdr-$helper"
-done
+/usr/bin/spaceport --help >/dev/null
+test -f /usr/bin/spaceport && test ! -L /usr/bin/spaceport
+test "$(stat -c %u /usr/bin/spaceport)" = 0
+test ! -e /usr/bin/herdr-gpui
+test ! -e /usr/bin/sheprd
 /usr/bin/sheprd-acp --help >/dev/null
 # Capture before matching: with pipefail, grep -q exiting early would fail the
 # writer with SIGPIPE and turn a present library into a false failure.
-for program in sheprd herdr-gpui sheprd-acp; do
+for program in spaceport sheprd-acp; do
     linked=$(ldd "/usr/bin/$program")
     if grep "not found" <<<"$linked"; then exit 1; fi
 done
@@ -50,12 +46,7 @@ test -f /usr/share/icons/hicolor/scalable/apps/sheprd.svg
 test -f /usr/share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt
 '
 removed='
-for program in sheprd herdr-gpui; do test ! -e "/usr/bin/$program"; done
-for prefix in sheprd herdr; do
-    for helper in acp; do
-        test ! -e "/usr/bin/$prefix-$helper"
-    done
-done
+for program in spaceport sheprd-acp; do test ! -e "/usr/bin/$program"; done
 '
 
 run() {
@@ -69,8 +60,7 @@ for image in "$ubuntu" "$debian"; do
         DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends /dist/$name.deb >/dev/null
         bash -c \"\$CHECK\"
         test \"\$(dpkg-query -W -f='\${Version}' herdr-gpui)\" = '$1-1'
-        test \"\$(dpkg-query -S /usr/bin/herdr-gpui)\" = 'herdr-gpui: /usr/bin/herdr-gpui'
-        test \"\$(dpkg-query -S /usr/bin/sheprd)\" = 'herdr-gpui: /usr/bin/sheprd'
+        test \"\$(dpkg-query -S /usr/bin/spaceport)\" = 'herdr-gpui: /usr/bin/spaceport'
         apt-get remove -qq -y herdr-gpui >/dev/null
         bash -c \"\$REMOVED\""
 done

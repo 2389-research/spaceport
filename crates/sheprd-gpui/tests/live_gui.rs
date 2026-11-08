@@ -24,7 +24,7 @@ struct Isolated {
 }
 
 fn gui_command(sandbox: &Sandbox, mut env: impl FnMut(&str) -> Option<OsString>) -> Command {
-    let mut command = sandbox.command(env!("CARGO_BIN_EXE_sheprd"), "gui.log");
+    let mut command = sandbox.command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
     // Only the GUI needs desktop transport; keep HOME, XDG and daemon paths private.
     for name in ["DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY"] {
         if let Some(mut value) = env(name) {

@@ -3,8 +3,8 @@
 
 Pure standard library so the Windows runner needs no zip tool. The layout
 mirrors package-linux.sh: the executable plus the same license and notice files.
-Beside sheprd.exe, which is a console program because it is also the CLI,
-the zip carries sheprd-launcher.exe, the windowed launcher that starts it without a
+Beside spaceport.exe, which is a console program because it is also the CLI,
+the zip carries spaceport-launcher.exe, the windowed launcher that starts it without a
 console window from Explorer or the Start menu, and sheprd-acp.exe, which the app
 starts chats with.
 """
@@ -18,10 +18,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 TARGETS = ("x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc")
 HELPERS = ("sheprd-acp.exe",)
-# Existing shortcuts, startup entries and chat helper paths keep their aliases.
-ALIASES = {"herdr-gpui.exe": "sheprd.exe", "herdr-gpui-launcher.exe": "sheprd-launcher.exe",
-           **{name.replace("sheprd-", "herdr-", 1): name for name in HELPERS if name.startswith("sheprd-")}}
-EXECUTABLES = ("sheprd.exe", "sheprd-launcher.exe", *HELPERS, *ALIASES)
+EXECUTABLES = ("spaceport.exe", "spaceport-launcher.exe", *HELPERS)
 LICENSES = ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons",
             "crates/sheprd-protocol/LICENSE-APACHE", "crates/sheprd-protocol/NOTICE.md",
             "crates/sheprd-gpui/SOUND-NOTICE.md")
@@ -61,14 +58,10 @@ def package(version, target, binary, launcher, output_dir, notices):
         partial = Path(temp.name)
     try:
         with zipfile.ZipFile(partial, "w") as archive:
-            add(archive, f"{name}/sheprd.exe", binary.read_bytes())
-            add(archive, f"{name}/sheprd-launcher.exe", launcher.read_bytes())
+            add(archive, f"{name}/spaceport.exe", binary.read_bytes())
+            add(archive, f"{name}/spaceport-launcher.exe", launcher.read_bytes())
             for companion in companions:
                 add(archive, f"{name}/{companion.name}", companion.read_bytes())
-            sources = {"sheprd.exe": binary, "sheprd-launcher.exe": launcher,
-                       **{companion.name: companion for companion in companions}}
-            for alias, canonical in ALIASES.items():
-                add(archive, f"{name}/{alias}", sources[canonical].read_bytes())
             for source in LICENSES:
                 add(archive, f"{name}/licenses/{Path(source).name}", (ROOT / source).read_bytes())
             add(archive, f"{name}/licenses/THIRD-PARTY-NOTICES.txt", notices.read_bytes())

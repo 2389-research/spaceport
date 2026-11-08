@@ -63,7 +63,7 @@ class RebrandCompatibility(unittest.TestCase):
                                   capture_output=True, text=True, check=True).stdout
         for line in ('cask "herdr-gpui" do', 'name "Sheprd"',
                      'app "Sheprd.app", target: "Herdr.app"',
-                     'binary "#{appdir}/Herdr.app/Contents/MacOS/sheprd"'):
+                     'binary "#{appdir}/Herdr.app/Contents/MacOS/spaceport"'):
             self.assertIn(line, rendered)
         self.assertIn("https://github.com/sheprd-labs/sheprd/releases/", rendered)
 
@@ -71,7 +71,7 @@ class RebrandCompatibility(unittest.TestCase):
         rendered = subprocess.run(["bash", str(SCRIPTS / "render-cask.sh"), "20261103.1", "a" * 64, "sheprd"],
                                   capture_output=True, text=True, check=True).stdout
         for line in ('cask "sheprd" do', 'app "Sheprd.app"',
-                     'binary "#{appdir}/Sheprd.app/Contents/MacOS/sheprd"'):
+                     'binary "#{appdir}/Sheprd.app/Contents/MacOS/spaceport"'):
             self.assertIn(line, rendered)
         self.assertNotIn("Herdr", rendered)
 
@@ -99,7 +99,7 @@ class RebrandCompatibility(unittest.TestCase):
         self.assertEqual(names, set(PACKAGE.EXECUTABLES))
         text = INSTALLER.SCRIPT.read_text()
         for name in PACKAGE.EXECUTABLES:
-            definition = {"sheprd.exe": "{#AppExe}", "sheprd-launcher.exe": "{#Launcher}",
+            definition = {"spaceport.exe": "{#AppExe}", "spaceport-launcher.exe": "{#Launcher}",
                           }.get(name, name)
             self.assertIn(f'Source: "{{#SourceDir}}\\{definition}";', text)
 

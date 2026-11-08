@@ -213,7 +213,7 @@ pub struct Config {
     /// toggle. The sort then follows Herdr's `ui.agent_panel_sort` unless it
     /// was toggled earlier, unless a plugin sets the agent view, which keeps the
     /// header visible. Set in Settings > Sidebar or with
-    /// `sheprd config set show_agents_header false`.
+    /// `spaceport config set show_agents_header false`.
     pub show_agents_header: bool,
     /// The mark before a device's name in the sidebar, in the layouts that
     /// draw one: where the device runs and how it is reached.

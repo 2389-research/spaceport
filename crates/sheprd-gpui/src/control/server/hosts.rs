@@ -107,7 +107,7 @@ fn named<'a>(
         .ok_or_else(|| {
             Response::error(
                 ErrorCode::NotFound,
-                format!("No host is named {name}; `sheprd host list` lists them"),
+                format!("No host is named {name}; `spaceport host list` lists them"),
             )
         })
 }

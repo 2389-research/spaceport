@@ -10,5 +10,5 @@ cask "sheprd" do
   depends_on macos: :sonoma
 
   app "Sheprd.app"
-  binary "#{appdir}/Sheprd.app/Contents/MacOS/sheprd"
+  binary "#{appdir}/Sheprd.app/Contents/MacOS/spaceport"
 end

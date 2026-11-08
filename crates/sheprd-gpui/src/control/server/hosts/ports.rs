@@ -189,7 +189,7 @@ pub(super) fn forward(
             .start(&target, number)
             .map_err(|error| Response::error(ErrorCode::Failed, error.to_string()))?;
         Ok(format!(
-            "Forwarding port {port} of {}; `sheprd ports` shows its local address",
+            "Forwarding port {port} of {}; `spaceport ports` shows its local address",
             place.label
         ))
     })();
@@ -365,7 +365,7 @@ pub(super) fn open(
         },
         Response::error(
             ErrorCode::Timeout,
-            format!("The forward of port {port} is still connecting; try `sheprd ports` later"),
+            format!("The forward of port {port} is still connecting; try `spaceport ports` later"),
         ),
         cx,
     );

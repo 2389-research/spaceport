@@ -47,11 +47,11 @@ pub fn run_helper(args: &[OsString]) -> Option<ExitCode> {
         return None;
     }
     let [account, sprite, remote @ ..] = rest else {
-        eprintln!("Usage: sheprd {HELPER} ACCOUNT SPRITE COMMAND...");
+        eprintln!("Usage: spaceport {HELPER} ACCOUNT SPRITE COMMAND...");
         return Some(ExitCode::from(2));
     };
     if remote.is_empty() {
-        eprintln!("Usage: sheprd {HELPER} ACCOUNT SPRITE COMMAND...");
+        eprintln!("Usage: spaceport {HELPER} ACCOUNT SPRITE COMMAND...");
         return Some(ExitCode::from(2));
     }
     Some(match run(account, sprite, remote) {

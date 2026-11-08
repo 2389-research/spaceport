@@ -7,7 +7,7 @@ rust-version.workspace = true
 version.workspace      = true
 
 [[bin]]
-name = "sheprd"
+name = "spaceport"
 path = "src/main.rs"
 
 [lints]

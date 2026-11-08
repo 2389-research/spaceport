@@ -8,13 +8,13 @@ const ROOT: &str = r"C:\";
 const ROOT: &str = "/";
 
 fn gui_in(directory: &str) -> PathBuf {
-    Path::new(directory).join("herdr-gpui.exe")
+    Path::new(directory).join("spaceport.exe")
 }
 
 #[test]
 fn relaunch_points_a_pin_at_the_launcher_beside_the_gui() {
     let directory = format!("{ROOT}Herdr");
-    let launcher = format!("{directory}{MAIN_SEPARATOR}herdr-gpui-launcher.exe");
+    let launcher = format!("{directory}{MAIN_SEPARATOR}spaceport-launcher.exe");
 
     let relaunch = relaunch(&gui_in(&directory));
 
@@ -33,7 +33,7 @@ fn relaunch_points_a_pin_at_the_launcher_beside_the_gui() {
 #[test]
 fn relaunch_quotes_a_launcher_path_with_spaces() {
     let directory = format!("{ROOT}Program Files{MAIN_SEPARATOR}Sheprd");
-    let launcher = format!("{directory}{MAIN_SEPARATOR}herdr-gpui-launcher.exe");
+    let launcher = format!("{directory}{MAIN_SEPARATOR}spaceport-launcher.exe");
 
     let relaunch = relaunch(&gui_in(&directory)).map(|relaunch| (relaunch.command, relaunch.icon));
 

@@ -1,6 +1,6 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
-//! `sheprd-launcher.exe`: starts `sheprd.exe` from the same directory without a
-//! console window. `sheprd.exe` stays a console program because it is also
+//! `spaceport-launcher.exe`: starts `spaceport.exe` from the same directory without a
+//! console window. `spaceport.exe` stays a console program because it is also
 //! the CLI, so Explorer and the Start menu open this launcher instead.
 
 use std::process::ExitCode;
@@ -18,7 +18,9 @@ fn main() -> ExitCode {
 
 #[cfg(not(windows))]
 fn main() -> ExitCode {
-    eprintln!("sheprd-launcher.exe is the Windows launcher for sheprd; run sheprd instead.");
+    eprintln!(
+        "spaceport-launcher.exe is the Windows launcher for spaceport; run spaceport instead."
+    );
     ExitCode::from(2)
 }
 
@@ -36,7 +38,7 @@ mod windows {
     /// all (`DETACHED_PROCESS`): console programs the GUI starts later (git,
     /// gh, wsl.exe) inherit that hidden console instead of each opening one.
     const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-    const TITLE: &str = "Sheprd";
+    const TITLE: &str = "Spaceport";
 
     /// Starts the GUI with this launcher's arguments and returns once it has
     /// started; the GUI is never waited on and keeps running after we exit.

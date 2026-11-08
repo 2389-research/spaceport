@@ -42,17 +42,17 @@ fn startup_apps_marks_decide_whether_a_present_entry_runs() {
 #[test]
 fn the_command_line_quotes_a_path_with_spaces() {
     let launcher =
-        Path::new(r"C:\Users\me\AppData\Local\Programs\Herdr UI\herdr-gpui-launcher.exe");
+        Path::new(r"C:\Users\me\AppData\Local\Programs\Spaceport\spaceport-launcher.exe");
     assert_eq!(
         command_line(launcher),
-        r#""C:\Users\me\AppData\Local\Programs\Herdr UI\herdr-gpui-launcher.exe""#
+        r#""C:\Users\me\AppData\Local\Programs\Spaceport\spaceport-launcher.exe""#
     );
 }
 
 #[test]
 fn turning_it_on_needs_the_launcher_beside_the_app() {
     let dir = tempfile::tempdir().unwrap();
-    let exe = dir.path().join("herdr-gpui.exe");
+    let exe = dir.path().join("spaceport.exe");
     let Err(Error::NoLauncher { path }) = launcher_beside(&exe) else {
         panic!("a missing launcher must be refused");
     };
@@ -69,7 +69,7 @@ fn an_entry_is_written_read_back_and_removed_with_its_mark() {
     // Removing what is not there, keys included, is not an error.
     set_in(root, None).unwrap();
 
-    let launcher = Path::new(r"C:\Programs\Herdr UI\herdr-gpui-launcher.exe");
+    let launcher = Path::new(r"C:\Programs\Spaceport\spaceport-launcher.exe");
     set_in(root, Some(launcher)).unwrap();
     assert_eq!(state_in(root).unwrap(), State::On);
     assert_eq!(
@@ -91,4 +91,27 @@ fn an_entry_is_written_read_back_and_removed_with_its_mark() {
     assert!(approved.get_value(VALUE).is_err());
     // The keys themselves stay: other apps' entries live there.
     assert!(root.open(RUN).is_ok());
+}
+
+#[test]
+fn changing_spaceport_login_leaves_the_upstream_entry_alone() {
+    let scratch = Scratch::new();
+    let run = scratch.key.create(RUN).unwrap();
+    run.set_string(
+        "Herdr UI",
+        r#""C:\Programs\Herdr UI\herdr-gpui-launcher.exe""#,
+    )
+    .unwrap();
+    let launcher = Path::new(r"C:\Programs\Spaceport\spaceport-launcher.exe");
+    set_in(&scratch.key, Some(launcher)).unwrap();
+    set_in(&scratch.key, None).unwrap();
+    assert_eq!(
+        scratch
+            .key
+            .open(RUN)
+            .unwrap()
+            .get_string("Herdr UI")
+            .unwrap(),
+        r#""C:\Programs\Herdr UI\herdr-gpui-launcher.exe""#
+    );
 }

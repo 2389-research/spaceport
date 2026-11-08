@@ -8,7 +8,7 @@ mod compatibility;
 fn gui_is_the_launchers_sibling() {
     let directory = Path::new("install").join("dir");
     let gui = gui_path(&directory.join("herdr-gpui-launcher.exe")).unwrap();
-    assert_eq!(gui, directory.join("sheprd.exe"));
+    assert_eq!(gui, directory.join("spaceport.exe"));
 }
 
 #[test]

@@ -80,10 +80,10 @@ ditto "$2" "$app"
 [[ $(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist") == "$1" ]] || fail 'App version mismatch'
 [[ $(plutil -extract CFBundleVersion raw "$app/Contents/Info.plist") == "$1" ]] || fail 'App build version mismatch'
 [[ $(plutil -extract LSMinimumSystemVersion raw "$app/Contents/Info.plist") == 14.2 ]] || fail 'App minimum OS mismatch'
-[[ $(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist") == sheprd ]] || fail 'App executable mismatch'
+[[ $(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist") == spaceport ]] || fail 'App executable mismatch'
 [[ $(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist") == so.pen.herdr-gpui ]] || fail 'App signing identity mismatch'
-helpers=(sheprd-acp herdr-acp)
-for executable in sheprd "${helpers[@]}"; do
+helpers=(sheprd-acp)
+for executable in spaceport "${helpers[@]}"; do
     for arch in arm64 x86_64; do
         lipo "$app/Contents/MacOS/$executable" -verify_arch "$arch"
     done
@@ -92,7 +92,7 @@ done
 for executable in "${helpers[@]}"; do
     codesign --force --sign "$MACOS_SIGNING_IDENTITY" --keychain "$keychain" --options runtime --timestamp "$app/Contents/MacOS/$executable"
 done
-codesign --force --sign "$MACOS_SIGNING_IDENTITY" --keychain "$keychain" --options runtime --entitlements "$release_root/assets/macos/Sheprd.entitlements" --timestamp "$app/Contents/MacOS/sheprd"
+codesign --force --sign "$MACOS_SIGNING_IDENTITY" --keychain "$keychain" --options runtime --entitlements "$release_root/assets/macos/Sheprd.entitlements" --timestamp "$app/Contents/MacOS/spaceport"
 codesign --force --sign "$MACOS_SIGNING_IDENTITY" --keychain "$keychain" --options runtime --entitlements "$release_root/assets/macos/Sheprd.entitlements" --timestamp "$app"
 codesign --verify --deep --strict --verbose=2 "$app"
 # Apple's notary and ticket services drop connections now and then ("The
