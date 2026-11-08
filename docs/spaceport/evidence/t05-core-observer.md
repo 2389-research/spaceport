@@ -24,3 +24,15 @@ This adds a real Core regression to the existing pure backend observer tests.
 A13 remains `not_run` as a complete acceptance case: confirmed RESIZE ordering
 with subsequent paint/data, remote observers, and native view behavior remain
 untested. It does not establish A11 or A12. T05 stays `in_progress`.
+
+The pinned Core `schema/README.md:84–101` defines an optional
+`resize_notifications` attach request and a confirmed reply. A capable observer
+must apply incoming RESIZE before later DATA; an older path uses separate size
+tracking. This client currently omits that request and reply field
+(`wire.rs::Attach` and `Attached`), ignores stream RESIZE in
+`connection.rs::Worker::dispatch`, and polls `terminal.list` every 500 ms in
+`backend/terminal.rs`. Therefore confirmed ordered resize is an **internal
+client implementation gap**, not evidence that Core lacks the route. The next
+cut must negotiate the feature, preserve RESIZE/DATA order in the bounded
+stream inbox, apply it before paint, and retain a tested polling fallback for
+an unconfirmed path. No Core source was changed.
