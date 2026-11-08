@@ -270,6 +270,7 @@
         "evidence/t04-checkpoint-ui-removal.md", "evidence/t04-checkpoint-worker-removal.md",
         "evidence/t04-security-section-removal.md",
         "evidence/t04-github-account-pr-dependency.md",
+        "evidence/t04-git-status-pr-dependency.md",
         "evidence/t05-core-default-observation.md"
       ],
       "must_close_gaps": [
