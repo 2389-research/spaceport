@@ -257,7 +257,7 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Hands the keyboard to what the group in use draws. A code, review,
+    /// Hands the keyboard to what the group in use draws. A review
     /// or devices tab tracks its own handle and keeps the keyboard where it
     /// is within it; anything else, such as the sidebar's search, may be
     /// hidden by zen mode, so the window's handle takes the keyboard to the
@@ -270,10 +270,9 @@ impl SheprdWindow {
                 _ => None,
             })
             .and_then(|id| {
-                let code = self.code_views.get(&id).map(|view| &view.focus);
                 let review = || self.reviews.get(&id).map(|review| review.focus());
                 let devices = || self.devices_overview.pages.get(&id).map(|page| &page.focus);
-                code.or_else(review).or_else(devices)
+                review().or_else(devices)
             });
         match own {
             Some(focus) if focus.contains_focused(window, cx) => {}

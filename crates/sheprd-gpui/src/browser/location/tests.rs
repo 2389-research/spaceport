@@ -2,6 +2,22 @@
 use super::*;
 
 #[test]
+fn old_source_payload_is_checked_before_its_tab_is_discarded() {
+    let absolute = std::env::temp_dir().join("main.rs");
+    let saved = |path: &str| {
+        serde_json::json!({"kind": "code", "file": {"path": path, "line": 4}}).to_string()
+    };
+    let location: Location = serde_json::from_str(&saved(absolute.to_str().unwrap())).unwrap();
+    assert!(matches!(location, Location::RetiredSource { .. }));
+    for bad in ["", "relative/main.rs", "/a\nb.rs"] {
+        assert!(
+            serde_json::from_str::<Location>(&saved(bad)).is_err(),
+            "{bad:?}"
+        );
+    }
+}
+
+#[test]
 fn only_preview_frames_count_as_local() {
     for local in [
         "herdr-preview://localhost/index.html",

@@ -150,11 +150,6 @@ pub(crate) struct SheprdWindow {
     /// A new cloud device's setup script whose tab is being opened.
     #[cfg(feature = "cloud")]
     pub(crate) cloud_setup: Option<crate::cloud_setup::Running>,
-    /// Checkouts indexed for Go to Symbol and Go to File.
-    pub(crate) code_indexes: crate::code_search::Indexes,
-    /// Code tabs' views, by tab.
-    pub(crate) code_views:
-        std::collections::HashMap<crate::browser::TabId, crate::code_view::CodeView>,
     pub(crate) collapsed_repos: std::collections::HashSet<String>,
     pub(crate) config: config::Config,
     pub(crate) config_load: Option<Task<()>>,

@@ -45,12 +45,11 @@ impl SheprdWindow {
         tabs.into_iter()
             .map(|tab| {
                 let id = tab.id;
-                // An editor tab bears its mark; a review tab shows a diff,
-                // a source tab a file, and the overview devices, not a page.
+                // An editor tab bears its mark; review and device tabs use
+                // their own marks rather than a page favicon.
                 let icon = match (tab.place.editor(), &tab.location) {
                     (Some(editor), _) => editor.icon(),
                     (_, Some(Location::Review { .. })) => "icons/diff-unified.svg",
-                    (_, Some(Location::Code { .. })) => "icons/code.svg",
                     (_, Some(Location::Orchestrator { .. })) => "icons/pulse.svg",
                     (_, Some(Location::Devices)) => "icons/devices.svg",
                     (_, Some(Location::CoreTerminal { .. })) => "icons/terminal.svg",

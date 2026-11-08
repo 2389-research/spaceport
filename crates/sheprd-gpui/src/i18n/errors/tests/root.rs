@@ -36,7 +36,6 @@ fn every_own_variant_has_a_message() {
             path: path.clone(),
             cleanup: io(),
         },
-        Error::CodeFileUnreadable,
         Error::ConnectionBusy,
         Error::ConnectionNotReady,
         Error::DeletionLookup,

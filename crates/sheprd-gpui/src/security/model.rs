@@ -129,7 +129,7 @@ pub(crate) struct Checkout {
     pub(crate) target: ConnectTarget,
     pub(crate) workspace_id: String,
     /// The repository's root on this machine, found while reading; `None`
-    /// on another host, where the code view cannot open a file.
+    /// on another host, where this client cannot open the manifest locally.
     pub(crate) root: Option<PathBuf>,
 }
 

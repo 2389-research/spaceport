@@ -5,6 +5,7 @@ use crate::browser::WebUrl;
 mod editors;
 mod orchestrator_tabs;
 mod px0;
+mod retired_code_view;
 mod retired_vs_code;
 
 fn url(value: &str) -> Option<Location> {

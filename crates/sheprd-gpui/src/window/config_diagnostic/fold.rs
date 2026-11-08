@@ -6,7 +6,7 @@
 //! Whether a line was cut short depends on the room layout gave it, which
 //! render cannot know: the terminal area's width follows the sidebar. So each
 //! card measures its text column after layout and draws again when what it
-//! found disagrees with the frame drawn, as the code view's outline does.
+//! found disagrees with the frame drawn.
 use crate::config::corners;
 use gpui::{prelude::*, *};
 use std::{cell::RefCell, rc::Rc, sync::Arc};

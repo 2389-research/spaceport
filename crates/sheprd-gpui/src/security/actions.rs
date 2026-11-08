@@ -1,15 +1,12 @@
 //! What a page's buttons do in the app: start agents on a fix through the
 //! workspace's fan-out dialog, with the prompt written and nothing started
 //! until the user picks agents and starts it there, and open the manifest
-//! in the code view. Everything that changes the alert or report on GitHub
+//! in the system's file application. Everything that changes the alert or report on GitHub
 //! (dismissing, accepting, closing) is left to GitHub's page.
 
 use super::{Alert, Item, Repo, Report, page::Found};
 use crate::i18n::fl;
-use crate::{
-    SheprdWindow, dialog_input::DialogInput, editor::EditorTarget, menu::Page,
-    sidebar::ActivityPanel, window::Flash,
-};
+use crate::{SheprdWindow, dialog_input::DialogInput, menu::Page, window::Flash};
 use gpui::{prelude::*, *};
 use std::path::{Component, Path, PathBuf};
 
@@ -86,27 +83,15 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Opens an alert's manifest from a checkout on this machine in a code
-    /// tab of the focused workspace; Back returns to the section.
-    pub(crate) fn open_security_manifest(
-        &mut self,
-        item: &Item,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    /// Opens an alert's local manifest with the system's safe file opener.
+    pub(crate) fn open_security_manifest(&mut self, item: &Item, cx: &mut Context<Self>) {
         let Some(Found::Alert(repo, alert)) = self.security.find(item) else {
             return;
         };
         let Some(path) = manifest_path(repo, alert) else {
             return;
         };
-        self.open_code_view(&EditorTarget { path, line: None }, window, cx);
-        if self.activity.panel == ActivityPanel::Security {
-            self.activity.pick(ActivityPanel::Workspaces);
-            self.activity.return_to = Some(ActivityPanel::Security);
-            self.save_chrome();
-        }
-        cx.notify();
+        self.open_in_system_app(path, cx);
     }
 }
 

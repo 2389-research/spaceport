@@ -46,8 +46,6 @@ pub enum Error {
     CloudHostUnsupported,
     #[error(transparent)]
     CloudSetup(#[from] crate::cloud_setup::Error),
-    #[error("This file is missing, larger than 1 MiB, or not UTF-8 text")]
-    CodeFileUnreadable,
     #[error("{source}")]
     ConfigFile {
         uri: Option<String>,
@@ -130,7 +128,7 @@ pub enum Error {
     InvalidBrowserTabs,
     #[error("Browser tabs open only http and https addresses with a host, of at most 8 KiB.")]
     InvalidBrowserUrl,
-    #[error("A code tab must name an absolute file path without control characters")]
+    #[error("An old source tab must name an absolute file path without control characters")]
     InvalidCodeFile,
     #[error("Not an address with a scheme other than http, https, and file, of at most 8 KiB.")]
     InvalidExternalUrl,

@@ -115,8 +115,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (WorkspacePicker, &["cmd-p"]),
         (Palette, &["cmd-shift-p"]),
         (ResumePalette, &["cmd-shift-r"]),
-        (GoToSymbol, &["cmd-shift-o"]),
-        (GoToFile, &["cmd-o"]),
         (Detach, &[]),
         (Reconnect, &[]),
         (Quit, &["cmd-q"]),

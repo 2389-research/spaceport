@@ -659,8 +659,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         notice_overflow: Default::default(),
         review_files_width: crate::panel_resize::REVIEW_FILES,
         reviews: Default::default(),
-        code_views: Default::default(),
-        code_indexes: Default::default(),
         orchestrators: Default::default(),
         orchestrator_live: Default::default(),
         next_orchestrator: 0,

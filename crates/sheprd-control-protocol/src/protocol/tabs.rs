@@ -1,4 +1,4 @@
-//! The app's own tabs: pages, code, reviews, the orchestrator, and the
+//! The app's own tabs: pages, reviews, the orchestrator, and the
 //! Devices overview, which Herdr does not know about.
 use serde::{Deserialize, Serialize};
 
@@ -94,7 +94,6 @@ impl TabKind {
             Self::Blank => "blank",
             Self::Web => "web",
             Self::File => "file",
-            Self::Code => "code",
             Self::Review => "review",
             Self::Orchestrator => "orchestrator",
             Self::Devices => "devices",
@@ -115,13 +114,12 @@ pub enum TabKind {
     Blank,
     Web,
     File,
-    Code,
     Review,
     Orchestrator,
     Devices,
     /// A herdr-core (Herdr 2) terminal the app draws.
     CoreTerminal,
-    /// The workspace's VS Code tab.
+    /// A retained embedded editor tab.
     Editor,
 }
 

@@ -47,7 +47,6 @@ compile_error!(
 mod cloud;
 mod cloud_setup;
 mod code_search;
-mod code_view;
 mod config;
 mod config_diagnostic;
 mod connection;

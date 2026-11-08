@@ -340,7 +340,7 @@ impl Pages {
             Location::Local { file } => Some(file.root().to_owned()),
             Location::Web { .. }
             | Location::Review { .. }
-            | Location::Code { .. }
+            | Location::RetiredSource { .. }
             | Location::Orchestrator { .. }
             | Location::Devices
             | Location::CoreTerminal { .. } => None,

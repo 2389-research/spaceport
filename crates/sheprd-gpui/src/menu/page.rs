@@ -29,8 +29,6 @@ pub(crate) enum Page {
     CarryPane,
     /// A checkout's agent checkpoints, and restoring one.
     Checkpoints,
-    /// Go to Symbol and Go to File over the focused pane's checkout.
-    CodeSearch,
     ConfirmClose,
     CoreWorkspaceActions,
     CoreWorkspaceCreate,

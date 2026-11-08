@@ -511,7 +511,6 @@ impl SheprdWindow {
                         | Page::Themes
                         | Page::DeviceTheme
                         | Page::Palette
-                        | Page::CodeSearch
                         | Page::AppUpdate
                         | Page::GitHub
                         | Page::GitLab
@@ -538,11 +537,7 @@ impl SheprdWindow {
             .when(
                 matches!(
                     page,
-                    Page::Keybinds
-                        | Page::Themes
-                        | Page::DeviceTheme
-                        | Page::Palette
-                        | Page::CodeSearch
+                    Page::Keybinds | Page::Themes | Page::DeviceTheme | Page::Palette
                 ),
                 |panel| {
                     panel
@@ -737,8 +732,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_theme_picker(cx));
         } else if page == Page::Palette {
             panel = panel.child(self.render_palette(viewport, cx));
-        } else if page == Page::CodeSearch {
-            panel = panel.child(self.render_code_search(cx));
         } else if page == Page::ConfirmClose {
             panel = panel.child(self.render_close_confirmation(cx));
         } else if page == Page::AppUpdate {

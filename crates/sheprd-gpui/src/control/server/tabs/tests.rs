@@ -2,7 +2,6 @@
 use super::*;
 use crate::{
     browser::{LocalFile, OrchestratorRepo, Scope, WebUrl},
-    code_view::CodeFile,
     control::protocol::Request,
     sidebar::layout_tests::{fixture_window, snapshot},
 };
@@ -33,12 +32,6 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
         Some(Location::Local {
             file: LocalFile::new(&page, None).unwrap(),
         }),
-        Some(Location::Code {
-            file: CodeFile {
-                path: "/src/main.rs".into(),
-                line: Some(4),
-            },
-        }),
         Some(Location::Orchestrator {
             repo: OrchestratorRepo::new("/src/app".into()).unwrap(),
         }),
@@ -54,7 +47,7 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
         crate::browser::Editor::Px0,
         Some(web("http://127.0.0.1:7777/")),
     );
-    let listed: Vec<TabInfo> = store.tabs().map(info).collect();
+    let listed: Vec<TabInfo> = store.tabs().filter_map(info).collect();
     let kinds: Vec<TabKind> = listed.iter().map(|tab| tab.kind).collect();
     assert_eq!(
         kinds,
@@ -62,7 +55,6 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
             TabKind::Blank,
             TabKind::Web,
             TabKind::File,
-            TabKind::Code,
             TabKind::Orchestrator,
             TabKind::Devices,
             TabKind::Editor,
@@ -72,15 +64,28 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
     assert_eq!(locations[0], None);
     assert_eq!(locations[1], Some("https://a.test/docs"));
     assert!(locations[2].unwrap().ends_with("index.html"));
-    assert_eq!(locations[3], Some("/src/main.rs"));
-    assert_eq!(locations[4], Some("/src/app"));
-    assert_eq!(locations[5], None);
-    assert_eq!(locations[6], Some("http://127.0.0.1:7777/"));
+    assert_eq!(locations[3], Some("/src/app"));
+    assert_eq!(locations[4], None);
+    assert_eq!(locations[5], Some("http://127.0.0.1:7777/"));
     let first = &listed[1];
     assert_eq!(first.workspace, "w_1");
     assert_eq!(first.host, "local:/tmp/herdr.sock");
     assert_eq!(first.opened_by.as_deref(), Some("w_1:p1"));
     assert_eq!(first.title, "a.test");
+}
+
+#[test]
+fn retired_source_is_never_listed_even_with_an_editor_place() {
+    let tab: Tab = serde_json::from_value(serde_json::json!({
+        "id": 7,
+        "scope": "local",
+        "workspace_id": "w",
+        "location": {"kind": "code", "file": {"path": "/src/main.rs", "line": 4}},
+        "title": "Source",
+        "place": "px0"
+    }))
+    .unwrap();
+    assert!(info(&tab).is_none());
 }
 
 /// The fixture window, showing workspace `w0` of two as a connected daemon

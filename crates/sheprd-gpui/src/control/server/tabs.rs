@@ -46,20 +46,23 @@ pub(super) fn serve(
 }
 
 /// What a tab is, as `tab list` names it.
-fn kind(tab: &Tab) -> TabKind {
-    if tab.place.is_editor() {
-        return TabKind::Editor;
+fn kind(tab: &Tab) -> Option<TabKind> {
+    if matches!(tab.location, Some(Location::RetiredSource { .. })) {
+        return None;
     }
-    match &tab.location {
+    if tab.place.is_editor() {
+        return Some(TabKind::Editor);
+    }
+    Some(match &tab.location {
         None => TabKind::Blank,
         Some(Location::Web { .. }) => TabKind::Web,
         Some(Location::Local { .. }) => TabKind::File,
         Some(Location::Review { .. }) => TabKind::Review,
         Some(Location::Orchestrator { .. }) => TabKind::Orchestrator,
-        Some(Location::Code { .. }) => TabKind::Code,
+        Some(Location::RetiredSource { .. }) => return None,
         Some(Location::Devices) => TabKind::Devices,
         Some(Location::CoreTerminal { .. }) => TabKind::CoreTerminal,
-    }
+    })
 }
 
 /// The address, file, or checkout a tab shows.
@@ -72,7 +75,7 @@ fn location(tab: &Tab) -> Option<String> {
             .clone()
             .or_else(|| checkout.repo_key.clone())?,
         Location::Orchestrator { repo } => repo.checkout.clone(),
-        Location::Code { file } => file.path.clone(),
+        Location::RetiredSource { .. } => return None,
         // Every pane's terminal, for `herdr-core attach` and the like.
         Location::CoreTerminal { panes, .. } => panes
             .terminals()
@@ -84,16 +87,16 @@ fn location(tab: &Tab) -> Option<String> {
     })
 }
 
-fn info(tab: &Tab) -> TabInfo {
-    TabInfo {
+fn info(tab: &Tab) -> Option<TabInfo> {
+    Some(TabInfo {
         id: tab.id.into(),
-        kind: kind(tab),
+        kind: kind(tab)?,
         title: tab.title.clone(),
         location: location(tab),
         workspace: tab.workspace_id.clone(),
         host: tab.scope.as_str().to_owned(),
         opened_by: tab.origin.clone(),
-    }
+    })
 }
 
 fn list(pages: bool, cx: &App) -> Response {
@@ -102,7 +105,7 @@ fn list(pages: bool, cx: &App) -> Response {
         .map(|store| {
             store
                 .tabs()
-                .map(info)
+                .filter_map(info)
                 .filter(|tab| !pages || tab.kind.is_page())
                 .collect()
         })
@@ -115,6 +118,7 @@ fn list(pages: bool, cx: &App) -> Response {
 fn find(id: u64, cx: &App) -> Result<Tab, Response> {
     cx.try_global::<Store>()
         .and_then(|store| store.get(TabId::from(id)))
+        .filter(|tab| !matches!(tab.location, Some(Location::RetiredSource { .. })))
         .cloned()
         .ok_or_else(|| not_found(format!("Sheprd has no tab {id}; `tab list` lists them")))
 }

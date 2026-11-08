@@ -25,23 +25,6 @@ fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
             None,
         )
         .unwrap();
-    let source = old
-        .open(
-            scope.clone(),
-            "w1",
-            Some(Location::Code {
-                file: crate::code_view::CodeFile {
-                    path: std::env::current_dir()
-                        .unwrap()
-                        .join("main.rs")
-                        .to_string_lossy()
-                        .into_owned(),
-                    line: Some(42),
-                },
-            }),
-            None,
-        )
-        .unwrap();
     let code = old.open(scope.clone(), "w1", None, None).unwrap();
     let code_group = old.open(scope.clone(), "w2", None, None).unwrap();
     for tab in &mut old.tabs {
@@ -63,7 +46,7 @@ fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
     let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
-        [page, px0, core, source]
+        [page, px0, core]
     );
     assert!(restored.get(code).is_none());
     assert!(restored.get(code_group).is_none());

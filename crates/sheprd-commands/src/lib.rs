@@ -74,10 +74,6 @@ pub enum Command {
     Palette,
     /// Reopen the palette as it was last left: query, filters, and selection.
     ResumePalette,
-    /// Go to a definition in the focused pane's checkout.
-    GoToSymbol,
-    /// Go to a file in the focused pane's checkout.
-    GoToFile,
     Detach,
     Reconnect,
     Quit,
@@ -659,16 +655,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-resume-palette",
     },
     CommandInfo {
-        command: Command::GoToSymbol,
-        name: "go_to_symbol",
-        message: "commands-go-to-symbol",
-    },
-    CommandInfo {
-        command: Command::GoToFile,
-        name: "go_to_file",
-        message: "commands-go-to-file",
-    },
-    CommandInfo {
         command: Command::Detach,
         name: "detach",
         message: "commands-detach",
@@ -903,8 +889,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::WorkspacePicker
         | Command::Palette
         | Command::ResumePalette
-        | Command::GoToSymbol
-        | Command::GoToFile
         | Command::Detach
         | Command::Reconnect
         | Command::Quit

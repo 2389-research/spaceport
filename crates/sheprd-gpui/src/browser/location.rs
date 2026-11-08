@@ -69,9 +69,10 @@ pub(crate) enum Location {
     Orchestrator {
         repo: OrchestratorRepo,
     },
-    /// A local source file, drawn read-only by the app, never a page.
-    Code {
-        file: crate::code_view::CodeFile,
+    /// Accepted only while reading an old tab file; the store discards it.
+    #[serde(rename = "code")]
+    RetiredSource {
+        file: RetiredSourceFile,
     },
     /// Every device this window connects to, drawn by the app, never a page.
     Devices,
@@ -85,6 +86,38 @@ pub(crate) enum Location {
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         observe: bool,
     },
+}
+
+/// The old source-tab payload is validated before the tab is discarded.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "SavedSourceFile")]
+pub(crate) struct RetiredSourceFile {
+    path: String,
+    line: Option<u32>,
+}
+
+#[derive(Deserialize)]
+struct SavedSourceFile {
+    path: String,
+    line: Option<u32>,
+}
+
+impl TryFrom<SavedSourceFile> for RetiredSourceFile {
+    type Error = crate::Error;
+
+    fn try_from(saved: SavedSourceFile) -> crate::Result<Self> {
+        if saved.path.is_empty()
+            || saved.path.len() > 4096
+            || saved.path.chars().any(char::is_control)
+            || !Path::new(&saved.path).is_absolute()
+        {
+            return Err(crate::Error::InvalidCodeFile);
+        }
+        Ok(Self {
+            path: saved.path,
+            line: saved.line,
+        })
+    }
 }
 
 /// The checkout an orchestrator view lists the repository of, on the view's
@@ -219,7 +252,7 @@ impl Location {
             Self::Local { file } => file.page_url(),
             // Never loaded: a review is drawn by the app.
             Self::Review { .. }
-            | Self::Code { .. }
+            | Self::RetiredSource { .. }
             | Self::Orchestrator { .. }
             | Self::Devices
             | Self::CoreTerminal { .. } => "about:blank".to_owned(),
@@ -231,7 +264,7 @@ impl Location {
         !matches!(
             self,
             Self::Review { .. }
-                | Self::Code { .. }
+                | Self::RetiredSource { .. }
                 | Self::Orchestrator { .. }
                 | Self::Devices
                 | Self::CoreTerminal { .. }
@@ -245,7 +278,7 @@ impl Location {
             Self::Local { file } => file.path().display().to_string(),
             // i18n: data
             Self::Review { checkout } => format!("Review of {}", checkout.branch),
-            Self::Code { file } => file.path.clone(),
+            Self::RetiredSource { .. } => String::new(),
             // i18n: data
             Self::Orchestrator { repo } => format!("Orchestrator of {}", repo.name()),
             Self::Devices => "Devices overview".to_owned(), // i18n: data
@@ -265,7 +298,7 @@ impl Location {
             Self::Web { url } => url.host().to_owned(),
             Self::Local { file } => file.entry.rsplit('/').next().unwrap_or_default().to_owned(),
             Self::Review { checkout } => format!("Review \u{00b7} {}", checkout.branch), // i18n: data
-            Self::Code { file } => file.name().to_owned(),
+            Self::RetiredSource { .. } => String::new(),
             // i18n: data
             Self::Orchestrator { repo } => format!("Orchestrator \u{00b7} {}", repo.name()),
             Self::Devices => "Devices".to_owned(), // i18n: data
@@ -285,7 +318,7 @@ impl Location {
             }
             Self::Devices => Some(fl!("browser-tab-devices")),
             Self::CoreTerminal { .. } => Some(fl!("browser-tab-terminal")),
-            Self::Web { .. } | Self::Local { .. } | Self::Code { .. } => None,
+            Self::Web { .. } | Self::Local { .. } | Self::RetiredSource { .. } => None,
         }
     }
 

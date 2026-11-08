@@ -13,7 +13,6 @@ error-bundle-write = Could not write { $path }: { $error }
 # $cleanup is why the half-written file could not be removed afterwards.
 error-cleanup = { $error }; removing { $path }: { $cleanup }
 error-cloud-host-unsupported = This is not available for cloud machines yet.
-error-code-file-unreadable = This file is missing, larger than 1 MiB, or not UTF-8 text
 error-connection-busy = Connection is busy. Try again.
 error-connection-not-ready = The connection is not ready. Try again.
 error-deletion-lookup = Checkout lookup failed. Dismiss and reopen the menu.
@@ -43,7 +42,7 @@ error-invalid-annotation = The page reported an invalid annotation
 error-invalid-branch-name = Invalid Git branch name. Use a name such as config-reload, without spaces or special ref characters.
 error-invalid-browser-tabs = Invalid saved browser tabs
 error-invalid-browser-url = Browser tabs open only http and https addresses with a host, of at most 8 KiB.
-error-invalid-code-file = A code tab must name an absolute file path without control characters
+error-invalid-code-file = An old source tab must name an absolute file path without control characters
 error-invalid-external-url = Not an address with a scheme other than http, https, and file, of at most 8 KiB.
 error-invalid-group-layouts = Invalid saved editor groups
 error-invalid-local-page = Local pages must be a plain file in a folder that is not hidden and does not hold your home directory.

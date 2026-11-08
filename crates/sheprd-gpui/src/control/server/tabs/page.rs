@@ -8,7 +8,7 @@ use crate::{
     browser::{Location, Store, Tab, WebUrl},
     control::protocol::{
         Caller, ErrorCode, Response,
-        tabs::{Reply, ZoomChange},
+        tabs::{Reply, TabKind, ZoomChange},
     },
 };
 use gpui::App;
@@ -35,7 +35,7 @@ fn no_pages() -> Response {
 /// The tab `id`, if it is a page: a web address or a local file.
 fn page_tab(id: u64, cx: &App) -> Result<Tab, Response> {
     let tab = find(id, cx)?;
-    if !kind(&tab).is_page() {
+    if !kind(&tab).is_some_and(TabKind::is_page) {
         return Err(Response::error(
             ErrorCode::InvalidRequest,
             format!("Tab {id} is not a page; `browser list` lists them"),

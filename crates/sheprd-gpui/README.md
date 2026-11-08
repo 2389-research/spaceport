@@ -2828,21 +2828,6 @@ next to the agent that is changing the code.
   Neovim, later files for the same tab open in that Neovim instead of a new
   split, as [herdr-nvim](https://github.com/ChmaraX/herdr-nvim)'s sidebar
   does.
-- **Go to Symbol** (`cmd-shift-o`) lists the functions, types, modules, and
-  constants of the focused pane's checkout; **Go to File** (`cmd-o`) lists its
-  files, and takes `file:line` to open at a line. Tab switches between the two.
-  Before you type, both start with what the agent is changing: the checkout's
-  uncommitted files, newest first, with their `+added −removed` line counts,
-  or the definitions in them.
-  Enter opens the result in your editor beside the focused pane;
-  Cmd-Enter (Ctrl-Enter elsewhere) opens it in a code tab instead.
-- **Code tabs** show a file read-only with syntax colouring and an outline of
-  its definitions, beside the workspace's terminals like any other tab. Click
-  an outline entry to jump to it, or a line to mark it. `j`/`k` and the arrows
-  scroll, Space and Page Up/Down page, `g`/`G` go to the top and bottom, `o`
-  shows or hides the outline, and `e` opens the marked line, or the top line in
-  view, in your editor.
-
 The editor is `$VISUAL`, then `$EDITOR`, then `vi`, as the new pane's shell
 sees them, started as `EDITOR +LINE FILE`. Set `editor_command` to choose
 another, with `{file}` and `{line}` placeholders where it needs them, such as
@@ -2861,20 +2846,7 @@ forward to be answered. An `editor_command`
 naming `nvim` listens too; one with `{file}` or `{line}` runs exactly as
 written and is never reused.
 On Windows, where a pane's shell has no `sh` to start the editor with, printed
-paths open in the system's application and Go to Symbol and Go to File open
-code tabs.
-
-The symbol index is built in the background from the files Git lists (tracked
-files and untracked ones it does not ignore), and kept for the next search;
-an index older than 30 seconds is read again while the last one stays usable.
-Symbols come from each line's leading keywords, as `ctags` reads them, for
-Rust, Swift, Ruby, Python, Go, JavaScript and TypeScript, Kotlin, Java, C#,
-Elixir, Zig, and the types and macros of C-family files. This is a heuristic, not a language server:
-a definition a macro generates, or one split oddly across lines, is missed, and
-C and C++ functions are not listed. Only local checkouts are indexed. Limits
-keep a huge repository responsive: at most 100,000 files are listed, files over
-1 MiB or that are not UTF-8 text are skipped, and at most 300,000 symbols are
-kept. Code tabs read files up to 1 MiB and colour their first 20,000 lines.
+paths open in the system's application.
 
 ## Devices Overview
 

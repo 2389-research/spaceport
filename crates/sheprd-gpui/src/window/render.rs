@@ -724,11 +724,14 @@ impl Render for SheprdWindow {
                 (Shown::Terminal, _) if self.shows_parked_terminal(slot.id, cx) => {
                     self.render_parked_terminal(slot, parked_font.clone(), cell_height, cx)
                 }
-                // Orchestrator tabs are dropped on load and never opened.
+                // Retired tabs are dropped on load and never opened.
                 (Shown::Page(_), Some(tab))
                     if matches!(
                         tab.location,
-                        Some(crate::browser::Location::Orchestrator { .. })
+                        Some(
+                            crate::browser::Location::Orchestrator { .. }
+                                | crate::browser::Location::RetiredSource { .. }
+                        )
                     ) =>
                 {
                     div().into_any_element()
@@ -740,9 +743,6 @@ impl Render for SheprdWindow {
                         .is_some_and(|location| !location.is_page()) =>
                 {
                     match tab.location {
-                        Some(crate::browser::Location::Code { .. }) => {
-                            self.render_code_tab(slot, &tab, cx)
-                        }
                         Some(crate::browser::Location::Devices) => {
                             self.render_devices_tab(slot, &tab, cx)
                         }

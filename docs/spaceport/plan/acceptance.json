@@ -338,7 +338,7 @@
       "scenario": "Invoke removed commands/config/UI and render plain git/diff/source text in terminals/chat.",
       "expected": "Specialized Git/IDE/review behavior is absent; ordinary content is unchanged; developer CI still works.",
       "status": "not_run",
-      "evidence": ["evidence/t04-code-edit-route.md"]
+      "evidence": ["evidence/t04-code-edit-route.md", "evidence/t04-source-view-removal.md"]
     },
     {
       "id": "A30",

@@ -19,7 +19,7 @@
     { key: 'watch', title: 'Watch', line: 'Agent status, host load, ports and recent activity. Local and SSH devices, Coder workspaces on macOS/Linux, and WSL on Windows.' },
     { key: 'review', title: 'Review', line: 'Read an agent’s changes side by side, pin line notes and send them back. Checkpoint every turn and rewind a worktree. Review and merge PRs.' },
     { key: 'move', title: 'Move', line: 'Teleport a worktree, its uncommitted work, tabs and running agents to another machine. Forward ports. Pick up where you left off.' },
-    { key: 'work', title: 'Work', line: 'GPU-painted terminals and tabs in editor groups, Go to File and Symbol, annotations on pages.' },
+    { key: 'work', title: 'Work', line: 'GPU-painted terminals and tabs in editor groups, with annotations on pages.' },
   ];
 
   const CHAPTERS = [

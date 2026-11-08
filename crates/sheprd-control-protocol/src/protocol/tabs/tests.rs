@@ -112,7 +112,7 @@ fn page_and_arrival_operations_extend_the_answer_timeout() {
 fn replies_round_trip() {
     let tab = TabInfo {
         id: 7,
-        kind: TabKind::Code,
+        kind: TabKind::File,
         title: "main.rs".into(),
         location: Some("/src/main.rs".into()),
         workspace: "w_1".into(),
@@ -145,11 +145,11 @@ fn replies_round_trip() {
 
 #[test]
 fn kinds_are_named_as_json_spells_them() {
+    assert!(serde_json::from_str::<TabKind>("\"code\"").is_err());
     for kind in [
         TabKind::Blank,
         TabKind::Web,
         TabKind::File,
-        TabKind::Code,
         TabKind::Review,
         TabKind::Orchestrator,
         TabKind::Devices,

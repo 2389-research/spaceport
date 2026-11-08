@@ -60,8 +60,6 @@ pub(super) fn defaults(command: Command) -> &'static [&'static str] {
         WorkspacePicker => &["ctrl-alt-shift-p"],
         Palette => &["ctrl-shift-p"],
         ResumePalette => &["ctrl-alt-shift-r"],
-        GoToSymbol => &["ctrl-alt-shift-o"],
-        GoToFile => &["ctrl-shift-o"],
         Quit => &["ctrl-shift-q"],
         SplitEditor => &["ctrl-shift-\\"],
         ToggleFullScreen => &["f11"],

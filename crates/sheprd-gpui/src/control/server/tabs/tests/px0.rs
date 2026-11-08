@@ -7,7 +7,7 @@ fn px0_reports_an_editor_and_round_trips_its_open_request() {
     let id = store
         .open_editor_tab(scope, "w1", crate::browser::Editor::Px0, None)
         .unwrap();
-    let info = info(store.get(id).unwrap());
+    let info = info(store.get(id).unwrap()).unwrap();
     assert_eq!(info.kind, TabKind::Editor);
     assert_eq!(info.workspace, "w1");
     assert_eq!(info.title, "px0");

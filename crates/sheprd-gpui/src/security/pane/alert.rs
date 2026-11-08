@@ -131,8 +131,8 @@ impl SheprdWindow {
                         false,
                     )
                     .debug_selector(|| "security-alert-manifest".into())
-                    .on_click(cx.listener(move |this, _, window, cx| {
-                        this.open_security_manifest(&open, window, cx);
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        this.open_security_manifest(&open, cx);
                     })),
                 )
             })
@@ -235,8 +235,8 @@ impl SheprdWindow {
                                 false,
                             )
                             .on_click(cx.listener(
-                                move |this, _, window, cx| {
-                                    this.open_security_manifest(&open, window, cx);
+                                move |this, _, _, cx| {
+                                    this.open_security_manifest(&open, cx);
                                 },
                             )),
                         )
