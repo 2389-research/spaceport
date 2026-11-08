@@ -4,6 +4,7 @@ use crate::protocol::{Call, Caller, Request, Response};
 
 mod removed_code_edit;
 mod removed_orchestrator;
+mod removed_px0;
 mod removed_review;
 
 fn round_trip(op: TabOp) {
@@ -145,13 +146,13 @@ fn replies_round_trip() {
 fn kinds_are_named_as_json_spells_them() {
     assert!(serde_json::from_str::<TabKind>("\"code\"").is_err());
     assert!(serde_json::from_str::<TabKind>("\"review\"").is_err());
+    assert!(serde_json::from_str::<TabKind>("\"editor\"").is_err());
     for kind in [
         TabKind::Blank,
         TabKind::Web,
         TabKind::File,
         TabKind::Orchestrator,
         TabKind::Devices,
-        TabKind::Editor,
     ] {
         assert_eq!(
             serde_json::to_string(&kind).unwrap(),

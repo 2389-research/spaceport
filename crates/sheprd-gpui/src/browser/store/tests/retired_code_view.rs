@@ -9,9 +9,6 @@ fn old_source_view_is_dropped_without_reusing_its_id() {
     let page = old
         .open(scope.clone(), "w", url("https://example.test/"), None)
         .unwrap();
-    let px0 = old
-        .open_editor_tab(scope.clone(), "w", Editor::Px0, None)
-        .unwrap();
     let core = old
         .open(
             scope.clone(),
@@ -32,7 +29,7 @@ fn old_source_view_is_dropped_without_reusing_its_id() {
     })
     .unwrap();
     let path = std::env::current_dir().unwrap().join("main.rs");
-    saved["tabs"][3]["location"] = serde_json::json!({
+    saved["tabs"][2]["location"] = serde_json::json!({
         "kind": "code", "file": {"path": path, "line": 42}
     });
 
@@ -40,9 +37,8 @@ fn old_source_view_is_dropped_without_reusing_its_id() {
     let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
-        [page, px0, core]
+        [page, core]
     );
     assert!(restored.get(source).is_none());
-    assert_eq!(restored.px0_tab(&scope, "w").map(|tab| tab.id), Some(px0));
     assert!(u64::from(restored.open(scope, "w", None, None).unwrap()) > u64::from(source));
 }

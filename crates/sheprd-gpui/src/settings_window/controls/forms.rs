@@ -1,6 +1,5 @@
-//! Form pieces for pages that hold forms rather than setting rows (px0 and
-//! Cloud devices): a titled block under the shared section heading,
-//! and a labelled switch row. Both follow the row system's look.
+//! Form pieces used by chat environment and appearance controls: a titled
+//! block under the shared section heading and a labelled switch row.
 // i18n: migrated
 use super::*;
 use crate::direction::Logical;

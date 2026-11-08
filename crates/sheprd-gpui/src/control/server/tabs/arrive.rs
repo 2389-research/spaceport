@@ -1,4 +1,4 @@
-//! Tabs opened in the caller's workspace: Devices and px0.
+//! Tabs opened in the caller's workspace: Devices.
 //! Each feature opens its tab in the focused
 //! workspace, so the window first switches to the caller's, and the tab
 //! opens once a snapshot says the switch landed.
@@ -165,38 +165,6 @@ pub(super) fn devices(
             opened(view, workspace, "the Devices overview", cx, |location| {
                 matches!(location, Location::Devices)
             })
-        },
-    );
-}
-
-pub(super) fn px0(
-    caller: &Caller,
-    incoming: socket::Incoming,
-    watches: &mut Watches,
-    cx: &mut App,
-) {
-    open_there(
-        caller,
-        incoming,
-        watches,
-        cx,
-        |_| true,
-        |view, workspace, window, cx| {
-            if !crate::browser::EMBEDDED || view.px0_root().is_none() {
-                return Response::error(
-                    ErrorCode::Unsupported,
-                    "px0 needs a local workspace and embedded pages (macOS or Windows)",
-                );
-            }
-            match view.open_px0(None, window, cx) {
-                Some(id) => Response::Tab {
-                    reply: Reply::Opened {
-                        id: id.into(),
-                        workspace: workspace.to_owned(),
-                    },
-                },
-                None => Response::error(ErrorCode::Failed, "Could not open the px0 tab"),
-            }
         },
     );
 }

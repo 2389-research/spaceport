@@ -39,7 +39,6 @@ pub(super) fn serve(
         TabOp::Screenshot { id, path } => page::screenshot(caller, id, path, incoming, watches, cx),
         TabOp::Zoom { id, change } => incoming.respond(page::zoom(&caller, id, change, cx)),
         TabOp::Devices => arrive::devices(&caller, incoming, watches, cx),
-        TabOp::Px0 => arrive::px0(&caller, incoming, watches, cx),
     }
 }
 
@@ -52,7 +51,7 @@ fn kind(tab: &Tab) -> Option<TabKind> {
         return None;
     }
     if tab.place.is_editor() {
-        return Some(TabKind::Editor);
+        return None;
     }
     Some(match &tab.location {
         None => TabKind::Blank,

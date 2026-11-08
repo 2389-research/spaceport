@@ -52,7 +52,6 @@ fn every_catalog_id_is_unique_and_belongs_to_its_section() {
             Section::Tabs => "tabs-",
             Section::Notifications => "notif-",
             Section::StatusBar => "status-",
-            Section::Px0 => "px0-",
             Section::Integrations => "integrations-",
             Section::Configuration => "config-",
         };
@@ -65,13 +64,9 @@ fn every_catalog_id_is_a_rendered_row(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(skill_fixture);
     cx.simulate_resize(size(px(960.), px(3000.)));
     for section in Section::ALL.iter().copied() {
-        cx.update(|window, cx| {
-            view.update(cx, |view, cx| {
-                if section == Section::Px0 {
-                    view.select_section(section, window, cx);
-                } else {
-                    view.section = section;
-                }
+        cx.update(|_, cx| {
+            view.update(cx, |view, _| {
+                view.section = section;
             });
         });
         cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));

@@ -8,7 +8,6 @@ use crate::{
 use gpui::{Entity, VisualTestContext};
 use std::{path::Path, sync::Arc};
 
-mod px0;
 mod windows;
 
 fn web(url: &str) -> Location {
@@ -39,13 +38,6 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
     for location in locations {
         store.open(scope.clone(), "w_1", location, Some("w_1:p1".into()));
     }
-    // px0 remains a listed editor tab with its loopback workbench address.
-    store.open_editor_tab(
-        scope.clone(),
-        "w_1",
-        crate::browser::Editor::Px0,
-        Some(web("http://127.0.0.1:7777/")),
-    );
     let listed: Vec<TabInfo> = store.tabs().filter_map(info).collect();
     let kinds: Vec<TabKind> = listed.iter().map(|tab| tab.kind).collect();
     assert_eq!(
@@ -56,7 +48,6 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
             TabKind::File,
             TabKind::Orchestrator,
             TabKind::Devices,
-            TabKind::Editor,
         ]
     );
     let locations: Vec<Option<&str>> = listed.iter().map(|tab| tab.location.as_deref()).collect();
@@ -65,7 +56,6 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
     assert!(locations[2].unwrap().ends_with("index.html"));
     assert_eq!(locations[3], Some("/src/app"));
     assert_eq!(locations[4], None);
-    assert_eq!(locations[5], Some("http://127.0.0.1:7777/"));
     let first = &listed[1];
     assert_eq!(first.workspace, "w_1");
     assert_eq!(first.host, "local:/tmp/herdr.sock");

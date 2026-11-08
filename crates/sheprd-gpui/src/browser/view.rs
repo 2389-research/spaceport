@@ -70,7 +70,6 @@ pub(crate) struct Browser {
     /// per tab, so a failure elsewhere never clears another's and sets it
     /// retrying; bounded by the tabs the store keeps.
     pub(super) failed: HashMap<TabId, SharedString>,
-    pub(super) px0: super::px0::Pages,
     /// The workspaces of the last snapshot and the boot they came from: one
     /// missing from the next snapshot of the same boot was closed.
     workspaces: Option<(Scope, String, HashSet<String>)>,
@@ -124,7 +123,6 @@ impl Browser {
             tab_body: Default::default(),
             group_motion: Default::default(),
             failed: HashMap::new(),
-            px0: Default::default(),
             workspaces: None,
             herdr_tabs: None,
             #[cfg(any(target_os = "macos", windows))]
@@ -325,7 +323,6 @@ impl SheprdWindow {
         self.forget_closed_workspaces(cx);
         self.settle_groups(window, cx);
         self.advance_close_run(window, cx);
-        self.ensure_px0_page(window, cx);
         self.poll_deliveries(cx);
         self.poll_reveal(window, cx);
         self.poll_orchestrators(window, cx);

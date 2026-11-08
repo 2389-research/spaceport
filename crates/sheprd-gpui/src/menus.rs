@@ -347,12 +347,6 @@ pub(crate) fn menus(config: &Config) -> Vec<Menu> {
                         command: Command::ToggleStatusBar,
                     },
                 ),
-                MenuItem::action(
-                    fl!("menus-open-px0"),
-                    RunCommand {
-                        command: Command::OpenPx0,
-                    },
-                ),
                 MenuItem::separator(),
                 MenuItem::action(
                     fl!("menus-reconnect"),

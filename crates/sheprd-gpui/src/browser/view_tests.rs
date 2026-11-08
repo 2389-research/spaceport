@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used)]
 
-use super::{Editor, Location, Store, WebUrl, view::scope};
+use super::{Location, Store, WebUrl, view::scope};
 use crate::{
     SheprdWindow,
     sidebar::layout_tests::{fixture_window, full_draw, snapshot},
@@ -79,9 +79,6 @@ mod tab_steps;
 /// shows pages: elsewhere a new tab opens nothing.
 #[cfg(any(target_os = "macos", windows))]
 mod tab_moves;
-
-mod editors;
-mod px0;
 
 /// Pages hide under the status bar's tooltips where they draw above the
 /// window, which only Windows does.

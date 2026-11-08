@@ -1,5 +1,5 @@
 //! The chats' extra environment on the General page, shown while ACP chats
-//! are on. Like px0's address, an edit stays in the field until Apply, and
+//! are on. An edit stays in the field until Apply, and
 //! saving goes through the window's serial persistence path.
 // i18n: migrated
 use super::*;

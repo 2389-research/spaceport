@@ -46,13 +46,11 @@ impl SheprdWindow {
         tabs.into_iter()
             .map(|tab| {
                 let id = tab.id;
-                // An editor tab bears its mark; device tabs use
-                // their own marks rather than a page favicon.
-                let icon = match (tab.place.editor(), &tab.location) {
-                    (Some(editor), _) => editor.icon(),
-                    (_, Some(Location::Orchestrator { .. })) => "icons/pulse.svg",
-                    (_, Some(Location::Devices)) => "icons/devices.svg",
-                    (_, Some(Location::CoreTerminal { .. })) => "icons/terminal.svg",
+                // Device tabs use their own marks rather than a page favicon.
+                let icon = match &tab.location {
+                    Some(Location::Orchestrator { .. }) => "icons/pulse.svg",
+                    Some(Location::Devices) => "icons/devices.svg",
+                    Some(Location::CoreTerminal { .. }) => "icons/terminal.svg",
                     _ => GLOBE,
                 };
                 // A page's own icon stands in for the globe.
@@ -133,7 +131,6 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let id = tab.id;
-        let editor = tab.place.is_editor();
         let loaded = tab.location.is_some();
         let external = match &tab.location {
             Some(Location::Web { url }) => Some(url.clone()),
@@ -313,9 +310,8 @@ impl SheprdWindow {
                     }
                 },
             ));
-        let content = match (page, &failure, tab.place.editor()) {
-            (Some(page), None, _) => self.page_area(page).into_any_element(),
-            (_, _, Some(editor)) => self.render_editor_status(editor, failure.clone(), cx),
+        let content = match (page, &failure) {
+            (Some(page), None) => self.page_area(page).into_any_element(),
             _ => div()
                 .flex_1()
                 .min_h_0()
@@ -350,15 +346,14 @@ impl SheprdWindow {
             // the keyboard; nothing here types into a terminal. A focus
             // handle belongs to one element, so a drawn terminal keeps it.
             .when(keyboard, |browser| browser.track_focus(&self.focus))
-            // An editor fills its tab without a browser toolbar or notes.
-            .when(!editor, |browser| browser.child(toolbar))
+            .child(toolbar)
             .child(
                 div()
                     .flex()
                     .flex_1()
                     .min_h_0()
                     .child(div().flex().flex_col().flex_1().min_w_0().child(content))
-                    .children(panel.filter(|_| !editor)),
+                    .children(panel),
             );
         self.with_ground(browser, rgb(self.theme.background))
     }

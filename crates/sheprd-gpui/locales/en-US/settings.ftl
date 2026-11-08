@@ -75,7 +75,6 @@ settings-section-indicators = Indicators
 settings-section-fonts = Fonts
 settings-section-status-bar = Status bar
 settings-section-tabs-and-panes = Tabs & panes
-settings-section-px0 = px0
 settings-section-notifications = Notifications
 settings-section-integrations = Integrations
 settings-section-configuration = Configuration
@@ -84,7 +83,6 @@ settings-lead-sidebar = Changes apply to every open window immediately.
 settings-lead-indicators = How agent status shows in the sidebar, tabs and the collapsed rail. Working always moves; reduced motion holds it still.
 settings-lead-fonts = Each face can have its own family and size.
 settings-lead-status-bar = Which items the bottom bar shows, and how compactly.
-settings-lead-px0 = Set the workbench address for px0 tabs.
 settings-lead-integrations = Agents Herdr can launch and track.
 settings-lead-configuration = Files behind these settings. Saved edits reload automatically.
 

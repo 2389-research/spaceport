@@ -54,7 +54,6 @@ pub enum ControlCommand {
     Tab(TabCommand),
     Devices,
     Chat(ChatCommand),
-    Px0,
     Notes(NotesCommand),
     Worktree(WorktreeCommand),
     /// Every kind of note the user sent this pane: page, review, terminal.
@@ -135,7 +134,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
         "chat",
         "Native views of sheprd-acp chats: start one, list them, show or hide one",
     ),
-    ("px0", "Open px0 on the caller's local checkout"),
     ("notes", "Notes kept on worktrees"),
     ("worktree", "Mute or unmute the caller's worktree"),
     (
@@ -277,10 +275,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
             ControlCommand::Devices
         }
         "chat" => ControlCommand::Chat(chat::chat(args)?),
-        "px0" => {
-            tabs::open_only(args)?;
-            ControlCommand::Px0
-        }
         "notes" => ControlCommand::Notes(work::notes(args)?),
         "worktree" => ControlCommand::Worktree(work::worktree(args)?),
         "feedback" => ControlCommand::Feedback {

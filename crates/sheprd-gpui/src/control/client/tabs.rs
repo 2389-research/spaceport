@@ -74,9 +74,5 @@ pub(super) fn devices(context: &Context) -> crate::Result<Output> {
     opened("the Devices overview", response)
 }
 
-pub(super) fn px0(context: &Context) -> crate::Result<Output> {
-    opened("px0", context.call(Request::Tab, TabOp::Px0)?)
-}
-
 #[cfg(test)]
 mod tests;

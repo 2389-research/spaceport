@@ -53,7 +53,6 @@ commands-next-tab = Next Tab
 commands-next-workspace = Next Workspace
 commands-open-notification-target = Open Notification Target
 commands-open-orchestrator = Show Issues
-commands-open-px0 = Open px0
 commands-open-worktree = Open Worktree
 commands-previous-agent = Previous Agent
 commands-previous-pane = Previous Pane

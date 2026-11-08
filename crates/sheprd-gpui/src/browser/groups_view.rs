@@ -759,24 +759,20 @@ impl SheprdWindow {
         if self.primary_group() == Some(group) {
             self.pending_navigation = None;
         }
-        if let Some(editor) = tab.place.editor() {
-            self.ensure_editor_page(editor, window, cx);
-        } else {
-            #[cfg(any(target_os = "macos", windows))]
-            match self.browser.pages.ensure(&tab, window, cx) {
-                Ok(()) => {
-                    self.browser.failed.remove(&id);
-                }
-                Err(error) => {
-                    tracing::warn!(%error, "Cannot create a browser page");
-                    self.browser
-                        .failed
-                        .insert(id, crate::i18n::Localize::localize(&error).into());
-                }
+        #[cfg(any(target_os = "macos", windows))]
+        match self.browser.pages.ensure(&tab, window, cx) {
+            Ok(()) => {
+                self.browser.failed.remove(&id);
+            }
+            Err(error) => {
+                tracing::warn!(%error, "Cannot create a browser page");
+                self.browser
+                    .failed
+                    .insert(id, crate::i18n::Localize::localize(&error).into());
             }
         }
         self.sync_address(group, Some(&tab), true, window, cx);
-        if tab.location.is_none() && !tab.place.is_editor() {
+        if tab.location.is_none() {
             let focus = self.group_address(group, cx).read(cx).focus.clone();
             window.focus(&focus, cx);
         }

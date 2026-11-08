@@ -39,7 +39,6 @@ mod pane_move;
 mod port_forward;
 mod processes;
 mod protocol;
-mod px0;
 mod remote;
 mod root;
 #[cfg(unix)]

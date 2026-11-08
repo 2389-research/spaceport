@@ -88,7 +88,6 @@ pub enum Command {
     ToggleAnnotate,
     InstallBrowserSkill,
     SplitEditor,
-    OpenPx0,
     ToggleFullScreen,
     CycleWindows,
     /// Closes the window it runs in, leaving the daemon and its terminals.
@@ -698,11 +697,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-split-editor",
     },
     CommandInfo {
-        command: Command::OpenPx0,
-        name: "open_px0",
-        message: "commands-open-px0",
-    },
-    CommandInfo {
         command: Command::ToggleFullScreen,
         name: "toggle_full_screen",
         message: "commands-toggle-full-screen",
@@ -893,7 +887,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::ToggleAnnotate
         | Command::InstallBrowserSkill
         | Command::SplitEditor
-        | Command::OpenPx0
         | Command::ToggleFullScreen
         | Command::CycleWindows
         | Command::CloseWindow

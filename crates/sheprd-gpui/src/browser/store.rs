@@ -1,7 +1,7 @@
 //! The app's browser tabs: which page each one shows and the workspace it
 //! belongs to. Herdr has no browser panes, so these live only in this client;
 //! every window shows the same tabs for a workspace, each with its own page.
-use super::{Editor, Location, zoom::Zoom};
+use super::{Location, zoom::Zoom};
 use crate::i18n::fl;
 use crate::{reorder::Beside, state_file};
 use gpui::{App, Global};
@@ -177,13 +177,13 @@ impl Scope {
     }
 }
 
-/// Editor tabs are singletons per provider and workspace. Their saved names
-/// remain flat strings for compatibility with earlier tab files.
+/// Retired editor names remain parseable so a saved file can retain its other tabs.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) enum Place {
     #[default]
     Group,
-    Editor(Editor),
+    /// Read only while loading an old px0 tab; never restored or created.
+    RetiredPx0,
     /// Read only while loading an old tab file; never restored or created.
     RetiredVsCode,
 }
@@ -192,7 +192,7 @@ impl Serialize for Place {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
             Self::Group => serializer.serialize_str("group"),
-            Self::Editor(editor) => editor.serialize(serializer),
+            Self::RetiredPx0 => serializer.serialize_str("px0"),
             Self::RetiredVsCode => serializer.serialize_str("code"),
         }
     }
@@ -207,22 +207,19 @@ impl<'de> Deserialize<'de> for Place {
         if name == "code" || name == "code_group" {
             return Ok(Self::RetiredVsCode);
         }
-        Editor::deserialize(serde::de::value::StrDeserializer::<D::Error>::new(&name))
-            .map(Self::Editor)
+        if name == "px0" {
+            return Ok(Self::RetiredPx0);
+        }
+        Err(serde::de::Error::unknown_variant(
+            &name,
+            &["group", "code", "code_group", "px0"],
+        ))
     }
 }
 
 impl Place {
     pub(crate) fn is_editor(self) -> bool {
-        matches!(self, Self::Editor(_) | Self::RetiredVsCode)
-    }
-
-    pub(crate) fn editor(self) -> Option<Editor> {
-        match self {
-            Self::Group => None,
-            Self::Editor(editor) => Some(editor),
-            Self::RetiredVsCode => None,
-        }
+        matches!(self, Self::RetiredPx0 | Self::RetiredVsCode)
     }
 }
 
@@ -376,10 +373,10 @@ impl Store {
                 .max()
                 .unwrap_or(0),
         );
-        // Earlier builds hosted the orchestrator, source viewer, and review in tabs;
+        // Earlier builds hosted editors, the orchestrator, source viewer, and review in tabs;
         // their old IDs stay reserved, but the views do not restore.
         tabs.retain(|tab| {
-            tab.place != Place::RetiredVsCode
+            !matches!(tab.place, Place::RetiredVsCode | Place::RetiredPx0)
                 && !matches!(
                     tab.location,
                     Some(
@@ -465,41 +462,6 @@ impl Store {
         self.tabs
             .iter()
             .filter(move |tab| tab.core_group().as_ref() == Some(key))
-    }
-
-    pub(crate) fn px0_tab(&self, scope: &Scope, workspace_id: &str) -> Option<&Tab> {
-        self.editor_tab(scope, workspace_id, Editor::Px0)
-    }
-
-    pub(crate) fn editor_tab(
-        &self,
-        scope: &Scope,
-        workspace_id: &str,
-        editor: Editor,
-    ) -> Option<&Tab> {
-        self.tabs.iter().find(|tab| {
-            tab.place.editor() == Some(editor)
-                && &tab.scope == scope
-                && tab.workspace_id == workspace_id
-        })
-    }
-
-    pub(crate) fn open_editor_tab(
-        &mut self,
-        scope: Scope,
-        workspace_id: &str,
-        editor: Editor,
-        location: Option<Location>,
-    ) -> Option<TabId> {
-        if let Some(tab) = self.editor_tab(&scope, workspace_id, editor) {
-            return Some(tab.id);
-        }
-        let waiting = location.is_none();
-        let id = self.push(scope, workspace_id, location, None, Place::Editor(editor))?;
-        if waiting {
-            self.visited(id, None, Some(editor.name()));
-        }
-        Some(id)
     }
 
     /// Opens a tab for the strips, or returns `None` when the app already

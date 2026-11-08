@@ -20,16 +20,15 @@ fn the_group_menu_shows_only_messages_under_en_xa() {
         draw(cx);
         let data = cx.update(|_, cx| {
             let view = view.read(cx);
-            let keys = [view.keymap().primary(Command::OpenPx0).to_owned()];
             let rows = view
                 .group_actions(group, cx)
                 .into_iter()
                 .flat_map(|action| match action {
-                    Action::Px0 | Action::Chat(_) => vec![action.label().into()],
+                    Action::Chat(_) => vec![action.label().into()],
                     Action::Port { process, link, .. } => vec![link.label(), process],
                     _ => Vec::new(),
                 });
-            keys.into_iter().chain(rows).collect::<Vec<String>>()
+            rows.collect::<Vec<String>>()
         });
         assert_translated("Group menu", &recorder.take(), &data);
     });

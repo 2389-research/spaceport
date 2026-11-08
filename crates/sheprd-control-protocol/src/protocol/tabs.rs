@@ -48,14 +48,13 @@ pub enum TabOp {
         change: ZoomChange,
     },
     Devices,
-    Px0,
 }
 
 impl TabOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
             Self::Text { .. } | Self::Screenshot { .. } => PAGE_WAIT_SECONDS,
-            Self::Devices | Self::Px0 => ARRIVE_WAIT_SECONDS,
+            Self::Devices => ARRIVE_WAIT_SECONDS,
             Self::List { .. }
             | Self::Focus { .. }
             | Self::Close { .. }
@@ -87,7 +86,6 @@ impl TabKind {
             Self::Orchestrator => "orchestrator",
             Self::Devices => "devices",
             Self::CoreTerminal => "core_terminal",
-            Self::Editor => "editor",
         }
     }
 
@@ -107,8 +105,6 @@ pub enum TabKind {
     Devices,
     /// A herdr-core (Herdr 2) terminal the app draws.
     CoreTerminal,
-    /// A retained embedded editor tab.
-    Editor,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

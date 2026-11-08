@@ -19,7 +19,6 @@ for what only Spaceport shows or keeps.
 
 | To | Run |
 | --- | --- |
-| Open px0 to browse, edit, or review your local checkout (macOS/Windows) | `spaceport px0 open` |
 | Get notes the user sent this pane (pages, reviews, terminals) | `spaceport feedback --wait 600` |
 | Keep a note on this worktree (repository and branch) | `spaceport notes set waiting on CI` |
 | Silence this worktree's notifications | `spaceport worktree mute` |

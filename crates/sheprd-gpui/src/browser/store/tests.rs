@@ -3,10 +3,10 @@ use super::*;
 use crate::browser::WebUrl;
 
 mod core_groups;
-mod editors;
+mod labels;
 mod orchestrator_tabs;
-mod px0;
 mod retired_code_view;
+mod retired_px0;
 mod retired_review;
 mod retired_vs_code;
 

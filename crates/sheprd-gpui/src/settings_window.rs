@@ -158,7 +158,6 @@ struct SettingsWindow {
     nav_search: Entity<crate::search_input::SearchInput>,
     themes: themes::ThemeBrowser,
     controls: controls::Controls,
-    px0: controls::px0::Px0Settings,
     chat_env: controls::chat_env::ChatEnvSettings,
     /// The open override dropdown, if any; its list renders inside its button.
     dropdown: Option<ui::Dropdown>,
@@ -287,7 +286,6 @@ impl SettingsWindow {
             nav_search,
             themes: themes::ThemeBrowser::new(cx),
             controls: controls::Controls::new(cx),
-            px0: Default::default(),
             chat_env: Default::default(),
             dropdown: None,
             number_edit: None,
@@ -615,9 +613,6 @@ impl SettingsWindow {
         self.section = section;
         // A page opened from search or elsewhere shows in a short list too.
         self.navigation_scroll.scroll_to_item(section.nav_item());
-        if section == Section::Px0 {
-            self.open_px0_settings(cx);
-        }
         if section == Section::General {
             self.open_chat_env_settings(cx);
         }
@@ -649,7 +644,6 @@ impl Render for SettingsWindow {
             None => match self.section {
                 Section::Theme => self.render_theme(window, cx),
                 Section::Integrations => self.render_integration_controls(cx),
-                Section::Px0 => self.render_px0_controls(cx),
                 _ => self.render_controls(window, cx),
             },
         };

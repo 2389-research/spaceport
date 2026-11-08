@@ -297,6 +297,7 @@
         "evidence/t04-github-account-pr-dependency.md",
         "evidence/t04-git-status-pr-dependency.md",
         "evidence/t04-px0-editor-dependency.md",
+        "evidence/t04-px0-editor-removal.md",
         "evidence/t05-core-default-observation.md"
       ],
       "must_close_gaps": [

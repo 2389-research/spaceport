@@ -9,7 +9,6 @@ pub(super) mod indicators;
 pub(super) use fonts::native_probe;
 pub(super) use fonts::{face_font, face_message, family_label};
 pub(super) mod preferences;
-pub(super) mod px0;
 
 use super::{Section, SettingsWindow};
 use crate::{
@@ -189,7 +188,6 @@ impl SettingsWindow {
         self.nav_search.update(cx, |input, cx| {
             input.set_appearance(self.config.ui.clone(), self.theme.clone(), cx);
         });
-        self.sync_px0_field(cx);
         self.sync_chat_env_field(cx);
         if let Some(edit) = &self.number_edit {
             edit.input.update(cx, |input, cx| {
@@ -293,7 +291,7 @@ impl SettingsWindow {
             Section::Tabs => self.render_tabs(cx),
             Section::Notifications => self.render_notifications(cx),
             Section::Configuration => self.render_configuration(cx),
-            Section::Theme | Section::Integrations | Section::Px0 => div(),
+            Section::Theme | Section::Integrations => div(),
         };
         div().flex().flex_col().min_w_0().child(content)
     }

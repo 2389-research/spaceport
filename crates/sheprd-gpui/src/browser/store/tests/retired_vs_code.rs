@@ -9,9 +9,6 @@ fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
     let page = old
         .open(scope.clone(), "w1", url("https://example.test/"), None)
         .unwrap();
-    let px0 = old
-        .open_editor_tab(scope.clone(), "w1", Editor::Px0, None)
-        .unwrap();
     let core = old
         .open(
             scope.clone(),
@@ -47,11 +44,10 @@ fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
     let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
-        [page, px0, core]
+        [page, core]
     );
     assert!(restored.get(code).is_none());
     assert!(restored.get(code_group).is_none());
-    assert_eq!(restored.px0_tab(&scope, "w1").map(|tab| tab.id), Some(px0));
 
     let next = restored.open(scope, "w1", None, None).unwrap();
     assert!(u64::from(next) > u64::from(code_group));

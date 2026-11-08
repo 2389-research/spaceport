@@ -445,10 +445,6 @@ impl SheprdWindow {
                 self.split_active_group(window, cx);
                 return;
             }
-            Command::OpenPx0 => {
-                self.open_px0(None, window, cx);
-                return;
-            }
             Command::InstallBrowserSkill => {
                 self.install_browser_skill(window, cx);
                 return;
