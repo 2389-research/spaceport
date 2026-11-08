@@ -37,6 +37,26 @@ fn oversized_put_is_refused_before_dispatch() {
 }
 
 #[test]
+fn put_name_must_be_a_bounded_basename_before_dispatch() {
+    let (client, _core) = connected();
+    for name in [
+        "",
+        "../secret.png",
+        "folder\\secret.png",
+        "bad\0name",
+        &"x".repeat(256),
+    ] {
+        assert!(
+            matches!(
+                client.terminal_put("lab/t7", name, b"safe"),
+                Err(Error::InvalidPutName)
+            ),
+            "{name:?}"
+        );
+    }
+}
+
+#[test]
 fn absent_put_route_is_unsupported_before_dispatch() {
     let (client, server) = pair();
     let methods: Vec<&str> = every_method()

@@ -264,6 +264,13 @@ impl Core {
         name: &str,
         bytes: &[u8],
     ) -> Result<wire::PutResult> {
+        if name.trim().is_empty()
+            || name.len() > 255
+            || name.contains(['/', '\\'])
+            || name.chars().any(char::is_control)
+        {
+            return Err(Error::InvalidPutName);
+        }
         if bytes.len() > MAX_PUT_BYTES {
             return Err(Error::PutTooLarge {
                 size: bytes.len(),

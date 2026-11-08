@@ -22,6 +22,8 @@ pub enum Error {
     Frame(#[from] frame::Error),
     #[error("herdr-core sent an invalid {0} answer")]
     Invalid(Method, #[source] serde_json::Error),
+    #[error("terminal attachment name must be a basename of at most 255 bytes")]
+    InvalidPutName,
     #[error("herdr-core I/O failed")]
     Io(#[from] io::Error),
     #[error("invalid herdr-core message")]
