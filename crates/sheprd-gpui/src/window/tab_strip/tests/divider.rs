@@ -101,7 +101,12 @@ fn each_part_of_the_grip_drags_the_divider(cx: &mut TestAppContext) {
 fn the_grip_keeps_off_a_page_and_keeps_its_width(cx: &mut TestAppContext) {
     let (view, cx) = split(cx);
     let right = view.read_with(cx, |view, _| view.group_slots()[1].id);
-    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab_in(right, window, cx)));
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            view.ensure_layout().unwrap().activate(right);
+            view.open_browser_tab(None, window, cx);
+        })
+    });
     draw(cx);
     let line = cx.debug_bounds("group-divider-0").unwrap();
     let grip = cx.debug_bounds("group-divider-0-left").unwrap();
@@ -121,7 +126,12 @@ fn the_grip_keeps_off_a_page_and_keeps_its_width(cx: &mut TestAppContext) {
 fn the_grip_lies_over_a_page_centered_on_its_line(cx: &mut TestAppContext) {
     let (view, cx) = split(cx);
     let right = view.read_with(cx, |view, _| view.group_slots()[1].id);
-    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab_in(right, window, cx)));
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            view.ensure_layout().unwrap().activate(right);
+            view.open_browser_tab(None, window, cx);
+        })
+    });
     draw(cx);
     let line = cx.debug_bounds("group-divider-0").unwrap();
     let before = cx.debug_bounds("group-divider-0-left").unwrap();

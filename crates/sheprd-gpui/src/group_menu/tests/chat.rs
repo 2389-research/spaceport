@@ -89,7 +89,7 @@ fn an_ssh_host_offers_the_agents_it_has_once_it_answered(cx: &mut TestAppContext
 #[test]
 fn each_headed_section_adds_one_child_before_its_rows() {
     let actions = [
-        Action::NewBrowserTab,
+        Action::Review,
         Action::Chat(Agent::Claude),
         Action::Chat(Agent::Codex),
         Action::Port {

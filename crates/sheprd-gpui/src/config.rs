@@ -242,7 +242,6 @@ pub struct Config {
     pub notifications: NotificationConfig,
     /// Where a link-modifier click on a printed file path opens it.
     pub open_files_in: FileTarget,
-    pub open_links_in: LinkTarget,
     /// The self-hosted OpenSandbox server whose sandboxes are devices.
     pub opensandbox: OpenSandboxConfig,
     pub option_as_alt: OptionAsAlt,
@@ -322,17 +321,6 @@ pub struct Config {
     /// What Toggle Zen Mode does beyond hiding the chrome.
     pub zen: Zen,
     // keep-sorted end
-}
-
-/// Where a link-modifier click on a terminal's web link opens it. Holding
-/// Alt (Option on macOS) as well opens it in the other one.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum LinkTarget {
-    #[default]
-    System,
-    /// A browser tab in the workspace, where the build can show pages.
-    BrowserTab,
 }
 
 /// VS Code as a tab of a space's editor groups, served by
@@ -446,7 +434,6 @@ impl Default for Config {
             notification_overrides: NotificationSettings::default(),
             notifications: NotificationConfig::default(),
             open_files_in: FileTarget::default(),
-            open_links_in: LinkTarget::default(),
             opensandbox: OpenSandboxConfig::default(),
             option_as_alt: OptionAsAlt::default(),
             palette: crate::palette::PaletteConfig::default(),
@@ -531,7 +518,6 @@ struct Settings {
     layout: Layout,
     notifications: NotificationSettings,
     open_files_in: FileTarget,
-    open_links_in: LinkTarget,
     opensandbox: OpenSandboxConfig,
     option_as_alt: OptionAsAlt,
     palette: crate::palette::PaletteConfig,
@@ -947,7 +933,6 @@ impl Config {
         config.agent_skill = settings.agent_skill;
         config.usage = settings.usage;
         config.option_as_alt = settings.option_as_alt;
-        config.open_links_in = settings.open_links_in;
         config.code = settings.code;
         settings.px0.check()?;
         config.px0 = settings.px0;

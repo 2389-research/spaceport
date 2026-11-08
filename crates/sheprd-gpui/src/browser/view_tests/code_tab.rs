@@ -81,11 +81,7 @@ fn vs_code_opens_as_a_tab_in_the_group_in_use(cx: &mut gpui::TestAppContext) {
     assert!(status.top() >= area.top());
 
     // A browser tab beside it keeps its toolbar.
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            view.command(Command::NewBrowserTab, window, cx)
-        })
-    });
+    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab(None, window, cx)));
     draw(cx);
     assert!(cx.debug_bounds("browser-reload").is_some());
 }

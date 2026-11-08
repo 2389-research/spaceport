@@ -43,7 +43,6 @@ commands-logs = Logs
 commands-move-pane = Move Pane…
 commands-move-tab-next = Move Tab Right
 commands-move-tab-previous = Move Tab Left
-commands-new-browser-tab = New Browser Tab
 commands-new-core-terminal = New Herdr 2 Terminal
 commands-mirror-core-pane = Mirror Herdr 2 Pane
 commands-new-tab = New Tab

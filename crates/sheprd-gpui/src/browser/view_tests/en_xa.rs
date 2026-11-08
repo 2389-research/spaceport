@@ -20,11 +20,7 @@ fn browser_tabs_show_only_messages_under_en_xa() {
         draw(cx);
         recorder.take();
 
-        cx.update(|window, cx| {
-            view.update(cx, |view, cx| {
-                view.command(Command::NewBrowserTab, window, cx)
-            })
-        });
+        cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab(None, window, cx)));
         draw(cx);
         assert_translated("blank browser tab", &uncut(recorder.take()), &[]);
 

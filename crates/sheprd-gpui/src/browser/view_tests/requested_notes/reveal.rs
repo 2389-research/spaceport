@@ -1,8 +1,5 @@
 use super::*;
-use crate::{
-    browser::{Feedback, Shown},
-    controls::Command,
-};
+use crate::browser::{Feedback, Shown};
 use sheprd_client::protocol::AgentStatus;
 
 fn shown(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Vec<Shown> {
@@ -18,11 +15,7 @@ fn shown(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Vec<Shown> 
 
 /// Opens a page over the agent's tab.
 fn open_page(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> crate::browser::TabId {
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            view.command(Command::NewBrowserTab, window, cx)
-        })
-    });
+    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab(None, window, cx)));
     let page = crate::browser::TabId::test(0);
     assert_eq!(shown(view, cx), [Shown::Page(page)]);
     page

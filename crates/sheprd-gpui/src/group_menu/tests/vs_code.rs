@@ -23,12 +23,11 @@ fn the_menu_opens_vs_code_in_its_group_once_there_is_a_server(cx: &mut TestAppCo
         assert!(vs_code(&listed).is_none(), "this build shows no pages");
         return;
     }
-    // Among the tabs to open, after a new browser tab.
-    assert_eq!(listed[0], Action::NewBrowserTab);
+    assert_eq!(listed[0], Action::VsCode);
     let row = vs_code(&listed).unwrap().clone();
     assert_eq!(row.label(), "VS Code");
     assert_eq!(row.icon(), Some("icons/vscode.svg"));
-    assert_eq!(row.section(), Action::NewBrowserTab.section());
+    assert_eq!(row.section(), 0);
 
     run(&view, cx, group, row);
     let id = cx.update(|_, cx| view.read(cx).code_tab_id(cx)).unwrap();

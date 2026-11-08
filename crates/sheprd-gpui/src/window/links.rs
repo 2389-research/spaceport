@@ -88,7 +88,6 @@ struct PendingActivation {
     /// What the row-local detector read at the click, opened when the
     /// daemon neither handles nor reads a web address there.
     fallback: Option<Fallback>,
-    in_tab: bool,
 }
 
 /// What this client opens itself for a click no plugin handler claimed.
@@ -484,7 +483,6 @@ impl SheprdWindow {
         pressed: &PressedLink,
         release: Point<Pixels>,
         modifiers: Modifiers,
-        in_tab: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
@@ -525,21 +523,21 @@ impl SheprdWindow {
                     self.links.activating = Some(InFlight {
                         id,
                         inbox: connection.links.clone(),
-                        context: PendingActivation { fallback, in_tab },
+                        context: PendingActivation { fallback },
                     });
                     return true;
                 }
                 Err(error) => tracing::debug!(%error, "Link activation not sent"),
             }
         }
-        self.open_link(fallback, in_tab, window, cx);
+        self.open_link(fallback, window, cx);
         true
     }
 
     fn finish_activation(
         &mut self,
         activation: Activation,
-        PendingActivation { fallback, in_tab }: PendingActivation,
+        PendingActivation { fallback }: PendingActivation,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -550,20 +548,14 @@ impl SheprdWindow {
                 cx.notify();
             }
             Activation::Declined(url) => {
-                self.open_link(url.map(Fallback::Web).or(fallback), in_tab, window, cx);
+                self.open_link(url.map(Fallback::Web).or(fallback), window, cx);
             }
         }
     }
 
-    fn open_link(
-        &mut self,
-        link: Option<Fallback>,
-        in_tab: bool,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
+    fn open_link(&mut self, link: Option<Fallback>, window: &mut Window, cx: &mut Context<Self>) {
         match link {
-            Some(Fallback::Web(url)) => self.open_web_link(url, in_tab, window, cx),
+            Some(Fallback::Web(url)) => cx.open_url(url.as_str()),
             Some(Fallback::File { link, in_editor }) => self.open_file_link(link, in_editor, cx),
             Some(Fallback::External(url)) if url.trusted() => cx.open_url(url.as_str()),
             Some(Fallback::External(url)) => self.ask_to_open_link(url, window, cx),
@@ -571,22 +563,6 @@ impl SheprdWindow {
                 self.show_flash(super::flash::Flash::warning(error.to_string()), cx)
             }
             None => {}
-        }
-    }
-
-    /// Opens a web address in a browser tab or the system browser, as the
-    /// settings and the click's modifiers chose.
-    fn open_web_link(
-        &mut self,
-        url: WebUrl,
-        in_tab: bool,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if in_tab && crate::browser::EMBEDDED {
-            self.open_browser_tab(Some(url), window, cx);
-        } else {
-            cx.open_url(&String::from(url));
         }
     }
 }

@@ -20,7 +20,7 @@ fn the_group_menu_shows_only_messages_under_en_xa() {
         draw(cx);
         let data = cx.update(|_, cx| {
             let view = view.read(cx);
-            let keys = [Command::NewBrowserTab, Command::OpenCode, Command::OpenPx0]
+            let keys = [Command::OpenCode, Command::OpenPx0]
                 .map(|command| view.keymap().primary(command).to_owned());
             let rows = view
                 .group_actions(group, cx)

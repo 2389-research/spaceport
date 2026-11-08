@@ -99,17 +99,9 @@ fn appearance_and_close_options_preserve_defaults() -> anyhow::Result<()> {
 }
 
 #[test]
-fn links_open_in_the_system_browser_unless_configured() -> anyhow::Result<()> {
-    assert_eq!(Config::parse("")?.open_links_in, LinkTarget::System);
-    assert_eq!(
-        Config::parse(DEFAULT_CONFIG)?.open_links_in,
-        LinkTarget::System
-    );
-    assert_eq!(
-        Config::parse("open_links_in = \"browser-tab\"")?.open_links_in,
-        LinkTarget::BrowserTab
-    );
-    assert!(Config::parse("open_links_in = \"tab\"").is_err());
+fn default_config_has_no_browser_page_link_preference() -> anyhow::Result<()> {
+    let config = Config::parse(DEFAULT_CONFIG)?;
+    assert!(config.unknown_keys.is_empty(), "{:?}", config.unknown_keys);
     Ok(())
 }
 

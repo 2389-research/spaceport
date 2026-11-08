@@ -56,7 +56,6 @@ pub(super) fn defaults(command: Command) -> &'static [&'static str] {
         GoToSymbol => &["cmd-shift-o"],
         GoToFile => &["cmd-o"],
         Quit => &["cmd-q"],
-        NewBrowserTab => &["cmd-shift-b"],
         SplitEditor => &["cmd-\\"],
         ToggleFullScreen => &["ctrl-cmd-f"],
         CycleWindows => &["cmd-`"],

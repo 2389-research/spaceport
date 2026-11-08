@@ -69,13 +69,10 @@ impl SheprdWindow {
         let Some(pressed) = pressed else {
             return;
         };
-        let in_tab = (self.config.open_links_in == crate::config::LinkTarget::BrowserTab)
-            != event.down.modifiers.alt;
         if self.activate_terminal_link(
             &pressed,
             event.up.position,
             event.down.modifiers,
-            in_tab,
             window,
             cx,
         ) {

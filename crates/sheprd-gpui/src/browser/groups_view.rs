@@ -800,19 +800,6 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Opens a blank browser tab in `group`.
-    pub(crate) fn open_browser_tab_in(
-        &mut self,
-        group: GroupId,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if let Some(layout) = self.ensure_layout() {
-            layout.activate(group);
-        }
-        self.open_browser_tab(None, window, cx);
-    }
-
     /// Closes a browser tab. The group showing it moves to the tab after it
     /// in its strip, or before it; a group of a split left with none closes.
     pub(crate) fn close_browser_tab(

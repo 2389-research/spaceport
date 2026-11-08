@@ -95,7 +95,8 @@ fn a_page_and_the_terminal_sit_side_by_side(cx: &mut gpui::TestAppContext) {
     };
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
-            view.open_browser_tab_in(right, window, cx);
+            view.ensure_layout().unwrap().activate(right);
+            view.open_browser_tab(None, window, cx);
             view.activate_group(left, window, cx);
         })
     });

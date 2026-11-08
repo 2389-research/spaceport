@@ -63,7 +63,6 @@ pub(super) fn defaults(command: Command) -> &'static [&'static str] {
         GoToSymbol => &["ctrl-alt-shift-o"],
         GoToFile => &["ctrl-shift-o"],
         Quit => &["ctrl-shift-q"],
-        NewBrowserTab => &["ctrl-alt-shift-b"],
         SplitEditor => &["ctrl-shift-\\"],
         ToggleFullScreen => &["f11"],
         CycleWindows => &["ctrl-shift-`"],

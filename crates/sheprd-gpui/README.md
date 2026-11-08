@@ -2757,9 +2757,6 @@ similar) opens itself, judged by where symlinks lead. An application, script,
 or unknown file type opens the folder that holds it, and a network path opens
 nothing.
 
-Set `open_links_in = "browser-tab"` to open web links in a [browser tab](#browser-tabs)
-instead. Holding Alt (Option on macOS) as well opens a link in the other target.
-
 With a daemon that offers it, a link click, a file path or `file://` hyperlink
 included, first goes to the daemon so a plugin's `[[link_handlers]]` entry can
 claim it; see [Herdr Plugins](#herdr-plugins).
@@ -2952,11 +2949,10 @@ tabs. Splitting opens nothing new and moves no tab.
   a tab of another group, that group becomes the group in use.
 - The group in use has the keyboard, and its chosen tab carries the accent.
   **+** opens a terminal tab in that group. The group's **…**, at the end
-  of its strip, offers the other kinds of tab: **New Browser Tab**
-  (`cmd-shift-b`), **Review Changes** when the Git chip tracks a checkout,
-  and the workspace's listening ports, each opening its page. `cmd-t` and
-  `cmd-shift-b` open in the group in use, where Close Tab acts too. Close
-  Tab in a group without tabs closes the group.
+  of its strip, offers other views such as **Review Changes** when the Git
+  chip tracks a checkout, and the workspace's listening ports, each opening
+  its page with the system URL handler. `cmd-t` opens in the group in use,
+  where Close Tab acts too. Close Tab in a group without tabs closes the group.
 - Drag a divider to resize the groups beside it. Groups are the window's own,
   per workspace. A group's own connection closes with the group, or when the
   window leaves the workspace or host; returning reconnects it.
@@ -2999,11 +2995,8 @@ own page for each one. Tabs are saved in
 `$XDG_STATE_HOME/herdr/gpui/browser-tabs.json` (default `~/.local/state/`) and
 come back after a restart; closing a workspace in Herdr removes its tabs.
 
-- Open one from a group's **…** menu, with **New Browser Tab** (`cmd-shift-b`)
-  in the command palette, from a clicked link
-  (see [Terminal Links](#terminal-links)), or from an agent (below). A new
-  tab starts blank with its address field focused, and lists the
-  workspace's listening ports: clicking one loads its page in that tab.
+- Open one from an agent's `browser open` request (below). A restored blank
+  tab shows the workspace's listening ports in its address view.
 - A tab shows its page's favicon, drawn from the page's `<link rel="icon">`
   or a site's `/favicon.ico`, and a globe until the page has one. An icon
   from another origin shows only when that origin allows the page to read
@@ -3825,7 +3818,7 @@ switching input languages. Alt+F4 closes a window through Windows itself.
 | Split right / Split down | Ctrl+Shift+D / Ctrl+Alt+Shift+D |
 | Close pane / Close tab | Ctrl+Shift+W / Ctrl+Alt+Shift+W |
 | Next / Previous tab | Ctrl+PageDown / Ctrl+PageUp |
-| Toggle sidebar / New browser tab | Ctrl+Shift+B / Ctrl+Alt+Shift+B |
+| Toggle sidebar | Ctrl+Shift+B |
 | Settings / Keyboard Shortcuts | Ctrl+Shift+, / Ctrl+Shift+/ |
 | Larger / Smaller text | Ctrl+Shift+= / Ctrl+Shift+- |
 | Reset text size | Ctrl+Shift+0 (Linux) / Ctrl+0 (Windows) |

@@ -26,7 +26,8 @@ fn the_font_size_keys_zoom_the_page_the_group_in_use_shows(cx: &mut gpui::TestAp
     let size = font(cx);
 
     // A blank tab needs no page, and keeps the zoom its page will take.
-    run(&view, Command::NewBrowserTab, cx);
+    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab(None, window, cx)));
+    draw(cx);
     assert!(
         cx.debug_bounds("browser-zoom").is_none(),
         "100% shows no mark"

@@ -11,6 +11,7 @@ mod agents_placement;
 mod backdrop;
 mod bitmap_fonts;
 mod bold_color;
+mod browser_page;
 mod change_counts;
 mod cjk_fonts;
 mod cloud_setup;

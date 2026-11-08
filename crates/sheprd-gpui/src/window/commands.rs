@@ -401,10 +401,6 @@ impl SheprdWindow {
                 }
                 return;
             }
-            Command::NewBrowserTab => {
-                self.open_browser_tab(None, window, cx);
-                return;
-            }
             Command::NextTab | Command::PreviousTab | Command::TabNumber(_)
                 if self.step_tab(command, window, cx) =>
             {

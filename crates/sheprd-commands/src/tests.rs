@@ -1,5 +1,7 @@
 use super::*;
 
+mod browser_page;
+
 fn snapshot() -> ClientShellSnapshot {
     serde_json::from_str(include_str!(
         "../../sheprd-protocol/tests/fixtures/endpoint-snapshot-v1.json"
@@ -118,7 +120,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (Reconnect, &[]),
         (Quit, &["cmd-q"]),
         (About, &[]),
-        (NewBrowserTab, &["cmd-shift-b"]),
         (OpenOrchestrator, &[]),
         (ReviewChanges, &[]),
         (GitMenu, &[]),
@@ -205,7 +206,6 @@ fn gui_commands_never_send_daemon_requests() {
         Command::Reconnect,
         Command::Quit,
         Command::About,
-        Command::NewBrowserTab,
         Command::InstallBrowserSkill,
         Command::SplitEditor,
         Command::OpenCode,

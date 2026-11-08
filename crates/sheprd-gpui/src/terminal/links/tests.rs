@@ -291,6 +291,7 @@ fn click_dispatch_opens_browser_and_respects_menu_and_revision(cx: &mut gpui::Te
     });
 }
 
+mod browser_page;
 mod drive_paths;
 mod escaped_paths;
 mod external;

@@ -84,7 +84,6 @@ pub enum Command {
     Logs,
     About,
     OpenNotificationTarget,
-    NewBrowserTab,
     /// The focused workspace's repository's issues, pull requests, and runs.
     OpenOrchestrator,
     /// A review of the focused checkout's changes.
@@ -691,11 +690,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-about",
     },
     CommandInfo {
-        command: Command::NewBrowserTab,
-        name: "new_browser_tab",
-        message: "commands-new-browser-tab",
-    },
-    CommandInfo {
         command: Command::OpenOrchestrator,
         name: "open_orchestrator",
         message: "commands-open-orchestrator",
@@ -923,7 +917,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::Logs
         | Command::About
         | Command::OpenNotificationTarget
-        | Command::NewBrowserTab
         | Command::OpenOrchestrator
         | Command::ReviewChanges
         | Command::GitMenu

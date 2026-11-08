@@ -36,7 +36,8 @@ fn toggle_annotate_without_a_page_says_so(cx: &mut gpui::TestAppContext) {
 fn toggle_annotate_arms_and_disarms_the_page_in_view(cx: &mut gpui::TestAppContext) {
     let (view, cx) = window(cx);
     draw(cx);
-    run(&view, Command::NewBrowserTab, cx);
+    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab(None, window, cx)));
+    draw(cx);
     run(&view, Command::ToggleAnnotate, cx);
     assert_eq!(flash(&view, cx).as_deref(), Some("No page to annotate"));
 

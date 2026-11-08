@@ -81,7 +81,7 @@ fn an_unchecked_path_leaves_the_click_to_the_application(cx: &mut gpui::TestAppC
         view.update(cx, |view, cx| {
             assert!(!view.terminal_mouse_down(&down, window, cx));
             let pressed = view.terminal_link_press(position, held).unwrap();
-            assert!(view.activate_terminal_link(&pressed, position, held, false, window, cx));
+            assert!(view.activate_terminal_link(&pressed, position, held, window, cx));
         });
     });
     cx.run_until_parked();

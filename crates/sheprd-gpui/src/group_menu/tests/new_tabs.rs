@@ -53,35 +53,6 @@ fn plus_opens_a_terminal_tab_in_the_group_that_asked(cx: &mut TestAppContext) {
     });
 }
 
-/// A blank tab needs no native page, but only builds that show pages open
-/// one rather than handing the request to the system browser.
-#[cfg(any(target_os = "macos", windows))]
-#[gpui::test]
-fn a_new_browser_tab_opens_blank_in_the_group_that_asked(cx: &mut TestAppContext) {
-    let (view, cx) = window(cx);
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            view.command(Command::SplitEditor, window, cx)
-        })
-    });
-    draw(cx);
-    let right = view.read_with(cx, |view, _| view.group_slots()[1].id);
-    click(cx, "g1-tab-actions");
-    // Keyboard: the first row is New Browser Tab.
-    cx.simulate_keystrokes("down enter");
-    draw(cx);
-    let picked = view.read_with(cx, |view, _| {
-        assert!(view.menu.page.is_none());
-        view.group_pick(right)
-    });
-    let Some(Pick::Page(id)) = picked else {
-        panic!("the right group shows the new page, not {picked:?}")
-    };
-    let blank = cx.update(|_, cx| cx.global::<Store>().get(id).unwrap().location.is_none());
-    assert!(blank);
-    assert!(cx.debug_bounds("g1-browser-placeholder").is_some());
-}
-
 #[gpui::test]
 fn review_is_offered_for_a_tracked_checkout(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
@@ -98,10 +69,7 @@ fn review_is_offered_for_a_tracked_checkout(cx: &mut TestAppContext) {
             );
         })
     });
-    assert_eq!(
-        actions(&view, cx, group),
-        [Action::NewBrowserTab, Action::Review, Action::Split]
-    );
+    assert_eq!(actions(&view, cx, group), [Action::Review, Action::Split]);
     run(&view, cx, group, Action::Review);
     view.read_with(cx, |view, _| {
         assert!(view.menu.page.is_none());
@@ -141,29 +109,20 @@ fn listening_ports_follow_the_tab_kinds(cx: &mut TestAppContext) {
             ("localhost:5173".to_owned(), "vite".to_owned()),
         ]
     );
-    let browser = cx.debug_bounds("group-menu-NewBrowserTab").unwrap();
     let first = cx.debug_bounds("group-menu-Port3000").unwrap();
     let split = cx.debug_bounds("group-menu-Split").unwrap();
-    assert!(first.top() > browser.bottom());
     assert!(split.top() > first.bottom());
     // Hidden ports are not offered either.
     cx.simulate_keystrokes("escape");
     cx.update(|_, cx| view.update(cx, |view, _| view.config.show_listening_ports = false));
-    assert_eq!(
-        actions(&view, cx, group),
-        [Action::NewBrowserTab, Action::Split]
-    );
+    assert_eq!(actions(&view, cx, group), [Action::Split]);
 }
 
 #[cfg(any(target_os = "macos", windows))]
 #[gpui::test]
 fn a_blank_tab_lists_the_listening_ports(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            view.command(Command::NewBrowserTab, window, cx)
-        })
-    });
+    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab(None, window, cx)));
     draw(cx);
     assert!(cx.debug_bounds("browser-placeholder").is_some());
     assert!(cx.debug_bounds("blank-port-3000").is_none());
@@ -203,9 +162,6 @@ fn a_long_process_name_leaves_the_port_address_readable(cx: &mut TestAppContext)
     assert!(row.right() <= panel.right(), "{row:?} {panel:?}");
     // The address keeps most of the row rather than being squeezed out.
     assert!(address.size.width >= px(100.), "{address:?}");
-    // A shortcut hint is not capped.
-    let shortcut = cx.debug_bounds("group-menu-NewBrowserTab-detail").unwrap();
-    assert!(shortcut.size.width > px(0.));
 }
 
 #[gpui::test]
@@ -236,7 +192,7 @@ fn the_keyboard_scrolls_a_long_menu_to_the_selected_row(cx: &mut TestAppContext)
     // Down wraps back to the first, which scrolls back up to it.
     cx.simulate_keystrokes("down");
     draw(cx);
-    let first = cx.debug_bounds("group-menu-NewBrowserTab").unwrap();
+    let first = cx.debug_bounds("group-menu-Port3000").unwrap();
     assert!(first.top() >= panel.top(), "{first:?} {panel:?}");
 }
 
@@ -247,7 +203,7 @@ fn the_listening_heading_shifts_the_rows_after_it() {
         process: "node".into(),
         link: Link::Page(WebUrl::try_from("http://localhost:3000/").unwrap()),
     };
-    let actions = [Action::NewBrowserTab, port, Action::Split];
+    let actions = [Action::Review, port, Action::Split];
     assert_eq!(child_index(&actions, 0), 0);
     assert_eq!(child_index(&actions, 1), 2);
     assert_eq!(child_index(&actions, 2), 3);

@@ -1,5 +1,5 @@
 //! The menu behind a group's "…" button: tabs other than a terminal to open
-//! in the group (a blank browser tab, the focused checkout's review, the
+//! in the group (the focused checkout's review, the
 //! repository's orchestrator, the focused workspace's listening ports, its
 //! VS Code), a new chat with an agent through `herdr-acp`, closing the tab it shows, its other tabs, or the group itself,
 //! and splitting it. A terminal tab comes from the group's "+". Closing a
@@ -28,7 +28,6 @@ const ICON_SIZE: f32 = 14.;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Action {
-    NewBrowserTab,
     /// The review tab of the checkout the Git chip tracks.
     Review,
     /// The focused workspace's repository's issues, pull requests, and runs.
@@ -58,7 +57,6 @@ impl Action {
     /// The row's text, which for a port is where its page opens.
     fn label(&self) -> SharedString {
         match self {
-            Self::NewBrowserTab => fl!("group-menu-new-browser-tab").into(),
             Self::Review => fl!("group-menu-review").into(),
             Self::Orchestrator => fl!("group-menu-orchestrator").into(),
             // A product's name.
@@ -75,7 +73,6 @@ impl Action {
 
     fn icon(&self) -> Option<&'static str> {
         match self {
-            Self::NewBrowserTab => Some("icons/globe.svg"),
             Self::Review => Some("icons/diff-unified.svg"),
             Self::Orchestrator => Some("icons/issue.svg"),
             Self::VsCode => Some(crate::browser::Editor::VsCode.icon()),
@@ -101,7 +98,7 @@ impl Action {
     /// Which run of rows this one belongs to; a rule separates runs.
     fn section(&self) -> u8 {
         match self {
-            Self::NewBrowserTab | Self::Review | Self::Orchestrator | Self::VsCode | Self::Px0 => 0,
+            Self::Review | Self::Orchestrator | Self::VsCode | Self::Px0 => 0,
             Self::Chat(_) => 1,
             Self::Port { .. } => 2,
             Self::Close | Self::CloseOthers | Self::CloseGroup => 3,
@@ -147,7 +144,7 @@ impl SheprdWindow {
     /// come from the last scan, so they follow the status bar's. Closing
     /// belongs to a split: a lone group has nowhere else to keep its tabs.
     fn group_actions(&self, group: GroupId, cx: &App) -> Vec<Action> {
-        let mut actions = vec![Action::NewBrowserTab];
+        let mut actions = Vec::new();
         if self.git.tracked().is_some() {
             actions.push(Action::Review);
         }
@@ -214,7 +211,6 @@ impl SheprdWindow {
         self.dismiss_menu(window, cx);
         self.activate_group(group, window, cx);
         match action {
-            Action::NewBrowserTab => self.open_browser_tab_in(group, window, cx),
             Action::Review => self.open_review(window, cx),
             Action::Orchestrator => self.open_orchestrator(window, cx),
             Action::VsCode => self.open_code(Some(group), window, cx),
@@ -339,11 +335,6 @@ impl SheprdWindow {
                 );
             }
             let detail: SharedString = match &action {
-                Action::NewBrowserTab => self
-                    .keymap()
-                    .primary(Command::NewBrowserTab)
-                    .to_owned()
-                    .into(),
                 // It has no default key; one bound to open_code shows.
                 Action::VsCode => self.keymap().primary(Command::OpenCode).to_owned().into(),
                 Action::Px0 => self.keymap().primary(Command::OpenPx0).to_owned().into(),

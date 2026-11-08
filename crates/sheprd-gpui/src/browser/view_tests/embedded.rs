@@ -21,9 +21,7 @@ fn a_browser_tab_covers_the_terminal_until_it_closes(cx: &mut gpui::TestAppConte
 
     // A blank tab needs no page, so this runs without a native web view.
     cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            view.command(Command::NewBrowserTab, window, cx)
-        });
+        view.update(cx, |view, cx| view.open_browser_tab(None, window, cx));
     });
     draw(cx);
     assert!(cx.debug_bounds("browser-tab-0").is_some());

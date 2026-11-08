@@ -296,7 +296,6 @@ fn a_replaced_connection_retires_link_requests_unanswered(cx: &mut gpui::TestApp
             inbox: Arc::default(),
             context: PendingActivation {
                 fallback: WebUrl::try_from(URL).ok().map(Fallback::Web),
-                in_tab: false,
             },
         });
     });
