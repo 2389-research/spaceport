@@ -1,8 +1,5 @@
-//! The `[container]` table: how new containers on this computer's Docker or
-//! Podman engine are made. A build without the `container` feature still
-//! parses the table, so one config file serves every build, but never reads
-//! it. Numbers may be written as TOML numbers or strings (`cpus = 2` or
-//! `cpus = "1.5"`); Settings writes strings.
+//! The retained `[container]` table; saved rows still use the engine key.
+//! Old provisioning and auto-stop values parse without changing user files.
 #[cfg(feature = "container")]
 use crate::Result;
 use serde::{Deserialize, Deserializer};
@@ -11,9 +8,7 @@ use serde::{Deserialize, Deserializer};
 #[serde(default, deny_unknown_fields)]
 pub struct ContainerConfig {
     // keep-sorted start
-    /// Stop a running container once none of its agents has worked or
-    /// waited for input for this long, such as `30m` or `2h`; `never` by
-    /// default. Its files stay, and the next connection starts it again.
+    /// Old auto-stop value, preserved but not used by the client.
     pub auto_stop: Option<String>,
     #[serde(deserialize_with = "text")]
     pub cpus: Option<String>,
@@ -61,7 +56,6 @@ impl ContainerConfig {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ContainerFields {
     pub engine: String,
-    pub auto_stop: String,
 }
 
 #[cfg(feature = "container")]
@@ -70,12 +64,11 @@ impl ContainerFields {
         let text = |value: &Option<String>| value.clone().unwrap_or_default();
         Self {
             engine: text(&config.engine),
-            auto_stop: text(&config.auto_stop),
         }
     }
 
-    pub fn entries(&self) -> [(&'static str, &str); 2] {
-        [("engine", &self.engine), ("auto_stop", &self.auto_stop)]
+    pub fn entries(&self) -> [(&'static str, &str); 1] {
+        [("engine", &self.engine)]
     }
 
     /// The checks loading applies, so a save cannot leave a config that then
@@ -87,7 +80,6 @@ impl ContainerFields {
         };
         ContainerConfig {
             engine: value(&self.engine),
-            auto_stop: value(&self.auto_stop),
             ..existing.clone()
         }
         .settings()

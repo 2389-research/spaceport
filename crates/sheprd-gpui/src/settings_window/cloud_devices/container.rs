@@ -1,7 +1,6 @@
 //! The Container tab of Settings > Cloud devices. Its fields save to
-//! `[container]` in the local config. Engine reads, stops, and removals run
-//! through `cloud::worker`,
-//! never on the UI thread.
+//! `[container]` in the local config. Engine reads and saved-row removal run
+//! through `cloud::worker`, never on the UI thread.
 // i18n: migrated
 
 use super::{
@@ -26,16 +25,10 @@ use gpui::{prelude::*, *};
 
 /// The editable `[container]` keys, in display order, with their labels'
 /// message IDs and hints.
-const FIELDS: [(&str, Hint); 2] = [
-    (
-        "settings-cloud-container-engine",
-        Hint::Message("settings-cloud-container-engine-placeholder"),
-    ),
-    (
-        "settings-cloud-container-auto-stop",
-        Hint::Message("settings-cloud-container-auto-stop-placeholder"),
-    ),
-];
+const FIELDS: [(&str, Hint); 1] = [(
+    "settings-cloud-container-engine",
+    Hint::Message("settings-cloud-container-engine-placeholder"),
+)];
 
 enum Update {
     Overview(crate::Result<Overview>),
@@ -43,7 +36,7 @@ enum Update {
 }
 
 pub(in crate::settings_window) struct ContainerCard {
-    fields: [Entity<SearchInput>; 2],
+    fields: [Entity<SearchInput>; 1],
     /// The config values the fields last loaded; see `follow_config`.
     loaded: ContainerFields,
     /// `None` until the first read finishes.
@@ -80,10 +73,7 @@ impl ContainerCard {
 
     fn values(&self, cx: &App) -> ContainerFields {
         let text = |index: usize| self.fields[index].read(cx).text().trim().to_owned();
-        ContainerFields {
-            engine: text(0),
-            auto_stop: text(1),
-        }
+        ContainerFields { engine: text(0) }
     }
 
     fn devices(&self) -> &[Device] {
@@ -94,8 +84,8 @@ impl ContainerCard {
 }
 
 /// The editable values in `FIELDS` order.
-fn texts(values: &ContainerFields) -> [&str; 2] {
-    [&values.engine, &values.auto_stop]
+fn texts(values: &ContainerFields) -> [&str; 1] {
+    [&values.engine]
 }
 
 /// What the row says about a container: its engine and its state.
@@ -212,12 +202,6 @@ impl SettingsWindow {
         });
     }
 
-    fn stop_container(&mut self, id: String, cx: &mut Context<Self>) {
-        self.container_job(cx, move |_, send| {
-            send(Update::Done(setup::stop_saved(&id).map_err(Into::into)));
-        });
-    }
-
     pub(super) fn container_config_changed(&mut self, cx: &mut Context<Self>) {
         if let Some(card) = &mut self.container_card {
             let loaded = ContainerFields::from_config(&self.config.container);
@@ -273,28 +257,13 @@ impl SettingsWindow {
             devices = devices.child(self.control_note(fl!("settings-cloud-none-yet")));
         }
         for (index, device) in card.devices().iter().enumerate() {
-            let running = device.state == Some(State::Running);
-            let id = device.saved.id.clone();
-            let stop = self
-                .cloud_button(
-                    SharedString::from(format!("cloud-container-stop-{index}")),
-                    fl!("settings-cloud-container-stop"),
-                    ready && running,
-                )
-                .debug_selector(move || format!("cloud-container-stop-{index}"))
-                .when(ready && running, |button| {
-                    button.on_click(
-                        cx.listener(move |this, _, _, cx| this.stop_container(id.clone(), cx)),
-                    )
-                })
-                .into_any_element();
             devices = devices.child(self.cloud_device_row_with(
                 index,
                 &device.saved,
                 state_text(&device.saved.account, device.state),
                 ready,
                 Self::forget_container_device,
-                [stop],
+                [],
                 cx,
             ));
         }

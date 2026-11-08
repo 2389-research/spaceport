@@ -109,7 +109,7 @@ fn follow_config<const N: usize>(
 }
 
 /// A fingerprint of the cloud devices `window` lists, which changes when one
-/// is added or removed there, by the sidebar, a job, or auto-stop.
+/// is added or removed there, including from the sidebar.
 fn cloud_devices(window: &crate::SheprdWindow) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();

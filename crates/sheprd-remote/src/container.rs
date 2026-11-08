@@ -9,8 +9,7 @@
 mod connect;
 mod engine;
 mod error;
-pub mod idle;
-pub mod lifecycle;
+mod lifecycle;
 mod machine;
 mod settings;
 pub mod setup;
@@ -20,7 +19,6 @@ pub use {
     connect::{command, connect},
     engine::Engine,
     settings::Settings,
-    setup::destroy_saved,
 };
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

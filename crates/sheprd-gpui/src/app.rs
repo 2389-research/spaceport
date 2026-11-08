@@ -459,8 +459,6 @@ pub(crate) fn run() -> std::process::ExitCode {
                 crate::window::system_notifications::install(cx);
                 crate::px0::Launcher::install(cx);
                 crate::device_tags::DeviceTags::install(cx);
-                #[cfg(feature = "cloud")]
-                crate::cloud::install_idle_checks(cx);
             }
             cx.set_global(appearance.select(light_appearance(cx)));
             // Only the user's own app follows their saved SSH host choices.

@@ -3,7 +3,6 @@ use super::*;
 use sheprd_client::{ClientEvent, SavedHost};
 
 #[cfg(feature = "container")]
-mod container_stop;
 mod en_xa;
 mod follow_focus;
 

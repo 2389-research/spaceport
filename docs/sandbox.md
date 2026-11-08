@@ -1,9 +1,9 @@
 # Sandboxes
 
 Historical Sheprd sandbox design. Spaceport has removed new Container creation,
-adoption, dispatch provisioning, and image build entry points. The existing
-saved Container connector, stop/idle paths, and this older design remain
-subject to T04/RM-CLOUD; this page does not describe a Spaceport release.
+adoption, dispatch provisioning, image build, client stop and destroy, and idle
+stop entry points. The saved Container connector and older shared cloud UI
+remain subject to T04/RM-CLOUD; this page does not describe a Spaceport release.
 
 ## Decision: a sandbox is a device
 

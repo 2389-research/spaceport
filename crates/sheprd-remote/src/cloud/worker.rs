@@ -5,7 +5,6 @@ use std::fmt;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Worker {
     // keep-sorted start
-    Destroy,
     ImageBuild,
     ImageReset,
     Job,
@@ -19,7 +18,6 @@ impl fmt::Display for Worker {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             // keep-sorted start
-            Self::Destroy => "destroy",
             Self::ImageBuild => "image build",
             Self::ImageReset => "image reset",
             Self::Job => "job",

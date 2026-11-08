@@ -15,16 +15,13 @@ pub mod image;
 pub mod install;
 pub mod names;
 mod providers;
-pub mod unsynced;
 mod value;
 mod worker;
 
 pub use catalog::{FILE as CATALOG_FILE, SavedDevice, load, remove, rename, save};
 pub use command::with_command;
 pub use providers::ProviderError;
-pub use providers::{
-    Deletion, Spec, connect, deletion, icon, image as image_support, name, noun, offer, provision,
-};
+pub use providers::{Spec, connect, icon, image as image_support, name, noun, offer, provision};
 pub use sheprd_client::CloudProvider;
 pub use value::Value;
 pub use worker::Worker;

@@ -1,6 +1,5 @@
-//! Reaching a saved container: start it if it stopped, then run Herdr's stdio
-//! bridge through `exec`. Runs on the connection worker, and the UI retries
-//! it on its own, so it never creates a container or installs anything.
+//! Reaching a saved container: start it if stopped, then run Herdr's stdio
+//! bridge through `exec` on the connection worker.
 
 use super::{Engine, Error, Result, machine};
 use crate::cloud::Value;

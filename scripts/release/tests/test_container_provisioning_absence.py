@@ -47,7 +47,7 @@ class ContainerProvisioningAbsence(unittest.TestCase):
 
     def test_saved_device_and_core_paths_remain(self):
         self.assertIn("CloudProvider::$variant => crate::$module::connect", source("crates/sheprd-remote/src/cloud/providers.rs"))
-        self.assertIn("CloudProvider::Container", source("crates/sheprd-remote/src/container/idle.rs"))
+        self.assertIn("pub fn connect(", source("crates/sheprd-remote/src/container/connect.rs"))
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/core_catalog.rs").exists())
 
@@ -62,7 +62,7 @@ class ContainerProvisioningAbsence(unittest.TestCase):
                 )
         app = source("crates/sheprd-gpui/src/app.rs")
         self.assertNotIn("start_cloud_job", app)
-        self.assertIn("install_idle_checks", app)
+        self.assertNotIn("install_idle_checks", app)
 
 
 if __name__ == "__main__":

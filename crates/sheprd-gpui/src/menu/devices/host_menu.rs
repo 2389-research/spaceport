@@ -47,16 +47,6 @@ pub(crate) struct HostMenu {
     /// Also delete the device's own GitHub sign-in. Offered only when it has
     /// one, since its account panel disappears with the device.
     forget_github: bool,
-    /// Delete a cloud device's machine at its provider, with everything it
-    /// bills for, before forgetting it: what Remove does for a provider that
-    /// can unless Remove from Sheprd only is chosen, since a forgotten machine
-    /// keeps billing.
-    #[cfg(feature = "cloud")]
-    destroy: bool,
-    /// What the machine holds that is pushed nowhere, looked for when the
-    /// Remove page opens on a device its provider can delete.
-    #[cfg(feature = "cloud")]
-    unsynced: destroy::Unsynced,
     /// The new name while renaming, or the port to forward.
     input: Option<Entity<SearchInput>>,
     renaming: bool,
@@ -189,10 +179,6 @@ impl SheprdWindow {
             session: session.to_owned(),
             selected: None,
             forget_github: true,
-            #[cfg(feature = "cloud")]
-            destroy: true,
-            #[cfg(feature = "cloud")]
-            unsynced: destroy::Unsynced::default(),
             input: None,
             renaming: false,
             error: None,
@@ -295,8 +281,6 @@ impl SheprdWindow {
             }
             Action::Remove => {
                 self.menu.page = Some(Page::RemoveDevice);
-                #[cfg(feature = "cloud")]
-                self.check_unsynced(cx);
             }
         }
         cx.notify();
@@ -383,15 +367,6 @@ impl SheprdWindow {
     /// catalog drops the device, its sidebar header pulses the way a worktree
     /// row does while it is removed; a failure is reported in the status bar.
     fn confirm_remove_device(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        #[cfg(feature = "cloud")]
-        if self
-            .menu
-            .host
-            .as_ref()
-            .is_some_and(HostMenu::awaiting_check)
-        {
-            return;
-        }
         let Some(host) = self.menu.host.take() else {
             tracing::warn!(
                 category = "device_remove",
@@ -400,8 +375,6 @@ impl SheprdWindow {
             return;
         };
         let forget = host.forget_github && self.host_has_github(&host.id);
-        #[cfg(feature = "cloud")]
-        let deletion = host.deletion().filter(|_| host.destroy);
         let store = self.menu.github_hosts.get(&host.id).map_or_else(
             || crate::github::select_store(&self.config.github),
             |auth| auth.store(),
@@ -429,15 +402,9 @@ impl SheprdWindow {
                         None => Ok(()),
                     })
                 }
-                // The machine itself is left as it is at the provider, unless
-                // it was asked to go too: then it goes first, and a failure
-                // keeps the device listed rather than billing unseen.
+                // Forget only the exact saved row; leave the machine running.
                 #[cfg(feature = "cloud")]
                 Saved::Cloud { provider, id } => {
-                    if let Some(deletion) = deletion {
-                        (deletion.run)(&id)?;
-                        return Ok(Ok(()));
-                    }
                     crate::cloud::remove(provider, &id)?;
                     Ok(Ok(()))
                 }
@@ -754,7 +721,6 @@ impl SheprdWindow {
                     .text_color(rgb(theme.subtext()))
                     .child(removal_note(host)),
             )
-            .children(self.unsynced_note(host))
             .when(github, |body| {
                 body.child(
                     div()
@@ -783,7 +749,6 @@ impl SheprdWindow {
                     .flex()
                     .justify_end()
                     .gap(px(8.))
-                    .children(self.remove_only_button(host, cx))
                     .child(
                         div()
                             .id("remove-device-cancel")
@@ -804,7 +769,7 @@ impl SheprdWindow {
                             .bg(rgb(theme.active))
                             .text_color(crate::menu::danger(theme))
                             .cursor_pointer()
-                            .child(remove_label(host))
+                            .child(fl!("host-menu-remove-submit"))
                             .on_click(cx.listener(|this, _, window, cx| {
                                 this.confirm_remove_device(window, cx)
                             })),
@@ -829,10 +794,6 @@ fn rename(saved: &Saved, label: &str) -> crate::Result<()> {
 /// What removal does, as the confirmation says it: an SSH device leaves its
 /// host's Herdr running, a cloud device leaves its machine at the provider.
 fn removal_note(host: &HostMenu) -> String {
-    #[cfg(feature = "cloud")]
-    if let Some(note) = destroy::removal_note(host) {
-        return note;
-    }
     match host.saved {
         Saved::Local => String::new(),
         Saved::Ssh { .. } => fl!(
@@ -852,31 +813,11 @@ fn removal_note(host: &HostMenu) -> String {
     }
 }
 
-#[cfg(feature = "cloud")]
-mod destroy;
-#[cfg(feature = "cloud")]
-use destroy::remove_label;
 mod actions;
 mod forwards;
 mod rename;
 mod tags;
 mod theme;
-
-#[cfg(not(feature = "cloud"))]
-impl SheprdWindow {
-    fn remove_only_button(&self, _: &HostMenu, _: &mut Context<Self>) -> Option<Div> {
-        None
-    }
-
-    fn unsynced_note(&self, _: &HostMenu) -> Option<Div> {
-        None
-    }
-}
-
-#[cfg(not(feature = "cloud"))]
-fn remove_label(_: &HostMenu) -> String {
-    fl!("host-menu-remove-submit")
-}
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]

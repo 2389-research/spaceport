@@ -1,29 +1,14 @@
 use super::*;
-use crate::cloud::Value;
 
 #[test]
-fn invalid_auto_stop_values_return_field_errors_instead_of_panicking() {
-    for value in [
-        "30分",
-        "30ｍ",
-        "💤",
-        "分m",
-        "３０m",
-        "m",
-        "0h",
-        "18446744073709551615h",
-    ] {
+fn old_auto_stop_values_are_preserved_without_affecting_connection_settings() {
+    let expected = Settings::resolve(&ContainerConfig::default()).unwrap();
+    for value in ["30m", "1m"] {
         let config = ContainerConfig {
             auto_stop: Some(value.into()),
             ..Default::default()
         };
-        assert!(
-            matches!(
-                Settings::resolve(&config),
-                Err(Error::Field(Value::Key("[container] auto_stop")))
-            ),
-            "{value}"
-        );
+        assert_eq!(Settings::resolve(&config).unwrap(), expected);
+        assert_eq!(config.auto_stop.as_deref(), Some(value));
     }
-    assert_eq!(super::super::settings::auto_stop(""), None);
 }

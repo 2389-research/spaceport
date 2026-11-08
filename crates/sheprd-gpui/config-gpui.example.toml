@@ -535,26 +535,12 @@ size = 12
 # uses Sheprd's own application unless one is set here.
 # applications = { "gitlab.example.com" = "<application id>" }
 
-# Containers on this computer's Docker or Podman engine as devices. Settings >
-# Cloud devices > Container edits this table. Each container gets its own home
-# volume and runs agents as an unprivileged "herdr" user, with the limits below,
-# no-new-privileges, and no access to this computer's files. Containers share
-# this computer's kernel, so prefer a VM provider for code you do not trust.
+# Saved Container devices use this computer's Docker or Podman engine. Settings >
+# Cloud devices > Container edits the engine key. Old provisioning and auto-stop
+# keys remain in user files as inert data; Spaceport does not offer those actions.
 # [container]
 # docker or podman; the first one installed when unset.
 # engine = "docker"
-# The image new containers start from, pinned to its digest when created. It
-# needs curl to install Herdr and git for checkouts.
-# image = "buildpack-deps:bookworm"
-# cpus = 4
-# memory = "8g"
-# pids_limit = 4096
-# Stop a running container once none of its agents has worked or waited for
-# input for this long (at least 5m); its files stay and the next connection
-# starts it. Default is never.
-# auto_stop = "30m"
-# The most containers kept as devices at once, up to 64. Default is 8.
-# max_containers = 8
 
 # What a new cloud device runs the first time it connects, in a "setup" tab:
 # the agents listed (claude, codex, gemini, opencode), each skipped when already

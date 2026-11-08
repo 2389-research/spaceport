@@ -11,7 +11,6 @@ mod menu_width;
 mod mute;
 mod tags;
 #[cfg(feature = "container")]
-mod unsynced;
 
 // Endpoint IDs carry the `ssh:` prefix; the profile ID is the rest.
 const HOST: &str = "ssh:0123456789abcdef0123456789abcdef";

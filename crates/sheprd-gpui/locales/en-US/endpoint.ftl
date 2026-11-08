@@ -9,7 +9,6 @@ endpoint-connection-lost = connection lost
 endpoint-status =
     { $state ->
         [disabled] disabled
-        [stopped] stopped
         [detached] detached
         [daemon-outdated] Herdr update needed
         [client-outdated] app update needed

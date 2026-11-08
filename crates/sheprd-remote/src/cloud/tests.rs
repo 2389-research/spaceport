@@ -26,20 +26,3 @@ fn a_non_cloud_target_is_refused() {
 fn cloud_devices_are_offered_only_where_they_can_connect() {
     assert_eq!(unavailable().is_some(), cfg!(windows));
 }
-
-#[test]
-fn deleting_at_a_provider_names_the_machine_and_what_goes_with_it() {
-    for &provider in CloudProvider::ALL {
-        let Some(deletion) = deletion(provider) else {
-            continue;
-        };
-        assert!(!(deletion.noun)("machine-1").is_empty());
-        // Read between "at <provider>" and " and remove it".
-        assert!(
-            deletion.leftovers.is_empty()
-                || (deletion.leftovers.starts_with(", ") && deletion.leftovers.ends_with(',')),
-            "{:?}",
-            deletion.leftovers
-        );
-    }
-}

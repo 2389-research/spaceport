@@ -1,12 +1,10 @@
-//! The blocking jobs behind the Container tab: read saved devices and their
-//! engine state, stop one, or delete one with its home volume.
+//! The blocking read behind the Container tab: saved devices and engine state.
 
 use super::{Engine, Result, Settings, machine};
 pub use super::{
     machine::State,
     settings::{DEFAULT_CPUS, DEFAULT_IMAGE, DEFAULT_MEMORY},
 };
-use crate::cloud::Value;
 use crate::cloud::{self, CloudProvider, SavedDevice};
 
 /// A saved container and what its engine says about it now.
@@ -49,34 +47,4 @@ pub fn overview(settings: &Settings, cancelled: &dyn Fn() -> bool) -> Result<Ove
         })
         .collect();
     Ok(Overview { engine, devices })
-}
-
-/// Delete the saved container `id` with its home volume, then forget it. A
-/// device no longer saved has nothing left to do. Blocks: run it on a worker.
-pub fn destroy_saved(id: &str) -> crate::Result<()> {
-    let Some(device) = cloud::load()?
-        .into_iter()
-        .find(|device| device.provider == CloudProvider::Container && device.id == id)
-    else {
-        return Ok(());
-    };
-    let engine =
-        Engine::from_key(&device.account).ok_or(super::Error::Field(Value::ContainerEngine))?;
-    machine::delete(engine, id, &|| false)?;
-    Ok(cloud::remove(CloudProvider::Container, id)?)
-}
-
-/// Stop the saved container `id`, keeping its files for the next connection.
-pub fn stop_saved(id: &str) -> crate::Result<()> {
-    let Some(device) = cloud::load()?
-        .into_iter()
-        .find(|device| device.provider == CloudProvider::Container && device.id == id)
-    else {
-        return Ok(());
-    };
-    let engine =
-        Engine::from_key(&device.account).ok_or(super::Error::Field(Value::ContainerEngine))?;
-    Ok(super::lifecycle::stop(engine, id, || {
-        machine::stop(engine, id, &|| false)
-    })?)
 }

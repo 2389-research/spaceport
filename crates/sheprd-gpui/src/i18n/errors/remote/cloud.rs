@@ -132,7 +132,6 @@ impl Localize for install::Failure {
 /// The Fluent selector for each worker that can stop.
 pub(super) fn worker_selector(worker: Worker) -> &'static str {
     match worker {
-        Worker::Destroy => "destroy",
         Worker::ImageBuild => "image-build",
         Worker::ImageReset => "image-reset",
         Worker::Job => "job",

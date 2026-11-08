@@ -8,12 +8,11 @@ fn saving_writes_only_edited_keys_and_validates_first() {
     let path = dir.path().join("config-gpui.local.toml");
     fs::write(
         &path,
-        "theme = 'Nord'\n\n[container]\nimage = 'debian:12' # mine\ncpus = 2\npids_limit = 512\nmemory = '4g'\n",
+        "theme = 'Nord'\n\n[container]\nimage = 'debian:12' # mine\ncpus = 2\npids_limit = 512\nmemory = '4g'\nauto_stop = '30m'\n",
     )
     .unwrap();
     let fields = ContainerFields {
         engine: "podman".into(),
-        auto_stop: "30m".into(),
     };
     Config::save_container_path(&fields, &path).unwrap();
     let text = fs::read_to_string(&path).unwrap();
@@ -29,8 +28,7 @@ fn saving_writes_only_edited_keys_and_validates_first() {
     assert_eq!(parsed["container"]["engine"].as_str(), Some("podman"));
     assert_eq!(parsed["container"]["auto_stop"].as_str(), Some("30m"));
     let broken = ContainerFields {
-        auto_stop: "1m".into(),
-        ..ContainerFields::default()
+        engine: "lxc".into(),
     };
     assert!(broken.validate(&ContainerConfig::default()).is_err());
 }
@@ -40,6 +38,8 @@ fn loading_reads_the_table_and_refuses_bad_values() {
     let config = Config::parse("[container]\nengine = \"podman\"\ncpus = 2\n").unwrap();
     assert_eq!(config.container.engine.as_deref(), Some("podman"));
     assert_eq!(config.container.cpus.as_deref(), Some("2"));
+    let old = Config::parse("[container]\nauto_stop = \"1m\"\n").unwrap();
+    assert_eq!(old.container.auto_stop.as_deref(), Some("1m"));
     assert!(Config::parse("[container]\nengine = \"lxc\"\n").is_err());
     assert!(Config::parse("[container]\nunknown = 1\n").is_err());
 }

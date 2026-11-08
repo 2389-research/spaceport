@@ -10,15 +10,11 @@ settings-cloud-container-engine-running = { $engine } { $version } is running.
 settings-cloud-container-engine = Engine
 # "docker" and "podman" are what the field takes; keep them as they are.
 settings-cloud-container-engine-placeholder = docker or podman; the first one installed if empty
-settings-cloud-container-auto-stop = Auto-stop
-# "never" and the times are what the field takes; keep them as they are.
-settings-cloud-container-auto-stop-placeholder = never; or 30m, 2h: stop once no agent has worked that long
 
 ## New container and Containers.
 
 settings-cloud-container-devices = Containers
-settings-cloud-container-devices-note = Remove forgets a container and leaves it on the engine. To delete one with its files, use Remove device… in its sidebar menu, which first checks it for unpushed work.
-settings-cloud-container-stop = Stop
+settings-cloud-container-devices-note = Remove forgets the saved device. The container and its files remain on the engine; manage them outside Spaceport.
 # A container's row: the engine it runs on, then its state.
 settings-cloud-container-running = { $engine } · running
 settings-cloud-container-stopped = { $engine } · stopped

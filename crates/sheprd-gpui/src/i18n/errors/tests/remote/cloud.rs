@@ -27,7 +27,6 @@ fn every_cloud_variant_has_a_message() {
 fn every_worker_has_a_message() {
     use sheprd_remote::cloud::Worker;
     let workers = [
-        Worker::Destroy,
         Worker::ImageBuild,
         Worker::ImageReset,
         Worker::Job,

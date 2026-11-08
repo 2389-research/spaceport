@@ -12,7 +12,6 @@ error-remote-cloud-missing = The cloud device is no longer saved.
 error-remote-cloud-state-directory = No state directory for saved cloud devices.
 # $worker selects the background worker that stopped.
 error-remote-cloud-worker = { $worker ->
-    [destroy] The cloud destroy worker stopped.
     [image-build] The cloud image build worker stopped.
     [image-reset] The cloud image reset worker stopped.
     [job] The cloud job worker stopped.

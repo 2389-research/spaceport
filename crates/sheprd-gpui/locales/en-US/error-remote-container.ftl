@@ -9,9 +9,7 @@ error-remote-container-spawn = Could not run { $engine }.
 error-remote-container-failed = { $engine } { $action } failed: { $detail }
 error-remote-container-timeout = { $engine } { $action } did not finish in time.
 error-remote-container-gone = The container { $name } no longer exists.
-error-remote-container-suspended = The container { $name } is stopped. Reconnect to start it again.
 error-remote-container-name-taken = A container or volume named { $name } already exists; try again for another name.
-error-remote-container-not-ours = { $name } on the engine was not made by Sheprd for this device, so it was left alone.
 # $count is the [container] max_containers limit.
 error-remote-container-limit = { $count ->
    *[other] There are already { $count } containers, the most [container] max_containers allows. Remove one first.

@@ -25,13 +25,9 @@ impl Localize for Error {
                 action = *action
             ),
             Self::Gone(name) => fl!("error-remote-container-gone", name = name.as_str()),
-            Self::Suspended(name) => {
-                fl!("error-remote-container-suspended", name = name.as_str())
-            }
             Self::NameTaken(name) => {
                 fl!("error-remote-container-name-taken", name = name.as_str())
             }
-            Self::NotOurs(name) => fl!("error-remote-container-not-ours", name = name.as_str()),
             Self::Limit(count) => fl!("error-remote-container-limit", count = *count),
             Self::Cancelled => fl!("error-remote-container-cancelled"),
             Self::BuildContext(_) => fl!("error-remote-container-build-context"),

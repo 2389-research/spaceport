@@ -68,7 +68,9 @@ fn the_card_keeps_existing_device_controls_without_creation(cx: &mut TestAppCont
 }
 
 #[gpui::test]
-fn a_running_container_can_be_stopped_and_a_missing_engine_is_explained(cx: &mut TestAppContext) {
+fn saved_container_controls_do_not_stop_it_and_missing_engine_is_explained(
+    cx: &mut TestAppContext,
+) {
     let (view, cx) = open(cx);
     set_overview(
         &view,
@@ -88,7 +90,7 @@ fn a_running_container_can_be_stopped_and_a_missing_engine_is_explained(cx: &mut
         },
     );
     draw(cx);
-    assert!(cx.debug_bounds("cloud-container-stop-0").is_some());
+    assert!(cx.debug_bounds("cloud-container-stop-0").is_none());
     assert!(cx.debug_bounds("cloud-container-remove-1").is_some());
     assert!(cx.debug_bounds("cloud-container-adopt-0").is_none());
     set_overview(

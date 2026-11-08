@@ -31,38 +31,6 @@ host-menu-rename-name = Name
 host-menu-rename-submit = Rename
 host-menu-renaming = Renaming…
 
-# Deleting a cloud device at its provider. $machine is what the provider
-# calls a machine, such as VM or workspace.
-host-menu-delete-checking = Checking…
-host-menu-delete-anyway = Delete anyway
-host-menu-delete = Delete { $machine }
-host-menu-unsynced-checking = Checking the { $machine } for work not pushed…
-host-menu-unsynced-failed = Could not check the { $machine } for work not pushed. Anything on it is deleted with it.
-host-menu-unsynced-found = Work on this { $machine } is pushed nowhere else:
-# One checkout with work pushed nowhere: its path, then what it holds.
-host-menu-unsynced-changed = { $path } ({ $changed ->
-        [one] { $changed } changed file
-       *[other] { $changed } changed files
-    })
-host-menu-unsynced-unpushed = { $path } ({ $unpushed ->
-        [one] { $unpushed } unpushed commit
-       *[other] { $unpushed } unpushed commits
-    })
-host-menu-unsynced-both = { $path } ({ $changed ->
-        [one] { $changed } changed file
-       *[other] { $changed } changed files
-    }, { $unpushed ->
-        [one] { $unpushed } unpushed commit
-       *[other] { $unpushed } unpushed commits
-    })
-host-menu-unsynced-more = and { $count } more
-host-menu-unsynced-advice = Push it, or Teleport it to another device, before deleting.
-# $device is the device's name, $target its machine, $provider the cloud
-# provider, and $leftovers what else the provider deletes with it, as the
-# provider words it.
-host-menu-delete-note = Delete the { $machine } { $device } ({ $target }) at { $provider }{ $leftovers } and remove it from this computer? Its files are not kept, and this cannot be undone.
-host-menu-remove-only = Remove from Sheprd only
-
 # The device's forwarded ports, under its menu's rows, and the dialog that
 # forwards one.
 host-menu-forwards = Forwarded ports
