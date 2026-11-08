@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 mod backdrop;
 mod close_window;
+mod core_unavailable;
 mod detach;
 mod en_xa;
 mod en_xa_input;

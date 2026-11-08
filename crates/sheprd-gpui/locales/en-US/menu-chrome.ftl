@@ -23,9 +23,3 @@ menu-chrome-whats-new = what's new
 menu-chrome-detach = detach
 menu-chrome-reconnect = reconnect
 menu-chrome-reload-config-failed = Reload config: { $error }
-
-# Shown when no Herdr is installed for the app to connect to.
-menu-chrome-install-title = Herdr must be installed
-menu-chrome-install-note = Install Herdr first, then choose Terminal > Reconnect. The Install button opens the Herdr website; nothing is installed automatically.
-menu-chrome-install = Install
-menu-chrome-dismiss = Dismiss

@@ -9,6 +9,8 @@ status-bar-awaiting-snapshot = Connected; waiting for snapshot
 status-bar-connected = Connected
 status-bar-disconnected = Disconnected
 status-bar-detached = Detached (daemon still running)
+status-bar-core-connected = Herdr Core connected (terminal fallback)
+status-bar-core-not-connected = Herdr Core not connected. Check the separate installation.
 # $status is one of the above, $error what went wrong.
 status-bar-status-error = { $status }: { $error }
 # Pane resize mode, which has no control on screen; keep the key names.

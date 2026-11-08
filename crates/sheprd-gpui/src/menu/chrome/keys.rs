@@ -381,9 +381,6 @@ impl SheprdWindow {
             "enter" if self.menu.page == Some(Page::VersionMismatch) => {
                 self.act_on_version_mismatch(window, cx);
             }
-            "enter" if self.menu.page == Some(Page::Install) => {
-                cx.open_url(crate::about::WEBSITE);
-            }
             "enter" if self.menu.page == Some(Page::About) => {
                 self.dismiss_menu(window, cx);
             }

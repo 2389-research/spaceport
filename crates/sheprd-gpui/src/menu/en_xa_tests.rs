@@ -1,5 +1,5 @@
 //! The `en-XA` leak test (`crate::i18n::leak_tests`) for the popup shell's
-//! own pages: the in-app menu, the install notice, the version mismatch
+//! own pages: the in-app menu, the version mismatch
 //! notice, and the release notes sheet. Each draws only translated
 //! messages, except for commands to run, host names, and the daemon's notes.
 #![allow(clippy::unwrap_used)]
@@ -50,9 +50,6 @@ fn the_menu_and_its_own_pages_show_only_messages_under_en_xa() {
         let (view, cx) = window(cx, recorder);
         check(&view, cx, recorder, "Menu", &[], |view, window, cx| {
             view.open_menu(window, cx);
-        });
-        check(&view, cx, recorder, "Install", &[], |view, window, cx| {
-            view.show_install_modal(window, cx);
         });
         for (host, mismatch) in [
             (

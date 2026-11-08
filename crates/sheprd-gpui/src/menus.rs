@@ -7,8 +7,7 @@ pub(crate) mod in_window;
 
 use crate::i18n::fl;
 use crate::{
-    CheckForUpdates, PlaySound, Quit, RunCommand, ShowHerdrNotDetected, ShowLogs,
-    ShowUpdatePreview,
+    CheckForUpdates, PlaySound, Quit, RunCommand, ShowLogs, ShowUpdatePreview,
     actions::{
         Copy, Cut, Paste, RingBellPreview, SelectAll, SetChatLayout, SetLayout, SetTabLayout,
         ShowToastPreview, ShowUpdateDownloadPreview, ShowUpdateHomebrewPreview, TogglePseudoLocale,
@@ -427,7 +426,6 @@ fn qa_menu() -> Menu {
         name: fl!("menus-qa").into(),
         disabled: false,
         items: vec![
-            MenuItem::action(fl!("menus-qa-herdr-not-detected"), ShowHerdrNotDetected),
             MenuItem::action(fl!("menus-qa-update-available"), ShowUpdatePreview),
             MenuItem::action(fl!("menus-qa-update-download"), ShowUpdateDownloadPreview),
             MenuItem::action(fl!("menus-qa-update-homebrew"), ShowUpdateHomebrewPreview),

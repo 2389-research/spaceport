@@ -17,13 +17,6 @@ use gpui::{prelude::*, *};
 const COVER_MARGIN: f32 = 8.;
 
 impl SheprdWindow {
-    pub(crate) fn show_install_modal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if !self.open_menu(window, cx) {
-            return;
-        }
-        self.menu.page = Some(Page::Install);
-    }
-
     pub(crate) fn open_menu(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         self.shift_taps.cancel();
         if !self.cancel_theme_preview(cx) {
@@ -576,11 +569,7 @@ impl SheprdWindow {
             .when(
                 matches!(
                     page,
-                    Page::Install
-                        | Page::AgentSkill
-                        | Page::VersionMismatch
-                        | Page::OpenCheckout
-                        | Page::OpenLink
+                    Page::AgentSkill | Page::VersionMismatch | Page::OpenCheckout | Page::OpenLink
                 ) || self.cloud_batch_open(),
                 |panel| {
                     panel
@@ -768,45 +757,6 @@ impl SheprdWindow {
             panel = panel.child(body);
         } else if page == Page::OpenCheckout {
             panel = panel.child(self.render_open_checkout(cx));
-        } else if page == Page::Install {
-            panel = panel
-                .child(div().p(px(8.)).child(fl!("menu-chrome-install-title")))
-                .child(div().p(px(8.)).child(fl!("menu-chrome-install-note")))
-                .child(
-                    div()
-                        .row()
-                        .flex_wrap()
-                        .gap(px(8.))
-                        .p(px(8.))
-                        .child(
-                            div()
-                                .id("menu-install")
-                                .debug_selector(|| "menu-install".into())
-                                .p(px(8.))
-                                .rounded(px(crate::config::corners::CONTROL))
-                                .bg(rgb(theme.active))
-                                .cursor_pointer()
-                                .child(fl!("menu-chrome-install"))
-                                .on_click(|_, _, cx| {
-                                    cx.stop_propagation();
-                                    cx.open_url(crate::about::WEBSITE);
-                                }),
-                        )
-                        .child(
-                            div()
-                                .id("menu-dismiss")
-                                .debug_selector(|| "menu-dismiss".into())
-                                .p(px(8.))
-                                .rounded(px(crate::config::corners::CONTROL))
-                                .hover(|button| button.bg(rgb(theme.active)))
-                                .cursor_pointer()
-                                .child(fl!("menu-chrome-dismiss"))
-                                .on_click(cx.listener(|this, _, window, cx| {
-                                    cx.stop_propagation();
-                                    this.dismiss_menu(window, cx);
-                                })),
-                        ),
-                );
         } else {
             panel = panel.child(self.render_release_notes(cx));
         }

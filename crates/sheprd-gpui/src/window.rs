@@ -227,7 +227,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) icon_font_notice: crate::icon_font_notice::IconFontNotice,
     #[cfg(feature = "integration-test")]
     pub(crate) input_probe: smoke::InputProbe,
-    pub(crate) install_warning_shown: bool,
     pub(crate) integrations: crate::integrations::Integrations,
     /// What a key code types in the active layout, to restore a dropped Shift.
     pub(crate) key_layout: fn(u16) -> Option<prefix::KeyChars>,
@@ -713,13 +712,6 @@ impl SheprdWindow {
         }
         #[cfg(feature = "azure")]
         self.update_cloud_activity();
-        if self.live.missing_installation
-            && self.needs_herdr_install()
-            && !self.install_warning_shown
-        {
-            self.install_warning_shown = true;
-            self.show_install_modal(window, cx);
-        }
         self.announce_version_mismatch(window, cx);
         self.resize();
         self.refresh_palette(window, cx);

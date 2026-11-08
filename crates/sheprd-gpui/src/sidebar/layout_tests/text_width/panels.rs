@@ -391,31 +391,9 @@ pub(super) fn check_keybinds_panel(view: &Entity<SheprdWindow>, cx: &mut gpui::V
     cx.update(|_, cx| assert!(view.read(cx).menu.page.is_none()));
 }
 
-pub(super) fn check_install_modal(
-    view: &Entity<SheprdWindow>,
-    cx: &mut gpui::VisualTestContext,
-) -> Option<Arc<ClientShellSnapshot>> {
-    let before_install = cx.update(|_, cx| view.read(cx).live.snapshot.clone());
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| view.show_install_modal(window, cx));
-    });
-    cx.update(|window, cx| {
-        full_draw(window, cx).clear(cx);
-        let view = view.read(cx);
-        assert!(view.menu.page == Some(crate::menu::Page::Install));
-        assert!(!view.live.missing_installation);
-        assert_eq!(view.live.snapshot, before_install);
-    });
-    assert!(cx.debug_bounds("menu-install").is_some());
-    assert!(cx.debug_bounds("menu-dismiss").is_some());
-    cx.simulate_keystrokes("escape");
-    cx.update(|_, cx| assert!(view.read(cx).menu.page.is_none()));
-    before_install
-}
-
 pub(super) fn check_app_update(
     view: &Entity<SheprdWindow>,
-    before_install: &Option<Arc<ClientShellSnapshot>>,
+    before: &Option<Arc<ClientShellSnapshot>>,
     cx: &mut gpui::VisualTestContext,
 ) -> Result<()> {
     // Fixtures have no updater worker, and unavailable updates use the shared panel.
@@ -426,7 +404,7 @@ pub(super) fn check_app_update(
     cx.update(|window, cx| {
         full_draw(window, cx).clear(cx);
         assert!(view.read(cx).menu.page == Some(crate::menu::Page::AppUpdate));
-        assert_eq!(view.read(cx).live.snapshot, *before_install);
+        assert_eq!(view.read(cx).live.snapshot, *before);
     });
     assert!(cx.debug_bounds("app-update-action").is_none());
     let releases = cx
@@ -455,7 +433,7 @@ pub(super) fn check_app_update(
                 full_draw(window, cx).clear(cx);
                 let view = view.read(cx);
                 assert_eq!(view.updater.state(), &updater_before);
-                assert_eq!(view.live.snapshot, *before_install);
+                assert_eq!(view.live.snapshot, *before);
                 assert_eq!(
                     view.update_preview,
                     Some(if ready {

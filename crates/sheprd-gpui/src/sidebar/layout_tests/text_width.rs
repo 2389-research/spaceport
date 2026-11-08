@@ -39,8 +39,8 @@ fn check_sidebar(fixture: Entity<SidebarFixture>, cx: &mut gpui::VisualTestConte
     panels::check_command_palette(&view, cx);
     panels::check_close_confirmation(&view, cx);
 
-    let before_install = panels::check_install_modal(&view, cx);
-    panels::check_app_update(&view, &before_install, cx)?;
+    let before_update = cx.update(|_, cx| view.read(cx).live.snapshot.clone());
+    panels::check_app_update(&view, &before_update, cx)?;
     status::check_status_bar(&view, cx)?;
     cx.update(|_, cx| cx.default_global::<PaintedProbes>().check())
 }

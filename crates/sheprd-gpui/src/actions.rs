@@ -18,7 +18,6 @@ actions!(
         ZoomWindow,
         PlaySound,
         RingBellPreview,
-        ShowHerdrNotDetected,
         ShowLogs,
         CheckForUpdates,
         ShowUpdatePreview,

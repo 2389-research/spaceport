@@ -2,9 +2,9 @@
 //! the user's running core, else the separately installed `herdr-core`.
 //! The shell is named, so every launch comes back
 //! to the same one instead of starting another. Only when herdr-core is
-//! unavailable too does the window ask the user to install Herdr.
+//! unavailable too does the status bar report the Core connection problem.
 
-use super::{CoreTerminalView, Start, State, worker};
+use super::{CoreTerminalView, Start, worker};
 use crate::SheprdWindow;
 use gpui::{prelude::*, *};
 use sheprd_backend::{Backend as _, Role, Size, Spawn, TerminalId};
@@ -108,11 +108,5 @@ impl SheprdWindow {
             Fallback::Shown(view) => Some(view.clone()),
             _ => None,
         }
-    }
-
-    /// Whether the window should still ask the user to install Herdr: only
-    /// once herdr-core is known to be unavailable as well.
-    pub(crate) fn needs_herdr_install(&self) -> bool {
-        matches!(self.core_terminals.hub.state(), State::Unavailable(_))
     }
 }

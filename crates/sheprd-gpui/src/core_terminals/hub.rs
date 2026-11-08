@@ -86,6 +86,16 @@ impl Hub {
         self.state = State::Ready(backend);
     }
 
+    #[cfg(test)]
+    pub(crate) fn set_unavailable_for_test(&mut self, error: Error) {
+        self.state = State::Unavailable(Arc::new(error));
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_connecting_for_test(&mut self) {
+        self.state = State::Connecting(std::sync::mpsc::channel().1);
+    }
+
     /// Connects on a background thread unless already connected or trying.
     /// A join-only ask waits a moment after a failure; asking to start
     /// always tries, and upgrades a join-only attempt in flight.

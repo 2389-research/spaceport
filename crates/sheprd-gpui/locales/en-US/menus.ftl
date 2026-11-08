@@ -71,7 +71,6 @@ menus-logs = Logs
 ## QA, shown when the qa_menu feature is on: previews for checking by hand.
 
 menus-qa = QA
-menus-qa-herdr-not-detected = Show herdr non-detected modal
 menus-qa-update-available = Show app update available
 menus-qa-update-download = Show update download progress (50%)
 menus-qa-update-homebrew = Show Homebrew update progress

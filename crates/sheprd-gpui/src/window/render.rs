@@ -8,8 +8,7 @@ use super::{
 };
 use crate::direction::Logical;
 use crate::{
-    CheckForUpdates, Minimize, PlaySound, RunCommand, ShowHerdrNotDetected, ShowUpdatePreview,
-    ZoomWindow,
+    CheckForUpdates, Minimize, PlaySound, RunCommand, ShowUpdatePreview, ZoomWindow,
     actions::{RingBellPreview, ShowToastPreview},
     browser::Shown,
     config::ClipboardToastPosition,
@@ -841,9 +840,6 @@ impl Render for SheprdWindow {
             }))
             .on_action(cx.listener(|_, _: &ZoomWindow, window, _| {
                 window.zoom_window();
-            }))
-            .on_action(cx.listener(|this, _: &ShowHerdrNotDetected, window, cx| {
-                this.show_install_modal(window, cx);
             }))
             .on_action(cx.listener(|this, _: &CheckForUpdates, window, cx| {
                 this.open_app_update(false, window, cx);

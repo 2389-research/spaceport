@@ -28,10 +28,16 @@ impl SheprdWindow {
     }
 
     pub(super) fn render_status_bar(&self, cx: &mut Context<Self>) -> Stateful<Div> {
-        let status = (!matches!(self.live.status, ConnectionStatus::Connected)
-            || self.local_error.is_some()
-            || self.live.error.is_some())
-        .then(|| self.live.status_text(self.local_error.as_deref()));
+        let status = if self.live.missing_installation {
+            Some(core_fallback_status(
+                self.core_terminals.hub.backend().is_some(),
+            ))
+        } else {
+            (!matches!(self.live.status, ConnectionStatus::Connected)
+                || self.local_error.is_some()
+                || self.live.error.is_some())
+            .then(|| self.live.status_text(self.local_error.as_deref()))
+        };
         let items = self.config.status_bar;
         let height = px(self.status_bar_height());
         let usage = self.render_usage(cx);
@@ -476,6 +482,14 @@ impl SheprdWindow {
             })
             .into()
         }
+    }
+}
+
+pub(super) fn core_fallback_status(ready: bool) -> String {
+    if ready {
+        fl!("status-bar-core-connected")
+    } else {
+        fl!("status-bar-core-not-connected")
     }
 }
 

@@ -28,7 +28,7 @@ pub(crate) enum LocalPeer {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("Could not start herdr server: {0}. Install Herdr and use Terminal > Reconnect.")]
+#[error("Could not start herdr server: {0}")]
 struct MissingInstallation(#[source] io::Error);
 
 pub(super) fn is_missing_installation(error: &io::Error) -> bool {

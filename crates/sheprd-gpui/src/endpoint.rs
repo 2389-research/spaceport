@@ -574,7 +574,6 @@ impl SheprdWindow {
         if !self.endpoints[index].enabled {
             return;
         }
-        self.install_warning_shown = false;
         self.version_notice_shown = false;
         #[cfg(feature = "container")]
         crate::container::lifecycle::resume(&self.endpoints[index].connection.target);

@@ -210,7 +210,6 @@ impl SheprdWindow {
             icon_font_notice: Default::default(),
             #[cfg(feature = "integration-test")]
             input_probe: smoke::InputProbe::default(),
-            install_warning_shown: false,
             integrations: Default::default(),
             key_layout: prefix::current_layout,
             key_press: function_keys::current_press,

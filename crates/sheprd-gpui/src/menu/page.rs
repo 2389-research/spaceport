@@ -63,7 +63,6 @@ pub(crate) enum Page {
     Group,
     /// A saved SSH device's context menu, from its sidebar host header.
     Host,
-    Install,
     Keybinds,
     /// Confirming the processes chosen there should end.
     KillProcesses,
