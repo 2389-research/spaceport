@@ -1,11 +1,10 @@
 //! `browser ...` and `feedback`.
 use super::{Context, Output, caller, notes_daemon, rejected, send, tabs, unexpected};
 use crate::{
-    browser::{LocalFile, WebUrl},
-    cli::control::{BrowserCommand, Placement, ZoomChange},
+    browser::WebUrl,
+    cli::control::{BrowserCommand, ZoomChange},
     control::protocol::{
-        BrowserOpen, Caller, ErrorCode, FeedbackRequest, MAX_WAIT_SECONDS, OpenedIn, Page, Request,
-        Response,
+        ErrorCode, FeedbackRequest, MAX_WAIT_SECONDS, Request, Response,
         tabs::{Reply, TabOp},
     },
 };
@@ -14,85 +13,6 @@ use std::path::Path;
 /// The explainer kit's example, which the agent skill points to.
 pub(super) const EXAMPLE: &str =
     include_str!("../../../../../skills/herdr-gpui-browser/examples/instagram-fetch.html");
-
-/// A file that exists is shown as a local page; anything else is an address.
-fn page(target: &str) -> crate::Result<(Page, String)> {
-    let path = Path::new(target);
-    if !target.contains("://") && path.is_file() {
-        let path = path.canonicalize()?;
-        let home = crate::config::home().ok();
-        LocalFile::new(&path, home.as_deref())?;
-        let text = path
-            .to_str()
-            .ok_or(crate::Error::InvalidLocalPage)?
-            .to_owned();
-        return Ok((Page::File(text.clone()), text));
-    }
-    let url = WebUrl::from_typed(target)?;
-    Ok((Page::Url(url.as_str().to_owned()), url.as_str().to_owned()))
-}
-
-/// Where a page goes unless the caller said: a local file, usually a mockup
-/// or an explainer the agent wrote, sits beside the terminal that opened it,
-/// so the user reads it and the agent's replies together. Web addresses, and
-/// files opened from outside a Herdr pane, take a tab.
-pub(super) fn default_placement(page: &Page, caller: &Caller) -> Placement {
-    match (page, &caller.pane_id) {
-        (Page::File(_), Some(_)) => Placement::Beside,
-        _ => Placement::Tab,
-    }
-}
-
-fn open(
-    target: &str,
-    workspace: Option<String>,
-    focus: bool,
-    placement: Option<Placement>,
-    context: &Context,
-) -> crate::Result<Output> {
-    let (page, shown) = page(target)?;
-    let caller = Caller {
-        window: context.window,
-        ..caller(workspace)?
-    };
-    let placement = placement.unwrap_or_else(|| default_placement(&page, &caller));
-    let request = Request::Open(BrowserOpen {
-        page,
-        caller,
-        focus,
-        placement,
-    });
-    let response = send(&request)?;
-    let text = match &response {
-        Response::Opened {
-            opened_in: OpenedIn::Tab,
-            workspace_id,
-            placement: opened,
-        } => {
-            let place = match opened {
-                Placement::Beside => "beside the terminal",
-                Placement::Tab => "in a browser tab",
-            };
-            let fallback = if placement == Placement::Beside && *opened == Placement::Tab {
-                " (your terminal is not on screen, so the page could not go beside it)"
-            } else {
-                ""
-            };
-            match workspace_id {
-                Some(id) => format!("Opened {shown} {place} of workspace {id}{fallback}"),
-                None => format!("Opened {shown} {place}{fallback}"),
-            }
-        }
-        Response::Opened {
-            opened_in: OpenedIn::SystemBrowser,
-            ..
-        } => format!(
-            "Opened {shown} in the system browser; this platform's build has no browser tabs"
-        ),
-        _ => return Err(rejected(response)),
-    };
-    Output::data(text, &response)
-}
 
 fn reload() -> crate::Result<Output> {
     match send(&Request::Reload(caller(None)?))? {
@@ -180,12 +100,6 @@ pub(super) fn run(command: BrowserCommand, context: &Context) -> crate::Result<O
         BrowserCommand::Help | BrowserCommand::Skill | BrowserCommand::Example => {
             Ok(Output::message(""))
         }
-        BrowserCommand::Open {
-            target,
-            workspace,
-            focus,
-            placement,
-        } => open(&target, workspace, focus, placement, context),
         BrowserCommand::Reload => reload(),
         BrowserCommand::Feedback { wait } => feedback(wait, context),
         BrowserCommand::List => tabs::list(true, context),

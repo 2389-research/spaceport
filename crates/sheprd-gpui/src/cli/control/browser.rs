@@ -1,20 +1,10 @@
 //! `browser ...`: page tabs, and the notes the user sends from them.
-pub use sheprd_control_protocol::Placement;
-
 use super::{Args, CliError, ZoomChange};
 use std::ffi::OsString;
 
 /// `sheprd browser ...`, answered by the running app.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BrowserCommand {
-    Open {
-        /// A web address or a local file, told apart when it runs.
-        target: String,
-        workspace: Option<String>,
-        focus: bool,
-        /// `--beside` or `--tab`; otherwise chosen by what the page is.
-        placement: Option<Placement>,
-    },
     Reload,
     /// Waits up to `wait` seconds for notes; zero only checks.
     Feedback {
@@ -156,36 +146,6 @@ pub(super) fn parse(args: &mut Args) -> Result<BrowserCommand, CliError> {
             }
             return Ok(BrowserCommand::Feedback { wait });
         }
-        Some("open") => {}
         _ => return Err(CliError::UnknownBrowserCommand(command)),
     }
-    let (mut target, mut workspace, mut focus) = (None, None, true);
-    let mut placement = None;
-    while let Some(arg) = args.next() {
-        match arg.to_str() {
-            Some("--help" | "-h") => return Ok(BrowserCommand::Help),
-            Some("--no-focus") => focus = false,
-            Some("--beside") => placement = Some(Placement::Beside),
-            Some("--tab") => placement = Some(Placement::Tab),
-            Some("--workspace") => {
-                let value = args
-                    .next()
-                    .filter(|value| {
-                        !value.is_empty() && !value.as_encoded_bytes().starts_with(b"-")
-                    })
-                    .ok_or(CliError::MissingWorkspace)?;
-                workspace = Some(utf8(value)?);
-            }
-            _ if target.is_none() && !arg.as_encoded_bytes().starts_with(b"-") => {
-                target = Some(utf8(arg)?);
-            }
-            _ => return Err(CliError::UnexpectedArgument(arg)),
-        }
-    }
-    Ok(BrowserCommand::Open {
-        target: target.ok_or(CliError::MissingUrl)?,
-        workspace,
-        focus,
-        placement,
-    })
 }

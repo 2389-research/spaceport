@@ -34,11 +34,11 @@ fn a_peer_that_closes_early_leaves_what_it_sent() {
 #[test]
 fn a_written_message_is_one_line_the_reader_takes_back() {
     let mut written = Vec::new();
-    write_line(&mut written, &open("https://a.test/")).unwrap();
+    write_line(&mut written, &reload()).unwrap();
     assert_eq!(written.last(), Some(&b'\n'));
     assert_eq!(written.iter().filter(|&&byte| byte == b'\n').count(), 1);
     let request: Request = serde_json::from_slice(&read_line(&written[..]).unwrap()).unwrap();
-    assert_eq!(request, open("https://a.test/"));
+    assert_eq!(request, reload());
 }
 
 #[test]

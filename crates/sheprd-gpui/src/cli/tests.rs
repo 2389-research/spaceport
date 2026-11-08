@@ -51,52 +51,16 @@ fn browser(command: BrowserCommand) -> LaunchMode {
 }
 
 #[test]
+fn removed_browser_open_command_is_rejected() {
+    assert!(matches!(
+        LaunchOptions::parse(["browser", "open", "https://a.test/"]),
+        Err(CliError::UnknownBrowserCommand(_))
+    ));
+}
+
+#[test]
 fn browser_commands_never_start_the_gui() {
     let mode = |args: &[&str]| LaunchOptions::parse(args.iter().copied()).map(|o| o.mode);
-    assert_eq!(
-        mode(&["browser", "open", "localhost:3000"]).unwrap(),
-        browser(BrowserCommand::Open {
-            target: "localhost:3000".into(),
-            workspace: None,
-            focus: true,
-            placement: None,
-        })
-    );
-    assert_eq!(
-        mode(&["browser", "open", "--beside", "demo.html"]).unwrap(),
-        browser(BrowserCommand::Open {
-            target: "demo.html".into(),
-            workspace: None,
-            focus: true,
-            placement: Some(control::Placement::Beside),
-        })
-    );
-    assert_eq!(
-        mode(&["browser", "open", "--tab", "demo.html"]).unwrap(),
-        browser(BrowserCommand::Open {
-            target: "demo.html".into(),
-            workspace: None,
-            focus: true,
-            placement: Some(control::Placement::Tab),
-        })
-    );
-    assert_eq!(
-        mode(&[
-            "browser",
-            "open",
-            "--no-focus",
-            "--workspace",
-            "w_2",
-            "https://a.test"
-        ])
-        .unwrap(),
-        browser(BrowserCommand::Open {
-            target: "https://a.test".into(),
-            workspace: Some("w_2".into()),
-            focus: false,
-            placement: None,
-        })
-    );
     assert_eq!(
         mode(&["browser", "skill"]).unwrap(),
         browser(BrowserCommand::Skill)
@@ -117,27 +81,15 @@ fn browser_commands_never_start_the_gui() {
         mode(&["browser", "feedback", "--wait", "300"]).unwrap(),
         browser(BrowserCommand::Feedback { wait: 300 })
     );
-    for help in [&["browser", "--help"][..], &["browser", "open", "-h"]] {
-        assert_eq!(mode(help).unwrap(), browser(BrowserCommand::Help));
-    }
+    assert_eq!(
+        mode(&["browser", "--help"]).unwrap(),
+        browser(BrowserCommand::Help)
+    );
     for (args, expected) in [
         (&["browser"][..], CliError::MissingBrowserCommand),
         (
             &["browser", "eval"],
             CliError::UnknownBrowserCommand("eval".into()),
-        ),
-        (&["browser", "open"], CliError::MissingUrl),
-        (
-            &["browser", "open", "--workspace"],
-            CliError::MissingWorkspace,
-        ),
-        (
-            &["browser", "open", "a", "b"],
-            CliError::UnexpectedArgument("b".into()),
-        ),
-        (
-            &["browser", "open", "--new"],
-            CliError::UnexpectedArgument("--new".into()),
         ),
         (
             &["browser", "skill", "x"],
@@ -168,16 +120,6 @@ fn browser_commands_never_start_the_gui() {
         mode(&["--dev", "browser"]).unwrap_err(),
         CliError::UnknownOption("browser".into())
     );
-}
-
-#[cfg(unix)]
-#[test]
-fn browser_arguments_must_be_utf8() {
-    use std::os::unix::ffi::OsStringExt;
-    let invalid = OsString::from_vec(b"https://a.test/\xff".to_vec());
-    let error = LaunchOptions::parse([OsString::from("browser"), "open".into(), invalid.clone()])
-        .unwrap_err();
-    assert_eq!(error, CliError::InvalidBrowserEncoding(invalid));
 }
 
 #[test]

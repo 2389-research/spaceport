@@ -7,23 +7,21 @@ mod branding;
 fn the_skill_is_marked_and_names_this_executable() {
     assert!(SKILL.starts_with("---\nname: herdr-gpui-browser\n"));
     assert!(managed(SKILL));
-    assert!(SKILL.contains("sheprd browser open"));
+    assert!(SKILL.contains("local `sheprd browser open` command has been removed"));
     assert_eq!(text(None), SKILL);
     let bundled = text(Some(Path::new(
         "/Applications/Herdr.app/Contents/MacOS/Herdr",
     )));
-    assert!(bundled.contains("/Applications/Herdr.app/Contents/MacOS/Herdr browser open"));
     assert!(!bundled.contains("herdr-gpui browser"));
     // Every command, not only the browser's, names the executable.
     assert!(!bundled.contains("herdr-gpui "));
     assert!(bundled.contains("/Applications/Herdr.app/Contents/MacOS/Herdr code open"));
     let spaced = text(Some(Path::new("/Users/a b/it's/Herdr")));
-    assert!(spaced.contains(r"'/Users/a b/it'\''s/Herdr' browser open"));
+    assert!(spaced.contains(r"'/Users/a b/it'\''s/Herdr' code open"));
 }
 
-/// The description lists commands after a colon (`daemon: show a file`),
-/// so as a plain YAML scalar it would parse as a nested mapping and fail
-/// every agent's frontmatter parser, hiding the skill from agents.
+/// Agent Skills reads the description as YAML. Keep it a quoted scalar so
+/// punctuation cannot change how agents parse the skill frontmatter.
 #[test]
 fn the_skill_description_is_a_quoted_scalar() {
     assert!(!description(SKILL).contains('"'));
@@ -84,22 +82,11 @@ fn description(skill: &str) -> &str {
 }
 
 #[test]
-fn the_skill_teaches_the_split_the_kit_and_page_results() {
-    for taught in [
-        "A local file opens in a split next to your terminal",
-        "--tab",
-        "/.herdr/kit.css",
-        "HerdrKit.scenario(",
-        "HerdrKit.variants(",
-        "herdr.send(",
-        "sheprd browser example",
-    ] {
-        assert!(SKILL.contains(taught), "{taught}");
-    }
-    let bundled = text(Some(Path::new(
-        "/Applications/Herdr.app/Contents/MacOS/Herdr",
-    )));
-    assert!(bundled.contains("/Applications/Herdr.app/Contents/MacOS/Herdr browser example"));
+fn the_skill_does_not_promise_local_page_open() {
+    assert!(SKILL.contains("The local `sheprd browser open` command has been removed"));
+    assert!(!SKILL.contains("sheprd browser open ./"));
+    assert!(!SKILL.contains("HerdrKit.scenario("));
+    assert!(SKILL.contains("`sheprd code open src/main.rs:42`"));
 }
 
 #[test]

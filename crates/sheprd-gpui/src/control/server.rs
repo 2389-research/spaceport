@@ -22,7 +22,7 @@ use crate::{
     SheprdWindow,
     browser::{Feedback, FeedbackKey, Scope},
 };
-use browser::{feedback, notes, open_browser, reload, serve_waiters};
+use browser::{feedback, notes, reload, serve_waiters};
 use gpui::{App, Context, Window, WindowHandle};
 use std::{
     path::Path,
@@ -229,7 +229,6 @@ pub(super) fn in_free_window(
 /// where the work is app-wide.
 fn named_window(request: &Request) -> Option<u64> {
     match request {
-        Request::Open(open) => open.caller.window,
         Request::Reload(caller) | Request::Status(caller) => caller.window,
         Request::Notes(notes) => notes.caller.window,
         Request::Feedback(_) => None,
@@ -274,7 +273,6 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
         return;
     }
     match incoming.request.clone() {
-        Request::Open(request) => incoming.respond(open_browser(&request, cx)),
         Request::Reload(caller) => incoming.respond(reload(&caller, cx)),
         Request::Feedback(request) => feedback(&request, incoming, &mut state.waiters, cx),
         Request::Notes(request) => incoming.respond(notes(&request, cx)),

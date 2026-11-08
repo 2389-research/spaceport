@@ -2993,8 +2993,7 @@ own page for each one. Tabs are saved in
 `$XDG_STATE_HOME/herdr/gpui/browser-tabs.json` (default `~/.local/state/`) and
 come back after a restart; closing a workspace in Herdr removes its tabs.
 
-- Open one from an agent's `browser open` request (below). A restored blank
-  tab shows the workspace's listening ports in its address view.
+- A restored blank tab shows the workspace's listening ports in its address view.
 - A tab shows its page's favicon, drawn from the page's `<link rel="icon">`
   or a site's `/favicon.ico`, and a globe until the page has one. An icon
   from another origin shows only when that origin allows the page to read
@@ -3245,41 +3244,11 @@ the titlebar's Git menu where its button would.
   250,000 lines a file, 5,000 untracked files; links and binaries are not
   read). Only the local daemon's checkouts can be reviewed.
 
-### Local Pages
+### Remote SSH Page Requests
 
-`sheprd browser open ./mockup.html` shows a local file. The app serves it,
-with the other files in its folder, through a private `herdr-preview:` scheme,
-since pages cannot open `file:` addresses:
-
-- Only that folder is served, never a file a link leads out of it, and never a
-  hidden file or folder. A folder holding your home directory is refused.
-- Web pages cannot load the folder's files: requests carrying another origin
-  are refused.
-- Files are read off the UI thread and are never cached, so
-  `sheprd browser reload` shows an edited file. Showing the same file
-  again from the same pane reuses its tab.
-
-### Letting Agents Open Pages
-
-Agents running in the app's panes can open a page for you:
-
-```sh
-sheprd browser open http://localhost:3000   # macOS: /Applications/Herdr.app/Contents/MacOS/Herdr
-sheprd browser open design/mockup.html      # in a split beside the agent's terminal
-sheprd browser open --no-focus https://example.com/docs
-sheprd browser open --tab design/mockup.html # a tab, like a web address
-sheprd browser reload                       # reload the pages this pane opened
-sheprd browser feedback --wait 600          # wait for the notes you send it
-sheprd browser --help
-```
-
-The tab joins the caller's own workspace, which Herdr names in the pane's
-`HERDR_WORKSPACE_ID`, and remembers the caller's `HERDR_PANE_ID` so notes on
-the page go back to it. The command talks to the running app over a socket at
-`$XDG_STATE_HOME/herdr/gpui/control.sock`, readable only by you, and exits with
-3 when the app is not running. On Windows it is a named pipe only your user
-can open ([details](../../docs/cli.md#windows)). Only processes on this
-machine can reach it.
+Local `sheprd browser open` has been removed. The SSH host shim still sends
+page requests through Herdr workspace metadata until the embedded browser
+path is removed.
 
 Agents on a saved SSH host open pages another way, since that host cannot
 reach this machine. The app writes a small `herdr-gpui` shim there, at

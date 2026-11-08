@@ -126,6 +126,41 @@ fn the_menu_lists_the_host_forwards_and_stops_one(cx: &mut TestAppContext) {
     assert!(cx.debug_bounds("host-forward-3000").is_none());
 }
 
+/// The menu keeps service opening available without creating a page tab.
+#[cfg(unix)]
+#[gpui::test]
+fn a_listening_forward_opens_with_the_system_handler(cx: &mut TestAppContext) {
+    let (view, cx) = cx.add_window_view(|window, cx| {
+        let mut view = fixture_window(window, cx);
+        add_host(&mut view);
+        view.port_forwards.fixture(
+            "penso@box",
+            3000,
+            crate::port_forward::State::Listening { local_port: 39876 },
+        );
+        view
+    });
+    cx.simulate_resize(size(px(800.), px(600.)));
+    view.update_in(cx, |view, window, cx| {
+        view.open_host_menu(HOST, point(px(10.), px(10.)), window, cx)
+    });
+    cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
+    let tabs_before = cx.update(|_, cx| {
+        cx.try_global::<crate::browser::Store>()
+            .map(|store| store.tabs().count())
+    });
+    let open = cx.debug_bounds("host-forward-open-3000").unwrap();
+    cx.simulate_click(open.center(), Modifiers::default());
+    assert_eq!(cx.opened_url().as_deref(), Some("http://127.0.0.1:39876/"));
+    assert_eq!(
+        cx.update(|_, cx| cx
+            .try_global::<crate::browser::Store>()
+            .map(|store| store.tabs().count())),
+        tabs_before
+    );
+    view.read_with(cx, |view, _| assert!(view.menu.page.is_none()));
+}
+
 /// Forwards survive a dropped connection but not their host being
 /// disabled or removed.
 #[gpui::test]

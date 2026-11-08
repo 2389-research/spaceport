@@ -17,7 +17,7 @@ pub(crate) use super::args::Args;
 pub use crate::control::{Cursor, EventKind, FontSize, Script, Size, Sound, Switch, ZoomChange};
 pub use app::{AppCommand, UiCommand, WindowCommand};
 pub use batch::BatchCommand;
-pub use browser::{BrowserCommand, Placement};
+pub use browser::BrowserCommand;
 pub use chat::ChatCommand;
 pub use exec::ExecCommand;
 pub use hosts::{CloudCommand, HostCommand, PortsCommand, PrCommand, SecurityCommand};
@@ -137,7 +137,7 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("skill", "Print the agent skill describing these commands"),
     (
         "browser",
-        "Browser tabs: open, reload, list, navigate, page notes",
+        "Browser tabs: reload, list, navigate, page notes",
     ),
     ("app", "Bring the app forward, hide it, or quit it"),
     (

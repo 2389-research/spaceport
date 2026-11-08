@@ -1,109 +1,14 @@
 //! Browser tabs, page notes, and the agents waiting for them.
 use super::super::{
-    Opening, Placed, Placement, Target, main_windows, plain, plain_path,
+    Target, main_windows, plain, plain_path,
     protocol::{
-        BrowserOpen, Caller, ErrorCode, FeedbackRequest, MAX_WAIT_SECONDS, NotesRequest, NotesTo,
-        OpenedIn, Page, Response,
+        Caller, ErrorCode, FeedbackRequest, MAX_WAIT_SECONDS, NotesRequest, NotesTo, Response,
     },
     socket, valid_caller,
 };
-use crate::browser::{Feedback, FeedbackKey, LocalFile, Location, Scope, WebUrl};
+use crate::browser::{Feedback, FeedbackKey, Scope};
 use gpui::App;
 use std::path::Path;
-
-fn location(page: &Page) -> Result<Location, Response> {
-    match page {
-        Page::Url(url) => WebUrl::try_from(url.as_str())
-            .map(|url| Location::Web { url })
-            .map_err(|error| Response::error(ErrorCode::InvalidUrl, error.to_string())),
-        Page::File(path) => {
-            let home = crate::config::home().ok();
-            LocalFile::new(Path::new(path), home.as_deref())
-                .map(|file| Location::Local { file })
-                .map_err(|error| Response::error(ErrorCode::InvalidUrl, error.to_string()))
-        }
-    }
-}
-
-pub(super) fn open_browser(request: &BrowserOpen, cx: &mut App) -> Response {
-    if !valid_caller(&request.caller) {
-        return Response::error(
-            ErrorCode::InvalidRequest,
-            "Invalid workspace, pane, or daemon",
-        );
-    }
-    let location = match location(&request.page) {
-        Ok(location) => location,
-        Err(response) => return response,
-    };
-    if !crate::browser::EMBEDDED {
-        let Location::Web { url } = &location else {
-            return Response::error(
-                ErrorCode::Unsupported,
-                "Local pages need browser tabs, which this platform's build does not have",
-            );
-        };
-        cx.open_url(url.as_str());
-        return Response::Opened {
-            opened_in: OpenedIn::SystemBrowser,
-            workspace_id: None,
-            placement: Placement::Tab,
-        };
-    }
-    let mut windows = main_windows(cx);
-    if windows.is_empty() {
-        return Response::error(ErrorCode::NoWindow, "Sheprd has no window open");
-    }
-    if let Some(id) = request.caller.window {
-        windows.retain(|handle| handle.window_id().as_u64() == id);
-        if windows.is_empty() {
-            return Response::error(ErrorCode::NotFound, format!("Sheprd has no window {id}"));
-        }
-    }
-    let caller = &request.caller;
-    let target = Target {
-        daemon: caller.daemon_socket.as_deref().map(Path::new),
-        workspace: caller.workspace_id.as_deref(),
-        pane: caller.pane_id.as_deref(),
-    };
-    // First the window connected to the caller's own daemon; then, when the
-    // socket paths are spelled differently, any window showing its workspace.
-    for strict in [true, false] {
-        for handle in &windows {
-            let opening = Opening {
-                location: &location,
-                focus: request.focus,
-                placement: request.placement,
-            };
-            let placed = handle.update(cx, |view, window, cx| {
-                view.open_requested_browser_tab(&target, strict, &opening, window, cx)
-            });
-            match placed {
-                Ok(Some(Placed::Opened {
-                    workspace_id,
-                    placement,
-                })) => {
-                    return Response::Opened {
-                        opened_in: OpenedIn::Tab,
-                        workspace_id: Some(workspace_id),
-                        placement,
-                    };
-                }
-                Ok(Some(Placed::Full)) => {
-                    return Response::error(ErrorCode::TabLimit, "Too many browser tabs are open");
-                }
-                Ok(None) | Err(_) => {}
-            }
-        }
-    }
-    Response::error(
-        ErrorCode::WorkspaceNotFound,
-        match &caller.workspace_id {
-            Some(id) => format!("No Sheprd window shows workspace {id}"),
-            None => "No Sheprd window shows a workspace".into(),
-        },
-    )
-}
 
 /// Reloads every page the calling pane opened, in every window.
 pub(super) fn reload(caller: &Caller, cx: &mut App) -> Response {

@@ -47,7 +47,7 @@ impl SheprdWindow {
             .is_some_and(|target| self.port_forwards.for_host(target).next().is_some())
     }
 
-    /// Opens a listening forward's page in a browser tab.
+    /// Opens a listening forward with the system URL handler.
     fn open_forward(
         &mut self,
         remote_port: NonZeroU16,
@@ -64,7 +64,7 @@ impl SheprdWindow {
             .and_then(crate::port_forward::Forward::url);
         if let Some(url) = url {
             self.dismiss_menu(window, cx);
-            self.open_browser_tab(Some(url), window, cx);
+            cx.open_url(url.as_str());
         }
     }
 

@@ -1,6 +1,5 @@
 //! Lets processes on this machine, such as an agent in a Herdr pane, drive
-//! the parts of the app Herdr cannot: show the user a page and hear back
-//! what the user noted on it, open the app's own tabs, and read or change
+//! the parts of the app Herdr cannot: hear back page notes, open the app's own tabs, and read or change
 //! state only this client keeps. Herdr itself has no way to reach a client,
 //! so the app listens on a socket of its own and `sheprd <command> ...`
 //! talks to it. Only this user's local processes can reach it: an agent on
@@ -10,8 +9,6 @@ mod client;
 mod server;
 
 use crate::SheprdWindow;
-use crate::browser::Location;
-pub(crate) use crate::cli::control::Placement;
 #[cfg(windows)]
 pub(crate) use client::send_focus;
 #[cfg(feature = "mockup")]
@@ -74,23 +71,6 @@ impl Target<'_> {
             &[true, false]
         }
     }
-}
-
-/// The page a request asks a window to open, and how to show it.
-pub(crate) struct Opening<'a> {
-    pub location: &'a Location,
-    /// Whether the window switches to the tab.
-    pub focus: bool,
-    pub placement: Placement,
-}
-
-/// Where a window opened a requested tab.
-pub(crate) enum Placed {
-    Opened {
-        workspace_id: String,
-        placement: Placement,
-    },
-    Full,
 }
 
 /// Identifiers a request carries are compared, never interpreted, but they

@@ -61,18 +61,16 @@ pub enum CliError {
     UnknownOption(OsString),
     #[error("--socket cannot be combined with --session or --dev")]
     ConflictingConnectionOptions,
-    #[error("browser requires a command: open, reload, feedback, skill, or --help")]
+    #[error("browser requires a command: reload, feedback, skill, or --help")]
     MissingBrowserCommand,
     #[error("Unknown browser command: {}", .0.to_string_lossy())]
     UnknownBrowserCommand(OsString),
-    #[error("browser open requires one URL or file")]
+    #[error("browser navigate requires one URL")]
     MissingUrl,
     #[error("--wait requires a number of seconds")]
     InvalidWait,
-    #[error("browser open accepts one URL; unexpected {}", .0.to_string_lossy())]
+    #[error("Unexpected browser argument: {}", .0.to_string_lossy())]
     UnexpectedArgument(OsString),
-    #[error("--workspace requires an ID")]
-    MissingWorkspace,
     #[error("browser arguments must be UTF-8")]
     InvalidBrowserEncoding(OsString),
     #[error("{0} requires a value")]

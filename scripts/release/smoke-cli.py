@@ -74,7 +74,7 @@ def smoke(executable):
         check_usage_error(executable, state, ["--unknown"], "Unknown option: --unknown")
         check_usage_error(executable, state, ["--socket"], "--socket requires a path")
         check_usage_error(executable, state, ["--integration-test"], "Unknown option: --integration-test")
-        check_usage_error(executable, state, ["browser", "open"], "browser open requires one URL")
+        check_usage_error(executable, state, ["browser", "open", "https://a.test/"], "Unknown browser command")
 
 
 def main(argv=None):

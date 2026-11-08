@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 use super::*;
-use crate::protocol::{BrowserOpen, Caller, FeedbackRequest, MAX_WAIT_SECONDS, OpenedIn, Page};
+use crate::protocol::{Caller, FeedbackRequest, MAX_WAIT_SECONDS};
 use test_support::{Address, address};
 
 mod cancellation;
@@ -11,13 +11,8 @@ mod pipe;
 #[cfg(unix)]
 mod unix;
 
-fn open(url: &str) -> Request {
-    Request::Open(BrowserOpen {
-        page: Page::Url(url.into()),
-        caller: Caller::default(),
-        focus: true,
-        placement: crate::protocol::Placement::Tab,
-    })
+fn reload() -> Request {
+    Request::Reload(Caller::default())
 }
 
 /// Both ends of one connection: the server's, timeouts set, and a caller's.
@@ -36,15 +31,11 @@ fn a_request_reaches_the_ui_and_its_answer_reaches_the_caller() {
     let server = Server::bind(&address.path).unwrap();
     let caller = thread::spawn({
         let path = address.path.clone();
-        move || call(&path, &open("https://a.test/"))
+        move || call(&path, &reload())
     });
     let incoming = server.next().unwrap();
-    assert_eq!(incoming.request, open("https://a.test/"));
-    let expected = Response::Opened {
-        opened_in: OpenedIn::Tab,
-        workspace_id: Some("w_1".into()),
-        placement: crate::protocol::Placement::Beside,
-    };
+    assert_eq!(incoming.request, reload());
+    let expected = Response::Reloaded { tabs: 1 };
     incoming.respond(expected.clone());
     assert_eq!(caller.join().unwrap().unwrap(), expected);
 }
@@ -105,7 +96,7 @@ fn a_waiting_caller_does_not_hold_up_the_next_one() {
     // While the first caller waits for the user, another is answered.
     let next = thread::spawn({
         let path = address.path.clone();
-        move || call(&path, &open("https://a.test/"))
+        move || call(&path, &reload())
     });
     server
         .next()
@@ -136,7 +127,7 @@ fn feedback_waits_are_bounded() {
         wait(u64::MAX),
         ANSWER_TIMEOUT + Duration::from_secs(MAX_WAIT_SECONDS)
     );
-    assert_eq!(answer_timeout(&open("https://a.test/")), ANSWER_TIMEOUT);
+    assert_eq!(answer_timeout(&reload()), ANSWER_TIMEOUT);
 }
 
 #[test]
@@ -179,7 +170,7 @@ fn an_answer_over_the_bound_is_refused_and_its_notes_kept() {
 fn a_missing_server_is_reported_as_unavailable() {
     let address = address();
     assert!(matches!(
-        call(&address.path, &open("https://a.test/")),
+        call(&address.path, &reload()),
         Err(crate::Error::Unavailable { .. })
     ));
 }

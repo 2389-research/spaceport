@@ -259,7 +259,7 @@ pub(crate) fn run() -> std::process::ExitCode {
         Err(error) => {
             eprintln!(
                 // i18n: data
-                "{error}\nUsage: sheprd [--socket CLIENT_SOCKET | --session NAME [--dev]]\n       sheprd browser open URL [--workspace ID] [--no-focus]\n       sheprd COMMAND ... (see sheprd --help)"
+                "{error}\nUsage: sheprd [--socket CLIENT_SOCKET | --session NAME [--dev]]\n       sheprd COMMAND ... (see sheprd --help)"
             );
             return std::process::ExitCode::from(2);
         }
@@ -310,10 +310,6 @@ pub(crate) fn run() -> std::process::ExitCode {
         println!(
             // i18n: data
             "  --build-info        Print the executable's build identity without starting the GUI"
-        );
-        println!(
-            // i18n: data
-            "  browser open URL    Show URL in a browser tab of the running app (see browser --help)"
         );
         // i18n: data
         println!("\nCommands for the running app (each with --help):");

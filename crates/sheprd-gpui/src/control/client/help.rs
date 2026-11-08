@@ -11,15 +11,6 @@ Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Sheprd not running,
 7 timed out, 8 unsupported on this platform or by this app version.";
 
 const BROWSER: &str = "\
-sheprd browser open URL|FILE [--workspace ID] [--no-focus] [--beside|--tab]
-    Show a web address, or a local HTML file, in a browser tab of the running
-    Sheprd. The tab joins the caller's own workspace (HERDR_WORKSPACE_ID),
-    or the frontmost one outside Herdr. Showing the same page again from the
-    same pane reuses and reloads its tab. Bare hosts such as localhost:3000
-    are accepted. A file is served with the other files in its folder.
-    A file opened from a Herdr pane goes in a split next to that terminal,
-    which stays in view and keeps the keyboard; a web address takes a tab of
-    the group in use. --beside and --tab choose instead.
 sheprd browser reload
     Reload the pages this pane opened, for example after editing the file.
 sheprd browser feedback [--wait SECONDS]

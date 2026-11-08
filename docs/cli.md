@@ -13,7 +13,7 @@ only your user can open; on Windows, over a named pipe (see
 [Windows](#windows)). An agent on an SSH host has no path to it; there,
 the app's shim at `~/.local/state/herdr/gpui/bin/sheprd` offers
 `browser open` and `browser reload` through Herdr workspace metadata (see
-[remote agents](../crates/sheprd-gpui/README.md#letting-agents-open-pages)),
+[remote agents](../crates/sheprd-gpui/README.md#remote-ssh-page-requests)),
 and every other command exits 8. A few commands work from files alone and
 need no running app; they say so below.
 
@@ -95,7 +95,7 @@ Sheprd** entry, which both Windows installers add, runs this command through
 | --- | --- |
 | `tab [list]` | Pages, code, reviews, and Devices tabs with IDs |
 | `tab focus\|close ID` | |
-| `browser open\|reload\|feedback` | See [browser tabs](../crates/sheprd-gpui/README.md#browser-tabs) |
+| `browser reload\|feedback` | See [browser tabs](../crates/sheprd-gpui/README.md#browser-tabs) |
 | `browser list` | Page tabs only |
 | `browser navigate ID URL` | Load another address in a page tab |
 | `browser back\|forward ID` | |

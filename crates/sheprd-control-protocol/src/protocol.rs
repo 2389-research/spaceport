@@ -1,7 +1,6 @@
 //! The control socket's messages: one JSON request line, one JSON response
-//! line, then the connection closes. Browser requests keep their original
-//! flat form; every other family sends `{"method", "caller", "op"}` with a
-//! family-specific `op`, and is answered with a family-specific `reply`.
+//! line, then the connection closes. Most request families send
+//! `{"method", "caller", "op"}` and receive a family-specific reply.
 pub mod app;
 pub mod chat;
 pub mod cloud;
@@ -13,28 +12,13 @@ pub mod work;
 
 use serde::{Deserialize, Serialize};
 
-/// Where `browser open` puts a new page.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Placement {
-    /// A tab of the group in use, which takes the window's view.
-    #[default]
-    Tab,
-    /// A group beside the caller's terminal, so both stay in view.
-    Beside,
-}
-
 /// Raised whenever a request or reply changes shape, so `status` can tell
 /// an outdated app from a refused request. 3: `browser.open` placement.
 /// 4: `link`. 5: the `tab` family's `zoom`. 6: the `cloud` family. 7: `chat`.
 /// 8: legacy `host` `automation_approve`. 9: `remote`. 10: `settings` `language`.
 /// 11: `mod`. 12: `status.core_catalog`. 13: removed phone control.
-pub const PROTOCOL_VERSION: u32 = 13;
-
-/// Older apps and clients know only tabs, so a tab is left off the wire.
-fn is_tab(placement: &Placement) -> bool {
-    *placement == Placement::Tab
-}
+/// 14: removed local `browser.open`.
+pub const PROTOCOL_VERSION: u32 = 14;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.
@@ -45,8 +29,6 @@ pub const MAX_WAIT_SECONDS: u64 = 600;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "method", deny_unknown_fields)]
 pub enum Request {
-    #[serde(rename = "browser.open")]
-    Open(BrowserOpen),
     #[serde(rename = "browser.reload")]
     Reload(Caller),
     #[serde(rename = "browser.feedback")]
@@ -114,15 +96,6 @@ impl Request {
     }
 }
 
-/// What a tab shows: a web address, or a local file by absolute path, which
-/// the caller resolved on its side.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", deny_unknown_fields)]
-pub enum Page {
-    Url(String),
-    File(String),
-}
-
 /// Who is asking: the Herdr pane, workspace, and daemon the caller runs in.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -142,17 +115,6 @@ pub struct Caller {
     /// The window to act in, by the ID `window list` reports.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub window: Option<u64>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct BrowserOpen {
-    pub page: Page,
-    pub caller: Caller,
-    /// Whether the window switches to the tab.
-    pub focus: bool,
-    #[serde(default, skip_serializing_if = "is_tab")]
-    pub placement: Placement,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -189,15 +151,6 @@ pub enum NotesTo {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum OpenedIn {
-    /// A browser tab inside the window.
-    Tab,
-    /// The system browser, on a platform whose build cannot show pages.
-    SystemBrowser,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub enum ErrorCode {
     InvalidRequest,
     InvalidUrl,
@@ -218,14 +171,6 @@ pub enum ErrorCode {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum Response {
-    Opened {
-        opened_in: OpenedIn,
-        workspace_id: Option<String>,
-        /// Where the page went: beside the terminal only when asked and
-        /// the window could split.
-        #[serde(default, skip_serializing_if = "is_tab")]
-        placement: Placement,
-    },
     Reloaded {
         tabs: usize,
     },
@@ -294,47 +239,13 @@ mod tests {
     mod removed_phone;
 
     #[test]
+    fn removed_browser_open_request_is_rejected() {
+        let request = r#"{"method":"browser.open","page":{"url":"https://a.test/"},"caller":{},"focus":true}"#;
+        assert!(serde_json::from_str::<Request>(request).is_err());
+    }
+
+    #[test]
     fn requests_have_a_stable_wire_form() {
-        let request = Request::Open(BrowserOpen {
-            page: Page::Url("http://localhost:3000/".into()),
-            caller: Caller {
-                pane_id: Some("w_1:p1".into()),
-                workspace_id: Some("w_1".into()),
-                daemon_socket: None,
-                window: None,
-            },
-            focus: true,
-            placement: Placement::Tab,
-        });
-        let text = serde_json::to_string(&request).unwrap();
-        assert_eq!(
-            text,
-            r#"{"method":"browser.open","page":{"url":"http://localhost:3000/"},"caller":{"pane_id":"w_1:p1","workspace_id":"w_1","daemon_socket":null},"focus":true}"#
-        );
-        assert_eq!(serde_json::from_str::<Request>(&text).unwrap(), request);
-        let beside: Request = serde_json::from_str(
-            r#"{"method":"browser.open","page":{"file":"/srv/a.html"},"caller":{},"focus":true,"placement":"beside"}"#,
-        )
-        .unwrap();
-        assert!(matches!(
-            beside,
-            Request::Open(BrowserOpen {
-                placement: Placement::Beside,
-                ..
-            })
-        ));
-        let minimal: Request = serde_json::from_str(
-            r#"{"method":"browser.open","page":{"file":"/srv/a.html"},"caller":{},"focus":false}"#,
-        )
-        .unwrap();
-        assert!(matches!(
-            minimal,
-            Request::Open(BrowserOpen {
-                page: Page::File(_),
-                caller: Caller { pane_id: None, .. },
-                ..
-            })
-        ));
         let feedback: Request = serde_json::from_str(
             r#"{"method":"browser.feedback","pane_id":"w_1:p1","wait_seconds":30}"#,
         )
@@ -396,16 +307,6 @@ mod tests {
     #[test]
     fn responses_round_trip() {
         for response in [
-            Response::Opened {
-                opened_in: OpenedIn::Tab,
-                workspace_id: Some("w_1".into()),
-                placement: Placement::Tab,
-            },
-            Response::Opened {
-                opened_in: OpenedIn::Tab,
-                workspace_id: Some("w_1".into()),
-                placement: Placement::Beside,
-            },
             Response::error(ErrorCode::WorkspaceNotFound, "No window shows w_9"),
             Response::Reloaded { tabs: 2 },
             Response::Feedback {
