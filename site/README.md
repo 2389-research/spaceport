@@ -66,10 +66,10 @@ Release assets use `Sheprd-VERSION-TARGET` and the primary command is `sheprd`.
 The Homebrew cask is `sheprd-labs/tap/sheprd`; `penso/tap/herdr-gpui` installs keep
 `Herdr.app` for the update bridge (`open -a Herdr`). Linux's package name and legacy
 `/usr/bin/herdr-gpui` entrypoint remain compatible. Windows keeps
-`%LOCALAPPDATA%\Programs\Herdr UI`, `so.pen.herdr-gpui`, legacy executable
-aliases, and both `sheprd://` and `herdr-gpui://` registrations. These strings
-are compatibility identities, not current product branding. Keep installer
-contracts aligned with `scripts/release/sheprd.iss` and its tests.
+`%LOCALAPPDATA%\Programs\Herdr UI`, `so.pen.herdr-gpui`, and legacy executable
+aliases. The installer no longer registers `sheprd://` or `herdr-gpui://`.
+These strings are compatibility identities, not current product branding. Keep
+installer contracts aligned with `scripts/release/sheprd.iss` and its tests.
 
 ## Media and checks
 

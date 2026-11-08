@@ -112,20 +112,9 @@ Type: dirifempty; Name: "{app}"
 ; A pre-Setup install may have supplied the desktop shortcut we renamed.
 Type: files; Name: "{userdesktop}\{#AppName}.lnk"
 
-; herdr-gpui:// links, for this user only: jump list entries, notification
-; clicks, and links from other apps start the launcher with the link as its
-; only argument; it passes the link to sheprd.exe, which hands it to the
-; running app. Removed on uninstall. The app also registers its
-; AppUserModelID for notifications on first use; that key goes too.
+; The app registers its AppUserModelID for notifications on first use; that
+; key goes on uninstall. Protocol links need a separately owned installer ID.
 [Registry]
-Root: HKCU; Subkey: "Software\Classes\sheprd"; ValueType: string; ValueName: ""; ValueData: "URL:{cm:LinkName,{#AppName}}"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "Software\Classes\sheprd"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
-Root: HKCU; Subkey: "Software\Classes\sheprd\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExe}"",0"
-Root: HKCU; Subkey: "Software\Classes\sheprd\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#Launcher}"" ""%1"""
-Root: HKCU; Subkey: "Software\Classes\herdr-gpui"; ValueType: string; ValueName: ""; ValueData: "URL:{cm:LinkName,{#AppName}}"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "Software\Classes\herdr-gpui"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
-Root: HKCU; Subkey: "Software\Classes\herdr-gpui\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExe}"",0"
-Root: HKCU; Subkey: "Software\Classes\herdr-gpui\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#Launcher}"" ""%1"""
 Root: HKCU; Subkey: "Software\Classes\AppUserModelId\{#AppUserModelID}"; Flags: uninsdeletekey dontcreatekey
 ; Settings > General > Launch at login writes a Run value naming the launcher,
 ; and Task Manager's Startup apps may mark it off. Setup creates neither; both

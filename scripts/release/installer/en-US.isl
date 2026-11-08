@@ -7,7 +7,5 @@
 
 [CustomMessages]
 AddToPath=Add sheprd to PATH, for terminals and agents
-; The protocol's name in Windows' default apps list; %1 is the app's name.
-LinkName=%1 link
 ; The folder context menu's command; %1 is the app's name.
 OpenIn=Open in %1

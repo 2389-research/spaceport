@@ -382,7 +382,8 @@ The compatibility exceptions are intentional:
   winget `Penso.HerdrUI`, publisher `Herdr UI`, and the configured Authenticode
   subject. ZIPs and installers ship both `sheprd.exe` / `sheprd-launcher.exe`
   and the legacy executable/helper copies; **all copies are signed**. Shortcuts
-  and Explorer text show Sheprd, and both `sheprd://` and `herdr-gpui://` work.
+  and Explorer text show Sheprd. The installer registers neither inherited
+  `sheprd://` nor `herdr-gpui://` scheme.
   Setup gracefully stops automation running under either executable name.
 - Runtime service/state identities and the upstream `herdr-core` / `hc` and
   `herdr` command remain compatible. The `HERDR_*` signing/build variables and

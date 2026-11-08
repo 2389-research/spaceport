@@ -1,7 +1,5 @@
-"""site/install.ps1: its Start menu shortcut, taskbar identity, Explorer entry,
-and herdr-gpui:// links, registered as the Setup.exe installer does."""
+"""site/install.ps1: its Start menu shortcut, taskbar identity, and Explorer entry."""
 from pathlib import Path
-import json
 import os
 import re
 import shutil
@@ -13,30 +11,6 @@ import unittest
 ROOT = Path(__file__).resolve().parents[3]
 INSTALL = ROOT / "site/install.ps1"
 ISS = ROOT / "scripts/release/sheprd.iss"
-ISL = ROOT / "scripts/release/installer/en-US.isl"
-SCHEME_KEY = r"HKCU:\Software\Classes\herdr-gpui"
-COMMAND_KEY = r"shell\open\command"
-
-# Reads a link scheme's values back, and asks Windows which command opens it.
-SCHEME_CHECK = r"""
-Add-Type -Name Assoc -Namespace HerdrTest -MemberDefinition @'
-[DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
-public static extern int AssocQueryString(int flags, int str, string assoc, string extra,
-  System.Text.StringBuilder output, ref int length);
-'@
-$output = New-Object System.Text.StringBuilder 1024
-$length = $output.Capacity
-# ASSOCF_IS_PROTOCOL, ASSOCSTR_COMMAND
-$found = [HerdrTest.Assoc]::AssocQueryString(0x1000, 1, $env:HERDR_TEST_SCHEME, 'open', $output, [ref]$length)
-$key = Get-Item -LiteralPath $scheme
-$registered = [ordered]@{
-  default = $key.GetValue('')
-  protocol = $key.GetValue('URL Protocol')
-  icon = (Get-Item -LiteralPath "$scheme\DefaultIcon").GetValue('')
-  command = (Get-Item -LiteralPath "$scheme\shell\open\command").GetValue('')
-  associated = $(if ($found -eq 0) { $output.ToString() } else { $null })
-}
-"""
 
 
 def app_id():
@@ -58,37 +32,6 @@ def install_steps():
     start = source.index("  $hasLauncher = Test-Path")
     end = source.index("\n  }\n", source.index("Start it from the Start menu (Sheprd) or with sheprd.", start))
     return source[start:end + len("\n  }")]
-
-
-def scheme_lines():
-    """The script's lines that register herdr-gpui:// links, and the ones
-    that remove them: -Uninstall's first, then a launcher-less release's."""
-    lines = INSTALL.read_text(encoding="utf-8").splitlines()
-    register = [line for line in lines
-                if re.match(r' +(New-Item -Force -Path|Set-Item|Set-ItemProperty) [^$]*"?\$scheme\b', line)]
-    remove = [line for line in lines if line.lstrip().startswith("Remove-Item") and line.endswith(" $scheme")]
-    return register, remove
-
-
-def installer_scheme_values(app, scheme="sheprd"):
-    """What Setup.exe writes under the scheme's key, keyed by (subkey below
-    it, value name), with its install directory set to `app`."""
-    iss = ISS.read_text(encoding="utf-8")
-    exe = re.search(r'^#define AppExe "([^"]+)"$', iss, re.M).group(1)
-    launcher = re.search(r'^#define Launcher "([^"]+)"$', iss, re.M).group(1)
-    pattern = (rf'^Root: HKCU; Subkey: "Software\\Classes\\{re.escape(scheme)}(?:\\([^"]+))?"; ValueType: string; '
-               r'ValueName: "([^"]*)"; ValueData: "((?:[^"]|"")*)"')
-    app_name = re.search(r'^#define AppName "([^"]+)"$', iss, re.M).group(1)
-    # Setup's own text comes from its English messages, as ISCC fills them in.
-    messages = dict(re.findall(r"^(\w+)=(.*)$", ISL.read_text(encoding="utf-8"), re.M))
-    values = {}
-    for subkey, name, data in re.findall(pattern, iss, re.M):
-        data = data.replace('""', '"').replace("{app}", app)
-        data = data.replace("{#AppExe}", exe).replace("{#Launcher}", launcher).replace("{#AppName}", app_name)
-        data = re.sub(r"\{cm:(\w+)(?:,([^}]*))?\}",
-                      lambda m: messages[m[1]].replace("%1", m[2] or ""), data)
-        values[(subkey, name)] = data
-    return values
 
 
 class InstallScriptTests(unittest.TestCase):
@@ -120,68 +63,15 @@ class InstallScriptTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.strip(), app_id())
 
-    def test_links_are_registered_on_install_and_removed_on_uninstall(self):
-        install = INSTALL.read_text(encoding="utf-8")
-        self.assertIn("$schemes = @('HKCU:\\Software\\Classes\\sheprd', 'HKCU:\\Software\\Classes\\herdr-gpui')", install)
-        self.assertLess(install.index("  $schemes = "), install.index("  if ($Uninstall) {"))
-        register, remove = scheme_lines()
-        self.assertEqual(len(register), 6)
-        self.assertEqual(len(remove), 2)
-        steps = install_steps()
-        self.assertTrue(all(line in steps for line in register), register)
-        self.assertLess(install.index(remove[0]), install.index("    Write-Host \"Uninstalled Sheprd from"))
-        self.assertIn(remove[1], steps)
-        self.assertEqual(installer_scheme_values("C:\\test", "sheprd"),
-                         installer_scheme_values("C:\\test", "herdr-gpui"))
-
     def test_installer_does_not_start_or_stop_scheduler(self):
         for source in (INSTALL, ISS):
             with self.subTest(path=source):
                 self.assertNotIn("Automate", source.read_text(encoding="utf-8"))
 
     @unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell.exe"), "needs Windows PowerShell")
-    def test_links_open_the_launcher_as_setup_exe_registers_and_uninstall_removes_them(self):
-        """Registers a throwaway scheme with the script's own lines, reads it
-        back and asks Windows which command opens it, then removes it with
-        the script's uninstall line."""
-        register, remove = scheme_lines()
-        app = r"C:\Program Files Test\Sheprd"
-        expected = installer_scheme_values(app)
-        self.assertEqual(set(expected), {("", ""), ("", "URL Protocol"), ("DefaultIcon", ""), (COMMAND_KEY, "")})
-        scheme = f"herdr-gpui-test-{os.getpid()}"
-        with tempfile.TemporaryDirectory(prefix="herdr-install-ps1-") as temp:
-            script = Path(temp) / "check.ps1"
-            script.write_text(
-                "$ErrorActionPreference = 'Stop'\n"
-                "$exe = Join-Path $env:HERDR_TEST_APP 'sheprd.exe'\n"
-                "$launcher = Join-Path $env:HERDR_TEST_APP 'sheprd-launcher.exe'\n"
-                "$scheme = 'HKCU:\\Software\\Classes\\' + $env:HERDR_TEST_SCHEME\n"
-                "try {\n" + "\n".join(register) + SCHEME_CHECK
-                + "} finally {\n" + remove[0] + "\n}\n"
-                "$registered.removed = -not (Test-Path -LiteralPath $scheme)\n"
-                "$registered | ConvertTo-Json\n",
-                encoding="utf-8")
-            result = subprocess.run(
-                ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-                 "-File", str(script)],
-                capture_output=True, text=True, timeout=120,
-                env={**os.environ, "HERDR_TEST_APP": app, "HERDR_TEST_SCHEME": scheme})
-        self.assertEqual(result.returncode, 0, result.stderr)
-        values = json.loads(result.stdout)
-        self.assertEqual(values["default"], expected[("", "")])
-        self.assertEqual(values["protocol"], expected[("", "URL Protocol")])
-        self.assertEqual(values["icon"], expected[("DefaultIcon", "")])
-        self.assertEqual(values["command"], expected[(COMMAND_KEY, "")])
-        self.assertEqual(values["command"], f'"{app}\\sheprd-launcher.exe" "%1"')
-        self.assertEqual(values["associated"], values["command"])
-        self.assertTrue(values["removed"])
-
-    @unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell.exe"), "needs Windows PowerShell")
-    def test_shortcut_explorer_entry_and_links_follow_the_releases_launcher(self):
+    def test_shortcut_and_explorer_entry_leave_other_link_schemes_alone(self):
         # Releases up to 20261016.1 ship sheprd.exe alone (#632): there
-        # the shortcut opens it, an existing Explorer entry and link
-        # registration go, and the closing message names neither the
-        # launcher nor that entry.
+        # the shortcut opens it and an existing Explorer entry goes away.
         for has_launcher in (False, True):
             key = rf"Software\HerdrInstallPs1Test-{os.getpid()}-{has_launcher}"
             with self.subTest(has_launcher=has_launcher), \
@@ -203,9 +93,9 @@ class InstallScriptTests(unittest.TestCase):
                     rf"$scheme = 'HKCU:\{key}\Scheme'",
                     rf"$schemes = @('HKCU:\{key}\Scheme', 'HKCU:\{key}\LegacyScheme')",
                     "$ownedShortcuts = @()",
-                    # An entry and a link registration left from an earlier install.
+                    # Other handlers must survive either install shape.
                     r'foreach ($verb in $verbs) { New-Item -Force -Path "$verb\command" | Out-Null }',
-                    r'New-Item -Force -Path "$scheme\shell\open\command" | Out-Null',
+                    r'foreach ($scheme in $schemes) { New-Item -Force -Path "$scheme\shell\open\command" | Out-Null; Set-Item -LiteralPath "$scheme\shell\open\command" -Value "other-app" }',
                     install_steps().replace("[Environment]::GetFolderPath('Programs')", "$env:HERDR_TEST_DIR"),
                     "'target=' + (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut).TargetPath",
                     "foreach ($verb in $verbs) {",
@@ -238,18 +128,13 @@ class InstallScriptTests(unittest.TestCase):
                         program, rest = verb[1:].split('"', 1)
                         self.assertTrue(os.path.samefile(program, launcher), verb)
                         self.assertEqual(rest, ' open "%V"')
-                    self.assertEqual(len(schemes), 2, result.stdout)
-                    for command in schemes:
-                        program, rest = command[1:].split('"', 1)
-                        self.assertTrue(os.path.samefile(program, launcher), command)
-                        self.assertEqual(rest, ' "%1"')
                     self.assertIn("sheprd-launcher.exe", message)
                     self.assertIn("Open in Sheprd", message)
                 else:
                     self.assertEqual(verbs, [], result.stdout)
-                    self.assertEqual(schemes, [], result.stdout)
                     self.assertNotIn("launcher", message)
                     self.assertNotIn("Open in Sheprd", message)
+                self.assertEqual(schemes, ["other-app", "other-app"], result.stdout)
 
 
 if __name__ == "__main__":

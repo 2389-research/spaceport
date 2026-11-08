@@ -9,7 +9,7 @@ fixture failures and the unrun Windows/Linux gates.
 | Updater identity | `crates/sheprd-updater/src/lib.rs` has `APP_ID = "so.pen.herdr-gpui"` and uses `HERDR_RELEASE_VERSION` / `HERDR_UPDATE_PUBLIC_KEY`. Development builds without that key stay disabled. | Use an owner-controlled production ID and key; reject the upstream identity at build and install boundaries. |
 | Update source | `crates/sheprd-updater/src/release.rs` points to `sheprd-labs/sheprd` releases and the asset resolver uses the upstream repository. Linux and Homebrew updater paths still name `herdr-gpui` and `sheprd`. | Use a separate Spaceport release source and package ownership after it is supplied and verified; keep updates disabled until then. |
 | macOS | Development `NSProcessInfo.processName` now follows the `Spaceport` window title. `assets/macos/Info.plist` still uses `so.pen.herdr-gpui`; `package-macos.sh` assembles `Sheprd.app`, while `sign-macos.sh` checks that upstream ID. The phone helpers and Core are no longer packaged. | Give the app its own bundle ID/name/icon and signing checks. |
-| Windows | The development GUI uses `spaceport.development` for notifications, taskbar and Jump List, while `scripts/release/sheprd.iss` still uses the upstream installer identity. The updater accepts `sheprd.exe` and `herdr-gpui.exe` as replacement targets. | Use an independent installer, app ID, executable and replacement target; test side-by-side safety on Windows. |
+| Windows | The development GUI uses `spaceport.development` for notifications, taskbar and Jump List, while `scripts/release/sheprd.iss` still uses the upstream installer identity. The installer no longer registers inherited link schemes. The updater accepts `sheprd.exe` and `herdr-gpui.exe` as replacement targets. | Use an independent installer, app ID, executable and replacement target; test side-by-side safety on Windows. |
 | Linux | The development window uses `spaceport.development` as its app ID. `scripts/release/package-linux.sh` still creates `Sheprd-*`, installs `org.sheprd.Sheprd.desktop`, and aliases `herdr-gpui`; its desktop entry cannot match the development window. | Use a separate desktop/package/executable identity and remove upstream aliases and excluded binaries. |
 | Release workflow | `scripts/release/dispatch.sh` requires the upstream repository; `.github/workflows/promote.yml` targets the Sheprd release and tap. | Configure an owner-controlled Spaceport release route; keep publishing gated by explicit authorization. |
 
@@ -29,7 +29,7 @@ An earlier pass changed the ad-hoc signed macOS development bundle ID at `f4375b
 | --- | --- | --- |
 | Window, process, art | `crates/sheprd-gpui/src/constants.rs` names the window `Spaceport` and gives Windows/Wayland the development-only `spaceport.development` OS ID. `app_icon.rs` now sets macOS `NSProcessInfo.processName` from that same window title. | `app_icon.rs` still embeds Sheprd artwork; `assets/icons/README.md` calls it Sheprd artwork. Final art is a G-RELEASE input. |
 | macOS bundle | `justfile` now writes `CFBundleIdentifier=spaceport.development` into the ad-hoc signed `just run` and `just run-debug` bundles. `README.md` and `crates/sheprd-gpui/README.md` name this development ID. | `assets/macos/Info.plist` still sets `Sheprd`, `so.pen.herdr-gpui`, `sheprd` and `Sheprd.icns`; `scripts/release/package-macos.sh` assembles `Sheprd.app`, while `sign-macos.sh` requires the upstream ID. |
-| Windows shell | `crates/sheprd-gpui/src/taskbar.rs` uses the development AppUserModelID; local CLI, toast and Jump List targets use `spaceport://`. The toast path requires a handler command for the running executable before protocol activation, and otherwise uses in-process delivery. No development handler is installed. | `scripts/release/sheprd.iss` still uses installer GUID `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`, AppUserModelID `so.pen.herdr-gpui`, publisher `Herdr UI`, the old install directory and `sheprd://`/`herdr-gpui://` registry keys. `package-windows.py` carries old executable aliases; `crates/sheprd-updater/src/windows.rs` accepts old replacement targets. |
+| Windows shell | `crates/sheprd-gpui/src/taskbar.rs` uses the development AppUserModelID; local CLI, toast and Jump List targets use `spaceport://`. The toast path requires a handler command for the running executable before protocol activation, and otherwise uses in-process delivery. No development handler is installed. The installer and script no longer register inherited link schemes. | `scripts/release/sheprd.iss` still uses installer GUID `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`, AppUserModelID `so.pen.herdr-gpui`, publisher `Herdr UI`, and the old install directory. `package-windows.py` carries old executable aliases; `crates/sheprd-updater/src/windows.rs` accepts old replacement targets. |
 | Linux desktop | `crates/sheprd-gpui/src/app.rs` applies the development Wayland/X11 ID from `constants.rs`. | `scripts/release/org.sheprd.Sheprd.desktop` declares `Name=Sheprd`, `Exec=sheprd`, `Icon=sheprd`, `StartupWMClass=org.sheprd.Sheprd`. `package-linux.sh` creates `Sheprd-*` and an `herdr-gpui` alias; `package-linux-distro.py` owns package name `herdr-gpui`; `crates/sheprd-updater/src/linux.rs` detects that package. The release desktop file does not match the development window. |
 | Updater trust and artifacts | `crates/sheprd-updater/src/lib.rs` rejects `HERDR_RELEASE_VERSION` at compile time and labels ordinary builds `dev`. `release.rs` and `install.rs` contain signed-manifest and archive checks; this pass did not rerun them. | `APP_ID` remains `so.pen.herdr-gpui`; `release.rs` fetches `sheprd-labs/sheprd`, `release/repository.rs` also accepts `penso/herdr-gpui`, and `release/format.rs` accepts old asset names. `HERDR_UPDATE_PUBLIC_KEY` remains the compile-time trust input; `brew.rs`, `linux.rs` and `windows.rs` target upstream installations. |
 | Release route | No Spaceport route is configured. `scripts/release/dispatch.sh` refuses any origin other than `sheprd-labs/sheprd` and any dispatcher other than `penso`. | `.github/workflows/release.yml` and `promote.yml` target that repository, signing variables and upstream Homebrew taps. The compile-time gate also blocks their release builds. These guards do not prove a Spaceport publishing path. |
@@ -51,3 +51,29 @@ The `app_icon::install` setter now reads `constants::WINDOW_TITLE` instead of a 
 At `13dc4573`, release and development package scripts no longer download, copy, sign, or install Herdr Core. The pinned fetch script and bundled Core license snapshot were removed; runtime discovery still selects a separately installed Core. `evidence/t12-external-core-package.md` records the bounded source and archive checks. A pre-existing installed package may still own a Core file, so migration must identify its owner before any cleanup. No installed file was changed.
 
 The combined release suite passed 188 tests with nine skips after a smoke CLI fixture was updated for the removed local `browser open` command. Release security passed 25 tests with one skip. The release build gate still rejects `HERDR_RELEASE_VERSION`; upstream production IDs, signing and update routes remain in source. No native signed package, side-by-side install, or update ran. G-RELEASE and G-PLATFORM remain open.
+
+## Inherited Windows link registrations
+
+At parent `942885d2`, the app parsed only `spaceport://` links, but the Inno
+Setup recipe and `site/install.ps1` still wrote `sheprd://` and
+`herdr-gpui://` registry handlers pointing at their launchers. A new source
+fixture failed on those rows before this cut. Both installers now leave those
+schemes alone. The PowerShell install fixture keeps two unrelated throwaway
+handlers in place so Windows CI can check that retained shortcut and Explorer
+work does not overwrite them. The unused installer `LinkName` translation was
+removed after the full release suite found it stale.
+
+The focused absence, install-script and compatibility tests passed 12 tests
+with two Windows-only skips. The release Python suite passed 187 tests with
+eight skips after the translation fix. `just check-file-size`, `just
+check-sorted`, and `git diff --check` passed. No Windows registry, native
+installer, installed app, or updater ran here. Existing registry handlers from
+older installations are not deleted by this new code; owner-safe cleanup is
+still unresolved.
+
+The installer GUID, directory, executable aliases, AppUserModelID, publisher,
+release source, and updater replacement targets still name upstream owners.
+Changing those requires owner-controlled production values and a side-by-side
+install test. The release compile gate remains closed; T12 stays blocked and
+A42–A44 remain not_run. This appended evidence needs a new signed observation
+after integration.
