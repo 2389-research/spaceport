@@ -3,7 +3,6 @@
 //! requests to the daemon and report what came back.
 
 // i18n: migrated
-mod dispatch;
 pub(super) mod popover;
 mod render;
 mod requests;
@@ -684,15 +683,6 @@ impl SheprdWindow {
             | WorkspaceAction::OpenWorktree => None,
         };
         self.menu.page = Some(Page::Dialog(action));
-        self.menu.dispatch = matches!(action, WorkspaceAction::NewWorkspace)
-            .then(|| self.menu.dispatch_repo())
-            .flatten()
-            .and_then(|repo| {
-                crate::dispatch::Picker::opened(
-                    &self.endpoints[self.selected_endpoint].id,
-                    self.dispatch_candidates(&repo, cx),
-                )
-            });
         self.menu.pr.clear();
         self.menu.pr_connection = None;
         self.menu.error = None;

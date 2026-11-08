@@ -26,7 +26,7 @@ pub use {
     error::{Error, Step},
     fresh::{
         Created, Naming, NewCheckout, Origin as FreshOrigin, Prepared, base_commit,
-        dispatch_workspace, dispatch_worktree, prepare,
+        dispatch_worktree, prepare,
     },
     host::{Host, installed_programs_script},
     job::{HostRepositories, Place, Retired, Source, open_repositories},

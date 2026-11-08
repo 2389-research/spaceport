@@ -377,43 +377,6 @@ pub(super) fn arrive(
     })
 }
 
-/// A new workspace on the destination repository's main checkout, cloning
-/// the repository first where it is missing.
-pub(super) fn open_workspace(
-    source: &Source,
-    destination: &Candidate,
-    label: Option<&str>,
-    report: &mut impl FnMut(Step),
-    cancelled: &AtomicBool,
-) -> Result<String> {
-    let to = &destination.place.host;
-    let path = match &destination.destination {
-        Destination::Open { repository, .. } | Destination::Reclaim { repository, .. } => {
-            git::main_checkout(to, &repository.key, cancelled)?
-        }
-        Destination::Arrive(Arrival::Existing { path, .. }) => path.clone(),
-        Destination::Arrive(Arrival::Clone { path }) => {
-            report(Step::Clone);
-            provision::clone(
-                &source.place.host,
-                &source.repo_key,
-                to,
-                path,
-                destination.origin.as_deref(),
-                cancelled,
-            )?;
-            path.clone()
-        }
-    };
-    report(Step::Open);
-    let mut args = vec!["workspace", "create", "--cwd", &path, "--no-focus"];
-    if let Some(label) = label {
-        args.extend(["--label", label]);
-    }
-    let opened: WorkspaceCreated = to.herdr(Step::Open, &args, cancelled)?;
-    Ok(opened.workspace.workspace_id)
-}
-
 /// A destination pane standing in for a source pane.
 #[derive(Debug, Clone)]
 struct Target {

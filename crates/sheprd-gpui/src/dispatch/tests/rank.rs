@@ -98,16 +98,11 @@ fn ties_go_to_the_current_host_then_by_name() {
 }
 
 #[test]
-fn an_unsampled_host_ranks_by_what_is_known() {
+fn an_unknown_load_ranks_by_what_is_known() {
     let unsampled = Candidate {
         load: None,
         ..host("new", 64, 0.)
     };
-    assert!(!unsampled.sampled());
-    assert!(
-        offline("gone").sampled(),
-        "an offline host has nothing to wait for"
-    );
     let candidates = [unsampled, host("known", 8, 2.)];
     assert_eq!(ids(&candidates, &rank(&candidates)), ["known", "new"]);
 }

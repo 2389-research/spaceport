@@ -194,27 +194,6 @@ pub fn dispatch_worktree(
     })
 }
 
-/// Open the repository on `destination` as a new workspace, for a new
-/// workspace dispatched there. A repository already open there gets one
-/// more workspace on its main checkout.
-pub fn dispatch_workspace(
-    origin: &Origin,
-    destination: &HostRepositories,
-    label: Option<&str>,
-    mut report: impl FnMut(Step),
-    cancelled: &AtomicBool,
-) -> Result<Created> {
-    report(Step::Discover);
-    let source = origin.source();
-    let candidate = job::resolve(&source, destination, cancelled)?;
-    let workspace_id = job::open_workspace(&source, &candidate, label, &mut report, cancelled)?;
-    Ok(Created {
-        endpoint_id: destination.place.endpoint_id.clone(),
-        workspace_id,
-        checkout: None,
-    })
-}
-
 #[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests;

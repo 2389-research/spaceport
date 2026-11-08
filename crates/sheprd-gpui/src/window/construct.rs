@@ -172,8 +172,6 @@ impl SheprdWindow {
             device_tags,
             device_themes: Default::default(),
             devices_overview: Default::default(),
-            dispatch_job: None,
-            dispatch_setups: Default::default(),
             endpoints: vec![endpoint::Endpoint::new(
                 endpoint::LOCAL.into(),
                 // i18n: data

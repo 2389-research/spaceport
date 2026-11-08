@@ -1,6 +1,5 @@
 # The dialogs a workspace row's popover opens: rename, new and open
-# worktree, new tab and workspace, note, close, and delete. $workspace,
-# $host, and $branch are names.
+# worktree, new tab and workspace, note, close, and delete.
 
 workspace-dialog-rename-title = Rename workspace
 workspace-dialog-rename = Rename
@@ -19,17 +18,12 @@ workspace-dialog-force-remove = Force remove
 workspace-dialog-delete-title = Delete worktree checkout?
 workspace-dialog-remove = Remove
 workspace-dialog-create = Create
-# Creates the worktree or workspace on another host.
-workspace-dialog-create-on = Create on { $host }
 workspace-dialog-cancel = Cancel
 # The submit button while the daemon works.
 workspace-dialog-waiting = Waiting...
 # What a screen reader says for the submit button while the daemon works.
 workspace-dialog-waiting-spoken = Waiting
 
-# New workspace on another host.
-workspace-dialog-opens-on = Opens the repository's main checkout on { $host }.
-workspace-dialog-opens-on-clone = Opens the repository's main checkout on { $host }, cloning the repository there first.
 workspace-dialog-close-note = { $count ->
         [one] Closes { $count } workspace and terminates its running terminals. Checkout files and branches are not deleted.
        *[other] Closes { $count } workspaces and terminates their running terminals. Checkout files and branches are not deleted.
@@ -47,8 +41,6 @@ workspace-dialog-archive-failed = The archive script cannot run: { $error }
 workspace-dialog-archive-trusted = The repository's archive script runs first, in a new tab. The checkout is removed only if it succeeds.
 workspace-dialog-archive-untrusted = The repository has an archive script. You can review it before anything runs.
 
-# $status says what a dispatch to another host is doing, in English.
-workspace-dialog-job-waiting = { $status } Dismissing does not cancel it.
 workspace-dialog-daemon-waiting = Waiting for the daemon. Dismissing does not cancel it.
 
 workspace-dialog-remove-failed = Remove worktree: { $error }

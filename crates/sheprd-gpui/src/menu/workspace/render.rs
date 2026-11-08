@@ -26,20 +26,7 @@ impl SheprdWindow {
             && self.removal.as_ref().is_some_and(|removal| {
                 removal.pending_for(self.menu.endpoint_target, &target.boot_id, &target.id)
             });
-        let dispatching = self.dispatch_job.is_some() && action == WorkspaceAction::NewWorkspace;
-        let creating = self.menu.opening.is_some() || dispatching;
-        // Another host chosen in the picker, where the new checkout goes.
-        let destination = self
-            .menu
-            .dispatch
-            .as_ref()
-            .map_or(crate::dispatch::Destination::Here, |picker| {
-                picker.destination()
-            });
-        let dispatched = match destination {
-            crate::dispatch::Destination::Host(host) => Some(host),
-            _ => None,
-        };
+        let creating = self.menu.opening.is_some();
         // Until the daemon names the checkout there is nothing to confirm, and a
         // request already in flight leaves nothing to press either.
         let armed = (action != WorkspaceAction::DeleteWorktree
@@ -85,7 +72,7 @@ impl SheprdWindow {
             ),
             WorkspaceAction::NewWorkspace => (
                 fl!("workspace-dialog-new-workspace-title"),
-                create_label(destination),
+                fl!("workspace-dialog-create").into(),
             ),
             WorkspaceAction::Note => (
                 fl!("workspace-dialog-note-title"),
@@ -118,39 +105,11 @@ impl SheprdWindow {
                     .text_color(rgb(theme.subtext()))
                     .child(fl!("workspace-dialog-new-tab-note")),
             ),
-            WorkspaceAction::NewWorkspace => body
-                .child(
-                    div()
-                        .text_color(rgb(theme.subtext()))
-                        .child(fl!("workspace-dialog-new-workspace-note")),
-                )
-                .children(self.menu.dispatch.as_ref().map(|picker| {
-                    // The picker's own captions, laid out like the form's.
-                    let caption = |caption: String, field: AnyElement| {
-                        div()
-                            .flex()
-                            .items_center()
-                            .gap(px(10.))
-                            .child(
-                                div()
-                                    .flex_none()
-                                    .text_color(rgb(theme.muted))
-                                    .child(caption),
-                            )
-                            .child(div().flex_1().min_w_0().child(field))
-                    };
-                    self.render_host_picker(picker, caption, cx)
-                }))
-                .children(dispatched.map(|host| {
-                    let host_name = host.label.as_str();
-                    div()
-                        .text_color(rgb(theme.subtext()))
-                        .child(if clones(host) {
-                            fl!("workspace-dialog-opens-on-clone", host = host_name)
-                        } else {
-                            fl!("workspace-dialog-opens-on", host = host_name)
-                        })
-                })),
+            WorkspaceAction::NewWorkspace => body.child(
+                div()
+                    .text_color(rgb(theme.subtext()))
+                    .child(fl!("workspace-dialog-new-workspace-note")),
+            ),
             WorkspaceAction::Close => {
                 body.child(div().text_color(rgb(theme.subtext())).child(fl!(
                     "workspace-dialog-close-note",
@@ -220,15 +179,11 @@ impl SheprdWindow {
         }
         if creating || removing {
             // Dismissing only closes the panel; the daemon keeps the queued work.
-            let waiting = match self.dispatch_job.as_ref().filter(|_| dispatching) {
-                Some(job) => fl!("workspace-dialog-job-waiting", status = job.status()),
-                None => fl!("workspace-dialog-daemon-waiting"),
-            };
             body = body.child(
                 div()
                     .debug_selector(|| "dialog-waiting".into())
                     .text_color(rgb(theme.subtext()))
-                    .child(waiting),
+                    .child(fl!("workspace-dialog-daemon-waiting")),
             );
         }
         let button = |id: &'static str| {
@@ -413,19 +368,4 @@ impl SheprdWindow {
                     ),
             )
     }
-}
-
-/// The submit button of a dialog that may create on another host.
-fn create_label(destination: crate::dispatch::Destination<'_>) -> SharedString {
-    match destination {
-        crate::dispatch::Destination::Here => fl!("workspace-dialog-create").into(),
-        crate::dispatch::Destination::Host(host) => {
-            fl!("workspace-dialog-create-on", host = host.label.as_str()).into()
-        }
-    }
-}
-
-/// Whether choosing `host` clones the repository there first.
-fn clones(host: &crate::dispatch::Candidate) -> bool {
-    host.repository == crate::dispatch::Repository::Missing
 }

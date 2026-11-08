@@ -130,8 +130,6 @@ pub(crate) struct MenuState {
     pub(crate) group: Option<crate::group_menu::GroupMenu>,
     pub(crate) host: Option<super::devices::HostMenu>,
     pub(crate) pane: Option<crate::pane_menu::PaneMenu>,
-    /// The host a new workspace goes to, when another one could.
-    pub(crate) dispatch: Option<crate::dispatch::Picker>,
     pub(crate) pr: crate::pull_request::Lookup,
     /// Also read by the sidebar, which paints each worktree's cached PR badge.
     pub(crate) pr_cache: crate::pull_request::Cache,
@@ -253,15 +251,6 @@ impl MenuState {
                 .target
                 .as_ref()
                 .is_some_and(|target| target.id == workspace)
-    }
-
-    /// The repository the open dialog's host picker ranks hosts for.
-    pub(crate) fn dispatch_repo(&self) -> Option<String> {
-        self.target
-            .as_ref()?
-            .worktree
-            .as_ref()
-            .map(|tree| tree.label.clone())
     }
 
     pub(super) fn apply_deletion_response(
@@ -392,7 +381,6 @@ impl MenuState {
             group: None,
             host: None,
             pane: None,
-            dispatch: None,
         }
     }
 
@@ -453,7 +441,6 @@ impl MenuState {
         self.suggested_name = None;
         self.worktree_open = None;
         self.close = None;
-        self.dispatch = None;
         self.pr.clear();
         self.pr_connection = None;
     }

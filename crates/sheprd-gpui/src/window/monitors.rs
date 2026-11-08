@@ -7,14 +7,12 @@ use gpui::Context;
 
 impl SheprdWindow {
     /// CPU, memory and GPU are sampled for every enabled host, while they
-    /// are shown, a Devices overview is open, or a host picker ranks hosts by
-    /// them.
+    /// are shown or a Devices overview is open.
     pub(super) fn update_system_load(&mut self) -> bool {
         if !self.config.show_system_load
             && !self.config.gpu_sampled()
             && !self.devices_overview_open()
             && !self.overview_shown()
-            && !self.dispatch_sampling()
             && !self.orchestrator_sampling
         {
             return self.system_load.poll(Vec::new(), false);

@@ -177,10 +177,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) device_themes: device_themes::DeviceThemes,
     /// The Devices overview's activity history and open tabs.
     pub(crate) devices_overview: crate::devices_overview::Overview,
-    /// A worktree or workspace being created on another host.
-    pub(crate) dispatch_job: Option<crate::dispatch::Job>,
-    /// Dispatched worktrees' setup scripts, waiting for their hosts in order.
-    pub(crate) dispatch_setups: std::collections::VecDeque<crate::dispatch::Setup>,
     pub(crate) endpoints: Vec<endpoint::Endpoint>,
     pub(crate) file_transfer: Option<transfers::FileTransfer>,
     /// The find bar, over the pane it searches.
@@ -610,7 +606,6 @@ impl SheprdWindow {
             window.window_handle().window_id(),
             crate::taskbar::button::Bar::from_progress(self.taskbar_progress()),
         );
-        self.poll_dispatch(window, cx);
         self.poll_device_setup(window, cx);
         self.poll_worktree_script(window, cx);
         self.poll_hover_menu(std::time::Instant::now(), window, cx);

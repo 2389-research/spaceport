@@ -1811,27 +1811,27 @@ endpoint.
 
 Spaceport no longer offers worktree Teleport in the workspace menu. It does
 not start a migration or read and write `teleported.json`; existing files stay
-untouched. The shared host scripts remain while pane carry, dispatch, and
+untouched. The shared host scripts remain while pane carry, Orchestrator dispatch, and
 legacy rich-chat paths still use them. See the
 [Spaceport removal evidence](../../docs/spaceport/evidence/t04-native-teleport-removal.md)
 for the exact remaining routes and open checks.
 
 ## Smart Dispatch
 
-The legacy New workspace dialog for a Git checkout can still offer another
-connected host. Its picker ranks hosts from load samples; choosing a remote
-host runs shared host scripts to open or clone the repository. This remaining
-route is excluded from Spaceport and is tracked in the
-[dispatch removal evidence](../../docs/spaceport/evidence/t04-native-dispatch-dependency.md).
-The desktop New worktree source and landing flow is gone; pane carry and
-Open worktree are separate remaining controls.
+The legacy New workspace dialog no longer offers another host. It keeps its
+current local target while the Core presentation workspace create page uses
+its separate document route. Orchestrator still has a host-ranked dispatch
+dialog and history, and pane carry still uses host scripts; those excluded
+routes remain in the [dispatch removal evidence](../../docs/spaceport/evidence/t04-workspace-dispatch-removal.md).
+The desktop New worktree source and landing flow is gone; pane carry and Open
+worktree are separate remaining controls.
 
 Spaceport does not load or write inherited `fan-outs.json`; its fan-out dialog,
 CLI command, host scripts and journal have been removed. Existing files remain
 where the older app saved them.
 
-Where new checkouts went is kept in `dispatch-history.json` in the state
-directory, by repository name and host. Dispatch needs a Linux or macOS client and the local session or a saved SSH host on both ends.
+The still-live Orchestrator route reads and writes `dispatch-history.json` in
+the state directory. Its remote actions remain separate removal work.
 
 ## Activity bar
 

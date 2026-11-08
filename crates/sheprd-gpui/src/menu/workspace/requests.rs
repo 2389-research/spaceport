@@ -247,14 +247,6 @@ impl SheprdWindow {
         {
             return;
         }
-        if let Some(target) = self.dispatch_choice(action) {
-            match self.submit_dispatch(&target) {
-                Ok(()) => self.local_error = None,
-                Err(error) => self.menu.error = Some(error.to_string()),
-            }
-            cx.notify();
-            return;
-        }
         let result = (|| {
             if !self.menu_target_current() {
                 return Err(crate::Error::StaleConnection);

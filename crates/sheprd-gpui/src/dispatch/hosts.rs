@@ -1,18 +1,13 @@
-//! The window's side of smart dispatch: gathering every host a repository
-//! could go to from the endpoints, describing the chosen one to Teleport's
-//! scripts, and following a dispatched job to its new workspace.
+//! Shared host facts for the remaining orchestration and pane carry routes.
+//! Candidate ranking and Teleport targets still serve those excluded callers.
 
-use super::{Candidate, History, Load, Picker, Repository, Setup};
+use super::{Candidate, History, Load, Repository};
 use crate::{
     SheprdWindow,
-    i18n::fl,
-    menu::Page,
     teleport::{FreshOrigin, HostRepositories, Place, host_for, open_repositories},
-    window::Flash,
 };
-use gpui::{App, Context, Window};
+use gpui::App;
 use sheprd_client::protocol::{AgentStatus, ClientShellSnapshot};
-use std::time::Instant;
 
 /// Host scripts need a POSIX client; see `sheprd_client::run_script`.
 const SCRIPTABLE_CLIENT: bool = cfg!(any(target_os = "linux", target_os = "macos"));
@@ -131,98 +126,5 @@ impl SheprdWindow {
             repositories: self.endpoint_snapshot(index).map(open_repositories),
             retired: Vec::new(),
         })
-    }
-
-    /// Whether a host picker is open, so every host's load must be sampled
-    /// even with the CPU display off.
-    pub(crate) fn dispatch_sampling(&self) -> bool {
-        self.menu.dispatch.is_some()
-    }
-
-    /// Keep open pickers current, and follow a finished job.
-    pub(crate) fn poll_dispatch(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let now = Instant::now();
-        let dialog =
-            self.menu.page == Some(Page::Dialog(crate::menu::WorkspaceAction::NewWorkspace));
-        if !dialog {
-            self.menu.dispatch = None;
-        }
-        let repo = self.menu.dispatch_repo();
-        if let (Some(repo), true) = (repo, self.menu.dispatch.is_some()) {
-            let candidates = self.dispatch_candidates(&repo, cx);
-            if let Some(picker) = &mut self.menu.dispatch
-                && picker.update(candidates, now)
-            {
-                cx.notify();
-            }
-        }
-        self.poll_dispatch_setup(now, cx);
-        let Some(job) = &mut self.dispatch_job else {
-            return;
-        };
-        let (changed, finished) = job.poll();
-        let Some(job) = &mut self.dispatch_job else {
-            return;
-        };
-        let Some(result) = finished else {
-            if changed && dialog {
-                cx.notify();
-            }
-            return;
-        };
-        let (host, repo) = (job.host.clone(), job.repo.clone());
-        self.dispatch_job = None;
-        match result {
-            Ok(created) => {
-                History::update(cx, |history| history.record(&repo, &created.endpoint_id));
-                if dialog {
-                    self.dismiss_menu(window, cx);
-                }
-                self.show_flash(
-                    Flash::success(fl!("dispatch-created", host = host.clone())),
-                    cx,
-                );
-                // Like a local creation, a new worktree runs its setup script,
-                // once the window has followed it there.
-                if let Some(checkout) = created.checkout {
-                    let setup = Setup::new(
-                        created.endpoint_id.clone(),
-                        created.workspace_id.clone(),
-                        repo,
-                        checkout,
-                        now,
-                    );
-                    self.queue_dispatch_setup(setup, cx);
-                }
-                self.target_follow = Some(crate::window::target_follow::Follow::new(
-                    created.endpoint_id,
-                    created.workspace_id,
-                ));
-            }
-            Err(error) if dialog => {
-                self.menu.error = Some(error);
-                cx.notify();
-            }
-            Err(error) => {
-                self.show_flash(
-                    Flash::warning(fl!(
-                        "dispatch-not-created",
-                        host = host.clone(),
-                        error = error
-                    )),
-                    cx,
-                );
-            }
-        }
-    }
-}
-
-impl Picker {
-    /// A picker for a dialog opened on `current`, filled at once.
-    pub(crate) fn opened(current: &str, candidates: Vec<Candidate>) -> Option<Self> {
-        let now = Instant::now();
-        let mut picker = Self::new(current, now);
-        picker.update(candidates, now);
-        picker.offers_choice().then_some(picker)
     }
 }

@@ -1,40 +1,17 @@
-//! Smart dispatch: which host a new workspace should go to.
-//! Hosts are ranked by spare cores from the system-load
-//! samples, less what the agents already working there will take and what a
-//! clone costs, nudged towards where this repository went before. Ranking is
-//! pure; the window gathers the candidates from its endpoints, and the work
-//! on another host runs through Teleport's scripts.
+//! Shared host candidates and ranking for the remaining orchestration views.
+//! Their history and machine lookup stay until those excluded routes are cut.
 // i18n: migrated
 
 mod error;
 mod history;
 mod hosts;
-mod job;
-mod picker;
-mod render;
-mod setup;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests;
 
 pub(crate) use error::Error;
-pub(crate) use {history::History, job::Job, picker::Picker, setup::Setup};
-
-/// Where a dialog's new workspace goes.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) enum Destination<'a> {
-    /// The host the window shows, through its own daemon.
-    Here,
-    /// Another host, through Teleport's scripts.
-    Host(&'a Candidate),
-}
-
-/// [`Destination`] owned, for a submitted dialog.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum Target {
-    Host(String),
-}
+pub(crate) use history::History;
 
 /// A host's load, from its latest system-load sample.
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -124,11 +101,6 @@ impl Candidate {
             score += CURRENT_CORES;
         }
         Some(score)
-    }
-
-    /// Whether the ranking can trust this host's numbers yet.
-    pub fn sampled(&self) -> bool {
-        !self.online || self.load.and_then(Load::spare_cores).is_some()
     }
 }
 
