@@ -64,3 +64,17 @@ Default app `cargo check -p sheprd-gpui --locked`, final
 `spec.py check` passed. The GUI link emitted the inherited macOS compact-unwind
 warning; the pinned `block` crate emitted Cargo's future-incompatibility
 notice. Native GUI, Windows/Linux and real engine behavior were not exercised.
+
+## Integrated branch verification
+
+After cherry-picking at `7f15ad1a`, the combined default and all-feature
+`cargo +1.99.0 check --locked --all-targets -p sheprd-gpui` commands passed.
+The merged Settings tests passed 7/7, including the restored search terms and
+saved Container row; exact workspace dispatch passed 6/6. The merged remote
+Container suite passed 170 tests with four opt-in live engine tests ignored.
+Container/Azure/desktop-copy source checks passed 7/7, and format, file-size,
+sorted-list and i18n passed at 4,394 used messages in 245 files. The spec
+package's 21 tool tests passed. The GUI test link printed the existing macOS
+`__eh_frame` warning and Cargo repeated the `block v0.1.6` future
+compatibility notice. These checks do not exercise a native window, a real
+engine, or the still-live saved connector/idle route end to end.
