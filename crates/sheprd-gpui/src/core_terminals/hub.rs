@@ -1,5 +1,5 @@
-//! The window's link to herdr-core: found running, or started from the copy
-//! bundled beside the app when the window is allowed to, on a thread of its
+//! The window's link to herdr-core: found running, or started from a separate
+//! installation when the window is allowed to, on a thread of its
 //! own. The window reads the outcome on its tick.
 
 use super::Error;
@@ -33,7 +33,7 @@ pub(crate) enum State {
 pub(crate) enum Start {
     /// Only join a core that already runs.
     Join,
-    /// Start the user's `herdr-core`, else the bundled one. The window asks
+    /// Start an installed `herdr-core`. The window asks
     /// for this only when no Herdr 1 is installed, or the user did.
     IfMissing,
 }
@@ -150,7 +150,7 @@ fn join(start: Start) -> Result<CoreBackend, Error> {
     if start == Start::Join || !matches!(first, sheprd_core_client::Error::Connect { .. }) {
         return Err(first.into());
     }
-    let binary = crate::bundled::locate(PROGRAM).ok_or(Error::NotBundled)?;
+    let binary = crate::bundled::locate_installed(PROGRAM).ok_or(Error::NotInstalled)?;
     sheprd_core_client::start(&binary, sheprd_client::login_env::apply, START_TIMEOUT)?;
     // `server start` returns once the core listens; a slow file system can
     // still refuse the first dial.

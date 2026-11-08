@@ -27,7 +27,7 @@ fn upgrade_join(start: Start) -> Result<CoreBackend, Error> {
             open = wake.wait(open).unwrap();
         }
     }
-    Err(Error::NotBundled)
+    Err(Error::NotInstalled)
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn a_start_asked_for_during_a_join_runs_when_the_join_fails() {
     );
     assert!(matches!(
         hub.state(),
-        State::Unavailable(error) if matches!(**error, Error::NotBundled)
+        State::Unavailable(error) if matches!(**error, Error::NotInstalled)
     ));
 }
 
@@ -56,7 +56,7 @@ static RETRY_CALLS: Mutex<Vec<Start>> = Mutex::new(Vec::new());
 
 fn retry_join(start: Start) -> Result<CoreBackend, Error> {
     RETRY_CALLS.lock().unwrap().push(start);
-    Err(Error::NotBundled)
+    Err(Error::NotInstalled)
 }
 
 #[test]

@@ -1,5 +1,4 @@
-//! Starting a core when none is running: the user's own `herdr-core`, or the
-//! copy bundled beside the app.
+//! Starting a separately installed core when none is running.
 
 use crate::{Error, Result};
 use std::{

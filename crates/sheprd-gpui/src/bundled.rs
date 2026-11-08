@@ -14,6 +14,26 @@ pub(crate) fn locate(program: &str) -> Option<PathBuf> {
     locate_in(program, exe.as_deref(), crate::login_env::path().as_deref())
 }
 
+/// Find an installed Core on the configured PATH, excluding the GUI's own
+/// directory even when that directory also appears on PATH.
+pub(crate) fn locate_installed(program: &str) -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    locate_installed_in(program, Some(&exe), crate::login_env::path().as_deref())
+}
+
+fn locate_installed_in(program: &str, exe: Option<&Path>, path: Option<&OsStr>) -> Option<PathBuf> {
+    let app_dir = exe?.canonicalize().ok()?.parent()?.to_owned();
+    path.into_iter()
+        .flat_map(std::env::split_paths)
+        .filter(|dir| dir.is_absolute())
+        .map(|dir| dir.join(program))
+        .filter(|candidate| runnable(candidate))
+        .find_map(|candidate| {
+            let real = candidate.canonicalize().ok()?;
+            (real.parent() != Some(app_dir.as_path())).then_some(real)
+        })
+}
+
 pub(crate) fn locate_in(
     program: &str,
     exe: Option<&Path>,

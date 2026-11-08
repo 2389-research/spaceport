@@ -114,7 +114,7 @@
       ],
       "deliverable": "Typed Core calls/streams/capabilities with no legacy fallback or parallel remote manager.",
       "status": "in_progress",
-      "evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log"],
+      "evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t02-startup.md"],
       "must_close_gaps": []
     },
     {
