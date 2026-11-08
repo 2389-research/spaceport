@@ -48,3 +48,21 @@ GUI config tests, default/all-feature app checks, native UI and
 installed-service checks remain unrun on this branch for merged verification.
 T04 remains blocked on G-LINK;
 A30 remains `not_run` while other excluded provider and runtime routes exist.
+
+## Integrated branch verification
+
+After merging as `b7e6db6e`, default and all-feature production app checks
+passed with `--locked` and no new code warnings; Cargo repeated only its
+existing `block v0.1.6` notice. The retained device and image catalog suite
+passed 15/15 with Boat, Container and Coder features, including foreign
+Daytona preservation, active Container retention, and corrupt-file refusal.
+The merged GUI config cases passed 2/2; the Core machine catalog filter
+passed 5/5 and remote document filter passed 6/6 (one separate opt-in case
+ignored). The source/asset absence test passed 2/2 and the published-site
+suite passed 19/19. The first site invocation used Python's built-in `site`
+module path and failed before discovery; the corrected
+`python3 -m unittest discover -s site/tests -p 'test_website.py' -v` passed.
+Format, file-size, sorted and i18n checks passed; i18n validated 4,973
+messages in 261 files. The GUI test link repeated the known macOS
+compact-unwind warning. No native cloud/Core UI, installed service, or
+published website was exercised by these merged checks.
