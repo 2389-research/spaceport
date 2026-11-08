@@ -161,17 +161,17 @@ fn a_real_core_runs_streams_and_stores() {
         seen.extend(chunk.bytes);
     }
 
-    let doc = core.doc_get("herdr-ui-live").unwrap();
+    let doc = core.doc_get("herdr-ui-live", None).unwrap();
     assert_eq!(doc.version, 0);
     let version = core
-        .doc_set("herdr-ui-live", &serde_json::json!({"tabs": 1}), 0)
+        .doc_set("herdr-ui-live", &serde_json::json!({"tabs": 1}), 0, None)
         .unwrap();
     assert_eq!(
-        core.doc_get("herdr-ui-live").unwrap().value,
+        core.doc_get("herdr-ui-live", None).unwrap().value,
         serde_json::json!({"tabs": 1})
     );
     assert!(matches!(
-        core.doc_set("herdr-ui-live", &serde_json::json!(2), 0),
+        core.doc_set("herdr-ui-live", &serde_json::json!(2), 0, None),
         Err(Error::Refused { .. })
     ));
     assert!(version > 0);

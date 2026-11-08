@@ -166,6 +166,24 @@ pub struct Doc {
     pub version: u64,
 }
 
+/// Core routes an opaque document to `on` without changing its contents.
+#[derive(Serialize)]
+pub(crate) struct DocGet<'a> {
+    pub name: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on: Option<&'a str>,
+}
+
+/// Compare-and-set parameters for one Core-owned document.
+#[derive(Serialize)]
+pub(crate) struct DocWrite<'a> {
+    pub name: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on: Option<&'a str>,
+    pub value: &'a Value,
+    pub version: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub(crate) struct DocSet {
     pub version: u64,

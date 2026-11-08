@@ -34,12 +34,12 @@ fn calls_are_answered_by_id_even_out_of_order() {
     let client = std::sync::Arc::new(client);
     let first = thread::spawn({
         let client = client.clone();
-        move || client.doc_get("one").unwrap()
+        move || client.doc_get("one", None).unwrap()
     });
     let one = core.request();
     let second = thread::spawn({
         let client = client.clone();
-        move || client.doc_get("two").unwrap()
+        move || client.doc_get("two", None).unwrap()
     });
     let two = core.request();
     assert_eq!(
@@ -178,7 +178,7 @@ fn losing_the_core_fails_waiting_calls_and_ends_streams() {
     drop(core);
     assert!(matches!(call.join().unwrap(), Err(Error::Lost)));
     assert!(client.is_lost());
-    assert!(matches!(client.doc_get("x"), Err(Error::Lost)));
+    assert!(matches!(client.doc_get("x", None), Err(Error::Lost)));
 }
 
 #[test]

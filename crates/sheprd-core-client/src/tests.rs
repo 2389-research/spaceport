@@ -2,6 +2,7 @@
 
 mod backend;
 mod connection;
+mod document;
 mod endpoint;
 mod event;
 mod frame;

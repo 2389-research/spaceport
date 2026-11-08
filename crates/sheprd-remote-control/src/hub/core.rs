@@ -124,7 +124,7 @@ impl Source {
         let boot = core.hello().core.id.clone();
         let next = {
             let mut poller = lock(&self.poller);
-            poller.read_spaces(&boot, core.doc_get("herdr-app"))?;
+            poller.read_spaces(&boot, core.doc_get("herdr-app", None))?;
             let mut next = poller.project(
                 &boot,
                 &terminals,

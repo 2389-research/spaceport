@@ -8,7 +8,7 @@ use crate::{
     frame::{Decoder, Frame, Kind},
     hello::{GENERATION, Hello},
     stream::{self, Attachment, End, Link, Route, Stream, Subscription},
-    wire::{self, Doc, DocSet, List, Subscribed, Terminal},
+    wire::{self, Doc, DocGet, DocSet, DocWrite, List, Subscribed, Terminal},
 };
 use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, TryRecvError};
 use serde::{Serialize, de::DeserializeOwned};
@@ -236,16 +236,27 @@ impl Core {
         self.typed(Method::TerminalKill, &json!({"terminal": terminal}))
     }
 
-    pub fn doc_get(&self, name: &str) -> Result<Doc> {
-        self.typed(Method::DocGet, &json!({"name": name}))
+    pub fn doc_get(&self, name: &str, on: Option<&str>) -> Result<Doc> {
+        self.typed(Method::DocGet, &DocGet { name, on })
     }
 
     /// Writes `value` over `version` (from `doc_get`) and returns the new
     /// version; a stale version is refused. `Value::Null` deletes it.
-    pub fn doc_set(&self, name: &str, value: &Value, version: u64) -> Result<u64> {
+    pub fn doc_set(
+        &self,
+        name: &str,
+        value: &Value,
+        version: u64,
+        on: Option<&str>,
+    ) -> Result<u64> {
         let set: DocSet = self.typed(
             Method::DocSet,
-            &json!({"name": name, "value": value, "version": version}),
+            &DocWrite {
+                name,
+                on,
+                value,
+                version,
+            },
         )?;
         Ok(set.version)
     }

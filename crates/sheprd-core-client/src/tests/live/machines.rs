@@ -48,6 +48,39 @@ fn a_real_core_aggregates_a_fixture_machine() {
     let line = core.machine_connect("lab").unwrap();
     assert_eq!(line.machine.id, added.id);
     assert_eq!(line.state, "connected");
+    assert_eq!(core.doc_get("spaceport", Some("lab")).unwrap().version, 0);
+    assert_eq!(
+        core.doc_set(
+            "spaceport",
+            &serde_json::json!({"scope": "remote"}),
+            0,
+            Some("lab")
+        )
+        .unwrap(),
+        1
+    );
+    assert_eq!(
+        remote.connect().doc_get("spaceport", None).unwrap().value,
+        serde_json::json!({"scope": "remote"})
+    );
+    assert_eq!(core.doc_get("spaceport", None).unwrap().version, 0);
+    assert_eq!(
+        remote
+            .connect()
+            .doc_set(
+                "spaceport",
+                &serde_json::json!({"scope": "edited"}),
+                1,
+                None
+            )
+            .unwrap(),
+        2
+    );
+    assert!(matches!(
+        core.doc_set("spaceport", &serde_json::json!({"scope": "stale"}), 1, Some("lab")),
+        Err(Error::Refused { kind: Some(kind), .. }) if kind == "conflict"
+    ));
+    assert_eq!(core.doc_get("spaceport", Some("lab")).unwrap().version, 2);
     let argv = [
         "sh".into(),
         "-c".into(),
