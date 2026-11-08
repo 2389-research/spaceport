@@ -64,20 +64,6 @@ and artwork; they are not refreshed screenshots of the rebrand.
   </tr>
   <tr>
     <td colspan="2">
-      <img src="docs/screenshots/review.png" alt="Review tab showing a unified diff of uncommitted changes with syntax colouring, a changed-files list, and two numbered review notes ready to send to Claude">
-      <br>
-      <sub><b><a href="crates/sheprd-gpui/README.md#reviewing-an-agents-changes">Review an agent's changes</a>.</b> Open <b>Review Changes</b> from a tab strip's <b>+</b> menu, click any line to leave a note like a pull request comment, then <b>Send to agent</b>.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2">
-      <img src="docs/screenshots/review-split-collapsed.png" alt="The same review side by side with the sidebar collapsed to a narrow rail of workspace and agent icons">
-      <br>
-      <sub><b>Side-by-side diffs and a collapsed sidebar.</b> Switch the review to side by side, and fold the sidebar to a rail that keeps every workspace and agent one click away.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2">
       <img src="docs/screenshots/browser-annotate.png" alt="Browser tab showing a local page with two numbered annotations, a hovered element outline, and a notes panel with element screenshots and Send to agent">
       <br>
       <sub><b><a href="crates/sheprd-gpui/README.md#annotating-a-page">Browser tabs with annotations</a>.</b> An agent opens its page with <code>sheprd browser open</code>; you pick elements or regions, write notes, and send them back to that agent. Listening ports such as <code>:4173</code> appear under their workspace.</sub>
@@ -108,13 +94,6 @@ and artwork; they are not refreshed screenshots of the rebrand.
       <img src="docs/screenshots/settings-sidebar.png" alt="Settings window on the Sidebar page with spacing sliders and per-host colour swatches">
       <br>
       <sub><b>Sidebar page.</b> Pick the layout and selection marks, tune spacing with sliders, and give each host its own colour.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2">
-      <img src="docs/screenshots/light-theme.png" alt="The review tab in the Catppuccin Latte light theme">
-      <br>
-      <sub><b>Light or dark, or both.</b> Any theme, or a light and dark pair that follows the system appearance; status colours keep their contrast on either.</sub>
     </td>
   </tr>
   <tr>

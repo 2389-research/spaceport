@@ -314,7 +314,7 @@ impl Pages {
         window: &mut Window,
         cx: &mut Context<SheprdWindow>,
     ) -> crate::Result<()> {
-        // A review tab is drawn by the app; only pages get a web view.
+        // Only pages get a web view.
         let Some(location) = tab
             .location
             .as_ref()
@@ -339,7 +339,7 @@ impl Pages {
         let root = match location {
             Location::Local { file } => Some(file.root().to_owned()),
             Location::Web { .. }
-            | Location::Review { .. }
+            | Location::RetiredReview { .. }
             | Location::RetiredSource { .. }
             | Location::Orchestrator { .. }
             | Location::Devices

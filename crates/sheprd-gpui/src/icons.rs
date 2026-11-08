@@ -302,8 +302,6 @@ embedded_icons! {
     "copy.svg",
     "cpu.svg",
     "devices.svg",
-    "diff-split.svg",
-    "diff-unified.svg",
     "error.svg",
     "external.svg",
     "fan-out.svg",

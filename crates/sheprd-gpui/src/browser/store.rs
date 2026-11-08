@@ -266,13 +266,17 @@ impl Store {
             .map(|tab| tab.id.0.saturating_add(1))
             .max()
             .unwrap_or(0);
-        // Earlier builds hosted the orchestrator and source viewer in tabs;
+        // Earlier builds hosted the orchestrator, source viewer, and review in tabs;
         // their old IDs stay reserved, but the views do not restore.
         tabs.retain(|tab| {
             tab.place != Place::RetiredVsCode
                 && !matches!(
                     tab.location,
-                    Some(Location::Orchestrator { .. } | Location::RetiredSource { .. })
+                    Some(
+                        Location::Orchestrator { .. }
+                            | Location::RetiredSource { .. }
+                            | Location::RetiredReview { .. }
+                    )
                 )
         });
         Self {

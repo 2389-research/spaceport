@@ -414,10 +414,6 @@ impl SheprdWindow {
                 self.open_orchestrator(window, cx);
                 return;
             }
-            Command::ReviewChanges => {
-                self.open_review(window, cx);
-                return;
-            }
             Command::GitMenu => {
                 // Where the titlebar's Git button last painted, so the
                 // shortcut opens the menu where clicking the button does.
@@ -524,20 +520,13 @@ impl SheprdWindow {
                 return;
             }
             Command::Find => {
-                // In a review, Find searches its changes.
-                match self.focused_review(window, cx) {
-                    Some(id) => self.open_review_search(id, window, cx),
-                    None => self.open_find(window, cx),
-                }
+                self.open_find(window, cx);
                 return;
             }
-            // Repeats the search in use: the review's, else the pane's find
-            // bar, opening the bar when nothing is being searched yet.
+            // Repeats the pane's find, opening the bar when nothing is searched yet.
             Command::FindNext | Command::FindPrevious => {
                 let back = command == Command::FindPrevious;
-                if let Some(id) = self.focused_review(window, cx) {
-                    self.review_find_again(id, back, window, cx);
-                } else if self.find.is_some() {
+                if self.find.is_some() {
                     // The bar's next match is the next older one, as Enter.
                     let step = if back {
                         crate::find::Step::Newer

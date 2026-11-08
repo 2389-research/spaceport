@@ -1,5 +1,5 @@
-//! The app's own tabs: pages, reviews, and the Devices overview,
-//! which Herdr does not know about.
+//! The app's own tabs: pages, the orchestrator, and the
+//! Devices overview, which Herdr does not know about.
 use serde::{Deserialize, Serialize};
 
 /// How long a page may take to hand back its text or picture.
@@ -84,7 +84,6 @@ impl TabKind {
             Self::Blank => "blank",
             Self::Web => "web",
             Self::File => "file",
-            Self::Review => "review",
             Self::Orchestrator => "orchestrator",
             Self::Devices => "devices",
             Self::CoreTerminal => "core_terminal",
@@ -104,7 +103,6 @@ pub enum TabKind {
     Blank,
     Web,
     File,
-    Review,
     Orchestrator,
     Devices,
     /// A herdr-core (Herdr 2) terminal the app draws.

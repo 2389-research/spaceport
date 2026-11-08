@@ -121,8 +121,8 @@ fn formula(
     Some((id, source))
 }
 
-/// Reuse the review's syntax grammar cache and semantic token classes.
-pub(super) fn highlight(language: &str, source: &str) -> Vec<Vec<crate::review::highlight::Span>> {
+/// Classify bounded code text with the shared chat grammar cache.
+pub(super) fn highlight(language: &str, source: &str) -> Vec<Vec<super::highlight::Span>> {
     let extension = match language {
         "rust" => "rs",
         "python" | "py" => "py",
@@ -136,7 +136,7 @@ pub(super) fn highlight(language: &str, source: &str) -> Vec<Vec<crate::review::
         "markdown" | "md" => "md",
         other => other,
     };
-    crate::review::highlight::colour_file(&format!("chat.{extension}"), source, 512)
+    super::highlight::colour_file(&format!("chat.{extension}"), source, 512)
 }
 
 #[cfg(test)]

@@ -82,8 +82,6 @@ pub enum Command {
     OpenNotificationTarget,
     /// The focused workspace's repository's issues, pull requests, and runs.
     OpenOrchestrator,
-    /// A review of the focused checkout's changes.
-    ReviewChanges,
     /// The titlebar's Git menu for the focused checkout.
     GitMenu,
     /// Annotate mode on the page in view.
@@ -680,11 +678,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-open-orchestrator",
     },
     CommandInfo {
-        command: Command::ReviewChanges,
-        name: "review_changes",
-        message: "commands-review-changes",
-    },
-    CommandInfo {
         command: Command::GitMenu,
         name: "git_menu",
         message: "commands-git-menu",
@@ -896,7 +889,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::About
         | Command::OpenNotificationTarget
         | Command::OpenOrchestrator
-        | Command::ReviewChanges
         | Command::GitMenu
         | Command::ToggleAnnotate
         | Command::InstallBrowserSkill

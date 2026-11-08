@@ -144,11 +144,11 @@ fn replies_round_trip() {
 #[test]
 fn kinds_are_named_as_json_spells_them() {
     assert!(serde_json::from_str::<TabKind>("\"code\"").is_err());
+    assert!(serde_json::from_str::<TabKind>("\"review\"").is_err());
     for kind in [
         TabKind::Blank,
         TabKind::Web,
         TabKind::File,
-        TabKind::Review,
         TabKind::Orchestrator,
         TabKind::Devices,
         TabKind::Editor,

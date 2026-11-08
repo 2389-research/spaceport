@@ -37,24 +37,16 @@ impl Side {
 /// The panel a drag resizes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum PanelDrag {
-    /// The notes beside a review; they share their width with a page's.
-    ReviewNotes,
     /// The notes beside an annotated page; only builds that show pages
     /// annotate them.
     #[cfg(any(target_os = "macos", windows))]
     PageNotes,
     /// The settings window's section list.
     SettingsNavigation,
-    /// The line between a side-by-side diff's halves.
-    DiffSides,
-    /// The review's list of changed files.
-    ReviewFiles,
 }
 
-/// The notes panel beside a review or an annotated page.
+/// The notes panel beside an annotated page.
 pub(crate) const NOTES: PanelWidth = PanelWidth::new(300., 220.);
-/// The review's list of changed files.
-pub(crate) const REVIEW_FILES: PanelWidth = PanelWidth::new(240., 160.);
 /// The settings window's section list.
 pub(crate) const SETTINGS_NAVIGATION: PanelWidth = PanelWidth::new(184., 150.);
 
@@ -153,20 +145,6 @@ pub(crate) fn handle(
     )
 }
 
-/// A line to drag at `x` within its `relative()` container, such as the one
-/// between a side-by-side diff's halves.
-pub(crate) fn divider(
-    id: &'static str,
-    x: Pixels,
-    drag: PanelDrag,
-    reset: impl Fn(&MouseDownEvent, &mut Window, &mut App) + 'static,
-) -> Grip {
-    Grip::new(
-        Axis::Horizontal,
-        grip(id, drag, reset).left(x - px(HANDLE / 2.)),
-    )
-}
-
 /// The grabbable strip both share: the sidebar's cursor, a drag of `drag`,
 /// and `reset` on a double-click.
 fn grip(
@@ -203,22 +181,18 @@ impl crate::SheprdWindow {
     /// panel sits on; `None` for a panel another window owns.
     fn window_panel(&mut self, drag: PanelDrag) -> Option<(&mut PanelWidth, Side)> {
         match drag {
-            PanelDrag::ReviewNotes => Some((&mut self.notes_width, Side::Right)),
             #[cfg(any(target_os = "macos", windows))]
             PanelDrag::PageNotes => Some((&mut self.notes_width, Side::Right)),
-            PanelDrag::ReviewFiles => Some((&mut self.review_files_width, Side::Left)),
-            PanelDrag::SettingsNavigation | PanelDrag::DiffSides => None,
+            PanelDrag::SettingsNavigation => None,
         }
     }
 
     /// `window_panel` to read while drawing.
     fn panel_at(&self, drag: PanelDrag) -> Option<(PanelWidth, Side)> {
         match drag {
-            PanelDrag::ReviewNotes => Some((self.notes_width, Side::Right)),
             #[cfg(any(target_os = "macos", windows))]
             PanelDrag::PageNotes => Some((self.notes_width, Side::Right)),
-            PanelDrag::ReviewFiles => Some((self.review_files_width, Side::Left)),
-            PanelDrag::SettingsNavigation | PanelDrag::DiffSides => None,
+            PanelDrag::SettingsNavigation => None,
         }
     }
 

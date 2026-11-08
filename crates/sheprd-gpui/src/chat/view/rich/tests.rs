@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
+    chat::highlight::{Contrast, Token},
     config::Theme,
-    review::highlight::{Contrast, Token},
 };
 
 mod imessage;

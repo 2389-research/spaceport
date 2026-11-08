@@ -54,42 +54,6 @@ fn plus_opens_a_terminal_tab_in_the_group_that_asked(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-fn review_is_offered_for_a_tracked_checkout(cx: &mut TestAppContext) {
-    let (view, cx) = window(cx);
-    let group = first_group(&view, cx);
-    cx.update(|_, cx| {
-        view.update(cx, |view, _| {
-            view.git = crate::git::Git::fixture(
-                crate::pull_request::Input {
-                    checkout: None,
-                    repo_key: Some("github.com/herdrdev/herdr-gpui".into()),
-                    branch: "develop".into(),
-                },
-                crate::git::Status::default(),
-            );
-        })
-    });
-    assert_eq!(actions(&view, cx, group), [Action::Review, Action::Split]);
-    run(&view, cx, group, Action::Review);
-    view.read_with(cx, |view, _| {
-        assert!(view.menu.page.is_none());
-        assert_eq!(view.reviews.len(), 1);
-    });
-    // A second review of the same checkout brings its tab back.
-    run(&view, cx, group, Action::Review);
-    let reviews = cx.update(|_, cx| {
-        cx.try_global::<Store>().map_or(0, |store| {
-            (0..64)
-                .filter_map(|id| store.get(crate::browser::TabId::test(id)))
-                .filter(|tab| matches!(tab.location, Some(crate::browser::Location::Review { .. })))
-                .count()
-        })
-    });
-    assert_eq!(reviews, 1);
-    view.read_with(cx, |view, _| assert_eq!(view.reviews.len(), 1));
-}
-
-#[gpui::test]
 fn listening_ports_follow_the_tab_kinds(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
     seed_ports(&view, cx);
@@ -203,7 +167,7 @@ fn the_listening_heading_shifts_the_rows_after_it() {
         process: "node".into(),
         link: Link::Page(WebUrl::try_from("http://localhost:3000/").unwrap()),
     };
-    let actions = [Action::Review, port, Action::Split];
+    let actions = [Action::Orchestrator, port, Action::Split];
     assert_eq!(child_index(&actions, 0), 0);
     assert_eq!(child_index(&actions, 1), 2);
     assert_eq!(child_index(&actions, 2), 3);

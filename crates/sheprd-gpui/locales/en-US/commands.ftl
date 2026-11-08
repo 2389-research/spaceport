@@ -74,7 +74,6 @@ commands-resize-pane-left = Resize Pane Left
 commands-resize-pane-right = Resize Pane Right
 commands-resize-pane-up = Resize Pane Up
 commands-resume-palette = Resume Palette
-commands-review-changes = Review Changes
 commands-sessions = Sessions
 commands-settings = Settings
 commands-split-down = Split Down

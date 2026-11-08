@@ -1,5 +1,5 @@
 use super::*;
-use crate::{chat::rich::TAB_WIDTH, review::highlight::Token};
+use crate::chat::{highlight::Token, rich::TAB_WIDTH};
 
 mod truncation;
 

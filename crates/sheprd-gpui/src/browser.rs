@@ -75,7 +75,7 @@ pub(crate) use groups::{GroupId, Pick, Shown, Slot};
 pub(crate) use layouts::Layouts;
 #[cfg(any(target_os = "macos", windows))]
 pub(crate) use location::PostedFrom;
-pub(crate) use location::{LocalFile, Location, OrchestratorRepo, ReviewCheckout};
+pub(crate) use location::{LocalFile, Location, OrchestratorRepo};
 #[cfg(any(target_os = "macos", windows))]
 pub(crate) use native::Pages;
 #[cfg(target_os = "macos")]

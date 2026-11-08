@@ -83,24 +83,3 @@ fn the_git_menu_command_opens_from_the_corner_in_zen_mode(cx: &mut TestAppContex
         assert_eq!(view.menu.anchor, gpui::point(px(1200. - 24.), px(24.)));
     });
 }
-
-/// The `review_changes` binding goes through the same path as the menu's
-/// Review row, so without a checkout it says so instead of doing nothing.
-#[gpui::test]
-fn the_review_command_says_when_there_is_no_checkout(cx: &mut TestAppContext) {
-    let (view, cx) = cx.add_window_view(crate::titlebar::tests::header_window);
-    cx.run_until_parked();
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            view.command(Command::ReviewChanges, window, cx)
-        })
-    });
-    cx.update(|_, cx| {
-        let flash = view
-            .read(cx)
-            .flash
-            .as_ref()
-            .map(|(flash, _)| flash.text.clone());
-        assert_eq!(flash.as_deref(), Some("No local checkout to review"));
-    });
-}

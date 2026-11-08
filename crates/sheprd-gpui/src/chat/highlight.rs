@@ -1,14 +1,6 @@
-//! Syntax colouring for a review's diff, worked out in the background a hunk
-//! at a time as hunks come into view, so drawing only applies prepared spans
-//! and a huge change is never coloured whole. Each file's grammar follows
-//! its name. Removed lines are read in the order the old file had them and
-//! added lines in the new file's, unchanged lines in both; every hunk starts
-//! afresh, since the lines between hunks are not in the diff. Tokens are
-//! classified, not coloured: the window colours each class from its own
-//! theme, so a theme change recolours the diff.
-use super::diff::{Kind, Lines};
+//! Syntax spans for bounded rich-chat code blocks. Tokens stay separate from
+//! theme colours so a theme change can recolour prepared text.
 use crate::config::Theme;
-use std::ops::Range;
 use std::sync::OnceLock;
 use syntect::parsing::{ParseState, Scope, ScopeStack, ScopeStackOp, SyntaxReference, SyntaxSet};
 
@@ -27,9 +19,6 @@ pub(crate) enum Token {
 /// How a token's colour is made readable where its code is drawn.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Contrast {
-    /// The theme's own: palette colours through [`Theme::ink`], comments
-    /// in its muted colour as they are.
-    Theme,
     /// Every colour moved to read at text contrast on this background.
     On(u32),
 }
@@ -47,8 +36,6 @@ impl Token {
             Self::Function => theme.palette[4],
         };
         match contrast {
-            Contrast::Theme if self == Self::Comment => colour,
-            Contrast::Theme => theme.ink(colour),
             Contrast::On(background) => {
                 crate::contrast::ink_on_chrome(colour, [background; 3], 4.5)
             }
@@ -66,11 +53,8 @@ pub(crate) struct Span {
 
 /// Bytes of a line coloured; the rest of a very long line stays plain.
 const MAX_COLOURED_BYTES: usize = 2_000;
-/// Lines of its hunk read before a stretch, unshown, so a string or
-/// comment open across the seam colours right.
-const WARM_UP: usize = 200;
 
-/// The bundled grammars, loaded once, on the first diff that needs them.
+/// The bundled grammars, loaded once, on the first code block that needs them.
 fn syntaxes() -> &'static SyntaxSet {
     static SYNTAXES: OnceLock<SyntaxSet> = OnceLock::new();
     SYNTAXES.get_or_init(SyntaxSet::load_defaults_newlines)
@@ -189,37 +173,6 @@ fn grammar(name: &str) -> Option<&'static SyntaxReference> {
     syntaxes().find_syntax_by_extension(extension)
 }
 
-/// The spans of each line of `lines` in `range`, a stretch of one hunk,
-/// for a file named `name`. Blocking: it runs on the background executor.
-pub(crate) fn colour(name: &str, lines: &Lines, range: Range<usize>) -> Vec<Vec<Span>> {
-    let Some(syntax) = grammar(name) else {
-        return vec![Vec::new(); range.len()];
-    };
-    let (mut old, mut new) = (Side::new(syntax), Side::new(syntax));
-    let mut read = |index: usize| {
-        let Some(line) = lines.get(index) else {
-            return Vec::new();
-        };
-        let text = lines.text_of(line);
-        match line.kind {
-            Kind::Added => new.line(text),
-            Kind::Removed => old.line(text),
-            Kind::Context => {
-                old.line(text);
-                new.line(text)
-            }
-            Kind::Hunk | Kind::Meta => Vec::new(),
-        }
-    };
-    let warm = lines
-        .hunk_start(range.start)
-        .max(range.start.saturating_sub(WARM_UP));
-    for index in warm..range.start {
-        read(index);
-    }
-    range.map(read).collect()
-}
-
 /// The spans of each of the first `limit` lines of `text`, a whole file
 /// named `name`, read top to bottom. Blocking: it runs on the background
 /// executor.
@@ -233,6 +186,3 @@ pub(crate) fn colour_file(name: &str, text: &str, limit: usize) -> Vec<Vec<Span>
         .map(|line| side.line(line))
         .collect()
 }
-
-#[cfg(test)]
-mod tests;

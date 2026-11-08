@@ -98,7 +98,7 @@ fn code_is_copied_verbatim_and_only_complete_fences_queue_grammars() {
         spans
             .iter()
             .flatten()
-            .any(|span| span.token == crate::review::highlight::Token::Keyword)
+            .any(|span| span.token == crate::chat::highlight::Token::Keyword)
     );
     for (line, spans) in source.lines().zip(spans) {
         assert!(

@@ -45,7 +45,10 @@ pub(super) fn serve(
 
 /// What a tab is, as `tab list` names it.
 fn kind(tab: &Tab) -> Option<TabKind> {
-    if matches!(tab.location, Some(Location::RetiredSource { .. })) {
+    if matches!(
+        tab.location,
+        Some(Location::RetiredSource { .. } | Location::RetiredReview { .. })
+    ) {
         return None;
     }
     if tab.place.is_editor() {
@@ -55,9 +58,8 @@ fn kind(tab: &Tab) -> Option<TabKind> {
         None => TabKind::Blank,
         Some(Location::Web { .. }) => TabKind::Web,
         Some(Location::Local { .. }) => TabKind::File,
-        Some(Location::Review { .. }) => TabKind::Review,
         Some(Location::Orchestrator { .. }) => TabKind::Orchestrator,
-        Some(Location::RetiredSource { .. }) => return None,
+        Some(Location::RetiredSource { .. } | Location::RetiredReview { .. }) => return None,
         Some(Location::Devices) => TabKind::Devices,
         Some(Location::CoreTerminal { .. }) => TabKind::CoreTerminal,
     })
@@ -68,12 +70,8 @@ fn location(tab: &Tab) -> Option<String> {
     Some(match tab.location.as_ref()? {
         Location::Web { url } => url.as_str().to_owned(),
         Location::Local { file } => file.path().display().to_string(),
-        Location::Review { checkout } => checkout
-            .checkout
-            .clone()
-            .or_else(|| checkout.repo_key.clone())?,
         Location::Orchestrator { repo } => repo.checkout.clone(),
-        Location::RetiredSource { .. } => return None,
+        Location::RetiredSource { .. } | Location::RetiredReview { .. } => return None,
         // Every pane's terminal, for `herdr-core attach` and the like.
         Location::CoreTerminal { panes, .. } => panes
             .terminals()

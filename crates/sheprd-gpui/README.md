@@ -1472,7 +1472,7 @@ padding_y = [4, 8]   # top, then bottom
 
 - One number pads both sides of the axis. A pair of numbers pads each side: left then right for `padding_x`, top then bottom for `padding_y`.
 - Each side is a finite number of logical pixels from 0 to 64. The default is `0`, which keeps the cells against the edges.
-- Every terminal takes the padding, in every tab group, whether the sidebar shows or not. A browser or review tab pads its own content and takes none.
+- Every terminal takes the padding, in every tab group, whether the sidebar shows or not. A browser tab pads its own content and takes none.
 - The terminal keeps the remaining size, so the daemon is resized to the columns and rows it actually has.
 - The padding shows the theme background.
 - **Settings > Theme > Terminal padding** sets each of the four sides with a slider, a typed value, or one-pixel steps. It writes one number when the two sides of an axis agree, and a pair when they differ.
@@ -2850,8 +2850,7 @@ tabs. Splitting opens nothing new and moves no tab.
   a tab of another group, that group becomes the group in use.
 - The group in use has the keyboard, and its chosen tab carries the accent.
   **+** opens a terminal tab in that group. The group's **…**, at the end
-  of its strip, offers other views such as **Review Changes** when the Git
-  chip tracks a checkout, and the workspace's listening ports, each opening
+  of its strip, offers the workspace's listening ports, each opening
   its page with the system URL handler. `cmd-t` opens in the group in use,
   where Close Tab acts too. Close Tab in a group without tabs closes the group.
 - Drag a divider to resize the groups beside it. Groups are the window's own,
@@ -3023,131 +3022,7 @@ in view from the keyboard; it has no default key.
   app would refuse, so the page can say so; whether the app kept one it was
   handed shows in the window, as the note or a warning.
 
-### Reviewing An Agent's Changes
-
-**Review Changes** in a group's **…** menu opens a review tab on the focused
-local checkout's changes, with untracked text files as wholly added,
-and lets you send review notes to the agent that made them, like inline
-comments on a pull request. It has no default key; bind `review_changes`
-under `[keybindings]` to open it from the keyboard, and `git_menu` to open
-the titlebar's Git menu where its button would.
-
-- The review is a tab like a browser tab: it sits in the group in use, can be
-  moved to a group of its own beside the terminal, take the whole window, or
-  close, and it is restored with the other tabs. Opening the review again
-  brings back the checkout's tab and reads its changes afresh. Its notes go
-  to the pane of the agent that was focused when it opened.
-- The icons at either end of its header show or hide the list of changed
-  files and the notes. A review narrower than 1,000 px starts with both
-  hidden so the diff has the room; once toggled, the choice holds. Writing a
-  note always shows the notes, and the notes icon counts the unsent ones.
-  Shown in a narrow group, each panel keeps to 30% of the review.
-
-- **Uncommitted** shows what is not committed yet (`git diff HEAD`).
-  **Branch** shows everything the branch's pull request will hold: the
-  working tree against where the branch left its base, so its commits and
-  uncommitted work together. The base is the pull request's base branch when
-  GitHub reported one, else `origin/HEAD`, then `main` or `master`, whichever
-  exists locally; nothing is fetched. The choice is remembered.
-- Click the base after "against" in a branch review to compare with another
-  branch, such as an older release branch or the feature branch this one was
-  cut from. The list holds the checkout's local and remote-tracking branches,
-  those this branch left most recently first; **Automatic** goes back to the
-  base above. The pick holds while the review tab is open, and a picked
-  branch that no longer exists falls back to the automatic base.
-- The two icons in the header draw the diff **unified**, removed lines above
-  the ones that replaced them, or **side by side**, the old version on the
-  left and the new on the right, each run of removed lines paired with the
-  added lines that follow it. Either side's line can take a note, notes and
-  their numbers carry over when switching, and the choice is remembered.
-  Side by side, drag the line between the halves to give either more room
-  (each keeps at least a fifth); a double-click on it evens them again.
-- A list of the changed files sits left of the diff, as on a pull request:
-  a tree of folders, a folder holding only one other sharing its line
-  (`src/review/`), each file with how it changed (A, M, D, R), its added
-  and removed lines, how many notes are queued on it, and a check once
-  viewed. Click a folder to fold it. Type in the list's filter to keep the
-  files whose path holds the text, and **Hide viewed** to leave viewed files
-  out. Clicking a file, or picking it with the arrows and pressing Enter,
-  brings it to the top of the diff, in either layout; the file at the top of
-  the diff is marked and kept in view as the diff scrolls. The list resizes
-  by its right edge and its width is remembered.
-- Long lines wrap, as on GitHub, so nothing is cut off at the edge.
-- Each file's header folds it (the chevron, or `x`) and marks it **Viewed**,
-  which folds it too. Deleted files, lockfiles and files `.gitattributes`
-  marks `linguist-generated` start folded. A viewed file that changes again
-  is no longer viewed. Marks are kept per checkout and branch across
-  restarts, in `review-viewed.json` beside the app's other state, up to 64
-  checkouts and 4,096 files. Renames show as `old → new`.
-- A hunk header shows how many unchanged lines it leaves out above it;
-  click that to show them, up to 200 at a time, read from the working tree.
-- Removed lines and the added lines that replaced them have the words that
-  changed marked, when the two lines are an edit of each other.
-- The whitespace icon leaves changes in whitespace alone out
-  (`git diff --ignore-all-space`).
-- Find in the changes with the search icon, `/`, or Cmd-F (Ctrl-F) while
-  the review is in use; Enter and Shift-Enter, or `n` and `N` in the diff,
-  step through the matches, and a match in a folded file opens it. A query
-  with no capitals ignores case.
-- With the diff in use, `j`/`k` and the arrows scroll a line, Space and Page
-  Up/Down a page, `]`/`[` move to the next or previous hunk and `.`/`,` to
-  the next or previous file, `x` folds the file at the top and `v` marks it
-  viewed.
-- The review reads its changes again when the checkout's change counts
-  move, keeping the line it was on, unless a note is being written.
-- A scrollbar along the diff's right edge shows how much of it is in view
-  and where; drag its thumb to move through a long change.
-- Changes of any size stay reviewable. The files are listed first
-  (`git diff --numstat` and `--name-status`), so the list and every file's
-  header show at once; their lines are then read a batch of files at a time
-  in the background, at most 64 files or 20,000 changed lines per Git call,
-  and files scrolled into view are read first. Past 500,000 changed lines,
-  a file is read once it scrolls into view. A file with more than 20,000
-  changed lines, or larger than 4 MiB on disk, is listed as "Large change
-  not shown" with a **Load diff** button that reads it whole. Binary files
-  are listed and never read. Each file keeps its text in one buffer, so a
-  change of hundreds of thousands of lines stays compact, and the diff only
-  lays out the rows in view.
-- The notes panel resizes by dragging its left edge, with the sidebar's
-  cursor and hover tint, and a double-click on the edge restores its
-  default. Settings' section list resizes the same way by its right edge.
-  The review and an annotated page share the width, which is remembered
-  with the sidebar's.
-
-- Click a line's gutter (its numbers and sign), added, removed or unchanged,
-  or a file name, write what should change, and press Enter or **Add note**.
-  Escape drops the note being written. Noted lines carry the note's number,
-  and unsent notes stay while the tab is open.
-- The code itself selects like an editor's: drag across it, double-click a
-  word, triple-click a line, Shift-click to extend, and Cmd-A (Ctrl-A
-  elsewhere) for the whole file at the top. Cmd-C or **Edit > Copy** copies
-  the code alone, never line numbers, `+`/`-` signs, or hunk headers; side by
-  side, a selection keeps to the side it started on, and Select All takes the
-  side last clicked in that file, else the new side (the old side of a deleted
-  file). A folded file has no code to select. Escape clears it. Tabs copy as the four spaces they are drawn as.
-- The copy icon on a file's header copies its path, and the one on a hunk
-  header copies the hunk as a patch reads, signs and header included.
-- Notes go to the agent in the focused pane, or else to the first agent Herdr
-  reports in the focused workspace; the header names it. **Send to agent**
-  turns them into one prompt: the checkout, then for each note the
-  `path:line`, the quoted line, and your note. Line numbers are the working
-  tree's in both views; a removed line names the revision it is numbered in
-  (`HEAD`, or the base and commit), so notes from either view stay exact and
-  stay queued when you switch. It reaches the agent the same one way as page notes above,
-  including `browser feedback`. Without an agent, **Copy** is offered.
-  As with page notes, sent notes stay listed until **Clear sent**: click one
-  to edit it, and Send delivers only new or edited notes, or all of them
-  again once every one was sent. Another Send waits until the previous batch
-  has been delivered or collected through `browser feedback`, or until you
-  **Withdraw** it. The notes icon
-  counts the unsent ones.
-- Git runs in the background, never on the UI thread, with explicit `a/`/`b/`
-  prefixes and no external diff tools or text conversion. Diff text is
-  cleaned of control characters and bounded (16,384 characters a line,
-  250,000 lines a file, 5,000 untracked files; links and binaries are not
-  read). Only the local daemon's checkouts can be reviewed.
-
-#### Explainer Kit
+### Explainer Kit
 
 Local pages can load a small kit the app serves at `/.herdr/kit.css` and
 `/.herdr/kit.js`, for interactive explainers and UI mockups: segmented

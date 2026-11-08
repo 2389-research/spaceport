@@ -1,10 +1,8 @@
 //! The menu behind a group's "…" button: tabs other than a terminal to open
-//! in the group (the focused checkout's review, the
-//! repository's orchestrator, the focused workspace's listening ports, and
-//! px0), a new chat with an agent through `herdr-acp`, closing the tab it shows, its other tabs, or the group itself,
-//! and splitting it. A terminal tab comes from the group's "+". Closing a
-//! tab here is the tab's own close; closing the group closes no tab: its
-//! tabs go to the group that takes its room.
+//! in the group (the repository's orchestrator, listening ports, and px0),
+//! a new chat through `herdr-acp`, closing tabs or the group, and splitting it.
+//! A terminal tab comes from the group's "+". Closing a group closes no tab:
+//! its tabs go to the group that takes its room.
 // i18n: migrated
 use crate::direction::Logical;
 use crate::i18n::fl;
@@ -28,8 +26,6 @@ const ICON_SIZE: f32 = 14.;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Action {
-    /// The review tab of the checkout the Git chip tracks.
-    Review,
     /// The focused workspace's repository's issues, pull requests, and runs.
     Orchestrator,
     /// A new tab running a `herdr-acp` chat with the agent.
@@ -55,7 +51,6 @@ impl Action {
     /// The row's text, which for a port is where its page opens.
     fn label(&self) -> SharedString {
         match self {
-            Self::Review => fl!("group-menu-review").into(),
             Self::Orchestrator => fl!("group-menu-orchestrator").into(),
             Self::Chat(agent) => agent.display_name().into(),
             Self::Px0 => "px0".into(),
@@ -69,7 +64,6 @@ impl Action {
 
     fn icon(&self) -> Option<&'static str> {
         match self {
-            Self::Review => Some("icons/diff-unified.svg"),
             Self::Orchestrator => Some("icons/issue.svg"),
             Self::Px0 => Some(crate::browser::Editor::Px0.icon()),
             Self::Chat(agent) => {
@@ -93,7 +87,7 @@ impl Action {
     /// Which run of rows this one belongs to; a rule separates runs.
     fn section(&self) -> u8 {
         match self {
-            Self::Review | Self::Orchestrator | Self::Px0 => 0,
+            Self::Orchestrator | Self::Px0 => 0,
             Self::Chat(_) => 1,
             Self::Port { .. } => 2,
             Self::Close | Self::CloseOthers | Self::CloseGroup => 3,
@@ -135,14 +129,11 @@ fn child_index(actions: &[Action], index: usize) -> usize {
 }
 
 impl SheprdWindow {
-    /// The rows worth offering for `group`. Review needs a checkout; ports
-    /// come from the last scan, so they follow the status bar's. Closing
+    /// The rows worth offering for `group`. Ports come from the last scan,
+    /// so they follow the status bar's. Closing
     /// belongs to a split: a lone group has nowhere else to keep its tabs.
     fn group_actions(&self, group: GroupId, cx: &App) -> Vec<Action> {
         let mut actions = Vec::new();
-        if self.git.tracked().is_some() {
-            actions.push(Action::Review);
-        }
         if self.can_open_orchestrator() {
             actions.push(Action::Orchestrator);
         }
@@ -203,7 +194,6 @@ impl SheprdWindow {
         self.dismiss_menu(window, cx);
         self.activate_group(group, window, cx);
         match action {
-            Action::Review => self.open_review(window, cx),
             Action::Orchestrator => self.open_orchestrator(window, cx),
             Action::Chat(agent) => self.start_chat_or_flash(agent, cx),
             Action::Px0 => {

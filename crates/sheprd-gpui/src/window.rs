@@ -252,7 +252,6 @@ pub(crate) struct SheprdWindow {
     /// The focus changes asked of the daemon, for the native GUI harness.
     #[cfg(feature = "integration-test")]
     pub(crate) navigations: smoke::Navigations,
-    /// The notes panel beside a review or an annotated page; both share it.
     /// The revision of the app-wide network reading this window last drew.
     pub(crate) network_quality_seen: u64,
     /// The last orchestrator view id handed out.
@@ -296,10 +295,6 @@ pub(crate) struct SheprdWindow {
     /// Herdr's resize mode: direction keys resize the focused pane until
     /// Escape, Enter, or the mode's own shortcut ends it.
     pub(crate) resize_mode: bool,
-    /// The review's list of changed files.
-    pub(crate) review_files_width: crate::panel_resize::PanelWidth,
-    /// Each review tab's state, by its tab.
-    pub(crate) reviews: std::collections::HashMap<crate::browser::TabId, crate::review::Review>,
     /// Sandbox images this window was asked to build ahead of a dispatch.
     #[cfg(feature = "cloud")]
     pub(crate) sandbox_image_builds: crate::cloud::image::Prebuilds,
@@ -510,9 +505,6 @@ impl SheprdWindow {
         }
         if self.notes_width.chosen().is_none() {
             self.notes_width.restore(chrome.notes_width);
-        }
-        if self.review_files_width.chosen().is_none() {
-            self.review_files_width.restore(chrome.review_files_width);
         }
         // A device dragged before the stored order loaded keeps its place.
         if self.device_order.is_empty() {

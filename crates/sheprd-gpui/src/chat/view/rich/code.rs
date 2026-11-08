@@ -1,10 +1,10 @@
 use super::*;
+use crate::chat::highlight::{Contrast, Span};
 use crate::chat::{
     rich::{CodeText, MAX_CODE_LINE_CHARS, MAX_CODE_LINES},
     selection::{Cell, Segment},
 };
 use crate::i18n::fl;
-use crate::review::highlight::{Contrast, Span};
 use std::sync::Arc;
 
 impl SheprdWindow {

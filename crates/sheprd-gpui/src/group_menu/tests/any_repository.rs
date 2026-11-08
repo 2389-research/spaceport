@@ -1,6 +1,5 @@
-//! Review in the "…" menu and the titlebar's Git menu follow any repository
-//! the focused space is in, not only a worktree Herdr made, and still show
-//! nothing for a folder outside one.
+//! The titlebar's Git menu follows any repository the focused space is in,
+//! even one outside a worktree Herdr made.
 use super::*;
 use crate::{menu::Page, pull_request::Input};
 use sheprd_client::protocol::ClientShellWorktree;
@@ -44,9 +43,8 @@ fn open_git_menu(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Opt
 }
 
 #[gpui::test]
-fn a_space_in_a_cloned_repository_offers_review_and_the_git_menu(cx: &mut TestAppContext) {
+fn a_space_in_a_cloned_repository_offers_the_git_menu(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
-    let group = groups(&view, cx)[0];
     // A clone opened as a space, in a subdirectory, with no worktree made
     // through Herdr: the daemon reports its branch but no worktree.
     let directory = std::env::temp_dir().join("clone/src");
@@ -58,7 +56,6 @@ fn a_space_in_a_cloned_repository_offers_review_and_the_git_menu(cx: &mut TestAp
         branch: "main".into(),
     };
     view.read_with(cx, |view, _| assert_eq!(view.git.tracked(), Some(&input)));
-    assert!(actions(&view, cx, group).contains(&Action::Review));
     assert_eq!(open_git_menu(&view, cx), Some(Page::Git));
     // Its pull request, found by the same directory, names the Git menu's
     // pull request row rather than offering to create another.
@@ -72,9 +69,8 @@ fn a_space_in_a_cloned_repository_offers_review_and_the_git_menu(cx: &mut TestAp
 }
 
 #[gpui::test]
-fn a_worktree_herdr_made_still_offers_review_by_its_daemon_key(cx: &mut TestAppContext) {
+fn a_worktree_herdr_made_still_offers_git_menu_by_its_daemon_key(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
-    let group = groups(&view, cx)[0];
     let key = std::env::temp_dir().join("repo/.git");
     let key = key.to_str().unwrap();
     let worktree = ClientShellWorktree {
@@ -100,18 +96,15 @@ fn a_worktree_herdr_made_still_offers_review_by_its_daemon_key(cx: &mut TestAppC
             })
         );
     });
-    assert!(actions(&view, cx, group).contains(&Action::Review));
     assert_eq!(open_git_menu(&view, cx), Some(Page::Git));
 }
 
 #[gpui::test]
-fn a_folder_outside_any_repository_offers_neither(cx: &mut TestAppContext) {
+fn a_folder_outside_any_repository_offers_no_git_menu(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
-    let group = groups(&view, cx)[0];
     let directory = std::env::temp_dir().join("notes");
     // The daemon reports no branch for a folder Git does not know.
     space_in(&view, cx, directory.to_str().unwrap(), None, None);
     view.read_with(cx, |view, _| assert_eq!(view.git.tracked(), None));
-    assert!(!actions(&view, cx, group).contains(&Action::Review));
     assert_eq!(open_git_menu(&view, cx), None);
 }

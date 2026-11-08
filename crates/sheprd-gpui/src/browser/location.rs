@@ -1,5 +1,5 @@
 //! Where a browser tab's page comes from: the web, or a local file an agent
-//! wrote; or, for a review tab, the checkout whose changes it shows. Pages cannot open `file:` addresses, so a local file is served
+//! wrote. Pages cannot open `file:` addresses, so a local file is served
 //! from its folder through a private scheme, and only from that folder.
 use super::WebUrl;
 use crate::i18n::fl;
@@ -60,9 +60,10 @@ pub(crate) enum Location {
     Local {
         file: LocalFile,
     },
-    /// A review of a checkout's changes, drawn by the app, never a page.
-    Review {
-        checkout: ReviewCheckout,
+    /// Accepted only while reading an old tab file; the store discards it.
+    #[serde(rename = "review")]
+    RetiredReview {
+        checkout: RetiredReviewCheckout,
     },
     /// A repository's issues, pull requests, and agent runs, drawn by the
     /// app, never a page.
@@ -166,16 +167,14 @@ impl OrchestratorRepo {
     }
 }
 
-/// The local checkout a review tab shows. Saved with the tabs, so it is
-/// checked again whenever it is read. `repo_key` is the daemon's Git common
-/// directory; a space it has no worktree metadata for is saved by its
-/// directory alone, which the worker resolves and verifies on every read.
+/// The local checkout an old review tab saved. It is validated before the
+/// store discards the tab; `repo_key` was the daemon's Git common directory.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "SavedReviewCheckout")]
-pub(crate) struct ReviewCheckout {
-    pub(crate) repo_key: Option<String>,
-    pub(crate) branch: String,
-    pub(crate) checkout: Option<String>,
+pub(crate) struct RetiredReviewCheckout {
+    repo_key: Option<String>,
+    branch: String,
+    checkout: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -186,7 +185,7 @@ struct SavedReviewCheckout {
     checkout: Option<String>,
 }
 
-impl TryFrom<SavedReviewCheckout> for ReviewCheckout {
+impl TryFrom<SavedReviewCheckout> for RetiredReviewCheckout {
     type Error = crate::Error;
 
     fn try_from(saved: SavedReviewCheckout) -> crate::Result<Self> {
@@ -215,34 +214,6 @@ impl TryFrom<SavedReviewCheckout> for ReviewCheckout {
     }
 }
 
-/// A review is saved by the repository the daemon names, or else by the
-/// workspace directory the Git chip follows; one naming neither has nothing
-/// to read.
-impl TryFrom<&crate::pull_request::Input> for ReviewCheckout {
-    type Error = crate::Error;
-
-    fn try_from(input: &crate::pull_request::Input) -> crate::Result<Self> {
-        if input.repo_key.is_none() && input.checkout.is_none() {
-            return Err(sheprd_github::pull_request::Error::Metadata.into());
-        }
-        Ok(Self {
-            repo_key: input.repo_key.clone(),
-            branch: input.branch.clone(),
-            checkout: input.checkout.clone(),
-        })
-    }
-}
-
-impl From<&ReviewCheckout> for crate::pull_request::Input {
-    fn from(checkout: &ReviewCheckout) -> Self {
-        Self {
-            checkout: checkout.checkout.clone(),
-            repo_key: checkout.repo_key.clone(),
-            branch: checkout.branch.clone(),
-        }
-    }
-}
-
 impl Location {
     /// The address the page is loaded from.
     #[cfg(any(target_os = "macos", windows, test))]
@@ -250,8 +221,7 @@ impl Location {
         match self {
             Self::Web { url } => url.as_str().to_owned(),
             Self::Local { file } => file.page_url(),
-            // Never loaded: a review is drawn by the app.
-            Self::Review { .. }
+            Self::RetiredReview { .. }
             | Self::RetiredSource { .. }
             | Self::Orchestrator { .. }
             | Self::Devices
@@ -263,7 +233,7 @@ impl Location {
     pub(crate) fn is_page(&self) -> bool {
         !matches!(
             self,
-            Self::Review { .. }
+            Self::RetiredReview { .. }
                 | Self::RetiredSource { .. }
                 | Self::Orchestrator { .. }
                 | Self::Devices
@@ -276,8 +246,7 @@ impl Location {
         match self {
             Self::Web { url } => url.as_str().to_owned(),
             Self::Local { file } => file.path().display().to_string(),
-            // i18n: data
-            Self::Review { checkout } => format!("Review of {}", checkout.branch),
+            Self::RetiredReview { .. } => String::new(),
             Self::RetiredSource { .. } => String::new(),
             // i18n: data
             Self::Orchestrator { repo } => format!("Orchestrator of {}", repo.name()),
@@ -297,7 +266,7 @@ impl Location {
         match self {
             Self::Web { url } => url.host().to_owned(),
             Self::Local { file } => file.entry.rsplit('/').next().unwrap_or_default().to_owned(),
-            Self::Review { checkout } => format!("Review \u{00b7} {}", checkout.branch), // i18n: data
+            Self::RetiredReview { .. } => String::new(),
             Self::RetiredSource { .. } => String::new(),
             // i18n: data
             Self::Orchestrator { repo } => format!("Orchestrator \u{00b7} {}", repo.name()),
@@ -310,15 +279,15 @@ impl Location {
     /// for a page or a file, which name themselves.
     pub(crate) fn drawn_title(&self) -> Option<String> {
         match self {
-            Self::Review { checkout } => {
-                Some(fl!("browser-tab-review", branch = checkout.branch.as_str()))
-            }
             Self::Orchestrator { repo } => {
                 Some(fl!("browser-tab-orchestrator", repo = repo.name()))
             }
             Self::Devices => Some(fl!("browser-tab-devices")),
             Self::CoreTerminal { .. } => Some(fl!("browser-tab-terminal")),
-            Self::Web { .. } | Self::Local { .. } | Self::RetiredSource { .. } => None,
+            Self::Web { .. }
+            | Self::Local { .. }
+            | Self::RetiredSource { .. }
+            | Self::RetiredReview { .. } => None,
         }
     }
 

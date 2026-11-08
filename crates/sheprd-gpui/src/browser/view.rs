@@ -309,7 +309,6 @@ impl SheprdWindow {
         self.ensure_px0_page(window, cx);
         self.poll_deliveries(cx);
         self.poll_reveal(window, cx);
-        self.poll_reviews(cx);
         self.poll_orchestrators(window, cx);
         self.sync_addresses(false, window, cx);
     }

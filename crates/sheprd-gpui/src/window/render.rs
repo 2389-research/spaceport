@@ -731,6 +731,7 @@ impl Render for SheprdWindow {
                         Some(
                             crate::browser::Location::Orchestrator { .. }
                                 | crate::browser::Location::RetiredSource { .. }
+                                | crate::browser::Location::RetiredReview { .. }
                         )
                     ) =>
                 {
@@ -749,7 +750,7 @@ impl Render for SheprdWindow {
                         Some(crate::browser::Location::CoreTerminal { .. }) => {
                             self.render_core_terminal_tab(slot, &tab, cx)
                         }
-                        _ => self.render_review_tab(slot, &tab, cx),
+                        _ => div().into_any_element(),
                     }
                 }
                 (Shown::Page(_), Some(tab)) => self.render_browser(slot, &tab, owns_keyboard, cx),

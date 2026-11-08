@@ -42,7 +42,6 @@ mod processes;
 mod protocol;
 mod px0;
 mod remote;
-mod review;
 mod root;
 mod security;
 #[cfg(unix)]

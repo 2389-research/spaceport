@@ -120,7 +120,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (Quit, &["cmd-q"]),
         (About, &[]),
         (OpenOrchestrator, &[]),
-        (ReviewChanges, &[]),
         (GitMenu, &[]),
         (ToggleAnnotate, &[]),
         (InstallBrowserSkill, &[]),
@@ -227,7 +226,6 @@ fn gui_commands_never_send_daemon_requests() {
         Command::NextAgent,
         Command::AgentNumber(1),
         Command::ReloadConfig,
-        Command::ReviewChanges,
         Command::GitMenu,
         Command::ToggleAnnotate,
     ] {

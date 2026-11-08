@@ -24,7 +24,8 @@ use serde::{Deserialize, Serialize};
 /// 20: removed GitHub and PR control routes.
 /// 21: removed review open control route.
 /// 22: removed orchestrator open control route.
-pub const PROTOCOL_VERSION: u32 = 22;
+/// 23: removed the native review tab kind from tab listings.
+pub const PROTOCOL_VERSION: u32 = 23;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.

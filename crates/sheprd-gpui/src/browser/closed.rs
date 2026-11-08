@@ -273,12 +273,6 @@ impl Store {
                 .in_workspace(&tab.scope, &tab.workspace_id)
                 .find(|open| matches!(open.location, Some(Location::Devices)))
                 .map(|open| open.id),
-            Some(Location::Review { checkout }) => self
-                .in_workspace(&tab.scope, &tab.workspace_id)
-                .find(|open| {
-                    matches!(&open.location, Some(Location::Review { checkout: existing }) if existing == checkout)
-                })
-                .map(|open| open.id),
             _ => None,
         } {
             return Some(existing);
@@ -386,16 +380,13 @@ impl SheprdWindow {
                     self.show_flash(Flash::warning(fl!("browser-too-many-tabs")), cx);
                     return;
                 };
-                self.poll_reviews(cx);
                 self.poll_orchestrators(window, cx);
                 self.poll_devices_overview(cx);
                 match self.ensure_layout().map(|layout| layout.active()) {
                     Some(group) => self.move_tab_to_group(Pick::Page(id), group, window, cx),
                     None => self.show_browser_tab(id, window, cx),
                 }
-                if let Some(review) = self.reviews.get(&id) {
-                    window.focus(review.focus(), cx);
-                } else if let Some(page) = self.devices_overview.pages.get(&id) {
+                if let Some(page) = self.devices_overview.pages.get(&id) {
                     window.focus(&page.focus, cx);
                 }
             }

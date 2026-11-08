@@ -22,6 +22,7 @@ mod discovery;
 mod existing;
 mod glide;
 mod harnesses;
+mod highlight;
 mod link;
 mod list;
 pub(crate) mod page;

@@ -123,7 +123,7 @@ pub(crate) struct Drawn {
 /// Prepared by the same bounded worker queue; code has no GPU texture.
 pub(crate) enum Output {
     Image(Drawn),
-    Code(Vec<Vec<crate::review::highlight::Span>>),
+    Code(Vec<Vec<super::highlight::Span>>),
 }
 
 impl Output {
@@ -447,7 +447,7 @@ impl Visuals {
         }
     }
 
-    pub(crate) fn code(&self, id: VisualId) -> Option<&[Vec<crate::review::highlight::Span>]> {
+    pub(crate) fn code(&self, id: VisualId) -> Option<&[Vec<super::highlight::Span>]> {
         match self.items.get(&id)?.shown.as_ref()?.as_ref().ok()? {
             Output::Code(spans) => Some(spans),
             Output::Image(_) => None,

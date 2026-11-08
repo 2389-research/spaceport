@@ -231,8 +231,6 @@ pub enum Error {
         #[source]
         source: sheprd_client::Error,
     },
-    #[error(transparent)]
-    Review(#[from] crate::review::Error),
     #[error("The page's picture could not be turned into a PNG")]
     ScreenshotImage,
     #[error("Could not write the screenshot to {}: {source}", path.display())]

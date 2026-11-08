@@ -141,7 +141,6 @@ impl Localize for Error {
                 method = method.to_string(),
                 error = source.localize()
             ),
-            Self::Review(error) => error.localize(),
             Self::ScreenshotImage => fl!("error-screenshot-image"),
             Self::ScreenshotWrite { path: file, source } => fl!(
                 "error-screenshot-write",
