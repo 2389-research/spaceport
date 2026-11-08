@@ -39,3 +39,15 @@ in the English Fluent catalog, including desktop UI copy. Production app,
 package, publisher, repository, and updater identity remain gated by
 G-RELEASE. T01/T09 remain in progress; A42 remains not run. This source and
 headless fixture check does not prove native identity or release parity.
+
+## Integrated branch verification
+
+After cherry-picking at `b64f2437`, the merged Rust tests
+`update_states_say_what_to_do` and
+`window_requests_without_a_window_are_refused_by_code` passed 1/1 each.
+The source product-copy test passed 1/1. After the Sprites cut, default and
+all-feature `cargo +1.99.0 check --locked --all-targets -p sheprd-gpui`
+passed, as did format, file-size, sorted-list, i18n and specification package
+checks. The Rust test link printed the existing macOS `__eh_frame` warning;
+Cargo printed the existing `block v0.1.6` notice. No native app or release
+package ran. The 81 English Fluent lines remain a separate review boundary.

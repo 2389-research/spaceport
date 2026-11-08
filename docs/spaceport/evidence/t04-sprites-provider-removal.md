@@ -42,3 +42,15 @@ removed, and both final checks emitted no new code warnings.
 Native GUI and real provider network/service behavior were not run. T04
 stays blocked on G-LINK while other excluded routes remain. A30 stays
 `not_run`.
+
+## Integrated branch verification
+
+After cherry-picking this cut at `08f76a38` on top of the control-copy cut,
+the combined default and all-feature `cargo +1.99.0 check --locked
+--all-targets -p sheprd-gpui` commands passed. The targeted `retired_sprites`
+catalog test passed 1/1. Sprites source absence and the control product-copy
+check passed 3/3 together; the site suite passed 30/30. Format, file-size,
+sorted-list and i18n checks passed at 4,576 used messages in 248 files.
+The specification package's 21 tool tests passed. Cargo reported the existing
+`block v0.1.6` future compatibility notice. No merged native GUI or provider
+network test ran.
