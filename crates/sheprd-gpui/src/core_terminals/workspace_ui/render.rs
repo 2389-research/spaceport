@@ -84,6 +84,7 @@ impl SheprdWindow {
                             .child(
                                 div()
                                     .id(SharedString::from(format!("core-workspace-select-{id}")))
+                                    .debug_selector(move || format!("core-workspace-select-{id}"))
                                     .flex_1()
                                     .min_w_0()
                                     .truncate()
@@ -294,6 +295,7 @@ impl SheprdWindow {
             for info in available.take(50) {
                 let core_id = local_core.to_owned();
                 let terminal_id = info.id.to_string();
+                let add_selector = format!("core-member-add-{group}-{core_id}-{terminal_id}");
                 let label = bounded(
                     info.name
                         .as_deref()
@@ -315,9 +317,8 @@ impl SheprdWindow {
                         )
                         .child(
                             div()
-                                .id(SharedString::from(format!(
-                                    "core-member-add-{group}-{core_id}-{terminal_id}"
-                                )))
+                                .id(SharedString::from(add_selector.clone()))
+                                .debug_selector(move || add_selector.clone())
                                 .role(Role::Button)
                                 .aria_label(fl!("core-workspace-member-add"))
                                 .cursor_pointer()

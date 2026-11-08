@@ -3,6 +3,9 @@ use crate::{menu::Page, sidebar};
 use sheprd_core_client::{Error, Method, wire::Doc};
 use uuid::Uuid;
 
+#[cfg(unix)]
+mod live;
+
 #[gpui::test]
 fn selecting_a_group_shows_exact_member_identity_without_changing_the_document(
     cx: &mut gpui::TestAppContext,
