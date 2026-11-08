@@ -4471,7 +4471,7 @@ HERDR_TEST_BINARY=C:/path/to/herdr.exe cargo test -p sheprd-gpui --test accessib
 Still missing, and not faked with labels that do nothing:
 
 - inside the larger dialogs and pickers (Add Device, the command palette's
-  results, themes, checkpoints, fan-out, teleport, pull requests), most rows
+  results, themes, fan-out, teleport, pull requests), most rows
   and buttons other than the shared field have no role yet, so a screen reader
   hears the dialog's name and its field but not every choice in it;
 - the Orchestrator's detail pane, conversation, and dispatch dialogs, and the

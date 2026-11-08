@@ -9,7 +9,6 @@ menu-page-install-the-agent-skill = Install the agent skill
 menu-page-menu = Menu
 menu-page-update = Update
 menu-page-move-pane-to-another-device = Move pane to another device
-menu-page-checkpoints = Checkpoints
 menu-page-close = Close
 menu-page-devices = Devices
 menu-page-device-theme = Device theme

@@ -5,7 +5,6 @@
 
 use super::{Flash, SheprdWindow};
 use crate::checkpoint;
-use crate::i18n::{Localize, fl};
 use gpui::Context;
 
 impl SheprdWindow {
@@ -100,9 +99,8 @@ impl SheprdWindow {
     }
 
     /// Agent turns are watched on every enabled, connected host this client
-    /// may run Git on, and finished restores are reported wherever the user is.
+    /// may run Git on.
     pub(super) fn update_checkpoints(&mut self, cx: &mut Context<Self>) {
-        self.close_stale_checkpoints();
         let enabled = self.config.agent_checkpoints;
         let mut watched = Vec::new();
         for (index, endpoint) in self.endpoints.iter().enumerate() {
@@ -124,17 +122,7 @@ impl SheprdWindow {
         }
         self.checkpoints
             .retain_endpoints(|endpoint| watched.contains(&endpoint));
-        let (changed, restored) = self.checkpoints.poll();
-        for restored in restored {
-            let flash = match restored.result {
-                Ok(()) => Flash::success(fl!(
-                    "window-notices-checkpoint-restored",
-                    branch = restored.checkout.branch
-                )),
-                Err(error) => Flash::warning(not_restored(&error)),
-            };
-            self.show_flash(flash, cx);
-        }
+        let (changed, _) = self.checkpoints.poll();
         if changed {
             cx.notify();
         }
@@ -190,29 +178,3 @@ impl SheprdWindow {
         }
     }
 }
-
-/// Why a restore failed: the error's message, then the cause a failed Git
-/// script or checkpoint worker carries, so Git's own output or the SSH
-/// failure stays in view. Git's and GitHub's own errors already keep their
-/// output in their messages.
-pub(super) fn not_restored(error: &sheprd_vcs::Error) -> String {
-    let cause = match error {
-        sheprd_vcs::Error::Checkpoint(checkpoint::Error::Script(cause)) => cause.localize(),
-        // The system's own words, kept as they are in every language.
-        sheprd_vcs::Error::Checkpoint(checkpoint::Error::Thread(cause)) => cause.to_string(),
-        _ => {
-            return fl!(
-                "window-notices-checkpoint-not-restored",
-                error = error.localize()
-            );
-        }
-    };
-    fl!(
-        "window-notices-checkpoint-not-restored-cause",
-        error = error.localize(),
-        cause = cause
-    )
-}
-
-#[cfg(test)]
-mod tests;

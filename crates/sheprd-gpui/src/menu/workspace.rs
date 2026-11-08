@@ -645,9 +645,6 @@ impl SheprdWindow {
             }
         }
         items.push((Dialog(WorkspaceAction::Close), target.close_label()));
-        if self.checkpoint_checkout().is_some() {
-            items.push((WorkspaceMenuAction::Checkpoints, Label::CHECKPOINTS));
-        }
         if self.note_checkout().is_some() {
             items.push((Dialog(WorkspaceAction::Note), Label::NOTE));
         }
@@ -895,7 +892,6 @@ impl SheprdWindow {
             WorkspaceMenuAction::GoToTeleported => self.go_to_teleported(window, cx),
             WorkspaceMenuAction::TeleportBack => self.teleport_back(window, cx),
             WorkspaceMenuAction::ClearTeleported => self.clear_teleport_mark(window, cx),
-            WorkspaceMenuAction::Checkpoints => self.open_checkpoints(window, cx),
             WorkspaceMenuAction::FanOut => self.open_fan_out(window, cx),
             WorkspaceMenuAction::Script(kind) => self.run_workspace_script(kind, window, cx),
             #[cfg(feature = "cloud")]

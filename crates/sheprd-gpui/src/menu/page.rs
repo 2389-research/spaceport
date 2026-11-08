@@ -27,8 +27,6 @@ pub(crate) enum Page {
     /// Reviewing, then following, a move of the pane menu's pane to another
     /// device.
     CarryPane,
-    /// A checkout's agent checkpoints, and restoring one.
-    Checkpoints,
     ConfirmClose,
     CoreWorkspaceActions,
     CoreWorkspaceCreate,
@@ -128,7 +126,6 @@ pub(crate) enum WorkspaceMenuAction {
     GoToTeleported,
     /// Forget that this checkout's work was teleported away.
     ClearTeleported,
-    Checkpoints,
     /// Send one prompt to several agents, or reopen their comparison.
     FanOut,
     /// Run one of the repository's worktree scripts in a new tab.
@@ -213,7 +210,6 @@ impl WorkspaceMenuAction {
             Self::Teleport | Self::GoToTeleported => "icons/teleport.svg",
             Self::TeleportBack => "icons/teleport-back.svg",
             Self::ClearTeleported => "icons/x.svg",
-            Self::Checkpoints => "icons/refresh.svg",
             Self::FanOut => "icons/fan-out.svg",
             Self::Orchestrator => "icons/github.svg",
             #[cfg(feature = "cloud")]

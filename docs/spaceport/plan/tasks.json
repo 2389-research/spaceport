@@ -45,7 +45,12 @@
       ],
       "deliverable": "Pin source/toolchain; generate actual feature/dependency/capability evidence and isolated baseline. No broad code deletion.",
       "status": "done",
-      "evidence": ["evidence/t00-baseline.md", "evidence/t00-dependencies.json", "evidence/t00-core-runtime.json", "evidence/t00-capture-cleanup.md"],
+      "evidence": [
+        "evidence/t00-baseline.md",
+        "evidence/t00-dependencies.json",
+        "evidence/t00-core-runtime.json",
+        "evidence/t00-capture-cleanup.md"
+      ],
       "must_close_gaps": []
     },
     {
@@ -76,7 +81,9 @@
       ],
       "deliverable": "Separate names/state/control endpoint from upstream; preserve compatibility and attribution. Production values remain gated.",
       "status": "in_progress",
-      "evidence": ["evidence/t01-identity.md"],
+      "evidence": [
+        "evidence/t01-identity.md"
+      ],
       "must_close_gaps": []
     },
     {
@@ -107,15 +114,35 @@
         "S10",
         "S12"
       ],
-      "gaps": ["G-MACHINE"],
+      "gaps": [
+        "G-MACHINE"
+      ],
       "read": [
         "docs/01-herdr-contract.md",
         "docs/06-security-and-resources.md"
       ],
       "deliverable": "Typed Core calls/streams/capabilities with no legacy fallback or parallel remote manager.",
       "status": "blocked",
-      "evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t02-startup.md", "evidence/t02-machine-add.md", "evidence/t02-remote-fixture.md", "evidence/t02-remote-fixture.log", "evidence/t02-machine-connect.md", "evidence/t02-document-route.md", "evidence/t02-document-events.md", "evidence/t02-machine-catalog-edits.md", "evidence/t02-observation-batch.md", "evidence/t02-machine-ui.md", "evidence/t02-machine-identity-gap.md", "evidence/t02-refusal-hint.md", "evidence/t02-core-add-ui.md"],
-      "must_close_gaps": ["G-MACHINE"]
+      "evidence": [
+        "evidence/t02-core-boundary.md",
+        "evidence/t02-live-core.log",
+        "evidence/t02-startup.md",
+        "evidence/t02-machine-add.md",
+        "evidence/t02-remote-fixture.md",
+        "evidence/t02-remote-fixture.log",
+        "evidence/t02-machine-connect.md",
+        "evidence/t02-document-route.md",
+        "evidence/t02-document-events.md",
+        "evidence/t02-machine-catalog-edits.md",
+        "evidence/t02-observation-batch.md",
+        "evidence/t02-machine-ui.md",
+        "evidence/t02-machine-identity-gap.md",
+        "evidence/t02-refusal-hint.md",
+        "evidence/t02-core-add-ui.md"
+      ],
+      "must_close_gaps": [
+        "G-MACHINE"
+      ]
     },
     {
       "id": "T03",
@@ -151,7 +178,13 @@
       ],
       "deliverable": "Migrate readers from legacy snapshots; implement namespaced versioned presentation documents and local view preferences.",
       "status": "in_progress",
-      "evidence": ["evidence/t03-workspace-document.md", "evidence/t03-observation.md", "evidence/t03-document-edits.md", "evidence/t03-workspace-ui.md", "evidence/t03-remote-document-route.md"],
+      "evidence": [
+        "evidence/t03-workspace-document.md",
+        "evidence/t03-observation.md",
+        "evidence/t03-document-edits.md",
+        "evidence/t03-workspace-ui.md",
+        "evidence/t03-remote-document-route.md"
+      ],
       "must_close_gaps": []
     },
     {
@@ -179,15 +212,61 @@
         "S08",
         "S09"
       ],
-      "gaps": ["G-LINK"],
+      "gaps": [
+        "G-LINK"
+      ],
       "read": [
         "docs/03-fork-and-deletion.md",
         "docs/06-security-and-resources.md"
       ],
       "deliverable": "Delete IDE/Git/GitHub/browser/cloud/Teleport/orchestration/mod/scheduler surfaces and dependencies in coherent units.",
       "status": "blocked",
-      "evidence": ["evidence/t04-terminal-annotations.md", "evidence/t04-client-mods.md", "evidence/t04-legacy-plugin-settings-removal.md", "evidence/t04-legacy-plugin-command-routes.md", "evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-legacy-plugin-dependency.md", "evidence/t04-phone-dependency.md", "evidence/t04-mobile-publication.md", "evidence/t10-ios-source.md", "evidence/t04-device-discovery.md", "evidence/t04-automation-dependency.md", "evidence/t04-browser-dependency.md", "evidence/t04-browser-system-open.md", "evidence/t04-browser-direct-page.md", "evidence/t04-browser-control-open.md", "evidence/t04-browser-remote-shim.md", "evidence/t04-ide-terminal-links.md", "evidence/t04-code-open-route.md", "evidence/t04-code-edit-route.md", "evidence/t04-code-ui-dependency.md", "evidence/t04-saved-vscode-migration.md", "evidence/t04-source-view-removal.md", "evidence/t04-cli-source-search-removal.md", "evidence/t04-code-index-removal.md", "evidence/t04-terminal-editor-removal.md", "evidence/t04-review-control-removal.md", "evidence/t04-native-review-removal.md", "evidence/t04-orchestrator-control-removal.md", "evidence/t04-legacy-launch-flags.md", "evidence/t04-legacy-window-session.md", "evidence/t04-default-bridge-dependency.md", "evidence/t04-legacy-install-offer.md", "evidence/t04-cloud-teleport-dependency.md", "evidence/t04-git-ide-dispatch-dependency.md", "evidence/t04-code-server-dependency.md", "evidence/t04-automation-removal.md", "evidence/t04-provider-dependency.md", "evidence/t04-daytona-dispatch-removal.md", "evidence/t04-checkpoint-cli-removal.md", "evidence/t05-core-default-observation.md"],
-      "must_close_gaps": ["G-LINK"]
+      "evidence": [
+        "evidence/t04-terminal-annotations.md",
+        "evidence/t04-client-mods.md",
+        "evidence/t04-legacy-plugin-settings-removal.md",
+        "evidence/t04-legacy-plugin-command-routes.md",
+        "evidence/t04-legacy-plugin-link-dependency.md",
+        "evidence/t04-legacy-plugin-dependency.md",
+        "evidence/t04-phone-dependency.md",
+        "evidence/t04-mobile-publication.md",
+        "evidence/t10-ios-source.md",
+        "evidence/t04-device-discovery.md",
+        "evidence/t04-automation-dependency.md",
+        "evidence/t04-browser-dependency.md",
+        "evidence/t04-browser-system-open.md",
+        "evidence/t04-browser-direct-page.md",
+        "evidence/t04-browser-control-open.md",
+        "evidence/t04-browser-remote-shim.md",
+        "evidence/t04-ide-terminal-links.md",
+        "evidence/t04-code-open-route.md",
+        "evidence/t04-code-edit-route.md",
+        "evidence/t04-code-ui-dependency.md",
+        "evidence/t04-saved-vscode-migration.md",
+        "evidence/t04-source-view-removal.md",
+        "evidence/t04-cli-source-search-removal.md",
+        "evidence/t04-code-index-removal.md",
+        "evidence/t04-terminal-editor-removal.md",
+        "evidence/t04-review-control-removal.md",
+        "evidence/t04-native-review-removal.md",
+        "evidence/t04-orchestrator-control-removal.md",
+        "evidence/t04-legacy-launch-flags.md",
+        "evidence/t04-legacy-window-session.md",
+        "evidence/t04-default-bridge-dependency.md",
+        "evidence/t04-legacy-install-offer.md",
+        "evidence/t04-cloud-teleport-dependency.md",
+        "evidence/t04-git-ide-dispatch-dependency.md",
+        "evidence/t04-code-server-dependency.md",
+        "evidence/t04-automation-removal.md",
+        "evidence/t04-provider-dependency.md",
+        "evidence/t04-daytona-dispatch-removal.md",
+        "evidence/t04-checkpoint-cli-removal.md",
+        "evidence/t04-checkpoint-ui-removal.md",
+        "evidence/t05-core-default-observation.md"
+      ],
+      "must_close_gaps": [
+        "G-LINK"
+      ]
     },
     {
       "id": "T05",
@@ -226,7 +305,12 @@
       ],
       "deliverable": "Local/remote Core terminal attach, input and window lifecycle through retained renderer; process survival proved.",
       "status": "in_progress",
-      "evidence": ["evidence/t05-core-lifecycle.md", "evidence/t05-core-observer.md", "evidence/t05-core-default-observation.md", "evidence/t05-explicit-termination.md"],
+      "evidence": [
+        "evidence/t05-core-lifecycle.md",
+        "evidence/t05-core-observer.md",
+        "evidence/t05-core-default-observation.md",
+        "evidence/t05-explicit-termination.md"
+      ],
       "must_close_gaps": []
     },
     {
@@ -265,7 +349,10 @@
       ],
       "deliverable": "Keep renderer/host adapter where valid; remove desktop-owned conversion/resume/config; prove route or record blocked parity.",
       "status": "blocked",
-      "evidence": ["evidence/external-core-dependencies.md", "evidence/t06-local-adapter-route.md"],
+      "evidence": [
+        "evidence/external-core-dependencies.md",
+        "evidence/t06-local-adapter-route.md"
+      ],
       "must_close_gaps": [
         "G-CHAT"
       ]
@@ -307,7 +394,13 @@
       ],
       "deliverable": "Preserve host/file/service UX through verified Core routes; no public rebinding or parallel transport workaround.",
       "status": "blocked",
-      "evidence": ["evidence/external-core-dependencies.md", "evidence/t07-file-route.md", "evidence/t07-terminal-put.md", "evidence/t02-machine-identity-gap.md", "evidence/t04-browser-dependency.md"],
+      "evidence": [
+        "evidence/external-core-dependencies.md",
+        "evidence/t07-file-route.md",
+        "evidence/t07-terminal-put.md",
+        "evidence/t02-machine-identity-gap.md",
+        "evidence/t04-browser-dependency.md"
+      ],
       "must_close_gaps": [
         "G-PORT",
         "G-FILE",
@@ -352,7 +445,10 @@
       ],
       "deliverable": "Existing timeline and notifications consume authoritative data; usage/job gaps explicit; no background service.",
       "status": "blocked",
-      "evidence": ["evidence/t04-automation-dependency.md", "evidence/t08-observability.md"],
+      "evidence": [
+        "evidence/t04-automation-dependency.md",
+        "evidence/t08-observability.md"
+      ],
       "must_close_gaps": [
         "G-OBS"
       ]
@@ -400,7 +496,9 @@
       ],
       "deliverable": "One catalog for existing GUI/CLI; exact targets, bounded observations, honest outcomes and preserved confirmations.",
       "status": "in_progress",
-      "evidence": ["evidence/t09-core-catalog-status.md"],
+      "evidence": [
+        "evidence/t09-core-catalog-status.md"
+      ],
       "must_close_gaps": []
     },
     {
@@ -443,7 +541,17 @@
       ],
       "deliverable": "Remove all excluded reachable behavior and packaged services after necessary pure primitives are extracted.",
       "status": "in_progress",
-      "evidence": ["evidence/t04-phone-dependency.md", "evidence/t04-mobile-publication.md", "evidence/t10-ios-source.md", "evidence/t10-device-tags-dependency.md", "evidence/t10-phone-removal.md", "evidence/t10-phone-dependencies.md", "evidence/t10-phone-fixtures.md", "evidence/t10-phone-wire.md", "evidence/t10-a31-native-inventory.md"],
+      "evidence": [
+        "evidence/t04-phone-dependency.md",
+        "evidence/t04-mobile-publication.md",
+        "evidence/t10-ios-source.md",
+        "evidence/t10-device-tags-dependency.md",
+        "evidence/t10-phone-removal.md",
+        "evidence/t10-phone-dependencies.md",
+        "evidence/t10-phone-fixtures.md",
+        "evidence/t10-phone-wire.md",
+        "evidence/t10-a31-native-inventory.md"
+      ],
       "must_close_gaps": []
     },
     {
@@ -540,7 +648,13 @@
       ],
       "deliverable": "Owner-controlled signed packages and updates; no publishing without authorization; all product gates reconciled.",
       "status": "blocked",
-      "evidence": ["evidence/release-identity-audit.md", "evidence/t12-external-core-package.md", "evidence/t12-cli-guide-correction.md", "evidence/native-platform-results.md", "evidence/t12-upstream-site-mirrors.md"],
+      "evidence": [
+        "evidence/release-identity-audit.md",
+        "evidence/t12-external-core-package.md",
+        "evidence/t12-cli-guide-correction.md",
+        "evidence/native-platform-results.md",
+        "evidence/t12-upstream-site-mirrors.md"
+      ],
       "must_close_gaps": [
         "G-RELEASE",
         "G-PLATFORM"

@@ -40,10 +40,3 @@ window-notices-shift-select = Hold Shift and drag to select text
 window-notices-diagnostic-app = Sheprd
 window-notices-diagnostic-copied = Copied the command
 window-notices-diagnostic-full = Full message
-
-# A checkpoint restore finished in the background: $branch is the
-# checkout's branch, $error why it failed.
-window-notices-checkpoint-restored = Restored a checkpoint of { $branch }
-window-notices-checkpoint-not-restored = Checkpoint not restored: { $error }
-# $cause is what the failed Git commands or worker reported.
-window-notices-checkpoint-not-restored-cause = Checkpoint not restored: { $error }: { $cause }

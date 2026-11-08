@@ -18,7 +18,6 @@ pub(crate) struct Label(&'static str);
 
 impl Label {
     // keep-sorted start
-    pub(crate) const CHECKPOINTS: Self = Self::new("worktree-popover-checkpoints");
     pub(crate) const CLEAR_TELEPORTED: Self = Self::new("worktree-popover-clear-teleported");
     pub(crate) const CLOSE: Self = Self::new("worktree-popover-close");
     pub(crate) const CLOSE_GROUP: Self = Self::new("worktree-popover-close-group");

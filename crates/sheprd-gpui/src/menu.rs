@@ -4,7 +4,6 @@
 //! it was started under.
 
 mod appear;
-mod checkpoints;
 mod chrome;
 mod colors;
 pub(crate) mod devices;
