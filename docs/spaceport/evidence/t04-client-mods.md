@@ -10,6 +10,8 @@ The source modules, CLI and control protocol, command, config, UI places and sav
 
 The app no longer installs or removes `herdr-mods`. It does not delete any skill already in a personal home: that file may belong to upstream Sheprd or to its author, and the fork has no ownership proof. Remaining exact `sheprd-mods`/`herdr-mods` references outside negative tests are in archival `design/sheprd-website` material; those inventories and the Spaceport deletion contract describe the old feature as source records, not reachable app behavior.
 
+The old skill's `<!-- herdr-gpui-managed-skill v1` marker identifies the upstream installer format, not Spaceport. Both apps use the same `.claude` and `.agents` home paths and the saved choice records no installer ID, file hash, or receipt. Checking that marker before deletion would still risk erasing Sheprd's file. A future cleanup would need a Spaceport-specific receipt or marker created when Spaceport writes a file; this cut writes neither and makes no home-directory change.
+
 Herdr daemon plugin commands and the Settings > Plugins view remain reachable through the legacy Herdr 1 path. They are outside this client-mod runtime cut and are an explicit remaining exclusion gap for the legacy/plugin surface audit. No disabled mod loader is retained.
 
 ## Red and green checks
