@@ -48,6 +48,10 @@ address only for current display facts. It must keep the hub document as the
 single grouping authority. This cut makes no production UI or backend change.
 Final local checks are the focused Core client case, `just format-check`,
 `just check-file-size`, `git diff --check`, and package `spec.py check`.
+After integration at `0beb253c`, the same private two-Core case passed 1/1
+against the merged client with the pinned Core binary. The specification
+package's 21 tool tests and `just format-check` passed. These checks still do
+not exercise a native Core-only tab.
 
 T03 and T05 remain `in_progress`. A08, A09 and A53 remain `not_run`: this slice
 does not offer grouped launch or document assignment after a new run, prove
