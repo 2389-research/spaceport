@@ -418,6 +418,16 @@ fn ui_refuses_same_group_conflict_and_fences_an_uncertain_version(cx: &mut gpui:
     assert_eq!(listed.terminals[0].pid, Some(pid));
 
     wait_document(cx, 2);
+    draw_group(cx, &view);
+    let add = cx.debug_bounds(add_id.clone().leak()).unwrap();
+    assert!(cx.update(|_, app| {
+        let projection = app.global::<observation::Observation>().projection();
+        projection.core_id() == Some(core_id.as_str())
+            && projection
+                .terminals()
+                .iter()
+                .any(|info| info.id.as_str() == terminal.address)
+    }));
     let shared = cx.update(|_, app| EditGuard::begin(app, 2).unwrap());
     let unknown = Err(edit::Error::WriteUnknown {
         version: 2,
@@ -425,8 +435,6 @@ fn ui_refuses_same_group_conflict_and_fences_an_uncertain_version(cx: &mut gpui:
     });
     EditGuard::finish(&shared, 2, &unknown);
     assert!(cx.update(|_, app| EditGuard::blocks(app, 2)));
-    draw_group(cx, &view);
-    let add = cx.debug_bounds(add_id.clone().leak()).unwrap();
     cx.simulate_click(add.center(), Modifiers::default());
     view.read_with(cx, |view, _| {
         assert!(view.core_terminals.workspace_ui.pending.is_none());

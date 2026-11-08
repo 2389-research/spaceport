@@ -77,7 +77,7 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_crud_and_selection_headless_passed; local_membership_ui_disjoint_rebase_and_same_group_refusal_passed_private_core; unknown_outcome_ui_guard_seeded_only; remote_native_and_partial_launch_not_run",
+      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_crud_and_selection_headless_passed; local_membership_ui_disjoint_rebase_and_same_group_refusal_passed_private_core; terminal_run_then_failed_manual_add_keeps_ungrouped_picker_and_pid; unknown_outcome_ui_guard_seeded_only; grouped_launch_partial_result_remote_and_native_not_run",
       "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md", "evidence/t03-workspace-document.md", "evidence/t03-observation.md", "evidence/t03-document-edits.md", "evidence/t03-workspace-ui.md"]
     },
     {
