@@ -72,7 +72,7 @@ fn every_image_variant_has_a_message() {
             path: PathBuf::from("/tmp/images.json"),
             source: io(),
         },
-        image::Error::Context("Daytona"),
+        image::Error::Context("Container"),
         image::Error::Devcontainer(json()),
         image::Error::Field(image::Field::Catalog),
         image::Error::Field(image::Field::ContextPath),
@@ -105,8 +105,6 @@ fn every_provider_delegates() {
         sheprd_remote::coder::Error::Size.into(),
         #[cfg(feature = "container")]
         sheprd_remote::container::Error::NoEngine.into(),
-        #[cfg(feature = "daytona")]
-        sheprd_remote::daytona::Error::Size.into(),
         #[cfg(feature = "opensandbox")]
         sheprd_remote::opensandbox::Error::Size.into(),
         #[cfg(feature = "railway")]

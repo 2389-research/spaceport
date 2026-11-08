@@ -75,7 +75,41 @@ pub struct Entry {
 #[derive(serde::Serialize, serde::Deserialize)]
 struct Document {
     version: u32,
-    projects: Vec<Entry>,
+    projects: Vec<StoredEntry>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct StoredEntry {
+    #[serde(flatten)]
+    project: Project,
+    origin: Origin,
+    #[serde(default)]
+    images: Vec<StoredImage>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+enum StoredImage {
+    Known(Image),
+    Foreign(serde_json::Value),
+}
+
+impl StoredImage {
+    fn valid(&self) -> bool {
+        match self {
+            Self::Known(_) => true,
+            Self::Foreign(value) => value
+                .get("provider")
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|name| {
+                    !name.is_empty()
+                        && name.len() <= 32
+                        && !CloudProvider::ALL
+                            .iter()
+                            .any(|provider| provider.key() == name)
+                }),
+        }
+    }
 }
 
 /// The catalog file tests use instead of the user's, for every thread: this
@@ -97,10 +131,15 @@ fn io(path: &Path) -> impl FnOnce(io::Error) -> Error + '_ {
     }
 }
 
-fn read(path: &Path) -> Result<Vec<Entry>> {
+fn read_document(path: &Path) -> Result<Document> {
     let file = match fs::File::open(path) {
         Ok(file) => file,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return Ok(Document {
+                version: 1,
+                projects: Vec::new(),
+            });
+        }
         Err(error) => return Err(io(path)(error)),
     };
     let mut bytes = Vec::new();
@@ -111,13 +150,81 @@ fn read(path: &Path) -> Result<Vec<Entry>> {
         return Err(Error::Field(Field::Catalog));
     }
     let document: Document = serde_json::from_slice(&bytes).map_err(Error::Json)?;
-    if document.version != 1 || document.projects.len() > MAX_PROJECTS {
+    if document.version != 1
+        || document.projects.len() > MAX_PROJECTS
+        || !document
+            .projects
+            .iter()
+            .flat_map(|entry| &entry.images)
+            .all(StoredImage::valid)
+    {
         return Err(Error::Field(Field::Catalog));
     }
-    Ok(document.projects)
+    Ok(document)
+}
+
+fn read(path: &Path) -> Result<Vec<Entry>> {
+    Ok(read_document(path)?
+        .projects
+        .into_iter()
+        .filter_map(|stored| {
+            let empty = stored.images.is_empty();
+            let images: Vec<_> = stored
+                .images
+                .into_iter()
+                .filter_map(|image| match image {
+                    StoredImage::Known(image) => Some(image),
+                    StoredImage::Foreign(_) => None,
+                })
+                .collect();
+            (empty || !images.is_empty()).then_some(Entry {
+                project: stored.project,
+                origin: stored.origin,
+                images,
+            })
+        })
+        .collect())
 }
 
 fn write(path: &Path, projects: Vec<Entry>) -> Result<()> {
+    let previous = read_document(path)?;
+    let mut stored: Vec<_> = projects
+        .into_iter()
+        .map(|entry| {
+            let mut images: Vec<_> = previous
+                .projects
+                .iter()
+                .filter(|old| old.project.id == entry.project.id)
+                .flat_map(|old| &old.images)
+                .filter_map(|image| match image {
+                    StoredImage::Foreign(value) => Some(StoredImage::Foreign(value.clone())),
+                    StoredImage::Known(_) => None,
+                })
+                .collect();
+            images.extend(entry.images.into_iter().map(StoredImage::Known));
+            StoredEntry {
+                project: entry.project,
+                origin: entry.origin,
+                images,
+            }
+        })
+        .collect();
+    for mut old in previous.projects {
+        if stored
+            .iter()
+            .any(|entry| entry.project.id == old.project.id)
+        {
+            continue;
+        }
+        old.images
+            .retain(|image| matches!(image, StoredImage::Foreign(_)));
+        if !old.images.is_empty() {
+            stored.push(old);
+        }
+    }
+    if stored.len() > MAX_PROJECTS {
+        return Err(Error::Field(Field::Projects));
+    }
     let parent = path.parent().ok_or(Error::StateDirectory)?;
     fs::create_dir_all(parent).map_err(io(parent))?;
     let mut file = tempfile::NamedTempFile::new_in(parent).map_err(io(parent))?;
@@ -125,7 +232,7 @@ fn write(path: &Path, projects: Vec<Entry>) -> Result<()> {
         &mut file,
         &Document {
             version: 1,
-            projects,
+            projects: stored,
         },
     )
     .map_err(Error::Json)?;

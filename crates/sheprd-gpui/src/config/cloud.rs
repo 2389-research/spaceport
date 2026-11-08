@@ -22,7 +22,6 @@ pub struct CloudConfig {
     pub boat: CloudSetup,
     pub coder: CloudSetup,
     pub container: CloudSetup,
-    pub daytona: CloudSetup,
     pub opensandbox: CloudSetup,
     pub railway: CloudSetup,
     /// Shell lines run after the agents, with `sh -e`.
@@ -65,7 +64,6 @@ impl CloudConfig {
             ("boat", &self.boat),
             ("coder", &self.coder),
             ("container", &self.container),
-            ("daytona", &self.daytona),
             ("opensandbox", &self.opensandbox),
             ("railway", &self.railway),
             ("sprites", &self.sprites),
@@ -93,7 +91,6 @@ impl CloudConfig {
         retain("cloud.boat.", &mut self.boat.agents);
         retain("cloud.coder.", &mut self.coder.agents);
         retain("cloud.container.", &mut self.container.agents);
-        retain("cloud.daytona.", &mut self.daytona.agents);
         retain("cloud.opensandbox.", &mut self.opensandbox.agents);
         retain("cloud.railway.", &mut self.railway.agents);
         retain("cloud.sprites.", &mut self.sprites.agents);

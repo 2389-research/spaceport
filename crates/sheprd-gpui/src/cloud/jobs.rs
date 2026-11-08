@@ -61,7 +61,7 @@ impl Jobs {
     }
 
     /// Count a job as finished without running one.
-    #[cfg(all(test, any(feature = "coder", feature = "daytona")))]
+    #[cfg(all(test, feature = "coder"))]
     pub(crate) fn finish_for_test(&mut self) {
         self.finished += 1;
     }

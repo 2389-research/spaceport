@@ -29,6 +29,11 @@ class Page(HTMLParser):
 
 
 class WebsiteTests(unittest.TestCase):
+    def test_retired_daytona_provider_is_absent_from_published_copy(self):
+        for name in ("index.html", "assets/features.js"):
+            with self.subTest(file=name):
+                self.assertNotIn("Daytona", (WEBSITE / name).read_text())
+
     def test_netlify_builds_website_site_from_its_own_config(self):
         config = tomllib.loads((ROOT / "website/netlify.toml").read_text())
         self.assertEqual(config["build"]["publish"], "site")

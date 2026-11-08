@@ -61,6 +61,49 @@ fn origin() -> Origin {
 }
 
 #[test]
+fn retired_daytona_image_is_hidden_and_preserved_beside_container_image() {
+    let dir = isolated();
+    let retired = serde_json::json!({
+        "provider": "daytona",
+        "key": "old",
+        "finished_at": 1,
+        "state": "ready",
+        "reference": "img:old"
+    });
+    let active = serde_json::to_value(ready(CloudProvider::Container, "current")).unwrap();
+    fs::write(
+        dir.file(),
+        serde_json::json!({
+            "version": 1,
+            "projects": [{
+                "id": "p",
+                "label": "app",
+                "origin": origin(),
+                "images": [retired, active]
+            }]
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let visible = load().unwrap();
+    assert_eq!(visible.len(), 1);
+    assert_eq!(visible[0].images.len(), 1);
+    assert_eq!(visible[0].images[0].provider, CloudProvider::Container);
+    record(
+        &project("p"),
+        origin(),
+        ready(CloudProvider::Container, "next"),
+    )
+    .unwrap();
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(dir.file()).unwrap()).unwrap();
+    assert_eq!(saved["projects"][0]["images"][0], retired);
+    assert!(forget("p", CloudProvider::Container).unwrap().is_some());
+    assert!(load().unwrap().is_empty());
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(dir.file()).unwrap()).unwrap();
+    assert_eq!(saved["projects"][0]["images"], serde_json::json!([retired]));
+}
+
+#[test]
 fn one_image_per_project_and_provider_is_kept() {
     let _dir = isolated();
     assert!(load().unwrap().is_empty());
@@ -80,7 +123,6 @@ fn one_image_per_project_and_provider_is_kept() {
     )
     .unwrap();
     assert_eq!(stale, ["img:k1"]);
-    record(&project("p"), origin(), ready(CloudProvider::Daytona, "k3")).unwrap();
     record(
         &project("q"),
         origin(),
@@ -89,7 +131,7 @@ fn one_image_per_project_and_provider_is_kept() {
     .unwrap();
     let projects = load().unwrap();
     assert_eq!(projects.len(), 2);
-    assert_eq!(projects[0].images.len(), 2);
+    assert_eq!(projects[0].images.len(), 1);
     assert_eq!(projects[0].images[0].key, "k2");
     assert_eq!(projects[0].images[0].stale, ["img:k1"]);
     deleted("p", CloudProvider::Container, &["img:k1".into()]).unwrap();
@@ -131,7 +173,6 @@ fn forgetting_the_last_image_forgets_the_project() {
         ready(CloudProvider::Container, "k"),
     )
     .unwrap();
-    assert_eq!(forget("p", CloudProvider::Daytona).unwrap(), None);
     assert_eq!(
         forget("p", CloudProvider::Container).unwrap(),
         Some(ready(CloudProvider::Container, "k"))

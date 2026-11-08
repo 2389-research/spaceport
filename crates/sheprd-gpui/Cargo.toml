@@ -97,7 +97,7 @@ test-case.workspace = true
 libc.workspace = true
 
 [features]
-default = ["azure", "boat", "coder", "container", "daytona", "opensandbox", "railway", "sprites"]
+default = ["azure", "boat", "coder", "container", "opensandbox", "railway", "sprites"]
 # Machines from cloud providers as devices: the shared device list, background
 # jobs, and connector. Turned on by each provider below; not useful alone.
 cloud = ["sheprd-client/cloud", "sheprd-remote/cloud", "sheprd-usage/cloud"]
@@ -110,8 +110,6 @@ boat = ["cloud", "sheprd-client/boat", "sheprd-remote/boat"]
 coder = ["cloud", "sheprd-client/coder", "sheprd-remote/coder"]
 # Containers on this computer's Docker or Podman engine as devices.
 container = ["cloud", "sheprd-client/container", "sheprd-remote/container"]
-# Daytona sandboxes as devices, with an API key and its SSH gateway.
-daytona = ["cloud", "sheprd-client/daytona", "sheprd-remote/daytona"]
 # Railway free VMs as devices, reached over SSH with a saved key identity.
 # Sandboxes on a self-hosted OpenSandbox server as devices, through this app as their exec relay.
 opensandbox = ["cloud", "sheprd-client/opensandbox", "sheprd-remote/opensandbox"]

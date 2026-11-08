@@ -14,7 +14,7 @@ fn every_provider_table_parses_in_every_build() -> anyhow::Result<()> {
     let config = Config::parse(
         "[cloud]\nagents = [\"claude\"]\nsetup = \"echo hi\"\n\
          [cloud.azure]\nagents = [\"codex\"]\n[cloud.boat]\nsetup = \"\"\n[cloud.coder]\nagents = []\n\
-         [cloud.daytona]\nagents = [\"opencode\"]\n[cloud.railway]\nsetup = \"echo rail\"\n",
+         [cloud.railway]\nsetup = \"echo rail\"\n",
     )?;
     assert_eq!(config.cloud.shared_agents(), [Agent::Claude]);
     assert_eq!(config.cloud.shared_setup(), Some("echo hi"));

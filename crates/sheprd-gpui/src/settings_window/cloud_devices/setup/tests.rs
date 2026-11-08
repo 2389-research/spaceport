@@ -18,7 +18,6 @@ fn open(cx: &mut TestAppContext) -> (Entity<SettingsWindow>, &mut VisualTestCont
         view.update(cx, |view, cx| {
             view.config.boat = Default::default();
             view.config.coder = Default::default();
-            view.config.daytona = Default::default();
             view.config.cloud = Default::default();
             view.select_section(Section::CloudDevices, window, cx);
         })

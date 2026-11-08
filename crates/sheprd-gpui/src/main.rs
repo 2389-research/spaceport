@@ -33,14 +33,13 @@ mod close_modal;
         feature = "boat",
         feature = "coder",
         feature = "container",
-        feature = "daytona",
         feature = "opensandbox",
         feature = "railway",
         feature = "sprites"
     ))
 ))]
 compile_error!(
-    "the `cloud` feature is enabled through a provider feature, such as `azure`, `boat`, `coder`, `container`, `daytona`, `opensandbox`, `railway`, or `sprites`"
+    "the `cloud` feature is enabled through a provider feature, such as `azure`, `boat`, `coder`, `container`, `opensandbox`, `railway`, or `sprites`"
 );
 #[cfg(feature = "cloud")]
 mod cloud;
@@ -195,8 +194,6 @@ use sheprd_remote::boat;
 use sheprd_remote::coder;
 #[cfg(feature = "container")]
 use sheprd_remote::container;
-#[cfg(feature = "daytona")]
-use sheprd_remote::daytona;
 #[cfg(feature = "opensandbox")]
 use sheprd_remote::opensandbox;
 #[cfg(feature = "railway")]

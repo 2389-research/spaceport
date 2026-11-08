@@ -79,8 +79,6 @@ pub enum CloudProvider {
     Coder,
     #[cfg(feature = "container")]
     Container,
-    #[cfg(feature = "daytona")]
-    Daytona,
     #[cfg(feature = "opensandbox")]
     OpenSandbox,
     #[cfg(feature = "railway")]
@@ -95,8 +93,6 @@ impl CloudProvider {
     pub const ALL: &[Self] = &[
         #[cfg(feature = "coder")]
         Self::Coder,
-        #[cfg(feature = "daytona")]
-        Self::Daytona,
         #[cfg(feature = "railway")]
         Self::Railway,
         #[cfg(feature = "boat")]
@@ -122,8 +118,6 @@ impl CloudProvider {
             Self::Coder => "coder",
             #[cfg(feature = "container")]
             Self::Container => "container",
-            #[cfg(feature = "daytona")]
-            Self::Daytona => "daytona",
             #[cfg(feature = "opensandbox")]
             Self::OpenSandbox => "opensandbox",
             #[cfg(feature = "railway")]

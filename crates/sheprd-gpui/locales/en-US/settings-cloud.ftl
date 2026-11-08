@@ -56,11 +56,7 @@ settings-cloud-setup-edit = Edit setup script in config file
 ## Images: each project's sandbox image at a provider.
 
 settings-cloud-images = Images
-# $provider is the provider's config key, which picks what it calls a machine.
-settings-cloud-images-note = { $provider ->
-        [daytona] Each project's image, built from its .herdr/sandbox/Dockerfile or dev container with Herdr added. A new sandbox for a project starts from its image, and a changed recipe builds a new one. Build ahead from a workspace's menu with Build sandbox images.
-       *[other] Each project's image, built from its .herdr/sandbox/Dockerfile or dev container with Herdr added. A new container for a project starts from its image, and a changed recipe builds a new one. Build ahead from a workspace's menu with Build sandbox images.
-    }
+settings-cloud-images-note = Each project's image, built from its .herdr/sandbox/Dockerfile or dev container with Herdr added. A new container for a project starts from its image, and a changed recipe builds a new one. Build ahead from a workspace's menu with Build sandbox images.
 # $project is the project's name, $path its folder.
 settings-cloud-image-build-error = { $project }: { $error } Open { $path } in a window to build its image.
 settings-cloud-image-no-window = Open a main Sheprd window to build images.

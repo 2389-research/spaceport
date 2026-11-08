@@ -1,7 +1,6 @@
 //! Bounded HTTP against the Sprites API: a size-capped reader, redirects
 //! refused, a sensitive bearer header, and failures reduced to one short
 //! line of the reply so a hostile endpoint cannot flood the UI or the log.
-//! The same policy as Daytona's client; only the error type and wording differ.
 
 use super::{Error, Result, Settings, Status};
 use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretString};

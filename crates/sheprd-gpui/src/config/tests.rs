@@ -48,6 +48,7 @@ mod removed_mods;
 mod removed_phone;
 mod repository_icons;
 mod retired_boxd;
+mod retired_daytona;
 mod retired_ide;
 mod retired_terminal_editor;
 mod sidebar_scope;

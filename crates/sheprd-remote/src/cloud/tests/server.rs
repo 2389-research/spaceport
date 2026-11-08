@@ -15,7 +15,7 @@ pub struct Request {
     pub target: String,
     pub authorization: Option<String>,
     /// The raw request head, for checks on headers other than `Authorization`.
-    #[cfg_attr(not(feature = "daytona"), allow(dead_code))]
+    #[allow(dead_code)]
     pub headers: String,
     pub body: String,
 }

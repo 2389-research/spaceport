@@ -9,8 +9,8 @@
 mod catalog;
 mod command;
 pub mod exec;
-// Only containers and Daytona hold images so far.
-#[cfg_attr(not(any(feature = "container", feature = "daytona")), allow(dead_code))]
+// Containers hold images for saved projects.
+#[cfg_attr(not(feature = "container"), allow(dead_code))]
 pub mod image;
 pub mod install;
 pub mod names;
@@ -102,12 +102,7 @@ pub fn unavailable() -> Option<&'static str> {
 /// What a job reports while it adds a machine, in words every provider shares.
 // Railway reports only the steps it has; the rest belong to the others.
 #[cfg_attr(
-    not(any(
-        feature = "azure",
-        feature = "boat",
-        feature = "coder",
-        feature = "daytona"
-    )),
+    not(any(feature = "azure", feature = "boat", feature = "coder",)),
     allow(dead_code)
 )]
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -147,7 +142,7 @@ impl Step {
 /// saved would otherwise leave the machine billing with no saved device to
 /// find it by. A failed delete is logged; `finish`'s error is returned
 /// either way.
-#[cfg_attr(not(any(feature = "coder", feature = "daytona")), allow(dead_code))]
+#[cfg_attr(not(feature = "coder"), allow(dead_code))]
 pub fn discard_on_error<T>(
     provider: CloudProvider,
     id: &str,

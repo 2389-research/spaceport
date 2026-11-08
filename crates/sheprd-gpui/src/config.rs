@@ -21,7 +21,6 @@ mod cloud;
 mod coder;
 mod container;
 mod daemon;
-mod daytona;
 mod devices;
 mod edit;
 mod error;
@@ -52,7 +51,6 @@ pub(crate) mod tab_layout;
     feature = "boat",
     feature = "coder",
     feature = "container",
-    feature = "daytona",
     feature = "opensandbox",
     feature = "sprites"
 ))]
@@ -111,9 +109,6 @@ pub(crate) use sheprd_remote::config::CoderFields;
 pub use sheprd_remote::config::ContainerConfig;
 #[cfg(feature = "container")]
 pub(crate) use sheprd_remote::config::ContainerFields;
-pub use sheprd_remote::config::DaytonaConfig;
-#[cfg(feature = "daytona")]
-pub(crate) use sheprd_remote::config::DaytonaFields;
 pub use sheprd_remote::config::OpenSandboxConfig;
 #[cfg(feature = "opensandbox")]
 pub(crate) use sheprd_remote::config::OpenSandboxFields;
@@ -187,7 +182,6 @@ pub struct Config {
     pub container: ContainerConfig,
     /// How far the app's own marks and labels stand off its chrome.
     pub contrast: Contrast,
-    pub daytona: DaytonaConfig,
     /// Per saved device, by catalog profile ID.
     pub(crate) devices: BTreeMap<String, DeviceSettings>,
     /// A bar on the leading edge of each working, blocked, or done row,
@@ -340,7 +334,6 @@ impl Default for Config {
             confirm_close_workspace: true,
             container: ContainerConfig::default(),
             contrast: Contrast::default(),
-            daytona: DaytonaConfig::default(),
             devices: BTreeMap::new(),
             edge_rail: false,
             favorite_themes: Vec::new(),
@@ -424,7 +417,6 @@ struct Settings {
     confirm_close_workspace: Option<bool>,
     container: ContainerConfig,
     contrast: Contrast,
-    daytona: DaytonaConfig,
     devices: BTreeMap<String, DeviceSettings>,
     edge_rail: Option<bool>,
     favorite_themes: Vec<String>,
@@ -511,7 +503,6 @@ impl Config {
             boat: config.boat,
             coder: config.coder,
             container: config.container,
-            daytona: config.daytona,
             opensandbox: config.opensandbox,
             sprites: config.sprites,
         })
@@ -754,9 +745,6 @@ impl Config {
         #[cfg(feature = "container")]
         settings.container.settings()?;
         config.container = settings.container;
-        #[cfg(feature = "daytona")]
-        settings.daytona.settings_with(|_| None)?;
-        config.daytona = settings.daytona;
         #[cfg(feature = "opensandbox")]
         settings.opensandbox.settings_with(|_| None)?;
         config.opensandbox = settings.opensandbox;

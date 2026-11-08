@@ -51,7 +51,6 @@ azure = ["cloud", "sheprd-client/azure", "dep:rustls", "dep:tungstenite", "dep:w
 boat = ["cloud", "sheprd-client/boat"]
 coder = ["cloud", "sheprd-client/coder"]
 container = ["cloud", "sheprd-client/container"]
-daytona = ["cloud", "sheprd-client/daytona"]
 # Sandboxes on a self-hosted OpenSandbox server, with this app as their exec relay.
 opensandbox = ["cloud", "sheprd-client/opensandbox", "dep:rustls", "dep:tungstenite", "dep:webpki-roots"]
 railway = ["cloud", "sheprd-client/railway"]

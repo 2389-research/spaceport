@@ -19,7 +19,6 @@ pub(super) fn invalid(value: Value) -> String {
     feature = "azure",
     feature = "boat",
     feature = "coder",
-    feature = "daytona",
     feature = "opensandbox",
     feature = "sprites"
 ))]
@@ -51,9 +50,6 @@ fn selector(value: Value) -> &'static str {
         Value::CoderIdentifier => "coder-identifier",
         Value::CoderWorkspace => "coder-workspace",
         Value::ContainerEngine => "container-engine",
-        Value::DaytonaApiKey => "daytona-api-key",
-        Value::DaytonaSandboxId => "daytona-sandbox-id",
-        Value::DaytonaSnapshot => "daytona-snapshot",
         Value::ExecSessionId => "exec-session-id",
         Value::ExecdEndpoint => "execd-endpoint",
         Value::OpenSandboxApiKey => "opensandbox-api-key",

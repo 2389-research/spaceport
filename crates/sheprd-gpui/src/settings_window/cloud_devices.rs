@@ -12,9 +12,7 @@ mod boat;
 mod coder;
 #[cfg(feature = "container")]
 mod container;
-#[cfg(feature = "daytona")]
-mod daytona;
-#[cfg(any(feature = "container", feature = "daytona"))]
+#[cfg(feature = "container")]
 mod images;
 #[cfg(feature = "opensandbox")]
 mod opensandbox;
@@ -32,9 +30,7 @@ pub(super) use boat::BoatCard;
 pub(super) use coder::CoderCard;
 #[cfg(feature = "container")]
 pub(super) use container::ContainerCard;
-#[cfg(feature = "daytona")]
-pub(super) use daytona::DaytonaCard;
-#[cfg(any(feature = "container", feature = "daytona"))]
+#[cfg(feature = "container")]
 pub(super) use images::SandboxImages;
 #[cfg(feature = "opensandbox")]
 pub(super) use opensandbox::OpenSandboxCard;
@@ -104,24 +100,14 @@ fn input(
 
 /// A field's placeholder: a message, or a value shown as it is, such as a
 /// default URL or image.
-#[cfg(any(
-    feature = "boat",
-    feature = "coder",
-    feature = "container",
-    feature = "daytona"
-))]
+#[cfg(any(feature = "boat", feature = "coder", feature = "container",))]
 #[derive(Clone, Copy, Debug)]
 enum Hint {
     Message(&'static str),
     Value(&'static str),
 }
 
-#[cfg(any(
-    feature = "boat",
-    feature = "coder",
-    feature = "container",
-    feature = "daytona"
-))]
+#[cfg(any(feature = "boat", feature = "coder", feature = "container",))]
 impl Hint {
     fn text(self) -> String {
         match self {
@@ -139,7 +125,6 @@ impl Hint {
     feature = "boat",
     feature = "coder",
     feature = "container",
-    feature = "daytona",
     feature = "opensandbox",
     feature = "sprites"
 ))]
@@ -191,8 +176,6 @@ impl SettingsWindow {
                 CloudProvider::Coder => self.open_coder_card(cx),
                 #[cfg(feature = "container")]
                 CloudProvider::Container => self.open_container_card(cx),
-                #[cfg(feature = "daytona")]
-                CloudProvider::Daytona => self.open_daytona_card(cx),
                 #[cfg(feature = "railway")]
                 CloudProvider::Railway => self.open_railway_card(cx),
                 #[cfg(feature = "opensandbox")]
@@ -216,8 +199,6 @@ impl SettingsWindow {
                 CloudProvider::Coder => self.coder_config_changed(cx),
                 #[cfg(feature = "container")]
                 CloudProvider::Container => self.container_config_changed(cx),
-                #[cfg(feature = "daytona")]
-                CloudProvider::Daytona => self.daytona_config_changed(cx),
                 #[cfg(feature = "railway")]
                 CloudProvider::Railway => self.railway_config_changed(cx),
                 #[cfg(feature = "opensandbox")]
@@ -287,8 +268,6 @@ impl SettingsWindow {
             CloudProvider::Coder => self.render_coder_card(cx),
             #[cfg(feature = "container")]
             CloudProvider::Container => self.render_container_card(cx),
-            #[cfg(feature = "daytona")]
-            CloudProvider::Daytona => self.render_daytona_card(cx),
             #[cfg(feature = "railway")]
             CloudProvider::Railway => self.render_railway_card(cx),
             #[cfg(feature = "opensandbox")]
@@ -366,7 +345,6 @@ impl SettingsWindow {
         feature = "boat",
         feature = "coder",
         feature = "container",
-        feature = "daytona",
         feature = "opensandbox",
         feature = "railway",
         feature = "sprites"
@@ -388,7 +366,6 @@ impl SettingsWindow {
         feature = "boat",
         feature = "coder",
         feature = "container",
-        feature = "daytona",
         feature = "opensandbox",
         feature = "railway",
         feature = "sprites"
@@ -426,7 +403,6 @@ impl SettingsWindow {
         feature = "boat",
         feature = "coder",
         feature = "container",
-        feature = "daytona",
         feature = "opensandbox",
         feature = "railway",
         feature = "sprites"

@@ -12,8 +12,6 @@ mod cloud;
 mod coder;
 #[cfg(feature = "container")]
 mod container;
-#[cfg(feature = "daytona")]
-mod daytona;
 #[cfg(feature = "opensandbox")]
 mod opensandbox;
 #[cfg(feature = "railway")]

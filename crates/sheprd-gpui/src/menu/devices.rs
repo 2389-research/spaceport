@@ -115,12 +115,7 @@ impl SheprdWindow {
     #[cfg(feature = "cloud")]
     // Providers that need no setting never read the environment.
     #[cfg_attr(
-        not(any(
-            feature = "azure",
-            feature = "boat",
-            feature = "coder",
-            feature = "daytona"
-        )),
+        not(any(feature = "azure", feature = "boat", feature = "coder",)),
         allow(unused_variables)
     )]
     fn cloud_providers_with_env(
@@ -143,10 +138,6 @@ impl SheprdWindow {
                 #[cfg(feature = "coder")]
                 crate::cloud::CloudProvider::Coder => {
                     self.config.coder.url.is_some() || var("HERDR_CODER_URL").is_some()
-                }
-                #[cfg(feature = "daytona")]
-                crate::cloud::CloudProvider::Daytona => {
-                    self.config.daytona.api_url.is_some() || var("HERDR_DAYTONA_API_URL").is_some()
                 }
                 #[cfg(feature = "opensandbox")]
                 crate::cloud::CloudProvider::OpenSandbox => {

@@ -50,7 +50,7 @@ error-remote-cloud-unavailable = Cloud devices are unavailable on Windows.
 error-remote-cloud-image-busy = Another build of this image is running; wait for it to finish.
 error-remote-cloud-image-cancelled = Cancelled.
 error-remote-cloud-image-catalog = Could not update { $path }: { $error }
-# $provider is a cloud provider's name, such as Daytona. COPY and ADD are
+# $provider is a cloud provider's name, such as Coder. COPY and ADD are
 # Dockerfile instructions.
 error-remote-cloud-image-context = { $provider } cannot copy files into an image yet: remove the recipe's COPY and ADD lines, or use a container.
 error-remote-cloud-image-devcontainer = The dev container definition is not valid JSON.
@@ -82,8 +82,8 @@ error-remote-cloud-socket-header-name = Invalid exec stream header name.
 error-remote-cloud-socket-closed = The exec stream closed before the command finished.
 
 # What a cloud provider refused, for every provider. $key is a setting such
-# as daytona.api_url or an environment variable, as written. Each $value
-# branch is a whole sentence; Azure, Boat, Coder, Daytona, OpenSandbox,
+# as coder.url or an environment variable, as written. Each $value
+# branch is a whole sentence; Azure, Boat, Coder, OpenSandbox,
 # and Sprites are product names, and execd is a program's name.
 error-remote-cloud-value-invalid-key = { $key } is not valid.
 error-remote-cloud-value-invalid = { $value ->
@@ -105,9 +105,6 @@ error-remote-cloud-value-invalid = { $value ->
     [coder-identifier] Coder identifier is not valid.
     [coder-workspace] Coder workspace is not valid.
     [container-engine] Container engine is not valid.
-    [daytona-api-key] Daytona API key is not valid.
-    [daytona-sandbox-id] Daytona sandbox ID is not valid.
-    [daytona-snapshot] Daytona snapshot name is not valid.
     [exec-session-id] Exec session ID is not valid.
     [execd-endpoint] Execd endpoint is not valid.
     [opensandbox-api-key] OpenSandbox API key is not valid.
@@ -138,9 +135,6 @@ error-remote-cloud-value-encoding = { $value ->
     [coder-identifier] Coder identifier must be UTF-8.
     [coder-workspace] Coder workspace must be UTF-8.
     [container-engine] Container engine must be UTF-8.
-    [daytona-api-key] Daytona API key must be UTF-8.
-    [daytona-sandbox-id] Daytona sandbox ID must be UTF-8.
-    [daytona-snapshot] Daytona snapshot name must be UTF-8.
     [exec-session-id] Exec session ID must be UTF-8.
     [execd-endpoint] Execd endpoint must be UTF-8.
     [opensandbox-api-key] OpenSandbox API key must be UTF-8.

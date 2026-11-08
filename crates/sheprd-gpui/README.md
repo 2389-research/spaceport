@@ -349,12 +349,12 @@ edits only the local catalog: the host's own Herdr keeps running. When the
 device has its own GitHub sign-in, the confirmation also offers to delete it,
 since its account panel goes away with the device. Local's menu offers neither.
 
-A cloud device's header (Azure, Boat, Coder, Container, Daytona,
+A cloud device's header (Azure, Boat, Coder, Container,
 OpenSandbox, Railway, or Sprites) has a menu too: **Rename…** changes the name the sidebar
 shows, falling back to the machine's name when left empty; **Cloud device
 settings…** opens its provider under Settings > Cloud devices; and **Remove
-device…** removes it from this computer. For an Azure machine, a Boat,
-Daytona, or OpenSandbox sandbox, a Coder workspace, a container, or a sprite,
+device…** removes it from this computer. For an Azure machine, a Boat or
+OpenSandbox sandbox, a Coder workspace, a container, or a sprite,
 it deletes the machine at the provider by default, with **Remove from Herdr
 only** beside it; a Railway VM is left as it is and expires on its own. Before
 deleting, the dialog searches the machine's home directory for Git checkouts
@@ -455,7 +455,7 @@ the app.
 ### Coder workspaces
 
 Settings > **Cloud devices** holds accounts with providers that create machines
-to use as devices: Azure, Boat, Coder, Container, Daytona, OpenSandbox,
+to use as devices: Azure, Boat, Coder, Container, OpenSandbox,
 Railway, and Sprites.
 Coder's card edits the `[coder]` keys (see `config-gpui.example.toml`), saves the OAuth client secret to the
 credential store rather than the config file, signs in and out, and lists the
@@ -547,27 +547,6 @@ a resume onto a different machine remains strict without trusting a first SSH
 connection. Boat devices need `ssh` and `ssh-keygen` on PATH and are unavailable
 on Windows. The API path is covered by tests against a scripted server, but has
 not yet been exercised against a live Boat account.
-
-### Daytona sandboxes (experimental)
-
-Settings > **Cloud devices** > **Daytona** holds a Daytona account: the API URL
-(`https://app.daytona.io/api` for Daytona's cloud), an optional organization,
-region, and snapshot, saved to `[daytona]`, and an API key saved to the
-credential store (`HERDR_DAYTONA_API_KEY` takes precedence). Settings lists
-saved Daytona devices and can forget one without deleting its sandbox.
-**Daytona** in **Add Device…** (its **Add provider** tile until configured)
-opens this tab. A dispatch can also make a sandbox, from the
-repository's [sandbox image](#sandbox-images) when it has one.
-
-Each connection starts a stopped sandbox, asks the API for a 10-minute SSH
-token for it, and runs Herdr's remote bridge through Daytona's SSH gateway.
-The token goes in a private temporary `ssh` config file that also replaces your
-own, never on the command line. Daytona publishes no host key for its gateway,
-so the first key seen is pinned in `daytona_known_hosts` in the GUI's state
-directory and a changed key is refused. Daytona devices need `ssh` on the PATH
-and are unavailable on Windows. This provider is a proof of concept: the API
-path is covered by tests against a scripted server, but not yet exercised
-against a live Daytona account.
 
 ### Containers (Docker or Podman)
 
@@ -677,8 +656,8 @@ limits its lifetime and how many a network can create. Needs
 
 ### Sandbox images
 
-A project can describe the machine its agents need, so a new container or
-Daytona sandbox for it starts with its tools and Herdr already installed.
+A project can describe the machine its agents need, so a new container for it
+starts with its tools and Herdr already installed.
 Commit a Dockerfile as `.herdr/sandbox/Dockerfile`, with that folder as its
 build context:
 
@@ -707,7 +686,7 @@ image tag that moves upstream does not change the key: pin a digest, or use
 A dispatch to a new container or sandbox builds the image first when it is
 missing, and the dialog shows the build's steps. **Build sandbox images** in a
 workspace's menu builds ahead, for every provider you have a device from that
-holds images. Settings > **Cloud devices** > **Container** or **Daytona** lists
+holds images. Settings > **Cloud devices** > **Container** lists
 each project's image there with its progress while it builds, **Log**,
 **Build now**, and **Reset**, which deletes the image so the next machine
 builds it afresh. Builds keep running when Settings closes.
@@ -715,9 +694,6 @@ builds it afresh. Builds keep running when Settings closes.
 - **Containers** build with `docker build` or `podman build` on this
   computer, tagged `herdr-<project>:<key>` and labelled
   `dev.herdr-gpui.image`; only labelled images are ever deleted.
-- **Daytona** builds a snapshot named `herdr-<project>-<key>` on its own
-  runners. Uploading build context files is not supported yet, so a Daytona
-  image's Dockerfile cannot `COPY` or `ADD` files from the project.
 
 ### Setup scripts for new cloud devices
 
@@ -760,9 +736,9 @@ started from **Run setup script** in the device's sidebar menu.
 Reconnecting never runs it again by itself.
 
 Each provider is a Cargo feature of `herdr-gpui`, on by default: `boat`, `coder`,
-`daytona`, and `railway`. A build with `--no-default-features` has no Cloud
+and `railway`. A build with `--no-default-features` has no Cloud
 Devices section and no provider rows in the device picker; it still accepts
-the `[boat]`, `[cloud]`, `[coder]`, and `[daytona]` tables, so one config file serves every
+the `[boat]`, `[cloud]`, and `[coder]` tables, so one config file serves every
 build, but never reads them.
 
 Switching revokes the old host's focus before releasing its surface, then resizes
@@ -2144,7 +2120,7 @@ Right-click a linked worktree and choose Teleport... to move it to another
 connected host: its branch and commits, staged, unstaged and untracked changes,
 tabs and splits, the programs running in them, and agent sessions. It is offered
 on Linux and macOS clients when the worktree's host is the local session or a
-saved SSH host or cloud device (Coder, Daytona, or Railway); custom socket and
+saved SSH host or cloud device (Coder or Railway); custom socket and
 WSL endpoints are not scripted. Neither is a
 development (`--dev`) session: the `herdr` CLI names sessions of the release
 installation only, so Teleport, fan-out, and dispatch are not offered there,
@@ -2152,7 +2128,7 @@ and an orchestrator action that drives that session through the CLI reports an
 error instead of reaching the release session of the same name.
 
 Cloud devices use the same saved account and machine identity as their sidebar
-connection, in either direction. Coder and Daytona wait for the saved machine to
+connection, in either direction. Coder waits for the saved machine to
 be ready; Railway uses its saved, verified SSH key. Teleport does not create a new
 cloud device or install Herdr. Cloud authentication and command preparation run
 only after a host is chosen, on the background worker.
@@ -2290,9 +2266,9 @@ within two minutes is given up on, with a warning. A
 new workspace opens the repository's main checkout on that host.
 
 Once you have a container device (see [Containers](#containers-docker-or-podman)),
-a Daytona sandbox, a sprite, or an OpenSandbox sandbox, the dialogs also offer
+a sprite, or an OpenSandbox sandbox, the dialogs also offer
 a **New container**, **New sprite**, or **New sandbox** tile, even with one
-host connected. A container or Daytona sandbox starts from the repository's
+host connected. A container starts from the repository's
 [sandbox image](#sandbox-images) when it has a recipe, building it first if
 needed.
 Creating with it makes a container with the `[container]` settings and Herdr
@@ -4473,7 +4449,7 @@ Windows but never roam to other computers in a domain, and other Windows users
 cannot read them. They are listed under **Windows Credentials** in Control
 Panel's Credential Manager; signing out in the app removes them. All windows
 share one credential through the same in-process lock as elsewhere, so a
-single-use refresh token is rotated once. Boat, Coder, and Daytona sign-ins use
+single-use refresh token is rotated once. Boat and Coder sign-ins use
 the same store under their own service names. A secret larger than Credential
 Manager's 2,560-byte limit is refused with an error rather than truncated. There
 is no private-file store here, so `allow_plaintext_credentials` changes nothing,

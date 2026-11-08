@@ -205,7 +205,7 @@ impl SettingsWindow {
         let mut card = self
             .cloud_card(fl!("settings-cloud-images"))
             .debug_selector(|| "cloud-images".into())
-            .child(self.control_note(fl!("settings-cloud-images-note", provider = provider.key())));
+            .child(self.control_note(fl!("settings-cloud-images-note")));
         let mut rows: Vec<(String, String)> = images
             .projects
             .iter()

@@ -12,10 +12,6 @@ fn open(cx: &mut gpui::TestAppContext) -> (Entity<SheprdWindow>, &mut VisualTest
             {
                 view.config.coder.url = None;
             }
-            #[cfg(feature = "daytona")]
-            {
-                view.config.daytona.api_url = None;
-            }
             view.open_add_device(window, cx);
         });
     });
@@ -40,7 +36,6 @@ fn page(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Option<Page>
 
 fn configured_elsewhere() -> bool {
     std::env::var_os("HERDR_CODER_URL").is_some()
-        || std::env::var_os("HERDR_DAYTONA_API_URL").is_some()
 }
 
 /// Each provider's entry in the rail, once it is in use.
@@ -54,8 +49,6 @@ pub(super) fn rail_id(provider: CloudProvider) -> &'static str {
         CloudProvider::Coder => "add-device-source-coder",
         #[cfg(feature = "container")]
         CloudProvider::Container => "add-device-source-container",
-        #[cfg(feature = "daytona")]
-        CloudProvider::Daytona => "add-device-source-daytona",
         #[cfg(feature = "railway")]
         CloudProvider::Railway => "add-device-source-railway",
         #[cfg(feature = "opensandbox")]
@@ -151,8 +144,6 @@ fn settings_only() -> Vec<(CloudProvider, &'static str)> {
             CloudProvider::Coder => None,
             #[cfg(feature = "container")]
             CloudProvider::Container => Some((provider, "add-device-source-container")),
-            #[cfg(feature = "daytona")]
-            CloudProvider::Daytona => Some((provider, "add-device-source-daytona")),
             #[cfg(feature = "railway")]
             CloudProvider::Railway => Some((provider, "add-device-source-railway")),
             #[cfg(feature = "opensandbox")]

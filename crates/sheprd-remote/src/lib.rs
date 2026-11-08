@@ -22,13 +22,10 @@ pub mod container;
     feature = "azure",
     feature = "boat",
     feature = "coder",
-    feature = "daytona",
     feature = "opensandbox",
     feature = "sprites"
 ))]
 mod credentials;
-#[cfg(feature = "daytona")]
-pub mod daytona;
 mod error;
 #[cfg(feature = "opensandbox")]
 pub mod opensandbox;

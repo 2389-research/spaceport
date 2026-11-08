@@ -38,7 +38,7 @@ Paths are in `crates/sheprd-remote/src/`, which has no GPUI, unless they name
 | Workspace lifecycle | `crates/sheprd-gpui/src/cloud/jobs.rs` (create with progress), `cloud/catalog.rs` (saved devices), provider `setup.rs` (create, delete, roll back a failed create). |
 | Dirty-state warning before delete | `cloud/unsynced.rs`, shown by the sidebar's Remove dialog. |
 | Lane-to-sandbox | `crates/sheprd-gpui/src/dispatch/`: the **New container** / **New sprite** tile; `dispatch/job.rs` provisions, then dispatches. |
-| Prebuilt environments | `cloud/image/`: a project's recipe (`.herdr/sandbox/Dockerfile`, else a dev container) read from its host, a key hashed from what the build reads, a catalog of built images, and one shared build registry; containers and Daytona hold images (`container/image.rs`, `daytona/image.rs`). |
+| Prebuilt environments | `cloud/image/`: a project's recipe (`.herdr/sandbox/Dockerfile`, else a dev container) read from its host, a key hashed from what the build reads, a catalog of built images, and one shared build registry; containers hold images (`container/image.rs`). |
 | Idle timers, quotas | `container/idle.rs`, `[container] max_containers`; Azure's `cleanup.rs`, each checked every minute by the app (`crates/sheprd-gpui/src/cloud.rs`); sprites sleep on their own. |
 | Credential broker | `teleport/credentials.rs` sends the `gh` token to a host that cannot reach GitHub. No scoping or trust tiers yet (see below). |
 | Port proxy | `crates/sheprd-gpui/src/port_forward/`, SSH hosts only. |
@@ -141,5 +141,3 @@ with until its recipe changes or it is reset.
 - **Ports** for containers and sprites: forwarding needs an SSH host.
 - **Images elsewhere.** Azure sandboxes and OpenSandbox start from registry
   images, so each needs a registry setting (one per provider) to push to.
-  Daytona builds cannot copy files in yet: its SDK uploads the context to
-  Daytona's object storage with signed S3 requests first.

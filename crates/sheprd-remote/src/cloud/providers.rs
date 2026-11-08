@@ -261,22 +261,6 @@ providers! {
         image: Some(&crate::container::image::SUPPORT),
         provision: Some(crate::container::setup::provision),
     },
-    // Sandboxes are created in Settings; existing ones cannot be attached yet.
-    "daytona" Daytona => {
-        module: daytona,
-        name: "Daytona",
-        icon: "icons/cloud/daytona.svg",
-        offer: "Manage Daytona devices in Settings",
-        noun: "sandbox",
-        command: gateway,
-        deletion: Some(Deletion {
-            noun: |_| "sandbox",
-            leftovers: "",
-            run: crate::daytona::destroy::destroy_saved,
-        }),
-        image: Some(&crate::daytona::image::SUPPORT),
-        provision: None,
-    },
     "opensandbox" OpenSandbox => {
         module: opensandbox,
         name: "OpenSandbox",

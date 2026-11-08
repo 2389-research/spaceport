@@ -5,7 +5,7 @@ use std::sync::atomic::AtomicBool;
 
 // A loopback API for the providers that have one; Railway is reached over SSH.
 mod discard;
-#[cfg(any(feature = "boat", feature = "coder", feature = "daytona"))]
+#[cfg(any(feature = "boat", feature = "coder"))]
 pub mod server;
 // What every exec relay command shares.
 #[cfg(any(feature = "azure", feature = "opensandbox", feature = "sprites"))]
@@ -31,16 +31,6 @@ fn a_non_cloud_target_is_refused() {
 #[test]
 fn cloud_devices_are_offered_only_where_they_can_connect() {
     assert_eq!(unavailable().is_some(), cfg!(windows));
-}
-
-#[cfg(feature = "daytona")]
-#[test]
-fn daytona_cannot_be_provisioned_by_dispatch() {
-    assert!(provision(CloudProvider::Daytona).is_none());
-    assert_eq!(
-        offer(CloudProvider::Daytona),
-        "Manage Daytona devices in Settings"
-    );
 }
 
 #[test]

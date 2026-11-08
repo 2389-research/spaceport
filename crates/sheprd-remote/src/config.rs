@@ -1,5 +1,5 @@
 //! The provider tables of Sheprd's config: `[azure]`, `[boat]`, `[coder]`,
-//! `[container]`, `[daytona]`, `[opensandbox]`, and `[sprites]`. The app owns
+//! `[container]`, `[opensandbox]`, and `[sprites]`. The app owns
 //! the config files, their layers, and their maintenance; it hands this crate
 //! a [`set_loader`] once at startup, and a provider job reads its table
 //! through it when it runs, so an edit since startup applies.
@@ -8,7 +8,6 @@ mod azure;
 mod boat;
 mod coder;
 mod container;
-mod daytona;
 mod opensandbox;
 mod sprites;
 
@@ -24,9 +23,6 @@ pub use coder::CoderFields;
 pub use container::ContainerConfig;
 #[cfg(feature = "container")]
 pub use container::ContainerFields;
-pub use daytona::DaytonaConfig;
-#[cfg(feature = "daytona")]
-pub use daytona::DaytonaFields;
 pub use opensandbox::OpenSandboxConfig;
 #[cfg(feature = "opensandbox")]
 pub use opensandbox::OpenSandboxFields;
@@ -43,7 +39,6 @@ pub struct Sections {
     pub boat: BoatConfig,
     pub coder: CoderConfig,
     pub container: ContainerConfig,
-    pub daytona: DaytonaConfig,
     pub opensandbox: OpenSandboxConfig,
     pub sprites: SpritesConfig,
 }

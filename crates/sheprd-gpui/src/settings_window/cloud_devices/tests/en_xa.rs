@@ -19,10 +19,6 @@ fn unconfigure(config: &mut crate::config::Config) {
     {
         config.coder = Default::default();
     }
-    #[cfg(feature = "daytona")]
-    {
-        config.daytona = Default::default();
-    }
     #[cfg(feature = "opensandbox")]
     {
         config.opensandbox = Default::default();
@@ -71,8 +67,6 @@ fn data() -> Vec<String> {
         crate::container::setup::DEFAULT_CPUS.into(),
         crate::container::setup::DEFAULT_MEMORY.into(),
     ]);
-    #[cfg(feature = "daytona")]
-    data.extend([crate::daytona::DEFAULT_API_URL.into(), "dtn_…".into()]);
     #[cfg(feature = "opensandbox")]
     data.extend([
         crate::opensandbox::DEFAULT_API_URL.into(),
