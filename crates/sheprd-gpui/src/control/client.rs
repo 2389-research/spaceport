@@ -200,7 +200,7 @@ fn send(request: &Request) -> crate::Result<Response> {
     Ok(socket::call(&socket_path()?, request)?)
 }
 
-/// Hands a `herdr-gpui://` link to the running app; what it did, for a
+/// Hands a `spaceport://` link to the running app; what it did, for a
 /// person. [`crate::control::Error::Unavailable`] means no app is running.
 pub(crate) fn send_link(link: &crate::link::Link) -> crate::Result<String> {
     hand_off(&Request::Link(Call {

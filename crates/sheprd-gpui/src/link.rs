@@ -1,13 +1,13 @@
-//! `sheprd://` links (and installed `herdr-gpui://` links): what the shell hands the app when the user
+//! `spaceport://` links: what the shell hands the app when the user
 //! picks a jump list entry, clicks a notification, or follows a link from a
 //! browser or another app.
 //!
 //! A link is untrusted input. Any web page can link one, and any local
 //! process can send one, so this is the only parser and it accepts exactly:
 //!
-//! - `sheprd://open?path=PATH`: a local checkout or worktree to show;
-//! - `sheprd://device?id=ID`: a device (host) to switch to;
-//! - `sheprd://notification?tag=TAG`: the notification that was clicked.
+//! - `spaceport://open?path=PATH`: a local checkout or worktree to show;
+//! - `spaceport://device?id=ID`: a device (host) to switch to;
+//! - `spaceport://notification?tag=TAG`: the notification that was clicked.
 //!
 //! Nothing else: no other parts, no unknown or repeated parameters, bounded
 //! lengths, and no control characters. A link names something to show; it
@@ -20,8 +20,7 @@ mod tests;
 use std::path::{Path, PathBuf};
 use url::Url;
 
-pub(crate) const SCHEME: &str = "sheprd";
-const SCHEMES: &[&str] = &[SCHEME, "herdr-gpui"];
+pub(crate) const SCHEME: &str = "spaceport";
 /// Bytes in a whole link. Browsers allow far more; nothing here needs it.
 const MAX_LINK: usize = 4096;
 const MAX_PATH: usize = 1024;
@@ -65,11 +64,9 @@ pub(crate) enum Error {
 /// malformed one is reported as a link instead of an unknown option.
 pub(crate) fn is_link(argument: &std::ffi::OsStr) -> bool {
     let bytes = argument.as_encoded_bytes();
-    SCHEMES.iter().any(|scheme| {
-        bytes.len() > scheme.len()
-            && bytes[..scheme.len()].eq_ignore_ascii_case(scheme.as_bytes())
-            && bytes[scheme.len()] == b':'
-    })
+    bytes.len() > SCHEME.len()
+        && bytes[..SCHEME.len()].eq_ignore_ascii_case(SCHEME.as_bytes())
+        && bytes[SCHEME.len()] == b':'
 }
 
 impl Link {
@@ -78,7 +75,7 @@ impl Link {
             return Err(Error::TooLong);
         }
         let url = Url::parse(text).map_err(Error::Malformed)?;
-        if !SCHEMES.contains(&url.scheme()) {
+        if url.scheme() != SCHEME {
             return Err(Error::Scheme);
         }
         if !url.username().is_empty()

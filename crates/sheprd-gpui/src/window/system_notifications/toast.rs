@@ -1,12 +1,12 @@
-//! Windows toasts whose click reaches the app through a `herdr-gpui://`
+//! Windows toasts whose click reaches the app through a `spaceport://`
 //! link. GPUI's own toasts answer a click only inside the process that
 //! posted them, and only while it still holds the toast, so a click in
 //! Action Center later, or one Windows delivers without letting the app take
 //! the foreground, is lost. These toasts use protocol activation instead: the
-//! shell starts `herdr-gpui.exe herdr-gpui://notification?tag=TAG`, which
+//! shell starts the app with `spaceport://notification?tag=TAG`, which
 //! hands the link to the running app and passes the foreground on (see
-//! `link`). They are used once the installer has registered the scheme;
-//! until then, GPUI's toasts post as before.
+//! `link`). They are used only when the registered handler is this executable;
+//! otherwise GPUI's toasts post as before.
 
 #[cfg(test)]
 mod tests;
@@ -28,7 +28,7 @@ pub(crate) enum Error {
 /// What the app learns, off the UI thread, before its first toast.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Shell {
-    /// Whether `sheprd://` links start this app for the user.
+    /// Whether `spaceport://` links launch this executable for the user.
     pub links: bool,
 }
 
@@ -44,7 +44,10 @@ pub(crate) fn prepare() -> Shell {
             crate::link::SCHEME
         ))
         .and_then(|key| key.get_string(""))
-        .is_ok_and(|command| !command.trim().is_empty());
+        .is_ok_and(|command| {
+            std::env::current_exe()
+                .is_ok_and(|executable| super::handler::owns_handler(&command, &executable))
+        });
     // Without this key, or a Start menu shortcut carrying the ID, an
     // unpackaged app's toasts are dropped.
     if let Err(error) = user

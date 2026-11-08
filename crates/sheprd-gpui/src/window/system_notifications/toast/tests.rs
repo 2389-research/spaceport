@@ -16,7 +16,7 @@ fn a_click_opens_the_notification_link_and_text_stays_text() {
         .unwrap()
         .to_string();
     assert!(xml.starts_with(
-        r#"<toast launch="sheprd://notification?tag=herdr%3Alocal%3Aboot%3Aw2%3Ap1" activationType="protocol">"#
+        r#"<toast launch="spaceport://notification?tag=herdr%3Alocal%3Aboot%3Aw2%3Ap1" activationType="protocol">"#
     ), "{xml}");
     assert!(
         xml.contains("&lt;b&gt;agent&lt;/b&gt; &amp; \"friends\""),

@@ -23,8 +23,8 @@ fn links_are_parsed_again_and_only_show_things(cx: &mut TestAppContext) {
     cx.update(|cx| {
         // Any local process can send one, so the app checks it too.
         for url in [
-            "herdr-gpui://run?command=calc",
-            "herdr-gpui://open?path=relative",
+            "spaceport://run?command=calc",
+            "spaceport://open?path=relative",
             "https://example.com",
         ] {
             assert_eq!(
@@ -34,17 +34,17 @@ fn links_are_parsed_again_and_only_show_things(cx: &mut TestAppContext) {
             );
         }
         assert_eq!(
-            code(&serve(link("herdr-gpui://device?id=ssh:nowhere"), cx)),
+            code(&serve(link("spaceport://device?id=ssh:nowhere"), cx)),
             Some(ErrorCode::NotFound)
         );
         assert!(matches!(
-            serve(link("herdr-gpui://device?id=local"), cx),
+            serve(link("spaceport://device?id=local"), cx),
             Response::Done { .. }
         ));
         // Posted by no window of this app.
         assert_eq!(
             code(&serve(
-                link("herdr-gpui://notification?tag=herdr:local:boot:w1:p1"),
+                link("spaceport://notification?tag=herdr:local:boot:w1:p1"),
                 cx
             )),
             Some(ErrorCode::NotFound)

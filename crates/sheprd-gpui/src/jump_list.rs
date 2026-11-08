@@ -2,7 +2,7 @@
 //! focused workspaces on this computer, and the devices as tasks. Windows
 //! shows the recent ones only while "Show recently opened items in Start,
 //! Jump Lists, and File Explorer" is on, as for every app. Each entry starts
-//! `herdr-gpui.exe` with a `herdr-gpui://` link as its only argument, which
+//! this app with a `spaceport://` link as its only argument, which
 //! the running app follows (see `link`), so an entry never names anything
 //! but what to show.
 //!

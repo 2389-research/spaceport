@@ -13,7 +13,7 @@ pub enum LaunchMode {
     /// Talk to the running app, or read its files, then exit without
     /// starting GPUI.
     Control(control::Invocation),
-    /// Hand a `sheprd://` link to the running app, or start the app
+    /// Hand a `spaceport://` link to the running app, or start the app
     /// and follow it there.
     Link(crate::link::Link),
     /// Show the UI variants compiled in from `HERDR_MOCKUP_FILE`.
@@ -100,7 +100,7 @@ pub enum CliError {
     InvalidEncoding(OsString),
     #[error("invalid link: {0}")]
     Link(#[from] crate::link::Error),
-    #[error("a sheprd:// link must be the only argument")]
+    #[error("a spaceport:// link must be the only argument")]
     LinkArguments,
     #[cfg(feature = "mockup")]
     #[error("{0} requires a path")]

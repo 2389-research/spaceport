@@ -1,13 +1,13 @@
 use super::*;
 
 #[test]
-fn current_and_installed_links_share_the_same_strict_parser() {
-    for scheme in ["sheprd", "herdr-gpui", "SHEPRD", "HERDR-GPUI"] {
+fn development_links_use_the_same_strict_parser_in_any_case() {
+    for scheme in ["spaceport", "SPACEPORT"] {
         let text = format!("{scheme}://device?id=local");
         assert!(is_link(std::ffi::OsStr::new(&text)));
         let link = Link::parse(&text).unwrap();
         assert_eq!(link, Link::Device { id: "local".into() });
-        assert_eq!(link.to_url(), "sheprd://device?id=local");
+        assert_eq!(link.to_url(), "spaceport://device?id=local");
         assert_eq!(
             Link::parse(&format!("{scheme}://device?id=local&id=other")),
             Err(Error::DuplicateParameter("id"))
@@ -19,7 +19,7 @@ fn current_and_installed_links_share_the_same_strict_parser() {
             })
         );
     }
-    for scheme in ["sheprdx", "herdr-gpuix"] {
+    for scheme in ["spaceportx", "spaceports"] {
         assert!(!is_link(std::ffi::OsStr::new(&format!("{scheme}:"))));
         assert_eq!(
             Link::parse(&format!("{scheme}://device?id=local")),

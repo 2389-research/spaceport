@@ -387,16 +387,18 @@ do them.
 
 ## Links
 
-`sheprd URL`, with a `herdr-gpui://` link as the only argument, hands the
+`sheprd URL`, with a `spaceport://` link as the only argument, hands the
 link to the running app, or starts the app and follows it once it is
-connected. On Windows the installer registers the scheme, so the shell runs
-this for jump list entries, notification clicks, and links in other apps.
+connected. The development build does not register an OS-wide handler; its
+Windows jump-list entries launch the executable with the link directly.
+Protocol-activated notification clicks require a handler command pointing
+exactly at the running executable and have not been verified on Windows.
 
 | Link | What the app does |
 | --- | --- |
-| `herdr-gpui://open?path=PATH` | Focus the workspace showing the Git checkout or worktree at `PATH`, or ask in the window before opening one there |
-| `herdr-gpui://device?id=ID` | Show the device `host list` names `ID` |
-| `herdr-gpui://notification?tag=TAG` | Open the pane of a notification this app posted |
+| `spaceport://open?path=PATH` | Focus the workspace showing the Git checkout or worktree at `PATH`, or ask in the window before opening one there |
+| `spaceport://device?id=ID` | Show the device `host list` names `ID` |
+| `spaceport://notification?tag=TAG` | Open the pane of a notification this app posted |
 
 A link is untrusted input, checked by the command and again by the app: only
 those shapes, each parameter once, bounded lengths, no control characters, and

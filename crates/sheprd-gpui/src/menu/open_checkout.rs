@@ -1,4 +1,4 @@
-//! Asks before opening a workspace for a checkout a `herdr-gpui://` link
+//! Asks before opening a workspace for a checkout a `spaceport://` link
 //! named. Any web page or program can send such a link, and a workspace
 //! starts a shell in its folder, so the user sees the folder first and
 //! nothing opens unless they say so. A checkout already open is focused

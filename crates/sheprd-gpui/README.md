@@ -13,8 +13,9 @@ The desktop command is `sheprd`; companion commands use `sheprd-*`. Helper
 discovery also accepts installed `herdr-*` companions, including on SSH hosts.
 Existing configuration, state, credentials, service names, and managed-skill
 identities remain in place. Releases retain the legacy executable entry points
-required by installed updaters. `sheprd://` links are preferred, and existing
-`herdr-gpui://` links still open. See [upgrade compatibility](../../docs/rebranding.md).
+required by installed updaters. The Spaceport development fork accepts
+`spaceport://` links only; no OS-wide handler is installed for it. See
+[upgrade compatibility](../../docs/rebranding.md) for the upstream release.
 
 It starts an installed local `herdr server` when absent; explicit socket and
 development targets remain attach-only. On Unix, GUI launches resolve the login-shell
@@ -3715,15 +3716,11 @@ while the GUI runs: a click cannot reopen a closed window.
   compositor's focus policy. Notifications are neither replaced nor retracted, so
   each event shows separately, and each keeps a small waiting thread until the
   server closes it.
-- **Windows** uses WinRT toasts under the AppUserModelID `so.pen.herdr-gpui`,
-  which the app sets at startup and registers, with its display name, under
-  `HKCU\Software\Classes\AppUserModelId`. Once the installer has registered
-  `herdr-gpui://` links, a toast opens through one: clicking the banner, or the
-  toast later in the notification center, starts the launcher with
-  `herdr-gpui://notification?tag=…`; `sheprd.exe` hands the click to the
-  running app, and its window comes forward. A click after the app quit only starts it.
-  Without that registration (a build run from `target`), toasts answer clicks
-  only while the app runs and still holds them, as GPUI posts them.
+- **Windows** development builds use AppUserModelID `spaceport.development`.
+  The OS-wide `spaceport://` handler is not registered by this fork, so GPUI
+  posts toasts that answer clicks while the app runs and still holds them.
+  Protocol activation from Action Center requires a handler command pointing
+  exactly at the running executable and remains unverified release work.
 
 ## macOS Dock Badge
 
@@ -5128,24 +5125,23 @@ Windows cross-check.
 - **Jump list.** Right-click the taskbar button, or the Start menu entry, for
   the Git checkouts of the workspaces you last focused on this computer, under
   **Recent workspaces**, and a **Show DEVICE** task for each device. Each entry
-  is a `herdr-gpui://` link (below) opened through the launcher, so it reaches
+  is a `spaceport://` link (below) passed to the executable, so it reaches
   the running app, or starts it. Windows shows recent workspaces only while **Settings > Personalization >
   Start > Show recently opened items in Start, Jump Lists, and File Explorer**
   is on; with it off, only the devices are listed. An entry you remove from the
   list is forgotten. The recent checkouts are kept in `jump-list.json` in the
   state directory.
-- **`herdr-gpui://` links.** The installer and `site/install.ps1` register the
-  scheme for the current user (`HKCU\Software\Classes\herdr-gpui`) and remove
-  it on uninstall.
-  `herdr-gpui://open?path=C:\src\repo` shows a local Git checkout or worktree:
+- **`spaceport://` links.** Development builds accept the scheme as an
+  argument, without registering a handler in the user's account.
+  `spaceport://open?path=C:\src\repo` shows a local Git checkout or worktree:
   the workspace already open there, or, after you agree in the window, a new
-  one (the repository's scripts are not trusted). `herdr-gpui://device?id=ID`
+  one (the repository's scripts are not trusted). `spaceport://device?id=ID`
   switches to a device by the ID `host list` prints. A link is untrusted input:
   only those shapes are accepted, paths must be absolute drive paths (never
   `\\server\share`, which would send your credentials to that server, nor
-  `..`), and a link never runs a command. Windows starts
-  `sheprd-launcher.exe` with the link as its only argument, so no console
-  window opens; `sheprd.exe` hands the link to the running app over the
+  `..`), and a link never runs a command. A jump-list shortcut starts the
+  installed windowed launcher when present; a source build uses its current
+  executable. The executable hands the link to the running app over the
   control pipe, or starts the app and follows it once connected. See
   [the command line](../../docs/cli.md#links).
 

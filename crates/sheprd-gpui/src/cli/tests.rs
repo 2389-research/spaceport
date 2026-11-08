@@ -9,6 +9,7 @@ mod cloud_exec;
 mod cloud_images;
 mod cloud_setup;
 mod control_commands;
+mod development_links;
 mod language;
 mod links;
 mod mods;

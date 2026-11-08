@@ -3,6 +3,7 @@
 use super::*;
 
 mod branding;
+mod development_scheme;
 
 #[cfg(windows)]
 const CHECKOUT: &str = r"C:\Users\me\src\herdr-gpui";
@@ -29,7 +30,7 @@ fn every_link_reads_back_from_its_url() {
         },
     ] {
         let url = link.to_url();
-        assert!(url.starts_with("sheprd://"), "{url}");
+        assert!(url.starts_with("spaceport://"), "{url}");
         assert_eq!(Link::parse(&url).unwrap(), link, "{url}");
     }
 }
@@ -38,20 +39,20 @@ fn every_link_reads_back_from_its_url() {
 fn browsers_percent_encoding_is_accepted() {
     let encoded = CHECKOUT.replace('\\', "%5C").replace(':', "%3A");
     assert_eq!(
-        Link::parse(&format!("herdr-gpui://open?path={encoded}")).unwrap(),
+        Link::parse(&format!("spaceport://open?path={encoded}")).unwrap(),
         Link::Open {
             path: CHECKOUT.into()
         }
     );
     assert_eq!(
-        Link::parse("herdr-gpui://device/?id=local").unwrap(),
+        Link::parse("spaceport://device/?id=local").unwrap(),
         Link::Device { id: "local".into() }
     );
 }
 
 #[test]
 fn only_the_known_shapes_are_accepted() {
-    let open = |query: &str| Link::parse(&format!("herdr-gpui://open?{query}"));
+    let open = |query: &str| Link::parse(&format!("spaceport://open?{query}"));
     let path = format!("path={CHECKOUT}");
     assert_eq!(open(""), Err(Error::MissingParameter("path")));
     assert_eq!(
@@ -67,24 +68,24 @@ fn only_the_known_shapes_are_accepted() {
         Err(Error::UnknownParameter("id".into()))
     );
     assert_eq!(
-        Link::parse("herdr-gpui://run?command=calc"),
+        Link::parse("spaceport://run?command=calc"),
         Err(Error::UnknownAction("run".into()))
     );
     assert_eq!(Link::parse("https://open?path=/tmp"), Err(Error::Scheme));
     for extra in [
-        "herdr-gpui://user@open?path=/x",
-        "herdr-gpui://open:80?path=/x",
-        "herdr-gpui://open/more?path=/x",
-        "herdr-gpui://open?path=/x#frag",
+        "spaceport://user@open?path=/x",
+        "spaceport://open:80?path=/x",
+        "spaceport://open/more?path=/x",
+        "spaceport://open?path=/x#frag",
     ] {
         assert_eq!(Link::parse(extra), Err(Error::UnexpectedPart), "{extra}");
     }
     assert!(matches!(
-        Link::parse("herdr-gpui://open?path=%"),
+        Link::parse("spaceport://open?path=%"),
         Err(Error::Path)
     ));
     assert_eq!(
-        Link::parse(&format!("herdr-gpui://open?path={}", "a".repeat(5000))),
+        Link::parse(&format!("spaceport://open?path={}", "a".repeat(5000))),
         Err(Error::TooLong)
     );
 }
@@ -116,19 +117,19 @@ fn paths_must_be_local_absolute_and_plain() {
 #[test]
 fn devices_and_tags_are_bounded_text() {
     assert_eq!(
-        Link::parse("herdr-gpui://device?id=a%20b"),
+        Link::parse("spaceport://device?id=a%20b"),
         Err(Error::Device)
     );
     assert_eq!(
-        Link::parse(&format!("herdr-gpui://device?id={}", "a".repeat(300))),
+        Link::parse(&format!("spaceport://device?id={}", "a".repeat(300))),
         Err(Error::Device)
     );
     assert_eq!(
-        Link::parse("herdr-gpui://notification?tag=other"),
+        Link::parse("spaceport://notification?tag=other"),
         Err(Error::Tag)
     );
     assert_eq!(
-        Link::parse("herdr-gpui://notification?tag=herdr:%E2%80%AEx"),
+        Link::parse("spaceport://notification?tag=herdr:%E2%80%AEx"),
         Err(Error::Tag)
     );
 }
@@ -136,9 +137,9 @@ fn devices_and_tags_are_bounded_text() {
 #[test]
 fn links_are_told_apart_from_options() {
     use std::ffi::OsStr;
-    assert!(is_link(OsStr::new("herdr-gpui://open?path=/x")));
-    assert!(is_link(OsStr::new("HERDR-GPUI:whatever")));
-    assert!(!is_link(OsStr::new("herdr-gpui")));
+    assert!(is_link(OsStr::new("spaceport://open?path=/x")));
+    assert!(is_link(OsStr::new("SPACEPORT:whatever")));
+    assert!(!is_link(OsStr::new("spaceport")));
     assert!(!is_link(OsStr::new("--socket")));
-    assert!(!is_link(OsStr::new("herdr-gpuix:")));
+    assert!(!is_link(OsStr::new("spaceportx:")));
 }

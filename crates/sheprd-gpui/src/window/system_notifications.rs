@@ -15,6 +15,8 @@
 
 #[cfg(target_os = "linux")]
 mod freedesktop;
+#[cfg(any(windows, test))]
+mod handler;
 #[cfg(windows)]
 mod toast;
 

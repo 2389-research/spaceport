@@ -1,4 +1,4 @@
-//! `link`: a `herdr-gpui://` link the shell started a second copy of the app
+//! `link`: a `spaceport://` link the shell started a second copy of the app
 //! with, from a jump list entry, a notification, or another application.
 //! It is parsed again here, since any local process can send one, and it
 //! only ever shows something: a checkout, a device, or a notification's pane.
