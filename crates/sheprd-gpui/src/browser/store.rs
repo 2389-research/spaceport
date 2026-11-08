@@ -190,9 +190,12 @@ impl Tab {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 struct Saved {
     tabs: Vec<Tab>,
+    /// Preserve IDs of tabs removed by a later app version across saves.
+    #[serde(default)]
+    next: u64,
 }
 
 #[derive(Default)]
@@ -217,12 +220,17 @@ fn clean_title(title: &str) -> String {
         .to_owned()
 }
 
+#[cfg(test)]
 fn parse(bytes: &[u8]) -> crate::Result<Vec<Tab>> {
+    Ok(parse_saved(bytes)?.tabs)
+}
+
+fn parse_saved(bytes: &[u8]) -> crate::Result<Saved> {
     let saved: Saved = serde_json::from_slice(bytes)?;
     if saved.tabs.len() > MAX_TABS || !saved.tabs.iter().all(Tab::valid) {
         return Err(crate::Error::InvalidBrowserTabs);
     }
-    Ok(saved.tabs)
+    Ok(saved)
 }
 
 impl Store {
@@ -238,7 +246,7 @@ impl Store {
             .as_deref()
             .map(|path| {
                 state_file::read(path, MAX_FILE_BYTES)
-                    .and_then(|bytes| bytes.as_deref().map_or(Ok(Vec::new()), parse))
+                    .and_then(|bytes| bytes.as_deref().map_or(Ok(Saved::default()), parse_saved))
             })
             .transpose()
             .unwrap_or_else(|error| {
@@ -255,17 +263,24 @@ impl Store {
                 }
             },
         );
-        Self::with_tabs(tabs, writer)
+        Self::with_saved(tabs, writer)
     }
 
-    fn with_tabs(mut tabs: Vec<Tab>, writer: Option<state_file::Writer<Saved>>) -> Self {
+    #[cfg(test)]
+    fn with_tabs(tabs: Vec<Tab>, writer: Option<state_file::Writer<Saved>>) -> Self {
+        Self::with_saved(Saved { tabs, next: 0 }, writer)
+    }
+
+    fn with_saved(saved: Saved, writer: Option<state_file::Writer<Saved>>) -> Self {
+        let Saved { mut tabs, next } = saved;
         // Saved group picks may still name a discarded tab. Never assign its
         // ID to a new tab or that old pick could show unrelated content.
-        let next = tabs
-            .iter()
-            .map(|tab| tab.id.0.saturating_add(1))
-            .max()
-            .unwrap_or(0);
+        let next = next.max(
+            tabs.iter()
+                .map(|tab| tab.id.0.saturating_add(1))
+                .max()
+                .unwrap_or(0),
+        );
         // Earlier builds hosted the orchestrator, source viewer, and review in tabs;
         // their old IDs stay reserved, but the views do not restore.
         tabs.retain(|tab| {
@@ -317,9 +332,14 @@ impl Store {
             return;
         }
         if let Some(writer) = &self.writer {
-            writer.save(Saved {
-                tabs: self.tabs.clone(),
-            });
+            writer.save(self.saved());
+        }
+    }
+
+    fn saved(&self) -> Saved {
+        Saved {
+            tabs: self.tabs.clone(),
+            next: self.next,
         }
     }
 

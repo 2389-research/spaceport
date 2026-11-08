@@ -56,7 +56,7 @@ fn family(name: &str) -> &'static str {
             "sheprd ui sidebar [on|off|toggle]\nsheprd ui statusbar [on|off|toggle]\nsheprd ui font-size +|-|reset|POINTS\nsheprd ui panel workspaces|overview|pull-requests|issues|tasks|security|automations|usage\n    For this window and session; settings are changed with `config`."
         }
         "tab" => {
-            "sheprd tab [list]\n    The app's own tabs: pages, reviews, Devices, Core terminals.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nsheprd tab focus|close ID\n    Show a tab, switching to its workspace, or close it."
+            "sheprd tab [list]\n    The app's own tabs: pages, Devices, Core terminals.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nsheprd tab focus|close ID\n    Show a tab, switching to its workspace, or close it."
         }
         "devices" => {
             "sheprd devices [open]\n    Open the Devices overview tab in the caller's workspace."

@@ -31,6 +31,7 @@ fn px0_is_a_separate_singleton_per_daemon_and_workspace() {
     assert_eq!(store.reopen_page(closed), Some(second));
     let saved = serde_json::to_vec(&Saved {
         tabs: store.tabs.clone(),
+        next: 0,
     })
     .unwrap();
     let restored = Store::with_tabs(parse(&saved).unwrap(), None);

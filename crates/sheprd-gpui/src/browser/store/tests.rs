@@ -133,6 +133,7 @@ fn saved_tabs_round_trip_and_invalid_files_are_rejected() {
         .unwrap();
     let bytes = serde_json::to_vec(&Saved {
         tabs: store.tabs.clone(),
+        next: 0,
     })
     .unwrap();
     let restored = Store::with_tabs(parse(&bytes).unwrap(), None);
@@ -183,6 +184,7 @@ fn saved_vs_code_tabs_parse_but_do_not_restore() {
         .place = Place::RetiredVsCode;
     let bytes = serde_json::to_vec(&Saved {
         tabs: store.tabs.clone(),
+        next: 0,
     })
     .unwrap();
     let restored = Store::with_tabs(parse(&bytes).unwrap(), None);

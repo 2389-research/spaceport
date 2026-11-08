@@ -35,6 +35,7 @@ fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
 
     let mut saved = serde_json::to_value(Saved {
         tabs: old.tabs.clone(),
+        next: 0,
     })
     .unwrap();
     for tab in saved["tabs"].as_array_mut().unwrap() {
@@ -63,7 +64,11 @@ fn discarded_max_id_cannot_wrap_to_a_new_tab() {
     old.open(scope.clone(), "w1", None, None).unwrap();
     old.tabs[0].id = TabId::test(u64::MAX);
     old.tabs[0].place = Place::RetiredVsCode;
-    let bytes = serde_json::to_vec(&Saved { tabs: old.tabs }).unwrap();
+    let bytes = serde_json::to_vec(&Saved {
+        tabs: old.tabs,
+        next: 0,
+    })
+    .unwrap();
     let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
     assert!(restored.tabs().next().is_none());
     assert!(restored.open(scope, "w1", None, None).is_none());

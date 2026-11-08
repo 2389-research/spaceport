@@ -26,7 +26,11 @@ fn old_source_view_is_dropped_without_reusing_its_id() {
         )
         .unwrap();
     let source = old.open(scope.clone(), "w", None, None).unwrap();
-    let mut saved = serde_json::to_value(Saved { tabs: old.tabs }).unwrap();
+    let mut saved = serde_json::to_value(Saved {
+        tabs: old.tabs,
+        next: 0,
+    })
+    .unwrap();
     let path = std::env::current_dir().unwrap().join("main.rs");
     saved["tabs"][3]["location"] = serde_json::json!({
         "kind": "code", "file": {"path": path, "line": 42}

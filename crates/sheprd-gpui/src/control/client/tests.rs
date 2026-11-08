@@ -3,6 +3,7 @@ use super::*;
 
 mod chat_lines;
 mod core_catalog;
+mod tab_help;
 
 #[test]
 fn output_is_whole_and_only_a_terminal_loses_controls() {
