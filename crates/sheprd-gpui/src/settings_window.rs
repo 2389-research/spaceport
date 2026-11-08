@@ -239,8 +239,6 @@ struct SettingsWindow {
     azure_card: Option<cloud_devices::AzureCard>,
     #[cfg(feature = "container")]
     container_card: Option<cloud_devices::ContainerCard>,
-    #[cfg(feature = "railway")]
-    railway_card: Option<cloud_devices::RailwayCard>,
     /// Sandbox images, for the cards of providers that hold them.
     #[cfg(feature = "container")]
     sandbox_images: cloud_devices::SandboxImages,
@@ -371,8 +369,6 @@ impl SettingsWindow {
             azure_card: None,
             #[cfg(feature = "container")]
             container_card: None,
-            #[cfg(feature = "railway")]
-            railway_card: None,
             #[cfg(feature = "container")]
             sandbox_images: Default::default(),
             #[cfg(feature = "sprites")]

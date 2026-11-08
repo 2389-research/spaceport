@@ -234,15 +234,6 @@ pub fn installed(mut ssh: Command, cancelled: &impl Fn() -> bool) -> Result<bool
     }
 }
 
-/// Run `ssh` exactly as given, with no remote command appended, and report how
-/// it ended, for a provider whose own connection says whether a machine exists
-/// and for how long. Unlike [`installed`], it classifies nothing: the caller
-/// reads the exit code and what the connection printed.
-#[cfg(feature = "railway")]
-pub fn reach(ssh: Command, cancelled: &impl Fn() -> bool) -> Result<Finished> {
-    run(ssh, PROBE_TIMEOUT, cancelled)
-}
-
 /// Run Herdr's installer on the machine. Only called after the user approved it.
 pub fn install(mut ssh: Command, cancelled: &impl Fn() -> bool) -> Result<()> {
     tracing::info!(

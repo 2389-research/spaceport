@@ -14,7 +14,7 @@ fn every_provider_table_parses_in_every_build() -> anyhow::Result<()> {
     let config = Config::parse(
         "[cloud]\nagents = [\"claude\"]\nsetup = \"echo hi\"\n\
          [cloud.azure]\nagents = [\"codex\"]\n[cloud.container]\nsetup = \"\"\n\
-         [cloud.railway]\nsetup = \"echo rail\"\n",
+         [cloud.sprites]\nsetup = \"echo sprite\"\n",
     )?;
     assert_eq!(config.cloud.shared_agents(), [Agent::Claude]);
     assert_eq!(config.cloud.shared_setup(), Some("echo hi"));
@@ -55,7 +55,7 @@ fn an_unknown_cloud_key_is_refused() {
 #[test]
 fn an_oversized_script_fails_to_load() {
     let text = format!(
-        "[cloud.railway]\nsetup = \"{}\"\n",
+        "[cloud.container]\nsetup = \"{}\"\n",
         "x".repeat(crate::cloud_setup::MAX_SCRIPT + 1)
     );
     let error = Config::parse(&text).err();

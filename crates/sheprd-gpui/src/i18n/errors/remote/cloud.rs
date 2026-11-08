@@ -45,8 +45,6 @@ impl Localize for ProviderError {
             Self::Azure(ref error) => error.localize(),
             #[cfg(feature = "container")]
             Self::Container(ref error) => error.localize(),
-            #[cfg(feature = "railway")]
-            Self::Railway(ref error) => error.localize(),
             #[cfg(feature = "sprites")]
             Self::Sprites(ref error) => error.localize(),
         }

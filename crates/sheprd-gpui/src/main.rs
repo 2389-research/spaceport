@@ -28,15 +28,10 @@ mod close_modal;
 // `cloud` is the machinery every provider shares; alone it offers nothing to add.
 #[cfg(all(
     feature = "cloud",
-    not(any(
-        feature = "azure",
-        feature = "container",
-        feature = "railway",
-        feature = "sprites"
-    ))
+    not(any(feature = "azure", feature = "container", feature = "sprites"))
 ))]
 compile_error!(
-    "the `cloud` feature is enabled through a provider feature, such as `azure`, `container`, `railway`, or `sprites`"
+    "the `cloud` feature is enabled through a provider feature, such as `azure`, `container`, or `sprites`"
 );
 #[cfg(feature = "cloud")]
 mod cloud;
@@ -185,8 +180,6 @@ use sheprd_client::{local_path, login_env};
 use sheprd_remote::azure;
 #[cfg(feature = "container")]
 use sheprd_remote::container;
-#[cfg(feature = "railway")]
-use sheprd_remote::railway;
 #[cfg(feature = "sprites")]
 use sheprd_remote::sprites;
 

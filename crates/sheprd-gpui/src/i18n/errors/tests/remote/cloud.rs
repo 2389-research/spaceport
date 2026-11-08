@@ -99,8 +99,6 @@ fn every_provider_delegates() {
         sheprd_remote::azure::Error::Size.into(),
         #[cfg(feature = "container")]
         sheprd_remote::container::Error::NoEngine.into(),
-        #[cfg(feature = "railway")]
-        sheprd_remote::railway::Error::KeyPath.into(),
         #[cfg(feature = "sprites")]
         sheprd_remote::sprites::Error::Size.into(),
     ];

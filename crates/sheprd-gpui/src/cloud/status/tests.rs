@@ -4,7 +4,6 @@ use sheprd_i18n::{Locale, Pseudo};
 fn steps() -> Vec<Step> {
     vec![
         Step::Creating,
-        Step::Connecting,
         Step::Starting,
         Step::Building("pending".into()),
         Step::CheckingHerdr,

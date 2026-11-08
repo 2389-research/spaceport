@@ -76,8 +76,6 @@ impl Source {
             Self::Cloud(crate::cloud::CloudProvider::Azure) => "add-device-source-azure",
             #[cfg(feature = "container")]
             Self::Cloud(crate::cloud::CloudProvider::Container) => "add-device-source-container",
-            #[cfg(feature = "railway")]
-            Self::Cloud(crate::cloud::CloudProvider::Railway) => "add-device-source-railway",
             #[cfg(feature = "sprites")]
             Self::Cloud(crate::cloud::CloudProvider::Sprites) => "add-device-source-sprites",
             #[cfg(feature = "cloud")]

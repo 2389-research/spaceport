@@ -225,17 +225,6 @@ providers! {
         image: Some(&crate::container::image::SUPPORT),
         provision: Some(crate::container::setup::provision),
     },
-    "railway" Railway => {
-        module: railway,
-        name: "Railway",
-        icon: "icons/cloud/railway.svg",
-        offer: "Set up a Railway VM in Settings",
-        noun: "VM",
-        command: plain,
-        deletion: None,
-        image: None,
-        provision: Some(crate::railway::create::provision),
-    },
     "sprites" Sprites => {
         module: sprites,
         name: "Sprites",

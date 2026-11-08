@@ -347,13 +347,12 @@ edits only the local catalog: the host's own Herdr keeps running. When the
 device has its own GitHub sign-in, the confirmation also offers to delete it,
 since its account panel goes away with the device. Local's menu offers neither.
 
-A cloud device's header (Azure, Container,
-Railway, or Sprites) has a menu too: **Rename…** changes the name the sidebar
+A cloud device's header (Azure, Container, or Sprites) has a menu too: **Rename…** changes the name the sidebar
 shows, falling back to the machine's name when left empty; **Cloud device
 settings…** opens its provider under Settings > Cloud devices; and **Remove
 device…** removes it from this computer. For an Azure machine, a container, or a sprite,
 it deletes the machine at the provider by default, with **Remove from Herdr
-only** beside it; a Railway VM is left as it is and expires on its own. Before
+only** beside it. Before
 deleting, the dialog searches the machine's home directory for Git checkouts
 with changed or untracked files or commits on no remote; when it finds some,
 it names them and the button becomes **Delete anyway**, and a machine it
@@ -450,7 +449,7 @@ launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
 Settings > **Cloud devices** holds accounts with providers that create machines
-to use as devices: Azure, Container, Railway, and Sprites.
+to use as devices: Azure, Container, and Sprites.
 Cloud devices are stored in the GUI's `cloud-devices.json` state file. Each
 entry names its provider, so adding another provider needs no new file.
 
@@ -517,24 +516,6 @@ a WebSocket whose binary frames carry stdin, stdout, stderr, and the exit code
 unchanged. The token stays on this computer. Sprites are unavailable on
 Windows, like every cloud device. This provider is tested against a scripted
 exec stream and API replies, but not yet against a live Sprites account.
-
-### Railway free VMs (experimental)
-
-Settings > **Cloud devices** > **Railway**, which **Railway** in **Add Device…**
-(under **Add provider** until it has a device) also opens, sets up the temporary Linux VM that
-`ssh railway.new` gives out without an account. The SSH key is its identity, so
-pick an existing private key or generate one by name (an ed25519 key without a
-passphrase, in `~/.ssh` when that exists, otherwise in Herdr's state directory;
-an existing file is never replaced). **Connect and set up** creates the VM if the
-key has none, installs Herdr in it when the **Install Herdr** switch is on, and
-saves the device with the key's path (as its account). Every reconnect uses the
-same key, never creates a VM or installs anything, and refuses a key file whose
-fingerprint changed or whose readable private key disagrees with its `.pub`
-file. Removing a device keeps its key files. Connections run
-`ssh -F /dev/null` with options that offer only that key and pin `railway.new`'s
-host key on first use (`railway_known_hosts`). The VM is temporary: Railway
-limits its lifetime and how many a network can create. Needs
-`ssh` and `ssh-keygen` on the PATH; unavailable on Windows.
 
 ### Sandbox images
 
@@ -615,7 +596,7 @@ memory only, at most eight at once; one that never ran, or a later run, is
 started from **Run setup script** in the device's sidebar menu.
 Reconnecting never runs it again by itself.
 
-Each provider is a Cargo feature of `herdr-gpui`; `azure`, `container`, `railway`, and `sprites` are on by default.
+Each provider is a Cargo feature of `herdr-gpui`; `azure`, `container`, and `sprites` are on by default.
 A build with `--no-default-features` has no Cloud
 Devices section and no provider rows in the device picker; it still accepts
 the `[cloud]` table, so one config file serves every build.
@@ -1999,7 +1980,7 @@ Right-click a linked worktree and choose Teleport... to move it to another
 connected host: its branch and commits, staged, unstaged and untracked changes,
 tabs and splits, the programs running in them, and agent sessions. It is offered
 on Linux and macOS clients when the worktree's host is the local session or a
-saved SSH host or cloud device (such as Railway); custom socket and
+saved SSH host or cloud device; custom socket and
 WSL endpoints are not scripted. Neither is a
 development (`--dev`) session: the `herdr` CLI names sessions of the release
 installation only, so Teleport, fan-out, and dispatch are not offered there,
@@ -2007,7 +1988,7 @@ and an orchestrator action that drives that session through the CLI reports an
 error instead of reaching the release session of the same name.
 
 Cloud devices use the same saved account and machine identity as their sidebar
-connection, in either direction. Railway uses its saved, verified SSH key.
+connection, in either direction.
 Teleport does not create a new
 cloud device or install Herdr. Cloud authentication and command preparation run
 only after a host is chosen, on the background worker.

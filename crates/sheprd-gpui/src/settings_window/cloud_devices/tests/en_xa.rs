@@ -43,8 +43,6 @@ fn data() -> Vec<String> {
         crate::container::setup::DEFAULT_CPUS.into(),
         crate::container::setup::DEFAULT_MEMORY.into(),
     ]);
-    #[cfg(feature = "railway")]
-    data.extend(["/Users/you/.ssh/id_ed25519".into(), "herdr-railway".into()]);
     #[cfg(feature = "sprites")]
     data.push(crate::sprites::DEFAULT_API_URL.into());
     data

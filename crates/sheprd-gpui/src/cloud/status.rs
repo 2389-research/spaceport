@@ -19,7 +19,6 @@ pub(crate) fn step(step: &Step) -> String {
 fn say(step: &Step, say: impl Fn(&str, &[(&str, FluentValue<'_>)]) -> String) -> String {
     match step {
         Step::Creating => say("cloud-status-creating", &[]),
-        Step::Connecting => say("cloud-status-connecting", &[]),
         Step::Starting => say("cloud-status-starting", &[]),
         Step::Building(status) => say(
             "cloud-status-building",

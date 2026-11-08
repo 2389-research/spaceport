@@ -10,8 +10,6 @@ mod azure;
 mod container;
 #[cfg(feature = "container")]
 mod images;
-#[cfg(feature = "railway")]
-mod railway;
 mod setup;
 #[cfg(feature = "sprites")]
 mod sprites;
@@ -22,8 +20,6 @@ pub(super) use azure::AzureCard;
 pub(super) use container::ContainerCard;
 #[cfg(feature = "container")]
 pub(super) use images::SandboxImages;
-#[cfg(feature = "railway")]
-pub(super) use railway::RailwayCard;
 #[cfg(feature = "sprites")]
 pub(super) use sprites::SpritesCard;
 
@@ -153,8 +149,6 @@ impl SettingsWindow {
                 CloudProvider::Azure => self.open_azure_card(cx),
                 #[cfg(feature = "container")]
                 CloudProvider::Container => self.open_container_card(cx),
-                #[cfg(feature = "railway")]
-                CloudProvider::Railway => self.open_railway_card(cx),
                 #[cfg(feature = "sprites")]
                 CloudProvider::Sprites => self.open_sprites_card(cx),
             }
@@ -170,8 +164,6 @@ impl SettingsWindow {
                 CloudProvider::Azure => self.azure_config_changed(cx),
                 #[cfg(feature = "container")]
                 CloudProvider::Container => self.container_config_changed(cx),
-                #[cfg(feature = "railway")]
-                CloudProvider::Railway => self.railway_config_changed(cx),
                 #[cfg(feature = "sprites")]
                 CloudProvider::Sprites => self.sprites_config_changed(cx),
             }
@@ -233,8 +225,6 @@ impl SettingsWindow {
             CloudProvider::Azure => self.render_azure_card(cx),
             #[cfg(feature = "container")]
             CloudProvider::Container => self.render_container_card(cx),
-            #[cfg(feature = "railway")]
-            CloudProvider::Railway => self.render_railway_card(cx),
             #[cfg(feature = "sprites")]
             CloudProvider::Sprites => self.render_sprites_card(cx),
         };
@@ -304,7 +294,7 @@ impl SettingsWindow {
 
     /// A saved device with its Remove button; removal leaves the machine
     /// itself untouched at the provider.
-    #[cfg(any(feature = "container", feature = "railway", feature = "sprites"))]
+    #[cfg(any(feature = "container", feature = "sprites"))]
     fn cloud_device_row(
         &self,
         index: usize,
@@ -318,7 +308,7 @@ impl SettingsWindow {
     }
 
     /// `cloud_device_row` with provider `actions` before its Remove button.
-    #[cfg(any(feature = "container", feature = "railway", feature = "sprites"))]
+    #[cfg(any(feature = "container", feature = "sprites"))]
     #[allow(clippy::too_many_arguments)]
     fn cloud_device_row_with(
         &self,
@@ -347,12 +337,7 @@ impl SettingsWindow {
     }
 
     /// A saved device's label and `detail`, with `actions` at the end.
-    #[cfg(any(
-        feature = "azure",
-        feature = "container",
-        feature = "railway",
-        feature = "sprites"
-    ))]
+    #[cfg(any(feature = "azure", feature = "container", feature = "sprites"))]
     fn cloud_device_row_actions(
         &self,
         device: &crate::cloud::SavedDevice,

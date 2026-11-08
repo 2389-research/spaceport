@@ -75,8 +75,6 @@ pub enum CloudProvider {
     Azure,
     #[cfg(feature = "container")]
     Container,
-    #[cfg(feature = "railway")]
-    Railway,
     #[cfg(feature = "sprites")]
     Sprites,
 }
@@ -85,8 +83,6 @@ pub enum CloudProvider {
 impl CloudProvider {
     /// Every provider this build supports, in display order.
     pub const ALL: &[Self] = &[
-        #[cfg(feature = "railway")]
-        Self::Railway,
         #[cfg(feature = "azure")]
         Self::Azure,
         #[cfg(feature = "container")]
@@ -102,8 +98,6 @@ impl CloudProvider {
             Self::Azure => "azure",
             #[cfg(feature = "container")]
             Self::Container => "container",
-            #[cfg(feature = "railway")]
-            Self::Railway => "railway",
             #[cfg(feature = "sprites")]
             Self::Sprites => "sprites",
         }
@@ -124,10 +118,9 @@ pub enum ConnectTarget {
     /// A machine a cloud provider created, reached through the application's
     /// connector, which holds the provider's credential and builds the command
     /// that runs the bridge there. `account` names the provider account or
-    /// deployment (for Railway, the path of the SSH key); `id` is the
-    /// provider's stable ID for the machine, which the connector reaches it by,
-    /// and `machine` its name when it was saved, for display: a machine can be
-    /// renamed, or deleted and its name reused.
+    /// deployment; `id` is the provider's stable ID for the machine, which the
+    /// connector reaches it by. `machine` is its name when saved, for display:
+    /// a machine can be renamed, or deleted and its name reused.
     #[cfg(feature = "cloud")]
     Cloud {
         provider: CloudProvider,

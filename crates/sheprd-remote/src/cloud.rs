@@ -100,15 +100,10 @@ pub fn unavailable() -> Option<&'static str> {
 }
 
 /// What a job reports while it adds a machine, in words every provider shares.
-// Railway reports only the steps it has; the rest belong to the others.
 #[cfg_attr(not(feature = "azure"), allow(dead_code))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Step {
     Creating,
-    /// Reaching a machine that may already exist, such as a Railway VM, whose
-    /// first connection creates it when it does not.
-    #[cfg_attr(not(feature = "railway"), allow(dead_code))]
-    Connecting,
     Starting,
     /// The provider's own word for where the build is, e.g. `pending`.
     Building(String),
@@ -124,7 +119,6 @@ impl Step {
     pub fn progress(&self) -> f32 {
         match self {
             Self::Creating => 0.15,
-            Self::Connecting => 0.25,
             Self::Starting | Self::Building(_) => 0.4,
             Self::CheckingHerdr => 0.7,
             // The build is most of a dispatch that needs one.

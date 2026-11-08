@@ -17,8 +17,6 @@ pub mod container;
 #[cfg(any(feature = "azure", feature = "sprites"))]
 mod credentials;
 mod error;
-#[cfg(feature = "railway")]
-pub mod railway;
 #[cfg(feature = "sprites")]
 pub mod sprites;
 pub mod teleport;

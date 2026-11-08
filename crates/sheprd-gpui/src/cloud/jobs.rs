@@ -63,12 +63,6 @@ impl Jobs {
     pub(crate) fn is_empty(&self) -> bool {
         self.jobs.is_empty()
     }
-
-    /// Whether any job adds a machine of this provider.
-    #[cfg(feature = "railway")]
-    pub(crate) fn has(&self, provider: CloudProvider) -> bool {
-        self.jobs.iter().any(|job| job.provider == provider)
-    }
 }
 
 impl SheprdWindow {

@@ -45,8 +45,6 @@ fn right_clicking_a_cloud_device_offers_rename_settings_setup_and_removal(cx: &m
         CloudProvider::Container => "host-container:w1",
         #[cfg(feature = "sprites")]
         CloudProvider::Sprites => "host-sprites:w1",
-        #[cfg(feature = "railway")]
-        CloudProvider::Railway => "host-railway:w1",
     };
     let header = cx.debug_bounds(header).unwrap();
     cx.simulate_mouse_down(header.center(), MouseButton::Right, Modifiers::default());

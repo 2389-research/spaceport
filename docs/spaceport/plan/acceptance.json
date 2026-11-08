@@ -349,7 +349,7 @@
       "scenario": "Exercise stale settings/commands and monitor fake provider endpoints and installed services.",
       "expected": "No provider auth/provisioning/Teleport/orchestration/scheduler/mod behavior or hidden worker remains.",
       "status": "not_run",
-      "evidence": ["evidence/t04-legacy-plugin-settings-removal.md", "evidence/t04-legacy-plugin-command-routes.md", "evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-orchestrator-control-removal.md", "evidence/t04-cloud-teleport-dependency.md", "evidence/t04-daytona-dispatch-removal.md", "evidence/t04-boxd-provider-removal.md", "evidence/t04-boxd-merged-config.md", "evidence/t04-daytona-provider-removal.md", "evidence/t04-coder-provider-removal.md", "evidence/t04-boat-provider-removal.md", "evidence/t04-opensandbox-provider-removal.md"]
+      "evidence": ["evidence/t04-legacy-plugin-settings-removal.md", "evidence/t04-legacy-plugin-command-routes.md", "evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-orchestrator-control-removal.md", "evidence/t04-cloud-teleport-dependency.md", "evidence/t04-daytona-dispatch-removal.md", "evidence/t04-boxd-provider-removal.md", "evidence/t04-boxd-merged-config.md", "evidence/t04-daytona-provider-removal.md", "evidence/t04-coder-provider-removal.md", "evidence/t04-boat-provider-removal.md", "evidence/t04-opensandbox-provider-removal.md", "evidence/t04-railway-provider-removal.md"]
     },
     {
       "id": "A31",
