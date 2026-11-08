@@ -50,3 +50,15 @@ Native GUI, provider endpoints, and installed service checks were not run.
 The specification validator only checks schema and links, not app behavior.
 T04 stays blocked on G-LINK while independent excluded-route cuts continue;
 A30 stays `not_run`.
+
+## Integrated branch verification
+
+After cherry-picking this cut at `35e3569d` on top of the retained desktop
+copy edit, the combined default and all-feature `cargo +1.99.0 check --locked
+--all-targets -p sheprd-gpui` commands passed. The targeted `retired_azure`
+catalog regression passed 1/1 and the control protocol library passed 57/57.
+Azure/Sprites absence and desktop/control copy source tests passed 6/6; the
+site suite passed 31/31. Format, file-size, sorted-list and i18n checks
+passed at 4,456 used messages in 245 files. The spec package's 21 tool tests
+passed. Cargo printed the existing `block v0.1.6` future compatibility
+notice. No merged native GUI or provider network test ran.

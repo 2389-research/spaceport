@@ -48,3 +48,15 @@ imply a Spaceport-signed update while upstream signing identity remains.
 T01/T09 remain in progress. A42 stays not run. G-RELEASE remains open. This
 source/i18n cut does not prove full product branding, native menu appearance,
 or a releasable package.
+
+## Integrated branch verification
+
+After cherry-picking at `26265eee` and the Azure provider cut, the desktop
+and control product-copy source tests passed together. `just check-i18n`
+passed with 4,456 used messages in 245 files, and format, file-size,
+sorted-list and spec package checks passed. Default and all-feature
+`cargo +1.99.0 check --locked --all-targets -p sheprd-gpui` passed on the
+merged branch. No native window or packaged app was run for these labels;
+the 55-line inventory above is tied to its named base revision. A current
+source search after Azure finds 49 `Sheprd` lines in 25 English Fluent files;
+their live/excluded/release ownership still needs review.
