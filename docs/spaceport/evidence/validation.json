@@ -36,17 +36,17 @@
     "examples/observation.json": "c62b06ed37236b7fc7e1ace848d8643ef3553c70570a2952186f6bb3172da184",
     "examples/unknown-outcome.json": "06a3dcb9b16e9596f79a25050eef3e99fbb9bb36ee055c6a5fe38a9e73374f42",
     "notes/HANDOFF_TEMPLATE.md": "505137a430a8db4587354998f4d23b1b964c3357b9cfc117c12da28fcfbcc470",
-    "plan/acceptance.json": "2a6ca3e562af2bede4bb59ace6d0b826b82c4dc2ee850d1e40abde70675421d4",
+    "plan/acceptance.json": "388d58f5cc985b9ed1b958a69b7c02efe6488039be7c7fbff045e66bfb83cd17",
     "plan/capabilities.json": "df85c8fb1b574cd4db6e4bce7eaec9bbf395061b7880b98efa0284506945b210",
     "plan/decisions.json": "2d854e1b2107f75cb8124f83cf650b5c1a3b1c7d445ac66136b7279c5374be21",
     "plan/gaps.json": "39af1806743c5c0b882b0610c5d48343a4fb8ce1a43e766cef9cfd6dc9f4563f",
     "plan/removals.json": "c6c224657b4756ec7999d9f103f233a86a6c644abbe36426a3cc1fe807ce31de",
     "plan/sources.json": "c614386b3b96c7e83462c8e86ffc65207b194c042912f1f96162bf6497f7b452",
-    "plan/tasks.json": "8dfe5e1d788e3030b0d84bb877116fcb9a7f73ce5750a7036cadce8a1e4d755a",
+    "plan/tasks.json": "2f1208d1d346e9a41122bee7f70f9efd898afe24fc977a6c8afd77ff0dc2d675",
     "tools/README.md": "dc87a5aaa0a9786e42d5296891a4bbe71ea59329859e2cd46fbef7652104d889",
     "tools/requirements.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
     "tools/spec.py": "cb935e63ff6076568fba9ceb72b88fde2ae103e9a2f42db001d308f7e1415002",
     "tools/test_spec.py": "45172ec5f47a57642575e82ccdba4474c405ec7e59f515e054f35d0882223f5f"
   },
-  "checked_at_utc": "2026-11-08T08:18:21.494349+00:00"
+  "checked_at_utc": "2026-11-08T08:23:28.130480+00:00"
 }

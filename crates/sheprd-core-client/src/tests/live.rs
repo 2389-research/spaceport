@@ -25,6 +25,8 @@ mod observer;
 mod remote_document;
 #[cfg(unix)]
 mod resize;
+#[cfg(unix)]
+mod termination;
 
 struct Sandbox {
     _dir: tempfile::TempDir,

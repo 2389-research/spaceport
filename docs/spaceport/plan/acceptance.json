@@ -268,7 +268,7 @@
       "scenario": "With duplicate labels and multiple views, explicitly terminate one qualified fixture terminal.",
       "expected": "Only that program ends; other views and processes are not accidentally destroyed.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t05-explicit-termination.md"]
     },
     {
       "id": "A24",
