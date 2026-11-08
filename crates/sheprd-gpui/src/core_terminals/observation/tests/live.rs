@@ -7,6 +7,8 @@ use std::{
     process::{Child, Command, ExitStatus, Stdio},
 };
 
+mod remote;
+
 struct Sandbox {
     _dir: tempfile::TempDir,
     binary: OsString,
@@ -18,6 +20,10 @@ struct Sandbox {
 
 impl Sandbox {
     fn start(binary: OsString) -> Self {
+        Self::start_with(binary, Vec::new())
+    }
+
+    fn start_with(binary: OsString, extra: Vec<(&'static str, OsString)>) -> Self {
         let parent = std::env::var_os("HERDR_TEST_TMPDIR").unwrap_or_else(|| "/tmp".into());
         let dir = tempfile::Builder::new()
             .prefix("hcobs")
@@ -26,6 +32,7 @@ impl Sandbox {
         let socket = dir.path().join("c.sock");
         let home = dir.path().join("home");
         let child = Self::command(&binary, &socket, &home)
+            .envs(extra)
             .arg("serve")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -39,6 +46,17 @@ impl Sandbox {
             home,
             stop_attempted: false,
         }
+    }
+
+    fn restart(&mut self) {
+        assert!(self.child.try_wait().unwrap().is_some());
+        self.child = Self::command(&self.binary, &self.socket, &self.home)
+            .arg("serve")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        self.stop_attempted = false;
     }
 
     fn command(binary: &OsString, socket: &PathBuf, home: &PathBuf) -> Command {
@@ -153,7 +171,16 @@ fn worker_refetches_local_document_after_notice() {
         let mailbox = Arc::clone(&mailbox);
         let stop = Arc::clone(&stop);
         let running = Arc::clone(&running);
-        std::thread::spawn(move || run(backend, 1, stop, running, mailbox))
+        std::thread::spawn(move || {
+            run(
+                backend,
+                1,
+                stop,
+                running,
+                mailbox,
+                Arc::new(Mutex::new(RemoteSelection::default())),
+            )
+        })
     };
     let wait_for_version = |version| {
         let deadline = Instant::now() + Duration::from_secs(5);

@@ -77,8 +77,8 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_crud_and_selection_headless_passed; local_membership_ui_disjoint_rebase_and_same_group_refusal_passed_private_core; terminal_run_then_failed_manual_add_keeps_ungrouped_picker_and_pid; remote_doc_id_route_reconnect_and_missed_passed_private_core_client; app_remote_watch_native_and_grouped_launch_partial_result_not_run; unknown_outcome_ui_guard_seeded_only",
-      "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md", "evidence/t03-workspace-document.md", "evidence/t03-observation.md", "evidence/t03-document-edits.md", "evidence/t03-workspace-ui.md", "evidence/t03-remote-document-route.md"]
+      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_crud_and_selection_headless_passed; local_membership_ui_disjoint_rebase_and_same_group_refusal_passed_private_core; terminal_run_then_failed_manual_add_keeps_ungrouped_picker_and_pid; remote_doc_id_route_reconnect_and_missed_passed_private_core_client; app_remote_document_reader_notice_and_reconnect_passed_private_core; native_remote_reader_and_grouped_launch_partial_result_not_run; unknown_outcome_ui_guard_seeded_only",
+      "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md", "evidence/t03-workspace-document.md", "evidence/t03-observation.md", "evidence/t03-document-edits.md", "evidence/t03-workspace-ui.md", "evidence/t03-remote-document-route.md", "evidence/t03-remote-document-reader.md"]
     },
     {
       "id": "CAP-CHAT",

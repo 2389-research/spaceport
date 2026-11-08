@@ -26,3 +26,9 @@ core-terminals-machine-not-current = no current machine list from Core
 core-terminals-machine-more = { $count } more Core machines
 # $reason comes from Core or the local Core client.
 core-terminals-machine-unavailable = Core machine list unavailable: { $reason }
+core-terminals-machine-groups = Groups stored on this Core
+core-terminals-machine-groups-loading = Loading this Core's groups…
+core-terminals-machine-groups-stale = This Core's groups are not current.
+core-terminals-machine-groups-error = Could not load this Core's groups: { $reason }
+core-terminals-machine-groups-empty = No groups stored on this Core
+core-terminals-machine-groups-more = { $count } more groups

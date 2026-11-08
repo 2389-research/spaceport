@@ -14,6 +14,7 @@ mod boat_rail;
 #[cfg(feature = "cloud")]
 mod cloud_providers;
 mod core_catalog;
+mod core_remote_document;
 mod en_xa;
 mod fold;
 mod host_key;

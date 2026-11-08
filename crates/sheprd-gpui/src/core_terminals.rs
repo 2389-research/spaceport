@@ -47,6 +47,42 @@ pub(crate) fn machine_catalog(cx: &App) -> Option<&[sheprd_core_client::wire::Ma
         .machines()
 }
 
+pub(crate) enum RemoteDocumentView<'a> {
+    Loading,
+    Ready(&'a [workspace_document::Workspace]),
+    Stale,
+    Failed(&'a observation::Error),
+}
+
+pub(crate) fn selected_remote_machine(cx: &App) -> Option<String> {
+    cx.try_global::<observation::Observation>()?
+        .selected_remote()
+}
+
+pub(crate) fn select_remote_machine(cx: &mut App, machine_id: &str) -> bool {
+    cx.global_mut::<observation::Observation>()
+        .select_remote(machine_id)
+}
+
+pub(crate) fn remote_document_status<'a>(
+    cx: &'a App,
+    machine_id: &str,
+) -> Option<RemoteDocumentView<'a>> {
+    Some(
+        match cx
+            .try_global::<observation::Observation>()?
+            .remote_status(machine_id)?
+        {
+            observation::RemoteStatus::Loading => RemoteDocumentView::Loading,
+            observation::RemoteStatus::Ready(document) => {
+                RemoteDocumentView::Ready(document.value.workspaces())
+            }
+            observation::RemoteStatus::Stale => RemoteDocumentView::Stale,
+            observation::RemoteStatus::Failed(error) => RemoteDocumentView::Failed(error),
+        },
+    )
+}
+
 pub(crate) fn machine_catalog_error(cx: &App) -> Option<&observation::Error> {
     cx.try_global::<observation::Observation>()?
         .projection()
@@ -97,6 +133,24 @@ pub(crate) fn set_machine_catalog_for_test(
     machines: Option<Vec<sheprd_core_client::wire::MachineView>>,
 ) {
     observation::set_machines_for_test(cx, machines);
+}
+
+#[cfg(test)]
+pub(crate) fn set_remote_document_for_test(
+    cx: &mut App,
+    machine_id: &str,
+    doc: sheprd_core_client::wire::Doc,
+) {
+    observation::set_remote_document_for_test(cx, machine_id, doc);
+}
+
+#[cfg(test)]
+pub(crate) fn set_selected_remote_machine_state_for_test(
+    cx: &mut App,
+    machine_id: &str,
+    state: &str,
+) {
+    observation::set_selected_remote_machine_state_for_test(cx, machine_id, state);
 }
 
 #[cfg(test)]

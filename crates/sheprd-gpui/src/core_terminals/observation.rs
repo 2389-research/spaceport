@@ -1,8 +1,12 @@
 //! The shared Core metadata subscription and Spaceport document observation.
 //! A worker owns blocking Core reads; windows consume only published facts.
 
+mod remote;
+
 use super::workspace_document::{self, NAME, VersionedDocument};
 use gpui::{App, Global};
+pub(super) use remote::RemoteStatus;
+use remote::{Remote, RemoteRequest};
 use sheprd_backend::{Backend as _, Change, TerminalInfo};
 use sheprd_core_client::{
     CoreBackend, CoreBatch,
@@ -54,6 +58,7 @@ pub(super) struct Projection {
     error: Option<Arc<Error>>,
     machines: Option<Arc<[MachineView]>>,
     machine_error: Option<Arc<Error>>,
+    remote: Remote,
     revision: u64,
 }
 
@@ -71,6 +76,7 @@ impl Projection {
         self.error = None;
         self.machines = None;
         self.machine_error = None;
+        self.remote.clear();
         self.revision += 1;
     }
 
@@ -136,6 +142,7 @@ impl Projection {
         self.error = None;
         self.machines = None;
         self.machine_error = None;
+        self.remote.clear();
         self.revision += 1;
     }
 
@@ -241,6 +248,24 @@ fn sort_machines(mut catalog: MachineList) -> MachineList {
 
 type Mailbox = Arc<Mutex<Option<Projection>>>;
 type MachineMailbox = Arc<Mutex<Option<Result<MachineList, Error>>>>;
+type RemoteMailbox = Arc<Mutex<Option<(RemoteRequest, Result<VersionedDocument, Error>)>>>;
+type RemoteRequests = Arc<Mutex<Option<RemoteRequest>>>;
+
+#[derive(Clone, Default, PartialEq, Eq)]
+struct RemoteSelection {
+    generation: u64,
+    machine_id: Option<String>,
+}
+
+type SelectedRemote = Arc<Mutex<RemoteSelection>>;
+
+fn selected_remote(selection: &SelectedRemote) -> RemoteSelection {
+    let state = match selection.lock() {
+        Ok(state) => state,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    state.clone()
+}
 
 fn publish(mailbox: &Mailbox, projection: &Projection) {
     replace_latest(mailbox, projection.clone());
@@ -266,6 +291,7 @@ fn take_latest<T>(mailbox: &Arc<Mutex<Option<T>>>) -> Option<T> {
 #[derive(Default)]
 pub(super) struct Observation {
     projection: Projection,
+    remote_selection: SelectedRemote,
     mailbox: Option<Mailbox>,
     running: Option<Arc<AtomicBool>>,
     stop: Option<Arc<AtomicBool>>,
@@ -304,10 +330,19 @@ impl Observation {
         let worker_stop = Arc::clone(&stop);
         let worker_running = Arc::clone(&running);
         let worker_mailbox = Arc::clone(&mailbox);
+        let worker_selection = Arc::clone(&self.remote_selection);
         match std::thread::Builder::new()
             .name("herdr-core-observe".into())
-            .spawn(move || run(backend, epoch, worker_stop, worker_running, worker_mailbox))
-        {
+            .spawn(move || {
+                run(
+                    backend,
+                    epoch,
+                    worker_stop,
+                    worker_running,
+                    worker_mailbox,
+                    worker_selection,
+                )
+            }) {
             Ok(_) => {
                 self.mailbox = Some(mailbox);
                 self.running = Some(running);
@@ -341,6 +376,58 @@ impl Observation {
 
     pub fn projection(&self) -> &Projection {
         &self.projection
+    }
+
+    pub(crate) fn selected_remote(&self) -> Option<String> {
+        selected_remote(&self.remote_selection).machine_id
+    }
+
+    pub(crate) fn select_remote(&mut self, machine_id: &str) -> bool {
+        if !self.projection.fresh()
+            || !self.projection.machines().is_some_and(|machines| {
+                machines
+                    .iter()
+                    .any(|view| view.machine.id == machine_id && view.state == "connected")
+            })
+        {
+            return false;
+        }
+        let mut selection = match self.remote_selection.lock() {
+            Ok(state) => state,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        selection.generation = selection.generation.wrapping_add(1);
+        selection.machine_id =
+            (selection.machine_id.as_deref() != Some(machine_id)).then(|| machine_id.to_owned());
+        let current = selection.clone();
+        drop(selection);
+        self.projection.remote.select(
+            self.projection.epoch,
+            current.generation,
+            current.machine_id,
+            self.projection.machines.as_deref(),
+        );
+        self.projection.revision += 1;
+        true
+    }
+
+    pub(crate) fn remote_status(&self, machine_id: &str) -> Option<&RemoteStatus> {
+        let selected = selected_remote(&self.remote_selection);
+        if selected.machine_id.as_deref() != Some(machine_id) {
+            return None;
+        }
+        if !self.projection.fresh() {
+            return Some(&RemoteStatus::Stale);
+        }
+        if self
+            .projection
+            .remote
+            .matches(self.projection.epoch, selected.generation, machine_id)
+        {
+            self.projection.remote.status()
+        } else {
+            Some(&RemoteStatus::Loading)
+        }
     }
 }
 
@@ -406,16 +493,62 @@ pub(super) fn set_machine_error_for_test(cx: &mut App, error: sheprd_core_client
         .refresh_machines(epoch, Err(Error::Core(error)));
 }
 
+#[cfg(test)]
+pub(super) fn set_remote_document_for_test(cx: &mut App, machine_id: &str, doc: Doc) {
+    let observation = cx.global_mut::<Observation>();
+    let selected = selected_remote(&observation.remote_selection);
+    assert_eq!(selected.machine_id.as_deref(), Some(machine_id));
+    let request = observation
+        .projection
+        .remote
+        .select(
+            observation.projection.epoch,
+            selected.generation,
+            selected.machine_id,
+            observation.projection.machines.as_deref(),
+        )
+        .expect("selected test machine is connected");
+    observation
+        .projection
+        .remote
+        .complete(request, parse_document(Ok(doc)));
+    observation.projection.revision += 1;
+}
+
+#[cfg(test)]
+pub(super) fn set_selected_remote_machine_state_for_test(
+    cx: &mut App,
+    machine_id: &str,
+    state: &str,
+) {
+    let observation = cx.global_mut::<Observation>();
+    let epoch = observation.projection.epoch;
+    let mut machines = observation.projection.machines().unwrap().to_vec();
+    machines
+        .iter_mut()
+        .find(|view| view.machine.id == machine_id)
+        .unwrap()
+        .state = state.to_owned();
+    observation
+        .projection
+        .refresh_machines(epoch, Ok(MachineList { machines }));
+    observation
+        .projection
+        .remote
+        .catalog(epoch, observation.projection.machines.as_deref());
+}
+
 fn run(
     backend: CoreBackend,
     epoch: u64,
     stop: Arc<AtomicBool>,
     running: Arc<AtomicBool>,
     mailbox: Mailbox,
+    selection: SelectedRemote,
 ) {
     let mut projection = Projection::default();
     projection.begin(epoch);
-    if let Err(error) = watch(backend, epoch, &stop, &mailbox, &mut projection) {
+    if let Err(error) = watch(backend, epoch, &stop, &mailbox, &selection, &mut projection) {
         projection.fail(epoch, error);
         publish(&mailbox, &projection);
     }
@@ -428,6 +561,7 @@ fn watch(
     epoch: u64,
     stop: &Arc<AtomicBool>,
     mailbox: &Mailbox,
+    selection: &SelectedRemote,
     projection: &mut Projection,
 ) -> Result<(), Error> {
     let (terminals, mut changes) = backend.watch()?;
@@ -436,42 +570,88 @@ fn watch(
     projection.initial(epoch, terminals, document);
     publish(mailbox, projection);
     let machine_results: MachineMailbox = Arc::new(Mutex::new(None));
+    let remote_requests: RemoteRequests = Arc::new(Mutex::new(None));
+    let remote_results: RemoteMailbox = Arc::new(Mutex::new(None));
     let read_backend = backend.clone();
     let read_stop = Arc::clone(stop);
     let read_results = Arc::clone(&machine_results);
+    let read_requests = Arc::clone(&remote_requests);
+    let read_remote_results = Arc::clone(&remote_results);
     if let Err(error) = std::thread::Builder::new()
         .name("herdr-core-machines".into())
         .spawn(move || {
+            let mut next_machine_read = Instant::now();
             while !read_stop.load(Ordering::Acquire) {
-                let result = read_backend
-                    .core()
-                    .machine_list()
-                    .map(sort_machines)
-                    .map_err(Error::Core);
-                replace_latest(&read_results, result);
-                let next = Instant::now() + MACHINE_REFRESH;
-                while !read_stop.load(Ordering::Acquire) && Instant::now() < next {
-                    std::thread::sleep(
-                        next.saturating_duration_since(Instant::now())
-                            .min(Duration::from_millis(100)),
-                    );
+                if Instant::now() >= next_machine_read {
+                    let result = read_backend
+                        .core()
+                        .machine_list()
+                        .map(sort_machines)
+                        .map_err(Error::Core);
+                    replace_latest(&read_results, result);
+                    next_machine_read = Instant::now() + MACHINE_REFRESH;
                 }
+                if let Some(request) = take_latest(&read_requests) {
+                    let result = parse_document(
+                        read_backend.core().doc_get(NAME, Some(&request.machine_id)),
+                    );
+                    replace_latest(&read_remote_results, (request, result));
+                }
+                std::thread::sleep(Duration::from_millis(100));
             }
         })
     {
         projection.refresh_machines(epoch, Err(Error::Worker(error)));
         publish(mailbox, projection);
     }
+    let mut observed_selection = RemoteSelection::default();
     while !stop.load(Ordering::Acquire) {
+        let current_selection = selected_remote(selection);
+        if current_selection != observed_selection {
+            observed_selection = current_selection;
+            let request = projection.remote.select(
+                epoch,
+                observed_selection.generation,
+                observed_selection.machine_id.clone(),
+                projection.machines.as_deref(),
+            );
+            if let Some(request) = request {
+                replace_latest(&remote_requests, request);
+            }
+            projection.revision += 1;
+            publish(mailbox, projection);
+        }
         let batch = changes.next_batch(Duration::from_millis(200))?;
+        let remote_notice = batch.missed
+            || batch
+                .documents
+                .iter()
+                .any(|notice| notice.machine.is_some() && notice.name == NAME);
+        if let Some(request) = projection.remote.invalidate(epoch, &batch) {
+            replace_latest(&remote_requests, request);
+        }
         let document =
             needs_document(&batch).then(|| parse_document(backend.core().doc_get(NAME, None)));
-        if batch.missed || !batch.changes.is_empty() || document.is_some() {
+        if batch.missed || !batch.changes.is_empty() || document.is_some() || remote_notice {
             projection.batch(epoch, batch, document);
+            if remote_notice {
+                projection.revision += 1;
+            }
             publish(mailbox, projection);
         }
         if let Some(result) = take_latest(&machine_results) {
             projection.refresh_machines(epoch, result);
+            if let Some(request) = projection
+                .remote
+                .catalog(epoch, projection.machines.as_deref())
+            {
+                replace_latest(&remote_requests, request);
+            }
+            publish(mailbox, projection);
+        }
+        if let Some((request, result)) = take_latest(&remote_results) {
+            projection.remote.complete(request, result);
+            projection.revision += 1;
             publish(mailbox, projection);
         }
     }
