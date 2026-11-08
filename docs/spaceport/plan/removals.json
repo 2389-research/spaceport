@@ -180,7 +180,7 @@
         "S09"
       ],
       "constraint": "Extract shared pure session/chat primitives first; retain desktop local IPC.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-LEGACY",
@@ -200,7 +200,7 @@
         "S11"
       ],
       "constraint": "Core protocol generation 1 and retained rendering/input types are not legacy backend behavior.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-PROVIDERS",
