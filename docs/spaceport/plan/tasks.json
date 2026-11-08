@@ -257,6 +257,7 @@
         "evidence/t04-default-bridge-dependency.md",
         "evidence/t04-legacy-install-offer.md",
         "evidence/t04-cloud-teleport-dependency.md",
+        "evidence/t04-teleport-current-cut-order.md",
         "evidence/t04-git-ide-dispatch-dependency.md",
         "evidence/t04-code-server-dependency.md",
         "evidence/t04-automation-removal.md",
