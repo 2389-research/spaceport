@@ -279,7 +279,7 @@
       "scenario": "Disconnect and try mutations; restart the client while offline; inspect saved files.",
       "expected": "No queued operations or browsable persistent transcripts; stale data is labeled; layout prefs may remain.",
       "status": "not_run",
-      "evidence": ["evidence/t03-typed-group-key.md"]
+      "evidence": ["evidence/t03-typed-group-key.md", "evidence/t03-core-window-list-identity.md"]
     },
     {
       "id": "A25",

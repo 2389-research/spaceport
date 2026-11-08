@@ -30,6 +30,20 @@ fn describe_window(window: &WindowInfo, text: &mut String) {
     if let Some(workspace) = &window.workspace {
         let _ = writeln!(text, "    workspace {workspace}");
     }
+    if let Some(core) = &window.core_workspace {
+        let _ = write!(
+            text,
+            "    core workspace {} (hub {}, document {}",
+            core.group_id, core.hub_core_id, core.document_name
+        );
+        if let Some(machine) = &core.machine_id {
+            let _ = write!(text, ", machine {machine}");
+        }
+        if !core.current {
+            let _ = write!(text, ", stale");
+        }
+        let _ = writeln!(text, ")");
+    }
     for host in &window.hosts {
         let _ = writeln!(
             text,
@@ -188,3 +202,6 @@ pub(super) fn run_command(name: &str, context: &Context) -> crate::Result<Output
         },
     )
 }
+
+#[cfg(test)]
+mod tests;

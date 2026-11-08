@@ -3,6 +3,7 @@ use super::*;
 use crate::control::protocol::app::Switch;
 
 mod core_catalog;
+mod core_window;
 
 fn call<T>(op: T) -> Call<T> {
     Call {

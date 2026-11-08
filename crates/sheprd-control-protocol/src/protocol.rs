@@ -28,7 +28,8 @@ use serde::{Deserialize, Serialize};
 /// 25: removed the Security activity panel and its UI control destination.
 /// 26: removed px0 tab open and editor tab kind.
 /// 27: removed the work fan-out request.
-pub const PROTOCOL_VERSION: u32 = 27;
+/// 28: window listings report selected Core presentation group identity.
+pub const PROTOCOL_VERSION: u32 = 28;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.

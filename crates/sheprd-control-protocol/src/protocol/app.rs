@@ -190,9 +190,22 @@ pub struct WindowInfo {
     pub fullscreen: bool,
     pub width: f32,
     pub height: f32,
-    /// The workspace the window shows on its selected host.
+    /// The selected legacy workspace, only while a legacy host is shown.
     pub workspace: Option<String>,
+    /// The selected Core presentation group, even if its document is stale.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub core_workspace: Option<CoreWorkspaceInfo>,
     pub hosts: Vec<HostInfo>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CoreWorkspaceInfo {
+    pub hub_core_id: String,
+    pub machine_id: Option<String>,
+    pub document_name: String,
+    pub group_id: String,
+    /// Whether the exact group is available in a fresh observation of its hub.
+    pub current: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

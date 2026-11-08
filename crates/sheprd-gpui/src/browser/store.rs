@@ -120,6 +120,14 @@ impl CoreGroupKey {
         &self.scope.hub_core_id
     }
 
+    pub(crate) fn machine_id(&self) -> Option<&str> {
+        self.scope.machine_id.as_deref()
+    }
+
+    pub(crate) fn document_name(&self) -> &str {
+        &self.scope.document_name
+    }
+
     pub(crate) fn parts(&self) -> (Scope, String) {
         (Scope::Core(self.scope.clone()), self.group_id.to_string())
     }

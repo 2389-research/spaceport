@@ -6,8 +6,8 @@ use crate::{
     control::protocol::{
         Call, Caller, ErrorCode, PROTOCOL_VERSION, Response,
         app::{
-            AppOp, CommandOp, CoreCatalog, CoreCatalogState, FontSize, HostInfo, Reply, Status,
-            UiOp, WindowInfo, WindowOp,
+            AppOp, CommandOp, CoreCatalog, CoreCatalogState, CoreWorkspaceInfo, FontSize, HostInfo,
+            Reply, Status, UiOp, WindowInfo, WindowOp,
         },
     },
     controls::{COMMANDS, Command},
@@ -54,6 +54,15 @@ impl SheprdWindow {
 
     fn control_info(&self, window: &Window, cx: &App) -> WindowInfo {
         let bounds = window.bounds();
+        let core_group = self.selected_core_group();
+        let workspace = if core_group.is_some() {
+            None
+        } else {
+            self.live
+                .snapshot
+                .as_ref()
+                .and_then(|snapshot| snapshot.focused_workspace_id.clone())
+        };
         WindowInfo {
             id: window.window_handle().window_id().as_u64(),
             title: self.title.clone(),
@@ -61,11 +70,14 @@ impl SheprdWindow {
             fullscreen: window.is_fullscreen(),
             width: f32::from(bounds.size.width),
             height: f32::from(bounds.size.height),
-            workspace: self
-                .live
-                .snapshot
-                .as_ref()
-                .and_then(|snapshot| snapshot.focused_workspace_id.clone()),
+            workspace,
+            core_workspace: core_group.map(|key| CoreWorkspaceInfo {
+                hub_core_id: key.hub_core_id().to_owned(),
+                machine_id: key.machine_id().map(str::to_owned),
+                document_name: key.document_name().to_owned(),
+                group_id: key.group_id().to_string(),
+                current: self.core_group_available(key, cx),
+            }),
             hosts: self.control_hosts(cx),
         }
     }
