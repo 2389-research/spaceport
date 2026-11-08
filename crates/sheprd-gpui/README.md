@@ -348,11 +348,10 @@ device has its own GitHub sign-in, the confirmation also offers to delete it,
 since its account panel goes away with the device. Local's menu offers neither.
 
 A cloud device's header (Azure, Container,
-OpenSandbox, Railway, or Sprites) has a menu too: **Rename…** changes the name the sidebar
+Railway, or Sprites) has a menu too: **Rename…** changes the name the sidebar
 shows, falling back to the machine's name when left empty; **Cloud device
 settings…** opens its provider under Settings > Cloud devices; and **Remove
-device…** removes it from this computer. For an Azure machine, an OpenSandbox sandbox,
-a container, or a sprite,
+device…** removes it from this computer. For an Azure machine, a container, or a sprite,
 it deletes the machine at the provider by default, with **Remove from Herdr
 only** beside it; a Railway VM is left as it is and expires on its own. Before
 deleting, the dialog searches the machine's home directory for Git checkouts
@@ -451,7 +450,7 @@ launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
 Settings > **Cloud devices** holds accounts with providers that create machines
-to use as devices: Azure, Container, OpenSandbox, Railway, and Sprites.
+to use as devices: Azure, Container, Railway, and Sprites.
 Cloud devices are stored in the GUI's `cloud-devices.json` state file. Each
 entry names its provider, so adding another provider needs no new file.
 
@@ -518,30 +517,6 @@ a WebSocket whose binary frames carry stdin, stdout, stderr, and the exit code
 unchanged. The token stays on this computer. Sprites are unavailable on
 Windows, like every cloud device. This provider is tested against a scripted
 exec stream and API replies, but not yet against a live Sprites account.
-
-### OpenSandbox (experimental)
-
-Settings > **Cloud devices** > **OpenSandbox** holds a self-hosted
-[OpenSandbox](https://github.com/opensandbox-group/OpenSandbox) server: its
-URL (`https`, or `http` on this computer, such as a server started with
-`uvx opensandbox-server`), and the image, CPU, and memory new sandboxes get,
-saved to `[opensandbox]`, with the server's API key in the credential store
-(`HERDR_OPENSANDBOX_API_KEY` takes precedence, and `HERDR_OPENSANDBOX_API_URL`
-replaces the URL). **Create sandbox** makes a sandbox with no expiry whose
-main process keeps Herdr's server running once Herdr is installed, installs
-Herdr when the **Install Herdr** switch is on, and saves the device; a failure
-deletes the sandbox again. A paused sandbox is resumed on connect. Once one
-exists, Smart Dispatch's dialogs offer **New sandbox**.
-
-The app reaches a sandbox by running itself as a relay
-(`sheprd __opensandbox-exec`) over execd's command stream. That stream has
-no way to end a command's input, which Teleport's scripts need, so the relay
-sends input in length-prefixed frames to a small shell wrapper that feeds the
-command through a FIFO and ends its input on an empty frame. Frames are read
-with GNU `head` where the image has it and with `dd`, a byte at a time and
-slower, where it does not. A relay that disappears stops sending heartbeats,
-and under bash the wrapper then ends the command's input. Tested against a
-local `opensandbox-server` on Docker; not against a Kubernetes deployment.
 
 ### Railway free VMs (experimental)
 
@@ -640,7 +615,7 @@ memory only, at most eight at once; one that never ran, or a later run, is
 started from **Run setup script** in the device's sidebar menu.
 Reconnecting never runs it again by itself.
 
-Each provider is a Cargo feature of `herdr-gpui`; `azure`, `container`, `opensandbox`, `railway`, and `sprites` are on by default.
+Each provider is a Cargo feature of `herdr-gpui`; `azure`, `container`, `railway`, and `sprites` are on by default.
 A build with `--no-default-features` has no Cloud
 Devices section and no provider rows in the device picker; it still accepts
 the `[cloud]` table, so one config file serves every build.
@@ -2169,9 +2144,9 @@ Setups of several such worktrees wait their turn; one whose host is not shown
 within two minutes is given up on, with a warning. A
 new workspace opens the repository's main checkout on that host.
 
-Once you have a container device (see [Containers](#containers-docker-or-podman)),
-a sprite, or an OpenSandbox sandbox, the dialogs also offer
-a **New container**, **New sprite**, or **New sandbox** tile, even with one
+Once you have a container device (see [Containers](#containers-docker-or-podman))
+or a sprite, the dialogs also offer
+a **New container** or **New sprite** tile, even with one
 host connected. A container starts from the repository's
 [sandbox image](#sandbox-images) when it has a recipe, building it first if
 needed.

@@ -83,7 +83,7 @@ error-remote-cloud-socket-closed = The exec stream closed before the command fin
 
 # What a cloud provider refused, for every provider. $key is a setting such
 # as azure.subscription_id or an environment variable, as written. Each $value
-# branch is a whole sentence; Azure, OpenSandbox,
+# branch is a whole sentence; Azure,
 # and Sprites are product names, and execd is a program's name.
 error-remote-cloud-value-invalid-key = { $key } is not valid.
 error-remote-cloud-value-invalid = { $value ->
@@ -97,7 +97,6 @@ error-remote-cloud-value-invalid = { $value ->
     [container-engine] Container engine is not valid.
     [exec-session-id] Exec session ID is not valid.
     [execd-endpoint] Execd endpoint is not valid.
-    [opensandbox-api-key] OpenSandbox API key is not valid.
     [remote-command] Remote command is not valid.
     [sandbox-id] Sandbox ID is not valid.
     [sprite-name] Sprite name is not valid.
@@ -117,7 +116,6 @@ error-remote-cloud-value-encoding = { $value ->
     [container-engine] Container engine must be UTF-8.
     [exec-session-id] Exec session ID must be UTF-8.
     [execd-endpoint] Execd endpoint must be UTF-8.
-    [opensandbox-api-key] OpenSandbox API key must be UTF-8.
     [remote-command] Remote command must be UTF-8.
     [sandbox-id] Sandbox ID must be UTF-8.
     [sprite-name] Sprite name must be UTF-8.

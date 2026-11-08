@@ -32,7 +32,6 @@ mod keybindings;
 mod layout;
 mod notifications;
 mod omarchy;
-mod opensandbox;
 mod option_as_alt;
 mod padding;
 pub(crate) mod preferences;
@@ -44,12 +43,7 @@ pub(crate) mod status_bar;
 mod status_icons;
 mod tab_labels;
 pub(crate) mod tab_layout;
-#[cfg(any(
-    feature = "azure",
-    feature = "container",
-    feature = "opensandbox",
-    feature = "sprites"
-))]
+#[cfg(any(feature = "azure", feature = "container", feature = "sprites"))]
 mod table;
 pub(crate) use sidebar_style::parse_hex;
 mod theme;
@@ -99,9 +93,6 @@ pub(crate) use sheprd_remote::config::AzureFields;
 pub use sheprd_remote::config::ContainerConfig;
 #[cfg(feature = "container")]
 pub(crate) use sheprd_remote::config::ContainerFields;
-pub use sheprd_remote::config::OpenSandboxConfig;
-#[cfg(feature = "opensandbox")]
-pub(crate) use sheprd_remote::config::OpenSandboxFields;
 pub use sheprd_remote::config::SpritesConfig;
 #[cfg(feature = "sprites")]
 pub(crate) use sheprd_remote::config::SpritesFields;
@@ -208,8 +199,6 @@ pub struct Config {
     pub(crate) missing_weight: Option<font_weight::MissingWeight>,
     pub(crate) notification_overrides: NotificationSettings,
     pub notifications: NotificationConfig,
-    /// The self-hosted OpenSandbox server whose sandboxes are devices.
-    pub opensandbox: OpenSandboxConfig,
     pub option_as_alt: OptionAsAlt,
     pub palette: crate::palette::PaletteConfig,
     /// The `[pane_keys]` table `keybindings` was built from, for the same
@@ -338,7 +327,6 @@ impl Default for Config {
             missing_weight: None,
             notification_overrides: NotificationSettings::default(),
             notifications: NotificationConfig::default(),
-            opensandbox: OpenSandboxConfig::default(),
             option_as_alt: OptionAsAlt::default(),
             palette: crate::palette::PaletteConfig::default(),
             pane_keys: PaneKeys::new(),
@@ -414,7 +402,6 @@ struct Settings {
     language: Option<sheprd_i18n::Language>,
     layout: Layout,
     notifications: NotificationSettings,
-    opensandbox: OpenSandboxConfig,
     option_as_alt: OptionAsAlt,
     palette: crate::palette::PaletteConfig,
     pane_keys: PaneKeys,
@@ -485,7 +472,6 @@ impl Config {
         Ok(sheprd_remote::config::Sections {
             azure: config.azure,
             container: config.container,
-            opensandbox: config.opensandbox,
             sprites: config.sprites,
         })
     }
@@ -719,9 +705,6 @@ impl Config {
         #[cfg(feature = "container")]
         settings.container.settings()?;
         config.container = settings.container;
-        #[cfg(feature = "opensandbox")]
-        settings.opensandbox.settings_with(|_| None)?;
-        config.opensandbox = settings.opensandbox;
         #[cfg(feature = "sprites")]
         settings.sprites.settings_with(|_| None)?;
         config.sprites = settings.sprites;

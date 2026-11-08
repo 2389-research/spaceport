@@ -75,8 +75,6 @@ pub enum CloudProvider {
     Azure,
     #[cfg(feature = "container")]
     Container,
-    #[cfg(feature = "opensandbox")]
-    OpenSandbox,
     #[cfg(feature = "railway")]
     Railway,
     #[cfg(feature = "sprites")]
@@ -95,8 +93,6 @@ impl CloudProvider {
         Self::Container,
         #[cfg(feature = "sprites")]
         Self::Sprites,
-        #[cfg(feature = "opensandbox")]
-        Self::OpenSandbox,
     ];
 
     /// The stable key used in saved files and endpoint IDs.
@@ -106,8 +102,6 @@ impl CloudProvider {
             Self::Azure => "azure",
             #[cfg(feature = "container")]
             Self::Container => "container",
-            #[cfg(feature = "opensandbox")]
-            Self::OpenSandbox => "opensandbox",
             #[cfg(feature = "railway")]
             Self::Railway => "railway",
             #[cfg(feature = "sprites")]

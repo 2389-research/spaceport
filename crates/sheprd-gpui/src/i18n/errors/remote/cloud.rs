@@ -45,8 +45,6 @@ impl Localize for ProviderError {
             Self::Azure(ref error) => error.localize(),
             #[cfg(feature = "container")]
             Self::Container(ref error) => error.localize(),
-            #[cfg(feature = "opensandbox")]
-            Self::OpenSandbox(ref error) => error.localize(),
             #[cfg(feature = "railway")]
             Self::Railway(ref error) => error.localize(),
             #[cfg(feature = "sprites")]
@@ -137,7 +135,7 @@ impl Localize for install::Failure {
     }
 }
 
-#[cfg(any(feature = "opensandbox", feature = "sprites"))]
+#[cfg(feature = "sprites")]
 impl Localize for sheprd_remote::cloud::socket::Error {
     fn localize(&self) -> String {
         match self {

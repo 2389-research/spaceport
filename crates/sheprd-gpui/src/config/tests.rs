@@ -52,6 +52,7 @@ mod retired_boxd;
 mod retired_coder;
 mod retired_daytona;
 mod retired_ide;
+mod retired_opensandbox;
 mod retired_terminal_editor;
 mod sidebar_scope;
 mod sidebar_search;

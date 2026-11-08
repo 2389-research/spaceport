@@ -15,9 +15,9 @@ pub mod image;
 pub mod install;
 pub mod names;
 mod providers;
-#[cfg(any(feature = "azure", feature = "opensandbox", feature = "sprites"))]
+#[cfg(any(feature = "azure", feature = "sprites"))]
 pub(crate) mod relay;
-#[cfg(any(feature = "opensandbox", feature = "sprites"))]
+#[cfg(feature = "sprites")]
 pub mod socket;
 pub mod unsynced;
 mod value;

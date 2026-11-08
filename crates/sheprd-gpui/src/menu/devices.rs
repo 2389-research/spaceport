@@ -126,11 +126,6 @@ impl SheprdWindow {
             .filter(|provider| match provider {
                 #[cfg(feature = "azure")]
                 crate::cloud::CloudProvider::Azure => self.config.azure.configured(&var),
-                #[cfg(feature = "opensandbox")]
-                crate::cloud::CloudProvider::OpenSandbox => {
-                    self.config.opensandbox.api_url.is_some()
-                        || var("HERDR_OPENSANDBOX_API_URL").is_some()
-                }
                 #[cfg(feature = "sprites")]
                 crate::cloud::CloudProvider::Sprites => {
                     self.config.sprites.api_url.is_some() || var("HERDR_SPRITES_API_URL").is_some()

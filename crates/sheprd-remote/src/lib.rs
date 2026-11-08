@@ -14,11 +14,9 @@ pub mod cloud;
 pub mod config;
 #[cfg(feature = "container")]
 pub mod container;
-#[cfg(any(feature = "azure", feature = "opensandbox", feature = "sprites"))]
+#[cfg(any(feature = "azure", feature = "sprites"))]
 mod credentials;
 mod error;
-#[cfg(feature = "opensandbox")]
-pub mod opensandbox;
 #[cfg(feature = "railway")]
 pub mod railway;
 #[cfg(feature = "sprites")]

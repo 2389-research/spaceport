@@ -19,7 +19,6 @@ pub struct CloudConfig {
     pub agents: Option<Vec<String>>,
     pub azure: CloudSetup,
     pub container: CloudSetup,
-    pub opensandbox: CloudSetup,
     pub railway: CloudSetup,
     /// Shell lines run after the agents, with `sh -e`.
     pub setup: Option<String>,
@@ -59,7 +58,6 @@ impl CloudConfig {
         [
             ("azure", &self.azure),
             ("container", &self.container),
-            ("opensandbox", &self.opensandbox),
             ("railway", &self.railway),
             ("sprites", &self.sprites),
         ]
@@ -84,7 +82,6 @@ impl CloudConfig {
         retain("cloud.", &mut self.agents);
         retain("cloud.azure.", &mut self.azure.agents);
         retain("cloud.container.", &mut self.container.agents);
-        retain("cloud.opensandbox.", &mut self.opensandbox.agents);
         retain("cloud.railway.", &mut self.railway.agents);
         retain("cloud.sprites.", &mut self.sprites.agents);
         unknown

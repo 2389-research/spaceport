@@ -1,9 +1,8 @@
 # Sandboxes
 
 How Sheprd gives agents isolated machines: containers on this computer,
-Fly Sprites, a self-hosted OpenSandbox server, and the existing cloud
-providers. User-facing behavior is in the
-crate README's "Containers (Docker or Podman)", "OpenSandbox", "Fly Sprites",
+Fly Sprites and the existing cloud providers. User-facing behavior is in the
+crate README's "Containers (Docker or Podman)", "Fly Sprites",
 and "Smart Dispatch" sections; this page records the design and is for working on it.
 
 ## Decision: a sandbox is a device
@@ -33,7 +32,7 @@ Paths are in `crates/sheprd-remote/src/`, which has no GPUI, unless they name
 | --- | --- |
 | Provider registry, `SandboxProvider` | `cloud/providers.rs`: one `providers!` row per provider generates the name, logo, connector, background command, deletion, on-demand provisioning, and `cloud::ProviderError`. No async trait: everything blocks on workers. |
 | Session manager (PTY, reconnect) | The sandbox's own Herdr daemon, through `sheprd_client::connect_command`. |
-| Exec / attach | The provider's command: `docker exec -i`, `ssh`, or this app as a relay (`azure/sandbox/relay.rs`, `sprites/relay.rs`, `opensandbox/relay.rs`, sharing `cloud/socket.rs`). |
+| Exec / attach | The provider's command: `docker exec -i`, `ssh`, or this app as a relay (`azure/sandbox/relay.rs` and `sprites/relay.rs`; Sprites uses `cloud/socket.rs`). |
 | Git sync | `teleport/`: `fresh.rs` (new worktree from a base commit, cloned or bundled), `carry.rs`, and Teleport itself, untracked files included. |
 | Workspace lifecycle | `crates/sheprd-gpui/src/cloud/jobs.rs` (create with progress), `cloud/catalog.rs` (saved devices), provider `setup.rs` (create, delete, roll back a failed create). |
 | Dirty-state warning before delete | `cloud/unsynced.rs`, shown by the sidebar's Remove dialog. |
@@ -74,15 +73,12 @@ stream to an arbitrary command exists.
 | Docker / Podman | Yes: `exec -i` without a TTY | Shipped. Live-tested with Docker (OrbStack). Podman follows the same CLI; not live-tested. |
 | Fly Sprites | Yes: exec WebSocket, one tag byte per frame, explicit stdin EOF | Shipped as experimental. Tested against a scripted stream; no live account. |
 | E2B | Only through envd's Connect RPC (base64 JSON, one POST per stdin chunk); its CLI decodes output as text, which breaks binary data | Not built: costlier than Sprites for the same result. |
-| OpenSandbox | Yes: execd's PTY session runs a command, and its WebSocket in pipe mode carries stdin, stdout, and stderr unchanged; it has no stdin EOF, so the relay frames input for a wrapper that ends it | Shipped as experimental. Live-tested against `opensandbox-server` (execd v1.1.0) on Docker: binary input with EOF, exit codes, install, entrypoint server, delete. |
 | Azure Container Apps sandboxes | Exec WebSocket on a terminal only | Already shipped, with a relay that works around the terminal. |
 
-Sources: [OpenSandbox execd PTY sessions](https://github.com/opensandbox-group/OpenSandbox/blob/main/components/execd/PTY.md),
-[Sprites exec WebSocket](https://docs.fly.io/sprites/api/websockets/execute-command.md),
+Sources: [Sprites exec WebSocket](https://docs.fly.io/sprites/api/websockets/execute-command.md),
 [Sprites lifecycle](https://docs.fly.io/sprites/concepts/lifecycle.md),
 [E2B process API](https://github.com/e2b-dev/infra/blob/main/packages/envd/spec/process/process.proto),
 [E2B CLI exec](https://docs.e2b.dev/cli/exec-command.md),
-[OpenSandbox](https://github.com/opensandbox-group/OpenSandbox),
 [podman exec](https://docs.podman.io/en/v5.0.3/markdown/podman-exec.1.html).
 
 ## Sandbox images
@@ -134,10 +130,9 @@ with until its recipe changes or it is reset.
 - **Orphans beyond containers.** A crash between a provider creating a
   machine and the device being saved leaves the machine unlisted. The
   Container card finds such containers by their `dev.herdr-gpui.device` label
-  and offers to add them back. OpenSandbox sandboxes carry a
-  `herdr-gpui-device` metadata key and could get the same; sprites only have
+  and offers to add them back. Sprites only have
   a `herdr-` name prefix, which the user's own sprites may share, so they are
   left alone.
 - **Ports** for containers and sprites: forwarding needs an SSH host.
-- **Images elsewhere.** Azure sandboxes and OpenSandbox start from registry
-  images, so each needs a registry setting (one per provider) to push to.
+- **Images elsewhere.** Azure sandboxes start from registry images, so Azure needs a registry
+  setting to push to.

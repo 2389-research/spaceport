@@ -8,8 +8,6 @@ fn setting(view: &mut SheprdWindow, provider: CloudProvider) -> Option<&mut Opti
         CloudProvider::Azure => Some(&mut view.config.azure.subscription_id),
         #[cfg(feature = "container")]
         CloudProvider::Container => None,
-        #[cfg(feature = "opensandbox")]
-        CloudProvider::OpenSandbox => Some(&mut view.config.opensandbox.api_url),
         #[cfg(feature = "sprites")]
         CloudProvider::Sprites => Some(&mut view.config.sprites.api_url),
         #[cfg(feature = "railway")]
@@ -30,10 +28,6 @@ fn account(provider: CloudProvider) -> Option<(&'static str, &'static str)> {
         )),
         #[cfg(feature = "container")]
         CloudProvider::Container => None,
-        #[cfg(feature = "opensandbox")]
-        CloudProvider::OpenSandbox => {
-            Some(("HERDR_OPENSANDBOX_API_URL", "https://sandbox.example.com"))
-        }
         #[cfg(feature = "sprites")]
         CloudProvider::Sprites => Some(("HERDR_SPRITES_API_URL", "https://api.sprites.dev")),
         #[cfg(feature = "railway")]

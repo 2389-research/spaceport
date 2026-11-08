@@ -21,7 +21,6 @@ pub enum Value {
     /// A setting such as `azure.subscription_id` or an environment variable,
     /// shown as written in every language.
     Key(&'static str),
-    OpenSandboxApiKey,
     RemoteCommand,
     SandboxId,
     SpriteName,
@@ -46,7 +45,6 @@ impl fmt::Display for Value {
             Self::ExecdEndpoint => "Execd endpoint",
             Self::ExecSessionId => "Exec session ID",
             Self::Key(key) => key,
-            Self::OpenSandboxApiKey => "OpenSandbox API key",
             Self::RemoteCommand => "Remote command",
             Self::SandboxId => "Sandbox ID",
             Self::SpriteName => "Sprite name",

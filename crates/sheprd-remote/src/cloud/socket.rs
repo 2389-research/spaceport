@@ -1,6 +1,6 @@
 //! The WebSocket under a provider's exec stream, for the relays that turn one
 //! into the standard streams Herdr's bridge, installer, and Teleport's
-//! scripts use (see `sprites::relay` and `opensandbox::relay`): TLS with the
+//! scripts use (see `sprites::relay`): TLS with the
 //! bundled web roots, or plain TCP to a loopback or `ws` endpoint, bounded
 //! messages, and a reader that feeds this process's stdin to the relay.
 //! [`connect`] alone opens the same TLS or TCP stream without the WebSocket.

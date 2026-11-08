@@ -16,16 +16,8 @@ settings-cloud-save = Save
 settings-cloud-cancel = Cancel
 settings-cloud-install-herdr = Install Herdr when missing
 settings-cloud-install-herdr-in-it = Install Herdr in it when missing
-settings-cloud-new-sandbox = New sandbox
-settings-cloud-create-sandbox = Create sandbox
 # A job the main window runs; $name is the new device's name.
 settings-cloud-creating = Creating { $name }. The device picker shows its progress.
-settings-cloud-no-window-sandbox = Open a main Sheprd window to create a sandbox.
-# An account's API key or token, kept in the credential store.
-settings-cloud-api-key = API key
-settings-cloud-forget-key = Forget key
-settings-cloud-key-saved = Saved. Type a new key to replace it.
-settings-cloud-key-missing = No API key saved.
 # The default among size or image choices; $choice is its name.
 settings-cloud-default-choice = { $choice } (default)
 # Deleting a device's machine at its provider; $name is the device's name.

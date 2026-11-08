@@ -99,8 +99,6 @@ fn every_provider_delegates() {
         sheprd_remote::azure::Error::Size.into(),
         #[cfg(feature = "container")]
         sheprd_remote::container::Error::NoEngine.into(),
-        #[cfg(feature = "opensandbox")]
-        sheprd_remote::opensandbox::Error::Size.into(),
         #[cfg(feature = "railway")]
         sheprd_remote::railway::Error::KeyPath.into(),
         #[cfg(feature = "sprites")]
@@ -111,7 +109,7 @@ fn every_provider_delegates() {
 
 /// `Tls` and `Stream` hold `rustls` and `tungstenite` errors, which this
 /// crate does not depend on, so they cannot be built here.
-#[cfg(any(feature = "opensandbox", feature = "sprites"))]
+#[cfg(feature = "sprites")]
 #[test]
 fn every_socket_variant_has_a_message() {
     use sheprd_remote::cloud::socket::Error;

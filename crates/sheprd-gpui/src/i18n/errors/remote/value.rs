@@ -15,7 +15,7 @@ pub(super) fn invalid(value: Value) -> String {
 
 /// `value` is not UTF-8. Every provider but containers reads text that
 /// may not be.
-#[cfg(any(feature = "azure", feature = "opensandbox", feature = "sprites"))]
+#[cfg(any(feature = "azure", feature = "sprites"))]
 pub(super) fn not_utf8(value: Value) -> String {
     match value {
         Value::Key(key) => fl!("error-remote-cloud-value-encoding-key", key = key),
@@ -36,7 +36,6 @@ fn selector(value: Value) -> &'static str {
         Value::ContainerEngine => "container-engine",
         Value::ExecSessionId => "exec-session-id",
         Value::ExecdEndpoint => "execd-endpoint",
-        Value::OpenSandboxApiKey => "opensandbox-api-key",
         Value::RemoteCommand => "remote-command",
         Value::SandboxId => "sandbox-id",
         Value::SpriteName => "sprite-name",

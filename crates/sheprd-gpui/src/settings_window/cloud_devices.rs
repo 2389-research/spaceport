@@ -10,8 +10,6 @@ mod azure;
 mod container;
 #[cfg(feature = "container")]
 mod images;
-#[cfg(feature = "opensandbox")]
-mod opensandbox;
 #[cfg(feature = "railway")]
 mod railway;
 mod setup;
@@ -24,8 +22,6 @@ pub(super) use azure::AzureCard;
 pub(super) use container::ContainerCard;
 #[cfg(feature = "container")]
 pub(super) use images::SandboxImages;
-#[cfg(feature = "opensandbox")]
-pub(super) use opensandbox::OpenSandboxCard;
 #[cfg(feature = "railway")]
 pub(super) use railway::RailwayCard;
 #[cfg(feature = "sprites")]
@@ -112,12 +108,7 @@ impl Hint {
 /// Follow a reloaded config in a card's inputs: a field still showing what
 /// was loaded last takes the new value, and one the user has edited keeps the
 /// edit, so a later Save neither writes stale values back nor drops typing.
-#[cfg(any(
-    feature = "azure",
-    feature = "container",
-    feature = "opensandbox",
-    feature = "sprites"
-))]
+#[cfg(any(feature = "azure", feature = "container", feature = "sprites"))]
 fn follow_config<const N: usize>(
     inputs: &[Entity<SearchInput>; N],
     previous: [&str; N],
@@ -164,8 +155,6 @@ impl SettingsWindow {
                 CloudProvider::Container => self.open_container_card(cx),
                 #[cfg(feature = "railway")]
                 CloudProvider::Railway => self.open_railway_card(cx),
-                #[cfg(feature = "opensandbox")]
-                CloudProvider::OpenSandbox => self.open_opensandbox_card(cx),
                 #[cfg(feature = "sprites")]
                 CloudProvider::Sprites => self.open_sprites_card(cx),
             }
@@ -183,8 +172,6 @@ impl SettingsWindow {
                 CloudProvider::Container => self.container_config_changed(cx),
                 #[cfg(feature = "railway")]
                 CloudProvider::Railway => self.railway_config_changed(cx),
-                #[cfg(feature = "opensandbox")]
-                CloudProvider::OpenSandbox => self.opensandbox_config_changed(cx),
                 #[cfg(feature = "sprites")]
                 CloudProvider::Sprites => self.sprites_config_changed(cx),
             }
@@ -248,8 +235,6 @@ impl SettingsWindow {
             CloudProvider::Container => self.render_container_card(cx),
             #[cfg(feature = "railway")]
             CloudProvider::Railway => self.render_railway_card(cx),
-            #[cfg(feature = "opensandbox")]
-            CloudProvider::OpenSandbox => self.render_opensandbox_card(cx),
             #[cfg(feature = "sprites")]
             CloudProvider::Sprites => self.render_sprites_card(cx),
         };
@@ -319,12 +304,7 @@ impl SettingsWindow {
 
     /// A saved device with its Remove button; removal leaves the machine
     /// itself untouched at the provider.
-    #[cfg(any(
-        feature = "container",
-        feature = "opensandbox",
-        feature = "railway",
-        feature = "sprites"
-    ))]
+    #[cfg(any(feature = "container", feature = "railway", feature = "sprites"))]
     fn cloud_device_row(
         &self,
         index: usize,
@@ -338,12 +318,7 @@ impl SettingsWindow {
     }
 
     /// `cloud_device_row` with provider `actions` before its Remove button.
-    #[cfg(any(
-        feature = "container",
-        feature = "opensandbox",
-        feature = "railway",
-        feature = "sprites"
-    ))]
+    #[cfg(any(feature = "container", feature = "railway", feature = "sprites"))]
     #[allow(clippy::too_many_arguments)]
     fn cloud_device_row_with(
         &self,
@@ -375,7 +350,6 @@ impl SettingsWindow {
     #[cfg(any(
         feature = "azure",
         feature = "container",
-        feature = "opensandbox",
         feature = "railway",
         feature = "sprites"
     ))]

@@ -11,10 +11,6 @@ fn unconfigure(config: &mut crate::config::Config) {
     {
         config.azure = Default::default();
     }
-    #[cfg(feature = "opensandbox")]
-    {
-        config.opensandbox = Default::default();
-    }
     #[cfg(feature = "sprites")]
     {
         config.sprites = Default::default();
@@ -46,12 +42,6 @@ fn data() -> Vec<String> {
         crate::container::setup::DEFAULT_IMAGE.into(),
         crate::container::setup::DEFAULT_CPUS.into(),
         crate::container::setup::DEFAULT_MEMORY.into(),
-    ]);
-    #[cfg(feature = "opensandbox")]
-    data.extend([
-        crate::opensandbox::DEFAULT_API_URL.into(),
-        "buildpack-deps:bookworm".into(),
-        "4Gi".into(),
     ]);
     #[cfg(feature = "railway")]
     data.extend(["/Users/you/.ssh/id_ed25519".into(), "herdr-railway".into()]);

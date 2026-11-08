@@ -4,7 +4,7 @@ use sheprd_client::ConnectTarget;
 use std::sync::atomic::AtomicBool;
 
 // What every exec relay command shares.
-#[cfg(any(feature = "azure", feature = "opensandbox", feature = "sprites"))]
+#[cfg(any(feature = "azure", feature = "sprites"))]
 pub(crate) mod relay;
 
 #[test]

@@ -97,7 +97,7 @@ test-case.workspace = true
 libc.workspace = true
 
 [features]
-default = ["azure", "container", "opensandbox", "railway", "sprites"]
+default = ["azure", "container", "railway", "sprites"]
 # Machines from cloud providers as devices: the shared device list, background
 # jobs, and connector. Turned on by each provider below; not useful alone.
 cloud = ["sheprd-client/cloud", "sheprd-remote/cloud", "sheprd-usage/cloud"]
@@ -106,8 +106,6 @@ cloud = ["sheprd-client/cloud", "sheprd-remote/cloud", "sheprd-usage/cloud"]
 azure = ["cloud", "sheprd-client/azure", "sheprd-remote/azure", "sheprd-usage/azure"]
 # Containers on this computer's Docker or Podman engine as devices.
 container = ["cloud", "sheprd-client/container", "sheprd-remote/container"]
-# Sandboxes on a self-hosted OpenSandbox server as devices, through this app as their exec relay.
-opensandbox = ["cloud", "sheprd-client/opensandbox", "sheprd-remote/opensandbox"]
 # Railway free VMs as devices, reached over SSH with a saved key identity.
 railway = ["cloud", "sheprd-client/railway", "sheprd-remote/railway"]
 # Fly Sprites as devices, with an API token and this app as their exec relay.
