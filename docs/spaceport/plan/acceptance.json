@@ -373,7 +373,7 @@
       "scenario": "Inspect all release target/features, binaries and dependencies after shared-type extraction.",
       "expected": "No legacy Herdr 1 backend or fallback; pure Core renderer/input types still pass tests.",
       "status": "not_run",
-      "evidence": ["evidence/t04-legacy-launch-flags.md", "evidence/t04-legacy-window-session.md"]
+      "evidence": ["evidence/t04-legacy-launch-flags.md", "evidence/t04-legacy-window-session.md", "evidence/t04-default-bridge-dependency.md"]
     },
     {
       "id": "A33",
