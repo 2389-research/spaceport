@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "gaps": [
+    {
+      "id": "G-CHAT",
+      "title": "Core-only native chat, especially remote",
+      "status": "open",
+      "sources": [
+        "S05",
+        "S06",
+        "S03"
+      ],
+      "issue": "The existing native Core chat path is documented local-only. A Herdr-owned remote structured-chat path has not been demonstrated; host adapter lifecycle and identity need audit.",
+      "required_evidence": "Exact attach/discovery/auth/permission route; local and remote reconnect/concurrent-view scenarios A14–A16/A54.",
+      "forbidden_workaround": "A new Spaceport SSH relay, mobile server, automatic agent conversion/resume or claiming terminal fallback equals native chat."
+    },
+    {
+      "id": "G-PORT",
+      "title": "Core-mediated loopback service forwarding",
+      "status": "open",
+      "sources": [
+        "S01",
+        "S03"
+      ],
+      "issue": "Retained forwarding requirement has no dedicated method in the inspected Core method table.",
+      "required_evidence": "Documented supported route with owner/lifetime and an end-to-end loopback-service test A27.",
+      "forbidden_workaround": "Parallel host manager, public service rebinding or silently configuring Tailscale Serve."
+    },
+    {
+      "id": "G-FILE",
+      "title": "General binary transfer parity",
+      "status": "open",
+      "sources": [
+        "S01",
+        "S03"
+      ],
+      "issue": "Core has terminal.put and file/exec primitives; complete retained upload/download/overwrite/cancel behavior was not exercised.",
+      "required_evidence": "Route-specific binary and safety scenarios A25–A26.",
+      "forbidden_workaround": "Treating text file methods as full transfer parity or installing a new host file service."
+    },
+    {
+      "id": "G-OBS",
+      "title": "Authoritative usage/automation visibility",
+      "status": "open",
+      "sources": [
+        "S03",
+        "S09"
+      ],
+      "issue": "Current Sheprd visibility depends in part on its own provider probes and automation daemon, both excluded. No equivalent complete Core feed is established.",
+      "required_evidence": "Supported source contract and A20 without removed collectors/schedulers; document the exact coverage.",
+      "forbidden_workaround": "Retain a hidden scheduler/provider login, scrape secrets or present unavailable values as zero/empty."
+    },
+    {
+      "id": "G-RELEASE",
+      "title": "Production identity/signing/update ownership",
+      "status": "open",
+      "sources": [
+        "S09"
+      ],
+      "issue": "Spaceport production app IDs, signing credentials, package/release endpoints and final icon assets were not supplied or validated.",
+      "required_evidence": "Owner-controlled values plus A42–A44; publishing separately authorized.",
+      "forbidden_workaround": "Inherit upstream signing identities/endpoints, claim domain ownership or ship development placeholders."
+    },
+    {
+      "id": "G-PLATFORM",
+      "title": "Native platform and full application verification",
+      "status": "open",
+      "sources": [
+        "S08",
+        "S09"
+      ],
+      "issue": "This specification was prepared from source, not from built and exercised Spaceport binaries.",
+      "required_evidence": "Pinned source/schema plus native A49–A51 and all mandatory applicable scenarios.",
+      "forbidden_workaround": "Claiming compilation/spec validation equals desktop or tailnet runtime support."
+    }
+  ]
+}

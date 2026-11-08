@@ -1,0 +1,28 @@
+{
+  "scope": "Specification tooling only; not Spaceport or Herdr integration",
+  "python": "3.13.5",
+  "jsonschema": "4.26.0",
+  "tests_run": 21,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "result": "passed",
+  "task_packet_bytes": {
+    "T00": 48169,
+    "T01": 36841,
+    "T02": 43745,
+    "T03": 43916,
+    "T04": 38908,
+    "T05": 45054,
+    "T06": 47117,
+    "T07": 44138,
+    "T08": 45058,
+    "T09": 49037,
+    "T10": 41192,
+    "T11": 45017,
+    "T12": 41040
+  },
+  "max_task_packet_bytes": 49037,
+  "task_packet_limit_bytes": 65536,
+  "application_tests_executed": 0
+}

@@ -1,0 +1,678 @@
+{
+  "source_revision": "ed14ccbccf1e730df7ca5b9bee3e7c5aeac9301f",
+  "packages": [
+    {
+      "name": "embed-resource",
+      "features": [],
+      "workspace_dependencies": [],
+      "external_dependencies": []
+    },
+    {
+      "name": "sheprd-acp",
+      "features": [],
+      "workspace_dependencies": [
+        "sheprd-chat-protocol",
+        "sheprd-client"
+      ],
+      "external_dependencies": [
+        "agent-client-protocol-schema",
+        "anyhow",
+        "base64",
+        "chrono",
+        "crossbeam-channel",
+        "crossterm",
+        "ratatui",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "unicode-width",
+        "url",
+        "uuid",
+        "tempfile",
+        "rustix"
+      ]
+    },
+    {
+      "name": "sheprd-chat-protocol",
+      "features": [],
+      "workspace_dependencies": [],
+      "external_dependencies": [
+        "serde",
+        "serde_json",
+        "thiserror",
+        "uuid",
+        "tempfile"
+      ]
+    },
+    {
+      "name": "sheprd-client",
+      "features": [
+        "azure",
+        "boat",
+        "boxd",
+        "cloud",
+        "coder",
+        "container",
+        "daytona",
+        "opensandbox",
+        "railway",
+        "sprites",
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-protocol"
+      ],
+      "external_dependencies": [
+        "base64",
+        "crossbeam-channel",
+        "serde",
+        "serde_json",
+        "tempfile",
+        "thiserror",
+        "tracing",
+        "rustix",
+        "libc",
+        "nix",
+        "interprocess",
+        "windows-sys"
+      ]
+    },
+    {
+      "name": "sheprd-protocol",
+      "features": [],
+      "workspace_dependencies": [],
+      "external_dependencies": [
+        "base64",
+        "bincode",
+        "serde",
+        "serde_json",
+        "thiserror"
+      ]
+    },
+    {
+      "name": "sheprd-automate",
+      "features": [],
+      "workspace_dependencies": [
+        "sheprd-automation",
+        "sheprd-client"
+      ],
+      "external_dependencies": [
+        "jiff",
+        "rusqlite",
+        "serde",
+        "serde_json",
+        "sha2",
+        "sysinfo",
+        "thiserror",
+        "toml",
+        "tempfile",
+        "rustix"
+      ]
+    },
+    {
+      "name": "sheprd-automation",
+      "features": [
+        "default",
+        "engine"
+      ],
+      "workspace_dependencies": [
+        "sheprd-luau"
+      ],
+      "external_dependencies": [
+        "jiff",
+        "mlua",
+        "serde",
+        "sha2",
+        "thiserror",
+        "unicode-properties",
+        "serde_json",
+        "tempfile"
+      ]
+    },
+    {
+      "name": "sheprd-luau",
+      "features": [],
+      "workspace_dependencies": [],
+      "external_dependencies": [
+        "mlua",
+        "thiserror"
+      ]
+    },
+    {
+      "name": "sheprd-backend",
+      "features": [],
+      "workspace_dependencies": [
+        "sheprd-protocol"
+      ],
+      "external_dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ]
+    },
+    {
+      "name": "sheprd-commands",
+      "features": [
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-client"
+      ],
+      "external_dependencies": [
+        "serde",
+        "serde_json",
+        "gpui-pre"
+      ]
+    },
+    {
+      "name": "sheprd-control-protocol",
+      "features": [
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-client",
+        "sheprd-github",
+        "sheprd-remote-control"
+      ],
+      "external_dependencies": [
+        "serde",
+        "serde_json",
+        "tempfile",
+        "thiserror",
+        "tracing",
+        "tempfile",
+        "interprocess"
+      ]
+    },
+    {
+      "name": "sheprd-github",
+      "features": [
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-client",
+        "sheprd-credentials",
+        "sheprd-updater",
+        "sheprd-client"
+      ],
+      "external_dependencies": [
+        "chrono",
+        "getrandom",
+        "secrecy",
+        "serde",
+        "serde_json",
+        "sha2",
+        "thiserror",
+        "tracing",
+        "ureq",
+        "zeroize",
+        "tempfile",
+        "rustix"
+      ]
+    },
+    {
+      "name": "sheprd-credentials",
+      "features": [],
+      "workspace_dependencies": [],
+      "external_dependencies": [
+        "secrecy",
+        "thiserror",
+        "tracing",
+        "zeroize",
+        "tempfile",
+        "futures-lite",
+        "oo7",
+        "security-framework",
+        "rustix",
+        "windows-sys"
+      ]
+    },
+    {
+      "name": "sheprd-updater",
+      "features": [],
+      "workspace_dependencies": [
+        "sheprd-client"
+      ],
+      "external_dependencies": [
+        "chrono",
+        "ed25519-dalek",
+        "flate2",
+        "serde",
+        "serde_json",
+        "sha2",
+        "tar",
+        "tempfile",
+        "thiserror",
+        "tracing",
+        "ureq",
+        "anyhow",
+        "rustix",
+        "windows-sys"
+      ]
+    },
+    {
+      "name": "sheprd-remote-control",
+      "features": [
+        "default",
+        "server"
+      ],
+      "workspace_dependencies": [
+        "sheprd-chat-protocol",
+        "sheprd-client",
+        "sheprd-core-client",
+        "sheprd-github",
+        "sheprd-terminal"
+      ],
+      "external_dependencies": [
+        "aes-gcm",
+        "axum",
+        "base64",
+        "futures-lite",
+        "getrandom",
+        "gix",
+        "hkdf",
+        "http-body-util",
+        "hyper",
+        "hyper-util",
+        "if-addrs",
+        "maud",
+        "mdns-sd",
+        "p256",
+        "pulldown-cmark",
+        "qrcode",
+        "rcgen",
+        "rustix",
+        "rustls",
+        "serde",
+        "serde_json",
+        "sha2",
+        "socket2",
+        "sysinfo",
+        "tempfile",
+        "thiserror",
+        "time",
+        "tokio",
+        "tokio-rustls",
+        "toml",
+        "toml_edit",
+        "tracing",
+        "tracing-subscriber",
+        "ureq",
+        "url",
+        "uuid",
+        "webpki-roots",
+        "x509-parser",
+        "futures-util",
+        "p256",
+        "roxmltree",
+        "tokio-tungstenite",
+        "tower"
+      ]
+    },
+    {
+      "name": "sheprd-core-client",
+      "features": [],
+      "workspace_dependencies": [
+        "sheprd-backend",
+        "sheprd-client",
+        "sheprd-terminal",
+        "sheprd-protocol"
+      ],
+      "external_dependencies": [
+        "crossbeam-channel",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "toml",
+        "tracing",
+        "tempfile",
+        "rustix"
+      ]
+    },
+    {
+      "name": "sheprd-terminal",
+      "features": [],
+      "workspace_dependencies": [
+        "sheprd-backend",
+        "sheprd-protocol"
+      ],
+      "external_dependencies": [
+        "alacritty_terminal",
+        "thiserror"
+      ]
+    },
+    {
+      "name": "sheprd-diagnostics",
+      "features": [
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-client"
+      ],
+      "external_dependencies": [
+        "chrono",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tracing",
+        "tracing-subscriber",
+        "tempfile",
+        "windows-sys"
+      ]
+    },
+    {
+      "name": "sheprd-gpui",
+      "features": [
+        "azure",
+        "boat",
+        "boxd",
+        "cloud",
+        "coder",
+        "container",
+        "daytona",
+        "default",
+        "integration-test",
+        "mockup",
+        "opensandbox",
+        "railway",
+        "sprites"
+      ],
+      "workspace_dependencies": [
+        "sheprd-automation",
+        "sheprd-backend",
+        "sheprd-chat-protocol",
+        "sheprd-client",
+        "sheprd-commands",
+        "sheprd-control-protocol",
+        "sheprd-core-client",
+        "sheprd-credentials",
+        "sheprd-diagnostics",
+        "sheprd-github",
+        "sheprd-i18n",
+        "sheprd-mods",
+        "sheprd-orchestrator",
+        "sheprd-remote",
+        "sheprd-remote-control",
+        "sheprd-updater",
+        "sheprd-usage",
+        "sheprd-vcs",
+        "sheprd-client",
+        "sheprd-commands",
+        "sheprd-control-protocol",
+        "sheprd-diagnostics",
+        "sheprd-github",
+        "sheprd-orchestrator",
+        "sheprd-remote",
+        "sheprd-usage",
+        "sheprd-vcs"
+      ],
+      "external_dependencies": [
+        "ammonia",
+        "anyhow",
+        "base64",
+        "chrono",
+        "config",
+        "flate2",
+        "getrandom",
+        "gix",
+        "gpui-pre",
+        "gpui-pre-platform",
+        "if-addrs",
+        "image",
+        "keepawake",
+        "mdns-sd",
+        "mermaid-rs-renderer",
+        "nucleo-matcher",
+        "percent-encoding",
+        "pulldown-cmark",
+        "ratex-layout",
+        "ratex-parser",
+        "ratex-render",
+        "ratex-types",
+        "rodio",
+        "secrecy",
+        "serde",
+        "serde_ignored",
+        "serde_json",
+        "sha2",
+        "skrifa",
+        "syntect",
+        "sysinfo",
+        "tempfile",
+        "thiserror",
+        "toml",
+        "toml_edit",
+        "tracing",
+        "tracing-subscriber",
+        "unicode-bidi",
+        "unicode-properties",
+        "unicode-segmentation",
+        "unicode-width",
+        "ureq",
+        "url",
+        "uuid",
+        "gpui-pre",
+        "socket2",
+        "test-case",
+        "fluent-syntax",
+        "winresource",
+        "lb-wry",
+        "fontdb",
+        "futures-lite",
+        "nix",
+        "oo7",
+        "block2",
+        "cocoa",
+        "core-graphics",
+        "dispatch2",
+        "zed-font-kit",
+        "foreign-types",
+        "nix",
+        "objc",
+        "objc2",
+        "objc2-app-kit",
+        "objc2-core-foundation",
+        "objc2-foundation",
+        "objc2-user-notifications",
+        "objc2-web-kit",
+        "raw-window-handle",
+        "rustix",
+        "libc",
+        "clipboard-win",
+        "raw-window-handle",
+        "windows",
+        "windows-registry",
+        "windows-result",
+        "windows-sys"
+      ]
+    },
+    {
+      "name": "sheprd-i18n",
+      "features": [],
+      "workspace_dependencies": [],
+      "external_dependencies": [
+        "fluent",
+        "fluent-langneg",
+        "i18n-embed",
+        "serde",
+        "sys-locale",
+        "thiserror",
+        "unic-langid",
+        "serde_json"
+      ]
+    },
+    {
+      "name": "sheprd-mods",
+      "features": [],
+      "workspace_dependencies": [
+        "sheprd-commands",
+        "sheprd-luau"
+      ],
+      "external_dependencies": [
+        "mlua",
+        "serde",
+        "sha2",
+        "thiserror",
+        "toml",
+        "tempfile"
+      ]
+    },
+    {
+      "name": "sheprd-orchestrator",
+      "features": [
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-client",
+        "sheprd-credentials",
+        "sheprd-github",
+        "sheprd-remote",
+        "sheprd-client",
+        "sheprd-github",
+        "sheprd-remote"
+      ],
+      "external_dependencies": [
+        "base64",
+        "chrono",
+        "gix",
+        "percent-encoding",
+        "rusqlite",
+        "secrecy",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tracing",
+        "ureq",
+        "url",
+        "uuid",
+        "zeroize",
+        "tempfile",
+        "rustix"
+      ]
+    },
+    {
+      "name": "sheprd-remote",
+      "features": [
+        "azure",
+        "boat",
+        "boxd",
+        "cloud",
+        "coder",
+        "container",
+        "daytona",
+        "opensandbox",
+        "railway",
+        "sprites",
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-client",
+        "sheprd-control-protocol",
+        "sheprd-credentials",
+        "sheprd-client"
+      ],
+      "external_dependencies": [
+        "base64",
+        "chrono",
+        "getrandom",
+        "httparse",
+        "percent-encoding",
+        "rustls",
+        "secrecy",
+        "serde",
+        "serde_json",
+        "sha2",
+        "tar",
+        "tempfile",
+        "thiserror",
+        "tracing",
+        "tungstenite",
+        "ureq",
+        "url",
+        "uuid",
+        "webpki-roots",
+        "zeroize",
+        "toml",
+        "nix",
+        "rustix"
+      ]
+    },
+    {
+      "name": "sheprd-usage",
+      "features": [
+        "azure",
+        "cloud",
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-client"
+      ],
+      "external_dependencies": [
+        "aes",
+        "cbc",
+        "chrono",
+        "pbkdf2",
+        "rusqlite",
+        "secrecy",
+        "serde",
+        "serde_json",
+        "sha1",
+        "sha2",
+        "thiserror",
+        "tracing",
+        "unicode-normalization",
+        "ureq",
+        "url",
+        "uuid",
+        "zeroize",
+        "tempfile",
+        "toml"
+      ]
+    },
+    {
+      "name": "sheprd-vcs",
+      "features": [
+        "azure",
+        "cloud",
+        "test-support"
+      ],
+      "workspace_dependencies": [
+        "sheprd-client",
+        "sheprd-github",
+        "sheprd-usage",
+        "sheprd-github"
+      ],
+      "external_dependencies": [
+        "secrecy",
+        "serde_json",
+        "thiserror",
+        "tracing",
+        "tempfile"
+      ]
+    },
+    {
+      "name": "sheprd-launcher",
+      "features": [],
+      "workspace_dependencies": [],
+      "external_dependencies": [
+        "thiserror",
+        "tempfile",
+        "winresource",
+        "windows-sys"
+      ]
+    },
+    {
+      "name": "sheprd-nearby",
+      "features": [],
+      "workspace_dependencies": [],
+      "external_dependencies": [
+        "base64",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "zbus",
+        "windows"
+      ]
+    }
+  ]
+}

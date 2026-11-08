@@ -1,0 +1,55 @@
+HERDR_CORE_TEST_BINARY="/tmp/spaceport-t00-target/debug/herdr-core" cargo test --locked -p sheprd-core-client live -- --ignored --nocapture
+   Compiling serde_core v1.0.229
+   Compiling memchr v2.8.3
+   Compiling rustix v1.1.6
+   Compiling libc v0.2.189
+   Compiling serde_json v1.0.154
+   Compiling smallvec v1.16.1
+   Compiling crossbeam-utils v0.8.23
+   Compiling lock_api v0.4.14
+   Compiling getrandom v0.4.3
+   Compiling arrayvec v0.7.8
+   Compiling regex-syntax v0.8.11
+   Compiling log v0.4.34
+   Compiling syn v3.0.6
+   Compiling syn v2.0.119
+   Compiling winnow v1.0.4
+   Compiling toml_writer v1.1.2+spec-1.1.0
+   Compiling aho-corasick v1.1.5
+   Compiling toml_parser v1.1.3+spec-1.1.0
+   Compiling errno v0.3.14
+   Compiling parking_lot_core v0.9.12
+   Compiling crossbeam-channel v0.5.17
+   Compiling signal-hook-registry v1.4.8
+   Compiling parking_lot v0.12.5
+   Compiling signal-hook v0.4.6
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.21
+   Compiling regex-automata v0.4.18
+   Compiling thiserror v2.0.21
+   Compiling bitflags v2.13.2
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling serde_spanned v1.1.1
+   Compiling toml v1.1.6+spec-1.1.0
+   Compiling tracing-attributes v0.1.31
+   Compiling serde v1.0.229
+   Compiling tracing v0.1.44
+   Compiling bincode v2.0.1
+   Compiling vte v0.15.0
+   Compiling rustix-openpty v0.2.0
+   Compiling polling v3.11.0
+   Compiling tempfile v3.27.0
+   Compiling alacritty_terminal v0.26.0
+   Compiling sheprd-protocol v0.1.0 (/Users/harper/Public/src/2389/spaceport-t00/crates/sheprd-protocol)
+   Compiling sheprd-backend v0.1.0 (/Users/harper/Public/src/2389/spaceport-t00/crates/sheprd-backend)
+   Compiling sheprd-client v0.1.0 (/Users/harper/Public/src/2389/spaceport-t00/crates/sheprd-client)
+   Compiling sheprd-terminal v0.1.0 (/Users/harper/Public/src/2389/spaceport-t00/crates/sheprd-terminal)
+   Compiling sheprd-core-client v0.1.0 (/Users/harper/Public/src/2389/spaceport-t00/crates/sheprd-core-client)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.85s
+     Running unittests src/lib.rs (/tmp/spaceport-t00-target/debug/deps/sheprd_core_client-f6d8324a399a77c1)
+
+running 2 tests
+test tests::live::a_real_core_through_the_backend_traits ... ok
+test tests::live::a_real_core_runs_streams_and_stores ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 0.29s

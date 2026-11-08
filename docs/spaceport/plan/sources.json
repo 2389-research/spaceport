@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "review_date": "2026-11-07",
+  "scope": "Source inspection only; no application build or live compatibility test was run.",
+  "repositories": {
+    "sheprd": {
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "role": "candidate fork baseline"
+    },
+    "herdr_core": {
+      "repository": "herdrdev/herdr-core",
+      "commit": "cd12ddd88bc11490228343291dc1096c9ed3bf77",
+      "role": "read-only API evidence baseline, not a tested release requirement"
+    }
+  },
+  "sources": [
+    {
+      "id": "S01",
+      "repository": "herdrdev/herdr-core",
+      "commit": "cd12ddd88bc11490228343291dc1096c9ed3bf77",
+      "path": "docs/machines.md",
+      "url": "https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/docs/machines.md",
+      "supports": "Core-owned remote machines, aggregation, reconnect and file operations."
+    },
+    {
+      "id": "S02",
+      "repository": "herdrdev/herdr-core",
+      "commit": "cd12ddd88bc11490228343291dc1096c9ed3bf77",
+      "path": "schema/README.md",
+      "url": "https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/schema/README.md",
+      "supports": "Wire protocol, attach streams, events, sequence resets, opaque documents and reported status."
+    },
+    {
+      "id": "S03",
+      "repository": "herdrdev/herdr-core",
+      "commit": "cd12ddd88bc11490228343291dc1096c9ed3bf77",
+      "path": "crates/herdr-core/src/api.rs",
+      "url": "https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/crates/herdr-core/src/api.rs",
+      "supports": "Complete method table and hello capability declaration; inspected lines 1–210."
+    },
+    {
+      "id": "S04",
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "path": "docs/session-model.md",
+      "url": "https://github.com/sheprd-labs/sheprd/blob/806b49870ac7761b98cbcea4bd115aa2f2b00d75/docs/session-model.md",
+      "supports": "Actual split between Herdr 1 workspaces and Core terminal/layout state; migration plan is not implemented parity."
+    },
+    {
+      "id": "S05",
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "path": "docs/rich-chat.md",
+      "url": "https://github.com/sheprd-labs/sheprd/blob/806b49870ac7761b98cbcea4bd115aa2f2b00d75/docs/rich-chat.md",
+      "supports": "Herdr 2 chat endpoint labels, local-only native attach, conversion and resume side effects; inspected lines 1–190."
+    },
+    {
+      "id": "S06",
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "path": "crates/sheprd-acp/README.md",
+      "url": "https://github.com/sheprd-labs/sheprd/blob/806b49870ac7761b98cbcea4bd115aa2f2b00d75/crates/sheprd-acp/README.md",
+      "supports": "Host-side conversation adapter, attach protocol, agent ownership and restore behavior; retrieved output was truncated after the behavior section."
+    },
+    {
+      "id": "S07",
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "path": "docs/cli.md",
+      "url": "https://github.com/sheprd-labs/sheprd/blob/806b49870ac7761b98cbcea4bd115aa2f2b00d75/docs/cli.md",
+      "supports": "Existing private local control interface, JSON output, targeting and command families; inspected lines 1–210."
+    },
+    {
+      "id": "S08",
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "path": "Cargo.toml",
+      "url": "https://github.com/sheprd-labs/sheprd/blob/806b49870ac7761b98cbcea4bd115aa2f2b00d75/Cargo.toml",
+      "supports": "Current crate inventory and dependencies; inspected lines 1–150."
+    },
+    {
+      "id": "S09",
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "path": "AGENTS.md",
+      "url": "https://github.com/sheprd-labs/sheprd/blob/806b49870ac7761b98cbcea4bd115aa2f2b00d75/AGENTS.md",
+      "supports": "Crate responsibilities and engineering conventions; requested lines 1–220, output was truncated in Rust conventions."
+    },
+    {
+      "id": "S10",
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "path": "crates/sheprd-core-client/src/method.rs",
+      "url": "https://github.com/sheprd-labs/sheprd/blob/806b49870ac7761b98cbcea4bd115aa2f2b00d75/crates/sheprd-core-client/src/method.rs",
+      "supports": "Existing Core adapter exposes only a subset of the current Core API."
+    },
+    {
+      "id": "S11",
+      "repository": "sheprd-labs/sheprd",
+      "commit": "806b49870ac7761b98cbcea4bd115aa2f2b00d75",
+      "path": "crates/sheprd-terminal/README.md",
+      "url": "https://github.com/sheprd-labs/sheprd/blob/806b49870ac7761b98cbcea4bd115aa2f2b00d75/crates/sheprd-terminal/README.md",
+      "supports": "Pure Alacritty-based emulator, damage, input and bounded rendering contracts."
+    },
+    {
+      "id": "S12",
+      "repository": "herdrdev/herdr-core",
+      "commit": "cd12ddd88bc11490228343291dc1096c9ed3bf77",
+      "path": "schema/hc.openrpc.json",
+      "url": "https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/schema/hc.openrpc.json",
+      "supports": "Inspected lines 1–160: persistent core identity, attach flags and versioned document result types; not a full schema audit."
+    }
+  ]
+}

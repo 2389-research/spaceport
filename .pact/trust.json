@@ -1,0 +1,11 @@
+{
+  "format": "pact/trust/v1",
+  "roots": [
+    {
+      "key_id": "ed25519:sha256:6a2563f06355cb2d43ca764c9dd70ba5fc5c2dc3927ea5e56390d2d11518c6f6",
+      "actor": "agent/codex",
+      "public_key": "-FZnpWgrdEeoeiC0B9rDhuI5IUauXWpu5IbkKtU_yJs",
+      "added_at": "2026-11-08T01:32:10Z"
+    }
+  ]
+}

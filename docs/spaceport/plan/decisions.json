@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "authority": "User choices; later specific choices supersede earlier assistant generalizations.",
+  "decisions": [
+    {
+      "id": "D01",
+      "title": "Workspaces first",
+      "decision": "Keep projects/workspaces as the primary navigation.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D02",
+      "title": "No IDE or diff viewer",
+      "decision": "Delete IDE integrations and specialized diff/review UI.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D03",
+      "title": "Full terminals",
+      "decision": "Keep general-purpose shells, tabs, splits and interactive agent terminals.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D04",
+      "title": "No Git integration",
+      "decision": "Remove Git/worktree/branch/checkpoint management and Git-specific navigation.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D05",
+      "title": "Browser versus forwarding",
+      "decision": "Remove embedded browser and annotations; keep listening-port discovery and forwarding; open URLs externally.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D06",
+      "title": "No cloud provisioning",
+      "decision": "Remove provider integrations and provisioning; consume existing Herdr machines.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D07",
+      "title": "Automation visibility only",
+      "decision": "Keep supported read-only automation status/results; remove editing, scheduling engines and mods.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D08",
+      "title": "Equal chat and terminal",
+      "decision": "Both remain first-class views; do not imply every terminal has a native chat capability.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D09",
+      "title": "Unified and host views",
+      "decision": "Unified workspace navigation with optional grouping by host; retain upstream presentation where possible.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D10",
+      "title": "Full notifications",
+      "decision": "Retain configurable agent attention, completion, error and supported job-result notifications.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D11",
+      "title": "Herdr integrations",
+      "decision": "Surface supported Herdr integration state/actions; do not own an integration subsystem.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D12",
+      "title": "Agent-focused monitoring",
+      "decision": "Keep reported agent/usage/rate-limit information; remove detailed host resource dashboards.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D13",
+      "title": "No Teleport",
+      "decision": "Remove client migration and execution relocation; reconnect to existing sessions.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D14",
+      "title": "Workspace controls",
+      "decision": "Keep create/rename/open/archive/delete controls; operate on Herdr-backed presentation metadata, not a new runtime. See reconciliation.",
+      "status": "clarified",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D15",
+      "title": "External Tailscale",
+      "decision": "Manual addresses/SSH aliases; Tailscale is independently installed and managed; no discovery or embedded login.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D16",
+      "title": "Full customization",
+      "decision": "Keep existing themes, layouts, fonts, shortcuts and appearance controls.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D17",
+      "title": "Activity history",
+      "decision": "Keep an activity timeline; later decision D49 rules out adding a new timeline architecture or history store.",
+      "status": "qualified",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D18",
+      "title": "Online only",
+      "decision": "No persistent offline content cache or offline action queue. View preferences may persist.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D19",
+      "title": "Timeline-scoped search",
+      "decision": "Search only information actually available in the retained activity timeline; no new file or global terminal index.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D20",
+      "title": "Desktop first and full windows",
+      "decision": "macOS/Windows/Linux first; retain windows, tabs, splits and pane management. Mobile is a separate exercise.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D21",
+      "title": "Full command palette",
+      "decision": "Keep the palette and relevant actions; remove commands for deleted features.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D22",
+      "title": "File interactions",
+      "decision": "Keep drag/drop, clipboard images, attachments, file transfers and external opening; no IDE navigation.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D23",
+      "title": "Session creation",
+      "decision": "Expose supported session/template launch controls through Herdr. Do not create a second agent registry or runtime.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D24",
+      "title": "Local startup",
+      "decision": "Connect to or start the separately installed local Herdr Core when needed.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D25",
+      "title": "No bundled Herdr",
+      "decision": "Do not bundle, download, install or update Herdr on the user's behalf.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D26",
+      "title": "Spaceport auto-updates",
+      "decision": "Retain app updates using Spaceport-owned identities and release infrastructure; no Herdr updates.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D27",
+      "title": "No provider/model configuration",
+      "decision": "Remove client-owned model/provider credentials and configuration. Agent programs keep their own settings.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D28",
+      "title": "Rich chat",
+      "decision": "Keep rich text, code, images, tool events and interactive prompts through a verified existing chat contract.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D29",
+      "title": "Attention indicators",
+      "decision": "Keep existing sidebar indicators, unread badges, OS badges and notification sounds.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D30",
+      "title": "No terminal annotation bridge",
+      "decision": "Remove terminal-selection annotations and send-to-agent tools; keep ordinary copy/paste.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D31",
+      "title": "No GitHub integration",
+      "decision": "Remove client-side GitHub sign-in, account integration, repository/PR/issue/security UI.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D32",
+      "title": "Mirror supported input",
+      "decision": "Expose only capabilities the backing Herdr/host-side agent contract actually supports.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D33",
+      "title": "Quit on last window",
+      "decision": "No background tray service; quitting Spaceport must not terminate Herdr or its agents.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D34",
+      "title": "No plugins",
+      "decision": "Remove all client-side plugin/mod extension systems.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D35",
+      "title": "Client CLI",
+      "decision": "Keep the relevant full client CLI; agent-runtime operations belong to hc, not duplicate Spaceport implementations.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D36",
+      "title": "Restore views",
+      "decision": "Restore windows/layout/selection and reattach; do not restart missing agents to recreate a view.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D37",
+      "title": "Guided onboarding",
+      "decision": "Detect/start installed local Core and offer manual remote setup through Core; never bootstrap missing Herdr.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D38",
+      "title": "Existing status display",
+      "decision": "Preserve upstream sidebar/status presentation; only report status supported by authoritative data.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D39",
+      "title": "Defer terminal swap",
+      "decision": "Keep current Alacritty-based emulation/GPUI rendering; no Ghostty migration in this fork.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D40",
+      "title": "Host manager UI",
+      "decision": "Keep the host-manager experience; D48/D56 place machine state and remote connection logic in Herdr.",
+      "status": "qualified",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D41",
+      "title": "Existing conversation organization",
+      "decision": "Preserve current conversation navigation and session organization.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D42",
+      "title": "Existing sidebar",
+      "decision": "Preserve hierarchy, interactions and layout options minus deleted feature entries.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D43",
+      "title": "Existing terminal UX",
+      "decision": "Preserve selection, scrollback, keyboard, mouse, themes and shortcuts.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D44",
+      "title": "Existing transfers",
+      "decision": "Retain file transfer behavior where supported by the Herdr-backed route; parity must be proved.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D45",
+      "title": "Existing settings UI",
+      "decision": "Keep design and organization, deleting settings for removed features.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D46",
+      "title": "Existing menus",
+      "decision": "Keep native/context menu structure and shortcuts, deleting removed actions.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D47",
+      "title": "Diagnostics",
+      "decision": "Keep troubleshooting logs and diagnostic tooling, without deleted-feature or secret leakage.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D48",
+      "title": "Herdr owns connections",
+      "decision": "Core owns remote machine catalog, transport, reconnect and aggregated state; Spaceport consumes it.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D49",
+      "title": "No timeline redesign",
+      "decision": "No change to activity timeline behavior beyond necessary backend migration and deleted-feature cleanup.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D50",
+      "title": "Keep profile shell",
+      "decision": "Keep profile/avatar UI where meaningful; remove GitHub actions and do not add a client identity system.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D51",
+      "title": "Complete rebrand",
+      "decision": "Spaceport product identity, executable, app IDs, release identity and assets; preserve required attribution and wire compatibility.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D52",
+      "title": "Name",
+      "decision": "Spaceport.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D53",
+      "title": "Independent fork",
+      "decision": "Maintain independently rather than routinely merging upstream; keep provenance and security diligence.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D54",
+      "title": "Real deletion",
+      "decision": "Delete unwanted code/dependencies/UI/tests/settings/docs; do not merely hide it behind flags.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D55",
+      "title": "Herdr 2 only",
+      "decision": "Remove legacy Herdr 1 compatibility; this does NOT mean removing Core protocol generation 1.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D56",
+      "title": "Herdr-mediated connectivity",
+      "decision": "Use Core for remote runtime connectivity; no new Spaceport transport/federation service.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    },
+    {
+      "id": "D57",
+      "title": "Remove mobile server",
+      "decision": "Delete phone remote-control server and its desktop integration; defer all mobile design/implementation.",
+      "status": "active",
+      "source": "User Q&A in this conversation; normalized, not a quotation."
+    }
+  ]
+}

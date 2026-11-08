@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "note": "Names in methods are Core RPCs, not Spaceport endpoints. T00 runtime evidence is scoped to one private macOS fixture; other paths remain unproved.",
+  "capabilities": [
+    {
+      "id": "CAP-CORE",
+      "title": "Core handshake/discovery",
+      "methods": [
+        "hello",
+        "rpc.discover"
+      ],
+      "sources": [
+        "S02",
+        "S03"
+      ],
+      "gaps": [],
+      "evidence_level": "scenario_verified_local",
+      "runtime_test_status": "passed_local_fixture",
+      "runtime_evidence": ["evidence/t00-core-runtime.json", "evidence/t00-core-test.log"]
+    },
+    {
+      "id": "CAP-REMOTE",
+      "title": "Core machine catalog/remote aggregation",
+      "methods": [
+        "machine.add",
+        "machine.list",
+        "machine.connect",
+        "machine.rename",
+        "machine.rm",
+        "events.subscribe"
+      ],
+      "sources": [
+        "S01",
+        "S02",
+        "S03"
+      ],
+      "gaps": [],
+      "evidence_level": "source_observed",
+      "runtime_test_status": "not_run"
+    },
+    {
+      "id": "CAP-TERMINAL",
+      "title": "Terminal lifecycle/stream/input",
+      "methods": [
+        "terminal.run",
+        "terminal.list",
+        "terminal.get",
+        "terminal.attach",
+        "terminal.send",
+        "terminal.keys",
+        "terminal.interrupt",
+        "terminal.wait",
+        "terminal.kill",
+        "terminal.rm"
+      ],
+      "sources": [
+        "S02",
+        "S03",
+        "S11"
+      ],
+      "gaps": [],
+      "evidence_level": "scenario_verified_local_subset",
+      "runtime_test_status": "partial_local_fixture",
+      "runtime_evidence": ["evidence/t00-core-runtime.json", "evidence/t00-core-test.log"]
+    },
+    {
+      "id": "CAP-WORKSPACE",
+      "title": "Proposed workspace presentation over Core documents",
+      "methods": [
+        "doc.get",
+        "doc.set"
+      ],
+      "sources": [
+        "S02",
+        "S04"
+      ],
+      "gaps": [],
+      "evidence_level": "design_required",
+      "runtime_test_status": "document_cas_primitive_passed_local_fixture",
+      "runtime_evidence": ["evidence/t00-core-test.log"]
+    },
+    {
+      "id": "CAP-CHAT",
+      "title": "Structured local/remote chat route",
+      "methods": [],
+      "sources": [
+        "S05",
+        "S06"
+      ],
+      "gaps": [
+        "G-CHAT"
+      ],
+      "evidence_level": "integration_unproved",
+      "runtime_test_status": "not_run"
+    },
+    {
+      "id": "CAP-FILES",
+      "title": "File attachments and general transfers",
+      "methods": [
+        "terminal.put",
+        "file.read",
+        "file.write",
+        "file.edit",
+        "machine.exec"
+      ],
+      "sources": [
+        "S01",
+        "S03"
+      ],
+      "gaps": [
+        "G-FILE"
+      ],
+      "evidence_level": "partial_source_coverage",
+      "runtime_test_status": "not_run"
+    },
+    {
+      "id": "CAP-PORTS",
+      "title": "Service discovery/forwarding",
+      "methods": [],
+      "sources": [
+        "S03"
+      ],
+      "gaps": [
+        "G-PORT"
+      ],
+      "evidence_level": "integration_unproved",
+      "runtime_test_status": "not_run"
+    },
+    {
+      "id": "CAP-OBS",
+      "title": "Read-only activity/usage/automation",
+      "methods": [],
+      "sources": [
+        "S03",
+        "S09"
+      ],
+      "gaps": [
+        "G-OBS"
+      ],
+      "evidence_level": "partial_source_coverage",
+      "runtime_test_status": "not_run"
+    },
+    {
+      "id": "CAP-CLIENT",
+      "title": "Private local desktop control",
+      "methods": [],
+      "sources": [
+        "S07",
+        "S09"
+      ],
+      "gaps": [],
+      "evidence_level": "source_observed",
+      "runtime_test_status": "not_run"
+    },
+    {
+      "id": "CAP-UPDATE",
+      "title": "Spaceport updates",
+      "methods": [],
+      "sources": [
+        "S09"
+      ],
+      "gaps": [
+        "G-RELEASE"
+      ],
+      "evidence_level": "integration_unproved",
+      "runtime_test_status": "not_run"
+    }
+  ]
+}

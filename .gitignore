@@ -30,3 +30,4 @@ mise.local.toml
 # Wrangler local state for the site Worker.
 .wrangler/
 __pycache__/
+.kata.local.toml

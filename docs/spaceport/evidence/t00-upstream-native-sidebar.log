@@ -1,0 +1,404 @@
+cargo test --locked -p sheprd-gpui --features integration-test --test live_gui native_sidebar -- --ignored --nocapture --test-threads=1
+ Downloading crates ...
+  Downloaded cocoa v0.27.0
+  Downloaded core-graphics v0.25.0
+  Downloaded cocoa-foundation v0.2.0
+  Downloaded test-case v3.4.0
+  Downloaded test-case-macros v3.4.0
+  Downloaded test-case-core v3.4.0
+   Compiling sheprd-client v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-client)
+   Compiling gpui-pre v0.3.10
+   Compiling sheprd-gpui v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-gpui)
+   Compiling sheprd-updater v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-updater)
+   Compiling sheprd-core-client v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-core-client)
+   Compiling sheprd-usage v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-usage)
+   Compiling sheprd-commands v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-commands)
+   Compiling sheprd-diagnostics v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-diagnostics)
+   Compiling sheprd-mods v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-mods)
+   Compiling sheprd-github v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-github)
+   Compiling sheprd-remote-control v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-remote-control)
+   Compiling sheprd-control-protocol v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-control-protocol)
+   Compiling sheprd-remote v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-remote)
+   Compiling gpui-pre-apple v0.3.10
+   Compiling sheprd-vcs v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-vcs)
+   Compiling gpui-pre-macos v0.3.10
+   Compiling gpui-pre-platform v0.3.10
+   Compiling sheprd-orchestrator v0.1.0 (/private/tmp/spaceport-sheprd-reference/crates/sheprd-orchestrator)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sheprd-gpui` (bin "sheprd") generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 49.09s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/live_gui.rs (/tmp/spaceport-t00-target/debug/deps/live_gui-84dbeeed3b9c2c98)
+
+running 3 tests
+test native_sidebar ... ICON native PASS: valid NSApplication image, 512x512 points
+BADGE native PASS: Dock count changed from 2 to 1 and cleared
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR native symbol cascade: symbol cascade reaches installed Nerd Fonts
+SIDEBAR native bidi: isolation marks take no room; Hebrew in visual order; en-XB "semeht 838 fo 838"
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR native compact fonts PASS at Size { 680px × 560px }: four inline roles, live specimen selection, installed Menlo search, scoped/default and All picker, Escape/outside dismissal, cancelled size 18; no source input or config writes
+SIDEBAR native compact fonts PASS at Size { 960px × 780px }: four inline roles, live specimen selection, installed Menlo search, scoped/default and All picker, Escape/outside dismissal, cancelled size 18; no source input or config writes
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR native standalone settings PASS: all 14 category clicks and bounds at 680x560/960x780, 2/4-column theme grid, native Nord search 7/838 and clear, native Nord card click, singleton Cmd-comma, isolated Cmd-W; theme draft live across windows without config writes; final theme persisted on close in sandbox
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR frame=0 input="herdr" PaintedText { bounds: Bounds { origin: Point { x: 90px, y: 98px }, size: Size { 173px × 16px } }, mask: Bounds { origin: Point { x: 90px, y: 98px }, size: Size { 173px × 16px } }, cached: "herdr", glyph_text: "herdr", width: 36.12305px, clipped: false }
+SIDEBAR frame=0 input="main" PaintedText { bounds: Bounds { origin: Point { x: 72px, y: 114px }, size: Size { 191px × 16px } }, mask: Bounds { origin: Point { x: 72px, y: 114px }, size: Size { 191px × 16px } }, cached: "main", glyph_text: "main", width: 28.89844px, clipped: false }
+SIDEBAR frame=0 input="Claude Code" PaintedText { bounds: Bounds { origin: Point { x: 88px, y: 454px }, size: Size { 175px × 16px } }, mask: Bounds { origin: Point { x: 88px, y: 454px }, size: Size { 175px × 16px } }, cached: "Claude Code", glyph_text: "Claude Code", width: 79.47071px, clipped: false }
+SIDEBAR frame=0 input="agent" PaintedText { bounds: Bounds { origin: Point { x: 88px, y: 494px }, size: Size { 175px × 16px } }, mask: Bounds { origin: Point { x: 88px, y: 494px }, size: Size { 175px × 16px } }, cached: "agent", glyph_text: "agent", width: 36.12305px, clipped: false }
+SIDEBAR frame=0 input="1256789" PaintedText { bounds: Bounds { origin: Point { x: 72px, y: 194px }, size: Size { 191px × 16px } }, mask: Bounds { origin: Point { x: 72px, y: 194px }, size: Size { 191px × 16px } }, cached: "1256789", glyph_text: "1256789", width: 50.57227px, clipped: false }
+SIDEBAR frame=0 input="herdr-gpui-sidebar-rendering-regression-investigation" PaintedText { bounds: Bounds { origin: Point { x: 90px, y: 138px }, size: Size { 173px × 16px } }, mask: Bounds { origin: Point { x: 90px, y: 138px }, size: Size { 173px × 16px } }, cached: "herdr-gpui-sidebar-ren…", glyph_text: "herdr-gpui-sidebar-ren…", width: 166.16603px, clipped: false }
+SIDEBAR frame=0 input="fix/sidebar-label-width-and-overflow-regression" PaintedText { bounds: Bounds { origin: Point { x: 72px, y: 154px }, size: Size { 191px × 16px } }, mask: Bounds { origin: Point { x: 72px, y: 154px }, size: Size { 191px × 16px } }, cached: "fix/sidebar-label-width-a…", glyph_text: "fix/sidebar-label-width-a…", width: 187.83986px, clipped: false }
+SIDEBAR verified frame=0 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 1200px × 780px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR verified frame=1 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR verified frame=2 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR verified frame=3 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR verified frame=4 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR verified frame=5 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR verified frame=6 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR verified frame=7 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR verified frame=8 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR verified frame=9 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR verified frame=10 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a…
+SIDEBAR verified frame=11 mode=Classic { density: Comfortable, style: Flat } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=12 mode=Classic { density: Normal, style: Flat } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=13 mode=Classic { density: Normal, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=14 mode=Classic { density: Normal, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=15 mode=Classic { density: Normal, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR verified frame=16 mode=Classic { density: Normal, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR verified frame=17 mode=Classic { density: Normal, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR verified frame=18 mode=Classic { density: Normal, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=19 mode=Classic { density: Normal, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=20 mode=Classic { density: Normal, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=21 mode=Classic { density: Normal, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=22 mode=Classic { density: Normal, style: Flat } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=23 mode=Classic { density: Normal, style: Flat } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=24 mode=Classic { density: Compact, style: Flat } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=25 mode=Classic { density: Compact, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=26 mode=Classic { density: Compact, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=27 mode=Classic { density: Compact, style: Flat } viewport=Size { 1200px × 852px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=28 mode=Classic { density: Compact, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=29 mode=Classic { density: Compact, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=30 mode=Classic { density: Compact, style: Flat } viewport=Size { 640px × 472px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=31 mode=Classic { density: Compact, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=32 mode=Classic { density: Compact, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=33 mode=Classic { density: Compact, style: Flat } viewport=Size { 1000px × 722px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=34 mode=Classic { density: Compact, style: Flat } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lon…
+SIDEBAR verified frame=35 mode=Classic { density: Compact, style: Flat } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR verified frame=36 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 800px × 672px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR verified frame=37 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR verified frame=38 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR verified frame=39 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR verified frame=40 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR verified frame=41 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR verified frame=42 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR verified frame=43 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR verified frame=44 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR verified frame=45 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR verified frame=46 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with…
+SIDEBAR verified frame=47 mode=Classic { density: Comfortable, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=48 mode=Classic { density: Normal, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=49 mode=Classic { density: Normal, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=50 mode=Classic { density: Normal, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=51 mode=Classic { density: Normal, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=52 mode=Classic { density: Normal, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=53 mode=Classic { density: Normal, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=54 mode=Classic { density: Normal, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=55 mode=Classic { density: Normal, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=56 mode=Classic { density: Normal, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=57 mode=Classic { density: Normal, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=58 mode=Classic { density: Normal, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-l…
+SIDEBAR verified frame=59 mode=Classic { density: Normal, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=60 mode=Classic { density: Compact, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=61 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=62 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=63 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=64 mode=Classic { density: Compact, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=65 mode=Classic { density: Compact, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=66 mode=Classic { density: Compact, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=67 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=68 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=69 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=70 mode=Classic { density: Compact, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=71 mode=Classic { density: Compact, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR verified layout=superset
+SIDEBAR native FAIL: Ok(Err(orca: bad paint "Claude Code" PaintedText { bounds: Bounds { origin: Point { x: 93px, y: 464px }, size: Size { 79px × 16px } }, mask: Bounds { origin: Point { x: 93px, y: 464px }, size: Size { 79px × 16px } }, cached: "Claude Code", glyph_text: "Claude Code", width: 79.47071px, clipped: false }))
+
+gui.log (last 40 lines, at most 600 chars each):
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=61 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=62 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=63 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1200px × 1012px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=64 mode=Classic { density: Compact, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=65 mode=Classic { density: Compact, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=66 mode=Classic { density: Compact, style: Rounded } viewport=Size { 640px × 632px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=67 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=68 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=69 mode=Classic { density: Compact, style: Rounded } viewport=Size { 1000px × 882px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=70 mode=Classic { density: Compact, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR verified frame=71 mode=Classic { density: Compact, style: Rounded } viewport=Size { 800px × 832px } clipped=0
+SIDEBAR verified layout=superset
+SIDEBAR native FAIL: Ok(Err(orca: bad paint "Claude Code" PaintedText { bounds: Bounds { origin: Point { x: 93px, y: 464px }, size: Size { 79px × 16px } }, mask: Bounds { origin: Point { x: 93px, y: 464px }, size: Size { 79px × 16px } }, cached: "Claude Code", glyph_text: "Claude Code", width: 79.47071px, clipped: false }))
+
+thread 'native_sidebar' (46249729) panicked at crates/sheprd-gpui/tests/live_gui.rs:184:5:
+native sidebar failed: exit status: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+test native_sidebar_preferences_failure_exits_without_aborting ... ICON native PASS: valid NSApplication image, 512x512 points
+BADGE native PASS: Dock count changed from 2 to 1 and cleared
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR native symbol cascade: symbol cascade reaches installed Nerd Fonts
+SIDEBAR native bidi: isolation marks take no room; Hebrew in visual order; en-XB "semeht 838 fo 838"
+SIDEBAR native preferences FAIL: shared settings load: Load Herdr settings: ⁨⁨/var/folders/rc/cyjg3p3x0cb4w4xlb8yqm_1h0000gn/T/h5370-32d30c20-1/config.toml⁩: ⁨invalid shared Herdr TOML⁩⁩
+
+gui.log (last 40 lines, at most 600 chars each):
+ICON native PASS: valid NSApplication image, 512x512 points
+BADGE native PASS: Dock count changed from 2 to 1 and cleared
+SIDEBAR child verified: sidebar-child
+SIDEBAR child verified: sidebar-child-with-a-lo…
+SIDEBAR native symbol cascade: symbol cascade reaches installed Nerd Fonts
+SIDEBAR native bidi: isolation marks take no room; Hebrew in visual order; en-XB "semeht 838 fo 838"
+SIDEBAR native preferences FAIL: shared settings load: Load Herdr settings: ⁨⁨/var/folders/rc/cyjg3p3x0cb4w4xlb8yqm_1h0000gn/T/h5370-32d30c20-1/config.toml⁩: ⁨invalid shared Herdr TOML⁩⁩
+ok
+test native_sidebar_probe_failure_exits_without_aborting ... ICON native PASS: valid NSApplication image, 512x512 points
+BADGE native PASS: Dock count changed from 2 to 1 and cleared
+SIDEBAR native paint FAIL: native paint probe "sidebar-child": child label width: actual 127px, expected 179px
+SIDEBAR native symbol cascade: symbol cascade reaches installed Nerd Fonts
+SIDEBAR native bidi: isolation marks take no room; Hebrew in visual order; en-XB "semeht 838 fo 838"
+SIDEBAR native compact fonts PASS at Size { 680px × 560px }: four inline roles, live specimen selection, installed Menlo search, scoped/default and All picker, Escape/outside dismissal, cancelled size 18; no source input or config writes
+SIDEBAR native compact fonts PASS at Size { 960px × 780px }: four inline roles, live specimen selection, installed Menlo search, scoped/default and All picker, Escape/outside dismissal, cancelled size 18; no source input or config writes
+SIDEBAR native standalone settings PASS: all 14 category clicks and bounds at 680x560/960x780, 2/4-column theme grid, native Nord search 7/838 and clear, native Nord card click, singleton Cmd-comma, isolated Cmd-W; theme draft live across windows without config writes; final theme persisted on close in sandbox
+SIDEBAR native FAIL: Ok(Err(native paint probe "sidebar-child"
+
+Caused by:
+    child label width: actual 127px, expected 179px))
+
+gui.log (last 40 lines, at most 600 chars each):
+ICON native PASS: valid NSApplication image, 512x512 points
+BADGE native PASS: Dock count changed from 2 to 1 and cleared
+SIDEBAR native paint FAIL: native paint probe "sidebar-child": child label width: actual 127px, expected 179px
+SIDEBAR native symbol cascade: symbol cascade reaches installed Nerd Fonts
+SIDEBAR native bidi: isolation marks take no room; Hebrew in visual order; en-XB "semeht 838 fo 838"
+SIDEBAR native compact fonts PASS at Size { 680px × 560px }: four inline roles, live specimen selection, installed Menlo search, scoped/default and All picker, Escape/outside dismissal, cancelled size 18; no source input or config writes
+SIDEBAR native compact fonts PASS at Size { 960px × 780px }: four inline roles, live specimen selection, installed Menlo search, scoped/default and All picker, Escape/outside dismissal, cancelled size 18; no source input or config writes
+SIDEBAR native standalone settings PASS: all 14 category clicks and bounds at 680x560/960x780, 2/4-column theme grid, native Nord search 7/838 and clear, native Nord card click, singleton Cmd-comma, isolated Cmd-W; theme draft live across windows without config writes; final theme persisted on close in sandbox
+SIDEBAR native FAIL: Ok(Err(native paint probe "sidebar-child"
+
+Caused by:
+    child label width: actual 127px, expected 179px))
+ok
+
+failures:
+
+failures:
+    native_sidebar
+
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 8 filtered out; finished in 15.57s
+
+error: test failed, to rerun pass `-p sheprd-gpui --test live_gui`
+error: Recipe `test-sidebar` failed on line 98 with exit code 101

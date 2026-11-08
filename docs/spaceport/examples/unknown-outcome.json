@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "receipt",
+  "request_id": "fixture-request-7",
+  "action": "existing-retained-action",
+  "target": {
+    "core_id": "fixture-core-A",
+    "connection_epoch": "fixture-connection-4",
+    "view_id": "fixture-view-1",
+    "terminal_address": "fixture-box/t3"
+  },
+  "state": "unknown",
+  "retry_safe": false,
+  "evidence": [
+    "Synthetic example: connection closed after submission; no outcome observation."
+  ],
+  "error_kind": "outcome_unknown"
+}

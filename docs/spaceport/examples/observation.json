@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "observation",
+  "source": {
+    "core_id": "fixture-core-A",
+    "connection_epoch": "fixture-connection-4",
+    "terminal_seq": 17,
+    "document_version": 3,
+    "chat_revision": null
+  },
+  "freshness": "current",
+  "coverage": "partial",
+  "items": [
+    {
+      "view_id": "fixture-view-1",
+      "terminal_address": "fixture-box/t3",
+      "display_name": "Example agent",
+      "reported_status": null,
+      "available": true
+    }
+  ],
+  "has_more": false,
+  "next_cursor": null,
+  "truncated": false,
+  "redacted": true
+}

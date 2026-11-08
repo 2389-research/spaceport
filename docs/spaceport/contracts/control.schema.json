@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proposed Spaceport client observation/receipt seed contract",
+  "description": "Design artifact, not an implemented CLI/server, not a complete protocol schema. Examples are synthetic.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/observation"
+    },
+    {
+      "$ref": "#/$defs/receipt"
+    }
+  ],
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "source",
+        "freshness",
+        "coverage",
+        "items",
+        "has_more",
+        "truncated",
+        "redacted"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "kind": {
+          "const": "observation"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "core_id",
+            "connection_epoch",
+            "terminal_seq",
+            "document_version",
+            "chat_revision"
+          ],
+          "properties": {
+            "core_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "connection_epoch": {
+              "type": "string",
+              "minLength": 1
+            },
+            "terminal_seq": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "document_version": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "chat_revision": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "freshness": {
+          "enum": [
+            "current",
+            "stale",
+            "unavailable"
+          ]
+        },
+        "coverage": {
+          "enum": [
+            "complete_for_query",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "view_id",
+              "terminal_address",
+              "display_name",
+              "reported_status",
+              "available"
+            ],
+            "properties": {
+              "view_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "terminal_address": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "display_name": {
+                "type": "string",
+                "maxLength": 1024
+              },
+              "reported_status": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 256
+              },
+              "available": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "has_more": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "redacted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "request_id",
+        "action",
+        "target",
+        "state",
+        "retry_safe",
+        "evidence",
+        "error_kind"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "kind": {
+          "const": "receipt"
+        },
+        "request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "core_id",
+            "connection_epoch",
+            "view_id",
+            "terminal_address"
+          ],
+          "properties": {
+            "core_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "connection_epoch": {
+              "type": "string",
+              "minLength": 1
+            },
+            "view_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "terminal_address": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "state": {
+          "enum": [
+            "rejected",
+            "submitted",
+            "acknowledged",
+            "observed",
+            "unknown"
+          ]
+        },
+        "retry_safe": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "error_kind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 128
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retry_safe": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "observed"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidence": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

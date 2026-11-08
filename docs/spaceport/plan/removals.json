@@ -1,0 +1,366 @@
+{
+  "schema_version": 1,
+  "note": "Candidate source roots, not deletion commands or an exhaustive transitive dependency audit. T00 must map exact symbols/edges before editing.",
+  "items": [
+    {
+      "id": "RM-IDE",
+      "disposition": "remove",
+      "feature": "IDE, editor and code-navigation surfaces",
+      "candidate_paths": [
+        "crates/sheprd-gpui",
+        "crates/sheprd-vcs"
+      ],
+      "decisions": [
+        "D02",
+        "D04"
+      ],
+      "sources": [
+        "S08",
+        "S09"
+      ],
+      "constraint": "Preserve plain source-code rendering and external file opening.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-GIT",
+      "disposition": "remove",
+      "feature": "Git/diff/worktree/checkpoint workflows",
+      "candidate_paths": [
+        "crates/sheprd-vcs"
+      ],
+      "decisions": [
+        "D02",
+        "D04"
+      ],
+      "sources": [
+        "S09"
+      ],
+      "constraint": "Extract necessary shared pure utilities; no hidden Git polling.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-GITHUB",
+      "disposition": "remove",
+      "feature": "GitHub authentication, repositories, PR/issues/security UI",
+      "candidate_paths": [
+        "crates/sheprd-github"
+      ],
+      "decisions": [
+        "D31"
+      ],
+      "sources": [
+        "S09"
+      ],
+      "constraint": "Keep profile shell only; no token/account migration.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-DISPATCH",
+      "disposition": "remove",
+      "feature": "Issue/PR/Beads orchestration and dispatch",
+      "candidate_paths": [
+        "crates/sheprd-orchestrator"
+      ],
+      "decisions": [
+        "D13",
+        "D27",
+        "D31"
+      ],
+      "sources": [
+        "S09"
+      ],
+      "constraint": "Audit generic cache/private-file helpers before removing crate.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-BROWSER",
+      "disposition": "remove",
+      "feature": "Embedded browser and visual annotations",
+      "candidate_paths": [
+        "crates/sheprd-gpui"
+      ],
+      "decisions": [
+        "D05"
+      ],
+      "sources": [
+        "S08",
+        "S09"
+      ],
+      "constraint": "Keep service UI and system-browser open; remove webview-only dependencies after target audit.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-CLOUD",
+      "disposition": "remove",
+      "feature": "Cloud provider provisioning and management",
+      "candidate_paths": [
+        "crates/sheprd-remote"
+      ],
+      "decisions": [
+        "D06"
+      ],
+      "sources": [
+        "S08",
+        "S09"
+      ],
+      "constraint": "Keep generic Core machines even if provisioned elsewhere; no provider APIs.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-TELEPORT",
+      "disposition": "remove",
+      "feature": "Client execution migration and recovery",
+      "candidate_paths": [
+        "crates/sheprd-remote",
+        "crates/sheprd-gpui"
+      ],
+      "decisions": [
+        "D13",
+        "D56"
+      ],
+      "sources": [
+        "S09"
+      ],
+      "constraint": "No automatic agent move/resume to preserve a view.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-AUTOMATION",
+      "disposition": "remove",
+      "feature": "Local scripting/schedules/automation execution",
+      "candidate_paths": [
+        "crates/sheprd-automate",
+        "crates/sheprd-automation"
+      ],
+      "decisions": [
+        "D07",
+        "D34"
+      ],
+      "sources": [
+        "S09"
+      ],
+      "constraint": "Passive authoritative visibility remains a capability gate; do not retain scheduler as hidden dependency.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-MODS",
+      "disposition": "remove",
+      "feature": "Client plugin/mod/Luau engines",
+      "candidate_paths": [
+        "crates/sheprd-mods",
+        "crates/sheprd-luau"
+      ],
+      "decisions": [
+        "D34"
+      ],
+      "sources": [
+        "S08",
+        "S09"
+      ],
+      "constraint": "No speculative replacement extension system.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-PHONE",
+      "disposition": "remove",
+      "feature": "Phone remote-control, pairing, push and nearby services",
+      "candidate_paths": [
+        "crates/sheprd-remote-control",
+        "crates/sheprd-apns",
+        "crates/sheprd-push-relay",
+        "crates/sheprd-nearby",
+        "ios/"
+      ],
+      "decisions": [
+        "D20",
+        "D57"
+      ],
+      "sources": [
+        "S08",
+        "S09"
+      ],
+      "constraint": "Extract shared pure session/chat primitives first; retain desktop local IPC.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-LEGACY",
+      "disposition": "extract_then_remove",
+      "feature": "Legacy Herdr 1 client/transport/snapshot behavior",
+      "candidate_paths": [
+        "crates/sheprd-client",
+        "crates/sheprd-protocol",
+        "crates/sheprd-gpui"
+      ],
+      "decisions": [
+        "D55"
+      ],
+      "sources": [
+        "S02",
+        "S09",
+        "S11"
+      ],
+      "constraint": "Core protocol generation 1 and retained rendering/input types are not legacy backend behavior.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-PROVIDERS",
+      "disposition": "extract_then_remove",
+      "feature": "Provider probes/sign-in and model configuration",
+      "candidate_paths": [
+        "crates/sheprd-usage",
+        "crates/sheprd-credentials",
+        "crates/sheprd-gpui"
+      ],
+      "decisions": [
+        "D12",
+        "D27"
+      ],
+      "sources": [
+        "S09"
+      ],
+      "constraint": "Preserve only reported values and generic primitives independently needed by kept features.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "RM-ANNOTATION",
+      "disposition": "remove",
+      "feature": "Terminal selection annotations/send-to-agent",
+      "candidate_paths": [
+        "crates/sheprd-gpui"
+      ],
+      "decisions": [
+        "D30"
+      ],
+      "sources": [
+        "S07"
+      ],
+      "constraint": "Normal selection/copy/paste remains.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "KEEP-CORE",
+      "disposition": "keep_adapt",
+      "feature": "Core adapter and pure backend types",
+      "candidate_paths": [
+        "crates/sheprd-core-client",
+        "crates/sheprd-backend"
+      ],
+      "decisions": [
+        "D48",
+        "D55",
+        "D56"
+      ],
+      "sources": [
+        "S09",
+        "S10"
+      ],
+      "constraint": "Extend verified Core methods, not a second host manager.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "KEEP-TERM",
+      "disposition": "keep",
+      "feature": "Current emulator and native rendering",
+      "candidate_paths": [
+        "crates/sheprd-terminal",
+        "crates/sheprd-gpui"
+      ],
+      "decisions": [
+        "D03",
+        "D39",
+        "D43"
+      ],
+      "sources": [
+        "S11"
+      ],
+      "constraint": "No Ghostty migration or terminal redesign.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "KEEP-SESSION",
+      "disposition": "keep_adapt",
+      "feature": "Pure session/pane model and Core-backed grouping",
+      "candidate_paths": [
+        "crates/sheprd-session"
+      ],
+      "decisions": [
+        "D01",
+        "D14",
+        "D36"
+      ],
+      "sources": [
+        "S04",
+        "S09"
+      ],
+      "constraint": "Presentation metadata only; no runtime authority.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "KEEP-CHAT",
+      "disposition": "keep_adapt",
+      "feature": "Chat model/reducer/renderer and necessary host adapter",
+      "candidate_paths": [
+        "crates/sheprd-chat-protocol",
+        "crates/sheprd-acp",
+        "crates/sheprd-gpui"
+      ],
+      "decisions": [
+        "D08",
+        "D28"
+      ],
+      "sources": [
+        "S05",
+        "S06",
+        "S09"
+      ],
+      "constraint": "Audit lifecycle/config/deployment paths; remote route is gated.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "KEEP-CONTROL",
+      "disposition": "keep_adapt",
+      "feature": "Desktop local CLI and command catalog",
+      "candidate_paths": [
+        "crates/sheprd-control-protocol",
+        "crates/sheprd-commands"
+      ],
+      "decisions": [
+        "D21",
+        "D35"
+      ],
+      "sources": [
+        "S07",
+        "S09"
+      ],
+      "constraint": "Private local control, not phone server; no hc clone.",
+      "audit_status": "not_started"
+    },
+    {
+      "id": "KEEP-SHELL",
+      "disposition": "keep_adapt",
+      "feature": "Desktop shell, diagnostics, locales, updater and launcher",
+      "candidate_paths": [
+        "crates/sheprd-gpui",
+        "crates/sheprd-diagnostics",
+        "crates/sheprd-i18n",
+        "crates/sheprd-updater",
+        "crates/sheprd-launcher"
+      ],
+      "decisions": [
+        "D16",
+        "D26",
+        "D38",
+        "D45",
+        "D46",
+        "D47",
+        "D51"
+      ],
+      "sources": [
+        "S08",
+        "S09"
+      ],
+      "constraint": "Rebrand independent identities; preserve retained UI/platform behavior.",
+      "audit_status": "not_started"
+    }
+  ]
+}

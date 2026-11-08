@@ -1,0 +1,26 @@
+test_acyclic_graph_is_accepted (test_spec.SpecificationToolsTests.test_acyclic_graph_is_accepted) ... ok
+test_all_packets_fit_default_budget (test_spec.SpecificationToolsTests.test_all_packets_fit_default_budget) ... ok
+test_cycles_are_rejected (test_spec.SpecificationToolsTests.test_cycles_are_rejected) ... ok
+test_done_task_requires_evidence (test_spec.SpecificationToolsTests.test_done_task_requires_evidence) ... ok
+test_duplicate_ids_are_rejected (test_spec.SpecificationToolsTests.test_duplicate_ids_are_rejected) ... ok
+test_duplicate_keys_are_rejected (test_spec.SpecificationToolsTests.test_duplicate_keys_are_rejected) ... ok
+test_environment_is_not_a_specification_input (test_spec.SpecificationToolsTests.test_environment_is_not_a_specification_input) ... ok
+test_full_package (test_spec.SpecificationToolsTests.test_full_package) ... ok
+test_hashing_rejects_symlink_inputs (test_spec.SpecificationToolsTests.test_hashing_rejects_symlink_inputs) ... ok
+test_input_change_changes_hash (test_spec.SpecificationToolsTests.test_input_change_changes_hash) ... ok
+test_investigation_can_complete_with_recorded_open_gap (test_spec.SpecificationToolsTests.test_investigation_can_complete_with_recorded_open_gap) ... ok
+test_missing_prerequisites_are_rejected (test_spec.SpecificationToolsTests.test_missing_prerequisites_are_rejected) ... ok
+test_nonfinite_json_is_rejected (test_spec.SpecificationToolsTests.test_nonfinite_json_is_rejected) ... ok
+test_observed_outcome_needs_evidence (test_spec.SpecificationToolsTests.test_observed_outcome_needs_evidence) ... ok
+test_packet_contains_required_context (test_spec.SpecificationToolsTests.test_packet_contains_required_context) ... ok
+test_packet_refuses_silent_truncation (test_spec.SpecificationToolsTests.test_packet_refuses_silent_truncation) ... ok
+test_packet_rejects_unknown_task (test_spec.SpecificationToolsTests.test_packet_rejects_unknown_task) ... ok
+test_parity_task_cannot_complete_with_open_gap (test_spec.SpecificationToolsTests.test_parity_task_cannot_complete_with_open_gap) ... ok
+test_read_rejects_path_escape (test_spec.SpecificationToolsTests.test_read_rejects_path_escape) ... ok
+test_skipped_schema_is_reported_not_run (test_spec.SpecificationToolsTests.test_skipped_schema_is_reported_not_run) ... ok
+test_unknown_outcome_cannot_be_retry_safe (test_spec.SpecificationToolsTests.test_unknown_outcome_cannot_be_retry_safe) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.060s
+
+OK

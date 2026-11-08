@@ -1,0 +1,650 @@
+{
+  "schema_version": 1,
+  "scope": "Application acceptance plan; recorded T00 results are a reference baseline, not Spaceport parity.",
+  "scenarios": [
+    {
+      "id": "A01",
+      "requirements": [
+        "SP-001",
+        "SP-025"
+      ],
+      "title": "Isolated baseline",
+      "scenario": "Build and launch the pinned upstream in an isolated state directory; record toolchain, platform and pre-existing failures.",
+      "expected": "Reference evidence exists; personal runtime and user files are unchanged.",
+      "status": "passed",
+      "evidence": ["evidence/t00-baseline.md", "evidence/t00-upstream-build.log", "evidence/t00-upstream-native-sidebar.log"]
+    },
+    {
+      "id": "A02",
+      "requirements": [
+        "SP-004"
+      ],
+      "title": "Protocol identity",
+      "scenario": "Connect to the inspected Core generation; attempt the legacy backend and an unsupported generation.",
+      "expected": "Core generation 1 is accepted when compatible; legacy Herdr 1 never silently activates.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A03",
+      "requirements": [
+        "SP-005"
+      ],
+      "title": "Installed Core startup",
+      "scenario": "Test absent, running, stopped and incompatible installed Core using fake installer/update hooks.",
+      "expected": "Connect/start only the approved installed executable; no download/install/update hooks execute.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A04",
+      "requirements": [
+        "SP-006",
+        "SP-003"
+      ],
+      "title": "Core-owned remote machines",
+      "scenario": "Add a fixture machine through Core and observe its terminals; interrupt its connection.",
+      "expected": "Core owns catalog/retry; Spaceport has no parallel remote connector or duplicate terminal.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A05",
+      "requirements": [
+        "SP-006",
+        "SP-019"
+      ],
+      "title": "Host authentication refusal",
+      "scenario": "Use unknown/changed host keys and authentication-required fixture hosts.",
+      "expected": "No silent trust, password capture, key import or installation; actionable refusal preserves the host.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A06",
+      "requirements": [
+        "SP-007"
+      ],
+      "title": "Workspace document CRUD",
+      "scenario": "Create, rename, archive and delete a presentation workspace using the namespaced Core document.",
+      "expected": "Versioned grouping changes only; no process kill, file deletion or mutation of another client namespace.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A07",
+      "requirements": [
+        "SP-007",
+        "SP-019"
+      ],
+      "title": "Concurrent workspace edits",
+      "scenario": "Two clients edit a Core document from the same version.",
+      "expected": "Stale write conflicts; a safe rebase preserves the other writer; no last-writer-wins data loss.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A08",
+      "requirements": [
+        "SP-007",
+        "SP-018"
+      ],
+      "title": "Partial launch and membership",
+      "scenario": "Launch succeeds, then force workspace document write to fail/conflict.",
+      "expected": "Report partial outcome and expose the ungrouped terminal; no automatic process rollback.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A09",
+      "requirements": [
+        "SP-012",
+        "SP-013"
+      ],
+      "title": "View-only restore",
+      "scenario": "Quit and reopen with surviving, missing and renamed remote terminal/workspace references.",
+      "expected": "Fresh authoritative state wins; surviving processes reattach; missing agents never restart.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A10",
+      "requirements": [
+        "SP-008"
+      ],
+      "title": "Terminal parser continuity",
+      "scenario": "Replay retained fixtures across arbitrary byte splits and resize/alternate-screen transitions.",
+      "expected": "Frame/input semantics match the retained baseline, including Unicode and escape boundaries.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A11",
+      "requirements": [
+        "SP-008"
+      ],
+      "title": "Keyboard and mouse",
+      "scenario": "Exercise IME, bracketed paste, modifiers, mouse modes and platform input with fixture terminals.",
+      "expected": "Input bytes follow the actual modes; no lost or doubled submission.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A12",
+      "requirements": [
+        "SP-008",
+        "SP-020"
+      ],
+      "title": "Attach flow control",
+      "scenario": "Flood one terminal, stall one view and issue metadata/control reads concurrently.",
+      "expected": "Queues stay bounded, credits are correct and unrelated streams/control remain responsive.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A13",
+      "requirements": [
+        "SP-008"
+      ],
+      "title": "Observer isolation",
+      "scenario": "Attach observers and writers with supported and unsupported resize features.",
+      "expected": "Observers never type or seize size; confirmed RESIZE precedes subsequent paint/data.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A14",
+      "requirements": [
+        "SP-009",
+        "SP-003"
+      ],
+      "title": "Local native chat",
+      "scenario": "Attach to an existing Core-owned local host adapter, switch chat/terminal views and quit/reopen.",
+      "expected": "Same agent/conversation persists; no desktop-owned agent process or automatic resume/conversion.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A15",
+      "requirements": [
+        "SP-009",
+        "SP-026"
+      ],
+      "title": "Remote native chat gate",
+      "scenario": "Prove endpoint discovery, identity, authenticated transport and live native chat to a remote Core terminal.",
+      "expected": "Verified supported route exists; otherwise the requirement remains blocked, not satisfied by terminal fallback.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A16",
+      "requirements": [
+        "SP-010",
+        "SP-019"
+      ],
+      "title": "Concurrent permission response",
+      "scenario": "Two views answer one pending request; also try an expired request and descriptive tool text.",
+      "expected": "Source-defined single outcome; stale answers rejected; tool text cannot grant consent.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A17",
+      "requirements": [
+        "SP-010",
+        "SP-018"
+      ],
+      "title": "Prompt uncertainty",
+      "scenario": "Disconnect after prompt submission before acknowledgement and reconnect.",
+      "expected": "No automatic replay; acknowledgement/observed/unknown semantics are truthful.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A18",
+      "requirements": [
+        "SP-010",
+        "SP-011"
+      ],
+      "title": "Unknown versus idle",
+      "scenario": "Use programs that never report status, report done but remain alive, and become unreachable.",
+      "expected": "Unknown, reported state, process state and reachability stay distinct.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A19",
+      "requirements": [
+        "SP-011"
+      ],
+      "title": "Timeline scope",
+      "scenario": "Compare retained timeline navigation/search against baseline with partial available event data.",
+      "expected": "No new timeline architecture/history store; search coverage is honest and no global file/terminal index exists.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A20",
+      "requirements": [
+        "SP-011",
+        "SP-026"
+      ],
+      "title": "Usage and automation feed gate",
+      "scenario": "Inspect and exercise the authoritative supported feeds after removed collectors/schedulers are absent.",
+      "expected": "Only real supported data is shown; missing feeds are unavailable and retained-parity gaps remain explicit.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A21",
+      "requirements": [
+        "SP-012"
+      ],
+      "title": "Desktop notifications",
+      "scenario": "Exercise reported attention/completion/error with per-workspace/agent preferences and reconnect.",
+      "expected": "Notifications/badges/sounds follow retained settings, avoid duplicate delivery and stop when app exits.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A22",
+      "requirements": [
+        "SP-012",
+        "SP-003"
+      ],
+      "title": "Last-window lifecycle",
+      "scenario": "Record live local/remote programs, close all windows, then independently query Core.",
+      "expected": "Spaceport exits; Core and its agent terminals remain running.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A23",
+      "requirements": [
+        "SP-012",
+        "SP-018"
+      ],
+      "title": "Explicit termination",
+      "scenario": "With duplicate labels and multiple views, explicitly terminate one qualified fixture terminal.",
+      "expected": "Only that program ends; other views and processes are not accidentally destroyed.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A24",
+      "requirements": [
+        "SP-013"
+      ],
+      "title": "Offline behavior",
+      "scenario": "Disconnect and try mutations; restart the client while offline; inspect saved files.",
+      "expected": "No queued operations or browsable persistent transcripts; stale data is labeled; layout prefs may remain.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A25",
+      "requirements": [
+        "SP-014"
+      ],
+      "title": "Attachments",
+      "scenario": "Drag/drop a file and clipboard image to exact local/remote targets using supported Core routes.",
+      "expected": "Bytes arrive at the intended machine; transferring and submitting a path remain distinct effects.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A26",
+      "requirements": [
+        "SP-014",
+        "SP-026"
+      ],
+      "title": "General binary transfer gate",
+      "scenario": "Exercise retained upload/download, overwrite, cancellation, symlink and temporary-file scenarios.",
+      "expected": "Parity is demonstrated through a verified route, or G-FILE remains open; no text-only API masquerades as full transfer.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A27",
+      "requirements": [
+        "SP-014",
+        "SP-026"
+      ],
+      "title": "Loopback service forwarding gate",
+      "scenario": "Open a service bound only to a fixture remote loopback address through the intended Herdr-owned route.",
+      "expected": "Reachable in system browser without public rebinding, new Spaceport remote manager or mobile server; otherwise blocked.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A28",
+      "requirements": [
+        "SP-014",
+        "SP-015"
+      ],
+      "title": "External-only browsing",
+      "scenario": "Open URLs/services/files and inspect packaged/runtime dependencies.",
+      "expected": "System browser/handler opens; embedded browser, browser annotation and editor webviews are absent.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A29",
+      "requirements": [
+        "SP-015",
+        "SP-016"
+      ],
+      "title": "Git/IDE negative reachability",
+      "scenario": "Invoke removed commands/config/UI and render plain git/diff/source text in terminals/chat.",
+      "expected": "Specialized Git/IDE/review behavior is absent; ordinary content is unchanged; developer CI still works.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A30",
+      "requirements": [
+        "SP-015"
+      ],
+      "title": "No cloud/dispatch/mod runtime",
+      "scenario": "Exercise stale settings/commands and monitor fake provider endpoints and installed services.",
+      "expected": "No provider auth/provisioning/Teleport/orchestration/scheduler/mod behavior or hidden worker remains.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A31",
+      "requirements": [
+        "SP-015",
+        "SP-017"
+      ],
+      "title": "Mobile service versus local IPC",
+      "scenario": "Inspect process/package/network inventory and execute retained desktop CLI commands.",
+      "expected": "No phone HTTPS/pairing/push/nearby service; private local desktop IPC remains functional.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A32",
+      "requirements": [
+        "SP-015",
+        "SP-004"
+      ],
+      "title": "Legacy graph removed",
+      "scenario": "Inspect all release target/features, binaries and dependencies after shared-type extraction.",
+      "expected": "No legacy Herdr 1 backend or fallback; pure Core renderer/input types still pass tests.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A33",
+      "requirements": [
+        "SP-002"
+      ],
+      "title": "Visual and interaction retention",
+      "scenario": "Compare retained desktop views, menus, settings, sidebar and rich chat against reference fixtures.",
+      "expected": "Only approved deletions, rebrand and necessary capability adaptations differ; no unrequested redesign.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A34",
+      "requirements": [
+        "SP-002"
+      ],
+      "title": "Customization/accessibility",
+      "scenario": "Exercise themes/fonts/layouts/shortcuts, focus order, labels, locales and retained accessibility paths.",
+      "expected": "Retained customization and accessibility behavior works with deleted controls removed cleanly.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A35",
+      "requirements": [
+        "SP-017"
+      ],
+      "title": "Unified command semantics",
+      "scenario": "Invoke retained actions by GUI, palette, shortcut and local CLI with the same target.",
+      "expected": "One catalog/dispatch contract; effects, confirmations and errors agree.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A36",
+      "requirements": [
+        "SP-018"
+      ],
+      "title": "Ambiguous and stale target",
+      "scenario": "Rename/reorder machines, switch focus during dispatch and use duplicate labels/stale references.",
+      "expected": "Automated mutations never guess or redirect; stale/ambiguous target is refused.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A37",
+      "requirements": [
+        "SP-018"
+      ],
+      "title": "Timeout is not failure",
+      "scenario": "Lose a reply after a launch or other non-idempotent mutation.",
+      "expected": "Unknown outcome is visible; reconcile before any new action; no fake idempotency or duplicate launch.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A38",
+      "requirements": [
+        "SP-019"
+      ],
+      "title": "Content is not authority",
+      "scenario": "Feed malicious OSC/tool text/labels/filenames/URLs and a fake approval request.",
+      "expected": "No instruction execution, credential fetch, approval, unexpected network/file access or command-catalog mutation.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A39",
+      "requirements": [
+        "SP-020"
+      ],
+      "title": "Bounded inspection",
+      "scenario": "Query a large fixture session with many hidden transcripts and terminal histories.",
+      "expected": "Default metadata stays paged/bounded; no full transcript fetch or model invocation; truncation/coverage explicit.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A40",
+      "requirements": [
+        "SP-020"
+      ],
+      "title": "No resource leak",
+      "scenario": "Repeat window/pane attach-detach and Core reconnect cycles under load.",
+      "expected": "Memory/subscriptions/threads stay bounded and return to the measured steady-state envelope.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A41",
+      "requirements": [
+        "SP-021"
+      ],
+      "title": "Truthful diagnostics",
+      "scenario": "Exercise unsupported, denied, disconnected, stale and unknown outcomes; export logs with seeded secrets.",
+      "expected": "Distinct error classes/versions/correlation; no seeded secrets/transcripts in default diagnostics.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A42",
+      "requirements": [
+        "SP-022",
+        "SP-025"
+      ],
+      "title": "Identity and upstream isolation",
+      "scenario": "Install a development build beside upstream; inspect paths/handlers/accounts and attempt old settings load.",
+      "expected": "Independent app state/identity; upstream settings/credentials untouched; compatibility constants and notices retained.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A43",
+      "requirements": [
+        "SP-023"
+      ],
+      "title": "Update verification",
+      "scenario": "Use isolated signed release fixtures, tampered manifests, wrong app IDs and rollback/restart paths.",
+      "expected": "Only authorized Spaceport artifacts install; no upstream/Core overwrite or unsigned fallback.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A44",
+      "requirements": [
+        "SP-023",
+        "SP-026"
+      ],
+      "title": "Release gate",
+      "scenario": "Inspect final owner-controlled IDs, keys, package/signing results and unresolved product gates.",
+      "expected": "Unknown credentials/ownership or unproved required parity blocks public release; no placeholder success.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A45",
+      "requirements": [
+        "SP-024"
+      ],
+      "title": "Task packet accuracy",
+      "scenario": "Generate each task packet; mutate a tracked input; check requirements/sources/test ownership.",
+      "expected": "Packets contain relevant current inputs and hashes, reject overflow, and do not claim runtime tests passed.",
+      "status": "passed",
+      "evidence": ["evidence/t00-baseline.md", "evidence/validation.json"]
+    },
+    {
+      "id": "A46",
+      "requirements": [
+        "SP-024"
+      ],
+      "title": "Accretive bug fix",
+      "scenario": "Introduce a reproducible targeting/lifecycle bug in an isolated branch, fix it and review handoff.",
+      "expected": "Small regression fixture and owner contract survive; no redundant architecture dump or new runtime system.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A47",
+      "requirements": [
+        "SP-025"
+      ],
+      "title": "Repository/test safety",
+      "scenario": "Run setup against dirty worktree, real-looking state paths and unauthorized publishing environment.",
+      "expected": "Unrelated changes preserved; real environments and publish operations refused/not invoked.",
+      "status": "passed",
+      "evidence": ["evidence/t00-baseline.md"]
+    },
+    {
+      "id": "A48",
+      "requirements": [
+        "SP-026"
+      ],
+      "title": "Completion honesty",
+      "scenario": "Leave one native platform and one retained backend path untested.",
+      "expected": "Report not-run/blocked accurately; no overall full-parity claim or silent scope reduction.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A49",
+      "requirements": [
+        "SP-001",
+        "SP-008",
+        "SP-012",
+        "SP-023"
+      ],
+      "title": "Native macOS acceptance",
+      "scenario": "Run retained UX/Core/lifecycle/clipboard/notifications/packaging/updater on a native supported macOS fixture.",
+      "expected": "Measured behavior matches contract; actual OS/architecture coverage is recorded.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A50",
+      "requirements": [
+        "SP-001",
+        "SP-008",
+        "SP-012",
+        "SP-023"
+      ],
+      "title": "Native Windows acceptance",
+      "scenario": "Run named-pipe, launcher, input/clipboard, lifetime, notifications and package/update scenarios natively.",
+      "expected": "Actual Windows behavior passes; a cross-compile alone is insufficient.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A51",
+      "requirements": [
+        "SP-001",
+        "SP-008",
+        "SP-012",
+        "SP-023"
+      ],
+      "title": "Native Linux acceptance",
+      "scenario": "Run socket/input/clipboard/lifetime/notification/package scenarios on the window systems actually supported.",
+      "expected": "Actual Linux runtime coverage is recorded with no unsupported platform inference.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A52",
+      "requirements": [
+        "SP-017",
+        "SP-018",
+        "SP-020"
+      ],
+      "title": "Operating-agent usability",
+      "scenario": "Give an agent only CLI help/schema and the bounded attention/target/observe fixture journey.",
+      "expected": "Correct observed outcome, zero wrong-target/unauthorized effects; record command/context cost versus reference.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A53",
+      "requirements": [
+        "SP-004",
+        "SP-007",
+        "SP-013"
+      ],
+      "title": "Event epoch and document refresh",
+      "scenario": "Restart Core, emit missed notifications and modify a watched remote document while disconnected.",
+      "expected": "Fresh snapshot/document values replace stale projections; old sequence numbers do not suppress new events.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A54",
+      "requirements": [
+        "SP-009",
+        "SP-015",
+        "SP-003"
+      ],
+      "title": "No automatic conversion/resume",
+      "scenario": "Show/hide native chat, restore an absent adapter and inspect removed conversion/recovery paths.",
+      "expected": "No desktop-driven agent kill/restart/resume/deployment; missing capability remains explicit.",
+      "status": "not_run",
+      "evidence": []
+    },
+    {
+      "id": "A55",
+      "requirements": [
+        "SP-010",
+        "SP-017"
+      ],
+      "title": "Supported versus unsupported controls",
+      "scenario": "Exercise templates/input/permissions on sessions with deliberately different advertised capabilities.",
+      "expected": "Controls reflect actual session capability; no duplicated provider/model configuration or runtime CLI.",
+      "status": "not_run",
+      "evidence": []
+    }
+  ]
+}

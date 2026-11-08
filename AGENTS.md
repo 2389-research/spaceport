@@ -3,6 +3,15 @@
 Engineering guidance for agents working in this repository. Read this alongside
 `README.md`, the relevant crate documentation, and the code before making changes.
 
+## Spaceport fork specification
+
+The authoritative Spaceport scope and task graph live in
+[`docs/spaceport/`](docs/spaceport/START_HERE.md). Read that package's
+`AGENTS.md`, `SPEC.md`, and `SYSTEM.md`; run its tools from `docs/spaceport/`.
+Keep the upstream engineering rules below where they apply to retained code.
+Where they describe excluded Sheprd behavior, the Spaceport specification
+governs the fork.
+
 ## Priorities
 
 - Keep changes small, explicit, and focused on the root cause.
