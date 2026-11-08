@@ -42,6 +42,18 @@ its 21 tool tests passed. A plain system Python check lacked the package's
 JSON Schema dependency, so validation used the existing package virtual
 environment. The package report covers spec integrity, not application QA.
 
+On the integration branch, the default and all-feature app checks passed;
+the control-protocol suite passed 58/58. Headless Activity layout passed 6/6,
+and the retained titlebar account-icon, profile-slot and UI-panel tests passed
+1/1, 1/1 and 2/2. The first retained Activity sections run found a stale
+embedded-page expectation: a repository URL correctly opened the system
+browser and left Issues visible. Commit `f92f39ce` corrected the test to
+assert both the opened URL and unchanged section; the focused sections suite
+then passed 4/4. `just format-check`, `check-file-size`, `check-sorted` and
+`check-i18n` passed on the merged cut. The test linker emitted the existing
+compact-unwind size warning, and Cargo retained the `block v0.1.6`
+future-compatibility notice. No native window or external service was used.
+
 GitHub profile sign-in/polling, PR and Issues Activity pages, repository
 workers, provider account dependencies and their credentials remain reachable.
 The generic credential primitives and updater release transport are retained.
