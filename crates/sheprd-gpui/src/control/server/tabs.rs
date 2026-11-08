@@ -1,4 +1,4 @@
-//! `tab`, `devices`, `orchestrator`, `review`, and page requests.
+//! `tab`, `devices`, `orchestrator`, and page requests.
 //! The Store keeps app tabs; caller targets still select their workspace.
 mod arrive;
 mod page;
@@ -40,7 +40,6 @@ pub(super) fn serve(
         TabOp::Zoom { id, change } => incoming.respond(page::zoom(&caller, id, change, cx)),
         TabOp::Devices => arrive::devices(&caller, incoming, watches, cx),
         TabOp::Orchestrator { repo } => arrive::orchestrator(&caller, repo, incoming, watches, cx),
-        TabOp::Review => arrive::review(&caller, incoming, watches, cx),
         TabOp::Px0 => arrive::px0(&caller, incoming, watches, cx),
     }
 }

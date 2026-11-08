@@ -19,7 +19,6 @@ for what only Sheprd shows or keeps.
 
 | To | Run |
 | --- | --- |
-| Open the review of your uncommitted changes | `sheprd review` |
 | Open px0 to browse, edit, or review your local checkout (macOS/Windows) | `sheprd px0 open` |
 | Get notes the user sent this pane (pages, reviews, terminals) | `sheprd feedback --wait 600` |
 | Keep a note on this worktree (repository and branch) | `sheprd notes set waiting on CI` |

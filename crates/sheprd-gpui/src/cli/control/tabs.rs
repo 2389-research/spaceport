@@ -1,4 +1,4 @@
-//! `tab`, `devices`, `orchestrator`, and `review`.
+//! `tab`, `devices`, and `orchestrator`.
 use super::{Args, CliError, unknown};
 use std::path::PathBuf;
 

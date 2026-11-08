@@ -56,16 +56,13 @@ fn family(name: &str) -> &'static str {
             "sheprd ui sidebar [on|off|toggle]\nsheprd ui statusbar [on|off|toggle]\nsheprd ui font-size +|-|reset|POINTS\nsheprd ui panel workspaces|overview|pull-requests|issues|tasks|security|automations|usage\n    For this window and session; settings are changed with `config`."
         }
         "tab" => {
-            "sheprd tab [list]\n    The app's own tabs: pages, code, reviews, Devices.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nsheprd tab focus|close ID\n    Show a tab, switching to its workspace, or close it."
+            "sheprd tab [list]\n    The app's own tabs: pages, reviews, Devices, Core terminals.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nsheprd tab focus|close ID\n    Show a tab, switching to its workspace, or close it."
         }
         "devices" => {
             "sheprd devices [open]\n    Open the Devices overview tab in the caller's workspace."
         }
         "orchestrator" => {
             "sheprd orchestrator [open] [--repo PATH]\n    Show the Issues section narrowed to the caller's project, or PATH's.\nsheprd orchestrator items|issues|prs|tasks [--repo PATH]\n    List what it last synced, from its local database (no network).\n    Runs here; Sheprd need not run. Exits 4 before its first sync."
-        }
-        "review" => {
-            "sheprd review [open]\n    Open the review of the caller's workspace's uncommitted changes."
         }
         "chat" => {
             "sheprd chat [status]\n    The window's sheprd-acp chat panes on this machine or an SSH host: pane, agent, status,\n    and whether the native chat view or the terminal shows. Exits 4 when\n    there are none.\nsheprd chat show|hide|toggle [--pane ID]\n    Show the native chat view over the pane, or its terminal, for this\n    window. The pane is the caller's own, else the focused one. Exits 5 when\n    it runs no chat the window can show.\nsheprd chat new AGENT [--pane ID]\n    Open a tab running a sheprd-acp chat with AGENT (claude, codex, copilot,\n    gemini, opencode, or pi) in the workspace and folder of the pane, else the\n    caller's own. On an SSH host the tab runs that host's sheprd-acp, from\n    ~/.herdr/bin or PATH. With no Herdr pane to go by, a Herdr 2 tab in the\n    active group splits its pane in use with the chat instead. The chat view\n    attaches once the program starts.\n    Exits 8 when ACP chats are off in Settings, sheprd-acp is missing here,\n    the host cannot be reached, or the agent is not installed there.\nsheprd chat convert [--pane ID]\n    Move the terminal agent in the pane, else the caller's own, else the\n    focused one, into a sheprd-acp chat in the same pane: stops its CLI\n    with Ctrl+C and continues its session, with its messages, in the chat.\n    Claude, Codex, Copilot, and OpenCode, once idle; a draft in its input\n    is lost. Exits 6 while the agent works and 8 for an agent or pane that\n    cannot move."

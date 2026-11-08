@@ -1,4 +1,4 @@
-//! `tab`, `devices`, `orchestrator`, and `review`.
+//! `tab`, `devices`, and `orchestrator`.
 mod items;
 
 use super::{Context, Output, unexpected};
@@ -122,11 +122,6 @@ pub(super) fn orchestrator(
         }
         OrchestratorCommand::Items { repo, items } => items::list(repo.as_deref(), items),
     }
-}
-
-pub(super) fn review(context: &Context) -> crate::Result<Output> {
-    let response = context.call(Request::Tab, TabOp::Review)?;
-    opened("the review", response)
 }
 
 #[cfg(test)]

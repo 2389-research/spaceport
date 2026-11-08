@@ -424,7 +424,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Tab(command) => tabs::tab(command, &context),
         ControlCommand::Devices => tabs::devices(&context),
         ControlCommand::Orchestrator(command) => tabs::orchestrator(command, &context),
-        ControlCommand::Review => tabs::review(&context),
         ControlCommand::Chat(command) => chat::chat(command, &context),
         ControlCommand::Px0 => tabs::px0(&context),
         ControlCommand::Notes(command) => work::notes(command, &context),

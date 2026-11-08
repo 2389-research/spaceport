@@ -9,7 +9,6 @@ use gpui::{Entity, VisualTestContext};
 use std::{path::Path, sync::Arc};
 
 mod px0;
-mod review;
 mod windows;
 
 fn web(url: &str) -> Location {

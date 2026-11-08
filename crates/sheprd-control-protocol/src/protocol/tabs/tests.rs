@@ -3,6 +3,7 @@ use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
 mod removed_code_edit;
+mod removed_review;
 
 fn round_trip(op: TabOp) {
     let request = Request::Tab(Call {
@@ -42,7 +43,6 @@ fn tab_operations_round_trip() {
         TabOp::Orchestrator {
             repo: Some("/src".into()),
         },
-        TabOp::Review,
     ] {
         round_trip(op);
     }
@@ -104,7 +104,7 @@ fn page_and_arrival_operations_extend_the_answer_timeout() {
         }),
         PAGE_WAIT_SECONDS
     );
-    assert_eq!(wait(TabOp::Review), ARRIVE_WAIT_SECONDS);
+    assert_eq!(wait(TabOp::Devices), ARRIVE_WAIT_SECONDS);
     assert_eq!(wait(TabOp::Focus { id: 1 }), 0);
 }
 

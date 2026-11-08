@@ -17,6 +17,7 @@ mod removed_legacy_launch;
 mod removed_legacy_window_session;
 mod removed_mods;
 mod removed_phone;
+mod removed_review;
 mod removed_search;
 mod removed_teleport;
 mod ui_panel;

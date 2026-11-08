@@ -54,7 +54,6 @@ pub enum ControlCommand {
     Tab(TabCommand),
     Devices,
     Orchestrator(OrchestratorCommand),
-    Review,
     Chat(ChatCommand),
     Px0,
     Notes(NotesCommand),
@@ -138,7 +137,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
         "orchestrator",
         "A repository's issues, pull requests, and runs",
     ),
-    ("review", "Open the review of the uncommitted changes"),
     (
         "chat",
         "Native views of herdr-acp chats: start one, list them, show or hide one",
@@ -286,10 +284,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
             ControlCommand::Devices
         }
         "orchestrator" => ControlCommand::Orchestrator(tabs::orchestrator(args)?),
-        "review" => {
-            tabs::open_only(args)?;
-            ControlCommand::Review
-        }
         "chat" => ControlCommand::Chat(chat::chat(args)?),
         "px0" => {
             tabs::open_only(args)?;

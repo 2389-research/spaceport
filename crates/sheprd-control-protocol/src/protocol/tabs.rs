@@ -54,8 +54,6 @@ pub enum TabOp {
         #[serde(default)]
         repo: Option<String>,
     },
-    /// The review of the caller's workspace's uncommitted changes.
-    Review,
     Px0,
 }
 
@@ -63,9 +61,7 @@ impl TabOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
             Self::Text { .. } | Self::Screenshot { .. } => PAGE_WAIT_SECONDS,
-            Self::Devices | Self::Orchestrator { .. } | Self::Review | Self::Px0 => {
-                ARRIVE_WAIT_SECONDS
-            }
+            Self::Devices | Self::Orchestrator { .. } | Self::Px0 => ARRIVE_WAIT_SECONDS,
             Self::List { .. }
             | Self::Focus { .. }
             | Self::Close { .. }

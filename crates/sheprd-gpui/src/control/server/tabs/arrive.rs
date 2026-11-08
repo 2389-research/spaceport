@@ -1,11 +1,11 @@
-//! Tabs opened in the caller's workspace: Devices, the
-//! orchestrator, and the review. Each feature opens its tab in the focused
+//! Tabs opened in the caller's workspace: Devices and the
+//! orchestrator. Each feature opens its tab in the focused
 //! workspace, so the window first switches to the caller's, and the tab
 //! opens once a snapshot says the switch landed.
 use super::{busy, closed};
 use crate::{
     SheprdWindow,
-    browser::{Location, OrchestratorRepo, ReviewCheckout, Store},
+    browser::{Location, OrchestratorRepo, Store},
     control::{
         protocol::{
             Caller, ErrorCode, Response,
@@ -204,45 +204,6 @@ pub(super) fn orchestrator(
                     "Issues show in the activity bar, which is turned off, or this host cannot list them",
                 )
             }
-        },
-    );
-}
-
-/// The review of the workspace's checkout, once the window's Git worker
-/// follows that checkout rather than the one shown before the switch.
-pub(super) fn review(
-    caller: &Caller,
-    incoming: socket::Incoming,
-    watches: &mut Watches,
-    cx: &mut App,
-) {
-    open_there(
-        caller,
-        incoming,
-        watches,
-        cx,
-        |view| {
-            let input = view.git_input();
-            input.is_none() || view.git.tracked() == input.as_ref()
-        },
-        |view, workspace, window, cx| {
-            let Some(checkout) = view
-                .git_input()
-                .and_then(|input| ReviewCheckout::try_from(&input).ok())
-            else {
-                return Response::error(
-                    ErrorCode::Failed,
-                    format!("Workspace {workspace} has no local Git checkout to review"),
-                );
-            };
-            view.open_review(window, cx);
-            opened(
-                view,
-                workspace,
-                "the review",
-                cx,
-                |location| matches!(location, Location::Review { checkout: open } if *open == checkout),
-            )
         },
     );
 }

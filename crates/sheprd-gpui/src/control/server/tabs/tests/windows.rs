@@ -159,7 +159,7 @@ fn requests_for_unknown_workspaces_and_bad_repos_are_refused(cx: &mut gpui::Test
         ..Caller::default()
     };
     for (op, caller, code) in [
-        (TabOp::Review, missing, ErrorCode::WorkspaceNotFound),
+        (TabOp::Devices, missing, ErrorCode::WorkspaceNotFound),
         (
             TabOp::Orchestrator {
                 repo: Some("src".into()),

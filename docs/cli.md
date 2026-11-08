@@ -90,7 +90,7 @@ Sheprd** entry, which both Windows installers add, runs this command through
 
 | Command | What it does |
 | --- | --- |
-| `tab [list]` | Pages, code, reviews, and Devices tabs with IDs |
+| `tab [list]` | Pages, reviews, Devices, and Core terminal tabs with IDs |
 | `tab focus\|close ID` | |
 | `browser reload\|feedback` | See [browser tabs](../crates/sheprd-gpui/README.md#browser-tabs) |
 | `browser list` | Page tabs only |
@@ -102,7 +102,6 @@ Sheprd** entry, which both Windows installers add, runs this command through
 | `devices` | The Devices overview |
 | `orchestrator [--repo PATH]` | Show the Issues section narrowed to your checkout's project, or PATH's |
 | `orchestrator items\|issues\|prs\|tasks` | What it last synced, from its local database (no app needed); `tasks` is the repository's Beads tasks, with each one's assignee, priority, and blockers in `--json` |
-| `review` | The review of your workspace's uncommitted changes |
 | `px0 [open]` | Open or focus px0 on your local workspace's checkout (macOS and Windows) |
 
 `px0 open` reuses one editor tab per workspace. It discovers a local px0
