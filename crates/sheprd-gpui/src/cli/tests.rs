@@ -12,11 +12,11 @@ mod control_commands;
 mod development_links;
 mod language;
 mod links;
-mod mods;
 mod open_command;
 mod px0;
 mod quota;
 mod remote;
+mod removed_mods;
 mod security;
 mod ui_panel;
 

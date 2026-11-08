@@ -116,9 +116,7 @@ impl Filter {
         self == Self::All
             || self
                 == match action {
-                    Action::Native(_) | Action::Configured(..) | Action::Mod { .. } => {
-                        Self::Commands
-                    }
+                    Action::Native(_) | Action::Configured(..) => Self::Commands,
                     Action::Go { .. } => Self::Navigation,
                     Action::Project(_) | Action::NewProject(_) => Self::Projects,
                     Action::Note { .. } => Self::Notes,
@@ -144,11 +142,6 @@ enum Action {
         endpoint: String,
         boot: String,
         workspace: String,
-    },
-    /// A command a mod declares; choosing it sends the mod `command:<id>`.
-    Mod {
-        name: String,
-        id: String,
     },
 }
 
@@ -219,31 +212,6 @@ enum Identity {
     Project(std::path::PathBuf),
     NewProject(std::path::PathBuf),
     Note(String, String),
-    Mod(String, String),
-}
-
-impl SheprdWindow {
-    /// One row per command each running mod declares, named `mod: title`.
-    fn mod_palette_entries(&self) -> Vec<Entry> {
-        self.mods
-            .entries()
-            .filter_map(|(name, entry)| Some((name, entry.manifest.as_ref()?)))
-            .flat_map(|(name, manifest)| {
-                manifest.commands.iter().map(move |command| {
-                    Entry::new(
-                        format!("{name}: {}", command.title),
-                        String::new(),
-                        fl!("palette-badge-mod"),
-                        Action::Mod {
-                            name: name.to_owned(),
-                            id: command.id.clone(),
-                        },
-                        None,
-                    )
-                })
-            })
-            .collect()
-    }
 }
 
 impl Action {
@@ -261,7 +229,6 @@ impl Action {
                 workspace,
                 ..
             } => Identity::Note(endpoint.clone(), workspace.clone()),
-            Self::Mod { name, id } => Identity::Mod(name.clone(), id.clone()),
         }
     }
 }
@@ -793,7 +760,6 @@ impl SheprdWindow {
                     }),
             );
         }
-        entries.extend(self.mod_palette_entries());
         entries.extend(palette.projects.projects.iter().map(|project| {
             let mut entry = Entry::new(
                 project.label.clone(),

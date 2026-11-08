@@ -97,7 +97,6 @@ mod menus;
 mod merged_cleanup;
 #[cfg(feature = "mockup")]
 mod mockup;
-mod mods;
 mod motion;
 mod multiline_input;
 mod navigation;

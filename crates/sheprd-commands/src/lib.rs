@@ -49,8 +49,6 @@ pub enum Command {
     TabNumber(u8),
     ToggleSidebar,
     ToggleStatusBar,
-    /// Shows or hides the panel of mod sections on the window's right.
-    ToggleModPanel,
     /// Moves keyboard focus to the next of the terminal, the title bar, the
     /// sidebar, and the status bar, where Tab moves between controls.
     FocusNextRegion,
@@ -575,11 +573,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-toggle-status-bar",
     },
     CommandInfo {
-        command: Command::ToggleModPanel,
-        name: "toggle_mod_panel",
-        message: "commands-toggle-mod-panel",
-    },
-    CommandInfo {
         command: Command::FocusNextRegion,
         name: "focus_next_region",
         message: "commands-focus-next-region",
@@ -912,7 +905,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::CopyMode
         | Command::ToggleSidebar
         | Command::ToggleStatusBar
-        | Command::ToggleModPanel
         | Command::FocusNextRegion
         | Command::FocusPreviousRegion
         | Command::ToggleZenMode

@@ -10,7 +10,6 @@ mod back;
 mod bubbles;
 mod counts;
 mod layout;
-mod mod_apps;
 mod pulse;
 mod sections;
 mod startup_counts;

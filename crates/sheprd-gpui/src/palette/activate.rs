@@ -66,15 +66,6 @@ impl SheprdWindow {
             self.command(command, window, cx);
             return;
         }
-        if let Action::Mod { name, id } = action {
-            self.dismiss_menu(window, cx);
-            self.send_to_mod(
-                &name,
-                sheprd_mods::Data::String(format!("command:{id}")),
-                cx,
-            );
-            return;
-        }
         if let Action::Project(project) = action {
             remember(cx);
             self.activate_project(project, window, cx);
@@ -136,8 +127,7 @@ impl SheprdWindow {
                 | Action::Go { .. }
                 | Action::Project(_)
                 | Action::NewProject(_)
-                | Action::Note { .. }
-                | Action::Mod { .. } => unreachable!(),
+                | Action::Note { .. } => unreachable!(),
             }
         })();
         match result {

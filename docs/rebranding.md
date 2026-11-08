@@ -30,7 +30,7 @@ Existing screenshots remain historical captures, not evidence of refreshed UI.
 | Nix | Existing `herdr-gpui` package/overlay attributes and legacy main/helper commands remain aliases. The main command alias targets the final wrapped `sheprd` executable. |
 | Windows | `%LOCALAPPDATA%\Programs\Herdr UI`, Inno AppId `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`, AppUserModelID `so.pen.herdr-gpui`, winget `Penso.HerdrUI`, and the same Authenticode publisher. Keep `herdr-gpui.exe` / `herdr-gpui-launcher.exe` alongside `sheprd.exe` / `sheprd-launcher.exe`; visible installer and shortcuts say Sheprd. |
 | Saved data | Existing config, state, cache, credential-store and service identities remain. Examples include `herdr/`, `config-gpui.toml`, `.herdr/`, `herdr-automate` and `herdr-remote-control` storage roots, OS keyring service names, launchd/systemd labels and Windows service/task identities. Do not move or delete these as branding cleanup. |
-| Existing integrations | Preserve control socket/pipe identities, `herdr-gpui://` and `herdr-remote://` links, browser `HerdrKit` / `herdr.send` / `/.herdr/` APIs, Luau `herdr.*`, `@herdr/ui`, `herdr-ui` chat fences and existing environment/config keys. Managed skill YAML names/folders remain `herdr-gpui-browser`, `herdr-automations` and `herdr-mods`; their marker remains `herdr-gpui-managed-skill v1`. Descriptions and CLI examples use Sheprd without inventing renamed extension APIs. |
+| Existing integrations | Preserve control socket/pipe identities, `herdr-gpui://` and `herdr-remote://` links, browser `HerdrKit` / `herdr.send` / `/.herdr/` APIs, Luau `herdr.*`, `@herdr/ui`, `herdr-ui` chat fences and existing environment/config keys. Managed skill YAML names/folders remain `herdr-gpui-browser` and `herdr-automations`; their marker remains `herdr-gpui-managed-skill v1`. Descriptions and CLI examples use Sheprd without inventing renamed extension APIs. |
 | iOS/watchOS | Production `so.pen.herdr.remote` app/extension/watch IDs, companion identifier, signing team, `group.so.pen.herdr.remote` App Group, Keychain services/access groups, APNs topics/entitlements, Bonjour `_herdr-remote._tcp`, Bluetooth and pairing/crypto identities remain. Module renames do not authorize changing these. |
 | Upstream | Herdr, herdr-core, `hc`, daemon CLI commands, sockets, wire contracts and third-party licensing attribution keep their actual names. Sheprd remains unaffiliated with Herdr. |
 
@@ -89,7 +89,7 @@ These are release-owner tasks, not claims of completed validation or deployment.
 - [ ] On x86_64 and ARM64 Windows, test upgrade/relaunch/uninstall, both executable
   pairs, existing pins, notifications, folder shortcuts, URL handling and winget
   version detection at the preserved installation directory.
-- [ ] Confirm settings, saved sign-ins, cloud devices, automations, mods and remote
+- [ ] Confirm settings, saved sign-ins, cloud devices, automations and remote
   pairings survive; test existing scripts/managed skills and both CLI entry points
   where compatibility aliases are shipped. Daemon sessions must keep running.
 - [ ] Test existing iOS/watchOS pairings, shared data, Keychain, push, Bonjour,

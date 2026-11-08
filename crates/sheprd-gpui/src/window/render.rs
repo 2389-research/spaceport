@@ -771,8 +771,7 @@ impl Render for SheprdWindow {
             groups.push(self.render_group(slot, body, ends, reach, window, cx));
         }
         let content = self.render_groups(groups, window, cx);
-        let content =
-            section.unwrap_or_else(|| self.with_mod_panel(self.zen_column(content), window, cx));
+        let content = section.unwrap_or_else(|| self.zen_column(content));
         // Not `||`: asking forgets group motion that has finished.
         if self.groups_moving()
             | self.tabs_growing()

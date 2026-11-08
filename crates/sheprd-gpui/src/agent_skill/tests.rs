@@ -37,7 +37,6 @@ fn the_skill_is_marked_and_names_this_executable() {
 fn the_skill_description_is_a_quoted_scalar() {
     assert!(!description(SKILL).contains('"'));
     assert!(!description(AUTOMATIONS).contains('"'));
-    assert!(!description(MODS).contains('"'));
 }
 
 #[test]
@@ -92,25 +91,23 @@ fn a_backslashed_install_path_stays_valid_yaml() {
 }
 
 #[test]
-fn both_skills_install_and_go_together() {
+fn browser_and_automation_skills_install_and_go_together() {
     let home = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(home.path().join(".claude")).unwrap();
     let placed = install(home.path(), SKILL).unwrap();
     assert_eq!(placed.len(), 1);
     let automations = file(&home.path().join(".claude"), AUTOMATIONS_NAME);
     assert!(managed(&std::fs::read_to_string(&automations).unwrap()));
-    let mods = file(&home.path().join(".claude"), MODS_NAME);
-    assert!(managed(&std::fs::read_to_string(&mods).unwrap()));
     let removed = remove(home.path()).unwrap();
-    assert!(removed.contains(&automations) && removed.contains(&mods));
-    assert!(!automations.exists() && !mods.exists());
+    assert!(removed.contains(&automations));
+    assert!(!automations.exists());
 }
 
 /// The Agent Skills format caps a description at 1,024 characters, and
 /// agents such as Pi refuse a skill over it.
 #[test]
 fn the_skill_description_fits_the_agent_skills_limit() {
-    for skill in [SKILL, AUTOMATIONS, MODS] {
+    for skill in [SKILL, AUTOMATIONS] {
         let length = description(skill).chars().count();
         assert!((1..=1024).contains(&length), "{length} characters");
     }

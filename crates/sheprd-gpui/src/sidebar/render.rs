@@ -870,7 +870,6 @@ impl SheprdWindow {
                         .children(self.core_sidebar_rows(cx)),
                 )
             })
-            .children(self.render_mod_sidebar_sections(cx))
             .map(|sidebar| {
                 if self.device_footer_shown() {
                     sidebar.child(self.render_device_footer(cx))

@@ -158,7 +158,7 @@
         "S09"
       ],
       "constraint": "No speculative replacement extension system.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-PHONE",

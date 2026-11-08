@@ -54,7 +54,6 @@ fn roundtrip_and_reset_drain_after_drop() {
             sidebar_split: Some(0.4),
             agent_sort: Some(AgentSort::Priority),
             notes_width: None,
-            mod_panel_width: None,
             review_files_width: None,
             device_order: Vec::new(),
         });
@@ -73,7 +72,6 @@ fn roundtrip_and_reset_drain_after_drop() {
             sidebar_split: Some(0.4),
             agent_sort: Some(AgentSort::Priority),
             notes_width: None,
-            mod_panel_width: None,
             review_files_width: None,
             device_order: Vec::new(),
         }
@@ -99,7 +97,6 @@ fn only_a_toggled_sort_is_stored_and_older_files_migrate() {
         sidebar_split: None,
         agent_sort,
         notes_width: None,
-        mod_panel_width: None,
         review_files_width: None,
         device_order: Vec::new(),
     };
@@ -175,7 +172,6 @@ fn drop_does_not_wait_for_blocked_worker_and_queued_saves_still_drain() {
             sidebar_split: None,
             agent_sort: Some(AgentSort::Grouped),
             notes_width: None,
-            mod_panel_width: None,
             review_files_width: None,
             device_order: Vec::new(),
         },
@@ -186,7 +182,6 @@ fn drop_does_not_wait_for_blocked_worker_and_queued_saves_still_drain() {
             sidebar_split: Some(0.6),
             agent_sort: Some(AgentSort::Priority),
             notes_width: Some(420.),
-            mod_panel_width: None,
             review_files_width: None,
             device_order: Vec::new(),
         },
@@ -246,7 +241,6 @@ fn malformed_and_invalid_widths_fall_back_to_default() {
                     sidebar_split: None,
                     agent_sort: None,
                     notes_width: None,
-                    mod_panel_width: None,
                     review_files_width: None,
                     device_order: Vec::new(),
                 }
@@ -261,7 +255,6 @@ fn malformed_and_invalid_widths_fall_back_to_default() {
         sidebar_split: None,
         agent_sort: None,
         notes_width: None,
-        mod_panel_width: None,
         review_files_width: None,
         device_order: Vec::new(),
     };
@@ -281,7 +274,6 @@ fn invalid_sidebar_splits_preserve_other_preferences() {
         sidebar_split: None,
         agent_sort: Some(AgentSort::Priority),
         notes_width: None,
-        mod_panel_width: None,
         review_files_width: None,
         device_order: Vec::new(),
     };
@@ -329,7 +321,6 @@ fn sidebar_split_roundtrips_including_boundaries_and_reset() {
             sidebar_split,
             agent_sort: Some(AgentSort::Priority),
             notes_width: None,
-            mod_panel_width: None,
             review_files_width: None,
             device_order: Vec::new(),
         };

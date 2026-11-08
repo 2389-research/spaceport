@@ -33,7 +33,6 @@ mod keymap;
 mod launch_at_login;
 mod link;
 mod listening_ports;
-mod mods;
 mod nearby;
 mod notification_mutes;
 mod orchestrator;

@@ -229,8 +229,6 @@ impl SheprdWindow {
             marked_selection: None,
             menu,
             merged_cleanup: Default::default(),
-            mod_panel_width: crate::panel_resize::MOD_PANEL,
-            mods: Default::default(),
             #[cfg(feature = "integration-test")]
             navigations: Default::default(),
             network_quality_seen: 0,

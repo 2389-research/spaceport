@@ -115,7 +115,6 @@ impl SheprdWindow {
                         )
                     }),
             )
-            .children(self.render_mod_status_items(cx))
             .children(self.render_listening_ports(cx))
             .children(self.render_system_load())
             .children(self.render_gpu_load())

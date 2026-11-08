@@ -22,8 +22,8 @@ window-notices-skill-installed-places =
     }
 # The one-time offer to install the agent skills.
 window-notices-skill-offer-title = Let agents show you pages?
-window-notices-skill-offer-body = Agents in your panes can open pages and HTML drafts in browser tabs here, read the notes you pin on them, write automations for you to approve, and write mods that extend this app. Skills teach them how.
-window-notices-skill-offer-detail = Install writes herdr-gpui-browser/SKILL.md, herdr-automations/SKILL.md, and herdr-mods/SKILL.md into ~/.claude/skills and ~/.agents/skills, whichever exist, and keeps them up to date. A skill of any of those names you wrote yourself is left alone. Remove them any time in Settings.
+window-notices-skill-offer-body = Agents in your panes can open pages and HTML drafts in browser tabs here, read the notes you pin on them, and write automations for you to approve. Skills teach them how.
+window-notices-skill-offer-detail = Install writes herdr-gpui-browser/SKILL.md and herdr-automations/SKILL.md into ~/.claude/skills and ~/.agents/skills, whichever exist, and keeps them up to date. A skill of either name you wrote yourself is left alone. Remove them any time in Settings.
 window-notices-skill-offer-install = Install
 window-notices-skill-offer-decline = Not now
 

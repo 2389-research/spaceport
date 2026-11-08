@@ -7,7 +7,6 @@ pub mod chat;
 pub mod cloud;
 pub mod events;
 pub mod hosts;
-pub mod mods;
 pub mod remote;
 pub mod settings;
 pub mod tabs;
@@ -83,8 +82,6 @@ pub enum Request {
     Cloud(Call<cloud::CloudOp>),
     #[serde(rename = "remote")]
     Remote(Call<remote::RemoteOp>),
-    #[serde(rename = "mod")]
-    Mod(Call<mods::ModOp>),
 }
 
 /// A `herdr-gpui://` link the shell started a second copy of the app with.
@@ -274,9 +271,6 @@ pub enum Response {
     },
     Remote {
         reply: remote::Reply,
-    },
-    Mod {
-        reply: mods::Reply,
     },
     Error {
         code: ErrorCode,

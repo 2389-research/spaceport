@@ -201,8 +201,6 @@ pub enum Error {
     #[error("neither XDG_STATE_HOME nor HOME is set")]
     MissingStateRoot,
     #[error(transparent)]
-    Mods(#[from] crate::mods::Error),
-    #[error(transparent)]
     Nearby(#[from] crate::remote::nearby::Error),
     #[error("No current daemon snapshot.")]
     NoSnapshot,

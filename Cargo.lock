@@ -9168,7 +9168,6 @@ dependencies = [
  "sheprd-diagnostics",
  "sheprd-github",
  "sheprd-i18n",
- "sheprd-mods",
  "sheprd-orchestrator",
  "sheprd-remote",
  "sheprd-remote-control",
@@ -9231,20 +9230,6 @@ version = "0.1.0"
 dependencies = [
  "mlua",
  "thiserror 2.0.21",
-]
-
-[[package]]
-name = "sheprd-mods"
-version = "0.1.0"
-dependencies = [
- "mlua",
- "serde",
- "sha2 0.11.1",
- "sheprd-commands",
- "sheprd-luau",
- "tempfile",
- "thiserror 2.0.21",
- "toml 1.1.6+spec-1.1.0",
 ]
 
 [[package]]
