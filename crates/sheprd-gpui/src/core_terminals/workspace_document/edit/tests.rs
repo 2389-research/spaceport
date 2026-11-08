@@ -106,5 +106,42 @@ fn rebased_write_timeout_keeps_its_attempted_version() {
     ));
 }
 
+#[test]
+fn malformed_set_success_is_unknown_but_unsent_errors_are_definite() {
+    let malformed = CoreError::Invalid(
+        Method::DocSet,
+        serde_json::from_value::<u64>(serde_json::Value::Null).unwrap_err(),
+    );
+    assert!(matches!(
+        write_error(7, malformed),
+        Error::WriteUnknown {
+            version: 7,
+            source: CoreError::Invalid(Method::DocSet, _)
+        }
+    ));
+    assert!(matches!(
+        write_error(7, CoreError::Busy),
+        Error::Core(CoreError::Busy)
+    ));
+    assert!(matches!(
+        write_error(7, CoreError::Unsupported(Method::DocSet)),
+        Error::Core(CoreError::Unsupported(Method::DocSet))
+    ));
+    assert!(matches!(
+        write_error(
+            7,
+            CoreError::Refused {
+                method: Method::DocSet,
+                kind: Some("internal".into()),
+                message: "save failed".into(),
+            }
+        ),
+        Error::WriteUnknown {
+            version: 7,
+            source: CoreError::Refused { .. }
+        }
+    ));
+}
+
 #[cfg(unix)]
 mod live;

@@ -105,16 +105,25 @@ fn apply_with(
 }
 
 fn write_error(version: u64, error: sheprd_core_client::Error) -> Error {
-    if matches!(
-        error,
-        sheprd_core_client::Error::Timeout(_) | sheprd_core_client::Error::Lost
-    ) {
+    // A malformed success or an internal refusal can follow a committed CAS.
+    // Only outbound failures and Core's pre-write refusals are definite.
+    let definite = match &error {
+        sheprd_core_client::Error::Busy
+        | sheprd_core_client::Error::Frame(_)
+        | sheprd_core_client::Error::Json(_)
+        | sheprd_core_client::Error::Unsupported(_) => true,
+        sheprd_core_client::Error::Refused {
+            kind: Some(kind), ..
+        } if kind == "conflict" || kind == "invalid_params" => true,
+        _ => false,
+    };
+    if definite {
+        Error::Core(error)
+    } else {
         Error::WriteUnknown {
             version,
             source: error,
         }
-    } else {
-        Error::Core(error)
     }
 }
 
