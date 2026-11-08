@@ -34,10 +34,22 @@ No personal checkout, daemon, service or config was read or changed. Old
 the removed worker; this cut does not rewrite it. A focused config test proves
 that status while a retained port setting still loads. Existing hidden Git
 refs in a person's repositories are left intact because deleting them would
-mutate user data. The root README
-and inherited website still contain upstream checkpoint marketing; T12 needs
-to qualify or replace those entrypoints.
+mutate user data. The root README now states the fork's development status;
+the inherited website still contains upstream checkpoint marketing. T12 needs
+to qualify or replace that entrypoint.
 
 RM-GIT remains `in_progress` because other Git/worktree routes are live.
 T04 remains `blocked` by G-LINK; this cut does not close it. A29 stays
 `not_run`, and native A33/A34 visual/accessibility checks remain open.
+
+## Integrated branch verification
+
+After merging as `f11c641c`, the default and all-feature production app
+checks passed with `--locked`; only Cargo's existing `block v0.1.6` notice
+remained. The source reachability test passed 1/1. `sheprd-vcs` passed 23
+unit tests and one doc test. The merged GUI test binary passed the stale
+checkpoint-config test, the checkpoint-free workspace menu test, and the
+retained control error-chain test, one each. Its linker repeated the known
+macOS compact-unwind warning. `just format-check`, file-size and sorted
+checks passed; `just check-i18n` validated 5,000 messages in 263 files.
+No native desktop or process-table check ran on this merged branch.
