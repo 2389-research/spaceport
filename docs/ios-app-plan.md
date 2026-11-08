@@ -904,32 +904,6 @@ Workspaces round (2026-10-29) replaces the Computers tab with a
   first change. No `@unchecked Sendable` without a comment stating the
   invariant.
 
-## TestFlight from CI
-
-A `ios-testflight` job in `.github/workflows/ios.yml` builds and uploads on
-every push to `main` that touches `ios/**` or the v2 fixtures, and on each
-release tag; pull requests run only `ios-test` and the unsigned build.
-
-- `macos-26` runner with Xcode 26 (or later) selected explicitly.
-- `xcodegen`, then `xcodebuild archive` with automatic signing through an
-  App Store Connect API key (`-allowProvisioningUpdates
-  -authenticationKeyPath ... -authenticationKeyID ... -authenticationKeyIssuerID ...`),
-  so no certificates or profiles are stored in the repository or secrets.
-- `xcodebuild -exportArchive` with an `ExportOptions.plist` whose
-  `destination` is `upload` and `method` is `app-store-connect`: Xcode
-  uploads to TestFlight itself, without fastlane or `altool`.
-- `CURRENT_PROJECT_VERSION` is the workflow's run number;
-  `MARKETING_VERSION` follows the app's release version.
-- "What to Test" lists the commits since the previous build, which each
-  build's notes record in a `Source:` line (`ios/README.md`).
-- Secrets (environment `testflight`, required reviewers off for `main`):
-  `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `APPLE_TEAM_ID`. The key is
-  written to a temporary file and removed in an `always()` step.
-- `aps-environment` is `production` for the archive, `development` for
-  local runs, set by configuration in `project.yml`.
-- Internal testers get each build at once; an external group is a manual
-  step in App Store Connect.
-
 ## Phases
 
 Status, 2026-10-28: phase 0 ran (`docs/ios-spikes.md`; the device checks
@@ -1089,8 +1063,3 @@ a sandbox daemon:
   - Wi-Fi to cellular plus Tailscale.
   - Revoke while streaming.
   - iPad with a keyboard.
-
-## Open questions
-
-- The App Store Connect API key and team ID, added as the `testflight`
-  environment's secrets.

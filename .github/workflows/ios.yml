@@ -1,9 +1,7 @@
 name: iOS
 
-# The native app in ios/ (docs/ios-app-plan.md). Pull requests run the
-# Swift package tests and an unsigned simulator build; main uploads a
-# TestFlight build once the `testflight` environment holds the App Store
-# Connect key (ios/tools/testflight.sh says what it needs).
+# The native app in ios/ (docs/ios-app-plan.md). Pull requests and main run
+# Swift package tests and an unsigned simulator build.
 on:
   push:
     branches: [main]
@@ -56,36 +54,6 @@ jobs:
           cd ios
           xcodegen -q
           python3 tools/test_branding.py
-          python3 tools/test_testflight_notes.py
           xcodebuild -project SheprdRemote.xcodeproj -scheme SheprdRemote \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO -quiet build
-
-  testflight:
-    name: TestFlight upload
-    needs: check
-    if: >-
-      (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui') &&
-      github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    runs-on: macos-26
-    # The archive, then up to 30 minutes for App Store Connect to take the notes.
-    timeout-minutes: 75
-    environment: testflight
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # The notes list the commits since the last build's.
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Install XcodeGen
-        run: brew install xcodegen
-      - name: Archive and upload
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-        run: sh ios/tools/testflight.sh

@@ -1,5 +1,8 @@
 # Sheprd for iOS
 
+Spaceport keeps this source during the mobile deletion audit, but has no
+TestFlight publication route. Its unsigned simulator check remains for now.
+
 Sheprd is the display name on iPhone, iPad, Apple Watch, widgets, and the share
 sheet. The Xcode targets and Swift modules use `SheprdRemote*`.
 
@@ -29,7 +32,7 @@ The native app for Sheprd's remote control (`docs/ios-app-plan.md`).
 | `Shared/` | The Live Activity's attributes, compiled into both targets |
 | `Mockups/` | The SwiftUI mockups the screens were picked from (`just ios-mockups`) |
 | `Spikes/` | Phase 0 spikes (`docs/ios-spikes.md`) |
-| `tools/` | The simulator loop's control client and the TestFlight upload scripts |
+| `tools/` | The simulator loop's control client and branding check |
 
 ## Build and test
 
@@ -127,37 +130,6 @@ account.
    - Use the new identifier as `topic` below.
 3. Run on a device. Live Activities and the Secure Enclave do not work fully
    in the simulator; there the app uses a software device key.
-
-## TestFlight
-
-`.github/workflows/ios.yml` uploads every change to `main` that touches the
-app, once the repository's `testflight` environment holds these secrets:
-
-| Secret | What |
-| --- | --- |
-| `APPLE_TEAM_ID` | Your ten-character team |
-| `ASC_KEY_ID`, `ASC_ISSUER_ID` | An App Store Connect API key with the App Manager role (Users and Access > Integrations) |
-| `ASC_KEY_P8` | The key's `.p8` file, its whole text |
-
-- **How it signs:** Xcode signs automatically with that key, so no
-  certificates or profiles are stored.
-- **What it uploads:** the export re-signs for distribution and uploads to
-  App Store Connect.
-- **Build number:** one more than the highest build App Store Connect has
-  for the app, asked for with the same key (`ios/tools/next-build.py`), so
-  CI and local uploads count up together. Set `BUILD_NUMBER` to choose one.
-- **What to Test:** the commits that touched the app since the last build,
-  grouped as the release notes are (`ios/tools/testflight_notes.py`). The
-  text ends in a `Source:` line naming the commit, which is how the next
-  upload finds where to start, so leave that line in if you edit the notes
-  in App Store Connect. A build whose notes lack it is skipped for the one
-  before it; with none to go on, the notes list the latest 20 commits. The
-  upload fails if the notes cannot be set within 30 minutes, though the
-  build stays uploaded; the next build's notes then cover both.
-- **Running it locally:** `just ios-testflight` does the same with the same
-  variables. Any it does not find set come from `pass`: the issuer ID from
-  `apple/app-store-connect-issuer-id` and the key from
-  `herdr-gpui/apple-api-key-KEYID`.
 
 ## Pair
 

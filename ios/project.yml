@@ -43,7 +43,7 @@ targets:
       path: SheprdRemote/Info.plist
       properties:
         CFBundleName: Sheprd
-        # From the build settings, which the TestFlight upload sets.
+        # The app and extensions share version values from build settings.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Sheprd
@@ -113,7 +113,7 @@ targets:
       path: SheprdRemoteWatch/Info.plist
       properties:
         CFBundleName: Sheprd
-        # From the build settings, which the TestFlight upload sets.
+        # The app and extensions share version values from build settings.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Sheprd
@@ -123,7 +123,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: so.pen.herdr.remote.watchkitapp
-        # App Store Connect refuses the upload without the Watch app's icon.
+        # The Watch app needs its own icon when distributed.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   SheprdRemoteShare:
@@ -143,7 +143,7 @@ targets:
       path: SheprdRemoteShare/Info.plist
       properties:
         CFBundleName: Sheprd
-        # From the build settings, which the TestFlight upload sets.
+        # The app and extensions share version values from build settings.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Sheprd
@@ -181,7 +181,7 @@ targets:
       path: SheprdRemoteNotifications/Info.plist
       properties:
         CFBundleName: Sheprd
-        # From the build settings, which the TestFlight upload sets.
+        # The app and extensions share version values from build settings.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Sheprd
@@ -211,7 +211,7 @@ targets:
       path: SheprdRemoteWidgets/Info.plist
       properties:
         CFBundleName: Sheprd
-        # From the build settings, which the TestFlight upload sets.
+        # The app and extensions share version values from build settings.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Sheprd

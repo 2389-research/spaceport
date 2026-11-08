@@ -263,35 +263,11 @@ ios-generate:
 
 # Swift package tests, against the fixtures the daemon's Rust tests write.
 ios-test:
-    PYTHONDONTWRITEBYTECODE=1 python3 ios/tools/test_testflight_notes.py
     cd ios/SheprdRemoteCore && swift test
 
 # Unsigned build of the app and its extensions for the simulator.
 ios-build: ios-generate
     cd ios && xcodebuild -project SheprdRemote.xcodeproj -scheme SheprdRemote -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO -quiet build
-
-# Archive and upload to TestFlight, taking the key from `pass` when unset.
-ios-testflight:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    # CI sets these from the `testflight` environment's secrets; here what
-    # the environment leaves unset comes from `pass`. The key ID and team
-    # are not secret.
-    export APPLE_TEAM_ID="${APPLE_TEAM_ID:-VJAHQVZ96V}"
-    export ASC_KEY_ID="${ASC_KEY_ID:-VACF2WK94S}"
-    if [ -z "${ASC_ISSUER_ID:-}" ] || [ -z "${ASC_KEY_P8:-}" ]; then
-        echo "Reading the App Store Connect key from pass: tap your YubiKey if it asks."
-    fi
-    if [ -z "${ASC_ISSUER_ID:-}" ]; then
-        ASC_ISSUER_ID=$(pass show apple/app-store-connect-issuer-id | head -1)
-        export ASC_ISSUER_ID
-    fi
-    if [ -z "${ASC_KEY_P8:-}" ]; then
-        ASC_KEY_P8=$(pass show "herdr-gpui/apple-api-key-$ASC_KEY_ID")
-        export ASC_KEY_P8
-    fi
-    echo "Credentials ready (key $ASC_KEY_ID, team $APPLE_TEAM_ID)."
-    sh ios/tools/testflight.sh
 
 # Render the native screen mockups in a headless simulator.
 ios-mockups appearance="dark" round="2":
