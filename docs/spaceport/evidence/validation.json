@@ -45,8 +45,8 @@
     "plan/tasks.json": "e69c0f708aae966ae7fa9693cf5ba5fe1b58a1c73ea7258954d35bbe6cbb7541",
     "tools/README.md": "dc87a5aaa0a9786e42d5296891a4bbe71ea59329859e2cd46fbef7652104d889",
     "tools/requirements.txt": "756cc9e506ae4ee1a6f6c0507088b5cfc0dc8ba350fb2d2d46f1ffa72033adb6",
-    "tools/spec.py": "52236430bc2cfadf5fed2e87bd4416993b39612db7d6a460b432f7a6f2092692",
-    "tools/test_spec.py": "73d79f67684a1602fc7af3a4f9b479a887f623f49da804ba3c144f53865d348b"
+    "tools/spec.py": "cb935e63ff6076568fba9ceb72b88fde2ae103e9a2f42db001d308f7e1415002",
+    "tools/test_spec.py": "45172ec5f47a57642575e82ccdba4474c405ec7e59f515e054f35d0882223f5f"
   },
-  "checked_at_utc": "2026-11-08T01:44:48.754076+00:00"
+  "checked_at_utc": "2026-11-08T01:47:06.642139+00:00"
 }

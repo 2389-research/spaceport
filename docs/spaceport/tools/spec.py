@@ -317,7 +317,7 @@ def task_packet(root: Path, task_id: str, max_bytes: int = 65536) -> str:
                'acceptance':[r['acceptance'][a] for a in task['acceptance']],
                'input_sha256':input_hashes(root)}
     sections = [f'# Spaceport task context: {task_id}',
-                'Specification input only. Source facts are not runtime verification. All application scenarios begin not_run.',
+                'Specification requirements and recorded statuses follow. Source facts and spec checks do not prove application behavior.',
                 '## Current task and traceability', '```json',json.dumps(payload,indent=2,ensure_ascii=False),'```',
                 '## Always-on agent instructions',text(root,'AGENTS.md'),
                 '## System boundaries',text(root,'SYSTEM.md'),

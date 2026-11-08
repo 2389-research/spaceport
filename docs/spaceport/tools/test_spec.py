@@ -45,7 +45,8 @@ class SpecificationToolsTests(unittest.TestCase):
         self.assertIn('SP-025',packet)
         self.assertIn('input_sha256',packet)
         self.assertIn('No broad code deletion',packet)
-        self.assertIn('not_run',packet)
+        self.assertIn('"status": "passed"',packet)
+        self.assertNotIn('All application scenarios begin not_run',packet)
 
     def test_all_packets_fit_default_budget(self):
         for task in spec.registries(spec.ROOT)['tasks']:
