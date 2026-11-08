@@ -11,6 +11,8 @@ herdr-core). No GPUI or async runtime.
   `herdr-core server start` when the app decides to.
 - `Core::attach` and `Core::subscribe` return streams whose reads give
   credit back as bytes are taken, so a slow view never blocks other calls.
+- Observers use confirmed `resize_notifications` frames in stream order with
+  output; older cores retain periodic size reads.
 
 - `CoreBackend` implements `sheprd_backend::Backend`: it emulates attached
   terminals with `sheprd-terminal`, so the app gets the same cells and sends

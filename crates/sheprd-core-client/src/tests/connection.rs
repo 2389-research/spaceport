@@ -14,7 +14,11 @@ fn the_handshake_asks_for_framed_mode_and_checks_the_core() {
     let connected = Core::over(client).unwrap();
     let (_, hello) = core.join().unwrap();
     assert_eq!(hello["method"], "hello");
-    assert_eq!(hello["params"], json!({"framed": true, "generation": 1}));
+    assert_eq!(
+        hello["params"],
+        json!({"features": ["resize_notifications"],
+        "framed": true, "generation": 1})
+    );
     assert_eq!(connected.hello().core.name, "box");
 
     let (client, server) = pair();

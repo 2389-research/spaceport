@@ -186,6 +186,7 @@ fn attached(backend: &CoreBackend, mock: &mut MockCore, role: Role) -> crate::Co
             request["params"]["observe"].as_bool().unwrap_or(false),
             role == Role::Observer
         );
+        assert!(request["params"].get("resize_notifications").is_none());
         let mut t1 = terminal("t1");
         (t1["cols"], t1["rows"]) = (json!(20), json!(4));
         mock.answer(&request, json!({"channel": 5, "terminal": t1}));

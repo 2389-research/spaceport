@@ -87,7 +87,7 @@ struct RefusalData {
 #[derive(Default)]
 struct Shared {
     lost: AtomicBool,
-    pending: Mutex<HashMap<u64, Sender<Reply>>>,
+    pending: Mutex<HashMap<u64, (Method, bool, Sender<Reply>)>>,
     routes: Mutex<HashMap<u32, Arc<Route>>>,
 }
 
@@ -132,7 +132,7 @@ impl Core {
     /// about `POLL` so the worker can write in between.
     pub(crate) fn over(mut stream: impl Read + Write + Send + 'static) -> Result<Self> {
         let hello = json!({"jsonrpc": "2.0", "id": 0, "method": Method::Hello.as_str(),
-            "params": {"framed": true, "generation": GENERATION}});
+            "params": {"features": ["resize_notifications"], "framed": true, "generation": GENERATION}});
         let mut line = serde_json::to_vec(&hello)?;
         line.push(b'\n');
         stream.write_all(&line)?;
@@ -248,10 +248,20 @@ impl Core {
     }
 
     pub fn attach(&self, attach: &wire::Attach<'_>) -> Result<Attachment> {
-        let reply = self.call(Method::TerminalAttach, attach)?;
+        let requested = attach.observe
+            && attach.resize_notifications
+            && self
+                .hello
+                .features
+                .iter()
+                .any(|feature| feature == "resize_notifications");
+        let mut params = attach.clone();
+        params.resize_notifications = requested;
+        let reply = self.call_with_resize(Method::TerminalAttach, &params, requested)?;
         let attached: wire::Attached = parse(Method::TerminalAttach, reply.result)?;
         let stream = self.stream(Method::TerminalAttach, reply.route)?;
-        Ok(Attachment::new(stream, attached.terminal))
+        let confirmed = requested && attached.resize_notifications;
+        Ok(Attachment::new(stream, attached.terminal, confirmed))
     }
 
     pub fn run(&self, run: &wire::Run<'_>) -> Result<Terminal> {
@@ -336,6 +346,15 @@ impl Core {
     }
 
     fn call(&self, method: Method, params: &impl Serialize) -> Result<Answer> {
+        self.call_with_resize(method, params, false)
+    }
+
+    fn call_with_resize(
+        &self,
+        method: Method,
+        params: &impl Serialize,
+        resize_notifications: bool,
+    ) -> Result<Answer> {
         if self.is_lost() {
             return Err(Error::Lost);
         }
@@ -349,7 +368,7 @@ impl Core {
             if pending.len() >= MAX_IN_FLIGHT {
                 return Err(Error::Busy);
             }
-            pending.insert(id, reply);
+            pending.insert(id, (method, resize_notifications, reply));
         }
         let message =
             json!({"jsonrpc": "2.0", "id": id, "method": method.as_str(), "params": params});
@@ -495,6 +514,12 @@ impl<S: Read + Write> Worker<S> {
                     route.push(&frame.payload).map_err(Error::from)
                 })
             }
+            (channel, Kind::Resize) => {
+                let route = locked(&self.shared.routes).get(&channel).cloned();
+                route.map_or(Ok(()), |route| {
+                    route.push_resize(&frame.payload).map_err(Error::from)
+                })
+            }
             (channel, Kind::Close) => {
                 if let Some(route) = locked(&self.shared.routes).remove(&channel) {
                     route.end(stream::closed(&frame.payload));
@@ -511,7 +536,8 @@ impl<S: Read + Write> Worker<S> {
         let Some(id) = message.get("id").and_then(Value::as_u64) else {
             return Ok(());
         };
-        let Some(waiter) = locked(&self.shared.pending).remove(&id) else {
+        let Some((method, requested_resize, waiter)) = locked(&self.shared.pending).remove(&id)
+        else {
             return Ok(());
         };
         let result = match message.get("error") {
@@ -529,7 +555,14 @@ impl<S: Read + Write> Worker<S> {
             .and_then(|result| result.get("channel")?.as_u64())
             .and_then(|channel| u32::try_from(channel).ok())
             .map(|channel| {
-                let route = Arc::new(Route::new());
+                let notifications = method == Method::TerminalAttach
+                    && requested_resize
+                    && result
+                        .as_ref()
+                        .ok()
+                        .and_then(|value| value.get("resize_notifications"))
+                        == Some(&Value::Bool(true));
+                let route = Arc::new(Route::new(notifications));
                 locked(&self.shared.routes).insert(channel, Arc::clone(&route));
                 (channel, route)
             });

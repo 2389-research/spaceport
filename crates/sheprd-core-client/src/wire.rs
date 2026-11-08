@@ -180,6 +180,8 @@ pub struct Subscribed {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Attached {
     pub channel: u32,
+    #[serde(default)]
+    pub resize_notifications: bool,
     pub terminal: Terminal,
 }
 
@@ -240,6 +242,8 @@ pub struct Attach<'a> {
     pub history: u32,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub observe: bool,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub resize_notifications: bool,
     pub rows: u16,
     pub terminal: &'a str,
 }

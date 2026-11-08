@@ -111,12 +111,18 @@ pub enum Error {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum Violation {
     // keep-sorted start
+    #[error("a terminal stream sent an invalid resize frame")]
+    InvalidResize,
     #[error("a hello reply longer than {0} bytes")]
     LongHello(usize),
     #[error("an event line longer than {0} bytes")]
     LongLine(usize),
     #[error("a stream sent past its credit")]
     PastCredit,
+    #[error("a terminal stream sent too many resize frames without a read")]
+    TooManyResizes,
+    #[error("a stream sent a resize without negotiated notifications")]
+    UnexpectedResize,
     #[error("the hello reply was not framed")]
     Unframed,
     // keep-sorted end

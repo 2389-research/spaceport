@@ -11,6 +11,7 @@ use crate::{
 };
 use crossbeam_channel::{Receiver, Sender, TrySendError};
 use serde::Deserialize;
+use sheprd_backend::Size;
 use std::{
     sync::{Mutex, MutexGuard, PoisonError},
     time::Duration,
@@ -20,6 +21,7 @@ use std::{
 /// 256 KiB of credit and sends a fresh paint past 4 MiB of lag, so this is
 /// only reached by a core that ignores credit.
 pub const MAX_BUFFERED: usize = 8 << 20;
+const MAX_RESIZES: usize = 4096;
 
 /// Why a stream ended.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,9 +52,18 @@ impl Closed {
 }
 
 /// What a stream delivered since the last read.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Resize {
+    /// The next DATA byte starts after this grid change.
+    pub at: usize,
+    pub size: Size,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Chunk {
     pub bytes: Vec<u8>,
+    /// Grid changes interleaved with DATA at byte offsets.
+    pub resizes: Vec<Resize>,
     /// Set once; nothing follows it.
     pub end: Option<End>,
 }
@@ -61,19 +72,22 @@ pub struct Chunk {
 struct Inbox {
     bytes: Vec<u8>,
     end: Option<End>,
+    resizes: Vec<Resize>,
     taken_end: bool,
 }
 
 /// One channel's inbox and the wake signal its reader waits on.
 pub(crate) struct Route {
     inbox: Mutex<Inbox>,
+    resize_notifications: bool,
     wake: (Sender<()>, Receiver<()>),
 }
 
 impl Route {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(resize_notifications: bool) -> Self {
         Self {
             inbox: Mutex::default(),
+            resize_notifications,
             wake: crossbeam_channel::bounded(1),
         }
     }
@@ -101,6 +115,38 @@ impl Route {
         Ok(())
     }
 
+    pub(crate) fn push_resize(&self, payload: &[u8]) -> Result<(), Violation> {
+        let [col_low, col_high, row_low, row_high] = payload else {
+            return Err(Violation::InvalidResize);
+        };
+        let size = Size::new(
+            u16::from_le_bytes([*col_low, *col_high]),
+            u16::from_le_bytes([*row_low, *row_high]),
+        )
+        .map_err(|_| Violation::InvalidResize)?;
+        if !self.resize_notifications {
+            return Err(Violation::UnexpectedResize);
+        }
+        let mut inbox = self.inbox();
+        if inbox.end.is_some() {
+            return Ok(());
+        }
+        let at = inbox.bytes.len();
+        if let Some(last) = inbox.resizes.last_mut()
+            && last.at == at
+        {
+            last.size = size;
+        } else {
+            if inbox.resizes.len() >= MAX_RESIZES {
+                return Err(Violation::TooManyResizes);
+            }
+            inbox.resizes.push(Resize { at, size });
+        }
+        drop(inbox);
+        self.signal();
+        Ok(())
+    }
+
     pub(crate) fn end(&self, end: End) {
         self.inbox().end.get_or_insert(end);
         self.signal();
@@ -108,20 +154,28 @@ impl Route {
 
     /// Everything waiting, after at most `timeout` for something to arrive.
     fn take(&self, timeout: Duration) -> Chunk {
-        let ready =
-            |inbox: &Inbox| !inbox.bytes.is_empty() || (inbox.end.is_some() && !inbox.taken_end);
+        let ready = |inbox: &Inbox| {
+            !inbox.bytes.is_empty()
+                || !inbox.resizes.is_empty()
+                || (inbox.end.is_some() && !inbox.taken_end)
+        };
         if !ready(&self.inbox()) {
             let _ = self.wake.1.recv_timeout(timeout);
         }
         let mut inbox = self.inbox();
         let bytes = std::mem::take(&mut inbox.bytes);
+        let resizes = std::mem::take(&mut inbox.resizes);
         let end = if inbox.taken_end {
             None
         } else {
             inbox.end.clone()
         };
         inbox.taken_end |= end.is_some();
-        Chunk { bytes, end }
+        Chunk {
+            bytes,
+            resizes,
+            end,
+        }
     }
 }
 
@@ -170,14 +224,23 @@ impl Stream {
 /// One attached terminal: its first paint and live output, and the viewer's
 /// keys, size, focus, and display facts going back.
 pub struct Attachment {
+    resize_notifications: bool,
     stream: Stream,
     /// The terminal as it was when attached.
     pub terminal: Terminal,
 }
 
 impl Attachment {
-    pub(crate) fn new(stream: Stream, terminal: Terminal) -> Self {
-        Self { stream, terminal }
+    pub(crate) fn new(stream: Stream, terminal: Terminal, resize_notifications: bool) -> Self {
+        Self {
+            resize_notifications,
+            stream,
+            terminal,
+        }
+    }
+
+    pub fn resize_notifications(&self) -> bool {
+        self.resize_notifications
     }
 
     pub fn channel(&self) -> u32 {

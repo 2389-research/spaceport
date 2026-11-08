@@ -11,3 +11,51 @@ The first Core client runs and attaches the terminal, then drops the attachment 
 A09 remains `not_run`: this test does not quit/reopen Spaceport, restore a workspace reference, or cover remote/missing/renamed targets in the GUI. A22 also remains `not_run`: it does not close the last native window or independently check a remote program. The other T05 acceptance cases still need their own scoped evidence. T05 is `in_progress`, not complete.
 
 The T03 private Core UI follow-on in [t03-workspace-ui.md](t03-workspace-ui.md) checks a successful real `terminal.run` followed by a conflicting manual Add to a Core group. After refusal, the terminal remains in the group's available picker and a second client lists its original address and PID exactly once. This does not prove a grouped-launch partial result: the desktop launch path currently opens a local tab and never requests Core group membership. T05 remains `in_progress`; A08, A09 and A22 remain `not_run`.
+
+## Confirmed observer resize frames
+
+At parent `a8180ba8`, the client did not advertise Core's
+`resize_notifications` feature, attach requests and replies omitted its flag,
+and the connection worker dropped inbound RESIZE. The route also merged DATA
+bytes, so it could not preserve size changes between them. The pinned
+`schema/README.md` lines 84–101 requires a confirmed observer to apply RESIZE
+before later DATA and to retain size-event fallback when the feature is absent.
+
+The client now advertises the feature, requests it only for observers when
+Core's hello reply lists it, and requires the attach reply to confirm it.
+The worker stores resize markers at byte offsets in the same bounded route
+as DATA, counts only DATA bytes for credit, coalesces consecutive resize
+frames without DATA, and closes on malformed, unexpected or excessive
+resize frames. The backend feeds bytes before each marker, resizes its
+emulator, then feeds later bytes. Only confirmed observers stop the existing
+500 ms `terminal.list` size fallback. Active viewers still own their resize
+requests, and observers still cannot send input, focus or size changes.
+
+The scripted peer tests first failed on missing attach and stream fields.
+After implementation, seven focused resize tests passed: negotiated order and
+credit, emulator paint order, absent hello fallback, unrequested frame
+refusal, malformed grid refusal, and marker bounds. The full default Core
+client library suite passed with 63 active tests and nine ignored. The
+private pinned Core fixture at `/tmp/spaceport-t00-target/debug/herdr-core`
+passed one opt-in case: a writer resized a sleeping fixture terminal, and a
+confirmed observer received RESIZE before the replacement paint's CAN byte.
+The sandbox used its private socket, home and exact-child cleanup; it did not
+connect to a personal Core or edit Core source.
+
+Verification: `cargo +1.99.0 test --locked -p sheprd-core-client --lib`
+with the isolated T03 target and incremental compilation disabled passed
+63/63 active tests. The same target and explicit `HERDR_CORE_TEST_BINARY`
+passed `tests::live::resize::a_private_core_orders_observer_resize_before_replacement_paint`
+with `--ignored --nocapture` (1/1). `cargo +1.99.0 check --locked
+-p sheprd-core-client --all-features`, `just format-check`,
+`just check-file-size`, `just check-sorted`, `git diff --check`, and the
+Spaceport package `spec.py check` passed.
+
+`CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/spaceport-t03-cas-target cargo
++1.99.0 check --locked -p sheprd-gpui --bin sheprd` passed; Cargo reported
+only the existing future-incompatibility notice for `block v0.1.6`.
+
+A13 remains `not_run`: this bounded check does not exercise a native GUI,
+remote relay, or an actual older Core. T05 remains `in_progress`. The earlier
+signed evidence digest covers prior text; this appended result needs a new
+observation after integration.

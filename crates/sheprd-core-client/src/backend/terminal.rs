@@ -12,8 +12,7 @@ use std::{
 /// How long a synchronized update (DEC 2026) may hold the screen before it
 /// is shown anyway, as terminals bound it.
 const SYNC_TIMEOUT: Duration = Duration::from_millis(150);
-/// How often an observer asks the core for its terminal's size, which the
-/// active viewer sets and nothing on an attachment reports.
+/// How often an observer without negotiated resize notices asks Core for size.
 const SIZE_CHECK: Duration = Duration::from_millis(500);
 
 /// An attached herdr-core terminal, emulated here: its raw output becomes
@@ -45,6 +44,12 @@ impl CoreTerminal {
         let attachment = core.attach(&Attach {
             cols: size.cols(),
             observe: role == Role::Observer,
+            resize_notifications: role == Role::Observer
+                && core
+                    .hello()
+                    .features
+                    .iter()
+                    .any(|feature| feature == "resize_notifications"),
             rows: size.rows(),
             terminal: id.as_str(),
             ..Attach::default()
@@ -56,6 +61,8 @@ impl CoreTerminal {
                 Size::new(attachment.terminal.cols, attachment.terminal.rows).unwrap_or(size)
             }
         };
+        let sizing = (role == Role::Observer && !attachment.resize_notifications())
+            .then(|| (Arc::clone(core), Instant::now()));
         Ok(Self {
             attachment,
             emulator: Emulator::new(emulated, scrollback),
@@ -63,7 +70,7 @@ impl CoreTerminal {
             keys: None,
             reporting: None,
             role,
-            sizing: (role == Role::Observer).then(|| (Arc::clone(core), Instant::now())),
+            sizing,
             sync_since: None,
         })
     }
@@ -178,7 +185,13 @@ impl sheprd_backend::Terminal for CoreTerminal {
         };
         self.follow_size();
         let chunk = self.attachment.read(timeout)?;
-        self.emulator.feed(&chunk.bytes);
+        let mut start = 0;
+        for resize in &chunk.resizes {
+            self.emulator.feed(&chunk.bytes[start..resize.at]);
+            self.emulator.resize(resize.size);
+            start = resize.at;
+        }
+        self.emulator.feed(&chunk.bytes[start..]);
         self.release_stale_sync();
         let mut updates: Vec<SurfaceUpdate> = self
             .emulator
