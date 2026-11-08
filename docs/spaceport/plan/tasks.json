@@ -151,7 +151,7 @@
       ],
       "deliverable": "Migrate readers from legacy snapshots; implement namespaced versioned presentation documents and local view preferences.",
       "status": "in_progress",
-      "evidence": ["evidence/t03-workspace-document.md"],
+      "evidence": ["evidence/t03-workspace-document.md", "evidence/t03-observation.md"],
       "must_close_gaps": []
     },
     {

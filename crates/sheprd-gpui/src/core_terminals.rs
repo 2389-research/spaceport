@@ -16,6 +16,7 @@ mod error;
 mod fallback;
 mod hub;
 mod infos;
+mod observation;
 pub(crate) mod panes;
 mod screen;
 mod selection;
@@ -33,6 +34,10 @@ mod tests;
 pub(crate) use error::Error;
 pub(crate) use hub::{Hub, Start, State};
 pub(crate) use view::{CoreTerminalView, Look};
+
+pub(crate) fn install_observation(cx: &mut App) {
+    observation::Observation::install(cx);
+}
 
 use crate::{
     SheprdWindow,
@@ -329,15 +334,25 @@ impl SheprdWindow {
             view.update(cx, |view, cx| view.poll(cx));
         }
         self.poll_core_panes(window, cx);
-        // Split chrome and the sidebar's rows name panes from what herdr-core
-        // reports, so it is read while any herdr-core tab is known.
-        let listed = !self.core_terminals.tabs.is_empty();
-        let backend = listed.then(|| self.core_terminals.hub.backend()).flatten();
-        if self
-            .core_terminals
-            .infos
-            .poll(backend, std::time::Instant::now())
-        {
+        // One app-wide subscription supplies the chrome in every window.
+        if !cx.has_global::<observation::Observation>() {
+            cx.set_global(observation::Observation::default());
+        }
+        let backend = self.core_terminals.hub.backend().cloned();
+        let observation = cx.global_mut::<observation::Observation>();
+        let before = observation.projection().revision();
+        observation.poll();
+        if let Some(backend) = backend {
+            observation.ensure(backend);
+        }
+        let projection = observation.projection();
+        let info_changed = self.core_terminals.infos.sync(
+            projection.revision(),
+            projection.terminals(),
+            projection.fresh(),
+        );
+        let changed = before != projection.revision() || info_changed;
+        if changed {
             cx.notify();
         }
         if !cx.has_active_drag() {

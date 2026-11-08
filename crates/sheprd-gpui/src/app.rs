@@ -467,6 +467,7 @@ pub(crate) fn run() -> std::process::ExitCode {
                 state.install(cx);
             }
             browser_tabs.install(cx);
+            crate::core_terminals::install_observation(cx);
             group_layouts.install(cx);
             worktree_notes.install(cx);
             review_viewed.install(cx);

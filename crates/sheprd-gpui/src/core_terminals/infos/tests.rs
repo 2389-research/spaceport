@@ -14,15 +14,6 @@ fn info(name: &str) -> TerminalInfo {
     }
 }
 
-/// Delivers `list` as the answer to a read already on its way.
-fn answer(infos: &mut Infos, list: Vec<TerminalInfo>) -> bool {
-    let (send, receive) = sync_channel(1);
-    send.send(Ok(list)).unwrap();
-    infos.pending = Some(receive);
-    infos.last = Some(Instant::now());
-    infos.poll(None, Instant::now())
-}
-
 #[test]
 fn a_started_terminal_is_known_at_once() {
     let mut infos = Infos::default();
@@ -31,14 +22,32 @@ fn a_started_terminal_is_known_at_once() {
 }
 
 #[test]
-fn a_started_terminal_outlives_one_list_that_missed_it() {
+fn a_started_terminal_outlives_one_observation_that_missed_it() {
     let mut infos = Infos::default();
     infos.insert(info("t2"));
-    // A list asked for before the start names only the older terminal.
-    assert!(answer(&mut infos, vec![info("t1")]));
+    // The initial subscribed snapshot may predate the Core run result.
+    assert!(infos.sync(1, &[info("t1")], true));
     assert!(infos.get(&TerminalId::new("t2").unwrap()).is_some());
     assert!(infos.get(&TerminalId::new("t1").unwrap()).is_some());
-    // The next one is the truth: a terminal it does not name is gone.
-    assert!(answer(&mut infos, vec![info("t1")]));
+    // The next observed revision is authoritative.
+    assert!(infos.sync(2, &[info("t1")], true));
     assert!(infos.get(&TerminalId::new("t2").unwrap()).is_none());
+}
+
+#[test]
+fn a_new_observation_replaces_old_facts() {
+    let mut infos = Infos::default();
+    assert!(infos.sync(1, &[info("t1")], true));
+    assert!(!infos.sync(1, &[], true));
+    assert!(infos.get(&TerminalId::new("t1").unwrap()).is_some());
+    assert!(infos.sync(2, &[], true));
+    assert!(infos.get(&TerminalId::new("t1").unwrap()).is_none());
+}
+
+#[test]
+fn a_lost_observation_clears_a_recent_run() {
+    let mut infos = Infos::default();
+    infos.insert(info("t1"));
+    assert!(infos.sync(1, &[], false));
+    assert!(infos.get(&TerminalId::new("t1").unwrap()).is_none());
 }

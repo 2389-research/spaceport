@@ -1,28 +1,14 @@
-//! What herdr-core reports about each terminal: its agent's status, its
-//! folder, and its name, for the chrome of split panes. Read on a short-lived
-//! thread every few seconds while a split is shown, never on the UI thread.
+//! Each window's quick lookup of the shared Core terminal observation.
+//! A successful run is shown at once while its subscribed event catches up.
 
-use sheprd_backend::{Backend as _, TerminalId, TerminalInfo};
-use sheprd_core_client::CoreBackend;
-use std::{
-    collections::{HashMap, HashSet},
-    sync::mpsc::{Receiver, TryRecvError, sync_channel},
-    time::{Duration, Instant},
-};
-
-/// How often the list is read again.
-const EVERY: Duration = Duration::from_secs(2);
-
-type Listed = Receiver<Result<Vec<TerminalInfo>, sheprd_core_client::Error>>;
+use sheprd_backend::{TerminalId, TerminalInfo};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub(super) struct Infos {
-    /// Terminals started since the last list was asked for, which a list
-    /// already on its way may not name yet.
     fresh: HashSet<TerminalId>,
     known: HashMap<TerminalId, TerminalInfo>,
-    last: Option<Instant>,
-    pending: Option<Listed>,
+    revision: u64,
 }
 
 impl Infos {
@@ -30,62 +16,35 @@ impl Infos {
         self.known.get(id)
     }
 
-    /// Records a terminal just started, until the next list replaces it,
-    /// and hands it back.
     pub(super) fn insert(&mut self, info: TerminalInfo) -> TerminalInfo {
         self.fresh.insert(info.id.clone());
         self.known.insert(info.id.clone(), info.clone());
         info
     }
 
-    /// Takes a finished read and starts the next when one is due. True when
-    /// what is known changed.
-    pub(super) fn poll(&mut self, backend: Option<&CoreBackend>, now: Instant) -> bool {
-        let mut changed = false;
-        if let Some(pending) = &self.pending {
-            match pending.try_recv() {
-                Ok(Ok(list)) => {
-                    let mut known: HashMap<TerminalId, TerminalInfo> = list
-                        .into_iter()
-                        .map(|info| (info.id.clone(), info))
-                        .collect();
-                    // A fresh terminal outlives one list that missed it.
-                    for id in self.fresh.drain() {
-                        if let Some(info) = self.known.get(&id)
-                            && !known.contains_key(&id)
-                        {
-                            known.insert(id, info.clone());
-                        }
-                    }
-                    changed = known != self.known;
-                    self.known = known;
-                    self.pending = None;
+    /// Copy a new shared revision. A run result survives one snapshot that
+    /// began before Core reported the created terminal.
+    pub(super) fn sync(&mut self, revision: u64, terminals: &[TerminalInfo], fresh: bool) -> bool {
+        if revision == self.revision {
+            return false;
+        }
+        self.revision = revision;
+        let mut known: HashMap<TerminalId, TerminalInfo> = terminals
+            .iter()
+            .cloned()
+            .map(|info| (info.id.clone(), info))
+            .collect();
+        for id in self.fresh.drain() {
+            if fresh {
+                if let Some(info) = self.known.get(&id)
+                    && !known.contains_key(&id)
+                {
+                    known.insert(id, info.clone());
                 }
-                Ok(Err(error)) => {
-                    tracing::debug!(%error, "Could not list herdr-core terminals");
-                    self.pending = None;
-                }
-                Err(TryRecvError::Disconnected) => self.pending = None,
-                Err(TryRecvError::Empty) => {}
             }
         }
-        let due = self
-            .last
-            .is_none_or(|last| now.duration_since(last) >= EVERY);
-        if let Some(backend) = backend.filter(|_| self.pending.is_none() && due) {
-            self.last = Some(now);
-            let backend = backend.clone();
-            let (send, receive) = sync_channel(1);
-            let started = std::thread::Builder::new()
-                .name("herdr-core-list".into())
-                .spawn(move || {
-                    let _ = send.send(backend.terminals());
-                });
-            match started {
-                Ok(_) => self.pending = Some(receive),
-                Err(error) => tracing::warn!(%error, "Could not start a herdr-core list worker"),
-            }
-        }
+        let changed = known != self.known;
+        self.known = known;
         changed
     }
 }
