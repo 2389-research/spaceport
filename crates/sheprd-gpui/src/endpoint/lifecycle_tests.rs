@@ -43,7 +43,6 @@ mod mouse_cell_motion;
 mod mouse_frame_gap;
 mod mouse_gestures;
 mod mouse_targets;
-mod plugin_selection;
 mod popup_projection;
 mod prompts;
 mod reconnect_backoff;

@@ -116,13 +116,7 @@ impl SheprdWindow {
                 .and_then(|p| p.target.as_ref())
                 .ok_or(Error::NoSession)?;
             match &action {
-                Action::Configured(id, action) => {
-                    let mut target = target.clone();
-                    if let Some(selection) = &mut target.selection {
-                        self.fence_plugin_selection(selection);
-                    }
-                    target.invocation(snapshot, id, *action)
-                }
+                Action::Configured(id, action) => target.invocation(snapshot, id, *action),
                 Action::Native(_)
                 | Action::Go { .. }
                 | Action::Project(_)
@@ -169,7 +163,7 @@ impl SheprdWindow {
                 .snapshot
                 .as_ref()
                 .ok_or(crate::Error::NoSnapshot)?;
-            Target::capture(snapshot, self.plugin_selection()).invocation(snapshot, id, action)
+            Target::capture(snapshot).invocation(snapshot, id, action)
         })();
         match result {
             Ok(params) => {

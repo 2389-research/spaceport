@@ -2744,28 +2744,10 @@ claim it; see [Herdr Plugins](#herdr-plugins).
 
 ## Herdr Plugins
 
-Herdr runs plugins; this client never reads plugin manifests, runs plugin
-commands, or touches the plugin registry. It works with the parts of a plugin
-the daemon exposes to clients:
-
-- **Actions.** Bind a plugin action in Herdr's own config with
-  `[[keys.command]] type = "plugin_action"`. It then runs from its key, as a
-  direct shortcut or a prefix chord, from the command palette, and is listed in
-  the shortcut reference. Herdr does not offer clients a list of plugin actions
-  nobody bound, so an unbound action cannot be run from here.
-- **Selected text.** A plugin action run while text is highlighted in the focused
-  pane, by a mouse selection kept after release or a copy-mode mark, is given that
-  text as `selected_text` in `HERDR_PLUGIN_CONTEXT_JSON`. The client sends the
-  selection's cells and Herdr reads the text from its own terminal, so the plugin
-  gets exactly what was highlighted on the host that runs the pane, without going
-  through the clipboard. As in Herdr's terminal client, only plugin actions receive
-  it, only from the focused pane, and never from a popup. The palette takes the
-  selection when it opens. Herdr reads the highlighted cells as they are in the
-  frame on screen when the action runs, and refuses the action, showing the
-  error, if the pane changed after that frame was drawn; run it again. With
-  `copy_on_select` on and
-  `keep_selection_after_copy = false`, a mouse selection is cleared on release, so
-  there is none to send.
+Herdr runs plugins; this client does not offer their actions in the command
+palette, shortcut reference, or key routes. The legacy connection still
+accepts the daemon's snapshot wire format while the remaining terminal path
+uses it. One plugin-related host route remains:
 - **Link handlers.** A link click that a handler claims opens nothing here. If the
   handler fails, its error is shown and nothing opens in its place. A click that
   nothing claims opens here as described in [Terminal Links](#terminal-links).
@@ -4060,8 +4042,8 @@ Ctrl+Shift+U is left unbound for
   Native shortcut labels and keycaps come from the shared `controls::COMMANDS`
   catalog, overridden by the config's `[keybindings]` table, with Cmd-V semantic
   paste (Ctrl-Shift-V on Linux, Ctrl-V on Windows) shown separately.
-  **Plugin & custom commands** lists the connected
-  daemon's `[[keys.command]]` entries, including plugin actions, with their
+  **Custom commands** lists the connected
+  daemon's non-plugin `[[keys.command]]` entries with their
   effective prefix and key combinations. A binding that cannot run says why:
   a Herdr or GUI shortcut (the paste key and the Edit menu included) holds it,
   an earlier command holds it, it lacks a modifier, no usable prefix exists,

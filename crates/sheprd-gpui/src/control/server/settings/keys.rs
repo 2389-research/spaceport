@@ -51,11 +51,14 @@ pub(super) fn keybinds(caller: &Caller, cx: &mut App) -> Response {
             .snapshot
             .as_ref()
             .filter(|_| view.live.status.is_connected())
-            .map(|snapshot| snapshot.commands.as_slice())
+            .map(|snapshot| {
+                crate::keymap::available_commands(&snapshot.commands).collect::<Vec<_>>()
+            })
             .unwrap_or_default();
         let custom = commands
             .iter()
-            .zip(keymap.custom_bindings(commands))
+            .copied()
+            .zip(keymap.custom_bindings(commands.iter().copied()))
             .flat_map(|(command, bindings)| {
                 bindings.into_iter().map(move |binding| CustomInfo {
                     label: command_label(command).to_owned(),

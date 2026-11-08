@@ -9,8 +9,8 @@ mod background_ranking;
 mod en_xa;
 mod frecency_ranking;
 mod go_to_search;
+mod legacy_plugin_commands;
 mod notes;
-mod plugin_selection;
 mod preview_layout;
 mod resume;
 
@@ -482,7 +482,7 @@ fn invocation_uses_captured_ids_not_current_focus() {
         binding_label: String::new(),
         binding_labels: Vec::new(),
     }];
-    let target = Target::capture(&snapshot, None);
+    let target = Target::capture(&snapshot);
     snapshot.focused_workspace_id = None;
     snapshot.focused_tab_id = None;
     snapshot.focused_pane_id = None;
@@ -495,7 +495,7 @@ fn invocation_uses_captured_ids_not_current_focus() {
             "tab_id": target.tab, "pane_id": target.pane,
         })
     );
-    let empty_target = Target::capture(&snapshot, None);
+    let empty_target = Target::capture(&snapshot);
     assert_eq!(
         empty_target
             .invocation(&snapshot, "build", ClientShellCommandAction::Shell)
@@ -514,7 +514,7 @@ fn invocation_rejects_stale_boot_command_action_and_membership() {
         binding_label: String::new(),
         binding_labels: Vec::new(),
     }];
-    let target = Target::capture(&original, None);
+    let target = Target::capture(&original);
     for change in 0..7 {
         let mut snapshot = original.clone();
         match change {
@@ -547,7 +547,7 @@ fn invocation_rejects_stale_boot_command_action_and_membership() {
 #[test]
 fn workspace_selection_rejects_removed_id_and_restarted_daemon() {
     let mut snapshot = snapshot();
-    let target = Target::capture(&snapshot, None);
+    let target = Target::capture(&snapshot);
     let id = snapshot.workspaces[0].workspace_id.clone();
     assert!(target.workspace_exists(&snapshot, &id).is_ok());
     assert!(target.workspace_exists(&snapshot, "missing").is_err());

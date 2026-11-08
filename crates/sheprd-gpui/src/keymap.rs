@@ -13,6 +13,7 @@ mod error;
 mod host;
 
 pub(crate) use custom::Reach;
+pub(crate) use custom::available_commands;
 pub(crate) use daemon::DaemonKeys;
 pub(crate) use error::Error;
 #[cfg(test)]

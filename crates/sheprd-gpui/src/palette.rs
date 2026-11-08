@@ -9,10 +9,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use serde_json::{Value, json};
-use sheprd_client::{
-    protocol::{ClientShellCommandAction, ClientShellSnapshot},
-    scrollback::SelectionReadParams,
-};
+use sheprd_client::protocol::{ClientShellCommandAction, ClientShellSnapshot};
 use std::sync::Arc;
 
 mod activate;
@@ -239,19 +236,15 @@ struct Target {
     workspace: Option<String>,
     tab: Option<String>,
     pane: Option<String>,
-    /// The focused pane's highlight when the target was captured, which a
-    /// plugin action receives as its selected text.
-    selection: Option<SelectionReadParams>,
 }
 
 impl Target {
-    fn capture(snapshot: &ClientShellSnapshot, selection: Option<SelectionReadParams>) -> Self {
+    fn capture(snapshot: &ClientShellSnapshot) -> Self {
         Self {
             boot: snapshot.boot_id.clone(),
             workspace: snapshot.focused_workspace_id.clone(),
             tab: snapshot.focused_tab_id.clone(),
             pane: snapshot.focused_pane_id.clone(),
-            selection,
         }
     }
 
@@ -277,7 +270,10 @@ impl Target {
         action: ClientShellCommandAction,
     ) -> Result<Value> {
         self.validate_boot(snapshot)?;
-        if action == ClientShellCommandAction::Unknown {
+        if matches!(
+            action,
+            ClientShellCommandAction::PluginAction | ClientShellCommandAction::Unknown
+        ) {
             return Err(crate::Error::UnsupportedCommand);
         }
         if !snapshot
@@ -316,14 +312,6 @@ impl Target {
             if let Some(value) = value {
                 params[key] = json!(value);
             }
-        }
-        // Herdr reads the selection only for plugin actions, and only from
-        // the pane the command targets.
-        if action == ClientShellCommandAction::PluginAction
-            && let Some(selection) = &self.selection
-            && self.pane.as_ref() == Some(&selection.pane_id)
-        {
-            params["selection"] = serde_json::to_value(selection)?;
         }
         Ok(params)
     }
@@ -570,14 +558,11 @@ impl SheprdWindow {
             let query = search.read(cx).text().to_owned();
             this.filter_palette(&query, cx);
         });
-        // Captured with the target, before the palette's own input could
-        // change what is highlighted.
-        let selection = self.plugin_selection();
         let target = self
             .live
             .snapshot
             .as_ref()
-            .map(|snapshot| Target::capture(snapshot, selection));
+            .map(|snapshot| Target::capture(snapshot));
         let local_target = self
             .endpoints
             .iter()
@@ -711,11 +696,12 @@ impl SheprdWindow {
             .as_ref()
             .filter(|_| self.live.status.is_connected())
         {
-            let bindings = self.keymap().custom_bindings(&snapshot.commands);
+            let commands: Vec<_> = crate::keymap::available_commands(&snapshot.commands).collect();
+            let bindings = self.keymap().custom_bindings(commands.iter().copied());
             entries.extend(
-                snapshot
-                    .commands
+                commands
                     .iter()
+                    .copied()
                     .zip(bindings)
                     .map(|(command, bindings)| {
                         let bindings: Vec<_> = bindings

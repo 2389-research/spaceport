@@ -10,12 +10,24 @@
 
 use super::{Keymap, MAX_KEYSTROKES, Trigger, daemon, has_modifier, identity, typed_matches};
 use gpui::{Keystroke, Modifiers};
-use sheprd_client::protocol::ClientShellCommand;
+use sheprd_client::protocol::{ClientShellCommand, ClientShellCommandAction};
 use std::collections::HashSet;
 
 /// Daemon labels listed per command. Each can spell up to nine keystrokes
 /// (`1..9`), so this bounds the reference however many a host sends.
 const MAX_LISTED: usize = 16;
+
+/// Herdr plugin actions are excluded from the desktop command surfaces.
+pub(crate) fn available_commands(
+    commands: &[ClientShellCommand],
+) -> impl Iterator<Item = &ClientShellCommand> {
+    commands.iter().filter(|command| {
+        !matches!(
+            command.action,
+            ClientShellCommandAction::PluginAction | ClientShellCommandAction::Unknown
+        )
+    })
+}
 
 /// Whether a custom command's binding runs here, and if not, why.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -60,7 +72,7 @@ impl Keymap {
         // Matching first keeps ordinary typing from checking every trigger
         // against the whole keymap, so the bound set is built only on a match.
         let mut bound = None;
-        commands.iter().find(|command| {
+        available_commands(commands).find(|command| {
             custom_triggers(command)
                 .filter(|trigger| match trigger {
                     Trigger::Prefixed(keystroke) => prefixed && typed_matches(typed, keystroke),
@@ -76,14 +88,14 @@ impl Keymap {
     /// Every binding of each command, parallel to `commands`, including those
     /// that cannot run here so a conflict stays discoverable. A trigger
     /// listed twice is shown once.
-    pub(crate) fn custom_bindings(
+    pub(crate) fn custom_bindings<'a>(
         &self,
-        commands: &[ClientShellCommand],
+        commands: impl IntoIterator<Item = &'a ClientShellCommand>,
     ) -> Vec<Vec<CustomBinding>> {
         let bound = self.bound_directly();
         let mut claimed = HashSet::new();
         commands
-            .iter()
+            .into_iter()
             .map(|command| {
                 let mut seen = HashSet::new();
                 let mut bindings = Vec::new();

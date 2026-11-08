@@ -658,19 +658,6 @@ impl Selection {
         self.pane_range(region)
     }
 
-    /// The pane and inclusive cell range a pane selection covers, in the
-    /// coordinates `pane.selection.read` takes, wherever its rows are; `None`
-    /// for a popup selection, a pane the surface no longer paints, or a
-    /// selection that chose no cell.
-    pub(crate) fn content_range(
-        &self,
-        surface: &PaneSurfaceFrame,
-        cell_width: f32,
-        cell_height: f32,
-    ) -> Option<(&str, TextRange)> {
-        self.pane_range(region(surface, &self.target, cell_width, cell_height)?)
-    }
-
     fn pane_range(&self, region: Region) -> Option<(&str, TextRange)> {
         let InputTarget::Pane(pane_id) = &self.target else {
             return None;

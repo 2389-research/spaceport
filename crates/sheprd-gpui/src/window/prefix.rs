@@ -388,9 +388,9 @@ mod tests {
         view.update(cx, |view, _| {
             Arc::make_mut(view.live.snapshot.as_mut().unwrap()).commands =
                 vec![ClientShellCommand {
-                    command_id: "plugin.y".into(),
+                    command_id: "custom.y".into(),
                     description: None,
-                    action: ClientShellCommandAction::PluginAction,
+                    action: ClientShellCommandAction::Shell,
                     binding_label: "ctrl+alt+y".into(),
                     binding_labels: vec!["ctrl+alt+y".into()],
                 }];

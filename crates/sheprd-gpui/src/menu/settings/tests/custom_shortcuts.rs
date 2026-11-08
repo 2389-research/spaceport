@@ -8,7 +8,7 @@ use gpui::{Entity, VisualTestContext};
 use sheprd_client::protocol::{ClientShellCommand, ClientShellCommandAction};
 use std::sync::Arc;
 
-fn command(
+pub(super) fn command(
     id: &str,
     description: Option<&str>,
     action: ClientShellCommandAction,
@@ -23,7 +23,7 @@ fn command(
     }
 }
 
-fn draw(cx: &mut VisualTestContext) {
+pub(super) fn draw(cx: &mut VisualTestContext) {
     cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
 }
 
@@ -42,7 +42,7 @@ fn search(view: &Entity<SheprdWindow>, query: &str, cx: &mut VisualTestContext) 
     draw(cx);
 }
 
-fn install(
+pub(super) fn install(
     view: &Entity<SheprdWindow>,
     commands: Vec<ClientShellCommand>,
     cx: &mut VisualTestContext,
@@ -57,15 +57,15 @@ fn install(
 
 #[gpui::test]
 #[allow(clippy::unwrap_used)]
-fn plugin_shortcuts_keep_all_actions_and_unusable_bindings_visible(cx: &mut gpui::TestAppContext) {
+fn custom_shortcuts_keep_all_actions_and_unusable_bindings_visible(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     install(
         &view,
         vec![
             command(
-                "plugin.audit",
+                "custom.audit",
                 Some("Audit review"),
-                ClientShellCommandAction::PluginAction,
+                ClientShellCommandAction::Shell,
                 &[
                     "prefix+y",
                     "ctrl+alt+a",
@@ -92,7 +92,7 @@ fn plugin_shortcuts_keep_all_actions_and_unusable_bindings_visible(cx: &mut gpui
         cx,
     );
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_keybinds(window, cx)));
-    search(&view, "plugin custom commands", cx);
+    search(&view, "custom commands", cx);
     for description in ["Audit review", "Run shell task", "pane.run", "popup.run"] {
         assert!(
             cx.debug_bounds(format!("shortcut-{description}").leak())
@@ -119,16 +119,16 @@ fn plugin_shortcuts_keep_all_actions_and_unusable_bindings_visible(cx: &mut gpui
 }
 
 #[gpui::test]
-fn plugin_shortcuts_keep_bindings_beyond_the_dispatch_limit_searchable(
+fn custom_shortcuts_keep_bindings_beyond_the_dispatch_limit_searchable(
     cx: &mut gpui::TestAppContext,
 ) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     install(
         &view,
         vec![command(
-            "plugin.aliases",
+            "custom.aliases",
             Some("Many aliases"),
-            ClientShellCommandAction::PluginAction,
+            ClientShellCommandAction::Shell,
             &[
                 "ctrl+alt+a",
                 "ctrl+alt+b",
@@ -155,14 +155,14 @@ fn plugin_shortcuts_keep_bindings_beyond_the_dispatch_limit_searchable(
 
 #[gpui::test]
 #[allow(clippy::unwrap_used)]
-fn plugin_shortcuts_search_description_section_and_active_prefix(cx: &mut gpui::TestAppContext) {
+fn custom_shortcuts_search_description_section_and_active_prefix(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     install(
         &view,
         vec![command(
-            "plugin.audit",
+            "custom.audit",
             Some("Audit review"),
-            ClientShellCommandAction::PluginAction,
+            ClientShellCommandAction::Shell,
             &["prefix+y", "ctrl+alt+a"],
         )],
         cx,
@@ -173,12 +173,7 @@ fn plugin_shortcuts_search_description_section_and_active_prefix(cx: &mut gpui::
             Keymap::with_overrides(&Default::default(), &Default::default(), &keys).unwrap();
     });
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_keybinds(window, cx)));
-    for query in [
-        "audit review",
-        "plugin custom commands",
-        "ctrl+a y",
-        "ctrl+alt+a",
-    ] {
+    for query in ["audit review", "custom commands", "ctrl+a y", "ctrl+alt+a"] {
         search(&view, query, cx);
         assert!(
             cx.debug_bounds("shortcut-Audit review").is_some(),
@@ -196,21 +191,21 @@ fn plugin_shortcuts_search_description_section_and_active_prefix(cx: &mut gpui::
 
 #[gpui::test]
 #[allow(clippy::unwrap_used)]
-fn plugin_shortcuts_follow_snapshot_replacement_removal_and_disconnect(
+fn custom_shortcuts_follow_snapshot_replacement_removal_and_disconnect(
     cx: &mut gpui::TestAppContext,
 ) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     let custom = |description| {
         command(
-            "plugin.audit",
+            "custom.audit",
             Some(description),
-            ClientShellCommandAction::PluginAction,
+            ClientShellCommandAction::Shell,
             &["prefix+y"],
         )
     };
     install(&view, vec![custom("Old audit")], cx);
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_keybinds(window, cx)));
-    search(&view, "plugin custom commands", cx);
+    search(&view, "custom commands", cx);
     assert!(cx.debug_bounds("shortcut-Old audit").is_some());
     install(&view, vec![custom("New audit")], cx);
     draw(cx);
@@ -235,23 +230,23 @@ fn plugin_shortcuts_follow_snapshot_replacement_removal_and_disconnect(
 }
 
 #[gpui::test]
-fn plugin_shortcut_rows_sharing_a_name_are_numbered(cx: &mut gpui::TestAppContext) {
+fn custom_shortcut_rows_sharing_a_name_are_numbered(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    let plugin = |id, description| {
+    let custom = |id, description| {
         command(
             id,
             Some(description),
-            ClientShellCommandAction::PluginAction,
+            ClientShellCommandAction::Shell,
             &["ctrl+alt+a"],
         )
     };
     install(
         &view,
         vec![
-            plugin("plugin.workspace", "New Workspace"),
-            plugin("plugin.one", "Audit"),
-            plugin("plugin.two", "Audit"),
-            plugin("plugin.solo", "Solo"),
+            custom("custom.workspace", "New Workspace"),
+            custom("custom.one", "Audit"),
+            custom("custom.two", "Audit"),
+            custom("custom.solo", "Solo"),
         ],
         cx,
     );

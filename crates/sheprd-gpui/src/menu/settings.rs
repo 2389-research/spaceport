@@ -426,8 +426,8 @@ impl SheprdWindow {
             .as_ref()
             .filter(|_| self.live.status.is_connected())
         {
-            let commands = &snapshot.commands;
-            let bindings = self.keymap().custom_bindings(commands);
+            let commands: Vec<_> = crate::keymap::available_commands(&snapshot.commands).collect();
+            let bindings = self.keymap().custom_bindings(commands.iter().copied());
             groups[3]
                 .1
                 .extend(commands.iter().zip(bindings).enumerate().map(

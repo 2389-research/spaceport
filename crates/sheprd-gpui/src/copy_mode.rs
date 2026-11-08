@@ -706,14 +706,6 @@ impl CopyMode {
         })
     }
 
-    /// The marked cells, when this is the pane copy mode walks and a mark
-    /// is set; a cursor alone selects nothing.
-    pub(crate) fn marked(&self, pane: &PaneSurfacePane) -> Option<TextRange> {
-        (pane.pane_id == self.pane_id)
-            .then(|| self.selection(pane.inner_rect.width.saturating_sub(1)))
-            .flatten()
-    }
-
     /// The last search and its count, as the badge shows it: "/needle 2 of
     /// 5", with `?` for a search toward older output.
     pub(crate) fn search_label(&self) -> Option<String> {

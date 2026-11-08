@@ -1,4 +1,5 @@
-mod plugin_shortcuts;
+mod custom_shortcuts;
+mod legacy_plugin_actions;
 
 #[gpui::test]
 #[allow(clippy::unwrap_used)]

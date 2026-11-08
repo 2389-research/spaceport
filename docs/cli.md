@@ -161,7 +161,7 @@ not take it either.
 | `theme [list]`, `theme set NAME` | The app theme. A device's terminal theme is `config set devices.ID.theme NAME`, with the ID from `host list` minus its `ssh:` prefix |
 | `font [list]`, `font set NAME`, `font reset` | |
 | `language [status]`, `language list`, `language set system\|TAG` | The language set and the locale Sheprd shows, the languages there are, each with its name in itself as Settings > General lists it, or save the `language` setting (a BCP 47 tag; `en-XA` and `en-XB` are pseudo-locales). Only `status` asks the app, and without it reports what it would show |
-| `keybinds [list]`, `keybinds check` | Shortcuts; custom Herdr commands this client cannot reach |
+| `keybinds [list]`, `keybinds check` | Shortcuts and reachable non-plugin custom Herdr commands |
 | `caffeine [status]`, `caffeine on\|off\|toggle [--for 30m]` | Keep the machine awake |
 | `sound [list]`, `sound play [done\|request]`, `bell` | Sounds play at `sound.volume` percent (`config set sound.volume 30`) |
 | `update [status]`, `update check` | Never downloads or installs |

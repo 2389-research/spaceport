@@ -51,7 +51,10 @@ fn select_all_reaches_the_history_and_the_rows_below_a_scrolled_pane() {
         let range =
             |range: Option<(&str, TextRange)>| range.map(|(pane, range)| (pane.to_owned(), range));
         assert_eq!(
-            range(selection.content_range(&s, CELL_WIDTH, CELL_HEIGHT)),
+            range(
+                selection
+                    .pane_range(region(&s, &selection.target, CELL_WIDTH, CELL_HEIGHT).unwrap())
+            ),
             expected,
             "scrolled to row {top}"
         );
@@ -116,7 +119,7 @@ fn select_all_survives_output_written_over_its_rows() {
 fn select_all_follows_the_buffer_as_history_grows_or_is_trimmed() {
     let range = |s: &PaneSurfaceFrame, selection: &Selection| {
         selection
-            .content_range(s, CELL_WIDTH, CELL_HEIGHT)
+            .pane_range(region(s, &selection.target, CELL_WIDTH, CELL_HEIGHT).unwrap())
             .map(|(pane, range)| (pane.to_owned(), range))
     };
     let selection = all(&scrolled("abcdefghij", 10), pane()).unwrap();

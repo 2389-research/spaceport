@@ -2,7 +2,7 @@ use super::*;
 
 fn range(s: &PaneSurfaceFrame, selection: &Selection) -> Option<(String, TextRange)> {
     selection
-        .content_range(s, CELL_WIDTH, CELL_HEIGHT)
+        .pane_range(region(s, &selection.target, CELL_WIDTH, CELL_HEIGHT)?)
         .map(|(pane, range)| (pane.to_owned(), range))
 }
 
@@ -10,7 +10,7 @@ fn point(row: u32, col: u16) -> TextPoint {
     TextPoint { row, col }
 }
 
-/// What a plugin action is sent: the cells the highlight covers, inclusive,
+/// The inclusive cells the highlight covers,
 /// whichever way it was dragged, cut at the half-cell the pointer stopped in.
 #[test]
 fn a_visible_selection_converts_to_inclusive_cells_either_way_it_was_dragged() {
