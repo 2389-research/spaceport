@@ -228,6 +228,7 @@
       "status": "blocked",
       "evidence": [
         "evidence/removal-reachability-7f15ad1a.md",
+        "evidence/removal-reachability-69eb27a5.md",
         "evidence/t04-terminal-annotations.md",
         "evidence/t04-client-mods.md",
         "evidence/t04-legacy-plugin-settings-removal.md",
@@ -633,6 +634,7 @@
       "status": "not_started",
       "evidence": [
         "evidence/removal-reachability-7f15ad1a.md",
+        "evidence/removal-reachability-69eb27a5.md",
         "evidence/t11-sidebar-activation-audit.md"
       ],
       "must_close_gaps": [
