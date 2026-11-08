@@ -17,7 +17,7 @@ impl SheprdWindow {
     /// The Herdr 2 rows, or nothing when the workspace has no herdr-core tab.
     pub(crate) fn core_sidebar_rows(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
         let store = cx.try_global::<Store>()?;
-        let (scope, workspace) = self.browser_key()?;
+        let (scope, workspace) = self.active_browser_key(cx)?;
         let panes: Vec<(TabId, TerminalId)> = store
             .in_workspace(&scope, &workspace)
             .filter_map(|tab| match &tab.location {

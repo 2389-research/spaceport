@@ -36,8 +36,11 @@ pub(super) enum Spot {
 impl SheprdWindow {
     /// The agents the strips offer: the installed ones, unless the launcher
     /// is off or no chat can start.
-    fn launcher_agents(&self) -> Vec<Agent> {
-        if self.config.chat.launcher == ChatLauncher::Off {
+    fn launcher_agents(&self, group: Slot, cx: &App) -> Vec<Agent> {
+        if self.config.chat.launcher == ChatLauncher::Off
+            || (self.selected_core_group().is_some()
+                && self.core_chat_group_tab(Some(group.id), cx).is_none())
+        {
             return Vec::new();
         }
         self.chat_agents()
@@ -56,7 +59,7 @@ impl SheprdWindow {
         spot: Spot,
         cx: &mut Context<Self>,
     ) -> Option<AnyElement> {
-        let agents = self.launcher_agents();
+        let agents = self.launcher_agents(slot, cx);
         if agents.is_empty() {
             return None;
         }
@@ -85,7 +88,7 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        let agents = self.launcher_agents();
+        let agents = self.launcher_agents(slot, cx);
         if agents.is_empty() {
             return plus.into_any_element();
         }

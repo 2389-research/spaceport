@@ -72,7 +72,7 @@ impl SheprdWindow {
         let toward = deal_toward(
             f32::from(past),
             self.tab_layout().new_tab_width(),
-            self.launcher_agents().len(),
+            self.launcher_agents(slot, cx).len(),
         );
         let deck = match &mut self.chats.launcher_deck {
             Some(deck) if deck.group == slot.id => deck,

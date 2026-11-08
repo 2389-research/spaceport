@@ -66,6 +66,15 @@ pub(crate) struct Link {
 }
 
 impl Link {
+    #[cfg(test)]
+    pub(crate) fn for_test() -> Self {
+        let (commands, _queue) = std::sync::mpsc::sync_channel(MAX_COMMANDS);
+        Self {
+            commands,
+            mailbox: Arc::new(Mailbox::default()),
+        }
+    }
+
     pub(crate) fn send(&self, command: Command) {
         if let Err(error) = self.commands.try_send(command) {
             tracing::warn!(?error, "Dropped input for a herdr-core terminal");

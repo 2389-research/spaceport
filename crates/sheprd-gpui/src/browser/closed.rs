@@ -359,7 +359,7 @@ impl SheprdWindow {
     /// Reopens the most recently closed tab of the focused workspace, whether
     /// it was a browser tab or a Herdr terminal tab.
     pub(crate) fn reopen_closed_tab(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some((scope, workspace)) = self.browser_key() else {
+        let Some((scope, workspace)) = self.active_browser_key(cx) else {
             return;
         };
         let Some(closed) = store(cx)

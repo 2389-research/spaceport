@@ -125,6 +125,20 @@ fn valid_pick(pick: &Pick) -> bool {
 }
 
 impl SavedLayout {
+    pub(crate) fn pages_only(&self) -> bool {
+        self.groups.iter().all(|group| {
+            group
+                .pick
+                .as_ref()
+                .is_none_or(|pick| matches!(pick, Pick::Page(_)))
+                && group.tabs.iter().all(|pick| matches!(pick, Pick::Page(_)))
+                && group
+                    .hidden
+                    .iter()
+                    .all(|pick| matches!(pick, Pick::Page(_)))
+        })
+    }
+
     /// Whether a saved layout is one the app could have written: bounded,
     /// with widths that are positive and finite, and names of sane length.
     pub(crate) fn valid(&self) -> bool {

@@ -291,6 +291,13 @@ impl SheprdWindow {
         group: Option<crate::browser::GroupId>,
         cx: &gpui::App,
     ) -> Option<TabId> {
+        if let Some(key) = self.selected_core_group()
+            && self.core_terminals.hub.backend().is_none_or(|backend| {
+                backend.core().is_lost() || backend.core().hello().core.id != key.hub_core_id()
+            })
+        {
+            return None;
+        }
         let group = group.or_else(|| self.active_group())?;
         match self.group_shown(group, cx) {
             crate::browser::Shown::Page(tab) => self.core_terminals.chat_split_at(tab).map(|_| tab),

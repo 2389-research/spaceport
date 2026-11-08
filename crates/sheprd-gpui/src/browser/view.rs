@@ -176,13 +176,32 @@ pub(crate) enum PageOpened {
 
 impl SheprdWindow {
     pub(crate) fn browser_key(&self) -> Option<(Scope, String)> {
+        if self.selected_core_group().is_some() {
+            return None;
+        }
         let workspace = self.live.snapshot.as_ref()?.focused_workspace_id.clone()?;
         Some((scope(&self.endpoints[self.selected_endpoint]), workspace))
     }
 
+    /// The group drawn in this window, which may belong to Core instead of
+    /// the legacy endpoint that still supplies the transitional shell.
+    pub(crate) fn layout_key(&self) -> Option<(Scope, String)> {
+        self.selected_core_group()
+            .map(super::CoreGroupKey::parts)
+            .or_else(|| self.browser_key())
+    }
+
+    pub(crate) fn active_browser_key(&self, cx: &App) -> Option<(Scope, String)> {
+        match self.selected_core_group() {
+            Some(key) => self.core_group_available(key, cx).then(|| key.parts()),
+            None => self.browser_key(),
+        }
+    }
+
     /// The focused workspace's browser tabs, in the order they opened.
     pub(crate) fn browser_tab_ids(&self, cx: &App) -> Vec<TabId> {
-        let (Some((scope, workspace)), Some(store)) = (self.browser_key(), store(cx)) else {
+        let (Some((scope, workspace)), Some(store)) = (self.active_browser_key(cx), store(cx))
+        else {
             return Vec::new();
         };
         store

@@ -33,7 +33,8 @@ impl SheprdWindow {
         faces: &TabContext<'_>,
         cx: &mut Context<Self>,
     ) -> Vec<(TabId, Stateful<Div>)> {
-        let (Some((scope, workspace)), Some(store)) = (self.browser_key(), store(cx)) else {
+        let (Some((scope, workspace)), Some(store)) = (self.active_browser_key(cx), store(cx))
+        else {
             return Vec::new();
         };
         let tabs: Vec<Tab> = store

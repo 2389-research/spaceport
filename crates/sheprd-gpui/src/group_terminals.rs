@@ -152,6 +152,9 @@ impl SheprdWindow {
 
     /// The tab `group`'s own connection focuses.
     pub(crate) fn group_focused_tab(&self, group: GroupId) -> Option<String> {
+        if self.selected_core_group().is_some() {
+            return None;
+        }
         if Some(group) == self.primary_group() {
             return self.focused_herdr_tab().map(str::to_owned);
         }

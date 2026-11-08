@@ -41,6 +41,8 @@ pub enum Error {
     // keep-sorted start
     #[error("{} is not installed on this host", .0.display_name())]
     AgentMissing(Agent),
+    #[error("select a Core terminal tab before starting a chat in this group")]
+    CoreTerminalRequired,
     #[error("ACP chats are off in Settings")]
     Disabled,
     #[error("Sheprd is not connected")]
@@ -273,6 +275,7 @@ impl SheprdWindow {
     pub(crate) fn start_chat_or_flash(&mut self, agent: Agent, cx: &mut Context<Self>) {
         let started = match self.core_chat_group_tab(None, cx) {
             Some(tab) => self.start_core_chat(agent, tab),
+            None if self.selected_core_group().is_some() => Err(Error::CoreTerminalRequired),
             None => self.start_chat(agent, None),
         };
         if let Err(error) = started {
@@ -290,6 +293,10 @@ impl SheprdWindow {
                 self.flash_chat_error(&error, cx);
             }
             cx.notify();
+            return;
+        }
+        if self.selected_core_group().is_some() {
+            self.flash_chat_error(&Error::CoreTerminalRequired, cx);
             return;
         }
         match self.start_chat(agent, None) {

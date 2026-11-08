@@ -12,7 +12,7 @@ use crate::{
         tabs::{Reply, TabInfo, TabKind, TabOp},
     },
 };
-use gpui::{App, WindowHandle};
+use gpui::{App, Context, Window, WindowHandle};
 
 pub(super) fn serve(
     call: Call<TabOp>,
@@ -140,34 +140,61 @@ fn windows(caller: &Caller, cx: &App) -> Vec<WindowHandle<SheprdWindow>> {
     windows
 }
 
+struct Showing {
+    window: WindowHandle<SheprdWindow>,
+    endpoint: Option<usize>,
+}
+
 /// A window listing the workspace `tab` belongs to, and the endpoint there.
-fn showing(caller: &Caller, tab: &Tab, cx: &App) -> Option<(WindowHandle<SheprdWindow>, usize)> {
+fn showing(caller: &Caller, tab: &Tab, cx: &App) -> Option<Showing> {
     windows(caller, cx).into_iter().find_map(|handle| {
+        if let Some(key) = tab.core_group() {
+            let available = handle
+                .read_with(cx, |view, cx| view.core_group_available(&key, cx))
+                .ok()?;
+            return available.then_some(Showing {
+                window: handle,
+                endpoint: None,
+            });
+        }
         let index = handle
             .read_with(cx, |view, _| {
                 view.endpoint_showing(&tab.scope, &tab.workspace_id)
             })
             .ok()
             .flatten()?;
-        Some((handle, index))
+        Some(Showing {
+            window: handle,
+            endpoint: Some(index),
+        })
     })
 }
 
 /// Switches a window to `tab`'s workspace and shows the tab there. Shown
 /// against its workspace, the tab is in front once the switch lands.
 fn reveal(caller: &Caller, tab: &Tab, cx: &mut App) -> Result<(), Response> {
-    let Some((handle, index)) = showing(caller, tab, cx) else {
+    let Some(showing) = showing(caller, tab, cx) else {
         return Err(not_found(format!(
             "No Spaceport window shows workspace {}, which tab {} belongs to",
             tab.workspace_id, tab.id
         )));
     };
-    handle
+    showing
+        .window
         .update(cx, |view, window, cx| {
             if view.menu.page.is_some() {
                 return Err(busy());
             }
-            view.go_to_workspace(index, &tab.workspace_id, cx);
+            if let Some(key) = tab.core_group() {
+                if !view.show_core_group(&key, cx) {
+                    return Err(not_found(format!(
+                        "Core group {} is unavailable",
+                        key.group_id()
+                    )));
+                }
+            } else if let Some(index) = showing.endpoint {
+                view.go_to_workspace(index, &tab.workspace_id, cx);
+            }
             view.show_browser_tab(tab.id, window, cx);
             Ok(())
         })
@@ -197,10 +224,13 @@ fn close(caller: &Caller, id: u64, cx: &mut App) -> Response {
         Err(response) => return response,
     };
     match showing(caller, &tab, cx) {
-        Some((handle, _)) => {
-            let _ = handle.update(cx, |view, window, cx| {
-                view.close_browser_tab(tab.id, window, cx);
+        Some(showing) => {
+            let closed = showing.window.update(cx, |view, window, cx| {
+                close_in_window(view, &tab, window, cx)
             });
+            if !matches!(closed, Ok(true)) {
+                return not_found(format!("No Spaceport window shows tab {id}"));
+            }
         }
         // A named window must be the one showing the tab: a stale or wrong
         // `--window` never closes a tab elsewhere.
@@ -212,6 +242,21 @@ fn close(caller: &Caller, id: u64, cx: &mut App) -> Response {
     }
     Store::update(cx, |store| store.close(tab.id));
     Response::done(format!("Closed tab {id} ({})", tab.title))
+}
+
+fn close_in_window(
+    view: &mut SheprdWindow,
+    tab: &Tab,
+    window: &mut Window,
+    cx: &mut Context<SheprdWindow>,
+) -> bool {
+    if let Some(key) = tab.core_group()
+        && !view.core_group_available(&key, cx)
+    {
+        return false;
+    }
+    view.close_browser_tab(tab.id, window, cx);
+    true
 }
 
 #[cfg(test)]

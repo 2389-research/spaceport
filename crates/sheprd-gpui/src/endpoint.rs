@@ -620,6 +620,7 @@ impl SheprdWindow {
         if !self.switch_endpoint(id, cx) {
             return false;
         }
+        self.leave_core_group(cx);
         self.catalog.choose(id);
         if let Some(error) = self.catalog.poll_write() {
             self.local_error = Some(fl!(
@@ -718,6 +719,7 @@ impl SheprdWindow {
         if retargeted {
             self.reconnect(cx);
         }
+        self.leave_core_group(cx);
         // After the reconnect: resetting the connection clears the error slot.
         if let Some(error) = self.catalog.poll_write() {
             self.local_error = Some(fl!(

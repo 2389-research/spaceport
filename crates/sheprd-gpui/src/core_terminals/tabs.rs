@@ -31,7 +31,7 @@ impl SheprdWindow {
             tabs.get(tab)
                 .is_some_and(|shown| shown.panes.contains(terminal))
         });
-        let Some((scope, workspace)) = self.browser_key() else {
+        let Some((scope, workspace)) = self.active_browser_key(cx) else {
             return;
         };
         let mut missing: Vec<(TabId, TerminalId, Role)> = Vec::new();
@@ -73,6 +73,12 @@ impl SheprdWindow {
             self.core_terminals.hub.connect(Start::Join);
             return;
         };
+        if self
+            .selected_core_group()
+            .is_some_and(|key| backend.core().hello().core.id != key.hub_core_id())
+        {
+            return;
+        }
         let look = self.core_look();
         for (tab, terminal, role) in missing {
             let Ok(size) = Size::new(FIRST_SIZE.0, FIRST_SIZE.1) else {

@@ -60,6 +60,7 @@ fn every_chat_variant_has_a_message() {
 #[test]
 fn every_chat_start_variant_has_a_message() {
     let mut errors = vec![
+        StartError::CoreTerminalRequired,
         StartError::Disabled,
         StartError::NotConnected,
         StartError::NotLocal,

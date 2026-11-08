@@ -2,6 +2,7 @@
 use super::*;
 use crate::browser::WebUrl;
 
+mod core_groups;
 mod editors;
 mod orchestrator_tabs;
 mod px0;

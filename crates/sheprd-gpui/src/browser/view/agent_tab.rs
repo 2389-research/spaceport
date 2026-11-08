@@ -34,6 +34,7 @@ impl SheprdWindow {
         workspace: &str,
         cx: &mut Context<Self>,
     ) {
+        self.leave_core_group(cx);
         if self.shows_workspace(index, workspace) {
             return;
         }

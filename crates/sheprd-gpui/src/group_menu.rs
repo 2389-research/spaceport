@@ -140,8 +140,17 @@ impl SheprdWindow {
         if crate::browser::EMBEDDED && self.px0_root().is_some() {
             actions.push(Action::Px0);
         }
-        actions.extend(self.chat_agents().into_iter().map(Action::Chat));
-        if let Some((_, _, listed)) = self.focused_listening_ports() {
+        if self.selected_core_group().is_none()
+            || self.core_chat_group_tab(Some(group), cx).is_some()
+        {
+            actions.extend(self.chat_agents().into_iter().map(Action::Chat));
+        }
+        if let Some((_, _, listed)) = self
+            .selected_core_group()
+            .is_none()
+            .then(|| self.focused_listening_ports())
+            .flatten()
+        {
             actions.extend(listed.ports.iter().filter_map(|port| {
                 Some(Action::Port {
                     number: port.number,

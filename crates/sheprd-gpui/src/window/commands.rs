@@ -168,7 +168,11 @@ impl SheprdWindow {
         if self.menu.page.is_some() {
             return false;
         }
-        self.dispatch_navigation(target, cx)
+        let navigated = self.dispatch_navigation(target, cx);
+        if navigated {
+            self.leave_core_group(cx);
+        }
+        navigated
     }
 
     /// Back or Forward along the selected endpoint's focus trail. The trail

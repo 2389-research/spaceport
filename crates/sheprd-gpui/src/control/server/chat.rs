@@ -33,6 +33,9 @@ pub(super) fn serve(call: Call<ChatOp>, cx: &mut App) -> Response {
                     .flatten();
                 let started = match core {
                     Some(tab) => view.start_core_chat(agent, tab),
+                    None if beside.is_none() && view.selected_core_group().is_some() => {
+                        Err(crate::chat::StartError::CoreTerminalRequired)
+                    }
                     None => view.start_chat(agent, beside.as_deref()),
                 };
                 match started {
@@ -100,6 +103,7 @@ fn start_code(error: &crate::chat::StartError) -> ErrorCode {
     use crate::chat::StartError;
     match error {
         StartError::AgentMissing(_)
+        | StartError::CoreTerminalRequired
         | StartError::Disabled
         | StartError::NotLocal
         | StartError::ProgramMissing => ErrorCode::Unsupported,

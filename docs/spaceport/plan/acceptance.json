@@ -105,7 +105,7 @@
       "scenario": "Quit and reopen with surviving, missing and renamed remote terminal/workspace references.",
       "expected": "Fresh authoritative state wins; surviving processes reattach; missing agents never restart.",
       "status": "not_run",
-      "evidence": ["evidence/t03-remote-terminal-parity.md"]
+      "evidence": ["evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md"]
     },
     {
       "id": "A10",
@@ -279,7 +279,7 @@
       "scenario": "Disconnect and try mutations; restart the client while offline; inspect saved files.",
       "expected": "No queued operations or browsable persistent transcripts; stale data is labeled; layout prefs may remain.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t03-typed-group-key.md"]
     },
     {
       "id": "A25",

@@ -3,6 +3,86 @@ use crate::{menu::Page, sidebar};
 use sheprd_core_client::{Error, Method, wire::Doc};
 use uuid::Uuid;
 
+#[gpui::test]
+fn core_only_group_switching_keeps_exact_tabs_and_picks(cx: &mut gpui::TestAppContext) {
+    use crate::browser::{CoreGroupKey, Pick, Shown, Store};
+    use sheprd_chat_protocol::Agent;
+    let first = Uuid::from_u128(71);
+    let second = Uuid::from_u128(72);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    cx.update(|window, cx| {
+        observation::set_document_for_test_as(cx, "hub-a", Doc {
+            value: serde_json::json!({"schema_version":1,"workspaces":[
+                {"id":first,"label":"Same"},{"id":second,"label":"Same"}
+            ]}), version: 3,
+        });
+        let key = CoreGroupKey::new("hub-a", None, "spaceport", first).unwrap();
+        let tab = Store::update(cx, |store| store.open_core(&key, None)).unwrap();
+        view.update(cx, |view, cx| {
+            view.config.herdr_2_terminals = false;
+            view.select_core_workspace(first, cx);
+            assert!(view.new_tabs_use_core());
+            assert_eq!(view.browser_tab_ids(cx), vec![tab]);
+            assert_eq!(view.open_workspace_tabs(cx), vec![Pick::Page(tab)]);
+            let group = view.ensure_layout().unwrap().active();
+            view.browser.layouts.get_mut(&key.parts()).unwrap().choose(group, Pick::Page(tab));
+            assert_eq!(view.group_shown(group, cx), Shown::Page(tab));
+            view.start_chat_in(Agent::Opencode, group, cx);
+            assert!(view.flash.as_ref().is_some_and(|(flash, _)| flash.text.contains("Core terminal tab")));
+            view.select_core_workspace(second, cx);
+            assert!(view.browser_tab_ids(cx).is_empty());
+            view.live.snapshot = Some(std::sync::Arc::new(sidebar::layout_tests::snapshot(1)));
+            let empty_group = view.ensure_layout().unwrap().active();
+            view.split_group(empty_group, window, cx);
+            assert!(view.group_slots().iter().all(|slot| !matches!(view.group_pick(slot.id), Some(Pick::Herdr(_)))));
+            view.select_core_workspace(first, cx);
+            assert_eq!(view.group_shown(group, cx), Shown::Page(tab));
+            view.go_to_workspace(0, "w0", cx);
+            assert!(view.selected_core_group().is_none());
+            view.select_core_workspace(first, cx);
+        });
+        observation::set_document_stale_for_test(cx);
+        view.update(cx, |view, cx| {
+            assert!(view.browser_tab_ids(cx).is_empty());
+            assert_eq!(view.group_shown(view.group_slots()[0].id, cx), Shown::Empty);
+        });
+        observation::set_document_for_test_as(cx, "hub-b", Doc {
+            value: serde_json::json!({"schema_version":1,"workspaces":[{"id":first,"label":"Same"}]}), version: 4,
+        });
+        view.update(cx, |view, cx| assert!(view.browser_tab_ids(cx).is_empty()));
+        observation::set_document_for_test_as(cx, "hub-a", Doc {
+            value: serde_json::json!({"schema_version":1,"workspaces":[]}), version: 5,
+        });
+        view.update(cx, |view, cx| assert!(view.browser_tab_ids(cx).is_empty()));
+    });
+}
+
+#[gpui::test]
+fn a_closed_core_page_reopens_in_its_exact_group(cx: &mut gpui::TestAppContext) {
+    use crate::browser::{CoreGroupKey, Store};
+    let group = Uuid::from_u128(71);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    cx.update(|window, cx| {
+        observation::set_document_for_test_as(cx, "hub-a", Doc {
+            value: serde_json::json!({"schema_version":1,"workspaces":[{"id":group,"label":"One"}]}),
+            version: 3,
+        });
+        let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
+        let first = Store::update(cx, |store| store.open_core(&key, None)).unwrap();
+        view.update(cx, |view, cx| {
+            view.select_core_workspace(group, cx);
+            view.show_browser_tab(first, window, cx);
+            view.close_browser_tab(first, window, cx);
+            assert!(view.browser_tab_ids(cx).is_empty());
+            view.reopen_closed_tab(window, cx);
+            let reopened = view.browser_tab_ids(cx);
+            assert_eq!(reopened.len(), 1);
+            assert_ne!(reopened[0], first);
+            assert_eq!(cx.global::<Store>().get(reopened[0]).unwrap().core_group(), Some(key));
+        });
+    });
+}
+
 #[cfg(unix)]
 mod live;
 
@@ -27,7 +107,14 @@ fn selecting_a_group_shows_exact_member_identity_without_changing_the_document(
         );
         view.update(cx, |view, cx| {
             view.select_core_workspace(id, cx);
-            assert_eq!(view.core_terminals.workspace_ui.selected_group, Some(id));
+            assert_eq!(
+                view.core_terminals
+                    .workspace_ui
+                    .selected_group
+                    .as_ref()
+                    .map(|key| key.group_id()),
+                Some(id)
+            );
             assert!(
                 matches!(view.core_workspace_access(cx), Access::Ready(doc) if doc.version == 3)
             );
@@ -435,4 +522,74 @@ fn an_uncertain_worker_keeps_the_version_fenced_after_its_window_closes() {
     assert!(EditGuard::blocked(GuardState::Uncertain(7), 4));
     assert!(EditGuard::blocked(GuardState::Uncertain(7), 7));
     assert!(!EditGuard::blocked(GuardState::Uncertain(7), 8));
+}
+
+#[gpui::test]
+fn a_pending_core_pane_cannot_take_focus_after_its_group_is_hidden(cx: &mut gpui::TestAppContext) {
+    use crate::{
+        browser::{CoreGroupKey, Location, Store},
+        core_terminals::{CoreTerminalView, Error, panes::Panes, worker::Link},
+        sidebar,
+    };
+    use gpui::prelude::*;
+    use sheprd_backend::TerminalId;
+    use sheprd_core_client::wire::Doc;
+    use uuid::Uuid;
+
+    let first = Uuid::from_u128(71);
+    let second = Uuid::from_u128(72);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    cx.update(|window, cx| {
+        observation::set_document_for_test_as(
+            cx,
+            "hub-a",
+            Doc {
+                value: serde_json::json!({"schema_version":1,"workspaces":[
+                    {"id":first,"label":"One"},{"id":second,"label":"Two"}
+                ]}),
+                version: 3,
+            },
+        );
+        let key = CoreGroupKey::new("hub-a", None, "spaceport", first).unwrap();
+        let terminal = TerminalId::try_from("t7".to_owned()).unwrap();
+        let panes = Panes::single(terminal.clone());
+        let tab = Store::update(cx, |store| {
+            store.open_core(
+                &key,
+                Some(Location::CoreTerminal {
+                    panes: panes.clone(),
+                    observe: false,
+                }),
+            )
+        })
+        .unwrap();
+        view.update(cx, |view, cx| {
+            view.core_terminals
+                .hub
+                .set_join_for_test(|_| Err(Error::NotInstalled));
+            view.select_core_workspace(first, cx);
+            view.show_browser_tab(tab, window, cx);
+            let pane = cx.new(|cx| {
+                CoreTerminalView::new(
+                    terminal.clone(),
+                    Link::for_test(),
+                    view.core_look(),
+                    view.painter.clone(),
+                    false,
+                    cx,
+                )
+            });
+            view.core_terminals
+                .show_for_test(tab, panes, false, Vec::new());
+            view.core_terminals
+                .views
+                .insert((tab, terminal), pane.clone());
+            view.core_terminals.focus_wanted = Some(tab);
+            window.focus(&view.focus, cx);
+            view.select_core_workspace(second, cx);
+            view.poll_core_terminals(window, cx);
+            assert!(!pane.read(cx).focus_handle().is_focused(window));
+            assert_eq!(view.core_terminals.focus_wanted, None);
+        });
+    });
 }

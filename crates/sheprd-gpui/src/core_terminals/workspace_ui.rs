@@ -10,7 +10,7 @@ use super::{
 };
 use crate::{
     SheprdWindow,
-    browser::{Location, Store},
+    browser::{CoreGroupKey, Location, Store},
     dialog_input::DialogInput,
     i18n::fl,
     menu::Page,
@@ -29,7 +29,7 @@ pub(super) struct State {
     dialog_generation: u64,
     pending: Option<Pending>,
     selected: MenuAction,
-    selected_group: Option<Uuid>,
+    pub(crate) selected_group: Option<CoreGroupKey>,
     target: Option<DialogTarget>,
 }
 
@@ -169,6 +169,22 @@ impl<'a> Access<'a> {
 }
 
 impl SheprdWindow {
+    pub(crate) fn selected_core_group(&self) -> Option<&CoreGroupKey> {
+        self.core_terminals.workspace_ui.selected_group.as_ref()
+    }
+
+    pub(crate) fn leave_core_group(&mut self, cx: &mut Context<Self>) {
+        if self
+            .core_terminals
+            .workspace_ui
+            .selected_group
+            .take()
+            .is_some()
+        {
+            cx.notify();
+        }
+    }
+
     fn core_workspace_epoch(cx: &App) -> Option<u64> {
         cx.try_global::<observation::Observation>()
             .map(|observation| observation.projection().epoch())
@@ -182,17 +198,77 @@ impl SheprdWindow {
     }
 
     fn select_core_workspace(&mut self, id: Uuid, cx: &mut Context<Self>) {
-        if !matches!(self.core_workspace_access(cx), Access::Ready(doc) if doc.value.workspaces().iter().any(|row| row.id == id))
-        {
+        let Some(core_id) = cx
+            .try_global::<observation::Observation>()
+            .and_then(|observation| observation.projection().core_id())
+        else {
+            return;
+        };
+        let Some(key) = CoreGroupKey::new(core_id, None, super::workspace_document::NAME, id)
+        else {
+            return;
+        };
+        if !self.core_group_available(&key, cx) {
             return;
         }
         let selected = &mut self.core_terminals.workspace_ui.selected_group;
-        *selected = if *selected == Some(id) {
+        *selected = if selected.as_ref() == Some(&key) {
             None
         } else {
-            Some(id)
+            Some(key)
         };
+        self.drop_group_terminals();
         cx.notify();
+    }
+
+    pub(crate) fn core_group_available(&self, key: &CoreGroupKey, cx: &App) -> bool {
+        let Some(observation) = cx.try_global::<observation::Observation>() else {
+            return false;
+        };
+        let projection = observation.projection();
+        if !projection.fresh() {
+            return false;
+        }
+        let Some(core_id) = projection.core_id() else {
+            return false;
+        };
+        if CoreGroupKey::new(
+            core_id,
+            None,
+            super::workspace_document::NAME,
+            key.group_id(),
+        )
+        .as_ref()
+            != Some(key)
+        {
+            return false;
+        }
+        if self.core_terminals.hub.backend().is_some_and(|backend| {
+            backend.core().is_lost() || backend.core().hello().core.id != key.hub_core_id()
+        }) {
+            return false;
+        }
+        matches!(self.core_workspace_access(cx), Access::Ready(doc) if doc.value.workspaces().iter().any(|row| row.id == key.group_id()))
+    }
+
+    pub(crate) fn show_core_group(&mut self, key: &CoreGroupKey, cx: &mut Context<Self>) -> bool {
+        if !self.core_group_available(key, cx) {
+            return false;
+        }
+        self.core_terminals.workspace_ui.selected_group = Some(key.clone());
+        self.drop_group_terminals();
+        cx.notify();
+        true
+    }
+
+    pub(super) fn clear_stale_core_group(&mut self, cx: &mut Context<Self>) {
+        let stale = self
+            .selected_core_group()
+            .is_some_and(|key| !self.core_group_available(key, cx));
+        if stale {
+            self.core_terminals.workspace_ui.selected_group = None;
+            cx.notify();
+        }
     }
 
     fn toggle_core_workspace_member(
@@ -313,13 +389,22 @@ impl SheprdWindow {
             self.show_flash(Flash::warning(fl!("core-terminals-local-only")), cx);
             return;
         }
-        let Some((scope, workspace)) = self.browser_key() else {
-            self.show_flash(Flash::warning(fl!("core-terminals-open-workspace")), cx);
+        let Some(core_id) = cx
+            .try_global::<observation::Observation>()
+            .and_then(|observation| observation.projection().core_id())
+        else {
             return;
         };
+        let Some(key) = CoreGroupKey::new(core_id, None, super::workspace_document::NAME, group)
+        else {
+            return;
+        };
+        if !self.show_core_group(&key, cx) {
+            return;
+        }
         let existing = cx.try_global::<Store>().and_then(|store| {
             store
-                .in_workspace(&scope, &workspace)
+                .in_core_group(&key)
                 .find_map(|tab| match &tab.location {
                     Some(Location::CoreTerminal {
                         panes,
@@ -330,14 +415,12 @@ impl SheprdWindow {
         });
         let tab = existing.or_else(|| {
             Store::update(cx, |store| {
-                store.open(
-                    scope,
-                    &workspace,
+                store.open_core(
+                    &key,
                     Some(Location::CoreTerminal {
                         panes: Panes::single(terminal.clone()),
                         observe: false,
                     }),
-                    None,
                 )
             })
         });

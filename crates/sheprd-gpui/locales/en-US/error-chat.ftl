@@ -27,6 +27,7 @@ error-chat-version = the chat program speaks protocol version { $version }
 
 # $agent is an agent's name, such as Claude Code.
 error-chat-start-agent-missing = { $agent } is not installed on this host
+error-chat-start-core-terminal-required = Select a Core terminal tab before starting a chat in this group
 error-chat-start-disabled = ACP chats are off in Settings
 error-chat-start-no-workspace = no workspace is focused
 error-chat-start-not-connected = Sheprd is not connected

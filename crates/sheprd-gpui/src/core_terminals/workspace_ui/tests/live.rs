@@ -229,7 +229,14 @@ fn ui_membership_rebases_disjoint_client_edit_without_touching_terminal(
         .unwrap();
     cx.simulate_click(select.center(), Modifiers::default());
     view.read_with(cx, |view, _| {
-        assert_eq!(view.core_terminals.workspace_ui.selected_group, Some(group));
+        assert_eq!(
+            view.core_terminals
+                .workspace_ui
+                .selected_group
+                .as_ref()
+                .map(|key| key.group_id()),
+            Some(group)
+        );
     });
     cx.update(|_, app| {
         let projection = app.global::<observation::Observation>().projection();

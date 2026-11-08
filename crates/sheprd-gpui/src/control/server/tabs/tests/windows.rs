@@ -2,6 +2,76 @@
 use super::*;
 
 #[gpui::test]
+fn core_tab_focus_requires_the_exact_observed_group_and_named_window(
+    cx: &mut gpui::TestAppContext,
+) {
+    use crate::{browser::CoreGroupKey, core_terminals::set_document_for_test_as};
+    use sheprd_core_client::wire::Doc;
+    let group = uuid::Uuid::from_u128(71);
+    let other = uuid::Uuid::from_u128(72);
+    let (view, cx) = window(cx);
+    let tab = cx.cx.update(|cx| {
+        set_document_for_test_as(cx, "hub-a", Doc {
+            value: serde_json::json!({"schema_version":1,"workspaces":[{"id":group,"label":"Same"},{"id":other,"label":"Same"}]}),
+            version: 3,
+        });
+        let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
+        Store::update(cx, |store| store.open_core(&key, None)).unwrap()
+    });
+    cx.cx.update(|cx| {
+        assert!(matches!(
+            focus(
+                &Caller {
+                    window: Some(999_999),
+                    ..Caller::default()
+                },
+                tab.into(),
+                cx
+            ),
+            Response::Error {
+                code: ErrorCode::NotFound,
+                ..
+            }
+        ));
+        assert!(matches!(
+            focus(&Caller::default(), tab.into(), cx),
+            Response::Done { .. }
+        ));
+        let selected = view.read(cx).active_browser_key(cx).unwrap();
+        assert_eq!(
+            selected,
+            CoreGroupKey::new("hub-a", None, "spaceport", group)
+                .unwrap()
+                .parts()
+        );
+        let background = CoreGroupKey::new("hub-a", None, "spaceport", other).unwrap();
+        let background_tab = Store::update(cx, |store| store.open_core(&background, None)).unwrap();
+        assert!(matches!(
+            close(&Caller::default(), background_tab.into(), cx),
+            Response::Done { .. }
+        ));
+        assert_eq!(view.read(cx).active_browser_key(cx).unwrap(), selected);
+    });
+    cx.cx.update(|cx| set_document_for_test_as(cx, "hub-b", Doc {
+        value: serde_json::json!({"schema_version":1,"workspaces":[{"id":group,"label":"Same"}]}), version: 4,
+    }));
+    cx.cx.update(|cx| {
+        assert!(matches!(
+            focus(&Caller::default(), tab.into(), cx),
+            Response::Error {
+                code: ErrorCode::NotFound,
+                ..
+            }
+        ));
+    });
+    cx.update(|window, cx| {
+        let saved = cx.global::<Store>().get(tab).cloned().unwrap();
+        assert!(!view.update(cx, |view, cx| close_in_window(view, &saved, window, cx)));
+        assert!(cx.global::<Store>().get(tab).is_some());
+    });
+}
+
+#[gpui::test]
 fn tabs_are_listed_focused_and_closed(cx: &mut gpui::TestAppContext) {
     let (view, cx) = window(cx);
     let page = open(&view, cx, "w0", Some(web("https://a.test/")));

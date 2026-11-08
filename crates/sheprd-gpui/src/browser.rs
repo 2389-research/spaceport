@@ -22,6 +22,7 @@ mod editor;
 mod favicon;
 mod feedback;
 mod group_motion;
+mod group_settle;
 mod groups;
 mod groups_view;
 mod hidden;
@@ -83,7 +84,7 @@ pub(crate) use page_keys::bind as bind_page_keys;
 /// A page screenshot as PNG, for `browser screenshot`.
 #[cfg(target_os = "macos")]
 pub(crate) use snapshot::png as page_png;
-pub(crate) use store::{Scope, Store, Tab, TabId};
+pub(crate) use store::{CoreGroupKey, Scope, Store, Tab, TabId};
 pub(crate) use tab_appear::{Leaving, Listed};
 pub(crate) use tab_scroll::{Thumb, ThumbDrag};
 #[cfg(target_os = "macos")]

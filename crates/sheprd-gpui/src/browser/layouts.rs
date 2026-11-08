@@ -35,17 +35,14 @@ pub(crate) struct Layouts {
 
 impl Global for Layouts {}
 
-fn valid_workspace(workspace: &str) -> bool {
-    !workspace.is_empty() && workspace.len() <= 256
-}
-
 fn parse(bytes: &[u8]) -> crate::Result<HashMap<Key, SavedLayout>> {
     let saved: Saved = serde_json::from_slice(bytes)?;
     if saved.layouts.len() > MAX_LAYOUTS
-        || !saved
-            .layouts
-            .iter()
-            .all(|entry| valid_workspace(&entry.workspace) && entry.layout.valid())
+        || !saved.layouts.iter().all(|entry| {
+            entry.scope.valid_workspace(&entry.workspace)
+                && entry.layout.valid()
+                && (!matches!(entry.scope, Scope::Core(_)) || entry.layout.pages_only())
+        })
     {
         return Err(crate::Error::InvalidGroupLayouts);
     }
@@ -186,6 +183,44 @@ impl Layouts {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    #[test]
+    fn core_layouts_keep_document_machine_and_page_pick_separate() {
+        let group = uuid::Uuid::from_u128(77);
+        let layout = r#"{"groups":[{"pick":{"kind":"page","id":41},"share":1}],"active":0}"#;
+        let file = format!(
+            r#"{{"layouts":[
+            {{"scope":"local:/x.sock","workspace":"{group}","layout":{layout}}},
+            {{"scope":{{"kind":"core","hub_core_id":"hub","machine_id":"machine-a","document_name":"spaceport"}},"workspace":"{group}","layout":{layout}}},
+            {{"scope":{{"kind":"core","hub_core_id":"hub","machine_id":"machine-b","document_name":"spaceport"}},"workspace":"{group}","layout":{layout}}},
+            {{"scope":{{"kind":"core","hub_core_id":"hub","machine_id":"machine-a","document_name":"other"}},"workspace":"{group}","layout":{layout}}}
+        ]}}"#
+        );
+        let parsed = parse(file.as_bytes()).unwrap();
+        assert_eq!(parsed.len(), 4);
+        let expected: SavedLayout = serde_json::from_str(layout).unwrap();
+        for (machine, document) in [
+            ("machine-a", "spaceport"),
+            ("machine-b", "spaceport"),
+            ("machine-a", "other"),
+        ] {
+            let key = super::super::CoreGroupKey::new("hub", Some(machine), document, group)
+                .unwrap()
+                .parts();
+            assert_eq!(parsed.get(&key), Some(&expected));
+        }
+        let old = (Scope::local("/x.sock".as_ref()), group.to_string());
+        assert_eq!(parsed.get(&old), Some(&expected));
+        let invalid = format!(
+            r#"{{"layouts":[{{"scope":{{"kind":"core","hub_core_id":"hub","machine_id":null,"document_name":"spaceport"}},"workspace":"{group}","layout":{{"groups":[{{"pick":{{"kind":"herdr","id":"t1"}},"share":1}}],"active":0}}}}]}}"#
+        );
+        assert!(parse(invalid.as_bytes()).is_err());
+        let alternate = format!(
+            r#"{{"layouts":[{{"scope":{{"kind":"core","hub_core_id":"hub","machine_id":null,"document_name":"spaceport"}},"workspace":"{}","layout":{layout}}}]}}"#,
+            group.to_string().to_uppercase()
+        );
+        assert!(parse(alternate.as_bytes()).is_err());
+    }
 
     #[test]
     fn saved_layouts_round_trip_and_damaged_files_are_refused() {

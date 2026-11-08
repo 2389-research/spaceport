@@ -7,6 +7,7 @@ use crate::{reorder::Beside, state_file};
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use uuid::Uuid;
 
 const MAX_TABS: usize = 256;
 const MAX_FILE_BYTES: u64 = 1024 * 1024;
@@ -65,23 +66,114 @@ impl std::fmt::Display for TabId {
 /// The daemon a workspace ID belongs to. IDs are only unique within one
 /// daemon, so a local session and a saved host can both have a `w_1`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub(crate) struct Scope(String);
+#[serde(untagged)]
+pub(crate) enum Scope {
+    Legacy(String),
+    Core(CoreScope),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ScopeKind {
+    Core,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct CoreScope {
+    kind: ScopeKind,
+    hub_core_id: String,
+    machine_id: Option<String>,
+    document_name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct CoreGroupKey {
+    scope: CoreScope,
+    group_id: Uuid,
+}
+
+impl CoreGroupKey {
+    pub(crate) fn new(
+        hub_core_id: &str,
+        machine_id: Option<&str>,
+        document_name: &str,
+        group_id: Uuid,
+    ) -> Option<Self> {
+        let key = Self {
+            scope: CoreScope {
+                kind: ScopeKind::Core,
+                hub_core_id: hub_core_id.to_owned(),
+                machine_id: machine_id.map(str::to_owned),
+                document_name: document_name.to_owned(),
+            },
+            group_id,
+        };
+        key.valid().then_some(key)
+    }
+
+    pub(crate) fn group_id(&self) -> Uuid {
+        self.group_id
+    }
+
+    pub(crate) fn hub_core_id(&self) -> &str {
+        &self.scope.hub_core_id
+    }
+
+    pub(crate) fn parts(&self) -> (Scope, String) {
+        (Scope::Core(self.scope.clone()), self.group_id.to_string())
+    }
+
+    fn valid(&self) -> bool {
+        let id = |value: &str| {
+            !value.trim().is_empty() && value.len() <= 128 && !value.chars().any(char::is_control)
+        };
+        id(&self.scope.hub_core_id)
+            && self.scope.machine_id.as_deref().is_none_or(id)
+            && !self.scope.document_name.trim().is_empty()
+            && self.scope.document_name.len() <= 128
+            && !self.scope.document_name.chars().any(char::is_control)
+            && !self.group_id.is_nil()
+    }
+}
 
 impl Scope {
     /// A local daemon, named by the client socket the window connects to.
     pub(crate) fn local(client_socket: &std::path::Path) -> Self {
-        Self(format!("local:{}", client_socket.display()))
+        Self::Legacy(format!("local:{}", client_socket.display()))
     }
 
     /// A saved SSH host, named by its catalog ID.
     pub(crate) fn endpoint(id: &str) -> Self {
-        Self(id.to_owned())
+        Self::Legacy(id.to_owned())
     }
 
     /// The scope as `tab list` reports a tab's host.
     pub(crate) fn as_str(&self) -> &str {
-        &self.0
+        match self {
+            Self::Legacy(id) => id,
+            Self::Core(core) => core.machine_id.as_deref().unwrap_or(&core.hub_core_id),
+        }
+    }
+
+    pub(crate) fn core_group(&self, workspace_id: &str) -> Option<CoreGroupKey> {
+        let Self::Core(scope) = self else {
+            return None;
+        };
+        let key = CoreGroupKey {
+            scope: scope.clone(),
+            group_id: Uuid::parse_str(workspace_id).ok()?,
+        };
+        key.valid().then_some(key)
+    }
+
+    pub(crate) fn valid_workspace(&self, workspace_id: &str) -> bool {
+        match self {
+            Self::Legacy(_) => !workspace_id.is_empty() && workspace_id.len() <= 256,
+            Self::Core(_) => self
+                .core_group(workspace_id)
+                .is_some_and(|key| key.group_id.to_string() == workspace_id),
+        }
     }
 }
 
@@ -178,8 +270,7 @@ impl Tab {
     }
 
     fn valid(&self) -> bool {
-        !self.workspace_id.is_empty()
-            && self.workspace_id.len() <= 256
+        self.scope.valid_workspace(&self.workspace_id)
             && self.title.chars().count() <= MAX_TITLE_CHARS
             && self
                 .origin
@@ -187,6 +278,10 @@ impl Tab {
                 .is_none_or(|pane| !pane.is_empty() && pane.len() <= 256)
             // Editor tabs are not annotation destinations for terminal agents.
             && (!self.place.is_editor() || self.origin.is_none())
+    }
+
+    pub(crate) fn core_group(&self) -> Option<CoreGroupKey> {
+        self.scope.core_group(&self.workspace_id)
     }
 }
 
@@ -363,6 +458,15 @@ impl Store {
             .filter(move |tab| &tab.scope == scope && tab.workspace_id == workspace_id)
     }
 
+    pub(crate) fn in_core_group<'a>(
+        &'a self,
+        key: &'a CoreGroupKey,
+    ) -> impl Iterator<Item = &'a Tab> + 'a {
+        self.tabs
+            .iter()
+            .filter(move |tab| tab.core_group().as_ref() == Some(key))
+    }
+
     pub(crate) fn px0_tab(&self, scope: &Scope, workspace_id: &str) -> Option<&Tab> {
         self.editor_tab(scope, workspace_id, Editor::Px0)
     }
@@ -408,6 +512,15 @@ impl Store {
         origin: Option<String>,
     ) -> Option<TabId> {
         self.push(scope, workspace_id, location, origin, Place::Group)
+    }
+
+    pub(crate) fn open_core(
+        &mut self,
+        key: &CoreGroupKey,
+        location: Option<Location>,
+    ) -> Option<TabId> {
+        let (scope, workspace_id) = key.parts();
+        self.push(scope, &workspace_id, location, None, Place::Group)
     }
 
     fn push(

@@ -112,6 +112,7 @@ impl Localize for StartError {
                     agent = agent.display_name()
                 )
             }
+            Self::CoreTerminalRequired => fl!("error-chat-start-core-terminal-required"),
             Self::Disabled => fl!("error-chat-start-disabled"),
             Self::NotConnected => fl!("error-chat-start-not-connected"),
             Self::NotLocal => fl!("error-chat-start-not-local"),

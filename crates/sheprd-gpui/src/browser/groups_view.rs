@@ -48,7 +48,7 @@ fn stepped<'a>(tabs: &'a [Pick], current: Option<&Pick>, command: Command) -> Op
 
 impl SheprdWindow {
     /// Whether some group of the focused workspace shows the page `id`.
-    pub(super) fn group_shows_page(&self, id: TabId, cx: &App) -> bool {
+    pub(crate) fn group_shows_page(&self, id: TabId, cx: &App) -> bool {
         self.group_slots()
             .into_iter()
             .any(|slot| self.group_shown(slot.id, cx) == Shown::Page(id))
@@ -68,7 +68,7 @@ impl SheprdWindow {
     }
 
     fn layout(&self) -> Option<&Layout> {
-        self.browser.layouts.get(&self.browser_key()?)
+        self.browser.layouts.get(&self.layout_key()?)
     }
 
     /// `key`'s groups, made on first use from the layout saved for it, if
@@ -100,7 +100,7 @@ impl SheprdWindow {
     /// The focused workspace's groups, creating its first one. Render calls
     /// this before drawing so every group it draws has an ID.
     pub(crate) fn ensure_layout(&mut self) -> Option<&mut Layout> {
-        let key = self.browser_key()?;
+        let key = self.layout_key()?;
         Some(self.layout_for(key))
     }
 
@@ -158,7 +158,12 @@ impl SheprdWindow {
 
     /// The tab `group` picked, the focused one when it follows the terminal.
     pub(crate) fn group_pick(&self, group: GroupId) -> Option<Pick> {
-        self.layout()?.pick(group, self.focused_herdr_tab())
+        let focused = self
+            .selected_core_group()
+            .is_none()
+            .then(|| self.focused_herdr_tab())
+            .flatten();
+        self.layout()?.pick(group, focused)
     }
 
     /// Records what `group`'s strip draws; see
@@ -238,7 +243,8 @@ impl SheprdWindow {
     /// The focused workspace's browser tabs and the labels their strips
     /// show, in strip order.
     pub(crate) fn browser_tab_labels(&self, cx: &App) -> Vec<(Pick, SharedString)> {
-        let (Some((scope, workspace)), Some(store)) = (self.browser_key(), store(cx)) else {
+        let (Some((scope, workspace)), Some(store)) = (self.active_browser_key(cx), store(cx))
+        else {
             return Vec::new();
         };
         store
@@ -301,7 +307,11 @@ impl SheprdWindow {
     /// What `group` shows, reading a window without groups yet as one
     /// following the terminal.
     fn shown_pick(&self, group: GroupId) -> Option<Pick> {
-        let focused = self.focused_herdr_tab();
+        let focused = self
+            .selected_core_group()
+            .is_none()
+            .then(|| self.focused_herdr_tab())
+            .flatten();
         match self.layout() {
             Some(layout) => layout.pick(group, focused),
             None => focused.map(|tab| Pick::Herdr(tab.to_owned())),
@@ -313,14 +323,14 @@ impl SheprdWindow {
     fn hides_tab(&self, pick: &Pick) -> bool {
         !self.browser.hidden.is_empty()
             && self
-                .browser_key()
+                .layout_key()
                 .is_some_and(|key| self.browser.hidden.hides(&key, pick))
     }
 
     /// The focused workspace's tabs this window lists, in strip order:
     /// Herdr tabs first, then browser tabs. A hidden tab counts while a
     /// group shows it.
-    fn workspace_tabs(&self, cx: &App) -> Vec<Pick> {
+    pub(super) fn workspace_tabs(&self, cx: &App) -> Vec<Pick> {
         let slots = self.group_slots();
         self.open_workspace_tabs(cx)
             .into_iter()
@@ -335,14 +345,22 @@ impl SheprdWindow {
 
     /// Every tab of the focused workspace, hidden ones included.
     pub(crate) fn open_workspace_tabs(&self, cx: &App) -> Vec<Pick> {
-        let herdr = self.live.snapshot.as_ref().map(|snapshot| {
-            snapshot
-                .tabs
-                .iter()
-                .filter(|tab| Some(&tab.workspace_id) == snapshot.focused_workspace_id.as_ref())
-                .map(|tab| Pick::Herdr(tab.tab_id.clone()))
-                .collect::<Vec<_>>()
-        });
+        if self.active_browser_key(cx).is_none() {
+            return Vec::new();
+        }
+        let herdr = self
+            .selected_core_group()
+            .is_none()
+            .then(|| self.live.snapshot.as_ref())
+            .flatten()
+            .map(|snapshot| {
+                snapshot
+                    .tabs
+                    .iter()
+                    .filter(|tab| Some(&tab.workspace_id) == snapshot.focused_workspace_id.as_ref())
+                    .map(|tab| Pick::Herdr(tab.tab_id.clone()))
+                    .collect::<Vec<_>>()
+            });
         herdr
             .unwrap_or_default()
             .into_iter()
@@ -452,7 +470,10 @@ impl SheprdWindow {
         }
         let tabs = self.workspace_tabs(cx);
         let current = self.group_pick(active).or_else(|| {
-            self.focused_herdr_tab()
+            self.selected_core_group()
+                .is_none()
+                .then(|| self.focused_herdr_tab())
+                .flatten()
                 .map(|tab| Pick::Herdr(tab.to_owned()))
         });
         let Some(target) = stepped(&tabs, current.as_ref(), command).cloned() else {
@@ -488,7 +509,7 @@ impl SheprdWindow {
 
     /// Steers a group's existing primary connection after replacing its tab,
     /// without activating the group or taking keyboard focus from a page.
-    fn steer_primary_group(&mut self, group: GroupId, cx: &mut Context<Self>) {
+    pub(super) fn steer_primary_group(&mut self, group: GroupId, cx: &mut Context<Self>) {
         if Some(group) != self.primary_group() {
             return;
         }
@@ -506,13 +527,30 @@ impl SheprdWindow {
     /// What `group` draws. A page another window closed reads as nothing
     /// until the next tick forgets it.
     pub(crate) fn group_shown(&self, group: GroupId, cx: &App) -> Shown {
+        if self.active_browser_key(cx).is_none() {
+            return Shown::Empty;
+        }
         let Some(layout) = self.layout() else {
-            return Shown::Terminal;
+            return if self.selected_core_group().is_some() {
+                Shown::Empty
+            } else {
+                Shown::Terminal
+            };
         };
+        if self.selected_core_group().is_some() && layout.pick(group, None).is_none() {
+            return Shown::Empty;
+        }
         let focused = |group| self.group_focused_tab(group);
         let shown = layout.shown(group, focused);
         match &shown {
-            Shown::Page(id) if store(cx).is_none_or(|store| store.get(*id).is_none()) => {
+            Shown::Page(id)
+                if store(cx)
+                    .and_then(|store| store.get(*id))
+                    .is_none_or(|tab| {
+                        self.active_browser_key(cx).as_ref()
+                            != Some(&(tab.scope.clone(), tab.workspace_id.clone()))
+                    }) =>
+            {
                 Shown::Empty
             }
             // The window's connection is on its way to the tab its group
@@ -684,70 +722,6 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Keeps the focused workspace's groups in step with its tabs, on every
-    /// tick: forgets the tabs that closed, names the group in use as the
-    /// owner of each tab that has none, gives a group whose tab closed
-    /// another of its own, and closes a group whose last tab closed.
-    pub(crate) fn settle_groups(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let (Some(key), Some(snapshot)) = (self.browser_key(), self.live.snapshot.clone()) else {
-            return;
-        };
-        if snapshot.focused_workspace_id.as_ref() != Some(&key.1) {
-            return;
-        }
-        let open = self.open_workspace_tabs(cx);
-        self.browser.hidden.retain_open(&key, &open);
-        let tabs = self.workspace_tabs(cx);
-        let Some(layout) = self.browser.layouts.get_mut(&key) else {
-            return;
-        };
-        let closed: Vec<Pick> = layout
-            .tabs()
-            .filter(|pick| !tabs.contains(pick))
-            .cloned()
-            .collect();
-        // With the groups whose tab was found closed before this ran.
-        let mut emptied: Vec<GroupId> = layout
-            .slots()
-            .map(|slot| slot.id)
-            .filter(|group| self.browser.emptied.contains(group))
-            .collect();
-        self.browser
-            .emptied
-            .retain(|group| !emptied.contains(group));
-        for pick in &closed {
-            emptied.extend(layout.forget(pick));
-        }
-        layout.adopt(tabs);
-        let mut changed = !closed.is_empty();
-        if layout.len() > 1 {
-            for slot in self.group_slots() {
-                if self.group_pick(slot.id).is_some() {
-                    continue;
-                }
-                match self.group_tabs(slot.id, cx).into_iter().next() {
-                    Some(next) => {
-                        if let Some(layout) = self.browser.layouts.get_mut(&key) {
-                            layout.show(slot.id, next);
-                        }
-                        // The window's connection goes to its group's tab;
-                        // a parked one is steered there as it is reconciled.
-                        self.steer_primary_group(slot.id, cx);
-                        changed = true;
-                    }
-                    None if emptied.contains(&slot.id) => {
-                        self.close_group(slot.id, window, cx);
-                        changed = true;
-                    }
-                    None => {}
-                }
-            }
-        }
-        if changed {
-            cx.notify();
-        }
-    }
-
     /// Shows a browser tab in its group, or in the group in use when it is
     /// new.
     pub(crate) fn show_browser_tab(
@@ -771,6 +745,12 @@ impl SheprdWindow {
         let Some(tab) = store(cx).and_then(|store| store.get(id)).cloned() else {
             return;
         };
+        if tab.core_group().is_some()
+            && self.active_browser_key(cx).as_ref()
+                != Some(&(tab.scope.clone(), tab.workspace_id.clone()))
+        {
+            return;
+        }
         let layout = self.layout_for((tab.scope.clone(), tab.workspace_id.clone()));
         let group = group.unwrap_or_else(|| layout.owner(&Pick::Page(id)));
         layout.choose(group, Pick::Page(id));
@@ -821,7 +801,7 @@ impl SheprdWindow {
         let key = (tab.scope.clone(), tab.workspace_id.clone());
         // Only the focused workspace's strips are known here; another
         // workspace's group is given a tab when it is next shown.
-        let focused = self.browser_key().as_ref() == Some(&key);
+        let focused = self.active_browser_key(cx).as_ref() == Some(&key);
         let group = self
             .browser
             .layouts
@@ -864,7 +844,12 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) {
         let new = self.browser.group_ids.next();
-        let focused = self.focused_herdr_tab().map(str::to_owned);
+        let focused = self
+            .selected_core_group()
+            .is_none()
+            .then(|| self.focused_herdr_tab())
+            .flatten()
+            .map(str::to_owned);
         let tabs = self.workspace_tabs(cx);
         // The group holding the window's connection keeps it: the new group
         // has no tab to show yet.

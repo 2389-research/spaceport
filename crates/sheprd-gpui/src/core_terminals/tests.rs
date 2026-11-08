@@ -5,4 +5,5 @@ mod panes;
 mod paste;
 mod screen;
 mod selection;
+mod spawn_identity;
 mod worker;

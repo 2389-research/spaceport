@@ -1,9 +1,27 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{
+    browser::CoreGroupKey,
     control::protocol::{Caller, chat::Reply},
+    core_terminals::set_document_for_test_as,
     sidebar::layout_tests::fixture_window,
 };
+
+#[gpui::test]
+fn core_group_without_terminal_refuses_untargeted_legacy_chat(cx: &mut gpui::TestAppContext) {
+    let group = uuid::Uuid::from_u128(71);
+    let (view, cx) = cx.add_window_view(fixture_window);
+    cx.cx.update(|cx| {
+        set_document_for_test_as(cx, "hub-a", sheprd_core_client::wire::Doc {
+            value: serde_json::json!({"schema_version":1,"workspaces":[{"id":group,"label":"One"}]}),
+            version: 3,
+        });
+        let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
+        view.update(cx, |view, cx| assert!(view.show_core_group(&key, cx)));
+        let refused = serve(call(ChatOp::New { agent: "claude".into(), pane: None }), cx);
+        assert!(matches!(refused, Response::Error { code: ErrorCode::Unsupported, .. }));
+    });
+}
 
 fn call(op: ChatOp) -> Call<ChatOp> {
     Call {

@@ -433,12 +433,18 @@ impl Observation {
 
 #[cfg(test)]
 pub(super) fn set_document_for_test(cx: &mut App, doc: Doc) {
+    set_document_for_test_as(cx, "core-test", doc);
+}
+
+#[cfg(test)]
+pub(super) fn set_document_for_test_as(cx: &mut App, core_id: &str, doc: Doc) {
     if !cx.has_global::<Observation>() {
         Observation::install(cx);
     }
     let observation = cx.global_mut::<Observation>();
     let epoch = observation.projection.epoch + 1;
     observation.projection.begin(epoch);
+    observation.projection.core_id = Some(core_id.to_owned());
     observation
         .projection
         .initial(epoch, vec![], Ok(VersionedDocument::read(doc).unwrap()));

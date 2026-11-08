@@ -17,6 +17,7 @@ mod fallback;
 mod hub;
 mod infos;
 mod observation;
+
 pub(crate) mod panes;
 mod screen;
 mod selection;
@@ -27,6 +28,15 @@ mod view;
 mod worker;
 pub(crate) mod workspace_document;
 mod workspace_ui;
+
+#[cfg(test)]
+pub(crate) fn set_document_for_test_as(
+    cx: &mut App,
+    core_id: &str,
+    doc: sheprd_core_client::wire::Doc,
+) {
+    observation::set_document_for_test_as(cx, core_id, doc);
+}
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
@@ -165,7 +175,7 @@ pub(crate) fn set_machine_catalog_pending_for_test(cx: &mut App) {
 
 use crate::{
     SheprdWindow,
-    browser::{Location, Scope, Store, TabId},
+    browser::{CoreGroupKey, Location, Scope, Store, TabId},
     i18n::fl,
     window::Flash,
 };
@@ -357,7 +367,8 @@ impl SheprdWindow {
     /// computer, so a tab on another host stays with that host's Herdr, where
     /// its shell starts on the host and in the workspace's folder.
     pub(crate) fn new_tabs_use_core(&self) -> bool {
-        self.config.herdr_2_terminals && !self.selected_is_remote()
+        self.selected_core_group().is_some()
+            || (self.config.herdr_2_terminals && !self.selected_is_remote())
     }
 
     /// The `new_core_terminal` command: starts a shell in herdr-core and
@@ -369,10 +380,18 @@ impl SheprdWindow {
             self.show_flash(Flash::warning(fl!("core-terminals-local-only")), cx);
             return;
         }
-        let Some((scope, workspace)) = self.browser_key() else {
+        let Some((scope, workspace)) = self.active_browser_key(cx) else {
             self.show_flash(Flash::warning(fl!("core-terminals-open-workspace")), cx);
             return;
         };
+        if let Some(key) = self.selected_core_group()
+            && self.core_terminals.hub.backend().is_none_or(|backend| {
+                backend.core().is_lost() || backend.core().hello().core.id != key.hub_core_id()
+            })
+        {
+            self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
+            return;
+        }
         self.dismiss_menu(window, cx);
         self.start_core_program(Purpose::Tab { scope, workspace }, Spawn::default());
     }
@@ -386,16 +405,24 @@ impl SheprdWindow {
 
     /// Starts the wanted shell once the hub is connected, in the folder of
     /// the pane it splits when herdr-core knows it.
-    fn start_core_shell(&mut self) {
+    fn start_core_shell(&mut self) -> bool {
         let terminals = &mut self.core_terminals;
         if terminals.starting.is_some() {
-            return;
+            return false;
         }
         let Some(backend) = terminals.hub.backend().cloned() else {
-            return;
+            return false;
         };
+        let wrong_core = terminals.wanted.as_ref().is_some_and(|(purpose, _)| {
+            !purpose_matches_core(purpose, &backend.core().hello().core.id)
+        });
+        if wrong_core {
+            terminals.wanted = None;
+            tracing::warn!("Refused Core tab spawn after Core identity changed");
+            return true;
+        }
         let Some((purpose, mut spawn)) = terminals.wanted.take() else {
-            return;
+            return false;
         };
         if spawn.cwd.is_none()
             && let Purpose::Split { at, .. } = &purpose
@@ -412,6 +439,7 @@ impl SheprdWindow {
             Ok(_) => terminals.starting = Some((purpose, receive)),
             Err(error) => tracing::warn!(%error, "Could not start a herdr-core spawn worker"),
         }
+        false
     }
 
     /// Runs every window tick: joins Core for local metadata and restored tabs,
@@ -446,7 +474,9 @@ impl SheprdWindow {
                     cx,
                 );
             }
-            self.start_core_shell();
+            if self.start_core_shell() {
+                self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
+            }
             cx.notify();
         }
         self.place_started_core_terminal(window, cx);
@@ -456,7 +486,9 @@ impl SheprdWindow {
         {
             // Focus the user gave something else while the pane waited, such
             // as a picker's search field, is newer than the wish: keep it.
-            if keyboard_free(window.focused(cx).as_ref(), &self.focus) {
+            if !self.group_shows_page(tab, cx) {
+                self.core_terminals.focus_wanted = None;
+            } else if keyboard_free(window.focused(cx).as_ref(), &self.focus) {
                 self.focus_core_terminal(tab, window, cx);
             } else {
                 self.core_terminals.focus_wanted = None;
@@ -489,6 +521,7 @@ impl SheprdWindow {
         if changed {
             cx.notify();
         }
+        self.clear_stale_core_group(cx);
         self.poll_core_workspace_edit(window, cx);
         if !cx.has_active_drag() {
             self.save_core_panes(cx);
@@ -617,4 +650,24 @@ impl SheprdWindow {
 /// only the window itself does.
 fn keyboard_free(focused: Option<&FocusHandle>, window: &FocusHandle) -> bool {
     focused.is_none_or(|focused| focused == window)
+}
+
+fn purpose_matches_core(purpose: &Purpose, actual_core_id: &str) -> bool {
+    let Purpose::Tab { scope, workspace } = purpose else {
+        return true;
+    };
+    let Scope::Core(_) = scope else {
+        return true;
+    };
+    let Some(key) = scope.core_group(workspace) else {
+        return false;
+    };
+    CoreGroupKey::new(
+        actual_core_id,
+        None,
+        workspace_document::NAME,
+        key.group_id(),
+    )
+    .as_ref()
+        == Some(&key)
 }

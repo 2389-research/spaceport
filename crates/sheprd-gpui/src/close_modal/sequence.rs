@@ -37,7 +37,7 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(workspace) = self.browser_key() else {
+        let Some(workspace) = self.active_browser_key(cx) else {
             return;
         };
         self.browser.closing = Some(CloseRun {
@@ -76,7 +76,7 @@ impl SheprdWindow {
             return;
         };
         // Leaving the workspace ends the run.
-        if self.browser_key().as_ref() != Some(&run.workspace) {
+        if self.active_browser_key(cx).as_ref() != Some(&run.workspace) {
             return;
         }
         loop {
