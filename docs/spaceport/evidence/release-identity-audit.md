@@ -13,7 +13,7 @@ T12 is blocked. This is a source audit of the current development branch, not a 
 
 The production app and package IDs, signing identity, update key/channel, release repository, and final icon are not supplied or validated. G-RELEASE remains open. The source currently fails A42–A44 as a complete product claim; no native side-by-side or signed-update test has run. This inventory sets targets for later bounded changes, not permission to reuse Sheprd credentials, keys or endpoints.
 
-The development GUI's OS display name is `Spaceport`. CLI, toast and Jump List links now use `spaceport://`; the parser rejects inherited schemes. Windows protocol toasts require a handler command that points exactly to the running executable, then fall back to GPUI delivery when none is verified. No Spaceport handler is installed by this development change, and native activation remains unverified.
+The development window title and Windows notification display name are `Spaceport`; the macOS app bundle still says Sheprd. CLI, toast and Jump List links now use `spaceport://`; the parser rejects inherited schemes. Windows protocol toasts require a handler command that points exactly to the running executable, then fall back to GPUI delivery when none is verified. No Spaceport handler is installed by this development change, and native activation remains unverified.
 
 ## Release build gate
 
