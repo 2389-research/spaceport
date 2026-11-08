@@ -18,7 +18,6 @@ pub(super) fn invalid(value: Value) -> String {
 #[cfg(any(
     feature = "azure",
     feature = "boat",
-    feature = "coder",
     feature = "opensandbox",
     feature = "sprites"
 ))]
@@ -47,8 +46,6 @@ fn selector(value: Value) -> &'static str {
         Value::BoatSandboxId => "boat-sandbox-id",
         Value::BoatSshPrivateKey => "boat-ssh-private-key",
         Value::BoatSshPublicKey => "boat-ssh-public-key",
-        Value::CoderIdentifier => "coder-identifier",
-        Value::CoderWorkspace => "coder-workspace",
         Value::ContainerEngine => "container-engine",
         Value::ExecSessionId => "exec-session-id",
         Value::ExecdEndpoint => "execd-endpoint",

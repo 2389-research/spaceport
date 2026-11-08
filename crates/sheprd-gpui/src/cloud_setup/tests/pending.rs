@@ -38,7 +38,7 @@ fn a_shown_devices_script_opens_its_tab_and_types_the_fixed_line(cx: &mut gpui::
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
             connect(view, &peer, cx);
-            view.queue_cloud_setup(pending("coder:elsewhere", now), cx);
+            view.queue_cloud_setup(pending("azure:elsewhere", now), cx);
             view.poll_cloud_setup(now, cx);
             // Another device's script waits for that device.
             assert!(view.cloud_setup.is_none());
@@ -46,7 +46,7 @@ fn a_shown_devices_script_opens_its_tab_and_types_the_fixed_line(cx: &mut gpui::
             view.poll_cloud_setup(now, cx);
             assert!(view.cloud_setup.is_some());
             // Taken, so no other window runs it again.
-            assert_eq!(PendingSetups::waiting(cx), ["coder:elsewhere"]);
+            assert_eq!(PendingSetups::waiting(cx), ["azure:elsewhere"]);
             // One script starts at a time, a worktree's included.
             assert!(view.script_slot_busy());
         })
@@ -126,9 +126,9 @@ fn a_device_queued_again_replaces_its_script_and_old_ones_give_up(cx: &mut gpui:
     let now = Instant::now();
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
-            view.queue_cloud_setup(pending("coder:a", now), cx);
-            view.queue_cloud_setup(pending("coder:a", now), cx);
-            assert_eq!(PendingSetups::waiting(cx), ["coder:a"]);
+            view.queue_cloud_setup(pending("azure:a", now), cx);
+            view.queue_cloud_setup(pending("azure:a", now), cx);
+            assert_eq!(PendingSetups::waiting(cx), ["azure:a"]);
             assert!(view.flash.is_none());
             // Never shown: given up on, with a word.
             view.poll_cloud_setup(now + Duration::from_secs(31 * 60), cx);
@@ -148,12 +148,12 @@ fn a_full_queue_drops_its_oldest_script(cx: &mut gpui::TestAppContext) {
             let mut index = 0;
             while view.flash.is_none() {
                 assert!(index < 64, "the queue never filled");
-                view.queue_cloud_setup(pending(&format!("coder:{index}"), now), cx);
+                view.queue_cloud_setup(pending(&format!("azure:{index}"), now), cx);
                 index += 1;
             }
             let waiting = PendingSetups::waiting(cx);
             assert_eq!(waiting.len(), index - 1);
-            assert!(!waiting.contains(&"coder:0".to_owned()));
+            assert!(!waiting.contains(&"azure:0".to_owned()));
         })
     });
 }

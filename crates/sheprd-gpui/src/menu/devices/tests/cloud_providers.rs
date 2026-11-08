@@ -8,8 +8,6 @@ fn setting(view: &mut SheprdWindow, provider: CloudProvider) -> Option<&mut Opti
         CloudProvider::Azure => Some(&mut view.config.azure.subscription_id),
         #[cfg(feature = "boat")]
         CloudProvider::Boat => Some(&mut view.config.boat.api_url),
-        #[cfg(feature = "coder")]
-        CloudProvider::Coder => Some(&mut view.config.coder.url),
         #[cfg(feature = "container")]
         CloudProvider::Container => None,
         #[cfg(feature = "opensandbox")]
@@ -34,8 +32,6 @@ fn account(provider: CloudProvider) -> Option<(&'static str, &'static str)> {
         )),
         #[cfg(feature = "boat")]
         CloudProvider::Boat => Some(("HERDR_BOAT_API_URL", "https://boat.dev/api/v1")),
-        #[cfg(feature = "coder")]
-        CloudProvider::Coder => Some(("HERDR_CODER_URL", "https://coder.example.com")),
         #[cfg(feature = "container")]
         CloudProvider::Container => None,
         #[cfg(feature = "opensandbox")]

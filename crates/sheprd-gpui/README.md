@@ -306,9 +306,8 @@ The SSH form accepts an SSH target, label, and optional remote session (default:
 `default`). **Skip host key verification (dangerous)**, off by default,
 connects without checking the host's key, now and on every later connection:
 the app passes `StrictHostKeyChecking=no` and reads no known hosts file for
-that target. It is for hosts that keep no key to check, such as the `*.coder`
-aliases `coder config-ssh` writes with `UserKnownHostsFile=/dev/null`, which
-otherwise fail the app's strict check. The choice is saved before the device,
+that target. It is for hosts that keep no stable key to check, whose SSH
+configuration disables host-key checks. The choice is saved before the device,
 under `[ssh] skip_host_key_verification` in the local config, by target.
 Removing the device keeps it there. To verify the host again, delete the
 target from that list (connections opened without checking take no new
@@ -333,8 +332,7 @@ hosts or suggest targets. **Enter** adds exactly what the target field shows.
 
 Each device's header in the Spaces list starts with a mark for where it runs:
 a monitor for this machine, the provider's logo for a cloud device, and a
-terminal for an SSH host or WSL distribution. An SSH host shows the Coder logo
-when its name ends in `.coder`, as `coder config-ssh` names workspaces, and the
+terminal for an SSH host or WSL distribution. An SSH host shows the
 Tailscale logo when it is a `*.ts.net` name or a Tailscale address
 (`100.64.0.0/10` or `fd7a:115c:a1e0::/48`). Hover the mark to see what it means.
 Orca and Minimal draw no icons on their rows and draw no mark either. Set
@@ -349,12 +347,12 @@ edits only the local catalog: the host's own Herdr keeps running. When the
 device has its own GitHub sign-in, the confirmation also offers to delete it,
 since its account panel goes away with the device. Local's menu offers neither.
 
-A cloud device's header (Azure, Boat, Coder, Container,
+A cloud device's header (Azure, Boat, Container,
 OpenSandbox, Railway, or Sprites) has a menu too: **Rename…** changes the name the sidebar
 shows, falling back to the machine's name when left empty; **Cloud device
 settings…** opens its provider under Settings > Cloud devices; and **Remove
 device…** removes it from this computer. For an Azure machine, a Boat or
-OpenSandbox sandbox, a Coder workspace, a container, or a sprite,
+OpenSandbox sandbox, a container, or a sprite,
 it deletes the machine at the provider by default, with **Remove from Herdr
 only** beside it; a Railway VM is left as it is and expires on its own. Before
 deleting, the dialog searches the machine's home directory for Git checkouts
@@ -452,58 +450,10 @@ how the daemon's processes are judged; that needs a change to how Herdr
 launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
-### Coder workspaces
-
 Settings > **Cloud devices** holds accounts with providers that create machines
-to use as devices: Azure, Boat, Coder, Container, OpenSandbox,
-Railway, and Sprites.
-Coder's card edits the `[coder]` keys (see `config-gpui.example.toml`), saves the OAuth client secret to the
-credential store rather than the config file, signs in and out, and lists the
-saved Coder devices with a Remove action. A secret set in the config file or
-`HERDR_CODER_OAUTH_CLIENT_SECRET` takes precedence over the saved one.
-
-Once Coder is configured, **Coder** in **Add Device…** shows its form; before
-that, its **Add provider** tile opens this Settings card. The form signs in with Coder's
-OAuth2 provider (authorization code with PKCE; the browser returns to the
-configured loopback redirect), then lists the account's templates, their presets,
-and existing workspaces. It opens with the first template, its default preset,
-and a random `prefix-adjective-noun` name already chosen, so creating takes one
-click; choosing an existing workspace attaches it instead.
-
-Creating or attaching runs in the background: the dialog closes at once and can
-start another while earlier ones are still building. The devices icon in the
-footer counts the workspaces being added, the device picker lists each under
-**Adding** with its latest status (creating, building, installing Herdr), and a
-toast reports each one ready to use, or why it was not added. Closing the window
-cancels unfinished jobs.
-
-Templates need not include Herdr. The dialog's **Install Herdr if it is missing**
-switch, on by default, is the approval to run Herdr's published installer
-(`curl -fsSL https://herdr.dev/install.sh | sh`) inside the new workspace, which
-verifies the release checksum and installs to `~/.local/bin`. This is the only
-remote installation the GUI performs, and only with that approval; reconnects
-never install anything. With the switch off, a workspace without Herdr is not
-added. A workspace without `curl` must get Herdr another way.
-
-Cloud devices, from every provider, are stored in the GUI's own
-`cloud-devices.json` in its state directory, because Herdr's `endpoints.json`
-schema is SSH-only. Each entry names its provider, so adding another provider
-needs no new file. They connect by
-running Herdr's remote bridge through `coder ssh`, with the deployment URL and
-access token passed only in that child's environment; Coder's tunnel
-authenticates the connection, so no SSH config or host key is involved. The
-`coder` CLI is required, found on PATH, in `/opt/homebrew/bin`, `/usr/local/bin`,
-`~/.local/bin`, or at `[coder] cli`. A stopped workspace (for example after
-autostop) is started before connecting. Selecting a saved workspace in the dialog
-offers **Remove device**, which forgets it without touching the workspace.
-
-The sign-in is saved under the same rules as the GitHub one: the Keychain in
-signed macOS release builds, the Secret Service on Linux, otherwise the private
-`coder-credentials` file beside the GUI config. It is tied
-to the deployment and OAuth client; changing either signs out. Tokens are renewed
-before expiry and on rejection. File drops are refused on Coder panes, and
-restoring the last selected device at startup covers SSH devices only. Coder
-devices are unavailable on Windows.
+to use as devices: Azure, Boat, Container, OpenSandbox, Railway, and Sprites.
+Cloud devices are stored in the GUI's `cloud-devices.json` state file. Each
+entry names its provider, so adding another provider needs no new file.
 
 ### Boat sandboxes (experimental)
 
@@ -711,7 +661,7 @@ git config --global pull.rebase true
 """
 
 # Replaces either key for one provider; an empty list or script turns it off.
-[cloud.coder]
+[cloud.boat]
 agents = []
 ```
 
@@ -724,8 +674,7 @@ are skipped with a note when it is missing (a system Node may also need root
 for `npm install -g`). Open a new tab afterwards to pick up PATH changes.
 
 Each provider's form has a **Run the setup script when it connects** switch,
-shown when a script is configured: on for a new machine, and in Coder's form
-off when attaching an existing workspace. Boat's **Finish setup** on a saved
+shown when a script is configured. Boat's **Finish setup** on a saved
 sandbox does not run it again. When the device is ready the script
 waits, for up to 30 minutes, until a window shows that device, then runs in a
 new, focused `setup` tab of the device's first workspace, like a worktree's
@@ -735,10 +684,11 @@ memory only, at most eight at once; one that never ran, or a later run, is
 started from **Run setup script** in the device's sidebar menu.
 Reconnecting never runs it again by itself.
 
-Each provider is a Cargo feature of `herdr-gpui`, on by default: `boat`, `coder`,
-and `railway`. A build with `--no-default-features` has no Cloud
+Each provider is a Cargo feature of `herdr-gpui`; `azure`, `boat`,
+`container`, `opensandbox`, `railway`, and `sprites` are on by default.
+A build with `--no-default-features` has no Cloud
 Devices section and no provider rows in the device picker; it still accepts
-the `[boat]`, `[cloud]`, and `[coder]` tables, so one config file serves every
+the `[boat]` and `[cloud]` tables, so one config file serves every
 build, but never reads them.
 
 Switching revokes the old host's focus before releasing its surface, then resizes
@@ -2120,7 +2070,7 @@ Right-click a linked worktree and choose Teleport... to move it to another
 connected host: its branch and commits, staged, unstaged and untracked changes,
 tabs and splits, the programs running in them, and agent sessions. It is offered
 on Linux and macOS clients when the worktree's host is the local session or a
-saved SSH host or cloud device (Coder or Railway); custom socket and
+saved SSH host or cloud device (such as Railway); custom socket and
 WSL endpoints are not scripted. Neither is a
 development (`--dev`) session: the `herdr` CLI names sessions of the release
 installation only, so Teleport, fan-out, and dispatch are not offered there,
@@ -2128,8 +2078,8 @@ and an orchestrator action that drives that session through the CLI reports an
 error instead of reaching the release session of the same name.
 
 Cloud devices use the same saved account and machine identity as their sidebar
-connection, in either direction. Coder waits for the saved machine to
-be ready; Railway uses its saved, verified SSH key. Teleport does not create a new
+connection, in either direction. Railway uses its saved, verified SSH key.
+Teleport does not create a new
 cloud device or install Herdr. Cloud authentication and command preparation run
 only after a host is chosen, on the background worker.
 
@@ -4449,7 +4399,7 @@ Windows but never roam to other computers in a domain, and other Windows users
 cannot read them. They are listed under **Windows Credentials** in Control
 Panel's Credential Manager; signing out in the app removes them. All windows
 share one credential through the same in-process lock as elsewhere, so a
-single-use refresh token is rotated once. Boat and Coder sign-ins use
+single-use refresh token is rotated once. Boat sign-in uses
 the same store under their own service names. A secret larger than Credential
 Manager's 2,560-byte limit is refused with an error rather than truncated. There
 is no private-file store here, so `allow_plaintext_credentials` changes nothing,

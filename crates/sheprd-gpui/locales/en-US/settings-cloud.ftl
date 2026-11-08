@@ -42,7 +42,7 @@ settings-cloud-delete-failed = Could not delete { $name }: { $error }
 ## New device setup.
 
 settings-cloud-setup-run = Run the setup script when it connects
-settings-cloud-setup-note = Runs once, in a setup tab, the first time a new cloud device connects: the agents switched on here, then the setup script from [cloud] in the config file. A provider's table, such as [cloud.coder], replaces either.
+settings-cloud-setup-note = Runs once, in a setup tab, the first time a new cloud device connects: the agents switched on here, then the setup script from [cloud] in the config file. A provider's table, such as [cloud.boat], replaces either.
 # $agent is the agent's product name, such as Claude Code.
 settings-cloud-setup-install = Install { $agent }
 settings-cloud-setup-none = No setup script of your own.

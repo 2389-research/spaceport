@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 
-/// Stand in for `coder ssh`: run the appended remote command locally.
+/// Run the appended remote command locally in this private fixture.
 fn local(home: &std::path::Path) -> Command {
     let mut command = Command::new("/bin/sh");
     command

@@ -196,14 +196,6 @@ impl SheprdWindow {
             self.add_provider_key(event, window, cx);
             return;
         }
-        #[cfg(feature = "coder")]
-        if self.menu.page == Some(Page::AddCoder) {
-            if self.coder_key(event, window, cx) {
-                cx.stop_propagation();
-                window.prevent_default();
-            }
-            return;
-        }
         if self.menu.page == Some(Page::Palette) {
             self.palette_key(event, window, cx);
             return;

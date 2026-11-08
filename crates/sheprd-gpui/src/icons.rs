@@ -288,7 +288,6 @@ embedded_icons! {
     "chevron-up.svg",
     "close.svg",
     "cloud/azure.svg",
-    "cloud/coder.svg",
     "cloud/container.svg",
     "cloud/opensandbox.svg",
     "cloud/railway.svg",

@@ -17,7 +17,6 @@ fn open(cx: &mut TestAppContext) -> (Entity<SettingsWindow>, &mut VisualTestCont
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.config.boat = Default::default();
-            view.config.coder = Default::default();
             view.config.cloud = Default::default();
             view.select_section(Section::CloudDevices, window, cx);
         })
@@ -30,13 +29,9 @@ fn draw(cx: &mut VisualTestContext) {
     cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
 }
 
-/// The provider whose card shows a "Run setup script" switch, when one does:
-/// Coder's is in Add Device instead.
+/// A provider whose card shows a "Run setup script" switch, when one does.
 fn card_provider() -> Option<CloudProvider> {
-    CloudProvider::ALL
-        .iter()
-        .copied()
-        .find(|provider| provider.key() != "coder")
+    CloudProvider::ALL.first().copied()
 }
 
 #[gpui::test]

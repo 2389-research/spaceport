@@ -6,8 +6,6 @@ mod activity_card;
 mod add_device;
 #[cfg(feature = "cloud")]
 mod catalog;
-#[cfg(feature = "coder")]
-pub(super) mod coder;
 mod core_catalog;
 pub(crate) use add_device::enter;
 mod error;
@@ -114,10 +112,7 @@ impl SheprdWindow {
 
     #[cfg(feature = "cloud")]
     // Providers that need no setting never read the environment.
-    #[cfg_attr(
-        not(any(feature = "azure", feature = "boat", feature = "coder",)),
-        allow(unused_variables)
-    )]
+    #[cfg_attr(not(any(feature = "azure", feature = "boat")), allow(unused_variables))]
     fn cloud_providers_with_env(
         &self,
         var: impl Fn(&str) -> Option<std::ffi::OsString>,
@@ -134,10 +129,6 @@ impl SheprdWindow {
                 #[cfg(feature = "boat")]
                 crate::cloud::CloudProvider::Boat => {
                     self.config.boat.api_url.is_some() || var("HERDR_BOAT_API_URL").is_some()
-                }
-                #[cfg(feature = "coder")]
-                crate::cloud::CloudProvider::Coder => {
-                    self.config.coder.url.is_some() || var("HERDR_CODER_URL").is_some()
                 }
                 #[cfg(feature = "opensandbox")]
                 crate::cloud::CloudProvider::OpenSandbox => {
@@ -160,10 +151,6 @@ impl SheprdWindow {
 
     /// Whether the open page is a cloud provider's pane of Add Device.
     pub(in crate::menu) fn cloud_dialog_open(&self) -> bool {
-        #[cfg(feature = "coder")]
-        if self.menu.page == Some(Page::AddCoder) {
-            return true;
-        }
         #[cfg(feature = "cloud")]
         if matches!(self.menu.page, Some(Page::AddCloud(_) | Page::AddProvider)) {
             return true;
@@ -177,10 +164,6 @@ impl SheprdWindow {
         compact: bool,
         cx: &mut Context<Self>,
     ) -> Option<AnyElement> {
-        #[cfg(feature = "coder")]
-        if self.menu.page == Some(Page::AddCoder) {
-            return Some(self.render_add_coder(compact, cx).into_any_element());
-        }
         #[cfg(feature = "cloud")]
         if self.menu.page == Some(Page::AddProvider) {
             return Some(self.render_add_provider(compact, cx).into_any_element());
@@ -372,7 +355,7 @@ impl SheprdWindow {
                                     )
                                 }
                             })
-                            // How many Coder workspaces are still being added,
+                            // How many cloud machines are still being added,
                             // on the icon's corner so the label keeps its room.
                             .when(self.cloud_jobs_pending() > 0, |icon| {
                                 icon.child(

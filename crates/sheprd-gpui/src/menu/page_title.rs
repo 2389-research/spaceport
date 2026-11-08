@@ -29,8 +29,6 @@ impl Page {
             Self::About => fl!("menu-page-about-herdr-ui"),
             #[cfg(feature = "cloud")]
             Self::AddCloud(_) => fl!("menu-page-add-device"),
-            #[cfg(feature = "coder")]
-            Self::AddCoder => fl!("menu-page-add-coder-workspace"),
             Self::AddDevice => fl!("menu-page-add-device"),
             #[cfg(feature = "cloud")]
             Self::AddProvider => fl!("menu-page-add-cloud-provider"),

@@ -50,7 +50,7 @@ error-remote-cloud-unavailable = Cloud devices are unavailable on Windows.
 error-remote-cloud-image-busy = Another build of this image is running; wait for it to finish.
 error-remote-cloud-image-cancelled = Cancelled.
 error-remote-cloud-image-catalog = Could not update { $path }: { $error }
-# $provider is a cloud provider's name, such as Coder. COPY and ADD are
+# $provider is a cloud provider's name, such as Boat. COPY and ADD are
 # Dockerfile instructions.
 error-remote-cloud-image-context = { $provider } cannot copy files into an image yet: remove the recipe's COPY and ADD lines, or use a container.
 error-remote-cloud-image-devcontainer = The dev container definition is not valid JSON.
@@ -82,8 +82,8 @@ error-remote-cloud-socket-header-name = Invalid exec stream header name.
 error-remote-cloud-socket-closed = The exec stream closed before the command finished.
 
 # What a cloud provider refused, for every provider. $key is a setting such
-# as coder.url or an environment variable, as written. Each $value
-# branch is a whole sentence; Azure, Boat, Coder, OpenSandbox,
+# as boat.api_url or an environment variable, as written. Each $value
+# branch is a whole sentence; Azure, Boat, OpenSandbox,
 # and Sprites are product names, and execd is a program's name.
 error-remote-cloud-value-invalid-key = { $key } is not valid.
 error-remote-cloud-value-invalid = { $value ->
@@ -102,8 +102,6 @@ error-remote-cloud-value-invalid = { $value ->
     [boat-sandbox-id] Boat sandbox ID is not valid.
     [boat-ssh-private-key] Boat SSH private key is not valid.
     [boat-ssh-public-key] Boat SSH public key is not valid.
-    [coder-identifier] Coder identifier is not valid.
-    [coder-workspace] Coder workspace is not valid.
     [container-engine] Container engine is not valid.
     [exec-session-id] Exec session ID is not valid.
     [execd-endpoint] Execd endpoint is not valid.
@@ -132,8 +130,6 @@ error-remote-cloud-value-encoding = { $value ->
     [boat-sandbox-id] Boat sandbox ID must be UTF-8.
     [boat-ssh-private-key] Boat SSH private key must be UTF-8.
     [boat-ssh-public-key] Boat SSH public key must be UTF-8.
-    [coder-identifier] Coder identifier must be UTF-8.
-    [coder-workspace] Coder workspace must be UTF-8.
     [container-engine] Container engine must be UTF-8.
     [exec-session-id] Exec session ID must be UTF-8.
     [execd-endpoint] Execd endpoint must be UTF-8.

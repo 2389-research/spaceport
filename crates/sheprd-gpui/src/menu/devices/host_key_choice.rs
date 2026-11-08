@@ -1,7 +1,6 @@
 //! The Add Device form's opt-in to connect without verifying the host's key,
-//! for hosts that keep no key to verify, such as `coder config-ssh`'s
-//! `*.coder` aliases. It starts off for every form and is saved with the
-//! device (see `config::ssh_hosts`).
+//! for hosts that keep no stable key to verify. It starts off for every form
+//! and is saved with the device (see `config::ssh_hosts`).
 
 use super::add_device::{Setup, Step};
 use crate::SheprdWindow;

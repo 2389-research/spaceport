@@ -1,6 +1,6 @@
 //! The `[cloud]` table: what a new cloud device runs the first time it
 //! connects (see `crate::cloud_setup`). `agents` and `setup` apply to every
-//! provider; a provider's own table, such as `[cloud.coder]`, replaces either
+//! provider; a provider's own table, such as `[cloud.boat]`, replaces either
 //! key it sets, and an empty list or script there turns that part off. Every
 //! build parses every provider's table, so one config file serves them all.
 
@@ -20,7 +20,6 @@ pub struct CloudConfig {
     pub agents: Option<Vec<String>>,
     pub azure: CloudSetup,
     pub boat: CloudSetup,
-    pub coder: CloudSetup,
     pub container: CloudSetup,
     pub opensandbox: CloudSetup,
     pub railway: CloudSetup,
@@ -62,7 +61,6 @@ impl CloudConfig {
         [
             ("azure", &self.azure),
             ("boat", &self.boat),
-            ("coder", &self.coder),
             ("container", &self.container),
             ("opensandbox", &self.opensandbox),
             ("railway", &self.railway),
@@ -89,7 +87,6 @@ impl CloudConfig {
         retain("cloud.", &mut self.agents);
         retain("cloud.azure.", &mut self.azure.agents);
         retain("cloud.boat.", &mut self.boat.agents);
-        retain("cloud.coder.", &mut self.coder.agents);
         retain("cloud.container.", &mut self.container.agents);
         retain("cloud.opensandbox.", &mut self.opensandbox.agents);
         retain("cloud.railway.", &mut self.railway.agents);

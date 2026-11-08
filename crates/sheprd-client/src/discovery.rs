@@ -75,8 +75,6 @@ pub enum CloudProvider {
     Azure,
     #[cfg(feature = "boat")]
     Boat,
-    #[cfg(feature = "coder")]
-    Coder,
     #[cfg(feature = "container")]
     Container,
     #[cfg(feature = "opensandbox")]
@@ -91,8 +89,6 @@ pub enum CloudProvider {
 impl CloudProvider {
     /// Every provider this build supports, in display order.
     pub const ALL: &[Self] = &[
-        #[cfg(feature = "coder")]
-        Self::Coder,
         #[cfg(feature = "railway")]
         Self::Railway,
         #[cfg(feature = "boat")]
@@ -114,8 +110,6 @@ impl CloudProvider {
             Self::Azure => "azure",
             #[cfg(feature = "boat")]
             Self::Boat => "boat",
-            #[cfg(feature = "coder")]
-            Self::Coder => "coder",
             #[cfg(feature = "container")]
             Self::Container => "container",
             #[cfg(feature = "opensandbox")]

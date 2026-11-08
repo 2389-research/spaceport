@@ -36,8 +36,6 @@ fn every_worker_has_a_message() {
         Worker::SignIn,
     ];
     assert_localized(&workers.map(Error::Worker));
-    #[cfg(feature = "coder")]
-    assert_localized(&workers.map(sheprd_remote::coder::Error::Worker));
 }
 
 #[test]
@@ -101,8 +99,6 @@ fn every_provider_delegates() {
         sheprd_remote::azure::Error::Size.into(),
         #[cfg(feature = "boat")]
         sheprd_remote::boat::Error::Size.into(),
-        #[cfg(feature = "coder")]
-        sheprd_remote::coder::Error::Size.into(),
         #[cfg(feature = "container")]
         sheprd_remote::container::Error::NoEngine.into(),
         #[cfg(feature = "opensandbox")]

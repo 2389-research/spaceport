@@ -239,8 +239,6 @@ struct SettingsWindow {
     azure_card: Option<cloud_devices::AzureCard>,
     #[cfg(feature = "boat")]
     boat_card: Option<cloud_devices::BoatCard>,
-    #[cfg(feature = "coder")]
-    coder_card: Option<cloud_devices::CoderCard>,
     #[cfg(feature = "container")]
     container_card: Option<cloud_devices::ContainerCard>,
     #[cfg(feature = "opensandbox")]
@@ -377,8 +375,6 @@ impl SettingsWindow {
             azure_card: None,
             #[cfg(feature = "boat")]
             boat_card: None,
-            #[cfg(feature = "coder")]
-            coder_card: None,
             #[cfg(feature = "container")]
             container_card: None,
             #[cfg(feature = "opensandbox")]

@@ -1,6 +1,6 @@
 //! One command an agent runs on a saved cloud machine, through the same
-//! authenticated command the device connection uses (`coder ssh`, a
-//! provider's SSH gateway, and so on), so no credential ever leaves the app.
+//! authenticated command the device connection uses, so no credential ever
+//! leaves the app.
 //! The command gets no input. Its stdout and stderr are kept apart, each to a
 //! bounded tail with terminal controls removed, as the output is untrusted
 //! and goes back over the control socket. It is stopped, with the remote

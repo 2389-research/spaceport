@@ -37,8 +37,6 @@ impl Source {
         match page {
             Page::AddDevice => Some(Self::Host),
             Page::AddWsl => Some(Self::Wsl),
-            #[cfg(feature = "coder")]
-            Page::AddCoder => Some(Self::Cloud(crate::cloud::CloudProvider::Coder)),
             #[cfg(feature = "cloud")]
             Page::AddCloud(provider) => Some(Self::Cloud(provider)),
             #[cfg(feature = "cloud")]
@@ -78,8 +76,6 @@ impl Source {
             Self::Cloud(crate::cloud::CloudProvider::Azure) => "add-device-source-azure",
             #[cfg(feature = "boat")]
             Self::Cloud(crate::cloud::CloudProvider::Boat) => "add-device-source-boat",
-            #[cfg(feature = "coder")]
-            Self::Cloud(crate::cloud::CloudProvider::Coder) => "add-device-source-coder",
             #[cfg(feature = "container")]
             Self::Cloud(crate::cloud::CloudProvider::Container) => "add-device-source-container",
             #[cfg(feature = "railway")]
@@ -241,18 +237,6 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        #[cfg(feature = "coder")]
-        if provider == crate::cloud::CloudProvider::Coder
-            && self.cloud_providers().contains(&provider)
-        {
-            if self.menu.coder.is_some() {
-                self.menu.page = Some(Page::AddCoder);
-                window.focus(&self.menu.focus.clone(), cx);
-            } else {
-                self.open_coder_setup(window, cx);
-            }
-            return;
-        }
         self.menu.page = Some(Page::AddCloud(provider));
         window.focus(&self.menu.focus.clone(), cx);
     }
@@ -333,8 +317,8 @@ impl SheprdWindow {
     ) -> Div {
         let theme = &self.theme;
         let current = self.menu.page.and_then(Source::of);
-        // A provider's pane opened from elsewhere, such as Coder's sign-in
-        // falling back, belongs under Add provider while the rail omits it.
+        // A provider's pane opened from elsewhere belongs under Add provider
+        // while the rail omits it.
         #[cfg(feature = "cloud")]
         let current = current.map(|shown| {
             if sources.contains(&shown) {
@@ -440,14 +424,7 @@ impl SheprdWindow {
     ) -> Div {
         let theme = &self.theme;
         let name = crate::cloud::name(provider);
-        let text = match provider {
-            #[cfg(feature = "coder")]
-            crate::cloud::CloudProvider::Coder if !self.cloud_providers().contains(&provider) => {
-                fl!("add-device-coder-connect")
-            }
-            // The provider's own offer, as herdr-remote words it.
-            _ => format!("{}.", crate::cloud::offer(provider)), // i18n: data
-        };
+        let text = format!("{}.", crate::cloud::offer(provider)); // i18n: data
         let pane = div()
             .flex_1()
             .min_h_0()

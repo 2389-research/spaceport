@@ -12,7 +12,7 @@ fn device(id: &str) -> SavedDevice {
         provider: CloudProvider::ALL[0],
         id: id.into(),
         label: "Dev box".into(),
-        account: "https://coder.example.com".into(),
+        account: "fixture-account".into(),
         machine: "herdr-dev-box".into(),
         session: "default".into(),
         enabled: true,
@@ -40,7 +40,7 @@ fn saves_replace_by_provider_and_id_and_survive_reload() {
         saved[0].target(),
         ConnectTarget::Cloud {
             provider: CloudProvider::ALL[0],
-            account: "https://coder.example.com".into(),
+            account: "fixture-account".into(),
             id: "w1".into(),
             machine: "herdr-dev-box".into(),
             session: "default".into(),
@@ -166,6 +166,31 @@ fn retired_daytona_device_is_hidden_and_preserved_on_catalog_write() {
     .unwrap();
     assert!(read(&path).unwrap().is_empty());
     save_in(&path, device("active")).unwrap();
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(saved["devices"][0], retired);
+}
+
+#[test]
+fn retired_coder_device_is_hidden_and_preserved_beside_active_device() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(FILE);
+    let retired = serde_json::json!({
+        "provider": "coder",
+        "id": "workspace-1",
+        "label": "Retired workspace",
+        "account": "https://coder.example.com",
+        "machine": "fixture-machine",
+        "session": "default",
+        "enabled": true
+    });
+    fs::write(
+        &path,
+        serde_json::json!({"version": 1, "devices": [retired]}).to_string(),
+    )
+    .unwrap();
+    assert!(read(&path).unwrap().is_empty());
+    save_in(&path, device("active")).unwrap();
+    assert_eq!(read(&path).unwrap(), [device("active")]);
     let saved: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
     assert_eq!(saved["devices"][0], retired);
 }

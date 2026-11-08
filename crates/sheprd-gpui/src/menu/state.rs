@@ -92,8 +92,6 @@ pub(crate) struct MenuState {
     pub(super) open_checkout: Option<std::path::PathBuf>,
     /// The address the open-link question is about.
     pub(super) open_link: Option<crate::terminal::ExternalUrl>,
-    #[cfg(feature = "coder")]
-    pub(super) coder: Option<super::devices::coder::Wizard>,
     pub(super) devices_scroll: ScrollHandle,
     /// The picker line to scroll into view once the list has been laid out:
     /// on the frame it first appears, GPUI drops a scroll request unapplied.
@@ -353,8 +351,6 @@ impl MenuState {
             folding: None,
             open_checkout: None,
             open_link: None,
-            #[cfg(feature = "coder")]
-            coder: None,
             devices_scroll: ScrollHandle::new(),
             devices_reveal: std::cell::Cell::new(None),
             usage_scroll: ScrollHandle::new(),
@@ -429,10 +425,6 @@ impl MenuState {
         self.folding = None;
         self.open_checkout = None;
         self.open_link = None;
-        #[cfg(feature = "coder")]
-        {
-            self.coder = None;
-        }
         self.devices_scroll.set_offset(Point::default());
         self.devices_reveal.set(None);
         self.usage_scroll.set_offset(Point::default());

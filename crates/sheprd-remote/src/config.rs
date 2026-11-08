@@ -1,12 +1,11 @@
-//! The provider tables of Sheprd's config: `[azure]`, `[boat]`, `[coder]`,
-//! `[container]`, `[opensandbox]`, and `[sprites]`. The app owns
+//! The provider tables of Sheprd's config: `[azure]`, `[boat]`, `[container]`,
+//! `[opensandbox]`, and `[sprites]`. The app owns
 //! the config files, their layers, and their maintenance; it hands this crate
 //! a [`set_loader`] once at startup, and a provider job reads its table
 //! through it when it runs, so an edit since startup applies.
 
 mod azure;
 mod boat;
-mod coder;
 mod container;
 mod opensandbox;
 mod sprites;
@@ -17,9 +16,6 @@ pub use azure::AzureFields;
 pub use boat::BoatConfig;
 #[cfg(feature = "boat")]
 pub use boat::BoatFields;
-pub use coder::CoderConfig;
-#[cfg(feature = "coder")]
-pub use coder::CoderFields;
 pub use container::ContainerConfig;
 #[cfg(feature = "container")]
 pub use container::ContainerFields;
@@ -37,7 +33,6 @@ use std::sync::OnceLock;
 pub struct Sections {
     pub azure: AzureConfig,
     pub boat: BoatConfig,
-    pub coder: CoderConfig,
     pub container: ContainerConfig,
     pub opensandbox: OpenSandboxConfig,
     pub sprites: SpritesConfig,

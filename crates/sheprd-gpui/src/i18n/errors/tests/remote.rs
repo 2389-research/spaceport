@@ -8,8 +8,6 @@ mod azure;
 mod boat;
 #[cfg(feature = "cloud")]
 mod cloud;
-#[cfg(feature = "coder")]
-mod coder;
 #[cfg(feature = "container")]
 mod container;
 #[cfg(feature = "opensandbox")]

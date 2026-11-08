@@ -13,15 +13,12 @@ pub mod azure;
 pub mod boat;
 #[cfg(feature = "cloud")]
 pub mod cloud;
-#[cfg(feature = "coder")]
-pub mod coder;
 pub mod config;
 #[cfg(feature = "container")]
 pub mod container;
 #[cfg(any(
     feature = "azure",
     feature = "boat",
-    feature = "coder",
     feature = "opensandbox",
     feature = "sprites"
 ))]

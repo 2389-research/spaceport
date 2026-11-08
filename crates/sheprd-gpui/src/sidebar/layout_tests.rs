@@ -24,8 +24,6 @@ mod agent_menu;
 mod agent_rows;
 #[cfg(test)]
 mod agents_header;
-#[cfg(all(test, feature = "coder"))]
-mod coder_dialog;
 #[cfg(test)]
 mod configured_rows;
 #[cfg(test)]

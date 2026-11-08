@@ -649,10 +649,10 @@ fn connect_powershell(
     .map_err(|closed| Error::Refused(closed.failure).into())
 }
 
-/// The stdio bridge through an application-built remote command, such as
-/// `coder ssh -- <workspace>`: the discovery script is appended as its final
-/// argument, and the command's standard streams become the connection. The
-/// caller owns the program, its arguments, and any credential it needs.
+/// The stdio bridge through an application-built remote command: the
+/// discovery script is appended as its final argument, and the command's
+/// standard streams become the connection. The caller owns the program, its
+/// arguments, and any credential it needs.
 pub fn connect_command(mut command: Command, session: &str, stop: &AtomicBool) -> Result<Bridge> {
     session_socket(Path::new(""), session)?;
     command.arg(bridge_command(session));

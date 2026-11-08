@@ -29,6 +29,11 @@ class Page(HTMLParser):
 
 
 class WebsiteTests(unittest.TestCase):
+    def test_retired_coder_provider_is_absent_from_published_copy(self):
+        for name in ("index.html", "assets/features.js"):
+            with self.subTest(file=name):
+                self.assertFalse("Coder" in (WEBSITE / name).read_text(), name)
+
     def test_retired_daytona_provider_is_absent_from_published_copy(self):
         for name in ("index.html", "assets/features.js"):
             with self.subTest(file=name):

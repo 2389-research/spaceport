@@ -1,8 +1,8 @@
 //! Checking for, and on explicit approval installing, Herdr on a cloud
 //! machine the user just created or attached. This is the one place the GUI
 //! installs anything remotely: it runs Herdr's published installer, which
-//! verifies the release checksum, through the provider's remote command (such
-//! as `coder ssh`). Background reconnects never call it. Output is bounded and
+//! verifies the release checksum, through the provider's remote command.
+//! Background reconnects never call it. Output is bounded and
 //! kept only for the failure message.
 
 use super::{Error, Result};
@@ -219,8 +219,7 @@ fn tail(bytes: &[u8]) -> String {
 }
 
 /// Whether the machine already has a Herdr the bridge can run. `ssh` is the
-/// provider's remote command, such as `coder ssh … <workspace>`; the probe is
-/// appended.
+/// provider's remote command; the probe is appended.
 pub fn installed(mut ssh: Command, cancelled: &impl Fn() -> bool) -> Result<bool> {
     ssh.arg(remote(PROBE));
     let finished = run(ssh, PROBE_TIMEOUT, cancelled)?;

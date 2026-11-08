@@ -7,11 +7,6 @@ fn open(cx: &mut gpui::TestAppContext) -> (Entity<SheprdWindow>, &mut VisualTest
     cx.simulate_resize(size(px(900.), px(700.)));
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
-            // Not configured from the environment either.
-            #[cfg(feature = "coder")]
-            {
-                view.config.coder.url = None;
-            }
             view.open_add_device(window, cx);
         });
     });
@@ -34,10 +29,6 @@ fn page(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Option<Page>
     cx.update(|_, cx| view.read(cx).menu.page)
 }
 
-fn configured_elsewhere() -> bool {
-    std::env::var_os("HERDR_CODER_URL").is_some()
-}
-
 /// Each provider's entry in the rail, once it is in use.
 pub(super) fn rail_id(provider: CloudProvider) -> &'static str {
     match provider {
@@ -45,8 +36,6 @@ pub(super) fn rail_id(provider: CloudProvider) -> &'static str {
         CloudProvider::Azure => "add-device-source-azure",
         #[cfg(feature = "boat")]
         CloudProvider::Boat => "add-device-source-boat",
-        #[cfg(feature = "coder")]
-        CloudProvider::Coder => "add-device-source-coder",
         #[cfg(feature = "container")]
         CloudProvider::Container => "add-device-source-container",
         #[cfg(feature = "railway")]
@@ -87,21 +76,6 @@ fn providers_not_in_use_wait_under_add_provider(cx: &mut gpui::TestAppContext) {
             "{provider:?} has a tile only when the rail omits it"
         );
     }
-    if configured_elsewhere() {
-        return;
-    }
-    #[cfg(feature = "coder")]
-    {
-        assert!(cx.debug_bounds("add-device-source-coder").is_none());
-        cx.update(|_, cx| {
-            view.update(cx, |view, _| {
-                view.config.coder.url = Some("https://coder.example.com".into());
-            })
-        });
-        draw(cx);
-        assert!(cx.debug_bounds("add-device-source-coder-ready").is_some());
-        assert!(cx.debug_bounds("add-provider-coder").is_none());
-    }
 }
 
 #[gpui::test]
@@ -140,8 +114,6 @@ fn settings_only() -> Vec<(CloudProvider, &'static str)> {
             CloudProvider::Azure => Some((provider, "add-device-source-azure")),
             #[cfg(feature = "boat")]
             CloudProvider::Boat => Some((provider, "add-device-source-boat")),
-            #[cfg(feature = "coder")]
-            CloudProvider::Coder => None,
             #[cfg(feature = "container")]
             CloudProvider::Container => Some((provider, "add-device-source-container")),
             #[cfg(feature = "railway")]

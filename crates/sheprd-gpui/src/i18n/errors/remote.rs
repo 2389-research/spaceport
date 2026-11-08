@@ -8,8 +8,6 @@ mod azure;
 mod boat;
 #[cfg(feature = "cloud")]
 mod cloud;
-#[cfg(feature = "coder")]
-mod coder;
 #[cfg(feature = "container")]
 mod container;
 #[cfg(feature = "opensandbox")]
@@ -22,7 +20,6 @@ mod teleport;
 #[cfg(any(
     feature = "azure",
     feature = "boat",
-    feature = "coder",
     feature = "container",
     feature = "opensandbox",
     feature = "sprites"

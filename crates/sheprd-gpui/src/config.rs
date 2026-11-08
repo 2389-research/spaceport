@@ -18,7 +18,6 @@ mod boat;
 pub(crate) mod chat;
 mod cjk_fonts;
 mod cloud;
-mod coder;
 mod container;
 mod daemon;
 mod devices;
@@ -49,7 +48,6 @@ pub(crate) mod tab_layout;
 #[cfg(any(
     feature = "azure",
     feature = "boat",
-    feature = "coder",
     feature = "container",
     feature = "opensandbox",
     feature = "sprites"
@@ -103,9 +101,6 @@ pub(crate) use sheprd_remote::config::AzureFields;
 pub use sheprd_remote::config::BoatConfig;
 #[cfg(feature = "boat")]
 pub(crate) use sheprd_remote::config::BoatFields;
-pub use sheprd_remote::config::CoderConfig;
-#[cfg(feature = "coder")]
-pub(crate) use sheprd_remote::config::CoderFields;
 pub use sheprd_remote::config::ContainerConfig;
 #[cfg(feature = "container")]
 pub(crate) use sheprd_remote::config::ContainerFields;
@@ -172,7 +167,6 @@ pub struct Config {
     pub clipboard_toast: ClipboardToast,
     /// What a new cloud device runs the first time it connects.
     pub cloud: CloudConfig,
-    pub coder: CoderConfig,
     pub confirm_close_pane: bool,
     pub confirm_close_tab: bool,
     /// Whether a workspace close shows its dialog when the check finds no
@@ -328,7 +322,6 @@ impl Default for Config {
             clipboard_overrides: ClipboardToastSettings::default(),
             clipboard_toast: ClipboardToast::default(),
             cloud: CloudConfig::default(),
-            coder: CoderConfig::default(),
             confirm_close_pane: true,
             confirm_close_tab: true,
             confirm_close_workspace: true,
@@ -411,7 +404,6 @@ struct Settings {
     chat: chat::ChatConfig,
     clipboard_toast: ClipboardToastSettings,
     cloud: CloudConfig,
-    coder: CoderConfig,
     confirm_close_pane: Option<bool>,
     confirm_close_tab: Option<bool>,
     confirm_close_workspace: Option<bool>,
@@ -501,7 +493,6 @@ impl Config {
         Ok(sheprd_remote::config::Sections {
             azure: config.azure,
             boat: config.boat,
-            coder: config.coder,
             container: config.container,
             opensandbox: config.opensandbox,
             sprites: config.sprites,
@@ -737,11 +728,6 @@ impl Config {
         config.chat = settings.chat;
         settings.cloud.check()?;
         config.cloud = settings.cloud;
-        // Check what the file says so a bad value is reported at load; the
-        // environment may still fill or override keys when Coder is used.
-        #[cfg(feature = "coder")]
-        settings.coder.check()?;
-        config.coder = settings.coder;
         #[cfg(feature = "container")]
         settings.container.settings()?;
         config.container = settings.container;

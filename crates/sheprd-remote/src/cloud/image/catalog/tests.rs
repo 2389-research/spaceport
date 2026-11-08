@@ -104,6 +104,45 @@ fn retired_daytona_image_is_hidden_and_preserved_beside_container_image() {
 }
 
 #[test]
+fn retired_coder_image_is_hidden_and_preserved_beside_container_image() {
+    let dir = isolated();
+    let retired = serde_json::json!({
+        "provider": "coder",
+        "key": "old",
+        "finished_at": 1,
+        "state": "ready",
+        "reference": "img:old"
+    });
+    let active = serde_json::to_value(ready(CloudProvider::Container, "current")).unwrap();
+    fs::write(
+        dir.file(),
+        serde_json::json!({
+            "version": 1,
+            "projects": [{
+                "id": "p",
+                "label": "app",
+                "origin": origin(),
+                "images": [retired, active]
+            }]
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let visible = load().unwrap();
+    assert_eq!(visible.len(), 1);
+    assert_eq!(visible[0].images.len(), 1);
+    assert_eq!(visible[0].images[0].provider, CloudProvider::Container);
+    record(
+        &project("p"),
+        origin(),
+        ready(CloudProvider::Container, "next"),
+    )
+    .unwrap();
+    let saved: serde_json::Value = serde_json::from_slice(&fs::read(dir.file()).unwrap()).unwrap();
+    assert_eq!(saved["projects"][0]["images"][0], retired);
+}
+
+#[test]
 fn one_image_per_project_and_provider_is_kept() {
     let _dir = isolated();
     assert!(load().unwrap().is_empty());

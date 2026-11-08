@@ -7,5 +7,4 @@ owners and identify each service only.
 | File | Source | Changes |
 | --- | --- | --- |
 | `azure.svg` | [Simple Icons 11.0.0 `icons/microsoftazure.svg`](https://github.com/simple-icons/simple-icons/blob/11.0.0/icons/microsoftazure.svg) (CC0-1.0) | Fill set to `currentColor`, title removed |
-| `coder.svg` | [coder/coder `site/static/icon/coder.svg`](https://github.com/coder/coder/blob/main/site/static/icon/coder.svg) (AGPL-3.0 repository) | Fill set to `currentColor` |
 | `railway.svg` | [Simple Icons 15.0.0 `icons/railway.svg`](https://github.com/simple-icons/simple-icons/blob/15.0.0/icons/railway.svg) (CC0-1.0) | Fill set to `currentColor`, title removed |

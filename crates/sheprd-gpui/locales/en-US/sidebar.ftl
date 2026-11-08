@@ -68,17 +68,8 @@ sidebar-origin-cloud = { $provider } { $noun ->
         [container] container
         [sandbox] sandbox
         [sprite] sprite
-        [workspace] workspace
        *[machine] machine
     }
-sidebar-origin-cloud-ssh = { $provider } { $noun ->
-        [VM] VM
-        [container] container
-        [sandbox] sandbox
-        [sprite] sprite
-        [workspace] workspace
-       *[machine] machine
-    } over SSH
 
 # $error is why the daemon refused to reorder the workspaces.
 sidebar-workspace-move-not-sent = Workspace move not sent: { $error }

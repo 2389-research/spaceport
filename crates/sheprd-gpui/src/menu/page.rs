@@ -10,9 +10,6 @@ pub(crate) enum Page {
     /// Settings rather than in the dialog.
     #[cfg(feature = "cloud")]
     AddCloud(crate::cloud::CloudProvider),
-    /// Sign in to Coder and add one of its workspaces as a device.
-    #[cfg(feature = "coder")]
-    AddCoder,
     AddDevice,
     /// Add Device's tiles of the cloud providers its rail leaves out.
     #[cfg(feature = "cloud")]

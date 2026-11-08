@@ -101,10 +101,7 @@ pub fn unavailable() -> Option<&'static str> {
 
 /// What a job reports while it adds a machine, in words every provider shares.
 // Railway reports only the steps it has; the rest belong to the others.
-#[cfg_attr(
-    not(any(feature = "azure", feature = "boat", feature = "coder",)),
-    allow(dead_code)
-)]
+#[cfg_attr(not(any(feature = "azure", feature = "boat")), allow(dead_code))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Step {
     Creating,
@@ -135,37 +132,6 @@ impl Step {
             Self::InstallingHerdr => 0.85,
         }
     }
-}
-
-/// Finish a machine the provider has just made with `finish`, and delete it
-/// with `discard` when that fails. A create that fails before the device is
-/// saved would otherwise leave the machine billing with no saved device to
-/// find it by. A failed delete is logged; `finish`'s error is returned
-/// either way.
-#[cfg_attr(not(feature = "coder"), allow(dead_code))]
-pub fn discard_on_error<T>(
-    provider: CloudProvider,
-    id: &str,
-    finish: impl FnOnce() -> crate::Result<T>,
-    discard: impl FnOnce() -> crate::Result<()>,
-) -> crate::Result<T> {
-    finish().inspect_err(|_| {
-        tracing::info!(
-            category = "cloud",
-            ?provider,
-            id,
-            "Deleting a failed create"
-        );
-        if let Err(error) = discard() {
-            tracing::warn!(
-                category = "cloud",
-                ?provider,
-                id,
-                %error,
-                "Could not delete a failed create; delete it at the provider"
-            );
-        }
-    })
 }
 
 #[cfg(test)]

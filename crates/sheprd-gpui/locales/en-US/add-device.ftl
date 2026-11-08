@@ -12,7 +12,6 @@ add-device-offer-ssh-wsl-cloud = An SSH host, a WSL distribution, or a cloud mac
 add-device-offer-ssh-wsl = An SSH host or a WSL distribution
 add-device-offer-ssh-cloud = An SSH host or a cloud machine
 add-device-offer-ssh = Set up a remote host over SSH
-add-device-coder-connect = Connect a Coder deployment in Settings, then create or attach workspaces here.
 add-device-open-settings = Open Settings…
 # The Add provider pane's lead, over tiles of providers not set up yet.
 add-device-providers-all-set = Every cloud provider is set up and listed beside SSH.
@@ -85,5 +84,5 @@ add-device-terminal-key-user = Setting up { $target } needs a terminal: it accep
 add-device-terminal-key = Setting up { $target } needs a terminal: it accepted none of your SSH keys. Run `herdr machine add { $target }` in a terminal, then add the device again.
 # The SSH host form's opt-in to connect without verifying the host's key.
 add-device-skip-host-key = Skip host key verification (dangerous)
-# Shown while the opt-in is on. Coder is a product name; keep it as it is.
-add-device-skip-host-key-warning = Herdr will accept any key this host offers, now and on every connection. Anyone who can intercept the connection can impersonate the host and read your terminals. Use it only for hosts that keep no key, such as Coder workspaces.
+# Shown while the opt-in is on.
+add-device-skip-host-key-warning = Herdr will accept any key this host offers, now and on every connection. Anyone who can intercept the connection can impersonate the host and read your terminals. Use it only for hosts that keep no stable key.

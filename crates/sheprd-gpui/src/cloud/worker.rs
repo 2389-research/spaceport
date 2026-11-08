@@ -1,4 +1,4 @@
-//! One blocking Coder job on a named thread, reporting through a bounded
+//! One blocking cloud job on a named thread, reporting through a bounded
 //! mailbox that a foreground task drains into its view. Dropping the handle
 //! raises the job's cancellation flag and drops the mailbox, so nothing the
 //! job sends afterwards reaches the view.

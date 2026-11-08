@@ -31,7 +31,6 @@ mod close_modal;
     not(any(
         feature = "azure",
         feature = "boat",
-        feature = "coder",
         feature = "container",
         feature = "opensandbox",
         feature = "railway",
@@ -39,7 +38,7 @@ mod close_modal;
     ))
 ))]
 compile_error!(
-    "the `cloud` feature is enabled through a provider feature, such as `azure`, `boat`, `coder`, `container`, `opensandbox`, `railway`, or `sprites`"
+    "the `cloud` feature is enabled through a provider feature, such as `azure`, `boat`, `container`, `opensandbox`, `railway`, or `sprites`"
 );
 #[cfg(feature = "cloud")]
 mod cloud;
@@ -188,8 +187,6 @@ use sheprd_client::{local_path, login_env};
 use sheprd_remote::azure;
 #[cfg(feature = "boat")]
 use sheprd_remote::boat;
-#[cfg(feature = "coder")]
-use sheprd_remote::coder;
 #[cfg(feature = "container")]
 use sheprd_remote::container;
 #[cfg(feature = "opensandbox")]

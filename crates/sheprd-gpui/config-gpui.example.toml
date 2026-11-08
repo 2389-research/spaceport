@@ -331,12 +331,12 @@ project_roots = []
 
 # SSH hosts whose host keys are never verified, by the target saved with the
 # device. Anyone who can intercept the connection to one can impersonate it.
-# Only for hosts that keep no key, such as `coder config-ssh`'s `*.coder`
-# aliases (`UserKnownHostsFile=/dev/null`). Add Device's "Skip host key
+# Only for hosts that keep no stable key (`UserKnownHostsFile=/dev/null`).
+# Add Device's "Skip host key
 # verification" box adds the target. To verify a host again, delete its
 # target here, or remove the device and add it again with the box clear.
 # [ssh]
-# skip_host_key_verification = ["dev.workspace.user.coder"]
+# skip_host_key_verification = ["ephemeral-host"]
 
 # Preferences offers a searchable picker for all four families together or each row.
 # Platform default removes the local family override; fallback cascades remain active.
@@ -535,34 +535,6 @@ size = 12
 # uses Sheprd's own application unless one is set here.
 # applications = { "gitlab.example.com" = "<application id>" }
 
-# A Coder deployment whose workspaces can be created and added as devices from
-# the device picker's "Add Coder Workspace…". Settings > Cloud devices edits
-# these keys and saves the client secret to the credential store, so editing
-# this table by hand is optional. Register an OAuth2 app in Coder
-# (the deployment must enable the `oauth2` experiment) with the redirect URI
-# below; Coder compares it as an exact string, so copy it verbatim. Requires the
-# `coder` CLI, which carries the connection. Each HERDR_CODER_URL,
-# HERDR_CODER_OAUTH_CLIENT_ID, HERDR_CODER_OAUTH_CLIENT_SECRET, and
-# HERDR_CODER_OAUTH_REDIRECT_URI variable overrides its field when set.
-# [coder]
-# url = "https://coder.example.com"
-# oauth_client_id = "YOUR_OAUTH2_APP_ID"
-# Coder requires a confidential client. Prefer Settings > Cloud devices, which
-# keeps the secret out of this file; when set here or in the environment, this
-# value takes precedence. It identifies this app to Coder, not your account.
-# oauth_client_secret = "YOUR_OAUTH2_APP_SECRET"
-# A loopback address with an explicit port the GUI can listen on while signing in.
-# oauth_redirect_uri = "http://127.0.0.1:47823/callback"
-# Create workspaces in this organization instead of your default one.
-# organization = "default"
-# New workspace names start with this prefix (lowercase, digits, hyphens).
-# workspace_prefix = "herdr"
-# Absolute path to the coder CLI when it is not on PATH or in a usual location.
-# cli = "/opt/homebrew/bin/coder"
-# Same meaning as [github] allow_plaintext_credentials, for the Coder sign-in,
-# which is saved in its own 0600 coder-credentials file. Default is false.
-# allow_plaintext_credentials = false
-
 # Boat sandboxes as devices (experimental). Settings > Cloud devices > Boat
 # edits this table and saves the API key to the credential store; the
 # environment variable HERDR_BOAT_API_KEY takes precedence.
@@ -624,14 +596,14 @@ size = 12
 # What a new cloud device runs the first time it connects, in a "setup" tab:
 # the agents listed (claude, codex, gemini, opencode), each skipped when already
 # installed, then these lines with sh -e. Settings > Cloud devices > New device
-# setup switches the agents. A provider's table, such as [cloud.coder], replaces
+# setup switches the agents. A provider's table, such as [cloud.boat], replaces
 # either key for that provider; an empty list or script there turns it off.
 # [cloud]
 # agents = ["claude", "opencode"]
 # setup = """
 # git config --global pull.rebase true
 # """
-# [cloud.coder]
+# [cloud.boat]
 # agents = []
 
 # What shows behind the main window, also under Settings > Theme > Window. At the

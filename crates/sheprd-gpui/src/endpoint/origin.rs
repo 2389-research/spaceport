@@ -1,7 +1,7 @@
 //! Where a device runs and how it is reached, for the mark before its name in
 //! the sidebar. Read from the connection target alone: upstream's host catalog
 //! keeps no record of how a host was added, so an SSH host is recognized by
-//! the names Coder's and Tailscale's own setups give it.
+//! the names Tailscale's setup gives it.
 
 use crate::i18n::fl;
 use sheprd_client::ConnectTarget;
@@ -16,13 +16,9 @@ pub(crate) enum Origin {
     Tailscale,
     /// A WSL distribution on this Windows machine.
     Wsl,
-    /// A machine a cloud provider created. `ssh` is a host the provider's CLI
-    /// wrote into `~/.ssh/config` rather than one saved as a cloud device.
+    /// A machine a cloud provider created.
     #[cfg(feature = "cloud")]
-    Cloud {
-        provider: crate::cloud::CloudProvider,
-        ssh: bool,
-    },
+    Cloud(crate::cloud::CloudProvider),
 }
 
 impl Origin {
@@ -33,23 +29,12 @@ impl Origin {
             }
             ConnectTarget::Wsl { .. } => Self::Wsl,
             #[cfg(feature = "cloud")]
-            ConnectTarget::Cloud { provider, .. } => Self::Cloud {
-                provider: *provider,
-                ssh: false,
-            },
+            ConnectTarget::Cloud { provider, .. } => Self::Cloud(*provider),
             ConnectTarget::Ssh { target, .. } => Self::of_ssh(&host_name(target)),
         }
     }
 
     fn of_ssh(host: &str) -> Self {
-        // `coder config-ssh` names each workspace `<agent>.<workspace>.<owner>.coder`.
-        #[cfg(feature = "coder")]
-        if host.ends_with(".coder") {
-            return Self::Cloud {
-                provider: crate::cloud::CloudProvider::Coder,
-                ssh: true,
-            };
-        }
         if host.ends_with(".ts.net") || host.parse().is_ok_and(tailnet) {
             return Self::Tailscale;
         }
@@ -64,7 +49,7 @@ impl Origin {
             Self::Ssh | Self::Wsl => "icons/terminal.svg",
             Self::Tailscale => "icons/network/tailscale.svg",
             #[cfg(feature = "cloud")]
-            Self::Cloud { provider, .. } => crate::cloud::icon(provider),
+            Self::Cloud(provider) => crate::cloud::icon(provider),
         }
     }
 
@@ -77,20 +62,8 @@ impl Origin {
             Self::Tailscale => fl!("sidebar-origin-tailscale"),
             Self::Wsl => fl!("sidebar-origin-wsl"),
             #[cfg(feature = "cloud")]
-            Self::Cloud {
-                provider,
-                ssh: false,
-            } => fl!(
+            Self::Cloud(provider) => fl!(
                 "sidebar-origin-cloud",
-                provider = crate::cloud::name(provider),
-                noun = crate::cloud::noun(provider)
-            ),
-            #[cfg(feature = "cloud")]
-            Self::Cloud {
-                provider,
-                ssh: true,
-            } => fl!(
-                "sidebar-origin-cloud-ssh",
                 provider = crate::cloud::name(provider),
                 noun = crate::cloud::noun(provider)
             ),

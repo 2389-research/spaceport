@@ -60,12 +60,6 @@ impl Jobs {
         self.revision
     }
 
-    /// Count a job as finished without running one.
-    #[cfg(all(test, feature = "coder"))]
-    pub(crate) fn finish_for_test(&mut self) {
-        self.finished += 1;
-    }
-
     pub(crate) fn is_empty(&self) -> bool {
         self.jobs.is_empty()
     }
@@ -74,14 +68,6 @@ impl Jobs {
     #[cfg(feature = "railway")]
     pub(crate) fn has(&self, provider: CloudProvider) -> bool {
         self.jobs.iter().any(|job| job.provider == provider)
-    }
-
-    /// Whether a job already adds a machine of this provider with this name.
-    #[cfg(feature = "coder")]
-    pub(crate) fn contains(&self, provider: CloudProvider, name: &str) -> bool {
-        self.jobs
-            .iter()
-            .any(|job| job.provider == provider && job.name == name)
     }
 }
 

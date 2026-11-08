@@ -15,10 +15,6 @@ fn unconfigure(config: &mut crate::config::Config) {
     {
         config.boat = Default::default();
     }
-    #[cfg(feature = "coder")]
-    {
-        config.coder = Default::default();
-    }
     #[cfg(feature = "opensandbox")]
     {
         config.opensandbox = Default::default();
@@ -55,11 +51,6 @@ fn data() -> Vec<String> {
         crate::boat::DEFAULT_API_URL.into(),
         "boat_…".into(),
         "never".into(),
-    ]);
-    #[cfg(feature = "coder")]
-    data.extend([
-        "https://coder.example.com".into(),
-        "http://127.0.0.1:47823/callback".into(),
     ]);
     #[cfg(feature = "container")]
     data.extend([

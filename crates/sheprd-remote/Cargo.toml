@@ -49,7 +49,6 @@ cloud = ["sheprd-client/cloud"]
 # Azure VMs and Container Apps sandboxes, reached over the data plane's exec stream.
 azure = ["cloud", "sheprd-client/azure", "dep:rustls", "dep:tungstenite", "dep:webpki-roots"]
 boat = ["cloud", "sheprd-client/boat"]
-coder = ["cloud", "sheprd-client/coder"]
 container = ["cloud", "sheprd-client/container"]
 # Sandboxes on a self-hosted OpenSandbox server, with this app as their exec relay.
 opensandbox = ["cloud", "sheprd-client/opensandbox", "dep:rustls", "dep:tungstenite", "dep:webpki-roots"]

@@ -85,16 +85,11 @@ fn every_page_title_is_a_message_under_en_xa() {
             .chain([Page::AddProvider]);
         #[cfg(not(feature = "cloud"))]
         let cloud = std::iter::empty();
-        #[cfg(feature = "coder")]
-        let coder = [Page::AddCoder];
-        #[cfg(not(feature = "coder"))]
-        let coder: [Page; 0] = [];
         let leaks: Vec<_> = pages
             .into_iter()
             .chain(dialogs)
             .chain(crate::usage::registry::all().map(Page::Usage))
             .chain(cloud)
-            .chain(coder)
             .map(Page::accessible_name)
             .filter(|name| !sheprd_i18n::pseudo::is_marked(name))
             .collect();

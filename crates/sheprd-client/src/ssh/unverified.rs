@@ -1,9 +1,9 @@
 //! SSH hosts the user chose to connect to without verifying their host keys.
 //!
 //! The bridge's policy is `StrictHostKeyChecking=yes`, and options given on the
-//! command line beat the user's config. A host that keeps no keys, as
-//! `coder config-ssh` writes for `*.coder` (`UserKnownHostsFile=/dev/null`),
-//! can then never connect: no key can be trusted for it. The app lets the user
+//! command line beat the user's config. A generated SSH config may disable
+//! host-key checks (`UserKnownHostsFile=/dev/null`), so its host cannot then
+//! connect: no key can be trusted for it. The app lets the user
 //! opt such a host out explicitly, and pushes that list here; every `ssh` this
 //! crate starts for a listed target is told not to check its key. Reading the
 //! list never blocks on I/O, so command builders stay safe on the UI thread.

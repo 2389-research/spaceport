@@ -34,10 +34,6 @@ pub struct Spec {
     pub image: Option<String>,
     /// Whether Herdr's installer may run on a machine that lacks Herdr.
     pub install: bool,
-    /// Coder: the template, by name or ID; `None` takes the only one.
-    pub template: Option<String>,
-    /// Coder: the template's preset, by name; `None` takes its default.
-    pub preset: Option<String>,
     /// Azure: a VM or a Container Apps sandbox.
     pub shape: Shape,
 }
@@ -56,8 +52,6 @@ impl Spec {
             name: None,
             image: None,
             install: true,
-            template: None,
-            preset: None,
             shape: Shape::Machine,
         }
     }
@@ -230,21 +224,6 @@ providers! {
         }),
         image: None,
         provision: Some(crate::boat::create::provision),
-    },
-    "coder" Coder => {
-        module: coder,
-        name: "Coder",
-        icon: "icons/cloud/coder.svg",
-        offer: "Create or attach a Coder workspace",
-        noun: "workspace",
-        command: plain,
-        deletion: Some(Deletion {
-            noun: |_| "workspace",
-            leftovers: ", with its disk,",
-            run: crate::coder::setup::destroy_saved,
-        }),
-        image: None,
-        provision: Some(crate::coder::create::provision),
     },
     "container" Container => {
         module: container,

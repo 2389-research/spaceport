@@ -39,7 +39,6 @@ remote_errors! {
     #[cfg(feature = "cloud")] sheprd_remote::cloud::Error,
     #[cfg(feature = "cloud")] sheprd_remote::cloud::ProviderError,
     #[cfg(feature = "cloud")] sheprd_remote::cloud::image::Error,
-    #[cfg(feature = "coder")] sheprd_remote::coder::Error,
     #[cfg(feature = "container")] sheprd_remote::container::Error,
     #[cfg(feature = "opensandbox")] sheprd_remote::opensandbox::Error,
     #[cfg(feature = "railway")] sheprd_remote::railway::Error,
