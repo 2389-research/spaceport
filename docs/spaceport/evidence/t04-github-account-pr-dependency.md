@@ -1,7 +1,8 @@
 # T04/RM-GITHUB: remaining account and PR graph
 
-Read-only source map after the Security cut at `1ceb52de`. No further app
-code, Core state, account, provider service or personal configuration changed.
+Read-only source map after the Security cut at `1ceb52de`, revisited at
+`30942e56` before attempting the account cut. No further app code, Core
+state, account, provider service or personal configuration changed.
 
 - `window.rs::poll_github` still drives `menu/github.rs::poll_github_at` on
   every tick. That method probes GitHub CLI sign-in, polls default, host and
@@ -17,6 +18,20 @@ code, Core state, account, provider service or personal configuration changed.
   `sheprd-github/src/pr_actions.rs`, `repo_items/` and the `sheprd-github` crate. Their
   repository worker and Core view ownership cross T03's reader work, so a
   standalone account/menu deletion would strand live PR and issue routes.
+  In detail, `browser/view.rs::poll_orchestrators` runs on each window tick;
+  `orchestrator/host.rs::repo_specs` puts `github_account` tokens in each
+  request, and `poll_orchestrators` refreshes those tokens for each target.
+  `orchestrator/section.rs` creates the same view before a section opens so
+  the Activity count can read it. Group and workspace menus and
+  `Command::OpenOrchestrator` also open that view. Removing only the Activity
+  buttons would leave the account reader and worker live.
+- The same `OrchestratorView` also owns Tasks/Beads lists, dispatch host
+  ranking, GitLab account notices, Overview run links and saved
+  `Location::Orchestrator` tabs (`orchestrator/host.rs`,
+  `orchestrator/view.rs`, `overview.rs`, `browser/{location,store,view}.rs`).
+  `control/server/tabs.rs` still reports an Orchestrator tab kind. Deleting
+  the worker to free the GitHub account path therefore crosses the
+  RM-DISPATCH and RM-BROWSER saved-tab cuts and the T03 view seam.
 - `settings_window/cloud_devices/{azure,boat,coder,daytona,opensandbox,sprites}.rs`
   imports `github::Store`, but `sheprd-github/src/store.rs` re-exports the
   generic `sheprd_credentials::Store`. These provider settings use that
@@ -30,10 +45,13 @@ code, Core state, account, provider service or personal configuration changed.
   dependency (`crates/sheprd-updater/Cargo.toml`); that release transport and
   the generic credentials crate must survive their product-specific cuts.
 
-Next coherent cut: settle the retained T03 Core reader/view ownership and
-provider credential import seam, then remove the PR/Issues and account
-workers, actions, menus, settings, assets and dependency edges together with
-negative startup/CLI/UI checks. Retain only the generic profile slot and
+Cut order: settle the T03 view owner and the saved Orchestrator tab migration,
+then remove the shared PR/Issues/Tasks reader and all its entries. Once no
+view asks for an account token, move the provider `Store` import to the
+generic credential owner and remove product sign-in, polling, settings,
+menus and account assets. Negative startup/CLI/UI tests must prove that no
+worker remains; retained tests must cover the generic profile slot and
 ordinary workspace/terminal/chat content. No dormant GitHub polling or
-hidden disabled account state should remain. T04 stays blocked on G-LINK;
-A29 and A30 remain `not_run`.
+hidden disabled account state should remain. This audit ran no product tests
+or default/all-feature app checks because it changed no app code. T04 stays
+blocked on G-LINK; A29 and A30 remain `not_run`.
