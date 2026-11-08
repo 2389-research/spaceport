@@ -112,3 +112,28 @@ fn a_real_core_aggregates_a_fixture_machine() {
     assert!(resumed.address.starts_with("lab/"), "{}", resumed.address);
     core.kill(&resumed.address).unwrap();
 }
+
+#[test]
+#[ignore = "needs HERDR_CORE_TEST_BINARY"]
+fn a_real_core_does_not_save_a_refused_machine() {
+    let binary = std::env::var_os("HERDR_CORE_TEST_BINARY").expect("HERDR_CORE_TEST_BINARY");
+    let parent = std::env::var_os("HERDR_TEST_TMPDIR").unwrap_or_else(|| "/tmp".into());
+    let dir = tempfile::Builder::new()
+        .prefix("hc-refuse")
+        .tempdir_in(std::path::PathBuf::from(parent))
+        .unwrap();
+    let relay = dir.path().join("fixture-ssh");
+    std::fs::write(
+        &relay,
+        b"#!/bin/sh\nprintf 'WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!\\n' >&2\nexit 255\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(&relay, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let local = Sandbox::start_with(binary, vec![("HC_SSH", relay.into_os_string())]);
+    let core = local.connect();
+    match core.machine_add("fixture-host", Some("lab"), None, false) {
+        Err(Error::Refused { kind, .. }) => assert_eq!(kind.as_deref(), Some("unreachable")),
+        other => panic!("expected Core refusal, got {other:?}"),
+    }
+    assert!(core.machine_list().unwrap().machines.is_empty());
+}

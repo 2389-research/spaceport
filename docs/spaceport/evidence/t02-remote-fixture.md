@@ -11,3 +11,7 @@ The test then killed the exact remote `serve` child it had created, after killin
 ## Core backend machine target
 
 `sheprd_backend::Spawn` now has an optional saved machine name. The Core backend passes it unchanged as `terminal.run`'s `on` parameter; an absent name keeps Core's local default. A scripted-peer test failed to compile before the field existed, then checked the exact `on = "lab"` request and `lab/t6` result. The private two-Core fixture opened a second client connection to the local Core, spawned on `lab` through `CoreBackend`, received a qualified address, and killed that exact terminal. It did not start an SSH manager in the client. The real-Core suite passed three opt-in tests; the client library passed 41 active tests with three ignored. The GUI does not yet route remote selection through this field, so A04 remains not run as a complete Spaceport scenario.
+
+## Refused machine is not saved
+
+A separate private Core fixture set Core's test-only `HC_SSH` hook to a script that printed the standard changed-host-identification warning and exited 255. Spaceport's `machine_add` returned Core's `unreachable` refusal, and `machine.list` stayed empty. All four opt-in real-Core tests passed. This proves refusal propagation and no saved machine for that script outcome. It does not exercise OpenSSH's host-key check, an actual known-hosts file, authentication prompts, or any real remote host. A05 remains not run.
