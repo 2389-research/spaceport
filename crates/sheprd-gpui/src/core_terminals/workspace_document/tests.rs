@@ -140,3 +140,27 @@ fn grouping_edits_only_change_document_values() {
         Err(Error::MissingWorkspace(_))
     ));
 }
+
+#[test]
+fn membership_keeps_exact_core_and_local_terminal_identity() {
+    let id = workspace_id();
+    let mut document = Document::read(Value::Null).unwrap();
+    document.create(id, "Project").unwrap();
+    document.add_member(id, "core-a", "t7").unwrap();
+    document.add_member(id, "core-b", "t7").unwrap();
+    assert!(matches!(
+        document.add_member(id, "core-a", "t7"),
+        Err(Error::DuplicateTerminalRef)
+    ));
+    assert!(matches!(
+        document.add_member(id, "core-a", "box/t7"),
+        Err(Error::InvalidTerminalRef)
+    ));
+    document.remove_member(id, "core-a", "t7").unwrap();
+    assert_eq!(document.workspaces()[0].members.len(), 1);
+    assert_eq!(document.workspaces()[0].members[0].core_id, "core-b");
+    assert!(matches!(
+        document.remove_member(id, "core-a", "t7"),
+        Err(Error::MissingTerminalRef)
+    ));
+}

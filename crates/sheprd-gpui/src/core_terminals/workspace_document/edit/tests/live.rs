@@ -215,3 +215,47 @@ fn disjoint_conflict_rebases_and_same_target_conflict_refuses() {
     assert_eq!(saved.value.workspaces().len(), 2);
     assert!(saved.value.workspaces()[0].archived);
 }
+
+#[test]
+#[ignore = "needs HERDR_CORE_TEST_BINARY"]
+fn membership_edits_only_the_private_core_document() {
+    let sandbox = Sandbox::start();
+    let core = sandbox.connect();
+    let core_id = core.hello().core.id.clone();
+    let empty = read(&core).unwrap();
+    let created = apply(
+        &core,
+        empty,
+        &Edit::Create {
+            id: id(1),
+            label: "One".into(),
+        },
+    )
+    .unwrap();
+    let added = apply(
+        &core,
+        created,
+        &Edit::AddMember {
+            id: id(1),
+            core_id: core_id.clone(),
+            terminal_id: "t7".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(added.value.workspaces()[0].members[0].core_id, core_id);
+    assert_eq!(added.value.workspaces()[0].members[0].terminal_id, "t7");
+    assert!(core.list(false).unwrap().terminals.is_empty());
+    let removed = apply(
+        &core,
+        added,
+        &Edit::RemoveMember {
+            id: id(1),
+            core_id,
+            terminal_id: "t7".into(),
+        },
+    )
+    .unwrap();
+    assert!(removed.value.workspaces()[0].members.is_empty());
+    assert_eq!(read(&core).unwrap().version, 3);
+    assert!(core.list(false).unwrap().terminals.is_empty());
+}

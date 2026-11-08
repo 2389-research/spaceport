@@ -50,10 +50,19 @@ impl SheprdWindow {
                 );
             }
             Access::Ready(document) => {
-                for workspace in document.value.workspaces().iter().take(50) {
+                let remaining = document.value.workspaces().len().saturating_sub(50);
+                let workspaces: Vec<_> = document
+                    .value
+                    .workspaces()
+                    .iter()
+                    .take(50)
+                    .cloned()
+                    .collect();
+                for workspace in &workspaces {
                     let label = workspace.label.clone();
                     let id = workspace.id;
                     let archived = workspace.archived;
+                    let selected = self.core_terminals.workspace_ui.selected_group == Some(id);
                     section = section.child(
                         div()
                             .id(SharedString::from(format!(
@@ -66,6 +75,7 @@ impl SheprdWindow {
                             .items_center()
                             .justify_between()
                             .py_1()
+                            .when(selected, |row| row.bg(rgb(theme.active)))
                             .text_color(rgb(if archived {
                                 theme.subtext()
                             } else {
@@ -73,10 +83,17 @@ impl SheprdWindow {
                             }))
                             .child(
                                 div()
+                                    .id(SharedString::from(format!("core-workspace-select-{id}")))
                                     .flex_1()
                                     .min_w_0()
                                     .truncate()
-                                    .child(crate::sidebar::label_text(&label)),
+                                    .role(Role::Button)
+                                    .aria_label(label.clone())
+                                    .cursor_pointer()
+                                    .child(crate::sidebar::label_text(&label))
+                                    .on_click(cx.listener(move |this, _, _, cx| {
+                                        this.select_core_workspace(id, cx);
+                                    })),
                             )
                             .child(
                                 div()
@@ -99,8 +116,10 @@ impl SheprdWindow {
                                     )),
                             ),
                     );
+                    if selected {
+                        section = section.child(self.render_core_workspace_members(workspace, cx));
+                    }
                 }
-                let remaining = document.value.workspaces().len().saturating_sub(50);
                 if remaining > 0 {
                     section = section.child(
                         div()
@@ -145,6 +164,179 @@ impl SheprdWindow {
             }
         }
         section.into_any_element()
+    }
+
+    fn render_core_workspace_members(
+        &self,
+        workspace: &crate::core_terminals::workspace_document::Workspace,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let group = workspace.id;
+        let theme = &self.theme;
+        let observed_core = cx
+            .try_global::<observation::Observation>()
+            .filter(|observation| observation.projection().fresh())
+            .and_then(|observation| observation.projection().core_id());
+        let local_core = self
+            .core_terminals
+            .hub
+            .backend()
+            .filter(|backend| !backend.core().is_lost())
+            .map(|backend| backend.core().hello().core.id.as_str())
+            .filter(|id| Some(*id) == observed_core);
+        let terminals = cx
+            .try_global::<observation::Observation>()
+            .filter(|observation| observation.projection().fresh())
+            .map(|observation| observation.projection().terminals())
+            .unwrap_or_default();
+        let mut rows = div().flex().flex_col().pl_3();
+        for member in workspace.members.iter().take(50) {
+            let core_id = member.core_id.clone();
+            let terminal_id = member.terminal_id.clone();
+            let live = if local_core == Some(core_id.as_str()) {
+                terminals
+                    .iter()
+                    .find(|info| info.id.as_str() == terminal_id)
+            } else {
+                None
+            };
+            let available = live.is_some();
+            let label = match live {
+                Some(info) => bounded(
+                    info.name
+                        .as_deref()
+                        .or(info.title.as_deref())
+                        .unwrap_or(&terminal_id),
+                ),
+                None => format!(
+                    "{core_id}/{terminal_id} ({})",
+                    fl!("core-workspace-member-unavailable")
+                ),
+            };
+            let open_core = core_id.clone();
+            let open_terminal = terminal_id.clone();
+            let remove_core = core_id.clone();
+            let remove_terminal = terminal_id.clone();
+            let remove_selector = format!("core-member-remove-{group}-{core_id}-{terminal_id}");
+            let row_core = core_id.clone();
+            let row_terminal = terminal_id.clone();
+            rows = rows.child(
+                div()
+                    .id(SharedString::from(format!(
+                        "core-member-{core_id}-{terminal_id}"
+                    )))
+                    .debug_selector(move || format!("core-member-{row_core}-{row_terminal}"))
+                    .flex()
+                    .items_center()
+                    .justify_between()
+                    .min_w_0()
+                    .child(
+                        div()
+                            .id(SharedString::from(format!(
+                                "core-member-open-{group}-{open_core}-{open_terminal}"
+                            )))
+                            .flex_1()
+                            .min_w_0()
+                            .truncate()
+                            .text_color(rgb(if available {
+                                theme.foreground
+                            } else {
+                                theme.muted
+                            }))
+                            .when(available, |row| {
+                                row.role(Role::Button)
+                                    .aria_label(format!("{core_id}/{terminal_id}"))
+                                    .cursor_pointer()
+                                    .on_click(cx.listener(move |this, _, window, cx| {
+                                        this.open_core_workspace_member(
+                                            group,
+                                            &open_core,
+                                            &open_terminal,
+                                            window,
+                                            cx,
+                                        );
+                                    }))
+                            })
+                            .child(crate::sidebar::label_text(&label)),
+                    )
+                    .child(
+                        div()
+                            .id(SharedString::from(remove_selector.clone()))
+                            .debug_selector(move || remove_selector.clone())
+                            .role(Role::Button)
+                            .aria_label(fl!("core-workspace-member-remove"))
+                            .cursor_pointer()
+                            .px_2()
+                            .child("−")
+                            .on_click(cx.listener(move |this, _, _, cx| {
+                                this.toggle_core_workspace_member(
+                                    group,
+                                    remove_core.clone(),
+                                    remove_terminal.clone(),
+                                    false,
+                                    cx,
+                                );
+                            })),
+                    ),
+            );
+        }
+        let remaining = workspace.members.len().saturating_sub(50);
+        if remaining > 0 {
+            rows = rows.child(fl!("core-workspace-members-more", count = remaining));
+        }
+        if let Some(local_core) = local_core {
+            let available = terminals.iter().filter(|info| {
+                !info.id.as_str().contains('/')
+                    && !workspace.members.iter().any(|member| {
+                        member.core_id == local_core && member.terminal_id == info.id.as_str()
+                    })
+            });
+            for info in available.take(50) {
+                let core_id = local_core.to_owned();
+                let terminal_id = info.id.to_string();
+                let label = bounded(
+                    info.name
+                        .as_deref()
+                        .or(info.title.as_deref())
+                        .unwrap_or(info.id.as_str()),
+                );
+                rows = rows.child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .justify_between()
+                        .min_w_0()
+                        .child(
+                            div()
+                                .flex_1()
+                                .min_w_0()
+                                .truncate()
+                                .child(crate::sidebar::label_text(&label)),
+                        )
+                        .child(
+                            div()
+                                .id(SharedString::from(format!(
+                                    "core-member-add-{group}-{core_id}-{terminal_id}"
+                                )))
+                                .role(Role::Button)
+                                .aria_label(fl!("core-workspace-member-add"))
+                                .cursor_pointer()
+                                .px_2()
+                                .child("+")
+                                .on_click(cx.listener(move |this, _, _, cx| {
+                                    this.toggle_core_workspace_member(
+                                        group,
+                                        core_id.clone(),
+                                        terminal_id.clone(),
+                                        true,
+                                        cx,
+                                    );
+                                })),
+                        ),
+                );
+            }
+        }
+        rows
     }
 
     pub(crate) fn render_core_workspace_actions(&self, cx: &mut Context<Self>) -> Div {

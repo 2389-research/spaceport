@@ -22,3 +22,7 @@ core-workspace-delete-note = Delete “{ $name }” ({ $id }) from the grouping 
 core-workspace-editing = Saving Core group…
 core-workspace-changed = Core groups changed. Close and reopen the dialog before editing.
 core-workspace-actions = Core group actions
+core-workspace-member-add = Add terminal to Core group
+core-workspace-member-remove = Remove terminal from Core group
+core-workspace-member-unavailable = unavailable
+core-workspace-members-more = { $count } more terminal references

@@ -18,6 +18,19 @@ fn terminal(id: &str) -> TerminalInfo {
     }
 }
 
+#[test]
+fn observed_core_identity_does_not_survive_loss_or_new_epoch() {
+    let mut projection = Projection::default();
+    projection.begin(1);
+    projection.core_id = Some("core-a".into());
+    projection.initial(1, vec![terminal("t7")], Ok(document(1)));
+    assert_eq!(projection.core_id(), Some("core-a"));
+    projection.lost(1);
+    assert_eq!(projection.core_id(), None);
+    projection.begin(2);
+    assert_eq!(projection.core_id(), None);
+}
+
 fn document(version: u64) -> VersionedDocument {
     parse_document(Ok(Doc {
         value: json!({"schema_version": 1, "workspaces": []}),

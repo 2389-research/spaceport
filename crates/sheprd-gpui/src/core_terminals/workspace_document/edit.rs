@@ -12,10 +12,31 @@ use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(in crate::core_terminals) enum Edit {
     // keep-sorted start
-    Archive { id: Uuid, archived: bool },
-    Create { id: Uuid, label: String },
-    Delete { id: Uuid },
-    Rename { id: Uuid, label: String },
+    AddMember {
+        id: Uuid,
+        core_id: String,
+        terminal_id: String,
+    },
+    Archive {
+        id: Uuid,
+        archived: bool,
+    },
+    Create {
+        id: Uuid,
+        label: String,
+    },
+    Delete {
+        id: Uuid,
+    },
+    RemoveMember {
+        id: Uuid,
+        core_id: String,
+        terminal_id: String,
+    },
+    Rename {
+        id: Uuid,
+        label: String,
+    },
     // keep-sorted end
 }
 
@@ -23,18 +44,30 @@ impl Edit {
     fn id(&self) -> Uuid {
         match self {
             Self::Create { id, .. }
+            | Self::AddMember { id, .. }
             | Self::Rename { id, .. }
             | Self::Archive { id, .. }
+            | Self::RemoveMember { id, .. }
             | Self::Delete { id } => *id,
         }
     }
 
     fn change(&self, document: &mut Document) -> super::Result<()> {
         match self {
+            Self::AddMember {
+                id,
+                core_id,
+                terminal_id,
+            } => document.add_member(*id, core_id, terminal_id),
             Self::Create { id, label } => document.create(*id, label),
             Self::Rename { id, label } => document.rename(*id, label),
             Self::Archive { id, archived } => document.archive(*id, *archived),
             Self::Delete { id } => document.delete(*id),
+            Self::RemoveMember {
+                id,
+                core_id,
+                terminal_id,
+            } => document.remove_member(*id, core_id, terminal_id),
         }
     }
 

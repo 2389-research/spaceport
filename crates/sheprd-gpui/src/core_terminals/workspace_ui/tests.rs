@@ -4,6 +4,88 @@ use sheprd_core_client::{Error, Method, wire::Doc};
 use uuid::Uuid;
 
 #[gpui::test]
+fn selecting_a_group_shows_exact_member_identity_without_changing_the_document(
+    cx: &mut gpui::TestAppContext,
+) {
+    let id = Uuid::from_u128(71);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    cx.update(|_, cx| {
+        observation::set_document_for_test(
+            cx,
+            Doc {
+                value: serde_json::json!({"schema_version": 1, "workspaces": [{
+                    "id": id, "label": "One", "members": [
+                        {"core_id": "core-a", "terminal_id": "t7"},
+                        {"core_id": "core-b", "terminal_id": "t7"}
+                    ]
+                }]}),
+                version: 3,
+            },
+        );
+        view.update(cx, |view, cx| {
+            view.select_core_workspace(id, cx);
+            assert_eq!(view.core_terminals.workspace_ui.selected_group, Some(id));
+            assert!(
+                matches!(view.core_workspace_access(cx), Access::Ready(doc) if doc.version == 3)
+            );
+        });
+    });
+    cx.update(|window, cx| sidebar::layout_tests::full_draw(window, cx).clear(cx));
+    assert!(cx.debug_bounds("core-member-core-a-t7").is_some());
+    assert!(cx.debug_bounds("core-member-core-b-t7").is_some());
+}
+
+#[gpui::test]
+fn selected_group_members_disappear_when_core_observation_is_stale(cx: &mut gpui::TestAppContext) {
+    let id = Uuid::from_u128(71);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    cx.update(|_, cx| {
+        observation::set_document_for_test(cx, Doc {
+            value: serde_json::json!({"schema_version": 1, "workspaces": [{
+                "id": id, "label": "One", "members": [{"core_id": "core-a", "terminal_id": "t7"}]
+            }]}),
+            version: 3,
+        });
+        view.update(cx, |view, cx| view.select_core_workspace(id, cx));
+    });
+    cx.update(|window, cx| sidebar::layout_tests::full_draw(window, cx).clear(cx));
+    assert!(cx.debug_bounds("core-member-core-a-t7").is_some());
+    cx.update(|_, cx| observation::set_document_stale_for_test(cx));
+    cx.update(|window, cx| sidebar::layout_tests::full_draw(window, cx).clear(cx));
+    assert!(cx.debug_bounds("core-member-core-a-t7").is_none());
+}
+
+#[gpui::test]
+fn a_narrow_selected_group_keeps_member_action_in_bounds(cx: &mut gpui::TestAppContext) {
+    use gpui::{px, size};
+
+    let id = Uuid::from_u128(71);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    cx.update(|_, cx| {
+        observation::set_document_for_test(
+            cx,
+            Doc {
+                value: serde_json::json!({"schema_version": 1, "workspaces": [{
+                    "id": id, "label": "A long group name", "members": [{
+                        "core_id": "core-a", "terminal_id": "very-long-terminal-identity"
+                    }]
+                }]}),
+                version: 3,
+            },
+        );
+        view.update(cx, |view, cx| view.select_core_workspace(id, cx));
+    });
+    cx.simulate_resize(size(px(320.), px(900.)));
+    cx.update(|window, cx| sidebar::layout_tests::full_draw(window, cx).clear(cx));
+    let row = cx
+        .debug_bounds("core-member-core-a-very-long-terminal-identity")
+        .unwrap();
+    let action = cx.debug_bounds("core-member-remove-00000000-0000-0000-0000-000000000047-core-a-very-long-terminal-identity").unwrap();
+    assert!(action.left() >= row.left() && action.right() <= row.right());
+    assert!(row.right() <= px(320.));
+}
+
+#[gpui::test]
 fn group_actions_keep_their_full_uuid_and_delete_waits_for_confirmation(
     cx: &mut gpui::TestAppContext,
 ) {

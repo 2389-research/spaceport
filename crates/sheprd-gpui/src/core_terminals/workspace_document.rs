@@ -122,6 +122,39 @@ impl Document {
         Ok(())
     }
 
+    pub fn add_member(&mut self, id: Uuid, core_id: &str, terminal_id: &str) -> Result<()> {
+        if !valid_core_id(core_id) || !valid_terminal_id(terminal_id) {
+            return Err(Error::InvalidTerminalRef);
+        }
+        let workspace = self.find_mut(id)?;
+        if workspace
+            .members
+            .iter()
+            .any(|member| member.core_id == core_id && member.terminal_id == terminal_id)
+        {
+            return Err(Error::DuplicateTerminalRef);
+        }
+        workspace.members.push(TerminalRef {
+            core_id: core_id.to_owned(),
+            terminal_id: terminal_id.to_owned(),
+            extra: BTreeMap::new(),
+        });
+        Ok(())
+    }
+
+    pub fn remove_member(&mut self, id: Uuid, core_id: &str, terminal_id: &str) -> Result<()> {
+        let workspace = self.find_mut(id)?;
+        let Some(index) = workspace
+            .members
+            .iter()
+            .position(|member| member.core_id == core_id && member.terminal_id == terminal_id)
+        else {
+            return Err(Error::MissingTerminalRef);
+        };
+        workspace.members.remove(index);
+        Ok(())
+    }
+
     pub fn delete(&mut self, id: Uuid) -> Result<()> {
         let Some(index) = self
             .workspaces

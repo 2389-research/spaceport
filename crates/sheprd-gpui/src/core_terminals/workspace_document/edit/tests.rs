@@ -39,6 +39,23 @@ fn same_workspace_edit_cannot_rebase() {
 }
 
 #[test]
+fn membership_rebases_only_when_target_group_is_unchanged() {
+    let mut base = Document::read(serde_json::Value::Null).unwrap();
+    base.create(id(1), "One").unwrap();
+    let mut unrelated = base.clone();
+    unrelated.create(id(2), "Two").unwrap();
+    let edit = Edit::AddMember {
+        id: id(1),
+        core_id: "core-a".into(),
+        terminal_id: "t7".into(),
+    };
+    assert!(edit.disjoint(&base, &unrelated));
+    let mut changed = base.clone();
+    changed.add_member(id(1), "core-b", "t8").unwrap();
+    assert!(!edit.disjoint(&base, &changed));
+}
+
+#[test]
 fn same_workspace_creation_cannot_rebase() {
     let base = Document::read(serde_json::Value::Null).unwrap();
     let mut latest = base.clone();

@@ -77,7 +77,7 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_crud_controls_and_guard_headless_passed; full_ui_core_crud_two_client_and_native_not_run",
+      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_crud_and_selection_headless_passed; local_membership_document_passed_private_core; full_ui_two_client_remote_membership_and_native_not_run",
       "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md", "evidence/t03-workspace-document.md", "evidence/t03-observation.md", "evidence/t03-document-edits.md", "evidence/t03-workspace-ui.md"]
     },
     {

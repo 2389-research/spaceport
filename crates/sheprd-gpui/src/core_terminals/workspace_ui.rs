@@ -5,10 +5,19 @@ mod render;
 
 use super::{
     observation,
+    panes::Panes,
     workspace_document::{VersionedDocument, edit},
 };
-use crate::{SheprdWindow, dialog_input::DialogInput, i18n::fl, menu::Page, window::Flash};
+use crate::{
+    SheprdWindow,
+    browser::{Location, Store},
+    dialog_input::DialogInput,
+    i18n::fl,
+    menu::Page,
+    window::Flash,
+};
 use gpui::{prelude::*, *};
+use sheprd_backend::TerminalId;
 use std::sync::{
     Arc, Mutex, MutexGuard,
     mpsc::{self, Receiver, TryRecvError},
@@ -20,6 +29,7 @@ pub(super) struct State {
     dialog_generation: u64,
     pending: Option<Pending>,
     selected: MenuAction,
+    selected_group: Option<Uuid>,
     target: Option<DialogTarget>,
 }
 
@@ -169,6 +179,174 @@ impl SheprdWindow {
             cx.try_global::<observation::Observation>()
                 .map(|observation| observation.projection()),
         )
+    }
+
+    fn select_core_workspace(&mut self, id: Uuid, cx: &mut Context<Self>) {
+        if !matches!(self.core_workspace_access(cx), Access::Ready(doc) if doc.value.workspaces().iter().any(|row| row.id == id))
+        {
+            return;
+        }
+        let selected = &mut self.core_terminals.workspace_ui.selected_group;
+        *selected = if *selected == Some(id) {
+            None
+        } else {
+            Some(id)
+        };
+        cx.notify();
+    }
+
+    fn toggle_core_workspace_member(
+        &mut self,
+        group: Uuid,
+        core_id: String,
+        terminal_id: String,
+        member: bool,
+        cx: &mut Context<Self>,
+    ) {
+        let document = match self.core_workspace_access(cx) {
+            Access::Ready(document) => document,
+            _ => {
+                self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
+                return;
+            }
+        };
+        let Some(workspace) = document
+            .value
+            .workspaces()
+            .iter()
+            .find(|row| row.id == group)
+        else {
+            return;
+        };
+        let present = workspace
+            .members
+            .iter()
+            .any(|item| item.core_id == core_id && item.terminal_id == terminal_id);
+        if present == member {
+            return;
+        }
+        if member {
+            let local = self
+                .core_terminals
+                .hub
+                .backend()
+                .map(|backend| &backend.core().hello().core.id);
+            let observed = cx
+                .try_global::<observation::Observation>()
+                .is_some_and(|observation| {
+                    observation.projection().fresh()
+                        && observation.projection().core_id() == Some(core_id.as_str())
+                        && observation
+                            .projection()
+                            .terminals()
+                            .iter()
+                            .any(|info| info.id.as_str() == terminal_id)
+                });
+            if local != Some(&core_id) || terminal_id.contains('/') || !observed {
+                self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
+                return;
+            }
+        }
+        let edit = if member {
+            edit::Edit::AddMember {
+                id: group,
+                core_id,
+                terminal_id,
+            }
+        } else {
+            edit::Edit::RemoveMember {
+                id: group,
+                core_id,
+                terminal_id,
+            }
+        };
+        self.submit_core_workspace_edit(edit, cx);
+        if let Some(error) = self.menu.error.take() {
+            self.show_flash(Flash::warning(error), cx);
+        }
+    }
+
+    fn open_core_workspace_member(
+        &mut self,
+        group: Uuid,
+        core_id: &str,
+        terminal_id: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let Some(backend) = self.core_terminals.hub.backend() else {
+            return;
+        };
+        if backend.core().is_lost() || backend.core().hello().core.id != core_id {
+            return;
+        }
+        let Access::Ready(document) = self.core_workspace_access(cx) else {
+            return;
+        };
+        if !document.value.workspaces().iter().any(|workspace| {
+            workspace.id == group
+                && workspace
+                    .members
+                    .iter()
+                    .any(|member| member.core_id == core_id && member.terminal_id == terminal_id)
+        }) {
+            return;
+        }
+        let observed = cx
+            .try_global::<observation::Observation>()
+            .is_some_and(|observation| {
+                observation.projection().fresh()
+                    && observation.projection().core_id() == Some(core_id)
+                    && observation
+                        .projection()
+                        .terminals()
+                        .iter()
+                        .any(|info| info.id.as_str() == terminal_id)
+            });
+        if !observed || terminal_id.contains('/') {
+            return;
+        }
+        let Ok(terminal) = TerminalId::new(terminal_id.to_owned()) else {
+            return;
+        };
+        if self.selected_is_remote() {
+            self.show_flash(Flash::warning(fl!("core-terminals-local-only")), cx);
+            return;
+        }
+        let Some((scope, workspace)) = self.browser_key() else {
+            self.show_flash(Flash::warning(fl!("core-terminals-open-workspace")), cx);
+            return;
+        };
+        let existing = cx.try_global::<Store>().and_then(|store| {
+            store
+                .in_workspace(&scope, &workspace)
+                .find_map(|tab| match &tab.location {
+                    Some(Location::CoreTerminal {
+                        panes,
+                        observe: false,
+                    }) if panes.contains(&terminal) => Some(tab.id),
+                    _ => None,
+                })
+        });
+        let tab = existing.or_else(|| {
+            Store::update(cx, |store| {
+                store.open(
+                    scope,
+                    &workspace,
+                    Some(Location::CoreTerminal {
+                        panes: Panes::single(terminal.clone()),
+                        observe: false,
+                    }),
+                    None,
+                )
+            })
+        });
+        if let Some(tab) = tab {
+            self.sync_core_views(cx);
+            self.show_core_pane(tab, &terminal, window, cx);
+        } else {
+            self.show_flash(Flash::warning(fl!("core-terminals-too-many-tabs")), cx);
+        }
     }
 
     pub(crate) fn open_core_workspace_dialog(
@@ -480,7 +658,9 @@ impl SheprdWindow {
             return;
         };
         let dismiss_page = match &edit {
-            edit::Edit::Archive { .. } => None,
+            edit::Edit::AddMember { .. }
+            | edit::Edit::Archive { .. }
+            | edit::Edit::RemoveMember { .. } => None,
             edit::Edit::Create { .. } => Some(Page::CoreWorkspaceCreate),
             edit::Edit::Delete { .. } => Some(Page::CoreWorkspaceDelete),
             edit::Edit::Rename { .. } => Some(Page::CoreWorkspaceRename),

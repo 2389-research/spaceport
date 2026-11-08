@@ -46,6 +46,7 @@ enum Freshness {
 
 #[derive(Clone, Default)]
 pub(super) struct Projection {
+    core_id: Option<String>,
     epoch: u64,
     freshness: Freshness,
     terminals: Vec<TerminalInfo>,
@@ -62,6 +63,7 @@ impl Projection {
     }
 
     pub fn begin(&mut self, epoch: u64) {
+        self.core_id = None;
         self.epoch = epoch;
         self.freshness = Freshness::Synchronizing;
         self.terminals.clear();
@@ -128,6 +130,7 @@ impl Projection {
             return;
         }
         self.freshness = Freshness::Stale;
+        self.core_id = None;
         self.terminals.clear();
         self.document = None;
         self.error = None;
@@ -180,6 +183,10 @@ impl Projection {
 
     pub fn terminals(&self) -> &[TerminalInfo] {
         &self.terminals
+    }
+
+    pub fn core_id(&self) -> Option<&str> {
+        self.core_id.as_deref()
     }
 
     pub fn document(&self) -> Option<&VersionedDocument> {
@@ -351,6 +358,13 @@ pub(super) fn set_document_for_test(cx: &mut App, doc: Doc) {
 }
 
 #[cfg(test)]
+pub(super) fn set_document_stale_for_test(cx: &mut App) {
+    let observation = cx.global_mut::<Observation>();
+    let epoch = observation.projection.epoch;
+    observation.projection.lost(epoch);
+}
+
+#[cfg(test)]
 pub(super) fn set_machines_for_test(cx: &mut App, machines: Option<Vec<MachineView>>) {
     if !cx.has_global::<Observation>() {
         Observation::install(cx);
@@ -417,6 +431,7 @@ fn watch(
     projection: &mut Projection,
 ) -> Result<(), Error> {
     let (terminals, mut changes) = backend.watch()?;
+    projection.core_id = Some(backend.core().hello().core.id.clone());
     let document = parse_document(backend.core().doc_get(NAME, None));
     projection.initial(epoch, terminals, document);
     publish(mailbox, projection);

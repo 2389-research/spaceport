@@ -22,6 +22,8 @@ pub enum Error {
     InvalidWorkspaceId,
     #[error("workspace document contains malformed JSON fields")]
     Json(#[from] serde_json::Error),
+    #[error("workspace does not contain this terminal reference")]
+    MissingTerminalRef,
     #[error("workspace {0} is missing")]
     MissingWorkspace(Uuid),
     #[error("workspace document schema {0} is newer than this client")]
