@@ -4,6 +4,7 @@ use crate::review::{
     diff::{Diff, RowId},
     view::Loaded,
 };
+use gpui::{KeyDownEvent, Keystroke};
 
 fn draw(cx: &mut gpui::VisualTestContext) {
     cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
@@ -24,6 +25,22 @@ fn hunks() -> Loaded {
         hunk(100, 60),
         hunk(5, 60),
     )))
+}
+
+#[gpui::test]
+fn editor_key_is_not_a_review_action(cx: &mut gpui::TestAppContext) {
+    let (view, cx) = window(cx, None);
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            view.seed_review(hunks(), window, cx);
+            let key = KeyDownEvent {
+                keystroke: Keystroke::parse("e").unwrap(),
+                is_held: false,
+                prefer_character_input: false,
+            };
+            assert!(!view.review_key(the(view), &key, window, cx));
+        })
+    });
 }
 
 #[gpui::test]

@@ -78,9 +78,6 @@ fn local_rich_document_link_opens_only_on_click_and_keeps_original_copy(cx: &mut
     std::fs::write(&path, "# Synthetic notes\n").unwrap();
     let source = document_link("Changes and verification details", &path);
     let (view, _peer, cx) = overlay::open(cx, ConnectTarget::Local);
-    view.update(cx, |view, _| {
-        view.config.open_files_in = crate::config::FileTarget::System;
-    });
     let program = Program::new();
     let _stream = overlay::attach_with(
         &view,

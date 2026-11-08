@@ -149,16 +149,6 @@ focus_follows_mouse = true
 # layout, true from both, and false never. Alt always reaches the pane on
 # Linux and Windows.
 option_as_alt = "auto"
-# Where a Cmd-click (Ctrl-click elsewhere) on a file path a pane printed, such
-# as `src/main.rs:42`, opens it: "editor" (the terminal editor, at that line,
-# in a pane split beside the one that printed it) or "system" (the default
-# application). Folders, images, and PDFs always open in the system's
-# application, as does every file on Windows. Holding Alt (Option) as well opens a
-# file in the other one.
-open_files_in = "editor"
-# How that editor starts. Unset, the pane's $VISUAL or $EDITOR runs, then vi,
-# as `$EDITOR +LINE FILE`. `{file}` and `{line}` place the two yourself:
-# editor_command = "hx {file}:{line}"
 # Keep a terminal selection highlighted after releasing the mouse copies it,
 # until the next click or keystroke. Cmd-C and Edit > Copy copy it again, and
 # selection tools and screen readers can still read it. false clears it on

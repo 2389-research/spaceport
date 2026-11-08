@@ -20,11 +20,10 @@ pub(super) fn hyperlinked(target: &str) -> Arc<PaneSurfaceFrame> {
 }
 
 /// Shows a hyperlink to `document`. Its file opens in the system's
-/// application, which the test observes, rather than the terminal editor:
-/// these tests are about which clicks reach the daemon.
+/// application, which the test observes; these tests are about which
+/// clicks reach the daemon.
 fn show(view: &mut SheprdWindow, document: &Document) {
     view.live.surface = Some(hyperlinked(&document.url()));
-    view.config.open_files_in = crate::config::FileTarget::System;
 }
 
 /// A Markdown file in a directory of its own, removed when dropped.

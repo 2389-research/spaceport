@@ -2737,11 +2737,7 @@ wraps its own output under a list item. Once the whole path is found on disk,
 every row of it is underlined, and a click on any of them opens it. Paths are
 not links in panes on SSH hosts, whose files live on that host.
 
-A file opens in your terminal editor at the printed line, in a new pane split
-to the right of the pane that printed it (see [Code Navigation](#code-navigation)).
-Folders, images, videos, and PDFs open with the system's default application
-instead, as does every file with `open_files_in = "system"`. Holding Alt
-(Option on macOS) as well opens a file in the other one. There, terminal output
+A clicked file opens through the system's default application. Terminal output
 is untrusted, so a click never launches anything: only a plain folder or a
 non-executable document (text, source, Markdown, JSON, images, PDF, and
 similar) opens itself, judged by where symlinks lead. An application, script,
@@ -2814,39 +2810,6 @@ the daemon exposes to clients:
   clipboard, local or remote, through the same bounded path as any pane. A plugin
   that runs a clipboard command such as `pbcopy` on a remote host writes that
   host's clipboard, not this one.
-
-## Code Navigation
-
-Sheprd is not an editor, but it can get you to the right line quickly,
-next to the agent that is changing the code.
-
-- **Open in your editor.** Cmd-click (Ctrl-click elsewhere) a printed path
-  such as `src/main.rs:42` to open it at that line in your terminal editor, in
-  a new pane split to the right of the pane that printed it. In a
-  [review](#reviewing-an-agents-changes), `e` opens the file at the top of the
-  diff the same way. Quitting the editor closes its pane. When the editor is
-  Neovim, later files for the same tab open in that Neovim instead of a new
-  split, as [herdr-nvim](https://github.com/ChmaraX/herdr-nvim)'s sidebar
-  does.
-The editor is `$VISUAL`, then `$EDITOR`, then `vi`, as the new pane's shell
-sees them, started as `EDITOR +LINE FILE`. Set `editor_command` to choose
-another, with `{file}` and `{line}` placeholders where it needs them, such as
-`editor_command = "hx {file}:{line}"`. Placeholders may sit inside double
-quotes, as in `subl "{file}:{line}"`; either way the path stays one word. The command is typed into the pane's
-shell, so the file's path must not contain a quote, backslash, or control
-character; such a file opens in the system's application instead.
-
-A Neovim editor is started with `--listen` on a socket in this app's private
-state folder (`herdr/gpui/nvim` under `$XDG_STATE_HOME` or `~/.local/state`,
-created with mode 700), and
-reused with `nvim --server … --remote-expr`, which opens the file with `:drop`,
-so `nvim` must be on the app's `PATH`. If that Neovim has quit, the file opens
-in a new split; if it is busy, such as on a swap-file prompt, its pane comes
-forward to be answered. An `editor_command`
-naming `nvim` listens too; one with `{file}` or `{line}` runs exactly as
-written and is never reused.
-On Windows, where a pane's shell has no `sh` to start the editor with, printed
-paths open in the system's application.
 
 ## Devices Overview
 

@@ -60,7 +60,6 @@ mod devices_overview;
 mod dialog_input;
 mod direction;
 mod dispatch;
-mod editor;
 mod endpoint;
 mod error;
 mod fan_out;

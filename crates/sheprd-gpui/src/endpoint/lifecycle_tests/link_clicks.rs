@@ -16,7 +16,6 @@ fn an_unchecked_path_leaves_the_click_to_the_application(cx: &mut gpui::TestAppC
     let position = cx.update(|_, cx| {
         view.update(cx, |view, cx| {
             prepare_mouse(view, endpoint, cx);
-            view.config.open_files_in = crate::config::FileTarget::System;
             let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
             snapshot.panes[0].cwd = Some(root.path().to_str().unwrap().into());
             snapshot.panes[0].foreground_cwd = snapshot.panes[0].cwd.clone();

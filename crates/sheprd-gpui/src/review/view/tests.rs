@@ -241,7 +241,6 @@ fn notes_go_to_the_focused_agent_or_the_workspace_s_first() {
 mod any_repository;
 mod base;
 mod colours;
-mod editor;
 mod en_xa;
 mod files;
 mod find_again;

@@ -609,8 +609,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         navigations: Default::default(),
         worktree_script: None,
         wsl_paste: None,
-        editor_open: None,
-        editor_panes: Vec::new(),
         teleport: None,
         teleport_marks: crate::teleport::Marks::detached(),
         teleport_follow: None,

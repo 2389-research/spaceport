@@ -14,7 +14,6 @@
 //! which would reach out to another machine, opens nothing.
 
 use super::SheprdWindow;
-use crate::editor::EditorTarget;
 use crate::terminal::{PaneLink, RowTarget, pane_link_at};
 use gpui::{Context, Pixels, Point};
 use std::{
@@ -62,7 +61,6 @@ pub(super) enum Unresolved {
 
 /// Where a clicked path opens, decided off the UI thread.
 enum Opened {
-    Editor(EditorTarget),
     System(url::Url),
     /// An explicit hyperlink's file is not there.
     Missing(PathBuf),
@@ -274,39 +272,19 @@ impl SheprdWindow {
         .detach();
     }
 
-    /// Opens the file `link` names, once a background check finds it there:
-    /// in the terminal editor beside its pane when `in_editor` and the file
-    /// is one an editor shows, and otherwise with the system's default
-    /// application, or the folder holding it when it is not a known document.
-    pub(crate) fn open_file_link(
-        &mut self,
-        link: FileLink,
-        in_editor: bool,
-        cx: &mut Context<Self>,
-    ) {
-        let pane = link.pane_id.clone();
+    /// Opens a clicked file with the system's default application, or the
+    /// folder holding it when the file is not a known document.
+    pub(crate) fn open_file_link(&mut self, link: FileLink, cx: &mut Context<Self>) {
         let selection_epoch = self.selection_epoch;
         let found = cx.background_executor().spawn(async move {
             let home = crate::config::home().ok();
             let path = link.resolve(home.as_deref())?;
-            let real = match real_path(&path) {
-                Ok(real) => real,
+            match real_path(&path) {
+                Ok(_) => {}
                 // The system opens a missing file silently, so the click
                 // on a link that promised one is answered here.
                 Err(Unresolved::Missing) if link.explicit => return Some(Opened::Missing(path)),
                 Err(_) => return None,
-            };
-            if in_editor
-                && std::fs::metadata(&real)
-                    .is_ok_and(|metadata| EditorTarget::editable(&real, &metadata))
-            {
-                let target = EditorTarget {
-                    path: path.clone(),
-                    line: link.line,
-                };
-                if crate::editor::command_line(&target, None, None).is_ok() {
-                    return Some(Opened::Editor(target));
-                }
             }
             url::Url::from_file_path(opened(&path)?)
                 .ok()
@@ -324,7 +302,6 @@ impl SheprdWindow {
                     return;
                 }
                 match opened {
-                    Opened::Editor(target) => this.open_in_editor(&target, Some(&pane), cx),
                     Opened::System(url) => cx.open_url(url.as_str()),
                     Opened::Missing(path) => this.show_flash(
                         super::flash::Flash::warning(

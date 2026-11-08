@@ -132,9 +132,6 @@ pub struct LiveState {
     /// `tab.create`), kept apart from dialogs so opening one cannot lose it.
     /// Cleared from the mailbox once the script job has read it.
     pub(crate) script_response: Option<(String, Option<DialogResponse>)>,
-    /// The `pane.split` an editor pane is waiting on, in its own slot for
-    /// the same reason. Cleared from the mailbox once the job has read it.
-    pub(crate) editor_response: Option<(String, Option<DialogResponse>)>,
     /// The `worktree.remove` a merged worktree cleanup is waiting on, in its
     /// own slot so it and an open dialog cannot take each other's answer.
     pub(crate) cleanup_response: Option<(String, Option<DialogResponse>)>,
@@ -240,7 +237,6 @@ impl Default for LiveState {
             dirty: true,
             dialog_response: None,
             script_response: None,
-            editor_response: None,
             cleanup_response: None,
             landing_response: None,
             notifications: Default::default(),
@@ -265,7 +261,6 @@ impl Default for LiveState {
 pub(crate) enum Answer {
     // keep-sorted start
     Cleanup,
-    Editor,
     Landing,
     Script,
     // keep-sorted end
@@ -275,7 +270,6 @@ impl LiveState {
     fn answer_slot(&mut self, answer: Answer) -> &mut Option<(String, Option<DialogResponse>)> {
         match answer {
             Answer::Cleanup => &mut self.cleanup_response,
-            Answer::Editor => &mut self.editor_response,
             Answer::Landing => &mut self.landing_response,
             Answer::Script => &mut self.script_response,
         }
@@ -344,7 +338,6 @@ impl LiveState {
             dirty: _,
             dialog_response,
             script_response,
-            editor_response,
             cleanup_response,
             landing_response,
             notifications,
@@ -409,10 +402,6 @@ impl LiveState {
                 (Some((a, None)), Some((b, None))) => a == b,
                 (a, b) => a.is_none() && b.is_none(),
             }
-            && match (editor_response, &self.editor_response) {
-                (Some((a, None)), Some((b, None))) => a == b,
-                (a, b) => a.is_none() && b.is_none(),
-            }
             && match (cleanup_response, &self.cleanup_response) {
                 (Some((a, None)), Some((b, None))) => a == b,
                 (a, b) => a.is_none() && b.is_none(),
@@ -448,7 +437,6 @@ impl LiveState {
         [
             &self.dialog_response,
             &self.script_response,
-            &self.editor_response,
             &self.cleanup_response,
             &self.landing_response,
         ]
@@ -652,7 +640,6 @@ impl LiveState {
                 for (id, result) in [
                     &mut self.dialog_response,
                     &mut self.script_response,
-                    &mut self.editor_response,
                     &mut self.cleanup_response,
                     &mut self.landing_response,
                 ]
@@ -732,7 +719,6 @@ impl LiveState {
                 }
                 for (id, result) in [
                     &mut self.script_response,
-                    &mut self.editor_response,
                     &mut self.cleanup_response,
                     &mut self.landing_response,
                 ]

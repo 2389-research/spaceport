@@ -133,7 +133,6 @@ fn a_document_check_cannot_open_after_switching_endpoints(cx: &mut gpui::TestApp
                 cwd: Some(directory.path().to_str().unwrap().into()),
                 explicit: true,
             },
-            false,
             cx,
         );
         view.selection_epoch += 1;
@@ -281,27 +280,19 @@ fn a_link_modifier_click_opens_a_printed_file_that_exists(cx: &mut gpui::TestApp
     cx.run_until_parked();
     assert!(cx.opened_url().is_none());
 
-    // By default a text file goes to the editor, which needs a pane to open
-    // beside; this fixture has no connection, so nothing opens.
-    // Without a Unix shell there is no editor, and the file opens in the
-    // default application as with Alt.
+    // A deliberate file click uses the checked system opener even when the
+    // pane has no connection; it never queues an editor pane split.
     modifier_click(cx, found, crate::keymap::secondary_key());
-    if crate::editor::SUPPORTED {
-        assert!(cx.opened_url().is_none());
-        view.read_with(cx, |view, _| {
-            let (flash, _) = view.flash.as_ref().unwrap();
-            assert_eq!(flash.text.as_ref(), crate::Error::NotConnected.to_string());
-        });
-    }
+    let real = real_path(&root.path().join("docs/notes.txt")).unwrap();
+    let expected = url::Url::from_file_path(real).unwrap();
+    assert_eq!(cx.opened_url().as_deref(), Some(expected.as_str()));
 
-    // Alt-click opens it in the other place, the default application.
+    // Alt does not turn the click into a pane launch.
     let alt = Modifiers {
         alt: true,
         ..crate::keymap::secondary_key()
     };
     modifier_click(cx, found, alt);
-    let real = real_path(&root.path().join("docs/notes.txt")).unwrap();
-    let expected = url::Url::from_file_path(real).unwrap();
     assert_eq!(cx.opened_url().as_deref(), Some(expected.as_str()));
 }
 

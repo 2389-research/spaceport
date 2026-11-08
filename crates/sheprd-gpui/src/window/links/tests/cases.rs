@@ -10,7 +10,7 @@
 #![cfg_attr(not(unix), allow(dead_code))]
 
 use super::*;
-use crate::{config::FileTarget, menu::Page, terminal_painter::decoration_spans};
+use crate::{menu::Page, terminal_painter::decoration_spans};
 use test_case::test_case;
 
 /// A web address too long for one row of the pane, which only the daemon
@@ -324,7 +324,6 @@ pub(super) fn in_sandbox<'a>(
     let (view, cx) = window(peer, daemon, cx);
     view.update(cx, |view, _| {
         view.live.surface = Some(surface);
-        view.config.open_files_in = FileTarget::System;
         let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
         for pane in &mut snapshot.panes {
             pane.cwd = Some(sandbox.work.to_str().unwrap().into());

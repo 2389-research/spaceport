@@ -69,11 +69,7 @@ impl Links {
             }) else {
                 return;
             };
-            view.open_file_link(
-                file,
-                view.config.open_files_in == crate::config::FileTarget::Editor,
-                cx,
-            );
+            view.open_file_link(file, cx);
         });
     }
 }

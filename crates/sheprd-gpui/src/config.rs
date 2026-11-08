@@ -204,8 +204,6 @@ pub struct Config {
     /// A bar on the leading edge of each working, blocked, or done row,
     /// whichever status icons are drawn.
     pub edge_rail: bool,
-    /// How the editor starts; the pane's `$VISUAL` or `$EDITOR` when unset.
-    pub(crate) editor_command: Option<crate::editor::EditorCommand>,
     /// Themes starred in the Color Scheme picker, which lists them first.
     pub favorite_themes: Vec<String>,
     pub features: Features,
@@ -239,8 +237,6 @@ pub struct Config {
     pub(crate) missing_weight: Option<font_weight::MissingWeight>,
     pub(crate) notification_overrides: NotificationSettings,
     pub notifications: NotificationConfig,
-    /// Where a link-modifier click on a printed file path opens it.
-    pub open_files_in: FileTarget,
     /// The self-hosted OpenSandbox server whose sandboxes are devices.
     pub opensandbox: OpenSandboxConfig,
     pub option_as_alt: OptionAsAlt,
@@ -322,19 +318,6 @@ pub struct Config {
     // keep-sorted end
 }
 
-/// Where a clicked file path opens. Alt-click (Option on macOS) opens it in
-/// the other one.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum FileTarget {
-    /// The terminal editor, in a pane beside the one that printed the path.
-    /// Folders, images, and PDFs still open in the system's application.
-    #[default]
-    Editor,
-    /// The system's default application.
-    System,
-}
-
 impl Default for Config {
     fn default() -> Self {
         let fonts::DefaultFonts {
@@ -373,7 +356,6 @@ impl Default for Config {
             daytona: DaytonaConfig::default(),
             devices: BTreeMap::new(),
             edge_rail: false,
-            editor_command: None,
             favorite_themes: Vec::new(),
             features: Features::default(),
             focus_follows_mouse: true,
@@ -390,7 +372,6 @@ impl Default for Config {
             missing_weight: None,
             notification_overrides: NotificationSettings::default(),
             notifications: NotificationConfig::default(),
-            open_files_in: FileTarget::default(),
             opensandbox: OpenSandboxConfig::default(),
             option_as_alt: OptionAsAlt::default(),
             palette: crate::palette::PaletteConfig::default(),
@@ -461,7 +442,6 @@ struct Settings {
     daytona: DaytonaConfig,
     devices: BTreeMap<String, DeviceSettings>,
     edge_rail: Option<bool>,
-    editor_command: Option<crate::editor::EditorCommand>,
     favorite_themes: Vec<String>,
     features: Features,
     focus_follows_mouse: Option<bool>,
@@ -473,7 +453,6 @@ struct Settings {
     language: Option<sheprd_i18n::Language>,
     layout: Layout,
     notifications: NotificationSettings,
-    open_files_in: FileTarget,
     opensandbox: OpenSandboxConfig,
     option_as_alt: OptionAsAlt,
     palette: crate::palette::PaletteConfig,
@@ -891,8 +870,6 @@ impl Config {
         config.option_as_alt = settings.option_as_alt;
         settings.px0.check()?;
         config.px0 = settings.px0;
-        config.open_files_in = settings.open_files_in;
-        config.editor_command = settings.editor_command;
         config.keep_selection_after_copy = settings.keep_selection_after_copy.unwrap_or(true);
         config.herdr_2_terminals = settings.herdr_2_terminals.unwrap_or(false);
         for (name, font, settings) in [

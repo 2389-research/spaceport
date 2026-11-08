@@ -72,8 +72,6 @@ pub enum Error {
     Devices(#[from] crate::menu::devices::Error),
     #[error(transparent)]
     Dispatch(#[from] crate::dispatch::Error),
-    #[error(transparent)]
-    Editor(#[from] crate::editor::Error),
     #[error("Enter a tab name.")]
     EmptyTabName,
     #[error("Workspace label must not be empty.")]

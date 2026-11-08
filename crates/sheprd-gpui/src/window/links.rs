@@ -99,12 +99,8 @@ enum Fallback {
     /// An explicit hyperlink this client never opens, which a click only
     /// explains.
     Unopened(crate::Error),
-    /// A file, in the terminal editor or the system's default application,
-    /// as the click's modifiers chose.
-    File {
-        link: FileLink,
-        in_editor: bool,
-    },
+    /// A local file checked before the system opens it.
+    File(FileLink),
 }
 
 /// A press that may become a click on a link.
@@ -493,11 +489,7 @@ impl SheprdWindow {
             return false;
         }
         let fallback = match (release.file, release.other) {
-            (Some(link), _) => Some(Fallback::File {
-                link,
-                in_editor: (self.config.open_files_in == crate::config::FileTarget::Editor)
-                    != modifiers.alt,
-            }),
+            (Some(link), _) => Some(Fallback::File(link)),
             (None, Some(RowTarget::External(url))) => Some(Fallback::External(url)),
             (None, Some(RowTarget::OtherHost(host))) => {
                 Some(Fallback::Unopened(crate::Error::LinkOnAnotherHost { host }))
@@ -556,7 +548,7 @@ impl SheprdWindow {
     fn open_link(&mut self, link: Option<Fallback>, window: &mut Window, cx: &mut Context<Self>) {
         match link {
             Some(Fallback::Web(url)) => cx.open_url(url.as_str()),
-            Some(Fallback::File { link, in_editor }) => self.open_file_link(link, in_editor, cx),
+            Some(Fallback::File(link)) => self.open_file_link(link, cx),
             Some(Fallback::External(url)) if url.trusted() => cx.open_url(url.as_str()),
             Some(Fallback::External(url)) => self.ask_to_open_link(url, window, cx),
             Some(Fallback::Unopened(error)) => {
