@@ -174,6 +174,11 @@ impl Core {
         self.typed(Method::TerminalList, &json!({"all": all}))
     }
 
+    /// Read one exact Core terminal, including a machine-qualified address.
+    pub fn terminal_get(&self, terminal: &str) -> Result<Terminal> {
+        self.typed(Method::TerminalGet, &json!({"terminal": terminal}))
+    }
+
     /// Read Core's machine catalog and connection states without owning retries.
     pub fn machine_list(&self) -> Result<wire::MachineList> {
         self.typed(Method::MachineList, &json!({}))

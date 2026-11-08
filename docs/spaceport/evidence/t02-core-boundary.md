@@ -7,3 +7,9 @@ The pinned Core source `cd12ddd88bc11490228343291dc1096c9ed3bf77` and its live `
 The scripted-peer test failed to compile before the method and typed result existed, then both request/result and unsupported cases passed. The isolated Core integration test ran against the pinned `0.1.18` binary with a private home and socket; `machine.list` returned an empty catalog. This proves the local read route only. It does not exercise remote SSH/Tailscale, authentication, host-key refusal, reconnect, a second client, or terminal aggregation.
 
 `RUSTUP_TOOLCHAIN=1.99.0 CARGO_TARGET_DIR=/tmp/spaceport-t00-target just test-core /tmp/spaceport-t00-target/debug/herdr-core` passed: 2 real-Core tests. `cargo +1.99.0 test --locked -p sheprd-core-client --lib` passed: 36 tests, 2 ignored. `cargo +1.99.0 fmt --all -- --check`, `just check-file-size`, and the package's `spec.py check --write-report` and 21 tool tests passed on macOS.
+
+## Exact terminal refresh
+
+The same pinned schema and runtime advertise `terminal.get` with a required `terminal` string and an optional `caller`. The client now sends an exact address without changing its machine prefix and decodes the returned terminal. A scripted-peer test failed to compile before the method existed, then passed for `lab/t7`. The private real-Core test also fetched a terminal it had just started, by its returned address. This is a local refresh proof, not a remote terminal or reconnection scenario.
+
+After this addition, `cargo +1.99.0 test --locked -p sheprd-core-client --lib` passed 37 tests with 2 ignored; the pinned real-Core `just test-core` rerun passed both tests.

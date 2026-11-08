@@ -120,6 +120,10 @@ fn a_real_core_runs_streams_and_stores() {
             ..Run::default()
         })
         .unwrap();
+    assert_eq!(
+        core.terminal_get(&started.address).unwrap().address,
+        started.address
+    );
     let subscription = core.subscribe().unwrap();
     assert!(
         subscription

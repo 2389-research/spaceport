@@ -35,6 +35,7 @@ methods! {
     Hello => "hello", false;
     MachineList => "machine.list", false;
     TerminalAttach => "terminal.attach", true;
+    TerminalGet => "terminal.get", false;
     TerminalKill => "terminal.kill", true;
     TerminalList => "terminal.list", true;
     TerminalRun => "terminal.run", true;

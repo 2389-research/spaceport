@@ -62,7 +62,7 @@
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
       "runtime_test_status": "partial_local_fixture",
-      "runtime_evidence": ["evidence/t00-core-runtime.json", "evidence/t00-core-test.log"]
+      "runtime_evidence": ["evidence/t00-core-runtime.json", "evidence/t00-core-test.log", "evidence/t02-core-boundary.md", "evidence/t02-live-core.log"]
     },
     {
       "id": "CAP-WORKSPACE",

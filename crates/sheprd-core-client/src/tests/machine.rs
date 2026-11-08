@@ -45,3 +45,14 @@ fn absent_machine_list_is_unsupported() {
         Err(Error::Unsupported(Method::MachineList))
     ));
 }
+
+#[test]
+fn terminal_get_preserves_the_qualified_core_target() {
+    let (client, mut core) = connected();
+    let call = thread::spawn(move || client.terminal_get("lab/t7"));
+    let request = core.request();
+    assert_eq!(request["method"], "terminal.get");
+    assert_eq!(request["params"], json!({"terminal": "lab/t7"}));
+    core.answer(&request, super::terminal("lab/t7"));
+    assert_eq!(call.join().unwrap().unwrap().address, "lab/t7");
+}
