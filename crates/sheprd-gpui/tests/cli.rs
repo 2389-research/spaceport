@@ -4,6 +4,8 @@
 #[cfg(target_os = "macos")]
 #[path = "cli/clipboard.rs"]
 mod clipboard;
+#[path = "cli/phone.rs"]
+mod phone;
 
 use std::{
     process::{Child, Command, Output, Stdio},
