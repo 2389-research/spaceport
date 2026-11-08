@@ -95,7 +95,7 @@ Sheprd** entry, which both Windows installers add, runs this command through
 
 | Command | What it does |
 | --- | --- |
-| `tab [list]` | Pages, reviews, Devices, and Core terminal tabs with IDs |
+| `tab [list]` | Current page, Orchestrator, Devices, Core terminal, and editor tabs with IDs; retired source and review tabs are omitted |
 | `tab focus\|close ID` | |
 | `browser reload\|feedback` | See [browser tabs](../crates/sheprd-gpui/README.md#browser-tabs) |
 | `browser list` | Page tabs only |
@@ -287,9 +287,10 @@ Set the reading width with `sheprd config set chat.max_width 1200`, or use
 pixels; the default is 800. Settings > General offers the same width slider and
 **Full-width chat** switch.
 
-A chat on an SSH host shows in the native chat view like a local one. Sheprd
-runs `sheprd-acp connect ID` on the host over the same SSH connection it uses
-for Herdr, and the program there sees an ordinary client on its own socket.
+The inherited SSH chat route remains in this development build, but it does
+not prove Spaceport's required Core-owned remote native chat. That route
+runs `sheprd-acp connect ID` on the host over the legacy SSH connection;
+[G-CHAT](spaceport/plan/gaps.json) records the missing Core adapter contract.
 Starting a chat there (`chat new`, or the workspace menu) runs the host's own
 `sheprd-acp`, looked for in `~/.herdr/bin`, `~/.cargo/bin`, `~/.local/bin`, and
 then the remote `PATH`. Install it on the host with:
