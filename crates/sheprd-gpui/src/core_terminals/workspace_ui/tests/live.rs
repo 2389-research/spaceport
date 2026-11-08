@@ -325,3 +325,148 @@ fn ui_membership_rebases_disjoint_client_edit_without_touching_terminal(
     assert_eq!(listed.terminals[0].address, terminal.address);
     assert_eq!(listed.terminals[0].pid, Some(pid));
 }
+
+#[gpui::test]
+#[ignore = "needs HERDR_CORE_TEST_BINARY"]
+fn ui_refuses_same_group_conflict_and_fences_an_uncertain_version(cx: &mut gpui::TestAppContext) {
+    let sandbox = Sandbox::start();
+    let first = sandbox.connect();
+    let second = sandbox.connect();
+    let group = Uuid::from_u128(73);
+    let other = Uuid::from_u128(74);
+    let core_id = first.hello().core.id.clone();
+    let created = edit::apply(
+        &first,
+        edit::read(&first).unwrap(),
+        &Edit::Create {
+            id: group,
+            label: "One".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(created.version, 1);
+    let argv = ["sh".to_owned(), "-c".to_owned(), "sleep 120".to_owned()];
+    let terminal = first
+        .run(&Run {
+            argv: &argv,
+            ..Run::default()
+        })
+        .unwrap();
+    let pid = terminal.pid.unwrap();
+    let backend = CoreBackend::new(sandbox.connect(), 1000);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    cx.update(|_, app| {
+        view.update(app, |view, _| {
+            view.core_terminals
+                .hub
+                .set_backend_for_test(backend.clone())
+        });
+        if !app.has_global::<observation::Observation>() {
+            observation::Observation::install(app);
+        }
+        app.global_mut::<observation::Observation>().ensure(backend);
+    });
+    wait_document(cx, 1);
+    cx.simulate_resize(size(px(1200.), px(800.)));
+    draw_group(cx, &view);
+    let select = cx
+        .debug_bounds(format!("core-workspace-select-{group}").leak())
+        .unwrap();
+    cx.simulate_click(select.center(), Modifiers::default());
+    draw_group(cx, &view);
+    let add_id = format!("core-member-add-{group}-{core_id}-{}", terminal.address);
+    let add = cx.debug_bounds(add_id.clone().leak()).unwrap();
+
+    let renamed = edit::apply(
+        &second,
+        created,
+        &Edit::Rename {
+            id: group,
+            label: "Changed elsewhere".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(renamed.version, 2);
+    assert!(cx.update(|_, app| {
+        app.global::<observation::Observation>()
+            .projection()
+            .document()
+            .is_some_and(|doc| doc.version == 1)
+    }));
+    cx.simulate_click(add.center(), Modifiers::default());
+    view.read_with(cx, |view, _| {
+        assert!(view.core_terminals.workspace_ui.pending.is_some());
+    });
+    wait_edit(cx, &view);
+    view.read_with(cx, |view, _| {
+        let message = &view.flash.as_ref().unwrap().0.text;
+        assert!(message.contains(&group.to_string()), "{message}");
+    });
+    let saved = edit::read(&second).unwrap();
+    assert_eq!(saved.version, 2);
+    let row = saved
+        .value
+        .workspaces()
+        .iter()
+        .find(|row| row.id == group)
+        .unwrap();
+    assert_eq!(row.label, "Changed elsewhere");
+    assert!(row.members.is_empty());
+    let listed = second.list(false).unwrap();
+    assert_eq!(listed.terminals.len(), 1);
+    assert_eq!(listed.terminals[0].address, terminal.address);
+    assert_eq!(listed.terminals[0].pid, Some(pid));
+
+    wait_document(cx, 2);
+    let shared = cx.update(|_, app| EditGuard::begin(app, 2).unwrap());
+    let unknown = Err(edit::Error::WriteUnknown {
+        version: 2,
+        source: Error::Timeout(Method::DocSet),
+    });
+    EditGuard::finish(&shared, 2, &unknown);
+    assert!(cx.update(|_, app| EditGuard::blocks(app, 2)));
+    draw_group(cx, &view);
+    let add = cx.debug_bounds(add_id.clone().leak()).unwrap();
+    cx.simulate_click(add.center(), Modifiers::default());
+    view.read_with(cx, |view, _| {
+        assert!(view.core_terminals.workspace_ui.pending.is_none());
+        assert!(
+            view.flash
+                .as_ref()
+                .is_some_and(|(flash, _)| flash.text.contains("unconfirmed"))
+        );
+    });
+    assert_eq!(edit::read(&second).unwrap().version, 2);
+
+    let advanced = edit::apply(
+        &second,
+        saved,
+        &Edit::Create {
+            id: other,
+            label: "Other".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(advanced.version, 3);
+    wait_document(cx, 3);
+    assert!(!cx.update(|_, app| EditGuard::blocks(app, 3)));
+    draw_group(cx, &view);
+    let add = cx.debug_bounds(add_id.leak()).unwrap();
+    cx.simulate_click(add.center(), Modifiers::default());
+    wait_edit(cx, &view);
+    let saved = edit::read(&second).unwrap();
+    assert_eq!(saved.version, 4);
+    assert!(saved.value.workspaces().iter().any(|row| row.id == other));
+    assert!(saved.value.workspaces().iter().any(|row| {
+        row.id == group
+            && row.label == "Changed elsewhere"
+            && row
+                .members
+                .iter()
+                .any(|member| member.core_id == core_id && member.terminal_id == terminal.address)
+    }));
+    let listed = second.list(false).unwrap();
+    assert_eq!(listed.terminals.len(), 1);
+    assert_eq!(listed.terminals[0].address, terminal.address);
+    assert_eq!(listed.terminals[0].pid, Some(pid));
+}
