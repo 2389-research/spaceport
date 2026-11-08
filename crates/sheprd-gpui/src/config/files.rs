@@ -182,64 +182,6 @@ impl Config {
         result.map_err(|error| error.at_path(path))
     }
 
-    /// Persist one change to the `[code]` table, keeping the rest of the
-    /// local file.
-    pub(crate) fn save_code(edit: super::CodeEdit) -> Result<()> {
-        let (_lock, local) = Self::prepare_files(&Self::path()?)?;
-        Self::save_code_path(&edit, &local)
-    }
-
-    pub(super) fn save_code_path(edit: &super::CodeEdit, path: &Path) -> Result<()> {
-        use super::{CodeEdit, CodeMode};
-        let result = (|| -> Result<()> {
-            let text = match fs::read_to_string(path) {
-                Ok(text) => text,
-                Err(error) if error.kind() == ErrorKind::NotFound => LOCAL_CONFIG.into(),
-                Err(error) => return Err(error.into()),
-            };
-            let mut document = text.parse::<toml_edit::DocumentMut>()?;
-            let (key, value): (_, Option<toml_edit::Value>) = match edit {
-                CodeEdit::Url(url) => ("url", url.as_ref().map(|url| url.as_str().into())),
-                CodeEdit::Mode(mode) => (
-                    "mode",
-                    Some(match mode {
-                        CodeMode::Start => "start".into(),
-                        CodeMode::Address => "address".into(),
-                    }),
-                ),
-                CodeEdit::Port(port) => ("port", Some(i64::from(port.get()).into())),
-                CodeEdit::AcceptLicense => ("license_accepted", Some(true.into())),
-            };
-            match value {
-                Some(mut value) => {
-                    let code = document
-                        .entry("code")
-                        .or_insert(toml_edit::Item::Table(toml_edit::Table::new()))
-                        .as_table_like_mut()
-                        .ok_or(Error::InvalidCodeTable)?;
-                    if let Some(previous) = code.get(key).and_then(toml_edit::Item::as_value) {
-                        *value.decor_mut() = previous.decor().clone();
-                    }
-                    code.insert(key, toml_edit::Item::Value(value));
-                }
-                None => {
-                    let Some(code) = document
-                        .get_mut("code")
-                        .and_then(toml_edit::Item::as_table_like_mut)
-                    else {
-                        return Ok(());
-                    };
-                    code.remove(key);
-                    if code.is_empty() {
-                        document.remove("code");
-                    }
-                }
-            }
-            write_config(path, &document.to_string())
-        })();
-        result.map_err(|error| error.at_path(path))
-    }
-
     /// Persist only the contrast setting, keeping the rest of the local file.
     pub(crate) fn save_contrast(contrast: Contrast) -> Result<()> {
         let (_lock, local) = Self::prepare_files(&Self::path()?)?;

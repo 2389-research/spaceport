@@ -1,17 +1,11 @@
 //! The `en-XA` leak test (`crate::i18n::leak_tests`) for browser tabs: a
 //! blank tab with its toolbar and placeholder, the notes panel with a note,
-//! and a VS Code tab whose server does not answer.
+//! and its notes composer.
 use super::*;
 use crate::{
     browser::{TabId, annotate::Anchor},
-    code_server::Server,
-    controls::Command,
     i18n::leak_tests::{assert_translated, draw, uncut, under_en_xa},
 };
-
-fn refuses(_: &WebUrl) -> crate::Result<Server> {
-    Err(crate::code_server::Error::TokenRefused.into())
-}
 
 #[test]
 fn browser_tabs_show_only_messages_under_en_xa() {
@@ -49,25 +43,6 @@ fn browser_tabs_show_only_messages_under_en_xa() {
             "notes list",
             &uncut(recorder.take()),
             std::slice::from_ref(&comment),
-        );
-
-        cx.update(|window, cx| {
-            view.update(cx, |view, cx| {
-                view.config.code.url =
-                    Some(WebUrl::try_from("http://127.0.0.1:8000/?tkn=x").unwrap());
-                view.browser.code_server.probe = refuses;
-                view.command(Command::OpenCode, window, cx);
-            })
-        });
-        cx.run_until_parked();
-        draw(cx);
-        assert!(cx.debug_bounds("code-unreachable").is_some());
-        // The tab is named by the product.
-        let name = Editor::VsCode.name().to_owned();
-        assert_translated(
-            "VS Code tab without its server",
-            &uncut(recorder.take()),
-            std::slice::from_ref(&name),
         );
     });
 }

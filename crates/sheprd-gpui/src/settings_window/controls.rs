@@ -2,7 +2,6 @@
 // i18n: migrated
 pub(super) mod backdrop;
 pub(super) mod chat_env;
-pub(super) mod code;
 mod fonts;
 mod forms;
 pub(super) mod indicators;
@@ -178,7 +177,6 @@ impl SettingsWindow {
             self.controls.saving_sizes.clear();
             self.controls.ruler.settle();
             self.flush_control_sizes(cx);
-            self.flush_code_url(cx);
         }
     }
 
@@ -194,7 +192,6 @@ impl SettingsWindow {
         });
         self.plugins
             .refresh_appearance(&self.config, &self.theme, cx);
-        self.refresh_code_appearance(cx);
         self.sync_px0_field(cx);
         self.sync_chat_env_field(cx);
         if let Some(edit) = &self.number_edit {
@@ -299,11 +296,7 @@ impl SettingsWindow {
             Section::Tabs => self.render_tabs(cx),
             Section::Notifications => self.render_notifications(cx),
             Section::Configuration => self.render_configuration(cx),
-            Section::Theme
-            | Section::Integrations
-            | Section::Plugins
-            | Section::Code
-            | Section::Px0 => div(),
+            Section::Theme | Section::Integrations | Section::Plugins | Section::Px0 => div(),
             #[cfg(feature = "cloud")]
             Section::CloudDevices => div(),
         };

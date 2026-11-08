@@ -261,6 +261,3 @@ mod new_tabs;
 mod orchestrator;
 #[cfg(unix)]
 mod tunnels;
-
-/// Showing and hiding VS Code from the menu, in place of a title bar button.
-mod vs_code;

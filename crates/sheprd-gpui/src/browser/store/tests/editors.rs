@@ -2,25 +2,25 @@ use super::*;
 
 #[test]
 fn editor_identity_preserves_the_saved_flat_names() {
-    for (name, place) in [
-        ("group", Place::Group),
-        ("code", Place::Editor(Editor::VsCode)),
-        ("px0", Place::Editor(Editor::Px0)),
-    ] {
+    for (name, place) in [("group", Place::Group), ("px0", Place::Editor(Editor::Px0))] {
         let json = format!("\"{name}\"");
         assert_eq!(serde_json::to_string(&place).unwrap(), json);
         assert_eq!(serde_json::from_str::<Place>(&json).unwrap(), place);
     }
     assert_eq!(
         serde_json::from_str::<Place>(r#""code_group""#).unwrap(),
-        Place::Editor(Editor::VsCode)
+        Place::RetiredVsCode
+    );
+    assert_eq!(
+        serde_json::from_str::<Place>(r#""code""#).unwrap(),
+        Place::RetiredVsCode
     );
     assert!(serde_json::from_str::<Place>(r#""unknown-editor""#).is_err());
 }
 
 #[test]
 fn every_editor_reuses_navigation_and_reopens_without_duplicates() {
-    for editor in [Editor::Px0, Editor::VsCode] {
+    for editor in [Editor::Px0] {
         let scope = Scope::endpoint("local");
         let mut store = Store::default();
         let first = store
@@ -53,7 +53,7 @@ fn every_editor_reuses_navigation_and_reopens_without_duplicates() {
 fn a_waiting_editor_tab_keeps_its_name_and_a_blank_tab_is_new() {
     let scope = Scope::endpoint("local");
     let mut store = Store::default();
-    for editor in [Editor::Px0, Editor::VsCode] {
+    for editor in [Editor::Px0] {
         let id = store
             .open_editor_tab(scope.clone(), "w", editor, None)
             .unwrap();

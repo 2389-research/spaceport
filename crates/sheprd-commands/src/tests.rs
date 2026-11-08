@@ -1,6 +1,7 @@
 use super::*;
 
 mod browser_page;
+mod retired_ide;
 
 fn snapshot() -> ClientShellSnapshot {
     serde_json::from_str(include_str!(
@@ -126,7 +127,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (ToggleAnnotate, &[]),
         (InstallBrowserSkill, &[]),
         (SplitEditor, &["cmd-\\"]),
-        (OpenCode, &[]),
         (OpenPx0, &[]),
         (ToggleFullScreen, &["ctrl-cmd-f"]),
         (CycleWindows, &["cmd-`"]),
@@ -208,7 +208,6 @@ fn gui_commands_never_send_daemon_requests() {
         Command::About,
         Command::InstallBrowserSkill,
         Command::SplitEditor,
-        Command::OpenCode,
         Command::ToggleFullScreen,
         Command::CycleWindows,
         Command::CloseWindow,

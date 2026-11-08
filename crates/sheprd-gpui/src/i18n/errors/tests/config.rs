@@ -17,7 +17,6 @@ fn every_config_variant_has_a_message() {
         Error::EmptyFontFamily("font"),
         Error::EmptyTheme,
         Error::InvalidChatWidth,
-        Error::InvalidCodeTable,
         Error::InvalidDeviceId("nope".into()),
         Error::InvalidDevicesTable,
         Error::InvalidFavoriteThemes,

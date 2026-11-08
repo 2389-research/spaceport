@@ -57,7 +57,6 @@ menus-open-scrollback-in-editor = Open Scrollback in Editor
 menus-open-notification-target = Open Notification Target
 menus-toggle-sidebar = Toggle Sidebar
 menus-toggle-status-bar = Toggle Status Bar
-menus-open-vs-code = Open VS Code
 menus-open-px0 = Open px0
 menus-reconnect = Reconnect
 

@@ -94,7 +94,6 @@ pub enum Command {
     ToggleAnnotate,
     InstallBrowserSkill,
     SplitEditor,
-    OpenCode,
     OpenPx0,
     ToggleFullScreen,
     CycleWindows,
@@ -720,11 +719,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-split-editor",
     },
     CommandInfo {
-        command: Command::OpenCode,
-        name: "open_code",
-        message: "commands-open-code",
-    },
-    CommandInfo {
         command: Command::OpenPx0,
         name: "open_px0",
         message: "commands-open-px0",
@@ -923,7 +917,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::ToggleAnnotate
         | Command::InstallBrowserSkill
         | Command::SplitEditor
-        | Command::OpenCode
         | Command::OpenPx0
         | Command::ToggleFullScreen
         | Command::CycleWindows

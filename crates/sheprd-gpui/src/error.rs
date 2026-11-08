@@ -49,8 +49,6 @@ pub enum Error {
     CloudHostUnsupported,
     #[error(transparent)]
     CloudSetup(#[from] crate::cloud_setup::Error),
-    #[error(transparent)]
-    Code(#[from] crate::code_server::Error),
     #[error("This file is missing, larger than 1 MiB, or not UTF-8 text")]
     CodeFileUnreadable,
     #[error("{source}")]

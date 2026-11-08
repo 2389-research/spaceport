@@ -1,7 +1,7 @@
 //! The app's browser tabs: which page each one shows and the workspace it
 //! belongs to. Herdr has no browser panes, so these live only in this client;
 //! every window shows the same tabs for a workspace, each with its own page.
-use super::{Editor, Location, WebUrl, zoom::Zoom};
+use super::{Editor, Location, zoom::Zoom};
 use crate::i18n::fl;
 use crate::{reorder::Beside, state_file};
 use gpui::{App, Global};
@@ -74,11 +74,6 @@ impl Scope {
         Self(format!("local:{}", client_socket.display()))
     }
 
-    /// Whether the daemon is on this computer.
-    pub(crate) fn is_local(&self) -> bool {
-        self.0.starts_with("local:")
-    }
-
     /// A saved SSH host, named by its catalog ID.
     pub(crate) fn endpoint(id: &str) -> Self {
         Self(id.to_owned())
@@ -97,6 +92,8 @@ pub(crate) enum Place {
     #[default]
     Group,
     Editor(Editor),
+    /// Read only while loading an old tab file; never restored or created.
+    RetiredVsCode,
 }
 
 impl Serialize for Place {
@@ -104,6 +101,7 @@ impl Serialize for Place {
         match self {
             Self::Group => serializer.serialize_str("group"),
             Self::Editor(editor) => editor.serialize(serializer),
+            Self::RetiredVsCode => serializer.serialize_str("code"),
         }
     }
 }
@@ -114,6 +112,9 @@ impl<'de> Deserialize<'de> for Place {
         if name == "group" {
             return Ok(Self::Group);
         }
+        if name == "code" || name == "code_group" {
+            return Ok(Self::RetiredVsCode);
+        }
         Editor::deserialize(serde::de::value::StrDeserializer::<D::Error>::new(&name))
             .map(Self::Editor)
     }
@@ -121,19 +122,15 @@ impl<'de> Deserialize<'de> for Place {
 
 impl Place {
     pub(crate) fn is_editor(self) -> bool {
-        self.editor().is_some()
+        matches!(self, Self::Editor(_) | Self::RetiredVsCode)
     }
 
     pub(crate) fn editor(self) -> Option<Editor> {
         match self {
             Self::Group => None,
             Self::Editor(editor) => Some(editor),
+            Self::RetiredVsCode => None,
         }
-    }
-
-    /// Whether this is the workspace's VS Code tab.
-    pub(crate) fn is_code(self) -> bool {
-        self.editor() == Some(Editor::VsCode)
     }
 }
 
@@ -272,7 +269,7 @@ impl Store {
         // Earlier builds hosted the orchestrator in a tab; its sections now
         // own it. Saved VS Code tabs must not start their server on restore.
         tabs.retain(|tab| {
-            tab.place != Place::Editor(Editor::VsCode)
+            tab.place != Place::RetiredVsCode
                 && !matches!(tab.location, Some(Location::Orchestrator { .. }))
         });
         Self {
@@ -328,8 +325,7 @@ impl Store {
         self.tabs.iter().find(|tab| tab.id == id)
     }
 
-    /// The tab strip tabs of one workspace, in the order they were opened,
-    /// the VS Code tab among them while it is in the groups.
+    /// The tab strip tabs of one workspace, in the order they were opened.
     pub(crate) fn in_workspace<'a>(
         &'a self,
         scope: &'a Scope,
@@ -338,11 +334,6 @@ impl Store {
         self.tabs
             .iter()
             .filter(move |tab| &tab.scope == scope && tab.workspace_id == workspace_id)
-    }
-
-    /// The workspace's VS Code tab, if it has one.
-    pub(crate) fn code_tab(&self, scope: &Scope, workspace_id: &str) -> Option<&Tab> {
-        self.editor_tab(scope, workspace_id, Editor::VsCode)
     }
 
     pub(crate) fn px0_tab(&self, scope: &Scope, workspace_id: &str) -> Option<&Tab> {
@@ -533,34 +524,6 @@ impl Store {
             self.save();
         }
         changed
-    }
-
-    /// Moves the VS Code tabs, of every workspace, that are on another server
-    /// than `server` to it, where they stay in their groups: `retarget` gives
-    /// each one's address there. Returns whether any moved.
-    pub(crate) fn follow_code_server(
-        &mut self,
-        server: &WebUrl,
-        serves: impl Fn(&Scope) -> bool,
-        retarget: impl Fn(&WebUrl) -> WebUrl,
-    ) -> Vec<TabId> {
-        let origin = server.origin();
-        let mut moved = Vec::new();
-        for tab in &mut self.tabs {
-            if !tab.place.is_code() || !serves(&tab.scope) {
-                continue;
-            }
-            if let Some(Location::Web { url }) = &tab.location
-                && url.origin() != origin
-            {
-                tab.location = Some(Location::Web { url: retarget(url) });
-                moved.push(tab.id);
-            }
-        }
-        if !moved.is_empty() {
-            self.save();
-        }
-        moved
     }
 
     /// Whether any tab belongs to one of `closed`, without claiming the

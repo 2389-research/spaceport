@@ -53,7 +53,6 @@ commands-next-agent = Next Agent
 commands-next-pane = Next Pane
 commands-next-tab = Next Tab
 commands-next-workspace = Next Workspace
-commands-open-code = Open VS Code
 commands-open-notification-target = Open Notification Target
 commands-open-orchestrator = Show Issues
 commands-open-px0 = Open px0

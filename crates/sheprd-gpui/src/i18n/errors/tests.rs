@@ -14,7 +14,6 @@ mod clipboard;
 #[cfg(feature = "cloud")]
 mod cloud_batch;
 mod cloud_setup;
-mod code_server;
 mod config;
 mod control;
 mod credentials;

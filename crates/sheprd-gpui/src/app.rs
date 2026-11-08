@@ -487,9 +487,6 @@ pub(crate) fn run() -> std::process::ExitCode {
             if mode == LaunchMode::Normal {
                 crate::control::install(cx);
                 crate::window::system_notifications::install(cx);
-                // Nor do they start VS Code.
-                crate::code_server::Launcher::install(cx);
-                crate::code_server::Hosts::install(cx);
                 crate::px0::Launcher::install(cx);
                 crate::device_tags::DeviceTags::install(cx);
                 #[cfg(feature = "cloud")]

@@ -385,7 +385,6 @@ impl SheprdWindow {
                 | Command::AgentNumber(_) => 1,
                 Command::NewWindow
                 | Command::ToggleSidebar
-                | Command::OpenCode
                 | Command::OpenPx0
                 | Command::ToggleStatusBar
                 | Command::FocusNextRegion

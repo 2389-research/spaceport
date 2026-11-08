@@ -10,9 +10,6 @@ pub(crate) enum Editor {
     // keep-sorted start
     #[serde(rename = "px0")]
     Px0,
-    // Preserve the saved VS Code tab's spelling, including its legacy alias.
-    #[serde(rename = "code", alias = "code_group")]
-    VsCode,
     // keep-sorted end
 }
 
@@ -21,15 +18,12 @@ impl Editor {
     pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Px0 => "px0",
-            // i18n: data
-            Self::VsCode => "VS Code",
         }
     }
 
     pub(crate) fn icon(self) -> &'static str {
         match self {
             Self::Px0 => "icons/code.svg",
-            Self::VsCode => "icons/vscode.svg",
         }
     }
 }
@@ -46,23 +40,11 @@ impl SheprdWindow {
             .filter(|root| std::path::Path::new(root).is_absolute())
     }
 
-    /// The folder the focused workspace started in on its SSH host, which
-    /// runs `/bin/sh`: an absolute POSIX path, whatever this computer's
-    /// paths look like.
-    pub(super) fn host_editor_root(&self) -> Option<&str> {
-        self.workspace_root().filter(|root| root.starts_with('/'))
-    }
-
     /// The folder the focused workspace started in, on its own host, as its
     /// first tab's first pane reports it.
     fn workspace_root(&self) -> Option<&str> {
         let (_, workspace) = self.browser_key()?;
         crate::palette::launch_root(self.live.snapshot.as_deref()?, &workspace)
-    }
-
-    pub(super) fn editor_tab_id(&self, editor: Editor, cx: &App) -> Option<TabId> {
-        let (scope, workspace) = self.browser_key()?;
-        Some(store(cx)?.editor_tab(&scope, &workspace, editor)?.id)
     }
 
     /// One tab per editor and workspace. Opening it again moves that tab to
@@ -105,7 +87,6 @@ impl SheprdWindow {
     ) {
         match editor {
             Editor::Px0 => self.ensure_px0_page(window, cx),
-            Editor::VsCode => self.ensure_code_page(window, cx),
         }
     }
 
@@ -175,7 +156,6 @@ impl SheprdWindow {
     ) -> AnyElement {
         match editor {
             Editor::Px0 => self.render_px0_status(failure, cx),
-            Editor::VsCode => self.render_code_status(failure, cx),
         }
     }
 }

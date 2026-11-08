@@ -20,8 +20,6 @@ pub enum Error {
     EmptyTheme,
     #[error("chat.max_width must be 0 (full width) or 320–4000 logical pixels")]
     InvalidChatWidth,
-    #[error("code must be a TOML table")]
-    InvalidCodeTable,
     #[error("devices.{0:?} is not a saved device ID")]
     InvalidDeviceId(String),
     #[error("devices and each devices.<id> must be tables")]

@@ -156,7 +156,6 @@ pages! {
     fonts: Fonts, fonts_page;
     status_bar: StatusBar, none;
     tabs: Tabs, tabs_data;
-    code: Code, none;
     notifications: Notifications, none;
     integrations: Integrations, none;
     plugins: Plugins, plugin_preview;

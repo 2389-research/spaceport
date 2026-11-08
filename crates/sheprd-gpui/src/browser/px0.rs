@@ -110,7 +110,7 @@ impl SheprdWindow {
                 State::Failed(error) => error.localize(),
             }
         };
-        super::code_view::centered(
+        centered(
             div()
                 .flex()
                 .flex_col()
@@ -132,4 +132,17 @@ impl SheprdWindow {
                 ),
         )
     }
+}
+
+/// Center a waiting px0 page without changing its retry controls.
+fn centered(content: impl IntoElement) -> AnyElement {
+    div()
+        .flex_1()
+        .min_h_0()
+        .flex()
+        .items_center()
+        .justify_center()
+        .px_4()
+        .child(content)
+        .into_any_element()
 }

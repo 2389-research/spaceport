@@ -14,7 +14,6 @@ pub(super) enum Section {
     Fonts,
     StatusBar,
     Tabs,
-    Code,
     Px0,
     Notifications,
     Integrations,
@@ -77,7 +76,6 @@ impl Section {
         Self::Fonts,
         Self::StatusBar,
         Self::Tabs,
-        Self::Code,
         Self::Px0,
         Self::Notifications,
         Self::Integrations,
@@ -101,7 +99,6 @@ impl Section {
             Self::StatusBar => "settings-section-status-bar",
             Self::General => "settings-section-general",
             Self::Tabs => "settings-section-tabs-and-panes",
-            Self::Code => "settings-section-code",
             Self::Px0 => "settings-section-px0",
             Self::Notifications => "settings-section-notifications",
             Self::Integrations => "settings-section-integrations",
@@ -119,7 +116,6 @@ impl Section {
             Self::Indicators => "settings-lead-indicators",
             Self::Fonts => "settings-lead-fonts",
             Self::StatusBar => "settings-lead-status-bar",
-            Self::Code => "settings-lead-code",
             Self::Px0 => "settings-lead-px0",
             Self::Integrations => "settings-lead-integrations",
             Self::Plugins => "settings-lead-plugins",
@@ -139,7 +135,7 @@ impl Section {
             Self::Theme | Self::Sidebar | Self::Indicators | Self::Fonts | Self::StatusBar => {
                 Some(Group::Appearance)
             }
-            Self::Tabs | Self::Code | Self::Px0 | Self::Notifications => Some(Group::Behaviour),
+            Self::Tabs | Self::Px0 | Self::Notifications => Some(Group::Behaviour),
             Self::Integrations | Self::Plugins => Some(Group::Connect),
             #[cfg(feature = "cloud")]
             Self::CloudDevices => Some(Group::Connect),
@@ -156,7 +152,6 @@ impl Section {
             Self::StatusBar => "icons/status-bar.svg",
             Self::General => "icons/settings.svg",
             Self::Tabs => "icons/tabs.svg",
-            Self::Code => "icons/vscode.svg",
             Self::Px0 => "icons/code.svg",
             Self::Notifications => "icons/bell.svg",
             Self::Integrations => "icons/agent-generic.svg",

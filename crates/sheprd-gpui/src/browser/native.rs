@@ -743,7 +743,7 @@ mod tests {
     fn only_a_tabs_latest_build_is_kept() {
         let mut pages = Pages::default();
         let tab = TabId::test(1);
-        // Closed while built, as a changed VS Code server closes its page,
+        // Closed while built, as a changed page address can close its page,
         // then built again: the first build finishing first leaves the
         // second one building.
         pages.building.insert(tab, build(1));

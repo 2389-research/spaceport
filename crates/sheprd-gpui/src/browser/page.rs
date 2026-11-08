@@ -85,7 +85,7 @@ impl Page {
 
     /// Has the page report light, or dark, as its `prefers-color-scheme`,
     /// as the app's theme is, whatever the system's appearance: so a page
-    /// that follows it, such as VS Code's, matches the window it sits in.
+    /// that follows it matches the window it sits in.
     pub(crate) fn set_light(&self, light: bool) {
         #[cfg(target_os = "macos")]
         {

@@ -445,10 +445,6 @@ impl SheprdWindow {
                 self.split_active_group(window, cx);
                 return;
             }
-            Command::OpenCode => {
-                self.open_code(None, window, cx);
-                return;
-            }
             Command::OpenPx0 => {
                 self.open_px0(None, window, cx);
                 return;

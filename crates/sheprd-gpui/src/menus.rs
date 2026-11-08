@@ -360,12 +360,6 @@ pub(crate) fn menus(config: &Config) -> Vec<Menu> {
                     },
                 ),
                 MenuItem::action(
-                    fl!("menus-open-vs-code"),
-                    RunCommand {
-                        command: Command::OpenCode,
-                    },
-                ),
-                MenuItem::action(
                     fl!("menus-open-px0"),
                     RunCommand {
                         command: Command::OpenPx0,

@@ -1,7 +1,7 @@
 //! The menu behind a group's "…" button: tabs other than a terminal to open
 //! in the group (the focused checkout's review, the
-//! repository's orchestrator, the focused workspace's listening ports, its
-//! VS Code), a new chat with an agent through `herdr-acp`, closing the tab it shows, its other tabs, or the group itself,
+//! repository's orchestrator, the focused workspace's listening ports, and
+//! px0), a new chat with an agent through `herdr-acp`, closing the tab it shows, its other tabs, or the group itself,
 //! and splitting it. A terminal tab comes from the group's "+". Closing a
 //! tab here is the tab's own close; closing the group closes no tab: its
 //! tabs go to the group that takes its room.
@@ -32,8 +32,6 @@ enum Action {
     Review,
     /// The focused workspace's repository's issues, pull requests, and runs.
     Orchestrator,
-    /// The workspace's VS Code tab, opened in this group.
-    VsCode,
     /// A new tab running a `herdr-acp` chat with the agent.
     Chat(Agent),
     Px0,
@@ -59,8 +57,6 @@ impl Action {
         match self {
             Self::Review => fl!("group-menu-review").into(),
             Self::Orchestrator => fl!("group-menu-orchestrator").into(),
-            // A product's name.
-            Self::VsCode => "VS Code".into(), // i18n: data
             Self::Chat(agent) => agent.display_name().into(),
             Self::Px0 => "px0".into(),
             Self::Port { link, .. } => link.label().into(),
@@ -75,7 +71,6 @@ impl Action {
         match self {
             Self::Review => Some("icons/diff-unified.svg"),
             Self::Orchestrator => Some("icons/issue.svg"),
-            Self::VsCode => Some(crate::browser::Editor::VsCode.icon()),
             Self::Px0 => Some(crate::browser::Editor::Px0.icon()),
             Self::Chat(agent) => {
                 Some(crate::icons::AgentIcon::from_identity(Some(agent.name())).path())
@@ -98,7 +93,7 @@ impl Action {
     /// Which run of rows this one belongs to; a rule separates runs.
     fn section(&self) -> u8 {
         match self {
-            Self::Review | Self::Orchestrator | Self::VsCode | Self::Px0 => 0,
+            Self::Review | Self::Orchestrator | Self::Px0 => 0,
             Self::Chat(_) => 1,
             Self::Port { .. } => 2,
             Self::Close | Self::CloseOthers | Self::CloseGroup => 3,
@@ -150,9 +145,6 @@ impl SheprdWindow {
         }
         if self.can_open_orchestrator() {
             actions.push(Action::Orchestrator);
-        }
-        if self.code_offered(cx) {
-            actions.push(Action::VsCode);
         }
         if crate::browser::EMBEDDED && self.px0_root().is_some() {
             actions.push(Action::Px0);
@@ -213,7 +205,6 @@ impl SheprdWindow {
         match action {
             Action::Review => self.open_review(window, cx),
             Action::Orchestrator => self.open_orchestrator(window, cx),
-            Action::VsCode => self.open_code(Some(group), window, cx),
             Action::Chat(agent) => self.start_chat_or_flash(agent, cx),
             Action::Px0 => {
                 self.open_px0(Some(group), window, cx);
@@ -335,8 +326,6 @@ impl SheprdWindow {
                 );
             }
             let detail: SharedString = match &action {
-                // It has no default key; one bound to open_code shows.
-                Action::VsCode => self.keymap().primary(Command::OpenCode).to_owned().into(),
                 Action::Px0 => self.keymap().primary(Command::OpenPx0).to_owned().into(),
                 Action::Port { process, .. } => process.clone().into(),
                 _ => "".into(),

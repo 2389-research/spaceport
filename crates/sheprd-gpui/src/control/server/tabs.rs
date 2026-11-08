@@ -46,8 +46,7 @@ pub(super) fn serve(
     }
 }
 
-/// What a tab is, as `tab list` names it. The workspace's VS Code tab is
-/// its editor, whatever address it shows.
+/// What a tab is, as `tab list` names it.
 fn kind(tab: &Tab) -> TabKind {
     if tab.place.is_editor() {
         return TabKind::Editor;
@@ -64,12 +63,8 @@ fn kind(tab: &Tab) -> TabKind {
     }
 }
 
-/// The address, file, or checkout a tab shows. The VS Code tab's address
-/// carries its server's token, so it is never reported.
+/// The address, file, or checkout a tab shows.
 fn location(tab: &Tab) -> Option<String> {
-    if tab.place.is_code() {
-        return None;
-    }
     Some(match tab.location.as_ref()? {
         Location::Web { url } => url.as_str().to_owned(),
         Location::Local { file } => file.path().display().to_string(),

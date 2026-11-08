@@ -112,7 +112,7 @@ GPUI renders these as masks tinted by the current theme.
 (CC0-1.0), with its fill set to `currentColor` and its title removed. It
 identifies the service only and remains GitLab's trademark.
 
-`vscode.svg`, `error.svg`, and `pass.svg` are unchanged Codicons from Microsoft's
+`error.svg` and `pass.svg` are unchanged Codicons from Microsoft's
 vscode-codicons, under CC BY 4.0; `LICENSE-codicons` has the source revision,
 license, and trademark notice.
 

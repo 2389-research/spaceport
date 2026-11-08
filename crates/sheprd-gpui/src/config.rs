@@ -188,7 +188,6 @@ pub struct Config {
     pub clipboard_toast: ClipboardToast,
     /// What a new cloud device runs the first time it connects.
     pub cloud: CloudConfig,
-    pub code: CodeConfig,
     pub coder: CoderConfig,
     pub confirm_close_pane: bool,
     pub confirm_close_tab: bool,
@@ -323,47 +322,6 @@ pub struct Config {
     // keep-sorted end
 }
 
-/// VS Code as a tab of a space's editor groups, served by
-/// `code serve-web`. Each space that shows it gets
-/// its own page, which starts at the server's address and then goes
-/// wherever it navigates.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
-#[serde(default, deny_unknown_fields)]
-pub struct CodeConfig {
-    /// Where the server comes from. Unset, it is `address` when `url` is
-    /// set, as before there was a choice, else `start` once VS Code is found.
-    pub(crate) mode: Option<CodeMode>,
-    /// The server to use in `address` mode. `None` leaves the panel empty,
-    /// with a hint to set it.
-    pub(crate) url: Option<crate::browser::WebUrl>,
-    /// The port of the server the app starts, picked once and kept: VS Code
-    /// keeps its settings in the storage of the page's origin.
-    pub(crate) port: Option<std::num::NonZeroU16>,
-    /// The user accepted VS Code's server license in the app. Until then
-    /// the app starts nothing, since it would accept it for them.
-    pub(crate) license_accepted: bool,
-}
-
-/// Where VS Code tabs' server comes from.
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum CodeMode {
-    /// The app starts `code serve-web` itself.
-    Start,
-    /// A server the user runs, at `url`.
-    Address,
-}
-
-/// One change to the `[code]` table.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum CodeEdit {
-    /// Sets the address, or removes it with `None`.
-    Url(Option<crate::browser::WebUrl>),
-    Mode(CodeMode),
-    Port(std::num::NonZeroU16),
-    AcceptLicense,
-}
-
 /// Where a clicked file path opens. Alt-click (Option on macOS) opens it in
 /// the other one.
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
@@ -406,7 +364,6 @@ impl Default for Config {
             clipboard_overrides: ClipboardToastSettings::default(),
             clipboard_toast: ClipboardToast::default(),
             cloud: CloudConfig::default(),
-            code: CodeConfig::default(),
             coder: CoderConfig::default(),
             confirm_close_pane: true,
             confirm_close_tab: true,
@@ -495,7 +452,6 @@ struct Settings {
     chat: chat::ChatConfig,
     clipboard_toast: ClipboardToastSettings,
     cloud: CloudConfig,
-    code: CodeConfig,
     coder: CoderConfig,
     confirm_close_pane: Option<bool>,
     confirm_close_tab: Option<bool>,
@@ -933,7 +889,6 @@ impl Config {
         config.agent_skill = settings.agent_skill;
         config.usage = settings.usage;
         config.option_as_alt = settings.option_as_alt;
-        config.code = settings.code;
         settings.px0.check()?;
         config.px0 = settings.px0;
         config.open_files_in = settings.open_files_in;

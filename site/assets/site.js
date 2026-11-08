@@ -35,7 +35,6 @@
     { k: 'Fan-out', t: 'One prompt, several agents', p: 'Send a prompt to Claude, Codex, OpenCode and others in parallel lanes across supported hosts, then compare results and keep the best. Available on macOS and Linux.', g: 'fanout' },
     { k: 'Review & checkpoints', t: 'Read it, note it, rewind it', p: 'Review local checkout changes in side-by-side diffs, with line notes you can send back to the agent. Save checkpoints and restore a worktree when you want to try another direction.', g: 'review' },
     { k: 'Teleport', t: 'Move work between machines', p: 'Move a worktree, its uncommitted changes, tabs, splits and agent sessions to another supported host, after a review step. Available on macOS and Linux; custom sockets and WSL are not supported.', g: 'teleport' },
-    { k: 'VS Code & browser tabs', t: 'Editors next to agents', p: 'On macOS and Windows, keep VS Code and browser tabs beside terminals in editor groups. Pin page notes and send them to the agent that opened it. Linux opens pages in the system browser.', g: 'terminal' },
   ];
   document.getElementById('rows').innerHTML = rows.map(r => `
     <div class="row">
@@ -81,7 +80,7 @@
   })();
 
   (() => {
-    const order = ['teleport', 'orchestrator', 'fanout', 'review', 'checkpoints', 'devices', 'pr', 'ports', 'vscode', 'annotate', 'sidebar', 'usage', 'cells'];
+    const order = ['teleport', 'orchestrator', 'fanout', 'review', 'checkpoints', 'devices', 'pr', 'ports', 'annotate', 'sidebar', 'usage', 'cells'];
     const big = new Set(['teleport', 'orchestrator']);
     const gal = document.getElementById('gal');
     const shots = order.map(id => HM.SHOTS.find(s => s.id === id)).filter(Boolean);

@@ -47,6 +47,12 @@ fn stepped<'a>(tabs: &'a [Pick], current: Option<&Pick>, command: Command) -> Op
 }
 
 impl SheprdWindow {
+    /// Whether some group of the focused workspace shows the page `id`.
+    pub(super) fn group_shows_page(&self, id: TabId, cx: &App) -> bool {
+        self.group_slots()
+            .into_iter()
+            .any(|slot| self.group_shown(slot.id, cx) == Shown::Page(id))
+    }
     /// The daemon's focused tab, when it belongs to the focused workspace.
     pub(crate) fn focused_herdr_tab(&self) -> Option<&str> {
         let snapshot = self.live.snapshot.as_ref()?;

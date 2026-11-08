@@ -434,12 +434,6 @@ pub(super) const CATALOG: &[Entry] = &[
         "settings-tabs-pane-history-description",
     ),
     entry(
-        Section::Code,
-        "code-mode",
-        "settings-code-mode",
-        "settings-code-mode-description",
-    ),
-    entry(
         Section::Px0,
         "px0-url",
         "settings-px0-title",

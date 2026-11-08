@@ -50,14 +50,13 @@ Copyright (c) 2011 to Present Mark Badolato, MIT License; each theme's
 copyright belongs to its author. crates/sheprd-gpui/THEMES-NOTICE.md has the
 revision and the full license text.
 
-The icons assets/icons/vscode.svg, error.svg, and pass.svg are Codicons,
+The icons assets/icons/error.svg and pass.svg are Codicons,
 Copyright (c) Microsoft Corporation, from
 https://github.com/microsoft/vscode-codicons at revision
 6b53088f5c55bce7107fb579765364f59cd4ad5d, unchanged, and licensed under
 CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/legalcode);
-assets/icons/LICENSE-codicons has the details. Visual Studio Code and its icon
-are trademarks of Microsoft Corporation, which does not make or endorse this
-app.
+assets/icons/LICENSE-codicons has the details. Visual Studio Code is a
+trademark of Microsoft Corporation, which does not make or endorse this app.
 
 The sidebar agent icons in assets/icons named agent-pi.svg, agent-claude.svg,
 agent-codex.svg (OpenAI mark), agent-gemini.svg, agent-cursor.svg,

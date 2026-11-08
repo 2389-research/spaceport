@@ -1483,7 +1483,7 @@ padding_y = [4, 8]   # top, then bottom
 
 - One number pads both sides of the axis. A pair of numbers pads each side: left then right for `padding_x`, top then bottom for `padding_y`.
 - Each side is a finite number of logical pixels from 0 to 64. The default is `0`, which keeps the cells against the edges.
-- Every terminal takes the padding, in every tab group, whether the sidebar shows or not. A browser, VS Code, or review tab pads its own content and takes none.
+- Every terminal takes the padding, in every tab group, whether the sidebar shows or not. A browser or review tab pads its own content and takes none.
 - The terminal keeps the remaining size, so the daemon is resized to the columns and rows it actually has.
 - The padding shows the theme background.
 - **Settings > Theme > Terminal padding** sets each of the four sides with a slider, a typed value, or one-pixel steps. It writes one number when the two sides of an axis agree, and a pair when they differ.
@@ -3034,7 +3034,7 @@ come back after a restart; closing a workspace in Herdr removes its tabs.
   menu, popover, or status bar tooltip that would fall over it, and for a
   dialog, which dims the whole window. Its place is empty until the menu
   closes. A page also steps aside while a toast or the file-transfer card
-  falls over it, as when a page or VS Code fills the right-hand group or the
+  falls over it, as when a page fills the right-hand group or the
   whole editor area, so they stay visible and clickable. A page that none of
   these reach keeps showing.
 - Linux has no embedded pages yet: browser tab requests open the system
@@ -3372,126 +3372,6 @@ through `sheprd-acp connect` run on that host over SSH, using the `sheprd-acp`
 `~/.local/bin`, a Mac's installed app, or the host's `PATH`; without one its
 pane keeps the program's terminal view. The view is not offered for WSL or
 cloud hosts. See `crates/sheprd-acp/README.md` for the program itself.
-
-## VS Code
-
-VS Code opens as a tab of a space's editor groups, like a browser tab, for
-reading code and reviewing diffs while agents work in the terminals: split
-the group to see it beside a terminal, or show it alone. It is a second frontend beside Herdr's: the
-page comes from VS Code's own web server, `code serve-web`, and the app adds
-nothing to what that server serves.
-
-**Settings > Code** chooses where that server comes from.
-
-**Start VS Code automatically**, the default once VS Code is found, has the
-app run the server itself. It looks for VS Code's `code` command on your
-login shell's `PATH`, then, on macOS, in
-`/Applications/Visual Studio Code.app`, and runs the `code-tunnel` program
-beside it, which is what `code serve-web` runs:
-
-```sh
-code-tunnel serve-web --host 127.0.0.1 --port <port> \
-  --connection-token-file <state>/vscode-token --accept-server-license-terms
-```
-
-- The server is Microsoft software under the
-  [VS Code Server License Terms](https://aka.ms/vscode-server-license). The
-  app never accepts them for you: the VS Code tab and the settings page show them
-  with **Accept and start**, and only after that does the app pass
-  `--accept-server-license-terms`. The acceptance is saved as
-  `license_accepted = true` under `[code]`.
-- It starts the first time a VS Code tab needs a page, never before, and says "Starting VS Code… (the first run downloads it)"
-  until VS Code answers: the first start downloads the server build.
-- The port is picked once and saved as `port` under `[code]`, since VS Code
-  keeps its settings in the storage of the page's address. If another
-  program holds that port, the VS Code tab and the settings page say so; quit it,
-  or remove `port` to have a new one picked (VS Code then starts without the
-  settings it kept). The app sends nothing to a port it does not hold, since
-  the token must reach only its own server. It asks that server for its
-  version alone, never with the token, once its own `serve-web` says it
-  listens there, and counts the answer only if `serve-web` still runs after
-  it; a page, which must carry the token, is made only while it runs.
-- The connection token is made once and kept in `vscode-token` in the app's
-  state folder (`~/.local/state/herdr/gpui` unless `XDG_STATE_HOME` is set),
-  readable only by you on macOS; on Windows it has your profile folder's
-  permissions. It is passed by that file's path,
-  never shown, and never logged; messages name only the host and port.
-- The app owns that one process. It stops it when it quits: it asks the
-  server and what it started to stop, and kills them if they have not after
-  a moment. On macOS the server runs in a process group of its own, made
-  for it, since `serve-web` leaves its server running when only it
-  is stopped; Windows ends the server's process tree with `taskkill /T`. If
-  the server stops or fails, the VS Code tab shows **Cannot reach the VS Code
-  server** with the reason, and the app starts it again, waiting 1 second,
-  then twice as long each time, up to a minute.
-- Spaces on SSH hosts still see this computer's VS Code: their folders are on
-  another machine, so their pages open an empty window. Running the server on
-  the host would need it started there and its port forwarded, which the app
-  does not do.
-
-**Use an address** keeps a server you run yourself, as before:
-
-```sh
-code serve-web --host 127.0.0.1 --port 8000 --accept-server-license-terms
-```
-
-It prints the address to open, with a `?tkn=` connection token. Paste that
-address in **Settings > Code**, which saves it in `config-gpui.local.toml`:
-
-```toml
-[code]
-mode = "address"
-url = "http://127.0.0.1:8000/?tkn=..."
-```
-
-A config with a `url` but no `mode`, as written before there was a choice,
-keeps using its address. Keep the port fixed: VS Code keeps its settings in
-the page's storage, which belongs to one address.
-
-- **Test connection** on that page asks the server whether it answers. A
-  server that does shows its build's commit; one that does not says why: the
-  connection was refused, the token was refused, or the address is not a
-  VS Code server. Messages name only the host and port, never the token.
-- **VS Code** in an editor group's **…** menu, beside the VS Code icon,
-  opens the space's VS Code tab in that group. The row appears once a
-  server is set, or VS Code is found to start, in builds that can show
-  pages. **Open VS Code** in the Terminal menu or the command palette opens
-  it in the group in use, as does a key you bind to `open_code` under
-  `[keybindings]`. It has no default key.
-- Each space has one VS Code tab, listed with the other tabs of the group it
-  belongs to. Opening it again moves that same tab to the group it is opened
-  from, and a group left without tabs closes, so
-  one group can show VS Code beside another showing a terminal, or a lone
-  group can show it alone. It splits, resizes, and is covered by dialogs as
-  any page is, and its page keeps running, keeping its state, while no group
-  shows it; closing the space in Herdr closes it. It still waits for its
-  server, and no agent opens pages in it.
-- The page opens on the address above, then goes wherever it navigates, and
-  comes back there after a restart. A space's page first opens the folder
-  the space started in, as its first tab's first terminal reports it, when
-  the space is on this computer; a space on an SSH host opens an empty
-  window, since its folder is on another machine than the server. **Open
-  Folder** in VS Code picks another; the page then remembers it.
-- The app asks the server whether it answers before it opens a page, since a
-  page that cannot load stays blank. Linux builds show no pages, so they
-  never start VS Code either. While the server does not answer, the tab says
-  so and why, and asks again every 5 seconds. Setting a new address moves
-  each VS Code tab to the new server, where it stays in its group with its
-  folder. A new token for the same server reopens each page where it was,
-  with the new token, and so does a restart.
-- VS Code fills its tab, without a browser tab's address bar, back,
-  forward, reload, or **Annotate**: it is an editor, not a page to browse.
-  Its page is otherwise a [browser tab](#browser-tabs)'s, so the same rules
-  apply: `http` and `https` only, native web views, and no pages on Linux.
-- The keyboard goes to whatever has focus. While a page has it, this one or a
-  browser tab's, the page's own shortcuts win, as a terminal program's do
-  while its pane has focus. On macOS, Cut, Copy, and Paste act on the page,
-  and the keys macOS keeps for the app (quit, hide, minimize, and cycling
-  windows) still reach the app. So do the keys bound to Next Tab, Previous
-  Tab, the tab numbers, Move Tab Left and Right, and moving to another
-  workspace or agent, as a web browser keeps its tab keys from its pages,
-  and the keys bound to the font size commands, which zoom the page. Click a
-  terminal to take the keyboard back.
 
 ## px0
 

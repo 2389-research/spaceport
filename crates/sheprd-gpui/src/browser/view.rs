@@ -70,14 +70,6 @@ pub(crate) struct Browser {
     /// per tab, so a failure elsewhere never clears another's and sets it
     /// retrying; bounded by the tabs the store keeps.
     pub(super) failed: HashMap<TabId, SharedString>,
-    /// Whether the VS Code server answers, asked before its pages open.
-    pub(super) code_server: super::code::CodeServer,
-    /// The same for each SSH host's own VS Code server, by its target.
-    pub(super) host_code_servers: HashMap<String, super::code::CodeServer>,
-    /// VS Code tabs that moved to their host's server from this computer's,
-    /// where they could name no folder: each opens its workspace's folder
-    /// once its workspace is focused, which is when that folder is known.
-    pub(super) code_folderless: HashSet<TabId>,
     pub(super) px0: super::px0::Pages,
     /// The workspaces of the last snapshot and the boot they came from: one
     /// missing from the next snapshot of the same boot was closed.
@@ -132,9 +124,6 @@ impl Browser {
             tab_body: Default::default(),
             group_motion: Default::default(),
             failed: HashMap::new(),
-            code_server: Default::default(),
-            host_code_servers: HashMap::new(),
-            code_folderless: HashSet::new(),
             px0: Default::default(),
             workspaces: None,
             herdr_tabs: None,
@@ -317,7 +306,6 @@ impl SheprdWindow {
         self.forget_closed_workspaces(cx);
         self.settle_groups(window, cx);
         self.advance_close_run(window, cx);
-        self.ensure_code_page(window, cx);
         self.ensure_px0_page(window, cx);
         self.poll_deliveries(cx);
         self.poll_reveal(window, cx);

@@ -9,7 +9,6 @@ error-config-empty-font-fallback = { $table }.fallback families must not be empt
 error-config-empty-font-family = { $table }.family must not be empty
 error-config-empty-theme = theme must not be empty
 error-config-invalid-chat-width = chat.max_width must be 0 (full width) or 320–4000 logical pixels
-error-config-invalid-code-table = code must be a TOML table
 # $device is the ID the config named, quoted.
 error-config-invalid-device-id = devices.{ $device } is not a saved device ID
 error-config-invalid-devices-table = devices and each devices.<id> must be tables

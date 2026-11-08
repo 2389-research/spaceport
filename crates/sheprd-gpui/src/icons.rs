@@ -346,7 +346,6 @@ embedded_icons! {
     "theme.svg",
     "trash.svg",
     "user.svg",
-    "vscode.svg",
     "whitespace.svg",
     "window-maximize.svg",
     "window-minimize.svg",

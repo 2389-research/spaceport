@@ -21,7 +21,6 @@ impl Localize for Error {
             Self::EmptyFontFamily(table) => fl!("error-config-empty-font-family", table = *table),
             Self::EmptyTheme => fl!("error-config-empty-theme"),
             Self::InvalidChatWidth => fl!("error-config-invalid-chat-width"),
-            Self::InvalidCodeTable => fl!("error-config-invalid-code-table"),
             Self::InvalidDeviceId(device) => fl!(
                 "error-config-invalid-device-id",
                 device = format!("{device:?}")

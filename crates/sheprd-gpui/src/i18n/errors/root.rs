@@ -42,7 +42,6 @@ impl Localize for Error {
             #[cfg(feature = "azure")]
             Self::CloudHostUnsupported => fl!("error-cloud-host-unsupported"),
             Self::CloudSetup(error) => error.localize(),
-            Self::Code(error) => error.localize(),
             Self::CodeFileUnreadable => fl!("error-code-file-unreadable"),
             // A parser's own diagnostic, which names the line it stopped at.
             Self::ConfigFile { source, .. } => source.to_string(),

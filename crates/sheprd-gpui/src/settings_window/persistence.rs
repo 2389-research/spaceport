@@ -138,7 +138,6 @@ impl SettingsWindow {
             .take()
             .filter(|_| !self.layout_saving)
             .map(|mode| self.layout_operation(mode));
-        let code = self.take_shutdown_code_url();
         let sidebar = self.take_shutdown_sidebar();
         let completion = self.save_completion.take();
         let executor = cx.background_executor().clone();
@@ -171,14 +170,8 @@ impl SettingsWindow {
             };
             let theme = theme.map_or(Ok(()), |theme| theme(shared));
             let layout = layout.map_or(Ok(()), |write| write());
-            let code = code.map_or(Ok(()), |write| write());
             let sidebar = sidebar.map_or(Ok(()), |write| write());
-            preceding
-                .and(sizes)
-                .and(theme)
-                .and(layout)
-                .and(sidebar)
-                .and(code)
+            preceding.and(sizes).and(theme).and(layout).and(sidebar)
         })
     }
 
@@ -280,7 +273,6 @@ impl SettingsWindow {
                 }
                 self.shared = loaded.shared;
                 self.error = loaded.error;
-                self.sync_code_field(cx);
                 self.sync_px0_field(cx);
                 self.sync_chat_env_field(cx);
                 // The saved volume reaches the shared sound worker now, not when

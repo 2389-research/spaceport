@@ -80,35 +80,8 @@ mod tab_steps;
 #[cfg(any(target_os = "macos", windows))]
 mod tab_moves;
 
-/// The VS Code tab's server checks. No native page is created, so this
-/// runs on every platform, except the checks only builds that show pages
-/// make.
-mod code;
-
-/// VS Code as a tab of the groups, opened in the group in use.
-mod code_tab;
 mod editors;
 mod px0;
-
-/// A new VS Code server moves the VS Code tabs to it. Only builds that
-/// show pages follow a server at all.
-#[cfg(any(target_os = "macos", windows))]
-mod code_group_server;
-
-/// A new VS Code page opens on its workspace's folder, once its server
-/// answers, which only builds that show pages ask.
-#[cfg(any(target_os = "macos", windows))]
-mod code_folder;
-
-/// A workspace on an SSH host opens VS Code from that host's own server,
-/// which only builds that show pages start.
-#[cfg(any(target_os = "macos", windows))]
-mod code_host;
-
-/// The VS Code server the app starts: its license, its states, and when it
-/// starts. Only builds that show pages start one.
-#[cfg(any(target_os = "macos", windows))]
-mod code_start;
 
 /// Pages hide under the status bar's tooltips where they draw above the
 /// window, which only Windows does.

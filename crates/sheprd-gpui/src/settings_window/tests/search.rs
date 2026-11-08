@@ -52,7 +52,6 @@ fn every_catalog_id_is_unique_and_belongs_to_its_section() {
             Section::Tabs => "tabs-",
             Section::Notifications => "notif-",
             Section::StatusBar => "status-",
-            Section::Code => "code-",
             Section::Px0 => "px0-",
             Section::Integrations => "integrations-",
             Section::Plugins => "plugins-",

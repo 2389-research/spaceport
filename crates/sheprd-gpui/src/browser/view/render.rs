@@ -45,8 +45,8 @@ impl SheprdWindow {
         tabs.into_iter()
             .map(|tab| {
                 let id = tab.id;
-                // The VS Code tab bears its mark; a review tab shows a diff,
-                // a code tab a file, and the overview devices, not a page.
+                // An editor tab bears its mark; a review tab shows a diff,
+                // a source tab a file, and the overview devices, not a page.
                 let icon = match (tab.place.editor(), &tab.location) {
                     (Some(editor), _) => editor.icon(),
                     (_, Some(Location::Review { .. })) => "icons/diff-unified.svg",
@@ -134,7 +134,7 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) -> AnyElement {
         let id = tab.id;
-        let code = tab.place.is_editor();
+        let editor = tab.place.is_editor();
         let loaded = tab.location.is_some();
         let external = match &tab.location {
             Some(Location::Web { url }) => Some(url.clone()),
@@ -351,16 +351,15 @@ impl SheprdWindow {
             // the keyboard; nothing here types into a terminal. A focus
             // handle belongs to one element, so a drawn terminal keeps it.
             .when(keyboard, |browser| browser.track_focus(&self.focus))
-            // VS Code fills its tab: it is an editor, not a page to browse,
-            // so it has no address, navigation, or notes of a browser's.
-            .when(!code, |browser| browser.child(toolbar))
+            // An editor fills its tab without a browser toolbar or notes.
+            .when(!editor, |browser| browser.child(toolbar))
             .child(
                 div()
                     .flex()
                     .flex_1()
                     .min_h_0()
                     .child(div().flex().flex_col().flex_1().min_w_0().child(content))
-                    .children(panel.filter(|_| !code)),
+                    .children(panel.filter(|_| !editor)),
             );
         self.with_ground(browser, rgb(self.theme.background))
     }

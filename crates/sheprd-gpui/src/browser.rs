@@ -4,8 +4,7 @@
 //! other clients never see them. Pages are native web views. On macOS they lie
 //! beneath the window's own drawing, so its menus and toasts show over them;
 //! on Windows they lie above it, so the window hides a page that one of its
-//! overlays reaches. Each workspace may also show VS Code in a panel to the
-//! right of its groups, or as a tab in its groups.
+//! overlays reaches.
 // i18n: migrated
 
 #[cfg(any(target_os = "macos", windows, test))]
@@ -18,11 +17,6 @@ mod building;
 #[cfg(any(target_os = "macos", windows))]
 mod chat_pages;
 mod closed;
-mod code;
-mod code_group;
-mod code_host;
-mod code_start;
-mod code_view;
 mod editor;
 #[cfg(any(target_os = "macos", windows))]
 mod favicon;
@@ -121,43 +115,6 @@ impl WebUrl {
 
     pub(crate) fn host(&self) -> &str {
         self.0.host_str().unwrap_or_default()
-    }
-
-    /// The scheme, host, and port, as in `http://127.0.0.1:8000`.
-    pub(crate) fn origin(&self) -> String {
-        self.0.origin().ascii_serialization()
-    }
-
-    /// The host and port, as in `127.0.0.1:8000`: what to name in a message,
-    /// since the path and query may hold a secret such as a token.
-    pub(crate) fn address(&self) -> String {
-        match self.0.port_or_known_default() {
-            Some(port) => format!("{}:{port}", self.host()),
-            None => self.host().to_owned(),
-        }
-    }
-
-    /// The port of an address on the loopback of whichever machine opens
-    /// it, such as `localhost:3000`, which on another host names that host.
-    pub(crate) fn loopback_port(&self) -> Option<std::num::NonZeroU16> {
-        let loopback = match self.0.host()? {
-            url::Host::Domain(name) => name == "localhost" || name.ends_with(".localhost"),
-            url::Host::Ipv4(address) => address.is_loopback() || address.is_unspecified(),
-            url::Host::Ipv6(address) => address.is_loopback() || address.is_unspecified(),
-        };
-        if !loopback {
-            return None;
-        }
-        std::num::NonZeroU16::new(self.0.port_or_known_default()?)
-    }
-
-    /// This address at `127.0.0.1:port`, keeping its scheme, path, query,
-    /// and fragment: a forwarded port listens on IPv4 loopback only.
-    pub(crate) fn at_local_port(&self, port: u16) -> Option<Self> {
-        let mut url = self.0.clone();
-        url.set_host(Some("127.0.0.1")).ok()?;
-        url.set_port(Some(port)).ok()?;
-        Some(Self(url))
     }
 
     /// What someone typed into the address field: a bare host such as
@@ -263,31 +220,6 @@ mod tests {
         assert!(typed("file:///etc/passwd").is_err());
         assert!(typed("ftp://a.test").is_err());
         assert!(typed("").is_err());
-    }
-
-    #[test]
-    fn loopback_addresses_move_to_a_forwarded_port() {
-        let url = |text| WebUrl::from_typed(text).unwrap();
-        for (text, port) in [
-            ("localhost:3000/app?x=1", 3000),
-            ("http://127.0.0.1:8080/", 8080),
-            ("http://[::1]/", 80),
-            ("https://app.localhost/", 443),
-            ("http://0.0.0.0:5173/", 5173),
-        ] {
-            assert_eq!(
-                url(text).loopback_port().map(|p| p.get()),
-                Some(port),
-                "{text}"
-            );
-        }
-        for text in ["https://example.com:3000/", "http://10.0.0.2:3000/"] {
-            assert_eq!(url(text).loopback_port(), None, "{text}");
-        }
-        let moved = url("localhost:3000/app?x=1#top")
-            .at_local_port(13000)
-            .unwrap();
-        assert_eq!(moved.as_str(), "http://127.0.0.1:13000/app?x=1#top");
     }
 
     #[test]

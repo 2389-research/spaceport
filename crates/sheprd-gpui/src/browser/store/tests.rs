@@ -1,5 +1,6 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
+use crate::browser::WebUrl;
 
 mod editors;
 mod orchestrator_tabs;
@@ -163,52 +164,6 @@ fn pane_origin_selects_only_its_tabs() {
     assert_eq!(other_ids, [theirs]);
 }
 
-/// A workspace's VS Code tab is listed in its strips like any tab, and is
-/// still its one VS Code tab, never handed to an agent.
-#[test]
-fn a_workspace_has_one_vs_code_tab_listed_in_its_strips() {
-    let mut store = Store::default();
-    let (local, remote) = (Scope::endpoint("local"), Scope::endpoint("ssh:box"));
-    let page = url("http://127.0.0.1:8000/");
-    let strip = store.open(local.clone(), "w_1", None, None).unwrap();
-    assert!(store.code_tab(&local, "w_1").is_none());
-    let code = store
-        .open_editor_tab(local.clone(), "w_1", Editor::VsCode, page.clone())
-        .unwrap();
-    assert_ne!(code, strip);
-    // Opening it again finds the same tab, wherever it went since.
-    store.visited(code, url("http://127.0.0.1:8000/?folder=/x"), None);
-    assert_eq!(
-        store.open_editor_tab(local.clone(), "w_1", Editor::VsCode, page.clone()),
-        Some(code)
-    );
-    assert_eq!(
-        store.get(code).unwrap().location,
-        url("http://127.0.0.1:8000/?folder=/x")
-    );
-    // One opened before its server's address is known gets it later.
-    let waiting = store
-        .open_editor_tab(local.clone(), "w_2", Editor::VsCode, None)
-        .unwrap();
-    assert_eq!(store.get(waiting).unwrap().location, None);
-    // Each workspace of each daemon has its own.
-    let other = store
-        .open_editor_tab(remote.clone(), "w_1", Editor::VsCode, page.clone())
-        .unwrap();
-    assert_ne!(other, code);
-    assert_eq!(store.code_tab(&local, "w_1").map(|tab| tab.id), Some(code));
-    // The strips list it with the workspace's other tabs.
-    let listed: Vec<_> = store
-        .in_workspace(&local, "w_1")
-        .map(|tab| tab.id)
-        .collect();
-    assert_eq!(listed, [strip, code]);
-    // It goes with its workspace.
-    assert!(store.forget_workspaces(&local, &["w_1".to_owned()]));
-    assert!(store.code_tab(&local, "w_1").is_none());
-    assert!(store.code_tab(&remote, "w_1").is_some());
-}
-
 /// Old VS Code spellings still parse so they cannot discard other saved tabs.
 #[test]
 fn saved_vs_code_tabs_parse_but_do_not_restore() {
@@ -217,14 +172,13 @@ fn saved_vs_code_tabs_parse_but_do_not_restore() {
     store
         .open(scope.clone(), "w_1", url("https://a.test/"), None)
         .unwrap();
+    let retired = store.open(scope.clone(), "w_1", None, None).unwrap();
     store
-        .open_editor_tab(
-            scope.clone(),
-            "w_1",
-            Editor::VsCode,
-            url("http://127.0.0.1:8000/"),
-        )
-        .unwrap();
+        .tabs
+        .iter_mut()
+        .find(|tab| tab.id == retired)
+        .unwrap()
+        .place = Place::RetiredVsCode;
     let bytes = serde_json::to_vec(&Saved {
         tabs: store.tabs.clone(),
     })
@@ -232,7 +186,7 @@ fn saved_vs_code_tabs_parse_but_do_not_restore() {
     let restored = Store::with_tabs(parse(&bytes).unwrap(), None);
     assert_eq!(restored.tabs.len(), 1);
     assert_eq!(restored.tabs[0].id, store.tabs[0].id);
-    assert!(restored.code_tab(&scope, "w_1").is_none());
+    assert!(restored.get(retired).is_none());
     let old =
         r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":null,"title":""}]}"#;
     let tabs = parse(old.as_bytes()).unwrap();
@@ -243,7 +197,7 @@ fn saved_vs_code_tabs_parse_but_do_not_restore() {
         );
         assert_eq!(
             parse(saved.as_bytes()).unwrap()[0].place,
-            Place::Editor(Editor::VsCode)
+            Place::RetiredVsCode
         );
     }
     for invalid in [

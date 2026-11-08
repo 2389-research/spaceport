@@ -47,12 +47,12 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
     for location in locations {
         store.open(scope.clone(), "w_1", location, Some("w_1:p1".into()));
     }
-    // The VS Code tab's address carries its token, which is never listed.
+    // px0 remains a listed editor tab with its loopback workbench address.
     store.open_editor_tab(
         scope.clone(),
         "w_1",
-        crate::browser::Editor::VsCode,
-        Some(web("http://127.0.0.1:8000/?tkn=secret")),
+        crate::browser::Editor::Px0,
+        Some(web("http://127.0.0.1:7777/")),
     );
     let listed: Vec<TabInfo> = store.tabs().map(info).collect();
     let kinds: Vec<TabKind> = listed.iter().map(|tab| tab.kind).collect();
@@ -75,7 +75,7 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
     assert_eq!(locations[3], Some("/src/main.rs"));
     assert_eq!(locations[4], Some("/src/app"));
     assert_eq!(locations[5], None);
-    assert_eq!(locations[6], None);
+    assert_eq!(locations[6], Some("http://127.0.0.1:7777/"));
     let first = &listed[1];
     assert_eq!(first.workspace, "w_1");
     assert_eq!(first.host, "local:/tmp/herdr.sock");

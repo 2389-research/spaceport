@@ -19,7 +19,7 @@
     { key: 'watch', title: 'Watch', line: 'Agent status, host load, ports and recent activity. Local and SSH devices, Coder workspaces on macOS/Linux, and WSL on Windows.' },
     { key: 'review', title: 'Review', line: 'Read an agent’s changes side by side, pin line notes and send them back. Checkpoint every turn and rewind a worktree. Review and merge PRs.' },
     { key: 'move', title: 'Move', line: 'Teleport a worktree, its uncommitted work, tabs and running agents to another machine. Forward ports. Pick up where you left off.' },
-    { key: 'work', title: 'Work', line: 'GPU-painted terminals, VS Code and browser tabs in editor groups, Go to File and Symbol, annotations on pages.' },
+    { key: 'work', title: 'Work', line: 'GPU-painted terminals and tabs in editor groups, Go to File and Symbol, annotations on pages.' },
   ];
 
   const CHAPTERS = [
@@ -43,7 +43,6 @@
     { id: 'pr', pillar: 'review', title: 'Pull requests', cap: 'Conversation, checks, review and merge, without leaving.', spec: 'PR page: avatars, review threads folded, checks green, Merge (squash) button.' },
     { id: 'teleport', pillar: 'move', title: 'Teleport', cap: 'Move a worktree and its agent sessions to another machine.', spec: 'Teleport review: branch, 3 unpushed commits, 5 files, panes and agent sessions, destination build-box.' },
     { id: 'ports', pillar: 'move', title: 'Ports and tunnels', cap: 'Each workspace’s listening ports, opened locally through SSH.', spec: 'Ports popover: :3000 vite, :5432 postgres on build-box, "Open in tab" via tunnel.' },
-    { id: 'vscode', pillar: 'work', title: 'VS Code in an editor group', cap: 'Beside the agent, in the same window.', spec: 'Editor groups: VS Code tab left, Claude terminal right, Go to Symbol palette open.' },
     { id: 'annotate', pillar: 'work', title: 'Annotate pages', cap: 'Pin notes on a page; the agent gets them.', spec: 'Browser tab with 3 pins and a notes panel.' },
     { id: 'cells', pillar: 'work', title: 'GPU-painted cells', cap: 'Pixel-aligned terminal glyphs, joined box drawing and smooth scrolling.', spec: 'Macro crop at 2x: terminal borders and Cmd-F find bar.' },
     { id: 'usage', pillar: 'watch', title: 'Usage in the status bar', cap: 'Claude, Codex, ChatGPT and more, before an agent stalls.', spec: 'Status bar meters + provider popover with several Claude accounts.' },
@@ -68,7 +67,7 @@
   }
 
   const TABS = {
-    terminal: [['claude', 'sidebar-polish', 1], ['codex', 'agent/412-ports'], [null, '🌐 localhost:3000'], [null, '⧉ VS Code']],
+    terminal: [['claude', 'sidebar-polish', 1], ['codex', 'agent/412-ports'], [null, '🌐 localhost:3000'], [null, '⧉ px0']],
     devices: [[null, '▦ Devices', 1], ['claude', 'sidebar-polish']],
     orchestrator: [[null, '◎ Orchestrator · sheprd', 1], ['claude', 'sidebar-polish']],
     review: [[null, '± Review · sidebar-polish', 1], ['claude', 'sidebar-polish']],
@@ -125,7 +124,7 @@
         <tr style="background:var(--sel)"><td><span class="cg">◉</span> #409 Fan-out lanes across hosts</td><td></td></tr>
         <tr><td><span class="cg">◉</span> #401 Checkpoint timeline day breaks</td><td><span class="hm-dot done"></span></td></tr>
         <tr><td><span class="cg">◉</span> #398 WSL device setup</td><td></td></tr>
-        <tr><td><span class="cg">◉</span> #395 VS Code in editor groups</td><td><span class="hm-dot done"></span></td></tr></table></div>
+        </table></div>
       <div class="hm-card"><b>#409 Fan-out lanes across hosts</b><p style="color:var(--dim);margin:6px 0 10px">Spread lanes to the host with the most spare cores; show the host chip on each lane.</p>
         <div style="font-size:11px;color:var(--dim);margin-bottom:5px">Dispatch to</div>
         <div class="hm-grid2" style="grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">

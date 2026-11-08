@@ -165,7 +165,6 @@ struct SettingsWindow {
     themes: themes::ThemeBrowser,
     controls: controls::Controls,
     plugins: controls::plugins::Plugins,
-    code: controls::code::CodeSettings,
     px0: controls::px0::Px0Settings,
     chat_env: controls::chat_env::ChatEnvSettings,
     /// The open override dropdown, if any; its list renders inside its button.
@@ -331,7 +330,6 @@ impl SettingsWindow {
             themes: themes::ThemeBrowser::new(cx),
             controls: controls::Controls::new(cx),
             plugins: controls::plugins::Plugins::new(cx),
-            code: Default::default(),
             px0: Default::default(),
             chat_env: Default::default(),
             dropdown: None,
@@ -610,9 +608,6 @@ impl SettingsWindow {
         if !self.finish_number_edit(true, cx) || !self.finish_hex_edit(true, cx) {
             return false;
         }
-        if !self.finish_code_edit(true, cx) {
-            self.finish_code_edit(false, cx);
-        }
         self.dropdown = None;
         if !self.theme_dirty()
             && self.layout_intent.is_none()
@@ -688,18 +683,12 @@ impl SettingsWindow {
         if !self.finish_hex_edit(true, cx) {
             self.finish_hex_edit(false, cx);
         }
-        if !self.finish_code_edit(true, cx) {
-            self.finish_code_edit(false, cx);
-        }
         self.dropdown = None;
         self.dismiss_control_font_picker(window, cx);
         self.clear_search(cx);
         self.section = section;
         // A page opened from search or elsewhere shows in a short list too.
         self.navigation_scroll.scroll_to_item(section.nav_item());
-        if section == Section::Code {
-            self.open_code_page(window, cx);
-        }
         if section == Section::Px0 {
             self.open_px0_settings(cx);
         }
@@ -739,7 +728,6 @@ impl Render for SettingsWindow {
                 Section::Theme => self.render_theme(window, cx),
                 Section::Integrations => self.render_integration_controls(cx),
                 Section::Plugins => self.render_plugin_controls(cx),
-                Section::Code => self.render_code_controls(window, cx),
                 Section::Px0 => self.render_px0_controls(cx),
                 #[cfg(feature = "cloud")]
                 Section::CloudDevices => self.render_cloud_devices(cx),

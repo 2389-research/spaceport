@@ -12,10 +12,6 @@ fn px0_is_a_separate_singleton_per_daemon_and_workspace() {
         Some(first),
         store.open_editor_tab(local.clone(), "w1", Editor::Px0, None)
     );
-    let code = store
-        .open_editor_tab(local.clone(), "w1", Editor::VsCode, None)
-        .unwrap();
-    assert_ne!(first, code);
     assert_ne!(
         first,
         store
@@ -42,6 +38,8 @@ fn px0_is_a_separate_singleton_per_daemon_and_workspace() {
     assert!(tab.place.is_editor());
     assert!(tab.origin.is_none());
     assert_eq!(tab.title, "px0");
-    assert!(restored.code_tab(&local, "w1").is_none());
-    assert!(restored.next > u64::from(code));
+    assert_eq!(
+        restored.px0_tab(&local, "w1").map(|tab| tab.id),
+        Some(second)
+    );
 }

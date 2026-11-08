@@ -14,7 +14,7 @@ fn rect(x: f32, y: f32, width: f32, height: f32) -> Bounds<gpui::Pixels> {
 fn a_page_steps_aside_only_for_the_overlays_it_reaches() {
     // A toast at the window's top right, over the right-hand group.
     let toast = [rect(1048., 52., 340., 90.)];
-    // VS Code filling the right-hand group, or the whole editor area.
+    // A page filling the right-hand group, or the whole editor area.
     let right = Some(rect(700., 40., 700., 760.));
     let whole = Some(rect(240., 40., 1160., 760.));
     // A page in the left group, clear of the toast.
@@ -48,7 +48,7 @@ fn a_toast_covers_the_pages_it_reaches_while_it_shows(cx: &mut gpui::TestAppCont
     assert_eq!(presented.len(), 1, "{presented:?}");
     let toast = presented[0];
     assert!(toast.size.width > px(0.) && toast.size.height > px(0.));
-    // Its stack sits at the window's right, where VS Code in the right-hand
+    // Its stack sits at the window's right, where a page in the right-hand
     // group, or filling the editor area, would hide it.
     assert!(toast.right() > px(1300.));
     assert!(view.read_with(cx, |view, _| view.pages_covered()));
