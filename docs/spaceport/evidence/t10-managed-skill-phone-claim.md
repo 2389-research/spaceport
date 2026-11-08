@@ -34,3 +34,7 @@ phone/iOS/publication source tests passed. `just check-file-size`,
 package, signing or personal service check ran. A31 stays `not_run` until
 native process/package/network and retained desktop IPC evidence exists;
 A54 stays open. T10 and RM-PHONE remain in progress.
+
+After integration at `0156081f`, the merged phone absence suite passed 6/6,
+including the managed-skill regression. The package integrity check passed;
+it does not inspect a user's installed skill copy or prove native startup.
