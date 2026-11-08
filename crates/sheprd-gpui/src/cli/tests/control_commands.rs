@@ -165,10 +165,6 @@ fn work_commands() {
         CliError::InvalidValue("--agent KIND[:COUNT]")
     );
     assert_eq!(
-        parse(&["teleport"]).unwrap_err(),
-        CliError::MissingValue("--to")
-    );
-    assert_eq!(
         command(&["wait", "tab-closed", "4", "--timeout", "5"]),
         ControlCommand::Wait {
             what: WaitFor::TabClosed(4),

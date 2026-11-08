@@ -1,4 +1,4 @@
-//! `notes`, `worktree`, `checkpoint`, `scripts`, `teleport`, and `fan-out`.
+//! `notes`, `worktree`, `checkpoint`, `scripts`, and `fan-out`.
 mod checkpoint;
 mod here;
 mod scripts;
@@ -135,23 +135,6 @@ pub(super) fn scripts(kind: Option<Script>, context: &Context) -> crate::Result<
         None => scripts::list(),
         Some(kind) => context.act(Request::Work, WorkOp::Script { kind }),
     }
-}
-
-pub(super) fn teleport(
-    worktree: Option<&str>,
-    host: String,
-    context: &Context,
-) -> crate::Result<Output> {
-    if let Some(worktree) = worktree {
-        return Err(crate::control::Error::Rejected {
-            code: ErrorCode::InvalidRequest,
-            message: format!(
-                "teleport moves the caller's own worktree, not {worktree}; run it from a pane there"
-            ),
-        }
-        .into());
-    }
-    context.act(Request::Work, WorkOp::Teleport { host })
 }
 
 pub(super) fn fan_out(fan_out: FanOut, context: &Context) -> crate::Result<Output> {

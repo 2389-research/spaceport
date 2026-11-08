@@ -17,3 +17,35 @@ Read-only source audit at `784bd9c9`. T04 and the RM-CLOUD/RM-TELEPORT audits re
 ## Next proof
 
 `SPEC.md:29,33,65,69` and `SYSTEM.md:44,48,71` exclude provider provisioning and client migration while retaining Core-owned machine display/actions, transfer and service access. No complete bounded provider-specific cut was isolated here: removing a provider module alone leaves its enum/config/commands/UI reachable, and the full cut touches the legacy endpoint/action graph that T03 has not replaced. After that boundary is settled, remove provider and Teleport behavior, settings, credential uses, workers, protocol/CLI commands, messages, tests and unused dependencies in coherent units. Negative tests should reject old provider/Teleport config and commands and prove app startup makes no provider/host-script calls. Retained tests should cover Core catalog display, manual Add Device, exact-target refusal, and file/service behavior only through verified Core routes. This source audit ran no product tests and does not claim A30 or native parity.
+
+## Teleport control route removal
+
+At `93ebc401`, `sheprd teleport --to HOST` still parsed and the
+`work` control operation could open the native Teleport dialog. A new
+CLI test first failed because the command parsed successfully; a new
+protocol test first failed because `WorkOp::Teleport` decoded. The
+CLI family, help, client dispatch, wire variant, server handler and
+dialog-opening flow are now removed together. The one host-offer method
+used only by that flow is gone. CLI docs and the installed agent skill
+no longer tell agents to use this command.
+
+The tests now reject both the old CLI command and its JSON work
+operation. They round-trip the caller's exact workspace ID on a
+retained `worktree` operation and parse its explicit window target.
+Nine retained work-control tests passed, including caller checkout
+identity, muting, and the checkpoint dialog. The native Teleport menu
+and backend still exist, so this proves only this control route is
+absent. Core machine catalog, Tailscale and service forwarding were
+not changed. The isolated T03 target with `CARGO_INCREMENTAL=0` ran
+`cargo +1.99.0 test --locked -p sheprd-control-protocol --lib`
+(58 passed), `cargo +1.99.0 test --locked -p sheprd-gpui --bin
+sheprd removed_teleport` (1 passed), the nine-test
+`control::server::work::tests` filter, and
+`cargo +1.99.0 check --locked -p sheprd-gpui --bin sheprd`.
+`just format-check`, `just check-file-size`, `just check-sorted`,
+`git diff --check`, and the package `spec.py check` passed.
+The GUI test link reported its existing macOS unwind-size warning and
+Cargo reported the existing `block v0.1.6` future-incompatibility
+notice; the production app check reported no new code warnings.
+T04 remains `in_progress`; A30, A33 and A34 remain
+`not_run`. This appended cut needs a new observation after integration.

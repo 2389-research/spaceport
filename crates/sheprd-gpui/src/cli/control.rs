@@ -73,10 +73,6 @@ pub enum ControlCommand {
     Scripts {
         kind: Option<Script>,
     },
-    Teleport {
-        worktree: Option<String>,
-        host: String,
-    },
     FanOut(FanOut),
     Pr(PrCommand),
     Host(HostCommand),
@@ -176,7 +172,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
         "scripts",
         "A repository's worktree setup, run, and archive scripts",
     ),
-    ("teleport", "Move a worktree to another host"),
     (
         "fan-out",
         "Send one prompt to several agents, each in its own worktree",
@@ -333,12 +328,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
         "checkpoint" => ControlCommand::Checkpoint(work::checkpoint(args)?),
         "scripts" => ControlCommand::Scripts {
             kind: work::script_kind(args)?,
-        },
-        "teleport" => ControlCommand::Teleport {
-            host: args
-                .text_option("--to")?
-                .ok_or(CliError::MissingValue("--to"))?,
-            worktree: args.optional_text()?,
         },
         "fan-out" => ControlCommand::FanOut(work::fan_out(args)?),
         "pr" => ControlCommand::Pr(hosts::pr(args)?),

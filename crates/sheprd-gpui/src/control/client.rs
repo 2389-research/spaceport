@@ -446,9 +446,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Feedback { wait } => browser::feedback(wait, &context),
         ControlCommand::Checkpoint(command) => work::checkpoint(command, &context),
         ControlCommand::Scripts { kind } => work::scripts(kind, &context),
-        ControlCommand::Teleport { worktree, host } => {
-            work::teleport(worktree.as_deref(), host, &context)
-        }
         ControlCommand::FanOut(fan_out) => work::fan_out(fan_out, &context),
         ControlCommand::Pr(command) => hosts::pr(command, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),

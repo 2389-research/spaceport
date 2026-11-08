@@ -53,7 +53,7 @@ table above. A command acts in the window that shows your workspace; it
 exits 5 rather than act in another session's window.
 
 Some commands only open the app's dialog and the user confirms there:
-restoring a checkpoint, teleporting a worktree, fanning out a prompt, running
+restoring a checkpoint, fanning out a prompt, running
 a worktree script the app has not seen, creating or destroying cloud
 machines, and adding a cloud machine. Say so
 when you run one, instead of waiting for it to finish. Run

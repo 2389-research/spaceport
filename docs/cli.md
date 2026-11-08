@@ -127,7 +127,6 @@ and builds without embedded pages return exit 8. See [px0](../crates/sheprd-gpui
 | `checkpoint restore [ID]` | Open the checkpoints dialog; you confirm there |
 | `scripts [list]` | The repository's `.herdr/worktree.toml` scripts (no app needed) |
 | `scripts setup\|run` | Run one in a new tab; an unseen script still asks first. Archive removes the worktree, so it stays behind the app's delete dialog |
-| `teleport --to HOST` | Open the teleport dialog for your linked worktree, reviewing HOST; you confirm there |
 | `fan-out PROMPT [--agent KIND[:N]]...` | Open the fan-out dialog prefilled; you start it there |
 | `chat [status]` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
 | `chat convert [--pane ID]` | Move the terminal agent in your pane (or ID, else the focused one) into a `sheprd-acp` chat in the same pane, keeping its conversation (see [Moving a terminal agent into a chat](rich-chat.md#moving-a-terminal-agent-into-a-chat)). Returns once the move has started; `chat` shows the chat when it attaches. Exits 6 while the agent works, 5 when the pane has no terminal agent, and 8 for an agent or pane that cannot move |
@@ -309,11 +308,10 @@ sheprd wait window            # also waits for the app to start
 
 ## What stays in the app
 
-Commands never bypass a confirmation. Restoring a checkpoint, teleporting a
-worktree, fanning out a prompt, running a worktree script the app has not
-seen, and creating or destroying cloud machines open the app's own dialog,
-already
-pointed at your checkout, the machines, or the device named, and the user
+Commands never bypass a confirmation. Restoring a checkpoint, fanning out
+a prompt, running a worktree script the app has not seen, and creating or
+destroying cloud machines open the app's own dialog, already pointed at
+your checkout, the machines, or the device named, and the user
 confirms there.
 `cloud exec` asks nothing because it confirms nothing: it is the agent's own
 work, run on a machine the user saved. Launching the app or requesting a new

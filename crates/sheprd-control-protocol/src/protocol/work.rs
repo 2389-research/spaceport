@@ -1,7 +1,7 @@
 //! Worktree notes, and the work flows that end in a dialog of the app's own:
-//! restoring a checkpoint, running a worktree script, teleporting, and
-//! fanning a prompt out. A command opens the flow already pointed at the
-//! caller's checkout; the user still confirms it in the app.
+//! restoring a checkpoint, running a worktree script, and fanning a prompt
+//! out. A command points the flow at the caller's checkout; the user still
+//! confirms it in the app.
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -26,8 +26,6 @@ pub enum WorkOp {
     /// Run one of the caller's repository's worktree scripts in a new tab.
     /// An untrusted script still asks the user first.
     Script { kind: Script },
-    /// Open the teleport dialog for the caller's worktree, reviewing `host`.
-    Teleport { host: String },
     /// Open the fan-out dialog with this prompt and these agents.
     FanOut(FanOutRequest),
 }

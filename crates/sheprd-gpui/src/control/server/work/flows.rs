@@ -1,8 +1,8 @@
 //! The work flows that end in a dialog of the app's own: restoring a
-//! checkpoint, running a worktree script, teleporting, and fanning out. Each
+//! checkpoint, running a worktree script, and fanning out. Each
 //! opens the flow as the caller's workspace menu would, already pointed at
 //! the caller's checkout, and leaves the consequential step to the user:
-//! restoring, moving, launching, and trusting a script all wait for them.
+//! restoring, launching, and trusting a script all wait for them.
 use super::{find, repository, selected_workspace};
 use crate::{
     SheprdWindow,
@@ -161,85 +161,6 @@ fn launch(view: &SheprdWindow, caller: &Caller, kind: ScriptKind) -> Result<Laun
         force: false,
         requested: true,
     })
-}
-
-/// The endpoint `host` names among `hosts` (ID, label): an exact ID, else
-/// one label, ignoring case.
-pub(super) fn pick_host<'a>(
-    hosts: impl IntoIterator<Item = (&'a str, &'a str)> + Clone,
-    host: &str,
-) -> Result<(&'a str, &'a str), Response> {
-    if let Some(found) = hosts.clone().into_iter().find(|(id, _)| *id == host) {
-        return Ok(found);
-    }
-    let mut labelled = hosts
-        .clone()
-        .into_iter()
-        .filter(|(_, label)| label.eq_ignore_ascii_case(host));
-    match (labelled.next(), labelled.next()) {
-        (Some(found), None) => Ok(found),
-        (Some(_), Some(_)) => Err(invalid(format!(
-            "Several hosts are labelled {host}; name one by its ID"
-        ))),
-        (None, _) => {
-            let known: Vec<_> = hosts
-                .into_iter()
-                .map(|(id, label)| format!("{label} ({id})"))
-                .collect();
-            Err(super::not_found(format!(
-                "No host is named {host}; the window has {}",
-                known.join(", ")
-            )))
-        }
-    }
-}
-
-pub(super) fn teleport(
-    view: &mut SheprdWindow,
-    caller: &Caller,
-    host: &str,
-    window: &mut Window,
-    cx: &mut Context<SheprdWindow>,
-) -> Response {
-    let hosts: Vec<(&str, &str)> = view
-        .endpoints
-        .iter()
-        .map(|endpoint| (endpoint.id.as_str(), endpoint.label.as_str()))
-        .collect();
-    let (id, label) = match pick_host(hosts.iter().copied(), host) {
-        Ok((id, label)) => (id.to_owned(), label.to_owned()),
-        Err(response) => return response,
-    };
-    if id == view.endpoints[view.selected_endpoint].id {
-        return invalid(format!("The worktree is already on {label}"));
-    }
-    if let Err(response) = open_menu(view, caller, window, cx) {
-        return response;
-    }
-    if !view.can_teleport() {
-        view.dismiss_menu(window, cx);
-        return invalid(
-            "Teleport moves a linked worktree, from Linux or macOS, off a host it can script, while no other move runs",
-        );
-    }
-    let branch = branch(view, caller);
-    view.open_teleport(window, cx);
-    let Some(teleport) = view
-        .teleport
-        .as_mut()
-        .filter(|teleport| teleport.offers(&id))
-    else {
-        view.dismiss_menu(window, cx);
-        return invalid(format!(
-            "Teleport cannot move work to {label}: it is disabled, the same machine, or not reachable by script"
-        ));
-    };
-    teleport.review_host(&id);
-    cx.notify();
-    bring_forward(window, cx);
-    Response::done(format!(
-        "Reviewing the move of {branch} to {label}; press Enter in Sheprd to teleport it"
-    ))
 }
 
 /// An agent kind by the name Herdr reports, ignoring case.

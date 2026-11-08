@@ -2,6 +2,8 @@
 use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
+mod removed_teleport;
+
 #[test]
 fn work_requests_have_a_stable_wire_form() {
     let request = Request::Work(Call {
@@ -31,7 +33,6 @@ fn work_requests_have_a_stable_wire_form() {
             id: Some("0001700000000000".into()),
         },
         WorkOp::Script { kind: Script::Run },
-        WorkOp::Teleport { host: "box".into() },
     ] {
         let request = Request::Work(Call {
             caller: Caller::default(),

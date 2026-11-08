@@ -1,5 +1,4 @@
-//! `notes`, `worktree`, `checkpoint restore`, `scripts`, `teleport`, and
-//! `fan-out`.
+//! `notes`, `worktree`, `checkpoint restore`, `scripts`, and `fan-out`.
 //!
 //! Every command acts on the caller's checkout: the workspace of the caller's
 //! pane on the caller's daemon, else the workspace the window focuses. A
@@ -38,9 +37,6 @@ pub(super) fn serve(call: Call<WorkOp>, incoming: socket::Incoming, _: &mut Watc
         }),
         WorkOp::Script { kind } => in_window(&caller, cx, |view, _, cx| {
             flows::script(view, &caller, kind, cx)
-        }),
-        WorkOp::Teleport { host } => in_free_window(&caller, cx, |view, window, cx| {
-            flows::teleport(view, &caller, &host, window, cx)
         }),
         WorkOp::FanOut(request) => in_free_window(&caller, cx, |view, window, cx| {
             flows::fan_out(view, &caller, request, window, cx)

@@ -1,6 +1,6 @@
 use super::*;
 use crate::{control::protocol::work::Script, menu::Page, teleport::AgentKind};
-use flows::{agent_kind, agents, pick_host, prompt_text};
+use flows::{agent_kind, agents, prompt_text};
 
 #[test]
 fn agent_names_map_case_insensitively_and_merge() {
@@ -43,27 +43,6 @@ fn prompts_become_one_safe_line() {
         "fix the bug[2J x"
     );
     assert_eq!(prompt_text("\n\t"), "");
-}
-
-#[test]
-fn hosts_are_named_by_id_or_one_label() {
-    let hosts = [("local", "Local"), ("ssh-1", "Box"), ("ssh-2", "box ")];
-    let pick = |name: &str| pick_host(hosts.iter().copied(), name);
-    assert_eq!(pick("ssh-2").ok(), Some(("ssh-2", "box ")));
-    assert_eq!(pick("box").ok(), Some(("ssh-1", "Box")));
-    assert_eq!(pick("LOCAL").ok(), Some(("local", "Local")));
-    let twins = [("a", "Box"), ("b", "box")];
-    assert_eq!(
-        pick_host(twins.iter().copied(), "BOX")
-            .err()
-            .as_ref()
-            .and_then(error_code),
-        Some(ErrorCode::InvalidRequest)
-    );
-    assert_eq!(
-        pick("elsewhere").err().as_ref().and_then(error_code),
-        Some(ErrorCode::NotFound)
-    );
 }
 
 #[gpui::test]
@@ -138,28 +117,6 @@ fn scripts_refuse_what_the_menu_does_not_offer(cx: &mut gpui::TestAppContext) {
                 Some(ErrorCode::InvalidRequest)
             );
             assert!(view.worktree_script.is_none());
-        })
-    });
-}
-
-#[gpui::test]
-fn teleport_names_a_host_before_opening_anything(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            connected(view);
-            let caller = caller(Some("w4"));
-            assert_eq!(
-                error_code(&flows::teleport(view, &caller, "nowhere", window, cx)),
-                Some(ErrorCode::NotFound)
-            );
-            assert_eq!(
-                error_code(&flows::teleport(view, &caller, "local", window, cx)),
-                Some(ErrorCode::InvalidRequest),
-                "the worktree is already there"
-            );
-            assert_eq!(view.menu.page, None);
-            assert!(view.teleport.is_none());
         })
     });
 }
