@@ -2,6 +2,14 @@
 
 T01 is in progress. A42 is not passed.
 
+The root README now opens with Spaceport's development status and links to the
+authoritative specification, task and capability records, and release audit.
+It labels the remaining inherited Sheprd README as historical reference, since
+that material still names upstream releases and features being removed. The
+source links resolve in this checkout and `git diff --check` passed. This is
+documentation clarity, not an independent product identity or native install
+test.
+
 ## State directory boundary
 
 `sheprd_client::local_path::state_dir_with` now selects `<XDG_STATE_HOME>/spaceport`, or the platform fallback root plus `spaceport`. The app's preferences, diagnostics, and Unix control socket derive their locations from this function. Existing `herdr/gpui` state is not migrated or read by this function. The Windows control pipe has a separate name and still needs isolation.

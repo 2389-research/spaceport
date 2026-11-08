@@ -1,23 +1,27 @@
-<p align="center">
-  <img src="assets/icons/sheprd-icon-badge.png" alt="Sheprd app icon with a notification badge" width="176" height="176">
-</p>
+<h1 align="center">Spaceport</h1>
 
-<h1 align="center">Sheprd</h1>
+Spaceport is an in-progress desktop fork of Sheprd. The [Spaceport
+specification](docs/spaceport/START_HERE.md) defines its target behavior and
+ownership rules. The [task plan](docs/spaceport/plan/tasks.json),
+[capability matrix](docs/spaceport/plan/capabilities.json), and
+[release identity audit](docs/spaceport/evidence/release-identity-audit.md)
+record what has been proved and what remains open. The current branch still
+contains legacy Herdr 1 and excluded UI paths. It is not a qualified
+Spaceport release.
 
-<p align="center">
-  <a href="https://github.com/sheprd-labs/sheprd/actions/workflows/ci.yml"><img src="https://github.com/sheprd-labs/sheprd/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-</p>
+The target app uses a separately installed Herdr Core for terminal and machine
+connections. Core does not supply the former daemon's native workspace model;
+Spaceport keeps its presentation document. Remote rich chat, forwarding, file
+transfer and platform parity have open gates in the task plan. Production
+package IDs, signing and update ownership are also unresolved. No release has
+been published from this worktree.
 
-<p align="center">
-  <a href="https://sheprd.org"><b>sheprd.org</b></a> ·
-  <a href="https://github.com/sheprd-labs/sheprd/releases">Releases</a> ·
-  <a href="docs/updating.md">App updates</a> ·
-  <a href="docs/cli.md">Command line</a> ·
-  <a href="crates/sheprd-gpui/README.md">GUI scope &amp; configuration</a> ·
-  <a href="crates/sheprd-gpui/PERFORMANCE.md">Performance report</a> ·
-  <a href="AGENTS.md">Contributing</a> ·
-  <a href="#star-history">Star history</a>
-</p>
+## Inherited Sheprd reference
+
+The material below describes the upstream app and remains here for source and
+UX reference during the fork. It is not a claim that each feature or command
+works in Spaceport. In particular, upstream release links and removed commands
+do not describe this development branch.
 
 A native Rust/GPUI workspace for terminals and AI agents on macOS, Linux, and
 Windows. Organize repositories, worktrees, tabs and splits; chat with agents,
