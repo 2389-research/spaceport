@@ -259,7 +259,7 @@ pub(crate) fn run() -> std::process::ExitCode {
         Err(error) => {
             eprintln!(
                 // i18n: data
-                "{error}\nUsage: sheprd [--socket CLIENT_SOCKET | --session NAME [--dev]]\n       sheprd COMMAND ... (see sheprd --help)"
+                "{error}\nUsage: sheprd [--socket CLIENT_SOCKET]\n       sheprd COMMAND ... (see sheprd --help)"
             );
             return std::process::ExitCode::from(2);
         }
@@ -305,7 +305,7 @@ pub(crate) fn run() -> std::process::ExitCode {
     if mode == LaunchMode::Help {
         println!(
             // i18n: data
-            "sheprd [--socket CLIENT_SOCKET | --session NAME [--dev]]\nConnects to Local and saved SSH hosts; never installs remote software.\nStarts the local Herdr daemon if needed; never stops it.\nExplicit --socket and --dev targets are attach-only; --socket isolates the GUI to one existing daemon."
+            "sheprd [--socket CLIENT_SOCKET]\nConnects to Local and saved SSH hosts; never installs remote software.\nStarts the local Herdr daemon if needed; never stops it.\nExplicit --socket targets are attach-only and isolate the GUI to one existing daemon."
         );
         println!(
             // i18n: data

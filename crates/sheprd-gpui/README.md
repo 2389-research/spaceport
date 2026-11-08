@@ -63,14 +63,12 @@ graphemes with combining marks continue to use font rendering.
 
 ```sh
 cargo run -p sheprd-gpui
-cargo run -p sheprd-gpui -- --session default
-cargo run -p sheprd-gpui -- --session my-project --dev
 cargo run -p sheprd-gpui -- --socket /absolute/path/to/herdr-client.sock
 ```
 
 Without flags, discovery follows `sheprd-client`'s environment and release-session
 rules. `--socket` must name the binary **client** socket, not the JSON API socket.
-`--dev` selects the `herdr-dev` config directory. Connection failure is displayed
+Connection failure is displayed
 in the single-row status bar and host rows. Endpoints reconnect independently with
 bounded backoff; Terminal > Reconnect retries the selected endpoint immediately,
 without input replay. The command palette's **Detach** disconnects the selected
@@ -1584,7 +1582,7 @@ the standalone updater harness includes these tests without GPUI dependencies.
 Sounds share the **local TUI configuration**, not `config-gpui.toml` or a remote
 host's files: `HERDR_CONFIG_PATH` takes precedence, then
 `$XDG_CONFIG_HOME/herdr/config.toml`, then `~/.config/herdr/config.toml`.
-Debug GUI builds and `--dev` still use the production `herdr` sound settings.
+Debug GUI builds still use the production `herdr` sound settings.
 The GUI only reads this file. Daemon `ReloadSoundConfig` messages reload it
 asynchronously; invalid reloads retain the last valid settings.
 
@@ -4970,7 +4968,7 @@ entry or the launcher with no link, sends `app focus` over the control pipe,
 so the running app's window comes forward and the new process exits. The
 launcher and the new process pass on the shell's foreground right, so the
 window comes forward instead of flashing in the taskbar. A launch with
-`--socket` or `--session` still starts a separate app. So does a plain launch
+`--socket` still starts a separate app. So does a plain launch
 when the running app cannot answer, for example one that hangs.
 
 Starting a local `herdr server` looks for `herdr.exe` and uses

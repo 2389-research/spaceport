@@ -25,7 +25,7 @@ fn a_link_takes_no_other_argument() {
     // Options before it are not a link invocation at all.
     assert_eq!(
         LaunchOptions::parse(["--dev", "spaceport://device?id=local"]).unwrap_err(),
-        CliError::UnknownOption("spaceport://device?id=local".into())
+        CliError::UnknownOption("--dev".into())
     );
 }
 

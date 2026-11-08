@@ -15,6 +15,7 @@ mod open_command;
 mod px0;
 mod quota;
 mod removed_automation;
+mod removed_legacy_launch;
 mod removed_mods;
 mod removed_phone;
 mod security;
@@ -118,18 +119,12 @@ fn browser_commands_never_start_the_gui() {
     // Only a leading "browser" is the subcommand.
     assert_eq!(
         mode(&["--dev", "browser"]).unwrap_err(),
-        CliError::UnknownOption("browser".into())
+        CliError::UnknownOption("--dev".into())
     );
 }
 
 #[test]
 fn connection_selection() {
-    assert!(
-        matches!(LaunchOptions::parse(["--dev"]).unwrap().target, ConnectTarget::Session { name, development: true } if name == "default")
-    );
-    assert!(
-        matches!(LaunchOptions::parse(["--session", "test"]).unwrap().target, ConnectTarget::Session { name, development: false } if name == "test")
-    );
     assert!(matches!(
         LaunchOptions::parse(std::iter::empty::<OsString>())
             .unwrap()
@@ -147,19 +142,9 @@ fn rejects_missing_and_duplicate_values() {
             "--socket requires a path",
         ),
         (
-            vec!["--session"],
-            CliError::MissingSessionName,
-            "--session requires a name",
-        ),
-        (
             vec!["--socket", "--help"],
             CliError::MissingSocketPath,
             "--socket requires a path",
-        ),
-        (
-            vec!["--session", "--dev"],
-            CliError::MissingSessionName,
-            "--session requires a name",
         ),
         (
             vec!["--socket", ""],
@@ -170,21 +155,6 @@ fn rejects_missing_and_duplicate_values() {
             vec!["--socket", "a", "--socket", "b"],
             CliError::DuplicateSocket,
             "--socket may only be specified once",
-        ),
-        (
-            vec!["--session", "a", "--session", "b"],
-            CliError::DuplicateSession,
-            "--session may only be specified once",
-        ),
-        (
-            vec!["--socket", "a", "--dev"],
-            CliError::ConflictingConnectionOptions,
-            "--socket cannot be combined with --session or --dev",
-        ),
-        (
-            vec!["--socket", "a", "--session", "b"],
-            CliError::ConflictingConnectionOptions,
-            "--socket cannot be combined with --session or --dev",
         ),
         (
             vec!["--unknown"],
@@ -207,9 +177,6 @@ fn socket_paths_need_not_be_utf8() {
     let path = OsString::from_vec(b"/tmp/socket-\xff".to_vec());
     let options = LaunchOptions::parse([OsString::from("--socket"), path.clone()]).unwrap();
     assert!(matches!(options.target, ConnectTarget::Socket(actual) if actual.as_os_str() == path));
-    let error = LaunchOptions::parse([OsString::from("--session"), path.clone()]).unwrap_err();
-    assert_eq!(error, CliError::InvalidSessionEncoding(path.clone()));
-    assert_eq!(error.to_string(), "--session requires a UTF-8 name");
     let error = LaunchOptions::parse([path.clone()]).unwrap_err();
     assert_eq!(error, CliError::UnknownOption(path.clone()));
     assert_eq!(
@@ -322,7 +289,7 @@ fn test_modes_are_exclusive() {
         "--integration-test requires an explicit --socket"
     );
     for flag in ["--sidebar-test", "--performance-test"] {
-        let error = LaunchOptions::parse([flag, "--dev"]).unwrap_err();
+        let error = LaunchOptions::parse([flag, "--socket", "/private/test.sock"]).unwrap_err();
         assert_eq!(error, CliError::ConflictingFixtureOptions);
         assert_eq!(
             error.to_string(),

@@ -49,18 +49,10 @@ pub struct LaunchOptions {
 pub enum CliError {
     #[error("--socket requires a path")]
     MissingSocketPath,
-    #[error("--session requires a name")]
-    MissingSessionName,
     #[error("--socket may only be specified once")]
     DuplicateSocket,
-    #[error("--session may only be specified once")]
-    DuplicateSession,
-    #[error("--session requires a UTF-8 name")]
-    InvalidSessionEncoding(OsString),
     #[error("Unknown option: {}", .0.to_string_lossy())]
     UnknownOption(OsString),
-    #[error("--socket cannot be combined with --session or --dev")]
-    ConflictingConnectionOptions,
     #[error("browser requires a command: reload, feedback, skill, or --help")]
     MissingBrowserCommand,
     #[error("Unknown browser command: {}", .0.to_string_lossy())]
@@ -191,8 +183,6 @@ impl LaunchOptions {
             });
         }
         let mut socket = None;
-        let mut session = None;
-        let mut development = false;
         #[cfg(feature = "integration-test")]
         let mut mode = LaunchMode::Normal;
         #[cfg(not(feature = "integration-test"))]
@@ -209,33 +199,17 @@ impl LaunchOptions {
                         },
                     });
                 }
-                Some("--socket" | "--session") => {
-                    let is_socket = arg == "--socket";
-                    let missing = if is_socket {
-                        CliError::MissingSocketPath
-                    } else {
-                        CliError::MissingSessionName
-                    };
+                Some("--socket") => {
                     let value = args
                         .next()
                         .filter(|value| {
                             !value.is_empty() && !value.as_encoded_bytes().starts_with(b"-")
                         })
-                        .ok_or(missing)?;
-                    if is_socket {
-                        if socket.replace(value).is_some() {
-                            return Err(CliError::DuplicateSocket);
-                        }
-                    } else {
-                        let value = value
-                            .into_string()
-                            .map_err(CliError::InvalidSessionEncoding)?;
-                        if session.replace(value).is_some() {
-                            return Err(CliError::DuplicateSession);
-                        }
+                        .ok_or(CliError::MissingSocketPath)?;
+                    if socket.replace(value).is_some() {
+                        return Err(CliError::DuplicateSocket);
                     }
                 }
-                Some("--dev") => development = true,
                 #[cfg(feature = "integration-test")]
                 Some(flag @ ("--integration-test" | "--sidebar-test" | "--performance-test")) => {
                     let next = match flag {
@@ -253,14 +227,9 @@ impl LaunchOptions {
                 }
             }
         }
-        if socket.is_some() && (session.is_some() || development) {
-            return Err(CliError::ConflictingConnectionOptions);
-        }
         #[cfg(feature = "integration-test")]
         {
-            if matches!(mode, LaunchMode::Sidebar | LaunchMode::Performance)
-                && (socket.is_some() || session.is_some() || development)
-            {
+            if matches!(mode, LaunchMode::Sidebar | LaunchMode::Performance) && socket.is_some() {
                 return Err(CliError::ConflictingFixtureOptions);
             }
             if mode == LaunchMode::Integration && socket.is_none() {
@@ -271,15 +240,9 @@ impl LaunchOptions {
                 return Err(CliError::UnsupportedPerformancePlatform);
             }
         }
-        let target = match (socket, session) {
-            (Some(path), _) => ConnectTarget::Socket(path.into()),
-            (_, Some(name)) => ConnectTarget::Session { name, development },
-            _ if development => ConnectTarget::Session {
-                name: "default".into(),
-                development,
-            },
-            _ => ConnectTarget::Local,
-        };
+        let target = socket.map_or(ConnectTarget::Local, |path| {
+            ConnectTarget::Socket(path.into())
+        });
         Ok(Self { target, mode })
     }
 }

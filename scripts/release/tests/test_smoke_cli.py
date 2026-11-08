@@ -23,7 +23,7 @@ usage = "Usage: sheprd [OPTIONS]\n"
 if broken == "hang":
     time.sleep(60)
 if args in (["--help"], ["-h"]):
-    options = ["--socket CLIENT_SOCKET", "--session NAME", "--dev", "--build-info"]
+    options = ["--socket CLIENT_SOCKET", "--build-info"]
     if broken == "help":
         options.pop()
     if broken == "feature":

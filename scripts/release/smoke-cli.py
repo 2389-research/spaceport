@@ -17,7 +17,7 @@ import tempfile
 TIMEOUT = 10
 # Variables a Herdr pane sets; with them gone no running app or daemon is reached.
 PANE_VARIABLES = ("HERDR_SOCKET_PATH", "HERDR_CLIENT_SOCKET_PATH", "HERDR_WORKSPACE_ID", "HERDR_PANE_ID")
-HELP_OPTIONS = ("--socket CLIENT_SOCKET", "--session NAME", "--dev", "--build-info")
+HELP_OPTIONS = ("--socket CLIENT_SOCKET", "--build-info")
 BUILD_INFO = re.compile(r"worktree=[^\n]*\nbranch=[^\n]*\npr=[^\n]*\n")
 
 
@@ -51,6 +51,9 @@ def check_help(executable, state):
         # The native test hooks are a separate feature that never ships.
         if "--integration-test" in help_text:
             raise SmokeError(f"{flag}: release build documents --integration-test")
+        for removed in ("--session NAME", "--dev"):
+            if removed in help_text:
+                raise SmokeError(f"{flag}: release build documents removed {removed}")
 
 
 def check_build_info(executable, state):
@@ -73,6 +76,8 @@ def smoke(executable):
         check_build_info(executable, state)
         check_usage_error(executable, state, ["--unknown"], "Unknown option: --unknown")
         check_usage_error(executable, state, ["--socket"], "--socket requires a path")
+        check_usage_error(executable, state, ["--session", "old"], "Unknown option: --session")
+        check_usage_error(executable, state, ["--dev"], "Unknown option: --dev")
         check_usage_error(executable, state, ["--integration-test"], "Unknown option: --integration-test")
         check_usage_error(executable, state, ["browser", "open", "https://a.test/"], "Unknown browser command")
 
