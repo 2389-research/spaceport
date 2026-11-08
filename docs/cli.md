@@ -156,7 +156,6 @@ not take it either.
 | `ports open PORT` | Open `localhost:PORT` with the system handler; forwards a remote port before opening |
 | `usage`, `system` | Plan usage and load of the selected host: CPU, memory, disk, uptime, and its GPU and video memory when it has one and `show_gpu_load` or `show_sidebar_gpu_load` is on |
 | `processes [--pane ID]` | The processes under a pane, with CPU and memory (no app needed) |
-| `search symbol\|file QUERY` | Go to Symbol or Go to File over the current checkout (no app needed) |
 
 ### Settings and services
 

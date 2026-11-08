@@ -76,11 +76,6 @@ pub enum ControlCommand {
     },
     Usage,
     System,
-    Search {
-        files: bool,
-        query: String,
-        limit: usize,
-    },
     Config(ConfigCommand),
     Theme(ThemeCommand),
     Font(ThemeCommand),
@@ -175,7 +170,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("processes", "The processes running under a pane"),
     ("usage", "AI plan usage on the selected host"),
     ("system", "The selected host's load"),
-    ("search", "Find a symbol or a file in the focused checkout"),
     ("config", "Sheprd settings: path, get, set, reload, check"),
     ("theme", "List or choose a color theme"),
     ("font", "List or choose the terminal font"),
@@ -318,21 +312,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
         },
         "usage" => ControlCommand::Usage,
         "system" => ControlCommand::System,
-        "search" => {
-            let files = match args.verb().as_ref().and_then(|verb| verb.to_str()) {
-                Some("symbol" | "symbols") => false,
-                Some("file" | "files") => true,
-                _ => return Err(CliError::InvalidValue("symbol|file")),
-            };
-            ControlCommand::Search {
-                limit: args.number("--limit", 1..=200)?.unwrap_or(20),
-                query: args.words()?.ok_or(CliError::MissingArgument {
-                    command: "search",
-                    what: "QUERY",
-                })?,
-                files,
-            }
-        }
         "config" => ControlCommand::Config(settings::config(args)?),
         "theme" => ControlCommand::Theme(settings::theme(args)?),
         "font" => ControlCommand::Font(settings::theme(args)?),

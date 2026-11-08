@@ -204,13 +204,6 @@ fn host_and_settings_commands() {
         CliError::InvalidValue("--kind")
     );
     assert_eq!(
-        parse(&["search", "symbol"]).unwrap_err(),
-        CliError::MissingArgument {
-            command: "search",
-            what: "QUERY"
-        }
-    );
-    assert_eq!(
         parse(&["logs", "extra"]).unwrap_err(),
         CliError::Unexpected {
             command: "logs",

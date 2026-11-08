@@ -3,13 +3,11 @@
 mod diagnostics;
 mod logs;
 mod processes;
-mod search;
 
 use super::Output;
 pub(super) use diagnostics::diagnostics;
 pub(super) use logs::logs;
 pub(super) use processes::processes;
-pub(super) use search::search;
 
 /// Every command `run` accepts, with its name and label.
 pub(super) fn commands() -> crate::Result<Output> {

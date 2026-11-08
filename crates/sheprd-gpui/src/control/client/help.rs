@@ -102,9 +102,6 @@ fn family(name: &str) -> &'static str {
         }
         "usage" => "sheprd usage\n    AI plan usage on the window's selected host.",
         "system" => "sheprd system\n    The window's selected host's load, when Sheprd samples it.",
-        "search" => {
-            "sheprd search symbol|file QUERY... [--limit N]\n    Go to Symbol or Go to File over the current directory's checkout,\n    printing paths relative to its root. Runs here; Sheprd need not run."
-        }
         "config" => {
             "sheprd config [path]\n    The settings files.\nsheprd config get KEY\n    The setting's value, as TOML: your override, else the default.\nsheprd config set KEY VALUE\nsheprd config unset KEY\n    Change a setting in spaceport/config.local.toml. VALUE is read as TOML\n    (14, true, [\"a\"], { show = true }), else as text. A value or key\n    Spaceport would not load is refused and the file left as it was.\n    A running Spaceport applies the change at once. KEY is dotted, such\n    as terminal.size. Unsetting a key that is not set exits 4.\nsheprd config check\n    Report settings that do not load and unknown keys, and, when Spaceport\n    runs, fonts that are not installed; exits 1 when there are any.\nsheprd config reload\n    Reread Spaceport's settings files.\nOnly reload needs Spaceport running."
         }

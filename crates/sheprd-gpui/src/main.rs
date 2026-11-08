@@ -46,7 +46,6 @@ compile_error!(
 #[cfg(feature = "cloud")]
 mod cloud;
 mod cloud_setup;
-mod code_search;
 mod config;
 mod config_diagnostic;
 mod connection;
@@ -186,8 +185,8 @@ use sheprd_orchestrator::cache;
 use sheprd_commands as controls;
 // The log file and crash reports, without GPUI.
 use sheprd_diagnostics::{self as diagnostics, crash};
-// Git status and writes, checkpoints, and the code index, without GPUI.
-use sheprd_vcs::{checkpoint, code_index, git};
+// Git status and checkpoints, without GPUI.
+use sheprd_vcs::{checkpoint, git};
 // Shared with herdr-client's own SSH and probe children.
 use sheprd_client::{local_path, login_env};
 // Cloud providers, host scripts, and Teleport's core; `cloud` and `teleport`
