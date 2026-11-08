@@ -9,3 +9,9 @@ The absence test now requires no files under `ios/`. It failed on the 37 fixture
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/release/tests -v`: 189 tests passed, 8 platform skips. This includes source-level Core-external package checks and CLI smoke script checks; it does not build or run a native package.
 - `uv run --with jsonschema==4.26.0 python tools/spec.py check` from `docs/spaceport`: passed package integrity validation. `just check-file-size` and `just check-sorted` passed. The first `git diff --check` found an extra blank line left in `.gitattributes` by the deletion; it was removed before the final check.
 - `uv run --with jsonschema==4.26.0 python tools/test_spec.py`: 21 passed. Final `git diff --check` passed. `just format-check` failed on unchanged `crates/sheprd-gpui/src/cli/tests.rs`: the base commit orders `removed_code_edit` before `removed_cloud`, while rustfmt requests the reverse. This branch does not change that file. No Cargo build, native app, installed service or network inventory ran; disk remained above 9 GiB.
+
+At merged revision `ee75a851`, `just format-check` passed because the
+independent cloud integration had already corrected that ordering. The full
+release source suite passed again: 189 tests, eight platform skips. This
+confirms the phone fixture absence in the combined tree; A31 remains open
+for native process, package, network and retained desktop CLI checks.

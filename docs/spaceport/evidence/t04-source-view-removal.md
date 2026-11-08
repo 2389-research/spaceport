@@ -4,8 +4,21 @@ At integrated base `16ab27bb`, `Location::Code` still restored old source tabs a
 
 This cut removes the native Go to File/Symbol catalog, menu, shortcuts, picker UI and its messages, the source-view reader/render/poller and its messages, and the live Security source-tab action. A deliberate click on a local Security manifest now uses `window/file_links.rs::open_in_system_app`, which checks the document or opens its parent folder before handing a file URL to the system. The existing `manifest_path` test still rejects remote and unsafe relative paths. The local CLI `search symbol|file` keeps its pure rank and index code; its command and repository indexing remain an explicit T04 exclusion gap, not a retained product contract. The separate terminal editor UI, Git/review/security surfaces, and browser page graph also remain reachable.
 
-Old saved `{"kind":"code"}` locations parse as `Location::RetiredSource` with the old absolute, bounded, control-free path check. `Store::with_tabs` drops them while reserving every parsed ID, so an old group pick cannot select a new page. It preserves page, px0 and Core terminal tabs from the same file. No personal tab file was read or rewritten. The control list and target lookup reject a retired source location if one is ever constructed in memory, even when a malformed record calls it an editor; `TabKind::Code` is removed and the private control protocol advances from 17 to 18. Read-only source-view focus tests now use a retained Devices tab to guard zen focus behavior.
+Old saved `{"kind":"code"}` locations parse as `Location::RetiredSource` with the old absolute, bounded, control-free path check. `Store::with_tabs` drops them while reserving every parsed ID, so an old group pick cannot select a new page. It preserves page, px0 and Core terminal tabs from the same file. No personal tab file was read or rewritten. The control list and target lookup reject a retired source location if one is ever constructed in memory, even when a malformed record calls it an editor; `TabKind::Code` is removed and the isolated branch's private control protocol advances from 17 to 18. Read-only source-view focus tests now use a retained Devices tab to guard zen focus behavior.
 
 TDD: the old-source restore test first failed because four tabs restored instead of the three retained tabs, then passed after filtering. The native command absence test first failed on `go_to_file`. The wire absence test first failed because `"code"` decoded as `TabKind`; both passed after deletion. A malformed retired location with an editor place still appeared in `tab list` until an additional red→green guard rejected it. On macOS, the production GUI check passed with no code warnings; the test binary compiled with the existing compact-unwind linker warning and Cargo's `block v0.1.6` notice. Focused GPUI filters passed: Store 17, saved payload 1, zen focus 5, tab control 10, page control 3, pure rank 4, local CLI search 3, rich-chat code 3, ordinary file links 7, Security page/path 12, and menu titles 2. The command crate passed 25/25 and control protocol passed 61/61. No native window, Windows/Linux build, real editor, system file launch, user config, Core daemon or service was exercised. T04/RM-IDE stay in progress and A29/A30 remain not run.
 
 Quick checks passed: `just format-check`, `just check-file-size`, `just check-sorted`, `just check-i18n` (5,212 messages), `git diff --check`, `node --check site/assets/kit.js`, and the site suite (24/24). The Spaceport package render/check passed with 51 local links and four package scenarios; its tool tests passed 21/21. These are source and package checks, not native end-to-end proof.
+
+## Merged verification
+
+At `84ecc415`, the merged control protocol is version 19: cloud control was
+removed at 18 and `TabKind::Code` at 19. The combined app passed default and
+all-feature production checks, the 55-test control protocol suite, the
+25-test command suite, and nine GUI `retired_` tests, including old source-tab
+drop and ID reservation. The i18n check passed with 5,181 valid messages in
+271 files. Format, file-size, sorted-list and specification tool checks also
+passed. The GUI test link still emits the existing macOS compact-unwind
+warning, and Cargo still reports `block v0.1.6` future incompatibility.
+This verifies the merged cut on macOS; native window use and A29/A30 remain
+open.
