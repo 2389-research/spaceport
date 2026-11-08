@@ -37,7 +37,6 @@ impl Localize for Error {
             ),
             Self::Client(error) => error.localize(),
             Self::Clipboard(error) => error.localize(),
-            Self::CloudSetup(error) => error.localize(),
             // A parser's own diagnostic, which names the line it stopped at.
             Self::ConfigFile { source, .. } => source.to_string(),
             Self::ConfigLoad(error) => error.to_string(),

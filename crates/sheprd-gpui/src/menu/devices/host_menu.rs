@@ -254,17 +254,6 @@ impl SheprdWindow {
                 }
                 return;
             }
-            #[cfg(feature = "cloud")]
-            Action::RunSetup => {
-                let Some(id) = self.menu.host.as_ref().map(|host| host.id.clone()) else {
-                    return;
-                };
-                self.dismiss_menu(window, cx);
-                if let Err(error) = self.rerun_cloud_setup(&id, cx) {
-                    self.show_flash(crate::window::Flash::warning(error.to_string()), cx);
-                }
-                return;
-            }
             #[cfg(unix)]
             Action::ForwardPort => {
                 let input = cx.new(SearchInput::new);

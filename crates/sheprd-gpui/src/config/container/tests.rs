@@ -8,7 +8,7 @@ fn saving_writes_only_edited_keys_and_validates_first() {
     let path = dir.path().join("config-gpui.local.toml");
     fs::write(
         &path,
-        "theme = 'Nord'\n\n[container]\nimage = 'debian:12' # mine\ncpus = 2\npids_limit = 512\nmemory = '4g'\nauto_stop = '30m'\n",
+        "theme = 'Nord'\n\n[container]\nimage = 'debian:12' # mine\ncpus = 2\npids_limit = 512\nmemory = '4g'\nauto_stop = '30m'\n\n[cloud]\nagents = ['future-agent'] # keep\nsetup = 'echo old'\n\n[cloud.container]\nsetup = 'echo saved'\n",
     )
     .unwrap();
     let fields = ContainerFields {
@@ -18,6 +18,8 @@ fn saving_writes_only_edited_keys_and_validates_first() {
     let text = fs::read_to_string(&path).unwrap();
     assert!(text.contains("theme = 'Nord'"));
     assert!(text.contains("image = 'debian:12' # mine"));
+    assert!(text.contains("agents = ['future-agent'] # keep"));
+    assert!(text.contains("setup = 'echo saved'"));
     assert!(
         text.contains("pids_limit = 512"),
         "keys Settings does not edit stay"

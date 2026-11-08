@@ -21,7 +21,6 @@ mod trust;
 pub(crate) use config::{Config, PATH as CONFIG_PATH, read as read_config};
 pub(crate) use error::Error;
 #[cfg(feature = "cloud")]
-pub(crate) use launch::SCRIPT_ENV;
 pub(crate) use launch::{Checkout, command_line, created_tab, main_checkout};
 pub(crate) use trust::{Grant, Trust};
 
@@ -426,20 +425,16 @@ impl SheprdWindow {
         )?)
     }
 
-    /// Whether a script, of a worktree or a new cloud device, a closed
+    /// Whether a worktree script, a closed
     /// agent's tab, or a new chat's tab is starting. The connection keeps
     /// one script reply slot, so one starts at a time.
     pub(crate) fn script_slot_busy(&self) -> bool {
         self.overview_reopening() || self.script_job_busy()
     }
 
-    /// Whether a worktree or cloud device script, or a new chat, holds the
+    /// Whether a worktree script or a new chat holds the
     /// script slot.
     pub(crate) fn script_job_busy(&self) -> bool {
-        #[cfg(feature = "cloud")]
-        if self.cloud_setup.is_some() {
-            return true;
-        }
         self.worktree_script.is_some() || self.chat_starting()
     }
 

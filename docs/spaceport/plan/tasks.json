@@ -270,6 +270,7 @@
         "evidence/t04-container-provisioning-removal.md",
         "evidence/t04-container-stop-removal.md",
         "evidence/t04-container-connector-dependency.md",
+        "evidence/t04-cloud-setup-removal.md",
         "evidence/t04-teleport-current-cut-order.md",
         "evidence/t04-native-teleport-removal.md",
         "evidence/t04-git-ide-dispatch-dependency.md",

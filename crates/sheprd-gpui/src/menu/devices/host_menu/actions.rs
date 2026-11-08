@@ -18,9 +18,6 @@ pub(super) enum Action {
     /// Opens Settings > Cloud devices on the device's provider.
     #[cfg(feature = "cloud")]
     ProviderSettings,
-    /// Runs the configured setup script on the cloud device again.
-    #[cfg(feature = "cloud")]
-    RunSetup,
     Remove,
 }
 
@@ -47,7 +44,6 @@ pub(super) const CLOUD_ACTIONS: &[(Action, &str)] = &[
     (Action::Tags(Mode::AlsoTagged), "device-tags-also-tagged"),
     (Action::Mute, "host-menu-mute"),
     (Action::ProviderSettings, "host-menu-cloud-settings"),
-    (Action::RunSetup, "host-menu-run-setup"),
     (Action::Remove, "host-menu-remove"),
 ];
 

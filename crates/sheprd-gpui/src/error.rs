@@ -40,8 +40,6 @@ pub enum Error {
     Client(#[from] sheprd_client::Error),
     #[error(transparent)]
     Clipboard(#[from] crate::window::clipboard::Error),
-    #[error(transparent)]
-    CloudSetup(#[from] crate::cloud_setup::Error),
     #[error("{source}")]
     ConfigFile {
         uri: Option<String>,

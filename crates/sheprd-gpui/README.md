@@ -449,17 +449,15 @@ launches its daemon on macOS. Device setup is not affected, since it runs in
 the app.
 
 Settings > **Cloud devices** still shows saved Container devices during the
-Spaceport migration. It can read engine state and save the engine and idle
-stop preference. New Container creation, adoption, dispatch provisioning and
-sandbox image builds are removed. The saved-device connector can still start
-a stopped container when asked to connect, and the Stop, Remove and idle
-paths remain pending the full T04/RM-CLOUD cut. No migration step deletes a
-container, its volume, an image, or a saved row.
+Spaceport migration. It can read engine state, save the engine, and forget an
+exact saved row. New Container creation, adoption, dispatch provisioning,
+sandbox image builds, Stop, provider destroy, and idle stopping are removed.
+The saved-device connector can still start a stopped container when asked to
+connect. No migration step deletes a container, volume, image, or saved row.
 
-The old `[container]` creation keys remain in the config file when Settings
-saves the remaining fields. The explicit **Run setup script** action on an
-existing device still uses `[cloud]` agents and setup text. It runs in a
-focused setup tab for the selected saved device.
+The old `[container]` creation keys and `[cloud]` setup keys remain in the
+config file when Settings saves the engine. They cannot launch setup scripts
+or install agents.
 The historical sandbox design is in [docs/sandbox.md](../../docs/sandbox.md).
 
 Each provider is a Cargo feature of `herdr-gpui`; `container` is on by default.

@@ -142,10 +142,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) chats: crate::chat::Chats,
     /// The chrome region whose controls take Tab; see `chrome_focus`.
     pub(crate) chrome_region: Option<chrome_focus::Region>,
-    #[cfg(feature = "cloud")]
-    /// A new cloud device's setup script whose tab is being opened.
-    #[cfg(feature = "cloud")]
-    pub(crate) cloud_setup: Option<crate::cloud_setup::Running>,
     pub(crate) collapsed_repos: std::collections::HashSet<String>,
     pub(crate) config: config::Config,
     pub(crate) config_load: Option<Task<()>>,
@@ -626,11 +622,6 @@ impl SheprdWindow {
         self.poll_dispatch(window, cx);
         self.poll_device_setup(window, cx);
         self.poll_worktree_script(window, cx);
-        #[cfg(feature = "cloud")]
-        {
-            self.poll_cloud_setup(std::time::Instant::now(), cx);
-            self.poll_cloud_setup_tab(cx);
-        }
         self.poll_worktree_source(cx);
         self.poll_hover_menu(std::time::Instant::now(), window, cx);
         if self.tick_flash(std::time::Instant::now()) {

@@ -667,7 +667,6 @@ impl Config {
         }
         // A newer build may keep more accounts or owners than this one.
         unknown_keys.extend(settings.github.limit_accounts());
-        unknown_keys.extend(settings.cloud.retain_known());
         unknown_keys.sort();
         unknown_keys.dedup();
         let mut config = Self {
@@ -680,7 +679,6 @@ impl Config {
         config.gitlab = settings.gitlab;
         settings.chat.check()?;
         config.chat = settings.chat;
-        settings.cloud.check()?;
         config.cloud = settings.cloud;
         #[cfg(feature = "container")]
         settings.container.settings()?;

@@ -29,7 +29,7 @@ fn add_cloud(view: &mut crate::SheprdWindow) -> String {
 }
 
 #[gpui::test]
-fn right_clicking_a_cloud_device_offers_rename_settings_setup_and_removal(cx: &mut TestAppContext) {
+fn right_clicking_a_cloud_device_offers_rename_settings_and_removal(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
         let mut view = fixture_window(window, cx);

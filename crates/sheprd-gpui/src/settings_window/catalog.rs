@@ -488,13 +488,6 @@ pub(super) const CATALOG: &[Entry] = &[
         "settings-cloud-accounts",
         "settings-cloud-accounts-description",
     ),
-    #[cfg(feature = "cloud")]
-    entry(
-        Section::CloudDevices,
-        "cloud-setup",
-        "settings-cloud-setup",
-        "settings-cloud-setup-description",
-    ),
     entry(
         Section::Configuration,
         "config-local",

@@ -156,7 +156,6 @@ impl SheprdWindow {
             chrome_region: None,
             #[cfg(feature = "cloud")]
             #[cfg(feature = "cloud")]
-            cloud_setup: None,
             collapsed_repos: Default::default(),
             config,
             config_load: None,

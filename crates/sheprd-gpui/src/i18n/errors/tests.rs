@@ -11,7 +11,6 @@ mod chat;
 mod chat_protocol;
 mod client;
 mod clipboard;
-mod cloud_setup;
 mod config;
 mod control;
 mod credentials;

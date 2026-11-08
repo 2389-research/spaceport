@@ -30,7 +30,6 @@ mod close_modal;
 compile_error!("the `cloud` feature is enabled through a provider feature, such as `container`");
 #[cfg(feature = "cloud")]
 mod cloud;
-mod cloud_setup;
 mod config;
 mod config_diagnostic;
 mod connection;

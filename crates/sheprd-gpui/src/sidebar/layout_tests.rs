@@ -664,7 +664,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         port_forwards: Default::default(),
         #[cfg(feature = "cloud")]
         #[cfg(feature = "cloud")]
-        cloud_setup: None,
         listening_ports: Default::default(),
         tunnels: Default::default(),
         sidebar_visible: true,

@@ -6,7 +6,6 @@
 
 #[cfg(feature = "container")]
 mod container;
-mod setup;
 
 #[cfg(feature = "container")]
 pub(super) use container::ContainerCard;
@@ -197,7 +196,6 @@ impl SettingsWindow {
             .when(crate::cloud::unavailable().is_some(), |section| {
                 section.child(self.control_note(fl!("settings-cloud-unavailable")))
             })
-            .child(self.render_cloud_setup(cx))
             .when(CloudProvider::ALL.len() > 1, |section| {
                 section.child(self.cloud_tabs(cx))
             })
