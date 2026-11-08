@@ -46,3 +46,17 @@ Schema, and the package's 21 tool tests passed. No native UI, personal
 provider, Core service or installed app was started.
 T04 remains blocked on G-LINK, and A30 remains `not_run` until all excluded
 cloud and other runtime routes are absent and native/process checks pass.
+
+## Integrated branch verification
+
+After cherry-picking the removal and wording correction as `1a1130d0` and
+`927212d0`, the default and all-feature `sheprd-gpui --bin sheprd` production
+checks passed with `--locked`. The only output notice was the existing
+`block v0.1.6` future incompatibility. The `sheprd-remote` cloud catalog
+suite with Boat, Container and Daytona features passed 8/8, including the
+foreign Boxd preservation test and retained provider rename/bounds cases.
+The source/asset absence test passed 2/2, `just format-check`, `just
+check-file-size`, `just check-sorted` and `just check-i18n` passed (5,012
+messages in 263 files). No native provider or Core onboarding UI ran. The
+focused GUI config tests passed only in the isolated branch and still need
+an integrated run if later edits touch that parser.
