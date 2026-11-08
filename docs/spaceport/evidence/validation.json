@@ -37,7 +37,7 @@
     "examples/unknown-outcome.json": "06a3dcb9b16e9596f79a25050eef3e99fbb9bb36ee055c6a5fe38a9e73374f42",
     "notes/HANDOFF_TEMPLATE.md": "505137a430a8db4587354998f4d23b1b964c3357b9cfc117c12da28fcfbcc470",
     "plan/acceptance.json": "dbe9a5d950c02cb10ee4d64dcf52baa17abadccdda59f71fe19ef6f9e0f45ec5",
-    "plan/capabilities.json": "23129322aa5d0e9de48d6ed5dcfc63fb143936bf45fbd7241ea48777826b78aa",
+    "plan/capabilities.json": "6892a8c13056e7cfd6d803593715e41bb4eeb9e3a72ddf234f34a68438bdd2e3",
     "plan/decisions.json": "2d854e1b2107f75cb8124f83cf650b5c1a3b1c7d445ac66136b7279c5374be21",
     "plan/gaps.json": "39af1806743c5c0b882b0610c5d48343a4fb8ce1a43e766cef9cfd6dc9f4563f",
     "plan/removals.json": "ce10cea1c5abff0e34c6e5ca79f2ac57e6640eef6355e2448182f63bb572ddb2",
@@ -48,5 +48,5 @@
     "tools/spec.py": "cb935e63ff6076568fba9ceb72b88fde2ae103e9a2f42db001d308f7e1415002",
     "tools/test_spec.py": "45172ec5f47a57642575e82ccdba4474c405ec7e59f515e054f35d0882223f5f"
   },
-  "checked_at_utc": "2026-11-08T05:07:10.937764+00:00"
+  "checked_at_utc": "2026-11-08T05:10:05.577251+00:00"
 }

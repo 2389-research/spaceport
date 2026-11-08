@@ -92,7 +92,7 @@
         "G-CHAT"
       ],
       "evidence_level": "integration_unproved",
-      "runtime_test_status": "pure_local_route_7_gui_unit_and_66_protocol_tests_passed_macos; adapter_and_remote_not_run",
+      "runtime_test_status": "pure_local_route_7_gui_unit_and_66_protocol_tests_passed_macos; host_adapter_attach_11_permission_5_private_endpoint_8_fixture_tests_passed_macos; core_launched_adapter_and_remote_not_run",
       "runtime_evidence": ["evidence/t06-local-adapter-route.md"]
     },
     {
