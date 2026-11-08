@@ -272,6 +272,7 @@
         "evidence/t04-automation-removal.md",
         "evidence/t04-provider-dependency.md",
         "evidence/t04-provider-probe-removal.md",
+        "evidence/t04-usage-tail-dependency.md",
         "evidence/t04-daytona-dispatch-removal.md",
         "evidence/t04-boxd-provider-removal.md",
         "evidence/t04-boxd-merged-config.md",
@@ -474,7 +475,8 @@
       "status": "blocked",
       "evidence": [
         "evidence/t04-automation-dependency.md",
-        "evidence/t08-observability.md"
+        "evidence/t08-observability.md",
+        "evidence/t04-usage-tail-dependency.md"
       ],
       "must_close_gaps": [
         "G-OBS"

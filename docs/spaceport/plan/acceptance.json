@@ -233,7 +233,7 @@
       "scenario": "Inspect and exercise the authoritative supported feeds after removed collectors/schedulers are absent.",
       "expected": "Only real supported data is shown; missing feeds are unavailable and retained-parity gaps remain explicit.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t04-usage-tail-dependency.md"]
     },
     {
       "id": "A21",
