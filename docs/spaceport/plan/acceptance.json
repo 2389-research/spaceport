@@ -619,7 +619,7 @@
       "scenario": "Restart Core, emit missed notifications and modify a watched remote document while disconnected.",
       "expected": "Fresh snapshot/document values replace stale projections; old sequence numbers do not suppress new events.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t03-remote-document-route.md"]
     },
     {
       "id": "A54",

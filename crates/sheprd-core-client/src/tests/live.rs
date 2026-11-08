@@ -19,6 +19,8 @@ mod lifecycle;
 mod machines;
 #[cfg(unix)]
 mod observation;
+#[cfg(unix)]
+mod remote_document;
 
 struct Sandbox {
     _dir: tempfile::TempDir,
@@ -113,6 +115,7 @@ impl Sandbox {
             .stderr(Stdio::null())
             .spawn()
             .unwrap();
+        self.stop_attempted = false;
     }
 
     fn wait_exact(child: &mut Child) -> io::Result<ExitStatus> {
