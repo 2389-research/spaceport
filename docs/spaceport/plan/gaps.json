@@ -52,6 +52,19 @@
       "forbidden_workaround": "Treating a preflight machine.list or post-action ID comparison as atomic, silently acting by name, or routing the action through legacy SSH/Herdr 1 state."
     },
     {
+      "id": "G-LINK",
+      "title": "Read-only terminal link target without plugin activation",
+      "status": "open",
+      "sources": [
+        "S02",
+        "S03",
+        "S11"
+      ],
+      "issue": "The Herdr 1 pane.link.activate call can run a plugin handler but also returns the full URL of a wrapped link. pane.link.resolve returns only cell spans, the local surface lacks a soft-wrap flag, and pinned Core 0.1.18 advertises no read-only link target route.",
+      "required_evidence": "A verified side-effect-free typed link target/span for exact terminal identity, content revision and viewport/cell, or equivalent proven terminal surface semantics; then negative plugin-activation and retained wrapped URL/file/chat/native interaction scenarios A30/A33.",
+      "forbidden_workaround": "Keep plugin-capable activation for some clicks, guess a wrapped URL from adjacent painted rows, or disable wrapped links while claiming retained UX."
+    },
+    {
       "id": "G-OBS",
       "title": "Authoritative usage/automation visibility",
       "status": "open",

@@ -59,7 +59,7 @@
         "S03",
         "S11"
       ],
-      "gaps": [],
+      "gaps": ["G-LINK"],
       "evidence_level": "scenario_verified_local_subset",
       "runtime_test_status": "partial_local_fixture; unchanged_parser_matches_pinned_reference_71_tests_each_macos; private_core_client_detach_reattach_same_pid_and_missing_id_passed_macos; private_core_observer_input_and_resize_isolation_passed_macos; confirmed_local_observer_resize_before_paint_passed_pinned_core; private_core_exact_address_kill_same_display_label_other_pid_and_observer_survive_passed_macos; older_core_remote_relay_and_native_gui_gates_open",
       "runtime_evidence": ["evidence/t00-core-runtime.json", "evidence/t00-core-test.log", "evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t05-terminal-parser.md", "evidence/t05-core-lifecycle.md", "evidence/t05-core-observer.md", "evidence/t05-core-default-observation.md", "evidence/t05-explicit-termination.md"]

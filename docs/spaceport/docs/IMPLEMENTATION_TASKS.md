@@ -60,7 +60,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T04 — Remove excluded product feature families
 
-Status: **in_progress** · Prerequisites: T01, T03
+Status: **blocked** · Prerequisites: T01, T03
 
 Delete IDE/Git/GitHub/browser/cloud/Teleport/orchestration/mod/scheduler surfaces and dependencies in coherent units.
 
@@ -68,9 +68,9 @@ Requirements: SP-002, SP-015, SP-016, SP-022
 
 Acceptance: A28, A29, A30, A33, A34
 
-Gates to investigate: none additional
+Gates to investigate: G-LINK
 
-Gates this task must close: none; record findings without claiming full parity
+Gates this task must close: G-LINK
 
 ## T05 — Prove terminal and lifecycle parity
 
