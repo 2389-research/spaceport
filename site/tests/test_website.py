@@ -1,10 +1,9 @@
-"""Publishing contracts for website/site, the page Netlify serves at sheprd.org."""
+"""Source and publish-gate contracts for the inherited sheprd.org site."""
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 import re
 import struct
-import subprocess
 import tomllib
 import unittest
 
@@ -39,12 +38,11 @@ class WebsiteTests(unittest.TestCase):
             with self.subTest(file=name):
                 self.assertNotIn("Daytona", (WEBSITE / name).read_text())
 
-    def test_netlify_builds_website_site_from_its_own_config(self):
+    def test_inherited_website_skips_git_triggered_builds(self):
         config = tomllib.loads((ROOT / "website/netlify.toml").read_text())
         self.assertEqual(config["build"]["publish"], "site")
         self.assertNotIn("base", config["build"])
-        result = subprocess.run(["bash", "-c", config["build"]["ignore"]], timeout=5)
-        self.assertNotEqual(result.returncode, 0, "exit 0 would skip the build")
+        self.assertEqual(config["build"]["ignore"], "exit 0")
         canonical = [r for r in config["redirects"] if r["status"] == 301]
         self.assertEqual({r["from"] for r in canonical}, {
             "http://www.sheprd.org/*", "https://www.sheprd.org/*"})

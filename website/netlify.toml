@@ -1,10 +1,10 @@
-# The sheprd.org Netlify project: base directory `website`. Netlify reads this
-# file before the root netlify.toml, which stays paused for `site/`.
+# Inherited sheprd.org site: base directory `website`. Keep Git-triggered
+# builds paused in the Spaceport fork until a separate site owner is verified.
 [build]
 command = ""
 publish = "site"
-# Always build, even if the root file's `ignore = "exit 0"` is inherited.
-ignore = "exit 1"
+# Netlify treats exit 0 as "ignore this build", matching the root site gate.
+ignore = "exit 0"
 
 # Scope the canonical redirect to www so deploy previews remain usable.
 [[redirects]]

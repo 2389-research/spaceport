@@ -1,17 +1,19 @@
-# sheprd.org
+# Inherited sheprd.org site
 
-The page Netlify publishes at <https://sheprd.org>. It is plain HTML, CSS and
-JavaScript, with no install or build step. `site/` is separate and stays with
-herdrui.dev.
+This is the inherited Sheprd marketing site, not a Spaceport release surface.
+`website/netlify.toml` skips Git-triggered builds in this fork. The source is
+plain HTML, CSS and JavaScript, with no install or build step. `site/` is
+separate and stays with herdrui.dev. No owner-controlled Spaceport site or
+publish route has been established.
 
 ```sh
 python3 -m http.server -d website/site 8000
 ```
 
-Python's server does not emulate Netlify headers or redirects. The Netlify
-project uses base directory `website`, so it reads `website/netlify.toml`, which
-publishes `website/site`. Only that folder is deployed, so this README and the
-config stay private.
+Python's server does not emulate Netlify headers or redirects. A Netlify
+project with base directory `website` reads `website/netlify.toml`, whose
+publish folder is `website/site`. This README and the config sit outside
+that folder.
 
 `herdrui/` is the separate Cloudflare Worker for herdrui.dev, and is not
 published by Netlify; see [`herdrui/README.md`](herdrui/README.md).
