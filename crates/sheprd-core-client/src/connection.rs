@@ -209,6 +209,23 @@ impl Core {
         )
     }
 
+    /// Rename one saved machine in Core; its permanent ID is unchanged.
+    /// Old qualified addresses stop working after Core accepts this call.
+    pub fn machine_rename(&self, machine: &str, new_name: &str) -> Result<wire::Machine> {
+        self.typed(
+            Method::MachineRename,
+            &wire::MachineRename { machine, new_name },
+        )
+    }
+
+    /// Forget one saved machine through Core. Remote terminals keep running.
+    /// A timed-out removal has an unknown outcome and must not be retried blindly.
+    pub fn machine_rm(&self, machine: &str) -> Result<String> {
+        let removed: wire::MachineRemoved =
+            self.typed(Method::MachineRm, &json!({"machine": machine}))?;
+        Ok(removed.removed)
+    }
+
     /// Every terminal now, and the events after it.
     pub fn subscribe(&self) -> Result<Subscription> {
         let reply = self.call(Method::EventsSubscribe, &json!({}))?;

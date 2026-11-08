@@ -36,6 +36,8 @@ methods! {
     MachineAdd => "machine.add", false;
     MachineConnect => "machine.connect", false;
     MachineList => "machine.list", false;
+    MachineRename => "machine.rename", false;
+    MachineRm => "machine.rm", false;
     TerminalAttach => "terminal.attach", true;
     TerminalGet => "terminal.get", false;
     TerminalKill => "terminal.kill", true;

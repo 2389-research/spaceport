@@ -1,0 +1,7 @@
+# T02 Core machine catalog edits
+
+Pinned Core source `cd12ddd88bc11490228343291dc1096c9ed3bf77` defines `machine.rename` with the current `machine` and `new_name`, returning a `Machine`, and `machine.rm` with `machine`, returning `{removed}` (`schema/hc.openrpc.json`, `crates/herdr-core/src/api.rs`). Core says a rename changes addresses under the old name and removal forgets the connection without killing remote terminals. These are one-shot mutations; a timeout has an unknown outcome and the client does not retry them.
+
+The Core client now sends typed rename parameters and decodes both results. Scripted-peer tests check exact request shapes, unchanged permanent ID on rename, and unsupported method refusal before dispatch. The private two-Core fixture renamed `lab` to `work`, fetched the same terminal under `work/…`, removed `work`, observed an empty local machine catalog, and then found the terminal still running through a direct connection to the private remote Core. It killed that exact fixture terminal for cleanup. The fixture uses Core's test-only `HC_SSH` pipe, not real SSH or a personal daemon.
+
+The new tests failed to compile before the methods existed. The targeted three scripted-peer tests and all four opt-in real-Core tests passed on macOS. This establishes the Core catalog route and process-ownership boundary only. No GUI rename/remove action, real SSH authentication, Windows/Linux native run, or A04 acceptance is claimed.

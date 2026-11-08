@@ -162,7 +162,28 @@ fn a_real_core_aggregates_a_fixture_machine() {
         })
         .unwrap();
     assert!(resumed.address.starts_with("lab/"), "{}", resumed.address);
-    core.kill(&resumed.address).unwrap();
+    let local_address = resumed.address.strip_prefix("lab/").unwrap();
+    let renamed = core.machine_rename("lab", "work").unwrap();
+    assert_eq!(renamed.id, added.id);
+    assert_eq!(renamed.name, "work");
+    assert_eq!(
+        core.terminal_get(&format!("work/{local_address}"))
+            .unwrap()
+            .address,
+        format!("work/{local_address}")
+    );
+    assert_eq!(core.machine_rm("work").unwrap(), "work");
+    assert!(core.machine_list().unwrap().machines.is_empty());
+    let remote_core = remote.connect();
+    assert!(
+        remote_core
+            .list(false)
+            .unwrap()
+            .terminals
+            .iter()
+            .any(|terminal| terminal.address == local_address)
+    );
+    remote_core.kill(local_address).unwrap();
 }
 
 #[test]

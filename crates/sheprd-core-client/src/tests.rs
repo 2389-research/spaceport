@@ -10,6 +10,7 @@ mod hello;
 mod labels;
 mod live;
 mod machine;
+mod machine_manage;
 
 use crate::frame::{Decoder, Frame, Kind, encode};
 use serde_json::{Value, json};

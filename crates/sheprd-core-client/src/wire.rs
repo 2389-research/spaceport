@@ -143,6 +143,17 @@ pub(crate) struct MachineAdd<'a> {
     pub temporary: bool,
 }
 
+#[derive(Serialize)]
+pub(crate) struct MachineRename<'a> {
+    pub machine: &'a str,
+    pub new_name: &'a str,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct MachineRemoved {
+    pub removed: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Subscribed {
     #[serde(default)]
