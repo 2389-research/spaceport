@@ -26,10 +26,7 @@ fn reads_open_alerts_most_severe_then_newest_first() {
     assert_eq!(first.ecosystem, "rust");
     assert_eq!(first.patched.as_deref(), Some("0.20.0"));
     assert_eq!(first.manifest, "Cargo.lock");
-    assert_eq!(
-        first.advisory_url().as_deref(),
-        Some("https://github.com/advisories/GHSA-wrw7-89jp-8q8g")
-    );
+    assert_eq!(first.advisory, "GHSA-wrw7-89jp-8q8g");
 }
 
 #[test]
@@ -76,8 +73,7 @@ fn remote_text_is_cleaned_and_bounded() {
     };
     assert!(!alerts[0].package.chars().any(char::is_control));
     assert!(alerts[0].summary.chars().count() <= 512);
-    // An identifier without GHSA's shape links nowhere.
-    assert_eq!(alerts[0].advisory_url(), None);
+    assert!(!super::super::model::ghsa(&alerts[0].advisory));
 }
 
 #[test]

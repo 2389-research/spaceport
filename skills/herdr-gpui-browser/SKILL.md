@@ -26,10 +26,6 @@ for what only Sheprd shows or keeps.
 | Silence this worktree's notifications | `sheprd worktree mute` |
 | Silence a whole host's notifications | `sheprd host mute studio` |
 | Save the working tree before a risky change, and compare later | `sheprd checkpoint create before refactor`, `sheprd checkpoint diff ID` |
-| Your branch's pull request, its checks, and (with your workspace focused) its comments | `sheprd pr`, `sheprd pr checks`, `sheprd pr comments` |
-| Diagnose missing GitHub details: last reported GraphQL quota and rate-limit retry delays | `sheprd pr quota --json` |
-| List the vulnerability reports outsiders filed and the open Dependabot alerts of your repositories, most severe first | `sheprd security --json` |
-| Show the user an alert's or a vulnerability report's page in Sheprd | `sheprd security open OWNER/NAME 42` or `... GHSA-xxxx-xxxx-xxxx` |
 | Show the Automations section while Core has no job feed | `sheprd ui panel automations` |
 | Open a dev server in a tab, forwarded when you run on an SSH host | `sheprd ports open 3000` |
 | See the processes under a pane, with CPU and memory | `sheprd processes` |

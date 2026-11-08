@@ -8369,7 +8369,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sheprd-client",
- "sheprd-github",
  "tempfile",
  "thiserror 2.0.21",
  "tracing",

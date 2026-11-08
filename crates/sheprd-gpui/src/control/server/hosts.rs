@@ -1,12 +1,9 @@
-//! `pr`, `host`, `ports`, `usage`, `system`, `security`, and
-//! what the
+//! `host`, `ports`, `usage`, `system`, and what the
 //! window gathers about its hosts, read from the state it already keeps.
 //! Nothing here starts a lookup, a scan, or a sample of its own; a request
 //! answers from the latest one, and says why when there is none.
 mod mute;
 mod ports;
-mod pr;
-mod security;
 
 #[cfg(test)]
 mod tests;
@@ -21,7 +18,6 @@ use crate::{
     },
 };
 use gpui::App;
-use sheprd_client::protocol::{ClientShellSnapshot, ClientShellWorkspace};
 use std::time::SystemTime;
 
 pub(super) fn serve(
@@ -44,12 +40,6 @@ pub(super) fn serve(
             select(view, &id, |view, id| view.select_endpoint(id, cx))
         }),
         HostOp::Tag { id, tags } => in_window(caller, cx, |view, _, cx| tag(view, &id, tags, cx)),
-        HostOp::Pr => in_window(caller, cx, |view, _, _| pr::status(view, caller)),
-        HostOp::PrQuota => in_window(caller, cx, |view, _, _| pr::quota(view)),
-        HostOp::PrComments => return pr::comments(call.caller, incoming, watches, cx),
-        HostOp::PrOpen => in_window(caller, cx, |view, window, cx| {
-            pr::open(view, caller, window, cx)
-        }),
         HostOp::Ports => in_window(caller, cx, |view, _, _| ports::list(view, caller)),
         HostOp::Forward { port } => in_window(caller, cx, |view, _, cx| {
             ports::forward(view, caller, port, cx)
@@ -60,10 +50,6 @@ pub(super) fn serve(
         HostOp::OpenPort { port } => return ports::open(call.caller, port, incoming, watches, cx),
         HostOp::Usage => in_window(caller, cx, |view, _, _| usage(view, SystemTime::now())),
         HostOp::System => in_window(caller, cx, |view, _, _| system(view)),
-        HostOp::Security => in_window(caller, cx, |view, _, _| security::alerts(view)),
-        HostOp::SecurityOpen { repository, item } => in_window(caller, cx, |view, window, cx| {
-            security::open(view, &repository, &item, window, cx)
-        }),
     };
     incoming.respond(response);
 }
@@ -102,34 +88,6 @@ impl Place {
             label: endpoint.label.clone(),
             workspace,
         })
-    }
-
-    pub(super) fn selected(&self, view: &SheprdWindow) -> bool {
-        self.index == view.selected_endpoint
-    }
-
-    fn snapshot<'a>(&self, view: &'a SheprdWindow) -> Option<&'a ClientShellSnapshot> {
-        let live = if self.selected(view) {
-            &view.live
-        } else {
-            &view.endpoints.get(self.index)?.live
-        };
-        live.snapshot.as_deref()
-    }
-
-    pub(super) fn workspace<'a>(&self, view: &'a SheprdWindow) -> Option<&'a ClientShellWorkspace> {
-        self.snapshot(view)?
-            .workspaces
-            .iter()
-            .find(|workspace| workspace.workspace_id == self.workspace)
-    }
-
-    pub(super) fn focused(&self, view: &SheprdWindow) -> bool {
-        self.selected(view)
-            && self
-                .snapshot(view)
-                .and_then(|snapshot| snapshot.focused_workspace_id.as_deref())
-                == Some(self.workspace.as_str())
     }
 }
 

@@ -1,4 +1,4 @@
-//! `pr`, `host`, `ports`, `usage`, `system`, and `security`.
+//! `host`, `ports`, `usage`, and `system`.
 mod text;
 
 pub(super) use text::bytes;
@@ -8,57 +8,12 @@ mod tests;
 
 use super::{Context, Output, unexpected};
 use crate::{
-    cli::control::{HostCommand, PortsCommand, PrCommand, SecurityCommand},
+    cli::control::{HostCommand, PortsCommand},
     control::protocol::{
         Request, Response,
         hosts::{HostOp, Reply},
     },
 };
-
-/// No pull request: said on stderr, exiting [`super::exit::NOTHING`].
-fn no_pr(note: Option<String>) -> crate::Result<Output> {
-    let text = note.unwrap_or_else(|| "No pull request for this branch".into());
-    Ok(Output::data(
-        text.clone(),
-        &serde_json::json!({ "pr": null, "note": text }),
-    )?
-    .nothing())
-}
-
-pub(super) fn pr(command: PrCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        PrCommand::Status | PrCommand::Checks => HostOp::Pr,
-        PrCommand::Comments => HostOp::PrComments,
-        PrCommand::Open => HostOp::PrOpen,
-        PrCommand::Quota => HostOp::PrQuota,
-    };
-    match context.call(Request::Host, op)? {
-        Response::Host {
-            reply: Reply::PrQuota { accounts },
-        } => Output::data(text::quotas(&accounts), &accounts),
-        Response::Done { message } => Ok(Output::message(message)),
-        Response::Host {
-            reply: Reply::Pr { pr: None, note },
-        } => no_pr(note),
-        Response::Host {
-            reply: Reply::Pr { pr: Some(pr), .. },
-        } => match command {
-            PrCommand::Checks => Output::data(text::checks(&pr.checks), &pr.checks),
-            _ => Output::data(text::pr(&pr), &pr),
-        },
-        Response::Host {
-            reply: Reply::Comments { comments },
-        } => {
-            let output = Output::data(text::comments(&comments), &comments)?;
-            Ok(if comments.is_empty() {
-                output.nothing()
-            } else {
-                output
-            })
-        }
-        response => Err(unexpected(response)),
-    }
-}
 
 pub(super) fn host(command: HostCommand, context: &Context) -> crate::Result<Output> {
     let op = match command {
@@ -103,23 +58,6 @@ pub(super) fn usage(context: &Context) -> crate::Result<Output> {
         } => {
             let empty = matches!(&reply, Reply::Usage { usage, .. } if usage.is_empty());
             let output = Output::data(text::usage(&reply), &reply)?;
-            Ok(if empty { output.nothing() } else { output })
-        }
-        response => Err(unexpected(response)),
-    }
-}
-
-pub(super) fn security(command: SecurityCommand, context: &Context) -> crate::Result<Output> {
-    if let SecurityCommand::Open { repository, item } = command {
-        return context.act(Request::Host, HostOp::SecurityOpen { repository, item });
-    }
-    match context.call(Request::Host, HostOp::Security)? {
-        Response::Host {
-            reply: reply @ Reply::Security { .. },
-        } => {
-            let empty = matches!(&reply, Reply::Security { repositories, .. }
-                if repositories.iter().all(|repo| repo.alerts.is_empty() && repo.reports.is_empty()));
-            let output = Output::data(text::security(&reply), &reply)?;
             Ok(if empty { output.nothing() } else { output })
         }
         response => Err(unexpected(response)),

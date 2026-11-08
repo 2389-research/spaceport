@@ -21,7 +21,8 @@ use serde::{Deserialize, Serialize};
 /// 16: removed `tab.code`. 17: removed `tab.edit`.
 /// 18: removed cloud control routes.
 /// 19: removed `TabKind::Code`.
-pub const PROTOCOL_VERSION: u32 = 19;
+/// 20: removed GitHub and PR control routes.
+pub const PROTOCOL_VERSION: u32 = 20;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.

@@ -433,13 +433,11 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Checkpoint(command) => work::checkpoint(command, &context),
         ControlCommand::Scripts { kind } => work::scripts(kind, &context),
         ControlCommand::FanOut(fan_out) => work::fan_out(fan_out, &context),
-        ControlCommand::Pr(command) => hosts::pr(command, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),
         ControlCommand::Ports(command) => hosts::ports(command, &context),
         ControlCommand::Processes { pane } => local::processes(pane.as_deref()),
         ControlCommand::Usage => hosts::usage(&context),
         ControlCommand::System => hosts::system(&context),
-        ControlCommand::Security(command) => hosts::security(command, &context),
         ControlCommand::Search {
             files,
             query,

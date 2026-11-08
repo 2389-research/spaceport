@@ -2,72 +2,13 @@
 use super::text;
 
 mod gpu;
-mod quota;
-mod security;
 use crate::control::protocol::{
     app::HostInfo,
-    hosts::{
-        CheckInfo, CommentInfo, ForwardInfo, LoadInfo, PortInfo, Ports, PrInfo, Reply, UsageInfo,
-        UsageWindow,
-    },
+    hosts::{ForwardInfo, LoadInfo, PortInfo, Ports, Reply, UsageInfo, UsageWindow},
 };
 
-fn check(name: &str, outcome: &str) -> CheckInfo {
-    CheckInfo {
-        name: name.into(),
-        outcome: outcome.into(),
-    }
-}
-
 #[test]
-fn a_pull_request_reads_as_a_short_summary() {
-    let pr = PrInfo {
-        number: 8,
-        url: "https://github.com/example/project/pull/8".into(),
-        title: "Improve menus".into(),
-        state: "Open".into(),
-        draft: false,
-        head: "feature".into(),
-        base: "main".into(),
-        additions: 10,
-        deletions: 2,
-        changed_files: 1,
-        review: Some("Review required".into()),
-        merge_status: None,
-        checks: vec![
-            check("test", "passed"),
-            check("lint", "failed"),
-            check("doc", "passed"),
-        ],
-    };
-    assert_eq!(
-        text::pr(&pr),
-        "#8 Improve menus\n\
-         Open · feature -> main · +10 -2 in 1 file\n\
-         Review required\n\
-         Checks: 2 passed, 1 failed\n\
-         https://github.com/example/project/pull/8"
-    );
-    assert_eq!(
-        text::checks(&pr.checks),
-        "passed   test\nfailed   lint\npassed   doc"
-    );
-    assert_eq!(text::checks(&[]), "No checks reported");
-}
-
-#[test]
-fn comments_and_hosts_read_one_per_entry() {
-    let comments = [CommentInfo {
-        author: "octocat".into(),
-        kind: "approved".into(),
-        created_at: "2026-09-20".into(),
-        body: "Ship it".into(),
-    }];
-    assert_eq!(
-        text::comments(&comments),
-        "octocat approved (2026-09-20)\n    Ship it"
-    );
-    assert_eq!(text::comments(&[]), "No comments yet");
+fn hosts_read_one_per_entry() {
     let hosts = [
         HostInfo {
             id: "local".into(),

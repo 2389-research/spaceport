@@ -151,14 +151,10 @@ not take it either.
 | `host [list]`, `host select ID` | The window's hosts, with their tags; show another one |
 | `host mute\|unmute [HOST]` | Silence a host's notifications as a whole, or let them through again, by ID or label; absent, your host. Works while it is offline |
 | `host tag ID [TAG...]` | Replace the local tags that group a host in the sidebar; with no tags, clear them |
-| `pr [status]\|checks\|comments\|open` | Your branch's pull request, on the window's selected host. `comments` needs your workspace focused |
-| `pr quota` | Last reported GraphQL points used, limit, and remaining, plus rate-limit retry delays for the window's GitHub accounts. `--json` returns records merged by login: known observations are preferred, then the latest reset window and greatest usage within it; retry delays retain the longest pause. Usage is never summed across credentials. Unavailable quotas are `null`. No network request is made. |
 | `ports [list]` | Ports your workspace listens on, and forwards |
 | `ports forward\|unforward PORT` | Forward a port of the SSH host to this machine |
 | `ports open PORT` | Open `localhost:PORT` with the system handler; forwards a remote port before opening |
 | `usage`, `system` | Plan usage and load of the selected host: CPU, memory, disk, uptime, and its GPU and video memory when it has one and `show_gpu_load` or `show_sidebar_gpu_load` is on |
-| `security` | Private vulnerability reports in triage (titles and metadata only, never their descriptions) and open Dependabot alerts of the github.com repositories the window's workspaces hold, most severe first, as the Security section last read them. Exits 4 when there are none |
-| `security open REPOSITORY ALERT\|GHSA` | Show alert `ALERT` (its number) or private report `GHSA` (its GHSA ID) of `REPOSITORY` (`owner/name`) in the Security section, beside its list: the fix, the advisory, and the dependency for an alert; the report, its advisory draft, and its conversation for a report. Only items the section lists open; nothing on GitHub changes |
 | `processes [--pane ID]` | The processes under a pane, with CPU and memory (no app needed) |
 | `search symbol\|file QUERY` | Go to Symbol or Go to File over the current checkout (no app needed) |
 

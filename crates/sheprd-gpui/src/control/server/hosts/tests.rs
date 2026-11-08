@@ -6,11 +6,6 @@ use gpui::{Entity, TestAppContext, VisualTestContext};
 mod info;
 mod muting;
 mod ports;
-mod pr;
-mod quota;
-mod quota_accounts;
-mod security;
-mod security_open;
 mod strict;
 mod usage;
 mod wsl_forwards;
@@ -52,15 +47,8 @@ fn a_request_is_about_the_callers_workspace_or_the_focused_one(cx: &mut TestAppC
             (own.index, own.endpoint.as_str(), own.workspace.as_str()),
             (0, "local", "w3")
         );
-        assert!(own.selected(view));
-        assert!(!own.focused(view));
-        assert_eq!(
-            own.workspace(view).unwrap().branch.as_deref(),
-            Some("develop")
-        );
         let focused = Place::of(view, &caller(None)).unwrap();
         assert_eq!(focused.workspace, "w0");
-        assert!(focused.focused(view));
         let missing = Place::of(view, &caller(Some("w_gone"))).unwrap_err();
         assert_eq!(error_code(&missing), Some(ErrorCode::WorkspaceNotFound));
     });

@@ -2,9 +2,8 @@
 use super::*;
 use crate::protocol::{Call, Caller, MAX_WAIT_SECONDS, Request, Response};
 
-mod quota;
 mod removed_cloud;
-mod security;
+mod removed_github;
 
 #[test]
 fn host_requests_have_a_stable_wire_form() {
@@ -23,15 +22,11 @@ fn host_requests_have_a_stable_wire_form() {
         HostOp::Select {
             id: "devbox".into(),
         },
-        HostOp::Pr,
-        HostOp::PrComments,
-        HostOp::PrOpen,
         HostOp::Ports,
         HostOp::Unforward { port: 1 },
         HostOp::OpenPort { port: 8080 },
         HostOp::Usage,
         HostOp::System,
-        HostOp::Security,
     ] {
         let request = Request::Host(Call {
             caller: Caller::default(),
@@ -66,49 +61,13 @@ fn only_waiting_operations_extend_the_answer_timeout() {
         })
         .wait_seconds()
     };
-    assert_eq!(wait(HostOp::PrComments), COMMENTS_WAIT_SECONDS);
     assert_eq!(wait(HostOp::OpenPort { port: 80 }), FORWARD_WAIT_SECONDS);
-    assert_eq!(wait(HostOp::Pr), 0);
-    assert!(COMMENTS_WAIT_SECONDS.max(FORWARD_WAIT_SECONDS) <= MAX_WAIT_SECONDS);
+    assert!(FORWARD_WAIT_SECONDS <= MAX_WAIT_SECONDS);
 }
 
 #[test]
 fn host_replies_round_trip() {
-    let pr = PrInfo {
-        number: 8,
-        url: "https://github.com/example/project/pull/8".into(),
-        title: "Title".into(),
-        state: "Open".into(),
-        draft: false,
-        head: "feature".into(),
-        base: "main".into(),
-        additions: 1,
-        deletions: 2,
-        changed_files: 3,
-        review: Some("Review required".into()),
-        merge_status: None,
-        checks: vec![CheckInfo {
-            name: "test".into(),
-            outcome: "passed".into(),
-        }],
-    };
     for reply in [
-        Reply::Pr {
-            pr: Some(Box::new(pr)),
-            note: None,
-        },
-        Reply::Pr {
-            pr: None,
-            note: Some("Still looking".into()),
-        },
-        Reply::Comments {
-            comments: vec![CommentInfo {
-                author: "octocat".into(),
-                kind: "approved".into(),
-                created_at: "2026-01-01T00:00:00Z".into(),
-                body: "Looks good".into(),
-            }],
-        },
         Reply::Ports(Box::new(Ports {
             host: "Local".into(),
             workspace: "w_1".into(),

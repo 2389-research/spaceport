@@ -1,9 +1,7 @@
-//! Hosts and what the app gathers about them: pull requests, listening and
-//! forwarded ports, plan usage, load, and Dependabot alerts.
+//! Hosts and what the app gathers about them: listening and forwarded ports,
+//! plan usage, and load.
 use serde::{Deserialize, Serialize};
 
-/// How long a pull request's comments may take to load.
-pub const COMMENTS_WAIT_SECONDS: u64 = 20;
 /// How long `ports open` may wait for a new forward to listen.
 pub const FORWARD_WAIT_SECONDS: u64 = 20;
 
@@ -28,14 +26,6 @@ pub enum HostOp {
         id: String,
         tags: Vec<String>,
     },
-    /// The pull request of the caller's workspace's branch.
-    Pr,
-    /// Its review comments, loaded on request.
-    PrComments,
-    /// Open it in a browser tab.
-    PrOpen,
-    /// Last reported GitHub GraphQL quota and active account pauses.
-    PrQuota,
     /// Ports the caller's workspace's processes listen on, and forwards.
     Ports,
     /// Forward a port of the selected SSH host to this machine.
@@ -52,55 +42,15 @@ pub enum HostOp {
     },
     Usage,
     System,
-    /// The Dependabot alerts the Security section last read.
-    Security,
-    /// Show an alert's (`item` a number) or a private report's (`item` a
-    /// GHSA ID) page in the Security section.
-    SecurityOpen {
-        repository: String,
-        item: String,
-    },
 }
 
 impl HostOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
-            Self::PrComments => COMMENTS_WAIT_SECONDS,
             Self::OpenPort { .. } => FORWARD_WAIT_SECONDS,
             _ => 0,
         }
     }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PrInfo {
-    pub number: u64,
-    pub url: String,
-    pub title: String,
-    pub state: String,
-    pub draft: bool,
-    pub head: String,
-    pub base: String,
-    pub additions: u64,
-    pub deletions: u64,
-    pub changed_files: u64,
-    pub review: Option<String>,
-    pub merge_status: Option<String>,
-    pub checks: Vec<CheckInfo>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CheckInfo {
-    pub name: String,
-    pub outcome: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CommentInfo {
-    pub author: String,
-    pub kind: String,
-    pub created_at: String,
-    pub body: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,19 +133,6 @@ pub enum Reply {
     Hosts {
         hosts: Vec<super::app::HostInfo>,
     },
-    Pr {
-        pr: Option<Box<PrInfo>>,
-        /// Why there is none to show, when it is not simply that the branch
-        /// has no pull request: still looking, or the lookup failed.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        note: Option<String>,
-    },
-    Comments {
-        comments: Vec<CommentInfo>,
-    },
-    PrQuota {
-        accounts: Vec<AccountQuota>,
-    },
     Ports(Box<Ports>),
     Usage {
         host: String,
@@ -208,83 +145,6 @@ pub enum Reply {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         note: Option<String>,
     },
-    Security {
-        repositories: Vec<SecurityRepoInfo>,
-        /// Why the listing may be empty or cut short.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        note: Option<String>,
-    },
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct AccountQuota {
-    pub login: String,
-    pub quota: Option<sheprd_github::quota::Quota>,
-    pub retry_after_seconds: Option<u64>,
-}
-
-/// One repository the Security section read.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SecurityRepoInfo {
-    /// `owner/name` on github.com.
-    pub name: String,
-    pub host: String,
-    /// Its Dependabot alerts page.
-    pub url: String,
-    /// "open", "off" (Dependabot alerts turned off), "hidden" (this sign-in
-    /// may not read alerts), or "error".
-    pub state: String,
-    /// Open alerts GitHub counts, which may be more than `alerts` holds.
-    pub total: u64,
-    pub alerts: Vec<SecurityAlertInfo>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-    /// Private vulnerability reporting: "on", "off", "hidden" (this sign-in
-    /// may not read reports), or "error".
-    pub reporting: String,
-    /// Reports outsiders filed, in triage: titles and metadata only.
-    pub reports: Vec<SecurityReportInfo>,
-    /// Whether GitHub holds more reports in triage than the section read.
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub more_reports: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub reports_error: Option<String>,
-}
-
-/// A private vulnerability report. Its description is never carried: the
-/// vulnerability is not fixed yet, and the user reads it on GitHub.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SecurityReportInfo {
-    /// The draft advisory's GHSA identifier.
-    pub advisory: String,
-    pub summary: String,
-    /// The reporter's rating, when they gave one.
-    pub severity: Option<String>,
-    pub reporter: Option<String>,
-    /// RFC 3339.
-    pub created_at: Option<String>,
-    /// The report's page.
-    pub url: Option<String>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SecurityAlertInfo {
-    pub number: u64,
-    /// "critical", "high", "moderate", or "low".
-    pub severity: String,
-    pub package: String,
-    pub ecosystem: String,
-    pub summary: String,
-    /// The GHSA identifier.
-    pub advisory: String,
-    pub advisory_url: Option<String>,
-    /// The affected version range.
-    pub vulnerable: String,
-    /// The first fixed version, when one is published.
-    pub patched: Option<String>,
-    pub manifest: String,
-    /// The alert's page.
-    pub url: String,
 }
 
 #[cfg(test)]

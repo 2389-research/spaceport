@@ -40,23 +40,6 @@ impl Item {
         }
     }
 
-    /// An item a command names: an alert by its number, a report by its
-    /// GHSA ID, of a checked `owner/name`.
-    pub(crate) fn named(repo: &str, item: &str) -> Option<Self> {
-        if !super::model::valid_name(repo) {
-            return None;
-        }
-        let repo = repo.to_owned();
-        if super::model::ghsa(item) {
-            return Some(Self::Report {
-                repo,
-                advisory: item.to_owned(),
-            });
-        }
-        let number = item.strip_prefix('#').unwrap_or(item).parse().ok()?;
-        Some(Self::Alert { repo, number })
-    }
-
     pub(crate) fn tabs(&self) -> &'static [Tab] {
         match self {
             Self::Alert { .. } => &[Tab::Overview, Tab::Advisory, Tab::Dependency],

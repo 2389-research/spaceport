@@ -1,14 +1,5 @@
-//! `pr`, `host`, `ports`, and `security`.
+//! `host` and `ports`.
 use super::{Args, CliError, unknown};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PrCommand {
-    Status,
-    Checks,
-    Comments,
-    Open,
-    Quota,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HostCommand {
@@ -26,37 +17,12 @@ pub enum HostCommand {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum SecurityCommand {
-    List,
-    /// Show an alert (`42`) or a private report (`GHSA-…`) of `repository`
-    /// in the section, beside its list.
-    Open {
-        repository: String,
-        item: String,
-    },
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PortsCommand {
     List,
     Forward(u16),
     Unforward(u16),
     Open(u16),
-}
-
-pub(super) fn pr(args: &mut Args) -> Result<PrCommand, CliError> {
-    let Some(verb) = args.verb() else {
-        return Ok(PrCommand::Status);
-    };
-    Ok(match verb.to_str() {
-        Some("status") => PrCommand::Status,
-        Some("checks") => PrCommand::Checks,
-        Some("comments") => PrCommand::Comments,
-        Some("open") => PrCommand::Open,
-        Some("quota") => PrCommand::Quota,
-        _ => return Err(unknown("pr", verb)),
-    })
 }
 
 pub(super) fn host(args: &mut Args) -> Result<HostCommand, CliError> {
@@ -76,20 +42,6 @@ pub(super) fn host(args: &mut Args) -> Result<HostCommand, CliError> {
                 .collect::<Result<_, _>>()?,
         },
         _ => return Err(unknown("host", verb)),
-    })
-}
-
-pub(super) fn security(args: &mut Args) -> Result<SecurityCommand, CliError> {
-    let Some(verb) = args.verb() else {
-        return Ok(SecurityCommand::List);
-    };
-    Ok(match verb.to_str() {
-        Some("list") => SecurityCommand::List,
-        Some("open") => SecurityCommand::Open {
-            repository: args.required_text("REPOSITORY")?,
-            item: args.required_text("ALERT|GHSA")?,
-        },
-        _ => return Err(unknown("security", verb)),
     })
 }
 

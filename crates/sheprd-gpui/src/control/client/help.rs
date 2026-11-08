@@ -91,9 +91,6 @@ fn family(name: &str) -> &'static str {
         "fan-out" => {
             "sheprd fan-out PROMPT... [--agent KIND[:COUNT]]...\n    Open the fan-out dialog for the caller's repository with PROMPT and\n    these agents (claude, codex, ...; at most 6 in all) chosen once the\n    host's agents are known. The user starts it there."
         }
-        "pr" => {
-            "sheprd pr [status]|checks\n    The pull request of the caller's workspace's branch, as Sheprd last\n    looked it up (selected host only; sign in to GitHub first). Exits 4\n    when there is none.\nsheprd pr comments\n    Its review comments (the workspace must be the focused one).\nsheprd pr open\n    Open it with the system URL handler.\nsheprd pr quota\n    Last reported GraphQL points and rate-limit retry delays for this\n    window's GitHub accounts. Reads cached state without a network request."
-        }
         "host" => {
             "sheprd host [list]\n    The window's hosts and their status. Herdr's `machine` command\n    manages saved hosts.\nsheprd host mute|unmute [HOST]\n    Silence a host's notifications as a whole, or let them through again,\n    by ID or label; absent, the caller's host. Works while it is offline.\nsheprd host select ID\n    Show that host in the window, as choosing it in the sidebar does.\nsheprd host tag ID [TAG...]\n    Replace the local tags that group that host in the sidebar; with no\n    tags, clear them."
         }
@@ -104,9 +101,6 @@ fn family(name: &str) -> &'static str {
             "sheprd processes [--pane ID]\n    The processes under a pane (default HERDR_PANE_ID), with CPU and\n    memory. Runs here; Sheprd need not run."
         }
         "usage" => "sheprd usage\n    AI plan usage on the window's selected host.",
-        "security" => {
-            "sheprd security\n    Private vulnerability reports in triage (titles only) and open\n    Dependabot alerts of the github.com repositories the window's\n    workspaces hold, most severe first, as the Security section last read\n    them (sign in to GitHub first). Exits 4 when there are none.\n    `ui panel security` shows the section.\nsheprd security open REPOSITORY ALERT|GHSA\n    Show alert ALERT (its number) or private report GHSA (its GHSA ID) of\n    REPOSITORY (owner/name) in the Security section, beside its list, as\n    the section last read it."
-        }
         "system" => "sheprd system\n    The window's selected host's load, when Sheprd samples it.",
         "search" => {
             "sheprd search symbol|file QUERY... [--limit N]\n    Go to Symbol or Go to File over the current directory's checkout,\n    printing paths relative to its root. Runs here; Sheprd need not run."

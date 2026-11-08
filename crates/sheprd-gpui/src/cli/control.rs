@@ -16,7 +16,7 @@ pub use crate::control::{Cursor, EventKind, FontSize, Script, Size, Sound, Switc
 pub use app::{AppCommand, UiCommand, WindowCommand};
 pub use browser::BrowserCommand;
 pub use chat::ChatCommand;
-pub use hosts::{HostCommand, PortsCommand, PrCommand, SecurityCommand};
+pub use hosts::{HostCommand, PortsCommand};
 pub use settings::{
     CaffeineCommand, ConfigCommand, IntegrationsCommand, KeybindsCommand, LanguageCommand,
     SoundCommand, ThemeCommand, UpdateCommand,
@@ -69,7 +69,6 @@ pub enum ControlCommand {
         kind: Option<Script>,
     },
     FanOut(FanOut),
-    Pr(PrCommand),
     Host(HostCommand),
     Ports(PortsCommand),
     Processes {
@@ -77,7 +76,6 @@ pub enum ControlCommand {
     },
     Usage,
     System,
-    Security(SecurityCommand),
     Search {
         files: bool,
         query: String,
@@ -169,7 +167,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
         "fan-out",
         "Send one prompt to several agents, each in its own worktree",
     ),
-    ("pr", "The pull request of the caller's branch"),
     ("host", "List the window's hosts, show one, or mute one"),
     (
         "ports",
@@ -178,10 +175,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("processes", "The processes running under a pane"),
     ("usage", "AI plan usage on the selected host"),
     ("system", "The selected host's load"),
-    (
-        "security",
-        "Vulnerability reports and Dependabot alerts of your repositories",
-    ),
     ("search", "Find a symbol or a file in the focused checkout"),
     ("config", "Sheprd settings: path, get, set, reload, check"),
     ("theme", "List or choose a color theme"),
@@ -318,7 +311,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
             kind: work::script_kind(args)?,
         },
         "fan-out" => ControlCommand::FanOut(work::fan_out(args)?),
-        "pr" => ControlCommand::Pr(hosts::pr(args)?),
         "host" => ControlCommand::Host(hosts::host(args)?),
         "ports" => ControlCommand::Ports(hosts::ports(args)?),
         "processes" => ControlCommand::Processes {
@@ -326,7 +318,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
         },
         "usage" => ControlCommand::Usage,
         "system" => ControlCommand::System,
-        "security" => ControlCommand::Security(hosts::security(args)?),
         "search" => {
             let files = match args.verb().as_ref().and_then(|verb| verb.to_str()) {
                 Some("symbol" | "symbols") => false,

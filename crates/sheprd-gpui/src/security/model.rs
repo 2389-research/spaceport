@@ -73,13 +73,6 @@ pub(crate) struct Alert {
     pub(crate) created_at: Option<DateTime<Utc>>,
 }
 
-impl Alert {
-    /// The advisory's public page, when its identifier has GHSA's shape.
-    pub(crate) fn advisory_url(&self) -> Option<String> {
-        ghsa(&self.advisory).then(|| format!("https://github.com/advisories/{}", self.advisory))
-    }
-}
-
 /// What a repository's alerts listing said.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum Alerts {

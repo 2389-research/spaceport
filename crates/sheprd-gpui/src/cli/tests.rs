@@ -9,16 +9,15 @@ mod language;
 mod links;
 mod open_command;
 mod px0;
-mod quota;
 mod removed_automation;
 mod removed_cloud;
 mod removed_code_edit;
+mod removed_github;
 mod removed_legacy_launch;
 mod removed_legacy_window_session;
 mod removed_mods;
 mod removed_phone;
 mod removed_teleport;
-mod security;
 mod ui_panel;
 
 #[test]
