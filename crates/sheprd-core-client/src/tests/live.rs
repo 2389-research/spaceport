@@ -12,6 +12,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(unix)]
+mod machines;
+
 struct Sandbox {
     _dir: tempfile::TempDir,
     binary: OsString,
@@ -21,13 +24,17 @@ struct Sandbox {
 
 impl Sandbox {
     fn start(binary: OsString) -> Self {
+        Self::start_with(binary, Vec::new())
+    }
+
+    fn start_with(binary: OsString, extra: Vec<(&'static str, OsString)>) -> Self {
         let parent = std::env::var_os("HERDR_TEST_TMPDIR").unwrap_or_else(|| "/tmp".into());
         let dir = tempfile::Builder::new()
             .prefix("hc")
             .tempdir_in(parent)
             .unwrap();
         let at = |name: &str| dir.path().join(name).into_os_string();
-        let vars = vec![
+        let mut vars = vec![
             ("HC_SESSION", OsString::from("live")),
             ("HC_SOCKET", at("c.sock")),
             ("HOME", at("home")),
@@ -35,6 +42,7 @@ impl Sandbox {
             ("XDG_CONFIG_HOME", at("config")),
             ("XDG_STATE_HOME", at("state")),
         ];
+        vars.extend(extra);
         let child = Self::command(&binary, &vars)
             .arg("serve")
             .stdout(Stdio::null())

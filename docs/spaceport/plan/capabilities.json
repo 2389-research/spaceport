@@ -36,8 +36,8 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "machine_list_passed_local_fixture; remote_aggregation_not_run",
-      "runtime_evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log"]
+      "runtime_test_status": "two_core_aggregation_and_restart_passed_macos; real_ssh_not_run",
+      "runtime_evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t02-remote-fixture.md", "evidence/t02-remote-fixture.log"]
     },
     {
       "id": "CAP-TERMINAL",
