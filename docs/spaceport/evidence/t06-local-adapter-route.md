@@ -31,3 +31,11 @@ Two attached clients observe one pending permission. The first sends `allow` and
 - `CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/spaceport-t06-local-adapter-target cargo +1.99.0 test --locked -p sheprd-core-client --lib`: 63 passed, 11 live tests ignored.
 - `just format-check`, `just check-file-size`, `just check-sorted`, `uv run --with jsonschema==4.26.0 python tools/spec.py check`, `uv run --with jsonschema==4.26.0 python tools/test_spec.py`, and `git diff --check`: passed. The first bare `python3 tools/spec.py check` could not load JSON Schema because that interpreter lacked the pinned package; the isolated `uv` run passed.
 - `CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/spaceport-t06-local-adapter-target cargo +1.99.0 clippy --locked -p sheprd-core-client --all-targets --all-features`: passed with one existing `clippy::type_complexity` warning in unchanged `connection.rs:90`; adding `-- -D warnings` failed on that same warning. No warning originated in this test slice.
+
+At merged revision `302aee5b`, the same private Core scenario passed with the
+main worktree's `sheprd-core-client` test binary (one passed, 74 filtered).
+It used the separately built adapter binary named above and the pinned Core
+binary; both ran only in the test's private sandbox. This rerun confirms the
+local subset survived integration. It adds no native GUI, real-agent, or remote
+chat claim. T06 and G-CHAT stay blocked/open; A14–A18 and A54–A55 stay
+`not_run`.
