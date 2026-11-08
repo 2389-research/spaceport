@@ -1,7 +1,7 @@
 //! The shared Core metadata subscription and Spaceport document observation.
 //! A worker owns blocking Core reads; windows consume only published facts.
 
-use super::workspace_document;
+use super::workspace_document::{self, NAME, VersionedDocument};
 use gpui::{App, Global};
 use sheprd_backend::{Backend as _, Change, TerminalInfo};
 use sheprd_core_client::{CoreBackend, CoreBatch, wire::Doc};
@@ -13,14 +13,12 @@ use std::{
     time::{Duration, Instant},
 };
 
-const DOCUMENT: &str = "spaceport";
-
 fn needs_document(batch: &CoreBatch) -> bool {
     batch.missed
         || batch
             .documents
             .iter()
-            .any(|notice| notice.machine.is_none() && notice.name == DOCUMENT)
+            .any(|notice| notice.machine.is_none() && notice.name == NAME)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -40,12 +38,6 @@ enum Freshness {
     Synchronizing,
     Fresh,
     Stale,
-}
-
-#[derive(Clone, Debug)]
-pub(super) struct VersionedDocument {
-    pub version: u64,
-    pub value: workspace_document::Document,
 }
 
 #[derive(Clone, Default)]
@@ -175,10 +167,7 @@ fn parse_document(
     result: Result<Doc, sheprd_core_client::Error>,
 ) -> Result<VersionedDocument, Error> {
     let doc = result?;
-    Ok(VersionedDocument {
-        version: doc.version,
-        value: workspace_document::Document::read(doc.value)?,
-    })
+    Ok(VersionedDocument::read(doc)?)
 }
 
 type Mailbox = Arc<Mutex<Option<Projection>>>;
@@ -306,13 +295,13 @@ fn watch(
     projection: &mut Projection,
 ) -> Result<(), Error> {
     let (terminals, mut changes) = backend.watch()?;
-    let document = parse_document(backend.core().doc_get(DOCUMENT, None));
+    let document = parse_document(backend.core().doc_get(NAME, None));
     projection.initial(epoch, terminals, document);
     publish(mailbox, projection);
     while !stop.load(Ordering::Acquire) {
         let batch = changes.next_batch(Duration::from_millis(200))?;
         let document =
-            needs_document(&batch).then(|| parse_document(backend.core().doc_get(DOCUMENT, None)));
+            needs_document(&batch).then(|| parse_document(backend.core().doc_get(NAME, None)));
         if batch.missed || !batch.changes.is_empty() || document.is_some() {
             projection.batch(epoch, batch, document);
             publish(mailbox, projection);

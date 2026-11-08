@@ -121,7 +121,7 @@ fn worker_refetches_local_document_after_notice() {
     wait_for_version(0);
     assert_eq!(
         core.doc_set(
-            DOCUMENT,
+            NAME,
             &json!({"schema_version": 1, "workspaces": []}),
             0,
             None

@@ -1,17 +1,35 @@
 //! Spaceport's versioned presentation grouping, stored as an opaque Core document.
 //! This module changes view metadata only; terminal processes remain Core-owned.
 
+pub(super) mod edit;
 mod error;
 
 pub use error::{Error, Result};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use sheprd_core_client::wire::Doc;
 use std::collections::{BTreeMap, HashSet};
 use uuid::Uuid;
 
 const SCHEMA_VERSION: u64 = 1;
 const MAX_LABEL_CHARS: usize = 200;
+pub(super) const NAME: &str = "spaceport";
+
+#[derive(Clone, Debug)]
+pub(super) struct VersionedDocument {
+    pub version: u64,
+    pub value: Document,
+}
+
+impl VersionedDocument {
+    pub fn read(doc: Doc) -> Result<Self> {
+        Ok(Self {
+            version: doc.version,
+            value: Document::read(doc.value)?,
+        })
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
