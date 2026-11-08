@@ -484,7 +484,7 @@
       "scenario": "Install a development build beside upstream; inspect paths/handlers/accounts and attempt old settings load.",
       "expected": "Independent app state/identity; upstream settings/credentials untouched; compatibility constants and notices retained.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/release-identity-audit.md"]
     },
     {
       "id": "A43",

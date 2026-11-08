@@ -12,6 +12,15 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class AppNameTests(unittest.TestCase):
+    def test_development_process_name_uses_window_identity(self):
+        constants = (ROOT / "crates/sheprd-gpui/src/constants.rs").read_text()
+        self.assertIn('pub(crate) const WINDOW_TITLE: &str = "Spaceport"', constants)
+        icon = (ROOT / "crates/sheprd-gpui/src/app_icon.rs").read_text()
+        self.assertRegex(
+            icon,
+            r"setProcessName\s*\(\s*&NSString::from_str\s*\(\s*crate::constants::WINDOW_TITLE\s*\)\s*\)",
+        )
+
     def test_development_bundle_uses_running_app_identity(self):
         constants = (ROOT / "crates/sheprd-gpui/src/constants.rs").read_text()
         app_id = re.search(r'pub\(crate\) const APP_ID: &str = "([^"]+)"', constants)
