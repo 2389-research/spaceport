@@ -51,10 +51,12 @@ terminal survival across detach, not a native window replacement.
 terminal addresses are filtered. `chat/chats.rs:60–78` still uses a separate
 SSH route for remote structured chat. This part depends on external G-CHAT,
 while local GUI/adapter parity needs its own native proof. Neither gap justifies
-silently keeping a second transport owner or deleting rich chat. The Herdr 1
-install offer (`menu/chrome.rs:20–26`, `window.rs:716–721`) is another bounded
-UI removal unit, but it needs truthful Core-unavailable guidance and its menu,
-keyboard, locale and test references removed together.
+silently keeping a second transport owner or deleting rich chat. At this
+source baseline, the Herdr 1 install offer (`menu/chrome.rs:20–26`,
+`window.rs:716–721`) was another bounded UI removal unit. That offer and its
+menu, keyboard, locale and test references were removed at `a13aecf3`, with
+truthful Core-unavailable guidance; see
+[t04-legacy-install-offer.md](t04-legacy-install-offer.md).
 
 No application code changed in this slice. T04 and RM-LEGACY remain
 `in_progress`; A32 remains `not_run`. This map does not claim full Core

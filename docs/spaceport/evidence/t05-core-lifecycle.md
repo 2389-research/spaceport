@@ -56,6 +56,12 @@ Spaceport package `spec.py check` passed.
 only the existing future-incompatibility notice for `block v0.1.6`.
 
 A13 remains `not_run`: this bounded check does not exercise a native GUI,
-remote relay, or an actual older Core. T05 remains `in_progress`. The earlier
-signed evidence digest covers prior text; this appended result needs a new
-observation after integration.
+remote relay, or an actual older Core. T05 remains `in_progress`. The merged
+result below supersedes the earlier signed evidence digest.
+
+On the combined branch, `sheprd-core-client --lib` passed 63 tests with ten
+opt-in tests ignored. Both the new private resize-order test and the earlier
+private observer input/size test passed against the pinned Core binary. The
+production GUI binary check passed with only the existing `block v0.1.6`
+future-compatibility notice. A13 still needs native GUI, remote relay, and
+older-Core behavior before it can pass.

@@ -26,6 +26,14 @@ The GUI tests used an isolated Cargo target and emitted the existing macOS
 linker `__eh_frame` warning and `block v0.1.6` future-compat notice.
 No personal daemon, Core process, or user configuration was touched.
 
+After integration with the px0 Settings split and Core resize client, the
+combined branch passed the same headless Core status tests 3/3, px0 Settings
+4/4, retry dialog fencing 1/1, en-XA menu 2/2, and source absence 1/1.
+`just check-i18n` validated 5,325 messages in 281 files, and the production
+GUI binary `cargo +1.99.0 check --locked -p sheprd-gpui --bin sheprd` passed.
+The existing `block` future-compatibility notice remains; no native window
+was exercised by these merged checks.
+
 The Herdr 1 default bridge and snapshot consumers still run; removing that
 runtime path needs the Core-first retained UI route described in
 `t04-default-bridge-dependency.md`. T04/RM-LEGACY remain in progress and A32
