@@ -397,7 +397,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Worktree(command) => work::worktree(command, &context),
         ControlCommand::Feedback { wait } => browser::feedback(wait, &context),
         ControlCommand::Scripts { kind } => work::scripts(kind, &context),
-        ControlCommand::FanOut(fan_out) => work::fan_out(fan_out, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),
         ControlCommand::Ports(command) => hosts::ports(command, &context),
         ControlCommand::Processes { pane } => local::processes(pane.as_deref()),

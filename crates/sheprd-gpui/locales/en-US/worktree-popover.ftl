@@ -8,9 +8,6 @@ worktree-popover-mute = Mute notifications
 worktree-popover-unmute = Unmute notifications
 worktree-popover-mute-button = Mute
 worktree-popover-unmute-button = Unmute
-worktree-popover-fan-out = Fan out prompt...
-# Opens the comparison of a fan-out already launched.
-worktree-popover-fan-out-comparison = Fan-out comparison...
 worktree-popover-rename = Rename
 worktree-popover-close = Close
 # Closes the workspace with the linked worktrees it heads.
@@ -25,8 +22,6 @@ worktree-popover-collapse-group = Collapse group
 worktree-popover-delete-worktree = Delete worktree checkout
 
 # Tile captions, shorter where the tile's icon says the rest.
-worktree-popover-tile-fan-out = Fan out
-worktree-popover-tile-comparison = Comparison
 worktree-popover-tile-rename = Rename
 worktree-popover-tile-close = Close
 worktree-popover-tile-close-group = Close group

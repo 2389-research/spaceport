@@ -22,8 +22,6 @@ dispatch-tag-best = Best fit
 dispatch-tag-current = current
 dispatch-tag-clone = will clone
 dispatch-tag-usual = usual pick
-# The repository is cloned there first.
-dispatch-clone = clone
 # The field listing the hosts not shown as tiles.
 dispatch-other = Other
 dispatch-more-hosts =

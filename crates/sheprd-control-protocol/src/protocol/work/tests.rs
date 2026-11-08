@@ -2,29 +2,12 @@
 use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
+mod excluded_fan_out;
 mod removed_checkpoint;
 mod removed_teleport;
 
 #[test]
 fn work_requests_have_a_stable_wire_form() {
-    let request = Request::Work(Call {
-        caller: Caller {
-            pane_id: Some("w_1:p1".into()),
-            workspace_id: Some("w_1".into()),
-            daemon_socket: None,
-            window: None,
-        },
-        op: WorkOp::FanOut(FanOutRequest {
-            prompt: "fix it".into(),
-            agents: vec![("claude".into(), 2)],
-        }),
-    });
-    let text = serde_json::to_string(&request).unwrap();
-    assert_eq!(
-        text,
-        r#"{"method":"work","caller":{"pane_id":"w_1:p1","workspace_id":"w_1","daemon_socket":null},"op":{"op":"fan_out","prompt":"fix it","agents":[["claude",2]]}}"#
-    );
-    assert_eq!(serde_json::from_str::<Request>(&text).unwrap(), request);
     for op in [
         WorkOp::Notes,
         WorkOp::Note,

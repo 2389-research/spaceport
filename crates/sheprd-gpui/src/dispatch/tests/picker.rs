@@ -23,10 +23,6 @@ fn the_best_three_are_tiles_and_the_rest_are_listed() {
     assert!(picker.update(hosts(), now));
     assert_eq!(names(picker.best()), ["beelink", "studio", "mini"]);
     assert_eq!(names(picker.rest()), ["nuc", "laptop", "farm"]);
-    assert_eq!(
-        picker.suggestion().map(|c| c.label.as_str()),
-        Some("beelink")
-    );
     assert!(picker.offers_choice());
 }
 
@@ -108,37 +104,15 @@ fn one_host_alone_offers_no_choice() {
 }
 
 #[test]
-fn lists_open_one_at_a_time() {
+fn dialog_host_list_toggles_and_choice_closes_it() {
     let now = Instant::now();
     let mut picker = Picker::new("laptop", now);
-    picker.toggle(Slot::Dialog);
-    assert_eq!(picker.open(), Some(Slot::Dialog));
-    picker.toggle(Slot::Lane(2));
-    assert_eq!(picker.open(), Some(Slot::Lane(2)));
-    picker.toggle(Slot::Lane(2));
-    assert_eq!(picker.open(), None);
-    picker.toggle(Slot::Dialog);
+    picker.toggle();
+    assert!(picker.open());
+    picker.toggle();
+    assert!(!picker.open());
+    picker.toggle();
     picker.update(hosts(), now);
     picker.choose("beelink");
-    assert_eq!(picker.open(), None, "choosing closes the list");
-}
-
-#[test]
-fn spreading_uses_the_settled_scores_and_current_reachability() {
-    let now = Instant::now();
-    let mut picker = Picker::new("laptop", now);
-    picker.update(hosts(), now);
-    let spread = picker.spread(4);
-    // beelink has 15 cores free, studio 12: a lane costs one.
-    assert_eq!(spread, ["beelink", "beelink", "beelink", "beelink"]);
-    // A momentary spike after settling does not move lanes.
-    let mut spiked = hosts();
-    spiked[1].working = 30;
-    picker.update(spiked, now);
-    assert_eq!(picker.spread(4), spread);
-    // A host that went offline takes no lanes.
-    let mut dropped = hosts();
-    dropped[1].online = false;
-    picker.update(dropped, now);
-    assert_eq!(picker.spread(2), ["studio", "studio"]);
+    assert!(!picker.open(), "choosing closes the list");
 }

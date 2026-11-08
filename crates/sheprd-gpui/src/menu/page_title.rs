@@ -50,7 +50,6 @@ impl Page {
                 WorkspaceAction::NewWorkspace => fl!("menu-page-new-workspace"),
                 WorkspaceAction::Note => fl!("menu-page-worktree-note"),
             },
-            Self::FanOut => fl!("menu-page-fan-out"),
             Self::ForwardPort => fl!("menu-page-forward-port"),
             Self::Git => fl!("menu-page-git"),
             Self::GitCommit => fl!("menu-page-commit"),

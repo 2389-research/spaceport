@@ -1,7 +1,5 @@
-//! Worktree notes, and the work flows that end in a dialog of the app's own:
-//! running a worktree script and fanning a prompt
-//! out. A command points the flow at the caller's checkout; the user still
-//! confirms it in the app.
+//! Worktree notes and scripts targeted at the caller's checkout.
+//! Untrusted scripts still require confirmation in the app.
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -20,8 +18,6 @@ pub enum WorkOp {
     /// Run one of the caller's repository's worktree scripts in a new tab.
     /// An untrusted script still asks the user first.
     Script { kind: Script },
-    /// Open the fan-out dialog with this prompt and these agents.
-    FanOut(FanOutRequest),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -30,14 +26,6 @@ pub enum Script {
     Setup,
     Run,
     Archive,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct FanOutRequest {
-    pub prompt: String,
-    /// Agent kinds by name (`claude`, `codex`, ...), each with how many.
-    pub agents: Vec<(String, u8)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

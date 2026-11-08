@@ -1,7 +1,7 @@
 use super::*;
 use control::{
-    AppCommand, ConfigCommand, ControlCommand, FanOut, FontSize, Invocation, NotesCommand,
-    PortsCommand, Script, Size, Switch, UiCommand, WaitFor, WindowCommand,
+    AppCommand, ConfigCommand, ControlCommand, FontSize, Invocation, NotesCommand, PortsCommand,
+    Script, Size, Switch, UiCommand, WaitFor, WindowCommand,
 };
 
 fn parse(args: &[&str]) -> Result<Invocation, CliError> {
@@ -114,24 +114,19 @@ fn work_commands() {
         }
     );
     assert_eq!(
-        command(&[
-            "fan-out", "--agent", "claude:2", "fix", "it", "--agent", "Codex"
-        ]),
-        ControlCommand::FanOut(FanOut {
-            prompt: "fix it".into(),
-            agents: vec![("claude".into(), 2), ("codex".into(), 1)],
-        })
-    );
-    assert_eq!(
-        parse(&["fan-out", "--agent", "claude:9", "x"]).unwrap_err(),
-        CliError::InvalidValue("--agent KIND[:COUNT]")
-    );
-    assert_eq!(
         command(&["wait", "tab-closed", "4", "--timeout", "5"]),
         ControlCommand::Wait {
             what: WaitFor::TabClosed(4),
             timeout: 5
         }
+    );
+}
+
+#[test]
+fn excluded_fan_out_command_is_rejected() {
+    assert_eq!(
+        parse(&["fan-out", "--agent", "claude:2", "fix it"]).unwrap_err(),
+        CliError::UnknownOption("fan-out".into())
     );
 }
 

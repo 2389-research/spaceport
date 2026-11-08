@@ -181,7 +181,6 @@ impl SheprdWindow {
                 target,
                 true,
             )],
-            fan_out: None,
             file_transfer: None,
             find: None,
             find_memory: Default::default(),

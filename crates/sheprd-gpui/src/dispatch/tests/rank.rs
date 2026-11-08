@@ -111,24 +111,3 @@ fn an_unsampled_host_ranks_by_what_is_known() {
     let candidates = [unsampled, host("known", 8, 2.)];
     assert_eq!(ids(&candidates, &rank(&candidates)), ["known", "new"]);
 }
-
-#[test]
-fn lanes_spread_to_the_host_with_the_most_room_left() {
-    let candidates = [
-        current(host("laptop", 10, 9.)),
-        host("beelink", 16, 13.),
-        host("studio", 24, 20.),
-        offline("farm"),
-    ];
-    let order = rank(&candidates);
-    let lanes = spread(&candidates, &order, 5);
-    let names: Vec<_> = lanes
-        .iter()
-        .map(|&i| candidates[i].endpoint_id.as_str())
-        .collect();
-    // studio (4 free) and beelink (3 free) share the work, a lane costing a
-    // core and a tie going to the better ranked; the busy laptop and the
-    // offline farm get none.
-    assert_eq!(names, ["studio", "studio", "beelink", "studio", "beelink"]);
-    assert!(spread(&[offline("x")], &[0], 3).is_empty());
-}

@@ -137,10 +137,6 @@ impl SheprdWindow {
     /// even with the CPU display off.
     pub(crate) fn dispatch_sampling(&self) -> bool {
         self.menu.dispatch.is_some()
-            || self
-                .fan_out
-                .as_ref()
-                .is_some_and(|fan_out| fan_out.composing())
     }
 
     /// Keep open pickers current, and follow a finished job.
@@ -156,15 +152,6 @@ impl SheprdWindow {
             let candidates = self.dispatch_candidates(&repo, cx);
             if let Some(picker) = &mut self.menu.dispatch
                 && picker.update(candidates, now)
-            {
-                cx.notify();
-            }
-        }
-        let composing = self.fan_out.as_ref().filter(|fan_out| fan_out.composing());
-        if let Some(repo) = composing.map(|fan_out| fan_out.repo_label().to_owned()) {
-            let candidates = self.dispatch_candidates(&repo, cx);
-            if let Some(fan_out) = &mut self.fan_out
-                && fan_out.update_hosts(candidates, now)
             {
                 cx.notify();
             }

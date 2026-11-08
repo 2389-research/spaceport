@@ -151,17 +151,6 @@ impl WorkspaceTarget {
         Ok(target)
     }
 
-    /// Full branch ref for operations that branch from this checkout.
-    pub(super) fn base_ref(&self) -> crate::Result<String> {
-        match &self.base {
-            Some(branch) => {
-                crate::worktree::validate_branch(branch)?;
-                Ok(format!("refs/heads/{branch}"))
-            }
-            None => Ok("HEAD".to_owned()),
-        }
-    }
-
     pub(super) fn can_create(&self) -> bool {
         // Like the TUI, accept Git branches before worktree metadata is available.
         // A repository root is named by its linked checkout, whatever the
@@ -553,9 +542,6 @@ impl SheprdWindow {
         } else {
             (WorkspaceMenuAction::Mute, Label::MUTE)
         }];
-        if let Some(label) = self.fan_out_item() {
-            items.push((WorkspaceMenuAction::FanOut, label));
-        }
         items.push((Dialog(WorkspaceAction::Rename), Label::RENAME));
         items.push((Dialog(WorkspaceAction::Close), target.close_label()));
         if self.note_checkout().is_some() {
@@ -782,7 +768,6 @@ impl SheprdWindow {
                 self.dismiss_menu(window, cx);
             }
             WorkspaceMenuAction::PullRequest => self.open_workspace_pr(cx),
-            WorkspaceMenuAction::FanOut => self.open_fan_out(window, cx),
             WorkspaceMenuAction::Script(kind) => self.run_workspace_script(kind, window, cx),
             WorkspaceMenuAction::Orchestrator => {
                 if let Some(target) = &self.menu.target {

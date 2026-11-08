@@ -182,9 +182,6 @@ pub(crate) struct SheprdWindow {
     /// Dispatched worktrees' setup scripts, waiting for their hosts in order.
     pub(crate) dispatch_setups: std::collections::VecDeque<crate::dispatch::Setup>,
     pub(crate) endpoints: Vec<endpoint::Endpoint>,
-    /// A prompt fanned out to several agents; once launched it outlives its
-    /// dialog so the lanes can be compared later.
-    pub(crate) fan_out: Option<crate::fan_out::FanOut>,
     pub(crate) file_transfer: Option<transfers::FileTransfer>,
     /// The find bar, over the pane it searches.
     pub(crate) find: Option<find::FindBar>,
@@ -613,7 +610,6 @@ impl SheprdWindow {
             window.window_handle().window_id(),
             crate::taskbar::button::Bar::from_progress(self.taskbar_progress()),
         );
-        self.poll_fan_out(window, cx);
         self.poll_dispatch(window, cx);
         self.poll_device_setup(window, cx);
         self.poll_worktree_script(window, cx);

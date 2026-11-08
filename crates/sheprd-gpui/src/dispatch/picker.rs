@@ -2,7 +2,7 @@
 //! and the host chosen. The ranking follows the samples only until they
 //! settle, so the tiles do not reshuffle under the pointer.
 
-use super::{Candidate, Destination, rank, spread};
+use super::{Candidate, Destination, rank};
 use std::time::{Duration, Instant};
 
 /// Hosts shown as tiles; the rest are listed behind the "Other" field.
@@ -11,29 +11,17 @@ pub(crate) const BEST: usize = 3;
 /// CPU needs two samples a couple of seconds apart.
 const SETTLE: Duration = Duration::from_secs(5);
 
-/// Which host list a click or an open list belongs to.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Slot {
-    /// The new worktree or workspace dialog's own host.
-    Dialog,
-    /// One fan-out lane's host.
-    Lane(usize),
-}
-
 #[derive(Debug, Clone)]
 pub(crate) struct Picker {
     candidates: Vec<Candidate>,
     /// Endpoint IDs, best first.
     order: Vec<String>,
     settled: bool,
-    /// The candidates as they stood when the ranking settled. Lanes are
-    /// spread by these, so they do not hop between hosts with every sample.
-    frozen: Vec<Candidate>,
     opened: Instant,
     /// The dialog's choice, an endpoint ID. Starts on the current host.
     chosen: String,
-    /// The host list open below a field or lane, if any.
-    open: Option<Slot>,
+    /// Whether the host list below the dialog's field is open.
+    open: bool,
 }
 
 impl Picker {
@@ -42,10 +30,9 @@ impl Picker {
             candidates: Vec::new(),
             order: Vec::new(),
             settled: false,
-            frozen: Vec::new(),
             opened: now,
             chosen: current.to_owned(),
-            open: None,
+            open: false,
         }
     }
 
@@ -83,9 +70,6 @@ impl Picker {
                 .collect();
             self.settled = self.candidates.iter().all(Candidate::sampled)
                 || now.duration_since(self.opened) >= SETTLE;
-            if self.settled {
-                self.frozen.clone_from(&self.candidates);
-            }
         }
         if self.chosen().is_none_or(|chosen| !chosen.online)
             && let Some(current) = self.current()
@@ -122,13 +106,6 @@ impl Picker {
         self.best().any(|c| c.endpoint_id == endpoint_id)
     }
 
-    /// The best-ranked host, if it is not the current one.
-    pub(crate) fn suggestion(&self) -> Option<&Candidate> {
-        self.ranked()
-            .next()
-            .filter(|best| best.online && !best.current)
-    }
-
     pub(crate) fn current(&self) -> Option<&Candidate> {
         self.candidates.iter().find(|c| c.current)
     }
@@ -155,7 +132,7 @@ impl Picker {
 
     /// Choose `endpoint_id`, if it is online. Closes any open list.
     pub(crate) fn choose(&mut self, endpoint_id: &str) -> bool {
-        self.open = None;
+        self.open = false;
         if !self.get(endpoint_id).is_some_and(|c| c.online) {
             return false;
         }
@@ -164,43 +141,12 @@ impl Picker {
         changed
     }
 
-    /// The online host for `endpoint_id`, for a lane's assignment.
-    pub(crate) fn online(&self, endpoint_id: &str) -> Option<&Candidate> {
-        self.get(endpoint_id).filter(|c| c.online)
-    }
-
-    pub(crate) fn open(&self) -> Option<Slot> {
+    pub(crate) fn open(&self) -> bool {
         self.open
     }
 
-    /// Open `slot`'s list, or close it when it is the one open.
-    pub(crate) fn toggle(&mut self, slot: Slot) {
-        self.open = (self.open != Some(slot)).then_some(slot);
-    }
-
-    pub(crate) fn close(&mut self) -> bool {
-        self.open.take().is_some()
-    }
-
-    /// A host for each of `lanes` new agents, by endpoint ID: each goes to
-    /// the online host with the most room left. Scores are the settled
-    /// ones; whether a host is online is current.
-    pub(crate) fn spread(&self, lanes: usize) -> Vec<String> {
-        let source = if self.settled {
-            &self.frozen
-        } else {
-            &self.candidates
-        };
-        let candidates: Vec<Candidate> = source
-            .iter()
-            .map(|candidate| Candidate {
-                online: self.online(&candidate.endpoint_id).is_some(),
-                ..candidate.clone()
-            })
-            .collect();
-        spread(&candidates, &rank(&candidates), lanes)
-            .into_iter()
-            .map(|index| candidates[index].endpoint_id.clone())
-            .collect()
+    /// Open or close the dialog's host list.
+    pub(crate) fn toggle(&mut self) {
+        self.open = !self.open;
     }
 }

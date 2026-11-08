@@ -23,7 +23,7 @@ pub use settings::{
 };
 use std::ffi::OsString;
 pub use tabs::TabCommand;
-pub use work::{FanOut, NotesCommand, WaitFor, WorktreeCommand};
+pub use work::{NotesCommand, WaitFor, WorktreeCommand};
 
 /// What to do, and how the answer is printed.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -64,7 +64,6 @@ pub enum ControlCommand {
     Scripts {
         kind: Option<Script>,
     },
-    FanOut(FanOut),
     Host(HostCommand),
     Ports(PortsCommand),
     Processes {
@@ -143,10 +142,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     (
         "scripts",
         "A repository's worktree setup, run, and archive scripts",
-    ),
-    (
-        "fan-out",
-        "Send one prompt to several agents, each in its own worktree",
     ),
     ("host", "List the window's hosts, show one, or mute one"),
     (
@@ -283,7 +278,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
         "scripts" => ControlCommand::Scripts {
             kind: work::script_kind(args)?,
         },
-        "fan-out" => ControlCommand::FanOut(work::fan_out(args)?),
         "host" => ControlCommand::Host(hosts::host(args)?),
         "ports" => ControlCommand::Ports(hosts::ports(args)?),
         "processes" => ControlCommand::Processes {

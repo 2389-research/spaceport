@@ -75,10 +75,6 @@ impl SheprdWindow {
             self.carry_key(event, window, cx);
             return;
         }
-        if self.menu.page == Some(Page::FanOut) {
-            self.fan_out_key(event, window, cx);
-            return;
-        }
         if self.menu.page == Some(Page::DeviceTheme) {
             self.device_theme_key(event, window, cx);
             return;

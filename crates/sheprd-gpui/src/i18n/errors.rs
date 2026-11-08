@@ -21,7 +21,6 @@ mod credentials;
 mod daemon;
 mod devices;
 mod dispatch;
-mod fan_out;
 mod file_drop;
 mod github;
 mod keymap;

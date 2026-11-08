@@ -1,7 +1,5 @@
 //! Git branch validation and checkout identity used by repository actions.
 
-const PREFIX: &str = "worktree";
-
 /// Characters Git refuses anywhere in a branch name besides whitespace and
 /// control characters.
 const REFUSED: [char; 7] = ['~', '^', ':', '?', '*', '[', '\\'];
@@ -28,20 +26,6 @@ pub(super) fn validate_branch(branch: &str) -> crate::Result<()> {
         return Err(crate::Error::InvalidBranchName);
     }
     Ok(())
-}
-
-/// The daemon's generated branch shape, used for fan-out lane names.
-pub(super) fn generated_branch_slug(seed: u64) -> String {
-    const ADJECTIVES: [&str; 8] = [
-        "brave", "calm", "clear", "green", "lucky", "quiet", "rapid", "silver",
-    ];
-    const NOUNS: [&str; 8] = [
-        "river", "cloud", "field", "forest", "harbor", "meadow", "stone", "valley",
-    ];
-    let adjective = ADJECTIVES[(seed as usize) % ADJECTIVES.len()];
-    let noun = NOUNS[((seed / ADJECTIVES.len() as u64) as usize) % NOUNS.len()];
-    let suffix = seed & 0xffff;
-    format!("{PREFIX}/{adjective}-{noun}-{suffix:04x}")
 }
 
 pub(super) use sheprd_github::checkout::{checkout_root, left_checkout};

@@ -1615,7 +1615,7 @@ worktrees, in `.herdr/worktree.toml` at the repository root:
 
 ```toml
 [scripts]
-# Runs when a new worktree is created from the New worktree dialog.
+# Runs when you choose Run setup script for a linked worktree.
 setup = """
 cp "$HERDR_ROOT_PATH/.env" .env
 ln -s "$HERDR_ROOT_PATH/node_modules" node_modules
@@ -1811,86 +1811,24 @@ endpoint.
 
 Spaceport no longer offers worktree Teleport in the workspace menu. It does
 not start a migration or read and write `teleported.json`; existing files stay
-untouched. The shared host scripts remain while pane carry, fan-out, dispatch,
+untouched. The shared host scripts remain while pane carry, dispatch, and
 legacy rich-chat paths still use them. See the
 [Spaceport removal evidence](../../docs/spaceport/evidence/t04-native-teleport-removal.md)
 for the exact remaining routes and open checks.
 
-## Where A New Worktree Opens
-
-The New worktree dialog's **Opens in** row of icons chooses what the checkout's
-first pane shows: **Terminal**, the shell Herdr opens there, or one of the
-agents installed on the host, such as `claude` or `codex`, which the window
-starts in that shell with `herdr agent start` once the checkout exists, even if
-the dialog was closed while the daemon was still creating it. While the new
-shell is still starting, a busy refusal is retried for up to ten seconds, and
-only while the pane still holds the terminal the creation returned, as the
-orchestrator's dispatch does. The agents are looked up on the host when the
-dialog opens. The choice you create with is offered first in the next dialog,
-in every window and after a restart; one the host lacks falls back to Terminal.
-The row shows only for a checkout made on the shown host whose `herdr` CLI the
-window can script, so not for a bare socket, WSL, or a Windows client, and not
-when the dialog sends the checkout to another host. A failed start is reported
-in the window and leaves the shell running in the new checkout.
-
 ## Smart Dispatch
 
-When more than one host is connected, the New worktree dialog (its branch form)
-and the New workspace dialog for a Git checkout offer a host for the new
-checkout. The three hosts with the most room are tiles, best first; every other
-host, offline ones last, opens from the Other field below them. The host the
-window shows stays chosen until you pick another, so pressing Enter still
-creates where it always did.
+The legacy New workspace dialog for a Git checkout can still offer another
+connected host. Its picker ranks hosts from load samples; choosing a remote
+host runs shared host scripts to open or clone the repository. This remaining
+route is excluded from Spaceport and is tracked in the
+[dispatch removal evidence](../../docs/spaceport/evidence/t04-native-dispatch-dependency.md).
+The desktop New worktree source and landing flow is gone; pane carry and
+Open worktree are separate remaining controls.
 
-Hosts rank by spare cores: cores less the 5 minute load average (or the CPU
-share where there is none), from the same samples as the CPU and memory
-display. While a picker is open every connected host is sampled, even with
-that display off. Each agent working there takes half a core off, a host that
-would have to clone the repository first takes one, memory above 90% halves
-its room, and each of the repository's last eight new checkouts that went
-there adds half a core, up to three. The ranking follows the samples for a few
-seconds, then holds still so the tiles do not move under the pointer.
-
-Choosing another host creates the checkout there through shared host
-scripts: the repository is found by remote, opened, or cloned, the base commit is resolved here and shipped as a Git bundle only when
-that host lacks it, and that host's own daemon creates the worktree from it.
-Closing the dialog does not stop it; the result arrives as a flash, and the
-window switches to the new workspace. Once it is shown, a new worktree runs the
-repository's setup script there, asking for trust as a local creation does.
-Setups of several such worktrees wait their turn; one whose host is not shown
-within two minutes is given up on, with a warning. A
-new workspace opens the repository's main checkout on that host.
-
-The fan-out dialog offers Spread agents across hosts. Each lane then goes to
-the host with the most room left, a lane counting as a core, and its host chip
-opens every host, best first, to move that lane. Each other host is set up once
-before its lanes, and a lane whose agent is not installed there fails with a
-reason. Lanes on another host show it next to their status, and Open, Keep and
-the comparison work across hosts; a host that cannot be read marks only its
-own lanes, keeping the changes read before.
-
-Each fan-out's lanes and the last step each one reached are kept in
-`fan-outs.json` in the state directory, written before and after every step,
-until a lane is kept or the comparison is forgotten. A lane whose next step
-cannot be saved stops before that step runs. If the app quits or
-crashes partway, the next launch shows the fan-out again as a comparison with a
-warning, and each lane says where it stopped: while creating its worktree (the
-branch may exist), before its agent started, while the agent was starting, or
-while the prompt was being sent. Nothing runs by itself. Start agent or Send
-prompt finishes a lane only when clicked, and Send prompt never starts a second
-agent. A lane that fails, finishing included, offers the same button again.
-Keep removes the other worktrees after its usual confirmation; a lane whose
-worktree may exist or sits on a host no longer set up stays saved until Forget,
-which lets the fan-out go and leaves every worktree as it is. Up to four
-fan-outs are kept; a fifth is launched without being saved, and says so, rather
-than dropping one. Its failed lanes can still be retried while its window is
-open, but it does not come back after a quit. A damaged fan-out is dropped without the others, and a file
-that cannot be read is moved to `fan-outs.json.unreadable` instead of being
-saved over. A prompt over 32 KiB is not saved, so its lanes cannot be finished
-from the comparison. A fan-out is restored only against the daemon it ran on,
-the same session or SSH host, since workspace and pane IDs repeat across
-daemons, and a restored lane is finished or removed only once its connected
-host shows its workspace on its branch. Only the first running copy of the app saves and restores fan-outs.
+Spaceport does not load or write inherited `fan-outs.json`; its fan-out dialog,
+CLI command, host scripts and journal have been removed. Existing files remain
+where the older app saved them.
 
 Where new checkouts went is kept in `dispatch-history.json` in the state
 directory, by repository name and host. Dispatch needs a Linux or macOS client and the local session or a saved SSH host on both ends.
@@ -3274,29 +3212,7 @@ Ctrl+Shift+U is left unbound for
   it uses the same configurable confirmation without focusing an inactive tab.
   Both icons use the current theme's foreground tint.
 - Cmd-T creates and focuses a tab; Cmd-Shift-N creates and focuses
-  a workspace. Cmd-N opens the New worktree dialog for the focused workspace
-  (for a linked worktree, through its repository's main checkout, starting from
-  the linked worktree's branch). The dialog opens on
-  its Branch field with the proposal selected, so typing replaces it. Tab and
-  Shift-Tab move between the search, Name, and Branch fields, selecting the
-  field's text, and Ctrl-Tab and Ctrl-Shift-Tab step through the dialog's
-  tabs; in a listing, Tab moves through its rows. The Branch field formats
-  what is typed, pasted, or committed by an input method: whitespace and
-  characters Git refuses (`~^:?*[\`) become one dash, and sequences Git
-  refuses, such as `..`, `@{`, `//`, or a leading dash, never form, so the
-  branch stays one Git accepts. The Name field is optional: left empty,
-  the daemon picks the workspace name; anything
-  typed is sent as the new workspace's label. The proposed branch follows the
-  name, so "Fix login" proposes `worktree/fix-login`, until the Branch field
-  is edited; a name with no ASCII letters or digits keeps the random proposal.
-  As with a typed branch, one that already exists is checked out as it is, at
-  its own commit, such as a branch left behind by a removed worktree of the
-  same name, and one still checked out elsewhere is refused with Git's
-  message. When the dialog cannot open,
-  because the workspace is not a Git repository, the main checkout is not open,
-  a linked worktree has a detached `HEAD`, nothing is focused, or the window is disconnected, a two-second flash in the
-  clipboard toast's position says why.
-  Cmd-D splits the focused pane vertically (new pane on the right);
+  a workspace. Cmd-D splits the focused pane vertically (new pane on the right);
   Cmd-Shift-D splits horizontally (new pane below). Cmd-Shift-] / Cmd-Shift-[
   cycles next/previous tab within the current workspace, wrapping at the ends.
   These shortcuts are native actions, not bytes sent to a terminal.
@@ -3809,7 +3725,7 @@ Where this differs from macOS and Linux:
   the host still opens, through its own `ssh -N -L` child.
 - **Uploads.** Files and images dropped or pasted on an SSH host's pane are
   not uploaded yet.
-- **Steps that also run here.** Fan-out, process lists, and pane moves also run this machine's `/bin/sh` and stay
+- **Steps that also run here.** Process lists and pane moves also run this machine's `/bin/sh` and stay
   unavailable from Windows.
 
 CPU and memory, plan usage, listening ports, and the agent skill's install run
@@ -3953,7 +3869,7 @@ HERDR_TEST_BINARY=C:/path/to/herdr.exe cargo test -p sheprd-gpui --test accessib
 Still missing, and not faked with labels that do nothing:
 
 - inside the larger dialogs and pickers (Add Device, the command palette's
-  results, themes, fan-out, teleport, pull requests), most rows
+  results, themes, pull requests), most rows
   and buttons other than the shared field have no role yet, so a screen reader
   hears the dialog's name and its field but not every choice in it;
 - the Orchestrator's detail pane, conversation, and dispatch dialogs, and the

@@ -23,8 +23,6 @@ impl Label {
     pub(crate) const COLLAPSE_GROUP: Self = Self::new("worktree-popover-collapse-group");
     pub(crate) const DELETE_WORKTREE: Self = Self::new("worktree-popover-delete-worktree");
     pub(crate) const EXPAND_GROUP: Self = Self::new("worktree-popover-expand-group");
-    pub(crate) const FAN_OUT: Self = Self::new("worktree-popover-fan-out");
-    pub(crate) const FAN_OUT_COMPARISON: Self = Self::new("worktree-popover-fan-out-comparison");
     pub(crate) const MUTE: Self = Self::new("worktree-popover-mute");
     pub(crate) const NOTE: Self = Self::new("worktree-popover-note");
     pub(crate) const OPEN_WORKTREE: Self = Self::new("worktree-popover-open-worktree");
@@ -68,11 +66,10 @@ impl Label {
 /// The grid's fixed slots, row by row: working on the checkout, then moving
 /// or leaving it. A slot lists the actions it can show, first available
 /// first, and the action it shows grayed when none is.
-const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 3] = {
+const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 2] = {
     use WorkspaceAction::*;
     use WorkspaceMenuAction::*;
     [
-        (&[FanOut], FanOut, Label::FAN_OUT),
         (&[Dialog(Rename)], Dialog(Rename), Label::RENAME),
         (&[Dialog(Close)], Dialog(Close), Label::CLOSE),
     ]
@@ -123,8 +120,6 @@ impl Tile {
     /// and position already say the rest.
     pub(in crate::menu) fn caption(self) -> String {
         match self.label {
-            Label::FAN_OUT => fl!("worktree-popover-tile-fan-out"),
-            Label::FAN_OUT_COMPARISON => fl!("worktree-popover-tile-comparison"),
             Label::RENAME => fl!("worktree-popover-tile-rename"),
             Label::CLOSE => fl!("worktree-popover-tile-close"),
             Label::CLOSE_GROUP => fl!("worktree-popover-tile-close-group"),
@@ -137,7 +132,7 @@ impl Tile {
 /// for the rows beneath it, except what the header draws.
 pub(in crate::menu) fn layout(
     items: &[(WorkspaceMenuAction, Label)],
-) -> ([Tile; 3], Vec<(WorkspaceMenuAction, Label)>) {
+) -> ([Tile; 2], Vec<(WorkspaceMenuAction, Label)>) {
     let tiles = SLOTS.map(|(choices, fallback, label)| {
         choices
             .iter()

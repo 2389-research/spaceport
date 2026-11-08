@@ -27,7 +27,8 @@ use serde::{Deserialize, Serialize};
 /// 24: removed checkpoint restore from the work control route.
 /// 25: removed the Security activity panel and its UI control destination.
 /// 26: removed px0 tab open and editor tab kind.
-pub const PROTOCOL_VERSION: u32 = 26;
+/// 27: removed the work fan-out request.
+pub const PROTOCOL_VERSION: u32 = 27;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.

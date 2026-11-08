@@ -17,7 +17,6 @@ menu-page-delete-worktree = Delete worktree
 menu-page-new-tab = New tab
 menu-page-new-workspace = New workspace
 menu-page-worktree-note = Worktree note
-menu-page-fan-out = Fan out
 menu-page-forward-port = Forward port
 menu-page-git = Git
 menu-page-commit = Commit

@@ -28,8 +28,6 @@ pub(crate) enum Page {
     /// Picks a saved SSH device's terminal theme.
     DeviceTheme,
     Dialog(WorkspaceAction),
-    /// One prompt sent to several agents, and their comparison.
-    FanOut,
     /// Names a saved SSH device's port to forward to this computer.
     ForwardPort,
     /// Titlebar Git actions for the focused checkout, and its commit dialog.
@@ -106,8 +104,6 @@ pub(crate) enum WorkspaceMenuAction {
     Collapse,
     Expand,
     PullRequest,
-    /// Send one prompt to several agents, or reopen their comparison.
-    FanOut,
     /// Run one of the repository's worktree scripts in a new tab.
     Script(crate::worktree_scripts::ScriptKind),
     /// Show the repository's issues in the activity bar.
@@ -183,7 +179,6 @@ impl WorkspaceMenuAction {
             }
             Self::Collapse => "icons/chevron-up.svg",
             Self::Expand => "icons/chevron-down.svg",
-            Self::FanOut => "icons/fan-out.svg",
             Self::Orchestrator => "icons/github.svg",
             Self::Script(crate::worktree_scripts::ScriptKind::Setup) => "icons/refresh.svg",
             Self::Script(_) => "icons/play.svg",

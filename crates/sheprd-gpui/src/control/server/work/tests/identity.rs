@@ -13,7 +13,6 @@ fn callers_resolve_to_their_checkout_by_repository_and_branch(cx: &mut gpui::Tes
             let found = find(view, &caller(Some("w4"))).ok().unwrap();
             assert_eq!(found.index, 0);
             assert_eq!(found.workspace.workspace_id, "w4");
-            assert_eq!(repository(found.workspace), "agent-launcher");
             assert_eq!(
                 notes::checkout_of(&view.endpoints[found.index].id, found.workspace),
                 Some(Checkout {

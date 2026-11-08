@@ -1,4 +1,4 @@
-//! `notes`, `worktree`, `scripts`, and `fan-out`.
+//! `notes`, `worktree`, and `scripts`.
 //!
 //! Every command acts on the caller's checkout: the workspace of the caller's
 //! pane on the caller's daemon, else the workspace the window focuses. A
@@ -12,7 +12,7 @@ mod notes;
 #[cfg(test)]
 mod tests;
 
-use super::{Watches, in_free_window, in_window, not_found, socket, target};
+use super::{Watches, in_window, not_found, socket, target};
 use crate::{
     SheprdWindow,
     control::protocol::{Call, Caller, ErrorCode, Response, work::WorkOp},
@@ -32,9 +32,6 @@ pub(super) fn serve(call: Call<WorkOp>, incoming: socket::Incoming, _: &mut Watc
         }),
         WorkOp::Script { kind } => in_window(&caller, cx, |view, _, cx| {
             flows::script(view, &caller, kind, cx)
-        }),
-        WorkOp::FanOut(request) => in_free_window(&caller, cx, |view, window, cx| {
-            flows::fan_out(view, &caller, request, window, cx)
         }),
     };
     incoming.respond(response);
@@ -104,12 +101,4 @@ pub(super) fn selected_workspace(view: &SheprdWindow, caller: &Caller) -> Result
         ));
     }
     Ok(found.workspace.workspace_id.clone())
-}
-
-/// The repository a workspace's checkout belongs to, for messages.
-pub(super) fn repository(workspace: &ClientShellWorkspace) -> &str {
-    workspace
-        .worktree
-        .as_ref()
-        .map_or(workspace.label.as_str(), |tree| tree.label.as_str())
 }

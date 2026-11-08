@@ -12,7 +12,7 @@ fn tile(action: WorkspaceMenuAction, label: Label, enabled: bool) -> Tile {
 #[test]
 fn every_slot_keeps_its_place_and_grays_what_is_unavailable() {
     use WorkspaceMenuAction::*;
-    // A plain checkout has no worktree or fan-out action to offer.
+    // A plain checkout keeps the ordinary workspace actions.
     let items = [
         (Dialog(WorkspaceAction::Rename), Label::RENAME),
         (Dialog(WorkspaceAction::Close), Label::CLOSE),
@@ -21,7 +21,6 @@ fn every_slot_keeps_its_place_and_grays_what_is_unavailable() {
     assert_eq!(
         tiles,
         [
-            tile(FanOut, Label::FAN_OUT, false),
             tile(Dialog(WorkspaceAction::Rename), Label::RENAME, true),
             tile(Dialog(WorkspaceAction::Close), Label::CLOSE, true),
         ]
@@ -43,8 +42,8 @@ fn rows_and_the_destructive_action_follow_the_grid_in_order() {
         ),
     ];
     let (tiles, rest) = layout(&items);
-    assert!(tiles[1].enabled && tiles[2].enabled);
-    assert_eq!(tiles[2].label, Label::CLOSE_GROUP);
+    assert!(tiles[0].enabled && tiles[1].enabled);
+    assert_eq!(tiles[1].label, Label::CLOSE_GROUP);
     assert_eq!(
         rest,
         [

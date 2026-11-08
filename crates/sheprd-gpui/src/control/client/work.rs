@@ -1,4 +1,4 @@
-//! `notes`, `worktree`, `scripts`, and `fan-out`.
+//! `notes`, `worktree`, and `scripts`.
 mod here;
 mod scripts;
 #[cfg(test)]
@@ -6,12 +6,12 @@ mod tests;
 
 use super::{Context, Output, unexpected};
 use crate::{
-    cli::control::{FanOut, NotesCommand, Script, WorktreeCommand},
+    cli::control::{NotesCommand, Script, WorktreeCommand},
     control::{
         ErrorCode,
         protocol::{
             Request, Response,
-            work::{FanOutRequest, MuteInfo, NoteInfo, Reply, WorkOp},
+            work::{MuteInfo, NoteInfo, Reply, WorkOp},
         },
     },
 };
@@ -126,14 +126,4 @@ pub(super) fn scripts(kind: Option<Script>, context: &Context) -> crate::Result<
         None => scripts::list(),
         Some(kind) => context.act(Request::Work, WorkOp::Script { kind }),
     }
-}
-
-pub(super) fn fan_out(fan_out: FanOut, context: &Context) -> crate::Result<Output> {
-    context.act(
-        Request::Work,
-        WorkOp::FanOut(FanOutRequest {
-            prompt: fan_out.prompt,
-            agents: fan_out.agents,
-        }),
-    )
 }

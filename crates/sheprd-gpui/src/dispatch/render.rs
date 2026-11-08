@@ -1,8 +1,7 @@
 //! Painting host pickers: the best hosts as tiles, every other host in a list
-//! behind an "Other" field, and a fan-out lane's host chip. Everything is
-//! drawn from the picker's prepared candidates.
+//! behind an "Other" field, drawn from the picker's prepared candidates.
 
-use super::{Candidate, Picker, Repository, Slot};
+use super::{Candidate, Picker, Repository};
 use crate::{SheprdWindow, config::corners, i18n::fl, toggles::radio};
 use gpui::{prelude::*, *};
 
@@ -69,35 +68,21 @@ impl SheprdWindow {
             .children(fill)
     }
 
-    /// Clicks in a picker go to the dialog's choice or to a lane.
-    fn host_picker_mut(&mut self, slot: Slot) -> Option<&mut Picker> {
-        match slot {
-            Slot::Dialog => self.menu.dispatch.as_mut(),
-            Slot::Lane(_) => self.fan_out.as_mut().map(|fan_out| fan_out.hosts_mut()),
-        }
-    }
-
-    pub(crate) fn pick_host(&mut self, slot: Slot, endpoint_id: &str, cx: &mut Context<Self>) {
-        let changed = match slot {
-            Slot::Dialog => self
-                .menu
-                .dispatch
-                .as_mut()
-                .is_some_and(|picker| picker.choose(endpoint_id)),
-            Slot::Lane(lane) => self
-                .fan_out
-                .as_mut()
-                .is_some_and(|fan_out| fan_out.assign(lane, endpoint_id)),
-        };
+    pub(crate) fn pick_host(&mut self, endpoint_id: &str, cx: &mut Context<Self>) {
+        let changed = self
+            .menu
+            .dispatch
+            .as_mut()
+            .is_some_and(|picker| picker.choose(endpoint_id));
         if changed {
             self.menu.error = None;
         }
         cx.notify();
     }
 
-    fn toggle_host_list(&mut self, slot: Slot, cx: &mut Context<Self>) {
-        if let Some(picker) = self.host_picker_mut(slot) {
-            picker.toggle(slot);
+    fn toggle_host_list(&mut self, cx: &mut Context<Self>) {
+        if let Some(picker) = &mut self.menu.dispatch {
+            picker.toggle();
             cx.notify();
         }
     }
@@ -134,7 +119,7 @@ impl SheprdWindow {
             .cursor_pointer()
             .on_click(cx.listener(move |this, _, _, cx| {
                 cx.stop_propagation();
-                this.pick_host(Slot::Dialog, &id, cx);
+                this.pick_host(&id, cx);
             }))
             .child(
                 div()
@@ -171,13 +156,12 @@ impl SheprdWindow {
             )
     }
 
-    /// One host as a list row, choosing it for `slot` when clicked.
+    /// One host as a list row, choosing it when clicked.
     fn dispatch_row(
         &self,
         candidate: &Candidate,
         first: bool,
         chosen: bool,
-        slot: Slot,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let theme = &self.theme;
@@ -210,7 +194,7 @@ impl SheprdWindow {
                     .hover(move |row| row.bg(rgb(hover)))
                     .on_click(cx.listener(move |this, _, _, cx| {
                         cx.stop_propagation();
-                        this.pick_host(slot, &id, cx);
+                        this.pick_host(&id, cx);
                     }))
             })
             .when(!candidate.online, |row| row.opacity(0.45))
@@ -241,13 +225,12 @@ impl SheprdWindow {
             )
     }
 
-    /// A bordered list of hosts, as a field or chip opens it.
+    /// A bordered list of hosts, opened from the dialog's field.
     fn dispatch_list<'a>(
         &self,
         hosts: impl Iterator<Item = &'a Candidate>,
         first: Option<&str>,
         chosen: &str,
-        slot: Slot,
         cx: &mut Context<Self>,
     ) -> Div {
         let theme = &self.theme;
@@ -262,7 +245,7 @@ impl SheprdWindow {
             .bg(rgb(theme.surface))
             .children(hosts.map(|candidate| {
                 let first = first == Some(candidate.endpoint_id.as_str());
-                self.dispatch_row(candidate, first, candidate.endpoint_id == chosen, slot, cx)
+                self.dispatch_row(candidate, first, candidate.endpoint_id == chosen, cx)
             }))
     }
 
@@ -300,7 +283,7 @@ impl SheprdWindow {
         if rest == 0 {
             return picker_view;
         }
-        let open = picker.open() == Some(Slot::Dialog);
+        let open = picker.open();
         let elsewhere = picker.chosen().filter(|c| !picker.is_best(&c.endpoint_id));
         let hover = theme.active;
         let field = div()
@@ -322,7 +305,7 @@ impl SheprdWindow {
             .hover(move |field| field.bg(rgb(hover)))
             .on_click(cx.listener(|this, _, _, cx| {
                 cx.stop_propagation();
-                this.toggle_host_list(Slot::Dialog, cx);
+                this.toggle_host_list(cx);
             }))
             .child(match elsewhere {
                 Some(chosen) => div()
@@ -351,79 +334,9 @@ impl SheprdWindow {
             );
         picker_view = picker_view.child(caption(fl!("dispatch-other"), field.into_any_element()));
         if open {
-            picker_view = picker_view.child(self.dispatch_list(
-                picker.rest(),
-                first.as_deref(),
-                &chosen,
-                Slot::Dialog,
-                cx,
-            ));
+            picker_view =
+                picker_view.child(self.dispatch_list(picker.rest(), first.as_deref(), &chosen, cx));
         }
         picker_view
-    }
-
-    /// A fan-out lane's host: a chip that opens every host, best first.
-    pub(crate) fn render_lane_host(
-        &self,
-        picker: &Picker,
-        lane: usize,
-        endpoint_id: &str,
-        cx: &mut Context<Self>,
-    ) -> (Stateful<Div>, Option<Div>) {
-        let theme = &self.theme;
-        let size = self.config.ui.size;
-        let host = picker.online(endpoint_id);
-        let slot = Slot::Lane(lane);
-        let open = picker.open() == Some(slot);
-        let hover = theme.active;
-        let chip = div()
-            .id(("dispatch-lane", lane))
-            .debug_selector(move || format!("dispatch-lane-{lane}"))
-            .flex_none()
-            .w(px(size * 12.))
-            .flex()
-            .items_center()
-            .gap(px(6.))
-            .px(px(8.))
-            .py(px(2.))
-            .rounded(px(corners::CONTROL))
-            .border_1()
-            .border_color(rgb(if open { theme.primary() } else { theme.active }))
-            .cursor_pointer()
-            .hover(move |chip| chip.bg(rgb(hover)))
-            .on_click(cx.listener(move |this, _, _, cx| {
-                cx.stop_propagation();
-                this.toggle_host_list(slot, cx);
-            }))
-            .child(self.dispatch_meter(host.and_then(cpu), 24.))
-            .child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .truncate()
-                    .child(host.map_or_else(|| endpoint_id.to_owned(), |h| h.label.clone())),
-            )
-            .children(
-                host.filter(|h| h.repository == Repository::Missing)
-                    .map(|_| {
-                        div()
-                            .flex_none()
-                            .text_color(rgb(theme.muted))
-                            .child(fl!("dispatch-clone"))
-                    }),
-            )
-            .child(
-                svg()
-                    .path("icons/chevron-down.svg")
-                    .size(px(10.))
-                    .flex_none()
-                    .text_color(rgb(theme.muted)),
-            );
-        let first = picker.ranked().next().map(|c| c.endpoint_id.clone());
-        let list = open.then(|| {
-            self.dispatch_list(picker.ranked(), first.as_deref(), endpoint_id, slot, cx)
-                .ml(px(size * 6.))
-        });
-        (chip, list)
     }
 }

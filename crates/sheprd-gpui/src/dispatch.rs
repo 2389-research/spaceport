@@ -1,5 +1,5 @@
-//! Smart dispatch: which host a new worktree, workspace, or fan-out lane
-//! should go to. Hosts are ranked by spare cores from the system-load
+//! Smart dispatch: which host a new workspace should go to.
+//! Hosts are ranked by spare cores from the system-load
 //! samples, less what the agents already working there will take and what a
 //! clone costs, nudged towards where this repository went before. Ranking is
 //! pure; the window gathers the candidates from its endpoints, and the work
@@ -19,14 +19,9 @@ mod setup;
 mod tests;
 
 pub(crate) use error::Error;
-pub(crate) use {
-    history::History,
-    job::Job,
-    picker::{Picker, Slot},
-    setup::Setup,
-};
+pub(crate) use {history::History, job::Job, picker::Picker, setup::Setup};
 
-/// Where a dialog's new worktree or workspace goes.
+/// Where a dialog's new workspace goes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Destination<'a> {
     /// The host the window shows, through its own daemon.
@@ -150,28 +145,4 @@ pub(crate) fn rank(candidates: &[Candidate]) -> Vec<usize> {
             .then_with(|| a.label.cmp(&b.label))
     });
     order
-}
-
-/// Lanes per host when `lanes` agents are spread over `ranked` (best
-/// first): each lane goes to the host with the most room left, an agent
-/// taking [`AGENT_CORES`] from it. Returns one host index per lane.
-pub(crate) fn spread(candidates: &[Candidate], ranked: &[usize], lanes: usize) -> Vec<usize> {
-    let mut room: Vec<(usize, f32)> = ranked
-        .iter()
-        .filter_map(|&index| Some((index, candidates[index].score()?)))
-        .collect();
-    let mut assigned = Vec::with_capacity(lanes);
-    for _ in 0..lanes {
-        // The first best wins a tie, so ranking order breaks it.
-        let Some(best) = room
-            .iter_mut()
-            .reduce(|best, next| if next.1 > best.1 { next } else { best })
-        else {
-            break;
-        };
-        assigned.push(best.0);
-        // A lane costs more than an idle agent: it starts by building.
-        best.1 -= 2. * AGENT_CORES;
-    }
-    assigned
 }

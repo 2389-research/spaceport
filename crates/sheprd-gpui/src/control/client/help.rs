@@ -76,9 +76,6 @@ fn family(name: &str) -> &'static str {
         "scripts" => {
             "spaceport scripts [list]\n    The current directory's repository's worktree scripts\n    (.herdr/worktree.toml). Runs here; Spaceport need not run.\nspaceport scripts setup|run\n    Run one in a new tab of the caller's workspace (setup: linked worktrees\n    only). Spaceport asks before running a script it has not seen. The\n    archive script runs only when a worktree is removed in Spaceport."
         }
-        "fan-out" => {
-            "spaceport fan-out PROMPT... [--agent KIND[:COUNT]]...\n    Open the fan-out dialog for the caller's repository with PROMPT and\n    these agents (claude, codex, ...; at most 6 in all) chosen once the\n    host's agents are known. The user starts it there."
-        }
         "host" => {
             "spaceport host [list]\n    The window's hosts and their status. Herdr's `machine` command\n    manages saved hosts.\nspaceport host mute|unmute [HOST]\n    Silence a host's notifications as a whole, or let them through again,\n    by ID or label; absent, the caller's host. Works while it is offline.\nspaceport host select ID\n    Show that host in the window, as choosing it in the sidebar does.\nspaceport host tag ID [TAG...]\n    Replace the local tags that group that host in the sidebar; with no\n    tags, clear them."
         }

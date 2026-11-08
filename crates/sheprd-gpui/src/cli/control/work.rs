@@ -1,4 +1,4 @@
-//! `notes`, `scripts`, `fan-out`, and `wait`.
+//! `notes`, `scripts`, and `wait`.
 use super::{Args, CliError, Script, unknown};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -17,13 +17,6 @@ pub enum NotesCommand {
     Clear,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct FanOut {
-    pub prompt: String,
-    /// `--agent claude:2`: kind names, each with how many.
-    pub agents: Vec<(String, u8)>,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WaitFor {
     Feedback,
@@ -32,8 +25,7 @@ pub enum WaitFor {
     Online,
 }
 
-/// Longest text accepted for a note, a label, or a prompt, before the app
-/// applies its own limits.
+/// Longest text accepted for a note before the app applies its own limits.
 const MAX_TEXT: usize = 16 * 1024;
 
 fn bounded(text: String) -> Result<String, CliError> {
@@ -84,32 +76,6 @@ pub(super) fn script_kind(args: &mut Args) -> Result<Option<Script>, CliError> {
         Some("archive") => Some(Script::Archive),
         _ => return Err(unknown("scripts", verb)),
     })
-}
-
-pub(super) fn fan_out(args: &mut Args) -> Result<FanOut, CliError> {
-    let agents = args
-        .options("--agent")?
-        .into_iter()
-        .map(|agent| {
-            let text = agent
-                .to_str()
-                .ok_or(CliError::InvalidValue("--agent KIND[:COUNT]"))?;
-            let (kind, count) = text.split_once(':').unwrap_or((text, "1"));
-            let count = count
-                .parse::<u8>()
-                .ok()
-                .filter(|count| (1..=8).contains(count));
-            match count {
-                Some(count) if !kind.is_empty() => Ok((kind.to_ascii_lowercase(), count)),
-                _ => Err(CliError::InvalidValue("--agent KIND[:COUNT]")),
-            }
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let prompt = bounded(args.words()?.ok_or(CliError::MissingArgument {
-        command: "fan-out",
-        what: "PROMPT",
-    })?)?;
-    Ok(FanOut { prompt, agents })
 }
 
 pub(super) fn wait_for(args: &mut Args) -> Result<WaitFor, CliError> {

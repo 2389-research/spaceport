@@ -7,7 +7,6 @@ mod appear;
 mod chrome;
 mod colors;
 pub(crate) mod devices;
-mod fan_out;
 mod git;
 mod github;
 pub(crate) mod gitlab;
