@@ -15,3 +15,5 @@ independent cloud integration had already corrected that ordering. The full
 release source suite passed again: 189 tests, eight platform skips. This
 confirms the phone fixture absence in the combined tree; A31 remains open
 for native process, package, network and retained desktop CLI checks.
+
+The later [phone wire cut](t10-phone-wire.md) removed the unused `ClientKind::Remote` variant while keeping old JSON greetings decodable.

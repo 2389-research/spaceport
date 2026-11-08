@@ -51,5 +51,15 @@ class PhoneAbsenceTests(unittest.TestCase):
         desktop = (ROOT / "crates/sheprd-gpui/Cargo.toml").read_text()
         self.assertNotIn('features = ["system"]', desktop)
 
+    def test_chat_wire_has_no_phone_client_kind(self):
+        wire = (ROOT / "crates/sheprd-chat-protocol/src/wire.rs").read_text()
+        self.assertFalse(
+            any(line.strip() == "Remote," for line in wire.splitlines()),
+            "phone chat client kind remains",
+        )
+        self.assertIn("#[serde(other)]", wire)
+        self.assertIn("Gui,", wire)
+        self.assertIn("Cli,", wire)
+
 if __name__ == "__main__":
     unittest.main()

@@ -55,8 +55,6 @@ pub enum ClientKind {
     Gui,
     /// A command-line client, such as a script.
     Cli,
-    /// The remote control daemon, on behalf of paired phones.
-    Remote,
     #[serde(other)]
     Other,
 }

@@ -361,7 +361,7 @@
       "scenario": "Inspect process/package/network inventory and execute retained desktop CLI commands.",
       "expected": "No phone HTTPS/pairing/push/nearby service; private local desktop IPC remains functional.",
       "status": "not_run",
-      "evidence": ["evidence/t10-phone-removal.md", "evidence/t10-phone-fixtures.md"]
+      "evidence": ["evidence/t10-phone-removal.md", "evidence/t10-phone-fixtures.md", "evidence/t10-phone-wire.md"]
     },
     {
       "id": "A32",

@@ -12,6 +12,7 @@ mod endpoint;
 mod frame;
 mod media;
 mod notices;
+mod removed_phone;
 mod revisions;
 mod wire;
 
