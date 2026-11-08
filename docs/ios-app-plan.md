@@ -1,5 +1,9 @@
 # Plan: Sheprd for iOS
 
+Historical upstream design. Spaceport removed the native iOS/watch source and
+its build workflow; the phone server and its shared test fixtures await a
+separate T10 cut.
+
 Turn `ios/` from a Live Activity companion into the main way to use remote
 control on an iPhone or iPad: everything the web app does, natively, plus
 what only a native app can do. Pairing works over Bluetooth when the phone

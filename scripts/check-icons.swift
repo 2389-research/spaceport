@@ -62,18 +62,6 @@ for name in ["Sheprd", "Sheprd-worktree"] {
 }
 print("PASS: embedded PNG dimensions and transparent margins")
 
-for target in ["SheprdRemote", "SheprdRemoteWatch"] {
-  let url = root.appendingPathComponent("ios/\(target)/Assets.xcassets/AppIcon.appiconset/AppIcon.png")
-  let image = NSBitmapImageRep(data: try Data(contentsOf: url))!
-  precondition(image.pixelsWide == 1024 && image.pixelsHigh == 1024)
-  for y in 0..<1024 {
-    for x in 0..<1024 {
-      precondition(image.colorAt(x: x, y: y)!.alphaComponent == 1, "Mobile icons must be opaque")
-    }
-  }
-}
-print("PASS: iPhone/iPad and Watch catalogs are opaque 1024px icons")
-
 for name in ["Sheprd", "Sheprd-worktree"] {
   let process = Process()
   let output = Pipe()

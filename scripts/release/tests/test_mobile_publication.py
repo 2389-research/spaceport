@@ -9,12 +9,9 @@ ROOT = Path(__file__).resolve().parents[3]
 
 class MobilePublication(unittest.TestCase):
     def test_testflight_upload_has_no_entrypoint(self):
-        workflow = (ROOT / ".github/workflows/ios.yml").read_text()
         recipes = (ROOT / "justfile").read_text()
 
-        self.assertIn("  check:\n", workflow)
-        self.assertIn("CODE_SIGNING_ALLOWED=NO", workflow)
-        self.assertNotIn("  testflight:\n", workflow)
+        self.assertFalse((ROOT / ".github/workflows/ios.yml").exists())
         self.assertNotIn("ios-testflight:", recipes)
         for name in (
             "app_store_connect.py",

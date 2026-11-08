@@ -1,5 +1,8 @@
 # Phase 0 spikes: results
 
+Historical upstream test report. Spaceport removed the native spike source;
+the commands below no longer run in this fork.
+
 The risky pieces of `docs/ios-app-plan.md`, tried before building on them.
 Spike code: `ios/Spikes/` (an iPhone app with a Notification Service
 Extension and a widget extension, plus `mac/`, the Mac's Bluetooth side),

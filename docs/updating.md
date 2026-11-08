@@ -396,9 +396,9 @@ the existing `so.pen.herdr.remote` app and extension/watch bundle identifiers,
 Group, Keychain service/access groups and APNs topic/entitlements. Changing them
 can strand pairings, shared data, notifications or companion updates. Visible
 names/icons change to Sheprd; no additional iOS compatibility code
-is required for a repository transfer. The identifiers described in
-[`ios/README.md`](../ios/README.md) for independent developer installations are
-not instructions to change the production app's identity.
+is required for a repository transfer. The identifiers in the
+[historical iOS plan](ios-app-plan.md) describe the upstream app, not a
+Spaceport mobile release. Spaceport no longer includes native iOS/watch source.
 
 ## Packaging API
 

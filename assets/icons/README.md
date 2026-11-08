@@ -98,12 +98,6 @@ The Windows `.ico` contains PNG entries at 16, 20, 24, 32, 40, 48, 64, and
 regenerates these and the installer images. It needs Python and `rsvg-convert`
 (use WSL on Windows). The installer image generator also supports `resvg`.
 
-### iPhone, iPad, and Apple Watch
-
-The `ios/SheprdRemote` and `ios/SheprdRemoteWatch` catalogs receive the opaque,
-full-bleed 1024px avatar. iOS/watchOS apply their own rounded/circular masks;
-desktop margins must not be baked into these images. The paw fits both masks.
-
 ## Interface and service marks
 
 `plus.svg`, `close.svg`, `pencil.svg`, `trash.svg`, `chevron-up.svg`,

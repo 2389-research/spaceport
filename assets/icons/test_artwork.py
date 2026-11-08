@@ -47,12 +47,6 @@ class ArtworkTests(unittest.TestCase):
                 self.assertEqual(struct.unpack_from(">II", png, 16), (w or 256, h or 256))
             self.assertEqual(sizes, [16, 20, 24, 32, 40, 48, 64, 256])
 
-    def test_mobile_icons_are_the_canonical_full_bleed_export(self):
-        avatar = (ASSETS / "sheprd-avatar.png").read_bytes()
-        for target in ("SheprdRemote", "SheprdRemoteWatch"):
-            icon = ROOT / f"ios/{target}/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
-            self.assertEqual(icon.read_bytes(), avatar)
-
     def test_social_cards_have_platform_dimensions_and_fit_upload_limit(self):
         for name, size in (("sheprd-social", (1200, 630)), ("sheprd-repository", (1280, 640))):
             png = (ROOT / f"assets/branding/{name}.png").read_bytes()

@@ -1,5 +1,8 @@
 # Plan: Remote control
 
+Historical upstream design. Spaceport removed the native iOS/watch source;
+the desktop phone server and pairing paths remain under the RM-PHONE audit.
+
 A phone (or any browser) controls the chats running on this machine: it lists
 workspaces and their tabs, shows `sheprd-acp` chats, sends prompts, answers the
 agents' questions, and gets push notifications when an agent needs an answer
@@ -458,8 +461,8 @@ that replaces the companion described here.)
 
 ### Built
 
-The companion lives in `ios/` (see `ios/README.md` for building, signing, and
-the APNs key):
+The former companion lived in `ios/` (see `docs/ios-app-plan.md` for the
+historical design):
 
 - **Project**: an XcodeGen spec (`ios/project.yml`) for the `SheprdRemote` app
   (visible name Sheprd) and the `SheprdRemoteWidgets` extension, iOS 17.2+, bundle

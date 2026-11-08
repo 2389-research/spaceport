@@ -111,11 +111,3 @@ for name in ["sheprd-avatar", "sheprd-icon-badge", "sheprd-github-app"] {
 }
 try render(artwork("sheprd-github-app.svg", worktree: false), pixels: 200, macOS: false)
   .write(to: assets.appendingPathComponent("sheprd-github-app-200.png"))
-
-// iOS and watchOS supply their own masks. Their app icons must be opaque and
-// full-bleed, without desktop margins or pre-rounded corners.
-let mobile = try render(artwork("sheprd-avatar.svg", worktree: false), pixels: 1024, macOS: false)
-for target in ["SheprdRemote", "SheprdRemoteWatch"] {
-  try mobile.write(to: root.appendingPathComponent("ios/\(target)/Assets.xcassets/AppIcon.appiconset/AppIcon.png"))
-  print("Generated \(target) AppIcon.png")
-}
