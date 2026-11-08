@@ -1,10 +1,10 @@
-//! `sheprd_vcs`'s errors from `error-vcs.ftl`: Git commands, checkpoints,
-//! and the code index. GitHub failures go through `sheprd_github`'s mapping,
-//! and Git's own output stays a placeable.
+//! `sheprd_vcs`'s errors from `error-vcs.ftl`: Git commands and checkpoints.
+//! GitHub failures go through `sheprd_github`'s mapping. Git's own output
+//! stays a placeable.
 
 use super::Localize;
 use crate::i18n::fl;
-use sheprd_vcs::{Error, checkpoint, code_index, git};
+use sheprd_vcs::{Error, checkpoint, git};
 
 impl Localize for Error {
     fn localize(&self) -> String {
@@ -13,7 +13,6 @@ impl Localize for Error {
             Self::Checkpoint(error) => error.localize(),
             #[cfg(feature = "azure")]
             Self::CloudHostUnsupported => fl!("error-vcs-cloud-host-unsupported"),
-            Self::CodeIndex(error) => error.localize(),
             Self::Git(error) => error.localize(),
             Self::GitHub(error) => error.localize(),
             // keep-sorted end
@@ -35,15 +34,6 @@ impl Localize for checkpoint::Error {
             Self::Unborn => fl!("error-vcs-checkpoint-unborn"),
             Self::Worker => fl!("error-vcs-checkpoint-worker"),
             // keep-sorted end
-        }
-    }
-}
-
-impl Localize for code_index::Error {
-    fn localize(&self) -> String {
-        match self {
-            Self::Cancelled => fl!("error-vcs-code-index-cancelled"),
-            Self::Root => fl!("error-vcs-code-index-root"),
         }
     }
 }
@@ -86,16 +76,14 @@ fn failed_step(operation: &str) -> &'static str {
         "check uncommitted files" => "check-uncommitted", // i18n: data
         "check unpushed commits" => "check-unpushed",     // i18n: data
         "commit" => "commit",
-        "count changes" => "count-changes", // i18n: data
         "count working tree changes" => "count-working-tree", // i18n: data
         "fetch the pull request branch" => "fetch-pull-request", // i18n: data
-        "find the checkout" => "find-checkout", // i18n: data
+        "find the checkout" => "find-checkout",               // i18n: data
         "find where the branch started" => "find-branch-start", // i18n: data
-        "list attribute files" => "list-attribute-files", // i18n: data
-        "list branches" => "list-branches", // i18n: data
-        "list files" => "list-files",       // i18n: data
-        "list untracked files" => "list-untracked", // i18n: data
-        "list working tree changes" => "list-working-tree", // i18n: data
+        "list attribute files" => "list-attribute-files",     // i18n: data
+        "list branches" => "list-branches",                   // i18n: data
+        "list untracked files" => "list-untracked",           // i18n: data
+        "list working tree changes" => "list-working-tree",   // i18n: data
         "prepare the remote pull request or issue checkout" => "prepare-remote-checkout", // i18n: data
         "push" => "push",
         "read attributes" => "read-attributes", // i18n: data

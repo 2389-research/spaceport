@@ -1,5 +1,5 @@
-# Git on the checkouts the app shows: commits, pushes, checkpoints, and the
-# code search index. Git's own output stays as it is in $details.
+# Git on the checkouts the app shows: commits, pushes, and checkpoints.
+# Git's own output stays as it is in $details.
 
 error-vcs-cloud-host-unsupported = This is not available for cloud machines yet.
 
@@ -15,11 +15,6 @@ error-vcs-checkpoint-thread = Could not start the checkpoint worker
 error-vcs-checkpoint-unborn = This checkout has no commit yet, so it has no checkpoints.
 error-vcs-checkpoint-worker = The checkpoint worker stopped.
 
-## Searching a checkout for files and symbols.
-
-error-vcs-code-index-cancelled = Reading the checkout was cancelled
-error-vcs-code-index-root = Only a local Git checkout can be searched for files and symbols
-
 ## Git commands. "git commit" and "git push" name Git's own commands.
 
 error-vcs-git-busy = A Git operation is already running.
@@ -30,14 +25,12 @@ error-vcs-git-failed = { $kind ->
     [check-uncommitted] git check uncommitted files failed: { $details }
     [check-unpushed] git check unpushed commits failed: { $details }
     [commit] git commit failed: { $details }
-    [count-changes] git count changes failed: { $details }
     [count-working-tree] git count working tree changes failed: { $details }
     [fetch-pull-request] git fetch the pull request branch failed: { $details }
     [find-branch-start] git find where the branch started failed: { $details }
     [find-checkout] git find the checkout failed: { $details }
     [list-attribute-files] git list attribute files failed: { $details }
     [list-branches] git list branches failed: { $details }
-    [list-files] git list files failed: { $details }
     [list-untracked] git list untracked files failed: { $details }
     [list-working-tree] git list working tree changes failed: { $details }
     [prepare-remote-checkout] git prepare the remote pull request or issue checkout failed: { $details }

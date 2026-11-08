@@ -305,7 +305,7 @@ pub enum Error {
     /// A usage read failed, or the usage shell the port and load scans share.
     #[error(transparent)]
     Usage(#[from] sheprd_usage::Error),
-    /// A Git, checkpoint, or code index failure. Build it with `.into()`, never
+    /// A Git or checkpoint failure. Build it with `.into()`, never
     /// directly: `error/vcs.rs` sends a GitHub failure carried by `herdr-vcs`
     /// to `GitHub`, where callers match it.
     #[error(transparent)]

@@ -1,5 +1,5 @@
 use super::*;
-use sheprd_vcs::{Error, checkpoint, code_index, git};
+use sheprd_vcs::{Error, checkpoint, git};
 use std::io;
 
 fn io() -> io::Error {
@@ -12,7 +12,6 @@ fn every_variant_has_a_message() {
         Error::Checkpoint(checkpoint::Error::Busy),
         #[cfg(feature = "azure")]
         Error::CloudHostUnsupported,
-        Error::CodeIndex(code_index::Error::Root),
         Error::Git(git::Error::Busy),
         Error::GitHub(sheprd_github::Error::Query),
     ]);
@@ -34,11 +33,6 @@ fn every_checkpoint_variant_has_a_message() {
 }
 
 #[test]
-fn every_code_index_variant_has_a_message() {
-    assert_localized(&[code_index::Error::Cancelled, code_index::Error::Root]);
-}
-
-#[test]
 fn every_git_variant_has_a_message() {
     let mut errors = vec![
         git::Error::Busy,
@@ -54,14 +48,12 @@ fn every_git_variant_has_a_message() {
             "check uncommitted files",
             "check unpushed commits",
             "commit",
-            "count changes",
             "count working tree changes",
             "fetch the pull request branch",
             "find the checkout",
             "find where the branch started",
             "list attribute files",
             "list branches",
-            "list files",
             "list untracked files",
             "list working tree changes",
             "prepare the remote pull request or issue checkout",

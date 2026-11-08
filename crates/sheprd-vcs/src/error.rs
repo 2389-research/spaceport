@@ -12,8 +12,6 @@ pub enum Error {
     #[error("This is not available for cloud machines yet.")]
     CloudHostUnsupported,
     #[error(transparent)]
-    CodeIndex(#[from] crate::code_index::Error),
-    #[error(transparent)]
     Git(#[from] crate::git::Error),
     #[error(transparent)]
     GitHub(#[from] sheprd_github::Error),
