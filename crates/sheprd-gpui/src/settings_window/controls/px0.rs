@@ -1,5 +1,5 @@
-//! px0 shares the Code settings page. Explicit Apply keeps unfinished edits
-//! local; saving goes through the settings window's serial persistence path.
+//! px0's settings page keeps unfinished edits local until Apply; saving goes
+//! through the settings window's serial persistence path.
 // i18n: migrated
 use super::*;
 use crate::{browser::WebUrl, i18n::fl};
@@ -40,7 +40,7 @@ impl SettingsWindow {
             input.set_placeholder_with(
                 || {
                     fl!(
-                        "settings-code-px0-placeholder",
+                        "settings-px0-placeholder",
                         example = "http://127.0.0.1:7777/"
                     )
                 },
@@ -100,20 +100,20 @@ impl SettingsWindow {
     }
 
     pub(in crate::settings_window) fn render_px0_controls(&self, cx: &mut Context<Self>) -> Div {
-        self.control_card(&fl!("settings-code-px0"))
-            .child(self.control_note(fl!("settings-code-px0-note")))
+        self.control_card(&fl!("settings-px0-title"))
+            .child(self.control_note(fl!("settings-px0-note")))
             .children(self.px0.input.as_ref().map(|input| {
                 div()
-                    .debug_selector(|| "settings-px0-url".into())
+                    .debug_selector(|| "px0-url".into())
                     .child(input.clone())
             }))
             .when(self.px0.invalid, |card| {
-                card.child(self.control_note(fl!("settings-code-px0-invalid")))
+                card.child(self.control_note(fl!("settings-px0-invalid")))
             })
             .child(
                 self.control_choice(
                     "settings-px0-apply",
-                    fl!("settings-code-px0-apply"),
+                    fl!("settings-px0-apply"),
                     false,
                     !self.busy(),
                 )

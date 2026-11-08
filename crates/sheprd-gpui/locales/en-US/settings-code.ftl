@@ -1,5 +1,5 @@
 # Settings > Code: where VS Code tabs' server comes from, its license, the
-# check of a server's address, and px0's workbench address.
+# check of a server's address.
 
 settings-code-vscode = VS Code
 settings-code-start = Start VS Code automatically
@@ -26,9 +26,3 @@ settings-code-test = Test connection
 settings-code-testing = Testing…
 settings-code-connected = Connected to VS Code
 settings-code-commit = commit { $commit }
-
-settings-code-px0 = px0
-settings-code-px0-placeholder = Automatic, or { $example }
-settings-code-px0-note = Leave the address empty to discover a local workbench or start installed px0 when a tab opens. Set an address to attach to a workbench you run yourself.
-settings-code-px0-invalid = Use a loopback HTTP workbench address without credentials, query or fragment.
-settings-code-px0-apply = Apply px0 address

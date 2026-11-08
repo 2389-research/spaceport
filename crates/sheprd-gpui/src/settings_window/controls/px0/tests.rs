@@ -2,7 +2,26 @@
 use super::*;
 use crate::settings_window::tests::{skill_fixture, skill_load};
 use core::prelude::v1::test;
-use gpui::TestAppContext;
+use gpui::{TestAppContext, px, size};
+
+#[gpui::test]
+fn px0_controls_have_their_own_settings_page(cx: &mut TestAppContext) {
+    let (view, cx) = cx.add_window_view(skill_fixture);
+    cx.simulate_resize(size(px(960.), px(900.)));
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            view.select_section(Section::Code, window, cx)
+        });
+        crate::sidebar::layout_tests::full_draw(window, cx).clear(cx);
+    });
+    assert!(cx.debug_bounds("px0-url").is_none());
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| view.select_section(Section::Px0, window, cx));
+        crate::sidebar::layout_tests::full_draw(window, cx).clear(cx);
+    });
+    assert!(cx.debug_bounds("px0-url").is_some());
+    assert!(cx.debug_bounds("settings-code-url").is_none());
+}
 
 #[gpui::test]
 fn px0_address_edits_survive_reload_and_invalid_input_is_not_saved(cx: &mut TestAppContext) {

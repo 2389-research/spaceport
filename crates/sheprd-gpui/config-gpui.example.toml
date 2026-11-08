@@ -500,7 +500,7 @@ size = 12
 
 # px0 in an editor tab (local workspaces on macOS and Windows). With no url,
 # discover an existing workbench, or start installed px0 lazily. Set a local
-# workbench address to attach to your own. Settings > Code edits this value.
+# workbench address to attach to your own. Settings > px0 edits this value.
 # [px0]
 # url = "http://127.0.0.1:7777/"
 

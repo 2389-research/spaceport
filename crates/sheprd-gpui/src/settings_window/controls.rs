@@ -299,7 +299,11 @@ impl SettingsWindow {
             Section::Tabs => self.render_tabs(cx),
             Section::Notifications => self.render_notifications(cx),
             Section::Configuration => self.render_configuration(cx),
-            Section::Theme | Section::Integrations | Section::Plugins | Section::Code => div(),
+            Section::Theme
+            | Section::Integrations
+            | Section::Plugins
+            | Section::Code
+            | Section::Px0 => div(),
             #[cfg(feature = "cloud")]
             Section::CloudDevices => div(),
         };

@@ -699,6 +699,8 @@ impl SettingsWindow {
         self.navigation_scroll.scroll_to_item(section.nav_item());
         if section == Section::Code {
             self.open_code_page(window, cx);
+        }
+        if section == Section::Px0 {
             self.open_px0_settings(cx);
         }
         if section == Section::General {
@@ -738,6 +740,7 @@ impl Render for SettingsWindow {
                 Section::Integrations => self.render_integration_controls(cx),
                 Section::Plugins => self.render_plugin_controls(cx),
                 Section::Code => self.render_code_controls(window, cx),
+                Section::Px0 => self.render_px0_controls(cx),
                 #[cfg(feature = "cloud")]
                 Section::CloudDevices => self.render_cloud_devices(cx),
                 _ => self.render_controls(window, cx),

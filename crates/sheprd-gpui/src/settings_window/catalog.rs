@@ -440,6 +440,12 @@ pub(super) const CATALOG: &[Entry] = &[
         "settings-code-mode-description",
     ),
     entry(
+        Section::Px0,
+        "px0-url",
+        "settings-px0-title",
+        "settings-px0-note",
+    ),
+    entry(
         Section::Notifications,
         "notif-delivery",
         "settings-notif-delivery",

@@ -15,6 +15,7 @@ pub(super) enum Section {
     StatusBar,
     Tabs,
     Code,
+    Px0,
     Notifications,
     Integrations,
     Plugins,
@@ -77,6 +78,7 @@ impl Section {
         Self::StatusBar,
         Self::Tabs,
         Self::Code,
+        Self::Px0,
         Self::Notifications,
         Self::Integrations,
         Self::Plugins,
@@ -100,6 +102,7 @@ impl Section {
             Self::General => "settings-section-general",
             Self::Tabs => "settings-section-tabs-and-panes",
             Self::Code => "settings-section-code",
+            Self::Px0 => "settings-section-px0",
             Self::Notifications => "settings-section-notifications",
             Self::Integrations => "settings-section-integrations",
             Self::Plugins => "settings-section-plugins",
@@ -117,6 +120,7 @@ impl Section {
             Self::Fonts => "settings-lead-fonts",
             Self::StatusBar => "settings-lead-status-bar",
             Self::Code => "settings-lead-code",
+            Self::Px0 => "settings-lead-px0",
             Self::Integrations => "settings-lead-integrations",
             Self::Plugins => "settings-lead-plugins",
             #[cfg(feature = "cloud")]
@@ -135,7 +139,7 @@ impl Section {
             Self::Theme | Self::Sidebar | Self::Indicators | Self::Fonts | Self::StatusBar => {
                 Some(Group::Appearance)
             }
-            Self::Tabs | Self::Code | Self::Notifications => Some(Group::Behaviour),
+            Self::Tabs | Self::Code | Self::Px0 | Self::Notifications => Some(Group::Behaviour),
             Self::Integrations | Self::Plugins => Some(Group::Connect),
             #[cfg(feature = "cloud")]
             Self::CloudDevices => Some(Group::Connect),
@@ -153,6 +157,7 @@ impl Section {
             Self::General => "icons/settings.svg",
             Self::Tabs => "icons/tabs.svg",
             Self::Code => "icons/vscode.svg",
+            Self::Px0 => "icons/code.svg",
             Self::Notifications => "icons/bell.svg",
             Self::Integrations => "icons/agent-generic.svg",
             Self::Plugins => "icons/plug.svg",

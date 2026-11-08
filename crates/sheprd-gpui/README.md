@@ -3512,7 +3512,7 @@ It never installs or updates px0. An owned workbench keeps its registry and
 workspace sessions under `<Sheprd state>/px0-state/px0`; px0's normal settings
 still apply. A discovered workbench keeps its existing state.
 
-**Settings > Code > px0** accepts the address of a workbench you run yourself;
+**Settings > px0** accepts the address of a workbench you run yourself;
 leave it empty for automatic discovery/start and press **Apply px0 address**.
 The same setting can be written in `config-gpui.local.toml`:
 
