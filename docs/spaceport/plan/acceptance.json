@@ -384,7 +384,7 @@
       "scenario": "Compare retained desktop views, menus, settings, sidebar and rich chat against reference fixtures.",
       "expected": "Only approved deletions, rebrand and necessary capability adaptations differ; no unrequested redesign.",
       "status": "not_run",
-      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md"]
+      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md"]
     },
     {
       "id": "A34",
