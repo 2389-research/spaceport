@@ -37,3 +37,15 @@ existing `block v0.1.6` future-compatibility notice.
 Native GUI and real provider network/service behavior were not run. T04
 stays blocked on G-LINK while other excluded routes remain. A30 stays
 `not_run`.
+
+## Integrated branch verification
+
+After cherry-picking this cut at `8b151fe4` and the command identity cut at
+`4394f8c0`, the combined default and all-feature `cargo +1.99.0 check
+--locked --all-targets -p sheprd-gpui` commands passed. The targeted
+`retired_railway` catalog test passed 1/1. The combined release fixture suite
+passed 204 tests with eight platform skips; the site suite passed 29/29.
+Source absence passed 2/2, `just format-check`, `just check-file-size`, `just
+check-sorted`, and `just check-i18n` passed, and the specification package's
+21 tool tests passed. Cargo printed the existing `block v0.1.6` future
+compatibility notice. No merged native GUI or provider network test ran.

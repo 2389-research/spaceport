@@ -16,3 +16,25 @@ New Windows and Linux package trees contain one app CLI executable, with no `she
 ## Open boundary
 
 This branch predates the OpenSandbox integration; merged quick and package checks must run after cherry-pick. Source search still finds 43 lines with `Sheprd` in control response and client text (for example `control/client/app.rs`, `control/server.rs`, and `control/client/settings.rs`). Those are a separate product-copy sweep; no final copy audit or native identity acceptance is claimed. T01 and T09 stay in progress, A42 stays not run, and G-RELEASE stays open.
+
+## Integrated branch verification
+
+After cherry-picking this cut at `4394f8c0` on top of the OpenSandbox and
+Railway removals, the combined default and all-feature `cargo +1.99.0 check
+--locked --all-targets -p sheprd-gpui` commands passed. The release fixture
+suite passed 204 tests with eight platform skips, release security passed 25
+with one skip, update manifest tests passed 13, and the site suite passed
+29/29. Format, file-size, sorted-list, i18n, commit-message and spec package
+checks passed. The isolated branch's CLI 18/18, managed skill 16/16, Windows
+launcher 3/3 and exact-window socket 1/1 tests were not relinked after this
+cherry-pick due the shared disk budget. The source conflicts only removed
+already-retired provider documentation and an OpenSandbox relay file. These
+checks do not prove native package installation, full product copy or release
+ownership; A42 and G-RELEASE remain open.
+
+The isolated built executable at `/tmp/spaceport-t00-target/debug/spaceport`
+also answered `--help` without starting GPUI. It printed the `spaceport`
+command name and still advertised the embedded `browser` family and legacy
+Herdr daemon startup. That is current behavior, not a retained Spaceport
+promise: RM-BROWSER and RM-LEGACY remain unfinished. This direct CLI probe
+does not exercise a native window, Core session or packaged artifact.
