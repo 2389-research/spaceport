@@ -149,7 +149,7 @@ fn select(
         .local_error
         .clone()
         .filter(|error| Some(error) != before.as_ref())
-        .unwrap_or_else(|| format!("Sheprd could not switch to {label}"));
+        .unwrap_or_else(|| format!("Spaceport could not switch to {label}"));
     Response::error(ErrorCode::Failed, reason)
 }
 
@@ -178,7 +178,7 @@ fn usage(view: &SheprdWindow, now: SystemTime) -> Response {
     } else if let Some(error) = entry.and_then(|entry| entry.error.as_deref()) {
         Some(error.to_string())
     } else if entry.is_none() {
-        Some(format!("Sheprd has not read usage on {host} yet"))
+        Some(format!("Spaceport has not read usage on {host} yet"))
     } else if usage.is_empty() {
         Some(format!("No AI plan is signed in on {host}"))
     } else {
@@ -247,7 +247,7 @@ fn system(view: &SheprdWindow) -> Response {
         (_, Some(error)) => Some(error.to_owned()),
         (Some(_), None) => None,
         (None, None) => Some(
-            "Sheprd samples load only while it shows it: in the status bar \
+            "Spaceport samples load only while it shows it: in the status bar \
              (show_system_load), the Devices overview, or a host picker"
                 .to_owned(),
         ),

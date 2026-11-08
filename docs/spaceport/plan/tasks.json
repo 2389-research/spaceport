@@ -83,7 +83,8 @@
       "status": "in_progress",
       "evidence": [
         "evidence/t01-identity.md",
-        "evidence/t01-command-identity-cut.md"
+        "evidence/t01-command-identity-cut.md",
+        "evidence/t01-control-copy-cut.md"
       ],
       "must_close_gaps": []
     },
@@ -514,7 +515,8 @@
       "status": "in_progress",
       "evidence": [
         "evidence/t09-core-catalog-status.md",
-        "evidence/t01-command-identity-cut.md"
+        "evidence/t01-command-identity-cut.md",
+        "evidence/t01-control-copy-cut.md"
       ],
       "must_close_gaps": []
     },

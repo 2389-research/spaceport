@@ -63,7 +63,7 @@ fn updater_window(cx: &mut App) -> Option<WindowHandle<SheprdWindow>> {
 }
 
 fn no_window() -> Response {
-    Response::error(ErrorCode::NoWindow, "Sheprd has no window open")
+    Response::error(ErrorCode::NoWindow, "Spaceport has no window open")
 }
 
 pub(super) fn update(cx: &mut App) -> Response {

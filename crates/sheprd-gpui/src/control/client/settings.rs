@@ -68,7 +68,7 @@ pub(super) fn theme(command: ThemeCommand, context: &Context) -> crate::Result<O
                 Err(error) if not_running(&error) => {
                     Config::check_files()?.save_theme(&name)?;
                     Ok(Output::message(format!(
-                        "Theme set to {name}; Sheprd shows it when it starts"
+                        "Theme set to {name}; Spaceport shows it when it starts"
                     )))
                 }
                 result => result,
@@ -213,7 +213,7 @@ fn install_skill() -> crate::Result<Output> {
     }
     if let Err(error) = agent_skill::save_choice(Choice::Installed) {
         message.push_str(&format!(
-            "\nSheprd may still offer it, as the choice was not saved: {error}"
+            "\nSpaceport may still offer it, as the choice was not saved: {error}"
         ));
     }
     let paths: Vec<String> = paths

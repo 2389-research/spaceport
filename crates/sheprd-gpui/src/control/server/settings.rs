@@ -32,7 +32,7 @@ pub(super) fn serve(
         SettingsOp::ReloadConfig => {
             incoming.respond(in_free_window(&caller, cx, |view, window, cx| {
                 view.command(Command::ReloadConfig, window, cx);
-                Response::done("Reloading Herdr's config and Sheprd's")
+                Response::done("Reloading Herdr's config and Spaceport's")
             }))
         }
         SettingsOp::CheckConfig => {
@@ -71,7 +71,7 @@ fn play(caller: &crate::control::protocol::Caller, sound: Sound, cx: &mut App) -
         if crate::sound::muted() {
             return Response::error(
                 ErrorCode::Unsupported,
-                "Sheprd plays no sounds: HERDR_DISABLE_SOUND is set in its environment",
+                "Spaceport plays no sounds: HERDR_DISABLE_SOUND is set in its environment",
             );
         }
         if view.sound.play(sound.into()) {
@@ -123,7 +123,7 @@ pub(super) fn answer_when_done(
         incoming,
         wait,
         move |_| slot.borrow_mut().take(),
-        Response::error(ErrorCode::Timeout, "Sheprd did not finish in time"),
+        Response::error(ErrorCode::Timeout, "Spaceport did not finish in time"),
         cx,
     );
 }

@@ -69,7 +69,7 @@ pub(super) fn script(
     if kind == ScriptKind::Archive {
         return Response::error(
             ErrorCode::Unsupported,
-            "The archive script runs when a worktree is removed; remove it from its workspace menu in Sheprd",
+            "The archive script runs when a worktree is removed; remove it from its workspace menu in Spaceport",
         );
     }
     let launch = match launch(view, caller, kind) {
@@ -79,7 +79,7 @@ pub(super) fn script(
     let repo = launch.repo.clone();
     match view.start_worktree_script(launch, cx) {
         Ok(()) => Response::done(format!(
-            "Starting the {} script of {repo} in a new tab; Sheprd asks first about a script it has not seen",
+            "Starting the {} script of {repo} in a new tab; Spaceport asks first about a script it has not seen",
             kind.name()
         )),
         Err(crate::Error::WorktreeScripts(crate::worktree_scripts::Error::Busy)) => {
@@ -221,6 +221,6 @@ pub(super) fn fan_out(
     cx.notify();
     bring_forward(window, cx);
     Response::done(format!(
-        "Opened fan-out for {repo} with {picked} agent(s) chosen; start it in Sheprd"
+        "Opened fan-out for {repo} with {picked} agent(s) chosen; start it in Spaceport"
     ))
 }

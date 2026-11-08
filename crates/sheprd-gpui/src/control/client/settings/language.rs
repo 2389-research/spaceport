@@ -60,9 +60,9 @@ pub(super) fn local(language: &Language) -> LanguageInfo {
 
 pub(super) fn text(info: &LanguageInfo, running: bool) -> String {
     let shows = if running {
-        "Sheprd shows"
+        "Spaceport shows"
     } else {
-        "Sheprd would show"
+        "Spaceport would show"
     };
     let mut text = format!(
         "language = {}\n{shows} {} ({})",

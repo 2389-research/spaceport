@@ -43,7 +43,7 @@ pub(crate) fn diagnostics(output: &Path) -> crate::Result<Output> {
 }
 
 fn gather() -> String {
-    let mut text = String::from("Sheprd diagnostics\n\n");
+    let mut text = String::from("Spaceport diagnostics\n\n");
     let _ = writeln!(text, "version: {}", crate::constants::APP_VERSION);
     let _ = writeln!(
         text,

@@ -133,14 +133,14 @@ pub(super) fn app(call: Call<AppOp>, cx: &mut App) -> Response {
         AppOp::Focus => match window_for(&call.caller, cx) {
             Ok(handle) => {
                 activate(handle, cx);
-                Response::done("Brought Sheprd forward")
+                Response::done("Brought Spaceport forward")
             }
             Err(response) => response,
         },
         AppOp::Open { path } => open(&call.caller, path, cx),
         AppOp::Hide => {
             cx.hide();
-            Response::done("Hid Sheprd")
+            Response::done("Hid Spaceport")
         }
         AppOp::Quit => {
             let timer = cx.background_executor().clone();
@@ -149,7 +149,7 @@ pub(super) fn app(call: Call<AppOp>, cx: &mut App) -> Response {
                 cx.update(|cx| cx.quit());
             })
             .detach();
-            Response::done("Quitting Sheprd; Herdr and its terminals keep running")
+            Response::done("Quitting Spaceport; Herdr and its terminals keep running")
         }
     }
 }
@@ -179,7 +179,7 @@ fn open_in(
     cx: &mut gpui::Context<SheprdWindow>,
 ) -> Response {
     match view.open_project_at(path.clone().into(), window, cx) {
-        Ok(()) => Response::done(format!("Opening {path} in Sheprd")),
+        Ok(()) => Response::done(format!("Opening {path} in Spaceport")),
         // The window has not reached its local Herdr yet, as right after the
         // app starts; a caller may try again shortly.
         Err(crate::Error::Palette(

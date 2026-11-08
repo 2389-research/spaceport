@@ -115,9 +115,9 @@ pub(super) fn list(view: &SheprdWindow, caller: &Caller) -> Response {
         })
         .unwrap_or_default();
     let note = if !view.config.show_listening_ports {
-        Some("Sheprd does not scan listening ports: show_listening_ports is off".to_owned())
+        Some("Spaceport does not scan listening ports: show_listening_ports is off".to_owned())
     } else if daemon.is_none() {
-        Some(format!("Sheprd cannot scan ports on {}", place.label))
+        Some(format!("Spaceport cannot scan ports on {}", place.label))
     } else {
         None
     };

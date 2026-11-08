@@ -28,7 +28,7 @@ pub(in crate::control::client) fn config(
             let value = parse_value(&value);
             Config::set_key(&key, value.clone())?;
             Ok(Output::message(format!(
-                "{key} = {} in {LOCAL}; Sheprd applies it at once",
+                "{key} = {} in {LOCAL}; Spaceport applies it at once",
                 value.to_string().trim()
             )))
         }
@@ -119,7 +119,7 @@ fn check(context: &Context) -> crate::Result<Output> {
     let fonts = if fonts_checked {
         ""
     } else {
-        "\nFonts were not checked: that needs a running Sheprd window."
+        "\nFonts were not checked: that needs a running Spaceport window."
     };
     if problems.is_empty() {
         return Ok(Output::message(format!("No problems found{fonts}")));

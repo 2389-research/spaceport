@@ -100,7 +100,7 @@ pub(super) fn selected_workspace(view: &SheprdWindow, caller: &Caller) -> Result
     if !view.live.status.is_connected() {
         return Err(Response::error(
             ErrorCode::Busy,
-            "Sheprd is not connected to that host right now",
+            "Spaceport is not connected to that host right now",
         ));
     }
     Ok(found.workspace.workspace_id.clone())

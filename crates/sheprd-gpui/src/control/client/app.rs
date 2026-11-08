@@ -76,7 +76,7 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
         core_catalog,
     } = &status;
     let mut text = format!(
-        "Sheprd {version} is running (pid {pid}, control protocol {protocol}{})\n",
+        "Spaceport {version} is running (pid {pid}, control protocol {protocol}{})\n",
         if *browser_tabs {
             ""
         } else {

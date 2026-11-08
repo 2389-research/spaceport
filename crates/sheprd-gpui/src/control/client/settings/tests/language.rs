@@ -24,13 +24,13 @@ fn status_names_the_setting_the_locale_and_a_pseudo_locale() {
     info.locale = "en-US".into();
     assert_eq!(
         text(&info, false),
-        "language = system\nSheprd would show en-US (ltr)"
+        "language = system\nSpaceport would show en-US (ltr)"
     );
     info.pseudo = Some("en-XA".into());
     info.locale = "en-XA".into();
     assert_eq!(
         text(&info, true),
-        "language = system\nSheprd shows en-XA (ltr), the QA pseudo-locale en-XA"
+        "language = system\nSpaceport shows en-XA (ltr), the QA pseudo-locale en-XA"
     );
 }
 

@@ -52,6 +52,10 @@ fn window_requests_without_a_window_are_refused_by_code(cx: &mut gpui::TestAppCo
         );
         assert_eq!(code(&named), Some(ErrorCode::NotFound));
         assert!(matches!(
+            named,
+            Response::Error { message, .. } if message == "Spaceport has no window 42"
+        ));
+        assert!(matches!(
             window(call(WindowOp::List), cx),
             Response::App {
                 reply: Reply::Windows { windows }

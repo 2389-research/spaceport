@@ -39,7 +39,7 @@ fn destination(caller: &Caller, cx: &mut App) -> Result<Destination, Response> {
         Response::error(
             ErrorCode::WorkspaceNotFound,
             match &caller.workspace_id {
-                Some(id) => format!("No Sheprd window shows workspace {id}"),
+                Some(id) => format!("No Spaceport window shows workspace {id}"),
                 None => "The window shows no workspace yet".to_owned(),
             },
         )

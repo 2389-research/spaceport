@@ -137,7 +137,7 @@ pub(super) fn window_for(
         return windows
             .into_iter()
             .find(|handle| handle.window_id().as_u64() == id)
-            .ok_or_else(|| not_found(format!("Sheprd has no window {id}")));
+            .ok_or_else(|| not_found(format!("Spaceport has no window {id}")));
     }
     if let Some(workspace) = &caller.workspace_id {
         let target = target(caller);
@@ -172,13 +172,13 @@ pub(super) fn window_for(
         // another session's.
         return Err(Response::error(
             ErrorCode::WorkspaceNotFound,
-            format!("No Sheprd window shows workspace {workspace}"),
+            format!("No Spaceport window shows workspace {workspace}"),
         ));
     }
     windows
         .into_iter()
         .next()
-        .ok_or_else(|| Response::error(ErrorCode::NoWindow, "Sheprd has no window open"))
+        .ok_or_else(|| Response::error(ErrorCode::NoWindow, "Spaceport has no window open"))
 }
 
 pub(super) fn target(caller: &Caller) -> Target<'_> {
@@ -259,7 +259,7 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
             .iter()
             .any(|handle| handle.window_id().as_u64() == id)
     {
-        incoming.respond(not_found(format!("Sheprd has no window {id}")));
+        incoming.respond(not_found(format!("Spaceport has no window {id}")));
         return;
     }
     if may_park && state.watches.full() {

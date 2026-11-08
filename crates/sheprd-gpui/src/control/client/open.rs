@@ -92,7 +92,7 @@ fn retry(
                 return Err(crate::control::Error::Rejected {
                     code: ErrorCode::Timeout,
                     message: format!(
-                        "Sheprd did not open the folder within {} seconds of starting: {error}",
+                        "Spaceport did not open the folder within {} seconds of starting: {error}",
                         START_WAIT.as_secs()
                     ),
                 }

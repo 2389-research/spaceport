@@ -22,7 +22,7 @@ pub(super) fn reachable(reach: &str) -> bool {
 pub(super) fn reach_note(reach: &str) -> &'static str {
     match reach {
         "runs" => "runs",
-        "shadowed" => "used by a Herdr or Sheprd shortcut",
+        "shadowed" => "used by a Herdr or Spaceport shortcut",
         "taken" => "an earlier custom command has the same keys",
         "needs_modifier" => "a key without a modifier would swallow typing",
         "no_prefix" => "no prefix key is configured",
@@ -119,12 +119,12 @@ pub(super) fn update(state: &str, latest: Option<&str>, detail: Option<&str>) ->
         ),
         "idle" => "No update check has finished yet".to_owned(),
         "checking" => "Checking for the latest release".to_owned(),
-        "current" => "Sheprd is up to date".to_owned(),
-        "available" => format!("{latest} is available; update from Sheprd"),
+        "current" => "Spaceport is up to date".to_owned(),
+        "available" => format!("{latest} is available; update from Spaceport"),
         "downloading" => format!("{latest} is downloading"),
-        "ready" => format!("{latest} is downloaded; install it from Sheprd"),
+        "ready" => format!("{latest} is downloaded; install it from Spaceport"),
         "homebrew" => format!("{latest} is available; upgrade it with Homebrew"),
-        "restart" => format!("{latest} is installed; restart Sheprd to use it"),
+        "restart" => format!("{latest} is installed; restart Spaceport to use it"),
         "error" => format!(
             "The last update check failed: {}",
             detail.unwrap_or("unknown error")

@@ -116,7 +116,7 @@ fn find(id: u64, cx: &App) -> Result<Tab, Response> {
         .and_then(|store| store.get(TabId::from(id)))
         .filter(|tab| !matches!(tab.location, Some(Location::RetiredSource { .. })))
         .cloned()
-        .ok_or_else(|| not_found(format!("Sheprd has no tab {id}; `tab list` lists them")))
+        .ok_or_else(|| not_found(format!("Spaceport has no tab {id}; `tab list` lists them")))
 }
 
 fn closed() -> Response {
@@ -158,7 +158,7 @@ fn showing(caller: &Caller, tab: &Tab, cx: &App) -> Option<(WindowHandle<SheprdW
 fn reveal(caller: &Caller, tab: &Tab, cx: &mut App) -> Result<(), Response> {
     let Some((handle, index)) = showing(caller, tab, cx) else {
         return Err(not_found(format!(
-            "No Sheprd window shows workspace {}, which tab {} belongs to",
+            "No Spaceport window shows workspace {}, which tab {} belongs to",
             tab.workspace_id, tab.id
         )));
     };

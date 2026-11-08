@@ -26,7 +26,7 @@ fn only_bindings_that_run_are_reachable_and_each_reason_reads_plainly() {
     assert!(text::reachable("runs"));
     assert_eq!(
         text::unreachable(&[custom("Lazygit", "shadowed")]),
-        "1 binding of Herdr's custom commands cannot run from this window:\n  Lazygit (ctrl-b g): used by a Herdr or Sheprd shortcut"
+        "1 binding of Herdr's custom commands cannot run from this window:\n  Lazygit (ctrl-b g): used by a Herdr or Spaceport shortcut"
     );
 }
 
@@ -75,9 +75,12 @@ fn update_states_say_what_to_do() {
     );
     assert_eq!(
         text::update("available", Some("1.4.0"), None),
-        "1.4.0 is available; update from Sheprd"
+        "1.4.0 is available; update from Spaceport"
     );
-    assert_eq!(text::update("current", None, None), "Sheprd is up to date");
+    assert_eq!(
+        text::update("current", None, None),
+        "Spaceport is up to date"
+    );
     assert_eq!(
         text::update("error", None, Some("offline")),
         "The last update check failed: offline"
