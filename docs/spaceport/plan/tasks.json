@@ -653,6 +653,7 @@
         "evidence/t12-external-core-package.md",
         "evidence/t12-cli-guide-correction.md",
         "evidence/t12-readme-correction.md",
+        "evidence/t12-release-guide-banner.md",
         "evidence/native-platform-results.md",
         "evidence/t12-upstream-site-mirrors.md"
       ],

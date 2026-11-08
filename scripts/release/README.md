@@ -1,5 +1,13 @@
 # Release Packaging
 
+**Spaceport development status:** These are inherited Sheprd packaging notes,
+not instructions to release this fork. The current release build rejects
+`HERDR_RELEASE_VERSION` because production Spaceport app IDs, signing keys,
+update source, icons, and native package checks are unresolved. See the
+[release identity audit](../../docs/spaceport/evidence/release-identity-audit.md)
+and [open gates](../../docs/spaceport/plan/gaps.json). Do not run a publish or
+install route from this branch.
+
 Run with Bash; packaging scripts never build or execute the GUI, bundle a daemon,
 or publish artifacts. Output directories must already exist. Existing
 artifacts are refused. Versions are calendar versions `YYYYMMDD.COUNTER`: an
