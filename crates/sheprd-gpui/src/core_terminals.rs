@@ -39,6 +39,32 @@ pub(crate) fn install_observation(cx: &mut App) {
     observation::Observation::install(cx);
 }
 
+/// The catalog Core reported on the current connection, never a local SSH list.
+pub(crate) fn machine_catalog(cx: &App) -> Option<&[sheprd_core_client::wire::MachineView]> {
+    cx.try_global::<observation::Observation>()?
+        .projection()
+        .machines()
+}
+
+pub(crate) fn machine_catalog_error(cx: &App) -> Option<&observation::Error> {
+    cx.try_global::<observation::Observation>()?
+        .projection()
+        .machine_error()
+}
+
+pub(crate) fn machine_catalog_started(cx: &App) -> bool {
+    cx.try_global::<observation::Observation>()
+        .is_some_and(|observation| observation.projection().started())
+}
+
+#[cfg(test)]
+pub(crate) fn set_machine_catalog_for_test(
+    cx: &mut App,
+    machines: Option<Vec<sheprd_core_client::wire::MachineView>>,
+) {
+    observation::set_machines_for_test(cx, machines);
+}
+
 use crate::{
     SheprdWindow,
     browser::{Location, Scope, Store, TabId},

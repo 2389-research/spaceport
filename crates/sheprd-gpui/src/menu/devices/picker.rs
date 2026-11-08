@@ -329,6 +329,7 @@ impl SheprdWindow {
         {
             view = self.cloud_job_rows(view);
         }
+        view = view.children(self.render_core_machine_catalog(cx));
         // The card stays put above the list, which scrolls on its own.
         div()
             .flex()

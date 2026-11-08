@@ -13,6 +13,7 @@ mod add_provider;
 mod boat_rail;
 #[cfg(feature = "cloud")]
 mod cloud_providers;
+mod core_catalog;
 mod en_xa;
 mod fold;
 mod host_key;

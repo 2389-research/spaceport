@@ -8,6 +8,7 @@ mod add_device;
 mod catalog;
 #[cfg(feature = "coder")]
 pub(super) mod coder;
+mod core_catalog;
 pub(crate) use add_device::enter;
 mod discover;
 mod error;

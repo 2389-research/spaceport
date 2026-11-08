@@ -19,3 +19,10 @@ core-terminals-mirror-needs-pane = Click a Herdr 2 pane to mirror first
 core-terminals-watching = Watching
 # The sidebar's list of herdr-core panes, under the agents.
 core-terminals-sidebar = Herdr 2
+
+core-terminals-machine-heading = Core machines
+core-terminals-machine-empty = No Core machines saved
+core-terminals-machine-not-current = no current machine list from Core
+core-terminals-machine-more = { $count } more Core machines
+# $reason comes from Core or the local Core client.
+core-terminals-machine-unavailable = Core machine list unavailable: { $reason }

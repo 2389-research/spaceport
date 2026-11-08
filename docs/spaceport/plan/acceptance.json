@@ -46,7 +46,7 @@
       "scenario": "Add a fixture machine through Core and observe its terminals; interrupt its connection.",
       "expected": "Core owns catalog/retry; Spaceport has no parallel remote connector or duplicate terminal.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t02-machine-ui.md"]
     },
     {
       "id": "A05",

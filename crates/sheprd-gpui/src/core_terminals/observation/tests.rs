@@ -1,7 +1,7 @@
 use super::*;
 use serde_json::json;
 use sheprd_backend::{AgentStatus, RunState, TerminalId};
-use sheprd_core_client::wire::Doc;
+use sheprd_core_client::wire::{Doc, Machine, MachineList, MachineView};
 
 #[cfg(unix)]
 mod live;
@@ -24,6 +24,108 @@ fn document(version: u64) -> VersionedDocument {
         version,
     }))
     .unwrap()
+}
+
+fn machine(id: &str, name: &str, state: &str) -> MachineView {
+    MachineView {
+        machine: Machine {
+            host: "fixture.invalid".into(),
+            id: id.into(),
+            name: name.into(),
+            session: None,
+            target: "fixture.invalid".into(),
+            temporary: false,
+            version: "0.1.18".into(),
+            via: false,
+        },
+        since_ms: None,
+        state: state.into(),
+        why: None,
+    }
+}
+
+#[test]
+fn core_machine_catalog_is_fresh_sorted_and_epoch_fenced() {
+    let mut projection = Projection::default();
+    projection.begin(1);
+    projection.initial(1, vec![], Ok(document(0)));
+    projection.refresh_machines(
+        1,
+        Ok(sort_machines(MachineList {
+            machines: vec![
+                machine("stable-b", "zeta", "unreachable"),
+                machine("stable-a", "alpha", "connected"),
+            ],
+        })),
+    );
+    let machines = projection.machines().unwrap();
+    assert_eq!(machines[0].machine.id, "stable-a");
+    assert_eq!(machines[1].state, "unreachable");
+    projection.lost(1);
+    assert!(projection.machines().is_none());
+    projection.begin(2);
+    projection.initial(2, vec![], Ok(document(0)));
+    projection.refresh_machines(
+        1,
+        Ok(MachineList {
+            machines: vec![machine("stale", "wrong", "connected")],
+        }),
+    );
+    assert!(projection.machines().is_none());
+}
+
+#[test]
+fn failed_machine_refresh_clears_old_catalog_without_hiding_the_error() {
+    let mut projection = Projection::default();
+    projection.begin(1);
+    projection.initial(1, vec![], Ok(document(0)));
+    projection.refresh_machines(
+        1,
+        Ok(MachineList {
+            machines: vec![machine("stable-a", "lab", "connected")],
+        }),
+    );
+    projection.refresh_machines(
+        1,
+        Err(Error::Core(sheprd_core_client::Error::Unsupported(
+            sheprd_core_client::Method::MachineList,
+        ))),
+    );
+    assert!(projection.machines().is_none());
+    assert!(matches!(
+        projection.machine_error(),
+        Some(Error::Core(sheprd_core_client::Error::Unsupported(
+            sheprd_core_client::Method::MachineList
+        )))
+    ));
+    assert!(
+        projection.fresh(),
+        "terminal facts remain independently fresh"
+    );
+}
+
+#[test]
+fn machine_read_mailbox_keeps_only_the_latest_result() {
+    let mailbox: MachineMailbox = Arc::new(Mutex::new(None));
+    replace_latest(
+        &mailbox,
+        Ok(MachineList {
+            machines: vec![machine("old", "old", "connected")],
+        }),
+    );
+    replace_latest(
+        &mailbox,
+        Ok(MachineList {
+            machines: vec![machine("new", "new", "connected")],
+        }),
+    );
+    assert_eq!(
+        take_latest(&mailbox).unwrap().unwrap().machines[0]
+            .machine
+            .id,
+        "new"
+    );
+    assert!(take_latest(&mailbox).is_none());
 }
 
 #[test]

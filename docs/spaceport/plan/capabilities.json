@@ -36,8 +36,8 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "private_two_core_aggregation_restart_backend_spawn_refusal_rename_and_rm_passed_macos; gui_and_real_ssh_not_run",
-      "runtime_evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t02-remote-fixture.md", "evidence/t02-remote-fixture.log", "evidence/t02-machine-catalog-edits.md"]
+      "runtime_test_status": "private_two_core_aggregation_restart_backend_spawn_refusal_rename_and_rm_passed_macos; headless_gui_catalog_and_private_observer_passed_macos; native_gui_actions_and_real_ssh_not_run",
+      "runtime_evidence": ["evidence/t02-core-boundary.md", "evidence/t02-live-core.log", "evidence/t02-remote-fixture.md", "evidence/t02-remote-fixture.log", "evidence/t02-machine-catalog-edits.md", "evidence/t02-machine-ui.md"]
     },
     {
       "id": "CAP-TERMINAL",

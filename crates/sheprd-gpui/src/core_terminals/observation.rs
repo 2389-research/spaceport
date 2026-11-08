@@ -4,7 +4,10 @@
 use super::workspace_document::{self, NAME, VersionedDocument};
 use gpui::{App, Global};
 use sheprd_backend::{Backend as _, Change, TerminalInfo};
-use sheprd_core_client::{CoreBackend, CoreBatch, wire::Doc};
+use sheprd_core_client::{
+    CoreBackend, CoreBatch,
+    wire::{Doc, MachineList, MachineView},
+};
 use std::{
     sync::{
         Arc, Mutex,
@@ -13,6 +16,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+const MACHINE_REFRESH: Duration = Duration::from_secs(2);
 fn needs_document(batch: &CoreBatch) -> bool {
     batch.missed
         || batch
@@ -22,7 +26,7 @@ fn needs_document(batch: &CoreBatch) -> bool {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub(super) enum Error {
+pub(crate) enum Error {
     #[error(transparent)]
     Core(#[from] sheprd_core_client::Error),
     #[error(transparent)]
@@ -47,6 +51,8 @@ pub(super) struct Projection {
     terminals: Vec<TerminalInfo>,
     document: Option<VersionedDocument>,
     error: Option<Arc<Error>>,
+    machines: Option<Arc<[MachineView]>>,
+    machine_error: Option<Arc<Error>>,
     revision: u64,
 }
 
@@ -57,6 +63,8 @@ impl Projection {
         self.terminals.clear();
         self.document = None;
         self.error = None;
+        self.machines = None;
+        self.machine_error = None;
         self.revision += 1;
     }
 
@@ -119,7 +127,31 @@ impl Projection {
         self.terminals.clear();
         self.document = None;
         self.error = None;
+        self.machines = None;
+        self.machine_error = None;
         self.revision += 1;
+    }
+
+    pub fn refresh_machines(&mut self, epoch: u64, result: Result<MachineList, Error>) {
+        if epoch != self.epoch || self.freshness != Freshness::Fresh {
+            return;
+        }
+        match result {
+            Ok(catalog) => {
+                let changed = self.machines.as_deref() != Some(catalog.machines.as_slice())
+                    || self.machine_error.is_some();
+                self.machines = Some(catalog.machines.into());
+                self.machine_error = None;
+                if changed {
+                    self.revision += 1;
+                }
+            }
+            Err(error) => {
+                self.machines = None;
+                self.machine_error = Some(Arc::new(error));
+                self.revision += 1;
+            }
+        }
     }
 
     fn fail(&mut self, epoch: u64, error: Error) {
@@ -150,6 +182,14 @@ impl Projection {
         self.document.as_ref()
     }
 
+    pub fn machines(&self) -> Option<&[MachineView]> {
+        self.machines.as_deref()
+    }
+
+    pub fn machine_error(&self) -> Option<&Error> {
+        self.machine_error.as_deref()
+    }
+
     pub fn fresh(&self) -> bool {
         self.freshness == Freshness::Fresh
     }
@@ -161,6 +201,10 @@ impl Projection {
     pub fn revision(&self) -> u64 {
         self.revision
     }
+
+    pub fn started(&self) -> bool {
+        self.epoch != 0
+    }
 }
 
 fn parse_document(
@@ -170,10 +214,24 @@ fn parse_document(
     Ok(VersionedDocument::read(doc)?)
 }
 
+fn sort_machines(mut catalog: MachineList) -> MachineList {
+    catalog.machines.sort_by(|a, b| {
+        a.machine
+            .name
+            .cmp(&b.machine.name)
+            .then(a.machine.id.cmp(&b.machine.id))
+    });
+    catalog
+}
+
 type Mailbox = Arc<Mutex<Option<Projection>>>;
+type MachineMailbox = Arc<Mutex<Option<Result<MachineList, Error>>>>;
 
 fn publish(mailbox: &Mailbox, projection: &Projection) {
-    let latest = projection.clone();
+    replace_latest(mailbox, projection.clone());
+}
+
+fn replace_latest<T>(mailbox: &Arc<Mutex<Option<T>>>, latest: T) {
     let mut slot = match mailbox.lock() {
         Ok(slot) => slot,
         Err(poisoned) => poisoned.into_inner(),
@@ -181,7 +239,7 @@ fn publish(mailbox: &Mailbox, projection: &Projection) {
     *slot = Some(latest);
 }
 
-fn take_latest(mailbox: &Mailbox) -> Option<Projection> {
+fn take_latest<T>(mailbox: &Arc<Mutex<Option<T>>>) -> Option<T> {
     let mut slot = match mailbox.lock() {
         Ok(slot) => slot,
         Err(poisoned) => poisoned.into_inner(),
@@ -271,6 +329,24 @@ impl Observation {
     }
 }
 
+#[cfg(test)]
+pub(super) fn set_machines_for_test(cx: &mut App, machines: Option<Vec<MachineView>>) {
+    if !cx.has_global::<Observation>() {
+        Observation::install(cx);
+    }
+    let observation = cx.global_mut::<Observation>();
+    let epoch = observation.projection.epoch + 1;
+    observation.projection.begin(epoch);
+    if let Some(machines) = machines {
+        observation.projection.freshness = Freshness::Fresh;
+        observation
+            .projection
+            .refresh_machines(epoch, Ok(sort_machines(MachineList { machines })));
+    } else {
+        observation.projection.lost(epoch);
+    }
+}
+
 fn run(
     backend: CoreBackend,
     epoch: u64,
@@ -284,13 +360,14 @@ fn run(
         projection.fail(epoch, error);
         publish(&mailbox, &projection);
     }
+    stop.store(true, Ordering::Release);
     running.store(false, Ordering::Release);
 }
 
 fn watch(
     backend: CoreBackend,
     epoch: u64,
-    stop: &AtomicBool,
+    stop: &Arc<AtomicBool>,
     mailbox: &Mailbox,
     projection: &mut Projection,
 ) -> Result<(), Error> {
@@ -298,12 +375,43 @@ fn watch(
     let document = parse_document(backend.core().doc_get(NAME, None));
     projection.initial(epoch, terminals, document);
     publish(mailbox, projection);
+    let machine_results: MachineMailbox = Arc::new(Mutex::new(None));
+    let read_backend = backend.clone();
+    let read_stop = Arc::clone(stop);
+    let read_results = Arc::clone(&machine_results);
+    if let Err(error) = std::thread::Builder::new()
+        .name("herdr-core-machines".into())
+        .spawn(move || {
+            while !read_stop.load(Ordering::Acquire) {
+                let result = read_backend
+                    .core()
+                    .machine_list()
+                    .map(sort_machines)
+                    .map_err(Error::Core);
+                replace_latest(&read_results, result);
+                let next = Instant::now() + MACHINE_REFRESH;
+                while !read_stop.load(Ordering::Acquire) && Instant::now() < next {
+                    std::thread::sleep(
+                        next.saturating_duration_since(Instant::now())
+                            .min(Duration::from_millis(100)),
+                    );
+                }
+            }
+        })
+    {
+        projection.refresh_machines(epoch, Err(Error::Worker(error)));
+        publish(mailbox, projection);
+    }
     while !stop.load(Ordering::Acquire) {
         let batch = changes.next_batch(Duration::from_millis(200))?;
         let document =
             needs_document(&batch).then(|| parse_document(backend.core().doc_get(NAME, None)));
         if batch.missed || !batch.changes.is_empty() || document.is_some() {
             projection.batch(epoch, batch, document);
+            publish(mailbox, projection);
+        }
+        if let Some(result) = take_latest(&machine_results) {
+            projection.refresh_machines(epoch, result);
             publish(mailbox, projection);
         }
     }
