@@ -11,6 +11,7 @@ mod labels;
 mod live;
 mod machine;
 mod machine_manage;
+mod observation;
 mod put;
 
 use crate::frame::{Decoder, Frame, Kind, encode};

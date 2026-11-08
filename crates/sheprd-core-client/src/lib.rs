@@ -18,7 +18,7 @@ pub mod wire;
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests;
 
-pub use backend::{CoreBackend, CoreChanges, CoreTerminal};
+pub use backend::{CoreBackend, CoreBatch, CoreChanges, CoreTerminal, DocumentInvalidation};
 pub use connection::{Core, MAX_PUT_BYTES};
 pub use endpoint::Endpoint;
 pub use error::{Error, Result, Violation};

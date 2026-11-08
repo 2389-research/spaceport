@@ -107,14 +107,51 @@ pub struct CoreChanges {
     subscription: crate::Subscription,
 }
 
+/// A named Core document changed; its current value must be fetched again.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocumentInvalidation {
+    pub machine: Option<String>,
+    pub name: String,
+    pub version: u64,
+}
+
+/// One subscribed batch. A missed event replaces terminal facts and makes
+/// every watched document stale, even if no document notice appears here.
+#[derive(Debug)]
+pub struct CoreBatch {
+    pub changes: Vec<Change>,
+    pub documents: Vec<DocumentInvalidation>,
+    pub missed: bool,
+}
+
 impl sheprd_backend::Changes for CoreChanges {
     type Error = Error;
 
     fn next(&mut self, timeout: Duration) -> Result<Vec<Change>> {
+        Ok(self.next_batch(timeout)?.changes)
+    }
+}
+
+impl CoreChanges {
+    pub fn next_batch(&mut self, timeout: Duration) -> Result<CoreBatch> {
         let mut changes = Vec::new();
+        let mut documents = Vec::new();
+        let mut missed = false;
         for notice in self.subscription.next(timeout)? {
             match notice {
-                Notice::Document { seq, .. } if seq > self.seq => self.seq = seq,
+                Notice::Document {
+                    seq,
+                    machine,
+                    name,
+                    version,
+                } if seq > self.seq => {
+                    self.seq = seq;
+                    documents.push(DocumentInvalidation {
+                        machine,
+                        name,
+                        version,
+                    });
+                }
                 Notice::Document { .. } => {}
                 Notice::Heartbeat { .. } => {}
                 Notice::Missed { seq, terminals } => {
@@ -124,6 +161,8 @@ impl sheprd_backend::Changes for CoreChanges {
                         .map(|terminal| (terminal.address.clone(), terminal))
                         .collect();
                     changes.clear();
+                    documents.clear();
+                    missed = true;
                     changes.push(Change::Resync(
                         self.records.values().map(info).collect::<Result<_>>()?,
                     ));
@@ -138,11 +177,13 @@ impl sheprd_backend::Changes for CoreChanges {
                 }
             }
         }
-        Ok(changes)
+        Ok(CoreBatch {
+            changes,
+            documents,
+            missed,
+        })
     }
-}
 
-impl CoreChanges {
     fn apply(&mut self, address: String, change: TerminalChange) -> Result<Option<Change>> {
         if let TerminalChange::Removed = change {
             self.records.remove(&address);
