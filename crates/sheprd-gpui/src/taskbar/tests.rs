@@ -22,7 +22,7 @@ fn relaunch_points_a_pin_at_the_launcher_beside_the_gui() {
         relaunch,
         Some(Relaunch {
             command: OsString::from(format!("\"{launcher}\"")),
-            display_name: "Sheprd",
+            display_name: "Spaceport",
             icon: OsString::from(format!("{launcher},-1")),
             id: crate::constants::APP_ID,
             launcher: PathBuf::from(launcher),

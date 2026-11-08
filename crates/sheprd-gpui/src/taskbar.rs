@@ -20,7 +20,7 @@ const LAUNCHER_EXE: &str = "sheprd-launcher.exe";
 
 /// The name a pinned Herdr shows on the taskbar and in its Jump List.
 #[cfg(any(windows, test))]
-const DISPLAY_NAME: &str = "Sheprd"; // i18n: data
+const DISPLAY_NAME: &str = crate::constants::WINDOW_TITLE; // i18n: data
 
 /// What a window sets so that pinning it pins the launcher.
 #[cfg(any(windows, test))]

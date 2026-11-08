@@ -59,7 +59,7 @@ fn system_notification_click_opens_its_origin_and_rejects_a_reconnect(
     assert!(shown.actions.is_empty());
     assert_eq!(
         cx.app_identity(),
-        Some((crate::constants::APP_ID.into(), "Sheprd".into()))
+        Some((crate::constants::APP_ID.into(), "Spaceport".into()))
     );
     post(&view, cx);
     assert_eq!(cx.shown_system_notifications().len(), 1);

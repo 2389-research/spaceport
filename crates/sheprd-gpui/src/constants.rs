@@ -1,18 +1,17 @@
-//! Values fixed at build time or by the reference design: the product name the
-//! OS sees, the tab strip's geometry, and the release identity the updater and
-//! any credential store key off.
+//! Values fixed at build time or by the reference design: the development app
+//! identity the OS sees, the tab strip's geometry, and the release version.
 
 // Every window carries the product name; the focused space follows it.
-pub(crate) const WINDOW_TITLE: &str = "Sheprd";
+pub(crate) const WINDOW_TITLE: &str = "Spaceport";
 
-// The bundle identifier and release version are the updater's, defined once
-// beside the code that keys off them.
-pub(crate) use sheprd_updater::{APP_ID, APP_VERSION};
+// Development windows and notifications must not share Sheprd's OS identity.
+// The release build gate stays in sheprd-updater until production IDs exist.
+pub(crate) const APP_ID: &str = "spaceport.development";
+pub(crate) use sheprd_updater::APP_VERSION;
 
-// What Linux desktops know the app by: the Wayland app ID and X11 WM_CLASS that
-// window rules match, and the name of the desktop entry docks find the icon
-// through. Unlike `APP_ID`, no signature or installed path depends on it.
-pub(crate) const LINUX_APP_ID: &str = "org.sheprd.Sheprd";
+// Wayland app ID and X11 WM_CLASS. The inherited release desktop entry does
+// not match this development-only ID; production packaging remains blocked.
+pub(crate) const LINUX_APP_ID: &str = APP_ID;
 
 // Even tab cells, as on herdr.dev, so short labels do not collapse to a sliver.
 pub(crate) const TAB_WIDTH: f32 = 64.;
