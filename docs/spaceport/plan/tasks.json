@@ -186,7 +186,7 @@
       ],
       "deliverable": "Delete IDE/Git/GitHub/browser/cloud/Teleport/orchestration/mod/scheduler surfaces and dependencies in coherent units.",
       "status": "in_progress",
-      "evidence": ["evidence/t04-terminal-annotations.md", "evidence/t04-client-mods.md", "evidence/t04-legacy-plugin-dependency.md", "evidence/t04-phone-dependency.md", "evidence/t04-device-discovery.md", "evidence/t04-automation-dependency.md", "evidence/t04-browser-dependency.md", "evidence/t04-cloud-teleport-dependency.md", "evidence/t04-git-ide-dispatch-dependency.md"],
+      "evidence": ["evidence/t04-terminal-annotations.md", "evidence/t04-client-mods.md", "evidence/t04-legacy-plugin-dependency.md", "evidence/t04-phone-dependency.md", "evidence/t04-device-discovery.md", "evidence/t04-automation-dependency.md", "evidence/t04-browser-dependency.md", "evidence/t04-cloud-teleport-dependency.md", "evidence/t04-git-ide-dispatch-dependency.md", "evidence/t04-code-server-dependency.md"],
       "must_close_gaps": []
     },
     {
