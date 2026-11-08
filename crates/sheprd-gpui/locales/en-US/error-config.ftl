@@ -42,7 +42,7 @@ error-config-theme-not-found = theme { $name } not found in { $directories }
 error-config-too-many-devices = [devices] must list at most { $limit } devices
 error-config-too-many-font-fallbacks = { $table }.fallback must list at most 8 families
 # $keys lists the config keys, separated by commas.
-error-config-unknown-keys = Sheprd has no setting { $keys }; config-gpui.toml lists every setting
+error-config-unknown-keys = Spaceport has no setting { $keys }; config-gpui.toml lists every setting
 # $name is the layout's name as the config wrote it, quoted.
 error-config-unknown-layout = Unknown sidebar layout { $name }
 

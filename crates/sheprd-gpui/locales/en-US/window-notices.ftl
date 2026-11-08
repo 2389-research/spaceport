@@ -37,6 +37,6 @@ window-notices-shift-select = Hold Shift and drag to select text
 # The config diagnostic cards: the label of the app's own cards (the
 # daemon's card is labeled with the device's name), the copied command
 # chip, and the fold button's name for screen readers.
-window-notices-diagnostic-app = Sheprd
+window-notices-diagnostic-app = Spaceport
 window-notices-diagnostic-copied = Copied the command
 window-notices-diagnostic-full = Full message

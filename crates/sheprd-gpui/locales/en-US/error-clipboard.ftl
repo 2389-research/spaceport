@@ -8,10 +8,10 @@ error-clipboard-size = Clipboard content exceeds the { $limit }-byte limit.
 error-clipboard-timeout = Clipboard acquisition timed out.
 error-clipboard-unsupported = Remote clipboard acquisition is not supported on this platform.
 
-# macOS only: the helper process Sheprd starts to read the pasteboard.
+# macOS only: the helper process Spaceport starts to read the pasteboard.
 # $status is how the helper exited, as the system words it.
 error-clipboard-macos-exited = The macOS clipboard reader exited unsuccessfully ({ $status }). Try pasting again.
-error-clipboard-macos-missing = Sheprd's app was removed or replaced since it started, so it cannot read the clipboard. Restart Sheprd to paste.
+error-clipboard-macos-missing = Spaceport's app was removed or replaced since it started, so it cannot read the clipboard. Restart Spaceport to paste.
 error-clipboard-macos-process = Could not run the macOS clipboard reader
 error-clipboard-macos-response = The macOS clipboard reader returned an invalid response
 error-clipboard-macos-text-encoding = Clipboard text is not valid UTF-8.

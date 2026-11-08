@@ -1,16 +1,16 @@
 # The menu bar: macOS's global one, and the bar Linux and Windows windows
 # draw. Layout names come from layout.ftl and tab-layout.ftl.
 
-menus-herdr = Sheprd
-menus-about-herdr = About Sheprd
+menus-herdr = Spaceport
+menus-about-herdr = About Spaceport
 menus-command-palette = Command Palette
 menus-settings = Settings
 menus-keyboard-shortcuts = Keyboard Shortcuts
 menus-check-for-updates = Check for Updates...
-menus-hide-herdr = Hide Sheprd
+menus-hide-herdr = Hide Spaceport
 menus-hide-others = Hide Others
 menus-show-all = Show All
-menus-quit-herdr = Quit Sheprd
+menus-quit-herdr = Quit Spaceport
 
 menus-file = File
 menus-new-workspace = New Workspace

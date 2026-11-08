@@ -2,7 +2,7 @@
 # show them. Each is the catalog entry of the same name in herdr-commands;
 # `$number` is the workspace, tab, or agent a numbered command focuses.
 
-commands-about = About Sheprd
+commands-about = About Spaceport
 commands-back = Back
 commands-clear-pane = Clear Pane
 commands-close-pane = Close Pane

@@ -25,6 +25,6 @@ config-diagnostic-missing-weight = "{ $family }" has no { $weight } face; using 
 # Fonts are never bundled; the notice names how to install one.
 config-diagnostic-icon-font = Prompt icons need a Nerd Font, and none is installed.
 # On macOS, above the Homebrew command the card shows and copies.
-config-diagnostic-icon-font-homebrew = Install one with Homebrew, then restart Sheprd:
+config-diagnostic-icon-font-homebrew = Install one with Homebrew, then restart Spaceport:
 # Elsewhere. "Symbols Nerd Font Mono" is the font's name.
-config-diagnostic-icon-font-download = Install Symbols Nerd Font Mono from nerdfonts.com, then restart Sheprd.
+config-diagnostic-icon-font-download = Install Symbols Nerd Font Mono from nerdfonts.com, then restart Spaceport.

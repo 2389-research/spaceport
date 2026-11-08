@@ -84,7 +84,8 @@
       "evidence": [
         "evidence/t01-identity.md",
         "evidence/t01-command-identity-cut.md",
-        "evidence/t01-control-copy-cut.md"
+        "evidence/t01-control-copy-cut.md",
+        "evidence/t01-desktop-copy-cut.md"
       ],
       "must_close_gaps": []
     },
@@ -517,7 +518,8 @@
       "evidence": [
         "evidence/t09-core-catalog-status.md",
         "evidence/t01-command-identity-cut.md",
-        "evidence/t01-control-copy-cut.md"
+        "evidence/t01-control-copy-cut.md",
+        "evidence/t01-desktop-copy-cut.md"
       ],
       "must_close_gaps": []
     },
