@@ -47,8 +47,8 @@ python tools/spec.py context T00
 The package validator checks the plan and its links. It does not run the
 desktop app. See [engineering guidance](AGENTS.md), the [Core boundary
 evidence](docs/spaceport/evidence/t02-core-boundary.md), [native platform
-results](docs/spaceport/evidence/native-platform-results.md), and the [release
-identity audit](docs/spaceport/evidence/release-identity-audit.md) before
+results](docs/spaceport/evidence/native-platform-results.md), and the [current
+release identity snapshot](docs/spaceport/evidence/t12-release-identity-147491e2.md) before
 claiming a feature or build is ready.
 
 Do not use the inherited Sheprd release scripts to publish or install

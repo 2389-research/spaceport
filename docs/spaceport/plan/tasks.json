@@ -675,6 +675,7 @@
       "status": "blocked",
       "evidence": [
         "evidence/release-identity-audit.md",
+        "evidence/t12-release-identity-147491e2.md",
         "evidence/t12-external-core-package.md",
         "evidence/t12-cli-guide-correction.md",
         "evidence/t12-readme-correction.md",
