@@ -34,6 +34,9 @@ def capture(binary, log_path):
         environment = {
             "HOME": private,
             "PATH": "/usr/bin:/bin",
+            # The private serve child must stay ours to stop and reap; macOS
+            # otherwise moves it into launchd and outlives this sandbox.
+            "HC_LAUNCHD_DIRECT": str(os.getpid()),
             "HC_SESSION": "spaceport-t00",
             "HC_SOCKET": str(endpoint),
             "TMPDIR": private,
@@ -79,6 +82,10 @@ def capture(binary, log_path):
                             raise RuntimeError(
                                 "hello.methods differs from rpc.discover methods"
                             )
+                        if child.poll() is not None:
+                            raise RuntimeError(
+                                "Core detached from its private test child"
+                            )
                         return {
                             "version": hello["version"],
                             "generation": hello["generation"],
@@ -87,13 +94,39 @@ def capture(binary, log_path):
                             "schema": schema,
                         }
             finally:
-                if child.poll() is None:
+                stop = None
+                stop_error = None
+                if endpoint.exists():
+                    try:
+                        stop = subprocess.run(
+                            [str(binary), "server", "stop"],
+                            env=environment,
+                            cwd=private,
+                            stdin=subprocess.DEVNULL,
+                            stdout=log,
+                            stderr=subprocess.STDOUT,
+                            timeout=10,
+                            check=False,
+                        )
+                    except (OSError, subprocess.TimeoutExpired) as error:
+                        stop_error = error
+                if child.poll() is None and (stop is None or stop.returncode != 0):
                     child.terminate()
+                child_timed_out = False
                 try:
                     child.wait(timeout=10)
                 except subprocess.TimeoutExpired:
+                    child_timed_out = True
                     child.kill()
                     child.wait()
+                if child_timed_out:
+                    raise RuntimeError("Core private child did not stop within 10 seconds")
+                if stop_error is not None:
+                    raise RuntimeError("Core private server stop failed") from stop_error
+                if stop is not None and stop.returncode != 0:
+                    raise RuntimeError(
+                        f"Core private server stop failed with status {stop.returncode}"
+                    )
 
 
 def main():

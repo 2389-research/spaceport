@@ -45,7 +45,7 @@
       ],
       "deliverable": "Pin source/toolchain; generate actual feature/dependency/capability evidence and isolated baseline. No broad code deletion.",
       "status": "done",
-      "evidence": ["evidence/t00-baseline.md", "evidence/t00-dependencies.json", "evidence/t00-core-runtime.json"],
+      "evidence": ["evidence/t00-baseline.md", "evidence/t00-dependencies.json", "evidence/t00-core-runtime.json", "evidence/t00-capture-cleanup.md"],
       "must_close_gaps": []
     },
     {
