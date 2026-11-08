@@ -57,7 +57,7 @@ ledger. This section records a later bounded cut; it does not replace those
 observations. The `sheprd cloud` family, its `Request::Cloud` command, cloud
 host operations, batch event kind, server dispatch, client response handling,
 help, CLI docs, and managed-skill claims are removed together. Control protocol
-version 15 refuses the old wire forms. The app-local batch registry, its
+version 18 refuses the old wire forms in the merged branch. The app-local batch registry, its
 create/destroy confirmation pages, their error mapping, and the sole message
 file were orphaned by that route and removed. The provider-owned `Shape` enum
 remains in `sheprd-control-protocol::cloud` because the retained remote provider
@@ -98,3 +98,16 @@ are still reachable. T04 stays `in_progress` and A30 stays `not_run`; this cut
 does not prove that excluded cloud provisioning has left the runtime. The
 earlier evidence was signed, so the new section needs its own observation
 after integration.
+
+## Merged cloud-route verification
+
+At `ff8ff4ed`, the cloud route was integrated after the Teleport and terminal
+editor control cuts. Control protocol version 18 retains all three refusals.
+The merged protocol library passed 55 tests, including the removed-cloud wire
+case. The default and all-feature app checks passed with only Cargo's existing
+`block v0.1.6` future-compatibility notice. The merged i18n check passed with
+5,226 valid messages in 273 files, and format, file-size, sorted-list, package,
+and diff checks passed. The merged GUI removed-route filter passed 30 tests,
+including cloud, Teleport and terminal editor refusal. Its existing macOS
+linker unwind-size warning remains. Provider settings, jobs, picker rows and backend remain reachable;
+A30 and native product verification remain open.
