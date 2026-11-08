@@ -20,14 +20,15 @@ the test's temporary directory.
 
 Old root `[boxd]` settings become unknown and inert. An old `[cloud.boxd]`
 table is unsupported by the strict `[cloud]` parser and makes config load
-fail with a parse error. A new test checks that startup rejects it without
+fail. A new test checks that startup rejects it without
 rewriting the file. No compatibility parser, silent migration, or credential
 cleanup is included. A person with that old table must remove it from their
 Spaceport config. This remains a startup compatibility limit to verify before
 shipping.
 
-The source/asset absence test first failed on 42 live Boxd references and
-the icon/locale files; after the cut it passed 2/2. The focused catalog test
+The source/asset absence test first failed on Boxd references and the
+icon/locale files. Its first substring scan also caught unrelated names, so
+the matcher was narrowed before the final green run (2/2). The focused catalog test
 passed 1/1 with Boat, Container and Daytona features. The two config tests
 passed 2/2 with GUI default features off. The no-default compile found a type
 inference gap in the device rail when no cloud feature exists; an explicit
