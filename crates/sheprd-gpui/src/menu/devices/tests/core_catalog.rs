@@ -81,6 +81,7 @@ fn device_picker_bounds_core_refusal_but_keeps_the_typed_cause(cx: &mut gpui::Te
                 method: Method::MachineList,
                 kind: Some("fixture".into()),
                 message: long.clone(),
+                hint: None,
             },
         );
     });

@@ -56,23 +56,61 @@ fn calls_are_answered_by_id_even_out_of_order() {
 }
 
 #[test]
-fn a_refusal_keeps_the_cores_kind() {
+fn a_refusal_keeps_the_cores_kind_and_actionable_hint() {
     let (client, mut core) = connected();
     let call = thread::spawn(move || client.kill("t9"));
     let request = core.request();
     let message = json!({"jsonrpc": "2.0", "id": request["id"],
         "error": {"code": -32000, "message": "no terminal t9", "data": {"kind": "not_found", "hint": "hc ls"}}});
     core.send(0, Kind::Data, &serde_json::to_vec(&message).unwrap());
-    match call.join().unwrap() {
-        Err(Error::Refused {
+    let error = call.join().unwrap().unwrap_err();
+    let diagnostic = format!("{error:?}");
+    assert_eq!(
+        error.to_string(),
+        "herdr-core refused terminal.kill: no terminal t9"
+    );
+    match error {
+        Error::Refused {
             method: Method::TerminalKill,
             kind,
             message,
-        }) => {
+            hint,
+        } => {
             assert_eq!(
                 (kind.as_deref(), message.as_str()),
                 (Some("not_found"), "no terminal t9")
             );
+            assert_eq!(hint.as_ref().map(crate::RefusalHint::as_str), Some("hc ls"));
+            assert!(!diagnostic.contains("hc ls"));
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn a_refusal_hint_is_bounded_and_safe_for_one_line() {
+    let (client, mut core) = connected();
+    let call = thread::spawn(move || client.machine_add("fixture.invalid", None, None, false));
+    let request = core.request();
+    let secret = "SECRET-DO-NOT-LOG";
+    let hint = format!("check host\n\u{2028}{}{}", "🙂".repeat(600), secret);
+    let message = json!({"jsonrpc": "2.0", "id": request["id"],
+        "error": {"code": -32000, "message": "login required",
+            "data": {"kind": "needs_login", "hint": hint}}});
+    core.send(0, Kind::Data, &serde_json::to_vec(&message).unwrap());
+    let error = call.join().unwrap().unwrap_err();
+    let diagnostic = format!("{error:?}");
+    match error {
+        Error::Refused {
+            hint: Some(hint), ..
+        } => {
+            assert_eq!(hint.as_str().chars().count(), 512);
+            assert!(hint.as_str().starts_with("check host "));
+            assert!(!hint.as_str().contains('\n'));
+            assert!(!hint.as_str().contains('\u{2028}'));
+            assert!(!hint.as_str().contains(secret));
+            assert!(!diagnostic.contains(secret));
+            assert!(!diagnostic.contains("check host"));
         }
         other => panic!("{other:?}"),
     }

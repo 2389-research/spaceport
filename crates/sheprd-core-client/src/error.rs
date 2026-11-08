@@ -1,7 +1,50 @@
 use crate::{Method, frame, hello};
-use std::{io, path::PathBuf, process::ExitStatus};
+use std::{fmt, io, path::PathBuf, process::ExitStatus};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+/// Core's suggested next step, safe to show only through an explicit UI path.
+/// Wire text is kept on one line and bounded before it enters shared errors.
+#[derive(Clone, PartialEq, Eq)]
+pub struct RefusalHint(String);
+
+impl RefusalHint {
+    const MAX_CHARS: usize = 512;
+
+    /// Returns bounded display text; a hint is guidance, never a command to run.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub(crate) fn from_wire(value: String) -> Option<Self> {
+        if value.is_empty() {
+            return None;
+        }
+        let mut chars = value.chars();
+        let mut safe: String = chars
+            .by_ref()
+            .take(Self::MAX_CHARS)
+            .map(|ch| {
+                if ch.is_control() || matches!(ch, '\u{2028}' | '\u{2029}') {
+                    ' '
+                } else {
+                    ch
+                }
+            })
+            .collect();
+        if chars.next().is_some() {
+            safe.pop();
+            safe.push('…');
+        }
+        Some(Self(safe))
+    }
+}
+
+impl fmt::Debug for RefusalHint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("RefusalHint([redacted])")
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -36,12 +79,13 @@ pub enum Error {
     Protocol(#[from] Violation),
     #[error("{size}-byte terminal attachment is over the {limit}-byte limit")]
     PutTooLarge { size: usize, limit: usize },
-    /// `kind` and `message` are the core's own words, kept for diagnostics.
+    /// `kind` and `message` are Core's words; `hint` is explicit UI guidance.
     #[error("herdr-core refused {method}: {message}")]
     Refused {
         method: Method,
         kind: Option<String>,
         message: String,
+        hint: Option<RefusalHint>,
     },
     #[error("HC_SESSION {0:?} cannot be a folder name")]
     Session(String),

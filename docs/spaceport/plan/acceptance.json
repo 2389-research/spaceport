@@ -58,7 +58,7 @@
       "scenario": "Use unknown/changed host keys and authentication-required fixture hosts.",
       "expected": "No silent trust, password capture, key import or installation; actionable refusal preserves the host.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t02-refusal-hint.md"]
     },
     {
       "id": "A06",

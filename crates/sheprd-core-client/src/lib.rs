@@ -21,7 +21,7 @@ mod tests;
 pub use backend::{CoreBackend, CoreBatch, CoreChanges, CoreTerminal, DocumentInvalidation};
 pub use connection::{Core, MAX_PUT_BYTES};
 pub use endpoint::Endpoint;
-pub use error::{Error, Result, Violation};
+pub use error::{Error, RefusalHint, Result, Violation};
 pub use method::Method;
 pub use start::{PROGRAM, start};
 pub use stream::{Attachment, Chunk, Closed, End, MAX_BUFFERED, Subscription};

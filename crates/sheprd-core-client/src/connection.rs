@@ -4,7 +4,7 @@
 //! channel 0 run side by side, matched to their answers by ID.
 
 use crate::{
-    Endpoint, Error, Method, Result, Violation,
+    Endpoint, Error, Method, RefusalHint, Result, Violation,
     frame::{Decoder, Frame, Kind},
     hello::{GENERATION, Hello},
     stream::{self, Attachment, End, Link, Route, Stream, Subscription},
@@ -56,10 +56,14 @@ struct Answer {
 
 impl Refusal {
     fn into_error(self, method: Method) -> Error {
+        let (kind, hint) = self.data.map_or((None, None), |data| {
+            (data.kind, data.hint.and_then(RefusalHint::from_wire))
+        });
         Error::Refused {
             method,
-            kind: self.data.and_then(|data| data.kind),
+            kind,
             message: self.message,
+            hint,
         }
     }
 }
@@ -76,6 +80,8 @@ struct Refusal {
 struct RefusalData {
     #[serde(default)]
     kind: Option<String>,
+    #[serde(default)]
+    hint: Option<String>,
 }
 
 #[derive(Default)]

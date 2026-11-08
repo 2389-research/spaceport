@@ -59,6 +59,7 @@ fn timeout_is_not_a_conflict_to_retry() {
         method: Method::DocSet,
         kind: Some("conflict".into()),
         message: "stale version".into(),
+        hint: None,
     }));
 }
 
