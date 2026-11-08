@@ -6,7 +6,8 @@ Spaceport is an independent desktop fork of
 defines the product and ownership rules. The [task plan](docs/spaceport/plan/tasks.json),
 [capability matrix](docs/spaceport/plan/capabilities.json), and
 [acceptance record](docs/spaceport/plan/acceptance.json) show what has been
-checked and what remains open.
+checked and what remains open. The [feature reachability snapshot](docs/spaceport/evidence/removal-reachability-6725e923.md)
+maps retained and excluded source routes at a named revision.
 
 The target app keeps native terminals, rich chats, workspaces, customization,
 file interactions, service access, notifications, diagnostics, and a local
