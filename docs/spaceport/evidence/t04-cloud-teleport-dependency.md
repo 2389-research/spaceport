@@ -111,3 +111,30 @@ and diff checks passed. The merged GUI removed-route filter passed 30 tests,
 including cloud, Teleport and terminal editor refusal. Its existing macOS
 linker unwind-size warning remains. Provider settings, jobs, picker rows and backend remain reachable;
 A30 and native product verification remain open.
+
+## Boxd Settings creation route removal
+
+The Boxd account page in Settings no longer offers a New machine card or a
+Create machine action. Its `create_boxd_machine` callback, install/setup
+toggles, and job handoff are gone together. Account key controls, saved-device
+display and removal remain. The account error now appears on the account card.
+The Boxd Settings message catalog and crate README no longer claim that this
+page creates machines.
+
+Two headless UI tests first failed because the New card was still reachable
+for unconfigured and configured accounts. They now pass and also check that
+the account controls remain and no cloud job starts. The retained Core machine
+catalog tests (3) and manual Core Add Device tests (6) pass. The Boxd Settings
+tests pass (3). With `CARGO_INCREMENTAL=0` and the isolated target,
+`cargo +1.99.0 check --locked -p sheprd-gpui --bin sheprd` passed with no
+Rust code warnings. `just check-i18n` passed with 5,177 valid and used messages
+in 271 files. The test link emitted its existing macOS unwind-size warning;
+Cargo reported the existing `block v0.1.6` future-compatibility notice.
+
+This removes one Settings entry point. Smart Dispatch still calls Boxd
+provisioning, and the provider backend, saved credentials, device picker,
+Tailscale, and file/service paths remain. No provider API or personal account
+was accessed in these tests. T04 remains `in_progress`; A30 remains `not_run`.
+Native GUI and full workspace CI were not run. The earlier sections have
+signed observations, so this appended result needs a new observation after
+integration.

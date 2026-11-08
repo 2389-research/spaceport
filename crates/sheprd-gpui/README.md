@@ -642,12 +642,9 @@ account: the API URL (`https://boxd.sh:9443` for boxd's service, or a region
 such as `https://nyc.boxd.sh:9443`), saved to `[boxd]`, and an API key saved
 to the credential store (`HERDR_BOXD_API_KEY` takes precedence, and
 `HERDR_BOXD_API_URL` replaces the URL). Create a key in the boxd console or
-with `boxd auth keys create <name>`; a key belongs to one organization, and
-the machines are made there. **Create machine** makes a machine with a
-generated name from boxd's default Ubuntu image, labelled `sheprd=device` and
-with any `[boxd] labels`, installs Herdr in it when the **Install Herdr**
-switch is on (the default), and saves the device; a failure deletes the
-machine again. boxd machines are full Linux microVMs with a persistent disk.
+with `boxd auth keys create <name>`; a key belongs to one organization.
+Settings lists saved boxd devices and can forget one without deleting its
+machine. boxd machines are full Linux microVMs with a persistent disk.
 One that went to standby or hibernated after being idle, or was stopped, is
 resumed, woken, or started when Sheprd connects. Once a boxd device exists,
 Smart Dispatch's dialogs offer a new machine like **New container**.

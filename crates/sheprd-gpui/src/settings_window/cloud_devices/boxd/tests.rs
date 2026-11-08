@@ -32,7 +32,7 @@ fn draw(cx: &mut VisualTestContext) {
 }
 
 #[gpui::test]
-fn an_unconfigured_account_offers_boxd_and_cannot_create(cx: &mut TestAppContext) {
+fn an_unconfigured_account_keeps_key_controls_without_creation(cx: &mut TestAppContext) {
     let (view, cx) = open(cx);
     draw(cx);
     assert!(cx.debug_bounds("cloud-boxd-card").is_some());
@@ -48,12 +48,32 @@ fn an_unconfigured_account_offers_boxd_and_cannot_create(cx: &mut TestAppContext
             })
         ));
     });
-    let create = cx.debug_bounds("cloud-boxd-create").unwrap().center();
-    cx.simulate_click(create, Default::default());
+    assert!(cx.debug_bounds("cloud-boxd-save").is_some());
+    assert!(cx.debug_bounds("cloud-boxd-new").is_none());
+    assert!(cx.debug_bounds("cloud-boxd-create").is_none());
     view.read_with(cx, |view, cx| {
         let main = view.source.upgrade().unwrap();
         assert!(main.read(cx).cloud_jobs.is_empty());
     });
+}
+
+#[gpui::test]
+fn a_configured_account_has_no_settings_creation_route(cx: &mut TestAppContext) {
+    let (view, cx) = open(cx);
+    view.update_in(cx, |view, _, cx| {
+        view.config.boxd.api_url = Some("https://boxd.sh:9443".into());
+        view.boxd_card.as_mut().unwrap().account = Account::Known(Overview {
+            key: Key::Saved,
+            machines: Some(Ok(1)),
+            devices: Vec::new(),
+        });
+        cx.notify();
+    });
+    draw(cx);
+    assert!(cx.debug_bounds("cloud-boxd-card").is_some());
+    assert!(cx.debug_bounds("cloud-boxd-devices").is_some());
+    assert!(cx.debug_bounds("cloud-boxd-new").is_none());
+    assert!(cx.debug_bounds("cloud-boxd-create").is_none());
 }
 
 /// Failures from the account check and from a removal show in the chosen

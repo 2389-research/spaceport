@@ -1,8 +1,6 @@
 //! The boxd tab of Settings > Cloud devices. Its API URL saves to `[boxd]`
-//! in the local config; its API key saves to the credential store. Creating a
-//! machine hands a job to the main window, which shows progress in
-//! the device picker and a toast when it is ready. Account reads and removals
-//! run through `cloud::worker`, never on the UI thread.
+//! in the local config; its API key saves to the credential store. Account
+//! reads and removals run through `cloud::worker`, never on the UI thread.
 // i18n: migrated
 
 use super::{
@@ -13,7 +11,7 @@ use crate::direction::Logical;
 use crate::{
     boxd::{
         Settings,
-        setup::{self, AddRequest, Key, Overview},
+        setup::{self, Key, Overview},
     },
     cloud::{
         CloudProvider, SavedDevice,
@@ -44,10 +42,6 @@ pub(in crate::settings_window) struct BoxdCard {
     loaded: BoxdFields,
     key: Entity<SearchInput>,
     account: Account,
-    /// The user's approval to install Herdr in machines created from here.
-    install: bool,
-    /// Run the setup script on the next device made here, when one is set.
-    setup: bool,
     message: Option<String>,
     job: Option<Worker>,
 }
@@ -89,8 +83,6 @@ impl BoxdCard {
             loaded,
             key,
             account: Account::Checking,
-            install: true,
-            setup: true,
             message: None,
             job: None,
         }
@@ -232,42 +224,6 @@ impl SettingsWindow {
         });
     }
 
-    /// Hand a new machine to the main window, which runs and reports the job
-    /// so it survives this window closing.
-    fn create_boxd_machine(&mut self, cx: &mut Context<Self>) {
-        let Some(settings) = self.boxd_settings() else {
-            return;
-        };
-        let Some(card) = &mut self.boxd_card else {
-            return;
-        };
-        let name = setup::random_name();
-        let request = AddRequest {
-            settings,
-            name: name.clone(),
-            install: card.install,
-        };
-        let run = card.setup;
-        let script = self.cloud_setup_script(CloudProvider::Boxd, run);
-        let started = self.source.update(cx, |window, cx| {
-            window.start_cloud_job(
-                CloudProvider::Boxd,
-                name.clone(),
-                script,
-                move |cancelled, report| setup::add_device(request, cancelled, report),
-                cx,
-            )
-        });
-        if let Some(card) = &mut self.boxd_card {
-            card.message = Some(match started {
-                Ok(Ok(())) => fl!("settings-cloud-creating", name = name),
-                Ok(Err(error)) => error.localize(),
-                Err(_) => fl!("settings-cloud-boxd-no-window"),
-            });
-        }
-        cx.notify();
-    }
-
     pub(super) fn boxd_config_changed(&mut self, cx: &mut Context<Self>) {
         if let Some(card) = &mut self.boxd_card {
             let loaded = loaded(&self.config);
@@ -300,14 +256,12 @@ impl SettingsWindow {
                 overview.key,
             ),
         };
-        let usable = matches!(&card.account, Account::Known(overview)
-            if matches!(overview.machines, Some(Ok(_))));
         let key_note = match key {
             Key::Environment => fl!("settings-cloud-boxd-key-environment"),
             Key::Saved => fl!("settings-cloud-boxd-key-saved"),
             Key::Missing => fl!("settings-cloud-boxd-key-missing"),
         };
-        let account = self
+        let mut account = self
             .cloud_card(fl!(
                 "settings-cloud-experimental",
                 provider = crate::cloud::name(CloudProvider::Boxd)
@@ -352,53 +306,8 @@ impl SettingsWindow {
                         }),
                 ),
             );
-        let create = ready && usable && crate::cloud::unavailable().is_none();
-        let mut new = self
-            .cloud_card(fl!("settings-cloud-boxd-new"))
-            .debug_selector(|| "cloud-boxd-new".into())
-            .child(self.control_note(fl!("settings-cloud-boxd-new-note")))
-            .child(
-                self.control_switch(
-                    "cloud-boxd-install",
-                    fl!("settings-cloud-install-herdr-in-it"),
-                    card.install,
-                    ready,
-                )
-                .when(ready, |row| {
-                    row.on_click(cx.listener(|this, _, _, cx| {
-                        if let Some(card) = &mut this.boxd_card {
-                            card.install = !card.install;
-                        }
-                        cx.notify();
-                    }))
-                }),
-            )
-            .children(self.cloud_setup_switch(
-                CloudProvider::Boxd,
-                card.setup,
-                ready,
-                |this| {
-                    if let Some(card) = &mut this.boxd_card {
-                        card.setup = !card.setup;
-                    }
-                },
-                cx,
-            ))
-            .child(
-                div().row().justify_end().child(
-                    self.cloud_button(
-                        "cloud-boxd-create",
-                        fl!("settings-cloud-boxd-create"),
-                        create,
-                    )
-                    .debug_selector(|| "cloud-boxd-create".into())
-                    .when(create, |button| {
-                        button.on_click(cx.listener(|this, _, _, cx| this.create_boxd_machine(cx)))
-                    }),
-                ),
-            );
         if let Some(message) = &card.message {
-            new = new.child(div().min_w_0().child(message.clone()));
+            account = account.child(div().min_w_0().child(message.clone()));
         }
         let mut devices = self
             .cloud_card(fl!("settings-cloud-boxd-devices"))
@@ -423,7 +332,6 @@ impl SettingsWindow {
             .gap(px(4.))
             .min_w_0()
             .child(account)
-            .child(new)
             .child(devices)
     }
 }
