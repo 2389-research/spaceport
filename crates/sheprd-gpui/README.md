@@ -1312,10 +1312,8 @@ not replayed on unmuting. An OS notification posted before the mute stays, and
 clicking it still opens its pane. Three things a workspace or tab mute does
 not hold back: notifications posted with `herdr notification show` and terminal
 bells (`[bell]`), which Herdr sends without the workspace or pane they came
-from, and the phone notifications of
-[remote control](../sheprd-remote-control/README.md), which its own daemon
-sends. A device's mute does hold back the first two, since they still arrive
-from that device, but not the phone's.
+from. A device's mute does hold back those notifications, since they still
+arrive from that device.
 
 Mutes stay in this client, in `notification-mutes.json` in its state
 directory, and every window shows the same ones. A mute follows its workspace

@@ -189,7 +189,7 @@ arbitrary repositories on GitHub. For both identities it understands:
 - `https://api.github.com/repos/OWNER/REPO/releases/latest` (stable),
   `/releases?per_page=10` (beta), and `/releases?per_page=20` (display-only history).
 - `https://github.com/OWNER/REPO/releases/download/vVERSION/FILENAME` for
-  manifests, raw signatures, archives, packages, installers and remote host builds.
+  manifests, raw signatures, archives, packages and installers.
 
 The deployed bridge starts discovery at the legacy endpoint so it works before
 the new repository exists. A successful legacy response is authoritative; that updater
@@ -236,13 +236,12 @@ exact, case-sensitive alternatives, not prefix wildcards:
 | Schema 1, GNU Linux | `herdr-gpui-VERSION-TARGET-update.tar.gz` | `sheprd-VERSION-TARGET-update.tar.gz` |
 | Schema 2, GNU Linux | `Herdr-VERSION-TARGET.deb`, `.rpm`, `.pkg.tar.zst` | `Sheprd-VERSION-TARGET.deb`, `.rpm`, `.pkg.tar.zst` |
 | Schema 3, Windows | `Herdr-VERSION-TARGET-setup.exe` | `Sheprd-VERSION-TARGET-setup.exe` |
-| Schema 4, musl host builds | `herdr-remote-control-VERSION-TARGET` | `sheprd-remote-control-VERSION-TARGET` |
 
-The manifest and signature filenames (`update-`, `package-`, `windows-`, and
-`host-manifest.json` / `.sig`), schemas, size limits and target/count bounds stay
+The manifest and signature filenames (`update-`, `package-`, and
+`windows-manifest.json` / `.sig`), schemas, size limits and target/count bounds stay
 unchanged. Each target has one asset per format: a manifest cannot list both
 legacy and new aliases for the same slot. Mixed spellings in different slots
-are allowed. A package manifest still never substitutes for an archive or host
+are allowed. A package manifest still never substitutes for an archive
 manifest. Packaging, signing, attestation and verification now use the new
 publication names together; historical signed releases keep their original bytes.
 
@@ -307,10 +306,6 @@ Installation contracts, beyond accepting a filename:
   the winget identity needs a separately implemented and native-tested installer
   migration before publication; accepting `Sheprd-...-setup.exe` alone does not
   implement that migration.
-- **Remote helpers:** schema 4 accepts either bare host-build filename for the
-  same musl targets. Bytes are verified before copying to the existing
-  version/target cache and remote installation path. Helper commands, service
-  identity, state and wire compatibility must remain usable by the old client.
 - **Manual downloads:** DMGs, Linux manual trees and Windows ZIPs are not
   self-update inputs. Publication uses `Sheprd-VERSION-...` names and updated
   layouts. Test install scripts, the Homebrew cask, winget publication and site
@@ -350,8 +345,8 @@ binary "#{appdir}/Sheprd.app/Contents/MacOS/sheprd"
 **The old path.** A move leaves `Herdr.app` as a relative symlink to `Sheprd.app`,
 hidden from Finder but listed by `ls`. Paths outside the app keep resolving: a
 core started from the old bundle outlives the app, and scripts and shell profiles
-may name it. The app rewrites the paths it owns when it next starts, such as the
-remote control LaunchAgent and the agent skills. A Homebrew move only gets the
+may name it. The app rewrites the paths it owns when it next starts, such as
+the agent skills. A Homebrew move only gets the
 link when the app itself restarts after the upgrade, so a `brew upgrade` run in a
 terminal leaves no link. Nothing removes the link later.
 
@@ -366,7 +361,7 @@ updates as a symlinked installation.
    isolated resources on macOS, Linux and Windows, including Homebrew stable
    and beta, package ownership, rollback, and restart.
 2. Give existing clients time to install it. Retain old releases and their
-   immutable assets, including version-pinned host builds. Prepare the new
+   immutable assets. Prepare the new
    repository permissions, protected environments and signing secrets without
    rotating keys; update OIDC/trusted provenance identities for the later
    repository location. The separate manual Sigstore/provenance verification
@@ -374,7 +369,7 @@ updates as a symlinked installation.
 3. Transfer only after reviewing missed-client recovery and the platform
    prerequisites above. Preserve GitHub's old-repository redirects. Publish
    higher calendar versions, with the same signed manifest families, from the
-   successor. The source rename updates visible desktop/iOS/watchOS branding and
+   successor. The source rename updates visible desktop branding and
    icons, publication assets, site references (`herdrui.dev` to `sheprd.org`) and
    integrations. Deploy those only after review. Keep old install/site URLs operational or
    redirect them as a separate deployment task.
@@ -390,15 +385,7 @@ legacy feed remains authoritative to this compatibility client. Do not recreate
 the repository casually; such a feed needs a continuing publication/recovery
 plan for both legacy and compatibility clients. No feed is created here.
 
-iOS/watchOS use App Store/TestFlight identities, not this GitHub updater. Retain
-the existing `so.pen.herdr.remote` app and extension/watch bundle identifiers,
-`WKCompanionAppBundleIdentifier`, signing team, `group.so.pen.herdr.remote` App
-Group, Keychain service/access groups and APNs topic/entitlements. Changing them
-can strand pairings, shared data, notifications or companion updates. Visible
-names/icons change to Sheprd; no additional iOS compatibility code
-is required for a repository transfer. The identifiers in the
-[historical iOS plan](ios-app-plan.md) describe the upstream app, not a
-Spaceport mobile release. Spaceport no longer includes native iOS/watch source.
+Spaceport has no iOS/watchOS client or phone update route.
 
 ## Packaging API
 
@@ -461,19 +448,16 @@ size, and hash checks and never changes the legacy manifest.
 4. Download both current-run Linux artifacts and both Windows installers
    (Authenticode-signed once Windows signing is set up) without executing their
    contents. Require all three updater
-   archives, all six Linux packages, both installers, and both static
-   `sheprd-remote-control` host builds, check the PEM/public-key match, sign the
-   four exact manifest JSON files, verify the four signatures, and require 64
-   raw bytes each. Upload the DMG, macOS updater archive, the four JSON files
+   archives, all six Linux packages, and both installers. Check the PEM/public-key
+   match, sign the three exact manifest JSON files, verify the three signatures,
+   and require 64 raw bytes each. Upload the DMG, macOS updater archive, the three JSON files
    and raw signatures for the attestation job.
 5. In the separate protected OIDC job, combine these with both Linux artifact
-   sets (manual tarball, `.deb`, `.rpm`, Arch package, updater archive and
-   static host build), both signed Windows zips and installers, and the locked
-   six-target SBOM. Require the exact twenty-seven-file base set, then checksum,
-   Sigstore-sign and attest all twenty-seven files. Each has four sidecars
-   (`.sha256`, `.sha512`, `.sig`, `.crt`); `SHA256SUMS` covers all 135 files.
+   sets (manual tarball, `.deb`, `.rpm`, Arch package, updater archive), both signed
+   Windows zips and installers, and the locked six-target SBOM. Require the exact
+   twenty-three-file base set, then checksum, Sigstore-sign and attest those files.
 6. The protected publication job refuses existing tags/releases, creates a
-   `vVERSION` tag at the validated SHA and a draft, uploads all 136 assets, then
+   `vVERSION` tag at the validated SHA and a draft, uploads the exact signed asset set, then
    re-downloads and verifies the exact set and hashes before publication. The
    separately approved Homebrew job uses only the verified published DMG.
 
@@ -581,7 +565,7 @@ as `~/.local/bin/sheprd`, with safe ancestor permissions. Root, system locations
 symlinked paths, hard-linked binaries, and known package-container environments
 are refused. Supported archive targets are x86_64 GNU and aarch64 GNU Linux.
 The update replaces that executable only: the `sheprd-acp` beside it, which chats
-run, and `sheprd-remote-control`, which Remote control runs, stay as
+run, stays as
 installed until the next manual archive install.
 On macOS the app must be user-owned and its parent writable without elevation;
 the usual root/admin-owned `/Applications` parent is allowed. The installed and

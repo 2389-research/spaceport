@@ -122,9 +122,8 @@ as arguments, so the runner must not have untrusted local users. No GUI executab
 is run, including for version probing. Signing works on a copy of the input app.
 
 The bundle holds `Contents/MacOS/sheprd`, the `sheprd-acp` chat runner,
-`sheprd-remote-control`, `sheprd-nearby`, and the pinned
-upstream `herdr-core`. Packaging takes the helpers from beside each architecture's
-`sheprd` and includes real legacy `herdr-*` helper copies for saved service paths.
+and the pinned upstream `herdr-core`. Packaging takes the helpers from beside
+each architecture's `sheprd` and includes the legacy `herdr-acp` helper copy.
 All helpers and their compatibility copies are signed first without the
 app's entitlements, then `sheprd`, then the bundle, all with hardened runtime and secure
 timestamps. The zipped app must receive JSON status `Accepted`, then the app is
@@ -147,9 +146,8 @@ the Windows target graphs, each the app's joined with those of the programs ship
 `generate-sbom.py`). No separate per-platform manifest or publication job is used.
 The caller must supply the matching release binary; packaging does not cross-build
 or resolve shared libraries. Output is `Sheprd-VERSION-TARGET.tar.gz`, with a
-same-named root containing `bin/sheprd`, `bin/sheprd-acp`,
-`bin/sheprd-remote-control` and `bin/sheprd-nearby`, the
-Bluetooth helper for nearby pairing and presence (all taken from beside the binary), a scalable SVG icon, desktop entry, license and
+same-named root containing `bin/sheprd`, `bin/sheprd-acp`, and `bin/herdr-core`
+(companions taken from beside the binary), a scalable SVG icon, desktop entry, license and
 notice under `share/`, plus `herdr-gpui -> sheprd` and real legacy helper copies.
 The relative main-command symlink follows standalone updates to `sheprd`.
 Install that tree into a chosen prefix with its `bin` on
@@ -198,9 +196,7 @@ OUTPUT_DIR THIRD_PARTY_NOTICES` (standard-library Python, since the runner has n
 zip tool) writes one `Sheprd-VERSION-TARGET.zip` per target with a same-named root
 containing `sheprd.exe`, the windowed `sheprd-launcher.exe` that the
 installer's Start menu shortcut opens, `sheprd-acp.exe`, which the app starts
-chats with, `sheprd-remote-control.exe`, the remote control daemon it runs as a
-scheduled task, and `sheprd-nearby.exe`, the Bluetooth helper for nearby pairing and presence (all
-taken from beside `BINARY`), the pinned `herdr-core.exe`, real legacy executable
+chats with (taken from beside `BINARY`), the pinned `herdr-core.exe`, real legacy executable
 and helper copies, and `licenses/` holding the same license
 and notice files as the Linux tree. Entries carry a fixed timestamp.
 
@@ -252,8 +248,8 @@ fails instead of falling back to unsigned. When signing is on:
 1. `windows-signing.py unpack` extracts the tested zip without running anything.
 2. `azure/login` signs in to Azure with the job's OIDC token, and
    `azure/artifact-signing-action` signs `sheprd.exe`,
-   `sheprd-launcher.exe`, `sheprd-acp.exe`, `sheprd-remote-control.exe`,
-   `sheprd-nearby.exe`, and `herdr-core.exe` with SHA-256 and an RFC 3161 timestamp from
+   `sheprd-launcher.exe`, `sheprd-acp.exe`, and `herdr-core.exe`
+   with SHA-256 and an RFC 3161 timestamp from
    `http://timestamp.acs.microsoft.com`.
 3. `windows-signing.py repack` refuses unless the tree holds exactly the zip's
    files and each executable differs from the tested one only by its appended
@@ -392,8 +388,7 @@ The compatibility exceptions are intentional:
   Setup gracefully stops automation running under either executable name.
 - Runtime service/state identities and the upstream `herdr-core` / `hc` and
   `herdr` command remain compatible. The `HERDR_*` signing/build variables and
-  local `herdr_sign` hook keep their deployed names. iOS module names change,
-  but bundle IDs, app groups and signing/APNs identities do not.
+  local `herdr_sign` hook keep their deployed names.
 
 `scripts/verify-release.sh --legacy` explicitly selects the old immutable asset
 names and exact `penso/herdr-gpui` Sigstore/provenance identity for historical
@@ -409,19 +404,15 @@ signing step of `sign` receives it; builds, tests, metadata, OIDC and publicatio
 never do. The public key is validated before builds and matched against the
 private key before signing exact JSON bytes. See [updater setup](../../docs/updating.md).
 
-The exact release base set is twenty-seven files: the DMG, two manual Linux archives,
+The exact release base set is twenty-three files: the DMG, two manual Linux archives,
 their `.deb`, `.rpm` and Arch packages, two Windows zips and two Windows installers, SBOM, three updater archives, `update-manifest.json`, and its
 raw 64-byte Ed25519 `update-manifest.sig`, plus `package-manifest.json` and
 `package-manifest.sig` for the six Linux packages, `windows-manifest.json` and
-`windows-manifest.sig` for the two signed Windows installers, and
-`host-manifest.json` and `host-manifest.sig` (schema 4) for the two static
-`sheprd-remote-control-VERSION-ARCH-unknown-linux-musl` host builds. Each Linux
-job builds its host build with `build-host.sh`; Sheprd copies it onto SSH and
-cloud machines of that architecture to pair a phone with them
-(`docs/remote-control-plan.md`, "Other machines"). All base files receive SHA-256 and Sigstore sidecars and GitHub
+`windows-manifest.sig` for the two signed Windows installers. All base files
+receive SHA-256 and Sigstore sidecars and GitHub
 provenance in the separate protected OIDC job. The raw signature is not overwritten:
 its Sigstore sidecar is `update-manifest.sig.sig`; the JSON's is
-`update-manifest.json.sig` (and likewise for the package, Windows, and host manifests).
+`update-manifest.json.sig` (and likewise for the package and Windows manifests).
 Starting with `20261102.2`, `artifact-manifest.py create` validates and combines
 the signer's SHA-512 sidecars into one `SHA512SUMS` file. `SHA256SUMS` covers
 every other published file, including `SHA512SUMS`. The six bare Linux package
@@ -430,7 +421,7 @@ This keeps the current set below the 128-asset limit in installed updaters, with
 any platform, signature, or checksum algorithm. Creation refuses sets of 128 or
 more assets. Older immutable releases retain their per-file SHA-512 contract
 and remain verifiable. Missing or additional files fail closed.
-`artifact-manifest.py base-names VERSION DIRECTORY` lists the twenty-seven base names.
+`artifact-manifest.py base-names VERSION DIRECTORY` lists the twenty-three base names.
 The publication job verifies downloaded draft bytes and the complete exact asset
 set before making it public; Homebrew still verifies and uses only the final DMG.
 
@@ -565,7 +556,7 @@ The caller must supply a valid `HERDR_UPDATE_PUBLIC_KEY` before building. All si
 Apple signing variables listed above and `HERDR_UPDATE_SIGNING_KEY` are removed
 from Cargo's environment, including metadata queries. No local `.envrc` is sourced
 until both builds and unsigned assembly succeed.
-Host build dependencies use `CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none`:
+Build dependencies use `CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none`:
 Apple stripping produced unloadable, misaligned proc-macro dylibs during local
 Intel cross-compilation. The setting does not disable optimization or change
 stripping policy for the distributed executable.

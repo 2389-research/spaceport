@@ -22,7 +22,6 @@ local sockets or Windows named pipes, and to supported remote hosts through
 noninteractive SSH. It may start an installed Herdr 1 daemon, or a user-installed
 or bundled pinned herdr-core when needed. The daemons own terminal processes;
 closing the GUI leaves their sessions running. The repository also includes
-the opt-in remote-control service, which does expose a network listener, and
 local control/attach endpoints for app and agent integrations.
 
 In scope:
@@ -37,8 +36,7 @@ In scope:
   store instead). Credential handling lives in `crates/sheprd-github` and
   `crates/sheprd-credentials`.
 - herdr-core stream handling and terminal emulation in `crates/sheprd-core-client`
-  and `crates/sheprd-terminal`, and remote-control authentication, pairing,
-  encryption and HTTP boundaries in `crates/sheprd-remote-control`.
+  and `crates/sheprd-terminal`.
 - Anything in `crates/sheprd-gpui` that lets terminal content escape its pane:
   unintended command execution, clipboard or notification writes, or path
   handling from daemon-supplied strings.
@@ -60,7 +58,7 @@ manual Linux archives with their `.deb`, `.rpm` and Arch packages;
 x86_64 and ARM64 Windows zips and installers; CycloneDX SBOM; three updater archives;
 updater manifest JSON and its raw Ed25519 signature; Linux package manifest JSON and
 its raw Ed25519 signature; Windows installer manifest JSON and its raw Ed25519
-signature; static remote-control host binaries and their signed host manifest)
+signature)
 has checksums, a Sigstore
 signature/certificate, and GitHub provenance.
 Checksums alone are not authentication:

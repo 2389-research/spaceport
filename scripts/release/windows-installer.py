@@ -307,14 +307,12 @@ def check_installation(app, signed_installer):
     """`signed_installer` is the installer whose signatures to require along
     with the installed files', or None to skip signature checks."""
     exe, launcher = app / "sheprd.exe", app / "sheprd-launcher.exe"
-    remote_control = app / "sheprd-remote-control.exe"
     for path in [*(app / name for name in packaged_executables()), app / "licenses" / "THIRD-PARTY-NOTICES.txt"]:
         if not path.is_file():
             raise ValueError(f"Installer did not install {path}")
     # sheprd.exe is the command line, a console program (3); the launcher
-    # opens it without a console window, so it is a GUI one (2), as is the
-    # remote control daemon, which runs as a scheduled task with no console.
-    if (subsystem(exe), subsystem(launcher), subsystem(remote_control)) != (3, 2, 2):
+    # opens it without a console window, so it is a GUI one (2).
+    if (subsystem(exe), subsystem(launcher)) != (3, 2):
         raise ValueError("Installed executables have the wrong subsystems")
     info = subprocess.run([str(exe), "--build-info"], capture_output=True, text=True,
                           check=True, timeout=60).stdout

@@ -1,5 +1,4 @@
-//! The files behind Sheprd's settings, as the app and
-//! `herdr-remote-control enroll` both handle them: `config-gpui.toml`, which
+//! The files behind Sheprd's settings: `config-gpui.toml`, which
 //! is managed unless it predates overrides, `config-gpui.local.toml`, the
 //! user's overrides, and the lock that keeps their writers apart.
 use std::{

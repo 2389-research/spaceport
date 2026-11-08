@@ -37,7 +37,7 @@ class RebrandCompatibility(unittest.TestCase):
                 if not name.endswith(("-manifest.json", "-manifest.sig")):
                     (directory / name).write_bytes(b"artifact")
             for family in ({"require_all_targets": True}, {"packages": True},
-                           {"windows": True}, {"hosts": True}):
+                           {"windows": True}):
                 payload = json.loads(UPDATER.create(directory, version, **family))
                 for asset in payload["assets"]:
                     self.assertIn(asset["name"], names)
@@ -52,7 +52,7 @@ class RebrandCompatibility(unittest.TestCase):
             names = MANIFEST.asset_names(version, legacy=True)
             self.assertIn(f"Herdr-{version}-universal-apple-darwin.dmg", names)
             self.assertIn(f"herdr-gpui-{version}-macos-universal.app.tar.gz", names)
-            self.assertIn(f"herdr-remote-control-{version}-x86_64-unknown-linux-musl", names)
+            self.assertFalse(any("remote-control" in name for name in names))
             (directory / "SHA256SUMS").write_text("".join(f"{'a' * 64}  {name}\n" for name in names))
             self.assertEqual(set(MANIFEST.verify_manifest(directory, version, legacy=True)), set(names))
             with self.assertRaisesRegex(ValueError, "Unexpected checksum manifest"):

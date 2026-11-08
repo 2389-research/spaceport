@@ -17,8 +17,7 @@ impl Naming {
             Self::Herdr => legacy,
             Self::Sheprd => legacy
                 .replacen("herdr-gpui-", "sheprd-", 1)
-                .replacen("Herdr-", "Sheprd-", 1)
-                .replacen("herdr-remote-control-", "sheprd-remote-control-", 1),
+                .replacen("Herdr-", "Sheprd-", 1),
         }
     }
 }

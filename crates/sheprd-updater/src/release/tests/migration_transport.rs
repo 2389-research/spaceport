@@ -193,8 +193,6 @@ fn only_404_uses_the_successor_once_for_every_resource() -> anyhow::Result<()> {
         LATEST_URL.to_owned(),
         RELEASES_URL.into(),
         HISTORY_URL.into(),
-        release_url("20260920.2", "host-manifest.json"),
-        release_url("20260920.2", "host-manifest.sig"),
         release_url("20260920.2", "sheprd-20260920.2-macos-universal.app.tar.gz"),
     ] {
         let new = old.replace("penso/herdr-gpui", "sheprd-labs/sheprd");

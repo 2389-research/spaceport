@@ -6,11 +6,9 @@ version_check "$1"
 case $2 in x86_64-unknown-linux-gnu|aarch64-unknown-linux-gnu) ;; *) fail 'Unsupported Linux target';; esac
 [[ -f $3 && -d $4 ]] || fail 'Binary file and existing output directory required'
 [[ -f $5 && -s $5 ]] || fail 'Nonempty third-party notices file required'
-# The app starts chats with the sheprd-acp beside its executable, runs the
-# sheprd-remote-control beside it as a user service, and starts sheprd-nearby for nearby pairing and presence
-# over Bluetooth, and runs Herdr 2 terminals in the herdr-core there; the
-# build leaves all four beside sheprd (herdr-core fetched pinned).
-companions=(sheprd-acp sheprd-remote-control sheprd-nearby herdr-core)
+# The app starts chats with sheprd-acp beside its executable and runs
+# Herdr 2 terminals in herdr-core. The build leaves both beside sheprd.
+companions=(sheprd-acp herdr-core)
 for companion in "${companions[@]}"; do
     [[ -f $(dirname -- "$3")/$companion ]] || fail "A $companion beside the binary required"
 done

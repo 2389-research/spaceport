@@ -1,5 +1,9 @@
 # Sheprd naming and compatibility
 
+This is the upstream Sheprd rename record. The Spaceport fork's current
+product and release contracts are in [the Spaceport specification](spaceport/SPEC.md);
+its phone service and native mobile app have been removed.
+
 The product is **Sheprd**, the main command is **`sheprd`**, the primary
 repository is [`sheprd-labs/sheprd`](https://github.com/sheprd-labs/sheprd), and
 the site is [sheprd.org](https://sheprd.org). Owned crates use `sheprd-*`;

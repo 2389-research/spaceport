@@ -67,18 +67,13 @@
             ];
           };
           cargoLock.lockFile = ./Cargo.lock;
-          # The app starts chats with the sheprd-acp beside its executable,
-          # runs the sheprd-remote-control beside it as a user service, runs
-          # and starts sheprd-nearby for nearby pairing and presence over Bluetooth.
+          # The app starts chats with sheprd-acp beside its executable.
           cargoBuildFlags = [
             "-p"
             "sheprd-gpui"
             "-p"
             "sheprd-acp"
             "-p"
-            "sheprd-remote-control"
-            "-p"
-            "sheprd-nearby"
           ];
           # The optimized CLI suite CI's main-branch build runs; the rest of
           # the workspace suite needs a desktop or a live daemon.
@@ -115,7 +110,7 @@
               --prefix PATH : ${lib.makeBinPath [ pkgs.wl-clipboard pkgs.xclip ]}
             # Point at the final wrapper, including its clipboard PATH setup.
             ln -s sheprd $out/bin/herdr-gpui
-            for helper in acp nearby remote-control; do
+            for helper in acp; do
               ln -s "sheprd-$helper" "$out/bin/herdr-$helper"
             done
           '';

@@ -65,7 +65,6 @@ commands-previous-workspace = Previous Workspace
 commands-quit = Quit
 commands-reconnect = Reconnect
 commands-reload-config = Reload Config
-commands-remote-pair = Remote Control: Pair Device
 commands-remove-worktree = Delete Worktree Checkout
 commands-rename-pane = Rename Pane
 commands-rename-tab = Rename Tab

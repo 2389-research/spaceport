@@ -25,8 +25,6 @@ class BuildMacosTests(unittest.TestCase):
         scripts.mkdir(parents=True)
         for name in ("build-macos.sh", "common.sh"):
             shutil.copyfile(SCRIPTS / name, scripts / name)
-        # The Swift helper's build needs swiftc; a stand-in records the call.
-        (scripts / "build-nearby.sh").write_text('set -eu\n[[ ! -e sourced && $# == 1 ]]\nprintf "nearby %s\\n" "$1" >> calls\n')
         shutil.copyfile(SCRIPTS.parent / "update-manifest.py", scripts.parent / "update-manifest.py")
         (scripts / "package-macos.sh").write_text(
             'set -eu\n[[ ! -e sourced && $# == 5 && -s $5 ]]\n'
@@ -129,14 +127,11 @@ class BuildMacosTests(unittest.TestCase):
         self.env["FAIL_BUILD"] = "0"
         self.run_build(success=True)
         calls = (self.root / "calls").read_text().splitlines()
-        # Each target's Rust build, then its Swift Bluetooth helper, then its
-        # herdr-core, fetched right after that target's build.
-        self.assertEqual(calls[-8:], [
-            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control --target aarch64-apple-darwin",
-            "nearby aarch64-apple-darwin",
+        # Each target's Rust build and fetched herdr-core precede packaging.
+        self.assertEqual(calls[-6:], [
+            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp --target aarch64-apple-darwin",
             "fetch aarch64-apple-darwin target/aarch64-apple-darwin/release",
-            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control --target x86_64-apple-darwin",
-            "nearby x86_64-apple-darwin",
+            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp --target x86_64-apple-darwin",
             "fetch x86_64-apple-darwin target/x86_64-apple-darwin/release",
             "package", "sign",
         ])

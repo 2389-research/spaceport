@@ -13,15 +13,10 @@ TARGETS = ("aarch64-apple-darwin", "x86_64-apple-darwin",
            "x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu",
            "x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc")
 # Programs packaged beside the app. Each is built with its own default
-# features, which the app's graph lacks (it uses sheprd-remote-control without
-# its `server` feature), so each graph joins the app's with its root as one
-# more component. A root the app also links as a library is the same package,
-# so the shipped application's entry replaces the library's.
+# features, so each graph joins the app's with its root as one more component.
 # keep-sorted start
 SHIPPED = (
     "sheprd-acp",
-    "sheprd-nearby",
-    "sheprd-remote-control",
 )
 # keep-sorted end
 

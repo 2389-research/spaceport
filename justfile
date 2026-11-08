@@ -6,11 +6,8 @@ run *args:
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "$(uname -s)" != Darwin ]; then
-        # The app starts chats with the sheprd-acp, finds the automation
-        # daemon, starts Remote control with the sheprd-remote-control, and
-        # Bluetooth pairing and presence with the sheprd-nearby, all beside
-        # its own executable.
-        cargo build --locked --release -p sheprd-acp -p sheprd-nearby -p sheprd-remote-control
+        # The app starts chats with sheprd-acp beside its executable.
+        cargo build --locked --release -p sheprd-acp
         exec cargo run --locked --release -p sheprd-gpui -- {{args}}
     fi
     {{just_executable()}} bundle release
@@ -32,7 +29,7 @@ run-debug *args:
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "$(uname -s)" != Darwin ]; then
-        cargo build --locked -p sheprd-acp -p sheprd-nearby -p sheprd-remote-control
+        cargo build --locked -p sheprd-acp
         exec cargo run --locked -p sheprd-gpui -- {{args}}
     fi
     {{just_executable()}} bundle debug
@@ -123,14 +120,13 @@ mockup file="" feedback="" capture="":
     exec target/debug/sheprd "${args[@]}"
 
 build-release:
-    cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control
+    cargo build --locked --release -p sheprd-gpui -p sheprd-acp
 
 # Compile and install the release executable into Cargo's bin directory.
 [unix]
 install:
     cargo install --locked --force --path crates/sheprd-gpui --bin sheprd
     cargo install --locked --force --path crates/sheprd-acp
-    cargo install --locked --force --path crates/sheprd-remote-control
 
 # Only installation bypasses the POSIX shell used by the other recipes.
 [windows]
@@ -140,7 +136,6 @@ install:
     cargo install --locked --force --path crates/sheprd-gpui --bin sheprd || exit /b 1
     cargo install --locked --force --path crates/sheprd-launcher || exit /b 1
     cargo install --locked --force --path crates/sheprd-acp || exit /b 1
-    cargo install --locked --force --path crates/sheprd-remote-control
 
 # Regenerate circular Linux artwork on any platform (Python standard library).
 icons-linux:
@@ -173,22 +168,16 @@ bundle profile="release" features="":
     esac
     app=target/{{profile}}/Sheprd.app
     cargo build --locked $flags --target-dir target -p sheprd-gpui --features "{{features}}"
-    cargo build --locked $flags --target-dir target -p sheprd-acp -p sheprd-remote-control
+    cargo build --locked $flags --target-dir target -p sheprd-acp
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
     # Replace the executables rather than rewrite them in place: macOS keeps
     # a signed file's old signature with its inode, so reading the rewritten
     # pages kills the reader, and a chat still running the old sheprd-acp
     # keeps its own copy.
-    rm -f "$app/Contents/MacOS/sheprd" "$app/Contents/MacOS/sheprd-acp" "$app/Contents/MacOS/sheprd-remote-control" "$app/Contents/MacOS/sheprd-nearby"
+    rm -f "$app/Contents/MacOS/sheprd" "$app/Contents/MacOS/sheprd-acp"
     cp target/{{profile}}/sheprd "$app/Contents/MacOS/sheprd"
     # Chats the app starts run the sheprd-acp beside its executable.
     cp target/{{profile}}/sheprd-acp "$app/Contents/MacOS/sheprd-acp"
-    # Remote control runs the sheprd-remote-control beside it as a user service.
-    cp target/{{profile}}/sheprd-remote-control "$app/Contents/MacOS/sheprd-remote-control"
-    # Bluetooth pairing and presence run the Swift helper beside it; without
-    # it the app pairs over the network only.
-    xcrun swiftc -O -swift-version 6 macos/sheprd-nearby/main.swift macos/sheprd-nearby/Framing.swift \
-        macos/sheprd-nearby/Bonjour.swift -o "$app/Contents/MacOS/sheprd-nearby"
     # Herdr 2 terminals run in the pinned herdr-core beside it, as releases
     # bundle it. Fetched once per profile; an offline build goes on without.
     core=target/{{profile}}/herdr-core
@@ -201,7 +190,7 @@ bundle profile="release" features="":
         cp "$core" "$app/Contents/MacOS/herdr-core"
         codesign --force --sign - "$app/Contents/MacOS/herdr-core"
     fi
-    for helper in acp remote-control nearby; do
+    for helper in acp; do
         rm -f "$app/Contents/MacOS/herdr-$helper"
         cp "$app/Contents/MacOS/sheprd-$helper" "$app/Contents/MacOS/herdr-$helper"
     done
@@ -244,11 +233,6 @@ check-i18n:
 # Sort every `keep-sorted start`/`end` region in place.
 sort:
     python3 scripts/check-sorted.py --fix
-
-# Compile the remote control web app's stylesheet (commit the result) with
-# the Tailwind standalone CLI v4, so building the crate needs no Node.
-web-css:
-    tailwindcss --input crates/sheprd-remote-control/src/web/assets/input.css --output crates/sheprd-remote-control/src/web/assets/app.css --minify
 
 test-mockup-wait:
     python3 .claude/skills/gpui-mockup/scripts/test_wait.py

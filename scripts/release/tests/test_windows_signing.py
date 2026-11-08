@@ -101,16 +101,12 @@ class RepackTests(unittest.TestCase):
         self.app = executable()
         self.launcher = executable(length=0x303)
         self.acp = executable(length=0x305)
-        self.remote_control = executable(length=0x307)
-        self.nearby = executable(length=0x30B)
         self.core = executable(length=0x30C)
         self.archive = self.work / f"{ROOT}.zip"
         with zipfile.ZipFile(self.archive, "w") as release:
             PACKAGE.add(release, f"{ROOT}/sheprd.exe", self.app)
             PACKAGE.add(release, f"{ROOT}/sheprd-launcher.exe", self.launcher)
             PACKAGE.add(release, f"{ROOT}/sheprd-acp.exe", self.acp)
-            PACKAGE.add(release, f"{ROOT}/sheprd-remote-control.exe", self.remote_control)
-            PACKAGE.add(release, f"{ROOT}/sheprd-nearby.exe", self.nearby)
             PACKAGE.add(release, f"{ROOT}/herdr-core.exe", self.core)
             for alias, canonical in PACKAGE.ALIASES.items():
                 PACKAGE.add(release, f"{ROOT}/{alias}", release.read(f"{ROOT}/{canonical}"))
@@ -124,8 +120,6 @@ class RepackTests(unittest.TestCase):
         (root / "sheprd.exe").write_bytes(sign(self.app))
         (root / "sheprd-launcher.exe").write_bytes(sign(self.launcher))
         (root / "sheprd-acp.exe").write_bytes(sign(self.acp))
-        (root / "sheprd-remote-control.exe").write_bytes(sign(self.remote_control))
-        (root / "sheprd-nearby.exe").write_bytes(sign(self.nearby))
         (root / "herdr-core.exe").write_bytes(sign(self.core))
         for alias, canonical in PACKAGE.ALIASES.items():
             (root / alias).write_bytes((root / canonical).read_bytes())
@@ -141,7 +135,6 @@ class RepackTests(unittest.TestCase):
             self.assertEqual(signed.read(f"{ROOT}/sheprd.exe"), sign(self.app))
             self.assertEqual(signed.read(f"{ROOT}/sheprd-launcher.exe"), sign(self.launcher))
             self.assertEqual(signed.read(f"{ROOT}/sheprd-acp.exe"), sign(self.acp))
-            self.assertEqual(signed.read(f"{ROOT}/sheprd-remote-control.exe"), sign(self.remote_control))
             self.assertEqual(signed.read(f"{ROOT}/herdr-core.exe"), sign(self.core))
             self.assertEqual(signed.read(f"{ROOT}/licenses/LICENSE"), b"license")
             for alias, canonical in PACKAGE.ALIASES.items():
@@ -156,8 +149,6 @@ class RepackTests(unittest.TestCase):
              lambda: (root / "sheprd-launcher.exe").write_bytes(sign(self.launcher))),
             ("unsigned sheprd-acp", lambda: (root / "sheprd-acp.exe").write_bytes(self.acp),
              lambda: (root / "sheprd-acp.exe").write_bytes(sign(self.acp))),
-            ("unsigned sheprd-remote-control", lambda: (root / "sheprd-remote-control.exe").write_bytes(self.remote_control),
-             lambda: (root / "sheprd-remote-control.exe").write_bytes(sign(self.remote_control))),
             ("unsigned herdr-core", lambda: (root / "herdr-core.exe").write_bytes(self.core),
              lambda: (root / "herdr-core.exe").write_bytes(sign(self.core))),
             ("changed license", lambda: (root / "licenses/LICENSE").write_bytes(b"other"),

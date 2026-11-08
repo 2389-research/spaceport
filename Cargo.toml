@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-credentials", "crates/sheprd-diagnostics", "crates/sheprd-github", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-nearby", "crates/sheprd-orchestrator", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-remote-control", "crates/sheprd-terminal", "crates/sheprd-updater", "crates/sheprd-usage", "crates/sheprd-vcs"]
+members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-credentials", "crates/sheprd-diagnostics", "crates/sheprd-github", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-orchestrator", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-terminal", "crates/sheprd-updater", "crates/sheprd-usage", "crates/sheprd-vcs"]
 resolver = "2"
 
 [workspace.package]
@@ -34,8 +34,6 @@ cbc                  = { features = ["block-padding"], version = "0.2.1" }
 percent-encoding     = "2"
 pbkdf2               = { default-features = false, features = ["hmac"], version = "0.13.0" }
 pulldown-cmark       = { default-features = false, features = ["html"], version = "0.13.6" }
-# The remote control pairing QR, drawn as quads; no image or SVG renderer.
-qrcode               = { default-features = false, version = "0.14.1" }
 # Native chat math: the engine exposes baseline metrics and bounds before rasterization.
 ratex-layout         = "=0.1.15"
 ratex-parser         = "=0.1.15"
@@ -70,8 +68,6 @@ unic-langid          = { features = ["macros"], version = "0.9" }
 fontdb               = "0.24"
 foreign-types        = "0.5"
 futures-lite         = "2"
-# Sends frames on sheprd-remote-control's WebSocket test client; axum already links it.
-futures-util         = { default-features = false, features = ["sink"], version = "0.3" }
 getrandom            = "0.4.3"
 gpui                 = { package = "gpui-pre", version = "=0.3.10" }
 gpui_platform        = { package = "gpui-pre-platform", version = "=0.3.10" }
@@ -93,7 +89,6 @@ sheprd-i18n           = { path = "crates/sheprd-i18n" }
 sheprd-orchestrator   = { path = "crates/sheprd-orchestrator" }
 sheprd-protocol       = { path = "crates/sheprd-protocol" }
 sheprd-remote         = { default-features = false, path = "crates/sheprd-remote" }
-sheprd-remote-control         = { default-features = false, path = "crates/sheprd-remote-control" }
 sheprd-terminal       = { path = "crates/sheprd-terminal" }
 sheprd-updater        = { path = "crates/sheprd-updater" }
 sheprd-usage          = { path = "crates/sheprd-usage" }
@@ -175,26 +170,6 @@ tar                  = "0.4"
 tempfile             = "3"
 test-case            = "3"
 thiserror            = "2"
-# The remote control daemon's runtime and web server; only sheprd-remote-control uses them.
-tokio                = { features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"], version = "1" }
-# Server-rendered HTML for the remote control web app, escaped by default.
-maud                 = "0.27"
-axum                 = { default-features = false, features = ["http1", "json", "matched-path", "query", "tokio", "ws"], version = "0.8" }
-# Drives sheprd-remote-control's router in tests without a socket; axum already links it.
-tower                = { default-features = false, features = ["util"], version = "0.5" }
-# A WebSocket client for sheprd-remote-control's live socket tests; axum's
-# `ws` feature already links this version.
-tokio-tungstenite    = { default-features = false, features = ["handshake"], version = "0.30" }
-tokio-rustls         = { default-features = false, features = ["ring", "tls12"], version = "0.26" }
-# sheprd-remote-control's APNs sender for iOS Live Activities: APNs speaks only
-# HTTP/2, which ureq lacks. hyper's own HTTP/2 client (plus h2) over the
-# tokio-rustls above on the daemon's Tokio runtime is the smallest maintained
-# stack for it: axum already links hyper, hyper-util, and http-body-util, so
-# only h2 is new. Not reqwest, which would bring a second connection pool and
-# TLS configuration; not a2, which pins its own HTTP and crypto stacks.
-http-body-util       = "0.1"
-hyper                = { default-features = false, features = ["client", "http2"], version = "1" }
-hyper-util           = { default-features = false, features = ["tokio"], version = "0.1" }
 # Certificate validity dates for rcgen, from a `SystemTime`.
 time                 = { default-features = false, features = ["std"], version = "0.3.47" }
 toml                 = "1.1"

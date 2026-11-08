@@ -176,7 +176,6 @@ fn both_naming_contracts_authenticate_and_select_through_both_repository_familie
     }
     Ok(())
 }
-
 #[test]
 fn canonical_metadata_does_not_change_channel_version_or_signature_policy() -> anyhow::Result<()> {
     let mut fixture = Fixture::new(
@@ -280,45 +279,6 @@ fn metadata_still_binds_exact_repository_tag_and_file() -> anyhow::Result<()> {
             parse_release(&serde_json::to_vec(&metadata)?),
             Err(Error::ReleaseAsset)
         ));
-    }
-    Ok(())
-}
-
-#[test]
-fn remote_helpers_use_the_same_transfer_and_signed_naming_contract() -> anyhow::Result<()> {
-    for target in HOST_TARGETS {
-        for prefix in ["herdr-remote-control", "sheprd-remote-control"] {
-            let mut manifest = fixture();
-            manifest.schema = 4;
-            manifest.assets[0].target = target.into();
-            manifest.assets[0].name = format!("{prefix}-{VERSION}-{target}");
-            let bytes = serde_json::to_vec(&manifest)?;
-            let key = SigningKey::from_bytes(&[42; 32]);
-            let public = hex(key.verifying_key().as_bytes());
-            for tampered in [false, true] {
-                let result = host::host_asset_with(VERSION, &public, target, |url, _| {
-                    if url.contains("/penso/herdr-gpui/") {
-                        return Err(Error::HttpStatus(404));
-                    }
-                    assert!(url.starts_with(
-                        "https://github.com/sheprd-labs/sheprd/releases/download/v20260920.2/"
-                    ));
-                    if url.ends_with("host-manifest.json") {
-                        return Ok(bytes.clone());
-                    }
-                    let mut sig = key.sign(&bytes).to_bytes();
-                    if tampered {
-                        sig[0] ^= 1;
-                    }
-                    Ok(sig.to_vec())
-                });
-                if tampered {
-                    assert!(matches!(result, Err(Error::Signature(_))));
-                } else {
-                    assert_eq!(result?, manifest.assets[0]);
-                }
-            }
-        }
     }
     Ok(())
 }

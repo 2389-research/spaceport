@@ -58,10 +58,6 @@ class ReleaseTests(unittest.TestCase):
         binary.write_bytes(build_identity())
         acp = self.work / "sheprd-acp"
         acp.write_bytes(b"chat program")
-        remote_control = self.work / "sheprd-remote-control"
-        remote_control.write_bytes(b"remote control daemon")
-        nearby = self.work / "sheprd-nearby"
-        nearby.write_bytes(b"bluetooth helper")
         core = self.work / "herdr-core"
         core.write_bytes(b"herdr-core daemon")
         for target in ("x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"):
@@ -71,9 +67,7 @@ class ReleaseTests(unittest.TestCase):
                     base = f"Sheprd-20260920.3-{target}/"
                     files = {m.name: m for m in archive.getmembers() if m.isfile()}
                     self.assertEqual(set(files), {base + p for p in [
-                        "bin/sheprd", "bin/sheprd-acp", "bin/sheprd-remote-control",
-                        "bin/herdr-acp", "bin/herdr-remote-control", "bin/herdr-nearby",
-                        "bin/sheprd-nearby",
+                        "bin/sheprd", "bin/sheprd-acp", "bin/herdr-acp",
                         "bin/herdr-core",
                         "share/applications/org.sheprd.Sheprd.desktop",
                         "share/icons/hicolor/scalable/apps/sheprd.svg",
@@ -89,7 +83,7 @@ class ReleaseTests(unittest.TestCase):
                     self.assertEqual(alias.linkname, "sheprd")
                     self.assertEqual(archive.extractfile(base + "bin/herdr-gpui").read(), binary.read_bytes())
                     for legacy, canonical in [(f"herdr-{helper}", f"sheprd-{helper}")
-                                              for helper in ("acp", "remote-control", "nearby")]:
+                                              for helper in ("acp",)]:
                         for name in (legacy, canonical):
                             self.assertTrue(files[base + "bin/" + name].isreg())
                             self.assertEqual(files[base + "bin/" + name].mode & 0o777, 0o755)
@@ -97,11 +91,6 @@ class ReleaseTests(unittest.TestCase):
                                          archive.extractfile(base + "bin/" + canonical).read())
                     self.assertEqual(files[base + "bin/sheprd-acp"].mode & 0o777, 0o755)
                     self.assertEqual(archive.extractfile(base + "bin/sheprd-acp").read(), acp.read_bytes())
-                    self.assertEqual(files[base + "bin/sheprd-remote-control"].mode & 0o777, 0o755)
-                    self.assertEqual(archive.extractfile(base + "bin/sheprd-remote-control").read(),
-                                     remote_control.read_bytes())
-                    self.assertEqual(files[base + "bin/sheprd-nearby"].mode & 0o777, 0o755)
-                    self.assertEqual(archive.extractfile(base + "bin/sheprd-nearby").read(), nearby.read_bytes())
                     self.assertEqual(files[base + "bin/herdr-core"].mode & 0o777, 0o755)
                     self.assertEqual(archive.extractfile(base + "bin/herdr-core").read(), core.read_bytes())
                     self.assertEqual(archive.extractfile(base + "share/licenses/herdr-gpui/HERDR-CORE-LICENSES.txt").read(),
@@ -134,16 +123,6 @@ class ReleaseTests(unittest.TestCase):
                                  self.notices, success=False)
         self.assertIn("A sheprd-acp beside the binary required", result.stderr)
         acp.write_bytes(b"chat program")
-        remote_control.unlink()
-        result = self.run_script("package-linux.sh", "20260920.3", "x86_64-unknown-linux-gnu", binary, self.work,
-                                 self.notices, success=False)
-        self.assertIn("A sheprd-remote-control beside the binary required", result.stderr)
-        remote_control.write_bytes(b"remote control daemon")
-        nearby.unlink()
-        result = self.run_script("package-linux.sh", "20260920.3", "x86_64-unknown-linux-gnu", binary, self.work,
-                                 self.notices, success=False)
-        self.assertIn("A sheprd-nearby beside the binary required", result.stderr)
-        nearby.write_bytes(b"bluetooth helper")
         core.unlink()
         result = self.run_script("package-linux.sh", "20260920.3", "x86_64-unknown-linux-gnu", binary, self.work,
                                  self.notices, success=False)
@@ -162,10 +141,6 @@ class ReleaseTests(unittest.TestCase):
         launcher.write_bytes(b"windowed launcher")
         acp = self.work / "sheprd-acp.exe"
         acp.write_bytes(b"chat program")
-        remote_control = self.work / "sheprd-remote-control.exe"
-        remote_control.write_bytes(b"remote control daemon")
-        nearby = self.work / "sheprd-nearby.exe"
-        nearby.write_bytes(b"bluetooth helper")
         core = self.work / "herdr-core.exe"
         core.write_bytes(b"herdr-core daemon")
         target = "x86_64-pc-windows-msvc"
@@ -175,8 +150,8 @@ class ReleaseTests(unittest.TestCase):
         with zipfile.ZipFile(output) as archive:
             self.assertIsNone(archive.testzip())
             self.assertEqual(set(archive.namelist()), {base + p for p in [
-                "sheprd.exe", "sheprd-launcher.exe", "sheprd-acp.exe", "sheprd-remote-control.exe", "sheprd-nearby.exe", "herdr-core.exe",
-                "herdr-gpui.exe", "herdr-gpui-launcher.exe", "herdr-acp.exe", "herdr-remote-control.exe", "herdr-nearby.exe",
+                "sheprd.exe", "sheprd-launcher.exe", "sheprd-acp.exe", "herdr-core.exe",
+                "herdr-gpui.exe", "herdr-gpui-launcher.exe", "herdr-acp.exe",
                 "licenses/LICENSE", "licenses/NOTICE", "licenses/LICENSE-octicons",
                 "licenses/LICENSE-APACHE", "licenses/NOTICE.md", "licenses/SOUND-NOTICE.md",
                 "licenses/THIRD-PARTY-NOTICES.txt", "licenses/HERDR-CORE-LICENSES.txt",
@@ -187,11 +162,9 @@ class ReleaseTests(unittest.TestCase):
             for legacy, canonical in [("herdr-gpui.exe", "sheprd.exe"),
                                       ("herdr-gpui-launcher.exe", "sheprd-launcher.exe"),
                                       *((f"herdr-{helper}.exe", f"sheprd-{helper}.exe")
-                                        for helper in ("acp", "remote-control", "nearby"))]:
+                                        for helper in ("acp",))]:
                 self.assertEqual(archive.read(base + legacy), archive.read(base + canonical))
             self.assertEqual(archive.read(base + "sheprd-acp.exe"), acp.read_bytes())
-            self.assertEqual(archive.read(base + "sheprd-remote-control.exe"), remote_control.read_bytes())
-            self.assertEqual(archive.read(base + "sheprd-nearby.exe"), nearby.read_bytes())
             self.assertEqual(archive.read(base + "herdr-core.exe"), core.read_bytes())
             self.assertEqual(archive.read(base + "licenses/HERDR-CORE-LICENSES.txt"),
                              (SCRIPTS / "herdr-core-licenses.txt").read_bytes())
@@ -215,14 +188,6 @@ class ReleaseTests(unittest.TestCase):
         result = self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices, success=False)
         self.assertIn("A sheprd-acp.exe beside the binary required", result.stderr)
         acp.write_bytes(b"chat program")
-        remote_control.unlink()
-        result = self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices, success=False)
-        self.assertIn("A sheprd-remote-control.exe beside the binary required", result.stderr)
-        remote_control.write_bytes(b"remote control daemon")
-        nearby.unlink()
-        result = self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices, success=False)
-        self.assertIn("A sheprd-nearby.exe beside the binary required", result.stderr)
-        nearby.write_bytes(b"bluetooth helper")
         core.unlink()
         result = self.run_windows("20260920.3", target, binary, launcher, self.work, self.notices, success=False)
         self.assertIn("A herdr-core.exe beside the binary required", result.stderr)
@@ -276,8 +241,7 @@ class ReleaseTests(unittest.TestCase):
 
     def macos_builds(self, arm_worktree=False, intel_worktree=False):
         """Each architecture's build folder, as the build leaves it:
-        herdr-gpui and the sheprd-acp, sheprd-remote-control,
-        the Swift sheprd-nearby, and fetched herdr-core beside it, in a folder
+        herdr-gpui, sheprd-acp, and fetched herdr-core beside it, in a folder
         the mock lipo reads the architecture from."""
         binaries = []
         for arch, worktree in (("arm64", arm_worktree), ("x86_64", intel_worktree)):
@@ -285,8 +249,6 @@ class ReleaseTests(unittest.TestCase):
             folder.mkdir(exist_ok=True)
             (folder / "herdr-gpui").write_bytes(build_identity(worktree))
             (folder / "sheprd-acp").write_bytes(b"chat program")
-            (folder / "sheprd-remote-control").write_bytes(b"remote control daemon")
-            (folder / "sheprd-nearby").write_bytes(b"bluetooth helper")
             (folder / "herdr-core").write_bytes(b"herdr-core daemon")
             binaries.append(folder / "herdr-gpui")
         return binaries
@@ -297,10 +259,8 @@ class ReleaseTests(unittest.TestCase):
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices)
         app = self.work / "Sheprd.app"
         self.assertEqual({str(p.relative_to(app)) for p in app.rglob("*") if p.is_file()}, {
-            "Contents/MacOS/sheprd", "Contents/MacOS/sheprd-acp", "Contents/MacOS/sheprd-remote-control",
-            "Contents/MacOS/sheprd-nearby", "Contents/MacOS/herdr-core",
-            "Contents/MacOS/herdr-acp", "Contents/MacOS/herdr-remote-control",
-            "Contents/MacOS/herdr-nearby",
+            "Contents/MacOS/sheprd", "Contents/MacOS/sheprd-acp", "Contents/MacOS/herdr-core",
+            "Contents/MacOS/herdr-acp",
             "Contents/Info.plist", "Contents/Resources/Sheprd.icns",
             "Contents/Resources/Assets.car",
             "Contents/Resources/LICENSE-APACHE", "Contents/Resources/NOTICE.md",
@@ -312,7 +272,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual((app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").read_bytes(), self.notices.read_bytes())
         self.assertFalse((app / "Contents/MacOS/Herdr").exists())
         self.assertFalse((app / "Contents/MacOS/sheprd").is_symlink())
-        for helper in ("acp", "remote-control", "nearby"):
+        for helper in ("acp",):
             self.assertEqual((app / f"Contents/MacOS/herdr-{helper}").read_bytes(),
                              (app / f"Contents/MacOS/sheprd-{helper}").read_bytes())
         self.assertEqual((app / "Contents/Resources/HERDR-CORE-LICENSES.txt").read_bytes(),
@@ -325,7 +285,7 @@ class ReleaseTests(unittest.TestCase):
 
     def test_assembly_requires_each_companion_beside_each_binary(self):
         self.mock_tools()
-        for companion in ("sheprd-acp", "sheprd-remote-control", "sheprd-nearby", "herdr-core"):
+        for companion in ("sheprd-acp", "herdr-core"):
             with self.subTest(companion=companion):
                 arm, intel = self.macos_builds()
                 (intel.parent / companion).unlink()
@@ -377,10 +337,8 @@ class ReleaseTests(unittest.TestCase):
         (app / "Contents/MacOS/sheprd").write_text("never run")
         (app / "Contents/MacOS/sheprd").chmod(0o755)
         (app / "Contents/MacOS/sheprd-acp").write_text("never run")
-        (app / "Contents/MacOS/sheprd-remote-control").write_text("never run")
-        (app / "Contents/MacOS/sheprd-nearby").write_text("never run")
         (app / "Contents/MacOS/herdr-core").write_text("never run")
-        for helper in ("acp", "remote-control", "nearby"):
+        for helper in ("acp",):
             (app / f"Contents/MacOS/herdr-{helper}").write_text("never run")
         (app / "Contents/Resources").mkdir()
         (app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").write_bytes(self.notices.read_bytes())
@@ -417,10 +375,8 @@ class ReleaseTests(unittest.TestCase):
         (app / "Contents/MacOS/sheprd").write_text("never run")
         (app / "Contents/MacOS/sheprd").chmod(0o755)
         (app / "Contents/MacOS/sheprd-acp").write_text("never run")
-        (app / "Contents/MacOS/sheprd-remote-control").write_text("never run")
-        (app / "Contents/MacOS/sheprd-nearby").write_text("never run")
         (app / "Contents/MacOS/herdr-core").write_text("never run")
-        for helper in ("acp", "remote-control", "nearby"):
+        for helper in ("acp",):
             (app / f"Contents/MacOS/herdr-{helper}").write_text("never run")
         (app / "Contents/Resources").mkdir()
         (app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").write_bytes(self.notices.read_bytes())
@@ -487,11 +443,10 @@ class ReleaseTests(unittest.TestCase):
         signs = [c for c in calls if c[:2] == ["codesign", "--force"]]
         self.assertTrue(any(c[-1].endswith("/Contents/MacOS/sheprd") for c in signs))
         self.assertTrue(any(c[-1].endswith("/Sheprd.app") for c in signs))
-        # The nested sheprd-acp, sheprd-remote-control,
-        # sheprd-nearby, and herdr-core are signed before the app seals it,
+        # The nested sheprd-acp and herdr-core are signed before the app seals it,
         # without the app's entitlements.
         targets = [c[-1].rsplit("/", 1)[-1] for c in signs]
-        for nested in ("sheprd-acp", "sheprd-remote-control", "sheprd-nearby", "herdr-core"):
+        for nested in ("sheprd-acp", "herdr-core"):
             self.assertLess(targets.index(nested), targets.index("Sheprd.app"))
             self.assertFalse(any("--entitlements" in c for c in signs if c[-1].endswith(f"/{nested}")))
         self.assertTrue(all("--timestamp" in c for c in signs))

@@ -114,7 +114,7 @@ class ReleaseTargets(unittest.TestCase):
         self.assertNotIn("secrets.", package)
         # Bash, so "$TARGET" and friends expand on the Windows runner.
         self.assertIn("    defaults:\n      run:\n        shell: bash\n", package)
-        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp -p sheprd-remote-control -p sheprd-nearby --target "$TARGET"',
+        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp --target "$TARGET"',
                         'python scripts/release/package-windows.py "$VERSION" "$TARGET"',
                         'python scripts/release/windows-installer.py install-iscc',
                         'python scripts/release/windows-installer.py build "$VERSION" "$TARGET"',
@@ -155,11 +155,9 @@ class ReleaseTargets(unittest.TestCase):
         self.assertEqual(re.findall(r"- runner: (\S+)\n            target: (\S+)", linux), [
             ("ubuntu-24.04", "x86_64-unknown-linux-gnu"),
             ("ubuntu-24.04-arm", "aarch64-unknown-linux-gnu")])
-        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-acp -p sheprd-remote-control -p sheprd-nearby --target "$TARGET"',
+        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-acp --target "$TARGET"',
                         'python3 scripts/release/smoke-cli.py "target/$TARGET/release/sheprd"',
                         '"target/$TARGET/release/sheprd-acp" --help',
-                        '"target/$TARGET/release/sheprd-remote-control" --version',
-                        '"target/$TARGET/release/sheprd-nearby" --version',
                         'python3 scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"',
                         '"target/$TARGET/release/herdr-core" --version',
                         'test "$(rustc -vV | sed -n \'s/^host: //p\')" = "$TARGET"',
@@ -177,7 +175,7 @@ class ReleaseTargets(unittest.TestCase):
         self.assertEqual(re.findall(r"- runner: (\S+)\n            target: (\S+)", windows), [
             ("windows-2025", "x86_64-pc-windows-msvc"),
             ("windows-11-arm", "aarch64-pc-windows-msvc")])
-        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp -p sheprd-remote-control -p sheprd-nearby --target "$TARGET"',
+        for command in ('cargo build --locked --release -p sheprd-gpui -p sheprd-launcher -p sheprd-acp --target "$TARGET"',
                         'python scripts/release/smoke-cli.py "target/$TARGET/release/sheprd.exe"',
                         'python scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"',
                         '"target/$TARGET/release/herdr-core.exe" --version',
@@ -196,10 +194,8 @@ class ReleaseTargets(unittest.TestCase):
         self.assertIn('python3 scripts/release/fetch-herdr-core.py "$TARGET" "target/$TARGET/release"', macos)
         self.assertIn('"target/$TARGET/release/herdr-core" --version', macos)
         self.assertIn("target/${{ matrix.target }}/release/herdr-core\n", macos)
-        self.assertIn("binaries/arm64/sheprd-nearby binaries/x86_64/sheprd-nearby\n", jobs["sign"])
-        self.assertIn('"target/$TARGET/release/sheprd-nearby.exe" --version', jobs["windows"])
-        # The Swift helper ships on macOS; the Rust one only on Linux and Windows.
-        self.assertNotIn("-p sheprd-nearby", macos)
+        self.assertNotIn("sheprd-nearby", workflow)
+        self.assertNotIn("sheprd-remote-control", workflow)
         for name in ("macos-build", "linux", "windows"):
             # `cargo test` rebuilds the binary with dev-dependency features and
             # overwrites the one built for release; the shipped bytes are
@@ -372,12 +368,8 @@ class ReleaseTargets(unittest.TestCase):
         for name in ("update-manifest.json", "update-manifest.sig"):
             self.assertIn(f"            dist/{name}\n", sign)
         self.assertIn('test "$(wc -c < dist/update-manifest.sig | tr -d \' \')" = 64', sign)
-        # Host builds: built static in each Linux job, listed and signed here.
-        self.assertIn('create dist "$VERSION" --hosts', sign)
-        self.assertIn('test "$(wc -c < dist/host-manifest.sig | tr -d \' \')" = 64', sign)
-        for name in ("host-manifest.json", "host-manifest.sig"):
-            self.assertIn(f"            dist/{name}\n", sign)
-        self.assertIn('build-host.sh "$VERSION" "$HOST_TARGET" dist', jobs["linux"])
+        self.assertNotIn("host-manifest", sign)
+        self.assertNotIn("build-host.sh", jobs["linux"])
 
 
 class WindowsTrust(unittest.TestCase):
@@ -396,7 +388,7 @@ class WindowsTrust(unittest.TestCase):
         for setting in ("timestamp-rfc3161: http://timestamp.acs.microsoft.com", "timestamp-digest: SHA256",
                         "file-digest: SHA256", "exclude-environment-credential: true",
                         "cache-dependencies: false", "name: windows-package-${{ matrix.target }}",
-                        "}}\\sheprd.exe\n", "}}\\sheprd-launcher.exe\n", "}}\\sheprd-acp.exe\n", "}}\\sheprd-remote-control.exe\n", "}}\\sheprd-nearby.exe\n", "}}\\herdr-core.exe\n",
+                        "}}\\sheprd.exe\n", "}}\\sheprd-launcher.exe\n", "}}\\sheprd-acp.exe\n", "}}\\herdr-core.exe\n",
                         "name: windows-signed-${{ matrix.target }}"):
             self.assertIn(setting, sign)
         # Unpack, sign, check and repack, then sign the installer, then verify.
@@ -529,35 +521,6 @@ class SbomMerge(unittest.TestCase):
                 self.generate([component] * (len(SBOM.TARGETS) - 1) +
                               [dict(component, scope="required", **{field: value})])
 
-    def test_a_shipped_root_the_app_links_replaces_its_library_entry(self):
-        # The app links sheprd-remote-control as a library; the release ships it
-        # as a program, whose root differs in type, purl, and nested targets.
-        name = "sheprd-remote-control"
-        library = {"bom-ref": name, "name": name, "type": "library", "purl": "lib", "scope": "required"}
-        root = {"bom-ref": name, "name": name, "type": "application", "purl": "bin", "components": [{"bom-ref": "bin"}]}
-        documents = [document for _ in SBOM.TARGETS for document in (
-            {"bomFormat": "CycloneDX", "specVersion": "1.5",
-             "metadata": {"component": {"bom-ref": "herdr", "name": "herdr-gpui"}},
-             "components": [dict(library)],
-             "dependencies": [{"ref": "herdr", "dependsOn": [name]}, {"ref": name, "dependsOn": []}]},
-            *({"bomFormat": "CycloneDX", "specVersion": "1.5",
-               "metadata": {"component": dict(root) if shipped == name else
-                            {"bom-ref": shipped, "name": shipped, "type": "application"}},
-               "components": [{"bom-ref": "tokio", "name": "tokio", "scope": "required"}],
-               "dependencies": [{"ref": shipped, "dependsOn": ["tokio"]}, {"ref": "tokio", "dependsOn": []}]}
-              for shipped in SBOM.SHIPPED))]
-        with tempfile.TemporaryDirectory() as temp:
-            output = Path(temp) / "union.json"
-            with mock.patch.object(SBOM.sys, "argv", ["generate-sbom.py", str(output)]), \
-                    mock.patch.object(SBOM.shutil, "which", side_effect=lambda tool: f"/mock/{tool}"), \
-                    mock.patch.object(SBOM.subprocess, "run"), \
-                    mock.patch.object(Path, "read_text", side_effect=[json.dumps(d) for d in documents]):
-                SBOM.main()
-            bom = json.loads(output.read_text())
-        entry = next(component for component in bom["components"] if component["bom-ref"] == name)
-        self.assertEqual(entry, dict(root, scope="required"))
-        self.assertIn({"ref": name, "dependsOn": ["tokio"]}, bom["dependencies"])
-
     def test_invalid_scope_rejected(self):
         for scope in (None, "unknown"):
             with self.subTest(scope=scope), self.assertRaisesRegex(ValueError, "Invalid SBOM component scope"):
@@ -602,10 +565,7 @@ class ReleaseSecurity(unittest.TestCase):
             "sheprd-20260920.1-x86_64-unknown-linux-gnu-update.tar.gz",
             "sheprd-20260920.1-aarch64-unknown-linux-gnu-update.tar.gz",
             "update-manifest.json", "update-manifest.sig", "package-manifest.json", "package-manifest.sig",
-            "windows-manifest.json", "windows-manifest.sig",
-            *(f"sheprd-remote-control-20260920.1-{target}"
-              for target in ("x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl")),
-            "host-manifest.json", "host-manifest.sig"})
+            "windows-manifest.json", "windows-manifest.sig"})
         # Five files per base asset; SHA256SUMS lists all but itself.
         assets = len(MANIFEST.base_names(VERSION)) * 5 + len(MANIFEST.package_aliases(VERSION))
         self.assertEqual(len((self.path / "SHA256SUMS").read_text().splitlines()), assets)

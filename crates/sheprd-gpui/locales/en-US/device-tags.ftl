@@ -7,12 +7,4 @@ device-tags-also-title = Also tag {$device}
 device-tags-folded = {$group} (collapsed)
 device-tags-new = New group…
 device-tags-remove-section = No group
-device-tags-synced = Tags synced · { $count ->
-    [one] 1 phone
-   *[other] {$count} phones
-}
-device-tags-waiting = { $count ->
-    [one] 1 device waiting for tags
-   *[other] {$count} devices waiting for tags
-}
 device-tags-page = Device tags

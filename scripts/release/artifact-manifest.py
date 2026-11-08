@@ -29,18 +29,14 @@ def base_names(version, legacy=False):
             f"sheprd-{version}-aarch64-unknown-linux-gnu-update.tar.gz",
             "update-manifest.json", "update-manifest.sig",
             "package-manifest.json", "package-manifest.sig",
-            "windows-manifest.json", "windows-manifest.sig",
-            f"sheprd-remote-control-{version}-x86_64-unknown-linux-musl",
-            f"sheprd-remote-control-{version}-aarch64-unknown-linux-musl",
-            "host-manifest.json", "host-manifest.sig"]
+            "windows-manifest.json", "windows-manifest.sig"]
     if legacy:
-        return [name.replace("Sheprd-", "Herdr-").replace("sheprd-remote-control-", "herdr-remote-control-")
+        return [name.replace("Sheprd-", "Herdr-")
                 .replace("sheprd-", "herdr-gpui-") for name in names]
     return names
 
 
-UPDATER_SIGNATURES = ("update-manifest.sig", "package-manifest.sig", "windows-manifest.sig",
-                      "host-manifest.sig")
+UPDATER_SIGNATURES = ("update-manifest.sig", "package-manifest.sig", "windows-manifest.sig")
 
 
 def package_aliases(version, legacy=False):
