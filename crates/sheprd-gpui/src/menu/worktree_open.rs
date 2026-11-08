@@ -175,7 +175,7 @@ impl SheprdWindow {
         // Opening can establish the branch-only source's parent membership before
         // its response reaches the UI. Allow only the listed identity, while pending.
         if self.menu.page != Some(Page::Dialog(WorkspaceAction::OpenWorktree))
-            || self.menu.creation.is_none()
+            || self.menu.opening.is_none()
             || target.worktree.is_some()
             || target.branch.is_none()
         {
@@ -208,7 +208,7 @@ impl SheprdWindow {
     pub(super) fn open_existing_worktrees(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let search = cx.new(SearchInput::new);
         search.update(cx, |input, cx| {
-            input.set_placeholder_with(|| fl!("worktree-source-search-worktrees"), cx);
+            input.set_placeholder_with(|| fl!("worktree-open-search"), cx);
             input.set_appearance(self.config.ui.clone(), self.theme.clone(), cx);
             window.focus(&input.focus, cx);
         });
@@ -258,7 +258,7 @@ impl SheprdWindow {
                         .pt(px(6.))
                         .text_color(rgb(self.theme.muted))
                         .child(fl!(
-                            "worktree-source-count-worktrees",
+                            "worktree-open-count",
                             shown = picker.filtered.len(),
                             total = picker.entries.len(),
                         )),
@@ -282,13 +282,13 @@ impl SheprdWindow {
                     .p(px(16.))
                     .text_color(rgb(self.theme.muted))
                     .child(if picker.pending.is_some() {
-                        fl!("worktree-source-loading-worktrees")
+                        fl!("worktree-open-loading")
                     } else if !picker.entries.is_empty() {
-                        fl!("worktree-source-no-matching-worktrees")
+                        fl!("worktree-open-no-matching")
                     } else if self.menu.error.is_some() {
-                        fl!("worktree-source-worktrees-unavailable")
+                        fl!("worktree-open-unavailable")
                     } else {
-                        fl!("worktree-source-no-worktrees")
+                        fl!("worktree-open-empty")
                     }),
             );
         } else {
@@ -321,8 +321,8 @@ impl SheprdWindow {
         };
         let label = entry.branch.as_deref().unwrap_or(&entry.label);
         let status = match (entry.open_workspace_id.is_some(), entry.is_detached) {
-            (true, _) => fl!("worktree-source-open"),
-            (_, true) => fl!("worktree-source-detached"),
+            (true, _) => fl!("worktree-open-open"),
+            (_, true) => fl!("worktree-open-detached"),
             _ => String::new(),
         };
         div()
@@ -365,7 +365,7 @@ impl SheprdWindow {
             .on_click(cx.listener(move |this, _, window, cx| {
                 cx.stop_propagation();
                 if this.menu.page != Some(Page::Dialog(WorkspaceAction::OpenWorktree))
-                    || this.menu.creation.is_some()
+                    || this.menu.opening.is_some()
                 {
                     return;
                 }

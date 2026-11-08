@@ -465,10 +465,6 @@ impl SheprdWindow {
                 self.resume_palette(window, cx);
                 return;
             }
-            Command::NewWorktree => {
-                self.open_new_worktree(window, cx);
-                return;
-            }
             Command::OpenWorktree | Command::RemoveWorktree => {
                 let shortcut = if command == Command::OpenWorktree {
                     WorktreeShortcut::Open

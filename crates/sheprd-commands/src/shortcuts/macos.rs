@@ -6,7 +6,6 @@ pub(super) fn defaults(command: Command) -> &'static [&'static str] {
         OpenNotificationTarget => &["cmd-alt-n"],
         NewWindow => &["cmd-alt-shift-n"],
         Workspace => &["cmd-shift-n"],
-        NewWorktree => &["cmd-n"],
         Tab => &["cmd-t"],
         SplitRight => &["cmd-d"],
         SplitDown => &["cmd-shift-d"],

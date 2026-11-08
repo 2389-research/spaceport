@@ -3,6 +3,11 @@ use super::*;
 mod browser_page;
 mod retired_ide;
 
+#[test]
+fn excluded_worktree_creation_is_absent_from_the_command_catalog() {
+    assert!(COMMANDS.iter().all(|info| info.name != "new_worktree"));
+}
+
 fn snapshot() -> ClientShellSnapshot {
     serde_json::from_str(include_str!(
         "../../sheprd-protocol/tests/fixtures/endpoint-snapshot-v1.json"
@@ -18,7 +23,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (Logs, &[]),
         (NewWindow, &["cmd-alt-shift-n"]),
         (Workspace, &["cmd-shift-n"]),
-        (NewWorktree, &["cmd-n"]),
         (OpenWorktree, &[]),
         (RemoveWorktree, &[]),
         (WorktreeNotes, &[]),
@@ -179,7 +183,6 @@ fn gui_commands_never_send_daemon_requests() {
         Command::OpenNotificationTarget,
         Command::Logs,
         Command::NewWindow,
-        Command::NewWorktree,
         Command::OpenWorktree,
         Command::RemoveWorktree,
         Command::Find,

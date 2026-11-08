@@ -215,9 +215,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) key_layout: fn(u16) -> Option<prefix::KeyChars>,
     /// The key code and Shift of the key being handled, from AppKit's event.
     pub(crate) key_press: fn() -> Option<(u16, bool)>,
-    /// What a new worktree whose creation is in flight opens in, kept
-    /// apart from the dialog so closing it does not drop the launch.
-    pub(crate) landing_launch: Option<crate::worktree_landing::Launch>,
     /// When this window last forwarded user input; gates re-claiming a frame another client sized.
     pub(crate) last_input: Option<std::time::Instant>,
     /// The last pointer position over the panes, so a move event that did not move is not use.
@@ -620,7 +617,6 @@ impl SheprdWindow {
         self.poll_dispatch(window, cx);
         self.poll_device_setup(window, cx);
         self.poll_worktree_script(window, cx);
-        self.poll_worktree_source(cx);
         self.poll_hover_menu(std::time::Instant::now(), window, cx);
         if self.tick_flash(std::time::Instant::now()) {
             cx.notify();

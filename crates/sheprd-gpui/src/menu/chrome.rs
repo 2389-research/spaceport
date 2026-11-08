@@ -308,12 +308,7 @@ impl SheprdWindow {
         let add_device = rail::Source::of(page).is_some();
         let compact_rail = viewport.width - px(32.) < px(rail::COMPACT_BELOW * (font.size / 12.));
         let footer_anchored = matches!(page, Page::Menu | Page::Devices) && !session_modal;
-        // A GitHub tab of the new worktree dialog is a picker, not a form.
-        let listing =
-            self.worktree_listing() || page == Page::Dialog(WorkspaceAction::OpenWorktree);
-        // The new worktree dialog keeps a listing's size on every tab, form
-        // included, so moving between tabs never resizes it.
-        let settled = listing || page == Page::Dialog(WorkspaceAction::NewWorktree);
+        let settled = page == Page::Dialog(WorkspaceAction::OpenWorktree);
         // Context menus open where the pointer asked for them. A dialog is a
         // modal decision, not a continuation of the row it came from, so it
         // centres over a dimmed window the way the Herdr TUI's dialogs do.

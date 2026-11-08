@@ -60,11 +60,7 @@ fn stale_boot_target_and_changed_close_members_are_rejected() {
     let mut snapshot = sidebar::layout_tests::snapshot(7);
     let target = WorkspaceTarget::new(&snapshot, &snapshot.workspaces[3]);
     snapshot.boot_id = "replacement".into();
-    for action in [
-        WorkspaceAction::Rename,
-        WorkspaceAction::Close,
-        WorkspaceAction::NewWorktree,
-    ] {
+    for action in [WorkspaceAction::Rename, WorkspaceAction::Close] {
         assert!(target.request(&snapshot, action, "valid label").is_err());
     }
     snapshot.boot_id = target.boot_id.clone();

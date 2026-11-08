@@ -1,5 +1,4 @@
-//! Repository lookups (the pull request section, the new worktree dialog's
-//! branch and GitHub tabs) for a main checkout whose shell left the
+//! Repository lookups for the pull request section when a main checkout's shell left the
 //! repository Herdr keeps for it, and for a linked checkout routed through
 //! such a main checkout.
 
@@ -15,7 +14,7 @@ fn open(view: &mut SheprdWindow, workspace: usize, linked_route: bool) {
     snapshot.workspaces[3].new_workspace_cwd = MOVED.into();
     snapshot.workspaces[3].branch = Some("main".into());
     let target = if linked_route {
-        WorkspaceTarget::for_new_worktree(snapshot, &snapshot.workspaces[workspace]).unwrap()
+        WorkspaceTarget::for_linked_repository(snapshot, &snapshot.workspaces[workspace]).unwrap()
     } else {
         WorkspaceTarget::new(snapshot, &snapshot.workspaces[workspace])
     };

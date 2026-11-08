@@ -140,32 +140,3 @@ fn a_trusted_archive_script_runs_in_a_tab_instead_of_removing(cx: &mut gpui::Tes
     );
     assert_eq!(tab["params"]["env"]["HERDR_ROOT_PATH"], "/repo");
 }
-
-/// Creating a worktree starts its setup script, asking first; opening an
-/// existing checkout does not.
-#[gpui::test]
-fn a_created_worktree_offers_its_setup_script(cx: &mut gpui::TestAppContext) {
-    let dir = tempfile::tempdir().unwrap();
-    crate::worktree_scripts::tests::write_scripts(dir.path(), "[scripts]\nsetup = \"npm ci\"\n");
-    let created = serde_json::json!({"result":{"type":"worktree_created","workspace":{"workspace_id":"w1",
-        "worktree":{"checkout_path":dir.path().to_str().unwrap(),"repo_root":"/repo","repo_key":"repo/main","repo_name":"main"}}}});
-    let peer = crate::window::MockPeer::new();
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            crate::worktree_scripts::tests::connect(view, &peer, cx);
-            view.open_workspace_menu("w1", Default::default(), window, cx);
-            view.menu.page = Some(crate::menu::Page::Dialog(WorkspaceAction::NewWorktree));
-            view.apply_creation_response(Ok(created), window, cx);
-            assert!(view.menu.page.is_none());
-        })
-    });
-    cx.run_until_parked();
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            view.poll_worktree_script(window, cx);
-            assert_eq!(view.menu.page, Some(crate::menu::Page::WorktreeScript));
-            assert!(view.local_error.is_none());
-        })
-    });
-}

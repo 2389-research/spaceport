@@ -17,9 +17,7 @@ impl SheprdWindow {
     /// overlay leaves unhandled cannot run twice through the menu bar.
     pub(super) fn menu_edit(&mut self, key: &str, window: &mut Window, cx: &mut Context<Self>) {
         let event = actions::edit_key(key);
-        if self.menu.page == Some(Page::Dialog(WorkspaceAction::OpenWorktree))
-            || self.worktree_listing()
-        {
+        if self.menu.page == Some(Page::Dialog(WorkspaceAction::OpenWorktree)) {
             return;
         }
         if let Some(input) = self.menu.input.as_mut() {
@@ -56,35 +54,7 @@ impl SheprdWindow {
             // SearchInput and the platform own text editing and composition.
             return;
         }
-        // A listing has its own search field, so the branch draft must
-        // not consume the keys typed into it.
-        if self.worktree_source_key(event, window, cx) {
-            cx.stop_propagation();
-            window.prevent_default();
-            return;
-        }
-        let listing = self.worktree_listing() || self.worktree_search_focused(window, cx);
-        // The shared search owns its own typing, so everything the list
-        // itself does not own must reach the native text handler.
-        if listing
-            && (self.worktree_source_composing(cx) || event.keystroke.key.as_str() != "escape")
-        {
-            return;
-        }
-        // The name field edits itself; only Escape and Enter are left
-        // for the dialog, and neither may reach the branch draft.
-        let naming = self.worktree_name_focused(window, cx);
-        if naming
-            && (self
-                .menu
-                .worktree
-                .as_ref()
-                .is_some_and(|source| source.name.read(cx).is_composing())
-                || !matches!(event.keystroke.key.as_str(), "escape" | "enter"))
-        {
-            return;
-        }
-        if let Some(input) = self.menu.input.as_mut().filter(|_| !listing && !naming) {
+        if let Some(input) = self.menu.input.as_mut() {
             if input.key(&event.keystroke, cx) {
                 cx.stop_propagation();
                 window.prevent_default();
@@ -225,7 +195,7 @@ impl SheprdWindow {
             {
                 if let Some(picker) = &mut self.menu.worktree_open
                     && !picker.filtered.is_empty()
-                    && self.menu.creation.is_none()
+                    && self.menu.opening.is_none()
                 {
                     let count = picker.filtered.len();
                     picker.selected = if event.keystroke.key == "up" {

@@ -57,25 +57,15 @@ fn checkout_paths_follow_the_endpoint_shape() {
     assert!(!left_checkout("/.git", "/home/mac"));
 }
 
-/// The workspace's kept repository is no longer trusted, so a new or opened
-/// worktree is asked for by the directory it is in.
+/// A moved workspace opens checkouts from its current directory.
 #[test]
-fn a_moved_main_checkout_branches_the_directory_it_is_in() {
+fn a_moved_main_checkout_opens_from_the_directory_it_is_in() {
     let snapshot = moved();
-    let target = WorkspaceTarget::for_new_worktree(&snapshot, &snapshot.workspaces[3]).unwrap();
+    let target =
+        WorkspaceTarget::for_linked_repository(&snapshot, &snapshot.workspaces[3]).unwrap();
     assert_eq!(target.source, Source::Directory(MOVED.into()));
     assert_eq!(target.worktree, None);
     assert!(target.can_create());
-    assert_eq!(
-        target
-            .request(&snapshot, WorkspaceAction::NewWorktree, "feature/next")
-            .unwrap(),
-        (
-            Method::WorktreeCreate,
-            serde_json::json!({"cwd": MOVED, "base": "HEAD", "focus": true,
-                "trust_repository": false, "branch": "feature/next"})
-        )
-    );
     assert_eq!(
         target
             .request(&snapshot, WorkspaceAction::OpenWorktree, "/elsewhere")
@@ -107,16 +97,17 @@ fn a_main_checkout_in_its_repository_names_its_workspace() {
 }
 
 /// A dialog opened before the shell moved, or after it moved again, refuses
-/// rather than branching a repository its label no longer names.
+/// rather than opening a checkout in a different repository.
 #[test]
 fn a_main_checkout_that_moves_after_the_dialog_opened_refuses() {
     let before = sidebar::layout_tests::snapshot(7);
     let after = moved();
-    let target = WorkspaceTarget::for_new_worktree(&before, &before.workspaces[3]).unwrap();
-    let moved_target = WorkspaceTarget::for_new_worktree(&after, &after.workspaces[3]).unwrap();
+    let target = WorkspaceTarget::for_linked_repository(&before, &before.workspaces[3]).unwrap();
+    let moved_target =
+        WorkspaceTarget::for_linked_repository(&after, &after.workspaces[3]).unwrap();
     let mut again = moved();
     again.workspaces[3].new_workspace_cwd = format!("{MOVED}-again");
-    for action in [WorkspaceAction::NewWorktree, WorkspaceAction::OpenWorktree] {
+    for action in [WorkspaceAction::OpenWorktree] {
         for (target, snapshot) in [
             (&target, &after),
             (&moved_target, &before),
@@ -134,9 +125,10 @@ fn a_main_checkout_that_moves_after_the_dialog_opened_refuses() {
 /// open for it has wandered off, the repository's own root is named, since
 /// the daemon refuses a linked checkout as the source.
 #[test]
-fn a_linked_checkout_creates_through_its_repository_root() {
+fn a_linked_checkout_uses_its_repository_root() {
     let snapshot = moved();
-    let target = WorkspaceTarget::for_new_worktree(&snapshot, &snapshot.workspaces[4]).unwrap();
+    let target =
+        WorkspaceTarget::for_linked_repository(&snapshot, &snapshot.workspaces[4]).unwrap();
     let root = sidebar::layout_tests::REPO_KEY.trim_end_matches("/.git");
     assert_eq!(
         target.source,
@@ -144,15 +136,6 @@ fn a_linked_checkout_creates_through_its_repository_root() {
             root: root.into(),
             key: sidebar::layout_tests::REPO_KEY.into(),
         }
-    );
-    let (method, params) = target
-        .request(&snapshot, WorkspaceAction::NewWorktree, "")
-        .unwrap();
-    assert_eq!(method, Method::WorktreeCreate);
-    assert_eq!(
-        params,
-        serde_json::json!({"cwd": root, "base": "refs/heads/worktree/sidebar-child",
-            "focus": true, "trust_repository": false})
     );
     // Opening a checkout goes through the linked checkout rather than the
     // moved main checkout, whose own menu would list the directory it moved
@@ -185,7 +168,7 @@ fn a_linked_checkout_creates_through_its_repository_root() {
     stayed.workspace_id = "w9".into();
     both.workspaces.push(stayed);
     assert_eq!(WorktreeShortcut::Open.target(&both), Ok("w9".into()));
-    let target = WorkspaceTarget::for_new_worktree(&both, &both.workspaces[4]).unwrap();
+    let target = WorkspaceTarget::for_linked_repository(&both, &both.workspaces[4]).unwrap();
     assert_eq!(
         (target.id.as_str(), &target.source),
         ("w9", &Source::Workspace)
@@ -214,24 +197,16 @@ fn removing_a_moved_main_checkout_explains_main_checkouts_stay() {
 }
 
 /// A main checkout moved to a directory outside any repository reports no
-/// branch. A linked checkout routed through it still creates and opens
-/// worktrees of its repository, until the main checkout is kept for another.
+/// branch. A linked checkout routed through it still opens worktrees of its
+/// repository until the main checkout is kept for another.
 #[test]
-fn a_linked_checkout_creates_while_its_main_checkout_is_outside_git() {
+fn a_linked_checkout_opens_while_its_main_checkout_is_outside_git() {
     let mut snapshot = moved();
     snapshot.workspaces[3].branch = None;
-    let target = WorkspaceTarget::for_new_worktree(&snapshot, &snapshot.workspaces[4]).unwrap();
+    let target =
+        WorkspaceTarget::for_linked_repository(&snapshot, &snapshot.workspaces[4]).unwrap();
     assert!(matches!(target.source, Source::Repository { .. }));
     assert!(target.can_create());
-    let root = sidebar::layout_tests::REPO_KEY.trim_end_matches("/.git");
-    assert_eq!(
-        target
-            .request(&snapshot, WorkspaceAction::NewWorktree, "")
-            .unwrap()
-            .1,
-        serde_json::json!({"cwd": root, "base": "refs/heads/worktree/sidebar-child",
-            "focus": true, "trust_repository": false})
-    );
     assert!(
         target
             .request(&snapshot, WorkspaceAction::OpenWorktree, "/elsewhere")
@@ -242,7 +217,7 @@ fn a_linked_checkout_creates_while_its_main_checkout_is_outside_git() {
         tree.key = "/fixture/other/.git".into();
     }
     assert!(matches!(
-        target.request(&rekeyed, WorkspaceAction::NewWorktree, ""),
+        target.request(&rekeyed, WorkspaceAction::OpenWorktree, "/elsewhere"),
         Err(crate::Error::WorkspaceRepositoryChanged)
     ));
 }

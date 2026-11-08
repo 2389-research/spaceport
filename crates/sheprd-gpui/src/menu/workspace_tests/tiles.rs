@@ -21,11 +21,6 @@ fn every_slot_keeps_its_place_and_grays_what_is_unavailable() {
     assert_eq!(
         tiles,
         [
-            tile(
-                Dialog(WorkspaceAction::NewWorktree),
-                Label::NEW_WORKTREE,
-                false
-            ),
             tile(FanOut, Label::FAN_OUT, false),
             tile(Dialog(WorkspaceAction::Rename), Label::RENAME, true),
             tile(Dialog(WorkspaceAction::Close), Label::CLOSE, true),
@@ -38,7 +33,6 @@ fn every_slot_keeps_its_place_and_grays_what_is_unavailable() {
 fn rows_and_the_destructive_action_follow_the_grid_in_order() {
     use WorkspaceMenuAction::*;
     let items = [
-        (Dialog(WorkspaceAction::NewWorktree), Label::NEW_WORKTREE),
         (Dialog(WorkspaceAction::Rename), Label::RENAME),
         (Dialog(WorkspaceAction::Close), Label::CLOSE_GROUP),
         (Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE),
@@ -49,8 +43,8 @@ fn rows_and_the_destructive_action_follow_the_grid_in_order() {
         ),
     ];
     let (tiles, rest) = layout(&items);
-    assert!(tiles[0].enabled && tiles[2].enabled && tiles[3].enabled);
-    assert_eq!(tiles[3].label, Label::CLOSE_GROUP);
+    assert!(tiles[1].enabled && tiles[2].enabled);
+    assert_eq!(tiles[2].label, Label::CLOSE_GROUP);
     assert_eq!(
         rest,
         [

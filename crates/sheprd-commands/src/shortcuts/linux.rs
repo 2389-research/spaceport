@@ -10,7 +10,6 @@ pub(super) fn defaults(command: Command) -> &'static [&'static str] {
         NewWindow => &["ctrl-alt-n"],
         Workspace => &["ctrl-alt-shift-n"],
         // Keep the frequent creation action on N; Ctrl-Shift-U is Unicode entry.
-        NewWorktree => &["ctrl-shift-n"],
         Tab => &["ctrl-shift-t"],
         SplitRight => &["ctrl-shift-d"],
         SplitDown => &["ctrl-alt-shift-d"],

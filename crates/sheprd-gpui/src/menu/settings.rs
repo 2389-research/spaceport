@@ -322,7 +322,6 @@ impl SheprdWindow {
             }
             let group = match info.command {
                 Command::Workspace
-                | Command::NewWorktree
                 | Command::OpenWorktree
                 | Command::RemoveWorktree
                 | Command::EditWorktreeNote

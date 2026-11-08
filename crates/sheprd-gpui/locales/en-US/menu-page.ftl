@@ -12,7 +12,6 @@ menu-page-devices = Devices
 menu-page-device-theme = Device theme
 menu-page-rename-workspace = Rename workspace
 menu-page-close-workspace = Close workspace
-menu-page-new-worktree = New worktree
 menu-page-open-worktree = Open worktree
 menu-page-delete-worktree = Delete worktree
 menu-page-new-tab = New tab

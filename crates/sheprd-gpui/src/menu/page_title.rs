@@ -44,7 +44,6 @@ impl Page {
             Self::Dialog(action) => match action {
                 WorkspaceAction::Rename => fl!("menu-page-rename-workspace"),
                 WorkspaceAction::Close => fl!("menu-page-close-workspace"),
-                WorkspaceAction::NewWorktree => fl!("menu-page-new-worktree"),
                 WorkspaceAction::OpenWorktree => fl!("menu-page-open-worktree"),
                 WorkspaceAction::DeleteWorktree => fl!("menu-page-delete-worktree"),
                 WorkspaceAction::NewTab => fl!("menu-page-new-tab"),

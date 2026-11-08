@@ -1,4 +1,4 @@
-//! Submitting a new worktree or workspace dialog whose host picker chose
+//! Submitting a new workspace dialog whose host picker chose
 //! another host: the work runs as a dispatch job instead of
 //! a daemon request.
 
@@ -7,19 +7,12 @@ use crate::{
     SheprdWindow,
     dispatch::{Destination, Job, Target},
     menu::WorkspaceAction,
-    teleport::Naming,
 };
 
 impl SheprdWindow {
-    /// Where the dialog's picker sends the new checkout when it is not this
-    /// host. A GitHub listing creates its own checkouts on this host.
+    /// Where the new workspace dialog's picker sends its request.
     pub(in crate::menu) fn dispatch_choice(&self, action: WorkspaceAction) -> Option<Target> {
-        let creates = match action {
-            WorkspaceAction::NewWorktree => !self.worktree_listing(),
-            WorkspaceAction::NewWorkspace => true,
-            _ => false,
-        };
-        if !creates {
+        if action != WorkspaceAction::NewWorkspace {
             return None;
         }
         match self.menu.dispatch.as_ref()?.destination() {
@@ -30,12 +23,7 @@ impl SheprdWindow {
 
     /// Start creating on `target`. The dialog stays open on the job's
     /// progress, and the window follows the result once it lands.
-    pub(in crate::menu) fn submit_dispatch(
-        &mut self,
-        action: WorkspaceAction,
-        target: &Target,
-        name: Option<String>,
-    ) -> crate::Result<()> {
+    pub(in crate::menu) fn submit_dispatch(&mut self, target: &Target) -> crate::Result<()> {
         let Target::Host(endpoint_id) = target;
         let endpoint_id = endpoint_id.as_str();
         if self.dispatch_job.is_some() {
@@ -60,51 +48,21 @@ impl SheprdWindow {
                 .map_or_else(|| endpoint_id.to_owned(), |e| e.label.clone());
             return Err(crate::dispatch::Error::HostUnavailable(label).into());
         };
-        let job = match self.dispatch_then(action, name)? {
-            crate::dispatch::Then::Worktree { base, naming } => {
-                Job::worktree(origin, destination, base, naming)
-            }
-            crate::dispatch::Then::Workspace { label } => {
-                Job::workspace(origin, destination, label)
-            }
-        };
+        let label = self.dispatch_label();
+        let job = Job::workspace(origin, destination, label);
         self.dispatch_job = Some(job);
         self.menu.error = None;
         Ok(())
     }
 
     /// What the open dialog asks for, from its fields.
-    fn dispatch_then(
-        &self,
-        action: WorkspaceAction,
-        name: Option<String>,
-    ) -> crate::Result<crate::dispatch::Then> {
-        let target = self
-            .menu
-            .target
-            .as_ref()
-            .ok_or(crate::Error::StaleWorkspace)?;
+    fn dispatch_label(&self) -> Option<String> {
         let text = self
             .menu
             .input
             .as_ref()
             .map_or("", |input| input.text.as_str())
             .trim();
-        Ok(if action == WorkspaceAction::NewWorktree {
-            if !text.is_empty() {
-                crate::worktree::validate_branch(text)?;
-            }
-            crate::dispatch::Then::Worktree {
-                base: target.base_ref()?,
-                naming: Naming {
-                    branch: (!text.is_empty()).then(|| text.to_owned()),
-                    label: name,
-                },
-            }
-        } else {
-            crate::dispatch::Then::Workspace {
-                label: chosen_label(text, self.menu.suggested_name.as_deref()).map(str::to_owned),
-            }
-        })
+        chosen_label(text, self.menu.suggested_name.as_deref()).map(str::to_owned)
     }
 }

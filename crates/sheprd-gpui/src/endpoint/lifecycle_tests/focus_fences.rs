@@ -131,7 +131,6 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
         (Command::WorkspacePicker, Method::WorkspaceFocus),
         (Command::Palette, Method::CommandInvoke),
         (Command::Workspace, Method::WorkspaceClose),
-        (Command::Workspace, Method::WorktreeCreate),
         (Command::Workspace, Method::WorktreeOpen),
         (Command::Workspace, Method::WorktreeRemove),
     ]
@@ -164,10 +163,7 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                     view.open_tab_close(id, window, cx);
                 } else if matches!(
                     method,
-                    Method::WorkspaceClose
-                        | Method::WorktreeCreate
-                        | Method::WorktreeOpen
-                        | Method::WorktreeRemove
+                    Method::WorkspaceClose | Method::WorktreeOpen | Method::WorktreeRemove
                 ) {
                     crate::menu::workspace_tests::submit_focus_change(view, method, window, cx);
                 } else {

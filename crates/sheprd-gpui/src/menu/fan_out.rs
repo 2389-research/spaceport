@@ -43,7 +43,7 @@ impl SheprdWindow {
         if target.can_create() {
             return (target.source == Addressed::Workspace).then(|| describe(target));
         }
-        self.linked_new_worktree_target()
+        self.linked_repository_target()
             .filter(|target| target.source == Addressed::Workspace)
             .as_ref()
             .map(describe)

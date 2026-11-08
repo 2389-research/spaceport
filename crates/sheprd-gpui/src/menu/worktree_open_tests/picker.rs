@@ -59,7 +59,7 @@ fn open_worktree_picker_menu_keyboard_mouse_and_narrow_layout(cx: &mut TestAppCo
             assert_eq!(view.menu.worktree_open.as_ref().unwrap().selected, 0);
             // The disconnected fixture cannot queue, and leaves a visible error.
             assert!(view.menu.error.is_some());
-            assert!(view.menu.creation.is_none());
+            assert!(view.menu.opening.is_none());
         });
         cx.simulate_keystrokes("escape");
         cx.update(|_, cx| assert!(view.read(cx).menu.page.is_none()));
@@ -71,10 +71,6 @@ fn open_worktree_picker_menu_keyboard_mouse_and_narrow_layout(cx: &mut TestAppCo
             for (id, opens) in [("w3", true), ("w4", false)] {
                 view.open_workspace_menu(id, Default::default(), window, cx);
                 let actions = view.workspace_menu_actions();
-                assert!(
-                    actions.contains(&WorkspaceMenuAction::Dialog(WorkspaceAction::NewWorktree)),
-                    "{id}"
-                );
                 assert_eq!(
                     actions.contains(&WorkspaceMenuAction::Dialog(WorkspaceAction::OpenWorktree)),
                     opens,
@@ -147,7 +143,7 @@ fn open_worktree_rows_fill_the_list_and_header_escape_dismisses(cx: &mut TestApp
             cx.update(|window, cx| {
                 view.update(cx, |view, cx| {
                     view.menu.error = (!waiting).then(|| "Endpoint error. ".repeat(100));
-                    view.menu.creation = waiting.then(|| "open".into());
+                    view.menu.opening = waiting.then(|| "open".into());
                     cx.notify();
                 });
                 window.draw(cx).clear(cx);
@@ -170,7 +166,7 @@ fn open_worktree_rows_fill_the_list_and_header_escape_dismisses(cx: &mut TestApp
         cx.update(|window, cx| {
             let view = view.read(cx);
             assert!(view.menu.page.is_none());
-            assert!(view.menu.worktree_open.is_none() && view.menu.creation.is_none());
+            assert!(view.menu.worktree_open.is_none() && view.menu.opening.is_none());
             assert!(view.focus.is_focused(window));
             assert!(view.pending_navigation.is_none());
         });

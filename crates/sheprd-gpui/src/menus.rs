@@ -147,12 +147,6 @@ pub(crate) fn menus(config: &Config) -> Vec<Menu> {
                     },
                 ),
                 MenuItem::action(
-                    fl!("menus-new-worktree"),
-                    RunCommand {
-                        command: Command::NewWorktree,
-                    },
-                ),
-                MenuItem::action(
                     fl!("menus-new-tab"),
                     RunCommand {
                         command: Command::Tab,

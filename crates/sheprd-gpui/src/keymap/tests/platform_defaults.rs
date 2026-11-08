@@ -52,7 +52,6 @@ fn linux_shortcuts_preserve_terminal_keys_and_shifted_actions() {
         (Command::Tab, "ctrl-shift-t"),
         (Command::NewWindow, "ctrl-alt-n"),
         (Command::CloseWindow, "ctrl-alt-w"),
-        (Command::NewWorktree, "ctrl-shift-n"),
         (Command::Workspace, "ctrl-alt-shift-n"),
         (Command::Palette, "ctrl-shift-p"),
         (Command::ResumePalette, "ctrl-alt-shift-r"),
@@ -104,7 +103,6 @@ fn windows_shortcuts_preserve_terminal_and_system_keys() {
     for (command, key) in [
         (Command::Tab, "ctrl-shift-t"),
         (Command::NewWindow, "ctrl-alt-n"),
-        (Command::NewWorktree, "ctrl-shift-n"),
         (Command::Palette, "ctrl-shift-p"),
         (Command::SplitRight, "ctrl-shift-d"),
         (Command::CopyMode, "ctrl-alt-shift-c"),

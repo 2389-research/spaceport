@@ -14,7 +14,6 @@ menus-quit-herdr = Quit Spaceport
 
 menus-file = File
 menus-new-workspace = New Workspace
-menus-new-worktree = New Worktree...
 menus-new-tab = New Tab
 menus-go-to = Go To
 menus-close-pane = Close Pane...

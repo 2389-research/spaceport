@@ -10,7 +10,7 @@ mod requests;
 mod scripts;
 
 use super::{Page, WorkspaceAction, WorkspaceMenuAction, state::Deletion};
-use crate::{SheprdWindow, dialog_input::DialogInput, i18n::fl};
+use crate::{SheprdWindow, dialog_input::DialogInput};
 use gpui::{prelude::*, *};
 use popover::Label;
 use sheprd_client::{
@@ -28,9 +28,7 @@ pub(crate) struct WorkspaceTarget {
     /// row folds a group even when another parent closes on its own.
     pub(super) heads_group: bool,
     pub(super) branch: Option<String>,
-    /// The branch a new worktree starts from, when it is not this checkout's
-    /// `HEAD`: a linked checkout asks its main checkout, the only source the
-    /// daemon accepts, to branch from the linked checkout's branch instead.
+    /// A linked checkout's branch when its main checkout acts for it.
     pub(super) base: Option<String>,
     /// How worktree requests name the repository to the daemon.
     pub(super) source: Source,
@@ -111,13 +109,11 @@ impl WorkspaceTarget {
         params
     }
 
-    /// The target a new worktree for `workspace` is created through. A linked
-    /// checkout resolves to its repository's open main checkout, based on the
-    /// linked checkout's branch so the new branch starts where it stands.
-    pub(super) fn for_new_worktree(
+    /// Resolve a linked checkout through its repository's open main checkout.
+    pub(super) fn for_linked_repository(
         snapshot: &ClientShellSnapshot,
         workspace: &ClientShellWorkspace,
-    ) -> Result<Self, NewWorktreeUnavailable> {
+    ) -> Result<Self, RepositoryUnavailable> {
         let Some(tree) = workspace
             .worktree
             .as_ref()
@@ -127,16 +123,16 @@ impl WorkspaceTarget {
             return if target.can_create() {
                 Ok(target)
             } else {
-                Err(NewWorktreeUnavailable::NotGit)
+                Err(RepositoryUnavailable::NotGit)
             };
         };
         let branch = workspace
             .branch
             .clone()
-            .ok_or(NewWorktreeUnavailable::Detached)?;
+            .ok_or(RepositoryUnavailable::Detached)?;
         let main = main_checkout(snapshot, tree)
             .or_else(|| snapshot.workspaces.iter().find(|w| is_main_of(w, tree)))
-            .ok_or(NewWorktreeUnavailable::MainCheckoutClosed)?;
+            .ok_or(RepositoryUnavailable::MainCheckoutClosed)?;
         let mut target = Self {
             base: Some(branch),
             ..Self::new(snapshot, main)
@@ -155,8 +151,7 @@ impl WorkspaceTarget {
         Ok(target)
     }
 
-    /// The ref a new worktree starts from: a full ref, so a tag of the same
-    /// name cannot shadow the branch.
+    /// Full branch ref for operations that branch from this checkout.
     pub(super) fn base_ref(&self) -> crate::Result<String> {
         match &self.base {
             Some(branch) => {
@@ -165,11 +160,6 @@ impl WorkspaceTarget {
             }
             None => Ok("HEAD".to_owned()),
         }
-    }
-
-    /// What the new worktree dialog says it branches from.
-    pub(super) fn base_label(&self) -> &str {
-        self.base.as_deref().unwrap_or("HEAD")
     }
 
     pub(super) fn can_create(&self) -> bool {
@@ -264,19 +254,6 @@ impl WorkspaceTarget {
                     serde_json::json!({"workspace_id": self.id, "close_group": self.close_members.len() > 1}),
                 )
             }
-            WorkspaceAction::NewWorktree => {
-                self.validate_repository(snapshot)?;
-                let base = self.base_ref()?;
-                let mut params = self.source_params();
-                params["base"] = base.into();
-                params["focus"] = true.into();
-                params["trust_repository"] = false.into();
-                if !text.trim().is_empty() {
-                    crate::worktree::validate_branch(text.trim())?;
-                    params["branch"] = text.trim().into();
-                }
-                (Method::WorktreeCreate, params)
-            }
             WorkspaceAction::OpenWorktree => {
                 self.validate_repository(snapshot)?;
                 if text.is_empty() {
@@ -313,26 +290,12 @@ impl WorkspaceTarget {
     }
 }
 
-/// Why the new worktree shortcut found no workspace to branch from.
+/// Why a linked checkout cannot supply its repository's main checkout.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum NewWorktreeUnavailable {
-    Disconnected,
-    NoWorkspace,
+pub(super) enum RepositoryUnavailable {
     NotGit,
     MainCheckoutClosed,
     Detached,
-}
-
-impl NewWorktreeUnavailable {
-    pub(super) fn message(self) -> String {
-        match self {
-            Self::Disconnected => fl!("worktree-popover-new-disconnected"),
-            Self::NoWorkspace => fl!("worktree-popover-new-no-workspace"),
-            Self::NotGit => fl!("worktree-popover-not-git"),
-            Self::MainCheckoutClosed => fl!("worktree-popover-new-main-closed"),
-            Self::Detached => fl!("worktree-popover-new-detached"),
-        }
-    }
 }
 
 /// Whether `workspace` is a main checkout whose directory is no longer inside
@@ -352,18 +315,6 @@ pub(super) fn known_worktree(workspace: &ClientShellWorkspace) -> Option<ClientS
         .worktree
         .clone()
         .filter(|_| !left_checkout(workspace))
-}
-
-/// The workspace focused when the new worktree shortcut is pressed, once it
-/// is known to have a source for one.
-fn new_worktree_source(snapshot: &ClientShellSnapshot) -> Result<String, NewWorktreeUnavailable> {
-    let focused = snapshot
-        .workspaces
-        .iter()
-        .find(|w| Some(&w.workspace_id) == snapshot.focused_workspace_id.as_ref())
-        .ok_or(NewWorktreeUnavailable::NoWorkspace)?;
-    WorkspaceTarget::for_new_worktree(snapshot, focused)?;
-    Ok(focused.workspace_id.clone())
 }
 
 /// The open main checkout of `tree`'s repository, through which the daemon
@@ -508,27 +459,6 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Opens the new worktree dialog for the focused workspace, as its menu's
-    /// "New worktree" row would. When there is no source for one, a flash says
-    /// why rather than the shortcut doing nothing visible.
-    pub(crate) fn open_new_worktree(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let source = match &self.live.snapshot {
-            Some(snapshot) if self.live.status.is_connected() => new_worktree_source(snapshot),
-            _ => Err(NewWorktreeUnavailable::Disconnected),
-        };
-        let id = match source {
-            Ok(id) => id,
-            Err(reason) => {
-                self.show_flash(crate::window::Flash::warning(reason.message()), cx);
-                return;
-            }
-        };
-        self.open_workspace_menu(&id, Point::default(), window, cx);
-        if self.menu.page == Some(Page::Workspace) {
-            self.open_workspace_dialog(WorkspaceAction::NewWorktree, window, cx);
-        }
-    }
-
     /// Opens the focused workspace's rename or close dialog, as its menu's
     /// row would. Closing confirms here as it does from the menu.
     pub(crate) fn open_focused_workspace_dialog(
@@ -623,9 +553,6 @@ impl SheprdWindow {
         } else {
             (WorkspaceMenuAction::Mute, Label::MUTE)
         }];
-        if target.can_create() || self.linked_new_worktree_target().is_some() {
-            items.push((Dialog(WorkspaceAction::NewWorktree), Label::NEW_WORKTREE));
-        }
         if let Some(label) = self.fan_out_item() {
             items.push((WorkspaceMenuAction::FanOut, label));
         }
@@ -708,8 +635,8 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// The main-checkout target a linked checkout's menu creates through.
-    pub(super) fn linked_new_worktree_target(&self) -> Option<WorkspaceTarget> {
+    /// The main-checkout target a linked checkout resolves through.
+    pub(super) fn linked_repository_target(&self) -> Option<WorkspaceTarget> {
         let target = self
             .menu
             .target
@@ -720,7 +647,7 @@ impl SheprdWindow {
             .workspaces
             .iter()
             .find(|w| w.workspace_id == target.id && snapshot.boot_id == target.boot_id)?;
-        WorkspaceTarget::for_new_worktree(snapshot, workspace).ok()
+        WorkspaceTarget::for_linked_repository(snapshot, workspace).ok()
     }
 
     pub(super) fn open_workspace_dialog(
@@ -733,10 +660,8 @@ impl SheprdWindow {
         // checkout; only the base remembers the linked checkout.
         // A linked checkout opens one only when its main checkout's shell has
         // wandered off; see `WorktreeShortcut::target`.
-        if matches!(
-            action,
-            WorkspaceAction::NewWorktree | WorkspaceAction::OpenWorktree
-        ) && let Some(target) = self.linked_new_worktree_target()
+        if matches!(action, WorkspaceAction::OpenWorktree)
+            && let Some(target) = self.linked_repository_target()
         {
             self.menu.target = Some(target);
         }
@@ -767,38 +692,26 @@ impl SheprdWindow {
                 self.menu.suggested_name.clone().unwrap_or_default(),
             )),
             // Propose the daemon's own branch shape, selected so typing replaces it.
-            WorkspaceAction::NewWorktree => {
-                Some(DialogInput::branch(crate::worktree::proposed_branch()))
-            }
             WorkspaceAction::Note => note.map(DialogInput::new),
             WorkspaceAction::Close
             | WorkspaceAction::DeleteWorktree
             | WorkspaceAction::OpenWorktree => None,
         };
         self.menu.page = Some(Page::Dialog(action));
-        self.menu.dispatch = matches!(
-            action,
-            WorkspaceAction::NewWorktree | WorkspaceAction::NewWorkspace
-        )
-        .then(|| self.menu.dispatch_repo())
-        .flatten()
-        .and_then(|repo| {
-            crate::dispatch::Picker::opened(
-                &self.endpoints[self.selected_endpoint].id,
-                self.dispatch_candidates(&repo, cx),
-            )
-        });
+        self.menu.dispatch = matches!(action, WorkspaceAction::NewWorkspace)
+            .then(|| self.menu.dispatch_repo())
+            .flatten()
+            .and_then(|repo| {
+                crate::dispatch::Picker::opened(
+                    &self.endpoints[self.selected_endpoint].id,
+                    self.dispatch_candidates(&repo, cx),
+                )
+            });
         self.menu.pr.clear();
         self.menu.pr_connection = None;
         self.menu.error = None;
         if action == WorkspaceAction::OpenWorktree {
             self.open_existing_worktrees(window, cx);
-            return;
-        }
-        if action == WorkspaceAction::NewWorktree {
-            self.menu.landing = self.open_landing(cx);
-            self.open_worktree_source(window, cx);
-            cx.notify();
             return;
         }
         if action == WorkspaceAction::Close

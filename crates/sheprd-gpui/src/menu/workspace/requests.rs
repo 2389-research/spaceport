@@ -101,7 +101,6 @@ impl SheprdWindow {
     /// and to a removal whose dialog has already closed.
     pub(crate) fn update_workspace_dialog(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.update_pending_removal(window, cx);
-        self.land_dismissed_creation(cx);
         if let Some(check) = &mut self.menu.close_check
             && check.poll()
         {
@@ -134,8 +133,7 @@ impl SheprdWindow {
             }
             return;
         }
-        self.apply_checkout_list(cx);
-        if self.menu.deletion.is_none() && self.menu.creation.is_none() {
+        if self.menu.deletion.is_none() && self.menu.opening.is_none() {
             return;
         }
         if !self.menu_target_current()
@@ -159,154 +157,46 @@ impl SheprdWindow {
             self.read_archive_script(cx);
             return;
         }
-        if self.menu.creation.as_deref() != Some(id.as_str()) {
+        if self.menu.opening.as_deref() != Some(id.as_str()) {
             return;
         }
         let result = result.clone();
-        self.menu.creation = None;
-        self.apply_creation_response(result, window, cx);
+        self.menu.opening = None;
+        self.apply_open_response(result, window, cx);
     }
 
-    /// Send the dialog's `worktree.create` or `worktree.open`, correlated so
-    /// its answer reaches the dialog and, for a created checkout with a
-    /// landing to start, that landing too, even once the dialog has closed.
-    pub(in crate::menu) fn request_checkout(
-        &mut self,
-        boot: &str,
-        method: sheprd_client::Method,
-        params: serde_json::Value,
-        opens: bool,
-    ) -> crate::Result<String> {
-        let connection = &self.endpoints[self.selected_endpoint].connection;
-        let lands = !opens && self.menu.landing.is_some();
-        let id = if lands {
-            connection.request_creation(boot, method, params)?
-        } else {
-            connection.request_dialog(boot, method, params)?
-        };
-        self.arm_landing(&id, opens);
-        Ok(id)
-    }
-
-    /// Keep the open dialog's landing for creation request `request`. An
-    /// opened checkout keeps whatever it runs, so it has none.
-    pub(in crate::menu) fn arm_landing(&mut self, request: &str, opens: bool) {
-        self.landing_launch = self
-            .menu
-            .landing
-            .as_ref()
-            .zip(self.menu.target.as_ref())
-            .filter(|_| !opens)
-            .map(|(picker, target)| {
-                crate::worktree_landing::Launch::new(
-                    request,
-                    self.menu.endpoint_target,
-                    &target.boot_id,
-                    picker,
-                )
-            });
-    }
-
-    /// Land a checkout whose dialog closed before the daemon answered, once
-    /// the answer arrives. A newer connection or boot never receives it.
-    fn land_dismissed_creation(&mut self, cx: &mut Context<Self>) {
-        if self.menu.creation.is_some() {
-            return;
-        }
-        let Some(launch) = &self.landing_launch else {
-            return;
-        };
-        let endpoint = (
-            self.selection_epoch,
-            self.endpoints[self.selected_endpoint].generation,
-        );
-        let boot = self
-            .live
-            .snapshot
-            .as_ref()
-            .filter(|_| self.live.status.is_connected())
-            .map(|snapshot| snapshot.boot_id.as_str());
-        if !launch.current(endpoint, boot) {
-            self.landing_launch = None;
-            return;
-        }
-        let request = launch.request().to_owned();
-        let Some(answer) = self.take_answer(crate::state::Answer::Landing, &request) else {
-            return;
-        };
-        if let (Some(launch), Ok(response)) = (self.landing_launch.take(), answer) {
-            self.land(launch, &response, cx);
-        }
-    }
-
-    /// Follow the checkout the daemon created or opened. The daemon switches its own
-    /// session, but this client shell keeps its own location, so the new
-    /// workspace is only selected (and revealed in the sidebar) once this
-    /// client focuses it.
-    pub(in crate::menu) fn apply_creation_response(
+    /// Follow an opened checkout once its correlated answer arrives.
+    pub(in crate::menu) fn apply_open_response(
         &mut self,
         result: crate::state::DialogResponse,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        // A refused creation leaves the dialog open, so the row it was for is
-        // released and the listing can be used again.
-        let release = |this: &mut Self, error: String, cx: &mut Context<Self>| {
-            if let Some(source) = &mut this.menu.worktree {
-                source.pending = None;
-            }
-            // Nothing was created, so the next submission arms its own landing.
-            if let Some(launch) = this.landing_launch.take() {
-                let _ = this.take_answer(crate::state::Answer::Landing, launch.request());
-            }
-            this.menu.error = Some(error);
-            cx.notify();
-        };
         let response = match result {
             Ok(response) => response,
-            Err(error) => return release(self, error.to_string(), cx),
+            Err(error) => {
+                self.menu.error = Some(error.to_string());
+                cx.notify();
+                return;
+            }
         };
         if let Some(error) = response.get("error") {
             let (code, message) = endpoint_error(error);
-            return release(self, format!("{code}: {message}"), cx);
+            self.menu.error = Some(format!("{code}: {message}"));
+            cx.notify();
+            return;
         }
         let result = &response["result"];
-        let opening = self.menu.page == Some(Page::Dialog(WorkspaceAction::OpenWorktree))
-            || self
-                .menu
-                .worktree
-                .as_ref()
-                .and_then(|source| source.pending.as_ref())
-                .is_some_and(|pending| pending.opens());
-        let expected = if opening {
-            "worktree_opened"
-        } else {
-            "worktree_created"
-        };
-        let created = (result["type"] == expected)
+        let Some(opened) = (result["type"] == "worktree_opened")
             .then(|| result["workspace"]["workspace_id"].as_str())
             .flatten()
             .filter(|id| !id.is_empty())
-            .map(str::to_owned);
-        let Some(created) = created else {
-            return release(self, fl!("workspace-dialog-unexpected"), cx);
+        else {
+            self.menu.error = Some(fl!("workspace-dialog-unexpected"));
+            cx.notify();
+            return;
         };
-        // The note names what the checkout is for, so it is taken from the
-        // dialog's own pending row before dismissal drops it.
-        if !opening {
-            self.write_worktree_note(result, cx);
-            // Staying put is a pick too, so the ranking learns it.
-            if let Some(repo) = self.menu.dispatch_repo() {
-                let endpoint = self.endpoints[self.selected_endpoint].id.clone();
-                crate::dispatch::History::update(cx, |history| history.record(&repo, &endpoint));
-            }
-        }
-        // Only a new checkout is set up; an opened one already exists as it is.
-        let setup = (!opening)
-            .then(|| self.setup_launch(result, &created))
-            .flatten();
         let endpoint = self.endpoints[self.selected_endpoint].id.clone();
-        // A folded group would hide the new checkout the sidebar is about to select.
         let group = self
             .menu
             .target
@@ -325,26 +215,7 @@ impl SheprdWindow {
         if let Some(group) = group {
             self.collapsed_repos_mut().remove(&group);
         }
-        // Navigate to the pane when creating (the new shell), to the workspace
-        // when opening (an existing checkout whose pane is already focused).
-        let pane = result["root_pane"]["pane_id"]
-            .as_str()
-            .filter(|id| !id.is_empty());
-        if let Some(pane_id) = pane {
-            self.navigate_endpoint(&endpoint, NavigationTarget::Pane(pane_id), cx);
-        } else {
-            self.navigate_endpoint(&endpoint, NavigationTarget::Workspace(&created), cx);
-        }
-        self.land_created(&response, cx);
-        if let Some(launch) = setup
-            && let Err(error) = self.start_worktree_script(launch, cx)
-        {
-            self.local_error = Some(fl!(
-                "workspace-dialog-setup-failed",
-                error = error.to_string()
-            ));
-            cx.notify();
-        }
+        self.navigate_endpoint(&endpoint, NavigationTarget::Workspace(opened), cx);
     }
 
     pub(in crate::menu) fn submit_workspace_dialog(
@@ -373,17 +244,11 @@ impl SheprdWindow {
             .input
             .as_ref()
             .is_some_and(|input| input.marked.is_some())
-            || self
-                .menu
-                .worktree
-                .as_ref()
-                .is_some_and(|source| source.name.read(cx).is_composing())
         {
             return;
         }
-        let name = self.worktree_name(cx);
         if let Some(target) = self.dispatch_choice(action) {
-            match self.submit_dispatch(action, &target, name) {
+            match self.submit_dispatch(&target) {
                 Ok(()) => self.local_error = None,
                 Err(error) => self.menu.error = Some(error.to_string()),
             }
@@ -423,12 +288,6 @@ impl SheprdWindow {
                     .unwrap_or("")
             };
             let (method, mut params) = target.request(snapshot, action, text)?;
-            // The daemon names the workspace as it creates it, so no rename follows.
-            if action == WorkspaceAction::NewWorktree
-                && let Some(name) = name
-            {
-                params["label"] = name.into();
-            }
             if matches!(
                 action,
                 WorkspaceAction::NewTab | WorkspaceAction::NewWorkspace
@@ -510,25 +369,20 @@ impl SheprdWindow {
                     focus_changed: true,
                 });
             }
-            if matches!(
-                action,
-                WorkspaceAction::NewWorktree | WorkspaceAction::OpenWorktree
-            ) {
-                if self.menu.creation.is_some() {
+            if action == WorkspaceAction::OpenWorktree {
+                if self.menu.opening.is_some() {
                     return Ok(Submission::Awaiting {
                         focus_changed: false,
                     });
                 }
                 // Correlated, so the daemon's failure reaches the dialog and the
-                // created checkout can be focused once it exists.
+                // opened checkout can be focused once it appears in the snapshot.
                 let boot = target.boot_id.clone();
-                let opens = action == WorkspaceAction::OpenWorktree;
-                let id = self.request_checkout(&boot, method, params, opens)?;
-                self.menu.creation = Some(id);
+                let id = self.endpoints[self.selected_endpoint]
+                    .connection
+                    .request_dialog(&boot, method, params)?;
+                self.menu.opening = Some(id);
                 self.menu.error = None;
-                if let Some(source) = &mut self.menu.worktree {
-                    source.superseded();
-                }
                 return Ok(Submission::Awaiting {
                     focus_changed: true,
                 });

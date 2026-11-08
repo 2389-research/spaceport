@@ -21,7 +21,7 @@ mod tests;
 pub(crate) use error::Error;
 pub(crate) use {
     history::History,
-    job::{Job, Then},
+    job::Job,
     picker::{Picker, Slot},
     setup::Setup,
 };

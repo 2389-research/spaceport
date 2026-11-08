@@ -26,7 +26,6 @@ impl Label {
     pub(crate) const FAN_OUT: Self = Self::new("worktree-popover-fan-out");
     pub(crate) const FAN_OUT_COMPARISON: Self = Self::new("worktree-popover-fan-out-comparison");
     pub(crate) const MUTE: Self = Self::new("worktree-popover-mute");
-    pub(crate) const NEW_WORKTREE: Self = Self::new("worktree-popover-new-worktree");
     pub(crate) const NOTE: Self = Self::new("worktree-popover-note");
     pub(crate) const OPEN_WORKTREE: Self = Self::new("worktree-popover-open-worktree");
     pub(crate) const ORCHESTRATOR: Self = Self::new("worktree-popover-orchestrator");
@@ -69,15 +68,10 @@ impl Label {
 /// The grid's fixed slots, row by row: working on the checkout, then moving
 /// or leaving it. A slot lists the actions it can show, first available
 /// first, and the action it shows grayed when none is.
-const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 4] = {
+const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 3] = {
     use WorkspaceAction::*;
     use WorkspaceMenuAction::*;
     [
-        (
-            &[Dialog(NewWorktree)],
-            Dialog(NewWorktree),
-            Label::NEW_WORKTREE,
-        ),
         (&[FanOut], FanOut, Label::FAN_OUT),
         (&[Dialog(Rename)], Dialog(Rename), Label::RENAME),
         (&[Dialog(Close)], Dialog(Close), Label::CLOSE),
@@ -129,7 +123,6 @@ impl Tile {
     /// and position already say the rest.
     pub(in crate::menu) fn caption(self) -> String {
         match self.label {
-            Label::NEW_WORKTREE => fl!("worktree-popover-tile-new-worktree"),
             Label::FAN_OUT => fl!("worktree-popover-tile-fan-out"),
             Label::FAN_OUT_COMPARISON => fl!("worktree-popover-tile-comparison"),
             Label::RENAME => fl!("worktree-popover-tile-rename"),
@@ -144,7 +137,7 @@ impl Tile {
 /// for the rows beneath it, except what the header draws.
 pub(in crate::menu) fn layout(
     items: &[(WorkspaceMenuAction, Label)],
-) -> ([Tile; 4], Vec<(WorkspaceMenuAction, Label)>) {
+) -> ([Tile; 3], Vec<(WorkspaceMenuAction, Label)>) {
     let tiles = SLOTS.map(|(choices, fallback, label)| {
         choices
             .iter()
@@ -389,17 +382,8 @@ impl SheprdWindow {
         let theme = &self.theme;
         let label = tile.label;
         let selected = tile.enabled && self.menu.workspace_selected == Some(tile.action);
-        let primary = tile.action == WorkspaceMenuAction::Dialog(WorkspaceAction::NewWorktree);
-        let ink = if primary && tile.enabled {
-            accent(theme)
-        } else {
-            rgb(theme.foreground)
-        };
-        let resting = if primary && tile.enabled {
-            Rgba { a: 0.16, ..ink }
-        } else {
-            rgb(theme.surface).blend(rgba((theme.foreground << 8) | 0x0f))
-        };
+        let ink = rgb(theme.foreground);
+        let resting = rgb(theme.surface).blend(rgba((theme.foreground << 8) | 0x0f));
         crate::accessibility::disabled(
             div()
                 .id(label.id())

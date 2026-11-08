@@ -5,7 +5,6 @@
 workspace-dialog-rename-title = Rename workspace
 workspace-dialog-rename = Rename
 workspace-dialog-rename-note = Edit the workspace label.
-workspace-dialog-new-worktree-title = New worktree
 workspace-dialog-open-worktree-title = Open worktree
 workspace-dialog-open = Open
 workspace-dialog-new-tab-title = New tab
@@ -36,18 +35,7 @@ workspace-dialog-close-note = { $count ->
        *[other] Closes { $count } workspaces and terminates their running terminals. Checkout files and branches are not deleted.
     }
 
-# New worktree. $base is the branch or commit it starts from, such as HEAD.
 workspace-dialog-name = Name
-workspace-dialog-branch = Branch
-# Caption of the row choosing what the new worktree's first pane shows.
-workspace-dialog-lands-in = Opens in
-workspace-dialog-creates-on = Creates a worktree from { $base } on { $host }, without granting repository trust:
-workspace-dialog-creates-on-clone = Creates a worktree from { $base } on { $host }, cloning the repository there first, without granting repository trust:
-workspace-dialog-creates-here = Creates this folder from { $base }, without granting repository trust:
-# Where the checkout goes, before a branch is typed or when no folder is known.
-workspace-dialog-daemon-names = The daemon names the checkout.
-workspace-dialog-daemon-chooses = The daemon chooses the checkout.
-workspace-dialog-host-chooses = { $host }'s daemon chooses the checkout.
 workspace-dialog-merged = Pull request #{ $number } was merged.
 workspace-dialog-force-removes = This force removes the checkout folder:
 workspace-dialog-removes = This removes the checkout folder:
@@ -65,4 +53,3 @@ workspace-dialog-daemon-waiting = Waiting for the daemon. Dismissing does not ca
 
 workspace-dialog-remove-failed = Remove worktree: { $error }
 workspace-dialog-unexpected = Unexpected daemon response. Review current workspace state before retrying.
-workspace-dialog-setup-failed = The setup script did not start: { $error }

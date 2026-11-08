@@ -179,13 +179,6 @@ impl SearchInput {
         cx.notify();
     }
 
-    /// Select the whole text, as a native field does when Tab moves into it.
-    pub(crate) fn select_all(&mut self, cx: &mut Context<Self>) {
-        self.edit.anchor = 0;
-        self.edit.cursor = self.edit.text.len();
-        cx.notify();
-    }
-
     /// The field's accessible name, which the placeholder otherwise stands
     /// in for. Unchanged is a no-op, so the owner may set it from its render.
     pub(crate) fn set_label(&mut self, label: &str, cx: &mut Context<Self>) {

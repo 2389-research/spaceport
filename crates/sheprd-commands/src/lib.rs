@@ -15,7 +15,6 @@ pub use shortcuts::platform_default;
 pub enum Command {
     NewWindow,
     Workspace,
-    NewWorktree,
     /// The focused repository's "Open worktree..." dialog.
     OpenWorktree,
     /// The focused linked worktree's delete confirmation.
@@ -165,11 +164,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         command: Command::Workspace,
         name: "new_workspace",
         message: "commands-new-workspace",
-    },
-    CommandInfo {
-        command: Command::NewWorktree,
-        name: "new_worktree",
-        message: "commands-new-worktree",
     },
     CommandInfo {
         command: Command::OpenWorktree,
@@ -848,7 +842,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
             (Method::TabFocus, json!({"tab_id": target.tab_id}))
         }
         Command::NewWindow
-        | Command::NewWorktree
         | Command::OpenWorktree
         | Command::RemoveWorktree
         | Command::WorktreeNotes

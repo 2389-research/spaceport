@@ -30,9 +30,7 @@ mod workspace;
 mod workspace_close;
 mod worktree_note;
 mod worktree_open;
-mod worktree_render;
 mod worktree_shortcut;
-mod worktree_source;
 
 #[cfg(test)]
 mod announcement_tests;
@@ -48,8 +46,6 @@ mod version_mismatch_tests;
 pub(crate) mod workspace_tests;
 #[cfg(test)]
 mod worktree_open_tests;
-#[cfg(test)]
-mod worktree_tests;
 
 #[cfg(any(windows, test, feature = "integration-test"))]
 pub(crate) use state::Cover;
@@ -59,7 +55,6 @@ pub(crate) use {
     state::{MenuState, Removal},
     version_mismatch::Notice as VersionNotice,
     worktree_shortcut::WorktreeShortcut,
-    worktree_source::WorktreeSource,
 };
 
 use crate::direction::Logical;

@@ -3,7 +3,7 @@
 //! dialog does not stop it, since stopping halfway could leave a clone or a
 //! stray reference behind; only closing the window does.
 
-use crate::teleport::{self, Created, FreshOrigin, HostRepositories, Naming, Step};
+use crate::teleport::{self, Created, FreshOrigin, HostRepositories, Step};
 use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
@@ -17,7 +17,6 @@ enum Event {
 
 /// What a dispatch makes once its destination is ready.
 pub(crate) enum Then {
-    Worktree { base: String, naming: Naming },
     Workspace { label: Option<String> },
 }
 
@@ -30,9 +29,6 @@ impl Then {
         cancelled: &AtomicBool,
     ) -> crate::Result<Created> {
         Ok(match self {
-            Self::Worktree { base, naming } => {
-                teleport::dispatch_worktree(origin, destination, base, naming, report, cancelled)?
-            }
             Self::Workspace { label } => teleport::dispatch_workspace(
                 origin,
                 destination,
@@ -99,16 +95,6 @@ impl Job {
                 then.run(&origin, &destination, &mut report, cancelled)
             },
         )
-    }
-
-    /// Create a worktree of `origin`'s repository from `base` on `destination`.
-    pub(crate) fn worktree(
-        origin: FreshOrigin,
-        destination: HostRepositories,
-        base: String,
-        naming: Naming,
-    ) -> Self {
-        Self::on_host(origin, destination, Then::Worktree { base, naming })
     }
 
     /// Open `origin`'s repository as a new workspace on `destination`.

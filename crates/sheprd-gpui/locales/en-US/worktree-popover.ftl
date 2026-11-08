@@ -2,7 +2,6 @@
 # plain rows for rarer actions, and the destructive action last. Rows ending
 # in "..." open a dialog.
 
-worktree-popover-new-worktree = New worktree
 # The header's toggle for the workspace's notifications: its accessible
 # name, then the short word it shows.
 worktree-popover-mute = Mute notifications
@@ -26,19 +25,13 @@ worktree-popover-collapse-group = Collapse group
 worktree-popover-delete-worktree = Delete worktree checkout
 
 # Tile captions, shorter where the tile's icon says the rest.
-worktree-popover-tile-new-worktree = New worktree
 worktree-popover-tile-fan-out = Fan out
 worktree-popover-tile-comparison = Comparison
 worktree-popover-tile-rename = Rename
 worktree-popover-tile-close = Close
 worktree-popover-tile-close-group = Close group
 
-# Why the new worktree shortcut found nothing to branch from.
-worktree-popover-new-disconnected = Not connected, so no worktree can be created
-worktree-popover-new-no-workspace = No workspace is focused to create a worktree from
 worktree-popover-not-git = This workspace is not a Git repository
-worktree-popover-new-main-closed = Open this repository's main checkout to create a worktree
-worktree-popover-new-detached = This checkout has no branch to start a worktree from
 
 # Why the open or delete worktree shortcut has nothing to act on.
 worktree-popover-change-disconnected = Not connected, so no worktree can be changed

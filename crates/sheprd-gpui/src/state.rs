@@ -135,9 +135,6 @@ pub struct LiveState {
     /// The `worktree.remove` a merged worktree cleanup is waiting on, in its
     /// own slot so it and an open dialog cannot take each other's answer.
     pub(crate) cleanup_response: Option<(String, Option<DialogResponse>)>,
-    /// The `worktree.create` a chosen landing waits on, also in its own slot:
-    /// the dialog's may be taken by a newer dialog once this one has closed.
-    pub(crate) landing_response: Option<(String, Option<DialogResponse>)>,
     pub(crate) notifications: std::collections::VecDeque<crate::notifications::Notice>,
     pub(crate) notifications_lost: bool,
     outer_focused: Option<bool>,
@@ -238,7 +235,6 @@ impl Default for LiveState {
             dialog_response: None,
             script_response: None,
             cleanup_response: None,
-            landing_response: None,
             notifications: Default::default(),
             notifications_lost: false,
             keyboard_report_all: false,
@@ -261,7 +257,6 @@ impl Default for LiveState {
 pub(crate) enum Answer {
     // keep-sorted start
     Cleanup,
-    Landing,
     Script,
     // keep-sorted end
 }
@@ -270,7 +265,6 @@ impl LiveState {
     fn answer_slot(&mut self, answer: Answer) -> &mut Option<(String, Option<DialogResponse>)> {
         match answer {
             Answer::Cleanup => &mut self.cleanup_response,
-            Answer::Landing => &mut self.landing_response,
             Answer::Script => &mut self.script_response,
         }
     }
@@ -339,7 +333,6 @@ impl LiveState {
             dialog_response,
             script_response,
             cleanup_response,
-            landing_response,
             notifications,
             notifications_lost,
             outer_focused,
@@ -406,10 +399,6 @@ impl LiveState {
                 (Some((a, None)), Some((b, None))) => a == b,
                 (a, b) => a.is_none() && b.is_none(),
             }
-            && match (landing_response, &self.landing_response) {
-                (Some((a, None)), Some((b, None))) => a == b,
-                (a, b) => a.is_none() && b.is_none(),
-            }
             && notifications.is_empty()
             && !notifications_lost
             && *outer_focused == self.outer_focused
@@ -438,7 +427,6 @@ impl LiveState {
             &self.dialog_response,
             &self.script_response,
             &self.cleanup_response,
-            &self.landing_response,
         ]
         .into_iter()
         .flatten()
@@ -641,7 +629,6 @@ impl LiveState {
                     &mut self.dialog_response,
                     &mut self.script_response,
                     &mut self.cleanup_response,
-                    &mut self.landing_response,
                 ]
                 .into_iter()
                 .flatten()
@@ -720,7 +707,6 @@ impl LiveState {
                 for (id, result) in [
                     &mut self.script_response,
                     &mut self.cleanup_response,
-                    &mut self.landing_response,
                 ]
                 .into_iter()
                     .flatten()

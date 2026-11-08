@@ -146,13 +146,8 @@ impl SheprdWindow {
     /// Keep open pickers current, and follow a finished job.
     pub(crate) fn poll_dispatch(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let now = Instant::now();
-        let dialog = matches!(
-            self.menu.page,
-            Some(Page::Dialog(
-                crate::menu::WorkspaceAction::NewWorktree
-                    | crate::menu::WorkspaceAction::NewWorkspace
-            ))
-        );
+        let dialog =
+            self.menu.page == Some(Page::Dialog(crate::menu::WorkspaceAction::NewWorkspace));
         if !dialog {
             self.menu.dispatch = None;
         }

@@ -70,7 +70,7 @@ fn open_worktree_search_filters_automatically_and_preserves_path_selection(
                 )
             });
             cx.simulate_keystrokes("up down enter");
-            cx.update(|_, cx| assert!(view.read(cx).menu.creation.is_none()));
+            cx.update(|_, cx| assert!(view.read(cx).menu.opening.is_none()));
         }
     }
     cx.simulate_keystrokes("down");
@@ -165,7 +165,7 @@ fn open_worktree_search_composition_and_reopen_are_isolated(cx: &mut TestAppCont
             assert_eq!(view.menu.worktree_open.as_ref().unwrap().selected, 0);
             assert!(search.read(cx).is_composing());
             view.submit_workspace_dialog(window, cx);
-            assert!(view.menu.creation.is_none() && view.menu.error.is_none());
+            assert!(view.menu.opening.is_none() && view.menu.error.is_none());
             assert!(view.marked.is_empty());
             assert!(view.menu.input.is_none());
         });

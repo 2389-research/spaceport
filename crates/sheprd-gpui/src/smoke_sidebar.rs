@@ -551,7 +551,6 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
             for action in [
                 menu::WorkspaceAction::Rename,
                 menu::WorkspaceAction::Close,
-                menu::WorkspaceAction::NewWorktree,
                 menu::WorkspaceAction::DeleteWorktree,
             ] {
                 let point = handle.update(cx, |view, window, cx| {
@@ -579,12 +578,6 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                     _ => Err(anyhow!("missing native workspace")),
                 };
                 timer.timer(Duration::from_millis(50)).await;
-                // Observe only this dialog's inputs without exposing menu-private fields.
-                let inputs = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
-                let observed = inputs.clone();
-                let subscription = cx.update(|cx| cx.observe_new::<crate::search_input::SearchInput>(
-                    move |_, _, cx| observed.borrow_mut().push(cx.entity()),
-                ));
                 let opened = AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<_> {
                     clicked?;
                     let view = root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?;
@@ -641,62 +634,20 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                         bail!("workspace menu opened wrong dialog at {width}x{height} after {steps} down keys: expected {:?}, actual {:?}", menu::Page::Dialog(action), view.read(cx).menu.page);
                     }
                     window.dispatch_action(Box::new(RunCommand { command: Command::Tab }), cx);
-                    let branch = view.read(cx).menu.input.as_ref().map(|input| input.text.clone());
-                    Ok((before, branch))
+                    Ok(before)
                 });
                 // Finish entity creation before inspecting the dialog's focused input.
                 let verified = AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<()> {
-                    let (before, branch) = opened.context("opening native dialog")??;
+                    let before = opened.context("opening native dialog")??;
                     let view = root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?;
-                    let name = if action == menu::WorkspaceAction::NewWorktree {
-                        if view.read(cx).worktree_name_focused(window, cx) || view.read(cx).worktree_search_focused(window, cx) {
-                            bail!("new worktree did not focus its branch field");
-                        }
-                        // The name is one click away; focus its editor as that click does.
-                        Some(inputs.borrow().iter()
-                            .find(|input| {
-                                window.focus(&input.read(cx).focus.clone(), cx);
-                                view.read(cx).worktree_name_focused(window, cx)
-                            })
-                            .cloned().context("missing native worktree name editor")?)
-                    } else {
-                        None
-                    };
                     // Only the editable dialogs carry a text field; confirmations do not.
-                    if matches!(action, menu::WorkspaceAction::Rename | menu::WorkspaceAction::NewWorktree) {
+                    if action == menu::WorkspaceAction::Rename {
                         window.dispatch_keystroke(Keystroke::parse("cmd-a")?, cx);
                         for ch in "long-label-\u{65e5}\u{672c}-\u{1f600}".repeat(4).chars() {
                             window.dispatch_keystroke(crate::keymap::parse_keystroke(&ch.to_string())?, cx);
                         }
                         window.draw(cx).clear(cx);
-                        if let Some(name) = name {
-                            // The branch takes the name's proposal only once this update's
-                            // events are delivered, so a draft that differs here was typed into.
-                            if view.read(cx).menu.input.as_ref().map(|input| &input.text) != branch.as_ref() {
-                                bail!("keys typed into the worktree name reached its branch draft");
-                            }
-                            name.update(cx, |input, cx| -> Result<()> {
-                                if input.text() != "long-label-\u{65e5}\u{672c}-\u{1f600}".repeat(4)
-                                    || !input.focus.is_focused(window) {
-                                    bail!("native worktree name editor lost Unicode text or focus");
-                                }
-                                let end = input.text().encode_utf16().count();
-                                let field = input.bounds_for_range(0..end, Bounds::default(), window, cx)
-                                    .context("missing native name field bounds")?;
-                                let caret = input.bounds_for_range(end..end, Bounds::default(), window, cx)
-                                    .context("missing native name IME bounds")?;
-                                // Text-range bounds end at the caret; Bounds::contains
-                                // excludes that right edge, unlike an input's padded box.
-                                if caret.left() != field.right() || caret.top() != field.top()
-                                    || caret.bottom() != field.bottom() || field.size.width <= px(0.)
-                                    || field.left() < px(0.) || field.top() < px(0.)
-                                    || field.right() > window.viewport_size().width || field.bottom() > window.viewport_size().height {
-                                    bail!("native name caret/field out of bounds: field={field:?} caret={caret:?} viewport={:?}", window.viewport_size());
-                                }
-                                Ok(())
-                            })?;
-                        } else {
-                            view.update(cx, |view, cx| -> Result<()> {
+                        view.update(cx, |view, cx| -> Result<()> {
                             let input = view.menu.input.as_ref().context("missing native editor")?;
                             if input.text != "long-label-\u{65e5}\u{672c}-\u{1f600}".repeat(4) { bail!("native editor lost Unicode text"); }
                             let end = input.text.encode_utf16().count();
@@ -705,14 +656,12 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                             if !field.contains(&caret.origin) || field.right() > window.viewport_size().width || field.bottom() > window.viewport_size().height { bail!("native dialog caret/field out of bounds"); }
                             Ok(())
                         })?;
-                        }
                     }
                     window.dispatch_keystroke(Keystroke::parse("escape")?, cx);
                     let state = view.read(cx);
                     if state.menu.page.is_some() || state.input_probe.text != before.text || state.input_probe.keys != before.keys || state.input_probe.actions != before.actions || !state.focus.is_focused(window) { bail!("workspace dialog leaked input or lost focus"); }
                     Ok(())
                 });
-                drop(subscription);
                 if !matches!(verified, Ok(Ok(()))) {
                     eprintln!("SIDEBAR native dialog FAIL: {verified:?}");
                     std::process::exit(1);

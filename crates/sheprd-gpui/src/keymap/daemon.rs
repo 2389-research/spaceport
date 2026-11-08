@@ -77,11 +77,6 @@ const ACTIONS: &[(&str, Target, &str)] = &[
         Target::Command(Command::Workspace),
         "prefix+shift+n",
     ),
-    (
-        "new_worktree",
-        Target::Command(Command::NewWorktree),
-        "prefix+shift+g",
-    ),
     // Herdr leaves both unbound.
     ("open_worktree", Target::Command(Command::OpenWorktree), ""),
     (

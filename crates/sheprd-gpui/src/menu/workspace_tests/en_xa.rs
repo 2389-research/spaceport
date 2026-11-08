@@ -33,16 +33,9 @@ fn names(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Vec<String>
         let menu = &view.menu;
         let fields = [
             menu.input.as_ref().map(|input| input.text.clone()),
-            menu.target
-                .as_ref()
-                .map(|target| target.base_label().to_owned()),
-            menu.worktree
-                .as_ref()
-                .map(|source| source.name.read(cx).text().to_owned()),
             menu.deletion
                 .as_ref()
                 .and_then(|deletion| deletion.path.clone()),
-            Some(view.checkout_preview()),
             // Errors keep their English until they are localized.
             menu.error.clone(),
             // The open worktree dialog's key hint.
@@ -81,7 +74,6 @@ fn the_workspace_popover_and_its_dialogs_show_only_messages_under_en_xa() {
         }
         for (workspace, action) in [
             ("w3", WorkspaceAction::Rename),
-            ("w3", WorkspaceAction::NewWorktree),
             ("w3", WorkspaceAction::OpenWorktree),
             ("w3", WorkspaceAction::NewTab),
             ("w3", WorkspaceAction::NewWorkspace),

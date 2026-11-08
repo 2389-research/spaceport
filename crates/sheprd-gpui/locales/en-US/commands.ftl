@@ -46,7 +46,6 @@ commands-mirror-core-pane = Mirror Herdr 2 Pane
 commands-new-tab = New Tab
 commands-new-window = New Window
 commands-new-workspace = New Workspace
-commands-new-worktree = New Worktree
 commands-next-agent = Next Agent
 commands-next-pane = Next Pane
 commands-next-tab = Next Tab

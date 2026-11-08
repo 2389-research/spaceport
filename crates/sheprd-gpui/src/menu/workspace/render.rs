@@ -9,33 +9,6 @@ use crate::{
 use gpui::{prelude::*, *};
 
 impl SheprdWindow {
-    /// The checkout the daemon would create for the branch currently drafted.
-    /// Only a preview: the daemon derives the path it actually uses.
-    pub(in crate::menu) fn checkout_preview(&self) -> String {
-        let repo = self
-            .menu
-            .target
-            .as_ref()
-            .and_then(|target| target.worktree.as_ref())
-            .map(|worktree| worktree.label.as_str());
-        let root = self
-            .live
-            .snapshot
-            .as_ref()
-            .map(|snapshot| snapshot.worktree_directory.as_str())
-            .filter(|root| !root.is_empty());
-        let branch = self
-            .menu
-            .input
-            .as_ref()
-            .map_or("", |input| input.text.trim());
-        match (repo, root) {
-            _ if branch.is_empty() => fl!("workspace-dialog-daemon-names"),
-            (Some(repo), Some(root)) => crate::worktree::checkout_preview(root, repo, branch),
-            _ => fl!("workspace-dialog-daemon-chooses"),
-        }
-    }
-
     pub(in crate::menu) fn render_workspace_dialog(
         &self,
         action: WorkspaceAction,
@@ -53,12 +26,8 @@ impl SheprdWindow {
             && self.removal.as_ref().is_some_and(|removal| {
                 removal.pending_for(self.menu.endpoint_target, &target.boot_id, &target.id)
             });
-        let dispatching = self.dispatch_job.is_some()
-            && matches!(
-                action,
-                WorkspaceAction::NewWorktree | WorkspaceAction::NewWorkspace
-            );
-        let creating = self.menu.creation.is_some() || dispatching;
+        let dispatching = self.dispatch_job.is_some() && action == WorkspaceAction::NewWorkspace;
+        let creating = self.menu.opening.is_some() || dispatching;
         // Another host chosen in the picker, where the new checkout goes.
         let destination = self
             .menu
@@ -105,10 +74,6 @@ impl SheprdWindow {
             WorkspaceAction::Close => (
                 target.close_label().text(),
                 target.close_label().text().into(),
-            ),
-            WorkspaceAction::NewWorktree => (
-                fl!("workspace-dialog-new-worktree-title"),
-                create_label(destination),
             ),
             WorkspaceAction::OpenWorktree => (
                 fl!("workspace-dialog-open-worktree-title"),
@@ -192,92 +157,6 @@ impl SheprdWindow {
                     count = target.close_members.len()
                 )))
             }
-            WorkspaceAction::NewWorktree => {
-                // Captions share a column so both fields start at the same edge.
-                let row = |caption: SharedString, field: AnyElement| {
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap(px(10.))
-                        .child(
-                            div()
-                                .flex_none()
-                                .w(px(font.size * 4.5))
-                                .text_color(rgb(theme.muted))
-                                .child(caption),
-                        )
-                        .child(div().flex_1().min_w_0().child(field))
-                };
-                if let Some(source) = &self.menu.worktree {
-                    // Set each frame, like the caption beside it, so the
-                    // accessible name follows a language change; unchanged
-                    // is a no-op.
-                    source.name.update(cx, |input, cx| {
-                        input.set_label(&fl!("worktree-source-name"), cx);
-                    });
-                }
-                body.children(self.menu.worktree.as_ref().map(|source| {
-                    row(
-                        fl!("workspace-dialog-name").into(),
-                        div()
-                            .debug_selector(|| "worktree-name".into())
-                            .child(source.name.clone())
-                            .into_any_element(),
-                    )
-                }))
-                .child(row(
-                    fl!("workspace-dialog-branch").into(),
-                    self.render_dialog_input(cx).into_any_element(),
-                ))
-                .children(self.menu.dispatch.as_ref().map(|picker| {
-                    // The picker's own captions, in English until dispatch's
-                    // text is messages.
-                    self.render_host_picker(picker, |caption, field| row(caption.into(), field), cx)
-                }))
-                // Agents start through this host's CLI, so only a checkout
-                // made here can land in one.
-                .children(
-                    self.menu
-                        .landing
-                        .as_ref()
-                        .filter(|_| destination == crate::dispatch::Destination::Here)
-                        .map(|picker| {
-                            row(
-                                fl!("workspace-dialog-lands-in").into(),
-                                self.render_landing(picker, cx),
-                            )
-                        }),
-                )
-                .child(match dispatched {
-                    Some(host) if clones(host) => fl!(
-                        "workspace-dialog-creates-on-clone",
-                        base = target.base_label(),
-                        host = host.label.as_str(),
-                    ),
-                    Some(host) => fl!(
-                        "workspace-dialog-creates-on",
-                        base = target.base_label(),
-                        host = host.label.as_str(),
-                    ),
-                    None => {
-                        fl!("workspace-dialog-creates-here", base = target.base_label())
-                    }
-                })
-                .child(
-                    div()
-                        .debug_selector(|| "dialog-checkout".into())
-                        .rounded(px(crate::config::corners::CONTROL))
-                        .bg(rgb(theme.active))
-                        .px(px(10.))
-                        .py(px(6.))
-                        .child(match dispatched {
-                            Some(host) => {
-                                fl!("workspace-dialog-host-chooses", host = host.label.as_str())
-                            }
-                            None => self.checkout_preview(),
-                        }),
-                )
-            }
             WorkspaceAction::DeleteWorktree => body
                 .children(deletion.and_then(|deletion| deletion.merged).map(|number| {
                     div()
@@ -324,7 +203,7 @@ impl SheprdWindow {
                     ),
             );
         }
-        if self.menu.input.is_some() && action != WorkspaceAction::NewWorktree {
+        if self.menu.input.is_some() {
             body = body.child(self.render_dialog_input(cx));
         }
         if let Some(error) = &self.menu.error {
@@ -364,14 +243,11 @@ impl SheprdWindow {
         };
         // A picker owns the panel's height, so its list scrolls inside the
         // dialog instead of growing it past the window.
-        let listing = action == WorkspaceAction::OpenWorktree || self.worktree_listing();
+        let listing = action == WorkspaceAction::OpenWorktree;
         div()
             .flex()
             .flex_col()
-            .when(
-                listing || action == WorkspaceAction::NewWorktree,
-                |dialog| dialog.size_full().min_h_0(),
-            )
+            .when(listing, |dialog| dialog.size_full().min_h_0())
             .child(
                 div()
                     .debug_selector(|| "dialog-header".into())
@@ -441,9 +317,6 @@ impl SheprdWindow {
                         )
                     }),
             )
-            .when(action == WorkspaceAction::NewWorktree, |dialog| {
-                dialog.child(self.render_worktree_tabs(cx))
-            })
             .child(if action == WorkspaceAction::OpenWorktree {
                 self.render_existing_worktrees(cx)
                     .when(creating || self.menu.error.is_some(), |picker| {
@@ -457,21 +330,6 @@ impl SheprdWindow {
                                 .child(body),
                         )
                     })
-                    .into_any_element()
-            } else if listing {
-                self.render_worktree_items(cx).into_any_element()
-            } else if action == WorkspaceAction::NewWorktree {
-                // The branch form shares the listings' settled height, so it
-                // fills the space above the footer and scrolls within it.
-                div()
-                    .id("new-worktree-form")
-                    .debug_selector(|| "new-worktree-form".into())
-                    .flex()
-                    .flex_col()
-                    .flex_1()
-                    .min_h_0()
-                    .overflow_y_scroll()
-                    .child(body)
                     .into_any_element()
             } else {
                 body.into_any_element()

@@ -45,31 +45,11 @@ fn actions_target_clicked_workspace_and_match_daemon_schemas() {
             serde_json::json!({"workspace_id": "w3", "close_group": true})
         )
     );
-    for branch in ["", "  ", " feature/test "] {
-        let (method, params) = target
-            .request(&snapshot, WorkspaceAction::NewWorktree, branch)
-            .unwrap();
-        assert_eq!(method, Method::WorktreeCreate);
-        let mut expected = serde_json::json!({"workspace_id": "w3", "base": "HEAD", "focus": true, "trust_repository": false});
-        if !branch.trim().is_empty() {
-            expected["branch"] = branch.trim().into();
-        }
-        assert_eq!(params, expected);
-    }
-    assert!(matches!(
-        target.request(&snapshot, WorkspaceAction::NewWorktree, "config reload"),
-        Err(crate::Error::InvalidBranchName)
-    ));
     for index in [0, 4, 5] {
         let target = WorkspaceTarget::new(&snapshot, &snapshot.workspaces[index]);
         assert_eq!(target.close_label().english(), "Close");
         assert_eq!(target.close_members.len(), 1);
         assert!(!target.can_create());
-        assert!(
-            target
-                .request(&snapshot, WorkspaceAction::NewWorktree, "")
-                .is_err()
-        );
     }
     let mut standalone = snapshot.clone();
     standalone

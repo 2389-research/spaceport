@@ -1,7 +1,6 @@
 use super::DialogInput;
 use gpui::Keystroke;
 
-mod branch_format;
 mod graphemes;
 mod word_keys;
 

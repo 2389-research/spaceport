@@ -167,43 +167,4 @@ impl SheprdWindow {
         })
         .detach();
     }
-
-    /// The setup script a created checkout runs, from the daemon's answer:
-    /// it names the checkout and the repository's main checkout.
-    pub(super) fn setup_launch(
-        &self,
-        result: &serde_json::Value,
-        workspace: &str,
-    ) -> Option<crate::worktree_scripts::Launch> {
-        let target = self.menu.target.as_ref()?;
-        let tree = &result["workspace"]["worktree"];
-        let text = |value: &serde_json::Value| {
-            value
-                .as_str()
-                .filter(|text| !text.is_empty())
-                .map(str::to_owned)
-        };
-        let path = text(&tree["checkout_path"])?;
-        let known = target.worktree.as_ref();
-        Some(crate::worktree_scripts::Launch {
-            kind: crate::worktree_scripts::ScriptKind::Setup,
-            endpoint: self.menu.endpoint_target,
-            endpoint_id: self.endpoints[self.selected_endpoint].id.clone(),
-            boot: target.boot_id.clone(),
-            workspace: workspace.to_owned(),
-            repo: known
-                .map(|tree| tree.label.clone())
-                .or_else(|| text(&tree["repo_name"]))
-                .unwrap_or_else(|| target.label.clone()),
-            repo_key: known
-                .map(|tree| tree.key.clone())
-                .or_else(|| text(&tree["repo_key"]))?,
-            checkout: Some(crate::worktree_scripts::Checkout {
-                path,
-                root: text(&tree["repo_root"]),
-            }),
-            force: false,
-            requested: false,
-        })
-    }
 }

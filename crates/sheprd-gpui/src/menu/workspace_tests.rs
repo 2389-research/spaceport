@@ -9,6 +9,7 @@ mod close_unconfirmed;
 mod dialog_layout;
 mod dispatch;
 mod en_xa;
+mod excluded_creation;
 mod issues;
 mod left_checkout;
 mod left_checkout_lookup;
@@ -21,13 +22,11 @@ mod removed_checkpoints;
 mod scripts;
 mod targets;
 mod tiles;
-mod worktree_create;
 mod worktree_delete;
 mod worktree_delete_keys;
 mod worktree_delete_recovery;
 // Host scripts, which find and start agents, need a POSIX client.
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-mod worktree_landing;
 
 /// Presses the open workspace dialog's submit, for `endpoint::lifecycle_tests`.
 #[cfg(unix)]
@@ -62,7 +61,6 @@ pub(crate) fn submit_focus_change(
 ) {
     let action = match method {
         Method::WorkspaceClose => WorkspaceAction::Close,
-        Method::WorktreeCreate => WorkspaceAction::NewWorktree,
         Method::WorktreeOpen => WorkspaceAction::OpenWorktree,
         Method::WorktreeRemove => WorkspaceAction::DeleteWorktree,
         _ => panic!("unexpected fixture action"),
@@ -121,7 +119,7 @@ pub(crate) fn submit_focus_change(
             assert_eq!(view.menu.page, Some(super::Page::Dialog(action)));
             view.removal.as_ref().unwrap().pending.clone()
         }
-        WorkspaceAction::NewWorktree | WorkspaceAction::OpenWorktree => view.menu.creation.clone(),
+        WorkspaceAction::OpenWorktree => view.menu.opening.clone(),
         _ => None,
     };
     if pending.is_some() {

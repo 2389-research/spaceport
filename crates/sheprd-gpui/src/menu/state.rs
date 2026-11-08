@@ -108,9 +108,9 @@ pub(crate) struct MenuState {
     pub(crate) error: Option<String>,
     pub(super) deletion: Option<Deletion>,
     pub(super) close_check: Option<super::workspace_close::CloseCheck>,
-    /// The correlated `worktree.create` or `worktree.open` request, so the dialog
-    /// can report the daemon's answer and follow the returned workspace.
-    pub(super) creation: Option<String>,
+    /// The correlated `worktree.open` request, so the dialog can report its
+    /// answer and follow the opened workspace.
+    pub(super) opening: Option<String>,
     /// The name a new tab or workspace dialog proposed. Submitting it
     /// unchanged, or nothing, leaves naming to the daemon, as Herdr does.
     pub(super) suggested_name: Option<String>,
@@ -130,12 +130,8 @@ pub(crate) struct MenuState {
     pub(crate) group: Option<crate::group_menu::GroupMenu>,
     pub(crate) host: Option<super::devices::HostMenu>,
     pub(crate) pane: Option<crate::pane_menu::PaneMenu>,
-    /// The new worktree dialog's tabs and the GitHub listing behind them.
-    pub(crate) worktree: Option<super::WorktreeSource>,
-    /// The host a new worktree or workspace goes to, when another one could.
+    /// The host a new workspace goes to, when another one could.
     pub(crate) dispatch: Option<crate::dispatch::Picker>,
-    /// What a new worktree's first pane shows, when its host can start agents.
-    pub(crate) landing: Option<crate::worktree_landing::Picker>,
     pub(crate) pr: crate::pull_request::Lookup,
     /// Also read by the sidebar, which paints each worktree's cached PR badge.
     pub(crate) pr_cache: crate::pull_request::Cache,
@@ -237,8 +233,8 @@ impl Removal {
 pub(super) enum Submission {
     /// The request is queued and the dialog has nothing left to wait for.
     Queued { focus_changed: bool },
-    /// The dialog stays open for a daemon answer it still needs: the checkout a
-    /// removal must confirm, or the one a creation produced.
+    /// The dialog stays open for a daemon answer it still needs: a checkout
+    /// removal or open request.
     Awaiting { focus_changed: bool },
 }
 
@@ -357,7 +353,7 @@ impl MenuState {
             error: None,
             deletion: None,
             close_check: None,
-            creation: None,
+            opening: None,
             suggested_name: None,
             worktree_open: None,
             keybinds_scroll: ScrollHandle::new(),
@@ -396,9 +392,7 @@ impl MenuState {
             group: None,
             host: None,
             pane: None,
-            worktree: None,
             dispatch: None,
-            landing: None,
         }
     }
 
@@ -455,13 +449,11 @@ impl MenuState {
         self.deletion = None;
         self.version_notice = None;
         self.close_check = None;
-        self.creation = None;
+        self.opening = None;
         self.suggested_name = None;
         self.worktree_open = None;
         self.close = None;
-        self.worktree = None;
         self.dispatch = None;
-        self.landing = None;
         self.pr.clear();
         self.pr_connection = None;
     }
