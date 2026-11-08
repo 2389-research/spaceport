@@ -1104,7 +1104,7 @@ Gates this task must close: G-OBS
 
 ## T09 — Unify client commands and structured inspection
 
-Status: **not_started** · Prerequisites: T03, T05
+Status: **in_progress** · Prerequisites: T03, T05
 
 One catalog for existing GUI/CLI; exact targets, bounded observations, honest outcomes and preserved confirmations.
 

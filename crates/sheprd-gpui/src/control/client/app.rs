@@ -4,7 +4,10 @@ use crate::{
     cli::control::{AppCommand, UiCommand, WindowCommand},
     control::protocol::{
         Request, Response,
-        app::{AppOp, CommandOp, Reply, Status, UiOp, WindowInfo, WindowOp},
+        app::{
+            AppOp, CommandOp, CoreCatalog, CoreCatalogState, Reply, Status, UiOp, WindowInfo,
+            WindowOp,
+        },
     },
 };
 use std::fmt::Write as _;
@@ -39,6 +42,26 @@ fn describe_window(window: &WindowInfo, text: &mut String) {
     }
 }
 
+pub(super) fn describe_core_catalog(catalog: &CoreCatalog) -> String {
+    let epoch = catalog
+        .epoch
+        .map_or_else(|| "none".to_owned(), |epoch| epoch.to_string());
+    let detail = match catalog.state {
+        CoreCatalogState::NotStarted => "not started".to_owned(),
+        CoreCatalogState::Synchronizing => "synchronizing".to_owned(),
+        CoreCatalogState::Current => catalog.machine_count.map_or_else(
+            || "current; count unavailable".to_owned(),
+            |count| format!("current; {count} machines"),
+        ),
+        CoreCatalogState::Disconnected => "disconnected; catalog stale".to_owned(),
+        CoreCatalogState::Unavailable => format!(
+            "unavailable ({})",
+            sheprd_client::text::safe_text(catalog.error.as_deref().unwrap_or("unknown"), 160)
+        ),
+    };
+    format!("Core machine catalog, epoch {epoch}: {detail}")
+}
+
 pub(super) fn status(context: &Context) -> crate::Result<Output> {
     let response = send(&Request::Status(context.caller()?))?;
     let Response::Status(status) = response else {
@@ -50,6 +73,7 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
         pid,
         browser_tabs,
         windows,
+        core_catalog,
     } = &status;
     let mut text = format!(
         "Sheprd {version} is running (pid {pid}, control protocol {protocol}{})\n",
@@ -66,6 +90,7 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
             crate::control::protocol::PROTOCOL_VERSION
         );
     }
+    let _ = writeln!(text, "{}", describe_core_catalog(core_catalog));
     if windows.is_empty() {
         text.push_str("No window is open\n");
     }

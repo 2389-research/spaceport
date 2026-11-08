@@ -399,8 +399,8 @@
         "docs/08-agent-journeys.md"
       ],
       "deliverable": "One catalog for existing GUI/CLI; exact targets, bounded observations, honest outcomes and preserved confirmations.",
-      "status": "not_started",
-      "evidence": [],
+      "status": "in_progress",
+      "evidence": ["evidence/t09-core-catalog-status.md"],
       "must_close_gaps": []
     },
     {

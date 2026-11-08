@@ -198,6 +198,10 @@ impl Projection {
         self.freshness == Freshness::Fresh
     }
 
+    pub fn stale(&self) -> bool {
+        self.freshness == Freshness::Stale
+    }
+
     pub fn error(&self) -> Option<&Error> {
         self.error.as_deref()
     }
@@ -362,6 +366,16 @@ pub(super) fn set_machines_for_test(cx: &mut App, machines: Option<Vec<MachineVi
     } else {
         observation.projection.lost(epoch);
     }
+}
+
+#[cfg(test)]
+pub(super) fn set_machine_catalog_pending_for_test(cx: &mut App) {
+    if !cx.has_global::<Observation>() {
+        Observation::install(cx);
+    }
+    let observation = cx.global_mut::<Observation>();
+    let epoch = observation.projection.epoch + 1;
+    observation.projection.begin(epoch);
 }
 
 #[cfg(test)]

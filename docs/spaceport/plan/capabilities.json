@@ -154,8 +154,9 @@
         "S09"
       ],
       "gaps": [],
-      "evidence_level": "source_observed",
-      "runtime_test_status": "not_run"
+      "evidence_level": "scenario_verified_local_subset",
+      "runtime_test_status": "headless_core_catalog_status_and_explicit_window_refusal_passed; native_cli_not_run",
+      "runtime_evidence": ["evidence/t09-core-catalog-status.md"]
     },
     {
       "id": "CAP-UPDATE",

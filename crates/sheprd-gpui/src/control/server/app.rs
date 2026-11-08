@@ -5,9 +5,13 @@ use crate::{
     constants::APP_VERSION,
     control::protocol::{
         Call, Caller, ErrorCode, PROTOCOL_VERSION, Response,
-        app::{AppOp, CommandOp, FontSize, HostInfo, Reply, Status, UiOp, WindowInfo, WindowOp},
+        app::{
+            AppOp, CommandOp, CoreCatalog, CoreCatalogState, FontSize, HostInfo, Reply, Status,
+            UiOp, WindowInfo, WindowOp,
+        },
     },
     controls::{COMMANDS, Command},
+    core_terminals,
 };
 use gpui::{App, Window, px, size};
 use sheprd_client::ConnectTarget;
@@ -79,12 +83,39 @@ fn windows(cx: &mut App) -> Vec<WindowInfo> {
 }
 
 pub(super) fn status(_: &Caller, cx: &mut App) -> Response {
+    let epoch = core_terminals::machine_catalog_epoch(cx);
+    let machine_count = core_terminals::machine_catalog(cx).map(|machines| machines.len());
+    let error = core_terminals::machine_catalog_error_code(cx);
+    let state = if epoch.is_none() {
+        CoreCatalogState::NotStarted
+    } else if core_terminals::machine_catalog_stale(cx) {
+        CoreCatalogState::Disconnected
+    } else if !core_terminals::machine_catalog_fresh(cx) {
+        CoreCatalogState::Synchronizing
+    } else if machine_count.is_some() {
+        CoreCatalogState::Current
+    } else if error.is_some() {
+        CoreCatalogState::Unavailable
+    } else {
+        CoreCatalogState::Synchronizing
+    };
+    let machine_count = if state == CoreCatalogState::Current {
+        machine_count
+    } else {
+        None
+    };
     Response::Status(Status {
         version: APP_VERSION.to_owned(),
         protocol: PROTOCOL_VERSION,
         pid: std::process::id(),
         browser_tabs: crate::browser::EMBEDDED,
         windows: windows(cx),
+        core_catalog: CoreCatalog {
+            epoch,
+            state,
+            machine_count,
+            error: error.map(str::to_owned),
+        },
     })
 }
 

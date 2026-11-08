@@ -163,6 +163,30 @@ pub struct Status {
     /// Whether pages show in tabs; otherwise they open in the system browser.
     pub browser_tabs: bool,
     pub windows: Vec<WindowInfo>,
+    #[serde(default)]
+    pub core_catalog: CoreCatalog,
+}
+
+/// What this client has observed from Core's machine catalog in its current epoch.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CoreCatalog {
+    pub epoch: Option<u64>,
+    pub state: CoreCatalogState,
+    /// `None` means no current catalog, unlike a current catalog of zero machines.
+    pub machine_count: Option<usize>,
+    /// A stable class only; Core's untrusted diagnostic text stays out of status.
+    pub error: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CoreCatalogState {
+    #[default]
+    NotStarted,
+    Synchronizing,
+    Current,
+    Disconnected,
+    Unavailable,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

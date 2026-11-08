@@ -1,5 +1,6 @@
 use super::*;
 
+mod core_status;
 #[cfg(windows)]
 mod pipe_status;
 

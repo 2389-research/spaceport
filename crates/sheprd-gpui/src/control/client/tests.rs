@@ -2,6 +2,7 @@
 use super::*;
 
 mod chat_lines;
+mod core_catalog;
 mod remote_lines;
 
 #[test]

@@ -58,6 +58,39 @@ pub(crate) fn machine_catalog_started(cx: &App) -> bool {
         .is_some_and(|observation| observation.projection().started())
 }
 
+pub(crate) fn machine_catalog_epoch(cx: &App) -> Option<u64> {
+    let projection = cx.try_global::<observation::Observation>()?.projection();
+    projection.started().then(|| projection.epoch())
+}
+
+pub(crate) fn machine_catalog_fresh(cx: &App) -> bool {
+    cx.try_global::<observation::Observation>()
+        .is_some_and(|observation| observation.projection().fresh())
+}
+
+pub(crate) fn machine_catalog_stale(cx: &App) -> bool {
+    cx.try_global::<observation::Observation>()
+        .is_some_and(|observation| observation.projection().stale())
+}
+
+/// A stable class for control output; Core's arbitrary error text is not echoed.
+pub(crate) fn machine_catalog_error_code(cx: &App) -> Option<&'static str> {
+    let error = machine_catalog_error(cx)?;
+    Some(match error {
+        observation::Error::Core(sheprd_core_client::Error::Refused { .. }) => "refused",
+        observation::Error::Core(sheprd_core_client::Error::Timeout(_)) => "timeout",
+        observation::Error::Core(sheprd_core_client::Error::Lost) => "disconnected",
+        observation::Error::Core(sheprd_core_client::Error::Unsupported(_)) => "unsupported",
+        observation::Error::Core(
+            sheprd_core_client::Error::Frame(_)
+            | sheprd_core_client::Error::Invalid(..)
+            | sheprd_core_client::Error::Json(_)
+            | sheprd_core_client::Error::Protocol(_),
+        ) => "invalid_response",
+        _ => "failed",
+    })
+}
+
 #[cfg(test)]
 pub(crate) fn set_machine_catalog_for_test(
     cx: &mut App,
@@ -69,6 +102,11 @@ pub(crate) fn set_machine_catalog_for_test(
 #[cfg(test)]
 pub(crate) fn set_machine_catalog_error_for_test(cx: &mut App, error: sheprd_core_client::Error) {
     observation::set_machine_error_for_test(cx, error);
+}
+
+#[cfg(test)]
+pub(crate) fn set_machine_catalog_pending_for_test(cx: &mut App) {
+    observation::set_machine_catalog_pending_for_test(cx);
 }
 
 use crate::{

@@ -450,7 +450,7 @@
       "scenario": "Query a large fixture session with many hidden transcripts and terminal histories.",
       "expected": "Default metadata stays paged/bounded; no full transcript fetch or model invocation; truncation/coverage explicit.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t09-core-catalog-status.md"]
     },
     {
       "id": "A40",
@@ -472,7 +472,7 @@
       "scenario": "Exercise unsupported, denied, disconnected, stale and unknown outcomes; export logs with seeded secrets.",
       "expected": "Distinct error classes/versions/correlation; no seeded secrets/transcripts in default diagnostics.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t09-core-catalog-status.md"]
     },
     {
       "id": "A42",

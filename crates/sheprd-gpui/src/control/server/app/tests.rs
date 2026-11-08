@@ -2,6 +2,8 @@
 use super::*;
 use crate::control::protocol::app::Switch;
 
+mod core_catalog;
+
 fn call<T>(op: T) -> Call<T> {
     Call {
         caller: Caller::default(),
