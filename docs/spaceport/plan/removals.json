@@ -87,7 +87,7 @@
         "S09"
       ],
       "constraint": "Keep service UI and system-browser open; remove webview-only dependencies after target audit.",
-      "audit_status": "not_started"
+      "audit_status": "in_progress"
     },
     {
       "id": "RM-CLOUD",
