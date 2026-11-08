@@ -10,7 +10,6 @@ mod en_xa;
 mod example_config;
 mod footer_fit;
 mod icons;
-mod keychain_grants;
 mod report_messages;
 mod section;
 mod status_bar_room;

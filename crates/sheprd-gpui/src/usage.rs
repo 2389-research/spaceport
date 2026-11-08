@@ -1,9 +1,7 @@
-//! Plan usage in the status bar, its panel, and the Usage section. Reading
-//! it is `herdr-usage`'s; this draws it, keeps the Keychain grants the user
-//! gave, and embeds the provider logos.
+//! Plan usage presentation in the status bar, panel, and Usage section.
+//! Core has no usage feed yet; shared host and shell types remain.
 // i18n: migrated
 
-mod access;
 mod details;
 mod icons;
 mod panel;
@@ -15,12 +13,11 @@ mod ui;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use access::KeychainGrants;
 pub(crate) use panel::PANEL_WIDTH;
 pub(crate) use render::Hint;
-pub(crate) use sheprd_usage::{
-    Access, Host, Provider, Reading, Shell, Usage, UsageConfig, model, registry, service,
-};
+#[cfg(test)]
+pub(crate) use sheprd_usage::registry;
+pub(crate) use sheprd_usage::{Host, Provider, Reading, Shell, Usage, UsageConfig, model};
 
 pub(crate) fn icon(path: &str) -> Option<&'static [u8]> {
     icons::PROVIDER_ICONS

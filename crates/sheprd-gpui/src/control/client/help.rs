@@ -91,7 +91,9 @@ fn family(name: &str) -> &'static str {
         "processes" => {
             "spaceport processes [--pane ID]\n    The processes under a pane (default HERDR_PANE_ID), with CPU and\n    memory. Runs here; Spaceport need not run."
         }
-        "usage" => "spaceport usage\n    AI plan usage on the window's selected host.",
+        "usage" => {
+            "spaceport usage\n    Plan usage on the selected host when Core supplies a feed; currently unavailable."
+        }
         "system" => {
             "spaceport system\n    The window's selected host's load, when Spaceport samples it."
         }

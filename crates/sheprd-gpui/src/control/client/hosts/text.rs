@@ -93,8 +93,8 @@ pub(super) fn usage(reply: &Reply) -> String {
         return String::new();
     };
     let mut text = String::new();
-    if usage.is_empty() {
-        let _ = writeln!(text, "No usage to show on {host}");
+    if usage.is_empty() && note.is_none() {
+        let _ = writeln!(text, "Plan usage unavailable on {host}");
     }
     for provider in usage {
         let _ = write!(text, "{}", provider.provider);

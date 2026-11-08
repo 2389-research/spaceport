@@ -36,16 +36,23 @@ fn fixture(
 
 #[gpui::test]
 fn usage_lists_each_host_across_the_window(cx: &mut gpui::TestAppContext) {
-    let (_, cx) = fixture(cx, true);
+    let (view, cx) = fixture(cx, true);
     let section = cx.debug_bounds("usage-section").unwrap();
     assert_eq!(
         section.left(),
         cx.debug_bounds("activity-bar").unwrap().right()
     );
-    assert!(cx.debug_bounds("usage-section-refresh").is_some());
+    assert!(cx.debug_bounds("usage-section-refresh").is_none());
     let host = cx.debug_bounds("usage-section-host-0").unwrap();
     assert!(section.contains(&host.origin));
     assert!(cx.debug_bounds("usage-section-off").is_none());
+    assert!(cx.debug_bounds("usage-section-unavailable").is_some());
+    view.update(cx, |view, cx| {
+        assert!(
+            view.render_usage(cx).is_some(),
+            "status bar names the unavailable feed"
+        );
+    });
 }
 
 #[gpui::test]

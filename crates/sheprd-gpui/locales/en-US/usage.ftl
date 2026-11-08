@@ -3,12 +3,8 @@
 # shown as reported.
 
 usage-section-title = Usage
-usage-refresh = Refresh
 usage-updating = Updating…
-usage-off = Plan usage is off. Turn on Usage in Settings to read your agents' limits.
-usage-not-read-yet = Not read yet
-usage-read-while-selected = Read while this host is selected
-usage-no-agents = No signed-in agents found on this host.
+usage-off = Plan usage display is off.
 usage-not-updated-yet = Not updated yet
 # $time is a countdown such as "2h 53m".
 usage-updated-ago = Updated { $time } ago
@@ -19,7 +15,7 @@ usage-panel-subtitle = { $updated } · { $host }
 
 # Status bar.
 usage-unavailable = Usage unavailable
-usage-refresh-usage = Refresh usage
+usage-core-unavailable-detail = Core does not report plan usage yet.
 # What a screen reader says for a service's segment.
 usage-segment = { $name } usage { $percent }% used
 usage-segment-idle = { $name } usage
@@ -112,11 +108,3 @@ usage-account-note = { $status ->
         [yes] , disabled
        *[no] {""}
     }
-usage-keychain-needed = { $name }'s sign-in is kept in the macOS Keychain, so reading it makes macOS ask for permission. Choose Always Allow to see these numbers at launch without being asked again.
-usage-keychain-allow = Allow Keychain Access
-usage-keychain-denied = macOS was not allowed to share { $name }'s sign-in. Try again to have macOS ask once more.
-usage-keychain-try-again = Try Again
-usage-setup = Set up
-# $setting is a config key such as [usage.providers.zai] api_key, and
-# $variables the environment variables that also set it.
-usage-setup-setting-or-env = { $setting } or { $variables }

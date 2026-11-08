@@ -374,12 +374,6 @@ pub(crate) fn run() -> std::process::ExitCode {
     } else {
         crate::browser::Store::default()
     };
-    // Nor with usage Keychain grants, so a fixture never makes macOS ask.
-    let keychain_grants = if mode == LaunchMode::Normal {
-        crate::usage::KeychainGrants::load()
-    } else {
-        crate::usage::KeychainGrants::default()
-    };
     // Nor with saved editor groups, which they would overwrite.
     let group_layouts = if mode == LaunchMode::Normal {
         crate::browser::Layouts::load()
@@ -451,7 +445,6 @@ pub(crate) fn run() -> std::process::ExitCode {
             worktree_landing.install(cx);
             fan_out_journal.install(cx);
             agent_skill.install_global(cx);
-            keychain_grants.install(cx);
             taskbar.install(cx);
             #[cfg(windows)]
             if let Some(jump_list) = jump_list {

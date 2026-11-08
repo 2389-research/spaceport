@@ -177,10 +177,10 @@ fn usage(view: &SheprdWindow, now: SystemTime) -> Response {
         Some("Usage is turned off ([usage] show in the settings)".to_owned())
     } else if let Some(error) = entry.and_then(|entry| entry.error.as_deref()) {
         Some(error.to_string())
-    } else if entry.is_none() {
-        Some(format!("Spaceport has not read usage on {host} yet"))
     } else if usage.is_empty() {
-        Some(format!("No AI plan is signed in on {host}"))
+        Some(format!(
+            "Plan usage is unavailable on {host}: Core has no usage feed"
+        ))
     } else {
         None
     };

@@ -1,15 +1,14 @@
-//! The usage panel a status bar segment opens: one tab per signed-in agent on
-//! the selected host, its account, every limit with its pace, whatever else
-//! its service reports, and links to the service's own pages.
+//! The usage panel a reported status bar segment opens, with its account,
+//! limits, and links to the service's own pages.
 
-use super::{Access, KeychainGrants, Reading, model::Provider, service::Service, text, ui::Ui};
+use super::{Reading, model::Provider, text, ui::Ui};
 use crate::{
-    i18n::{self, Localize, fl},
+    i18n::{Localize, fl},
     menu::Page,
     window::SheprdWindow,
 };
 use gpui::{prelude::*, *};
-use std::time::{Instant, SystemTime};
+use std::time::SystemTime;
 
 pub(crate) const PANEL_WIDTH: f32 = 340.;
 /// The gap between the status bar and the panel it opened.
@@ -159,7 +158,6 @@ impl SheprdWindow {
                         ),
                 ),
         );
-        // A sign-in waiting on Keychain access is explained below instead.
         let errors = reading
             .filter(|r| r.access.is_none())
             .and_then(|r| r.error.as_deref())
@@ -181,31 +179,17 @@ impl SheprdWindow {
             font_size: font.size,
             now,
         };
-        let access = reading.and_then(|r| r.access);
-        if let Some(access) = access {
-            view = view
-                .child(rule())
-                .child(self.usage_access(provider, access, cx));
-        }
         if let Some(report) = reading.and_then(|r| r.report.as_ref()) {
             view = view
                 .child(rule())
                 .child(super::details::render(report, &ui));
-        } else if access.is_none() && !service.meta().settings.is_empty() {
-            // Nothing to show yet: say what would sign it in.
-            view = view.child(rule()).child(setup(service, &ui));
+        } else {
+            view = view
+                .child(rule())
+                .child(fl!("usage-core-unavailable-detail"));
         }
         let body = view
             .child(rule())
-            .child(self.usage_action(
-                "usage-refresh-row",
-                "icons/refresh.svg",
-                fl!("usage-refresh"),
-                cx.listener(|this, _, _, cx| {
-                    this.usage.refresh(Instant::now());
-                    cx.notify();
-                }),
-            ))
             .children(service.meta().dashboard.map(|url| {
                 self.usage_action(
                     "usage-dashboard",
@@ -294,49 +278,6 @@ impl SheprdWindow {
             }))
     }
 
-    /// Why the sign-in is not read yet, and the one control that makes macOS
-    /// ask, so the prompt only ever follows the user's own click.
-    fn usage_access(
-        &self,
-        provider: Provider,
-        access: Access,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
-        let theme = &self.theme;
-        let name = provider.name();
-        let (text, label) = match access {
-            Access::Needed => (
-                fl!("usage-keychain-needed", name = name),
-                fl!("usage-keychain-allow"),
-            ),
-            Access::Denied => (
-                fl!("usage-keychain-denied", name = name),
-                fl!("usage-keychain-try-again"),
-            ),
-        };
-        div()
-            .flex()
-            .flex_col()
-            .child(
-                div()
-                    .px(px(8.))
-                    .py(px(4.))
-                    .text_size(px(self.config.ui.size * 0.9))
-                    .text_color(rgb(theme.muted))
-                    .child(text),
-            )
-            .child(self.usage_action(
-                "usage-allow-keychain",
-                "icons/lock.svg",
-                label,
-                cx.listener(move |this, _, _, cx| {
-                    KeychainGrants::grant(provider, cx);
-                    this.usage.allow(provider, Instant::now());
-                    cx.notify();
-                }),
-            ))
-    }
-
     fn usage_action(
         &self,
         id: &'static str,
@@ -369,34 +310,4 @@ impl SheprdWindow {
                 action(event, window, cx);
             })
     }
-}
-
-/// Where each of the provider's settings goes and how to find its value.
-fn setup(service: &dyn Service, ui: &Ui) -> AnyElement {
-    ui.block()
-        .child(ui.heading(fl!("usage-setup")))
-        .children(service.meta().settings.iter().map(|setting| {
-            let key = format!("[usage.providers.{}] {}", service.meta().id, setting.name);
-            let key = if setting.env.is_empty() {
-                key
-            } else {
-                fl!(
-                    "usage-setup-setting-or-env",
-                    setting = key,
-                    variables = setting.env.join(", ")
-                )
-            };
-            div()
-                .flex()
-                .flex_col()
-                .gap(px(2.))
-                .text_size(ui.small())
-                .child(key)
-                .child(
-                    div()
-                        .text_color(ui.muted())
-                        .child(i18n::message(setting.message, &[])),
-                )
-        }))
-        .into_any_element()
 }

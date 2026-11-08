@@ -151,7 +151,8 @@ not take it either.
 | `ports [list]` | Ports your workspace listens on, and forwards |
 | `ports forward\|unforward PORT` | Forward a port of the SSH host to this machine |
 | `ports open PORT` | Open `localhost:PORT` with the system handler; forwards a remote port before opening |
-| `usage`, `system` | Plan usage and load of the selected host: CPU, memory, disk, uptime, and its GPU and video memory when it has one and `show_gpu_load` or `show_sidebar_gpu_load` is on |
+| `usage` | Plan usage on the selected host; reports unavailable until Core supplies a usage feed |
+| `system` | Load of the selected host: CPU, memory, disk, uptime, and its GPU and video memory when enabled |
 | `processes [--pane ID]` | The processes under a pane, with CPU and memory (no app needed) |
 
 ### Settings and services

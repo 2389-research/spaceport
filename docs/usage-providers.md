@@ -1,5 +1,11 @@
 # Usage providers
 
+> Historical Sheprd implementation notes. Spaceport does not start or refresh
+> these provider probes, read their sign-ins, or offer their setup controls.
+> Its Usage UI and CLI report an unavailable value until Core supplies an
+> authoritative feed. The provider crate remains compiled while shared host
+> and shell types still have other callers.
+
 The status bar shows as many signed-in AI services as fit on the selected
 host, and clicking one opens its panel. The service selected in the panel
 comes first, followed by those closest to their limits. Narrowing the window

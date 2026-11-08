@@ -16,11 +16,7 @@ use crate::{
     window::SheprdWindow,
 };
 use gpui::{prelude::*, *};
-use std::{
-    cell::Cell,
-    rc::Rc,
-    time::{Duration, SystemTime},
-};
+use std::{cell::Cell, rc::Rc, time::SystemTime};
 
 const METER_WIDTH: f32 = 40.;
 /// Windows a detailed segment names at most; the panel lists the rest. A
@@ -29,8 +25,7 @@ pub(super) const BAR_WINDOWS: usize = 2;
 
 impl SheprdWindow {
     /// As many providers as fit: the one chosen in the panel first, then
-    /// those closest to a limit; nothing when usage is hidden or no provider
-    /// on the host has numbers yet.
+    /// those closest to a limit; unavailable is shown until Core reports usage.
     pub(crate) fn render_usage(&self, cx: &mut Context<Self>) -> Option<impl IntoElement + use<>> {
         let entry = self.usage.current();
         let shown = entry
@@ -41,11 +36,15 @@ impl SheprdWindow {
         let host_error = entry
             .and_then(|entry| entry.error.as_deref())
             .filter(|_| shown.is_empty())
-            .map(Localize::localize);
-        if !self.config.usage.show || (shown.is_empty() && host_error.is_none()) {
+            .map(Localize::localize)
+            .or_else(|| {
+                shown
+                    .is_empty()
+                    .then(|| fl!("usage-core-unavailable-detail"))
+            });
+        if !self.config.usage.show {
             return None;
         }
-        let busy = self.usage.busy();
         let now = SystemTime::now();
         let theme = &self.theme;
         let mut row = div()
@@ -85,12 +84,7 @@ impl SheprdWindow {
                     }),
             );
         }
-        let refresh = svg()
-            .path("icons/refresh.svg")
-            .size(px(11.))
-            .text_color(rgb(theme.muted));
         // Full-height segments wrap below the visible row when crowded.
-        // Refresh stays outside that row, so it remains accessible.
         Some(
             div()
                 .flex()
@@ -98,49 +92,7 @@ impl SheprdWindow {
                 .min_w_0()
                 .h_full()
                 .items_center()
-                .gap(px(4.))
-                .child(row)
-                .child(
-                    div()
-                        .id("usage-refresh")
-                        .debug_selector(|| "usage-refresh".into())
-                        .role(Role::Button)
-                        .aria_label(fl!("usage-refresh-usage"))
-                        .map(|control| {
-                            self.chrome_stop(
-                                crate::window::chrome_focus::Region::StatusBar,
-                                control,
-                            )
-                        })
-                        .size(px(18.))
-                        .flex_none()
-                        .flex()
-                        .items_center()
-                        .justify_center()
-                        .rounded(px(crate::config::corners::CONTROL))
-                        .cursor_pointer()
-                        .hover(|s| s.bg(rgb(theme.active)))
-                        .child(if busy {
-                            refresh
-                                .with_animation(
-                                    "usage-refreshing",
-                                    Animation::new(crate::motion::duration(Duration::from_secs(1)))
-                                        .repeat(),
-                                    |icon, delta| {
-                                        icon.with_transformation(Transformation::rotate(
-                                            percentage(delta),
-                                        ))
-                                    },
-                                )
-                                .into_any_element()
-                        } else {
-                            refresh.into_any_element()
-                        })
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.usage.refresh(std::time::Instant::now());
-                            cx.notify();
-                        })),
-                ),
+                .child(row),
         )
     }
 

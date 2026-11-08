@@ -1,7 +1,5 @@
-//! The activity bar's Usage section: every host's plan limits across the
-//! window's body, one card per signed-in agent, drawn from the same reports
-//! as the status bar's usage panel. Only the selected host is read; another
-//! host shows what was read while it was selected.
+//! The activity bar's Usage section: reported plan limits for each host.
+//! An absent authoritative feed is shown as unavailable.
 
 use super::{Host, text, ui::Ui};
 use crate::{
@@ -9,15 +7,14 @@ use crate::{
     i18n::{Localize, fl},
 };
 use gpui::{prelude::*, *};
-use std::time::{Instant, SystemTime};
+use std::time::SystemTime;
 
 const CARD_WIDTH: f32 = 320.;
 
 impl SheprdWindow {
-    pub(crate) fn render_usage_section(&self, cx: &mut Context<Self>) -> AnyElement {
+    pub(crate) fn render_usage_section(&self, _cx: &mut Context<Self>) -> AnyElement {
         let theme = &self.theme;
         let font = &self.config.ui;
-        let small = px(font.size - 1.);
         let now = SystemTime::now();
         let header = div()
             .debug_selector(|| "usage-section-header".into())
@@ -35,40 +32,7 @@ impl SheprdWindow {
                     .font_weight(FontWeight::SEMIBOLD)
                     .child(fl!("usage-section-title")),
             )
-            .child(div().flex_1())
-            .when(self.config.usage.show, |header| {
-                header.child(
-                    div()
-                        .id("usage-section-refresh")
-                        .debug_selector(|| "usage-section-refresh".into())
-                        .px(px(10.))
-                        .h(px(24.))
-                        .flex()
-                        .items_center()
-                        .gap_1()
-                        .rounded(px(crate::config::corners::CONTROL))
-                        .border_1()
-                        .border_color(rgb(theme.active))
-                        .cursor_pointer()
-                        .hover(|style| style.bg(rgb(theme.active)))
-                        .text_size(small)
-                        .child(
-                            svg()
-                                .path("icons/refresh.svg")
-                                .size(px(12.))
-                                .text_color(rgb(theme.subtext())),
-                        )
-                        .child(if self.usage.busy() {
-                            fl!("usage-updating")
-                        } else {
-                            fl!("usage-refresh")
-                        })
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            this.usage.refresh(Instant::now());
-                            cx.notify();
-                        })),
-                )
-            });
+            .child(div().flex_1());
         let mut body = div().p_5().flex().flex_col().gap_5();
         if !self.config.usage.show {
             body = body.child(
@@ -120,18 +84,11 @@ impl SheprdWindow {
     fn usage_host(&self, index: usize, label: &str, host: &Host, ui: &Ui) -> Div {
         let theme = &self.theme;
         let small = ui.small();
-        let selected = index == self.selected_endpoint;
         let entry = self.usage.entry(host);
         let updated = entry
             .and_then(|entry| entry.updated)
             .map(|at| text::updated(ui.now.duration_since(at).unwrap_or_default()))
-            .unwrap_or_else(|| {
-                if selected {
-                    fl!("usage-not-read-yet")
-                } else {
-                    fl!("usage-read-while-selected")
-                }
-            });
+            .unwrap_or_else(|| fl!("usage-unavailable"));
         let readings = entry
             .map(|entry| entry.tabs(&self.config.usage))
             .unwrap_or_default();
@@ -140,8 +97,9 @@ impl SheprdWindow {
         if readings.is_empty() {
             cards = cards.child(
                 div()
+                    .debug_selector(|| "usage-section-unavailable".into())
                     .text_color(rgb(theme.muted))
-                    .child(fl!("usage-no-agents")),
+                    .child(fl!("usage-core-unavailable-detail")),
             );
         }
         for reading in readings {

@@ -662,9 +662,6 @@ impl SheprdWindow {
         if self.update_git() {
             cx.notify();
         }
-        if self.update_usage(cx) {
-            cx.notify();
-        }
         self.poll_devices_overview(cx);
         self.poll_core_terminals(window, cx);
         self.poll_overview(cx);

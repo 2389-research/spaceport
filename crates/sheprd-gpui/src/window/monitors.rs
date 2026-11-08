@@ -1,39 +1,11 @@
-//! The background monitors the window polls as it ticks: plan usage, system
-//! load, listening ports, and port forwards, each on the
-//! hosts it watches.
+//! The background monitors the window polls as it ticks: system load,
+//! listening ports, and port forwards on the hosts they watch.
 // i18n: migrated
 
 use super::{Flash, SheprdWindow};
 use gpui::Context;
 
 impl SheprdWindow {
-    /// Plan usage follows the selected host: a remote host reports its own
-    /// agents' sign-ins, never this machine's.
-    pub(super) fn update_usage(&mut self, cx: &mut Context<Self>) -> bool {
-        let host = self
-            .config
-            .usage
-            .show
-            .then(|| self.endpoints.get(self.selected_endpoint))
-            .flatten()
-            .and_then(|endpoint| crate::usage::Host::of(&endpoint.connection.target));
-        let granted = crate::usage::KeychainGrants::granted(cx);
-        let changed = self.usage.poll(
-            host,
-            &self.config.usage,
-            &granted,
-            self.config_load_revision,
-            self.active,
-            std::time::Instant::now(),
-        );
-        // A denied prompt takes the grant back, so a later launch does not
-        // ask again in the background.
-        for provider in self.usage.take_denied() {
-            crate::usage::KeychainGrants::revoke(provider, cx);
-        }
-        changed
-    }
-
     /// CPU, memory and GPU are sampled for every enabled host, while they
     /// are shown, a Devices overview is open, or a host picker ranks hosts by
     /// them.

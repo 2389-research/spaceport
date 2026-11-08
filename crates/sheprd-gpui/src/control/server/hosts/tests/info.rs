@@ -62,7 +62,7 @@ fn usage_and_load_say_why_they_are_empty(cx: &mut TestAppContext) {
             };
             assert_eq!(host, "Local");
             assert!(readings.is_empty());
-            assert!(note.contains("not read usage"), "{note}");
+            assert!(note.contains("unavailable"), "{note}");
             view.config.usage.show = false;
             let Response::Host {
                 reply: Reply::Usage {

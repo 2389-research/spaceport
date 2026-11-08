@@ -74,7 +74,6 @@ fn the_footer_fits_more_than_two_and_follows_resize_in_both_directions(cx: &mut 
     }
     let bar = cx.debug_bounds("connection-status").unwrap();
     for id in [
-        "usage-refresh",
         "status-theme",
         "status-keybinds",
         "report-issue",
