@@ -12,7 +12,9 @@ The new application-menu test failed on the old sign-in row, then passed with
 the retained general rows present. The new titlebar test used an invalid OAuth
 client ID so the old automatic sign-in failed before any network request; it
 failed on the changed auth state, then passed after the click stopped calling
-`start_github`. The titlebar suite passed 5/5 and the menu font-size suite
+`start_github`. Integration review added a source-route guard before the click,
+so an ambient CI OAuth client ID cannot turn this test into a network request.
+The titlebar suite passed 5/5 and the menu font-size suite
 passed 3/3. `cargo +1.99.0 check --workspace --all-targets --locked --offline`
 passed on macOS. `just format-check`, `just check-file-size`,
 `just check-sorted` and `git diff --check` passed. The package validator

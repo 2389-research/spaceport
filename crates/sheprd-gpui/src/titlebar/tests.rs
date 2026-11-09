@@ -155,8 +155,9 @@ fn profile_slot_bounds_and_context_menu_do_not_start_auth(cx: &mut TestAppContex
 
 #[gpui::test]
 fn left_click_opens_profile_without_starting_github_sign_in(cx: &mut TestAppContext) {
-    // An invalid client ID makes a stray sign-in attempt fail before network I/O.
-    assert!(std::env::var_os("HERDR_GITHUB_OAUTH_CLIENT_ID").is_none());
+    // Keep a sign-in call out of this click route before exercising it: a
+    // runner may have a real OAuth client ID in its environment.
+    assert!(!include_str!("../titlebar.rs").contains("start_github("));
     let (view, cx) = cx.add_window_view(header_window);
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
