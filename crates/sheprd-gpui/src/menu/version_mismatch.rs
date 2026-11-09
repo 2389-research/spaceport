@@ -71,8 +71,10 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.endpoints[self.selected_endpoint]
-            .version_mismatch
+        if self
+            .endpoints
+            .get(self.selected_endpoint)
+            .and_then(|endpoint| endpoint.version_mismatch.as_ref())
             .is_none()
         {
             self.version_notice_shown = false;
@@ -84,7 +86,9 @@ impl SheprdWindow {
 
     /// Opens the notice for the selected endpoint's refused handshake.
     pub(crate) fn show_version_mismatch(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let endpoint = &self.endpoints[self.selected_endpoint];
+        let Some(endpoint) = self.endpoints.get(self.selected_endpoint) else {
+            return;
+        };
         let Some(mismatch) = endpoint.version_mismatch.clone() else {
             return;
         };

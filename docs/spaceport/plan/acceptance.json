@@ -105,7 +105,7 @@
       "scenario": "Quit and reopen with surviving, missing and renamed remote terminal/workspace references.",
       "expected": "Fresh authoritative state wins; surviving processes reattach; missing agents never restart.",
       "status": "not_run",
-      "evidence": ["evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md", "evidence/t03-exact-core-hub.md", "evidence/t03-core-join-without-legacy-endpoint.md"]
+      "evidence": ["evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md", "evidence/t03-exact-core-hub.md", "evidence/t03-core-join-without-legacy-endpoint.md", "evidence/t03-zero-endpoint-tick.md"]
     },
     {
       "id": "A10",

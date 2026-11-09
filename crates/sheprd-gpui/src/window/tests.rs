@@ -11,6 +11,7 @@ use std::sync::Arc;
 mod backdrop;
 mod close_window;
 mod core_join;
+mod core_only_tick;
 mod core_title;
 mod core_unavailable;
 mod detach;

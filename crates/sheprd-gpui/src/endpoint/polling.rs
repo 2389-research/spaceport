@@ -46,6 +46,11 @@ impl SheprdWindow {
     }
 
     pub(crate) fn poll_endpoints(&mut self, cx: &mut Context<Self>) {
+        // A Core-only view has no legacy endpoint to poll. Its Core link is
+        // handled later in the window tick.
+        if self.endpoints.is_empty() {
+            return;
+        }
         self.recover_connections(
             Instant::now(),
             std::time::SystemTime::now(),
@@ -320,6 +325,9 @@ impl SheprdWindow {
     /// I/O to the disk and to each host, so both run on workers and only this
     /// page starts one; results are cached between opens.
     pub(crate) fn poll_sessions(&mut self, cx: &mut Context<Self>) {
+        if self.endpoints.is_empty() {
+            return;
+        }
         let development = self.local_development();
         let open = self.menu.page == Some(crate::menu::Page::Devices)
             && self.menu.unfolded_device.is_some();

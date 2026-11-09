@@ -373,10 +373,10 @@ impl SheprdWindow {
     /// Folds link answers into the window, and follows a pane that changed
     /// or scrolled under a still pointer.
     pub(crate) fn poll_links(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let current = self.endpoints[self.selected_endpoint]
-            .connection
-            .links
-            .clone();
+        let Some(endpoint) = self.endpoints.get(self.selected_endpoint) else {
+            return;
+        };
+        let current = endpoint.connection.links.clone();
         if let Some(flight) = &self.links.resolving {
             match flight.poll(&current, LinkRequest::Resolve) {
                 PollResult::Waiting => {}

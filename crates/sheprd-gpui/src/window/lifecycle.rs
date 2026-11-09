@@ -61,7 +61,11 @@ impl SheprdWindow {
         // Herdr refuses the tab claim below from a connection whose surface is
         // inactive, as a newly selected endpoint's is until the poll queues
         // its activation. That activation sends the window's size itself.
-        if !self.endpoints[self.selected_endpoint].surface_requested() {
+        if !self
+            .endpoints
+            .get(self.selected_endpoint)
+            .is_some_and(|endpoint| endpoint.surface_requested())
+        {
             return;
         }
         // Another client (a CLI, or another window) can resize the tab the
@@ -185,6 +189,9 @@ impl SheprdWindow {
     }
 
     pub(crate) fn report_focus(&mut self) {
+        if self.endpoints.get(self.selected_endpoint).is_none() {
+            return;
+        }
         // The first positive report acknowledges the daemon's active tab. Wait
         // until its surface is coherent, but not necessarily our size: focus
         // claims tab geometry, so waiting for that size can deadlock startup.
