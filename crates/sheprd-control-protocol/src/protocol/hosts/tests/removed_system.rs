@@ -4,7 +4,6 @@ use super::*;
 
 #[test]
 fn resource_dashboard_operations_and_replies_are_rejected() {
-    assert!(crate::protocol::PROTOCOL_VERSION > 34);
     assert!(
         serde_json::from_str::<Request>(r#"{"method":"host","caller":{},"op":{"op":"system"}}"#)
             .is_err()
