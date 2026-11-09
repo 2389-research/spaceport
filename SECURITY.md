@@ -30,11 +30,7 @@ In scope:
   limits, bounds, and malformed or hostile payloads.
 - Socket discovery and connection handling in `crates/sheprd-client`, including
   socket peer validation, SSH target validation, and host/session selection.
-- Native GitHub PR lookup and OAuth device sign-in, including HTTPS boundaries,
-  cancellation, secret redaction/zeroization, and the app-specific macOS Keychain
-  entry used by signed release builds (development builds use the private file
-  store instead). Credential handling lives in `crates/sheprd-github` and
-  `crates/sheprd-credentials`.
+- Credential storage and redaction in `crates/sheprd-credentials`.
 - herdr-core stream handling and terminal emulation in `crates/sheprd-core-client`
   and `crates/sheprd-terminal`.
 - Anything in `crates/sheprd-gpui` that lets terminal content escape its pane:

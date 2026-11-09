@@ -105,9 +105,7 @@ for worktree in [false, true] {
   try compileAssetCatalog(name: name, worktree: worktree)
 }
 
-for name in ["sheprd-avatar", "sheprd-icon-badge", "sheprd-github-app"] {
+for name in ["sheprd-avatar", "sheprd-icon-badge"] {
   try render(artwork("\(name).svg", worktree: false), pixels: 1024, macOS: false)
     .write(to: assets.appendingPathComponent("\(name).png"))
 }
-try render(artwork("sheprd-github-app.svg", worktree: false), pixels: 200, macOS: false)
-  .write(to: assets.appendingPathComponent("sheprd-github-app-200.png"))

@@ -20,8 +20,6 @@ class OrchestratorCrateAbsence(unittest.TestCase):
     def test_retained_owners_stay_present(self):
         for relative in (
             "crates/sheprd-credentials/src/lib.rs",
-            "crates/sheprd-gpui/src/avatars/cache.rs",
-            "crates/sheprd-github/src/pull_request/cache.rs",
             "crates/sheprd-gpui/src/core_terminals.rs",
         ):
             with self.subTest(path=relative):

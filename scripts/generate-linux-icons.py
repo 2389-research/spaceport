@@ -60,7 +60,6 @@ def main():
         "sheprd-icon.svg": ("tile", False, False),
         "sheprd-icon-square.svg": ("square", False, False),
         "sheprd-icon-badge.svg": ("tile", False, True),
-        "sheprd-github-app.svg": ("square", False, False),
     }
     for name, options in variants.items():
         (ASSETS / name).write_text(artwork(source, *options))
