@@ -293,8 +293,7 @@ impl SheprdWindow {
                     self.browser
                         .pages
                         .ids()
-                        // A chat's panel page has no tab; its chat owns it.
-                        .filter(|id| store.get(*id).is_none() && !id.is_panel()),
+                        .filter(|id| store.get(*id).is_none()),
                 )
                 .collect();
             if !gone.is_empty() {

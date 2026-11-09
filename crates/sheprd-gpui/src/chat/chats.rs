@@ -141,8 +141,6 @@ pub(crate) struct ChatPane {
     /// The search field over a long menu while one is open, with the
     /// subscription that redraws the menu as it changes.
     pub(crate) menu_search: Option<(Entity<SearchInput>, gpui::Subscription)>,
-    /// The web pages live in the chat's messages, oldest first.
-    pub(crate) pages: Vec<super::page::ChatPage>,
     /// Trying again cannot help: the program speaks another version.
     permanent: bool,
     pub(crate) prepared: Prepared,
@@ -254,7 +252,6 @@ impl ChatPane {
             list_snapshots: 0,
             menu: None,
             menu_search: None,
-            pages: Vec::new(),
             permanent: false,
             prepared,
             #[cfg(feature = "integration-test")]
@@ -520,16 +517,6 @@ pub(crate) struct Chats {
     /// The locale the panes' prepared text was last drawn in.
     measured_locale: Option<sheprd_i18n::Locale>,
     measured_width: u16,
-    /// Chat pages opened so far, which numbers the next one.
-    #[cfg(any(target_os = "macos", windows))]
-    pub(crate) opened_pages: u64,
-    /// Pages of panes no longer attached, for the window to close.
-    #[cfg(any(target_os = "macos", windows))]
-    closed_pages: Vec<crate::browser::TabId>,
-    /// The chat pages the window presented this frame, for the check that
-    /// asks for a frame when they moved.
-    #[cfg(any(target_os = "macos", windows))]
-    pub(crate) presented: std::rc::Rc<std::cell::RefCell<Vec<crate::browser::TabId>>>,
     panes: Vec<ChatPane>,
     /// The `herdr-acp` new chats run.
     pub(crate) program: super::Program,
@@ -652,15 +639,11 @@ impl Chats {
     ) -> bool {
         let before = self.panes.len();
         let released = &mut self.released;
-        #[cfg(any(target_os = "macos", windows))]
-        let closed_pages = &mut self.closed_pages;
         self.panes.retain_mut(|pane| {
             let keep = targets.contains(&pane.target);
             if !keep {
                 pane.prepared.visuals.clear();
                 released.extend(pane.prepared.visuals.take_released());
-                #[cfg(any(target_os = "macos", windows))]
-                closed_pages.extend(pane.pages.drain(..).map(|page| page.id));
             }
             keep
         });
@@ -694,12 +677,6 @@ impl Chats {
         self.panes
             .iter_mut()
             .fold(false, |changed, pane| pane.poll(now) | changed)
-    }
-
-    /// Chat pages whose panes went away.
-    #[cfg(any(target_os = "macos", windows))]
-    pub(crate) fn take_closed_pages(&mut self) -> Vec<crate::browser::TabId> {
-        std::mem::take(&mut self.closed_pages)
     }
 
     pub(crate) fn take_released(&mut self) -> Vec<std::sync::Arc<gpui::RenderImage>> {

@@ -47,8 +47,7 @@ impl SheprdWindow {
         #[cfg(any(target_os = "macos", windows))]
         {
             self.browser.pages.set_theme(&self.theme);
-            let mut live = self.live_pages(cx);
-            live.extend(self.shown_chat_pages());
+            let live = self.live_pages(cx);
             // A tab's zoom may change in any window, or from the command
             // line, so each window's pages follow the store as they show.
             if let Some(store) = super::store(cx) {

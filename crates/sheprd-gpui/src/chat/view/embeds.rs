@@ -1,11 +1,11 @@
 //! What an agent message shows in place of things the app loads only when
-//! asked: a page from an HTML fence, live in the message once shown, a
+//! asked: HTML opened in the system browser after a click, a
 //! picture on the web, and the caption of a picture on the agent's machine
 //! that follows the message.
 
 use super::{
     super::{
-        page::{PAGE_HEIGHT, PageKey, PageSource},
+        page::PageSource,
         visual::{Source, VisualId, Visuals},
     },
     visuals::Frame,
@@ -15,30 +15,16 @@ use gpui::{prelude::*, *};
 use sheprd_chat_protocol::EntryId;
 use std::{path::PathBuf, rc::Rc};
 
-/// What the button says where it shows the page.
-fn show_label() -> String {
-    if crate::browser::EMBEDDED {
-        fl!("chat-page-show")
-    } else {
-        fl!("chat-page-open-in-browser")
-    }
-}
-
 impl SheprdWindow {
-    /// An HTML fence: its page live in the message once shown, until then
-    /// a card that says what it is and shows it.
+    /// An HTML fence shown as a card with an explicit open action.
     pub(super) fn render_chat_html(
         &self,
         pane_id: &str,
-        entry: EntryId,
+        _entry: EntryId,
         part: usize,
         page: &Rc<str>,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        let key = PageKey { entry, part };
-        if let Some(live) = self.render_chat_live_page(pane_id, key, cx) {
-            return live.into_any_element();
-        }
         let lines = page.lines().count();
         let source = PageSource::Html(page.clone());
         self.embed_card("icons/globe.svg")
@@ -49,12 +35,11 @@ impl SheprdWindow {
                     .min_w_0()
                     .child(fl!("chat-page-html-lines", count = lines)),
             )
-            .child(self.show_button(pane_id, ("chat-show-page", part), key, source, cx))
+            .child(self.show_button(pane_id, ("chat-show-page", part), source, cx))
             .into_any_element()
     }
 
-    /// Under a tool call that wrote an HTML file: the page live once shown,
-    /// until then a button that shows it.
+    /// Under a tool call that wrote an HTML file, show an explicit open action.
     pub(super) fn render_chat_file_page(
         &self,
         pane_id: &str,
@@ -62,19 +47,11 @@ impl SheprdWindow {
         path: PathBuf,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        let key = PageKey {
-            entry,
-            part: PageKey::TOOL,
-        };
-        if let Some(live) = self.render_chat_live_page(pane_id, key, cx) {
-            return live.into_any_element();
-        }
         div()
             .flex()
             .child(self.show_button(
                 pane_id,
                 ("chat-show-file", entry.0),
-                key,
                 PageSource::File(path),
                 cx,
             ))
@@ -85,7 +62,6 @@ impl SheprdWindow {
         &self,
         pane_id: &str,
         id: impl Into<ElementId>,
-        key: PageKey,
         source: PageSource,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
@@ -105,101 +81,12 @@ impl SheprdWindow {
             .text_color(rgb(theme.text_on(fill)))
             .text_size(self.chat_small_text())
             .cursor_pointer()
-            .child(show_label())
+            .child(fl!("chat-page-open-in-browser"))
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
                 cx.stop_propagation();
-                this.show_chat_page(&pane_id, key, source.clone(), window, cx);
+                this.show_chat_page(&pane_id, source.clone(), window, cx);
             }))
-    }
-
-    /// The page at `key`, live in the message under a bar that hides it.
-    /// Its body paints nothing: on macOS the page shows from beneath the
-    /// window's drawing there.
-    fn render_chat_live_page(
-        &self,
-        pane_id: &str,
-        key: PageKey,
-        cx: &mut Context<Self>,
-    ) -> Option<Div> {
-        let page = self
-            .chats
-            .pane(pane_id)?
-            .pages
-            .iter()
-            .find(|page| page.key == key)?;
-        let theme = &self.theme;
-        let pane = pane_id.to_owned();
-        let hide = div()
-            .id(("chat-hide-page", page.id_number()))
-            .debug_selector(|| "chat-hide-page".into())
-            .flex_none()
-            .px(px(8.))
-            .h(px(22.))
-            .flex()
-            .items_center()
-            .gap(px(4.))
-            .rounded(px(corners::CONTROL))
-            .text_size(self.chat_small_text())
-            .text_color(rgb(theme.subtext()))
-            .cursor_pointer()
-            .hover(|button| button.bg(rgb(theme.active)))
-            .child(
-                svg()
-                    .path("icons/close.svg")
-                    .size(px(9.))
-                    .text_color(rgb(theme.subtext())),
-            )
-            .child(fl!("chat-page-hide"))
-            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-            .on_click(cx.listener(move |this, _: &ClickEvent, _, cx| {
-                cx.stop_propagation();
-                this.hide_chat_page(&pane, key, cx);
-            }));
-        #[cfg(any(target_os = "macos", windows))]
-        let body = match self.chat_page_element(page.id) {
-            Some(page) => div().size_full().child(page),
-            None => opening(theme),
-        };
-        #[cfg(not(any(target_os = "macos", windows)))]
-        let body = opening(theme);
-        Some(
-            div()
-                .debug_selector(|| "chat-page".into())
-                .w_full()
-                .flex()
-                .flex_col()
-                .rounded(px(corners::CONTROL))
-                .border_1()
-                .border_color(rgb(theme.active))
-                .child(
-                    div()
-                        .flex()
-                        .items_center()
-                        .gap(px(6.))
-                        .px(px(8.))
-                        .h(px(30.))
-                        .border_b_1()
-                        .border_color(rgb(theme.active))
-                        .bg(rgb(theme.surface))
-                        .child(
-                            svg()
-                                .flex_none()
-                                .path("icons/globe.svg")
-                                .size(px(12.))
-                                .text_color(rgb(theme.subtext())),
-                        )
-                        .child(
-                            div()
-                                .flex_1()
-                                .min_w_0()
-                                .truncate()
-                                .child(fl!("chat-page-html")),
-                        )
-                        .child(hide),
-                )
-                .child(div().w_full().h(px(PAGE_HEIGHT)).relative().child(body)),
-        )
     }
 
     /// A picture on the web: drawn once loaded, until then a card that
@@ -320,15 +207,4 @@ impl SheprdWindow {
                     .text_color(rgb(theme.subtext())),
             )
     }
-}
-
-fn opening(theme: &crate::config::Theme) -> Div {
-    div()
-        .size_full()
-        .flex()
-        .items_center()
-        .justify_center()
-        .bg(rgb(theme.background))
-        .text_color(rgb(theme.muted))
-        .child(fl!("chat-page-opening"))
 }

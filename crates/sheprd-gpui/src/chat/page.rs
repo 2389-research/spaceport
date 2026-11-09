@@ -1,19 +1,6 @@
-//! Web pages shown inside a chat: an HTML fence the agent wrote, or an
-//! HTML file one of its tool calls wrote. Where pages show in the window
-//! (macOS and Windows), one opens live in the message, in place of its card,
-//! and scrolls with it; elsewhere it opens in the system browser. Either is
-//! copied first to a file of its own, in a folder only this user can read,
-//! so the page's script can read nothing beside it: an HTML file's siblings
-//! stay out of reach, at the cost of the stylesheets and scripts it loads
-//! from them.
-//!
-//! A page in a message lies beneath the window's drawing on macOS, so the
-//! list's clip crops it like any row; on Windows it lies above, so it shows
-//! only while the whole of it is in view. Either way it shows only where
-//! the last frame drew it, and a frame that moves it asks for one more.
-//!
-//! The page is the agent's, so it is untrusted: it only ever loads because
-//! the user asked, and it gets what a local browser tab gets, no more.
+//! Opens a chat's HTML fence or tool-written HTML file in the system browser
+//! after an explicit click. A copied file lives alone in a private folder, so
+//! its script cannot read siblings of the original file.
 
 mod error;
 
@@ -21,52 +8,15 @@ pub(crate) use error::Error;
 
 use crate::{
     SheprdWindow,
-    browser::TabId,
     i18n::{Localize, fl},
     notifications::safe_text,
 };
 use gpui::{AppContext as _, Context, Window};
-use sheprd_chat_protocol::EntryId;
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
     path::{Path, PathBuf},
     rc::Rc,
 };
-
-/// How tall a page draws in a message.
-pub(crate) const PAGE_HEIGHT: f32 = 420.;
-/// Pages a chat keeps live; showing another closes the oldest.
-#[cfg(any(target_os = "macos", windows))]
-const MAX_LIVE: usize = 4;
-
-/// Where in the transcript a page shows: the part of an agent message that
-/// holds the fence, or [`PageKey::TOOL`] under a tool call.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct PageKey {
-    pub(crate) entry: EntryId,
-    pub(crate) part: usize,
-}
-
-impl PageKey {
-    /// The part a tool call's page takes.
-    pub(crate) const TOOL: usize = usize::MAX;
-}
-
-/// A page live in a chat's message. Linux shows pages in the system
-/// browser, so a chat there never has one.
-#[derive(Debug)]
-#[cfg_attr(not(any(target_os = "macos", windows, test)), allow(dead_code))]
-pub(crate) struct ChatPage {
-    pub(crate) key: PageKey,
-    pub(crate) id: TabId,
-}
-
-impl ChatPage {
-    /// A number for the element ids of the page's controls.
-    pub(crate) fn id_number(&self) -> u64 {
-        self.id.number()
-    }
-}
 
 /// What to show.
 #[derive(Clone, Debug)]
@@ -83,7 +33,6 @@ impl SheprdWindow {
     pub(crate) fn show_chat_page(
         &mut self,
         pane_id: &str,
-        key: PageKey,
         source: PageSource,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -112,7 +61,7 @@ impl SheprdWindow {
         cx.spawn_in(window, async move |this, cx| {
             let copied = copied.await;
             let _ = this.update_in(cx, |this, window, cx| match copied {
-                Ok(path) => this.open_chat_file(&pane_id, key, path, window, cx),
+                Ok(path) => this.open_chat_file(&pane_id, path, window, cx),
                 Err(error) => this.chat_page_failed(&pane_id, error.localize(), cx),
             });
         })
@@ -126,55 +75,10 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    #[cfg(any(target_os = "macos", windows))]
+    /// The system browser shows the exact copied file after the user clicks.
     fn open_chat_file(
         &mut self,
         pane_id: &str,
-        key: PageKey,
-        path: PathBuf,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let home = crate::config::home().ok();
-        let file = match crate::browser::LocalFile::new(&path, home.as_deref()) {
-            Ok(file) => file,
-            Err(error) => return self.chat_page_failed(pane_id, error.localize(), cx),
-        };
-        let open = self
-            .chats
-            .pane(pane_id)
-            .is_some_and(|pane| pane.pages.iter().any(|page| page.key == key));
-        if open {
-            return;
-        }
-        self.chats.opened_pages += 1;
-        let id = TabId::panel(self.chats.opened_pages);
-        // A chat's page has no tab to show its title on.
-        // i18n: data
-        let title = "HTML page".to_owned();
-        if let Err(error) = self.open_chat_page(id, file, title, window, cx) {
-            return self.chat_page_failed(pane_id, error.localize(), cx);
-        }
-        let Some(pane) = self.chats.pane_mut(pane_id) else {
-            self.close_chat_page(id);
-            return;
-        };
-        pane.pages.push(ChatPage { key, id });
-        pane.remeasure(key.entry);
-        let oldest = (pane.pages.len() > MAX_LIVE).then(|| pane.pages.remove(0));
-        if let Some(oldest) = oldest {
-            pane.remeasure(oldest.key.entry);
-            self.close_chat_page(oldest.id);
-        }
-        cx.notify();
-    }
-
-    /// Without pages in the window, the system browser shows the file.
-    #[cfg(not(any(target_os = "macos", windows)))]
-    fn open_chat_file(
-        &mut self,
-        pane_id: &str,
-        _key: PageKey,
         path: PathBuf,
         _window: &mut Window,
         cx: &mut Context<Self>,
@@ -186,53 +90,6 @@ impl SheprdWindow {
             }
             Err(()) => self.chat_page_failed(pane_id, Error::NotFile.localize(), cx),
         }
-    }
-
-    /// Closes the page at `key` of the chat in `pane_id`, back to its card.
-    pub(crate) fn hide_chat_page(&mut self, pane_id: &str, key: PageKey, cx: &mut Context<Self>) {
-        let Some(pane) = self.chats.pane_mut(pane_id) else {
-            return;
-        };
-        let Some(index) = pane.pages.iter().position(|page| page.key == key) else {
-            return;
-        };
-        let page = pane.pages.remove(index);
-        pane.remeasure(key.entry);
-        #[cfg(any(target_os = "macos", windows))]
-        self.close_chat_page(page.id);
-        #[cfg(not(any(target_os = "macos", windows)))]
-        let _ = page;
-        cx.notify();
-    }
-
-    /// The chat pages to show this frame: those of chats on screen that the
-    /// last frame drew, and on Windows drew whole.
-    #[cfg(any(target_os = "macos", windows))]
-    pub(crate) fn shown_chat_pages(&self) -> Vec<TabId> {
-        let shown: Vec<TabId> = self
-            .chat_pages_on_screen()
-            .filter(|id| {
-                self.chat_page_drawn(*id)
-                    .is_some_and(|drawn| crate::browser::chat_page_visible(drawn, PAGE_HEIGHT))
-            })
-            .collect();
-        self.chats.presented.replace(shown.clone());
-        shown
-    }
-
-    /// The pages of the chats the frame on screen draws.
-    #[cfg(any(target_os = "macos", windows))]
-    pub(crate) fn chat_pages_on_screen(&self) -> impl Iterator<Item = TabId> + '_ {
-        self.live
-            .surface
-            .as_ref()
-            .filter(|surface| surface.popup.is_none())
-            .into_iter()
-            .flat_map(|surface| surface.panes.iter())
-            .filter(|pane| !self.chats.raw(&pane.pane_id))
-            .filter_map(|pane| self.chats.pane(&pane.pane_id))
-            .filter(|chat| chat.available())
-            .flat_map(|chat| chat.pages.iter().map(|page| page.id))
     }
 }
 

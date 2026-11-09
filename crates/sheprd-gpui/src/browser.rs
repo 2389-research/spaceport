@@ -9,8 +9,6 @@
 
 #[cfg(windows)]
 mod building;
-#[cfg(any(target_os = "macos", windows))]
-mod chat_pages;
 mod closed;
 #[cfg(any(target_os = "macos", windows))]
 mod favicon;
@@ -51,8 +49,6 @@ mod view;
 mod view_tests;
 mod zoom;
 
-#[cfg(any(target_os = "macos", windows))]
-pub(crate) use chat_pages::chat_page_visible;
 pub(crate) use closed::ClosedHerdrTab;
 pub(crate) use group_motion::Fold;
 #[cfg(test)]

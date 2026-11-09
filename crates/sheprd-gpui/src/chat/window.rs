@@ -218,10 +218,6 @@ impl SheprdWindow {
         for texture in self.chats.take_released() {
             cx.drop_image(texture, Some(window));
         }
-        #[cfg(any(target_os = "macos", windows))]
-        for page in self.chats.take_closed_pages() {
-            self.close_chat_page(page);
-        }
         let font = self.chat_font();
         let style = DiagramStyle::of(&self.theme, &font);
         let renderer = cx.svg_renderer();

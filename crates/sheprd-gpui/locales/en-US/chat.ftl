@@ -154,15 +154,11 @@ chat-question-answer = Answer
 chat-question-truncated = … (answers truncated)
 
 # Pages and pictures in a message.
-chat-page-show = Show page
 chat-page-open-in-browser = Open in browser
-chat-page-hide = Hide
-chat-page-html = HTML page
 chat-page-html-lines = { $count ->
     [one] HTML page · { $count } line
    *[other] HTML page · { $count } lines
 }
-chat-page-opening = Opening the page…
 chat-page-opened = Opened the page in your browser
 # $host is an SSH host's name.
 chat-page-remote = That page is on { $host }; open it there to see it

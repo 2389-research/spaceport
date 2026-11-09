@@ -411,7 +411,6 @@ impl SheprdWindow {
                 }
             }))
             .children(self.chat_ground())
-            .children(self.chat_pages_check(chat))
             .child(self.render_chat_header(chat, rail::fits(bounds), cx))
             .child(
                 div()
@@ -518,27 +517,6 @@ impl SheprdWindow {
         );
         #[cfg(not(target_os = "macos"))]
         None
-    }
-
-    /// The check that asks for another frame when this chat's pages moved
-    /// into or out of view; see [`super::page`].
-    fn chat_pages_check(&self, chat: &ChatPane) -> Option<AnyElement> {
-        #[cfg(any(target_os = "macos", windows))]
-        {
-            if chat.pages.is_empty() {
-                return None;
-            }
-            let ids = chat.pages.iter().map(|page| page.id).collect();
-            Some(
-                self.chat_pages_settle(ids, self.chats.presented.clone(), super::page::PAGE_HEIGHT)
-                    .into_any_element(),
-            )
-        }
-        #[cfg(not(any(target_os = "macos", windows)))]
-        {
-            let _ = chat;
-            None
-        }
     }
 
     /// The terminal's background where no page shows, for the window's
