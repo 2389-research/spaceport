@@ -6,10 +6,11 @@
 //! daemon's text.
 
 use super::closed;
-use crate::{NavigationTarget, SheprdWindow, i18n::fl, teleport::AgentKind, window::Flash};
+use crate::{NavigationTarget, SheprdWindow, i18n::fl, window::Flash};
 use gpui::Context;
 use serde_json::{Value, json};
 use sheprd_client::Method;
+use sheprd_remote::agent::AgentKind;
 use std::time::{Duration, Instant};
 
 /// How long a reopen may wait for its host to come up and answer.

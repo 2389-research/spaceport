@@ -1,10 +1,9 @@
-//! What each pane runs, and how to run it again on the destination.
+//! ABOUTME: Recognizes agent executables and validates reported session references.
+//! ABOUTME: Keeps existing agent flags for explicit chat and reopen operations.
 
-use super::snapshot::{AgentSession, Pane, ProcessInfo, SessionKind};
+use crate::snapshot::{AgentSession, SessionKind};
 
-/// Agents Herdr's integrations report resumable sessions for. Resume commands
-/// follow Herdr's own (`agent_resume::plan`); whether Teleport can also bring
-/// the session to another host is [`AgentKind::carries`].
+/// Agents Herdr's integrations report resumable sessions for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AgentKind {
     Claude,
@@ -47,7 +46,7 @@ enum Arity {
 
 impl AgentKind {
     /// Every kind, in declaration order.
-    pub const ALL: [Self; 18] = [
+    pub const ALL: &[Self] = &[
         Self::Claude,
         Self::Codex,
         Self::Opencode,
@@ -125,31 +124,13 @@ impl AgentKind {
         }
     }
 
-    /// The program that runs this agent. Teleport hosts are POSIX, so
+    /// The program that runs this agent. Host script routes are POSIX, so
     /// Cursor's is never Windows' `cursor-agent.cmd`.
     pub fn binary(self) -> &'static str {
         match self {
             Self::Cursor => "cursor-agent",
             _ => self.name(),
         }
-    }
-
-    /// Whether Teleport can bring this agent's session to another host: it
-    /// knows where the agent keeps it, or the agent keeps it on a server.
-    /// The rest resume through Herdr's own restore on the host that stores
-    /// the session; where that storage lives is unconfirmed, so Teleport
-    /// starts them afresh instead.
-    pub fn carries(self) -> bool {
-        matches!(
-            self,
-            Self::Claude
-                | Self::Codex
-                | Self::Opencode
-                | Self::Pi
-                | Self::Omp
-                | Self::Copilot
-                | Self::Letta
-        )
     }
 
     /// Whether a reported session reference identifies a session this kind
@@ -354,277 +335,11 @@ impl AgentKind {
         }
         kept
     }
-
-    /// The command that reopens `reference` (an id, or the session file's
-    /// destination path), with `flags` from the original command line.
-    pub fn resume_argv(self, reference: &str, flags: &[String]) -> Vec<String> {
-        let mut argv = vec![self.binary().to_owned()];
-        let mut flag = |flag: &str| argv.extend([flag.to_owned(), reference.to_owned()]);
-        match self {
-            Self::Claude
-            | Self::Devin
-            | Self::Droid
-            | Self::Hermes
-            | Self::Qodercli
-            | Self::Qwen
-            | Self::Cursor
-            | Self::Grok => flag("--resume"),
-            Self::Opencode | Self::Pi | Self::Kimi | Self::Kilo => flag("--session"),
-            Self::Mastracode => flag("--thread"),
-            Self::Antigravity => flag("--conversation"),
-            Self::Codex => argv.extend(["resume".to_owned(), reference.to_owned()]),
-            // Their resume flags take an optional value, so it must be inline.
-            Self::Copilot | Self::Omp => argv.push(format!("--resume={reference}")),
-            Self::Letta => match reference.strip_prefix("default:") {
-                Some(agent) => {
-                    argv.extend(["--conversation", "default", "--agent", agent].map(str::to_owned))
-                }
-                None => flag("--conversation"),
-            },
-        }
-        argv.extend(flags.iter().cloned());
-        argv
-    }
 }
 
 fn valid_path(path: &str) -> bool {
     path.starts_with('/') && path.len() <= MAX_SESSION_PATH && !path.chars().any(char::is_control)
 }
 
-/// What a source pane is doing, and so what its destination pane will do.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Work {
-    /// An idle shell prompt; the new pane's shell is enough.
-    Shell,
-    /// A supported agent with a resumable session.
-    Session {
-        agent: AgentKind,
-        session: AgentSession,
-        flags: Vec<String>,
-    },
-    /// A detected agent without a session Teleport can move. `argv` starts
-    /// the same agent afresh; a handoff note carries its context.
-    Agent { name: String, argv: Vec<String> },
-    /// Any other foreground program, run again with the same arguments.
-    Command(Vec<String>),
-}
-
-impl Work {
-    pub fn classify(pane: &Pane, process: &ProcessInfo) -> Self {
-        let job = process.foreground_job();
-        let argv = job.map(|job| job.argv.clone()).unwrap_or_default();
-        if let Some(session) = &pane.agent_session
-            && let Some(agent) = AgentKind::parse(&session.agent)
-            && agent.carries()
-            && agent.accepts(session)
-        {
-            return Self::Session {
-                agent,
-                session: session.clone(),
-                flags: agent.kept_flags(&argv),
-            };
-        }
-        if let Some(name) = pane.agent.as_ref().filter(|name| !name.is_empty()) {
-            let argv = if argv.is_empty() {
-                vec![name.clone()]
-            } else {
-                argv
-            };
-            return Self::Agent {
-                name: name.clone(),
-                argv,
-            };
-        }
-        if argv.is_empty() {
-            Self::Shell
-        } else {
-            Self::Command(argv)
-        }
-    }
-
-    /// The program the destination must have, if any.
-    pub fn program(&self) -> Option<&str> {
-        match self {
-            Self::Shell => None,
-            Self::Session { agent, .. } => Some(agent.binary()),
-            Self::Agent { argv, .. } | Self::Command(argv) => argv.first().map(|p| basename(p)),
-        }
-    }
-}
-
-fn basename(path: &str) -> &str {
-    path.rsplit('/').next().unwrap_or(path)
-}
-
-/// `path` moved from under `from` to under `to`, if it lies under `from`.
-pub fn remap(path: &str, from: &str, to: &str) -> Option<String> {
-    let from = from.trim_end_matches('/');
-    let rest = path.strip_prefix(from)?;
-    (rest.is_empty() || rest.starts_with('/'))
-        .then(|| format!("{}{rest}", to.trim_end_matches('/')))
-}
-
-/// Replace every occurrence of the checkout path `from` in `text`, where the
-/// match ends at a path boundary (so `/w/feat` never rewrites `/w/feature`).
-pub fn rewrite_paths(text: &[u8], from: &str, to: &str) -> Vec<u8> {
-    let from = from.trim_end_matches('/').as_bytes();
-    let to = to.trim_end_matches('/').as_bytes();
-    if from.is_empty() || from == to {
-        return text.to_vec();
-    }
-    let mut out = Vec::with_capacity(text.len());
-    let mut index = 0;
-    while index < text.len() {
-        if text[index..].starts_with(from) {
-            let next = text.get(index + from.len()).copied();
-            let boundary = !next.is_some_and(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b));
-            if boundary {
-                out.extend_from_slice(to);
-                index += from.len();
-                continue;
-            }
-        }
-        out.push(text[index]);
-        index += 1;
-    }
-    out
-}
-
-/// A command line re-targeted at the destination: paths under the source
-/// checkout move with it, and an absolute program outside the checkout is
-/// found on the destination's `PATH` instead.
-pub fn remap_argv(argv: &[String], from: &str, to: &str) -> Vec<String> {
-    argv.iter()
-        .enumerate()
-        .map(|(index, arg)| {
-            let moved =
-                String::from_utf8_lossy(&rewrite_paths(arg.as_bytes(), from, to)).into_owned();
-            if index == 0 && moved.starts_with('/') && remap(arg, from, to).is_none() {
-                basename(&moved).to_owned()
-            } else {
-                moved
-            }
-        })
-        .collect()
-}
-
-/// One POSIX shell command line for `argv`.
-pub fn command_line(argv: &[String]) -> String {
-    argv.iter()
-        .map(|arg| {
-            if !arg.is_empty()
-                && arg
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b"-_./=:,+@%".contains(&b))
-            {
-                arg.clone()
-            } else {
-                sheprd_client::shell_quote(arg)
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-/// Claude Code's project directory name for `cwd`: every character that is
-/// not an ASCII letter or digit becomes `-`, and names over 200 characters are
-/// cut and suffixed with a base-36 hash of the full path.
-pub fn claude_project_dir(cwd: &str) -> String {
-    const LIMIT: usize = 200;
-    let name: String = cwd
-        .encode_utf16()
-        .map(|unit| match char::from_u32(u32::from(unit)) {
-            Some(c) if c.is_ascii_alphanumeric() => c,
-            _ => '-',
-        })
-        .collect();
-    if name.len() <= LIMIT {
-        return name;
-    }
-    // Java-style string hash over UTF-16 units, as JavaScript computes it.
-    let hash = cwd.encode_utf16().fold(0i32, |hash, unit| {
-        hash.wrapping_shl(5)
-            .wrapping_sub(hash)
-            .wrapping_add(i32::from(unit))
-    });
-    format!(
-        "{}-{}",
-        &name[..LIMIT],
-        base36(i64::from(hash).unsigned_abs())
-    )
-}
-
-fn base36(mut value: u64) -> String {
-    const DIGITS: &[u8; 36] = b"0123456789abcdefghijklmnopqrstuvwxyz";
-    let mut out = Vec::new();
-    loop {
-        out.push(DIGITS[(value % 36) as usize]);
-        value /= 36;
-        if value == 0 {
-            break;
-        }
-    }
-    out.reverse();
-    String::from_utf8_lossy(&out).into_owned()
-}
-
-/// pi's session directory name for `cwd`.
-pub fn pi_session_dir(cwd: &str) -> String {
-    let trimmed = cwd.strip_prefix(['/', '\\']).unwrap_or(cwd);
-    format!("--{}--", trimmed.replace(['/', '\\', ':'], "-"))
-}
-
-/// Where the agent in the `index`th handed-off pane writes its note, relative
-/// to the checkout. The note is an untracked file, so it travels with the
-/// uncommitted changes.
-pub fn handoff_path(index: usize) -> String {
-    format!(".herdr/teleport/handoff-{}.md", index + 1)
-}
-
-/// The prompt that asks an agent to leave its context behind in the checkout.
-pub fn handoff_prompt(path: &str) -> String {
-    format!(
-        "This work is moving to another machine. Write a handoff note to {path} \
-         (create the directory) so another agent can continue seamlessly: the goal, what is \
-         done, the current state including uncommitted changes, decisions and constraints, \
-         open questions, and the exact next steps. Do not change anything else, then stop."
-    )
-}
-
-pub fn handoff_resume_prompt(path: &str) -> String {
-    format!("Read {path} and continue the work it describes.")
-}
-
-impl AgentKind {
-    /// Whether [`AgentKind::start_argv`] knows how to give this agent a
-    /// first prompt, so it can continue from a handoff note.
-    pub fn takes_prompt(self) -> bool {
-        matches!(
-            self,
-            Self::Claude | Self::Codex | Self::Opencode | Self::Pi | Self::Omp | Self::Copilot
-        )
-    }
-
-    /// The command that starts this agent afresh, optionally with a first
-    /// prompt when it [takes one](AgentKind::takes_prompt).
-    pub fn start_argv(self, prompt: Option<&str>) -> Vec<String> {
-        let mut argv = vec![self.binary().to_owned()];
-        if let Some(prompt) = prompt.filter(|_| self.takes_prompt()) {
-            match self {
-                Self::Opencode => argv.push("--prompt".to_owned()),
-                // Copilot's `-p` runs the prompt and exits.
-                Self::Copilot => argv.push("-i".to_owned()),
-                _ => {}
-            }
-            argv.push(prompt.to_owned());
-        }
-        argv
-    }
-
-    /// Agents a handoff may fall back to, most capable first.
-    pub const FALLBACKS: [Self; 4] = [Self::Claude, Self::Codex, Self::Opencode, Self::Pi];
-}
-
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests;

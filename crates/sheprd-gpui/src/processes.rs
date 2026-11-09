@@ -3,8 +3,7 @@
 //! and a way to signal exactly the ones the user picked.
 //!
 //! Herdr names the pane's process; its GUI connection does not carry process
-//! details, so a worker asks the `herdr` CLI (`pane process-info`) as Teleport
-//! does, then lists this machine's processes with `sysinfo` and keeps the
+//! details, so a worker asks the `herdr` CLI (`pane process-info`), then lists this machine's processes with `sysinfo` and keeps the
 //! pane's subtree. Only a daemon on this machine is watched: a remote pane's
 //! pids mean nothing here. The worker samples every couple of seconds while a
 //! pane's process list is open, and stops when it closes.
@@ -94,7 +93,7 @@ impl Daemon {
         &self,
         pane: &str,
         cancelled: &AtomicBool,
-    ) -> Result<crate::teleport::ProcessInfo> {
+    ) -> Result<sheprd_remote::snapshot::ProcessInfo> {
         let script = self.script(&crate::daemon::executable(), pane)?;
         let mut output = Vec::new();
         run_script(
@@ -106,9 +105,9 @@ impl Daemon {
             cancelled,
         )
         .map_err(Error::Query)?;
-        serde_json::from_slice::<crate::teleport::Envelope<crate::teleport::ProcessInfoResult>>(
-            &output,
-        )
+        serde_json::from_slice::<
+            sheprd_remote::snapshot::Envelope<sheprd_remote::snapshot::ProcessInfoResult>,
+        >(&output)
         .map(|envelope| envelope.result.process_info)
         .map_err(|source| Error::Answer(source).into())
     }

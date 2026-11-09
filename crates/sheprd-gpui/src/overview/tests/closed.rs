@@ -5,9 +5,9 @@ use crate::{
         reopen,
     },
     sidebar::layout_tests::snapshot,
-    teleport::AgentKind,
 };
 use sheprd_client::protocol::{ClientShellPane, ClientShellSnapshot};
+use sheprd_remote::agent::AgentKind;
 
 /// A report of host `local` under `boot`, with a pane for each agent.
 fn report(boot: &str, agents: &[&str]) -> (ClientShellSnapshot, Vec<Row>) {

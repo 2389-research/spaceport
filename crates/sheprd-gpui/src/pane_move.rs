@@ -2,13 +2,13 @@
 //!
 //! `pane.move` is not among the methods Herdr advertises to GUI clients, so
 //! the move runs `herdr pane move` against the endpoint's session, locally or
-//! over SSH, through the same host scripts Teleport uses. The CLI's exit and
+//! over SSH, through the shared host script route. The CLI's exit and
 //! envelope are authoritative; the snapshot that follows shows the result.
 
 use crate::i18n::fl;
-use crate::teleport::Host;
 use serde::Deserialize;
 use sheprd_client::protocol::{ClientShellSnapshot, ClientShellWorkspace};
+use sheprd_remote::host_script::Host;
 use std::sync::atomic::AtomicBool;
 
 /// Where a pane goes. Every variant names its target explicitly, so the move
@@ -399,12 +399,12 @@ fn failure(error: sheprd_client::Error) -> Error {
     Error::Script(error)
 }
 
-/// The Teleport host for `target`, which this move shares.
+/// The host script route for this move's exact target.
 pub(crate) fn host_for(target: &sheprd_client::ConnectTarget) -> Result<Host> {
-    // Teleport's hosts refuse what its scripts cannot reach: a custom socket
+    // Host scripts refuse targets they cannot reach: a custom socket
     // has no host, and the CLI cannot name a development session.
-    crate::teleport::host_for(target).map_err(|error| match error {
-        crate::teleport::Error::DevelopmentSession => Error::DevelopmentSession,
+    sheprd_remote::host_script::host_for(target).map_err(|error| match error {
+        sheprd_remote::host_script::Error::DevelopmentSession => Error::DevelopmentSession,
         _ => Error::UnsupportedHost,
     })
 }

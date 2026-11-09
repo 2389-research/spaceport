@@ -1,24 +1,23 @@
-//! `herdr-remote`'s root `Error` from `error-remote.ftl`, including
-//! Teleport's errors from `error-remote-teleport.ftl`.
-
-mod teleport;
+//! ABOUTME: Localizes typed failures from the shared host script routes.
+//! ABOUTME: Keeps unsupported targets and development sessions distinct.
 
 use super::Localize;
 use crate::i18n::fl;
-use sheprd_remote::Error;
+use sheprd_remote::{Error, host_script};
 
 impl Localize for Error {
     fn localize(&self) -> String {
         match self {
-            // keep-sorted start
-            Self::Client(error) => error.localize(),
-            // The system's own words, as `Json` is its parser's.
-            Self::Io(error) => error.to_string(),
-            Self::Json(error) => error.to_string(),
-            Self::Path(error) => error.localize(),
-            Self::PreferencesPath => fl!("error-remote-preferences-path"),
-            Self::Teleport(error) => error.localize(),
-            // keep-sorted end
+            Self::HostScript(error) => error.localize(),
+        }
+    }
+}
+
+impl Localize for host_script::Error {
+    fn localize(&self) -> String {
+        match self {
+            Self::UnsupportedHost => fl!("error-host-script-unsupported-host"),
+            Self::DevelopmentSession => fl!("error-host-script-development-session"),
         }
     }
 }

@@ -1,12 +1,15 @@
 //! Discover the exact CLI conversation already running in a pane. Reads only
 //! daemon metadata and process identity; never opens unrelated session history.
 
-use crate::teleport::{self, Envelope, Host, ProcessInfoResult, SessionKind, SnapshotResult};
 use sheprd_chat_protocol::Agent;
 use sheprd_client::{
     ConnectTarget, ScriptLimits,
     protocol::{ClientShellAgent, ClientShellSnapshot},
     shell_quote,
+};
+use sheprd_remote::{
+    host_script::{self, Host},
+    snapshot::{Envelope, ProcessInfoResult, SessionKind, SnapshotResult},
 };
 use std::{
     collections::{BTreeSet, HashMap},
@@ -231,7 +234,7 @@ fn inspect(
     candidates: &[String],
     cancelled: &AtomicBool,
 ) -> Result<Vec<Binding>, Error> {
-    let host = teleport::host_for(&scope.target)?;
+    let host = host_script::host_for(&scope.target)?;
     inspect_host(&host, scope, candidates, cancelled)
 }
 
@@ -394,7 +397,7 @@ struct ProcessIdentity {
 /// that child only when all other matches are verified launcher ancestors.
 fn agent_pid(
     agent: Agent,
-    info: &teleport::ProcessInfo,
+    info: &sheprd_remote::snapshot::ProcessInfo,
     processes: &HashMap<u32, ProcessIdentity>,
 ) -> Option<u32> {
     let group = info.foreground_process_group_id?;
@@ -452,17 +455,17 @@ fn sections(bytes: &[u8]) -> impl Iterator<Item = (&str, &str)> {
 
 /// A pane whose reported session names an agent that may be observed.
 struct Selected<'a> {
-    pane: &'a teleport::snapshot::Pane,
+    pane: &'a sheprd_remote::snapshot::Pane,
     agent: Agent,
-    session: &'a teleport::snapshot::AgentSession,
+    session: &'a sheprd_remote::snapshot::AgentSession,
 }
 
 /// The foreground processes running `agent`, unless there are more than
 /// [`MAX_MATCHING_PROCESSES`] to verify.
 pub(super) fn agent_processes(
     agent: Agent,
-    info: &teleport::ProcessInfo,
-) -> Option<Vec<&teleport::snapshot::Process>> {
+    info: &sheprd_remote::snapshot::ProcessInfo,
+) -> Option<Vec<&sheprd_remote::snapshot::Process>> {
     let matching: Vec<_> = info
         .foreground_processes
         .iter()

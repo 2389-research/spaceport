@@ -1,11 +1,11 @@
-use crate::teleport;
+use sheprd_remote::host_script;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("could not read the existing agent metadata")]
     Answer(#[source] serde_json::Error),
     #[error(transparent)]
-    Host(#[from] teleport::Error),
+    Host(#[from] host_script::Error),
     #[error("could not inspect the existing agent on its host")]
     Query(#[source] sheprd_client::Error),
     #[error("the existing-agent discovery worker stopped")]

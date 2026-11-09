@@ -3,9 +3,9 @@
 //! a shell is idle, when a pass is due, when a watched chat has ended, and
 //! the line typed into the shell.
 
-use crate::teleport::ProcessInfo;
 use sheprd_chat_protocol::{EndpointId, TOKEN, restore};
 use sheprd_client::protocol::ClientShellSnapshot;
+use sheprd_remote::snapshot::ProcessInfo;
 use std::{
     collections::{HashMap, HashSet},
     path::{Path, PathBuf},
