@@ -4,11 +4,12 @@ use super::*;
 fn a_removed_app_file_says_to_restart_rather_than_failing_to_spawn() {
     let gone = std::env::temp_dir().join("herdr-removed-app/Contents/MacOS/Herdr");
     let error = reader_command(&gone, false).err();
+    let restart = format!("Restart {}", crate::constants::WINDOW_TITLE);
     assert!(matches!(&error, Some(Error::Missing(path)) if path == &gone));
     assert!(
         error
             .map(|error| error.to_string())
-            .is_some_and(|text| text.contains("Restart Sheprd"))
+            .is_some_and(|text| text.contains(&restart))
     );
 }
 
