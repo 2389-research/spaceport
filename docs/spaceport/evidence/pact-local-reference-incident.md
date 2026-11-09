@@ -1,0 +1,7 @@
+# Local PACT reference incident
+
+On 2026-11-09, an attempted batch for T04 chat HTML, T04 saved pages and T01 theme isolation signed a local object at `.pact/objects/sha256/57/ebb0cbbd443c1b58c63eb6fa675976986f739a6a89640b88d4dcc448c5eb53.json`. The two T04 events used `#t04-browser-tab-protocol-removal` as `caused_by`; the actual signed event ID is `#t04-browser-tab-protocol-cut`. The T01 event is not the source of the reference error.
+
+`pact index rebuild` reported `source_invalid`. `pact verify --strict` reported two invalid references in 122 objects and 179 events. Object integrity, signing and authorization passed; reference validation failed. The object is untracked in Git. No subsequent PACT object was signed, and PACT writes remain paused. The PACT skill directs append-only handling of persisted objects and the CLI exposes no repair command. A one-time quarantine of the exact object was proposed to Doctor Biz, with byte preservation and an audit note, but no approval had arrived when this note was written. Do not edit, move, delete or commit the object as a routine cleanup.
+
+The last valid parent is `sha256:8f75e54d4f73e58814dc47ed5185bceb02be8c1e939835e671d10016fe97db5f`. The attempted event batch is `/tmp/spaceport-browser-theme-pact-events.json`, a machine-local aid rather than a source of truth. If Doctor Biz authorizes a recovery, verify the bad object's hash, preserve exact bytes and record the exception before any corrected signed events. Do not retry the same batch blindly.
