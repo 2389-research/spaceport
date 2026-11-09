@@ -56,3 +56,13 @@ edge alone were removed. Separate Git status/PR actions remain reachable and
 are excluded under T04. T04 stays `blocked` by G-LINK and A29/A30 stay
 `not_run`; there was no native Mac window run because the machine was at
 loginwindow.
+
+Integrated as `d245f3b4d` with the backend doc-pointer fix `ee7dbcffe`.
+On the combined branch, `cargo +1.99.0 test -p sheprd-control-protocol
+--locked --offline --quiet` passed 60 tests, and `cargo +1.99.0 check -p
+sheprd-gpui --all-targets --locked --offline --quiet` passed. Package
+integrity and all 21 package tool tests passed. Format, file-size,
+sorted-list, commit-message, and diff checks passed. The source reachability
+sweep found no live Orchestrator worker, GitLab account, or removed Activity
+panel enum reference in the desktop/control/command crates. Native UI and
+release/package checks remain unrun.
