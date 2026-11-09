@@ -138,8 +138,6 @@ pub struct Status {
     pub version: String,
     pub protocol: u32,
     pub pid: u32,
-    /// Whether pages show in tabs; otherwise they open in the system browser.
-    pub browser_tabs: bool,
     pub windows: Vec<WindowInfo>,
     #[serde(default)]
     pub core_catalog: CoreCatalog,

@@ -22,8 +22,8 @@
 use gpui::{Window, WindowBackgroundAppearance};
 use objc2::rc::Retained;
 use objc2_app_kit::{NSColor, NSWindow};
+use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use std::ffi::c_int;
-use wry::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
 /// How far the desktop is blurred, in points.
 const RADIUS: c_int = 24;

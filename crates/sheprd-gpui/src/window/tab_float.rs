@@ -13,7 +13,7 @@ use gpui::{prelude::*, *};
 use objc2::rc::Retained;
 use objc2_app_kit::{NSView, NSWindow};
 use objc2_foundation::{NSPoint, NSRect};
-use wry::raw_window_handle::{HasWindowHandle, RawWindowHandle};
+use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
 /// Room around the card for its shadow, which the window must hold.
 const PAD: f32 = 12.;

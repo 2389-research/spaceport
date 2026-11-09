@@ -1,9 +1,13 @@
-//! A page's title comes in after its tab opened, often once the tab is in
+//! A Core terminal title comes in after its tab opened, often once the tab is in
 //! view and done growing. The tab then widens, so a crowded strip brings it
 //! into view again: otherwise its end, with its close button, is left past
 //! the strip's edge until another tab is chosen.
 use super::*;
-use crate::browser::{Store, TabId};
+use crate::{
+    browser::{Location, Store, TabId},
+    core_terminals::panes::Panes,
+};
+use sheprd_backend::TerminalId;
 
 const TITLE: &str = "feat: scroll pane history smoothly, following the trackpad";
 
@@ -25,13 +29,26 @@ fn close_button(id: TabId) -> &'static str {
 }
 
 #[gpui::test]
-fn a_chosen_page_stays_in_view_when_its_title_comes_in(cx: &mut TestAppContext) {
+fn a_chosen_core_tab_stays_in_view_when_its_title_comes_in(cx: &mut TestAppContext) {
     let (view, cx) = crowded(cx, false);
-    // A page opens at the strip's end with no title yet, as one an agent
-    // opens does, and is shown.
+    // A native terminal opens at the strip's end before its program reports
+    // a title. The fixture never attaches to a real runtime.
     let opened = cx.update(|_, cx| {
         let scope = crate::browser::scope(&view.read(cx).endpoints[0]);
-        Store::update(cx, |store| store.open(scope, "w1", None, None)).unwrap()
+        Store::update(cx, |store| {
+            store.open(
+                scope,
+                "w1",
+                Some(Location::CoreTerminal {
+                    panes: Panes::single(
+                        TerminalId::try_from("fixture-terminal".to_owned()).unwrap(),
+                    ),
+                    observe: false,
+                }),
+                None,
+            )
+        })
+        .unwrap()
     });
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
@@ -49,6 +66,10 @@ fn a_chosen_page_stays_in_view_when_its_title_comes_in(cx: &mut TestAppContext) 
     // Its title comes in once it is settled, and it widens.
     cx.update(|_, cx| Store::update(cx, |store| store.visited(opened, None, Some(TITLE))));
     frames(&view, cx);
+    let label = view.read_with(cx, |_, cx| {
+        cx.global::<Store>().get(opened).unwrap().label()
+    });
+    assert!(label.starts_with("feat: scroll pane"), "{label}");
     let (left, right) = viewport(cx);
     let close = cx.debug_bounds(close_button(opened)).unwrap();
     assert!(

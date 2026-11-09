@@ -6,12 +6,11 @@
 use super::tab_appear::{Leaving, Listed};
 use super::tab_scroll::Thumb;
 use super::{
-    Location, Scope, Tab, TabId,
+    Location, Scope, TabId,
     groups::{GroupId, Layout, Pick, Shown, Slot},
     view::store,
 };
-use crate::i18n::fl;
-use crate::{NavigationTarget, SheprdWindow, controls::Command, search_input::SearchInput};
+use crate::{NavigationTarget, SheprdWindow, controls::Command};
 use gpui::{prelude::*, *};
 use std::{collections::hash_map::Entry, time::Instant};
 
@@ -567,18 +566,6 @@ impl SheprdWindow {
         }
     }
 
-    /// The pages live in some group, which the window presents.
-    #[cfg(any(target_os = "macos", windows))]
-    pub(crate) fn live_pages(&self, cx: &App) -> Vec<TabId> {
-        self.drawn_group_slots()
-            .into_iter()
-            .filter_map(|slot| match self.group_shown(slot.id, cx) {
-                Shown::Page(id) => Some(id),
-                _ => None,
-            })
-            .collect()
-    }
-
     /// Settles which group holds the window's connection, then, when that
     /// is `group`, focuses the Herdr tab it picked if the connection shows
     /// another, and hands it the keyboard. A group with a parked connection
@@ -748,23 +735,6 @@ impl SheprdWindow {
         if self.primary_group() == Some(group) {
             self.pending_navigation = None;
         }
-        #[cfg(any(target_os = "macos", windows))]
-        match self.browser.pages.ensure(&tab, window, cx) {
-            Ok(()) => {
-                self.browser.failed.remove(&id);
-            }
-            Err(error) => {
-                tracing::warn!(%error, "Cannot create a browser page");
-                self.browser
-                    .failed
-                    .insert(id, crate::i18n::Localize::localize(&error).into());
-            }
-        }
-        self.sync_address(group, Some(&tab), true, window, cx);
-        if tab.location.is_none() {
-            let focus = self.group_address(group, cx).read(cx).focus.clone();
-            window.focus(&focus, cx);
-        }
         if let Some(Location::CoreTerminal { .. }) = &tab.location {
             self.focus_core_terminal(id, window, cx);
         }
@@ -852,7 +822,6 @@ impl SheprdWindow {
             .group_motion
             .open(new, group, crate::motion::now());
         self.bring_group_tab(new, window, cx);
-        self.sync_addresses(true, window, cx);
         cx.notify();
     }
 
@@ -883,10 +852,8 @@ impl SheprdWindow {
                 .group_motion
                 .fold(group, index, share, into, crate::motion::now());
         }
-        self.browser.addresses.remove(&group);
         self.forget_group_terminal(group);
         self.bring_group_tab(active, window, cx);
-        self.sync_addresses(true, window, cx);
         cx.notify();
     }
 
@@ -894,60 +861,5 @@ impl SheprdWindow {
     pub(crate) fn drag_divider(&mut self, divider: usize, offset: f32, width: f32) -> bool {
         self.ensure_layout()
             .is_some_and(|layout| layout.drag(divider, offset, width))
-    }
-
-    /// `group`'s address field, made the first time it shows a page.
-    pub(crate) fn group_address(&mut self, group: GroupId, cx: &mut App) -> Entity<SearchInput> {
-        self.browser
-            .addresses
-            .entry(group)
-            .or_insert_with(|| {
-                let input = cx.new(|cx| {
-                    let mut input = SearchInput::new(cx);
-                    input.set_placeholder_with(|| fl!("browser-address-placeholder"), cx);
-                    input
-                });
-                (input, None)
-            })
-            .0
-            .clone()
-    }
-
-    /// Shows each live page's address in its group's field, unless someone
-    /// is typing there.
-    pub(crate) fn sync_addresses(&mut self, force: bool, window: &Window, cx: &mut Context<Self>) {
-        for slot in self.group_slots() {
-            if let Shown::Page(id) = self.group_shown(slot.id, cx) {
-                let tab = store(cx).and_then(|store| store.get(id)).cloned();
-                self.sync_address(slot.id, tab.as_ref(), force, window, cx);
-            }
-        }
-    }
-
-    pub(crate) fn sync_address(
-        &mut self,
-        group: GroupId,
-        tab: Option<&Tab>,
-        force: bool,
-        window: &Window,
-        cx: &mut Context<Self>,
-    ) {
-        let input = self.group_address(group, cx);
-        let id = tab.map(|tab| tab.id);
-        let text = tab
-            .and_then(|tab| tab.location.as_ref())
-            .map(Location::display)
-            .unwrap_or_default();
-        let shown = self.browser.addresses.get(&group).and_then(|(_, tab)| *tab);
-        let field = input.read(cx);
-        if !force
-            && (field.focus.is_focused(window) || (shown == id && field.text() == text.as_str()))
-        {
-            return;
-        }
-        if let Some((_, tab)) = self.browser.addresses.get_mut(&group) {
-            *tab = id;
-        }
-        input.update(cx, |input, cx| input.set_text_selected(&text, cx));
     }
 }

@@ -25,19 +25,12 @@ fn file(path: &str) -> crate::Result<LocalFile> {
 // Windows paths need a drive to be absolute.
 #[cfg(unix)]
 #[test]
-fn local_pages_are_served_from_a_private_folder() {
+fn retired_local_payloads_keep_validated_paths() {
     let page = file("/Users/me/project/design/mockup v2.html").unwrap();
-    assert_eq!(page.root(), Path::new("/Users/me/project/design"));
+    assert_eq!(page.root, Path::new("/Users/me/project/design"));
+    assert_eq!(page.entry, "mockup v2.html");
     let location = Location::Local { file: page };
-    assert_eq!(
-        location.page_url(),
-        "herdr-preview://localhost/mockup%20v2.html"
-    );
     assert_eq!(location.default_title(), "mockup v2.html");
-    assert_eq!(
-        location.display(),
-        "/Users/me/project/design/mockup v2.html"
-    );
     for refused in [
         "relative/page.html",
         "/Users/me/page.html",
@@ -49,50 +42,6 @@ fn local_pages_are_served_from_a_private_folder() {
     ] {
         assert!(file(refused).is_err(), "{refused}");
     }
-}
-
-#[test]
-fn requests_stay_inside_the_folder_and_skip_hidden_names() {
-    let root = Path::new("/srv/site");
-    assert_eq!(requested_file(root, "/").unwrap(), root.join("index.html"));
-    assert_eq!(
-        requested_file(root, "/assets/app%20x.css").unwrap(),
-        root.join("assets").join("app x.css")
-    );
-    for refused in [
-        "/../etc/passwd",
-        "/%2e%2e/x",
-        "/.git/config",
-        "/a/../../b",
-        "/a%2fb",
-        "/a//b",
-    ] {
-        assert!(requested_file(root, refused).is_none(), "{refused}");
-    }
-}
-
-// Windows paths need a drive to be absolute.
-#[cfg(unix)]
-#[test]
-fn navigation_within_a_local_folder_keeps_its_root() {
-    let page = Location::Local {
-        file: file("/Users/me/site/index.html").unwrap(),
-    };
-    for origin in PREVIEW_ORIGINS {
-        let next = page.visited(&format!("{origin}docs/b.html#top")).unwrap();
-        assert_eq!(next.display(), "/Users/me/site/docs/b.html");
-    }
-    assert!(
-        page.visited("herdr-preview://localhost/.git/config")
-            .is_none()
-    );
-    let web = page.visited("https://a.test/").unwrap();
-    assert!(matches!(web, Location::Web { .. }));
-    // A web page cannot claim a local file.
-    let web = Location::Web {
-        url: WebUrl::try_from("https://a.test/").unwrap(),
-    };
-    assert!(web.visited("herdr-preview://localhost/x.html").is_none());
 }
 
 // Windows paths need a drive to be absolute.

@@ -35,7 +35,8 @@ use serde::{Deserialize, Serialize};
 /// 32: removed worktree script control requests.
 /// 33: removed the browser reload request and reply.
 /// 34: removed page-only tab operations and replies.
-/// 35: removed the host-resource system request and reply.
+/// 35: removed the host-resource system request/reply, browser capability,
+/// and retired page kinds from app status/tab replies.
 pub const PROTOCOL_VERSION: u32 = 35;
 
 /// Bounds a request and a response alike.

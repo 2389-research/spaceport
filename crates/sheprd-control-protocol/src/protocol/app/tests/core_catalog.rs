@@ -7,7 +7,6 @@ fn status_core_catalog_keeps_unknown_distinct_from_an_empty_result() {
         version: "0.1".into(),
         protocol: crate::protocol::PROTOCOL_VERSION,
         pid: 1,
-        browser_tabs: false,
         windows: vec![],
         core_catalog: CoreCatalog {
             epoch: Some(7),
@@ -17,6 +16,7 @@ fn status_core_catalog_keeps_unknown_distinct_from_an_empty_result() {
         },
     });
     let value = serde_json::to_value(&current).unwrap();
+    assert!(value.get("browser_tabs").is_none());
     assert_eq!(value["core_catalog"]["state"], "current");
     assert_eq!(value["core_catalog"]["machine_count"], 0);
     assert_eq!(serde_json::from_value::<Response>(value).unwrap(), current);

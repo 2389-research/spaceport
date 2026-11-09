@@ -2,7 +2,9 @@ use super::*;
 use crate::browser::{Pick, Store};
 
 #[gpui::test]
-fn moving_a_page_steers_its_source_terminal_without_taking_focus(cx: &mut gpui::TestAppContext) {
+fn moving_a_native_tab_steers_its_source_terminal_without_taking_focus(
+    cx: &mut gpui::TestAppContext,
+) {
     for ready in [true, false] {
         let (endpoint, mut server) = connected_endpoint("page-move");
         let (fixture, cx) = cx.add_window_view(|window, cx| {
@@ -22,8 +24,16 @@ fn moving_a_page_steers_its_source_terminal_without_taking_focus(cx: &mut gpui::
                 shown.tabs.push(next);
                 view.live.snapshot = Some(Arc::new(shown.clone()));
                 let (scope, workspace) = view.browser_key().unwrap();
-                let page =
-                    Store::update(cx, |store| store.open(scope, &workspace, None, None)).unwrap();
+                let page = Store::update(cx, |store| {
+                    store.open(
+                        scope,
+                        &workspace,
+                        Some(crate::browser::Location::Devices),
+                        None,
+                    )
+                })
+                .unwrap();
+                view.poll_devices_overview(cx);
                 view.show_browser_tab(page, window, cx);
                 let source = view.active_group().unwrap();
                 view.split_group(source, window, cx);
@@ -32,16 +42,13 @@ fn moving_a_page_steers_its_source_terminal_without_taking_focus(cx: &mut gpui::
                 if !ready {
                     view.live.surface = None;
                 }
+                let focus = view.devices_overview.pages[&page].focus.clone();
+                window.focus(&focus, cx);
                 view.move_tab_to_group(Pick::Page(page), destination, window, cx);
                 assert_eq!(view.group_pick(source), Some(Pick::Herdr("next".into())));
                 assert_eq!(view.active_group(), Some(destination));
                 assert_eq!(view.group_pick(destination), Some(Pick::Page(page)));
-                assert!(
-                    view.group_address(destination, cx)
-                        .read(cx)
-                        .focus
-                        .is_focused(window)
-                );
+                assert!(focus.is_focused(window));
                 if !ready {
                     assert_eq!(
                         view.pending_navigation,

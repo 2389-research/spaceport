@@ -30,7 +30,6 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use sheprd_client::protocol::AgentStatus;
-use std::sync::Arc;
 
 pub(crate) use classic::{DOT_GAP, ZOOM_ICON};
 
@@ -71,10 +70,8 @@ pub(crate) enum Mark {
         status: AgentStatus,
         agent: Option<AgentIcon>,
     },
-    /// A browser tab's kind: a globe, a diff, a file, or an editor's mark.
+    /// The native tab's content kind.
     Icon(&'static str),
-    /// The page's own icon, in place of the globe.
-    Favicon(Arc<RenderImage>),
 }
 
 impl Mark {
@@ -87,7 +84,7 @@ impl Mark {
                 ..
             } => Lead::Nothing,
             Self::Herdr { .. } => Lead::Status,
-            Self::Icon(_) | Self::Favicon(_) => Lead::Icon,
+            Self::Icon(_) => Lead::Icon,
         }
     }
 }
@@ -120,14 +117,6 @@ impl Probe {
         let name = match self {
             Self::Herdr(id) => format!("tab-muted-{id}"),
             Self::Page(id) => format!("browser-tab-muted-{id}"),
-        };
-        move || slot.selector(&name)
-    }
-
-    fn favicon(&self, slot: Slot) -> impl Fn() -> String + 'static {
-        let name = match self {
-            Self::Herdr(id) => format!("tab-favicon-{id}"),
-            Self::Page(id) => format!("favicon-{id}"),
         };
         move || slot.selector(&name)
     }
@@ -367,13 +356,6 @@ fn lead_mark(
                 .into_any_element()
         }),
         Mark::Icon(path) => Some(icon(path, size, text)),
-        Mark::Favicon(favicon) => Some(
-            img(favicon.clone())
-                .debug_selector(probe.favicon(cx.slot))
-                .size(px(size))
-                .flex_none()
-                .into_any_element(),
-        ),
     }
 }
 
@@ -386,7 +368,7 @@ fn kind_icon(mark: &Mark, probe: &Probe, size: f32, text: u32, cx: &TabContext<'
             size,
             text,
         ),
-        Mark::Icon(_) | Mark::Favicon(_) => {
+        Mark::Icon(_) => {
             lead_mark(mark, probe, size, text, cx).unwrap_or_else(|| div().into_any_element())
         }
     }
@@ -398,7 +380,7 @@ fn kind_icon(mark: &Mark, probe: &Probe, size: f32, text: u32, cx: &TabContext<'
 fn status_mark(mark: &Mark, probe: &Probe, cx: &TabContext<'_>) -> Option<AnyElement> {
     match mark {
         Mark::Herdr { .. } => lead_mark(mark, probe, 0., 0, cx),
-        Mark::Icon(_) | Mark::Favicon(_) => None,
+        Mark::Icon(_) => None,
     }
 }
 

@@ -63,7 +63,7 @@ struct Strip {
 impl Strip {
     /// Whether the strip's last layout shows the tab at `index` whole, or
     /// from its left edge when it is wider than the strip.
-    fn shows(&self, index: usize) -> bool {
+    fn shows(&self, index: usize, width: f32) -> bool {
         let Some(tab) = self.handle.bounds_for_item(index) else {
             return false;
         };
@@ -73,7 +73,8 @@ impl Strip {
         }
         let offset = self.handle.offset().x;
         let slack = px(0.5);
-        tab.left() + offset >= view.left() - slack
+        tab.size.width >= px(width) - slack
+            && tab.left() + offset >= view.left() - slack
             && (tab.right() + offset <= view.right() + slack || tab.size.width > view.size.width)
     }
 }
@@ -119,12 +120,14 @@ impl TabScroll {
         // it tries again until the last layout shows the tab. The frame that
         // changes the choice or the width lays the tab out anew, so the last
         // layout cannot yet say it shows.
-        if same && strip.shows(index) && !growing {
+        if same && strip.shows(index, width) && !growing {
             strip.tries = MAX_TRIES;
             return false;
         }
         strip.handle.scroll_to_item(index);
-        strip.tries += 1;
+        // Animation frames do not spend the bounded attempts needed once
+        // the tab reaches its full width in the following layout.
+        strip.tries = if growing { 0 } else { strip.tries + 1 };
         strip.tries < MAX_TRIES || growing
     }
 
@@ -184,6 +187,8 @@ mod tests {
 
     use super::*;
     use core::prelude::v1::test;
+
+    mod reveal;
 
     #[test]
     fn a_strip_whose_tabs_fit_draws_no_thumb() {

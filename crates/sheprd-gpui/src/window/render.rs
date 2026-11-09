@@ -2,10 +2,7 @@
 //! the latest projection only: it never queries the daemon, touches disk, or
 //! starts a process.
 
-use super::{
-    PressedLink, SheprdWindow,
-    tab_strip::{Reach, native_page},
-};
+use super::{PressedLink, SheprdWindow, tab_strip::Reach};
 use crate::direction::Logical;
 use crate::{
     CheckForUpdates, Minimize, PlaySound, RunCommand, ShowUpdatePreview, ZoomWindow,
@@ -237,10 +234,6 @@ impl Render for SheprdWindow {
         let regions = self.terminal_regions(surface.as_ref(), &highlights, slide, &look, cx);
         // Without regions the canvas paints the whole grid, images included.
         let whole = regions.is_empty();
-        // A chat's page panel lies beneath the window's drawing on macOS,
-        // over the cells of the chat's pane, so the cells paint around it.
-        #[cfg(target_os = "macos")]
-        let drawn_pages = self.browser.drawn_pages();
         // The IME composition paints inline at the input cursor; a menu's
         // text field shows its own.
         // It anchors to the live surface, as the IME's candidate window does,
@@ -267,14 +260,6 @@ impl Render for SheprdWindow {
             .iter()
             .map(|slot| self.group_shown(slot.id, cx))
             .collect();
-        // On Windows a divider's grip keeps off a native page, which would
-        // cover it. A folding group stands between two groups without a
-        // divider.
-        let pages: Vec<bool> = if self.folding_groups().is_empty() {
-            shown.iter().map(|shown| native_page(shown, cx)).collect()
-        } else {
-            Vec::new()
-        };
         // The window's own terminal, with its input, goes to the group holding
         // its connection; other terminal groups paint parked connections.
         let primary = self.primary_group();
@@ -320,12 +305,7 @@ impl Render for SheprdWindow {
             .min_h_0()
             .min_w_0()
             .overflow_hidden()
-            // On macOS a chat's page panel shows from beneath the window's
-            // drawing, so the terminal's background paints around it.
-            .when(!cfg!(target_os = "macos"), |terminal| {
-                terminal.bg(fill.base(self.terminal_theme().background))
-            })
-            .children(self.terminal_ground(fill.base(self.terminal_theme().background)))
+            .bg(fill.base(self.terminal_theme().background))
             .map(|terminal| self.accessible_terminal(terminal, window, cx))
             .capture_key_down(cx.listener(Self::chat_zoom_key))
             .on_key_down(cx.listener(Self::key_down))
@@ -528,28 +508,6 @@ impl Render for SheprdWindow {
                                                 cx,
                                             );
                                         };
-                                        #[cfg(target_os = "macos")]
-                                        {
-                                            let pages: Vec<Bounds<Pixels>> = drawn_pages
-                                                .borrow()
-                                                .values()
-                                                .copied()
-                                                .filter(|page| page.intersects(&bounds))
-                                                .collect();
-                                            if pages.is_empty() {
-                                                paint(window, cx);
-                                            } else {
-                                                for piece in
-                                                    crate::browser::around_pages(bounds, pages)
-                                                {
-                                                    window.with_content_mask(
-                                                        Some(ContentMask { bounds: piece }),
-                                                        |window| paint(window, cx),
-                                                    );
-                                                }
-                                            }
-                                        }
-                                        #[cfg(not(target_os = "macos"))]
                                         paint(window, cx);
                                     } else {
                                         // Regions place no images, so nothing
@@ -737,23 +695,18 @@ impl Render for SheprdWindow {
                 {
                     div().into_any_element()
                 }
-                (Shown::Page(_), Some(tab))
-                    if tab
-                        .location
-                        .as_ref()
-                        .is_some_and(|location| !location.is_page()) =>
-                {
-                    match tab.location {
-                        Some(crate::browser::Location::Devices) => {
-                            self.render_devices_tab(slot, &tab, cx)
-                        }
-                        Some(crate::browser::Location::CoreTerminal { .. }) => {
-                            self.render_core_terminal_tab(slot, &tab, cx)
-                        }
-                        _ => div().into_any_element(),
+                (Shown::Page(_), Some(tab)) => match tab.location {
+                    None if tab.core_group().is_some() => {
+                        self.render_core_terminal_tab(slot, &tab, cx)
                     }
-                }
-                (Shown::Page(_), Some(tab)) => self.render_browser(slot, &tab, owns_keyboard, cx),
+                    Some(crate::browser::Location::Devices) => {
+                        self.render_devices_tab(slot, &tab, cx)
+                    }
+                    Some(crate::browser::Location::CoreTerminal { .. }) => {
+                        self.render_core_terminal_tab(slot, &tab, cx)
+                    }
+                    _ => div().into_any_element(),
+                },
                 (Shown::Elsewhere(tab), _) => match self.live_frame_of(tab, window_frame.clone()) {
                     Some(frame) => self.render_terminal_mirror(
                         slot,
@@ -767,7 +720,14 @@ impl Render for SheprdWindow {
                 _ => self.render_stand_in(slot, &shown, owns_keyboard, cx),
             };
             let ends = merged.then(|| crate::titlebar::Ends::of(slot.index, count));
-            let reach = Reach::of(&pages, slot.index);
+            let reach = Reach::of(
+                if self.folding_groups().is_empty() {
+                    count
+                } else {
+                    0
+                },
+                slot.index,
+            );
             groups.push(self.render_group(slot, body, ends, reach, window, cx));
         }
         let content = self.render_groups(groups, window, cx);
@@ -775,11 +735,6 @@ impl Render for SheprdWindow {
         // Not `||`: asking forgets group motion that has finished.
         if self.groups_moving() | self.tabs_growing() | self.chrome_sliding() | self.flash_moving()
         {
-            window.request_animation_frame();
-        }
-        // On Windows a menu that just opened hides the pages it covers once
-        // it is laid out, a frame later.
-        if self.present_browser(cx) {
             window.request_animation_frame();
         }
         // Zen mode keeps toasts and menus: they carry errors and what the

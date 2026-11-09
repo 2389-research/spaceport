@@ -267,7 +267,6 @@ fn bubble(content: Div, fill: u32, tail: Option<Side>, look: &Look<'_>) -> Div {
     let scale = look.text / TEXT;
     let radius = px(RADIUS * scale);
     let overhang = px(TAIL * scale + 1.);
-    let pages_under = look.pages_under();
     let color: Hsla = rgb(fill).into();
     // First, so the content paints over it; wider than the bubble by the
     // tail on each side, which only the tail paints into.
@@ -278,14 +277,6 @@ fn bubble(content: Div, fill: u32, tail: Option<Side>, look: &Look<'_>) -> Div {
                 point(bounds.left() + overhang, bounds.top()),
                 point(bounds.right() - overhang, bounds.bottom()),
             );
-            // A page shown in the message lies beneath the window's drawing
-            // on macOS, so the bubble leaves it showing, square.
-            if let Some(pieces) = pages_under(bubble) {
-                for piece in pieces {
-                    window.paint_quad(gpui::fill(piece, color));
-                }
-                return;
-            }
             match tail.map(|side| outline(bubble, side, scale)) {
                 Some(Ok(path)) => window.paint_path(path, color),
                 _ => window.paint_quad(gpui::fill(bubble, color).corner_radii(radius)),

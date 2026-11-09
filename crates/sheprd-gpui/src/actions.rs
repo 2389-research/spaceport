@@ -121,8 +121,6 @@ pub(crate) fn bind_keys(cx: &mut App) {
                 .map(|appearance| appearance.config.keybindings.clone())
         })
         .unwrap_or_default();
-    #[cfg(target_os = "macos")]
-    crate::browser::bind_page_keys(&keymap);
     // Shortcuts come from the user's config, so one GPUI refuses is skipped
     // and logged rather than taking the app down.
     let bindings: Vec<_> = keymap

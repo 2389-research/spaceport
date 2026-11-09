@@ -121,7 +121,6 @@ pub(super) fn status(_: &Caller, cx: &mut App) -> Response {
         version: APP_VERSION.to_owned(),
         protocol: PROTOCOL_VERSION,
         pid: std::process::id(),
-        browser_tabs: crate::browser::EMBEDDED,
         windows: windows(cx),
         core_catalog: CoreCatalog {
             epoch,

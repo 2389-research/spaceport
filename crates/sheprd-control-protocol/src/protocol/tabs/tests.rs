@@ -75,9 +75,9 @@ fn devices_arrival_extends_the_answer_timeout() {
 fn replies_round_trip() {
     let tab = TabInfo {
         id: 7,
-        kind: TabKind::File,
-        title: "main.rs".into(),
-        location: Some("/src/main.rs".into()),
+        kind: TabKind::CoreTerminal,
+        title: "Terminal".into(),
+        location: Some("terminal-7".into()),
         workspace: "w_1".into(),
         host: "local:/tmp/herdr.sock".into(),
         opened_by: None,
@@ -105,16 +105,14 @@ fn replies_round_trip() {
 
 #[test]
 fn kinds_are_named_as_json_spells_them() {
+    for retired in ["blank", "web", "file"] {
+        assert!(serde_json::from_value::<TabKind>(serde_json::json!(retired)).is_err());
+    }
     assert!(serde_json::from_str::<TabKind>("\"code\"").is_err());
     assert!(serde_json::from_str::<TabKind>("\"review\"").is_err());
     assert!(serde_json::from_str::<TabKind>("\"editor\"").is_err());
     assert!(serde_json::from_str::<TabKind>("\"orchestrator\"").is_err());
-    for kind in [
-        TabKind::Blank,
-        TabKind::Web,
-        TabKind::File,
-        TabKind::Devices,
-    ] {
+    for kind in [TabKind::CoreTerminal, TabKind::Devices] {
         assert_eq!(
             serde_json::to_string(&kind).unwrap(),
             format!("\"{}\"", kind.name())

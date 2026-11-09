@@ -1086,7 +1086,7 @@ padding_y = [4, 8]   # top, then bottom
 
 - One number pads both sides of the axis. A pair of numbers pads each side: left then right for `padding_x`, top then bottom for `padding_y`.
 - Each side is a finite number of logical pixels from 0 to 64. The default is `0`, which keeps the cells against the edges.
-- Every terminal takes the padding, in every tab group, whether the sidebar shows or not. A browser tab pads its own content and takes none.
+- Every terminal takes the padding, in every tab group, whether the sidebar shows or not. Native content tabs pad their own content and take none.
 - The terminal keeps the remaining size, so the daemon is resized to the columns and rows it actually has.
 - The padding shows the theme background.
 - **Settings > Theme > Terminal padding** sets each of the four sides with a slider, a typed value, or one-pixel steps. It writes one number when the two sides of an axis agree, and a pair when they differ.
@@ -2089,74 +2089,15 @@ tabs. Splitting opens nothing new and moves no tab.
   another group shrinks out where it stood. The tabs a strip already has when
   the window first draws it appear at once.
 
-## Browser Tabs
+## Native tabs and external pages
 
-A browser tab shows a web page in place of the terminal, next to the
-workspace's Herdr tabs. Herdr panes are always terminals, so browser tabs
-belong to this app alone: the daemon, the TUI, and other clients never see
-them. Every window lists the same tabs for a workspace, and each window has its
-own page for each one. Tabs are saved in
-`$XDG_STATE_HOME/herdr/gpui/browser-tabs.json` (default `~/.local/state/`) and
-come back after a restart; closing a workspace in Herdr removes its tabs.
+Spaceport retains terminal, chat, Devices, and split layouts. It has no embedded
+web browser, page toolbar, preview server, or explainer kit. Saved web, local
+page, and blank browser tabs are discarded; retained native tabs keep their IDs.
+Explicit terminal links and service URLs open in the system browser. Files use
+the existing system file handler.
 
-- A restored blank tab shows the workspace's listening ports in its address view.
-- A tab shows its page's favicon, drawn from the page's `<link rel="icon">`
-  or a site's `/favicon.ico`, and a globe until the page has one. An icon
-  from another origin shows only when that origin allows the page to read
-  it (CORS); otherwise the tab keeps its globe.
-- The toolbar has back, forward, reload, the address field, and a button that
-  opens the page in the system browser. The address field accepts bare hosts:
-  `localhost:3000` becomes `http://localhost:3000/`.
-- While a browser tab is focused, Increase and Decrease Font Size
-  (`cmd-=` / `cmd--`) zoom its page a step, from 50% to 300%, and Reset Font
-  Size (`cmd-0`) returns it to 100%. The tab is the one whose page has the
-  keyboard, or else the one the group in use shows. On macOS the keys bound
-  to those commands zoom a page that has the keyboard too, as Safari's do,
-  so the page cannot take them for itself. Each tab keeps its own zoom, saved with it, and every window's
-  page for the tab follows it. A zoomed page's toolbar shows its zoom;
-  clicking it returns to 100%.
-- Close Tab and Close Pane close the browser tab being shown, without asking.
-  Clicking a Herdr tab, or switching Herdr tabs in the workspace, shows its
-  terminal again. Next Tab, Previous Tab, and the tab numbers count browser
-  tabs too, after the workspace's Herdr tabs. Move Tab Left and Right move
-  the browser tab being shown among the browser tabs, wrapping at either
-  end, as dragging it does; a Herdr tab moves among the Herdr tabs.
-- Only `http` and `https` pages open, plus local files an agent shows (below).
-  Pages cannot navigate to other schemes
-  (so `file:` and applications' custom URL schemes stay closed), downloads are
-  refused, and a page's new windows open as new browser tabs. The only
-  message a page can send the app is its icon, which shows on its tab; the
-  app runs only its own scripts in pages. On
-  Windows, a frame inside a page that links to an application's URL scheme
-  gets WebView2's own confirmation prompt rather than being refused outright.
-- Pages are native web views (WebKit on macOS, WebView2 on Windows). On
-  macOS a page lies beneath the window's own drawing. Menus, popovers,
-  dialogs, tooltips, toasts, and the file-transfer card show over it, and
-  the page stays live around them. The grip between two groups keeps its
-  full width over a page. While a menu or dialog is open, a file dropped on
-  the window never reaches a page. A file dropped on a toast or the
-  file-transfer card still reaches the page beneath.
-- On Windows a page is layered above the window, so it steps aside for a
-  menu, popover, or status bar tooltip that would fall over it, and for a
-  dialog, which dims the whole window. Its place is empty until the menu
-  closes. A page also steps aside while a toast or the file-transfer card
-  falls over it, as when a page fills the right-hand group or the
-  whole editor area, so they stay visible and clickable. A page that none of
-  these reach keeps showing.
-- Linux has no embedded pages yet: browser tab requests open the system
-  browser, and local files are unavailable.
-
-### Explainer Kit
-
-Local pages can load a small kit the app serves at `/.herdr/kit.css` and
-`/.herdr/kit.js`, for interactive explainers and UI mockups: segmented
-controls, a row of steps with their status, the selected step's detail, an
-outcome, placeholders, and mockup variants with **Pick** buttons that copy the chosen result for manual sharing. `/.herdr/theme.css` carries the window's theme colors, so the
-page matches the app and follows a theme change on its next load. Dotted
-paths are never read from the page's folder, so these cannot hide a file of
-the page's own. Opened elsewhere, the kit falls back to its own light and
-dark colors.
-The kit inserts every text as text, never as HTML.
+## Agent skill
 
 Agents only use what they know about, so the app offers, once, to install a
 `spaceport` skill that teaches them these commands. It goes into
@@ -2245,15 +2186,8 @@ image file a tool call wrote or read, shows in the chat; `sheprd-acp` reads it
 beside the agent, so this works for chats on SSH hosts too, and only files
 whose bytes are an image count. A picture linked on the web shows as a card
 naming its host and loads only when you press Load, since loading it tells
-that server your address. An `html` code block, or an HTML file a tool call
-wrote on this machine, gets a Show page button: on macOS and Windows the page
-then runs live inside the message, in place of its card, and scrolls with the
-chat (on Windows it shows while all of it is in view); Hide turns it back
-into the card, and a chat keeps at most four pages live. On Linux, which has
-no pages in the window, the button opens your browser. The page is copied
-alone into a private folder first, so its script cannot read the files
-beside it; a page that loads its own stylesheets or scripts from separate
-files shows without them. A web picture is fetched from the host its card
+that server your address. A requested HTML page opens a private copy through the
+system file handler. It does not run inside the chat. A web picture is fetched from the host its card
 names only, without following a redirect.
 
 **Layouts.** `[chat] layout` picks how a chat view draws: `timeline` puts the

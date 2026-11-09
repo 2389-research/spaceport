@@ -7,9 +7,9 @@ fn tabs_are_listed_one_per_line() {
     let tabs = [
         TabInfo {
             id: 3,
-            kind: TabKind::Web,
-            title: "Docs".into(),
-            location: Some("https://a.test/".into()),
+            kind: TabKind::CoreTerminal,
+            title: "Terminal".into(),
+            location: Some("terminal-7".into()),
             workspace: "w_1".into(),
             host: "local:/tmp/herdr.sock".into(),
             opened_by: Some("w_1:p2".into()),
@@ -26,7 +26,7 @@ fn tabs_are_listed_one_per_line() {
     ];
     assert_eq!(
         describe(&tabs),
-        "3\tweb\tDocs\thttps://a.test/\t(workspace w_1, opened by w_1:p2)\n\
+        "3\tcore_terminal\tTerminal\tterminal-7\t(workspace w_1, opened by w_1:p2)\n\
          4\tdevices\tDevices\t(workspace w_2)"
     );
     assert_eq!(describe(&[]), "");

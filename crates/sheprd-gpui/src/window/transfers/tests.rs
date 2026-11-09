@@ -23,8 +23,6 @@ use std::{
 
 mod cancellation;
 mod completion;
-#[cfg(windows)]
-mod covered_pages;
 mod en_xa;
 mod progress;
 mod taskbar;

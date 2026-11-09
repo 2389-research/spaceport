@@ -74,7 +74,7 @@ fn core_tab_focus_requires_the_exact_observed_group_and_named_window(
 #[gpui::test]
 fn tabs_are_listed_focused_and_closed(cx: &mut gpui::TestAppContext) {
     let (view, cx) = window(cx);
-    let page = open(&view, cx, "w0", Some(web("https://a.test/")));
+    let page = open(&view, cx, "w0", Some(Location::Devices));
     let devices = open(&view, cx, "w1", Some(Location::Devices));
     let caller = Caller::default();
     cx.cx.update(|cx| {

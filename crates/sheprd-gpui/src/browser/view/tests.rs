@@ -1,5 +1,3 @@
-use super::{Location, Store, WebUrl, scope};
-
 #[test]
 fn long_titles_are_shortened_on_a_character_boundary() {
     assert_eq!(super::tab_label("Example Domain"), "Example Domain");
@@ -10,6 +8,3 @@ fn long_titles_are_shortened_on_a_character_boundary() {
     );
     assert_eq!(super::tab_label(&"é".repeat(40)).chars().count(), 29);
 }
-
-#[cfg(any(target_os = "macos", windows))]
-mod popup;

@@ -1,51 +1,23 @@
-//! Browser tabs: web pages shown in place of the terminal, or beside it in
-//! another editor group, next to a workspace's Herdr tabs. Herdr panes are always
-//! terminals, so these tabs belong to this client alone; the daemon and its
-//! other clients never see them. Pages are native web views. On macOS they lie
-//! beneath the window's own drawing, so its menus and toasts show over them;
-//! on Windows they lie above it, so the window hides a page that one of its
-//! overlays reaches.
+//! Client-owned native tabs and shared terminal/chat split layouts.
+//! The selected Herdr runtime owns terminal processes; views only arrange them.
 // i18n: migrated
 
-#[cfg(windows)]
-mod building;
 mod closed;
-#[cfg(any(target_os = "macos", windows))]
-mod favicon;
 mod group_motion;
 mod group_settle;
 mod groups;
 mod groups_view;
 mod hidden;
-#[cfg(any(target_os = "macos", windows, test))]
-mod kit;
 mod layouts;
 mod location;
-#[cfg(any(target_os = "macos", windows, test))]
-mod markdown;
-#[cfg(any(target_os = "macos", windows))]
-mod native;
-#[cfg(any(target_os = "macos", windows))]
-mod page;
-#[cfg(target_os = "macos")]
-mod page_keys;
-#[cfg(target_os = "macos")]
-mod parking;
-#[cfg(any(target_os = "macos", windows))]
-mod preview;
-#[cfg(target_os = "macos")]
-mod stacking;
 mod store;
 mod tab_appear;
 pub(crate) mod tab_body;
 mod tab_move;
 mod tab_scroll;
-#[cfg(target_os = "macos")]
-mod underlay;
 mod view;
 #[cfg(test)]
 mod view_tests;
-mod zoom;
 
 pub(crate) use closed::ClosedHerdrTab;
 pub(crate) use group_motion::Fold;
@@ -58,31 +30,15 @@ pub(crate) use location::LocalFile;
 pub(crate) use location::Location;
 #[cfg(test)]
 pub(crate) use location::RetiredOrchestratorRepo;
-#[cfg(any(target_os = "macos", windows))]
-pub(crate) use native::Pages;
-#[cfg(target_os = "macos")]
-pub(crate) use page_keys::bind as bind_page_keys;
 pub(crate) use store::{CoreGroupKey, Scope, Store, Tab, TabId};
 pub(crate) use tab_appear::{Leaving, Listed};
 pub(crate) use tab_scroll::{Thumb, ThumbDrag};
-#[cfg(target_os = "macos")]
-pub(crate) use underlay::{
-    AroundPages, around as around_pages, ground as ground_around_pages,
-    picture as picture_around_pages,
-};
 pub(crate) use view::{Browser, PageOpened, scope};
-pub(crate) use zoom::Zoom;
-
-/// Whether this build can show a page inside the window. Elsewhere a browser
-/// tab request opens the system browser instead.
-pub(crate) const EMBEDDED: bool = cfg!(any(target_os = "macos", windows));
 
 const MAX_URL_BYTES: usize = 8192;
 
-/// An address a browser tab may show: http or https with a host, bounded,
-/// and free of whitespace and control characters. Anything that reaches a
-/// page, from a terminal link, an agent, or the address field, is parsed into
-/// this first.
+/// A bounded http or https address with a host and no whitespace or controls.
+/// Explicit terminal and service link clicks use this before opening externally.
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub(crate) struct WebUrl(url::Url);
@@ -94,24 +50,6 @@ impl WebUrl {
 
     pub(crate) fn host(&self) -> &str {
         self.0.host_str().unwrap_or_default()
-    }
-
-    /// What someone typed into the address field: a bare host such as
-    /// `localhost:3000` or `example.com/docs` gets a scheme, local hosts plain
-    /// http and everything else https.
-    pub(crate) fn from_typed(text: &str) -> crate::Result<Self> {
-        let text = text.trim();
-        if let Ok(url) = Self::try_from(text) {
-            return Ok(url);
-        }
-        if text.contains("://") {
-            return Err(crate::Error::InvalidBrowserUrl);
-        }
-        let host = text.split(['/', ':', '?', '#']).next().unwrap_or_default();
-        let local =
-            matches!(host, "localhost" | "127.0.0.1" | "[::1]") || host.ends_with(".localhost");
-        let scheme = if local { "http" } else { "https" };
-        Self::try_from(format!("{scheme}://{text}").as_str())
     }
 }
 
@@ -184,21 +122,6 @@ mod tests {
         }
         let long = format!("https://a.test/{}", "x".repeat(MAX_URL_BYTES));
         assert!(WebUrl::try_from(long.as_str()).is_err());
-    }
-
-    #[test]
-    fn typed_addresses_gain_a_scheme() {
-        let typed = |text| WebUrl::from_typed(text).map(|url| url.as_str().to_owned());
-        assert_eq!(typed("localhost:3000").unwrap(), "http://localhost:3000/");
-        assert_eq!(typed("app.localhost/x").unwrap(), "http://app.localhost/x");
-        assert_eq!(
-            typed(" example.com/docs ").unwrap(),
-            "https://example.com/docs"
-        );
-        assert_eq!(typed("http://a.test").unwrap(), "http://a.test/");
-        assert!(typed("file:///etc/passwd").is_err());
-        assert!(typed("ftp://a.test").is_err());
-        assert!(typed("").is_err());
     }
 
     #[test]

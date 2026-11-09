@@ -38,6 +38,8 @@ fn restored_tabs_keep_exact_cli_targets_and_reserve_retired_ids(cx: &mut gpui::T
             tabs.iter().map(|tab| tab.id).collect::<Vec<_>>(),
             [u64::from(core), u64::from(devices)]
         );
+        assert_eq!(tabs[0].kind, TabKind::CoreTerminal);
+        assert_eq!(tabs[1].kind, TabKind::Devices);
         for id in [retired, TabId::test(u64::from(retired) + 1)] {
             assert!(matches!(
                 focus(&Caller::default(), id.into(), cx),

@@ -28,31 +28,9 @@ fn close(a: Pixels, b: Pixels) -> bool {
 
 #[test]
 fn a_grip_is_centered_between_two_groups_the_app_draws() {
-    let [left, right] = [0, 1].map(|index| Reach::of(&[false, false], index));
+    let [left, right] = [0, 1].map(|index| Reach::of(2, index));
     assert_eq!((left.left, left.right), (0., 2.));
     assert_eq!((right.left, right.right), (2., 0.));
-}
-
-#[test]
-fn a_grip_beside_one_native_page_lies_over_the_other_group() {
-    let [left, right] = [0, 1].map(|index| Reach::of(&[false, true], index));
-    assert_eq!((left.left, left.right), (0., 4.));
-    assert_eq!(right, Reach::default());
-    let [left, right] = [0, 1].map(|index| Reach::of(&[true, false], index));
-    assert_eq!(left, Reach::default());
-    assert_eq!((right.left, right.right), (4., 0.));
-    // Each divider of a group between two pages keeps its whole width.
-    let middle = Reach::of(&[true, false, true], 1);
-    assert_eq!((middle.left, middle.right), (4., 4.));
-}
-
-#[test]
-fn no_grip_lies_over_a_native_page_or_a_group_that_is_not_there() {
-    for index in 0..3 {
-        assert_eq!(Reach::of(&[true, true], index), Reach::default());
-        assert_eq!(Reach::of(&[], index), Reach::default());
-    }
-    assert_eq!(Reach::of(&[false], 0), Reach::default());
 }
 
 /// The groups touch the line, and the grip is five pixels wide around it.
@@ -95,41 +73,15 @@ fn each_part_of_the_grip_drags_the_divider(cx: &mut TestAppContext) {
     }
 }
 
-/// On Windows a page draws above the grip, so the grip moves off it.
-#[cfg(windows)]
+/// Native content shares centered grips with terminal groups.
 #[gpui::test]
-fn the_grip_keeps_off_a_page_and_keeps_its_width(cx: &mut TestAppContext) {
+fn the_grip_beside_a_devices_tab_stays_centered(cx: &mut TestAppContext) {
     let (view, cx) = split(cx);
     let right = view.read_with(cx, |view, _| view.group_slots()[1].id);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.ensure_layout().unwrap().activate(right);
-            view.open_browser_tab(None, window, cx);
-        })
-    });
-    draw(cx);
-    let line = cx.debug_bounds("group-divider-0").unwrap();
-    let grip = cx.debug_bounds("group-divider-0-left").unwrap();
-    assert!(cx.debug_bounds("group-divider-0-right").is_none());
-    assert!(close(grip.right(), line.left()), "{grip:?} {line:?}");
-    assert!(close(line.right() - grip.left(), px(5.)), "{grip:?}");
-    let before = cx.debug_bounds("group").unwrap();
-    drag_left(cx, grip.center());
-    let after = cx.debug_bounds("group").unwrap();
-    assert!(after.size.width < before.size.width - px(50.));
-}
-
-/// On macOS a page lies beneath the window's drawing, so the grip stays
-/// centered on its line over the page, and the part over the page drags.
-#[cfg(target_os = "macos")]
-#[gpui::test]
-fn the_grip_lies_over_a_page_centered_on_its_line(cx: &mut TestAppContext) {
-    let (view, cx) = split(cx);
-    let right = view.read_with(cx, |view, _| view.group_slots()[1].id);
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
-            view.ensure_layout().unwrap().activate(right);
-            view.open_browser_tab(None, window, cx);
+            view.open_native_tab(window, cx);
         })
     });
     draw(cx);

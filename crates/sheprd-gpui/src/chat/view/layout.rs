@@ -89,18 +89,9 @@ impl Look<'_> {
         self.window.chat_column(content)
     }
 
-    /// `content` over `color`, as `.bg(color)` would paint it, except where
-    /// a page in a message shows from beneath the window's drawing.
+    /// Paints the native message content over its background.
     pub(super) fn ground(&self, content: Div, color: u32) -> AnyElement {
         self.window.with_ground(content, rgb(color))
-    }
-
-    /// For a background painted by hand: where it must paint around pages
-    /// in a message, or `None` while none lies under it.
-    pub(super) fn pages_under(
-        &self,
-    ) -> impl Fn(Bounds<Pixels>) -> Option<Vec<Bounds<Pixels>>> + 'static {
-        self.window.pages_under()
     }
 }
 

@@ -81,13 +81,6 @@ fn native_notifications() {
     native_fixture(Fixture::Notifications);
 }
 
-#[cfg(any(target_os = "macos", windows))]
-#[test]
-#[ignore = "requires active native desktop; a page in the window, no daemon"]
-fn native_pages() {
-    native_fixture(Fixture::Pages);
-}
-
 #[cfg(target_os = "linux")]
 #[test]
 #[ignore = "requires active Wayland desktop; input shutdown fixtures, no daemon"]
@@ -124,8 +117,6 @@ enum Fixture {
     #[cfg(target_os = "linux")]
     ApplicationMenus,
     Notifications,
-    #[cfg(any(target_os = "macos", windows))]
-    Pages,
     InvalidChildWidth,
     #[cfg(target_os = "macos")]
     InvalidSettings,
@@ -187,8 +178,6 @@ fn native_fixture(fixture: Fixture) {
         #[cfg(target_os = "linux")]
         Fixture::ApplicationMenus => "APPLICATION MENUS native PASS",
         Fixture::Notifications => "NOTIFICATIONS native PASS:",
-        #[cfg(any(target_os = "macos", windows))]
-        Fixture::Pages => "PAGES native PASS:",
         #[cfg(target_os = "linux")]
         Fixture::InputShutdown(_) => "INPUT shutdown ready:",
         _ => "SIDEBAR native PASS:",
@@ -219,10 +208,6 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         }
         Fixture::Notifications => {
             command.env("HERDR_TEST_NOTIFICATIONS_ONLY", "1");
-        }
-        #[cfg(any(target_os = "macos", windows))]
-        Fixture::Pages => {
-            command.env("HERDR_TEST_PAGES_ONLY", "1");
         }
         Fixture::InvalidChildWidth => {
             command.env("HERDR_TEST_SIDEBAR_PROBE_FAILURE", "1");

@@ -1,11 +1,10 @@
 //! The dividers between groups. A divider draws a line one pixel wide, so
 //! the groups beside it touch the line. The strip to drag it by is wider than
 //! the line: the rest of it lies over the groups, inside their frames, and
-//! over the pages they show on macOS.
+//! receives pointer presses before their content.
 
 use crate::{
     SheprdWindow,
-    browser::Shown,
     panel_resize::{GRIP_THICKNESS, GripHold},
 };
 use gpui::{prelude::*, *};
@@ -21,25 +20,6 @@ const GRIP: f32 = 5.;
 #[derive(Clone, Copy)]
 struct DividerDrag(usize);
 
-/// Whether `shown` is a native page that draws over everything the app
-/// draws, so a grip laid over it could not be pressed.
-#[cfg(windows)]
-pub(in crate::window) fn native_page(shown: &Shown, cx: &App) -> bool {
-    let Shown::Page(id) = shown else {
-        return false;
-    };
-    cx.try_global::<crate::browser::Store>()
-        .and_then(|store| store.get(*id))
-        .is_some_and(|tab| tab.location.as_ref().is_none_or(|at| at.is_page()))
-}
-
-/// Only Windows pages draw over the app. On macOS a page lies beneath the
-/// app's drawing, and a grip over it takes the press; Linux shows no pages.
-#[cfg(not(windows))]
-pub(in crate::window) fn native_page(_: &Shown, _: &App) -> bool {
-    false
-}
-
 /// How far the grips of a group's two dividers lie over the group, from its
 /// left and right edges.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -49,25 +29,16 @@ pub(in crate::window) struct Reach {
 }
 
 impl Reach {
-    /// The reach over the `index`th group, given which groups show a native
-    /// page. A grip is centered on its line between two groups the app draws.
-    /// Beside one native page it lies wholly over the other group, so it
-    /// keeps its width. Between two native pages only the line is left.
-    pub(in crate::window) fn of(pages: &[bool], index: usize) -> Self {
-        let Some(&page) = pages.get(index) else {
+    /// Centers each grip between adjacent groups. A folding layout passes
+    /// zero groups because its visible neighbors have no shared divider.
+    pub(in crate::window) fn of(groups: usize, index: usize) -> Self {
+        if index >= groups {
             return Self::default();
-        };
-        let toward = |neighbor: Option<usize>| {
-            let neighbor = neighbor.and_then(|neighbor| pages.get(neighbor));
-            match (page, neighbor) {
-                (true, _) | (_, None) => 0.,
-                (false, Some(true)) => GRIP - LINE,
-                (false, Some(false)) => (GRIP - LINE) / 2.,
-            }
-        };
+        }
+        let half = (GRIP - LINE) / 2.;
         Self {
-            left: toward(index.checked_sub(1)),
-            right: toward(index.checked_add(1)),
+            left: if index > 0 { half } else { 0. },
+            right: if index + 1 < groups { half } else { 0. },
         }
     }
 
@@ -123,8 +94,7 @@ fn grip(divider: usize, side: &'static str, width: f32) -> Stateful<Div> {
         .w(px(width))
         .cursor(CursorStyle::ResizeLeftRight)
         // A press on the grip is not a press on what the group shows under
-        // it. Blocking what lies beneath also keeps a page under the grip
-        // from taking the press.
+        // it; the grip takes the press before the content beneath it.
         .occlude()
         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
         .on_drag(DividerDrag(divider), |_, _, _, cx| cx.new(|_| EmptyView))

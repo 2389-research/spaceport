@@ -37,39 +37,23 @@ pub(super) fn serve(
 
 /// What a tab is, as `tab list` names it.
 fn kind(tab: &Tab) -> Option<TabKind> {
-    if matches!(
-        tab.location,
-        Some(
-            Location::RetiredSource { .. }
-                | Location::RetiredReview { .. }
-                | Location::RetiredOrchestrator { .. }
-        )
-    ) {
-        return None;
-    }
     if tab.place.is_editor() {
         return None;
     }
-    Some(match &tab.location {
-        None => TabKind::Blank,
-        Some(Location::Web { .. }) => TabKind::Web,
-        Some(Location::Local { .. }) => TabKind::File,
-        Some(
-            Location::RetiredSource { .. }
-            | Location::RetiredReview { .. }
-            | Location::RetiredOrchestrator { .. },
-        ) => return None,
-        Some(Location::Devices) => TabKind::Devices,
-        Some(Location::CoreTerminal { .. }) => TabKind::CoreTerminal,
-    })
+    match &tab.location {
+        None if tab.core_group().is_some() => Some(TabKind::CoreTerminal),
+        Some(Location::Devices) => Some(TabKind::Devices),
+        Some(Location::CoreTerminal { .. }) => Some(TabKind::CoreTerminal),
+        _ => None,
+    }
 }
 
-/// The address, file, or checkout a tab shows.
+/// The runtime terminal IDs a Core tab shows.
 fn location(tab: &Tab) -> Option<String> {
     Some(match tab.location.as_ref()? {
-        Location::Web { url } => url.as_str().to_owned(),
-        Location::Local { file } => file.path().display().to_string(),
-        Location::RetiredSource { .. }
+        Location::Web { .. }
+        | Location::Local { .. }
+        | Location::RetiredSource { .. }
         | Location::RetiredReview { .. }
         | Location::RetiredOrchestrator { .. } => return None,
         // Every pane's terminal, for `herdr-core attach` and the like.
@@ -108,7 +92,7 @@ fn list(cx: &App) -> Response {
 fn find(id: u64, cx: &App) -> Result<Tab, Response> {
     cx.try_global::<Store>()
         .and_then(|store| store.get(TabId::from(id)))
-        .filter(|tab| !matches!(tab.location, Some(Location::RetiredSource { .. })))
+        .filter(|tab| kind(tab).is_some())
         .cloned()
         .ok_or_else(|| not_found(format!("Spaceport has no tab {id}; `tab list` lists them")))
 }

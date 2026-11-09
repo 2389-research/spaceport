@@ -1,7 +1,5 @@
 //! Control target matching for app requests.
 
-#[cfg(all(windows, feature = "integration-test"))]
-use crate::browser::TabId;
 use crate::{SheprdWindow, browser::Scope, control::Target};
 
 impl SheprdWindow {
@@ -82,13 +80,5 @@ impl SheprdWindow {
                     .any(|candidate| candidate.workspace_id == workspace)
                     .then_some(index)
             })
-    }
-}
-
-/// The Windows page fixture checks that the app has built a page.
-#[cfg(all(windows, feature = "integration-test"))]
-impl SheprdWindow {
-    pub(crate) fn has_page(&self, id: TabId) -> bool {
-        self.browser.pages.contains(id)
     }
 }

@@ -47,13 +47,7 @@ impl SheprdWindow {
             .debug_selector(|| "connection-status".into())
             .role(Role::Status)
             .aria_label(fl!("status-bar-label"))
-            // Windows pages draw above the bar's tooltips, so those under
-            // where a tooltip shows hide while the pointer is over the bar.
-            .on_hover(cx.listener(|this, hovered: &bool, _, cx| {
-                this.hover_status_bar(*hovered, cx);
-            }))
             .relative()
-            .children(self.status_bar_probe())
             .row()
             .flex_none()
             .h(height)

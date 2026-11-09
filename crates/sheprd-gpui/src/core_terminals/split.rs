@@ -335,6 +335,7 @@ impl SheprdWindow {
             _ => fl!("core-terminals-connecting"),
         };
         div()
+            .debug_selector(|| "core-terminal-placeholder".into())
             .flex_1()
             .size_full()
             .flex()

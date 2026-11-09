@@ -7,7 +7,7 @@ need work.
 `spaceport` is also a command line for the running app. Herdr's own
 `herdr` CLI drives the daemon: workspaces, terminal tabs, panes, agents,
 worktrees, and notifications. `spaceport COMMAND` covers what only this
-client knows or draws: its windows, its own tabs (pages, Devices and Core
+client knows or draws: its windows, its own tabs (Devices and Core
 terminals), the activity bar's sections, worktree notes, forwarded
 ports, and its settings.
 
@@ -85,7 +85,7 @@ Legacy windows keep their existing launch target.
 
 | Command | What it does |
 | --- | --- |
-| `tab [list]` | Current page, Devices, and Core terminal tabs with IDs; retired specialized tabs are omitted |
+| `tab [list]` | Current Devices and Core terminal tabs with IDs; retired page and specialized tabs are omitted |
 | `tab focus\|close ID` | |
 | `devices` | The Devices overview |
 
@@ -214,7 +214,7 @@ The request is `{"method": "link", "caller", "op": {"url"}}`.
 One JSON request line, one JSON response line, then the socket closes. A
 request is `{"method", "caller", "op"}`, where `caller` carries the pane,
 workspace, daemon socket, and window, and `op` is tagged with `"op"`.
-`status` reports the protocol version, currently 34. Requests and responses
+`status` reports the protocol version, currently 35. Requests and responses
 are bounded to 256 KiB. A request that waits says for how long (at most 600
 seconds), and the app answers at most a
 few requests at a time.

@@ -20,7 +20,6 @@ pub use protocol::{
     app::{FontSize, Size, Switch},
     events::{Cursor, EventKind},
     settings::Sound,
-    tabs::ZoomChange,
 };
 pub(crate) use sheprd_control_protocol::Error;
 use sheprd_control_protocol::{protocol, socket};

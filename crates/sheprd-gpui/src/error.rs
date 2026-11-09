@@ -1,9 +1,6 @@
 //! Internal failures retain their categories and sources until presentation.
 use std::{io, path::PathBuf};
 
-#[cfg(any(target_os = "macos", windows))]
-use wry::raw_window_handle::HandleError as WindowHandleError;
-
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -251,12 +248,6 @@ pub enum Error {
     /// A usage read failed, or the usage shell the port and load scans share.
     #[error(transparent)]
     Usage(#[from] sheprd_usage::Error),
-    #[cfg(any(target_os = "macos", windows))]
-    #[error("Could not create the page: {0}")]
-    WebView(#[from] wry::Error),
-    #[cfg(any(target_os = "macos", windows))]
-    #[error("Could not reach the native window for the page: {0}")]
-    WindowHandle(#[from] WindowHandleError),
     #[error(transparent)]
     WorkspaceDocument(#[from] crate::core_terminals::workspace_document::Error),
     #[error("Repository changed. Dismiss and reopen the menu.")]

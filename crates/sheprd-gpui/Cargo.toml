@@ -15,7 +15,6 @@ workspace = true
 
 [dependencies]
 url.workspace = true
-ammonia.workspace              = true
 anyhow.workspace               = true
 base64.workspace               = true
 chrono.workspace               = true
@@ -42,7 +41,6 @@ image                          = { features = ["bmp", "tiff"], workspace = true 
 keepawake.workspace            = true
 mermaid-rs-renderer.workspace  = true
 nucleo-matcher.workspace       = true
-percent-encoding.workspace     = true
 pulldown-cmark.workspace       = true
 ratex-layout.workspace         = true
 ratex-parser.workspace         = true
@@ -101,16 +99,10 @@ integration-test = [
   "dep:core-graphics",
   "dep:foreign-types",
   "dep:objc",
-  "dep:raw-window-handle",
 ]
 
 [target.'cfg(unix)'.dependencies]
 rustix.workspace = true
-
-# wry has no working GPUI child-view backend on Linux yet; browser tabs there
-# open in the system browser instead.
-[target.'cfg(any(target_os = "macos", windows))'.dependencies]
-wry.workspace = true
 
 # `windows-sys` sets the window attributes and reads the
 # system settings GPUI leaves to the app, and opens avatar cache entries without following reparse points. It also
@@ -156,7 +148,6 @@ font-kit.workspace              = true
 block2.workspace                = true
 dispatch2.workspace             = true
 objc2-core-foundation.workspace = true
-objc2-web-kit.workspace         = true
 objc2-user-notifications.workspace = true
 cocoa                        = { optional = true, workspace = true }
 core-graphics                = { optional = true, workspace = true }
@@ -166,7 +157,7 @@ objc                         = { optional = true, workspace = true }
 objc2.workspace              = true
 objc2-app-kit.workspace      = true
 objc2-foundation.workspace   = true
-raw-window-handle            = { optional = true, workspace = true }
+raw-window-handle.workspace = true
 
 [[test]]
 name              = "live_gui"

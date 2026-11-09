@@ -436,7 +436,6 @@ impl SheprdWindow {
                             this.poll_file_transfer(cx);
                         })),
                 )
-                .children(self.overlay_probe())
                 .into_any_element(),
         )
     }

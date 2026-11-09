@@ -29,9 +29,7 @@ url = "2"
 acp                  = { default-features = false, package = "agent-client-protocol-schema", version = "1.12" }
 anyhow               = "1"
 aes                  = "0.9.3"
-ammonia              = "4.2.1"
 cbc                  = { features = ["block-padding"], version = "0.2.1" }
-percent-encoding     = "2"
 pbkdf2               = { default-features = false, features = ["hmac"], version = "0.13.0" }
 pulldown-cmark       = { default-features = false, features = ["html"], version = "0.13.6" }
 # Native chat math: the engine exposes baseline metrics and bounds before rasterization.
@@ -71,8 +69,6 @@ futures-lite         = "2"
 getrandom            = "0.4.3"
 gpui                 = { package = "gpui-pre", version = "=0.3.10" }
 gpui_platform        = { package = "gpui-pre-platform", version = "=0.3.10" }
-# The web views behind browser tabs; `browser::page` lays them out in the window.
-wry                  = { package = "lb-wry", version = "=0.53.3" }
 sheprd-backend        = { path = "crates/sheprd-backend" }
 sheprd-chat-protocol  = { path = "crates/sheprd-chat-protocol" }
 sheprd-client         = { path = "crates/sheprd-client" }
@@ -109,12 +105,9 @@ oo7                  = { default-features = false, features = ["async-std", "nat
 objc2                = "0.6.4"
 objc2-app-kit        = { default-features = false, features = ["NSAppearance", "NSApplication", "NSColor", "NSDockTile", "NSDragging", "NSEvent", "NSGraphics", "NSGraphicsContext", "NSImage", "NSImageRep", "NSPasteboard", "NSPasteboardItem", "NSResponder", "NSTextInputContext", "NSTrackingArea", "NSView", "NSWindow", "block2", "objc2-core-foundation", "std"], version = "0.3.2" }
 objc2-foundation     = { default-features = false, features = ["NSArray", "NSBundle", "NSData", "NSError", "NSProcessInfo", "NSString", "NSURL", "std"], version = "0.3.2" }
-# The WebKit snapshot behind page annotation screenshots and the popups pages
-# open, at the versions wry uses.
 block2               = "0.6.2"
 dispatch2            = { default-features = false, features = ["objc2", "std"], version = "0.3.1" }
 objc2-core-foundation = { default-features = false, features = ["CFCGTypes", "std"], version = "0.3.2" }
-objc2-web-kit        = { default-features = false, features = ["WKSnapshotConfiguration", "WKUIDelegate", "WKWebView", "block2", "objc2-app-kit", "objc2-core-foundation", "std"], version = "0.3.2" }
 # Asks for Dock badge permission; the version GPUI's macOS platform already links.
 objc2-user-notifications ={ default-features = false, features = ["UNUserNotificationCenter", "block2", "std"], version = "0.3.2" }
 raw-window-handle    = "0.6"

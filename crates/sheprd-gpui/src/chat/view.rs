@@ -330,11 +330,7 @@ impl SheprdWindow {
             .overflow_hidden()
             .flex()
             .flex_col()
-            // A page in the panel shows from beneath the window's drawing
-            // on macOS, so the chat's background paints around it.
-            .when(!cfg!(target_os = "macos"), |view| {
-                view.bg(rgb(theme.background))
-            })
+            .bg(rgb(theme.background))
             // Files dragged over the chat become attachments when dropped. The
             // chat occludes the terminal's own drop handler, so it takes the
             // drop and routes it the same way.
@@ -410,7 +406,6 @@ impl SheprdWindow {
                     }
                 }
             }))
-            .children(self.chat_ground())
             .child(self.render_chat_header(chat, rail::fits(bounds), cx))
             .child(
                 div()
@@ -501,37 +496,6 @@ impl SheprdWindow {
                 )
             });
         self.render_chat_running_row(chat, row, working.is_none(), cx)
-    }
-
-    /// The chat's background where no page shows: on macOS, where a page
-    /// lies beneath the window's drawing. Elsewhere the view paints its
-    /// own background.
-    fn chat_ground(&self) -> Option<AnyElement> {
-        #[cfg(target_os = "macos")]
-        return Some(
-            crate::browser::ground_around_pages(
-                rgb(self.theme.background).into(),
-                self.browser.drawn_pages(),
-            )
-            .into_any_element(),
-        );
-        #[cfg(not(target_os = "macos"))]
-        None
-    }
-
-    /// The terminal's background where no page shows, for the window's
-    /// terminal area on macOS; see [`Self::chat_ground`].
-    pub(crate) fn terminal_ground(&self, color: Hsla) -> Option<AnyElement> {
-        #[cfg(target_os = "macos")]
-        return Some(
-            crate::browser::ground_around_pages(color, self.browser.drawn_pages())
-                .into_any_element(),
-        );
-        #[cfg(not(target_os = "macos"))]
-        {
-            let _ = color;
-            None
-        }
     }
 
     /// Gives the chat's composer the keyboard and makes its pane Herdr's

@@ -85,18 +85,11 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
         version,
         protocol,
         pid,
-        browser_tabs,
         windows,
         core_catalog,
     } = &status;
-    let mut text = format!(
-        "Spaceport {version} is running (pid {pid}, control protocol {protocol}{})\n",
-        if *browser_tabs {
-            ""
-        } else {
-            ", pages open in the system browser"
-        }
-    );
+    let mut text =
+        format!("Spaceport {version} is running (pid {pid}, control protocol {protocol})\n");
     if *protocol != crate::control::protocol::PROTOCOL_VERSION {
         let _ = writeln!(
             text,

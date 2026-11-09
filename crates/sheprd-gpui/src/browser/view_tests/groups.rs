@@ -86,7 +86,7 @@ fn splitting_only_splits(cx: &mut gpui::TestAppContext) {
 /// Needs a build that shows pages: elsewhere a new tab opens nothing.
 #[cfg(any(target_os = "macos", windows))]
 #[gpui::test]
-fn a_page_and_the_terminal_sit_side_by_side(cx: &mut gpui::TestAppContext) {
+fn a_devices_tab_and_the_terminal_sit_side_by_side(cx: &mut gpui::TestAppContext) {
     let (view, cx) = window(cx);
     draw(cx);
     run(&view, cx, Command::SplitEditor);
@@ -96,14 +96,14 @@ fn a_page_and_the_terminal_sit_side_by_side(cx: &mut gpui::TestAppContext) {
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.ensure_layout().unwrap().activate(right);
-            view.open_browser_tab(None, window, cx);
+            view.open_native_tab(window, cx);
             view.activate_group(left, window, cx);
         })
     });
     let page = crate::browser::TabId::test(0);
     assert_eq!(shown(&view, cx), [Shown::Terminal, Shown::Page(page)]);
     assert!(cx.debug_bounds("terminal").is_some());
-    assert!(cx.debug_bounds("g1-browser").is_some());
+    assert!(cx.debug_bounds("g1-devices-tab").is_some());
     // Each group lists its own tabs only.
     for selector in ["tab-t0", "g1-browser-tab-0"] {
         assert!(cx.debug_bounds(selector).is_some(), "{selector}");

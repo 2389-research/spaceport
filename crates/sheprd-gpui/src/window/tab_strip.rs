@@ -27,7 +27,7 @@ use gpui::{prelude::*, *};
 #[cfg(test)]
 use sheprd_client::protocol::AgentStatus;
 
-pub(super) use dividers::{Reach, native_page};
+pub(super) use dividers::Reach;
 
 /// How tall the thumb along a scrolling strip's foot draws.
 const THUMB_HEIGHT: f32 = 4.;

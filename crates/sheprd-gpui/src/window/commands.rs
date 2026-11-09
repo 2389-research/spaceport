@@ -552,13 +552,6 @@ impl SheprdWindow {
                 self.convert_to_chat_or_flash(cx);
                 return;
             }
-            // A focused page zooms instead of the terminal font, and keeps
-            // the keyboard if it held it.
-            Command::IncreaseFontSize | Command::DecreaseFontSize | Command::ResetFontSize
-                if self.zoom_focused_page(command, cx) =>
-            {
-                return;
-            }
             Command::IncreaseFontSize | Command::DecreaseFontSize => {
                 let step = if command == Command::IncreaseFontSize {
                     FONT_SIZE_STEP

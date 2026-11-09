@@ -18,6 +18,7 @@ mod created;
 mod tests;
 
 use gpui::{Window, WindowId};
+use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use std::{cell::RefCell, collections::HashMap};
 use windows::Win32::{
     Foundation::HWND,
@@ -26,7 +27,6 @@ use windows::Win32::{
         ITaskbarList3, TBPF_INDETERMINATE, TBPF_NOPROGRESS, TBPF_NORMAL, TBPFLAG, TaskbarList,
     },
 };
-use wry::raw_window_handle::{HasWindowHandle, RawWindowHandle};
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum Error {

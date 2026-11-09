@@ -159,10 +159,6 @@ impl Localize for Error {
             Self::UnsupportedCommand => fl!("error-unsupported-command"),
             Self::Update(error) => error.localize(),
             Self::Usage(error) => error.localize(),
-            #[cfg(any(target_os = "macos", windows))]
-            Self::WebView(error) => fl!("error-web-view", error = error.to_string()),
-            #[cfg(any(target_os = "macos", windows))]
-            Self::WindowHandle(error) => fl!("error-window-handle", error = error.to_string()),
             Self::WorkspaceDocument(error) => error.to_string(),
             Self::WorkspaceRepositoryChanged => fl!("error-workspace-repository-changed"),
             Self::WorktreeIdentity(error) => error.localize(),

@@ -10,7 +10,7 @@ fn run(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext, command: Command
 }
 
 fn open_page(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) {
-    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab(None, window, cx)));
+    cx.update(|window, cx| view.update(cx, |view, cx| view.open_native_tab(window, cx)));
     draw(cx);
 }
 

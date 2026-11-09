@@ -86,7 +86,7 @@ fn listening_ports_follow_the_tab_kinds(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_blank_tab_lists_the_listening_ports(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
-    cx.update(|window, cx| view.update(cx, |view, cx| view.open_browser_tab(None, window, cx)));
+    cx.update(|window, cx| view.update(cx, |view, cx| view.open_native_tab(window, cx)));
     draw(cx);
     assert!(cx.debug_bounds("browser-placeholder").is_some());
     assert!(cx.debug_bounds("blank-port-3000").is_none());

@@ -18,7 +18,7 @@ fn web(url: &str) -> Location {
 }
 
 #[test]
-fn tabs_are_listed_by_kind_with_what_they_show() {
+fn retired_pages_are_not_listed_but_native_tabs_keep_their_targets() {
     let scope = Scope::local(Path::new("/tmp/herdr.sock"));
     let mut store = Store::default();
     // Hidden folders are never served, so the folder has a plain name.
@@ -41,25 +41,13 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
     }
     let listed: Vec<TabInfo> = store.tabs().filter_map(info).collect();
     let kinds: Vec<TabKind> = listed.iter().map(|tab| tab.kind).collect();
-    assert_eq!(
-        kinds,
-        [
-            TabKind::Blank,
-            TabKind::Web,
-            TabKind::File,
-            TabKind::Devices,
-        ]
-    );
-    let locations: Vec<Option<&str>> = listed.iter().map(|tab| tab.location.as_deref()).collect();
-    assert_eq!(locations[0], None);
-    assert_eq!(locations[1], Some("https://a.test/docs"));
-    assert!(locations[2].unwrap().ends_with("index.html"));
-    assert_eq!(locations[3], None);
-    let first = &listed[1];
+    assert_eq!(kinds, [TabKind::Devices]);
+    let first = &listed[0];
+    assert_eq!(first.location, None);
     assert_eq!(first.workspace, "w_1");
     assert_eq!(first.host, "local:/tmp/herdr.sock");
     assert_eq!(first.opened_by.as_deref(), Some("w_1:p1"));
-    assert_eq!(first.title, "a.test");
+    assert_eq!(first.title, "Devices");
 }
 
 #[test]
@@ -98,7 +86,10 @@ fn open(
 ) -> TabId {
     cx.cx.update(|cx| {
         let scope = crate::browser::scope(&view.read(cx).endpoints[0]);
-        Store::update(cx, |store| store.open(scope, workspace, location, None)).unwrap()
+        Store::update(cx, |store| {
+            store.open(scope, workspace, location.or(Some(Location::Devices)), None)
+        })
+        .unwrap()
     })
 }
 

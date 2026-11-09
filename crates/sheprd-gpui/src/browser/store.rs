@@ -1,7 +1,6 @@
-//! The app's browser tabs: which page each one shows and the workspace it
-//! belongs to. Herdr has no browser panes, so these live only in this client;
-//! every window shows the same tabs for a workspace, each with its own page.
-use super::{Location, zoom::Zoom};
+//! Client-owned native tabs and the workspace each one belongs to.
+//! Windows share tab references; the selected runtime owns their terminals.
+use super::Location;
 use crate::i18n::fl;
 use crate::{reorder::Beside, state_file};
 use gpui::{App, Global};
@@ -217,20 +216,16 @@ pub(crate) struct Tab {
     pub id: TabId,
     pub scope: Scope,
     pub workspace_id: String,
-    /// `None` for a new tab still waiting for an address.
+    /// `None` while a Core tab waits for its terminal reference.
     pub location: Option<Location>,
-    /// The page's own title once it reports one; the host until then.
+    /// The native content title, updated from terminal reports.
     pub title: String,
-    /// The Herdr pane whose agent opened the tab, which notes on the page
-    /// go back to.
+    /// The Herdr pane that opened the tab, when it has one.
     #[serde(default)]
     pub origin: Option<String>,
     /// Tabs saved before panels existed are all `Group` tabs.
     #[serde(default, skip_serializing_if = "is_group")]
     pub place: Place,
-    /// How large the page draws; tabs saved before zoom draw at 100%.
-    #[serde(default, skip_serializing_if = "Zoom::is_actual")]
-    pub zoom: Zoom,
 }
 
 fn is_group(place: &Place) -> bool {
@@ -495,7 +490,6 @@ impl Store {
             title,
             origin,
             place,
-            zoom: Zoom::default(),
         })
     }
 
@@ -555,8 +549,7 @@ impl Store {
         Some(tab)
     }
 
-    /// Records where a page went and what it calls itself. Returns whether
-    /// anything changed.
+    /// Updates a native content reference or title. Returns whether it changed.
     pub(crate) fn visited(
         &mut self,
         id: TabId,
@@ -583,19 +576,6 @@ impl Store {
             self.save();
         }
         changed
-    }
-
-    /// Zooms a tab's page. Returns whether its zoom changed.
-    pub(crate) fn set_zoom(&mut self, id: TabId, zoom: Zoom) -> bool {
-        let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == id) else {
-            return false;
-        };
-        if tab.zoom == zoom {
-            return false;
-        }
-        tab.zoom = zoom;
-        self.save();
-        true
     }
 
     /// Drops the tabs of workspaces the daemon closed.

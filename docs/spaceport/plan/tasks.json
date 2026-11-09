@@ -354,7 +354,8 @@
         "evidence/t04-browser-saved-page-restore.md",
         "evidence/t04-browser-popup-entry-removal.md",
         "evidence/t03-sidebar-terminal-fallback.md",
-        "evidence/t05-core-default-observation.md"
+        "evidence/t05-core-default-observation.md",
+        "evidence/t04-native-browser-engine-removal.md"
       ],
       "must_close_gaps": [
         "G-LINK"

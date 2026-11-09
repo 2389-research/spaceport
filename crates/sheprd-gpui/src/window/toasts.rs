@@ -343,12 +343,7 @@ impl SheprdWindow {
                 cards.insert(place, room.into_any_element());
             }
             if !cards.is_empty() {
-                corners.push(
-                    corner(position, width)
-                        .children(cards)
-                        .children(self.overlay_probe())
-                        .into_any_element(),
-                );
+                corners.push(corner(position, width).children(cards).into_any_element());
             }
         }
         corners
