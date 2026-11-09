@@ -2,7 +2,9 @@ use super::*;
 use crate::sidebar::layout_tests::{SidebarFixture, fixture_window, full_draw};
 use gpui::{AppContext as _, Entity, Modifiers, VisualTestContext, px, size};
 
-fn fixture(cx: &mut gpui::TestAppContext) -> (Entity<SheprdWindow>, &mut VisualTestContext) {
+pub(super) fn fixture(
+    cx: &mut gpui::TestAppContext,
+) -> (Entity<SheprdWindow>, &mut VisualTestContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
         let view = cx.new(|cx| {
@@ -62,14 +64,14 @@ fn a_section_takes_the_body_beside_the_bar_and_workspaces_brings_it_back(
 ) {
     let (view, cx) = fixture(cx);
     let terminal_column = cx.debug_bounds("sidebar").unwrap().right();
-    click(cx, "activity-pull-requests");
+    click(cx, "activity-overview");
     assert_eq!(
         cx.update(|_, cx| view.read(cx).activity.panel),
-        ActivityPanel::PullRequests
+        ActivityPanel::Overview
     );
     // The bar stays; the sidebar and the terminals give way to the section.
     let bar = cx.debug_bounds("activity-bar").unwrap();
-    let section = cx.debug_bounds("activity-section").unwrap();
+    let section = cx.debug_bounds("overview").unwrap();
     assert!(cx.debug_bounds("sidebar").is_none());
     assert_eq!(section.left(), bar.right());
     assert!(section.left() < terminal_column);
@@ -80,23 +82,14 @@ fn a_section_takes_the_body_beside_the_bar_and_workspaces_brings_it_back(
     // The status bar stays under it.
     let status = cx.debug_bounds("connection-status").unwrap();
     assert!(status.top() >= section.bottom());
-    // The fixture's socket cannot run the orchestrator's scripts, so the
-    // list has no repository, which its empty state says.
-    assert!(cx.debug_bounds("orchestrator-list").is_some());
-    // The overview takes the body as the other sections do.
+    click(cx, "activity-usage");
+    assert!(cx.debug_bounds("usage-section").is_some());
     click(cx, "activity-overview");
-    assert_eq!(
-        cx.update(|_, cx| view.read(cx).activity.panel),
-        ActivityPanel::Overview
-    );
-    assert!(cx.debug_bounds("overview").is_some());
-    assert!(cx.debug_bounds("activity-section-empty").is_none());
-    click(cx, "activity-pull-requests");
     // A section picked again stays.
-    click(cx, "activity-pull-requests");
-    assert!(cx.debug_bounds("activity-section").is_some());
+    click(cx, "activity-overview");
+    assert!(cx.debug_bounds("overview").is_some());
     click(cx, "activity-workspaces");
-    assert!(cx.debug_bounds("activity-section").is_none());
+    assert!(cx.debug_bounds("overview").is_none());
     assert_eq!(
         cx.debug_bounds("sidebar").unwrap().left(),
         cx.debug_bounds("activity-bar").unwrap().right()
@@ -114,7 +107,7 @@ fn a_section_takes_the_body_beside_the_bar_and_workspaces_brings_it_back(
 #[gpui::test]
 fn zen_mode_keeps_the_terminals_whatever_section_was_shown(cx: &mut gpui::TestAppContext) {
     let (view, cx) = fixture(cx);
-    click(cx, "activity-issues");
+    click(cx, "activity-overview");
     assert!(view.read_with(cx, |view, _| view.activity_section().is_some()));
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
@@ -129,7 +122,7 @@ fn turning_the_bar_off_restores_the_plain_sidebar(cx: &mut gpui::TestAppContext)
     let (view, cx) = fixture(cx);
     view.update(cx, |view, cx| {
         // A stored section waits for the bar; the terminals show meanwhile.
-        view.activity.panel = ActivityPanel::Issues;
+        view.activity.panel = ActivityPanel::Overview;
         view.config.sidebar_style.activity_bar = false;
         cx.notify();
     });
@@ -167,11 +160,11 @@ fn a_stored_panel_yields_to_one_picked_before_it_loaded(cx: &mut gpui::TestAppCo
     let (view, cx) = fixture(cx);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
-            view.show_activity_panel(ActivityPanel::Issues, window, cx);
+            view.show_activity_panel(ActivityPanel::Overview, window, cx);
             view.activity
                 .restore(Some(ActivityPanel::Usage), &Default::default());
-            assert_eq!(view.activity.panel, ActivityPanel::Issues);
-            assert_eq!(view.activity.chosen(), Some(ActivityPanel::Issues));
+            assert_eq!(view.activity.panel, ActivityPanel::Overview);
+            assert_eq!(view.activity.chosen(), Some(ActivityPanel::Overview));
         })
     });
 }

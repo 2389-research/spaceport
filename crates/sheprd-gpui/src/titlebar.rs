@@ -42,18 +42,8 @@ const UNOPENED_NOTE_MIN_WIDTH: f32 = 720.;
 
 impl SheprdWindow {
     fn open_profile(&mut self, connect: bool, window: &mut Window, cx: &mut Context<Self>) {
-        let shown = matches!(self.menu.page, Some(Page::GitHub | Page::GitLab));
+        let shown = self.menu.page == Some(Page::GitHub);
         if !shown && !self.open_menu(window, cx) {
-            return;
-        }
-        // GitLab waiting for a token opens its page, once GitHub has an
-        // account and nothing of its own to ask.
-        if self.orchestrator_gitlab_needs_sign_in(cx)
-            && self.pr_profile().is_some()
-            && !self.github_needs_attention()
-            && self.github_rate_limit_message().is_none()
-        {
-            self.open_gitlab_page(window, cx);
             return;
         }
         self.menu.page = Some(Page::GitHub);
@@ -366,7 +356,7 @@ impl SheprdWindow {
         let image = self
             .pr_profile()
             .and_then(|profile| self.menu.github_avatars.get(&profile.avatar_url));
-        let attention = self.github_needs_attention() || self.orchestrator_gitlab_needs_sign_in(cx);
+        let attention = self.github_needs_attention();
         let rate_limit = self.github_rate_limit_message();
         let limited = rate_limit.is_some();
         let foreground = self.theme.foreground;

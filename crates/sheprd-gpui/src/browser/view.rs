@@ -325,7 +325,6 @@ impl SheprdWindow {
         self.advance_close_run(window, cx);
         self.poll_deliveries(cx);
         self.poll_reveal(window, cx);
-        self.poll_orchestrators(window, cx);
         self.sync_addresses(false, window, cx);
     }
 

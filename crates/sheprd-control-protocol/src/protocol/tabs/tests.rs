@@ -147,11 +147,11 @@ fn kinds_are_named_as_json_spells_them() {
     assert!(serde_json::from_str::<TabKind>("\"code\"").is_err());
     assert!(serde_json::from_str::<TabKind>("\"review\"").is_err());
     assert!(serde_json::from_str::<TabKind>("\"editor\"").is_err());
+    assert!(serde_json::from_str::<TabKind>("\"orchestrator\"").is_err());
     for kind in [
         TabKind::Blank,
         TabKind::Web,
         TabKind::File,
-        TabKind::Orchestrator,
         TabKind::Devices,
     ] {
         assert_eq!(

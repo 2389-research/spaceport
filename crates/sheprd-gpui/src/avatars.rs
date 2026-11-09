@@ -387,13 +387,9 @@ fn avatar_agent() -> ureq::Agent {
         .into()
 }
 
-/// Where an account's picture may be downloaded from: GitHub's avatars, and
-/// GitLab.com's, which are its own uploads or Gravatar's. A self-managed
-/// GitLab's pictures are not fetched, since its address is the instance's own
-/// choice; its accounts show the GitLab mark instead.
-const PROFILE_AVATAR_ORIGINS: [&str; 3] = [
+/// Where an account's picture may be downloaded from.
+const PROFILE_AVATAR_ORIGINS: [&str; 2] = [
     "https://avatars.githubusercontent.com/",
-    "https://gitlab.com/uploads/-/system/user/avatar/",
     "https://secure.gravatar.com/avatar/",
 ];
 

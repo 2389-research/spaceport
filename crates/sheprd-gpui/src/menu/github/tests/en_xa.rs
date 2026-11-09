@@ -17,7 +17,7 @@ fn reported(view: &crate::SheprdWindow) -> Vec<String> {
         .profile
         .as_ref()
         .map(|profile| format!("@{}", profile.login));
-    ["GitHub", "GitLab", "github.com/login/device", "ABCD-1234"]
+    ["GitHub", "github.com/login/device", "ABCD-1234"]
         .map(str::to_owned)
         .into_iter()
         .chain(auth.message.clone())

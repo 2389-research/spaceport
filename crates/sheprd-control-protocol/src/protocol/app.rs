@@ -9,9 +9,6 @@ pub enum ActivityPanel {
     #[default]
     Workspaces,
     Overview,
-    PullRequests,
-    Issues,
-    Tasks,
     Automations,
     Usage,
 }
@@ -20,9 +17,6 @@ impl ActivityPanel {
     pub const ALL: &[Self] = &[
         Self::Workspaces,
         Self::Overview,
-        Self::PullRequests,
-        Self::Issues,
-        Self::Tasks,
         Self::Automations,
         Self::Usage,
     ];
@@ -32,9 +26,6 @@ impl ActivityPanel {
         match self {
             Self::Overview => "overview",
             Self::Workspaces => "workspaces",
-            Self::PullRequests => "pull-requests",
-            Self::Issues => "issues",
-            Self::Tasks => "tasks",
             Self::Automations => "automations",
             Self::Usage => "usage",
         }

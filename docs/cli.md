@@ -69,7 +69,7 @@ Every command accepts:
 | `window detach\|reconnect` | Detach from, or reconnect to, the selected host |
 | `ui sidebar\|statusbar [on\|off\|toggle]` | For this window and session |
 | `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session |
-| `ui panel workspaces\|overview\|pull-requests\|issues\|tasks\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, the focused workspace's pull requests or issues across the window, Beads tasks across the window's projects, an unavailable job and run feed, or every host's plan usage |
+| `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage |
 | `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it |
 | `commands` | The names `run` accepts (no app needed) |
 | `open DIR` | Open a folder as **Open Project** in the palette does, starting the app if needed (below) |
@@ -100,7 +100,7 @@ Spaceport** entry, which both Windows installers add, runs this command through
 
 | Command | What it does |
 | --- | --- |
-| `tab [list]` | Current page, Orchestrator, Devices, Core terminal, and editor tabs with IDs; retired source and review tabs are omitted |
+| `tab [list]` | Current page, Devices, and Core terminal tabs with IDs; retired specialized tabs are omitted |
 | `tab focus\|close ID` | |
 | `browser reload\|feedback` | See [browser tabs](../crates/sheprd-gpui/README.md#browser-tabs) |
 | `browser list` | Page tabs only |

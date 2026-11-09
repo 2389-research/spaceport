@@ -38,7 +38,6 @@ mod device_tags;
 mod devices_overview;
 mod dialog_input;
 mod direction;
-mod dispatch;
 mod endpoint;
 mod error;
 mod find;
@@ -76,7 +75,6 @@ mod navigation;
 mod network_quality;
 mod notification_mutes;
 mod notifications;
-mod orchestrator;
 mod osc52;
 mod overview;
 mod palette;
@@ -148,8 +146,6 @@ use sheprd_updater as updater;
 // GitHub's pull request actions; `github` and `pull_request` are the app's
 // own modules, which add the avatars, the shared store, and badge colors.
 use sheprd_github::pr_actions;
-// The orchestrator's records, readers, and worker are reached through
-// the app's `orchestrator` module, which adds the views.
 // The command catalog and its default shortcuts, without GPUI.
 use sheprd_commands as controls;
 // The log file and crash reports, without GPUI.

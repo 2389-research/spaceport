@@ -8474,7 +8474,6 @@ dependencies = [
  "sheprd-diagnostics",
  "sheprd-github",
  "sheprd-i18n",
- "sheprd-orchestrator",
  "sheprd-remote",
  "sheprd-updater",
  "sheprd-usage",

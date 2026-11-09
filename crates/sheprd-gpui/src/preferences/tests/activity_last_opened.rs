@@ -91,7 +91,7 @@ fn visits_stored_before_a_save_that_raced_the_load_are_saved_again(cx: &mut Test
         let chrome = await_loaded(&mut preferences);
         view.sidebar_preferences = Some(preferences);
         // The pick's save reaches the worker after its load.
-        view.activity.pick(ActivityPanel::Issues);
+        view.activity.pick(ActivityPanel::Overview);
         view.save_chrome();
         chrome
     });

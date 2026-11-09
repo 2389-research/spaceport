@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{
-    browser::{LocalFile, OrchestratorRepo, Scope, WebUrl},
+    browser::{LocalFile, RetiredOrchestratorRepo, Scope, WebUrl},
     control::protocol::Request,
     sidebar::layout_tests::{fixture_window, snapshot},
 };
@@ -31,8 +31,8 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
         Some(Location::Local {
             file: LocalFile::new(&page, None).unwrap(),
         }),
-        Some(Location::Orchestrator {
-            repo: OrchestratorRepo::new("/src/app".into()).unwrap(),
+        Some(Location::RetiredOrchestrator {
+            repo: RetiredOrchestratorRepo::new("/src/app".into()).unwrap(),
         }),
         Some(Location::Devices),
     ];
@@ -47,7 +47,6 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
             TabKind::Blank,
             TabKind::Web,
             TabKind::File,
-            TabKind::Orchestrator,
             TabKind::Devices,
         ]
     );
@@ -55,8 +54,7 @@ fn tabs_are_listed_by_kind_with_what_they_show() {
     assert_eq!(locations[0], None);
     assert_eq!(locations[1], Some("https://a.test/docs"));
     assert!(locations[2].unwrap().ends_with("index.html"));
-    assert_eq!(locations[3], Some("/src/app"));
-    assert_eq!(locations[4], None);
+    assert_eq!(locations[3], None);
     let first = &listed[1];
     assert_eq!(first.workspace, "w_1");
     assert_eq!(first.host, "local:/tmp/herdr.sock");

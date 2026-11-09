@@ -28,10 +28,5 @@ pub(crate) fn text(seconds: u64) -> String {
     i18n::message(id, &args(count))
 }
 
-/// Seconds from `then` to `now`, both Unix seconds, never negative.
-pub(crate) fn since(then: i64, now: i64) -> u64 {
-    u64::try_from(now.saturating_sub(then)).unwrap_or(0)
-}
-
 #[cfg(test)]
 mod tests;

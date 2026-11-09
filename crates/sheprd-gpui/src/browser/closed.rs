@@ -258,10 +258,7 @@ impl Store {
     /// when the workspace already has one open.
     pub(crate) fn reopen_page(&mut self, tab: Tab) -> Option<TabId> {
         if let Some(existing) = match &tab.location {
-            Some(Location::Orchestrator { .. }) => self
-                .in_workspace(&tab.scope, &tab.workspace_id)
-                .find(|open| matches!(open.location, Some(Location::Orchestrator { .. })))
-                .map(|open| open.id),
+            Some(Location::RetiredOrchestrator { .. }) => return None,
             Some(Location::Devices) => self
                 .in_workspace(&tab.scope, &tab.workspace_id)
                 .find(|open| matches!(open.location, Some(Location::Devices)))
@@ -373,7 +370,6 @@ impl SheprdWindow {
                     self.show_flash(Flash::warning(fl!("browser-too-many-tabs")), cx);
                     return;
                 };
-                self.poll_orchestrators(window, cx);
                 self.poll_devices_overview(cx);
                 match self.ensure_layout().map(|layout| layout.active()) {
                     Some(group) => self.move_tab_to_group(Pick::Page(id), group, window, cx),

@@ -20,7 +20,7 @@ fn drawn(handle: WindowHandle<SheprdWindow>, cx: &mut TestAppContext) -> (bool, 
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     (
         cx.debug_bounds("activity-bar").is_some(),
-        cx.debug_bounds("activity-section").is_some(),
+        cx.debug_bounds("overview").is_some(),
         cx.debug_bounds("sidebar").is_some(),
     )
 }
@@ -28,14 +28,14 @@ fn drawn(handle: WindowHandle<SheprdWindow>, cx: &mut TestAppContext) -> (bool, 
 #[gpui::test]
 fn the_switch_hides_and_restores_the_bar_in_every_main_window(cx: &mut TestAppContext) {
     let workspaces = main_window(cx);
-    let pull_requests = main_window(cx);
-    pull_requests
+    let overview = main_window(cx);
+    overview
         .update(cx, |view, _, _| {
-            view.activity.pick(ActivityPanel::PullRequests);
+            view.activity.pick(ActivityPanel::Overview);
         })
         .unwrap();
     assert_eq!(drawn(workspaces, cx), (true, false, true));
-    assert_eq!(drawn(pull_requests, cx), (true, true, false));
+    assert_eq!(drawn(overview, cx), (true, true, false));
 
     let edits = Arc::new(Mutex::new(Vec::new()));
     // What the file holds, so the reload after each save reads the write back.
@@ -76,9 +76,9 @@ fn the_switch_hides_and_restores_the_bar_in_every_main_window(cx: &mut TestAppCo
         edits.lock().unwrap().pop(),
         Some(Preference::SidebarActivityBar(false))
     );
-    // Both bars go, and the Pull requests window shows its terminals again.
+    // Both bars go, and the Overview window shows its terminals again.
     assert_eq!(drawn(workspaces, cx), (false, false, true));
-    assert_eq!(drawn(pull_requests, cx), (false, false, true));
+    assert_eq!(drawn(overview, cx), (false, false, true));
 
     toggle(cx);
     assert_eq!(
@@ -87,5 +87,5 @@ fn the_switch_hides_and_restores_the_bar_in_every_main_window(cx: &mut TestAppCo
     );
     // The section picked before comes back with the bar.
     assert_eq!(drawn(workspaces, cx), (true, false, true));
-    assert_eq!(drawn(pull_requests, cx), (true, true, false));
+    assert_eq!(drawn(overview, cx), (true, true, false));
 }

@@ -393,7 +393,7 @@ impl Store {
                 && !matches!(
                     tab.location,
                     Some(
-                        Location::Orchestrator { .. }
+                        Location::RetiredOrchestrator { .. }
                             | Location::RetiredSource { .. }
                             | Location::RetiredReview { .. }
                     )

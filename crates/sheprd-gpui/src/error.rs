@@ -62,8 +62,6 @@ pub enum Error {
     DeletionLookup,
     #[error(transparent)]
     Devices(#[from] crate::menu::devices::Error),
-    #[error(transparent)]
-    Dispatch(#[from] crate::dispatch::Error),
     #[error("Enter a tab name.")]
     EmptyTabName,
     #[error("Workspace label must not be empty.")]
@@ -175,8 +173,6 @@ pub enum Error {
     NotificationMutes(#[from] crate::notification_mutes::Error),
     #[error("The current directory is not in a Git checkout.")]
     NotInCheckout,
-    #[error(transparent)]
-    Orchestrator(#[from] crate::orchestrator::Error),
     #[error(transparent)]
     Overview(#[from] crate::overview::Error),
     #[cfg(target_os = "macos")]

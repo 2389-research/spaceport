@@ -20,7 +20,6 @@ menu-page-forward-port = Forward port
 menu-page-git = Git
 menu-page-commit = Commit
 menu-page-github-account = GitHub account
-menu-page-gitlab-tokens = GitLab tokens
 menu-page-tab-actions = Tab actions
 menu-page-device = Device
 menu-page-keyboard-shortcuts = Keyboard shortcuts

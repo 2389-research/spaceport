@@ -13,7 +13,6 @@ impl SheprdWindow {
             && !self.config.gpu_sampled()
             && !self.devices_overview_open()
             && !self.overview_shown()
-            && !self.orchestrator_sampling
         {
             return self.system_load.poll(Vec::new(), false);
         }

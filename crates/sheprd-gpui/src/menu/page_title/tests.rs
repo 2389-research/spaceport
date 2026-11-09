@@ -45,7 +45,6 @@ fn every_page_title_is_a_message_under_en_xa() {
             Page::Git,
             Page::GitCommit,
             Page::GitHub,
-            Page::GitLab,
             Page::Group,
             Page::Host,
             Page::Keybinds,

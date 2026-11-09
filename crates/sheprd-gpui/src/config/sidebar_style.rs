@@ -127,7 +127,7 @@ impl ChangeCounts {
 #[derive(Clone, Debug, PartialEq)]
 pub struct SidebarStyle {
     /// `activity_bar`: the icon column that picks what the window shows:
-    /// the sidebar and terminals, or an orchestrator section. On unless
+    /// the sidebar and terminals, or a retained section. On unless
     /// turned off.
     pub activity_bar: bool,
     /// `automations`: show the unavailable Automation activity page.

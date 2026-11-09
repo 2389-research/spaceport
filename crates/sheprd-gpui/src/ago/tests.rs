@@ -20,13 +20,6 @@ fn reads_in_the_largest_whole_unit() {
 }
 
 #[test]
-fn a_clock_ahead_reads_as_now() {
-    assert_eq!(since(130, 100), 0);
-    assert_eq!(since(0, 125), 125);
-    assert_eq!(message(since(100, 0)), ("ago-now", None));
-}
-
-#[test]
 fn the_window_isolates_the_count_and_translates_every_unit() {
     i18n::show(&Locale::FALLBACK);
     assert_eq!(text(120), "\u{2068}2\u{2069} min ago");

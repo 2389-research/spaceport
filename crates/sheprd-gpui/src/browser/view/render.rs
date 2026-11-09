@@ -48,7 +48,7 @@ impl SheprdWindow {
                 let id = tab.id;
                 // Device tabs use their own marks rather than a page favicon.
                 let icon = match &tab.location {
-                    Some(Location::Orchestrator { .. }) => "icons/pulse.svg",
+                    Some(Location::RetiredOrchestrator { .. }) => "icons/pulse.svg",
                     Some(Location::Devices) => "icons/devices.svg",
                     Some(Location::CoreTerminal { .. }) => "icons/terminal.svg",
                     _ => GLOBE,

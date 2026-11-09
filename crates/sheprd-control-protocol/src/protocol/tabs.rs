@@ -1,4 +1,4 @@
-//! The app's own tabs: pages, the orchestrator, and the
+//! The app's own tabs: pages and the
 //! Devices overview, which Herdr does not know about.
 use serde::{Deserialize, Serialize};
 
@@ -83,7 +83,6 @@ impl TabKind {
             Self::Blank => "blank",
             Self::Web => "web",
             Self::File => "file",
-            Self::Orchestrator => "orchestrator",
             Self::Devices => "devices",
             Self::CoreTerminal => "core_terminal",
         }
@@ -101,7 +100,6 @@ pub enum TabKind {
     Blank,
     Web,
     File,
-    Orchestrator,
     Devices,
     /// A herdr-core (Herdr 2) terminal the app draws.
     CoreTerminal,

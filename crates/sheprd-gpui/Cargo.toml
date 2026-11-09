@@ -37,7 +37,6 @@ sheprd-credentials.workspace    = true
 sheprd-diagnostics.workspace    = true
 sheprd-github.workspace         = true
 sheprd-i18n.workspace           = true
-sheprd-orchestrator.workspace   = true
 sheprd-remote.workspace         = true
 sheprd-updater.workspace        = true
 sheprd-usage.workspace          = true
@@ -87,7 +86,6 @@ sheprd-remote = { features = ["test-support"], workspace = true }
 sheprd-control-protocol = { features = ["test-support"], workspace = true }
 sheprd-diagnostics = { features = ["test-support"], workspace = true }
 sheprd-github = { features = ["test-support"], workspace = true }
-sheprd-orchestrator = { features = ["test-support"], workspace = true }
 sheprd-usage = { features = ["test-support"], workspace = true }
 sheprd-vcs = { features = ["test-support"], workspace = true }
 socket2.workspace = true

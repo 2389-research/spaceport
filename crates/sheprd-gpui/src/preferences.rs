@@ -298,13 +298,12 @@ fn read_chrome(path: &Path) -> crate::Result<Chrome> {
 /// Reading them changes only the in-memory choice, not the saved file.
 fn retained_activity_panel(name: &str) -> Option<crate::sidebar::ActivityPanel> {
     use crate::sidebar::ActivityPanel;
+    if matches!(name, "pull-requests" | "issues" | "tasks") {
+        return Some(ActivityPanel::Workspaces);
+    }
     ActivityPanel::parse(name).map(|panel| match panel {
         ActivityPanel::Workspaces | ActivityPanel::Usage => panel,
-        ActivityPanel::Overview
-        | ActivityPanel::PullRequests
-        | ActivityPanel::Issues
-        | ActivityPanel::Tasks
-        | ActivityPanel::Automations => ActivityPanel::Workspaces,
+        ActivityPanel::Overview | ActivityPanel::Automations => ActivityPanel::Workspaces,
     })
 }
 

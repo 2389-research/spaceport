@@ -23,7 +23,5 @@ browser-page-loading = Loading…
 # Tab titles. A new tab has no address yet.
 browser-tab-new = New Tab
 # A review of a checkout's changes. $branch is its branch.
-# An orchestrator tab. $repo is a repository's name.
-browser-tab-orchestrator = Orchestrator · { $repo }
 browser-tab-devices = Devices
 browser-tab-terminal = Terminal

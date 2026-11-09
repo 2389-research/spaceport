@@ -2,8 +2,7 @@
 //! what the window shows. Workspaces is the sidebar beside the terminals, as
 //! it was; every other section takes the window's body, keeping the bar,
 //! title bar, and status bar: Overview what needs the user on every host
-//! (`crate::overview`), Orchestrator, Pull requests, and Issues the focused
-//! workspace's orchestrator on that list (see `orchestrator::section`),
+//! (`crate::overview`),
 //! Automations the unavailable job feed (`crate::automations`),
 //! and Usage the plan limits of every host (`crate::usage::section`).
 //! `[sidebar] activity_bar = false` turns the bar off, and `[sidebar]
@@ -15,14 +14,11 @@ use super::{SidebarMode, agents::Indicators, line_height};
 use crate::direction::Logical;
 use crate::fonts::StyledFont;
 use crate::i18n::fl;
-use crate::{
-    Command, SheprdWindow,
-    orchestrator::{List, OrchestratorView, ViewId},
-};
+use crate::{Command, SheprdWindow};
 use chrono::{DateTime, Utc};
 use gpui::{prelude::*, *};
 pub use sheprd_control_protocol::ActivityPanel;
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 mod counts;
 
@@ -47,9 +43,6 @@ fn label(panel: ActivityPanel) -> SharedString {
     match panel {
         ActivityPanel::Overview => fl!("sidebar-activity-overview"),
         ActivityPanel::Workspaces => fl!("sidebar-activity-workspaces"),
-        ActivityPanel::PullRequests => fl!("sidebar-activity-pull-requests"),
-        ActivityPanel::Issues => fl!("sidebar-activity-issues"),
-        ActivityPanel::Tasks => fl!("sidebar-activity-tasks"),
         ActivityPanel::Automations => fl!("sidebar-activity-automations"),
         ActivityPanel::Usage => fl!("sidebar-activity-usage"),
     }
@@ -60,16 +53,12 @@ fn icon(panel: ActivityPanel) -> &'static str {
     match panel {
         ActivityPanel::Overview => "icons/pulse.svg",
         ActivityPanel::Workspaces => "icons/terminal.svg",
-        ActivityPanel::PullRequests => "icons/pull-request.svg",
-        ActivityPanel::Issues => "icons/issue.svg",
-        ActivityPanel::Tasks => "icons/beads.svg",
         ActivityPanel::Automations => "icons/automations.svg",
         ActivityPanel::Usage => "icons/chart.svg",
     }
 }
 
-/// The window's bar: the section it shows, and the orchestrator view a
-/// section shows.
+/// The window's bar and the section it shows.
 #[derive(Debug, Default)]
 pub(crate) struct Activity {
     pub(crate) panel: ActivityPanel,
@@ -78,23 +67,12 @@ pub(crate) struct Activity {
     /// When each section was last open, so its count shows in the accent
     /// only for what changed since.
     last_opened: HashMap<ActivityPanel, DateTime<Utc>>,
-    /// The orchestrator view the shown section draws.
-    pub(crate) section_view: Option<ViewId>,
-    /// The list last picked on that tab's view, so the user's own choice of
-    /// list there stands until another section is picked.
-    pub(crate) section_list: Option<List>,
     /// The section the window left for a pane it opened, which Back
     /// returns to before walking the focus trail.
     pub(crate) return_to: Option<ActivityPanel>,
-    /// Whether a listed project has Beads, so the bar offers Tasks.
-    pub(crate) tasks_listed: bool,
     /// What holds the keyboard while Overview or Usage is shown, so typing
     /// never reaches a terminal the section hides.
     pub(crate) section_focus: Option<FocusHandle>,
-    /// Each orchestrator view's lists and live agents as last counted, by
-    /// identity, so a new snapshot or a live status change redraws the bar
-    /// and nothing else does.
-    sources: Vec<(ViewId, [usize; 3])>,
 }
 
 impl Activity {
@@ -110,7 +88,6 @@ impl Activity {
         self.opened(panel, now);
         self.panel = panel;
         self.picked = true;
-        self.section_list = None;
         true
     }
 
@@ -161,34 +138,6 @@ impl Activity {
         }
         self.last_opened != *last_opened
     }
-
-    /// Records the views' lists; whether they changed since last time.
-    pub(crate) fn observe_sources(
-        &mut self,
-        views: &[(ViewId, Entity<OrchestratorView>)],
-        cx: &App,
-    ) -> bool {
-        let mut sources: Vec<_> = views
-            .iter()
-            .map(|(id, view)| {
-                let view = view.read(cx);
-                (
-                    *id,
-                    [
-                        usize::try_from(view.revision()).unwrap_or(usize::MAX),
-                        Arc::as_ptr(view.live()) as usize,
-                        0,
-                    ],
-                )
-            })
-            .collect();
-        sources.sort_unstable();
-        if sources == self.sources {
-            return false;
-        }
-        self.sources = sources;
-        true
-    }
 }
 
 impl SheprdWindow {
@@ -198,12 +147,10 @@ impl SheprdWindow {
     }
 
     /// Whether the bar lists `panel`. A section turned off in the settings
-    /// is not listed, and a window left on it shows Workspaces. Tasks is
-    /// listed while a project uses Beads.
+    /// is not listed, and a window left on it shows Workspaces.
     pub(crate) fn activity_panel_listed(&self, panel: ActivityPanel) -> bool {
         match panel {
             ActivityPanel::Automations => self.config.sidebar_style.automations,
-            ActivityPanel::Tasks => self.activity.tasks_listed,
             _ => true,
         }
     }
@@ -275,7 +222,7 @@ impl SheprdWindow {
     }
 
     /// Shows `panel`, whatever was shown before: Workspaces with its sidebar
-    /// expanded, a section with its orchestrator holding the keyboard.
+    /// expanded, a section with its own keyboard focus.
     pub(crate) fn show_activity_panel(
         &mut self,
         panel: ActivityPanel,
@@ -293,9 +240,8 @@ impl SheprdWindow {
         if self.activity.pick(panel) {
             self.save_chrome();
         }
-        self.sync_activity_section(cx);
         match self.activity_section() {
-            Some(ActivityPanel::Overview | ActivityPanel::Automations | ActivityPanel::Usage) => {
+            Some(_) => {
                 let focus = self
                     .activity
                     .section_focus
@@ -303,7 +249,6 @@ impl SheprdWindow {
                     .clone();
                 window.focus(&focus, cx);
             }
-            Some(_) => self.focus_activity_section(window, cx),
             None => {}
         }
         cx.notify();
@@ -316,9 +261,6 @@ impl SheprdWindow {
             ActivityPanel::Overview => self.render_overview(cx),
             ActivityPanel::Automations => self.render_automations_section(cx),
             ActivityPanel::Usage => self.render_usage_section(cx),
-            ActivityPanel::PullRequests | ActivityPanel::Issues | ActivityPanel::Tasks => {
-                return self.render_orchestrator_section();
-            }
         };
         let focus = self.activity.section_focus.clone();
         Some(
@@ -385,7 +327,7 @@ impl SheprdWindow {
 
     fn render_activity_bar(&self, cx: &mut Context<Self>) -> Stateful<Div> {
         let theme = &self.theme;
-        let counts = self.activity_counts(cx);
+        let counts = self.activity_counts();
         let bar = div()
             .id("activity-bar")
             .debug_selector(|| "activity-bar".into())
@@ -693,9 +635,6 @@ fn panel_selector(panel: ActivityPanel) -> &'static str {
     match panel {
         ActivityPanel::Overview => "activity-overview",
         ActivityPanel::Workspaces => "activity-workspaces",
-        ActivityPanel::PullRequests => "activity-pull-requests",
-        ActivityPanel::Issues => "activity-issues",
-        ActivityPanel::Tasks => "activity-tasks",
         ActivityPanel::Automations => "activity-automations",
         ActivityPanel::Usage => "activity-usage",
     }

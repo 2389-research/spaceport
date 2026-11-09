@@ -9,7 +9,6 @@ mod colors;
 pub(crate) mod devices;
 mod git;
 mod github;
-pub(crate) mod gitlab;
 mod mute;
 mod open_checkout;
 mod open_link;

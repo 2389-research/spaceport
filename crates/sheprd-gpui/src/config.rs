@@ -79,7 +79,6 @@ pub use option_as_alt::{OptionAsAlt, OptionKeys};
 pub use padding::Padding;
 pub(crate) use padding::{Axis, MAX_PADDING, Side, Sides};
 use serde::Deserialize;
-pub use sheprd_orchestrator::gitlab::Config as GitLabConfig;
 pub(crate) use sidebar::{
     AgentLayout, AgentToken, Rows, SidebarLayout, SpaceLayout, SpaceToken, TokenStyle,
 };
@@ -151,8 +150,6 @@ pub struct Config {
     /// Focus the split terminal pane under the pointer without clicking.
     pub focus_follows_mouse: bool,
     pub github: GitHubConfig,
-    /// Where GitLab tokens pasted in the account menu are saved.
-    pub gitlab: GitLabConfig,
     /// New tabs run in herdr-core (Herdr 2) rather than Herdr 1, for their
     /// native panes. Off by default while Herdr 1 holds the user's sessions;
     /// without Herdr 1 installed, terminals are Herdr 2's anyway.
@@ -288,7 +285,6 @@ impl Default for Config {
             features: Features::default(),
             focus_follows_mouse: true,
             github: GitHubConfig::default(),
-            gitlab: GitLabConfig::default(),
             herdr_2_terminals: false,
             icon_font_missing: false,
             keep_selection_after_copy: true,
@@ -363,7 +359,6 @@ struct Settings {
     features: Features,
     focus_follows_mouse: Option<bool>,
     github: GitHubConfig,
-    gitlab: GitLabConfig,
     herdr_2_terminals: Option<bool>,
     keep_selection_after_copy: Option<bool>,
     keybindings: BTreeMap<String, Binding>,
@@ -648,7 +643,6 @@ impl Config {
         settings.github.client_id_with_override(None)?;
         settings.github.check_accounts()?;
         config.github = settings.github;
-        config.gitlab = settings.gitlab;
         settings.chat.check()?;
         config.chat = settings.chat;
         config.favorite_themes = settings.favorite_themes;

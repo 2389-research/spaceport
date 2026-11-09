@@ -65,10 +65,10 @@ pub(crate) enum Location {
     RetiredReview {
         checkout: RetiredReviewCheckout,
     },
-    /// A repository's issues, pull requests, and agent runs, drawn by the
-    /// app, never a page.
-    Orchestrator {
-        repo: OrchestratorRepo,
+    /// Accepted only while reading an old tab file; the store discards it.
+    #[serde(rename = "orchestrator")]
+    RetiredOrchestrator {
+        repo: RetiredOrchestratorRepo,
     },
     /// Accepted only while reading an old tab file; the store discards it.
     #[serde(rename = "code")]
@@ -121,12 +121,10 @@ impl TryFrom<SavedSourceFile> for RetiredSourceFile {
     }
 }
 
-/// The checkout an orchestrator view lists the repository of, on the view's
-/// endpoint, which may be an SSH host. Tabs saved by earlier builds carry
-/// one, so it is checked again whenever it is read.
+/// The checkout saved by an old Orchestrator tab, validated before discard.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "SavedOrchestratorRepo")]
-pub(crate) struct OrchestratorRepo {
+pub(crate) struct RetiredOrchestratorRepo {
     pub(crate) checkout: String,
 }
 
@@ -135,35 +133,26 @@ struct SavedOrchestratorRepo {
     checkout: String,
 }
 
-impl TryFrom<SavedOrchestratorRepo> for OrchestratorRepo {
-    type Error = crate::orchestrator::Error;
+impl TryFrom<SavedOrchestratorRepo> for RetiredOrchestratorRepo {
+    type Error = crate::Error;
 
-    fn try_from(saved: SavedOrchestratorRepo) -> crate::orchestrator::Result<Self> {
+    fn try_from(saved: SavedOrchestratorRepo) -> crate::Result<Self> {
         Self::new(saved.checkout)
     }
 }
 
-impl OrchestratorRepo {
+impl RetiredOrchestratorRepo {
     /// An absolute, bounded path without control characters; a remote one
     /// is a POSIX path whatever this machine's own convention.
-    pub(crate) fn new(checkout: String) -> crate::orchestrator::Result<Self> {
+    pub(crate) fn new(checkout: String) -> crate::Result<Self> {
         let valid = !checkout.is_empty()
             && checkout.len() <= 4096
             && !checkout.chars().any(char::is_control)
             && (checkout.starts_with('/') || Path::new(&checkout).is_absolute());
         if !valid {
-            return Err(crate::orchestrator::Error::InvalidCheckout);
+            return Err(crate::Error::InvalidBrowserTabs);
         }
         Ok(Self { checkout })
-    }
-
-    /// The checkout's folder name, for the tab title.
-    pub(crate) fn name(&self) -> &str {
-        self.checkout
-            .trim_end_matches(['/', '\\'])
-            .rsplit(['/', '\\'])
-            .next()
-            .unwrap_or(&self.checkout)
     }
 }
 
@@ -223,7 +212,7 @@ impl Location {
             Self::Local { file } => file.page_url(),
             Self::RetiredReview { .. }
             | Self::RetiredSource { .. }
-            | Self::Orchestrator { .. }
+            | Self::RetiredOrchestrator { .. }
             | Self::Devices
             | Self::CoreTerminal { .. } => "about:blank".to_owned(),
         }
@@ -235,7 +224,7 @@ impl Location {
             self,
             Self::RetiredReview { .. }
                 | Self::RetiredSource { .. }
-                | Self::Orchestrator { .. }
+                | Self::RetiredOrchestrator { .. }
                 | Self::Devices
                 | Self::CoreTerminal { .. }
         )
@@ -249,7 +238,7 @@ impl Location {
             Self::RetiredReview { .. } => String::new(),
             Self::RetiredSource { .. } => String::new(),
             // i18n: data
-            Self::Orchestrator { repo } => format!("Orchestrator of {}", repo.name()),
+            Self::RetiredOrchestrator { .. } => String::new(),
             Self::Devices => "Devices overview".to_owned(), // i18n: data
             Self::CoreTerminal { panes, .. } => {
                 let terminals: Vec<String> =
@@ -269,7 +258,7 @@ impl Location {
             Self::RetiredReview { .. } => String::new(),
             Self::RetiredSource { .. } => String::new(),
             // i18n: data
-            Self::Orchestrator { repo } => format!("Orchestrator \u{00b7} {}", repo.name()),
+            Self::RetiredOrchestrator { .. } => String::new(),
             Self::Devices => "Devices".to_owned(), // i18n: data
             Self::CoreTerminal { .. } => "Terminal".to_owned(), // i18n: data
         }
@@ -279,9 +268,7 @@ impl Location {
     /// for a page or a file, which name themselves.
     pub(crate) fn drawn_title(&self) -> Option<String> {
         match self {
-            Self::Orchestrator { repo } => {
-                Some(fl!("browser-tab-orchestrator", repo = repo.name()))
-            }
+            Self::RetiredOrchestrator { .. } => None,
             Self::Devices => Some(fl!("browser-tab-devices")),
             Self::CoreTerminal { .. } => Some(fl!("browser-tab-terminal")),
             Self::Web { .. }

@@ -53,7 +53,6 @@ impl Page {
             Self::Git => fl!("menu-page-git"),
             Self::GitCommit => fl!("menu-page-commit"),
             Self::GitHub => fl!("menu-page-github-account"),
-            Self::GitLab => fl!("menu-page-gitlab-tokens"),
             Self::Group => fl!("menu-page-tab-actions"),
             Self::Host => fl!("menu-page-device"),
             Self::Keybinds => fl!("menu-page-keyboard-shortcuts"),

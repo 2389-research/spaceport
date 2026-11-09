@@ -341,7 +341,7 @@ impl Pages {
             Location::Web { .. }
             | Location::RetiredReview { .. }
             | Location::RetiredSource { .. }
-            | Location::Orchestrator { .. }
+            | Location::RetiredOrchestrator { .. }
             | Location::Devices
             | Location::CoreTerminal { .. } => None,
         };

@@ -404,12 +404,6 @@ pub(crate) fn run() -> std::process::ExitCode {
     } else {
         crate::palette::Frecency::default()
     };
-    // Nor with where the user's worktrees went.
-    let dispatch_history = if mode == LaunchMode::Normal {
-        crate::dispatch::History::load()
-    } else {
-        crate::dispatch::History::default()
-    };
     // Whether the launcher is installed is read once here, never while a window opens.
     let taskbar = crate::taskbar::Taskbar::load();
     gpui_platform::application()
@@ -426,7 +420,6 @@ pub(crate) fn run() -> std::process::ExitCode {
             overview_marks.install(cx);
             notification_mutes.install(cx);
             palette_frecency.install(cx);
-            dispatch_history.install(cx);
             agent_skill.install_global(cx);
             taskbar.install(cx);
             #[cfg(windows)]

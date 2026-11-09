@@ -13,7 +13,7 @@ fn ui_panel_shows_a_section_and_workspaces_expands_the_sidebar(cx: &mut gpui::Te
     let shown = cx.cx.update(|cx| {
         ui(
             call(UiOp::Panel {
-                panel: ActivityPanel::Issues,
+                panel: ActivityPanel::Overview,
             }),
             cx,
         )
@@ -21,7 +21,7 @@ fn ui_panel_shows_a_section_and_workspaces_expands_the_sidebar(cx: &mut gpui::Te
     assert!(matches!(shown, Response::Done { .. }), "{shown:?}");
     cx.cx.update(|cx| {
         let view = view.read(cx);
-        assert_eq!(view.activity.panel, ActivityPanel::Issues);
+        assert_eq!(view.activity.panel, ActivityPanel::Overview);
         assert!(view.activity_section().is_some());
     });
     // Workspaces brings the sidebar back expanded.
@@ -72,8 +72,6 @@ fn ui_panel_shows_the_overview_automations_and_usage_across_the_window(
             let view = view.read(cx);
             assert_eq!(view.activity.panel, panel);
             assert_eq!(view.activity_section(), Some(panel));
-            // Neither shows an orchestrator, so none is opened for it.
-            assert!(view.activity.section_view.is_none());
         });
     }
 }

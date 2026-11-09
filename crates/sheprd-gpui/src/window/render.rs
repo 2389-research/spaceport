@@ -729,7 +729,7 @@ impl Render for SheprdWindow {
                     if matches!(
                         tab.location,
                         Some(
-                            crate::browser::Location::Orchestrator { .. }
+                            crate::browser::Location::RetiredOrchestrator { .. }
                                 | crate::browser::Location::RetiredSource { .. }
                                 | crate::browser::Location::RetiredReview { .. }
                         )

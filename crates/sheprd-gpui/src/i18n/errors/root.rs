@@ -47,7 +47,6 @@ impl Localize for Error {
             Self::Daemon(error) => error.localize(),
             Self::DeletionLookup => fl!("error-deletion-lookup"),
             Self::Devices(error) => error.localize(),
-            Self::Dispatch(error) => error.localize(),
             Self::EmptyTabName => fl!("error-empty-tab-name"),
             Self::EmptyWorkspaceLabel => fl!("error-empty-workspace-label"),
             Self::FileDrop(error) => error.localize(),
@@ -109,7 +108,6 @@ impl Localize for Error {
             Self::NotConnected => fl!("error-not-connected"),
             Self::NotificationMutes(error) => error.localize(),
             Self::NotInCheckout => fl!("error-not-in-checkout"),
-            Self::Orchestrator(error) => error.localize(),
             Self::Overview(error) => error.localize(),
             #[cfg(target_os = "macos")]
             Self::PageStack => fl!("error-page-stack"),

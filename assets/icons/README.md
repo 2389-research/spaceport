@@ -103,14 +103,9 @@ regenerates these and the installer images. It needs Python and `rsvg-convert`
 `plus.svg`, `close.svg`, `pencil.svg`, `trash.svg`, `chevron-up.svg`,
 `chevron-down.svg`, `git-branch.svg`, `sessions.svg`, `file.svg`,
 `zoom.svg`, the `window-*.svg` controls, `pull-request.svg`,
-`issue.svg`, `beads.svg`, `user.svg`, `cpu.svg`, and `brain.svg` are original
+`user.svg`, `cpu.svg`, and `brain.svg` are original
 interface artwork.
 GPUI renders these as masks tinted by the current theme.
-
-`gitlab.svg` is GitLab's tanuki mark from
-[Simple Icons 15.0.0](https://github.com/simple-icons/simple-icons/blob/15.0.0/icons/gitlab.svg)
-(CC0-1.0), with its fill set to `currentColor` and its title removed. It
-identifies the service only and remains GitLab's trademark.
 
 `error.svg` and `pass.svg` are unchanged Codicons from Microsoft's
 vscode-codicons, under CC BY 4.0; `LICENSE-codicons` has the source revision,

@@ -11,8 +11,8 @@ fn orchestrator_tabs_saved_by_earlier_builds_are_dropped_on_load() {
         .open(
             scope,
             "w_1",
-            Some(Location::Orchestrator {
-                repo: crate::browser::OrchestratorRepo::new("/tmp/repo".into()).unwrap(),
+            Some(Location::RetiredOrchestrator {
+                repo: crate::browser::RetiredOrchestratorRepo::new("/tmp/repo".into()).unwrap(),
             }),
             None,
         )

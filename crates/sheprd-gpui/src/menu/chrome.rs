@@ -507,7 +507,6 @@ impl SheprdWindow {
                         | Page::Palette
                         | Page::AppUpdate
                         | Page::GitHub
-                        | Page::GitLab
                         | Page::AddDevice
                         | Page::AddWsl
                         | Page::Usage(_)
@@ -547,7 +546,7 @@ impl SheprdWindow {
                 panel.h(px(rail::HEIGHT * (font.size / 12.))
                     .min((viewport.height - px(32.)).max(px(0.))))
             })
-            .when(matches!(page, Page::GitHub | Page::GitLab), |panel| {
+            .when(page == Page::GitHub, |panel| {
                 panel
                     .w((viewport.width - px(32.)).max(px(0.)).min(px(400.)))
                     .flex()
@@ -658,8 +657,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_remove_wsl(cx));
         } else if page == Page::GitHub {
             panel = panel.child(self.render_github_auth(cx));
-        } else if page == Page::GitLab {
-            panel = panel.child(self.render_gitlab_page(cx));
         } else if page == Page::Workspace {
             // The PR card's text width: the panel's inset and border, and the
             // card's own margin, border, and padding.

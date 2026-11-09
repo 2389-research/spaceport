@@ -40,4 +40,10 @@ fn ui_panel_refuses_a_missing_or_unknown_panel() {
         parse(&["ui", "panel", "security"]),
         Err(CliError::InvalidValue(_))
     ));
+    for name in ["pull-requests", "issues", "tasks"] {
+        assert!(matches!(
+            parse(&["ui", "panel", name]),
+            Err(CliError::InvalidValue(_))
+        ));
+    }
 }

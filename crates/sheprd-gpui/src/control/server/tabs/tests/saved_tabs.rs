@@ -20,7 +20,7 @@ fn restored_tabs_keep_exact_cli_targets_and_reserve_retired_ids(cx: &mut gpui::T
         let retired = store.open(
             scope,
             "w0",
-            Some(Location::Orchestrator { repo: OrchestratorRepo::new("/src/old".into()).unwrap() }),
+            Some(Location::RetiredOrchestrator { repo: RetiredOrchestratorRepo::new("/src/old".into()).unwrap() }),
             None,
         ).unwrap();
         let bytes = serde_json::to_vec(&serde_json::json!({"tabs":store.tabs().collect::<Vec<_>>(),"next":0})).unwrap();

@@ -235,20 +235,10 @@ pub(crate) struct SheprdWindow {
     pub(crate) navigations: smoke::Navigations,
     /// The revision of the app-wide network reading this window last drew.
     pub(crate) network_quality_seen: u64,
-    /// The last orchestrator view id handed out.
-    pub(crate) next_orchestrator: u64,
     pub(crate) notes_width: crate::panel_resize::PanelWidth,
     /// Which notice cards had lines too long for their row when last laid out.
     pub(crate) notice_overflow: std::rc::Rc<config_diagnostic::Overflow>,
     pub(crate) options: ConnectOptions,
-    /// Orchestrator views' requests, acted on at the next tick.
-    pub(crate) orchestrator_events: Vec<(crate::orchestrator::ViewId, crate::orchestrator::Event)>,
-    pub(crate) orchestrator_live: crate::orchestrator::LiveCache,
-    /// Whether an orchestrator's dispatch dialog ranks hosts by their load.
-    pub(crate) orchestrator_sampling: bool,
-    /// The orchestrator views the sections made, by id.
-    pub(crate) orchestrators:
-        std::collections::HashMap<crate::orchestrator::ViewId, crate::orchestrator::Orchestrator>,
     /// The activity bar's Overview page.
     pub(crate) overview: crate::overview::Page,
     pub(crate) painter: std::rc::Rc<std::cell::RefCell<terminal_painter::TerminalPainter>>,
@@ -618,9 +608,6 @@ impl SheprdWindow {
             self.discard_composition(cx);
         }
         self.poll_github(window, cx);
-        if self.poll_gitlab_avatars() {
-            cx.notify();
-        }
         if self.update_workspace_pr() {
             cx.notify();
         }

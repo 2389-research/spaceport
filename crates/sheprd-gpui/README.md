@@ -1811,8 +1811,8 @@ endpoint.
 
 Spaceport no longer offers worktree Teleport in the workspace menu. It does
 not start a migration or read and write `teleported.json`; existing files stay
-untouched. The shared host scripts remain while pane carry, Orchestrator dispatch, and
-legacy rich-chat paths still use them. See the
+untouched. The shared host scripts remain while pane carry and legacy rich-chat paths
+still use them. See the
 [Spaceport removal evidence](../../docs/spaceport/evidence/t04-native-teleport-removal.md)
 for the exact remaining routes and open checks.
 
@@ -1820,9 +1820,8 @@ for the exact remaining routes and open checks.
 
 The legacy New workspace dialog no longer offers another host. It keeps its
 current local target while the Core presentation workspace create page uses
-its separate document route. Orchestrator still has a host-ranked dispatch
-dialog and history, and pane carry still uses host scripts; those excluded
-routes remain in the [dispatch removal evidence](../../docs/spaceport/evidence/t04-workspace-dispatch-removal.md).
+its separate document route. Pane carry still uses host scripts; that excluded route remains in the
+[dispatch removal evidence](../../docs/spaceport/evidence/t04-workspace-dispatch-removal.md).
 The desktop New worktree source and landing flow is gone; pane carry and Open
 worktree are separate remaining controls.
 
@@ -1830,8 +1829,8 @@ Spaceport does not load or write inherited `fan-outs.json`; its fan-out dialog,
 CLI command, host scripts and journal have been removed. Existing files remain
 where the older app saved them.
 
-The still-live Orchestrator route reads and writes `dispatch-history.json` in
-the state directory. Its remote actions remain separate removal work.
+Spaceport does not load or write inherited `dispatch-history.json`; older
+files remain where the earlier app saved them.
 
 ## Activity bar
 
@@ -1844,7 +1843,7 @@ window at once, and `spaceport ui panel NAME` shows a section.
 - **Workspaces** is the sidebar beside the terminals. Clicking it while shown
   folds the sidebar to its rail.
 - **Overview** shows what needs you on every connected host: agents waiting on
-  you and failed runs first, in a card of their own, then finished agents
+  you first, in a card of their own, then finished agents
   ready for review, working agents by host, and idle ones. Hovering a row
   offers **Snooze** (until a preset time), **Settle**, **Pin**, and **Open**;
   snoozed and settled rows fold away at the bottom and come back once their
@@ -1861,9 +1860,6 @@ window at once, and `spaceport ui panel NAME` shows a section.
   column beside the list shows each host's CPU, memory, agents, and ports;
   each host folds, and the column folds to a strip of load dots. The icon
   counts what needs you.
-- **Pull requests** and **Issues** list every repository the connected hosts'
-  workspaces hold (see [Orchestrator](#orchestrator)). Refresh spins while a
-  sync runs.
 - **Usage** shows every host's plan limits, one card per signed-in agent. Only
   the selected host is read; another host shows what was read while it was
   selected.
@@ -1871,159 +1867,10 @@ window at once, and `spaceport ui panel NAME` shows a section.
 When Overview or a section opens an agent's pane, the title bar's Back returns
 to it before walking back through panes.
 
-A section's icon shows its count in the accent color until the section is
-opened, then in a muted gray until something it counts changes again: an
-issue or pull request updated, an alert or report opened, or an agent coming
-to need you. When each section was last open is remembered per daemon between
+Overview's icon shows its agent count in the accent color until the section is
+opened, then in muted gray until another agent comes to need you. When each section was last open is remembered per daemon between
 runs. Agent states are timed from when this client first saw them, so after a
 restart an agent already waiting on you counts as new once.
-
-## Orchestrator
-
-The activity bar's **Pull requests**, **Issues**, and **Tasks** sections list,
-across the window, every repository the workspaces of every connected local or SSH host
-hold: their GitHub issues and pull requests or GitLab issues, their
-[Beads](https://github.com/steveyegge/beads) issues when a main checkout has a
-`.beads` folder, and the agent runs dispatched for them. Folders outside Git
-are quietly skipped unless they have a `.beads` folder; **Refresh** checks
-skipped folders again. Git and SSH discovery failures still show their errors.
-Opening a repository on an SSH host takes one connection, which also finds
-the agents installed there and its branches, and Beads reads in one more. The
-repositories on one SSH host share at most four connections to it at a
-time, so many of them stay under sshd's default `MaxStartups`; a connection
-the host drops before key exchange is tried once more a second later. While
-an SSH host cannot be reached, a project keeps what it last listed, with the
-error above it, and finds its repository again on the next sync or Refresh.
-Worktrees of one
-repository count once, and each repository syncs on its own, so up to 32 are
-listed. A row shows its project while several are listed. Under the search, a
-row of pills picks backends (GitHub, GitLab, Beads) and projects, each with its
-count; none picked lists all. The Issues row of a group's "…" menu or of a
-workspace's popover, and the Show Issues command
-open the Issues section narrowed to that workspace's project. A repository
-without a GitHub remote has no GitHub source; the header says "no GitHub
-remote" when none of them has one.
-
-- **Issues** lists open GitHub or GitLab issues and beads together, grouped by
-  priority. A bead's children sit under it. The **Filters** button unfolds a
-  column narrowing to items with a run, blocked ones, one source, or one
-  label; folded, the filters in use show as chips that clear them. Five sorts
-  are offered. Search matches every word you type across title, id, author,
-  labels, state, and body, case-insensitively unless a word has a capital, and
-  keeps a match's parents in view. **Start agent** on a row opens the dispatch
-  dialog.
-- **Tasks** lists [Beads](https://github.com/steveyegge/beads) tasks alone,
-  across every project with a `.beads` folder, and shows on the bar only while
-  one is open. Each row has its project, status, assignee, and priority group,
-  and a lock while it is blocked. Besides the pills, **Filters** narrows by
-  status (which is also how closed tasks are listed), priority, and assignee.
-  A task's page shows who holds it, its acceptance criteria, and the tasks it
-  is tied to (parent, blockers, what it blocks, children), each opening its
-  own page, and **Open project** goes to the workspace holding it. Beads stays
-  the source of truth: tasks are read with `bd`, each sync (every minute while
-  the section shows, or on Refresh) picking up what `bd` or an agent changed.
-  Tasks are told apart by database and id, so projects with the same ids stay
-  separate. Worktrees of a repository, and projects whose `.beads/redirect`
-  names one `.beads` folder, list its tasks once. A project whose database
-  cannot be read shows its error and leaves the others listed. Creating and
-  editing tasks, and comments, are still done with `bd`.
-
-  **Start agent** claims the task with `bd update --claim` on its own host
-  first, so a task someone else holds starts nothing and the banner says who
-  holds it. The agent gets the task's id, description, and acceptance criteria,
-  with instructions to read its dependencies, follow the project's agent
-  instructions, keep its claim alive, and close it only with a summary and
-  validation evidence. A launch that fails gives back a claim it took, and
-  nothing ever marks a task finished for the agent. The task keeps its run,
-  whose page opens the agent's pane. Agents start on the database's own host,
-  so the dialog offers no other.
-- **Pull requests** is a table grouped by what each waits on: a review asked
-  of you, your own to fix (changes requested or failing checks), those ready to
-  merge, the rest, and recently closed or merged ones. Each row shows its
-  branch, author, review state, its checks as colored pills, diff size, its
-  run, and age. Review state, review requests, and checks are read from GitHub
-  after every sync and kept in memory only, never in the shared database.
-
-Runs have no list of their own: the [Overview](#activity-bar) shows the agents and
-failed runs that need you, and an item's **Agent** page shows its runs. Their
-status comes from Herdr's live view of each connected host.
-
-A click selects a row; Enter or a double-click opens its page in a pane beside
-the list, which keeps only the columns that fit. The pane's left edge drags to
-resize or close it, and × closes it. An issue's page shows its
-description as plain text with Markdown structure, its runs, and its details. A
-pull request's page also has its conversation, read as on GitHub: authors'
-avatars, Markdown comments, each review holding its inline threads with
-resolved ones folded, and a summary of verdicts on top; you can comment there.
-It also shows the checks, review decision, and merge state. Merge offers the methods the
-repository allows and names the head commit shown, so GitHub refuses it if the
-branch moved.
-
-**Dispatch agent** opens a dialog: a prompt, an agent installed on the
-selected destination host, an optional model (passed as `--model`), a branch
-(`agent/<number>-<slug>-<hash>` as agent-launcher names it, editable), and
-extra instructions. The new worktree is
-created from the main checkout's `HEAD` in the workspace's repository, and the
-agent starts in it with the prompt. Its tab and pane are explicitly named with
-the issue or PR identifier and title, so long-paste transport markers do not
-replace that task context. With more than one host connected, the
-dialog also ranks the hosts as [Smart Dispatch](#smart-dispatch) does; picking
-another one sets the repository up there the same way and starts the agent
-there, and its run card then acts on that host. A pull
-request's **Review with agent** does the same on an `agent/review-…` branch with a
-read-only prompt: the agent verifies the pull request, reads its diff, and
-reports findings without writing to GitHub. A run's card sends it messages, stops
-it, or removes its worktree; a bead's details can delete it with `bd`. Each of
-those asks first. Leaving the section leaves an already-started dispatch
-running; it does not remove the new worktree.
-
-The hash at the end of a branch name is the item's own, so the Orchestrator
-finds work without its database, such as on another machine: a Herdr workspace
-on an item's branch shows as that item's run, working or stopped by whether an
-agent is in it, and so does an `agent/…` branch in the repository that no
-workspace shows. These runs open their workspace but have no controls.
-
-Issues, pull requests with their reviews and checks, and runs are kept in a
-per-repository database in Sheprd's state directory, so a restart lists them
-at once and syncs after. The first time a repository opens, agent-launcher's
-database for it is copied in, with its runs. The tab uses agent-launcher's
-prompt profiles from `~/.config/agent-launcher/agents/<name>/prompt.md` (the
-built-in prompt when none is chosen). A review keeps its read-only prompt and
-adds the chosen profile after it. A profile whose first line is
-`review: replace` is sent instead of that prompt, followed by any extra
-instructions, and the dialog marks it "replaces built-in". Its read-only
-safeguards and the steps that verify the pull request are then gone, so the
-profile has to state its own. The line itself is never sent. Such a profile can
-also use `{{ pr_title }}`, `{{ pr_link }}`, `{{ pr_body }}`, `{{ pr_number }}`,
-`{{ pr_head_ref }}`, `{{ pr_head_sha }}`, `{{ pr_head_repository }}`,
-`{{ pr_base_ref }}`, and `{{ pr_base_sha }}`. A pull request's author picks
-its head branch, so a ref or repository name with anything beyond letters,
-digits, `-`, `_`, `/`, and `.` is withheld; prefer the SHAs in commands. GitHub is read as the account used
-for pull requests on that host. A GitLab remote, on gitlab.com or a
-self-managed host, lists its open issues (not yet its merge requests), read
-with the `GITLAB_TOKEN` or `GITLAB_ACCESS_TOKEN` the checkout's `.envrc` sets
-(loaded through direnv, for a checkout on this computer whose `.envrc` you
-allowed), else with your login shell's when `GITLAB_HOST` names that instance
-(gitlab.com by default), else with the account connected or the token pasted
-in the account menu, else
-with the GitLab CLI's sign-in (`glab auth login`), and sent only over HTTPS;
-public projects need none, and an `http://` remote is read without one. The
-account button at the top right of the title bar switches between GitHub and
-GitLab: the GitLab side lists each instance with where its token comes from
-and whom it signs in as. **Connect** signs in through GitLab in the browser
-with a one-time code, as GitHub's sign-in does (gitlab.com out of the box; a
-self-managed instance once `[gitlab] applications` names its OAuth
-application), and the page also checks a pasted personal access token (scope
-`read_api`) before saving it in the credential store. When GitLab needs a
-token, the button shows a dot and the source shows "sign in", which opens that
-page. A remote on an SSH host
-of its own, such as `git@gitlab-ssh.example.com:group/project.git` for an
-instance served at `gitlab.example.com`, is read from the instance whose
-`ssh_host` the GitLab CLI's config names it, at that instance's `api_host` and
-`api_protocol`, with its token (`glab config set ssh_host
-gitlab-ssh.example.com --host gitlab.example.com`). GitHub Enterprise is listed as not
-supported yet. The window button in the tab's header moves the view into
-a window of its own.
 
 ## Images
 
@@ -2936,16 +2783,6 @@ Ctrl+Shift+U is left unbound for
   upstream repository: its own branches are fetched from `upstream`, pull
   requests from the fork behind `origin` check out their real branch from
   `origin`, and other forks use the PR head ref fetched from `upstream`.
-  A GitLab project (its `origin` remote, else `upstream`, on a host named
-  "gitlab" or one glab knows as an instance) fills the issues tab with its 50
-  most recently updated open issues, and needs no GitHub account: without one,
-  the dialog looks for a GitLab remote as it opens and enables the issues tab
-  when it finds one. They are read with the token the Orchestrator reads that
-  instance with (an `.envrc`'s or the shell's `GITLAB_TOKEN`, an account
-  connected in the account menu, or glab's); a public project lists without
-  one. Picking an issue creates a new branch named after it, and the agent
-  context note says it is a GitLab issue. Merge requests are not listed, so the
-  PR tab stays faded for a GitLab project.
 - Open worktree... asynchronously lists the clicked parent's existing checkouts
   through `worktree.list`, including already-open and detached checkouts but
   excluding bare/prunable entries. Use Up/Down and Enter, the Open button, or
@@ -3056,7 +2893,7 @@ Ctrl+Shift+U is left unbound for
   (from visible memberships and GitHub App installations), or configured owners
   include the repository's owner, and with the device's account otherwise. This
   applies to sidebar PR badges, the New worktree pull request and issue lists, PR
-  checks, comments and merges, creating a pull request, and the orchestrator.
+  checks, comments and merges, and creating a pull request.
   Accounts are listed in `[github] accounts` with an `id` naming their credential
   entry (`github.com/account/<id>`, or `github-credentials-account-<id>`) and
   optional `owners`; **Remove account (D)** deletes the credential, then the entry.
@@ -3836,9 +3673,7 @@ The other windows are named the same way: Settings as a navigation list of
 sections (a tab list, the open page a tab panel named for it), each setting a
 group named by its title with its description as help text, and its switches,
 choices, buttons, and fields by name and state; Logs as its search field,
-buttons, a list of entries, the level menu, and its status line; Orchestrator
-as its buttons, filters (switches), and its rows by identifier, title, and
-state.
+buttons, a list of entries, the level menu, and its status line.
 
 Each button can be invoked from the screen reader. With a Windows contrast
 theme on (Settings > Accessibility > Contrast themes), the app's own marks and
@@ -3873,10 +3708,9 @@ Still missing, and not faked with labels that do nothing:
   results, themes, pull requests), most rows
   and buttons other than the shared field have no role yet, so a screen reader
   hears the dialog's name and its field but not every choice in it;
-- the Orchestrator's detail pane, conversation, and dispatch dialogs, and the
-  Settings controls built from arbitrary elements (font and color pickers)
+- Settings controls built from arbitrary elements (font and color pickers)
   are not named yet;
-- Settings, Logs, and Orchestrator have no region keys: there Tab follows
+- Settings and Logs have no region keys: there Tab follows
   GPUI's own order only where a control registers a tab stop;
 - when the app starts in the background (from a script rather than the Start
   menu), AccessKit can miss the first activation and report the window rather

@@ -120,12 +120,6 @@ impl SheprdWindow {
         }
     }
 
-    /// Whether this window reads and writes saved sign-ins. Headless windows
-    /// never touch them, so tests leave the user's keyring alone.
-    pub(crate) fn reads_credentials(&self) -> bool {
-        self.avatars.is_some()
-    }
-
     /// Start signing in the account the GitHub page shows.
     pub(crate) fn start_github(&mut self) {
         let config = &self.config;
@@ -749,7 +743,42 @@ impl SheprdWindow {
             .flex_col()
             .w_full()
             .min_h_0()
-            .child(self.render_account_tabs(super::Page::GitHub, cx))
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .flex_none()
+                    .gap(px(8.))
+                    .p(px(10.))
+                    .border_b_1()
+                    .border_color(rgb(theme.active))
+                    .child(
+                        crate::sidebar::github_mark(theme.foreground)
+                            .debug_selector(|| "github-mark".into())
+                            .size(px(20.)),
+                    )
+                    .child("GitHub")
+                    .child(div().flex_1())
+                    .child(
+                        div()
+                            .id("github-header-close")
+                            .debug_selector(|| "github-header-close".into())
+                            .role(Role::Button)
+                            .aria_label(fl!("github-menu-close"))
+                            .cursor_pointer()
+                            .px(px(8.))
+                            .py(px(4.))
+                            .rounded(px(crate::config::corners::CONTROL))
+                            .when(self.menu.github_selected == Some(Action::Close), |button| {
+                                button.bg(rgb(theme.active))
+                            })
+                            .hover(|style| style.bg(rgb(theme.active)))
+                            .child(crate::sidebar::label_text(&fl!("github-menu-close")))
+                            .on_click(
+                                cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)),
+                            ),
+                    ),
+            )
             .child(body)
             .when(has_footer, |panel| panel.child(footer))
     }
