@@ -121,7 +121,7 @@
       "sources": [
         "S09"
       ],
-      "constraint": "No automatic agent move/resume to preserve a view.",
+      "constraint": "Migration/Git preparation/dispatch/provisioning/session-copy engine removed after extracting existing host scripts, agent metadata and pane/process readers. No replacement manager or shim. Legacy chat conversion/restore ownership and native parity remain T06 gates. See evidence/t04-teleport-engine-removal.md.",
       "audit_status": "in_progress"
     },
     {
@@ -218,7 +218,7 @@
       "sources": [
         "S09"
       ],
-      "constraint": "Compiled provider fetch/probe/sign-in graph removed; passive metadata/report models and bounded port-inspection shell remain. Authoritative usage parity is still gated on G-OBS. Generic credentials-crate tail remains a separate extraction. See evidence/t04-provider-implementation-removal.md.",
+      "constraint": "Compiled provider fetch/probe/sign-in graph and unused credential-store tail removed. Passive metadata/report models and bounded port-inspection shell remain. Authoritative usage parity stays gated on G-OBS. See evidence/t04-provider-implementation-removal.md and evidence/t04-credential-store-tail-removal.md.",
       "audit_status": "in_progress"
     },
     {

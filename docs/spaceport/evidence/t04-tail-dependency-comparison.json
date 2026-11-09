@@ -1,0 +1,101 @@
+{
+  "base": "749a117a5",
+  "current_commit": "f76255c8258dac1593a5a71eeb0a1bcdef658f6c",
+  "package_count_before": 883,
+  "package_count_after": 876,
+  "removed_packages": [
+    {
+      "name": "filetime",
+      "version": "0.2.29"
+    },
+    {
+      "name": "secrecy",
+      "version": "0.10.3"
+    },
+    {
+      "name": "security-framework",
+      "version": "3.7.0"
+    },
+    {
+      "name": "security-framework-sys",
+      "version": "2.17.0"
+    },
+    {
+      "name": "sheprd-credentials",
+      "version": "0.1.0"
+    },
+    {
+      "name": "tar",
+      "version": "0.4.46"
+    },
+    {
+      "name": "xattr",
+      "version": "1.6.1"
+    }
+  ],
+  "added_packages": [],
+  "changed_packages": [],
+  "scope": "Locked all-target dependency inventory; not cross-platform compilation or runtime evidence.",
+  "all_feature_target_metadata": [
+    {
+      "target": "aarch64-apple-darwin",
+      "resolved_nodes": 587,
+      "remote_production_dependencies": [
+        "serde",
+        "sheprd-client",
+        "thiserror"
+      ],
+      "result": "metadata_resolved"
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "resolved_nodes": 591,
+      "remote_production_dependencies": [
+        "serde",
+        "sheprd-client",
+        "thiserror"
+      ],
+      "result": "metadata_resolved"
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu",
+      "resolved_nodes": 671,
+      "remote_production_dependencies": [
+        "serde",
+        "sheprd-client",
+        "thiserror"
+      ],
+      "result": "metadata_resolved"
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "resolved_nodes": 675,
+      "remote_production_dependencies": [
+        "serde",
+        "sheprd-client",
+        "thiserror"
+      ],
+      "result": "metadata_resolved"
+    },
+    {
+      "target": "aarch64-pc-windows-msvc",
+      "resolved_nodes": 563,
+      "remote_production_dependencies": [
+        "serde",
+        "sheprd-client",
+        "thiserror"
+      ],
+      "result": "metadata_resolved"
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "resolved_nodes": 566,
+      "remote_production_dependencies": [
+        "serde",
+        "sheprd-client",
+        "thiserror"
+      ],
+      "result": "metadata_resolved"
+    }
+  ]
+}

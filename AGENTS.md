@@ -52,12 +52,10 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-control-protocol` | The control socket between `spaceport <command>` and the running app: request and response types, bounds, and the Unix socket or named pipe; no GPUI |
 | `crates/sheprd-commands` | The command catalog: each command's name, default shortcuts per platform, and the daemon request it becomes against a snapshot; no GPUI (the app binds the keys and runs window commands) |
 | `crates/sheprd-usage` | Passive usage report models and display metadata, plus the bounded shell helper retained by port scanning; no provider probes, sign-in configuration, credential/cookie readers, fetch worker or GPUI |
-| `crates/sheprd-remote` | Machines beyond this computer's daemon: the cloud providers (one feature each), their config tables and saved devices, running scripts on any host, and Teleport's core; no GPUI (the app runs its jobs and draws its views) |
-| `crates/sheprd-remote-control` | Remote control from a phone. With the `server` feature, the `sheprd-remote-control` daemon: HTTPS with its own CA, dual-approval pairing, Web Push, and chats and terminal tabs through Herdr's API socket. Without it, what Sheprd uses: the daemon's control protocol, the `[remote]` config table, the user service install, and the pairing state; no GPUI, and no Tokio without `server` |
-| `crates/sheprd-nearby` | `sheprd-nearby` on Linux and Windows: Sheprd's Bluetooth helper for nearby pairing and presence, BlueZ over `zbus` or WinRT's GATT server, speaking the macOS Swift helper's stdio protocol (`macos/sheprd-nearby`); no GPUI or Tokio |
+| `crates/sheprd-remote` | Existing bounded Herdr host scripts, agent-session validation/arguments and pane/process snapshot readers retained by chat and pane movement; no migration, provisioning, dispatch, credential store or GPUI |
 | `crates/sheprd-diagnostics` | The app's log file and crash reports: the bounded capture of the crates the app names, the writer thread and rotation, the reader the log window tails, the panic hook, and Windows minidumps; no GPUI |
 | `crates/sheprd-i18n` | The languages the app shows (`docs/i18n.md`): `Locale`, `Direction`, the `language` setting and its negotiation with an `en-US` fallback, the Fluent catalog, and the `en-XA`/`en-XB` pseudo-locales; no GPUI (the app embeds `crates/sheprd-gpui/locales`, keeps the current locale, and checks `fl!`) |
-| `crates/sheprd-launcher` | Windows-only windowed launcher that starts `sheprd.exe` without a console window; std plus `MessageBoxW` for start failures |
+| `crates/sheprd-launcher` | Windows-only windowed launcher that starts `spaceport.exe` without a console window; std plus `MessageBoxW` for start failures |
 | `crates/embed-resource` | No-op stand-in for GPUI's `embed-resource` build dependency, patched in so GPUI embeds no Windows manifest beside `crates/sheprd-gpui/windows.manifest`; not a production crate |
 | `crates/test-support/sandbox.rs` | Shared isolated process setup for opt-in integration tests; not a production crate |
 | `crates/test-support/pe.rs` | Windows executable (PE) reader for tests that check subsystem and resources; not a production crate |
@@ -138,10 +136,7 @@ agents in Herdr panes can use what only this client shows or keeps
   terminal tabs, panes, agents, scrollback), that the app cannot really do,
   or that skips a confirmation. Destructive or outward actions open the
   app's own dialog, pointed at the caller's checkout or the machines named,
-  and the user confirms there; a batch of them is confirmed once. The one
-  exception is `cloud exec`, a command on a cloud machine the user saved,
-  which is the agent's own work and asks nothing, as the agent's shell does
-  not.
+  and the user confirms there; a batch of them is confirmed once.
 - Keep the shared contract: `--json` and `--window` on every command, the
   exit-code table in `docs/cli.md`, bounded requests and responses, and
   targeting that refuses rather than acting in another session's window.

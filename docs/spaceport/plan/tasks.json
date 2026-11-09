@@ -362,7 +362,9 @@
         "evidence/t04-combined-ui-regressions.md",
         "evidence/t01-t04-pseudo-locale-fixtures.md",
         "evidence/integrated-removals-0fd548118.md",
-        "evidence/t04-provider-implementation-removal.md"
+        "evidence/t04-provider-implementation-removal.md",
+        "evidence/t04-teleport-engine-removal.md",
+        "evidence/t04-credential-store-tail-removal.md"
       ],
       "must_close_gaps": [
         "G-LINK"
@@ -454,7 +456,8 @@
       "status": "blocked",
       "evidence": [
         "evidence/external-core-dependencies.md",
-        "evidence/t06-local-adapter-route.md"
+        "evidence/t06-local-adapter-route.md",
+        "evidence/t04-teleport-engine-removal.md"
       ],
       "must_close_gaps": [
         "G-CHAT"
@@ -662,7 +665,9 @@
         "evidence/t10-phone-fixtures.md",
         "evidence/t10-phone-wire.md",
         "evidence/t10-a31-native-inventory.md",
-        "evidence/t10-managed-skill-phone-claim.md"
+        "evidence/t10-managed-skill-phone-claim.md",
+        "evidence/t04-teleport-engine-removal.md",
+        "evidence/t04-credential-store-tail-removal.md"
       ],
       "must_close_gaps": []
     },
