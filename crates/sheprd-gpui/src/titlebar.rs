@@ -640,7 +640,5 @@ mod tests;
 #[cfg(test)]
 mod git_button_tests;
 #[cfg(test)]
-mod git_command_tests;
-
 #[cfg(all(test, target_os = "macos"))]
 mod native_chrome_tests;

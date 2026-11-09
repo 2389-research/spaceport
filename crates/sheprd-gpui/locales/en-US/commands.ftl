@@ -32,7 +32,6 @@ commands-focus-tab = Focus Tab { $number }
 commands-focus-up = Focus Up
 commands-focus-workspace = Focus Workspace { $number }
 commands-forward = Forward
-commands-git-menu = Git Menu
 commands-increase-font-size = Increase Font Size
 commands-install-browser-skill = Install Browser Skill for Agents
 commands-keybindings = Keyboard Shortcuts

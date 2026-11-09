@@ -1,6 +1,7 @@
 use super::*;
 
 mod browser_page;
+mod removed_git;
 mod removed_orchestrator;
 mod retired_ide;
 
@@ -124,7 +125,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (Reconnect, &[]),
         (Quit, &["cmd-q"]),
         (About, &[]),
-        (GitMenu, &[]),
         (ToggleAnnotate, &[]),
         (InstallBrowserSkill, &[]),
         (SplitEditor, &["cmd-\\"]),
@@ -228,7 +228,6 @@ fn gui_commands_never_send_daemon_requests() {
         Command::NextAgent,
         Command::AgentNumber(1),
         Command::ReloadConfig,
-        Command::GitMenu,
         Command::ToggleAnnotate,
     ] {
         assert!(request(command, &s).is_none(), "{command:?}");

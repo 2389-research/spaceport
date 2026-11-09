@@ -302,6 +302,7 @@
         "evidence/t04-security-section-removal.md",
         "evidence/t04-github-account-pr-dependency.md",
         "evidence/t04-git-status-pr-dependency.md",
+        "evidence/t04-git-command-route-removal.md",
         "evidence/t04-worktree-source-landing-removal.md",
         "evidence/t04-fan-out-removal.md",
         "evidence/t04-workspace-dispatch-removal.md",

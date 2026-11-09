@@ -414,19 +414,6 @@ impl SheprdWindow {
                 self.reopen_closed_tab(window, cx);
                 return;
             }
-            Command::GitMenu => {
-                // Where the titlebar's Git button last painted, so the
-                // shortcut opens the menu where clicking the button does.
-                // Zen mode hides the button and leaves that point stale, so
-                // the menu drops from the top-right corner it sits near.
-                let anchor = if self.zen_active() {
-                    gpui::point(window.viewport_size().width - gpui::px(24.), gpui::px(24.))
-                } else {
-                    self.git_anchor.get()
-                };
-                self.open_git_menu(anchor, window, cx);
-                return;
-            }
             Command::ToggleAnnotate => {
                 #[cfg(any(target_os = "macos", windows))]
                 self.toggle_shown_annotating(window, cx);

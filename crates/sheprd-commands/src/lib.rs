@@ -79,8 +79,6 @@ pub enum Command {
     Logs,
     About,
     OpenNotificationTarget,
-    /// The titlebar's Git menu for the focused checkout.
-    GitMenu,
     /// Annotate mode on the page in view.
     ToggleAnnotate,
     InstallBrowserSkill,
@@ -664,11 +662,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-about",
     },
     CommandInfo {
-        command: Command::GitMenu,
-        name: "git_menu",
-        message: "commands-git-menu",
-    },
-    CommandInfo {
         command: Command::ToggleAnnotate,
         name: "toggle_annotate",
         message: "commands-toggle-annotate",
@@ -868,7 +861,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::Logs
         | Command::About
         | Command::OpenNotificationTarget
-        | Command::GitMenu
         | Command::ToggleAnnotate
         | Command::InstallBrowserSkill
         | Command::SplitEditor
