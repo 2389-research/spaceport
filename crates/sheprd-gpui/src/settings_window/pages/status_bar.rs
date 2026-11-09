@@ -1,5 +1,5 @@
 //! Status bar: a switch per item, and how compactly a shown item draws.
-//! Usage, CPU/memory and network quality keep their existing visibility keys,
+//! Usage and network quality keep their existing visibility keys,
 //! which also stop their sampling.
 // i18n: migrated
 use super::{SettingsWindow, on_value, ui};
@@ -51,9 +51,7 @@ impl SettingsWindow {
         let theme = &self.theme;
         let items = self.config.status_bar;
         let usage = self.config.usage.show;
-        let system_load = self.config.show_system_load;
         let network_quality = self.config.show_network_quality;
-        let gpu = self.config.show_gpu_load;
         let keep_awake = items.keep_awake;
         let buttons = [
             ButtonRow {
@@ -106,44 +104,6 @@ impl SettingsWindow {
                             }),
                         ),
                     ),
-            )
-            .child(
-                ui::row(
-                    theme,
-                    "status-system-load",
-                    fl!("settings-status-system-load"),
-                )
-                .description(fl!("settings-status-system-load-description"))
-                .control(self.detail_control(
-                    "status-system-load-detail",
-                    items.system_load,
-                    system_load,
-                    Edit::SystemLoad,
-                    cx,
-                ))
-                .switch(self.preference_toggle(
-                    "status-system-load-toggle",
-                    system_load,
-                    Preference::ShowSystemLoad(!system_load),
-                    cx,
-                )),
-            )
-            .child(
-                ui::row(theme, "status-gpu", fl!("settings-status-gpu"))
-                    .description(fl!("settings-status-bar-gpu-hint"))
-                    .control(self.detail_control(
-                        "status-gpu-detail",
-                        items.gpu_detail,
-                        gpu,
-                        Edit::GpuDetail,
-                        cx,
-                    ))
-                    .switch(self.preference_toggle(
-                        "status-gpu-toggle",
-                        gpu,
-                        Preference::ShowGpuLoad(!gpu),
-                        cx,
-                    )),
             )
             .child(
                 ui::row(

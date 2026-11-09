@@ -76,33 +76,6 @@ impl SheprdWindow {
         let endpoint_collapsed = endpoint.collapsed;
         let endpoint_label = endpoint.label.clone();
         let connected = endpoint.live.status.is_connected();
-        let host = crate::usage::Host::load_of(&endpoint.connection.target);
-        let reading = host.as_ref().and_then(|host| self.system_load.get(host));
-        let load = reading.filter(|_| self.config.show_system_load);
-        // Densities with detail lines give the load its own line;
-        // compact ones fit gauges between the name and the status, the
-        // GPU's among them when the sidebar shows it.
-        let load_line = load.filter(|_| layout.workspace_details());
-        let gpu_gauge = self.config.show_sidebar_gpu_load
-            && reading.is_some_and(|reading| {
-                reading
-                    .latest()
-                    .is_some_and(|sample| sample.gpu.is_some_and(|gpu| gpu.busy.is_some()))
-            });
-        let gauges = reading
-            .filter(|_| !layout.workspace_details())
-            .filter(|_| self.config.show_system_load || gpu_gauge)
-            .map(|reading| {
-                let (width, gauges) = crate::system_load::gauges(
-                    reading,
-                    theme,
-                    super::metrics::glyph_width(font),
-                    (font.size * 0.8).round(),
-                    self.config.show_system_load,
-                    self.config.show_sidebar_gpu_load,
-                );
-                (width, gauges, reading)
-            });
         // The Devices layout counts the agents listed under the header.
         let working = (!self.config.layout.mode.lists_workspaces())
             .then(|| self.working_summary(endpoint))
@@ -114,32 +87,13 @@ impl SheprdWindow {
         let muted =
             crate::notification_mutes::Mutes::any(cx).is_some_and(|mutes| mutes.host(&endpoint.id));
         let muted_size = (line_height(font) * 0.75).round();
-        // The removal pulse, the count, the mute mark, and the gauges take
+        // The removal pulse, the count and the mute mark take
         // their room from the label, not from the status.
         let label_width = (host_label_width
             - if removing { dot + host_gap } else { 0. }
             - if muted { muted_size + host_gap } else { 0. }
-            - working_width
-            - gauges.as_ref().map_or(0., |(width, ..)| width + host_gap))
-        .max(0.);
-        // A host with a GPU adds its own line under CPU and memory, in the
-        // densities that have detail lines.
-        let gpu_line = host
-            .as_ref()
-            .filter(|_| self.config.show_sidebar_gpu_load && layout.workspace_details())
-            .and_then(|host| {
-                let reading = self.system_load.get(host)?;
-                let line = crate::system_load::gpu_line(
-                    reading,
-                    theme,
-                    Some(super::metrics::glyph_width(font)),
-                    crate::config::status_bar::Detail::Detailed,
-                )?;
-                Some((line, reading, host.clone()))
-            });
-        let lines = 1.
-            + if load_line.is_some() { 1. } else { 0. }
-            + if gpu_line.is_some() { 1. } else { 0. };
+            - working_width)
+            .max(0.);
         // The layout decides whether headers have a mark; the setting turns it off.
         let origin = (self.config.show_device_icons && self.config.layout.mode.device_icons())
             .then(|| crate::endpoint::origin::Origin::of(&endpoint.connection.target));
@@ -171,7 +125,7 @@ impl SheprdWindow {
                     move |this, _, cx| this.toggle_device(&endpoint, cx),
                 )
             })
-            .h(px(lines * line_height(font)
+            .h(px(line_height(font)
                 + 2. * layout.host_padding()
                 + look.chrome_height()))
             .flex_none()
@@ -312,20 +266,6 @@ impl SheprdWindow {
                                 .child(text),
                         )
                     })
-                    .when_some(
-                        gauges.zip(host.clone()),
-                        |row, ((_, gauges, reading), host)| {
-                            row.child(
-                                div()
-                                    .id(SharedString::from(format!(
-                                        "{prefix}host-load-{endpoint_id}"
-                                    )))
-                                    .flex_none()
-                                    .child(gauges)
-                                    .tooltip(crate::system_load::tooltip(reading, &host, theme)),
-                            )
-                        },
-                    )
                     .when(muted, |row| {
                         row.child(
                             crate::icons::muted(theme, muted_size)
@@ -345,42 +285,6 @@ impl SheprdWindow {
                             })),
                     ),
             )
-            .when_some(load_line.zip(host), |row, (reading, host)| {
-                row.child(
-                    div()
-                        .id(SharedString::from(format!(
-                            "{prefix}host-load-{endpoint_id}"
-                        )))
-                        .h(px(line_height(font)))
-                        .row()
-                        .items_center()
-                        .ps(px(arrow_width + host_gap + icon_room))
-                        .overflow_hidden()
-                        .child(crate::system_load::line(
-                            reading,
-                            theme,
-                            Some(super::metrics::glyph_width(font)),
-                            crate::config::status_bar::Detail::Detailed,
-                        ))
-                        .tooltip(crate::system_load::tooltip(reading, &host, theme)),
-                )
-            })
-            .when_some(gpu_line, |row, (line, reading, host)| {
-                row.child(
-                    div()
-                        .id(SharedString::from(format!(
-                            "{prefix}host-gpu-{endpoint_id}"
-                        )))
-                        .debug_selector(|| format!("{prefix}host-gpu-{endpoint_id}"))
-                        .h(px(line_height(font)))
-                        .row()
-                        .items_center()
-                        .ps(px(arrow_width + host_gap + icon_room))
-                        .overflow_hidden()
-                        .child(line)
-                        .tooltip(crate::system_load::tooltip(reading, &host, theme)),
-                )
-            })
             .on_click(cx.listener(move |this, _, window, cx| {
                 this.select_endpoint(&select_id, cx);
                 window.focus(&this.focus, cx);

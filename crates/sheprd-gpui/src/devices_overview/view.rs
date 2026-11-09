@@ -220,11 +220,9 @@ impl SheprdWindow {
                                     .child(table::devices(
                                         &look,
                                         &shown,
-                                        &self.system_load,
                                         slot,
                                         id,
                                         &page.expanded,
-                                        self.config.gpu_sampled(),
                                         cx,
                                     )),
                             ),

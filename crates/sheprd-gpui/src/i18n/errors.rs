@@ -37,7 +37,6 @@ mod root;
 #[cfg(unix)]
 mod setup_relay;
 mod sound;
-mod system_load;
 #[cfg(test)]
 pub(crate) mod tests;
 mod updater;

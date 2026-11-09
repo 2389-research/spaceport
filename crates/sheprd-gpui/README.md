@@ -808,34 +808,6 @@ These switches affect GPUI only; they do not change
 the daemon or its plugins. Header text uses GPUI's standard truncation: character boundaries, with trailing
 space or punctuation trimmed before the ellipsis.
 
-The status bar shows the selected host's CPU and memory: a sparkline of recent
-CPU use and a memory meter, each with its current share, and cores, load
-averages, memory in gigabytes, free space on the volume holding the home
-directory, and uptime in its tooltip. With more than one host, each
-host row in the sidebar shows its own: right-aligned gauges after the name in
-compact layouts, and the sparkline and meter on a second line otherwise. This
-machine is read in process; each connected Linux or macOS remote host is read
-every two seconds over its own SSH shell, kept open while the host is connected
-(`/proc` on Linux; `vm_stat` and a one-second `iostat` on macOS; `df -Pk
-"$HOME"` on both, with `/proc/uptime` on Linux and `kern.boottime` on macOS).
-Other remote systems show it as unavailable. Set top-level `show_system_load = false`, or turn off **Show CPU
-and memory** in Settings, to hide it and stop sampling while no
-[Devices overview](#devices-overview) is open.
-
-GPU and video memory are off by default, with a setting each for the status
-bar and the sidebar. Top-level `show_gpu_load = true`, or **GPU and video
-memory** in Settings > Status bar, shows the selected host's in the status bar;
-`show_sidebar_gpu_load = true`, or **Show GPU and video memory** in Settings >
-Sidebar, shows each host's on a sidebar line under its CPU and memory (layouts
-with detail lines; compact ones add a GPU gauge after the host's name). While
-either is on, the Overview and Devices pages show GPU and VRAM too. `[status_bar]
-gpu_detail = "compact"` shows the shares without the graph and meter. NVIDIA
-cards are read with `nvidia-smi`, AMD cards from the `amdgpu` driver's sysfs
-files, and Apple GPUs with `ioreg`, which reports no video memory because it
-is shared; Intel GPUs report no usage without root and are left out. A remote
-host is probed in the same SSH step as its CPU and memory. While the settings
-are both off no GPU tool runs on any host.
-
 The coffee cup in the status bar keeps this machine's display on and stops it
 from sleeping when idle, for as long as the cup is full; click it again to let
 go. It is app-wide, so every window shows the same cup. macOS holds power
@@ -875,7 +847,7 @@ do not scan this machine. Set top-level `show_listening_ports = false`, or
 turn off **Show listening ports** in Settings, to hide them and stop scanning.
 
 Set top-level `show_network_quality = true` to show latency and packet loss
-from this machine in the status bar, after CPU and memory: `NET 31ms 0%`.
+from this machine in the status bar: `NET 31ms 0%`.
 A worker thread times one TCP connect to `1.1.1.1:443` every 15 seconds, in
 process and without ICMP, about a megabyte a day, so it suits a metered link
 such as a phone hotspot; no throughput test runs. Latency is the median of
@@ -1791,7 +1763,7 @@ window at once, and `spaceport ui panel NAME` shows a section.
   navigation require their original daemon session; after a restart or a
   session switch, stale workspace IDs are not reused. A shelf shows only when it
   holds something, and with nothing to list the page says what it is for. A
-  column beside the list shows each host's CPU, memory, agents, and ports;
+  column beside the list shows each host's agents, connectivity and ports;
   each host folds, and the column folds to a strip of load dots. The icon
   counts what needs you.
 - **Usage** shows every host's plan limits, one card per signed-in agent. Only
@@ -2038,16 +2010,15 @@ a window.
   "View all devices" adds one lane per device on the same time axis. Darker
   cells mean more agents were working, red cells mean one was waiting for
   input, and blank cells mean the device was not connected.
-- **Totals:** working, blocked, and idle or done agents across every device,
+- **Totals:** working, blocked, idle or done, and unknown agents across every device,
   and how many devices are online.
 - **Devices:** one row per device with a dot per agent, how many are working
-  and blocked, CPU, memory, free space on the volume holding the home
-  directory, and uptime. Clicking a row opens it on that device's agents,
+  and blocked. Clicking a row opens it on that device's agents,
   working first, with each agent's workspace and state; clicking an agent
   shows its pane.
 
 The search field narrows the lanes and the table to devices whose name,
-address, agents, or workspaces match every word typed. Load columns wrap in
+address, agents, or workspaces match every word typed. Agent summaries wrap in
 narrow tabs. **Add Device** opens SSH setup, with WSL beside it on Windows; it is
 unavailable in explicit-socket and development-catalog windows.
 
@@ -2056,10 +2027,7 @@ so it starts empty each time the window opens; nothing is saved or asked of
 the daemon. Each minute holds the most agents seen working and waiting at
 once, and minutes the machine slept stay empty. A wall-clock jump forward of
 at least five seconds beyond monotonic elapsed time is treated like sleep;
-backward adjustments do not rewind or pause the history. CPU, memory, disk, and uptime
-come from the same sampling as the status bar's load, and every enabled host
-is sampled while an overview tab is open, even with the status bar's load
-hidden.
+backward adjustments do not rewind or pause the history.
 
 ## Editor Groups
 
@@ -3400,7 +3368,7 @@ Where this differs from macOS and Linux:
 - **Steps that also run here.** Process lists and pane moves also run this machine's `/bin/sh` and stay
   unavailable from Windows.
 
-CPU and memory, plan usage, listening ports, and the agent skill's install run
+Listening ports and the agent skill's install run
 on the host's `/bin/sh` through `ssh`, as they do from macOS and Linux.
 
 ### WSL distributions
@@ -3420,13 +3388,6 @@ Saved distributions are kept in `gpui-wsl.json` beside upstream's endpoint
 catalog (`%LOCALAPPDATA%\herdr\client`), never in the catalog itself, whose
 strict schema cannot name one. The device you last chose, a distribution
 included, is selected again at startup.
-
-CPU and memory are sampled as for an SSH host running Linux: one `/bin/sh`
-per distribution, started with `wsl.exe --distribution NAME --exec /bin/sh -s`
-and kept open between samples, which reads `/proc`. The status bar and the
-distribution's sidebar row show them. A distribution shares the machine's
-CPUs, so its CPU figure is what its processes use, and its memory is what
-WSL has given that distribution.
 
 Plan usage is read through its own `wsl.exe` shell in the same way, as on an
 SSH host: the distribution's own agent sign-ins, read with its `python3` or
@@ -3497,7 +3458,7 @@ window, the main window exposes:
   expandable when they fold others, which Expand and Collapse do; **New
   workspace**, **Menu**, the agents' sort, the device picker, and **Sessions**;
 - the status bar as a status bar: the connection message, the model, usage,
-  CPU and memory, and network readings by what they say, and its buttons
+  and network readings by what they say, and its buttons
   (**Keep the display awake** as a switch);
 - every popup as a menu (context menus) or a dialog named by its title, with
   its menu rows, its text field, and the workspace dialogs' **Cancel** and

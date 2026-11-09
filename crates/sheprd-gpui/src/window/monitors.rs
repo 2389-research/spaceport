@@ -1,26 +1,12 @@
-//! The background monitors the window polls as it ticks: system load,
-//! listening ports, and port forwards on the hosts they watch.
+//! The listening-port scanners and port forwards the window polls as it ticks.
+//! Hosts remain selected through the existing endpoint connections.
 // i18n: migrated
 
 use super::{Flash, SheprdWindow};
 use gpui::Context;
 
 impl SheprdWindow {
-    /// CPU, memory and GPU are sampled for every enabled host, while they
-    /// are shown or a Devices overview is open.
-    pub(super) fn update_system_load(&mut self) -> bool {
-        if !self.config.show_system_load
-            && !self.config.gpu_sampled()
-            && !self.devices_overview_open()
-            && !self.overview_shown()
-        {
-            return self.system_load.poll(Vec::new(), false);
-        }
-        let hosts = self.connected_hosts(crate::usage::Host::load_of);
-        self.system_load.poll(hosts, self.config.gpu_sampled())
-    }
-
-    /// Listening ports are scanned on the same hosts as CPU and memory.
+    /// Listening ports are scanned on the connected hosts.
     pub(super) fn update_listening_ports(&mut self) -> bool {
         if !self.config.show_listening_ports {
             self.tunnels.close_all();
@@ -90,12 +76,5 @@ impl SheprdWindow {
         if changed {
             cx.notify();
         }
-    }
-
-    /// The machine the selected endpoint runs on, for its load.
-    pub(crate) fn selected_host(&self) -> Option<crate::usage::Host> {
-        self.endpoints
-            .get(self.selected_endpoint)
-            .and_then(|endpoint| crate::usage::Host::load_of(&endpoint.connection.target))
     }
 }

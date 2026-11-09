@@ -25,8 +25,6 @@ class AzureCloudSourceAbsence(unittest.TestCase):
     def test_cloud_host_routes_and_claims_are_absent_with_other_products_retained(self):
         for name in (
             "crates/sheprd-usage/src/model.rs",
-            "crates/sheprd-gpui/src/system_load.rs",
-            "crates/sheprd-gpui/src/system_load/render.rs",
             "crates/sheprd-gpui/src/listening_ports.rs",
         ):
             path = ROOT / name

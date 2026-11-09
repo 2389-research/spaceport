@@ -88,27 +88,14 @@ show_repository_icons = true
 # machine, a cloud provider, Tailscale, or SSH. In the layouts that draw one
 # (not orca or minimal). Also under Settings > Sidebar.
 show_device_icons = true
-# Show CPU and memory: the selected host's in the status bar, and each host's
-# on its sidebar row. Connected remote hosts are read over SSH every couple of
-# seconds; false stops all sampling. Also under Settings > Status bar.
-show_system_load = true
-# GPU and video memory, from nvidia-smi, the amdgpu driver, or ioreg on a Mac.
-# show_gpu_load shows the selected host's in the status bar (Settings > Status
-# bar); show_sidebar_gpu_load shows each host's on a sidebar line under its
-# CPU and memory, or as a gauge after its name in compact densities (Settings
-# > Sidebar). While
-# either is on, the Overview and Devices pages show GPUs too; with both off no
-# GPU tool runs on any host.
-show_gpu_load = false
-show_sidebar_gpu_load = false
 # Show the TCP ports each workspace's servers listen on, under its sidebar row
 # and in the status bar; click one to open it in a browser tab. Hosts are
 # scanned every five seconds with ss or lsof, a remote one over SSH; false
 # stops all scanning. Also under Settings > General.
 show_listening_ports = true
-# Show latency and loss from this machine in the status bar, beside CPU and
-# memory. One timed TCP connect to 1.1.1.1:443 every 15 seconds, about a
-# megabyte a day, so it suits a metered link such as a phone hotspot. Also
+# Show latency and loss from this machine in the status bar. One timed TCP
+# connect to 1.1.1.1:443 every 15 seconds, about a megabyte a day, so it suits
+# a metered link such as a phone hotspot. Also
 # under Settings > Status bar.
 show_network_quality = false
 # Draw wheel and trackpad scrollback between rows, following the OS deltas
@@ -509,9 +496,8 @@ size = 12
 # over it; lower opacity shows more of it.
 # image = "~/Pictures/wallpaper.jpg"
 
-# What the status bar shows, also under Settings > Status bar. Whether usage,
-# CPU/memory, and the GPU show at all is [usage] show, show_system_load, and
-# show_gpu_load.
+# What the status bar shows, also under Settings > Status bar.
+# Whether usage appears at all is [usage] show.
 # [status_bar]
 # The bar itself. false opens windows without it; Terminal > Toggle Status Bar,
 # or a `toggle_status_bar` binding, hides or shows it for the session. While
@@ -520,10 +506,6 @@ size = 12
 # "detailed" draws a meter and a service's two tightest windows; "compact"
 # shows each service's tightest limit as one share.
 # usage = "detailed"
-# "detailed" draws a CPU graph and a memory meter; "compact" shows the shares.
-# system_load = "detailed"
-# "detailed" draws a GPU graph and a video memory meter; "compact" the shares.
-# gpu_detail = "detailed"
 # The cup that keeps the machine awake; it stays while holding, so it can stop.
 # keep_awake = true
 # What the cup keeps awake: "display" holds the display and the system, so the

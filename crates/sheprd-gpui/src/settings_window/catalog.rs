@@ -197,12 +197,6 @@ pub(super) const CATALOG: &[Entry] = &[
     ),
     entry(
         Section::Sidebar,
-        "sidebar-gpu-load",
-        "settings-sidebar-gpu-load",
-        "settings-sidebar-gpu-load-description",
-    ),
-    entry(
-        Section::Sidebar,
         "sidebar-indent",
         "settings-sidebar-indent",
         "settings-sidebar-indent-description",
@@ -268,18 +262,6 @@ pub(super) const CATALOG: &[Entry] = &[
         "status-usage",
         "settings-status-usage",
         "settings-status-usage-description",
-    ),
-    entry(
-        Section::StatusBar,
-        "status-system-load",
-        "settings-status-system-load",
-        "settings-status-system-load-description",
-    ),
-    entry(
-        Section::StatusBar,
-        "status-gpu",
-        "settings-status-gpu",
-        "settings-status-gpu-description",
     ),
     entry(
         Section::StatusBar,

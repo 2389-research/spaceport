@@ -20,6 +20,7 @@ mod removed_project_open;
 mod removed_px0;
 mod removed_review;
 mod removed_search;
+mod removed_system;
 mod removed_teleport;
 mod ui_panel;
 

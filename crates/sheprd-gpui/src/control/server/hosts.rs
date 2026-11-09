@@ -1,4 +1,4 @@
-//! `host`, `ports`, `usage`, `system`, and what the
+//! `host`, `ports`, `usage`, and what the
 //! window gathers about its hosts, read from the state it already keeps.
 //! Nothing here starts a lookup, a scan, or a sample of its own; a request
 //! answers from the latest one, and says why when there is none.
@@ -14,7 +14,7 @@ use crate::{
     browser::PageOpened,
     control::protocol::{
         Call, Caller, ErrorCode, Response,
-        hosts::{HostOp, LoadInfo, Reply, UsageInfo, UsageWindow},
+        hosts::{HostOp, Reply, UsageInfo, UsageWindow},
     },
 };
 use gpui::App;
@@ -49,7 +49,6 @@ pub(super) fn serve(
         }),
         HostOp::OpenPort { port } => return ports::open(call.caller, port, incoming, watches, cx),
         HostOp::Usage => in_window(caller, cx, |view, _, _| usage(view, SystemTime::now())),
-        HostOp::System => in_window(caller, cx, |view, _, _| system(view)),
     };
     incoming.respond(response);
 }
@@ -221,61 +220,6 @@ pub(super) fn usage_info(reading: &crate::usage::Reading, now: SystemTime) -> Us
             })
             .unwrap_or_default(),
         error: reading.error.as_ref().map(ToString::to_string),
-    }
-}
-
-/// The selected host's latest load sample.
-fn system(view: &SheprdWindow) -> Response {
-    let label = selected_label(view);
-    let host = view
-        .endpoints
-        .get(view.selected_endpoint)
-        .and_then(|endpoint| crate::usage::Host::load_of(&endpoint.connection.target));
-    let Some(host) = host else {
-        return Response::Host {
-            reply: Reply::System {
-                load: None,
-                note: Some(format!("Load is not available on {label}")),
-            },
-        };
-    };
-    let reading = view.system_load.get(&host);
-    let load = reading
-        .and_then(crate::system_load::Reading::latest)
-        .map(|sample| Box::new(load_info(&label, sample)));
-    let note = match (&load, reading.and_then(crate::system_load::Reading::error)) {
-        (_, Some(error)) => Some(error.to_owned()),
-        (Some(_), None) => None,
-        (None, None) => Some(
-            "Spaceport samples load only while it shows it: in the status bar \
-             (show_system_load), the Devices overview, or a host picker"
-                .to_owned(),
-        ),
-    };
-    Response::Host {
-        reply: Reply::System { load, note },
-    }
-}
-
-pub(super) fn load_info(host: &str, sample: &crate::system_load::Sample) -> LoadInfo {
-    LoadInfo {
-        host: host.to_owned(),
-        cpu_percent: sample.cpu,
-        memory_used: sample.memory.map(|memory| memory.used),
-        memory_total: sample.memory.map(|memory| memory.total),
-        cores: sample.cores,
-        load: sample.load,
-        uptime_seconds: sample.uptime,
-        disk_available: sample.disk.map(|disk| disk.available),
-        disk_total: sample.disk.map(|disk| disk.total),
-        gpu_count: sample.gpu.map(|gpu| gpu.count),
-        gpu_percent: sample.gpu.and_then(|gpu| gpu.busy),
-        gpu_memory_used: sample
-            .gpu
-            .and_then(|gpu| gpu.memory.map(|memory| memory.used)),
-        gpu_memory_total: sample
-            .gpu
-            .and_then(|gpu| gpu.memory.map(|memory| memory.total)),
     }
 }
 

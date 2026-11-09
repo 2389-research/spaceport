@@ -360,16 +360,6 @@ impl SettingsWindow {
                     cx,
                 )),
             )
-            .child(
-                ui::row(theme, "sidebar-gpu-load", fl!("settings-sidebar-gpu-load"))
-                    .description(fl!("settings-sidebar-gpu-load-description"))
-                    .switch(self.preference_toggle(
-                        "sidebar-gpu-load-toggle",
-                        self.config.show_sidebar_gpu_load,
-                        Preference::ShowSidebarGpuLoad(!self.config.show_sidebar_gpu_load),
-                        cx,
-                    )),
-            )
             .child(ui::section(
                 theme,
                 &fl!("settings-sidebar-section-spacing"),

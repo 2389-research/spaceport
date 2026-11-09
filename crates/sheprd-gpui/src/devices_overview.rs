@@ -5,7 +5,7 @@
 //! own or take a window to itself.
 //!
 //! Everything it shows is already in the window: the endpoints' snapshots,
-//! the system load samples, and the activity history the tick keeps. Drawing
+//! the activity history the tick keeps. Drawing
 //! reads that prepared state only.
 // i18n: migrated
 
@@ -216,6 +216,7 @@ impl SheprdWindow {
     }
 
     /// Whether an overview tab is open, so every host's load is sampled.
+    #[cfg(test)]
     pub(crate) fn devices_overview_open(&self) -> bool {
         !self.devices_overview.pages.is_empty()
     }

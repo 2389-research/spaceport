@@ -13,7 +13,6 @@ the branch with it.
 | Installer shows the former ram icon instead of Inno Setup's stock graphic | ![](installer-before.png) | ![](installer-after.png) |
 | `herdr-gpui.exe` carries a name, version, and icon (Properties → Details) | ![](exe-details-before.png) | ![](exe-details-after.png) |
 | Ctrl-V in a WSL pane: "Image not sent" before; text pastes after (Ctrl-Shift-V shown, Ctrl-V reaches the shell as a key) | ![](wsl-ctrl-v-before.png) | ![](wsl-ctrl-v-after.png) |
-| CPU and memory of a WSL distribution in the sidebar and status bar (25% under an 8-thread load) | ![](wsl-cpu-memory-before.png) | ![](wsl-cpu-memory-after.png) |
 | Title bar follows the app's dark theme under light Windows (a light theme keeps a light one: ![](title-bar-light-theme-after.png)) | ![](title-bar-theme-before.png) | ![](title-bar-theme-after.png) |
 | `[backdrop] opacity = 0.6, blur = true`: composition blur under a solid title bar before; DWM acrylic over the window and title bar after | ![](backdrop-blur-before.png) | ![](backdrop-acrylic-after.png) |
 | `material = "mica"` (after only: Mica tints the window with the wallpaper, not the windows behind) | | ![](backdrop-mica-after.png) |

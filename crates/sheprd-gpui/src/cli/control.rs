@@ -55,7 +55,6 @@ pub enum ControlCommand {
         pane: Option<String>,
     },
     Usage,
-    System,
     Config(ConfigCommand),
     Theme(ThemeCommand),
     Font(ThemeCommand),
@@ -119,7 +118,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ),
     ("processes", "The processes running under a pane"),
     ("usage", "AI plan usage on the selected host"),
-    ("system", "The selected host's load"),
     (
         "config",
         "Spaceport settings: path, get, set, reload, check",
@@ -234,7 +232,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
             pane: args.text_option("--pane")?,
         },
         "usage" => ControlCommand::Usage,
-        "system" => ControlCommand::System,
         "config" => ControlCommand::Config(settings::config(args)?),
         "theme" => ControlCommand::Theme(settings::theme(args)?),
         "font" => ControlCommand::Font(settings::theme(args)?),

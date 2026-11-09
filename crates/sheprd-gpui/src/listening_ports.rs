@@ -20,8 +20,8 @@ mod tests;
 
 use crate::{
     Result,
-    system_load::Stop,
     usage::{Host, Shell},
+    worker_stop::Stop,
 };
 pub(crate) use render::{chips, close_button};
 #[cfg(test)]

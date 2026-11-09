@@ -39,7 +39,6 @@ mod device_tag_groups;
 #[cfg(test)]
 mod devices_layout;
 #[cfg(test)]
-mod gpu_line;
 #[cfg(test)]
 mod host_agents;
 #[cfg(test)]
@@ -631,7 +630,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         overview: Default::default(),
         viewport_width: 0.,
         usage: Default::default(),
-        system_load: Default::default(),
         network_quality_seen: 0,
         devices_overview: Default::default(),
         port_forwards: Default::default(),

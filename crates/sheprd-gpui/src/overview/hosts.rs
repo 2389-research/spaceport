@@ -1,18 +1,15 @@
-//! The Overview's host column: every enabled host with its agents, CPU and
-//! memory, and listening ports. Each host folds to one line, and the whole
-//! column folds to a strip of load dots.
+//! The Overview host column shows reported agents, connectivity and ports.
+//! Host cards and the column fold without changing their runtime targets.
 
 use crate::{
     SheprdWindow,
     devices_overview::{Device, Link, Look, Tally},
     i18n::fl,
-    system_load::{self, CPU_WARN, GPU_WARN, MEMORY_WARN, VRAM_WARN},
 };
 use gpui::{prelude::*, *};
 
 const WIDTH: f32 = 290.;
 const STRIP: f32 = 40.;
-const METER: f32 = 150.;
 /// Ports a host card lists; the count says the rest.
 const PORTS: usize = 6;
 
@@ -59,7 +56,6 @@ impl SheprdWindow {
                 .border_color(rgb(theme.active))
                 .child(toggle)
                 .children(devices.iter().map(|device| {
-                    let cpu = self.host_cpu(device);
                     div()
                         .flex()
                         .flex_col()
@@ -71,12 +67,7 @@ impl SheprdWindow {
                                 .size(px(14.))
                                 .text_color(rgb(theme.subtext())),
                         )
-                        .child(self.load_dot(look, cpu))
-                        .child(
-                            div().text_size(px(9.)).text_color(rgb(theme.muted)).child(
-                                cpu.map_or_else(|| "—".to_owned(), |cpu| format!("{cpu:.0}%")),
-                            ),
-                        )
+                        .child(look.link(device.link))
                 }))
                 .into_any_element();
         }
@@ -118,33 +109,9 @@ impl SheprdWindow {
             .into_any_element()
     }
 
-    fn host_cpu(&self, device: &Device) -> Option<f32> {
-        let host = device.host.as_ref()?;
-        self.system_load.get(host)?.latest()?.cpu
-    }
-
-    fn load_dot(&self, look: &Look, cpu: Option<f32>) -> Div {
-        let theme = look.theme;
-        let color = cpu.map_or(theme.active, |cpu| {
-            system_load::severity(cpu, CPU_WARN, theme, theme.ink(theme.palette[2]))
-        });
-        div().flex_none().size(px(7.)).rounded_full().bg(rgb(color))
-    }
-
     fn host_card(&self, look: &Look, device: &Device, cx: &mut Context<Self>) -> Div {
         let theme = look.theme;
         let folded = self.overview.folded.contains(&device.id);
-        let sample = device
-            .host
-            .as_ref()
-            .and_then(|host| self.system_load.get(host))
-            .and_then(system_load::Reading::latest);
-        let cpu = sample.and_then(|sample| sample.cpu);
-        let memory = sample.and_then(|sample| sample.memory.map(|memory| memory.percent()));
-        // Only hosts with a GPU get its meters, while GPUs are read.
-        let gpu = sample
-            .and_then(|sample| sample.gpu)
-            .filter(|_| self.config.gpu_sampled());
         let id = device.id.clone();
         let agents = match device.link {
             Link::Online => agents_line(device.tally),
@@ -186,14 +153,9 @@ impl SheprdWindow {
             )
             .when(folded, |header| {
                 let total = device.tally.total();
-                header
-                    .when(total > 0, |header| {
-                        header.child(look.mono(total.to_string()))
-                    })
-                    .child(self.load_dot(look, cpu))
-                    .child(
-                        look.mono(cpu.map_or_else(|| "—".to_owned(), |cpu| format!("{cpu:.0}%"))),
-                    )
+                header.when(total > 0, |header| {
+                    header.child(look.mono(total.to_string()))
+                })
             })
             .on_click(cx.listener(move |this, _, _, cx| {
                 if !this.overview.folded.remove(&id) {
@@ -224,31 +186,6 @@ impl SheprdWindow {
                                 .text_color(rgb(theme.muted))
                                 .child(agents),
                         )
-                        .child(meter(look, fl!("overview-meter-cpu"), cpu, CPU_WARN))
-                        .child(meter(
-                            look,
-                            fl!("overview-meter-memory"),
-                            memory,
-                            MEMORY_WARN,
-                        ))
-                        .when_some(gpu, |card, gpu| {
-                            card.when(gpu.busy.is_some(), |card| {
-                                card.child(meter(
-                                    look,
-                                    fl!("overview-meter-gpu"),
-                                    gpu.busy,
-                                    GPU_WARN,
-                                ))
-                            })
-                            .when_some(gpu.memory, |card, memory| {
-                                card.child(meter(
-                                    look,
-                                    fl!("overview-meter-vram"),
-                                    Some(memory.percent()),
-                                    VRAM_WARN,
-                                ))
-                            })
-                        })
                         .when(!ports.is_empty(), |card| {
                             let more = ports.len().saturating_sub(PORTS);
                             card.child(
@@ -318,35 +255,4 @@ pub(super) fn agents_line(tally: Tally) -> String {
             working = working
         ),
     }
-}
-
-fn meter(look: &Look, label: String, percent: Option<f32>, warn: f32) -> Div {
-    let theme = look.theme;
-    let fill = percent
-        .map(|percent| system_load::severity(percent, warn, theme, theme.ink(theme.palette[2])));
-    div()
-        .flex()
-        .items_center()
-        .gap_2()
-        // At least the width of the English abbreviations; longer ones push the bar.
-        .child(div().flex_none().min_w(px(30.)).child(look.mono(label)))
-        .child(
-            div()
-                .w(px(METER))
-                .h(px(4.))
-                .rounded_full()
-                .bg(rgb(theme.active))
-                .when_some(percent.zip(fill), |bar, (percent, fill)| {
-                    bar.child(
-                        div()
-                            .h_full()
-                            .rounded_full()
-                            .w(px(METER * percent.clamp(0., 100.) / 100.))
-                            .bg(rgb(fill)),
-                    )
-                }),
-        )
-        .child(
-            look.mono(percent.map_or_else(|| "—".to_owned(), |percent| format!("{percent:.0}%"))),
-        )
 }

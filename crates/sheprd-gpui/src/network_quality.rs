@@ -12,7 +12,7 @@ mod render;
 #[cfg(test)]
 mod tests;
 
-use crate::system_load::Stop;
+use crate::worker_stop::Stop;
 use gpui::{App, Global};
 use probe::Outcome;
 use std::{

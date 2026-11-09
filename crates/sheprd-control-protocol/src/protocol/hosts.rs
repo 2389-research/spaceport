@@ -1,5 +1,5 @@
 //! Hosts and what the app gathers about them: listening and forwarded ports,
-//! plan usage, and load.
+//! and plan usage.
 use serde::{Deserialize, Serialize};
 
 /// How long `ports open` may wait for a new forward to listen.
@@ -41,7 +41,6 @@ pub enum HostOp {
         port: u16,
     },
     Usage,
-    System,
 }
 
 impl HostOp {
@@ -89,31 +88,6 @@ pub struct UsageWindow {
     pub resets_in_seconds: Option<u64>,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct LoadInfo {
-    pub host: String,
-    pub cpu_percent: Option<f32>,
-    pub memory_used: Option<u64>,
-    pub memory_total: Option<u64>,
-    pub cores: Option<u32>,
-    pub load: Option<[f32; 3]>,
-    pub uptime_seconds: Option<u64>,
-    pub disk_available: Option<u64>,
-    pub disk_total: Option<u64>,
-    /// Graphics cards that report their usage; absent on hosts without one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub gpu_count: Option<u32>,
-    /// The cards' mean busy share.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub gpu_percent: Option<f32>,
-    /// Dedicated video memory, summed across cards; absent on Apple GPUs,
-    /// which share system memory.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub gpu_memory_used: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub gpu_memory_total: Option<u64>,
-}
-
 /// A workspace's listening ports, and its host's forwards. Boxed in
 /// [`Reply`], which every response carries.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -137,11 +111,6 @@ pub enum Reply {
     Usage {
         host: String,
         usage: Vec<UsageInfo>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        note: Option<String>,
-    },
-    System {
-        load: Option<Box<LoadInfo>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         note: Option<String>,
     },

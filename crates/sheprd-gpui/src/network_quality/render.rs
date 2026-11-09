@@ -1,4 +1,4 @@
-//! `NET 31ms 0%` in the status bar, after CPU and memory, with the recent
+//! `NET 31ms 0%` in the status bar, with the recent
 //! probes summarized in a tooltip.
 
 use super::{INTERVAL, LATENCY_PROBES, Reading, TARGET, WINDOW, probe::Outcome};
@@ -62,7 +62,7 @@ impl SheprdWindow {
                 .flex_none()
                 .items_center()
                 .gap(px(5.))
-                // CPU and memory's 6px padding and the bar's 6px gap
+                // Keep the status segment's padding aligned with the bar's gap
                 // already sit on the left, and the bar's gap and the next
                 // button's 8px padding on the right; these margins bring both
                 // sides to the 10px between CPU and MEM.
@@ -87,7 +87,7 @@ fn millis(duration: Duration) -> f32 {
 }
 
 /// Foreground below `warn`, yellow from it, red from `critical`, matching
-/// the CPU and memory colors.
+/// the other status segment colors.
 fn graded(value: f32, warn: f32, critical: f32, theme: &Theme) -> u32 {
     if value >= critical {
         theme.ink(theme.palette[1])

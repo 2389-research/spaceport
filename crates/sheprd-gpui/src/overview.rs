@@ -250,12 +250,6 @@ impl SheprdWindow {
         self.overview.drawn.3
     }
 
-    /// Whether the page is shown, so every host's load is sampled for its
-    /// host column.
-    pub(crate) fn overview_shown(&self) -> bool {
-        self.activity_section() == Some(ActivityPanel::Overview) && !self.overview_hosts_closed()
-    }
-
     /// Whether the host column shows as a strip: as the user left it, else
     /// while the window is too narrow for it beside the list.
     pub(crate) fn overview_hosts_closed(&self) -> bool {

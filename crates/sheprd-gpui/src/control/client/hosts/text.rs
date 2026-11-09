@@ -2,7 +2,7 @@
 //! without an app; `finish` makes the app's text safe to print.
 use crate::control::protocol::{
     app::HostInfo,
-    hosts::{LoadInfo, Ports, Reply},
+    hosts::{Ports, Reply},
 };
 use std::fmt::Write as _;
 
@@ -139,60 +139,4 @@ pub(in crate::control::client) fn bytes(bytes: u64) -> String {
     } else {
         format!("{value:.1} {unit}")
     }
-}
-
-fn load(load: &LoadInfo) -> String {
-    let mut lines = vec![load.host.clone()];
-    if let Some(cpu) = load.cpu_percent {
-        let cores = load
-            .cores
-            .map(|cores| format!(" of {cores} cores"))
-            .unwrap_or_default();
-        lines.push(format!("  CPU     {cpu:.0}%{cores}"));
-    }
-    if let (Some(used), Some(total)) = (load.memory_used, load.memory_total) {
-        lines.push(format!("  Memory  {} of {}", bytes(used), bytes(total)));
-    }
-    if let Some(count) = load.gpu_count {
-        let cards = if count > 1 {
-            format!(" across {count} cards")
-        } else {
-            String::new()
-        };
-        let busy = load
-            .gpu_percent
-            .map_or_else(|| "—".to_owned(), |busy| format!("{busy:.0}%"));
-        lines.push(format!("  GPU     {busy}{cards}"));
-    }
-    if let (Some(used), Some(total)) = (load.gpu_memory_used, load.gpu_memory_total) {
-        lines.push(format!("  VRAM    {} of {}", bytes(used), bytes(total)));
-    }
-    if let (Some(available), Some(total)) = (load.disk_available, load.disk_total) {
-        lines.push(format!(
-            "  Disk    {} free of {}",
-            bytes(available),
-            bytes(total)
-        ));
-    }
-    if let Some([one, five, fifteen]) = load.load {
-        lines.push(format!("  Load    {one:.2} {five:.2} {fifteen:.2}"));
-    }
-    if let Some(uptime) = load.uptime_seconds {
-        lines.push(format!("  Up      {}", duration(uptime)));
-    }
-    lines.join("\n")
-}
-
-pub(super) fn system(reply: &Reply) -> String {
-    let Reply::System { load: sample, note } = reply else {
-        return String::new();
-    };
-    let mut text = sample.as_deref().map(load).unwrap_or_default();
-    if let Some(note) = note {
-        if !text.is_empty() {
-            text.push('\n');
-        }
-        text.push_str(note);
-    }
-    text
 }

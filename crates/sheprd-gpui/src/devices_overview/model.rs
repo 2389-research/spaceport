@@ -3,7 +3,7 @@
 
 use super::history::Counts;
 use crate::i18n::fl;
-use crate::{endpoint::Endpoint, state::LiveState, usage::Host};
+use crate::{endpoint::Endpoint, state::LiveState};
 use sheprd_client::{ConnectTarget, protocol::AgentStatus};
 
 /// A device's agents by state.
@@ -116,8 +116,6 @@ pub(crate) struct Device {
     pub agents: Vec<AgentLine>,
     /// Agent and workspace names, lowercased, for the search.
     names: Vec<String>,
-    /// Where load samples come from.
-    pub host: Option<Host>,
 }
 
 impl Device {
@@ -185,7 +183,6 @@ impl Device {
             dots,
             agents: lines,
             names,
-            host: Host::load_of(&endpoint.connection.target),
         }
     }
 
@@ -217,7 +214,6 @@ impl Device {
             dots,
             agents: Vec::new(),
             names: vec!["claude".into(), "herdr-gpui".into()],
-            host: None,
         }
     }
 }

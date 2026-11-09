@@ -237,8 +237,6 @@ pub enum Error {
     #[error("{} exceeds {limit} bytes", path.display())]
     StateFileSize { path: PathBuf, limit: u64 },
     #[error(transparent)]
-    SystemLoad(#[from] crate::system_load::Error),
-    #[error(transparent)]
     TabLayout(#[from] crate::config::tab_layout::Error),
     #[error("{0}")]
     Toml(#[from] toml::de::Error),

@@ -71,10 +71,6 @@ overview-agents-working = { $total ->
        *[other] { $total } agents
     } · { $working } working
 # Meters on a host card, abbreviated.
-overview-meter-cpu = CPU
-overview-meter-memory = MEM
-overview-meter-gpu = GPU
-overview-meter-vram = VRAM
 
 # Reopening a closed agent.
 overview-session-gone = The agent's original session is no longer connected

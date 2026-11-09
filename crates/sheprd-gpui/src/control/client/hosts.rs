@@ -1,4 +1,4 @@
-//! `host`, `ports`, `usage`, and `system`.
+//! `host`, `ports`, and `usage`.
 mod text;
 
 pub(super) use text::bytes;
@@ -58,19 +58,6 @@ pub(super) fn usage(context: &Context) -> crate::Result<Output> {
         } => {
             let empty = matches!(&reply, Reply::Usage { usage, .. } if usage.is_empty());
             let output = Output::data(text::usage(&reply), &reply)?;
-            Ok(if empty { output.nothing() } else { output })
-        }
-        response => Err(unexpected(response)),
-    }
-}
-
-pub(super) fn system(context: &Context) -> crate::Result<Output> {
-    match context.call(Request::Host, HostOp::System)? {
-        Response::Host {
-            reply: reply @ Reply::System { .. },
-        } => {
-            let empty = matches!(&reply, Reply::System { load: None, .. });
-            let output = Output::data(text::system(&reply), &reply)?;
             Ok(if empty { output.nothing() } else { output })
         }
         response => Err(unexpected(response)),

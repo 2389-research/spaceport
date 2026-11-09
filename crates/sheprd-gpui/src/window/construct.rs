@@ -268,7 +268,6 @@ impl SheprdWindow {
             status_bar_visible,
             strip_navigation_fits: true,
             surface_signal,
-            system_load: Default::default(),
             tab_drag: None,
             terminal_mouse: None,
             theme,

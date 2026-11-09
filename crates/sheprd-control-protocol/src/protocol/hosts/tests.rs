@@ -4,6 +4,7 @@ use crate::protocol::{Call, Caller, MAX_WAIT_SECONDS, Request, Response};
 
 mod removed_cloud;
 mod removed_github;
+mod removed_system;
 
 #[test]
 fn host_requests_have_a_stable_wire_form() {
@@ -26,7 +27,6 @@ fn host_requests_have_a_stable_wire_form() {
         HostOp::Unforward { port: 1 },
         HostOp::OpenPort { port: 8080 },
         HostOp::Usage,
-        HostOp::System,
     ] {
         let request = Request::Host(Call {
             caller: Caller::default(),
@@ -100,10 +100,6 @@ fn host_replies_round_trip() {
                 error: None,
             }],
             note: None,
-        },
-        Reply::System {
-            load: None,
-            note: Some("Not sampled".into()),
         },
     ] {
         let response = Response::Host { reply };

@@ -33,11 +33,6 @@ impl Host {
             }
         }
     }
-
-    /// The host whose CPU and memory a device shows.
-    pub fn load_of(target: &ConnectTarget) -> Option<Self> {
-        Self::of(target)
-    }
 }
 
 /// A registered provider. Only [`super::registry`] makes one, so each value

@@ -1,10 +1,9 @@
 #![allow(clippy::unwrap_used)]
 use super::text;
 
-mod gpu;
 use crate::control::protocol::{
     app::HostInfo,
-    hosts::{ForwardInfo, LoadInfo, PortInfo, Ports, Reply, UsageInfo, UsageWindow},
+    hosts::{ForwardInfo, PortInfo, Ports, Reply, UsageInfo, UsageWindow},
 };
 
 #[test]
@@ -73,7 +72,7 @@ fn ports_list_listeners_forwards_and_why_none() {
 }
 
 #[test]
-fn usage_and_load_read_in_plain_units() {
+fn usage_reads_in_plain_units() {
     let reply = Reply::Usage {
         host: "Local".into(),
         usage: vec![UsageInfo {
@@ -93,33 +92,6 @@ fn usage_and_load_read_in_plain_units() {
         text::usage(&reply),
         "Claude · Max · me@example.com\n  Session       12% used, resets in 2h 53m"
     );
-    let load = Reply::System {
-        load: Some(Box::new(LoadInfo {
-            host: "Local".into(),
-            cpu_percent: Some(25.),
-            memory_used: Some(8 << 30),
-            memory_total: Some(16 << 30),
-            cores: Some(8),
-            load: None,
-            uptime_seconds: Some(3 * 86_400 + 4 * 3600),
-            disk_available: None,
-            disk_total: None,
-            gpu_count: None,
-            gpu_percent: None,
-            gpu_memory_used: None,
-            gpu_memory_total: None,
-        })),
-        note: None,
-    };
-    assert_eq!(
-        text::system(&load),
-        "Local\n  CPU     25% of 8 cores\n  Memory  8.0 GiB of 16.0 GiB\n  Up      3d 4h"
-    );
-    let none = Reply::System {
-        load: None,
-        note: Some("Not sampled".into()),
-    };
-    assert_eq!(text::system(&none), "Not sampled");
 }
 
 #[test]

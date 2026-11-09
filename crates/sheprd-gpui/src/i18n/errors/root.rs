@@ -152,7 +152,6 @@ impl Localize for Error {
             Self::StateFileSize { path: file, limit } => {
                 fl!("error-state-file-size", path = path(file), limit = *limit)
             }
-            Self::SystemLoad(error) => error.localize(),
             Self::TabLayout(error) => error.localize(),
             Self::Toml(error) => error.to_string(),
             Self::TomlEdit(error) => error.to_string(),

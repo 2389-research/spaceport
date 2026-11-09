@@ -23,15 +23,13 @@ fn status_bar_items_default_to_the_full_bar() -> anyhow::Result<()> {
 #[test]
 fn status_bar_items_parse_and_report_unknown_keys() -> anyhow::Result<()> {
     let config = Config::parse(
-        "[status_bar]\nusage = 'compact'\nsystem_load = 'compact'\nkeep_awake = false\ntheme = 'icon'\nshortcuts = 'hidden'\nreport_issue = 'icon'\nclock = true\n",
+        "[status_bar]\nusage = 'compact'\nkeep_awake = false\ntheme = 'icon'\nshortcuts = 'hidden'\nreport_issue = 'icon'\nclock = true\n",
     )?;
     assert_eq!(
         config.status_bar,
         StatusBar {
             show: true,
             usage: Detail::Compact,
-            system_load: Detail::Compact,
-            gpu_detail: Detail::Detailed,
             keep_awake: false,
             keep_awake_scope: Default::default(),
             theme: Button::Icon,
@@ -61,7 +59,6 @@ fn status_bar_edits_round_trip_through_the_overrides_file() -> anyhow::Result<()
     )?;
     let edits = [
         Edit::Usage(Detail::Compact),
-        Edit::SystemLoad(Detail::Compact),
         Edit::KeepAwake(false),
         Edit::Theme(Button::Icon),
         Edit::Shortcuts(Button::Hidden),
@@ -80,8 +77,6 @@ fn status_bar_edits_round_trip_through_the_overrides_file() -> anyhow::Result<()
         StatusBar {
             show: true,
             usage: Detail::Compact,
-            system_load: Detail::Compact,
-            gpu_detail: Detail::Detailed,
             keep_awake: false,
             keep_awake_scope: Default::default(),
             theme: Button::Icon,

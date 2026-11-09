@@ -34,11 +34,6 @@ fn behaviour_pages_route_every_row_to_its_preference(cx: &mut TestAppContext) {
     for (section, selector, expected) in [
         (
             Section::StatusBar,
-            "status-system-load-toggle",
-            Preference::ShowSystemLoad(false),
-        ),
-        (
-            Section::StatusBar,
             "status-network-quality-toggle",
             Preference::ShowNetworkQuality(true),
         ),

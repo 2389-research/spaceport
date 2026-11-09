@@ -10,7 +10,6 @@ mod activity_bar_windows;
 mod appearance_messages;
 mod config_watch;
 mod en_xa;
-mod gpu_settings;
 mod language_picker;
 mod language_reload;
 #[cfg(windows)]

@@ -1,13 +1,11 @@
-//! The device table: one row per device with its agents, CPU, memory, GPU,
-//! video memory, home disk and uptime. Clicking a row opens it on a list of its agents, and
-//! clicking an agent shows its pane.
+//! The device table: each host and its reported agents.
+//! Opening a row lists agents; choosing an agent shows its exact pane.
 
 use super::{Device, Link, view::Look};
 use crate::i18n::fl;
 use crate::{
     SheprdWindow,
     browser::{Slot, TabId},
-    system_load::{self, CPU_WARN, DISK_WARN, GPU_WARN, MEMORY_WARN, SystemLoad, VRAM_WARN},
 };
 use gpui::{prelude::*, *};
 use sheprd_client::protocol::AgentStatus;
@@ -16,58 +14,18 @@ use std::collections::HashSet;
 const DEVICE_MIN: f32 = 180.;
 /// Every column but the device's, which takes the rest, by the message
 /// heading it; the last, the row's chevron, has none.
-pub(super) const COLUMNS: &[(&str, f32)] = &[
-    ("devices-overview-column-agents", 230.),
-    ("devices-overview-column-cpu", 84.),
-    ("devices-overview-column-memory", 84.),
-    ("devices-overview-column-gpu", 84.),
-    ("devices-overview-column-vram", 84.),
-    ("devices-overview-column-disk", 96.),
-    ("devices-overview-column-uptime", 76.),
-    ("", 12.),
-];
-/// The columns shown while GPUs are read (`Config::gpu_sampled`).
-const GPU_COLUMNS: [&str; 2] = [
-    "devices-overview-column-gpu",
-    "devices-overview-column-vram",
-];
+pub(super) const COLUMNS: &[(&str, f32)] = &[("devices-overview-column-agents", 230.), ("", 12.)];
 
 /// A column's heading in the shown language.
 fn heading(id: &str) -> String {
-    if id.is_empty() {
-        return String::new();
-    }
     crate::i18n::message(id, &[])
 }
 
-/// Whether a load column is drawn: the GPU's only while `show_gpu_load` is on.
-fn shown(name: &str, gpu: bool) -> bool {
-    gpu || !GPU_COLUMNS.contains(&name)
-}
-
-/// The load columns drawn after the agents'.
-#[cfg(test)]
-pub(super) fn load_columns(gpu: bool) -> usize {
-    COLUMNS[1..]
-        .iter()
-        .filter(|(name, _)| shown(name, gpu))
-        .count()
-}
-const METER_WIDTH: f32 = 64.;
 /// Where an open row's agents start: under the device's name, past its dot.
 const AGENT_INDENT: f32 = 31.;
 
-/// A row's cells: the device, its agents, then the load columns as one
-/// group, so a narrow tab wraps that group onto a line of its own, then wraps
-/// its columns if needed. The header wraps in step with every row. `load`
-/// holds a cell per column; the GPU's are dropped unless `gpu`.
-fn cells(
-    device: impl IntoElement,
-    agents: impl IntoElement,
-    load: impl IntoIterator<Item = AnyElement>,
-    gpu: bool,
-    selector: String,
-) -> Div {
+/// Rows and headings wrap the agent count together at narrow widths.
+fn cells(device: impl IntoElement, agents: impl IntoElement, chevron: impl IntoElement) -> Div {
     div()
         .flex()
         .flex_wrap()
@@ -76,55 +34,22 @@ fn cells(
         .gap_y_2()
         .child(div().flex_1().min_w(px(DEVICE_MIN)).child(device))
         .child(div().flex_none().w(px(COLUMNS[0].1)).child(agents))
-        .child(
-            div()
-                .debug_selector({
-                    let selector = selector.clone();
-                    move || selector
-                })
-                .flex()
-                .flex_none()
-                .max_w_full()
-                .flex_wrap()
-                .items_center()
-                .gap_3()
-                .children(
-                    load.into_iter()
-                        .zip(&COLUMNS[1..])
-                        .filter(|(_, (name, _))| shown(name, gpu))
-                        .enumerate()
-                        .map(|(index, (cell, (_, width)))| {
-                            let selector = format!("{selector}-{index}");
-                            div()
-                                .debug_selector(move || selector)
-                                .flex_none()
-                                .w(px(*width))
-                                .child(cell)
-                        }),
-                ),
-        )
+        .child(div().flex_none().w(px(COLUMNS[1].1)).child(chevron))
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn devices(
     look: &Look,
     shown: &[&Device],
-    load: &SystemLoad,
     slot: Slot,
     tab: TabId,
     expanded: &HashSet<String>,
-    gpu_shown: bool,
     cx: &mut Context<SheprdWindow>,
 ) -> Div {
     let theme = look.theme;
     let header = cells(
         fl!("devices-overview-column-device"),
         heading(COLUMNS[0].0),
-        COLUMNS[1..]
-            .iter()
-            .map(|(id, _)| heading(id).into_any_element()),
-        gpu_shown,
-        slot.selector("devices-load-header"),
+        div(),
     )
     .px_3()
     .py_2()
@@ -133,63 +58,20 @@ pub(super) fn devices(
     .text_size(look.small())
     .text_color(rgb(theme.subtext()));
     let rows = shown.iter().enumerate().map(|(position, device)| {
-        let reading = device
-            .host
-            .as_ref()
-            .filter(|_| device.link == Link::Online)
-            .and_then(|host| load.get(host));
-        let sample = reading.and_then(system_load::Reading::latest);
-        let disk = sample.and_then(|sample| sample.disk);
-        let gpu = sample.and_then(|sample| sample.gpu);
         let open = expanded.contains(&device.id);
         let id = device.id.clone();
         let row_id = device.id.clone();
         let row = cells(
             name(look, device),
             agents(look, device),
-            [
-                meter(look, None, sample.and_then(|sample| sample.cpu), CPU_WARN)
-                    .into_any_element(),
-                meter(
-                    look,
-                    None,
-                    sample.and_then(|sample| sample.memory.map(|memory| memory.percent())),
-                    MEMORY_WARN,
-                )
-                .into_any_element(),
-                meter(look, None, gpu.and_then(|gpu| gpu.busy), GPU_WARN).into_any_element(),
-                meter(
-                    look,
-                    None,
-                    gpu.and_then(|gpu| gpu.memory.map(|memory| memory.percent())),
-                    VRAM_WARN,
-                )
-                .into_any_element(),
-                meter(
-                    look,
-                    disk.map(|disk| system_load::storage(disk.available)),
-                    disk.map(|disk| disk.used_percent()),
-                    DISK_WARN,
-                )
-                .into_any_element(),
-                look.mono(
-                    sample
-                        .and_then(|sample| sample.uptime)
-                        .map_or_else(|| "—".to_owned(), system_load::uptime),
-                )
-                .into_any_element(),
-                svg()
-                    .size(px(COLUMNS[COLUMNS.len() - 1].1))
-                    .path(if open {
-                        "icons/chevron-down.svg"
-                    } else {
-                        "icons/chevron-right.svg"
-                    })
-                    .text_color(rgb(theme.muted))
-                    .into_any_element(),
-            ],
-            gpu_shown,
-            slot.selector(&format!("devices-load-{}", device.id)),
+            svg()
+                .size(px(COLUMNS[1].1))
+                .path(if open {
+                    "icons/chevron-down.svg"
+                } else {
+                    "icons/chevron-right.svg"
+                })
+                .text_color(rgb(theme.muted)),
         )
         .id(SharedString::from(
             slot.selector(&format!("devices-row-{}", device.id)),
@@ -387,40 +269,4 @@ fn agents(look: &Look, device: &Device) -> Div {
                     )),
             )
         })
-}
-
-/// A share over a thin bar, or a dash before the first sample.
-fn meter(look: &Look, label: Option<String>, percent: Option<f32>, warn: f32) -> Div {
-    let theme = look.theme;
-    let Some(percent) = percent else {
-        return look.mono("—");
-    };
-    let fill = system_load::severity(
-        percent,
-        warn,
-        theme,
-        crate::config::mix(theme.background, theme.foreground, 70),
-    );
-    div()
-        .flex()
-        .flex_col()
-        .gap(px(3.))
-        .child(
-            look.mono(label.unwrap_or_else(|| format!("{percent:.0}%")))
-                .text_color(rgb(theme.foreground)),
-        )
-        .child(
-            div()
-                .w(px(METER_WIDTH))
-                .h(px(3.))
-                .rounded_full()
-                .bg(rgb(theme.active))
-                .child(
-                    div()
-                        .h_full()
-                        .rounded_full()
-                        .w(px(METER_WIDTH * percent.clamp(0., 100.) / 100.))
-                        .bg(rgb(fill)),
-                ),
-        )
 }

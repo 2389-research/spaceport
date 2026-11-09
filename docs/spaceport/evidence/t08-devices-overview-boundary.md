@@ -1,6 +1,8 @@
 # T08: Devices overview dashboard and retained timeline boundary
 
-Read-only source audit at `cce928f7`; no app or Core behavior changed. The
+Historical read-only source audit at `cce928f7`; no app or Core behavior changed
+in that audit. Its Core-only retirement recommendation below is superseded
+by the D58 qualification at the end of this note. The
 Devices activity card still calls `open_devices_overview`. When a Core group
 is selected, `browser_key()` returns no legacy workspace, so the button
 flashes “no workspace” (`menu/devices/activity_card.rs:101–103`,
@@ -32,3 +34,20 @@ an unrelated legacy endpoint with a working agent. The host manager must
 show the Core identities; no legacy count, metric, history or pane action
 may appear as Core activity. Stale Core facts must read as unavailable, and
 legacy content must not be silently relabeled as Core data.
+
+
+## D58 qualification and bounded cut (2026-11-09)
+
+D58 permits the working Herdr 1 route. The earlier recommendation to retire
+this whole page and its legacy pane actions was too broad: it would remove
+the retained Devices activity chart, history, host/agent rows and terminal
+navigation. The audit's warning against relabeling legacy observations as
+Core facts still applies. No Core capability gap justifies deleting the
+working Herdr 1 path or moving a session to another runtime.
+
+The [resource-dashboard removal](t08-resource-dashboard-removal.md) removes
+only CPU/GPU/memory/disk/uptime sampling and dashboard controls. Devices keeps
+its existing bounded in-memory chart, host scope, row expansion, search and
+exact endpoint/pane navigation. No new history service or Core feed was
+added. G-OBS stays open and T08 stays blocked; native and platform acceptance
+remain unproved.

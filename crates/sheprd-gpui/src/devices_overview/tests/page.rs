@@ -81,35 +81,19 @@ fn closing_the_tab_drops_its_page(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
-fn a_narrow_tab_wraps_the_load_columns_instead_of_cutting_them(cx: &mut gpui::TestAppContext) {
+fn a_narrow_tab_preserves_the_chart_totals_and_agents(cx: &mut gpui::TestAppContext) {
     let (view, cx) = window(cx);
-    cx.simulate_resize(gpui::size(gpui::px(1400.), gpui::px(900.)));
-    open(&view, cx);
-    let wide_row = cx.debug_bounds("devices-row-local").unwrap();
-    let wide_totals = cx.debug_bounds("devices-totals").unwrap();
-    let wide_load = cx.debug_bounds("devices-load-local").unwrap();
-    assert!(
-        wide_load.top() < wide_row.top() + (wide_row.size.height / 2.),
-        "one line when there is room"
-    );
-
     cx.simulate_resize(gpui::size(gpui::px(820.), gpui::px(900.)));
-    draw(cx);
-    let tab = cx.debug_bounds("devices-tab").unwrap();
-    let row = cx.debug_bounds("devices-row-local").unwrap();
-    let load = cx.debug_bounds("devices-load-local").unwrap();
-    let header = cx.debug_bounds("devices-load-header").unwrap();
-    assert!(load.right() <= tab.right(), "{load:?} inside {tab:?}");
-    assert!(row.size.height > wide_row.size.height, "the load wrapped");
-    let totals = cx.debug_bounds("devices-totals").unwrap();
-    assert_eq!(
-        totals.size.height, wide_totals.size.height,
-        "the four totals keep one row"
-    );
-    assert!(
-        (header.left() - load.left()).abs() < gpui::px(1.),
-        "the header wraps in step: {header:?} {load:?}"
-    );
+    open(&view, cx);
+    for selector in ["devices-activity", "devices-totals", "devices-row-local"] {
+        let bounds = cx.debug_bounds(selector).unwrap();
+        let tab = cx.debug_bounds("devices-tab").unwrap();
+        assert!(
+            bounds.left() >= tab.left() && bounds.right() <= tab.right(),
+            "{selector}"
+        );
+    }
+    assert!(cx.debug_bounds("devices-load-local").is_none());
 }
 
 #[gpui::test]

@@ -309,7 +309,6 @@ pub(crate) struct SheprdWindow {
     /// Notified in place of this view by a surface-only update, which redraws
     /// the window while the cached sidebar keeps its layout.
     pub(crate) surface_signal: Entity<SurfaceSignal>,
-    pub(crate) system_load: crate::system_load::SystemLoad,
     /// A press on a tab that may lift it for reordering.
     pub(crate) tab_drag: Option<tab_drag::TabDrag>,
     pub(crate) terminal_mouse: Option<mouse::Gesture>,
@@ -582,9 +581,6 @@ impl SheprdWindow {
         self.poll_devices_overview(cx);
         self.poll_core_terminals(window, cx);
         self.poll_overview(cx);
-        if self.update_system_load() {
-            cx.notify();
-        }
         let network_quality = crate::network_quality::poll(self.config.show_network_quality, cx);
         if network_quality != self.network_quality_seen {
             self.network_quality_seen = network_quality;

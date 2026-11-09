@@ -33,7 +33,6 @@ mod root;
 #[cfg(unix)]
 mod setup_relay;
 mod sound;
-mod system_load;
 mod terminal_attach;
 mod updater;
 mod usage;
