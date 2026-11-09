@@ -670,7 +670,8 @@
         "evidence/removal-reachability-69eb27a5.md",
         "evidence/removal-reachability-54cb41c2.md",
         "evidence/t11-sidebar-activation-audit.md",
-        "evidence/t11-native-pages-activation.md"
+        "evidence/t11-native-pages-activation.md",
+        "evidence/t11-native-locked-desktop-attempt.md"
       ],
       "must_close_gaps": [
         "G-CHAT",

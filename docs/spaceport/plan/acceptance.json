@@ -565,7 +565,7 @@
       "scenario": "Run retained UX/Core/lifecycle/clipboard/notifications/packaging/updater on a native supported macOS fixture.",
       "expected": "Measured behavior matches contract; actual OS/architecture coverage is recorded.",
       "status": "not_run",
-      "evidence": ["evidence/native-platform-results.md", "evidence/t11-native-pages-activation.md"]
+      "evidence": ["evidence/native-platform-results.md", "evidence/t11-native-pages-activation.md", "evidence/t11-native-locked-desktop-attempt.md"]
     },
     {
       "id": "A50",
