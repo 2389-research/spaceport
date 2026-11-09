@@ -5,7 +5,7 @@
 //! its tooltips are checked in `sidebar::rail::tests`.
 use super::*;
 use crate::config::LayoutMode;
-use crate::i18n::leak_tests::{Recorder, assert_translated, draw, under_en_xa};
+use crate::i18n::leak_tests::{Recorder, assert_translated, draw, uncut, under_en_xa};
 use crate::sidebar::layout_tests::{SidebarFixture, full_draw};
 use crate::state::ConnectionStatus;
 use gpui::{AppContext as _, Entity, VisualTestContext, px, size};
@@ -97,7 +97,8 @@ pub(super) fn check(
 ) {
     cx.update(|window, _| window.refresh());
     draw(cx);
-    let shown = recorder.take();
+    // Truncated labels also shape prefixes and single-character measurements.
+    let shown = uncut(recorder.take());
     let data = cx.update(|_, cx| data(view.read(cx), &shown));
     assert_translated(surface, &shown, &data);
 }

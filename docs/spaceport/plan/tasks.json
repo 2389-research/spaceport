@@ -90,7 +90,8 @@
         "evidence/t01-diagnostics-identity.md",
         "evidence/t01-theme-source-isolation.md",
         "evidence/t01-dev-bundle-name.md",
-        "evidence/t01-about-name.md"
+        "evidence/t01-about-name.md",
+        "evidence/t01-t04-pseudo-locale-fixtures.md"
       ],
       "must_close_gaps": []
     },
@@ -356,7 +357,8 @@
         "evidence/t03-sidebar-terminal-fallback.md",
         "evidence/t05-core-default-observation.md",
         "evidence/t04-native-browser-engine-removal.md",
-        "evidence/t04-combined-ui-regressions.md"
+        "evidence/t04-combined-ui-regressions.md",
+        "evidence/t01-t04-pseudo-locale-fixtures.md"
       ],
       "must_close_gaps": [
         "G-LINK"

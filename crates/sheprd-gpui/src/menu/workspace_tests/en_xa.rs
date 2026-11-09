@@ -2,7 +2,7 @@
 //! popover and the dialogs it opens: each draws only translated messages,
 //! except for names: the workspace's and its branch.
 use super::*;
-use crate::i18n::leak_tests::{assert_translated, draw, under_en_xa};
+use crate::i18n::leak_tests::{Recorder, assert_translated, draw, under_en_xa};
 use gpui::{Entity, VisualTestContext, px, size};
 
 /// The window with the sidebar fixture's workspaces, connected.
@@ -54,21 +54,41 @@ fn popover(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext, workspace: &
     draw(cx);
 }
 
+fn check_popover(
+    view: &Entity<SheprdWindow>,
+    cx: &mut VisualTestContext,
+    recorder: &Recorder,
+    workspace: &str,
+) {
+    popover(view, cx, workspace);
+    for retained in ["workspace-menu-Rename", "workspace-menu-Note..."] {
+        assert!(
+            cx.debug_bounds(retained).is_some(),
+            "{workspace}: {retained}"
+        );
+    }
+    for removed in [
+        "workspace-menu-New worktree...",
+        "workspace-menu-Close",
+        "workspace-menu-Close group",
+        "workspace-menu-Delete worktree checkout",
+    ] {
+        assert!(cx.debug_bounds(removed).is_none(), "{workspace}: {removed}");
+    }
+    let data = names(view, cx);
+    assert_translated(
+        &format!("Workspace popover on {workspace}"),
+        &recorder.take(),
+        &data,
+    );
+}
+
 #[test]
 fn the_workspace_popover_and_its_dialogs_show_only_messages_under_en_xa() {
     under_en_xa("workspace popover en-XA leak", |cx, recorder| {
         let (view, cx) = window(cx);
         recorder.take();
-        // A main checkout, then a linked worktree.
-        for workspace in ["w3", "w4"] {
-            popover(&view, cx, workspace);
-            let data = names(&view, cx);
-            assert_translated(
-                &format!("Workspace popover on {workspace}"),
-                &recorder.take(),
-                &data,
-            );
-        }
+        check_popover(&view, cx, recorder, "w3");
         for (workspace, action) in [
             ("w3", WorkspaceAction::Rename),
             ("w3", WorkspaceAction::OpenWorktree),
@@ -87,6 +107,17 @@ fn the_workspace_popover_and_its_dialogs_show_only_messages_under_en_xa() {
             let data = names(&view, cx);
             assert_translated(&format!("{action:?} dialog"), &recorder.take(), &data);
         }
+    });
+}
+
+// A separate test gives the linked checkout a fresh text cache. Its remaining
+// translated labels are all shared with the main checkout's popover.
+#[test]
+fn the_linked_checkout_popover_shows_only_messages_under_en_xa() {
+    under_en_xa("linked checkout popover en-XA leak", |cx, recorder| {
+        let (view, cx) = window(cx);
+        recorder.take();
+        check_popover(&view, cx, recorder, "w4");
     });
 }
 
