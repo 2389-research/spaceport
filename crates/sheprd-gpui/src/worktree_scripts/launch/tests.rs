@@ -3,54 +3,15 @@
 use super::*;
 
 #[test]
-fn typed_lines_hold_no_repository_content_and_survive_any_shell() {
-    for (kind, force) in [
-        (ScriptKind::Setup, false),
-        (ScriptKind::Run, false),
-        (ScriptKind::Archive, false),
-        (ScriptKind::Archive, true),
-    ] {
-        let line = command_line(kind, force);
-        let quoted = line
-            .strip_prefix("sh -ec '")
-            .and_then(|rest| rest.strip_suffix('\''))
-            .unwrap();
-        assert!(!quoted.contains(['\'', '\\', '\n']), "{line}");
-        assert!(quoted.starts_with(r#"eval "$HERDR_WORKTREE_SCRIPT""#));
-    }
-    assert!(!command_line(ScriptKind::Run, true).contains("remove"));
-    assert!(!command_line(ScriptKind::Archive, false).contains("--force"));
-    assert!(command_line(ScriptKind::Archive, true).ends_with("--force'"));
-}
-
-#[test]
-#[cfg(unix)]
-fn archive_line_removes_only_after_the_script_succeeds() {
-    let dir = tempfile::tempdir().unwrap();
-    let log = dir.path().join("log");
-    // Stands in for the pane's herdr, recording what it was asked.
-    let herdr = dir.path().join("herdr");
-    std::fs::write(&herdr, "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$LOG\"\n").unwrap();
-    std::fs::set_permissions(&herdr, std::os::unix::fs::PermissionsExt::from_mode(0o755)).unwrap();
-    let run = |script: &str, force: bool| {
-        std::process::Command::new("/bin/sh")
-            .args(["-c", command_line(ScriptKind::Archive, force)])
-            .env_clear()
-            .env("PATH", "/usr/bin:/bin")
-            .env("LOG", &log)
-            .env("HERDR_BIN_PATH", &herdr)
-            .env("HERDR_WORKSPACE_ID", "w7")
-            .env(SCRIPT_ENV, script)
-            .status()
-            .unwrap()
-    };
-    assert!(!run("echo one >> \"$LOG\"\nfalse\necho two >> \"$LOG\"", false).success());
-    assert_eq!(std::fs::read_to_string(&log).unwrap(), "one\n");
-    assert!(run("echo 'it''s fine' >> \"$LOG\"", true).success());
-    assert_eq!(
-        std::fs::read_to_string(&log).unwrap(),
-        "one\nits fine\nworktree remove --workspace w7 --force\n"
-    );
+fn typed_line_runs_only_the_reviewed_script() {
+    let line = command_line();
+    let quoted = line
+        .strip_prefix("sh -ec '")
+        .and_then(|rest| rest.strip_suffix('\''))
+        .unwrap();
+    assert!(!quoted.contains(['\'', '\\', '\n']), "{line}");
+    assert_eq!(quoted, r#"eval "$HERDR_WORKTREE_SCRIPT""#);
+    assert!(!line.contains("worktree remove"));
 }
 
 #[test]

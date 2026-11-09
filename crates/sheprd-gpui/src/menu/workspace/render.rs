@@ -4,7 +4,7 @@
 use crate::{
     SheprdWindow,
     i18n::fl,
-    menu::{WorkspaceAction, WorkspaceMenuAction, danger, workspace_close::checking},
+    menu::{WorkspaceAction, WorkspaceMenuAction, danger},
 };
 use gpui::{prelude::*, *};
 
@@ -20,47 +20,18 @@ impl SheprdWindow {
         let theme = &self.theme;
         let font = &self.config.ui;
         let danger = danger(theme);
-        let deletion = self.menu.deletion.as_ref();
-        let force = deletion.is_some_and(|deletion| deletion.force);
-        let removing = action == WorkspaceAction::DeleteWorktree
-            && self.removal.as_ref().is_some_and(|removal| {
-                removal.pending_for(self.menu.endpoint_target, &target.boot_id, &target.id)
-            });
         let creating = self.menu.opening.is_some();
-        // Until the daemon names the checkout there is nothing to confirm, and a
-        // request already in flight leaves nothing to press either.
-        let armed = (action != WorkspaceAction::DeleteWorktree
-            || deletion.is_some_and(|deletion| deletion.ready()))
-            && (action != WorkspaceAction::OpenWorktree
-                || self.menu.worktree_open.as_ref().is_some_and(|picker| {
-                    picker.pending.is_none()
-                        && !picker.filtered.is_empty()
-                        && !picker.search.read(cx).is_composing()
-                }))
-            && (action != WorkspaceAction::Close
-                || self.menu.close_check.as_ref().is_some_and(|check| {
-                    check.allows(
-                        self.menu
-                            .input
-                            .as_ref()
-                            .map_or("", |input| input.text.as_str()),
-                        self.config.confirm_close_workspace,
-                    )
-                }))
-            && !creating
-            && !removing;
-        let destructive = matches!(
-            action,
-            WorkspaceAction::Close | WorkspaceAction::DeleteWorktree
-        );
+        let armed = (action != WorkspaceAction::OpenWorktree
+            || self.menu.worktree_open.as_ref().is_some_and(|picker| {
+                picker.pending.is_none()
+                    && !picker.filtered.is_empty()
+                    && !picker.search.read(cx).is_composing()
+            }))
+            && !creating;
         let (title, submit): (String, SharedString) = match action {
             WorkspaceAction::Rename => (
                 fl!("workspace-dialog-rename-title"),
                 fl!("workspace-dialog-rename").into(),
-            ),
-            WorkspaceAction::Close => (
-                target.close_label().text(),
-                target.close_label().text().into(),
             ),
             WorkspaceAction::OpenWorktree => (
                 fl!("workspace-dialog-open-worktree-title"),
@@ -77,14 +48,6 @@ impl SheprdWindow {
             WorkspaceAction::Note => (
                 fl!("workspace-dialog-note-title"),
                 fl!("workspace-dialog-save").into(),
-            ),
-            WorkspaceAction::DeleteWorktree if force => (
-                fl!("workspace-dialog-force-delete-title"),
-                fl!("workspace-dialog-force-remove").into(),
-            ),
-            WorkspaceAction::DeleteWorktree => (
-                fl!("workspace-dialog-delete-title"),
-                fl!("workspace-dialog-remove").into(),
             ),
         };
         let mut body = div().flex().flex_col().gap(px(10.)).px(px(16.)).py(px(12.));
@@ -110,53 +73,7 @@ impl SheprdWindow {
                     .text_color(rgb(theme.subtext()))
                     .child(fl!("workspace-dialog-new-workspace-note")),
             ),
-            WorkspaceAction::Close => {
-                body.child(div().text_color(rgb(theme.subtext())).child(fl!(
-                    "workspace-dialog-close-note",
-                    count = target.close_members.len()
-                )))
-            }
-            WorkspaceAction::DeleteWorktree => body
-                .child(if force {
-                    fl!("workspace-dialog-force-removes")
-                } else {
-                    fl!("workspace-dialog-removes")
-                })
-                .child(
-                    div()
-                        .debug_selector(|| "dialog-path".into())
-                        .rounded(px(crate::config::corners::CONTROL))
-                        .bg(rgb(theme.active))
-                        .px(px(10.))
-                        .py(px(6.))
-                        .child(
-                            deletion
-                                .and_then(|deletion| deletion.path.clone())
-                                .unwrap_or_else(|| fl!("workspace-dialog-path-pending")),
-                        ),
-                )
-                .child(div().text_color(rgb(theme.subtext())).child(if force {
-                    fl!("workspace-dialog-force-note")
-                } else {
-                    fl!("workspace-dialog-delete-note")
-                }))
-                .children(deletion.and_then(|deletion| self.archive_note(target, deletion, cx))),
         };
-        if action == WorkspaceAction::Close {
-            body = body.child(
-                div()
-                    .debug_selector(|| "close-git-status".into())
-                    .text_color(danger)
-                    .child(
-                        self.menu
-                            .close_check
-                            .as_ref()
-                            .map_or_else(checking, |check| {
-                                check.status(self.config.confirm_close_workspace)
-                            }),
-                    ),
-            );
-        }
         if self.menu.input.is_some() {
             body = body.child(self.render_dialog_input(cx));
         }
@@ -172,7 +89,7 @@ impl SheprdWindow {
                     .child(error.clone()),
             );
         }
-        if creating || removing {
+        if creating {
             // Dismissing only closes the panel; the daemon keeps the queued work.
             body = body.child(
                 div()
@@ -211,13 +128,13 @@ impl SheprdWindow {
                     .when_some(
                         WorkspaceMenuAction::Dialog(action).icon(),
                         |header, icon| {
-                            header.child(svg().path(icon).size(px(16.)).flex_none().text_color(
-                                if destructive {
-                                    danger
-                                } else {
-                                    rgb(theme.muted)
-                                },
-                            ))
+                            header.child(
+                                svg()
+                                    .path(icon)
+                                    .size(px(16.))
+                                    .flex_none()
+                                    .text_color(rgb(theme.muted)),
+                            )
                         },
                     )
                     .child(
@@ -323,22 +240,16 @@ impl SheprdWindow {
                             );
                             footer.child(
                                 submit_button
-                                    // The primary action carries the fill; a
-                                    // destructive one also carries the warning hue.
-                                    .border_color(if !armed {
-                                        rgb(theme.active)
-                                    } else if destructive {
-                                        danger
-                                    } else {
+                                    .border_color(if armed {
                                         rgb(theme.foreground)
+                                    } else {
+                                        rgb(theme.active)
                                     })
                                     .when(armed, |button| button.bg(rgb(theme.active)))
-                                    .text_color(if !armed {
-                                        rgb(theme.muted)
-                                    } else if destructive {
-                                        danger
-                                    } else {
+                                    .text_color(if armed {
                                         rgb(theme.foreground)
+                                    } else {
+                                        rgb(theme.muted)
                                     })
                                     .child(if creating {
                                         fl!("workspace-dialog-waiting").into()

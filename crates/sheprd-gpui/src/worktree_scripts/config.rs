@@ -38,7 +38,6 @@ struct File {
 pub(crate) struct Scripts {
     setup: Option<String>,
     run: Option<String>,
-    archive: Option<String>,
 }
 
 impl Scripts {
@@ -47,7 +46,6 @@ impl Scripts {
         match kind {
             ScriptKind::Setup => self.setup.as_deref(),
             ScriptKind::Run => self.run.as_deref(),
-            ScriptKind::Archive => self.archive.as_deref(),
         }
         .filter(|script| !script.trim().is_empty())
     }
@@ -69,7 +67,7 @@ impl Config {
         let text = std::str::from_utf8(bytes).map_err(Error::Encoding)?;
         let file: File = toml::from_str(text).map_err(Error::Parse)?;
         // Scripts travel to the pane as environment values, which cannot hold NUL.
-        if [ScriptKind::Setup, ScriptKind::Run, ScriptKind::Archive]
+        if [ScriptKind::Setup, ScriptKind::Run]
             .into_iter()
             .filter_map(|kind| file.scripts.get(kind))
             .any(|script| script.contains('\0'))

@@ -761,11 +761,8 @@ A tab asks before closing only while one of its agents is working or blocked
 on a prompt; tabs whose agents are idle or done, or that have none, close at
 once. Set top-level `confirm_close_tab = false` to never ask for tabs
 (including their running processes), `confirm_close_pane = false` to close
-panes without asking, `confirm_close_workspace = false` to close a workspace
-from its menu without the dialog, and `show_agents = false` to hide the Agents
-section and give Spaces the full sidebar height. All four default to `true`.
-A workspace close still asks when its Git check finds uncommitted files or
-unpushed commits, whatever `confirm_close_workspace` says.
+panes without asking, and `show_agents = false` to hide the Agents
+section and give Spaces the full sidebar height. All three default to `true`.
 The pane dialog's **Do not ask again** checkbox (click it or press Space) saves
 `confirm_close_pane = false` to `config-gpui.local.toml` once the close is sent. Saved edits apply automatically. The
 **Show agents** control in **Settings > Sidebar** saves
@@ -1619,8 +1616,6 @@ ln -s "$HERDR_ROOT_PATH/node_modules" node_modules
 """
 # Runs when you choose Run script from the workspace's menu.
 run = "npm run dev"
-# Runs when you delete the worktree checkout, before it is removed.
-archive = "docker compose down"
 ```
 
 Every key is optional, and an unknown key is an error rather than a script
@@ -1632,13 +1627,9 @@ for, so each branch can carry its own.
   menu, to run it again.
 - **run** starts from **Run script** in the menu of any Git checkout. A
   repository without one says so.
-- **archive** runs when you confirm **Delete worktree checkout**. Its tab
-  removes the checkout with the pane's own `herdr worktree remove` only if
-  the script succeeds; if it fails, the tab stays open on its output and the
-  checkout stays in place.
 
-Each script runs in a new, focused tab labelled `setup`, `run`, or
-`archive` in the checkout's workspace, never in the background, as
+Each script runs in a new, focused tab labelled `setup` or `run`
+in the checkout's workspace, never in the background, as
 `sh -e`, so it stops at the first failing command. Its working directory is
 the checkout. `HERDR_WORKTREE_PATH` names that checkout and
 `HERDR_ROOT_PATH` the repository's main checkout. The script reaches the tab
@@ -1655,8 +1646,7 @@ keyboard shortcut and ignores clicks for its first moment: a keystroke or
 click meant for the terminal cannot answer it. **Trust and run** remembers
 that exact file for that repository on that host. Any change to the file, such as a pulled commit, asks again. The
 same repository on another host is asked about separately. **Don't run**
-runs nothing. For an archive script, **Remove without running** removes the
-checkout as the delete dialog would have, and Escape keeps it. Trust is kept
+runs nothing. Escape keeps it. Trust is kept
 by this client in `trusted-worktree-scripts.json` in its state directory;
 delete that file to forget every grant.
 
@@ -2923,18 +2913,10 @@ Ctrl+Shift+U is left unbound for
   which still take precedence over it in the app. Saved SSH devices do not offer
   it: this computer's CLI is the main account's, and a device without its own
   sign-in already uses that.
-- Workspace actions retain the clicked ID and boot, revalidate before queueing,
-  and reject changed close-group membership. Reconnect clears dialogs. Queue
+- Workspace actions retain the clicked ID and boot and revalidate before queueing.
+  Reconnect clears dialogs. Queue
   errors remain in the dialog; daemon errors appear in the connection status bar.
   Queue acceptance dismisses the dialog, not an optimistic state mutation.
-- Linked spaces offer Delete worktree checkout with a daemon-resolved path and a
-  single confirmation, matching the Herdr TUI. Unlike other workspace dialogs,
-   deletion stays open until the correlated daemon result arrives, with submission
-   disabled while waiting. Dirty/untracked refusals show the error and **Force remove**
-   in the same dialog; force requires a new confirmation. Dismissing while waiting
-   does not cancel the request, and its reply never reopens the dialog. All Git/filesystem work
-  stays in Herdr. Unpushed commits are not checked by this API. See
-  [WORKTREE-DELETION.md](WORKTREE-DELETION.md) for safety limits and sources.
 - Worktree creation sends the clicked `workspace_id`, optional `branch`,
   `base: "HEAD"`, `focus: true`, and `trust_repository: false`. Blank branches use
   daemon policy. The daemon's deferred endpoint navigation focuses the result;
@@ -3143,15 +3125,11 @@ Ctrl+Shift+U is left unbound for
   that types text, such as `@` or `-`, works the same way everywhere, so a
   text field gets it by typing it twice. Every
   daemon action has a GUI command except the `navigate_pane_*` keys (Go To
-  has no pane cursor). `open_worktree` and `remove_worktree` act on the
-  focused workspace, as in the TUI: the first opens its Open worktree...
-  dialog (a linked checkout's through its repository's main checkout), the
-  second its Delete worktree checkout confirmation, only for a linked
-  worktree. When neither applies (a main checkout, a workspace outside Git,
-  nothing focused, or no connection) nothing opens and a flash says why.
-  Herdr leaves both unbound, and so do the GUI's `open_worktree` and
-  `remove_worktree` commands, which `[keybindings]` and the palette offer
-  too. `workspace_picker` and
+  has no pane cursor). `open_worktree` opens the focused workspace's Open worktree...
+  dialog (a linked checkout's through its repository's main checkout).
+  When it cannot apply (a workspace outside Git, nothing focused, or no
+  connection), nothing opens and a flash says why. Herdr leaves it unbound,
+  as does the GUI's `open_worktree` command. `workspace_picker` and
   `goto` open Go To, where `navigate_workspace_up`/`_down` move the selection
   when the key cannot be typed into its search. `split_vertical` and
   `split_horizontal` are Split Right and Split Down. As in the TUI,
@@ -3173,8 +3151,8 @@ Ctrl+Shift+U is left unbound for
   makes h, j, k, l or the arrows resize the focused pane until Escape, Enter,
   or the shortcut again; the status bar shows it. `equalize_splits` evens
   every split in the focused tab, as a double-click on a border between
-  panes does; it has no default shortcut. Renames and
-  `close_workspace` open the same dialogs as their menus, and `reload_config`
+  panes does; it has no default shortcut. Renames open the same dialogs
+  as their menus, and `reload_config`
   reloads both the daemon's config and this one. The daemon's
   `[[keys.command]]` shortcuts, prefix chords or direct keys, run their
   command through `command.invoke` on the focused pane, and the palette lists

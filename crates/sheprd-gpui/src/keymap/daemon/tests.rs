@@ -209,7 +209,6 @@ fn layout_and_navigation_actions_take_herdr_defaults() {
     let keys = DaemonKeys::default();
     for (command, key) in [
         (Command::RenameWorkspace, "shift-w"),
-        (Command::CloseWorkspace, "shift-d"),
         (Command::ReloadConfig, "shift-r"),
         (Command::RenameTab, "shift-t"),
         (Command::RenamePane, "shift-p"),

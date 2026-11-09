@@ -4,9 +4,8 @@
 //! unparseable entry, a `hyper` modifier, an action with no GUI command) is
 //! skipped rather than turned into a GUI config error.
 //!
-//! `open_worktree` and `remove_worktree` act on the focused workspace, as in
-//! the TUI, by opening the dialog that workspace's menu row would open; when
-//! it has no such row, a flash says why.
+//! `open_worktree` acts on the focused workspace by opening its menu dialog;
+//! when it has no such row, a flash says why.
 //!
 //! Herdr's `navigate_pane_*` keys have no GUI command: the workspace picker
 //! is a search field here, with no pane cursor to move.
@@ -80,11 +79,6 @@ const ACTIONS: &[(&str, Target, &str)] = &[
     // Herdr leaves both unbound.
     ("open_worktree", Target::Command(Command::OpenWorktree), ""),
     (
-        "remove_worktree",
-        Target::Command(Command::RemoveWorktree),
-        "",
-    ),
-    (
         "workspace_picker",
         Target::Command(Command::WorkspacePicker),
         "prefix+w",
@@ -98,11 +92,6 @@ const ACTIONS: &[(&str, Target, &str)] = &[
         "rename_workspace",
         Target::Command(Command::RenameWorkspace),
         "prefix+shift+w",
-    ),
-    (
-        "close_workspace",
-        Target::Command(Command::CloseWorkspace),
-        "prefix+shift+d",
     ),
     (
         "reload_config",

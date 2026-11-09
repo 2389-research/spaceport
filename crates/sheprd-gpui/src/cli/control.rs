@@ -131,10 +131,7 @@ pub const FAMILIES: &[(&str, &str)] = &[
         "feedback",
         "Notes the user sent this pane, from pages, reviews, or terminals",
     ),
-    (
-        "scripts",
-        "A repository's worktree setup, run, and archive scripts",
-    ),
+    ("scripts", "A repository's worktree setup and run scripts"),
     ("host", "List the window's hosts, show one, or mute one"),
     (
         "ports",

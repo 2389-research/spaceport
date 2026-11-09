@@ -250,8 +250,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) pressed_terminal_link: Option<PressedLink>,
     /// The terminal grid's cached regions; see `regions`.
     pub(crate) regions: Vec<regions::RegionLayers>,
-    /// A `worktree.remove` queued after its dialog closed.
-    pub(crate) removal: Option<menu::Removal>,
     /// Herdr's resize mode: direction keys resize the focused pane until
     /// Escape, Enter, or the mode's own shortcut ends it.
     pub(crate) resize_mode: bool,

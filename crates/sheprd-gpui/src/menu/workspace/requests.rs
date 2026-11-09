@@ -1,122 +1,16 @@
-//! Carrying a workspace dialog's request to the daemon, and applying the
-//! answer to the dialog, or to a removal whose dialog has already closed.
+//! Carrying a workspace dialog's request to the daemon and applying its answer.
 
 use super::chosen_label;
 use crate::{
     NavigationTarget, SheprdWindow,
-    dialog_input::DialogInput,
     i18n::fl,
-    menu::{Page, Removal, Submission, WorkspaceAction, endpoint_error},
+    menu::{Page, Submission, WorkspaceAction, endpoint_error},
 };
 use gpui::*;
 
 impl SheprdWindow {
-    /// Track the response even if the user dismisses the confirmation while
-    /// waiting. Only the matching, still-open dialog may be changed by it.
-    fn update_pending_removal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(removal) = &self.removal else {
-            return;
-        };
-        let current = removal.endpoint
-            == (
-                self.selection_epoch,
-                self.endpoints[self.selected_endpoint].generation,
-            )
-            && self.live.status.is_connected()
-            && self
-                .live
-                .snapshot
-                .as_ref()
-                .is_some_and(|snapshot| snapshot.boot_id == removal.boot_id);
-        if !current {
-            self.removal = None;
-            return;
-        }
-        let Some((id, Some(result))) = &self.live.dialog_response else {
-            return;
-        };
-        if removal.pending.as_deref() != Some(id.as_str()) {
-            return;
-        }
-        let result = result.clone();
-        let Some(removal) = self.removal.take() else {
-            return;
-        };
-        let dialog_open = self.menu.page == Some(Page::Dialog(WorkspaceAction::DeleteWorktree))
-            && self.menu.endpoint_target == removal.endpoint
-            && self.menu.target.as_ref().is_some_and(|target| {
-                target.id == removal.workspace && target.boot_id == removal.boot_id
-            });
-        let (force, error) = match result {
-            Err(error) => {
-                tracing::warn!(category = "request_rejected", "Worktree removal failed");
-                (removal.force, error.to_string())
-            }
-            Ok(response) => {
-                let Some(error) = response.get("error").filter(|error| !error.is_null()) else {
-                    tracing::debug!("Worktree removal completed");
-                    if dialog_open {
-                        self.dismiss_menu(window, cx);
-                    }
-                    return;
-                };
-                let (code, message) = endpoint_error(error);
-                // Log the known refusal category, never checkout paths or Git's
-                // potentially private diagnostic payload.
-                let category = match code {
-                    "dirty_worktree_requires_force" => "dirty_worktree_requires_force",
-                    "worktree_remove_failed" => "worktree_remove_failed",
-                    _ => "daemon_refusal",
-                };
-                tracing::warn!(category, force = removal.force, "Worktree removal failed");
-                (
-                    removal.force || code == "dirty_worktree_requires_force",
-                    format!("{code}: {message}"),
-                )
-            }
-        };
-        if dialog_open {
-            if let Some(deletion) = &mut self.menu.deletion {
-                deletion.force = force;
-            }
-            self.menu.error = Some(error.clone());
-        }
-        if force {
-            // Keep the record so reopening the dialog asks for the force removal
-            // rather than repeating the refused one.
-            self.removal = Some(Removal {
-                pending: None,
-                force,
-                ..removal
-            });
-        }
-        self.local_error = Some(fl!(
-            "workspace-dialog-remove-failed",
-            error = error.to_string()
-        ));
-        cx.notify();
-    }
-
-    /// Apply the daemon's answer to whichever worktree dialog is waiting for it,
-    /// and to a removal whose dialog has already closed.
+    /// Apply the daemon's answer to the open worktree dialog.
     pub(crate) fn update_workspace_dialog(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.update_pending_removal(window, cx);
-        if let Some(check) = &mut self.menu.close_check
-            && check.poll()
-        {
-            if check.skippable(self.config.confirm_close_workspace) {
-                // Submitting rechecks the connection and the group, so a
-                // refusal still shows in the dialog.
-                self.submit_workspace_dialog(window, cx);
-            } else if check
-                .report
-                .as_ref()
-                .is_some_and(|report| report.needs_consent())
-            {
-                self.menu.input = Some(DialogInput::new(String::new()));
-            }
-            cx.notify();
-        }
         if self.menu.worktree_open.is_some() && !self.worktree_open_current() {
             self.dismiss_menu(window, cx);
             return;
@@ -133,7 +27,7 @@ impl SheprdWindow {
             }
             return;
         }
-        if self.menu.deletion.is_none() && self.menu.opening.is_none() {
+        if self.menu.opening.is_none() {
             return;
         }
         if !self.menu_target_current()
@@ -151,12 +45,6 @@ impl SheprdWindow {
         let Some((id, Some(result))) = &self.live.dialog_response else {
             return;
         };
-        if self.menu.deletion.is_some() {
-            let (id, result) = (id.clone(), result.clone());
-            self.menu.apply_deletion_response(&id, result);
-            self.read_archive_script(cx);
-            return;
-        }
         if self.menu.opening.as_deref() != Some(id.as_str()) {
             return;
         }
@@ -286,80 +174,6 @@ impl SheprdWindow {
             ) && let Some(label) = chosen_label(text, self.menu.suggested_name.as_deref())
             {
                 params["label"] = label.into();
-            }
-            if action == WorkspaceAction::Close {
-                let Some(check) = &self.menu.close_check else {
-                    return Ok(Submission::Awaiting {
-                        focus_changed: false,
-                    });
-                };
-                if !check.current(snapshot, target) {
-                    return Err(crate::Error::WorkspaceGroupChanged);
-                }
-                if !check.allows(text, self.config.confirm_close_workspace) {
-                    return Ok(Submission::Awaiting {
-                        focus_changed: false,
-                    });
-                }
-            }
-            if action == WorkspaceAction::DeleteWorktree {
-                if self.removal.as_ref().is_some_and(|removal| {
-                    removal.pending_for(self.menu.endpoint_target, &target.boot_id, &target.id)
-                }) {
-                    return Ok(Submission::Awaiting {
-                        focus_changed: false,
-                    });
-                }
-                let deletion = self
-                    .menu
-                    .deletion
-                    .as_ref()
-                    .ok_or(crate::Error::MissingDeletion)?;
-                if deletion.pending.is_some() {
-                    return Ok(Submission::Awaiting {
-                        focus_changed: false,
-                    });
-                }
-                if !deletion.ready() {
-                    return Err(crate::Error::DeletionLookup);
-                }
-                let force = deletion.force;
-                let (boot, workspace) = (target.boot_id.clone(), target.id.clone());
-                // With an archive script, the checkout is removed by that
-                // script's tab once it succeeds, never before it runs.
-                if let Some(config) = deletion.archive.script() {
-                    let tree = target.worktree.as_ref();
-                    let launch = crate::worktree_scripts::Launch {
-                        kind: crate::worktree_scripts::ScriptKind::Archive,
-                        endpoint: (
-                            self.selection_epoch,
-                            self.endpoints[self.selected_endpoint].generation,
-                        ),
-                        endpoint_id: self.endpoints[self.selected_endpoint].id.clone(),
-                        boot,
-                        workspace,
-                        repo: tree.map_or_else(|| target.label.clone(), |tree| tree.label.clone()),
-                        repo_key: tree.map(|tree| tree.key.clone()).unwrap_or_default(),
-                        checkout: deletion.path.clone().map(|path| {
-                            crate::worktree_scripts::Checkout {
-                                path,
-                                root: deletion.root.clone(),
-                            }
-                        }),
-                        force,
-                        requested: true,
-                    };
-                    let config = config.clone();
-                    self.start_archive_script(launch, config, cx)?;
-                    return Ok(Submission::Queued {
-                        focus_changed: true,
-                    });
-                }
-                self.queue_worktree_removal(&boot, &workspace, force)?;
-                self.menu.error = None;
-                return Ok(Submission::Awaiting {
-                    focus_changed: true,
-                });
             }
             if action == WorkspaceAction::OpenWorktree {
                 if self.menu.opening.is_some() {

@@ -14,7 +14,6 @@ error-bundle-write = Could not write { $path }: { $error }
 error-cleanup = { $error }; removing { $path }: { $cleanup }
 error-connection-busy = Connection is busy. Try again.
 error-connection-not-ready = The connection is not ready. Try again.
-error-deletion-lookup = Checkout lookup failed. Dismiss and reopen the menu.
 error-empty-tab-name = Enter a tab name.
 error-empty-workspace-label = Workspace label must not be empty.
 # $key is a config key, such as token.
@@ -54,7 +53,6 @@ error-local-git = Git could not run
 error-local-worktree-note = Worktree notes stay in this app and are never sent to the daemon
 error-log-read = Could not read the log { $path }: { $error }
 error-malformed-link = This link's address is not valid, so it opens nothing.
-error-missing-deletion = Reopen the deletion dialog.
 # HOME is an environment variable.
 error-missing-home = HOME is not set
 # XDG_STATE_HOME and HOME are environment variables.
@@ -91,8 +89,6 @@ error-state-file-size = { $path } exceeds { $limit } bytes
 error-unsupported-command = This command action is not supported by this client.
 error-web-view = Could not create the page: { $error }
 error-window-handle = Could not reach the native window for the page: { $error }
-error-workspace-checkout-changed = Checkout changed. Dismiss and reopen the menu.
-error-workspace-group-changed = Workspace group changed. Dismiss and review the group again.
 error-workspace-repository-changed = Repository changed. Dismiss and reopen the menu.
 error-worktree-list = Invalid or oversized worktree list. Dismiss and reopen the menu.
 error-worktree-list-decode = Malformed worktree list. Dismiss and reopen the menu.

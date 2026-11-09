@@ -1,6 +1,6 @@
 //! The `en-XA` leak test (`crate::i18n::leak_tests`) for the workspace
 //! popover and the dialogs it opens: each draws only translated messages,
-//! except for names: the workspace's, its branch, and the checkout's path.
+//! except for names: the workspace's and its branch.
 use super::*;
 use crate::i18n::leak_tests::{assert_translated, draw, under_en_xa};
 use gpui::{Entity, VisualTestContext, px, size};
@@ -33,9 +33,6 @@ fn names(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Vec<String>
         let menu = &view.menu;
         let fields = [
             menu.input.as_ref().map(|input| input.text.clone()),
-            menu.deletion
-                .as_ref()
-                .and_then(|deletion| deletion.path.clone()),
             // Errors keep their English until they are localized.
             menu.error.clone(),
             // The open worktree dialog's key hint.
@@ -62,7 +59,7 @@ fn the_workspace_popover_and_its_dialogs_show_only_messages_under_en_xa() {
     under_en_xa("workspace popover en-XA leak", |cx, recorder| {
         let (view, cx) = window(cx);
         recorder.take();
-        // A main checkout, then a linked worktree, which offers deletion.
+        // A main checkout, then a linked worktree.
         for workspace in ["w3", "w4"] {
             popover(&view, cx, workspace);
             let data = names(&view, cx);
@@ -78,8 +75,6 @@ fn the_workspace_popover_and_its_dialogs_show_only_messages_under_en_xa() {
             ("w3", WorkspaceAction::NewTab),
             ("w3", WorkspaceAction::NewWorkspace),
             ("w3", WorkspaceAction::Note),
-            ("w3", WorkspaceAction::Close),
-            ("w4", WorkspaceAction::DeleteWorktree),
         ] {
             popover(&view, cx, workspace);
             recorder.take();

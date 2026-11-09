@@ -325,16 +325,12 @@ impl SheprdWindow {
             .when(matches!(page, Page::Workspace | Page::Dialog(_)), |panel| {
                 panel
                     .w(popover
-                        .unwrap_or(px(
-                            if page == Page::Dialog(WorkspaceAction::DeleteWorktree) {
-                                480.
-                            } else if settled {
-                                // A listing needs room for a title and its branch.
-                                560.
-                            } else {
-                                420.
-                            },
-                        ))
+                        .unwrap_or(px(if settled {
+                            // A listing needs room for a title and its branch.
+                            560.
+                        } else {
+                            420.
+                        }))
                         .min((viewport.width - px(24.)).max(px(0.))))
                     // Every dialog may use the window's height: a captioned form
                     // whose buttons need scrolling into view reads as clipped.

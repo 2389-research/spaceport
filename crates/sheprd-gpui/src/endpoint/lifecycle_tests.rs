@@ -250,10 +250,8 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
             Method::PaneClose,
             Method::TabClose,
             Method::CommandInvoke,
-            Method::WorkspaceClose,
             Method::WorktreeCreate,
             Method::WorktreeOpen,
-            Method::WorktreeRemove,
             Method::ServerReloadConfig,
         ]
         .map(|method| method.as_str().to_owned()),

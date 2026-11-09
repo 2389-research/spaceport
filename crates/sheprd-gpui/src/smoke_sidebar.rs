@@ -548,15 +548,11 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
         for (width, height) in [(640., 400.), (1200., 780.)] {
             let _ = handle.update(cx, |_, window, _| window.resize(size(px(width), px(height))));
             timer.timer(Duration::from_millis(100)).await;
-            for action in [
-                menu::WorkspaceAction::Rename,
-                menu::WorkspaceAction::Close,
-                menu::WorkspaceAction::DeleteWorktree,
-            ] {
+            for action in [menu::WorkspaceAction::Rename] {
                 let point = handle.update(cx, |view, window, cx| {
                     view.live.status = ConnectionStatus::Connected;
                     // Keep the clicked row inside the scroll viewport below the native titlebar.
-                    view.sidebar_scroll[0].set_offset(point(px(0.), px(if action == menu::WorkspaceAction::DeleteWorktree { -140. } else { -80. })));
+                    view.sidebar_scroll[0].set_offset(point(px(0.), px(-80.)));
                     cx.default_global::<sidebar::layout_tests::PaintedProbes>().0.clear();
                     cx.notify();
                     window.refresh();
@@ -567,7 +563,7 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                 }
                 let point = AnyWindowHandle::from(handle).update(cx, |_, window, cx| {
                     window.draw(cx).clear(cx);
-                    cx.global::<sidebar::layout_tests::PaintedProbes>().0.get(if action == menu::WorkspaceAction::DeleteWorktree { "sidebar-child" } else { "agent-launcher" }).map(|probe| {
+                    cx.global::<sidebar::layout_tests::PaintedProbes>().0.get("agent-launcher").map(|probe| {
                         eprintln!("DIALOG native {action:?} viewport={:?}", window.viewport_size());
                          probe.bounds.center()
                     })

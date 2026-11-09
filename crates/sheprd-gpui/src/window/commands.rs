@@ -438,13 +438,8 @@ impl SheprdWindow {
                 self.resume_palette(window, cx);
                 return;
             }
-            Command::OpenWorktree | Command::RemoveWorktree => {
-                let shortcut = if command == Command::OpenWorktree {
-                    WorktreeShortcut::Open
-                } else {
-                    WorktreeShortcut::Remove
-                };
-                self.open_worktree_shortcut(shortcut, window, cx);
+            Command::OpenWorktree => {
+                self.open_worktree_shortcut(WorktreeShortcut::Open, window, cx);
                 return;
             }
             Command::WorktreeNotes => {
@@ -603,13 +598,8 @@ impl SheprdWindow {
                 self.move_focused_pane(window, cx);
                 return;
             }
-            Command::RenameWorkspace | Command::CloseWorkspace => {
-                let action = if command == Command::RenameWorkspace {
-                    WorkspaceAction::Rename
-                } else {
-                    WorkspaceAction::Close
-                };
-                self.open_focused_workspace_dialog(action, window, cx);
+            Command::RenameWorkspace => {
+                self.open_focused_workspace_dialog(WorkspaceAction::Rename, window, cx);
                 return;
             }
             // As Herdr's binding does: the daemon rereads its file, and this

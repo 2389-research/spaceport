@@ -69,9 +69,7 @@ pub(crate) enum Page {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum WorkspaceAction {
     Rename,
-    Close,
     OpenWorktree,
-    DeleteWorktree,
     /// Names a tab before `tab.create`, when `ui.prompt_new_tab_name` asks.
     NewTab,
     /// Names a workspace before `workspace.create`, when
@@ -144,9 +142,7 @@ impl WorkspaceMenuAction {
     pub(crate) fn icon(self) -> Option<&'static str> {
         Some(match self {
             Self::Dialog(WorkspaceAction::Rename) => "icons/pencil.svg",
-            Self::Dialog(WorkspaceAction::Close) => "icons/close.svg",
             Self::Dialog(WorkspaceAction::OpenWorktree) => "icons/chevron-down.svg",
-            Self::Dialog(WorkspaceAction::DeleteWorktree) => "icons/trash.svg",
             Self::Dialog(WorkspaceAction::Note) => "icons/note.svg",
             Self::Dialog(WorkspaceAction::NewTab | WorkspaceAction::NewWorkspace) => {
                 "icons/plus.svg"

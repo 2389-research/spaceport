@@ -25,7 +25,6 @@ pub enum WorkOp {
 pub enum Script {
     Setup,
     Run,
-    Archive,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

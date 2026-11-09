@@ -193,16 +193,10 @@ impl SheprdWindow {
                     cx.notify();
                 }
             }
-            // A held key can outlive a dirty-worktree refusal and the switch
-            // to Force remove. Destructive consent requires a fresh press.
+            // Destructive Core document consent requires a fresh press.
             "enter"
                 if event.is_held
-                    && (matches!(
-                        self.menu.page,
-                        Some(Page::Dialog(
-                            WorkspaceAction::Close | WorkspaceAction::DeleteWorktree
-                        ))
-                    ) || self.menu.page == Some(Page::CoreWorkspaceDelete)
+                    && (self.menu.page == Some(Page::CoreWorkspaceDelete)
                         || self.core_workspace_delete_selected()) => {}
             "enter" if matches!(self.menu.page, Some(Page::Dialog(_))) => {
                 self.submit_workspace_dialog(window, cx)

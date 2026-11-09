@@ -25,8 +25,6 @@ fn actions_target_clicked_workspace_and_match_daemon_schemas() {
     snapshot.workspaces[0].branch = None;
     let target = WorkspaceTarget::new(&snapshot, &snapshot.workspaces[3]);
     assert!(target.can_create());
-    assert_eq!(target.close_label().english(), "Close group");
-    assert_eq!(target.close_members, ["w3", "w4", "w5"]);
     assert_eq!(
         target
             .request(&snapshot, WorkspaceAction::Rename, "new label")
@@ -36,19 +34,8 @@ fn actions_target_clicked_workspace_and_match_daemon_schemas() {
             serde_json::json!({"workspace_id": "w3", "label": "new label"})
         )
     );
-    assert_eq!(
-        target
-            .request(&snapshot, WorkspaceAction::Close, "")
-            .unwrap(),
-        (
-            Method::WorkspaceClose,
-            serde_json::json!({"workspace_id": "w3", "close_group": true})
-        )
-    );
     for index in [0, 4, 5] {
         let target = WorkspaceTarget::new(&snapshot, &snapshot.workspaces[index]);
-        assert_eq!(target.close_label().english(), "Close");
-        assert_eq!(target.close_members.len(), 1);
         assert!(!target.can_create());
     }
     let mut standalone = snapshot.clone();
@@ -57,5 +44,4 @@ fn actions_target_clicked_workspace_and_match_daemon_schemas() {
         .retain(|w| w.workspace_id != "w4" && w.workspace_id != "w5");
     let target = WorkspaceTarget::new(&standalone, &standalone.workspaces[3]);
     assert!(target.can_create());
-    assert_eq!(target.close_label().english(), "Close");
 }

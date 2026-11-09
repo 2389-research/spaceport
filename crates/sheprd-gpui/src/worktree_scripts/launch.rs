@@ -20,20 +20,9 @@ pub(crate) const WORKTREE_ENV: &str = "HERDR_WORKTREE_PATH";
 ///
 /// Single-quoted with no quote or backslash inside, so POSIX shells, fish,
 /// and nushell all pass it to `sh` unchanged. `-e` stops at the first failing
-/// command. An archive removes its checkout through the pane's own `herdr`
-/// (Herdr sets `HERDR_BIN_PATH` and `HERDR_WORKSPACE_ID` in every pane) only
-/// after the script succeeds; a failure leaves the tab open on its output and
-/// the checkout in place.
-pub(crate) fn command_line(kind: ScriptKind, force: bool) -> &'static str {
-    match (kind, force) {
-        (ScriptKind::Setup | ScriptKind::Run, _) => r#"sh -ec 'eval "$HERDR_WORKTREE_SCRIPT"'"#,
-        (ScriptKind::Archive, false) => {
-            r#"sh -ec 'eval "$HERDR_WORKTREE_SCRIPT"; exec "${HERDR_BIN_PATH:-herdr}" worktree remove --workspace "$HERDR_WORKSPACE_ID"'"# // i18n: data
-        }
-        (ScriptKind::Archive, true) => {
-            r#"sh -ec 'eval "$HERDR_WORKTREE_SCRIPT"; exec "${HERDR_BIN_PATH:-herdr}" worktree remove --workspace "$HERDR_WORKSPACE_ID" --force'"# // i18n: data
-        }
-    }
+/// command. A failure leaves the tab open on its output.
+pub(crate) fn command_line() -> &'static str {
+    r#"sh -ec 'eval "$HERDR_WORKTREE_SCRIPT"'"#
 }
 
 /// Where a script runs: the checkout, and the repository's main checkout

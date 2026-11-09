@@ -17,8 +17,6 @@ pub enum Command {
     Workspace,
     /// The focused repository's "Open worktree..." dialog.
     OpenWorktree,
-    /// The focused linked worktree's delete confirmation.
-    RemoveWorktree,
     /// Go To, listing only the checkouts that have a note.
     WorktreeNotes,
     /// The focused checkout's note.
@@ -109,7 +107,6 @@ pub enum Command {
     NextWorkspace,
     WorkspaceNumber(u8),
     RenameWorkspace,
-    CloseWorkspace,
     PreviousAgent,
     NextAgent,
     AgentNumber(u8),
@@ -163,11 +160,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         command: Command::OpenWorktree,
         name: "open_worktree",
         message: "commands-open-worktree",
-    },
-    CommandInfo {
-        command: Command::RemoveWorktree,
-        name: "remove_worktree",
-        message: "commands-remove-worktree",
     },
     CommandInfo {
         command: Command::WorktreeNotes,
@@ -238,11 +230,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         command: Command::RenameWorkspace,
         name: "rename_workspace",
         message: "commands-rename-workspace",
-    },
-    CommandInfo {
-        command: Command::CloseWorkspace,
-        name: "close_workspace",
-        message: "commands-close-workspace",
     },
     CommandInfo {
         command: Command::Tab,
@@ -822,7 +809,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         }
         Command::NewWindow
         | Command::OpenWorktree
-        | Command::RemoveWorktree
         | Command::WorktreeNotes
         | Command::EditWorktreeNote
         | Command::Find
@@ -874,7 +860,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::NextWorkspace
         | Command::WorkspaceNumber(_)
         | Command::RenameWorkspace
-        | Command::CloseWorkspace
         | Command::PreviousAgent
         | Command::NextAgent
         | Command::AgentNumber(_)

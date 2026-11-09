@@ -4,10 +4,8 @@
 //! from a replaced connection can never be applied to the current one.
 
 // i18n: migrated
-use super::endpoint_error;
 use super::{Page, WorkspaceMenuAction, WorkspaceTarget, github};
 use crate::dialog_input::DialogInput;
-use crate::i18n::fl;
 use gpui::{App, Bounds, Entity, FocusHandle, Pixels, Point, ScrollHandle, Subscription};
 
 /// What an open menu covers, as its last frame laid it out. Windows pages
@@ -98,8 +96,6 @@ pub(crate) struct MenuState {
     pub(super) target: Option<WorkspaceTarget>,
     pub input: Option<DialogInput>,
     pub(crate) error: Option<String>,
-    pub(super) deletion: Option<Deletion>,
-    pub(super) close_check: Option<super::workspace_close::CloseCheck>,
     /// The correlated `worktree.open` request, so the dialog can report its
     /// answer and follow the opened workspace.
     pub(super) opening: Option<String>,
@@ -148,65 +144,11 @@ pub(crate) struct MenuState {
     pub(crate) version_notice: Option<super::VersionNotice>,
 }
 
-pub(super) struct Deletion {
-    pub(super) pending: Option<String>,
-    pub(super) path: Option<String>,
-    /// The repository's main checkout, for the archive script's environment.
-    pub(super) root: Option<String>,
-    pub(super) force: bool,
-    /// Whether the checkout has an archive script to run first.
-    pub(super) archive: crate::worktree_scripts::ArchiveCheck,
-}
-
-impl Deletion {
-    pub(super) fn new(pending: Option<String>, force: bool) -> Self {
-        Self {
-            pending,
-            path: None,
-            root: None,
-            force,
-            archive: crate::worktree_scripts::ArchiveCheck::Unread,
-        }
-    }
-
-    /// Confirming is a single keypress, so the dialog may only submit once the
-    /// daemon has named the checkout, its lookup is no longer in flight, and
-    /// the checkout is known to have an archive script or not.
-    pub(super) fn ready(&self) -> bool {
-        self.pending.is_none() && self.path.is_some() && self.archive.settled()
-    }
-}
-
-/// A queued `worktree.remove`, retained even if its confirmation is dismissed.
-/// It drives sidebar progress and reports a refusal in the matching open dialog
-/// and the window's local error. A dirty checkout enables a force confirmation.
-pub(crate) struct Removal {
-    /// Same fence as the menu target: a response from a replaced connection is
-    /// not this removal's.
-    pub(super) endpoint: (u64, u64),
-    pub(super) boot_id: String,
-    pub(super) workspace: String,
-    /// The request id, until the daemon answers.
-    pub(super) pending: Option<String>,
-    /// Set once the daemon refused the checkout as dirty.
-    pub(super) force: bool,
-}
-
-impl Removal {
-    pub(crate) fn pending_for(&self, endpoint: (u64, u64), boot_id: &str, workspace: &str) -> bool {
-        self.pending.is_some()
-            && self.endpoint == endpoint
-            && self.boot_id == boot_id
-            && self.workspace == workspace
-    }
-}
-
 /// What a submitted dialog did, which decides whether it stays open.
 pub(super) enum Submission {
     /// The request is queued and the dialog has nothing left to wait for.
     Queued { focus_changed: bool },
-    /// The dialog stays open for a daemon answer it still needs: a checkout
-    /// removal or open request.
+    /// The dialog stays open for a daemon answer it still needs.
     Awaiting { focus_changed: bool },
 }
 
@@ -218,58 +160,6 @@ impl Submission {
 }
 
 impl MenuState {
-    pub(super) fn apply_deletion_response(
-        &mut self,
-        id: &str,
-        result: crate::state::DialogResponse,
-    ) {
-        let Some(deletion) = &mut self.deletion else {
-            return;
-        };
-        if deletion.pending.as_deref() != Some(id) {
-            return;
-        }
-        deletion.pending = None;
-        let response = match result {
-            Ok(response) => response,
-            Err(error) => {
-                self.error = Some(error.to_string());
-                return;
-            }
-        };
-        if let Some(error) = response.get("error") {
-            let (code, message) = endpoint_error(error);
-            self.error = Some(format!("{code}: {message}"));
-            return;
-        }
-        let result = &response["result"];
-        let Some(target) = &self.target else {
-            return;
-        };
-        if result["type"] == "worktree_list" {
-            let entry = result["worktrees"].as_array().and_then(|entries| {
-                let mut matches = entries
-                    .iter()
-                    .filter(|entry| entry["open_workspace_id"] == target.id);
-                let entry = matches.next()?;
-                (matches.next().is_none()
-                    && entry["is_linked_worktree"] == true
-                    && entry["is_bare"] == false)
-                    .then_some(entry)
-            });
-            deletion.path = entry
-                .and_then(|entry| entry["path"].as_str())
-                .filter(|path| !path.is_empty())
-                .map(str::to_owned);
-            deletion.root = crate::worktree_scripts::main_checkout(result);
-            if deletion.path.is_none() {
-                self.error = Some(fl!("menu-state-no-linked-checkout"));
-            }
-        } else {
-            self.error = Some(fl!("menu-state-unexpected-response"));
-        }
-    }
-
     pub fn new(cx: &App) -> Self {
         Self {
             page: None,
@@ -301,8 +191,6 @@ impl MenuState {
             target: None,
             input: None,
             error: None,
-            deletion: None,
-            close_check: None,
             opening: None,
             suggested_name: None,
             worktree_open: None,
@@ -376,9 +264,7 @@ impl MenuState {
         self.target = None;
         self.input = None;
         self.error = None;
-        self.deletion = None;
         self.version_notice = None;
-        self.close_check = None;
         self.opening = None;
         self.suggested_name = None;
         self.worktree_open = None;

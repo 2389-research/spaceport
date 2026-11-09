@@ -224,7 +224,6 @@ impl SheprdWindow {
             presentation: Default::default(),
             pressed_terminal_link: None,
             regions: Vec::new(),
-            removal: None,
             resize_mode: false,
             scrollbar_drag: None,
             selected_endpoint: 0,

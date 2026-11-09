@@ -135,19 +135,6 @@ impl SettingsWindow {
                     cx,
                 )),
             )
-            .child(
-                ui::row(
-                    theme,
-                    "tabs-confirm-workspace",
-                    fl!("settings-tabs-confirm-workspace"),
-                )
-                .switch(self.preference_toggle(
-                    "tabs-confirm-workspace-toggle",
-                    self.config.confirm_close_workspace,
-                    Preference::ConfirmCloseWorkspace(!self.config.confirm_close_workspace),
-                    cx,
-                )),
-            )
             .child(ui::section(
                 theme,
                 &fl!("settings-tabs-section-panes"),

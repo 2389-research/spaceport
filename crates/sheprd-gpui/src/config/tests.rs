@@ -45,6 +45,7 @@ mod preferences;
 mod removed_checkpoints;
 mod removed_mods;
 mod removed_phone;
+mod removed_workspace_close;
 mod removed_worktree_cleanup;
 mod repository_icons;
 mod retired_azure;

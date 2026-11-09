@@ -114,6 +114,13 @@ fn work_commands() {
         }
     );
     assert_eq!(
+        parse(&["scripts", "archive"]).unwrap_err(),
+        CliError::UnknownCommand {
+            family: "scripts",
+            command: "archive".into()
+        }
+    );
+    assert_eq!(
         command(&["wait", "tab-closed", "4", "--timeout", "5"]),
         ControlCommand::Wait {
             what: WaitFor::TabClosed(4),

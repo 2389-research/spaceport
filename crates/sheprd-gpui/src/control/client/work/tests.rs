@@ -33,13 +33,10 @@ fn script_listings_show_first_lines_and_whole_scripts() {
     )
     .unwrap();
     let (text, json) = scripts::listing(root, Some(&config));
-    assert_eq!(
-        text,
-        "setup   npm ci ...\nrun     npm run dev\narchive (none)"
-    );
+    assert_eq!(text, "setup   npm ci ...\nrun     npm run dev");
     assert_eq!(json["scripts"]["setup"], "\nnpm ci\ncp ../.env .\n");
     assert_eq!(json["scripts"]["run"], "npm run dev");
-    assert_eq!(json["scripts"]["archive"], serde_json::Value::Null);
+    assert!(json["scripts"].get("archive").is_none());
     assert_eq!(json["digest"], config.digest.as_str());
 }
 

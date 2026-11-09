@@ -17,7 +17,6 @@ pub(crate) enum Preference {
     /// `language`: `system` or the BCP 47 tag the windows show.
     Language(sheprd_i18n::Language),
     ConfirmClosePane(bool),
-    ConfirmCloseWorkspace(bool),
     ShowSystemLoad(bool),
     ShowNetworkQuality(bool),
     ShowGpuLoad(bool),
@@ -131,9 +130,6 @@ impl Config {
                 }
                 Preference::ConfirmClosePane(value) => {
                     (None, "confirm_close_pane", Some(value.into()))
-                }
-                Preference::ConfirmCloseWorkspace(value) => {
-                    (None, "confirm_close_workspace", Some(value.into()))
                 }
                 Preference::ShowSystemLoad(value) => (None, "show_system_load", Some(value.into())),
                 Preference::ShowNetworkQuality(value) => {

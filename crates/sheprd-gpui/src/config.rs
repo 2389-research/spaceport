@@ -134,9 +134,6 @@ pub struct Config {
     pub clipboard_toast: ClipboardToast,
     pub confirm_close_pane: bool,
     pub confirm_close_tab: bool,
-    /// Whether a workspace close shows its dialog when the check finds no
-    /// unpublished work. Uncommitted or unpushed work always asks.
-    pub confirm_close_workspace: bool,
     /// How far the app's own marks and labels stand off its chrome.
     pub contrast: Contrast,
     /// Per saved device, by catalog profile ID.
@@ -274,7 +271,6 @@ impl Default for Config {
             clipboard_toast: ClipboardToast::default(),
             confirm_close_pane: true,
             confirm_close_tab: true,
-            confirm_close_workspace: true,
             contrast: Contrast::default(),
             devices: BTreeMap::new(),
             edge_rail: false,
@@ -347,7 +343,6 @@ struct Settings {
     clipboard_toast: ClipboardToastSettings,
     confirm_close_pane: Option<bool>,
     confirm_close_tab: Option<bool>,
-    confirm_close_workspace: Option<bool>,
     contrast: Contrast,
     devices: BTreeMap<String, DeviceSettings>,
     edge_rail: Option<bool>,
@@ -689,7 +684,6 @@ impl Config {
         // keep-sorted start
         config.confirm_close_pane = settings.confirm_close_pane.unwrap_or(true);
         config.confirm_close_tab = settings.confirm_close_tab.unwrap_or(true);
-        config.confirm_close_workspace = settings.confirm_close_workspace.unwrap_or(true);
         config.focus_follows_mouse = settings.focus_follows_mouse.unwrap_or(true);
         config.show_agents = settings.show_agents.unwrap_or(true);
         config.show_agents_header = settings.show_agents_header.unwrap_or(true);

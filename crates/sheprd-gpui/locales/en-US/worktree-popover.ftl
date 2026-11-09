@@ -1,5 +1,5 @@
 # The popover a workspace row in the sidebar opens: a grid of action tiles,
-# plain rows for rarer actions, and the destructive action last. Rows ending
+# plain rows for rarer actions. Rows ending
 # in "..." open a dialog.
 
 # The header's toggle for the workspace's notifications: its accessible
@@ -9,28 +9,21 @@ worktree-popover-unmute = Unmute notifications
 worktree-popover-mute-button = Mute
 worktree-popover-unmute-button = Unmute
 worktree-popover-rename = Rename
-worktree-popover-close = Close
-# Closes the workspace with the linked worktrees it heads.
-worktree-popover-close-group = Close group
 worktree-popover-note = Note...
 worktree-popover-open-worktree = Open worktree...
 worktree-popover-run-script = Run script
 worktree-popover-run-setup-script = Run setup script
 worktree-popover-expand-group = Expand group
 worktree-popover-collapse-group = Collapse group
-worktree-popover-delete-worktree = Delete worktree checkout
 
 # Tile captions, shorter where the tile's icon says the rest.
 worktree-popover-tile-rename = Rename
-worktree-popover-tile-close = Close
-worktree-popover-tile-close-group = Close group
 
 worktree-popover-not-git = This workspace is not a Git repository
 
-# Why the open or delete worktree shortcut has nothing to act on.
+# Why the open worktree shortcut has nothing to act on.
 worktree-popover-change-disconnected = Not connected, so no worktree can be changed
 worktree-popover-no-workspace = No workspace is focused
 worktree-popover-open-main-closed = Open this repository's main checkout to open a worktree
-worktree-popover-main-checkout = Only a linked worktree can be removed, not a main checkout
 
 worktree-popover-note-unavailable = Notes are kept on Git checkouts with a branch

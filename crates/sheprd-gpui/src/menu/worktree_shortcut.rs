@@ -1,6 +1,4 @@
-//! Herdr's `open_worktree` and `remove_worktree` shortcuts: each acts on the
-//! focused workspace, as in the TUI, by opening the dialog that workspace's
-//! menu row would open, confirmation included.
+//! Herdr's `open_worktree` shortcut opens its dialog for the focused workspace.
 
 // i18n: migrated
 use super::{Page, WorkspaceAction, workspace::WorkspaceTarget};
@@ -8,13 +6,11 @@ use crate::{SheprdWindow, i18n::fl};
 use gpui::{Context, Point, Window};
 use sheprd_client::protocol::ClientShellSnapshot;
 
-/// A worktree shortcut, each opening one dialog of the workspace menu.
+/// A worktree shortcut opening the workspace menu's dialog.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum WorktreeShortcut {
     /// "Open worktree...", listing the repository's other checkouts.
     Open,
-    /// "Delete worktree checkout", asking for confirmation first.
-    Remove,
 }
 
 /// Why a worktree shortcut found no workspace to act on.
@@ -26,8 +22,6 @@ pub(super) enum Unavailable {
     /// A linked checkout opens worktrees through its main checkout, which is
     /// not open.
     MainCheckoutClosed,
-    /// Herdr removes only linked worktrees, never a repository's main checkout.
-    MainCheckout,
 }
 
 impl Unavailable {
@@ -37,7 +31,6 @@ impl Unavailable {
             Self::NoWorkspace => fl!("worktree-popover-no-workspace"),
             Self::NotGit => fl!("worktree-popover-not-git"),
             Self::MainCheckoutClosed => fl!("worktree-popover-open-main-closed"),
-            Self::MainCheckout => fl!("worktree-popover-main-checkout"),
         }
     }
 }
@@ -46,7 +39,6 @@ impl WorktreeShortcut {
     fn action(self) -> WorkspaceAction {
         match self {
             Self::Open => WorkspaceAction::OpenWorktree,
-            Self::Remove => WorkspaceAction::DeleteWorktree,
         }
     }
 
@@ -61,15 +53,15 @@ impl WorktreeShortcut {
             .ok_or(Unavailable::NoWorkspace)?;
         // The same tests the menu uses to offer each row.
         let target = WorkspaceTarget::new(snapshot, focused);
-        if !target.can_create() && !target.can_delete() {
+        if !target.can_create() && !target.is_linked_checkout() {
             return Err(Unavailable::NotGit);
         }
         let linked = focused
             .worktree
             .as_ref()
             .filter(|tree| tree.is_linked_worktree);
-        let row = match (self, linked) {
-            (Self::Open, Some(tree)) => super::workspace::main_checkout(snapshot, tree)
+        let row = match linked {
+            Some(tree) => super::workspace::main_checkout(snapshot, tree)
                 // A main checkout whose shell wandered off would list the
                 // repository it moved to, so the dialog opens through the
                 // linked checkout and names the repository's root instead.
@@ -81,8 +73,7 @@ impl WorktreeShortcut {
                         .then_some(focused)
                 })
                 .ok_or(Unavailable::MainCheckoutClosed)?,
-            (Self::Open, None) | (Self::Remove, Some(_)) => focused,
-            (Self::Remove, None) => return Err(Unavailable::MainCheckout),
+            None => focused,
         };
         Ok(row.workspace_id.clone())
     }
@@ -90,7 +81,7 @@ impl WorktreeShortcut {
 
 impl SheprdWindow {
     /// Opens the dialog `shortcut` names for the focused workspace, as its
-    /// menu row would, so removal still asks for a fresh confirmation. When
+    /// menu row would. When
     /// there is no such row, a flash says why rather than the shortcut doing
     /// nothing visible.
     pub(crate) fn open_worktree_shortcut(

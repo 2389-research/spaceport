@@ -1,11 +1,9 @@
 #![allow(clippy::unwrap_used)]
 
-use super::{WorkspaceAction, WorkspaceMenuAction, WorkspaceTarget, state::Deletion};
-use crate::{SheprdWindow, dialog_input::DialogInput, sidebar, worktree_scripts::ArchiveCheck};
+use super::{WorkspaceAction, WorkspaceMenuAction, WorkspaceTarget};
+use crate::{SheprdWindow, dialog_input::DialogInput, sidebar};
 use sheprd_client::Method;
 
-mod close;
-mod close_unconfirmed;
 mod dialog_layout;
 mod en_xa;
 mod excluded_creation;
@@ -15,14 +13,12 @@ mod mute;
 mod naming;
 mod no_pull_request;
 mod removed_checkpoints;
+mod removed_close_delete;
 mod removed_orchestrator;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod scripts;
 mod targets;
 mod tiles;
-mod worktree_delete;
-mod worktree_delete_keys;
-mod worktree_delete_recovery;
 // Host scripts, which find and start agents, need a POSIX client.
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 
@@ -57,45 +53,14 @@ pub(crate) fn submit_focus_change(
     window: &mut gpui::Window,
     cx: &mut gpui::Context<SheprdWindow>,
 ) {
-    let action = match method {
-        Method::WorkspaceClose => WorkspaceAction::Close,
-        Method::WorktreeOpen => WorkspaceAction::OpenWorktree,
-        Method::WorktreeRemove => WorkspaceAction::DeleteWorktree,
-        _ => panic!("unexpected fixture action"),
-    };
+    assert_eq!(method, Method::WorktreeOpen);
+    let action = WorkspaceAction::OpenWorktree;
     let snapshot = std::sync::Arc::make_mut(view.live.snapshot.as_mut().unwrap());
     snapshot.workspaces = sidebar::layout_tests::snapshot(7).workspaces;
-    let index = if action == WorkspaceAction::DeleteWorktree {
-        4
-    } else {
-        3
-    };
-    let target = WorkspaceTarget::new(snapshot, &snapshot.workspaces[index]);
-    let close_check = (action == WorkspaceAction::Close).then(|| {
-        super::workspace_close::CloseCheck::fixture(
-            snapshot,
-            &target,
-            Some(super::workspace_close::Report {
-                dirty: true,
-                unpushed: true,
-                unknown: false,
-            }),
-        )
-    });
+    let target = WorkspaceTarget::new(snapshot, &snapshot.workspaces[3]);
     view.open_menu(window, cx);
     view.menu.target = Some(target);
     view.menu.page = Some(super::Page::Dialog(action));
-    if let Some(check) = close_check {
-        view.menu.close_check = Some(check);
-        view.menu.input = Some(DialogInput::new("close".into()));
-    }
-    if action == WorkspaceAction::DeleteWorktree {
-        view.menu.deletion = Some(Deletion {
-            path: Some("/fixture/checkout".into()),
-            archive: ArchiveCheck::Read(None),
-            ..Deletion::new(None, false)
-        });
-    }
     if action == WorkspaceAction::OpenWorktree {
         use gpui::AppContext;
         let mut picker =
@@ -110,16 +75,7 @@ pub(crate) fn submit_focus_change(
     }
     view.submit_workspace_dialog(window, cx);
     assert!(view.menu.error.is_none() && view.local_error.is_none());
-    // Creation and removal both await their correlated response. Removal also
-    // keeps the id on the window in case its confirmation is dismissed.
-    let pending = match action {
-        WorkspaceAction::DeleteWorktree => {
-            assert_eq!(view.menu.page, Some(super::Page::Dialog(action)));
-            view.removal.as_ref().unwrap().pending.clone()
-        }
-        WorkspaceAction::OpenWorktree => view.menu.opening.clone(),
-        _ => None,
-    };
+    let pending = view.menu.opening.clone();
     if pending.is_some() {
         let inbox = view.endpoints[view.selected_endpoint]
             .connection

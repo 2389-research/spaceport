@@ -1,6 +1,4 @@
-//! The workspace a menu row targets: what may be created or deleted on it,
-//! which sibling workspaces close with it, and the dialogs that carry those
-//! requests to the daemon and report what came back.
+//! The workspace a menu row targets and its dialogs with the daemon.
 
 // i18n: migrated
 pub(super) mod popover;
@@ -8,7 +6,7 @@ mod render;
 mod requests;
 mod scripts;
 
-use super::{Page, WorkspaceAction, WorkspaceMenuAction, state::Deletion};
+use super::{Page, WorkspaceAction, WorkspaceMenuAction};
 use crate::{SheprdWindow, dialog_input::DialogInput};
 use gpui::{prelude::*, *};
 use popover::Label;
@@ -22,7 +20,6 @@ pub(crate) struct WorkspaceTarget {
     pub(super) id: String,
     pub(super) label: String,
     pub(super) worktree: Option<ClientShellWorktree>,
-    pub(super) close_members: Vec<String>,
     /// Whether linked worktrees of this parent's repository are open, so its
     /// row folds a group even when another parent closes on its own.
     pub(super) heads_group: bool,
@@ -70,7 +67,6 @@ impl WorkspaceTarget {
             id: workspace.workspace_id.clone(),
             label: workspace.label.clone(),
             worktree: known_worktree(workspace),
-            close_members: close_members(snapshot, workspace),
             heads_group: heads_group(snapshot, workspace),
             branch: workspace.branch.clone(),
             source: Source::of(workspace),
@@ -150,10 +146,10 @@ impl WorkspaceTarget {
         (self.worktree.is_some()
             || self.branch.is_some()
             || matches!(self.source, Source::Repository { .. }))
-            && !self.can_delete()
+            && !self.is_linked_checkout()
     }
 
-    pub(super) fn can_delete(&self) -> bool {
+    pub(super) fn is_linked_checkout(&self) -> bool {
         self.worktree
             .as_ref()
             .is_some_and(|tree| tree.is_linked_worktree)
@@ -190,26 +186,20 @@ impl WorkspaceTarget {
             .map(|tree| tree.key.as_str())
     }
 
-    pub(super) fn close_label(&self) -> Label {
-        if self.close_members.len() > 1 {
-            Label::CLOSE_GROUP
-        } else {
-            Label::CLOSE
-        }
-    }
-
     pub(super) fn request(
         &self,
         snapshot: &ClientShellSnapshot,
         action: WorkspaceAction,
         text: &str,
     ) -> crate::Result<(Method, serde_json::Value)> {
-        let workspace = snapshot
-            .workspaces
-            .iter()
-            .find(|w| w.workspace_id == self.id)
-            .filter(|_| snapshot.boot_id == self.boot_id)
-            .ok_or(crate::Error::StaleWorkspace)?;
+        if snapshot.boot_id != self.boot_id
+            || !snapshot
+                .workspaces
+                .iter()
+                .any(|workspace| workspace.workspace_id == self.id)
+        {
+            return Err(crate::Error::StaleWorkspace);
+        }
         let params = match action {
             WorkspaceAction::Rename => {
                 let label = text.trim();
@@ -219,20 +209,6 @@ impl WorkspaceTarget {
                 (
                     Method::WorkspaceRename,
                     serde_json::json!({"workspace_id": self.id, "label": label}),
-                )
-            }
-            WorkspaceAction::Close => {
-                if self.worktree != known_worktree(workspace)
-                    || self.close_members != close_members(snapshot, workspace)
-                {
-                    return Err(crate::Error::WorkspaceGroupChanged);
-                }
-                // The daemon closes every checkout of the repository for a
-                // group close, so a parent beside another parent asks for
-                // itself alone.
-                (
-                    Method::WorkspaceClose,
-                    serde_json::json!({"workspace_id": self.id, "close_group": self.close_members.len() > 1}),
                 )
             }
             WorkspaceAction::OpenWorktree => {
@@ -257,15 +233,6 @@ impl WorkspaceTarget {
                 serde_json::json!({"focus": true, "source_workspace_id": self.id}),
             ),
             WorkspaceAction::Note => return Err(crate::Error::LocalWorktreeNote),
-            WorkspaceAction::DeleteWorktree => {
-                if !self.can_delete() || self.worktree != known_worktree(workspace) {
-                    return Err(crate::Error::WorkspaceCheckoutChanged);
-                }
-                (
-                    Method::WorktreeRemove,
-                    serde_json::json!({"workspace_id": self.id, "force": false, "trust_repository": false}),
-                )
-            }
         };
         Ok(params)
     }
@@ -350,34 +317,6 @@ pub(super) fn chosen_label<'a>(text: &'a str, suggested: Option<&str>) -> Option
     (!text.is_empty() && Some(text) != suggested).then_some(text)
 }
 
-/// The workspaces closing `workspace` closes: its whole group when it is its
-/// repository's only parent and linked worktrees hang off it, else itself.
-/// Like the TUI, a parent beside another parent closes alone.
-fn close_members(snapshot: &ClientShellSnapshot, workspace: &ClientShellWorkspace) -> Vec<String> {
-    let alone = || vec![workspace.workspace_id.clone()];
-    let Some(tree) = workspace
-        .worktree
-        .as_ref()
-        .filter(|tree| !tree.is_linked_worktree)
-    else {
-        return alone();
-    };
-    let mut members = Vec::new();
-    for w in &snapshot.workspaces {
-        match &w.worktree {
-            Some(other) if other.key == tree.key => {
-                if w.workspace_id != workspace.workspace_id && !other.is_linked_worktree {
-                    return alone();
-                }
-                members.push(w.workspace_id.clone());
-            }
-            _ => {}
-        }
-    }
-    members.sort();
-    members
-}
-
 /// Whether `workspace` is a parent with linked worktrees of its repository open.
 fn heads_group(snapshot: &ClientShellSnapshot, workspace: &ClientShellWorkspace) -> bool {
     workspace
@@ -454,8 +393,7 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Opens the focused workspace's rename or close dialog, as its menu's
-    /// row would. Closing confirms here as it does from the menu.
+    /// Opens the focused workspace's dialog as its menu row would.
     pub(crate) fn open_focused_workspace_dialog(
         &mut self,
         action: WorkspaceAction,
@@ -536,8 +474,7 @@ impl SheprdWindow {
 
     /// The actions this workspace offers, in the order the popover shows them
     /// and arrow keys walk them: the header's mute toggle, the tile grid row
-    /// by row (work, then moving or leaving), the plain rows, and the
-    /// destructive action last.
+    /// by row, then the plain rows.
     pub(super) fn workspace_items(&self) -> Vec<(WorkspaceMenuAction, Label)> {
         use WorkspaceMenuAction::Dialog;
         let Some(target) = &self.menu.target else {
@@ -549,7 +486,6 @@ impl SheprdWindow {
             (WorkspaceMenuAction::Mute, Label::MUTE)
         }];
         items.push((Dialog(WorkspaceAction::Rename), Label::RENAME));
-        items.push((Dialog(WorkspaceAction::Close), target.close_label()));
         if self.note_checkout().is_some() {
             items.push((Dialog(WorkspaceAction::Note), Label::NOTE));
         }
@@ -564,7 +500,7 @@ impl SheprdWindow {
                 WorkspaceMenuAction::Script(ScriptKind::Run),
                 Label::RUN_SCRIPT,
             ));
-            if target.can_delete() {
+            if target.is_linked_checkout() {
                 items.push((
                     WorkspaceMenuAction::Script(ScriptKind::Setup),
                     Label::RUN_SETUP_SCRIPT,
@@ -578,12 +514,6 @@ impl SheprdWindow {
             } else {
                 (WorkspaceMenuAction::Collapse, Label::COLLAPSE_GROUP)
             });
-        }
-        if target.can_delete() {
-            items.push((
-                Dialog(WorkspaceAction::DeleteWorktree),
-                Label::DELETE_WORKTREE,
-            ));
         }
         items
     }
@@ -630,7 +560,7 @@ impl SheprdWindow {
             .menu
             .target
             .as_ref()
-            .filter(|target| target.can_delete())?;
+            .filter(|target| target.is_linked_checkout())?;
         let snapshot = self.live.snapshot.as_ref()?;
         let workspace = snapshot
             .workspaces
@@ -682,43 +612,13 @@ impl SheprdWindow {
             )),
             // Propose the daemon's own branch shape, selected so typing replaces it.
             WorkspaceAction::Note => note.map(DialogInput::new),
-            WorkspaceAction::Close
-            | WorkspaceAction::DeleteWorktree
-            | WorkspaceAction::OpenWorktree => None,
+            WorkspaceAction::OpenWorktree => None,
         };
         self.menu.page = Some(Page::Dialog(action));
         self.menu.error = None;
         if action == WorkspaceAction::OpenWorktree {
             self.open_existing_worktrees(window, cx);
             return;
-        }
-        if action == WorkspaceAction::Close
-            && let Some(snapshot) = &self.live.snapshot
-        {
-            self.menu.close_check = Some(super::workspace_close::CloseCheck::start(
-                snapshot,
-                target,
-                self.selected_endpoint == 0 && self.live.local_daemon_peer,
-                cx,
-            ));
-        }
-        if action == WorkspaceAction::DeleteWorktree {
-            let result = self.endpoints[self.selected_endpoint]
-                .connection
-                .request_dialog(
-                    &target.boot_id,
-                    Method::WorktreeList,
-                    serde_json::json!({"workspace_id": target.id, "trust_repository": false}),
-                );
-            self.menu.deletion = Some(Deletion::new(
-                result.as_ref().ok().cloned(),
-                self.removal.as_ref().is_some_and(|removal| {
-                    removal.force
-                        && removal.workspace == target.id
-                        && removal.boot_id == target.boot_id
-                }),
-            ));
-            self.menu.error = result.err().map(|error| error.to_string());
         }
         cx.notify();
     }

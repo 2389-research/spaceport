@@ -73,7 +73,6 @@ pub(super) fn script_kind(args: &mut Args) -> Result<Option<Script>, CliError> {
         Some("list") => None,
         Some("setup") => Some(Script::Setup),
         Some("run") => Some(Script::Run),
-        Some("archive") => Some(Script::Archive),
         _ => return Err(unknown("scripts", verb)),
     })
 }

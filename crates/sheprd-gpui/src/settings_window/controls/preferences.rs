@@ -137,11 +137,6 @@ mod tests {
                 Preference::SmoothScroll(false),
             ),
             (
-                Section::Tabs,
-                "tabs-confirm-workspace-toggle",
-                Preference::ConfirmCloseWorkspace(false),
-            ),
-            (
                 Section::Notifications,
                 "notif-finished-toggle",
                 Preference::NotificationFinished(false),

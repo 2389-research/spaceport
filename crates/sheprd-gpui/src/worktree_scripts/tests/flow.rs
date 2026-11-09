@@ -101,9 +101,7 @@ fn a_run_script_is_located_reviewed_trusted_and_typed_into_a_new_tab(
         ClientMessage::ClientShellPaneInput {
             pane_id: "w1:p9".into(),
             events: vec![
-                ClientPaneInputEvent::TextCommit(
-                    launch::command_line(ScriptKind::Run, false).into()
-                ),
+                ClientPaneInputEvent::TextCommit(launch::command_line().into()),
                 crate::menu::enter_key(),
             ],
         }
@@ -165,7 +163,7 @@ fn trust_covers_one_file_and_a_changed_file_asks_again(cx: &mut gpui::TestAppCon
             view.arm_worktree_script();
             view.skip_worktree_script(window, cx);
             assert_eq!(step(view), "none");
-            assert!(view.menu.page.is_none() && view.removal.is_none());
+            assert!(view.menu.page.is_none());
         })
     });
 }

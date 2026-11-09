@@ -317,7 +317,6 @@ impl SheprdWindow {
             let group = match info.command {
                 Command::Workspace
                 | Command::OpenWorktree
-                | Command::RemoveWorktree
                 | Command::EditWorktreeNote
                 | Command::Tab
                 | Command::SplitRight
@@ -348,8 +347,7 @@ impl SheprdWindow {
                 | Command::EqualizeSplits
                 | Command::RenamePane
                 | Command::MovePane
-                | Command::RenameWorkspace
-                | Command::CloseWorkspace => 0,
+                | Command::RenameWorkspace => 0,
                 Command::NextTab
                 | Command::PreviousTab
                 | Command::FocusLeft

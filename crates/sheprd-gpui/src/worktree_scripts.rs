@@ -1,10 +1,9 @@
-//! Per-repository setup, run, and archive scripts for worktrees.
+//! Per-repository setup and run scripts for worktrees.
 //!
 //! A repository commits its scripts in `.herdr/worktree.toml` (see
 //! [`config`]); this client keeps which of those files the user trusts (see
 //! [`trust`]). The setup script runs when a new worktree is created, the run
-//! script from the workspace menu, and the archive script before a checkout is
-//! removed. Every script runs in a new, focused tab of its checkout (see
+//! script from the workspace menu. Every script runs in a new, focused tab of its checkout (see
 //! [`launch`]), never in the background, and only once the user has reviewed
 //! and trusted that exact file for that repository on that host.
 //!
@@ -20,7 +19,7 @@ mod trust;
 
 pub(crate) use config::{Config, PATH as CONFIG_PATH, read as read_config};
 pub(crate) use error::Error;
-pub(crate) use launch::{Checkout, command_line, created_tab, main_checkout};
+pub(crate) use launch::{Checkout, command_line, created_tab};
 pub(crate) use trust::{Grant, Trust};
 
 use crate::{
@@ -44,19 +43,16 @@ pub(crate) enum ScriptKind {
     Setup,
     /// Starts the project, on request.
     Run,
-    /// Cleans up before the checkout is removed.
-    Archive,
 }
 
 impl ScriptKind {
-    pub(crate) const ALL: [Self; 3] = [Self::Setup, Self::Run, Self::Archive];
+    pub(crate) const ALL: [Self; 2] = [Self::Setup, Self::Run];
 
     /// The key in `[scripts]`, also the label of the tab it runs in.
     pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Setup => "setup",
             Self::Run => "run",
-            Self::Archive => "archive",
         }
     }
 }
@@ -75,8 +71,6 @@ pub(crate) struct Launch {
     pub(crate) repo_key: String,
     /// Asked of the daemon first when unknown.
     pub(crate) checkout: Option<Checkout>,
-    /// An archive removes its checkout with `--force`.
-    pub(crate) force: bool,
     /// Asked for by the user, so a repository without this script says so.
     /// A setup that follows a creation stays quiet instead.
     pub(crate) requested: bool,
@@ -119,30 +113,6 @@ impl Drop for Job {
     }
 }
 
-/// Where the delete dialog's archive script lookup stands.
-pub(crate) enum ArchiveCheck {
-    Unread,
-    Reading,
-    Read(Option<Config>),
-    Failed(crate::Error),
-}
-
-impl ArchiveCheck {
-    pub(crate) fn settled(&self) -> bool {
-        matches!(self, Self::Read(_) | Self::Failed(_))
-    }
-
-    /// The file, when it has an archive script to run.
-    pub(crate) fn script(&self) -> Option<&Config> {
-        match self {
-            Self::Read(Some(config)) if config.scripts.get(ScriptKind::Archive).is_some() => {
-                Some(config)
-            }
-            _ => None,
-        }
-    }
-}
-
 impl SheprdWindow {
     /// Begin `launch`: locate its checkout if need be, read its file, then run
     /// it if trusted or ask. Refused while another script is starting.
@@ -173,29 +143,6 @@ impl SheprdWindow {
             self.read_worktree_scripts(cx);
         }
         Ok(())
-    }
-
-    /// Begin an archive whose file the delete dialog already read: run it if
-    /// trusted, else ask, and remove the checkout only through the script.
-    pub(crate) fn start_archive_script(
-        &mut self,
-        launch: Launch,
-        config: Config,
-        cx: &mut Context<Self>,
-    ) -> crate::Result<()> {
-        if self.script_slot_busy() {
-            return Err(Error::Busy.into());
-        }
-        self.worktree_script = Some(Job {
-            launch,
-            step: Step::Reading,
-            cancel: Arc::new(AtomicBool::new(false)),
-        });
-        let offered = self.offer_worktree_script(config, cx);
-        if offered.is_err() {
-            self.worktree_script = None;
-        }
-        offered
     }
 
     fn read_worktree_scripts(&mut self, cx: &mut Context<Self>) {
@@ -363,7 +310,7 @@ impl SheprdWindow {
                     self.menu.page = Some(Page::WorktreeScript);
                 }
                 if dismissed {
-                    // Nothing runs, and an archive removes nothing.
+                    // Dismissing the trust question runs nothing.
                     self.worktree_script = None;
                 }
                 return;
@@ -398,7 +345,7 @@ impl SheprdWindow {
             Ok(created) => created,
             Err(error) => return self.fail_worktree_script(error, cx),
         };
-        let line = command_line(job.launch.kind, job.launch.force);
+        let line = command_line();
         let (boot, endpoint) = (job.launch.boot.clone(), job.launch.endpoint_id.clone());
         if let Err(error) = self.type_script_line(&boot, &pane, line) {
             return self.fail_worktree_script(error, cx);
@@ -485,33 +432,15 @@ impl SheprdWindow {
         }
     }
 
-    /// The trust question's other answer: run nothing. An archive goes on to
-    /// remove the checkout without its script, as the button says.
+    /// The trust question's other answer: run nothing.
     pub(crate) fn skip_worktree_script(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        // Removing without the script is consequential too.
         if !self.worktree_script_armed(std::time::Instant::now()) {
             return;
         }
-        let current = self.worktree_script_current();
-        let Some(job) = self.worktree_script.take() else {
+        let Some(_) = self.worktree_script.take() else {
             return;
         };
         self.dismiss_menu(window, cx);
-        if job.launch.kind != ScriptKind::Archive {
-            return;
-        }
-        let removed = if current {
-            self.queue_worktree_removal(&job.launch.boot, &job.launch.workspace, job.launch.force)
-        } else {
-            Err(crate::Error::StaleConnection)
-        };
-        if let Err(error) = removed {
-            self.local_error = Some(fl!(
-                "worktree-scripts-remove-failed",
-                error = error.localize()
-            ));
-            cx.notify();
-        }
     }
 
     pub(crate) fn render_worktree_script(&self, cx: &mut Context<Self>) -> Div {
@@ -564,10 +493,6 @@ impl SheprdWindow {
             ScriptKind::Run => (
                 fl!("worktree-scripts-ask-run"),
                 fl!("worktree-scripts-skip"),
-            ),
-            ScriptKind::Archive => (
-                fl!("worktree-scripts-ask-archive"),
-                fl!("worktree-scripts-skip-archive"),
             ),
         };
         let others: Vec<_> = ScriptKind::ALL

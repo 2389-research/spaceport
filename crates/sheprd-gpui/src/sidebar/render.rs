@@ -345,15 +345,6 @@ impl SheprdWindow {
                 } else {
                     0.
                 };
-                let removing_row = selected
-                    && self.live.status.is_connected()
-                    && self.removal.as_ref().is_some_and(|removal| {
-                        removal.pending_for(
-                            (self.selection_epoch, endpoint.generation),
-                            &snapshot.boot_id,
-                            &workspace.workspace_id,
-                        )
-                    });
                 // Lines under the row start under its label column, clear of
                 // the status dot.
                 let under_left = content_x
@@ -397,7 +388,9 @@ impl SheprdWindow {
                 // A child's trunk runs on past its note and ports to the next
                 // sibling, as it runs through the row itself.
                 let trunk = rows.trunk_below(&format!("{endpoint_id}-{id}"), tree, &row_cx);
-                let ports = (self.config.show_listening_ports && !removing_row)
+                let ports = self
+                    .config
+                    .show_listening_ports
                     .then_some(daemon.as_ref())
                     .flatten()
                     .and_then(|daemon| self.listening_ports.get(daemon, &workspace.workspace_id))
@@ -452,7 +445,7 @@ impl SheprdWindow {
                             (endpoint_index == 0).then_some(&self.git),
                             (note.as_deref(), muted),
                         ),
-                        removing: removing_row,
+                        removing: false,
                         status: shown_status,
                         lines,
                     }),

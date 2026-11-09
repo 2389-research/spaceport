@@ -41,9 +41,7 @@ impl Page {
             Self::DeviceTheme => fl!("menu-page-device-theme"),
             Self::Dialog(action) => match action {
                 WorkspaceAction::Rename => fl!("menu-page-rename-workspace"),
-                WorkspaceAction::Close => fl!("menu-page-close-workspace"),
                 WorkspaceAction::OpenWorktree => fl!("menu-page-open-worktree"),
-                WorkspaceAction::DeleteWorktree => fl!("menu-page-delete-worktree"),
                 WorkspaceAction::NewTab => fl!("menu-page-new-tab"),
                 WorkspaceAction::NewWorkspace => fl!("menu-page-new-workspace"),
                 WorkspaceAction::Note => fl!("menu-page-worktree-note"),

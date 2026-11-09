@@ -12,7 +12,6 @@ fn targeted_preferences_round_trip_and_reset_without_erasing_unknown_toml() -> a
     for edit in [
         Preference::ConfirmCloseTab(false),
         Preference::ConfirmClosePane(false),
-        Preference::ConfirmCloseWorkspace(false),
         Preference::ShowSystemLoad(false),
         Preference::ShowNetworkQuality(true),
         Preference::ShowListeningPorts(false),
@@ -41,7 +40,6 @@ fn targeted_preferences_round_trip_and_reset_without_erasing_unknown_toml() -> a
     assert_eq!(table["notifications"]["future"].as_integer(), Some(42));
     assert_eq!(table["confirm_close_tab"].as_bool(), Some(false));
     assert_eq!(table["confirm_close_pane"].as_bool(), Some(false));
-    assert_eq!(table["confirm_close_workspace"].as_bool(), Some(false));
     assert_eq!(table["show_system_load"].as_bool(), Some(false));
     assert_eq!(table["show_network_quality"].as_bool(), Some(true));
     assert_eq!(table["show_listening_ports"].as_bool(), Some(false));

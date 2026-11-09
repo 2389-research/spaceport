@@ -1,12 +1,12 @@
 //! The workspace popover: a header naming the workspace, with the toggle
 //! that mutes its notifications, a fixed grid of large action tiles, plain
-//! rows for the rarer actions, and the destructive action set apart.
+//! rows for the rarer actions.
 
 // i18n: migrated
 use crate::i18n::fl;
 use crate::{
     SheprdWindow, i18n,
-    menu::{WorkspaceAction, WorkspaceMenuAction, accent, danger},
+    menu::{WorkspaceAction, WorkspaceMenuAction, accent},
 };
 use gpui::{prelude::*, *};
 
@@ -17,10 +17,7 @@ pub(crate) struct Label(&'static str);
 
 impl Label {
     // keep-sorted start
-    pub(crate) const CLOSE: Self = Self::new("worktree-popover-close");
-    pub(crate) const CLOSE_GROUP: Self = Self::new("worktree-popover-close-group");
     pub(crate) const COLLAPSE_GROUP: Self = Self::new("worktree-popover-collapse-group");
-    pub(crate) const DELETE_WORKTREE: Self = Self::new("worktree-popover-delete-worktree");
     pub(crate) const EXPAND_GROUP: Self = Self::new("worktree-popover-expand-group");
     pub(crate) const MUTE: Self = Self::new("worktree-popover-mute");
     pub(crate) const NOTE: Self = Self::new("worktree-popover-note");
@@ -64,16 +61,13 @@ impl Label {
 /// The grid's fixed slots, row by row: working on the checkout, then moving
 /// or leaving it. A slot lists the actions it can show, first available
 /// first, and the action it shows grayed when none is.
-const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 2] = {
+const SLOTS: [(&[WorkspaceMenuAction], WorkspaceMenuAction, Label); 1] = {
     use WorkspaceAction::*;
     use WorkspaceMenuAction::*;
-    [
-        (&[Dialog(Rename)], Dialog(Rename), Label::RENAME),
-        (&[Dialog(Close)], Dialog(Close), Label::CLOSE),
-    ]
+    [(&[Dialog(Rename)], Dialog(Rename), Label::RENAME)]
 };
 
-const COLUMNS: usize = 2;
+const COLUMNS: usize = 1;
 
 /// The rows under the grid share one icon column and one label column: the
 /// same inset, a fixed icon slot each icon centres in whatever its size, and
@@ -119,8 +113,6 @@ impl Tile {
     pub(in crate::menu) fn caption(self) -> String {
         match self.label {
             Label::RENAME => fl!("worktree-popover-tile-rename"),
-            Label::CLOSE => fl!("worktree-popover-tile-close"),
-            Label::CLOSE_GROUP => fl!("worktree-popover-tile-close-group"),
             label => label.spoken(),
         }
     }
@@ -130,7 +122,7 @@ impl Tile {
 /// for the rows beneath it, except what the header draws.
 pub(in crate::menu) fn layout(
     items: &[(WorkspaceMenuAction, Label)],
-) -> ([Tile; 2], Vec<(WorkspaceMenuAction, Label)>) {
+) -> ([Tile; 1], Vec<(WorkspaceMenuAction, Label)>) {
     let tiles = SLOTS.map(|(choices, fallback, label)| {
         choices
             .iter()
@@ -171,7 +163,7 @@ const TILE_INSET: f32 = 8.;
 const TILE_GAP: f32 = 6.;
 
 impl SheprdWindow {
-    /// The popover's width: 340, or as wide as two of the longest caption
+    /// The popover's width: 340, or as wide as the longest caption
     /// need in a longer language, and never wider than `room`. Captions are
     /// short and few, and GPUI caches each shaped line, so measuring them as
     /// the popover draws costs no more than drawing them.
@@ -268,17 +260,11 @@ impl SheprdWindow {
             );
         }
         panel = panel.child(grid);
-        let delete = WorkspaceMenuAction::Dialog(WorkspaceAction::DeleteWorktree);
-        let (rows, destructive): (Vec<_>, Vec<_>) =
-            rest.into_iter().partition(|(action, _)| *action != delete);
-        if !rows.is_empty() {
+        if !rest.is_empty() {
             panel = panel.child(div().h(px(6.)));
         }
-        for (action, label) in rows {
+        for (action, label) in rest {
             panel = panel.child(self.render_workspace_row(action, label, cx));
-        }
-        for (action, label) in destructive {
-            panel = panel.child(self.render_workspace_danger(action, label, cx));
         }
         panel
     }
@@ -425,8 +411,7 @@ impl SheprdWindow {
         })
     }
 
-    /// A rarer action, as a plain row. Its icon leads, in the same column as
-    /// the destructive strip's, so the rows read as one list under the tiles.
+    /// A rarer action, as a plain row under the tiles.
     fn render_workspace_row(
         &self,
         action: WorkspaceMenuAction,
@@ -460,53 +445,6 @@ impl SheprdWindow {
                     theme.muted
                 }),
             ))
-            .child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .truncate()
-                    .debug_selector(move || format!("workspace-menu-label-{}", label.english()))
-                    .child(label.text()),
-            )
-            .on_click(cx.listener(move |this, _, window, cx| {
-                cx.stop_propagation();
-                this.activate_workspace_menu(action, window, cx);
-            }))
-    }
-
-    /// The destructive action, full width and red, apart from the tiles so it
-    /// never reads as one more of them.
-    fn render_workspace_danger(
-        &self,
-        action: WorkspaceMenuAction,
-        label: Label,
-        cx: &mut Context<Self>,
-    ) -> Stateful<Div> {
-        let theme = &self.theme;
-        let red = danger(theme);
-        let selected = Some(action) == self.menu.workspace_selected;
-        div()
-            .id(label.id())
-            .debug_selector(move || format!("workspace-menu-{}", label.english()))
-            .role(Role::MenuItem)
-            .aria_label(label.spoken())
-            .when(selected, |row| row.aria_active_descendant())
-            .mt(px(6.))
-            .mx(px(2.))
-            .min_h(px(self.config.ui.line_height() + 12.))
-            .px(px(ROW_INSET))
-            .flex()
-            .items_center()
-            .gap(px(ROW_GAP))
-            .cursor_pointer()
-            .rounded(px(crate::config::corners::CONTROL))
-            .bg(Rgba {
-                a: if selected { 0.26 } else { 0.12 },
-                ..red
-            })
-            .text_color(red)
-            .on_hover(Self::workspace_hover(action, cx))
-            .child(leading_icon(action, label, red))
             .child(
                 div()
                     .flex_1()

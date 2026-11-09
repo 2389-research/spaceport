@@ -12,11 +12,6 @@ fn scripts_refuse_what_the_menu_does_not_offer(cx: &mut gpui::TestAppContext) {
                     error_code(&flows::script(view, &caller(Some(workspace)), kind, cx))
                 };
             assert_eq!(
-                run(view, "w4", Script::Archive, cx),
-                Some(ErrorCode::Unsupported),
-                "archiving removes the checkout, so it stays in the delete dialog"
-            );
-            assert_eq!(
                 run(view, "w3", Script::Setup, cx),
                 Some(ErrorCode::InvalidRequest)
             );

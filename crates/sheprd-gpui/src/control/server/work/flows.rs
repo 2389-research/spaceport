@@ -13,7 +13,6 @@ impl From<Script> for ScriptKind {
         match script {
             Script::Setup => Self::Setup,
             Script::Run => Self::Run,
-            Script::Archive => Self::Archive,
         }
     }
 }
@@ -29,12 +28,6 @@ pub(super) fn script(
     cx: &mut Context<SheprdWindow>,
 ) -> Response {
     let kind = ScriptKind::from(kind);
-    if kind == ScriptKind::Archive {
-        return Response::error(
-            ErrorCode::Unsupported,
-            "The archive script runs when a worktree is removed; remove it from its workspace menu in Spaceport",
-        );
-    }
     let launch = match launch(view, caller, kind) {
         Ok(launch) => launch,
         Err(response) => return response,
@@ -75,7 +68,6 @@ fn launch(view: &SheprdWindow, caller: &Caller, kind: ScriptKind) -> Result<Laun
         repo: tree.label.clone(),
         repo_key: tree.key.clone(),
         checkout: None,
-        force: false,
         requested: true,
     })
 }

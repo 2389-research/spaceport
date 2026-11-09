@@ -58,8 +58,6 @@ pub enum Error {
     Credentials(#[from] sheprd_credentials::Error),
     #[error(transparent)]
     Daemon(#[from] crate::daemon::Error),
-    #[error("Checkout lookup failed. Dismiss and reopen the menu.")]
-    DeletionLookup,
     #[error(transparent)]
     Devices(#[from] crate::menu::devices::Error),
     #[error("Enter a tab name.")]
@@ -151,8 +149,6 @@ pub enum Error {
     },
     #[error("This link's address is not valid, so it opens nothing.")]
     MalformedLink,
-    #[error("Reopen the deletion dialog.")]
-    MissingDeletion,
     #[error("HOME is not set")]
     MissingHome,
     #[error("neither XDG_STATE_HOME nor HOME is set")]
@@ -281,12 +277,8 @@ pub enum Error {
     #[cfg(any(target_os = "macos", windows))]
     #[error("Could not reach the native window for the page: {0}")]
     WindowHandle(#[from] WindowHandleError),
-    #[error("Checkout changed. Dismiss and reopen the menu.")]
-    WorkspaceCheckoutChanged,
     #[error(transparent)]
     WorkspaceDocument(#[from] crate::core_terminals::workspace_document::Error),
-    #[error("Workspace group changed. Dismiss and review the group again.")]
-    WorkspaceGroupChanged,
     #[error("Repository changed. Dismiss and reopen the menu.")]
     WorkspaceRepositoryChanged,
     #[error(transparent)]

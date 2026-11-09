@@ -45,7 +45,6 @@ impl Localize for Error {
             Self::Control(error) => error.localize(),
             Self::Credentials(error) => error.localize(),
             Self::Daemon(error) => error.localize(),
-            Self::DeletionLookup => fl!("error-deletion-lookup"),
             Self::Devices(error) => error.localize(),
             Self::EmptyTabName => fl!("error-empty-tab-name"),
             Self::EmptyWorkspaceLabel => fl!("error-empty-workspace-label"),
@@ -98,7 +97,6 @@ impl Localize for Error {
                 error = source.to_string()
             ),
             Self::MalformedLink => fl!("error-malformed-link"),
-            Self::MissingDeletion => fl!("error-missing-deletion"),
             Self::MissingHome => fl!("error-missing-home"),
             Self::MissingStateRoot => fl!("error-missing-state-root"),
             Self::NoSnapshot => fl!("error-no-snapshot"),
@@ -173,9 +171,7 @@ impl Localize for Error {
             Self::WebView(error) => fl!("error-web-view", error = error.to_string()),
             #[cfg(any(target_os = "macos", windows))]
             Self::WindowHandle(error) => fl!("error-window-handle", error = error.to_string()),
-            Self::WorkspaceCheckoutChanged => fl!("error-workspace-checkout-changed"),
             Self::WorkspaceDocument(error) => error.to_string(),
-            Self::WorkspaceGroupChanged => fl!("error-workspace-group-changed"),
             Self::WorkspaceRepositoryChanged => fl!("error-workspace-repository-changed"),
             Self::WorktreeIdentity(error) => error.localize(),
             Self::WorktreeList => fl!("error-worktree-list"),

@@ -22,7 +22,6 @@ mod state;
 mod version_mismatch;
 mod whats_new;
 mod workspace;
-mod workspace_close;
 mod worktree_note;
 mod worktree_open;
 mod worktree_shortcut;
@@ -49,7 +48,7 @@ pub(crate) use state::Cover;
 pub(crate) use {
     colors::{accent, danger, online, tint},
     page::{Page, WorkspaceAction},
-    state::{MenuState, Removal},
+    state::MenuState,
     version_mismatch::Notice as VersionNotice,
     worktree_shortcut::WorktreeShortcut,
 };

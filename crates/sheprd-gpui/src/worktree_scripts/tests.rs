@@ -49,7 +49,6 @@ fn launch(view: &SheprdWindow, kind: ScriptKind, checkout: Option<&std::path::Pa
             path: path.to_str().unwrap().into(),
             root: Some("/repo".into()),
         }),
-        force: false,
         requested: true,
     }
 }

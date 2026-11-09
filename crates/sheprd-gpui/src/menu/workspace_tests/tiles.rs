@@ -13,46 +13,30 @@ fn tile(action: WorkspaceMenuAction, label: Label, enabled: bool) -> Tile {
 fn every_slot_keeps_its_place_and_grays_what_is_unavailable() {
     use WorkspaceMenuAction::*;
     // A plain checkout keeps the ordinary workspace actions.
-    let items = [
-        (Dialog(WorkspaceAction::Rename), Label::RENAME),
-        (Dialog(WorkspaceAction::Close), Label::CLOSE),
-    ];
+    let items = [(Dialog(WorkspaceAction::Rename), Label::RENAME)];
     let (tiles, rest) = layout(&items);
     assert_eq!(
         tiles,
-        [
-            tile(Dialog(WorkspaceAction::Rename), Label::RENAME, true),
-            tile(Dialog(WorkspaceAction::Close), Label::CLOSE, true),
-        ]
+        [tile(Dialog(WorkspaceAction::Rename), Label::RENAME, true),]
     );
     assert!(rest.is_empty());
 }
 
 #[test]
-fn rows_and_the_destructive_action_follow_the_grid_in_order() {
+fn rows_follow_the_grid_in_order() {
     use WorkspaceMenuAction::*;
     let items = [
         (Dialog(WorkspaceAction::Rename), Label::RENAME),
-        (Dialog(WorkspaceAction::Close), Label::CLOSE_GROUP),
         (Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE),
         (Collapse, Label::COLLAPSE_GROUP),
-        (
-            Dialog(WorkspaceAction::DeleteWorktree),
-            Label::DELETE_WORKTREE,
-        ),
     ];
     let (tiles, rest) = layout(&items);
-    assert!(tiles[0].enabled && tiles[1].enabled);
-    assert_eq!(tiles[1].label, Label::CLOSE_GROUP);
+    assert!(tiles[0].enabled);
     assert_eq!(
         rest,
         [
             (Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE),
             (Collapse, Label::COLLAPSE_GROUP),
-            (
-                Dialog(WorkspaceAction::DeleteWorktree),
-                Label::DELETE_WORKTREE
-            ),
         ]
     );
 }
@@ -101,7 +85,7 @@ fn the_keyboard_walks_actions_in_the_order_they_are_drawn(cx: &mut gpui::TestApp
 }
 
 #[gpui::test]
-fn rows_and_the_delete_strip_share_icon_and_label_columns(cx: &mut gpui::TestAppContext) {
+fn rows_share_icon_and_label_columns(cx: &mut gpui::TestAppContext) {
     use gpui::{Bounds, Pixels, px};
     let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
     // One icon column and one label column, across popovers opened at the same anchor.
@@ -128,8 +112,7 @@ fn rows_and_the_delete_strip_share_icon_and_label_columns(cx: &mut gpui::TestApp
                 })
                 .collect()
         };
-    let mut measured = measure("w3", &["Open worktree...", "Collapse group"]);
-    measured.extend(measure("w4", &["Delete worktree checkout"]));
+    let measured = measure("w3", &["Open worktree...", "Collapse group"]);
     let (icon, text) = measured[0];
     for (other_icon, other_text) in &measured[1..] {
         assert!((other_icon.center().x - icon.center().x).abs() <= px(0.5));

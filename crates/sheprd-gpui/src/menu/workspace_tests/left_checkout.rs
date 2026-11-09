@@ -175,27 +175,6 @@ fn a_linked_checkout_uses_its_repository_root() {
     );
 }
 
-/// Closing the moved workspace still checks its group against what the menu saw.
-#[test]
-fn a_moved_main_checkout_still_closes() {
-    let snapshot = moved();
-    let target = WorkspaceTarget::new(&snapshot, &snapshot.workspaces[3]);
-    assert!(matches!(
-        target.request(&snapshot, WorkspaceAction::Close, ""),
-        Ok((Method::WorkspaceClose, _))
-    ));
-}
-
-/// Removing still explains that a main checkout is never removed, rather than
-/// calling a moved one not Git.
-#[test]
-fn removing_a_moved_main_checkout_explains_main_checkouts_stay() {
-    assert_eq!(
-        WorktreeShortcut::Remove.target(&moved()),
-        Err(Unavailable::MainCheckout)
-    );
-}
-
 /// A main checkout moved to a directory outside any repository reports no
 /// branch. A linked checkout routed through it still opens worktrees of its
 /// repository until the main checkout is kept for another.

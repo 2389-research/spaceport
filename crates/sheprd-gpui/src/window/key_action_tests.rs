@@ -1,6 +1,5 @@
-//! Daemon key actions the window runs itself: renames and workspace closing
-//! open the dialogs their menus open, and resize mode claims keys until it
-//! ends.
+//! Daemon key actions the window runs itself: renames open their menu dialogs,
+//! and resize mode claims keys until it ends.
 
 #![allow(clippy::unwrap_used)]
 
@@ -35,7 +34,7 @@ fn dismiss(view: &gpui::Entity<SheprdWindow>, cx: &mut VisualTestContext) {
 }
 
 #[gpui::test]
-fn renames_and_close_open_the_focused_targets_dialogs(cx: &mut TestAppContext) {
+fn renames_open_the_focused_targets_dialogs(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(connected);
     run(&view, Command::RenameTab, cx);
     view.read_with(cx, |view, _| {
@@ -49,16 +48,11 @@ fn renames_and_close_open_the_focused_targets_dialogs(cx: &mut TestAppContext) {
     });
     dismiss(&view, cx);
 
-    for (command, action) in [
-        (Command::RenameWorkspace, WorkspaceAction::Rename),
-        (Command::CloseWorkspace, WorkspaceAction::Close),
-    ] {
-        run(&view, command, cx);
-        view.read_with(cx, |view, _| {
-            assert_eq!(view.menu.page, Some(Page::Dialog(action)), "{command:?}");
-        });
-        dismiss(&view, cx);
-    }
+    run(&view, Command::RenameWorkspace, cx);
+    view.read_with(cx, |view, _| {
+        assert_eq!(view.menu.page, Some(Page::Dialog(WorkspaceAction::Rename)));
+    });
+    dismiss(&view, cx);
 
     // Nothing focused, nothing to open.
     cx.update(|_, cx| {
@@ -73,7 +67,6 @@ fn renames_and_close_open_the_focused_targets_dialogs(cx: &mut TestAppContext) {
         Command::RenameTab,
         Command::RenamePane,
         Command::RenameWorkspace,
-        Command::CloseWorkspace,
     ] {
         run(&view, command, cx);
         view.read_with(cx, |view, _| {

@@ -5,12 +5,12 @@ fn context_menus_are_menus_and_questions_are_dialogs() {
     assert_eq!(Page::Workspace.accessible_role(), Role::Menu);
     assert_eq!(Page::Host.accessible_role(), Role::Menu);
     assert_eq!(
-        Page::Dialog(WorkspaceAction::DeleteWorktree).accessible_role(),
+        Page::Dialog(WorkspaceAction::Rename).accessible_role(),
         Role::Dialog
     );
     assert_eq!(
-        Page::Dialog(WorkspaceAction::DeleteWorktree).accessible_name(),
-        "Delete worktree"
+        Page::Dialog(WorkspaceAction::Rename).accessible_name(),
+        "Rename workspace"
     );
     assert_eq!(Page::Keybinds.accessible_role(), Role::Dialog);
 }
@@ -23,9 +23,7 @@ fn every_page_title_is_a_message_under_en_xa() {
     crate::i18n::leak_tests::under_en_xa("page titles en-XA", |_, _| {
         let dialogs = [
             WorkspaceAction::Rename,
-            WorkspaceAction::Close,
             WorkspaceAction::OpenWorktree,
-            WorkspaceAction::DeleteWorktree,
             WorkspaceAction::NewTab,
             WorkspaceAction::NewWorkspace,
             WorkspaceAction::Note,

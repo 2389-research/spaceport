@@ -11,7 +11,6 @@ cp "$HERDR_ROOT_PATH/.env" .env
 npm ci
 """
 run = "npm run dev"
-archive = "  "
 "#,
     )
     .unwrap();
@@ -20,7 +19,6 @@ archive = "  "
         Some("cp \"$HERDR_ROOT_PATH/.env\" .env\nnpm ci\n")
     );
     assert_eq!(config.scripts.get(ScriptKind::Run), Some("npm run dev"));
-    assert_eq!(config.scripts.get(ScriptKind::Archive), None);
     assert_eq!(config.digest.len(), 64);
     assert!(config.digest.bytes().all(|b| b.is_ascii_hexdigit()));
     // An empty file is a valid file with nothing to run.
@@ -43,6 +41,10 @@ fn digest_follows_every_byte_of_the_file() {
 
 #[test]
 fn refuses_unknown_keys_bad_encoding_nul_and_oversized_files() {
+    assert!(matches!(
+        Config::parse(b"[scripts]\narchive = \"remove\"\n"),
+        Err(crate::Error::WorktreeScripts(Error::Parse(_)))
+    ));
     assert!(matches!(
         Config::parse(b"[scripts]\nsetpu = \"x\"\n"),
         Err(crate::Error::WorktreeScripts(Error::Parse(_)))
