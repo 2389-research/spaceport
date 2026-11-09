@@ -9,7 +9,6 @@ error-palette-local-changed = The local connection changed. Reopen the palette.
 error-palette-no-session = No captured daemon session. Reopen the palette.
 error-palette-pane-removed = The original pane no longer exists in its tab. Reopen the palette.
 # $error is what git printed.
-error-palette-project-clone = git clone failed: { $error }
 error-palette-project-create = Could not create the project folder: { $error }
 error-palette-project-exists = A folder of that name already exists in the project root
 # palette.project_roots is a config key.

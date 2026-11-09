@@ -167,7 +167,7 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Create the directory (or clone into it), then open it through
+    /// Create the directory, then open it through
     /// `activate_project`, which resolves the new path and looks for an
     /// existing workspace off the UI thread exactly as for any other project.
     pub(super) fn create_project(
@@ -190,7 +190,7 @@ impl SheprdWindow {
         let config = self.config.palette.clone();
         let materialise = cx
             .background_executor()
-            .spawn(async move { project_create::materialise(&project, &|| false) });
+            .spawn(async move { project_create::materialise(&project) });
         if let Some(palette) = &mut self.menu.palette {
             palette.error = None;
         }

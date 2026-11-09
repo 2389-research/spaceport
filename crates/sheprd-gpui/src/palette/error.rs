@@ -21,8 +21,6 @@ pub enum Error {
     NoSession,
     #[error("The original pane no longer exists in its tab. Reopen the palette.")]
     PaneRemoved,
-    #[error("git clone failed: {0}")]
-    ProjectClone(String),
     #[error("Could not create the project folder: {source}")]
     ProjectCreate {
         #[source]

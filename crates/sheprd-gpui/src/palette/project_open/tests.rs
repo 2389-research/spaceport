@@ -316,7 +316,6 @@ fn a_created_project_under_a_symlinked_root_reuses_its_workspace(cx: &mut TestAp
                 Action::NewProject(project_create::NewProject {
                     path: link.join("fresh"),
                     label: "fresh".into(),
-                    source: project_create::Source::Folder,
                 }),
                 window,
                 cx,

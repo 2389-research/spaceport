@@ -15,9 +15,6 @@ impl Localize for Error {
             Self::LocalChanged => fl!("error-palette-local-changed"),
             Self::NoSession => fl!("error-palette-no-session"),
             Self::PaneRemoved => fl!("error-palette-pane-removed"),
-            Self::ProjectClone(output) => {
-                fl!("error-palette-project-clone", error = output.as_str())
-            }
             Self::ProjectCreate { source } => {
                 fl!("error-palette-project-create", error = source.to_string())
             }

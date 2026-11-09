@@ -12,7 +12,6 @@ fn every_palette_variant_has_a_message() {
         Error::LocalChanged,
         Error::NoSession,
         Error::PaneRemoved,
-        Error::ProjectClone("fatal: repository not found".into()),
         Error::ProjectCreate {
             source: std::io::Error::other("disk on fire"),
         },
