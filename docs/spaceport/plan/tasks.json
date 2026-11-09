@@ -410,7 +410,8 @@
         "evidence/t05-core-default-observation.md",
         "evidence/t05-core-window-title.md",
         "evidence/t05-explicit-termination.md",
-        "evidence/t03-remote-terminal-parity.md"
+        "evidence/t03-remote-terminal-parity.md",
+        "evidence/user-remote-terminal-smoke-20261109.md"
       ],
       "must_close_gaps": []
     },

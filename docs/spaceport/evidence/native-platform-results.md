@@ -15,6 +15,10 @@ processes and local/fixture remote methods, but they do not open the final
 Spaceport desktop UI. A49–A51 remain `not_run` as complete acceptance cases;
 G-PLATFORM remains open. The current branch has ongoing source removals, so
 these earlier native results do not qualify the later code revisions.
+Doctor Biz also [reports successful live remote terminal use](user-remote-terminal-smoke-20261109.md).
+That report covers connection and interactive input/output in the user's setup;
+its executable/runtime identities were not captured, so it does not qualify a
+specific candidate or close the complete platform scenarios.
 The [decoy activation audit](t11-sidebar-activation-audit.md) narrows the
 earlier failure to an inactive AppKit test process and records the missing
 upstream comparison. The newer page fixture found a visible, regular-policy
