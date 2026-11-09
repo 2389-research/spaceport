@@ -6,8 +6,8 @@ use super::*;
 fn old_source_view_is_dropped_without_reusing_its_id() {
     let scope = Scope::endpoint("local");
     let mut old = Store::default();
-    let page = old
-        .open(scope.clone(), "w", url("https://example.test/"), None)
+    let devices = old
+        .open(scope.clone(), "w", Some(Location::Devices), None)
         .unwrap();
     let core = old
         .open(
@@ -37,7 +37,7 @@ fn old_source_view_is_dropped_without_reusing_its_id() {
     let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
-        [page, core]
+        [devices, core]
     );
     assert!(restored.get(source).is_none());
     assert!(u64::from(restored.open(scope, "w", None, None).unwrap()) > u64::from(source));

@@ -332,6 +332,7 @@ impl LocalFile {
     /// The file at `path`, served from its folder. `path` must already be
     /// absolute and resolved; the caller's own process does that, so the UI
     /// never touches the disk here.
+    #[cfg(test)]
     pub(crate) fn new(path: &Path, home: Option<&Path>) -> crate::Result<Self> {
         let (Some(root), Some(name)) = (path.parent(), path.file_name().and_then(|n| n.to_str()))
         else {

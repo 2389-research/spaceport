@@ -62,7 +62,7 @@ fn core_tabs_keep_permanent_machine_and_group_identity_through_save() {
 }
 
 #[test]
-fn old_flat_tabs_remain_legacy_even_when_their_ids_match_a_core_group() {
+fn old_flat_page_tabs_do_not_restore_as_core_groups() {
     let group = Uuid::from_u128(71);
     let legacy = format!(
         r#"{{"tabs":[{{"id":4,"scope":"local:/tmp/herdr.sock","workspace_id":"{group}","location":null,"title":"Old","origin":null}}],"next":5}}"#
@@ -74,10 +74,11 @@ fn old_flat_tabs_remain_legacy_even_when_their_ids_match_a_core_group() {
         restored
             .in_workspace(&legacy_scope, &group.to_string())
             .count(),
-        1
+        0
     );
     assert_eq!(restored.in_core_group(&core_key).count(), 0);
-    assert!(restored.get(TabId::test(4)).unwrap().core_group().is_none());
+    assert!(restored.get(TabId::test(4)).is_none());
+    assert!(restored.next > 4);
 }
 
 #[test]

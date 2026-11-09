@@ -5,6 +5,7 @@ use crate::browser::WebUrl;
 mod core_groups;
 mod labels;
 mod orchestrator_tabs;
+mod retired_browser_pages;
 mod retired_code_view;
 mod retired_px0;
 mod retired_review;
@@ -128,7 +129,7 @@ fn saved_tabs_round_trip_and_invalid_files_are_rejected() {
         .open(
             Scope::endpoint("local"),
             "w_1",
-            url("https://a.test/"),
+            Some(Location::Devices),
             None,
         )
         .unwrap();
@@ -157,7 +158,7 @@ fn saved_vs_code_tabs_parse_but_do_not_restore() {
     let mut store = Store::default();
     let scope = Scope::endpoint("local");
     store
-        .open(scope.clone(), "w_1", url("https://a.test/"), None)
+        .open(scope.clone(), "w_1", Some(Location::Devices), None)
         .unwrap();
     let retired = store.open(scope.clone(), "w_1", None, None).unwrap();
     store

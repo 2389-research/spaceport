@@ -6,8 +6,8 @@ use super::*;
 fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
     let mut old = Store::default();
     let scope = Scope::endpoint("local");
-    let page = old
-        .open(scope.clone(), "w1", url("https://example.test/"), None)
+    let devices = old
+        .open(scope.clone(), "w1", Some(Location::Devices), None)
         .unwrap();
     let core = old
         .open(
@@ -44,7 +44,7 @@ fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
     let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
-        [page, core]
+        [devices, core]
     );
     assert!(restored.get(code).is_none());
     assert!(restored.get(code_group).is_none());

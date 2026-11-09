@@ -367,18 +367,14 @@ impl Store {
                 .max()
                 .unwrap_or(0),
         );
-        // Earlier builds hosted editors, the orchestrator, source viewer, and review in tabs;
-        // their old IDs stay reserved, but the views do not restore.
+        // Only the retained native views restore. Old page and editor IDs
+        // stay reserved so a saved group pick cannot show unrelated content.
         tabs.retain(|tab| {
             !matches!(tab.place, Place::RetiredVsCode | Place::RetiredPx0)
-                && !matches!(
+                && (matches!(
                     tab.location,
-                    Some(
-                        Location::RetiredOrchestrator { .. }
-                            | Location::RetiredSource { .. }
-                            | Location::RetiredReview { .. }
-                    )
-                )
+                    Some(Location::Devices | Location::CoreTerminal { .. })
+                ) || matches!((&tab.scope, &tab.location), (Scope::Core(_), None)))
         });
         Self {
             tabs,

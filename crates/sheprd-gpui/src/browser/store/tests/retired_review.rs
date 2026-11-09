@@ -6,8 +6,8 @@ use super::*;
 fn old_review_is_dropped_without_reusing_its_id() {
     let scope = Scope::endpoint("local");
     let mut old = Store::default();
-    let page = old
-        .open(scope.clone(), "w", url("https://example.test/"), None)
+    let devices = old
+        .open(scope.clone(), "w", Some(Location::Devices), None)
         .unwrap();
     let core = old
         .open(
@@ -37,7 +37,7 @@ fn old_review_is_dropped_without_reusing_its_id() {
     let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
-        [page, core]
+        [devices, core]
     );
     assert!(restored.get(review).is_none());
     assert!(u64::from(restored.open(scope, "w", None, None).unwrap()) > u64::from(review));
@@ -53,7 +53,9 @@ fn old_review_checkout_still_rejects_relative_paths() {
 fn retired_review_id_stays_reserved_after_a_second_restore() {
     let scope = Scope::endpoint("local");
     let mut old = Store::default();
-    let page = old.open(scope.clone(), "w", None, None).unwrap();
+    let devices = old
+        .open(scope.clone(), "w", Some(Location::Devices), None)
+        .unwrap();
     let review = old.open(scope.clone(), "w", None, None).unwrap();
     let mut saved = serde_json::to_value(Saved {
         tabs: old.tabs,
@@ -66,7 +68,10 @@ fn retired_review_id_stays_reserved_after_a_second_restore() {
     });
 
     let first = Store::with_tabs(parse(&serde_json::to_vec(&saved).unwrap()).unwrap(), None);
-    assert_eq!(first.tabs().map(|tab| tab.id).collect::<Vec<_>>(), [page]);
+    assert_eq!(
+        first.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
+        [devices]
+    );
     let persisted = serde_json::to_vec(&first.saved()).unwrap();
     let mut second = Store::with_saved(parse_saved(&persisted).unwrap(), None);
     assert!(second.open(scope, "w", None, None).unwrap() > review);

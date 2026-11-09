@@ -1,5 +1,5 @@
 // ABOUTME: Checks that old px0 tabs retire without replacing retained tab IDs.
-// ABOUTME: Keeps Core and page targets stable when a saved editor ID is dropped.
+// ABOUTME: Keeps Core and Devices targets stable when a saved editor ID is dropped.
 use super::*;
 use uuid::Uuid;
 
@@ -7,8 +7,8 @@ use uuid::Uuid;
 fn saved_px0_tab_is_discarded_without_reusing_its_id() {
     let mut old = Store::default();
     let scope = Scope::endpoint("local");
-    let page = old
-        .open(scope.clone(), "w", url("https://example.test/"), None)
+    let devices = old
+        .open(scope.clone(), "w", Some(Location::Devices), None)
         .unwrap();
     let key = CoreGroupKey::new("hub-a", None, "spaceport", Uuid::from_u128(71)).unwrap();
     let core = old.open_core(&key, None).unwrap();
@@ -26,7 +26,7 @@ fn saved_px0_tab_is_discarded_without_reusing_its_id() {
     );
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
-        [page, core]
+        [devices, core]
     );
     assert!(restored.get(TabId::test(500)).is_none());
     assert_eq!(
@@ -36,9 +36,9 @@ fn saved_px0_tab_is_discarded_without_reusing_its_id() {
             .collect::<Vec<_>>(),
         [core]
     );
-    assert!(restored.get(page).is_some());
+    assert!(restored.get(devices).is_some());
     let next = restored.open(scope, "w", None, None).unwrap();
     assert!(u64::from(next) > 500);
-    assert_eq!(restored.close(page).map(|tab| tab.id), Some(page));
+    assert_eq!(restored.close(devices).map(|tab| tab.id), Some(devices));
     assert!(restored.get(core).is_some());
 }

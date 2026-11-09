@@ -6,11 +6,6 @@ pub enum Error {
     Folder,
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    /// Only builds that show no pages open a file in the system browser.
-    #[cfg_attr(
-        all(any(target_os = "macos", windows), not(test)),
-        expect(dead_code, reason = "pages show in the window here")
-    )]
     #[error("not a file path")]
     NotFile,
     #[error("the page is too large")]

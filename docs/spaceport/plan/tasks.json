@@ -341,6 +341,7 @@
         "evidence/t04-browser-control-family-removal.md",
         "evidence/t04-browser-tab-protocol-removal.md",
         "evidence/t04-chat-html-system-open.md",
+        "evidence/t04-browser-saved-page-restore.md",
         "evidence/t03-sidebar-terminal-fallback.md",
         "evidence/t05-core-default-observation.md"
       ],
