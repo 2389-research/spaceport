@@ -35,9 +35,13 @@ Teleport error enum after a source-wide constructor audit; errors needed by
 the remaining host and job routes stay in place.
 
 On macOS, the focused absence test passed 1/1 and retained local pane-move
-tests passed 6/6. A wider pane-menu filter passed 17/19; the two existing
-right-click mouse-routing tests fail at their menu-open assertions even when
-run alone. Baseline comparison is pending, so this wider result stays red.
+tests passed 6/6. A wider pane-menu filter passed 17/19; two right-click
+mouse-routing tests fail at their menu-open assertions even when run alone.
+The exact pre-cut `427f70e2b` checkout, rebuilt in this same isolated
+worktree and target after a package clean, fails both at the same source
+lines (326 and 434). That baseline filter also exposes two unrelated
+workspace right-click failures. The wider pane-menu result remains red;
+these failures predate this cut and need their own mouse-routing fix.
 `cargo +1.99.0 check --locked --offline -p sheprd-gpui
 --all-targets --all-features` passed with no code warnings; default check
 passed after the final prune. The existing macOS compact-unwind linker note
