@@ -15,12 +15,13 @@ fn retired_boat_account_is_unknown_without_activating_provider() -> anyhow::Resu
 }
 
 #[test]
-fn retired_boat_setup_refuses_load_without_rewriting_user_file() -> anyhow::Result<()> {
+fn retired_boat_setup_is_ignored_without_rewriting_user_file() -> anyhow::Result<()> {
     let dir = tempfile::tempdir()?;
     let path = dir.path().join("config.toml");
     let original = b"[cloud.boat]\nsetup = 'echo old'\n";
     fs::write(&path, original)?;
-    assert!(Config::load_startup_path(&path, &dir.path().join("absent-daemon.toml")).is_err());
+    let config = Config::load_startup_path(&path, &dir.path().join("absent-daemon.toml"))?;
+    assert_eq!(config.unknown_keys, ["cloud"]);
     assert_eq!(fs::read(path)?, original);
     Ok(())
 }

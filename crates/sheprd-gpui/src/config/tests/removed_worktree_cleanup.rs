@@ -8,7 +8,7 @@ fn retired_automatic_worktree_cleanup_setting_is_unknown() -> anyhow::Result<()>
         Config::parse("remove_merged_worktrees = true\nconfirm_close_workspace = false\n")?;
     assert_eq!(
         config.unknown_keys,
-        ["remove_merged_worktrees", "confirm_close_workspace"]
+        ["confirm_close_workspace", "remove_merged_worktrees"]
     );
     Ok(())
 }
