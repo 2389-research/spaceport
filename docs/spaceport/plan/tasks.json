@@ -91,7 +91,8 @@
         "evidence/t01-theme-source-isolation.md",
         "evidence/t01-dev-bundle-name.md",
         "evidence/t01-about-name.md",
-        "evidence/t01-t04-pseudo-locale-fixtures.md"
+        "evidence/t01-t04-pseudo-locale-fixtures.md",
+        "evidence/t01-upstream-team-credits.md"
       ],
       "must_close_gaps": []
     },

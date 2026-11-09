@@ -215,7 +215,7 @@ Retain bounded diagnostics and troubleshooting. Correlate client actions with ex
 
 ### SP-022 — Complete but safe branding
 
-Rebrand visible application identity, executables, bundle/package IDs, local IPC/state paths, icons, URLs, update manifests and release channels. Preserve licenses/attribution and external protocol identifiers required for compatibility. Do not reuse upstream update keys/endpoints, access another app's credentials, claim a domain/account or mutate upstream user state. Preserve the profile shell without fake authentication. [D25–D26, D50–D53]
+Rebrand visible application identity, executables, bundle/package IDs, local IPC/state paths, icons, URLs, update manifests and release channels. The About view explicitly credits both the Herdr and Sheprd teams. Preserve licenses/attribution and external protocol identifiers required for compatibility. Do not reuse upstream update keys/endpoints, access another app's credentials, claim a domain/account or mutate upstream user state. Preserve the profile shell without fake authentication. [D25–D26, D50–D53, D59]
 
 ### SP-023 — Independent release engineering
 
@@ -981,6 +981,7 @@ It does not resurrect the phone server, add a custom tunnel manager, expose loop
 | D56 | **Herdr-mediated connectivity** — Use Core for remote runtime connectivity; no new Spaceport transport/federation service. | active |
 | D57 | **Remove mobile server** — Delete phone remote-control server and its desktop integration; defer all mobile design/implementation. | active |
 | D58 | **Allow Herdr 1** — Herdr 1 is an allowed runtime alongside Herdr Core. Preserve working native UX instead of requiring a Core-only startup or deleting the Herdr 1 backend. D55 is superseded. D24, D37, D48 and D56 apply to Core routes; existing Herdr 1 startup and connectors may serve Herdr 1 routes. Retain exact runtime targets and session ownership. This does not restore excluded features, authorize runtime installation/update or imply untested parity. | active |
+| D59 | **Credit both upstream teams** — The Spaceport About view must explicitly reference the Herdr team and the Sheprd team. Label upstream links as credits, retain required copyright/license notices and avoid implying endorsement. | active |
 
 
 ---

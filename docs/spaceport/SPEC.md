@@ -94,7 +94,7 @@ Retain bounded diagnostics and troubleshooting. Correlate client actions with ex
 
 ### SP-022 — Complete but safe branding
 
-Rebrand visible application identity, executables, bundle/package IDs, local IPC/state paths, icons, URLs, update manifests and release channels. Preserve licenses/attribution and external protocol identifiers required for compatibility. Do not reuse upstream update keys/endpoints, access another app's credentials, claim a domain/account or mutate upstream user state. Preserve the profile shell without fake authentication. [D25–D26, D50–D53]
+Rebrand visible application identity, executables, bundle/package IDs, local IPC/state paths, icons, URLs, update manifests and release channels. The About view explicitly credits both the Herdr and Sheprd teams. Preserve licenses/attribution and external protocol identifiers required for compatibility. Do not reuse upstream update keys/endpoints, access another app's credentials, claim a domain/account or mutate upstream user state. Preserve the profile shell without fake authentication. [D25–D26, D50–D53, D59]
 
 ### SP-023 — Independent release engineering
 

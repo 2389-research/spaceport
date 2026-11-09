@@ -50,10 +50,11 @@ fn about_box_shows_build_identity_and_opens_links(cx: &mut TestAppContext) {
         let name = cx.debug_bounds("about-name").unwrap();
         let version = cx.debug_bounds("about-version").unwrap();
         let disclaimer = cx.debug_bounds("about-unaffiliated").unwrap();
+        let credits = cx.debug_bounds("about-upstream-credits").unwrap();
         let copyright = cx.debug_bounds("about-copyright").unwrap();
         let close = cx.debug_bounds("about-close").unwrap();
         assert_eq!(icon.size, size(px(96.), px(96.)));
-        for row in [icon, name, version, disclaimer, copyright, close] {
+        for row in [icon, name, version, credits, disclaimer, copyright, close] {
             assert!(row.top() >= about.top() && row.bottom() <= about.bottom());
             assert!(row.left() >= about.left() && row.right() <= about.right());
         }
@@ -69,7 +70,6 @@ fn about_box_shows_build_identity_and_opens_links(cx: &mut TestAppContext) {
         );
 
         for (selector, url) in [
-            ("about-homepage", HOMEPAGE.to_owned()),
             ("about-website", WEBSITE.to_owned()),
             ("about-repository", REPOSITORY.to_owned()),
             ("about-author", "https://pen.so".to_owned()),

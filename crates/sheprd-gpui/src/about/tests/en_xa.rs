@@ -18,11 +18,14 @@ fn the_about_box_draws_only_messages() {
                 .iter()
                 .any(|line| line == crate::constants::WINDOW_TITLE)
         );
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.contains("Herdr") && line.contains("Sheprd")),
+            "About must credit both upstream teams"
+        );
         let names = [
             crate::constants::WINDOW_TITLE,
-            "Herdr",
-            "herdr.dev",
-            "GitHub",
             AUTHOR,
             LICENSE,
             COPYRIGHT_YEAR,

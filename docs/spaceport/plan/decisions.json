@@ -407,6 +407,13 @@
       "decision": "Herdr 1 is an allowed runtime alongside Herdr Core. Preserve working native UX instead of requiring a Core-only startup or deleting the Herdr 1 backend. D55 is superseded. D24, D37, D48 and D56 apply to Core routes; existing Herdr 1 startup and connectors may serve Herdr 1 routes. Retain exact runtime targets and session ownership. This does not restore excluded features, authorize runtime installation/update or imply untested parity.",
       "status": "active",
       "source": "Doctor Biz, 2026-11-09: allow herdr 1."
+    },
+    {
+      "id": "D59",
+      "title": "Credit both upstream teams",
+      "decision": "The Spaceport About view must explicitly reference the Herdr team and the Sheprd team. Label upstream links as credits, retain required copyright/license notices and avoid implying endorsement.",
+      "status": "active",
+      "source": "Doctor Biz, 2026-11-09: refactor About and reference the Herdr team and the Sheprd team."
     }
   ]
 }

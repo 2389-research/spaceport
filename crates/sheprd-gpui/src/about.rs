@@ -7,8 +7,9 @@ use gpui::{prelude::*, *};
 use std::sync::{Arc, LazyLock};
 
 pub(super) const WEBSITE: &str = "https://herdr.dev/";
-const HOMEPAGE: &str = "https://sheprd.org/";
 pub(super) const REPOSITORY: &str = "https://github.com/sheprd-labs/sheprd";
+const HERDR_NAME: &str = "Herdr"; // i18n: data
+const SHEPRD_NAME: &str = "Sheprd"; // i18n: data
 const COPYRIGHT_YEAR: &str = "© 2026";
 // i18n: data
 const AUTHOR: &str = "Fabien Penso";
@@ -75,11 +76,26 @@ impl SheprdWindow {
             )
             .child(
                 div()
+                    .debug_selector(|| "about-upstream-credits".into())
+                    .pt(px(4.))
+                    .text_color(muted)
+                    .child(fl!(
+                        "about-upstream-credits",
+                        herdr = HERDR_NAME,
+                        sheprd = SHEPRD_NAME
+                    )),
+            )
+            .child(
+                div()
                     .debug_selector(|| "about-unaffiliated".into())
                     .pt(px(4.))
                     .text_size(px(font.size * 0.85))
                     .text_color(muted)
-                    .child(fl!("about-unaffiliated")),
+                    .child(fl!(
+                        "about-unaffiliated",
+                        herdr = HERDR_NAME,
+                        sheprd = SHEPRD_NAME
+                    )),
             )
             .children(self.render_about_build(theme))
             .child(
@@ -88,10 +104,16 @@ impl SheprdWindow {
                     .items_center()
                     .gap(px(16.))
                     .pt(px(10.))
-                    .child(self.about_link("about-homepage", fl!("about-website"), HOMEPAGE))
-                    .child(self.about_link("about-website", "herdr.dev", WEBSITE))
-                    // i18n: data
-                    .child(self.about_link("about-repository", "GitHub", REPOSITORY)),
+                    .child(self.about_link(
+                        "about-website",
+                        fl!("about-upstream-team", name = HERDR_NAME),
+                        WEBSITE,
+                    ))
+                    .child(self.about_link(
+                        "about-repository",
+                        fl!("about-upstream-team", name = SHEPRD_NAME),
+                        REPOSITORY,
+                    )),
             )
             .child(
                 div()
