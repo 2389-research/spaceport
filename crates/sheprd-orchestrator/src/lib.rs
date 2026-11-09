@@ -3,11 +3,9 @@
 //!
 //! Its records live in its own per-repository SQLite database (`location`),
 //! whose schema began as agent-launcher's; agent-launcher's file is copied
-//! in the first time a repository opens. A restart shows what the database
-//! and the app's cache (`cache`) hold before reading anything again;
-//! `docs/orchestrator.md` has the details. The worker (`service`) blocks on
-//! the network, Git, and the disk, so it runs on its own thread; the app
-//! owns the views and the window's handle on each worker.
+//! in the first time a repository opens. The worker (`service`) blocks on
+//! the network, Git, and the disk, so callers must run it off the UI thread.
+//! The desktop app has no caller for this backend.
 
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 
