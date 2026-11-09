@@ -86,7 +86,7 @@
         "S08",
         "S09"
       ],
-      "constraint": "Keep service UI and system-browser open; remove webview-only dependencies after target audit.",
+      "constraint": "Native engine and webview dependencies are removed from source/lockfile; shared native tabs and explicit system opening remain. Native/platform and service-route gates stay open. See evidence/integrated-removals-0fd548118.md.",
       "audit_status": "in_progress"
     },
     {

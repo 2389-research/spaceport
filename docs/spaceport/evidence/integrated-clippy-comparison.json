@@ -1,0 +1,9 @@
+{
+  "baseline_commit": "4625f9f23",
+  "tested_commit": "0fd548118a6c578e71b4d6baef9f9482fb3a2777",
+  "command": "cargo +1.99.0 clippy -p sheprd-gpui --all-targets --all-features --no-deps --locked --offline -- -D warnings",
+  "result": "failed",
+  "baseline_diagnostic_count": 301,
+  "tested_diagnostic_count": 253,
+  "new_diagnostic_groups": []
+}
