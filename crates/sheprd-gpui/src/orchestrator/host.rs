@@ -57,32 +57,6 @@ pub(crate) struct LiveCache {
 }
 
 impl SheprdWindow {
-    /// Whether the focused workspace's repository can be listed: a host
-    /// scripts can run on, with a workspace open.
-    pub(crate) fn can_open_orchestrator(&self) -> bool {
-        self.orchestrator_host() && self.browser_key().is_some()
-    }
-
-    /// Whether the shown host can run the orchestrator's scripts.
-    pub(crate) fn orchestrator_host(&self) -> bool {
-        !matches!(
-            self.endpoints[self.selected_endpoint].connection.target,
-            ConnectTarget::Socket(_) | ConnectTarget::Wsl { .. }
-        )
-    }
-
-    /// The folder new tabs of workspace `id` start in.
-    pub(crate) fn workspace_folder(&self, id: &str) -> Option<String> {
-        self.live
-            .snapshot
-            .as_deref()?
-            .workspaces
-            .iter()
-            .find(|workspace| workspace.workspace_id == id)
-            .map(|workspace| workspace.new_workspace_cwd.clone())
-            .filter(|path| !path.is_empty())
-    }
-
     /// The orchestrator's look: the UI font's family at the terminal font's
     /// size, so Cmd-+ and Cmd-- scale it with the terminals.
     fn look(&self) -> Look {
@@ -205,25 +179,6 @@ impl SheprdWindow {
             }
         }
         specs
-    }
-
-    /// The key [`Self::repo_specs`] gives workspace `workspace` on the shown
-    /// host, so a section can pick that project.
-    pub(crate) fn workspace_repo_key(&self, workspace: &str) -> Option<String> {
-        let endpoint = self.endpoints.get(self.selected_endpoint)?;
-        let found = self
-            .live
-            .snapshot
-            .as_deref()?
-            .workspaces
-            .iter()
-            .find(|shown| shown.workspace_id == workspace)?;
-        let repo = OrchestratorRepo::new(found.new_workspace_cwd.clone()).ok()?;
-        Some(repo_key(
-            &endpoint.id,
-            found.worktree.as_ref().map(|tree| tree.key.as_str()),
-            &repo.checkout,
-        ))
     }
 
     pub(super) fn orchestrator_view(&self, id: ViewId) -> Option<&Entity<OrchestratorView>> {

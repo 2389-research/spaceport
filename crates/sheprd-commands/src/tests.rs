@@ -1,6 +1,7 @@
 use super::*;
 
 mod browser_page;
+mod removed_orchestrator;
 mod retired_ide;
 
 #[test]
@@ -123,7 +124,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (Reconnect, &[]),
         (Quit, &["cmd-q"]),
         (About, &[]),
-        (OpenOrchestrator, &[]),
         (GitMenu, &[]),
         (ToggleAnnotate, &[]),
         (InstallBrowserSkill, &[]),

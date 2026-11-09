@@ -338,7 +338,6 @@ impl SheprdWindow {
                 | Command::ClosePane
                 | Command::CloseTab
                 | Command::ReopenClosedTab
-                | Command::OpenOrchestrator
                 | Command::GitMenu
                 | Command::ToggleAnnotate
                 | Command::SplitEditor

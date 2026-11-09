@@ -94,17 +94,6 @@ impl OrchestratorView {
             .retain(|key| !self.skipped_repos.contains(key));
     }
 
-    /// Lists only the project `key` names, as a menu opening one workspace's
-    /// issues asks.
-    pub(crate) fn only_project(&mut self, key: String, cx: &mut Context<Self>) {
-        if !self.repos.iter().any(|repo| repo.key == key) {
-            return;
-        }
-        self.projects = HashSet::from([key]);
-        self.refresh_rows();
-        cx.notify();
-    }
-
     /// The item a row shows.
     pub(super) fn row_item(&self, row: &ItemRow) -> &Item {
         &self.repos[row.repo].snapshot.items[row.item]

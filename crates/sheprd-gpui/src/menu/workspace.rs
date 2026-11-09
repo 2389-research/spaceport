@@ -546,9 +546,6 @@ impl SheprdWindow {
         if self.note_checkout().is_some() {
             items.push((Dialog(WorkspaceAction::Note), Label::NOTE));
         }
-        if target.worktree.is_some() && self.orchestrator_host() {
-            items.push((WorkspaceMenuAction::Orchestrator, Label::ORCHESTRATOR));
-        }
         if target.can_create() {
             items.push((Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE));
         }
@@ -759,13 +756,6 @@ impl SheprdWindow {
             }
             WorkspaceMenuAction::PullRequest => self.open_workspace_pr(cx),
             WorkspaceMenuAction::Script(kind) => self.run_workspace_script(kind, window, cx),
-            WorkspaceMenuAction::Orchestrator => {
-                if let Some(target) = &self.menu.target {
-                    let workspace = target.id.clone();
-                    let folder = self.workspace_folder(&workspace);
-                    self.open_orchestrator_in(workspace, folder, window, cx);
-                }
-            }
         }
     }
 }

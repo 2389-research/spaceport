@@ -149,3 +149,47 @@ native-platform evidence.
 Read-only source search, package T04 context, `tools/spec.py check`, and
 `git diff --check` passed. No Cargo tests or native UI checks ran, and the
 shared Cargo target was not used.
+
+## Step 3b: direct Issues opener
+
+Source: isolated worktree at integration commit `c66dc64e2`; `tools/spec.py
+context T04` was run from the package root. The source inventory traced direct
+callers, command variants, strings, locale keys, menu configuration, saved
+state and tests. The full native Activity section and tick worker still span
+many owners; removing only their polling would leave dead PR/Issues/Tasks
+panels. This cut removes the distinct direct opener while leaving those
+panels live for a later coherent removal.
+
+`OpenOrchestrator` is absent from the command catalog, palette handling and
+window dispatch. The group and workspace menus no longer offer their Issues
+and pull requests action. Their shared `open_orchestrator[_in]` implementation,
+workspace project narrowing state, menu-only host/folder helpers, test-only
+inspection helpers and exclusive English message keys are gone. Existing
+Activity section selection still creates and updates its view, and its tick
+still drains events. A test for a closed workspace's run notice moved from the
+deleted workspace-menu test into the Activity section tests; it passes through
+the remaining live section entry route. Saved panel fallback and retired tab
+ID reservation were not changed. Core group/page identity, Usage, host-agent
+Overview rows, device Overview history/chart, diagnostics source and generic
+credential helpers are untouched.
+
+The command-catalog negative test and both local-menu negative tests failed
+before the code cut and passed afterward. Focused results: `sheprd-commands`
+27/27; group menu 29/29; workspace menu 53/53; Activity section 29/29;
+retained Overview 83/83; Core saved groups 3/3; Usage 102/102; preferences
+18/18; device Overview 30/30. `cargo +1.99.0 check -p sheprd-gpui
+--all-targets --locked --offline --quiet` passed with no new warnings. Cargo
+tests still emitted the pre-existing macOS compact-unwind linker warning.
+
+A separate `sheprd-diagnostics` test run was red: 22 passed, 1 failed, 1
+ignored. Its crash test looks under `<XDG_STATE_HOME>/herdr/gpui/logs`, while
+`sheprd_client::local_path::state_dir()` now returns
+`<XDG_STATE_HOME>/spaceport`; the test and diagnostics source were unchanged
+by this cut. The source-path mismatch exists at `c66dc64e2` and needs a
+separate identity/diagnostics fix. No native macOS window test ran because
+the desktop was at the login window.
+
+The PR/Issues/Tasks Activity panels, `ui panel` CLI/wire names,
+`poll_orchestrators`, GitLab account flow and `sheprd-orchestrator` worker still
+run. T04 remains blocked by G-LINK; A29 and A30 remain `not_run`. No release
+or full negative-reachability claim follows from this bounded cut.

@@ -1,7 +1,6 @@
 # The menu behind a tab group's "…" button: tabs to open in the group, chats,
 # listening ports, closing, and splitting.
 
-group-menu-orchestrator = Issues and pull requests
 group-menu-close-tab = Close Tab
 group-menu-close-others = Close Others
 group-menu-close-group = Close Group

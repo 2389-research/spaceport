@@ -13,7 +13,6 @@ worktree-popover-close = Close
 # Closes the workspace with the linked worktrees it heads.
 worktree-popover-close-group = Close group
 worktree-popover-note = Note...
-worktree-popover-orchestrator = Issues and pull requests
 worktree-popover-open-worktree = Open worktree...
 worktree-popover-run-script = Run script
 worktree-popover-run-setup-script = Run setup script

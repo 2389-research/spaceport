@@ -26,7 +26,6 @@ impl Label {
     pub(crate) const MUTE: Self = Self::new("worktree-popover-mute");
     pub(crate) const NOTE: Self = Self::new("worktree-popover-note");
     pub(crate) const OPEN_WORKTREE: Self = Self::new("worktree-popover-open-worktree");
-    pub(crate) const ORCHESTRATOR: Self = Self::new("worktree-popover-orchestrator");
     pub(crate) const RENAME: Self = Self::new("worktree-popover-rename");
     pub(crate) const RUN_SCRIPT: Self = Self::new("worktree-popover-run-script");
     pub(crate) const RUN_SETUP_SCRIPT: Self = Self::new("worktree-popover-run-setup-script");

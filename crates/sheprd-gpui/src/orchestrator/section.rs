@@ -1,11 +1,10 @@
 //! The activity bar's Pull requests, Issues, and Tasks sections: one orchestrator
 //! view the window owns, listing every repository the connected hosts'
 //! workspaces hold, drawn across the window in place of its terminals on the
-//! list the section names. The menus and Show Issues command open it
-//! narrowed to one workspace's project.
+//! list the section names.
 
 use super::{List, OrchestratorView, ViewId};
-use crate::{SheprdWindow, browser::OrchestratorRepo, i18n::fl, sidebar::ActivityPanel};
+use crate::{SheprdWindow, i18n::fl, sidebar::ActivityPanel};
 use gpui::{prelude::*, *};
 
 impl SheprdWindow {
@@ -21,8 +20,7 @@ impl SheprdWindow {
         let changed =
             Some(id) != self.activity.section_view || self.activity.section_list != Some(list);
         self.activity.section_view = Some(id);
-        let project = self.activity.section_project.take();
-        if !changed && project.is_none() {
+        if !changed {
             return;
         }
         let Some(view) = self.orchestrator_view(id).cloned() else {
@@ -31,12 +29,7 @@ impl SheprdWindow {
         let specs = self.repo_specs();
         view.update(cx, |view, cx| {
             view.set_repos(specs, cx);
-            if changed {
-                view.show_list(list, cx);
-            }
-            if let Some(key) = project {
-                view.only_project(key, cx);
-            }
+            view.show_list(list, cx);
         });
         self.activity.section_list = Some(list);
         cx.notify();
@@ -56,64 +49,6 @@ impl SheprdWindow {
         }
         // The tick hands it the repositories and accounts right after.
         self.activity.section_view = Some(self.sections_view(cx));
-    }
-
-    /// Shows the focused workspace's issues.
-    pub(crate) fn open_orchestrator(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some((_, workspace)) = self.browser_key() else {
-            self.show_flash(
-                crate::window::Flash::warning(fl!("orchestrator-no-workspace")),
-                cx,
-            );
-            return;
-        };
-        self.open_orchestrator_in(workspace, None, window, cx);
-    }
-
-    /// Shows the issues of workspace `workspace`, listing the repository of
-    /// `checkout` when given, else of its focused pane. Another workspace
-    /// than the focused one is switched to first.
-    pub(crate) fn open_orchestrator_in(
-        &mut self,
-        workspace: String,
-        checkout: Option<String>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        // The sections are the bar's: without it there is nowhere to show them.
-        if !self.activity_bar_shown() {
-            self.show_flash(
-                crate::window::Flash::warning(fl!("orchestrator-activity-bar-off")),
-                cx,
-            );
-            return;
-        }
-        if !self.orchestrator_host() {
-            self.show_flash(
-                crate::window::Flash::warning(fl!("orchestrator-needs-host")),
-                cx,
-            );
-            return;
-        }
-        // The section lists every project, narrowed to the one asked for:
-        // `checkout`'s when it is a listed repository, else the workspace's.
-        let asked = checkout
-            .and_then(|path| OrchestratorRepo::new(path).ok())
-            .and_then(|repo| {
-                self.repo_specs()
-                    .into_iter()
-                    .find(|spec| spec.request.checkout == repo.checkout)
-                    .map(|spec| spec.key)
-            });
-        self.activity.section_project = asked.or_else(|| self.workspace_repo_key(&workspace));
-        self.dismiss_menu(window, cx);
-        if self
-            .browser_key()
-            .is_none_or(|(_, focused)| focused != workspace)
-        {
-            self.navigate(crate::NavigationTarget::Workspace(&workspace), cx);
-        }
-        self.show_activity_panel(ActivityPanel::Issues, window, cx);
     }
 
     /// Back to Workspaces after the section's view opened something that

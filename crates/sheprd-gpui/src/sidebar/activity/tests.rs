@@ -9,6 +9,7 @@ use crate::{
 mod automation_unavailable;
 mod back;
 mod bubbles;
+mod closed_workspace;
 mod counts;
 mod layout;
 mod pulse;

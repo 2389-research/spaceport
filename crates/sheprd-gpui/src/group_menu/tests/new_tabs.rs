@@ -167,9 +167,8 @@ fn the_listening_heading_shifts_the_rows_after_it() {
         process: "node".into(),
         link: Link::Page(WebUrl::try_from("http://localhost:3000/").unwrap()),
     };
-    let actions = [Action::Orchestrator, port, Action::Split];
-    assert_eq!(child_index(&actions, 0), 0);
+    let actions = [port, Action::Split];
+    assert_eq!(child_index(&actions, 0), 1);
     assert_eq!(child_index(&actions, 1), 2);
-    assert_eq!(child_index(&actions, 2), 3);
-    assert_eq!(child_index(&actions[..1], 0), 0);
+    assert_eq!(child_index(&actions[..1], 0), 1);
 }

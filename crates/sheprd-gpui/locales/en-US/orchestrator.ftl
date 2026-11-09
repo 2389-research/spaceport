@@ -6,8 +6,6 @@ orchestrator-label = Orchestrator
 orchestrator-pull-requests = Pull requests
 orchestrator-issues = Issues
 orchestrator-tasks = Tasks
-orchestrator-no-workspace = Open a workspace first
-orchestrator-activity-bar-off = Pull requests and issues show in the activity bar, which is turned off
 orchestrator-needs-host = Pull requests and issues need a local or SSH host
 orchestrator-opening = Opening the repositories…
 

@@ -103,8 +103,6 @@ pub(crate) enum WorkspaceMenuAction {
     PullRequest,
     /// Run one of the repository's worktree scripts in a new tab.
     Script(crate::worktree_scripts::ScriptKind),
-    /// Show the repository's issues in the activity bar.
-    Orchestrator,
     /// Silence the workspace's notifications, or let them through again.
     /// Drawn as the toggle in the popover's header rather than as a row, and
     /// applied at once: the mute belongs to this client, never the daemon.
@@ -174,7 +172,6 @@ impl WorkspaceMenuAction {
             }
             Self::Collapse => "icons/chevron-up.svg",
             Self::Expand => "icons/chevron-down.svg",
-            Self::Orchestrator => "icons/github.svg",
             Self::Script(crate::worktree_scripts::ScriptKind::Setup) => "icons/refresh.svg",
             Self::Script(_) => "icons/play.svg",
             Self::Mute => crate::icons::MUTED,

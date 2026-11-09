@@ -10,7 +10,6 @@ mod dialog_layout;
 mod en_xa;
 mod excluded_creation;
 mod excluded_remote_workspace;
-mod issues;
 mod left_checkout;
 mod left_checkout_lookup;
 mod merged_removal;
@@ -18,6 +17,7 @@ mod mute;
 mod naming;
 mod pull_requests;
 mod removed_checkpoints;
+mod removed_orchestrator;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod scripts;
 mod targets;

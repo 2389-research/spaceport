@@ -1,5 +1,5 @@
 //! The menu behind a group's "…" button: tabs other than a terminal to open
-//! in the group (the repository's orchestrator and listening ports),
+//! in the group (chat and listening ports),
 //! a new chat through `herdr-acp`, closing tabs or the group, and splitting it.
 //! A terminal tab comes from the group's "+". Closing a group closes no tab:
 //! its tabs go to the group that takes its room.
@@ -25,8 +25,6 @@ const ICON_SIZE: f32 = 14.;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Action {
-    /// The focused workspace's repository's issues, pull requests, and runs.
-    Orchestrator,
     /// A new tab running a `herdr-acp` chat with the agent.
     Chat(Agent),
     /// One of the focused workspace's listening ports and where it opens.
@@ -49,7 +47,6 @@ impl Action {
     /// The row's text, which for a port is where its page opens.
     fn label(&self) -> SharedString {
         match self {
-            Self::Orchestrator => fl!("group-menu-orchestrator").into(),
             Self::Chat(agent) => agent.display_name().into(),
             Self::Port { link, .. } => link.label().into(),
             Self::Close => fl!("group-menu-close-tab").into(),
@@ -61,7 +58,6 @@ impl Action {
 
     fn icon(&self) -> Option<&'static str> {
         match self {
-            Self::Orchestrator => Some("icons/issue.svg"),
             Self::Chat(agent) => {
                 Some(crate::icons::AgentIcon::from_identity(Some(agent.name())).path())
             }
@@ -83,11 +79,10 @@ impl Action {
     /// Which run of rows this one belongs to; a rule separates runs.
     fn section(&self) -> u8 {
         match self {
-            Self::Orchestrator => 0,
-            Self::Chat(_) => 1,
-            Self::Port { .. } => 2,
-            Self::Close | Self::CloseOthers | Self::CloseGroup => 3,
-            Self::Split => 4,
+            Self::Chat(_) => 0,
+            Self::Port { .. } => 1,
+            Self::Close | Self::CloseOthers | Self::CloseGroup => 2,
+            Self::Split => 3,
         }
     }
 
@@ -130,9 +125,6 @@ impl SheprdWindow {
     /// belongs to a split: a lone group has nowhere else to keep its tabs.
     fn group_actions(&self, group: GroupId, cx: &App) -> Vec<Action> {
         let mut actions = Vec::new();
-        if self.can_open_orchestrator() {
-            actions.push(Action::Orchestrator);
-        }
         if self.selected_core_group().is_none()
             || self.core_chat_group_tab(Some(group), cx).is_some()
         {
@@ -196,7 +188,6 @@ impl SheprdWindow {
         self.dismiss_menu(window, cx);
         self.activate_group(group, window, cx);
         match action {
-            Action::Orchestrator => self.open_orchestrator(window, cx),
             Action::Chat(agent) => self.start_chat_or_flash(agent, cx),
             Action::Port { link, .. } => {
                 let Some((endpoint, workspace)) = self

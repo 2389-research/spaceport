@@ -414,10 +414,6 @@ impl SheprdWindow {
                 self.reopen_closed_tab(window, cx);
                 return;
             }
-            Command::OpenOrchestrator => {
-                self.open_orchestrator(window, cx);
-                return;
-            }
             Command::GitMenu => {
                 // Where the titlebar's Git button last painted, so the
                 // shortcut opens the menu where clicking the button does.

@@ -80,9 +80,6 @@ pub(crate) struct Activity {
     last_opened: HashMap<ActivityPanel, DateTime<Utc>>,
     /// The orchestrator view the shown section draws.
     pub(crate) section_view: Option<ViewId>,
-    /// The project the next section shown narrows to, as a menu or the
-    /// `orchestrator` command asked.
-    pub(crate) section_project: Option<String>,
     /// The list last picked on that tab's view, so the user's own choice of
     /// list there stands until another section is picked.
     pub(crate) section_list: Option<List>,
