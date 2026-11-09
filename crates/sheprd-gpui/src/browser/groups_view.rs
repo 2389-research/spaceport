@@ -567,19 +567,6 @@ impl SheprdWindow {
         }
     }
 
-    /// The group `pick` is live in, if any.
-    #[cfg(any(target_os = "macos", windows))]
-    pub(crate) fn group_showing(&self, pick: &Pick, cx: &App) -> Option<GroupId> {
-        self.group_slots()
-            .into_iter()
-            .map(|slot| slot.id)
-            .find(|group| match (self.group_shown(*group, cx), pick) {
-                (Shown::Terminal, Pick::Herdr(_)) => self.group_pick(*group).as_ref() == Some(pick),
-                (Shown::Page(id), Pick::Page(page)) => id == *page,
-                _ => false,
-            })
-    }
-
     /// The pages live in some group, which the window presents.
     #[cfg(any(target_os = "macos", windows))]
     pub(crate) fn live_pages(&self, cx: &App) -> Vec<TabId> {

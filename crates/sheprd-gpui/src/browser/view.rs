@@ -382,29 +382,10 @@ impl SheprdWindow {
                 }
                 Event::Posted(id, body) => self.apply_page_post(id, &body, window, cx),
                 Event::NewWindow(id, url) => {
-                    if let Ok(url) = WebUrl::try_from(url.as_str())
-                        && let Some(opened) = self.open_beside(id, url, cx)
-                    {
-                        self.show_browser_tab_in(opened.0, opened.1, window, cx);
+                    if let Ok(url) = WebUrl::try_from(url.as_str()) {
+                        self.open_page_externally(id, url, cx);
                     }
                 }
-                #[cfg(target_os = "macos")]
-                Event::Opened(id, url, source, popup) => {
-                    // Without a tab the popup is dropped, and with it the
-                    // opener's link to it.
-                    if let Some((group, opened)) = self.open_beside(id, url, cx) {
-                        if let Err(error) = self.browser.pages.adopt(opened, source, popup, window)
-                        {
-                            tracing::warn!(%error, "Cannot show a popup's page");
-                            self.browser
-                                .failed
-                                .insert(opened, crate::i18n::Localize::localize(&error).into());
-                        }
-                        self.show_browser_tab_in(group, opened, window, cx);
-                    }
-                }
-                #[cfg(target_os = "macos")]
-                Event::Closed(id) => self.close_browser_tab(id, window, cx),
             }
         }
     }
@@ -473,26 +454,17 @@ impl SheprdWindow {
         }
     }
 
-    /// Opens a tab on `url` for a page of tab `opener`, in its workspace and
-    /// in the group showing it. Returns that group and the new tab.
+    /// Opens a page's new-window URL through the system handler only while
+    /// its source tab is still a page in the shared store.
     #[cfg(any(target_os = "macos", windows))]
-    fn open_beside(
-        &mut self,
-        opener: TabId,
-        url: WebUrl,
-        cx: &mut Context<Self>,
-    ) -> Option<(Option<GroupId>, TabId)> {
-        let parent = store(cx).and_then(|store| store.get(opener)).cloned()?;
-        let group = self.group_showing(&Pick::Page(opener), cx);
-        let opened = Store::update(cx, |store| {
-            store.open(
-                parent.scope,
-                &parent.workspace_id,
-                Some(Location::Web { url }),
-                parent.origin,
-            )
-        })?;
-        Some((group, opened))
+    fn open_page_externally(&self, opener: TabId, url: WebUrl, cx: &mut Context<Self>) {
+        if store(cx)
+            .and_then(|store| store.get(opener))
+            .and_then(|tab| tab.location.as_ref())
+            .is_some_and(Location::is_page)
+        {
+            cx.open_url(url.as_str());
+        }
     }
 }
 

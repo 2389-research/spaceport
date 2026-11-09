@@ -63,7 +63,6 @@ error-pane-image-decode = Could not decode an image a pane placed.
 error-pane-image-limit = An image a pane placed exceeds the decoded size limit.
 # A failure on a file or folder.
 error-path = { $path }: { $error }
-error-popup-opener = The page that opened a popup is no longer in a window
 error-preferences-path = preferences path has no parent
 # XDG_CONFIG_HOME is an environment variable.
 error-relative-config-root = XDG_CONFIG_HOME must be an absolute path

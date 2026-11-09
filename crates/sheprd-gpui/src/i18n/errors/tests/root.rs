@@ -119,7 +119,7 @@ fn every_own_variant_has_a_message() {
         }),
     );
     #[cfg(target_os = "macos")]
-    errors.extend([Error::PageStack, Error::PopupOpener]);
+    errors.push(Error::PageStack);
     assert_localized(&errors);
 }
 

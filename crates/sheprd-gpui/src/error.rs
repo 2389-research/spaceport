@@ -174,9 +174,6 @@ pub enum Error {
         #[source]
         source: Box<Error>,
     },
-    #[cfg(target_os = "macos")]
-    #[error("The page that opened a popup is no longer in a window")]
-    PopupOpener,
     #[error(transparent)]
     PortForward(#[from] crate::port_forward::Error),
     #[error("preferences path has no parent")]
