@@ -1,5 +1,7 @@
 # Gotchas
 
+- 2026-11-09: Unknown top-level CLI families reject through the launch parser before control-command JSON handling. Even with `--json`, a removed family such as `system` returns exit 2 and text usage on stderr. Valid control commands keep their JSON contract; do not parse an unknown-family rejection as their response schema.
+
 - 2026-11-09: About credits must name both the Herdr and Sheprd teams (D59). Label their links as upstream references, retain copyright/license attribution and keep Spaceport's independent identity clear.
 
 - 2026-11-09: Doctor Biz wants future task worktrees inside the main checkout's `.worktrees/<task>` directory. The ignore entry prevents nested checkouts from appearing as source changes. Keep active worktrees and delivered test artifacts intact when cleaning old sibling checkouts.
