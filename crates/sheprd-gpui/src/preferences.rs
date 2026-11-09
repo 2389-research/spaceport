@@ -145,6 +145,14 @@ impl Preferences {
         )
     }
 
+    pub(crate) fn for_core(core_id: &str) -> Self {
+        Self::start(
+            state_dir()
+                .map(|dir| core_path(&dir, core_id))
+                .ok_or(crate::Error::MissingStateRoot),
+        )
+    }
+
     fn start(path: crate::Result<PathBuf>) -> Self {
         let (saves, requests) = mpsc::channel();
         let (loaded_tx, loaded) = mpsc::channel();
@@ -233,12 +241,22 @@ impl Drop for Preferences {
 pub(crate) use sheprd_client::local_path::state_dir;
 
 fn endpoint_path(dir: &Path, socket: &Path) -> PathBuf {
+    let hash = hash_bytes(socket.as_os_str().as_encoded_bytes());
+    dir.join(format!("local-{hash:016x}.json"))
+}
+
+fn core_path(dir: &Path, core_id: &str) -> PathBuf {
+    let hash = hash_bytes(core_id.as_bytes());
+    dir.join(format!("core-{hash:016x}.json"))
+}
+
+fn hash_bytes(bytes: &[u8]) -> u64 {
     let mut hash = 0xcbf29ce484222325_u64;
-    for byte in socket.as_os_str().as_encoded_bytes() {
+    for byte in bytes {
         hash ^= u64::from(*byte);
         hash = hash.wrapping_mul(0x100000001b3);
     }
-    dir.join(format!("local-{hash:016x}.json"))
+    hash
 }
 
 fn read_chrome(path: &Path) -> crate::Result<Chrome> {

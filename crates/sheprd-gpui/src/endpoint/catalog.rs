@@ -89,12 +89,21 @@ fn store(development: bool, selected: Option<&str>) -> Result<()> {
 
 impl Catalog {
     pub fn new(target: &ConnectTarget) -> Self {
+        let development = match target {
+            ConnectTarget::Socket(_) => None,
+            ConnectTarget::Session { development, .. } => Some(*development),
+            _ => Some(false),
+        };
+        Self::with_development(development)
+    }
+
+    pub(crate) fn inactive() -> Self {
+        Self::with_development(None)
+    }
+
+    fn with_development(development: Option<bool>) -> Self {
         Self {
-            development: match target {
-                ConnectTarget::Socket(_) => None,
-                ConnectTarget::Session { development, .. } => Some(*development),
-                _ => Some(false),
-            },
+            development,
             pending: None,
             next_poll: Instant::now(),
             desired: None,

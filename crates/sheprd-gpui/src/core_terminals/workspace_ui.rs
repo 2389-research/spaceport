@@ -242,39 +242,12 @@ impl SheprdWindow {
         key: &CoreGroupKey,
         cx: &'a App,
     ) -> Option<&'a CoreWorkspace> {
-        let Some(observation) = cx.try_global::<observation::Observation>() else {
-            return None;
-        };
-        let projection = observation.projection();
-        if !projection.fresh() {
-            return None;
-        }
-        let Some(core_id) = projection.core_id() else {
-            return None;
-        };
-        if CoreGroupKey::new(
-            core_id,
-            None,
-            super::workspace_document::NAME,
-            key.group_id(),
-        )
-        .as_ref()
-            != Some(key)
-        {
-            return None;
-        }
         if self.core_terminals.hub.backend().is_some_and(|backend| {
             backend.core().is_lost() || backend.core().hello().core.id != key.hub_core_id()
         }) {
             return None;
         }
-        let Access::Ready(doc) = self.core_workspace_access(cx) else {
-            return None;
-        };
-        doc.value
-            .workspaces()
-            .iter()
-            .find(|row| row.id == key.group_id())
+        super::core_group_workspace(key, cx)
     }
 
     pub(crate) fn selected_core_workspace_label<'a>(&self, cx: &'a App) -> Option<&'a str> {

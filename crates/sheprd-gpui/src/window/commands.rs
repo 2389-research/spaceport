@@ -381,8 +381,11 @@ impl SheprdWindow {
                 return;
             }
             Command::NewWindow => {
-                // Another client of the same launch target, not another daemon.
-                open_additional_window(self.endpoints[0].connection.target.clone(), cx);
+                if let Some(key) = self.selected_core_group() {
+                    crate::app::open_additional_core_window(key.clone(), cx);
+                } else if let Some(endpoint) = self.endpoints.first() {
+                    open_additional_window(endpoint.connection.target.clone(), cx);
+                }
                 return;
             }
             // A page has no panes, so either close closes its tab, as in

@@ -5,6 +5,9 @@ use crate::config::LayoutMode;
 #[cfg(feature = "integration-test")]
 use gpui::px;
 
+#[cfg(feature = "integration-test")]
+mod core_window;
+
 #[test]
 fn startup_appearance_loads_a_coherent_pair_and_reports_errors() {
     let appearance = InitialAppearance::load(

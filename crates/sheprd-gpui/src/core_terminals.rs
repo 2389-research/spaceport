@@ -51,6 +51,31 @@ pub(crate) use error::Error;
 pub(crate) use hub::{Hub, Start, State};
 pub(crate) use view::{CoreTerminalView, Look};
 
+pub(crate) fn core_group_workspace<'a>(
+    key: &CoreGroupKey,
+    cx: &'a App,
+) -> Option<&'a workspace_document::Workspace> {
+    let projection = cx.try_global::<observation::Observation>()?.projection();
+    if !projection.fresh() {
+        return None;
+    }
+    let expected = CoreGroupKey::new(
+        projection.core_id()?,
+        None,
+        workspace_document::NAME,
+        key.group_id(),
+    )?;
+    if &expected != key {
+        return None;
+    }
+    projection
+        .document()?
+        .value
+        .workspaces()
+        .iter()
+        .find(|row| row.id == key.group_id())
+}
+
 pub(crate) fn install_observation(cx: &mut App) {
     observation::Observation::install(cx);
 }

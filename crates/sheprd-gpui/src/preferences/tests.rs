@@ -3,6 +3,8 @@ use super::*;
 use std::env;
 use std::time::{Duration, Instant};
 
+mod core_path;
+
 struct TestDirectory(PathBuf);
 
 impl TestDirectory {

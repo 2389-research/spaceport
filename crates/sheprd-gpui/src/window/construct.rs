@@ -6,29 +6,35 @@ use super::{SheprdWindow, SurfaceSignal, function_keys, prefix};
 #[cfg(feature = "integration-test")]
 use crate::smoke;
 use crate::{
-    WINDOW_TITLE, endpoint, log_window, menu, preferences, sessions, sidebar,
+    WINDOW_TITLE,
+    app::WindowLaunch,
+    endpoint, log_window, menu, preferences, sessions, sidebar,
     state::LiveState,
     terminal::{Selection, WheelAccumulator},
     updater,
 };
 use gpui::{prelude::*, *};
-use sheprd_client::{ConnectOptions, ConnectTarget};
+use sheprd_client::ConnectOptions;
+#[cfg(feature = "integration-test")]
+use sheprd_client::ConnectTarget;
 #[cfg(feature = "integration-test")]
 use std::sync::Arc;
 use std::time::Duration;
 
 impl SheprdWindow {
     pub(crate) fn new(
-        target: ConnectTarget,
+        launch: impl Into<WindowLaunch>,
         window: &mut Window,
         cx: &mut Context<Self>,
         #[cfg(feature = "integration-test")] sidebar_test: bool,
     ) -> Self {
+        let launch = launch.into();
         #[cfg(feature = "integration-test")]
-        let target = if sidebar_test {
-            ConnectTarget::Socket("/unused-sidebar-fixture.sock".into())
-        } else {
-            target
+        let launch = match launch {
+            WindowLaunch::Legacy(_) if sidebar_test => {
+                WindowLaunch::Legacy(ConnectTarget::Socket("/unused-sidebar-fixture.sock".into()))
+            }
+            launch => launch,
         };
         let focus = cx.focus_handle();
         window.focus(&focus, cx);
@@ -82,7 +88,19 @@ impl SheprdWindow {
         let status_bar_visible = config.status_bar.show;
         let mut gui_config_diagnostic = crate::config_diagnostic::ConfigDiagnostic::default();
         gui_config_diagnostic.sync_own(config.diagnostic().as_deref());
-        let catalog = endpoint::Catalog::new(&target);
+        let (catalog, endpoints, core_key) = match launch {
+            WindowLaunch::Legacy(target) => (
+                endpoint::Catalog::new(&target),
+                vec![endpoint::Endpoint::new(
+                    endpoint::LOCAL.into(),
+                    "Local".into(), // i18n: data
+                    target,
+                    true,
+                )],
+                None,
+            ),
+            WindowLaunch::Core(key) => (endpoint::Catalog::inactive(), Vec::new(), Some(key)),
+        };
         let menu = menu::MenuState::new(cx);
         let sidebar_search = sidebar::SidebarSearch::new(cx);
         let surface_signal = cx.new(|_| SurfaceSignal);
@@ -168,13 +186,7 @@ impl SheprdWindow {
             device_tags,
             device_themes: Default::default(),
             devices_overview: Default::default(),
-            endpoints: vec![endpoint::Endpoint::new(
-                endpoint::LOCAL.into(),
-                // i18n: data
-                "Local".into(),
-                target,
-                true,
-            )],
+            endpoints,
             file_transfer: None,
             find: None,
             find_memory: Default::default(),
@@ -286,27 +298,38 @@ impl SheprdWindow {
             async {}
         })
         .detach();
+        if let Some(key) = core_key.as_ref() {
+            this.show_core_group(key, cx);
+        }
         #[cfg(feature = "integration-test")]
         if sidebar_test {
             this._poll = Task::ready(());
-            this.live.snapshot = Some(Arc::new(sidebar::layout_tests::snapshot(40)));
-            this.endpoints[0].live = this.live.clone();
-            if let Ok(mut inbox) = this.endpoints[0].connection.inbox.lock() {
-                *inbox = this.live.clone();
+            if let Some(endpoint) = this.endpoints.first_mut() {
+                this.live.snapshot = Some(Arc::new(sidebar::layout_tests::snapshot(40)));
+                endpoint.live = this.live.clone();
+                if let Ok(mut inbox) = endpoint.connection.inbox.lock() {
+                    *inbox = this.live.clone();
+                }
             }
             return this;
         }
         Self::poll_on_frame(cx.entity().downgrade(), window);
-        this.sidebar_preferences = this.endpoints[0]
-            .connection
-            .target
-            .socket_path()
-            .ok()
-            .map(|path| preferences::Preferences::new(&path));
-        this.reconnect(cx);
+        this.sidebar_preferences = if let Some(key) = core_key.as_ref() {
+            Some(preferences::Preferences::for_core(key.hub_core_id()))
+        } else {
+            this.endpoints
+                .first()
+                .and_then(|endpoint| endpoint.connection.target.socket_path().ok())
+                .map(|path| preferences::Preferences::new(&path))
+        };
+        if core_key.is_none() {
+            this.reconnect(cx);
+        }
         log_window::set_appearance(&this.config, &this.theme, cx);
         this.load_gui_config(cx);
-        this.load_shared_settings(cx);
+        if core_key.is_none() {
+            this.load_shared_settings(cx);
+        }
         this.watch_gui_config(cx);
         this
     }

@@ -6,8 +6,11 @@
 use crate::i18n::{Localize, fl};
 use crate::{
     APP_VERSION, Hide, HideOthers, Quit, SheprdWindow, ShowAll, ShowLogs, WINDOW_TITLE, app_icon,
-    bind_keys, cli,
+    bind_keys,
+    browser::CoreGroupKey,
+    cli,
     config::{Config, Theme},
+    core_terminals::Start,
     diagnostics, icons, log_window, menus, titlebar, updater,
 };
 #[cfg(feature = "integration-test")]
@@ -15,6 +18,17 @@ use crate::{performance, smoke};
 use anyhow::Result;
 use gpui::{prelude::*, *};
 use sheprd_client::ConnectTarget;
+
+pub(crate) enum WindowLaunch {
+    Legacy(ConnectTarget),
+    Core(CoreGroupKey),
+}
+
+impl From<ConnectTarget> for WindowLaunch {
+    fn from(target: ConnectTarget) -> Self {
+        Self::Legacy(target)
+    }
+}
 
 /// The first frame must not use default density while disk settings load.
 /// Load before the UI event loop; later windows reuse the last validated pair.
@@ -91,7 +105,7 @@ pub(crate) fn open_window(
     #[cfg(feature = "integration-test")] fixture: bool,
 ) -> Result<WindowHandle<SheprdWindow>> {
     open_window_placed(
-        target,
+        WindowLaunch::Legacy(target),
         updater,
         None,
         cx,
@@ -105,12 +119,21 @@ pub(crate) type Placement = (Bounds<Pixels>, Option<DisplayId>);
 
 /// Opens a main window at `placement`, or where the next one goes.
 fn open_window_placed(
-    target: ConnectTarget,
+    launch: WindowLaunch,
     updater: updater::Updater,
     placement: Option<Placement>,
     cx: &mut App,
     #[cfg(feature = "integration-test")] fixture: bool,
 ) -> Result<WindowHandle<SheprdWindow>> {
+    let expected_group = match &launch {
+        WindowLaunch::Core(key) => Some(key.clone()),
+        WindowLaunch::Legacy(_) => None,
+    };
+    if let Some(key) = expected_group.as_ref()
+        && crate::core_terminals::core_group_workspace(key, cx).is_none()
+    {
+        anyhow::bail!("Selected Core group is no longer available");
+    }
     let (bounds, display_id) = placement.unwrap_or_else(|| {
         // Cascade rather than stack windows exactly, so a new one is visible at once.
         let existing = cx
@@ -123,7 +146,7 @@ fn open_window_placed(
         bounds.origin += point(step, step);
         crate::window_state::WindowState::placement(bounds, cx)
     });
-    cx.open_window(
+    let handle = cx.open_window(
         WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             display_id,
@@ -137,7 +160,7 @@ fn open_window_placed(
             crate::taskbar::mark(window, cx);
             cx.new(|cx| {
                 let mut view = SheprdWindow::new(
-                    target,
+                    launch,
                     window,
                     cx,
                     #[cfg(feature = "integration-test")]
@@ -148,7 +171,14 @@ fn open_window_placed(
                 view
             })
         },
-    )
+    )?;
+    if let Some(key) = expected_group
+        && !handle.read_with(cx, |view, _| view.selected_core_group() == Some(&key))?
+    {
+        let _ = handle.update(cx, |_, window, _| window.remove_window());
+        anyhow::bail!("Selected Core group is no longer available");
+    }
+    Ok(handle)
 }
 
 /// The app's one sound worker. Each window holds its own connection and the
@@ -184,7 +214,7 @@ pub(crate) fn open_additional_window_then(
 ) {
     cx.defer(move |cx| {
         let opened = open_window_placed(
-            target,
+            WindowLaunch::Legacy(target),
             updater::Updater::secondary(),
             placement,
             cx,
@@ -202,6 +232,53 @@ pub(crate) fn open_additional_window_then(
             }
             Err(_) => {
                 tracing::error!("Unable to open an additional Spaceport window");
+                failed(cx);
+            }
+        }
+    });
+}
+
+pub(crate) fn open_additional_core_window(key: CoreGroupKey, cx: &mut App) {
+    open_additional_core_window_then(
+        key,
+        None,
+        |_, _, _| {},
+        |_| {},
+        cx,
+        #[cfg(feature = "integration-test")]
+        false,
+    );
+}
+
+pub(crate) fn open_additional_core_window_then(
+    key: CoreGroupKey,
+    placement: Option<Placement>,
+    then: impl FnOnce(&mut SheprdWindow, &mut Window, &mut Context<SheprdWindow>) + 'static,
+    failed: impl FnOnce(&mut App) + 'static,
+    cx: &mut App,
+    #[cfg(feature = "integration-test")] fixture: bool,
+) {
+    cx.defer(move |cx| {
+        let opened = open_window_placed(
+            WindowLaunch::Core(key),
+            updater::Updater::secondary(),
+            placement,
+            cx,
+            #[cfg(feature = "integration-test")]
+            fixture,
+        );
+        match opened {
+            Ok(handle) => {
+                let sound = shared_sound(cx);
+                let _ = handle.update(cx, |view, window, cx| {
+                    view.use_sound(sound);
+                    then(view, window, cx);
+                    view.core_terminals.hub.connect(Start::Join);
+                    window.activate_window();
+                });
+            }
+            Err(error) => {
+                tracing::error!(%error, "Unable to open a Core group window");
                 failed(cx);
             }
         }
