@@ -10,7 +10,6 @@ use crate::{
     },
     sidebar::layout_tests::fixture_window,
     window::MockPeer,
-    worktree_scripts::tests::connect,
 };
 use serde_json::json;
 use sheprd_chat_protocol::Agent;
@@ -163,7 +162,7 @@ pub(super) fn local_window(
     peer: &MockPeer,
     cx: &mut gpui::Context<SheprdWindow>,
 ) {
-    connect(view, peer, cx);
+    peer.prepare_local_tab(view, cx);
     view.config.features.acp_chats = true;
     view.endpoints[0].connection.target = sheprd_client::ConnectTarget::Local;
     view.live.local_daemon_peer = true;

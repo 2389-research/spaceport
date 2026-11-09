@@ -23,7 +23,7 @@ fn strip(
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
-            crate::worktree_scripts::tests::connect(view, &peer, cx);
+            peer.prepare_local_tab(view, cx);
             view.config.features.acp_chats = true;
             view.config.chat.launcher = launcher;
             view.endpoints[0].connection.target = sheprd_client::ConnectTarget::Local;

@@ -274,8 +274,6 @@ pub enum Error {
     WorktreeList,
     #[error("Malformed worktree list. Dismiss and reopen the menu.")]
     WorktreeListDecode(#[source] serde_json::Error),
-    #[error(transparent)]
-    WorktreeScripts(#[from] crate::worktree_scripts::Error),
     #[error("Select a checkout from the daemon's worktree list.")]
     WorktreeSelection,
     #[error(transparent)]

@@ -1602,59 +1602,6 @@ bridge files, they are not owned or deleted by Herdr on disconnect. Network loss
 can prevent cleanup, and kernel-blocked local filesystem operations cannot be
 forcibly interrupted. A copy stalls out after 30 seconds without progress.
 
-## Worktree Scripts
-
-A repository can commit scripts that prepare, start, and clean up its
-worktrees, in `.herdr/worktree.toml` at the repository root:
-
-```toml
-[scripts]
-# Runs when you choose Run setup script for a linked worktree.
-setup = """
-cp "$HERDR_ROOT_PATH/.env" .env
-ln -s "$HERDR_ROOT_PATH/node_modules" node_modules
-"""
-# Runs when you choose Run script from the workspace's menu.
-run = "npm run dev"
-```
-
-Every key is optional, and an unknown key is an error rather than a script
-that silently never runs. The file is read from the checkout the script is
-for, so each branch can carry its own.
-
-- **setup** runs after a worktree is created. Opening an existing checkout
-  does not run it. Linked worktrees also offer **Run setup script** in their
-  menu, to run it again.
-- **run** starts from **Run script** in the menu of any Git checkout. A
-  repository without one says so.
-
-Each script runs in a new, focused tab labelled `setup` or `run`
-in the checkout's workspace, never in the background, as
-`sh -e`, so it stops at the first failing command. Its working directory is
-the checkout. `HERDR_WORKTREE_PATH` names that checkout and
-`HERDR_ROOT_PATH` the repository's main checkout. The script reaches the tab
-as an environment variable, and the line typed into the tab's shell is
-fixed, so the file's contents never pass through your interactive shell.
-Scripts need `sh` on the daemon's host: a remote host's checkout is read and
-run there, not on this machine. WSL distributions are not supported yet: Run
-script says so, and creating or deleting a worktree there runs no script.
-
-**Trust.** The file is repository content, so nothing in it runs until you
-trust it. The first time a script would run, a dialog shows every script in
-the file, every line of it. The dialog can open by itself, so it has no
-keyboard shortcut and ignores clicks for its first moment: a keystroke or
-click meant for the terminal cannot answer it. **Trust and run** remembers
-that exact file for that repository on that host. Any change to the file, such as a pulled commit, asks again. The
-same repository on another host is asked about separately. **Don't run**
-runs nothing. Escape keeps it. Trust is kept
-by this client in `trusted-worktree-scripts.json` in its state directory;
-delete that file to forget every grant.
-
-The repository file, rather than this client's configuration, holds the
-scripts, so a team shares them and they follow the branch, as Conductor's
-`.conductor/settings.toml` and Superset's `.superset/config.json` do. Only
-the trust decision is local.
-
 ## Worktree Notes
 
 Right-click a Git checkout and choose Note... to keep a reminder on it, such as

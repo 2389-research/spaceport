@@ -128,9 +128,8 @@ pub struct LiveState {
     pub(crate) supports_edit_scrollback: bool,
     pub dirty: bool,
     pub(crate) dialog_response: Option<(String, Option<DialogResponse>)>,
-    /// The one request a worktree script is waiting on (`worktree.list` or
-    /// `tab.create`), kept apart from dialogs so opening one cannot lose it.
-    /// Cleared from the mailbox once the script job has read it.
+    /// The `tab.create` for a new chat or closed agent, kept apart from
+    /// dialogs so opening one cannot lose it. Cleared when the launch reads it.
     pub(crate) script_response: Option<(String, Option<DialogResponse>)>,
     pub(crate) notifications: std::collections::VecDeque<crate::notifications::Notice>,
     pub(crate) notifications_lost: bool,

@@ -39,7 +39,6 @@ mod terminal_attach;
 mod updater;
 mod usage;
 mod worktree_identity;
-mod worktree_scripts;
 mod wsl_drop;
 
 /// Fluent's isolation marks around each placeable, which `Display` lacks.

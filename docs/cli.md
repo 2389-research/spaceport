@@ -177,9 +177,8 @@ spaceport wait window            # also waits for the app to start
 
 ## What stays in the app
 
-Commands never bypass a confirmation. The inherited worktree script menu
-still asks before running an untrusted script; removing that menu is an open
-Spaceport task.
+Commands never bypass a confirmation. Spaceport no longer offers repository
+worktree scripts in the workspace menu or control CLI.
 
 The development build still has an inherited Herdr 1 startup path; removing it
 is an open Spaceport task. The Core path may start only a separately installed,

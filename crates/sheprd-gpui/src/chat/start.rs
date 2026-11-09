@@ -155,7 +155,7 @@ pub(crate) fn tab_params(
 }
 
 /// A chat whose tab is being made, fenced by the selection, connection, and
-/// daemon boot it was asked of, like a worktree script.
+/// daemon boot it was asked of.
 #[derive(Debug)]
 pub(crate) struct Starting {
     agent: Agent,
@@ -354,15 +354,11 @@ impl SheprdWindow {
         let Some(starting) = self.chats.starting.take() else {
             return;
         };
-        let typed = result
+        let typed: crate::Result<String> = result
             .map_err(|error| super::Error::from(Error::Request(error)).into())
             .and_then(|response| {
-                crate::worktree_scripts::created_tab(&response).map_err(|error| match error {
-                    crate::Error::WorktreeScripts(crate::worktree_scripts::Error::Response) => {
-                        super::Error::from(Error::Response).into()
-                    }
-                    error => error,
-                })
+                crate::window::tab_start::created_tab(&response)?
+                    .ok_or_else(|| super::Error::from(Error::Response).into())
             })
             .and_then(|(tab, pane)| {
                 let line = if starting.remote {

@@ -62,7 +62,6 @@ fn every_page_title_is_a_message_under_en_xa() {
             Page::Update,
             Page::VersionMismatch,
             Page::Workspace,
-            Page::WorktreeScript,
         ];
         let leaks: Vec<_> = pages
             .into_iter()

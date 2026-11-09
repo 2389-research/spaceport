@@ -61,8 +61,6 @@ pub(crate) enum Page {
     /// A daemon refused the handshake until one side is updated.
     VersionMismatch,
     Workspace,
-    /// Asks whether to trust a repository's worktree script before it runs.
-    WorktreeScript,
     // keep-sorted end
 }
 
@@ -86,8 +84,6 @@ pub(crate) enum WorkspaceMenuAction {
     /// it changes only the sidebar's own view, never the daemon's state.
     Collapse,
     Expand,
-    /// Run one of the repository's worktree scripts in a new tab.
-    Script(crate::worktree_scripts::ScriptKind),
     /// Silence the workspace's notifications, or let them through again.
     /// Drawn as the toggle in the popover's header rather than as a row, and
     /// applied at once: the mute belongs to this client, never the daemon.
@@ -149,8 +145,6 @@ impl WorkspaceMenuAction {
             }
             Self::Collapse => "icons/chevron-up.svg",
             Self::Expand => "icons/chevron-down.svg",
-            Self::Script(crate::worktree_scripts::ScriptKind::Setup) => "icons/refresh.svg",
-            Self::Script(_) => "icons/play.svg",
             Self::Mute => crate::icons::MUTED,
             Self::Unmute => "icons/bell.svg",
         })

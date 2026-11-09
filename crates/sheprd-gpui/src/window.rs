@@ -51,6 +51,7 @@ mod tab_drag;
 #[cfg(target_os = "macos")]
 mod tab_float;
 mod tab_ghost;
+pub(crate) mod tab_start;
 mod tab_strip;
 mod tab_tear;
 mod toasts;
@@ -338,8 +339,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) wheel: WheelAccumulator,
     /// A press on a workspace row that may lift it for reordering.
     pub(crate) workspace_drag: Option<sidebar::WorkspaceDrag>,
-    /// The worktree script being located, read, trusted, or opened.
-    pub(crate) worktree_script: Option<crate::worktree_scripts::Job>,
     /// Files dropped on a WSL pane whose paths are still being mapped; input
     /// typed meanwhile is held so it lands after them.
     pub(crate) wsl_paste: Option<wsl_drop::WslPaste>,
@@ -572,7 +571,6 @@ impl SheprdWindow {
             crate::taskbar::button::Bar::from_progress(self.taskbar_progress()),
         );
         self.poll_device_setup(window, cx);
-        self.poll_worktree_script(window, cx);
         self.poll_hover_menu(std::time::Instant::now(), window, cx);
         if self.tick_flash(std::time::Instant::now()) {
             cx.notify();

@@ -707,8 +707,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_agent_skill_offer(cx));
         } else if page == Page::VersionMismatch {
             panel = panel.child(self.render_version_mismatch(cx));
-        } else if page == Page::WorktreeScript {
-            panel = panel.child(self.render_worktree_script(cx));
         } else if page == Page::OpenLink {
             panel = panel.child(self.render_open_link(cx));
         } else {

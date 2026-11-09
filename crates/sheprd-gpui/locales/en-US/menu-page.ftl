@@ -35,6 +35,5 @@ menu-page-tab = Tab
 menu-page-themes = Themes
 menu-page-version-mismatch = Version mismatch
 menu-page-workspace = Workspace
-menu-page-trust-worktree-script = Trust worktree script
 # $provider is an AI service, such as Claude or Codex.
 menu-page-usage = { $provider } usage

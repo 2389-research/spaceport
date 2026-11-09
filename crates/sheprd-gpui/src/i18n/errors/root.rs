@@ -172,7 +172,6 @@ impl Localize for Error {
             Self::WorktreeIdentity(error) => error.localize(),
             Self::WorktreeList => fl!("error-worktree-list"),
             Self::WorktreeListDecode(_) => fl!("error-worktree-list-decode"),
-            Self::WorktreeScripts(error) => error.localize(),
             Self::WorktreeSelection => fl!("error-worktree-selection"),
             Self::WslDrop(error) => error.localize(),
             // keep-sorted end

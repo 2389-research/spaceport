@@ -70,7 +70,6 @@ impl Page {
             Self::Usage(provider) => fl!("menu-page-usage", provider = provider.name()),
             Self::VersionMismatch => fl!("menu-page-version-mismatch"),
             Self::Workspace => fl!("menu-page-workspace"),
-            Self::WorktreeScript => fl!("menu-page-trust-worktree-script"),
         })
     }
 }

@@ -11,8 +11,6 @@ worktree-popover-unmute-button = Unmute
 worktree-popover-rename = Rename
 worktree-popover-note = Note...
 worktree-popover-open-worktree = Open worktree...
-worktree-popover-run-script = Run script
-worktree-popover-run-setup-script = Run setup script
 worktree-popover-expand-group = Expand group
 worktree-popover-collapse-group = Collapse group
 

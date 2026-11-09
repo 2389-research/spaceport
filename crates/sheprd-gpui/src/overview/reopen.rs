@@ -1,9 +1,9 @@
 //! Starting a closed agent again: a new tab in its workspace, in the folder
 //! it ran from, with the agent's command typed into the tab's shell. The
-//! endpoint API has no method that starts a command, so this follows the
-//! worktree scripts: `tab.create` through the connection's script slot, then
-//! one line typed into the pane it made. The line comes from the agent kinds
-//! this client knows, never from the daemon's text.
+//! endpoint API has no method that starts a command, so it uses `tab.create`
+//! through the connection's script slot, then one line typed into the pane it
+//! made. The line comes from agent kinds this client knows, never from the
+//! daemon's text.
 
 use super::closed;
 use crate::{NavigationTarget, SheprdWindow, i18n::fl, teleport::AgentKind, window::Flash};
@@ -137,7 +137,7 @@ impl SheprdWindow {
             if !open {
                 return self.fail_overview_reopen(fl!("overview-workspace-closed"), cx);
             }
-            if self.script_job_busy() {
+            if self.chat_starting() {
                 return;
             }
             let params = job.create_params();
@@ -157,15 +157,11 @@ impl SheprdWindow {
         let Some(result) = self.take_answer(crate::state::Answer::Script, &request) else {
             return;
         };
-        let created = result
+        let created: crate::Result<(String, String)> = result
             .map_err(|error| super::Error::ReopenRequest(error).into())
             .and_then(|response| {
-                crate::worktree_scripts::created_tab(&response).map_err(|error| match error {
-                    crate::Error::WorktreeScripts(crate::worktree_scripts::Error::Response) => {
-                        super::Error::ReopenResponse.into()
-                    }
-                    error => error,
-                })
+                crate::window::tab_start::created_tab(&response)?
+                    .ok_or_else(|| super::Error::ReopenResponse.into())
             });
         let Some(job) = self.overview.reopen.take() else {
             return;

@@ -398,8 +398,8 @@ impl ConnectionBridge {
         Ok(id)
     }
 
-    /// Queues the request a worktree script waits on, correlated in its own
-    /// slot so a dialog opened meanwhile cannot take its answer.
+    /// Queues a chat or closed-agent tab start, correlated in its own slot so
+    /// a dialog opened meanwhile cannot take its answer.
     pub(crate) fn request_script(
         &self,
         boot_id: &str,

@@ -4,7 +4,6 @@
 pub(super) mod popover;
 mod render;
 mod requests;
-mod scripts;
 
 use super::{Page, WorkspaceAction, WorkspaceMenuAction};
 use crate::{SheprdWindow, dialog_input::DialogInput};
@@ -492,21 +491,6 @@ impl SheprdWindow {
         if target.can_create() {
             items.push((Dialog(WorkspaceAction::OpenWorktree), Label::OPEN_WORKTREE));
         }
-        // Whether the checkout defines scripts is only known once its file is
-        // read, so every Git checkout offers them and an absent one says so.
-        if target.worktree.is_some() {
-            use crate::worktree_scripts::ScriptKind;
-            items.push((
-                WorkspaceMenuAction::Script(ScriptKind::Run),
-                Label::RUN_SCRIPT,
-            ));
-            if target.is_linked_checkout() {
-                items.push((
-                    WorkspaceMenuAction::Script(ScriptKind::Setup),
-                    Label::RUN_SETUP_SCRIPT,
-                ));
-            }
-        }
         // Only a workspace that heads a group of checkouts can fold anything.
         if let Some(key) = target.group_key() {
             items.push(if self.collapsed_repos_for_selection().contains(key) {
@@ -656,7 +640,6 @@ impl SheprdWindow {
                 }
                 self.dismiss_menu(window, cx);
             }
-            WorkspaceMenuAction::Script(kind) => self.run_workspace_script(kind, window, cx),
         }
     }
 }

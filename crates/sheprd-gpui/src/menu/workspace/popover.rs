@@ -23,8 +23,6 @@ impl Label {
     pub(crate) const NOTE: Self = Self::new("worktree-popover-note");
     pub(crate) const OPEN_WORKTREE: Self = Self::new("worktree-popover-open-worktree");
     pub(crate) const RENAME: Self = Self::new("worktree-popover-rename");
-    pub(crate) const RUN_SCRIPT: Self = Self::new("worktree-popover-run-script");
-    pub(crate) const RUN_SETUP_SCRIPT: Self = Self::new("worktree-popover-run-setup-script");
     pub(crate) const UNMUTE: Self = Self::new("worktree-popover-unmute");
     // keep-sorted end
     /// Checked against the English files as it compiles, as `fl!` is.

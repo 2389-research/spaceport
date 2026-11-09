@@ -276,6 +276,22 @@ impl Peer {
         assert!(view.accepts_remote_images());
     }
 
+    /// Project a local endpoint for tests that launch a tab from an API reply.
+    pub(crate) fn prepare_local_tab(
+        &self,
+        view: &mut SheprdWindow,
+        cx: &mut Context<SheprdWindow>,
+    ) {
+        self.prepare(view, cx);
+        let local = &mut view.endpoints[0];
+        local.connection.target = ConnectTarget::Socket("/unused-local-tab-test.sock".into());
+        local.live = view.live.clone();
+        if let Ok(mut inbox) = local.connection.inbox.lock() {
+            *inbox = view.live.clone();
+            inbox.dirty = false;
+        }
+    }
+
     fn sentinel(&mut self, view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) {
         view.read_with(cx, |view, _| {
             ConnectionBridge::send_input(
