@@ -23,22 +23,23 @@ class AppNameTests(unittest.TestCase):
 
     def test_development_bundle_uses_running_app_identity(self):
         constants = (ROOT / "crates/sheprd-gpui/src/constants.rs").read_text()
-        app_id = re.search(r'pub\(crate\) const APP_ID: &str = "([^"]+)"', constants)
-        self.assertIsNotNone(app_id)
+        app_id = (ROOT / "crates/sheprd-gpui/development-app-id").read_text().strip()
+        self.assertEqual(app_id, "spaceport.development")
+        self.assertIn('APP_ID: &str = env!("SPACEPORT_APP_ID")', constants)
         justfile = (ROOT / "justfile").read_text()
-        bundle_id = re.search(r'plutil -replace CFBundleIdentifier -string (\S+)', justfile)
-        self.assertIsNotNone(bundle_id)
-        self.assertEqual(bundle_id[1], app_id[1])
-        self.assertNotIn("herdr-gpui", bundle_id[1])
+        self.assertIn('plutil -insert CFBundleIdentifier -string "$(cat crates/sheprd-gpui/development-app-id)"', justfile)
+        selector = (ROOT / "crates/sheprd-gpui/preview_identity.rs").read_text()
+        self.assertIn('include_str!("development-app-id")', selector)
+        self.assertIn('include_str!("macos-preview-app-id")', selector)
         title = re.search(r'pub\(crate\) const WINDOW_TITLE: &str = "([^"]+)"', constants)
         self.assertIsNotNone(title)
         for key in ("CFBundleName", "CFBundleDisplayName"):
             self.assertIn(f'plutil -replace {key} -string {title[1]}', justfile)
 
-    def test_bundle_plist_names_the_app_sheprd(self):
+    def test_bundle_plist_names_the_app_spaceport(self):
         info = plistlib.loads((ROOT / "assets/macos/Info.plist").read_bytes())
         for key in ("CFBundleName", "CFBundleDisplayName", "CFBundleExecutable"):
-            self.assertEqual(info[key], "spaceport" if key == "CFBundleExecutable" else "Sheprd", key)
+            self.assertEqual(info[key], "spaceport" if key == "CFBundleExecutable" else "Spaceport", key)
 
     @unittest.skipUnless(sys.platform == "darwin", "assetutil requires macOS")
     def test_asset_catalogs_contain_the_plist_icon_name(self):

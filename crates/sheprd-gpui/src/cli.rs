@@ -81,6 +81,16 @@ pub enum CliError {
 
 // The framed record is also read without execution by cross-platform packaging.
 pub fn build_info() -> &'static str {
+    // Keep packaging metadata in the bytes without changing --build-info output.
+    std::hint::black_box(concat!(
+        "\0SPACEPORT_PREVIEW_V1\nid=",
+        env!("SPACEPORT_APP_ID"),
+        "\nversion=",
+        env!("SPACEPORT_APP_VERSION"),
+        "\nprofile=",
+        env!("SPACEPORT_BUILD_PROFILE"),
+        "\n\0"
+    ));
     const PREFIX_LEN: usize = "\0HERDR_BUILD_IDENTITY_V1\n".len();
     const RECORD: &str = concat!(
         "\0HERDR_BUILD_IDENTITY_V1\n",

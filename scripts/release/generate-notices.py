@@ -14,7 +14,7 @@ ABOUT_VERSION = "cargo-about 0.9.2"
 INSTALL = "cargo install cargo-about --version 0.9.2 --locked --features cli"
 # cargo-about package exceptions are name-scoped; require a new version review.
 MPL_VERSIONS = {
-    "cbindgen": "0.28.0", "cssparser": "0.38.0", "dtoa-short": "0.3.5",
+    "cbindgen": "0.28.0",
     "dwrote": "0.11.5", "nucleo-matcher": "0.3.1", "option-ext": "0.2.0",
     "symphonia": "0.5.5", "symphonia-bundle-mp3": "0.5.5",
     "symphonia-core": "0.5.5", "symphonia-metadata": "0.5.5",
@@ -73,7 +73,7 @@ def render(evidence, lock_bytes):
     if any(entry["license"] in ("Unknown", "Ignore") for entry in evidence["crates"]):
         raise ValueError("cargo-about returned unresolved or ignored licenses")
     sections = [
-        "Sheprd - Third-Party Notices\n",
+        "Spaceport - Third-Party Notices\n",
         f"Generated with {ABOUT_VERSION}.\n"
         "Scope: locked workspace, all features, including build/dev dependencies;\n"
         "union of aarch64/x86_64 macOS, GNU/Linux, and Windows packaging\n"

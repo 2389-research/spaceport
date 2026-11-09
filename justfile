@@ -150,7 +150,7 @@ bundle profile="release" features="":
     done
     # LaunchServices and the Dock cache icons by bundle ID, so every worktree
     # build sharing the release ID competed with the installed app's icon.
-    plutil -replace CFBundleIdentifier -string spaceport.development "$app/Contents/Info.plist"
+    plutil -insert CFBundleIdentifier -string "$(cat crates/sheprd-gpui/development-app-id)" "$app/Contents/Info.plist"
     plutil -replace CFBundleName -string Spaceport "$app/Contents/Info.plist"
     plutil -replace CFBundleDisplayName -string Spaceport "$app/Contents/Info.plist"
     icons=$(python3 scripts/release/build-icon.py macos "$app/Contents/MacOS/spaceport")
@@ -283,9 +283,9 @@ release-beta:
 release-promote version:
     bash scripts/release/dispatch.sh --promote "{{version}}"
 
-# Local universal signed/notarized DMG; does not publish anything.
-dmg $VERSION:
-    bash scripts/release/build-macos.sh "$VERSION"
+# Local signed/notarized preview; uses the installed identity, never publishes.
+dmg $VERSION profile="debug" architecture="arm64":
+    bash scripts/release/build-macos.sh "$VERSION" "{{profile}}" "{{architecture}}" installed
 
 # Static checks and mocked release tests; does not dispatch or publish anything.
 release-check:

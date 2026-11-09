@@ -1,0 +1,126 @@
+name: macOS signed preview
+run-name: macOS preview ${{ inputs.version }} at ${{ inputs.expected_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Full main commit SHA to build and sign
+        required: true
+        type: string
+      version:
+        description: Immutable preview version YYYYMMDD.COUNTER
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: macos-signed-preview
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'harperreed/spaceport' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      VERSION: ${{ inputs.version }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate selected commit and version
+        run: |
+          set -euo pipefail
+          source scripts/release/common.sh
+          version_check "$VERSION"
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ && "$EXPECTED_SHA" == "$GITHUB_SHA" ]]
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_SHA" ]]
+      - name: Reserve this version against complete workflow history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release/preview-history.py
+      - run: rustup show
+      - run: cargo install cargo-about --version 0.9.2 --locked --features cli
+      - name: Build unsigned release-profile arm64 preview and smoke actual CLI
+        # build-macos.sh runs smoke-cli.py on the exact binary before packaging.
+        run: bash scripts/release/build-macos.sh "$VERSION" release arm64 unsigned
+      - name: Archive only this run's unsigned bundle
+        run: |
+          set -euo pipefail
+          mkdir -p target/preview-input
+          ditto -c -k --keepParent "target/distribution/$VERSION-release-arm64/Spaceport.app" target/preview-input/Spaceport.zip
+          cd target/preview-input
+          shasum -a 256 Spaceport.zip > SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos-preview-unsigned-${{ github.run_id }}
+          path: target/preview-input/
+          if-no-files-found: error
+          retention-days: 7
+
+  sign:
+    needs: build
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'harperreed/spaceport' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
+    environment: macos-preview
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ inputs.version }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: macos-preview-unsigned-${{ github.run_id }}
+          path: target/preview-input
+      - name: Check and unpack the same-run artifact
+        run: |
+          set -euo pipefail
+          cd target/preview-input
+          shasum -a 256 -c SHA256SUMS
+          ditto -x -k Spaceport.zip .
+          mkdir -p ../preview-signed
+      - name: Recheck immutable version before signing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release/preview-history.py
+      - name: Sign and notarize with the protected Developer ID identity
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: bash scripts/release/sign-macos.sh "$VERSION" target/preview-input/Spaceport.app target/preview-signed arm64 import
+      - name: Retain completed preview and submission diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: macos-preview-signed-${{ github.run_id }}
+          path: |
+            target/preview-signed/
+            target/notarization/
+          if-no-files-found: warn
+          retention-days: 30

@@ -3,6 +3,7 @@
 
 mod build_identity;
 mod locales;
+mod preview_identity;
 mod release_version;
 mod windows_resource;
 
@@ -14,6 +15,7 @@ mod windows_resource;
 enum BuildError {
     MissingManifestDir,
     MissingOutDir,
+    InvalidPreview,
     Locales(locales::Error),
     InvalidPrNumber,
     PrNumberEncoding(std::env::VarError),
@@ -24,6 +26,7 @@ impl std::fmt::Display for BuildError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::MissingManifestDir => f.write_str("CARGO_MANIFEST_DIR is not set"),
+            Self::InvalidPreview => f.write_str("SPACEPORT_MACOS_PREVIEW_VERSION requires macOS and YYYYMMDD.COUNTER (no leading zeros)"),
             Self::MissingOutDir => f.write_str("OUT_DIR is not set"),
             Self::Locales(error) => write!(f, "invalid messages: {error}"),
             Self::InvalidPrNumber => {
@@ -43,13 +46,39 @@ impl std::error::Error for BuildError {
             Self::PrNumberEncoding(error) => Some(error),
             Self::WindowsResource(error) => Some(error),
             Self::Locales(error) => Some(error),
-            Self::MissingManifestDir | Self::MissingOutDir | Self::InvalidPrNumber => None,
+            Self::MissingManifestDir
+            | Self::MissingOutDir
+            | Self::InvalidPrNumber
+            | Self::InvalidPreview => None,
         }
     }
 }
 
 fn main() -> Result<(), BuildError> {
     println!("cargo:rerun-if-changed=build.rs");
+    for file in [
+        "preview_identity.rs",
+        "development-app-id",
+        "macos-preview-app-id",
+    ] {
+        println!("cargo:rerun-if-changed={file}");
+    }
+    println!("cargo:rerun-if-env-changed=SPACEPORT_MACOS_PREVIEW_VERSION");
+    let preview = std::env::var("SPACEPORT_MACOS_PREVIEW_VERSION");
+    let preview = match &preview {
+        Ok(value) => Some(value.as_str()),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(_) => return Err(BuildError::InvalidPreview),
+    };
+    let (app_id, version) = preview_identity::select(
+        preview,
+        &std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default(),
+    )
+    .ok_or(BuildError::InvalidPreview)?;
+    println!("cargo:rustc-env=SPACEPORT_APP_ID={app_id}");
+    println!("cargo:rustc-env=SPACEPORT_APP_VERSION={version}");
+    let profile = std::env::var("PROFILE").unwrap_or_default();
+    println!("cargo:rustc-env=SPACEPORT_BUILD_PROFILE={profile}");
     println!("cargo:rerun-if-changed=build_identity.rs");
     println!("cargo:rerun-if-changed=locales.rs");
     println!("cargo:rerun-if-changed=release_version.rs");

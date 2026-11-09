@@ -14,7 +14,7 @@ SCRIPTS = ROOT / "scripts/release"
 
 
 def build_identity(worktree=False):
-    return (b"not executable\0HERDR_BUILD_IDENTITY_V1\nworktree="
+    return (b"not executable\0SPACEPORT_PREVIEW_V1\nid=ai.2389.spaceport\nversion=20260920.3\nprofile=release\n\0HERDR_BUILD_IDENTITY_V1\nworktree="
             + (b"1\nbranch=feature/test\npr=42\n\0" if worktree else b"0\nbranch=\npr=\n\0"))
 
 
@@ -163,7 +163,7 @@ class ReleaseTests(unittest.TestCase):
             for notices in [self.work / "missing", binary]:
                 result = self.run_script(script, "20260920.3", *inputs, self.work, notices, success=False)
                 self.assertIn("Nonempty third-party notices", result.stderr)
-        self.assertFalse((self.work / "Sheprd.app").exists())
+        self.assertFalse((self.work / "Spaceport.app").exists())
         self.assertFalse(list(self.work.glob("*.tar.gz")))
 
     def mock_tools(self):
@@ -204,7 +204,7 @@ class ReleaseTests(unittest.TestCase):
         self.mock_tools()
         arm, intel = self.macos_builds()
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices)
-        app = self.work / "Sheprd.app"
+        app = self.work / "Spaceport.app"
         self.assertEqual({str(p.relative_to(app)) for p in app.rglob("*") if p.is_file()}, {
             "Contents/MacOS/spaceport", "Contents/MacOS/sheprd-acp",
             "Contents/Info.plist", "Contents/Resources/Sheprd.icns",
@@ -232,7 +232,7 @@ class ReleaseTests(unittest.TestCase):
                 result = self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices,
                                          success=False)
                 self.assertIn(f"A {companion} beside each binary required", result.stderr)
-                self.assertFalse((self.work / "Sheprd.app").exists())
+                self.assertFalse((self.work / "Spaceport.app").exists())
 
     def test_worktree_icons_and_mismatched_architectures(self):
         self.mock_tools()
@@ -240,6 +240,7 @@ class ReleaseTests(unittest.TestCase):
         fixture = self.work / "packaging checkout"
         for path in ["scripts/release/common.sh", "scripts/release/package-macos.sh",
                      "scripts/release/package-linux.sh", "scripts/release/build-icon.py",
+                     "scripts/release/preview-identity.py", "crates/sheprd-gpui/macos-preview-app-id",
                      "scripts/release/org.sheprd.Sheprd.desktop", "assets/macos/Info.plist",
                       "LICENSE", "NOTICE", "assets/icons/LICENSE-octicons",
                       "crates/sheprd-gpui/SOUND-NOTICE.md",
@@ -255,8 +256,8 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn("different build identities", result.stderr)
         intel.write_bytes(build_identity(True))
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices)
-        self.assertEqual((self.work / "Sheprd.app/Contents/Resources/Sheprd.icns").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.icns").read_bytes())
-        self.assertEqual((self.work / "Sheprd.app/Contents/Resources/Assets.car").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.car").read_bytes())
+        self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Sheprd.icns").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.icns").read_bytes())
+        self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Assets.car").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.car").read_bytes())
         result = self.run_script("package-linux.sh", "20260920.3", "aarch64-unknown-linux-gnu", arm, self.work, self.notices)
         with tarfile.open(result.stdout.strip()) as archive:
             self.assertEqual(archive.extractfile("Sheprd-20260920.3-aarch64-unknown-linux-gnu/share/icons/hicolor/scalable/apps/sheprd.svg").read(), (fixture / "assets/icons/sheprd-linux-worktree.svg").read_bytes())
@@ -270,113 +271,7 @@ class ReleaseTests(unittest.TestCase):
             self.run_script("package-linux.sh", "20260920.3", "x86_64-unknown-linux-gnu", binary, self.work, self.notices, success=False)
             self.assertFalse(list(self.work.glob("*.tar.gz")))
 
-    def test_signing_retries_apple_network_failures(self):
-        self.mock_tools()
-        app = self.work / "unsigned.app"
-        (app / "Contents/MacOS").mkdir(parents=True)
-        (app / "Contents/MacOS/spaceport").write_text("never run")
-        (app / "Contents/MacOS/spaceport").chmod(0o755)
-        (app / "Contents/MacOS/sheprd-acp").write_text("never run")
-        for helper in ("acp",):
-            (app / f"Contents/MacOS/herdr-{helper}").write_text("never run")
-        (app / "Contents/Resources").mkdir()
-        (app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").write_bytes(self.notices.read_bytes())
-        self.env.update(
-            MACOS_CERTIFICATE_P12_BASE64="ZHVtbXk=", MACOS_CERTIFICATE_PASSWORD="dummy",
-            APPLE_API_PRIVATE_KEY="dummy p8", APPLE_API_KEY_ID="dummy",
-            APPLE_API_ISSUER_ID="dummy", MACOS_SIGNING_IDENTITY="Developer ID Application: Dummy",
-            APPLE_RETRY_DELAY="0",
-        )
-        output = self.work / "Sheprd-20260920.3-universal-apple-darwin.dmg"
-        # Nine dropped connections in a row still succeed on the tenth try.
-        self.env["MOCK_XCRUN_FAILURES"] = "9"
-        result = self.run_script("sign-macos.sh", "20260920.3", app, self.work)
-        self.assertIn("attempt 9 of 10", result.stderr)
-        self.assertTrue(output.exists())
-        for path in (output, self.work / "xcrun-failures"):
-            path.unlink()
-        # Ten in a row give up, leaving no output behind.
-        self.env["MOCK_XCRUN_FAILURES"] = "10"
-        result = self.run_script("sign-macos.sh", "20260920.3", app, self.work, success=False)
-        self.assertNotIn("attempt 10 of 10", result.stderr)
-        self.assertFalse(output.exists())
-        self.assertFalse(list(self.work.glob(".herdr-sign.*")))
-        (self.work / "xcrun-failures").unlink()
-        self.env.update(MOCK_XCRUN_FAILURES="0", APPLE_RETRY_DELAY="soon")
-        self.run_script("sign-macos.sh", "20260920.3", app, self.work, success=False)
-        self.assertFalse(output.exists())
-
-    def test_signing_success_and_fail_closed(self):
-        self.mock_tools()
-        app = self.work / "unsigned.app"
-        (app / "Contents/MacOS").mkdir(parents=True)
-        (app / "Contents/MacOS/spaceport").write_text("never run")
-        (app / "Contents/MacOS/spaceport").chmod(0o755)
-        (app / "Contents/MacOS/sheprd-acp").write_text("never run")
-        for helper in ("acp",):
-            (app / f"Contents/MacOS/herdr-{helper}").write_text("never run")
-        (app / "Contents/Resources").mkdir()
-        (app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").write_bytes(self.notices.read_bytes())
-        self.env.update(
-            MACOS_CERTIFICATE_P12_BASE64="ZHVtbXk=", MACOS_CERTIFICATE_PASSWORD="dummy",
-            APPLE_API_PRIVATE_KEY="dummy p8", APPLE_API_KEY_ID="dummy",
-            APPLE_API_ISSUER_ID="dummy", MACOS_SIGNING_IDENTITY="Developer ID Application: Dummy",
-            APPLE_RETRY_DELAY="0",
-        )
-        output = self.work / "Sheprd-20260920.3-universal-apple-darwin.dmg"
-        for response in ['{"status":"Invalid"}', '{"status":"In Progress"}', '{}', 'not json',
-                         '{"status":"Invalid"}\n{"status":"Accepted"}', '{"status":"Accepted"}']:
-            with self.subTest(response=response):
-                self.env["MOCK_NOTARY_JSON"] = response
-                accepted = response == '{"status":"Accepted"}'
-                self.run_script("sign-macos.sh", "20260920.3", app, self.work, success=accepted)
-                self.assertEqual(output.exists(), accepted)
-                self.assertFalse(list(self.work.glob(".herdr-sign.*")))
-        self.assertFalse((app / "Contents/_CodeSignature").exists())
-        self.assertFalse((app / "Contents/CodeResources").exists())
-        # Existing DMG outputs also fail before creating credentials.
-        before = (self.work / "log").read_text()
-        self.run_script("sign-macos.sh", "20260920.3", app, self.work, success=False)
-        self.assertEqual((self.work / "log").read_text(), before)
-        output.unlink()
-        for tool in ["codesign", "spctl", "hdiutil", "xcrun"]:
-            self.env["MOCK_FAIL"] = tool
-            self.run_script("sign-macos.sh", "20260920.3", app, self.work, success=False)
-            self.assertFalse(output.exists())
-            self.assertFalse(list(self.work.glob(".herdr-sign.*")))
-        del self.env["MOCK_FAIL"]
-        calls = [json.loads(line) for line in (self.work / "log").read_text().splitlines()]
-        restores = [c for c in calls if c[:5] == ["security", "list-keychains", "-d", "user", "-s"]]
-        self.assertTrue(restores)
-        originals = ["/mock/login keychain-db", "/mock/system.keychain"]
-        # Setup must add the signing keychain, because codesign looks the identity
-        # up through the search list rather than --keychain, but it must never drop
-        # an existing keychain, and the final call must restore exactly the original
-        # list so the machine is left as found even when signing fails.
-        self.assertTrue(all(c[5 : 5 + len(originals)] == originals for c in restores))
-        self.assertTrue(all(len(c[5:]) in (len(originals), len(originals) + 1) for c in restores))
-        self.assertEqual(restores[-1][5:], originals)
-        self.assertTrue(
-            any(
-                len(c[5:]) == len(originals) + 1 and c[-1].endswith("signing.keychain-db")
-                for c in restores
-            )
-        )
-        signs = [c for c in calls if c[:2] == ["codesign", "--force"]]
-        self.assertTrue(any(c[-1].endswith("/Contents/MacOS/spaceport") for c in signs))
-        self.assertTrue(any(c[-1].endswith("/Sheprd.app") for c in signs))
-        # The nested sheprd-acp is signed before the app seals it,
-        # without the app's entitlements.
-        targets = [c[-1].rsplit("/", 1)[-1] for c in signs]
-        for nested in ("sheprd-acp",):
-            self.assertLess(targets.index(nested), targets.index("Sheprd.app"))
-            self.assertFalse(any("--entitlements" in c for c in signs if c[-1].endswith(f"/{nested}")))
-        self.assertTrue(all("--timestamp" in c for c in signs))
-        self.assertTrue(all("runtime" in c for c in signs if not c[-1].endswith(".dmg")))
-        del self.env["APPLE_API_PRIVATE_KEY"]
-        before = (self.work / "log").read_text()
-        self.run_script("sign-macos.sh", "20260920.3", app, self.work, success=False)
-        self.assertEqual((self.work / "log").read_text(), before)
+    # Signing state, cleanup and no-resubmit contracts live in test_macos_preview.py.
 
 
 if __name__ == "__main__":
