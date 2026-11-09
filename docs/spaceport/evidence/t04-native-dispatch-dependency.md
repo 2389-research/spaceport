@@ -129,8 +129,9 @@ before a later crate removal. The app's avatar cache is a separate module.
 
 Verification for this cut: the new saved-mark regression failed before the
 filter and passed after it. `cargo +1.99.0 test -p sheprd-gpui overview::tests
---locked --offline --quiet` passed 83 tests after the parser fix, including
-retained device Overview history/chart behavior. The Core saved-group identity filter passed
+--locked --offline --quiet` passed 83 agent Overview tests after the parser
+fix. The separate device Overview history/chart tests did not run in this
+cut. The Core saved-group identity filter passed
 3 tests; `usage::tests` passed 102 tests. No new Rust warnings appeared; the
 macOS compact-unwind linker and `block` future-compatibility warnings remain.
 The exact-byte saved-file assertion passed before the parser fix, and the
