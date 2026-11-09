@@ -82,19 +82,20 @@ fn listening_ports_follow_the_tab_kinds(cx: &mut TestAppContext) {
     assert_eq!(actions(&view, cx, group), [Action::Split]);
 }
 
-#[cfg(any(target_os = "macos", windows))]
 #[gpui::test]
-fn a_blank_tab_lists_the_listening_ports(cx: &mut TestAppContext) {
+fn a_native_tab_keeps_port_actions_in_the_group_menu(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_native_tab(window, cx)));
     draw(cx);
-    assert!(cx.debug_bounds("browser-placeholder").is_some());
-    assert!(cx.debug_bounds("blank-port-3000").is_none());
+    assert!(cx.debug_bounds("devices-tab").is_some());
+    assert!(cx.debug_bounds("browser-placeholder").is_none());
     seed_ports(&view, cx);
-    let prompt = cx.debug_bounds("browser-placeholder").unwrap();
-    let chip = cx.debug_bounds("blank-port-3000").unwrap();
-    assert!(chip.top() > prompt.bottom());
-    assert!(cx.debug_bounds("blank-port-5173").is_some());
+    click(cx, "tab-actions");
+    assert!(cx.debug_bounds("group-menu-Port5173").is_some());
+    click(cx, "group-menu-Port3000");
+    assert_eq!(cx.opened_url().as_deref(), Some("http://localhost:3000/"));
+    assert!(cx.debug_bounds("devices-tab").is_some());
+    assert!(cx.debug_bounds("browser-placeholder").is_none());
 }
 
 #[test]

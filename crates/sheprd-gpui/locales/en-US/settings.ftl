@@ -180,7 +180,6 @@ settings-tabs-position = Position
 settings-tabs-hide-single = Hide with a single tab
 settings-tabs-confirm-tab = Confirm before closing a tab
 settings-tabs-confirm-pane = Confirm before closing a pane
-settings-tabs-confirm-workspace = Confirm before closing a workspace
 settings-tabs-focus-follows-mouse = Focus follows mouse
 settings-tabs-focus-follows-mouse-description = The pointer chooses the active pane within a split terminal tab.
 settings-tabs-pane-history = Restore scrollback after Herdr restarts

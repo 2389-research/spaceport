@@ -41,7 +41,7 @@ pub enum Error {
     // keep-sorted start
     #[error("{} is not installed on this host", .0.display_name())]
     AgentMissing(Agent),
-    #[error("select a Core terminal tab before starting a chat in this group")]
+    #[error("Select a Core terminal tab before starting a chat in this group")]
     CoreTerminalRequired,
     #[error("ACP chats are off in Settings")]
     Disabled,

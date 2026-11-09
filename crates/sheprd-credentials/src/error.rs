@@ -24,9 +24,7 @@ pub enum Error {
         "Cannot access private credential file. Require an owned directory and regular 0600 file; symlinks are rejected."
     )]
     Permissions,
-    #[error(
-        "No secure credential store configured. Explicitly opt in with allow_plaintext_credentials = true in the [github] or [coder] table, or use GH_TOKEN / GITHUB_TOKEN for GitHub."
-    )]
+    #[error("No secure credential store configured.")]
     Policy,
     #[cfg(target_os = "linux")]
     #[error(

@@ -11,7 +11,7 @@ error-credentials-keychain-read = Cannot read GitHub Keychain entry. Unlock your
 error-credentials-keychain-write = GitHub Keychain update failed. Unlock your login Keychain and try again.
 # 0600 is the file's Unix permissions: only its owner can read and write it.
 error-credentials-permissions = Cannot access private credential file. Require an owned directory and regular 0600 file; symlinks are rejected.
-error-credentials-policy = No secure credential store configured. Explicitly opt in with allow_plaintext_credentials = true in the [github] table, or use GH_TOKEN / GITHUB_TOKEN for GitHub.
+error-credentials-policy = No secure credential store configured.
 # Linux only.
 error-credentials-secret-service-read = Cannot read GitHub sign-in from the desktop keyring. Unlock your keyring or set GH_TOKEN.
 # Linux only. Secret Service is the desktop keyring's protocol; GNOME

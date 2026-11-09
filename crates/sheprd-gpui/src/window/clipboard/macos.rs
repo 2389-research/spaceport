@@ -37,7 +37,8 @@ pub enum Error {
     #[error("The macOS clipboard reader exited unsuccessfully ({0}). Try pasting again.")]
     Exited(ExitStatus),
     #[error(
-        "Sheprd's app was removed or replaced since it started, so it cannot read the clipboard. Restart Sheprd to paste."
+        "{app}'s app was removed or replaced since it started, so it cannot read the clipboard. Restart {app} to paste.",
+        app = crate::constants::WINDOW_TITLE
     )]
     Missing(PathBuf),
     #[error("Could not run the macOS clipboard reader")]

@@ -155,12 +155,6 @@ pub(super) const CATALOG: &[Entry] = &[
     ),
     entry(
         Section::Sidebar,
-        "sidebar-change-counts",
-        "settings-sidebar-change-counts",
-        "settings-sidebar-change-counts-description",
-    ),
-    entry(
-        Section::Sidebar,
         "sidebar-show-agents",
         "settings-sidebar-show-agents",
         "settings-sidebar-show-agents-description",
@@ -383,12 +377,6 @@ pub(super) const CATALOG: &[Entry] = &[
         Section::Tabs,
         "tabs-confirm-pane",
         "settings-tabs-confirm-pane",
-        "",
-    ),
-    entry(
-        Section::Tabs,
-        "tabs-confirm-workspace",
-        "settings-tabs-confirm-workspace",
         "",
     ),
     entry(
