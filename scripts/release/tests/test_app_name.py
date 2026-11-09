@@ -1,4 +1,4 @@
-"""macOS launch paths use Sheprd's bundle and bridge-compatible executable."""
+"""macOS development launch paths use Spaceport's independent bundle identity."""
 import json
 from pathlib import Path
 import plistlib
@@ -30,6 +30,10 @@ class AppNameTests(unittest.TestCase):
         self.assertIsNotNone(bundle_id)
         self.assertEqual(bundle_id[1], app_id[1])
         self.assertNotIn("herdr-gpui", bundle_id[1])
+        title = re.search(r'pub\(crate\) const WINDOW_TITLE: &str = "([^"]+)"', constants)
+        self.assertIsNotNone(title)
+        for key in ("CFBundleName", "CFBundleDisplayName"):
+            self.assertIn(f'plutil -replace {key} -string {title[1]}', justfile)
 
     def test_bundle_plist_names_the_app_sheprd(self):
         info = plistlib.loads((ROOT / "assets/macos/Info.plist").read_bytes())
@@ -63,20 +67,21 @@ class AppNameTests(unittest.TestCase):
             if recipe == "run":
                 # Opened through LaunchServices, so macOS asks for Local
                 # Network access instead of denying it to a shell's child.
-                self.assertIn('app="$PWD/target/release/Sheprd.app"', body.group(1))
+                self.assertIn('app="$PWD/target/release/Spaceport.app"', body.group(1))
                 self.assertIn('"$app" --args {{args}}', body.group(1))
                 self.assertRegex(body.group(1), r"\n\s*open -n -W ")
                 self.assertIn("{{just_executable()}} bundle release\n", body.group(1))
                 self.assertIn("--release -p sheprd-gpui -- {{args}}", body.group(1))
             else:
-                launch = f"exec target/{profile}/Sheprd.app/Contents/MacOS/spaceport {{{{args}}}}"
+                launch = f"exec target/{profile}/Spaceport.app/Contents/MacOS/spaceport {{{{args}}}}"
                 self.assertIn(launch, body.group(1))
 
-    def test_bundle_recipe_installs_the_executable_and_icon_as_sheprd(self):
+    def test_bundle_recipe_uses_spaceport_with_retained_icon_resources(self):
         justfile = (ROOT / "justfile").read_text()
         body = re.search(r'(?m)^bundle profile="release" features="":\n((?:[ \t]+.*\n|\n)+)', justfile)
         self.assertIsNotNone(body)
         for expected in (
+            'app=target/{{profile}}/Spaceport.app',
             'cargo build --locked $flags --target-dir target -p sheprd-gpui --features "{{features}}"',
             'cp target/{{profile}}/spaceport "$app/Contents/MacOS/spaceport"',
             'cp assets/macos/Info.plist "$app/Contents/Info.plist"',

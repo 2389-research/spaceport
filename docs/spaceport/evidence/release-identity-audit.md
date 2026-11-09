@@ -1,5 +1,7 @@
 # T12 release identity audit: source state
 
+The canonical development bundle now uses `Spaceport.app` and Spaceport bundle display names; `t01-dev-bundle-name.md` records the recipe and native artifact checks. The production plist, packaging names and release identities described below remain separate open gates.
+
 Current test-suite correction: `evidence/t04-release-contract-regressions.md` records the later 241-test release Python suite pass (eight skips) and a real development-binary CLI smoke pass. This supersedes the inherited red suite result in the GitHub removal evidence, while leaving all identity, signing and native package gates open.
 
 T12 is blocked. This is a source audit of the current development branch, not a package or update test. No release or user installation was changed.

@@ -1,7 +1,7 @@
 default:
     @just --list
 
-# Launch the bundle so macOS reads Sheprd's identity and privacy declarations.
+# Launch the bundle so macOS reads its identity and privacy declarations.
 run *args:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -15,7 +15,7 @@ run *args:
     # Network access (Bonjour, SSH hosts on the LAN) only for an app it
     # launched, and denies a binary started from a shell without asking.
     # Output still reaches this terminal; Ctrl-C quits the app.
-    app="$PWD/target/release/Sheprd.app"
+    app="$PWD/target/release/Spaceport.app"
     out=/dev/null
     if [ -t 0 ]; then out=$(tty); fi
     env_args=()
@@ -33,7 +33,7 @@ run-debug *args:
         exec cargo run --locked -p sheprd-gpui -- {{args}}
     fi
     {{just_executable()}} bundle debug
-    exec target/debug/Sheprd.app/Contents/MacOS/spaceport {{args}}
+    exec target/debug/Spaceport.app/Contents/MacOS/spaceport {{args}}
 
 format:
     cargo fmt --all
@@ -140,7 +140,7 @@ bundle profile="release" features="":
         debug) flags= ;;
         *) echo "Unknown profile: {{profile}} (release or debug)" >&2; exit 2 ;;
     esac
-    app=target/{{profile}}/Sheprd.app
+    app=target/{{profile}}/Spaceport.app
     cargo build --locked $flags --target-dir target -p sheprd-gpui --features "{{features}}"
     cargo build --locked $flags --target-dir target -p sheprd-acp
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
@@ -161,6 +161,8 @@ bundle profile="release" features="":
     # LaunchServices and the Dock cache icons by bundle ID, so every worktree
     # build sharing the release ID competed with the installed app's icon.
     plutil -replace CFBundleIdentifier -string spaceport.development "$app/Contents/Info.plist"
+    plutil -replace CFBundleName -string Spaceport "$app/Contents/Info.plist"
+    plutil -replace CFBundleDisplayName -string Spaceport "$app/Contents/Info.plist"
     icons=$(python3 scripts/release/build-icon.py macos "$app/Contents/MacOS/spaceport")
     cp "${icons%$'\n'*}" "$app/Contents/Resources/Sheprd.icns"
     cp "${icons##*$'\n'}" "$app/Contents/Resources/Assets.car"
