@@ -127,7 +127,7 @@
         "docs/01-herdr-contract.md",
         "docs/06-security-and-resources.md"
       ],
-      "deliverable": "Typed Core calls/streams/capabilities with no legacy fallback or parallel remote manager.",
+      "deliverable": "Typed Core calls/streams/capabilities with explicit runtime targets and no new remote manager; existing Herdr 1 routes remain allowed under D58.",
       "status": "blocked",
       "evidence": [
         "evidence/t02-core-boundary.md",
@@ -182,7 +182,7 @@
         "docs/01-herdr-contract.md",
         "docs/07-reconciliation.md"
       ],
-      "deliverable": "Migrate readers from legacy snapshots; implement namespaced versioned presentation documents and local view preferences.",
+      "deliverable": "Keep each view authoritative for its selected runtime; retain Herdr 1 snapshots and implement namespaced Core presentation documents and local view preferences. Core-only default startup is no longer required under D58.",
       "status": "in_progress",
       "evidence": [
         "evidence/t03-workspace-document.md",
@@ -204,6 +204,7 @@
         "evidence/t03-core-window-constructor.md",
         "evidence/t03-core-cli-window-target.md",
         "evidence/t03-core-default-startup-bootstrap.md",
+        "evidence/t03-runtime-policy-d58.md",
         "evidence/t03-sidebar-terminal-fallback.md",
         "evidence/t03-core-tab-tearoff.md"
       ],
@@ -392,7 +393,7 @@
         "docs/01-herdr-contract.md",
         "docs/05-verification.md"
       ],
-      "deliverable": "Local/remote Core terminal attach, input and window lifecycle through retained renderer; process survival proved.",
+      "deliverable": "Prove supported local/remote Herdr 1 and Core terminal attach, input, window lifecycle and process survival through the retained renderer; record runtime-specific coverage.",
       "status": "in_progress",
       "evidence": [
         "evidence/t05-core-lifecycle.md",
@@ -483,7 +484,7 @@
         "docs/01-herdr-contract.md",
         "docs/06-security-and-resources.md"
       ],
-      "deliverable": "Preserve host/file/service UX through verified Core routes; no public rebinding or parallel transport workaround.",
+      "deliverable": "Preserve host/file/service UX through separately verified Herdr 1 or Core routes; no public rebinding or new transport workaround. Core-specific gaps remain until verified or explicitly rescoped with evidence.",
       "status": "blocked",
       "evidence": [
         "evidence/external-core-dependencies.md",
@@ -599,7 +600,7 @@
     },
     {
       "id": "T10",
-      "title": "Delete legacy/mobile remnants and finalize dependencies",
+      "title": "Delete mobile and excluded remnants and finalize dependencies",
       "depends_on": [
         "T04",
         "T05",

@@ -58,6 +58,7 @@
 | D52 | **Name** — Spaceport. | active |
 | D53 | **Independent fork** — Maintain independently rather than routinely merging upstream; keep provenance and security diligence. | active |
 | D54 | **Real deletion** — Delete unwanted code/dependencies/UI/tests/settings/docs; do not merely hide it behind flags. | active |
-| D55 | **Herdr 2 only** — Remove legacy Herdr 1 compatibility; this does NOT mean removing Core protocol generation 1. | active |
+| D55 | **Herdr 2 only** — Remove legacy Herdr 1 compatibility; this does NOT mean removing Core protocol generation 1. | superseded |
 | D56 | **Herdr-mediated connectivity** — Use Core for remote runtime connectivity; no new Spaceport transport/federation service. | active |
 | D57 | **Remove mobile server** — Delete phone remote-control server and its desktop integration; defer all mobile design/implementation. | active |
+| D58 | **Allow Herdr 1** — Herdr 1 is an allowed runtime alongside Herdr Core. Preserve working native UX instead of requiring a Core-only startup or deleting the Herdr 1 backend. D55 is superseded. D24, D37, D48 and D56 apply to Core routes; existing Herdr 1 startup and connectors may serve Herdr 1 routes. Retain exact runtime targets and session ownership. This does not restore excluded features, authorize runtime installation/update or imply untested parity. | active |

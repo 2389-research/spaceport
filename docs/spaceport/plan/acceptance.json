@@ -20,8 +20,8 @@
         "SP-004"
       ],
       "title": "Protocol identity",
-      "scenario": "Connect to the inspected Core generation; attempt the legacy backend and an unsupported generation.",
-      "expected": "Core generation 1 is accepted when compatible; legacy Herdr 1 never silently activates.",
+      "scenario": "Connect to supported Herdr 1 and Core runtimes; attempt an unsupported generation and stale or cross-runtime target.",
+      "expected": "Compatible Herdr 1 and Core are allowed; unsupported protocols and wrong-runtime targets refuse without migration or duplicate launch.",
       "status": "not_run",
       "evidence": []
     },
@@ -30,9 +30,9 @@
       "requirements": [
         "SP-005"
       ],
-      "title": "Installed Core startup",
-      "scenario": "Test absent, running, stopped and incompatible installed Core using fake installer/update hooks.",
-      "expected": "Connect/start only the approved installed executable; no download/install/update hooks execute.",
+      "title": "Installed runtime startup",
+      "scenario": "Test absent, running, stopped and incompatible separately installed Herdr 1 and Core; check explicit-socket attach-only behavior in private fixtures.",
+      "expected": "Connect/start only the selected trusted installed runtime; explicit sockets never start one. No download/install/update hooks execute.",
       "status": "not_run",
       "evidence": []
     },
@@ -369,9 +369,9 @@
         "SP-015",
         "SP-004"
       ],
-      "title": "Legacy graph removed",
+      "title": "Retained runtime graph and excluded routes",
       "scenario": "Inspect all release target/features, binaries and dependencies after shared-type extraction.",
-      "expected": "No legacy Herdr 1 backend or fallback; pure Core renderer/input types still pass tests.",
+      "expected": "Herdr 1 and Core adapters remain where needed; excluded feature routes stay absent and shared renderer/input contracts pass. No automatic session migration or runtime installation occurs.",
       "status": "not_run",
       "evidence": ["evidence/t04-legacy-launch-flags.md", "evidence/t04-legacy-window-session.md", "evidence/t04-default-bridge-dependency.md", "evidence/t04-legacy-install-offer.md", "evidence/t05-core-default-observation.md"]
     },

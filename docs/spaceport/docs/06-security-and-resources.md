@@ -16,7 +16,7 @@ Opening a file or URL is an explicit outward action. Do not fetch external image
 
 ## Process lifecycle
 
-Spaceport owns only its UI, workers and deliberately short-lived support processes. Core and its terminal/agent programs are not children to be swept up by application shutdown. On quit, cancel subscriptions and client-owned transfers, close IPC and exit; do not invoke Core stop/update or agent termination. Tests must prove actual platform process survival, not just that a kill function was not called.
+Spaceport owns only its UI, workers and deliberately short-lived support processes. Herdr 1, Core and their terminal/agent programs are not children to be swept up by application shutdown. On quit, cancel subscriptions and client-owned transfers, close IPC and exit; do not invoke either runtime's stop/update or agent termination. Tests must prove actual platform process survival, not just that a kill function was not called.
 
 A user-confirmed terminal kill is distinct and precisely targeted. Chat view conversion/resume code that manipulates an agent merely to achieve a layout is removed. A Core keep/recovery policy is backend behavior; Spaceport must not recreate it.
 

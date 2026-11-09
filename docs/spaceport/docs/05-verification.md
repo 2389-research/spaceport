@@ -24,11 +24,11 @@ For rich chat: verify endpoint ownership and terminal/conversation identity; pro
 
 ## Scope-negative tests
 
-Removed UI, CLI commands, settings, worker services, provider calls and packaged binaries must be absent. No browser/webview, Git/GitHub workflow, cloud provisioning, Teleport, plugin engine, local scheduler, legacy Herdr 1 backend or mobile server is reachable. Plain terminal/chat text mentioning those concepts still renders. Product code-removal checks must not disable CI or erase attribution.
+Removed UI, CLI commands, settings, worker services, provider calls and packaged binaries must be absent. No browser/webview, Git/GitHub workflow, cloud provisioning, Teleport, plugin engine, local scheduler or mobile server is reachable. Herdr 1 itself remains allowed under D58. Plain terminal/chat text mentioning excluded concepts still renders. Product code-removal checks must not disable CI or erase attribution.
 
 ## Cross-platform acceptance
 
-Native macOS, Windows and Linux tests cover Core startup/discovery, socket/pipe ownership, IME/paste, clipboard images, external browser/file opening, notification permissions, last-window quit, detached process survival, renderer input, settings persistence, installer and updater. On Linux include the window-system configurations the release actually claims; on Windows include console versus windowed launch behavior. A Linux cross-compile is not a Windows UI test.
+Native macOS, Windows and Linux tests cover Herdr 1 and Core startup/discovery, socket/pipe ownership, IME/paste, clipboard images, external browser/file opening, notification permissions, last-window quit, detached process survival, renderer input, settings persistence, installer and updater. On Linux include the window-system configurations the release actually claims; on Windows include console versus windowed launch behavior. A Linux cross-compile is not a Windows UI test.
 
 Build only the architecture matrix deliberately selected for release and report it exactly. Do not claim support just because upstream publishes an architecture. Capture baseline package/renderer requirements before deleting platform-specific dependencies.
 

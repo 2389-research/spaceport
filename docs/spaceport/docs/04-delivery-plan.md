@@ -4,7 +4,7 @@ The canonical work graph is `plan/tasks.json`. Status starts at `not_started`; t
 
 ## Phase 0 — Prove the boundary before cutting
 
-**T00** pins source and toolchain, inventories features and dependencies, builds a read-only reference, exercises isolated Core behavior and records actual gaps. The first output is evidence and a deletion map, not a repository-wide rename. Confirm the existing session model and rich-chat path, because Core-only support changes more than the terminal codec.
+**T00** pins source and toolchain, inventories features and dependencies, builds a read-only reference, exercises isolated Core behavior and records actual gaps. The first output is evidence and a deletion map, not a repository-wide rename. Confirm the existing session model and rich-chat path, because runtime capabilities differ beyond the terminal codec. D58 permits Herdr 1; Core-specific work is not a requirement to remove the working Herdr 1 path.
 
 After T00, **T01** isolates the Spaceport development identity and **T02** establishes the Core capability adapter. These can proceed independently after agreeing on shared types. Production signing remains later.
 
@@ -12,7 +12,7 @@ After T00, **T01** isolates the Spaceport development identity and **T02** estab
 
 **T03** creates the Core-backed presentation projection and versioned workspace metadata, without a new runtime. **T05** attaches one real local terminal through it, restores the view without restarting the process, and proves last-window quit preserves that process. Then test the same flow with a Core-managed remote terminal.
 
-This is the proof that makes legacy removal safe. Do not delete the old backend first and attempt to reconstruct every missing behavior from memory.
+This proves the Core route independently. D58 permits the existing Herdr 1 backend to remain; do not delete it merely to force this migration.
 
 ## Phase 2 — Preserve the agent experience
 
@@ -22,7 +22,7 @@ If a backend gate blocks a task, complete its independent inspection/renderer te
 
 ## Phase 3 — Delete completely
 
-**T04** removes excluded IDE/Git/GitHub/browser/cloud/orchestration/mod features after the view seam is available. It may run alongside the retained-feature tasks with clear file ownership. **T10** removes legacy Herdr 1, phone server/push/pairing and remaining mixed-crate remnants only after their retained dependencies are extracted and exercised.
+**T04** removes excluded IDE/Git/GitHub/browser/cloud/orchestration/mod features after the view seam is available. It may run alongside the retained-feature tasks with clear file ownership. **T10** removes phone server/push/pairing and remaining excluded mixed-crate remnants only after their retained dependencies are extracted and exercised.
 
 Small coherent deletion commits are compatible with the user's demand for complete deletion. There must be no permanently hidden compatibility implementation in the final tree. Intermediate checkpoints are development safety, not a product feature-flag strategy.
 

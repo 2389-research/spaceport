@@ -6,7 +6,7 @@
 
 ## Product contract
 
-Spaceport is a native desktop workspace for interacting with agents and terminals running in Herdr Core. It should feel like the application the user already likes, with unwanted features removed—not a redesign or a replacement agent runtime.
+Spaceport is a native desktop workspace for interacting with agents and terminals running in Herdr 1 or Herdr Core. Preserve the approved desktop experience while removing excluded features. Decision D58 permits Herdr 1 and supersedes the earlier Core-only requirement.
 
 ### SP-001 — Product and platform boundary
 
@@ -18,35 +18,35 @@ Retain workspaces-first navigation, chat and terminal as equal first-class views
 
 ### SP-003 — Runtime ownership
 
-Herdr Core is the sole owner of terminal processes, host connections and execution lifecycle. Host-side agents/adapters own their conversation execution. Spaceport may display state and invoke supported operations, not schedule agents, coordinate teams, migrate execution, configure providers or infer runtime state from screen text. User-requested launches go through Core. [D11, D13, D23, D27, D32, D48, D56]
+The selected Herdr runtime owns terminal processes and execution lifecycle. Core owns machine connections for Core routes; existing Herdr 1 connection infrastructure may serve Herdr 1 routes. Host-side agents/adapters own their conversation execution. Spaceport may display state and invoke supported operations, not schedule agents, coordinate teams, migrate execution, configure providers or infer runtime state from screen text. User-requested launches go through the selected runtime. Do not add another transport manager. [D11, D13, D23, D27, D32, D48, D56, D58]
 
-### SP-004 — Core-only compatibility
+### SP-004 — Runtime compatibility
 
-Remove the legacy Herdr 1 backend, not every item called “generation 1.” Pin and test a supported Core protocol/API range independently of the app's release version. Record installed version, advertised methods/features and tested source/schema evidence. Unsupported capabilities fail explicitly; no silent legacy fallback. [D55; S02, S03]
+Retain Herdr 1 and Core adapters where they preserve approved behavior. Pin and test each supported runtime/protocol range independently of the app's release version. Record runtime identity, installed version, advertised methods/features where available, and tested source/schema evidence. Core protocol generation 1 is distinct from the Herdr 1 product. Unsupported capabilities fail explicitly; never move or recreate a session in another runtime as a fallback. [D58; S02, S03, S04, S09]
 
 ### SP-005 — Installation and startup
 
-Use a separately installed local `hc`/Herdr Core. Connect first; start it with its documented startup command only when necessary. Do not bundle/download/install/update it locally or remotely, run installation scripts, or select an unverified executable from a project directory. Guided onboarding explains missing/incompatible software and supports manual machine setup through Core. [D24–D25, D37]
+Use separately installed Herdr 1 or `hc`/Herdr Core. Connect first; start the installed local runtime with its documented startup command only when necessary. Existing Herdr 1 plain startup is allowed. Explicit sockets remain attach-only. Do not bundle/download/install/update either runtime locally or remotely, run installation scripts, or select an unverified executable from a project directory. Guided onboarding explains missing/incompatible software and supports manual machine setup. [D24–D25, D37, D58]
 
 ### SP-006 — Host connections and Tailscale
 
-Use Core's machine catalog, identity, SSH/custom-connection handling, reconnect policy and aggregated events. Preserve the host manager as a view/controller of that catalog. Do not maintain a second machine registry or remote reconnect loop. Tailscale is externally installed/configured; addresses and aliases are entered manually. No discovery, embedded VPN, OAuth, cloud-provider provisioning or public control listener. [D06, D15, D40, D48, D56; S01]
+For Core routes, use Core's machine catalog, identity, SSH/custom-connection handling, reconnect policy and aggregated events. Existing Herdr 1 host connections may remain for Herdr 1 sessions. Keep the host manager's runtime ownership explicit; do not create a new machine registry or reconnect manager. Tailscale is externally installed/configured; addresses and aliases are entered manually. No discovery, embedded VPN, OAuth, cloud-provider provisioning or public control listener. [D06, D15, D40, D48, D56, D58; S01]
 
 ### SP-007 — Workspace presentation, not a new runtime
 
-Preserve workspace create/rename/open/archive/delete controls. Workspace names, membership and layout are **presentation metadata**, not evidence that Core implements native workspace resources. Store shared grouping metadata in a Spaceport-namespaced, versioned Core document using `doc.get`/`doc.set`; keep per-device geometry/preferences local. Never write another client's document namespace. Terminal lifecycle remains exclusively Core-owned. Archive/delete grouping must not implicitly kill processes or delete project files. A separately explicit termination action uses Core and existing confirmation behavior. [D01, D04, D14, D36; S02, S04]
+Preserve workspace create/rename/open/archive/delete controls. Herdr 1 may supply its native workspace semantics; Core does not. For Core routes, store shared grouping metadata in a Spaceport-namespaced, versioned Core document using `doc.get`/`doc.set`. Keep per-device geometry/preferences local and never write another client's document namespace. The selected runtime owns terminal lifecycle. Archive/delete presentation grouping must not implicitly kill processes or delete project files. A separately explicit termination action uses the selected runtime and existing confirmation behavior. [D01, D04, D14, D36, D58; S02, S04]
 
 ### SP-008 — Full terminal behavior
 
-Keep current emulation, cell model, rendering, input encoding, selection, copy/paste, scrollback, mouse behavior, splits and supported observer views. Attach to Core's authoritative first paint and ordered byte stream; obey credit/backpressure and feature negotiation. Do not invent shell state from screenshots. A terminal can exist without an agent or native chat. [D03, D39, D43; S02, S11]
+Keep current emulation, cell model, rendering, input encoding, selection, copy/paste, scrollback, mouse behavior, splits and supported observer views. Retain the Herdr 1 cell path and Core's authoritative first paint and ordered byte stream; obey each protocol's bounds, backpressure and negotiation. Do not invent shell state from screenshots. A terminal can exist without an agent or native chat. [D03, D39, D43, D58; S02, S09, S11]
 
 ### SP-009 — Native chat without ownership creep
 
-Keep rich rendering and the existing host-side adapter/attach contract where verified compatible. Starting a host-side adapter is a Core-owned terminal launch, not a desktop-owned agent child. Showing/hiding a chat is presentation-only: no kill/resume/convert side effects. Do not expose model/provider configuration or automatically deploy helpers. Prove local and remote routes separately. A remote-chat gap must not be hidden by a new Spaceport server or by labeling terminal-only support as full native-chat parity. [D08, D23, D27–D28, D32, D56; S05, S06]
+Keep rich rendering and the existing host-side adapter/attach contract where verified compatible. Starting a host-side adapter is a selected-runtime terminal launch, not a desktop-owned agent child. Showing/hiding a chat is presentation-only: no kill/resume/convert side effects. Do not expose model/provider configuration or automatically deploy helpers. Prove local and remote routes for each supported runtime separately. A remote-chat gap must not be hidden by a new Spaceport server or by labeling terminal-only support as full native-chat parity. [D08, D23, D27–D28, D32, D56, D58; S05, S06]
 
 ### SP-010 — Capability-correct interaction
 
-Offer prompt composition, attachments, permission answers, queues and slash-command affordances only when their backing session supports them. Keep permission prompts distinct from ordinary messages and descriptive tool-call output. Unknown agent status is unknown, not idle. Input targets the exact Core/terminal/conversation instance the user or caller selected. [D11, D23, D28, D32]
+Offer prompt composition, attachments, permission answers, queues and slash-command affordances only when their backing session supports them. Keep permission prompts distinct from ordinary messages and descriptive tool-call output. Unknown agent status is unknown, not idle. Input targets the exact runtime/terminal/conversation instance the user or caller selected. [D11, D23, D28, D32, D58]
 
 ### SP-011 — Activity, search and monitoring
 
@@ -62,11 +62,11 @@ No persistent offline transcript/activity/terminal cache and no offline mutation
 
 ### SP-014 — Files and services
 
-Retain file/image attachments, drag/drop, existing general transfer behavior and external file opening through verified routes. Prefer Core's `terminal.put` and file/machine facilities; do not assume text file APIs provide every binary-transfer operation. Keep port discovery/forwarding as an explicit requirement and open URLs in the system browser. Do not replace loopback forwarding by exposing servers publicly, altering bind addresses or silently configuring Tailscale Serve. If the required Core-mediated forwarding/transfer contract is absent, record a parity blocker. [D05, D22, D44; S01, S03]
+Retain file/image attachments, drag/drop, existing general transfer behavior and external file opening through verified runtime routes. For Core, prefer `terminal.put` and file/machine facilities; do not assume text file APIs provide every binary-transfer operation. Existing Herdr 1 routes may satisfy these features when separately tested. Keep port discovery/forwarding as an explicit requirement and open URLs in the system browser. Do not expose servers publicly, alter bind addresses or silently configure Tailscale Serve to hide a missing route. Record parity blockers per runtime. [D05, D22, D44, D58; S01, S03, S09]
 
 ### SP-015 — Complete feature deletion
 
-Delete IDE/editor integration, code navigation/indexing, specialized diff/review UI, Git/worktree/branch/checkpoint controls, GitHub account/PR/issue/security surfaces, embedded browser/annotations, cloud providers/provisioning, Teleport/migration, orchestration/dispatch engines, automation editing/execution, client mods/plugins, terminal-to-agent annotations, legacy Herdr 1 backend and mobile remote-control/pairing/push components. Delete their settings, assets, CLI commands, workers, dependencies, tests and documentation after extracting any shared retained primitives. No disabled implementations shipped behind flags. [D02, D04–D07, D13, D27, D30–D31, D34, D54–D55, D57]
+Delete IDE/editor integration, code navigation/indexing, specialized diff/review UI, Git/worktree/branch/checkpoint controls, GitHub account/PR/issue/security surfaces, embedded browser/annotations, cloud providers/provisioning, Teleport/migration, orchestration/dispatch engines, automation editing/execution, client mods/plugins, terminal-to-agent annotations and mobile remote-control/pairing/push components. Herdr 1 itself is retained under D58; this does not restore any excluded feature carried by that backend. Delete excluded settings, assets, CLI commands, workers, dependencies, tests and documentation after extracting shared retained primitives. No disabled excluded implementations shipped behind flags. [D02, D04–D07, D13, D27, D30–D31, D34, D54, D57–D58]
 
 ### SP-016 — Do not censor terminal or chat content
 
@@ -114,4 +114,4 @@ Record all retained-feature/backend gaps and distinguish specification checks fr
 
 ## Definition of done
 
-The retained feature matrix is demonstrated on the supported desktop platforms; excluded behavior/dependencies are absent; Core owns all runtime and remote connectivity; agent and human control paths agree; lifecycle and adverse scenarios pass; release identity and updates are verified; docs/task/capability evidence reflect the shipping commit. Every exception is visible and approved, not silently reclassified as optional.
+The retained feature matrix is demonstrated on the supported desktop platforms; excluded behavior/dependencies are absent; Herdr 1 or Core owns each session's execution through its verified route; agent and human control paths agree; lifecycle and adverse scenarios pass; release identity and updates are verified; docs/task/capability evidence reflect the shipping commit. Every exception is visible and approved, not silently reclassified as optional.

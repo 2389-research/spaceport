@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "note": "Names in methods are Core RPCs, not Spaceport endpoints. T00 runtime evidence is scoped to one private macOS fixture; other paths remain unproved.",
+  "note": "Names in methods are Core RPCs, not Spaceport endpoints. D58 also permits Herdr 1; Core evidence and gaps below do not prove or disprove Herdr 1 parity. Each runtime route needs its own evidence. T00 runtime evidence is scoped to one private macOS fixture; other paths remain unproved.",
   "capabilities": [
     {
       "id": "CAP-CORE",

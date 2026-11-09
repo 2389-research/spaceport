@@ -2,7 +2,7 @@
 
 ## Mission
 
-Fork the pinned Sheprd baseline into Spaceport. Preserve the approved desktop experience. Delete excluded behavior completely. Integrate **Herdr Core only**, using an independently installed runtime. Do not edit Herdr itself or reinterpret this task as building an agent platform.
+Fork the pinned Sheprd baseline into Spaceport. Preserve the approved desktop experience. Delete excluded behavior completely. Herdr 1 and Herdr Core are allowed independently installed runtimes under decision D58. Do not edit Herdr itself or reinterpret this task as building an agent platform.
 
 Read `SPEC.md` and `SYSTEM.md` once. For each task, use `python tools/spec.py context TASK_ID` to obtain its specific requirements, sources, gaps and tests. Re-read changed authoritative inputs; do not trust a stale task capsule.
 
@@ -10,7 +10,7 @@ Read `SPEC.md` and `SYSTEM.md` once. For each task, use `python tools/spec.py co
 
 - User work and unrelated changes are untouchable. Inspect repository status before writing. Use a separate branch/worktree for this engineering task; removing the product's worktree UI does not prohibit developer Git workflows.
 - Never use a live personal daemon, actual agent transcript, real tailnet credentials or upstream production updater as a test fixture. Use isolated state directories and explicit fixture endpoints.
-- Core owns processes, remote connections and lifecycle. Spaceport may start an installed local Core, but may not install/update it or operate an alternate runtime.
+- The selected Herdr runtime owns its processes and lifecycle. Core owns connections for Core routes; the existing Herdr 1 connector may serve Herdr 1 routes. Spaceport may start an installed local runtime but may not install/update it, migrate sessions between runtimes, or add another transport manager.
 - Keep GPUI, the current terminal engine and the existing desktop interaction design. No mobile/UniFFI/Ghostty work, framework migration, plugin engine or new service.
 - **Do not delete by name.** Herdr 2 currently calls its wire protocol generation 1. Shared `sheprd-protocol` types may still support the renderer. Extract needed pure types before deleting legacy behavior.
 - Use source-observed methods, their generated schemas and actual runtime capabilities. Do not invent endpoint names, workspace APIs, replay support, delivery receipts or idempotency guarantees.

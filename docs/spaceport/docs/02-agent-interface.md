@@ -1,5 +1,7 @@
 # Agent-facing client contract
 
+D58 permits both Herdr 1 and Core. Core-specific examples below retain their scope. Existing Herdr 1 control commands keep exact daemon/boot/workspace/pane identity; do not translate them into a different runtime or infer equivalent capability without tests.
+
 Implements SP-017–SP-021 and SP-024. This is an **additive refinement of the retained local CLI**, not a new product daemon or a replacement for `hc`. Existing relevant commands keep their semantics after removed features disappear. Source baseline: [S07, S09](SOURCES.md).
 
 ## 1. Two tools with distinct jobs

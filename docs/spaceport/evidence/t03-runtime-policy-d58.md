@@ -1,0 +1,13 @@
+# T03: Herdr 1 runtime permission
+
+On 2026-11-09 Doctor Biz explicitly said “allow herdr 1” after choosing between allowing Herdr 1 for existing UX and retaining Core as the sole runtime. D58 supersedes D55. This is a product requirement change, not an implementation workaround or a test pass.
+
+Herdr 1 plain startup, explicit socket attachment, native workspace state and existing host connectors may remain. Each operation keeps its exact runtime/session target; Core routes still use Core's connection owner. Runtime installation/update, automatic session migration, a new transport manager and all previously excluded feature families remain outside scope. This does not restore removed CLI flags or Herdr 1 plugin-capable routes.
+
+The old Core-only cold-start bootstrap proposal is no longer required. Existing runtime code already permits Herdr 1, so this change updates authoritative decisions, requirements, ownership contracts, task/removal/acceptance records, bootstrap instructions and root guidance. It does not change runtime selection code or mark a task/acceptance gate passed. Core-specific backend gaps remain open until per-runtime feature coverage is proved and the affected gate is explicitly reconciled with that evidence.
+
+Verification used the isolated task worktree at base `e1bf26337`. The Rust 1.99.0 `daemon::tests` filter passed 34 tests, including 12 startup/socket tests and the matching keymap tests. The startup cases cover an existing daemon without launch, local startup, attach-only/cancelled requests, explicit and remote targets that never start a local daemon, missing executables, bounded waiting and isolated configuration paths. They use private fixtures rather than a personal daemon. The test link emitted the inherited macOS compact-unwind warning and Cargo's existing `block 0.1.6` future-compatibility notice. No production source changed, no native UI or live installed-runtime parity test ran, and no personal runtime was contacted.
+
+`tools/spec.py render`, `tools/spec.py check` and all 21 `tools/test_spec.py` tests passed from the package root with the existing package venv. Generated decision/task/reading views were regenerated from their sources. Historical evidence remains intact with an explicit D58 qualification on the retired cold-start proposal.
+
+Peer review caught five residual Core-only phrasings in process evidence, host catalog ownership, shutdown protection, chat adapter ownership and native test coverage. Those contracts now name the selected runtime or explicitly scope Core-specific rules. No application code or test result changed as a result of that review.

@@ -1,5 +1,7 @@
 # Herdr integration contract
 
+Under D58, Herdr 1 is also allowed. This document's method map and machine-hub rules describe Core routes. Preserve the existing Herdr 1 adapter for Herdr 1 sessions and verify its capabilities separately. Do not route a Core session through Herdr 1 to hide an unsupported operation, or claim Core parity from a Herdr 1 test.
+
 Implements SP-003–SP-010, SP-013–SP-014 and SP-018–SP-019. Sources: [S01–S06, S10–S12](SOURCES.md).
 
 ## 1. Establish capability, not wishful compatibility
@@ -65,7 +67,7 @@ Starting a terminal and assigning it to a workspace is non-atomic. If assignment
 
 Sheprd's host-side adapter owns the structured agent conversation and is kept alive as a terminal program; the GUI attaches to it. The Core chat path labels the terminal with an endpoint identifier. The inspected docs explicitly restrict native Core chat attachment to local terminals. [S05, S06]
 
-Retain the pure chat model/reducer and native renderer. Retain only host-side adapter behavior necessary for supported chat, with Core owning its process. Do not let the desktop resume/restart agents automatically, convert terminal agents by killing them, manage model/provider credentials or deploy adapters to remote hosts. Such old paths are incompatible with the thin-client boundary.
+Retain the pure chat model/reducer and native renderer. Retain only host-side adapter behavior necessary for supported chat, with the selected Herdr runtime owning its process. Do not let the desktop resume/restart agents automatically, convert terminal agents by killing them, manage model/provider credentials or deploy adapters to remote hosts. Such old paths are incompatible with the thin-client boundary.
 
 Local IPC to an already running host adapter is an existing compatibility dependency, not proof that Core routes native chat remotely. Inventory it explicitly. The target is a verified Herdr-owned route; a separate Spaceport SSH relay, HTTP/WebSocket service or mobile server is forbidden as an unapproved workaround. Do not pass binary chat traffic through an emulated terminal and assume a PTY is a transparent stream.
 

@@ -1,5 +1,9 @@
 # Decision reconciliation and architectural corrections
 
+## D58 — Herdr 1 is allowed (2026-11-09)
+
+Doctor Biz explicitly allowed Herdr 1 after clarifying that runtime generation matters less than preserving working UX. This supersedes D55's removal requirement and scopes the earlier Core-only startup/connection rules to Core routes. Existing Herdr 1 plain startup, explicit socket attachment, native workspaces and established host connectors may remain. There is no requirement to retire them merely because they use Herdr 1. Do not restore excluded features or introduce another transport manager. Runtime installation/update, cross-runtime migration and untested parity remain unapproved. Existing Core capability evidence and gaps retain their original scope; permission to use Herdr 1 is not a passing scenario.
+
 This document resolves contradictory assistant paraphrases and false implementation assumptions without reopening the user's product preferences. The chronological ledger remains intact in `plan/decisions.json`.
 
 ## R1 — Preserve by default, not redesign by questionnaire
@@ -10,9 +14,9 @@ D49 (“No change”) limits the earlier broad activity-history language. Keep t
 
 ## R2 — Herdr Core is remote-capable
 
-The earlier local-only claim conflated Sheprd's Core integration with Core itself. The inspected Core documents say the local Core owns remote connections, terminal/event aggregation and retry. Spaceport consumes that path. Preserve the host-manager UI, not its old independent multi-host backend. [S01–S03]
+The earlier local-only claim conflated Sheprd's Core integration with Core itself. The inspected Core documents say the local Core owns remote connections, terminal/event aggregation and retry. For Core routes, Spaceport consumes that path through the retained host-manager UI. D58 separately permits the existing Herdr 1 connectors for Herdr 1 sessions. [D58; S01–S03]
 
-D48/D56 therefore qualify D40. A saved machine is Core state; a favorite/color/selection is client presentation. Do not keep two authoritative host catalogs.
+D48/D56 qualify D40 for Core routes. A Core machine is Core state; a favorite/color/selection is client presentation. Do not duplicate Core's authoritative catalog in the client or confuse it with a Herdr 1 target.
 
 ## R3 — Workspaces need presentation semantics
 
@@ -42,7 +46,7 @@ Read-only automation/usage visibility cannot depend on keeping the removed Shepr
 
 ## R7 — Delete behavior, not every shared type
 
-Herdr 2's current wire protocol is generation 1. `sheprd-protocol` types are also used by the Core renderer. The removed feature is the legacy Herdr 1 backend. Extract necessary pure rendering/input types before deleting old snapshot/framing/transport behavior. [S02, S09, S11]
+Herdr 2's current wire protocol is generation 1. `sheprd-protocol` types are also used by the Core renderer. Under D58, retain the Herdr 1 backend and shared rendering/input types; remove only independently excluded behavior. [D58; S02, S09, S11]
 
 Deleting a mobile server does not delete the desktop CLI's private local control endpoint. Deleting Git UI does not prohibit using Git to build the fork or rendering a plain textual patch in chat.
 

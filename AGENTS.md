@@ -192,7 +192,7 @@ agents in Herdr panes can use what only this client shows or keeps
 - Cancellation must not flush queued work, replay commands, or join a worker on the UI thread. Do not add automatic reconnect/replay as an incidental refactor.
 - Crossbeam receiver clones compete for events; they are not broadcast subscribers.
 - Treat terminal content and daemon messages as untrusted data. Do not execute terminal escapes, follow graphics file paths, or run displayed update commands automatically. The one exception is the daemon's OSC 52 `ServerMessage::Clipboard`: decode it and put only its bounded UTF-8 text on the pasteboard, never arbitrary bytes, files, or images.
-- Spaceport connects to separately installed Herdr Core. It may start that trusted installed Core with its documented command only when necessary; it never bundles, installs, stops, migrates, or upgrades Core. Herdr 1 startup and the inherited explicit-socket route remain migration work; they are not approved Spaceport behavior. Keep the upstream no-surprise daemon lifecycle rule for retained client code.
+- Spaceport permits separately installed Herdr 1 and Herdr Core under `docs/spaceport/plan/decisions.json` D58. Existing Herdr 1 startup and explicit-socket attachment are allowed. Start a trusted installed local runtime only when necessary; explicit sockets remain attach-only. Never bundle, install, stop, migrate, or upgrade either runtime. Keep exact runtime targets and the upstream no-surprise daemon lifecycle rule; remove excluded feature routes independently.
 - Never commit secrets, credentials, private terminal output, or machine-local configuration.
 
 ## Dependencies And Features

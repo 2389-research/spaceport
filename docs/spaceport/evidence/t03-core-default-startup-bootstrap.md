@@ -1,5 +1,7 @@
 # T03: cold Core-only startup dependency
 
+Policy update, 2026-11-09: D58 allows Herdr 1. The Core-only bootstrap proposed below is no longer a required default-startup change. Its source observations remain historical evidence; native/runtime acceptance remains unproved. See `t03-runtime-policy-d58.md`.
+
 Read-only source and built-CLI audit at integration `32d3f130b`. `cargo +1.99.0 run -p sheprd-gpui --bin spaceport --locked --offline -- --help` exited successfully and truthfully said a plain launch starts local Herdr. `LaunchOptions::parse` still defaults to `ConnectTarget::Local`; `app::run` calls the legacy `open_window` and restores more legacy windows. Its endpoint bridge can start Herdr 1. No personal app state, socket, daemon, or Core repository was touched by this audit.
 
 The existing `WindowLaunch::Core` constructor preflights an exact `CoreGroupKey` against the app-global observation before opening a window, then joins that Core with `Start::Join`. A cold app has no such observation: `Observation::ensure` needs a connected `CoreBackend`, while the current Hub connects after a window exists. `WindowState` stores bounds, not the last selected Core group. A zero-endpoint window without a selected group is also unsafe: `window/reconnecting.rs::reconnecting` indexes the selected endpoint, and other legacy readers still assume one. Renaming CLI help, creating a dummy endpoint, or treating a failed Herdr 1 launch as Core startup would leave that dependency intact.

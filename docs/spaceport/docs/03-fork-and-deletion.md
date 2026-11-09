@@ -6,7 +6,7 @@ Implements SP-001–SP-004 and SP-015–SP-016, SP-022–SP-026. Candidate roots
 
 Fork at an explicit Sheprd commit. Record the origin without promising routine merges. Build and exercise an isolated baseline. Capture retained views, command behavior, emulator fixtures, permissions, terminal lifetime and relevant platform packaging. Record any pre-existing failures instead of laundering them into successful tests.
 
-Separate behavioral deletion from mechanical renaming. First establish Core-only end-to-end paths and typed view readers; then remove obsolete reachability. A directory named `sheprd-client` may mix old protocol code with useful helpers. A directory named `sheprd-protocol` still supplies Core rendering/input types. Extract retained pure primitives before deleting the legacy adapter. Preserve Core protocol generation 1. [S02, S09, S11]
+Separate behavioral deletion from mechanical renaming. Retain working Herdr 1 and Core paths under D58; remove excluded feature reachability independently. A directory named `sheprd-client` mixes retained Herdr 1 code with useful helpers. A directory named `sheprd-protocol` also supplies Core rendering/input types. Preserve both runtime contracts and Core protocol generation 1. [D58; S02, S09, S11]
 
 ## 2. Deletion units
 
@@ -20,7 +20,7 @@ A deletion unit is a complete unwanted behavior: UI entry points, command catalo
 | Automations/mods | `sheprd-automate`, `sheprd-automation`, `sheprd-luau`, `sheprd-mods` | Delete schedulers/execution/editing/runtime; retain only proven passive display types needed by an external feed |
 | Embedded pages/annotations | GPUI browser module and webview-specific dependencies | Delete browser, IDE webviews and annotation handlers; retain ordinary system URL/file opening |
 | Mobile service/push/pairing | `sheprd-remote-control`, `sheprd-apns`, `sheprd-push-relay`, `sheprd-nearby`, `ios/`, platform nearby helpers | Delete from the desktop fork/build graph; extract shared pure session/chat types before removal |
-| Legacy Herdr 1 | Legacy client/snapshot/bridge paths | Delete after Core-only replacement; do not delete shared types or Core wire generation 1 |
+| Herdr 1 | Existing client/snapshot/bridge paths | Retain under D58; remove excluded feature routes independently |
 | Provider usage/config | provider probes/sign-in inside `sheprd-usage`, UI model/provider settings | Delete client-owned collection/config; retain reported values from supported runtime/agent sources |
 | Terminal feedback | terminal annotation/send-selection-to-agent paths | Delete; normal selection/copy/paste remains |
 

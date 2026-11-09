@@ -184,22 +184,22 @@
     },
     {
       "id": "RM-LEGACY",
-      "disposition": "extract_then_remove",
-      "feature": "Legacy Herdr 1 client/transport/snapshot behavior",
+      "disposition": "retain",
+      "feature": "Herdr 1 client/transport/snapshot behavior",
       "candidate_paths": [
         "crates/sheprd-client",
         "crates/sheprd-protocol",
         "crates/sheprd-gpui"
       ],
       "decisions": [
-        "D55"
+        "D58"
       ],
       "sources": [
         "S02",
         "S09",
         "S11"
       ],
-      "constraint": "Core protocol generation 1 and retained rendering/input types are not legacy backend behavior.",
+      "constraint": "Herdr 1 is allowed by D58. Keep exact runtime targeting and existing lifecycle safeguards; remove excluded feature routes independently. Core protocol generation 1 remains a separate compatibility contract.",
       "audit_status": "in_progress"
     },
     {

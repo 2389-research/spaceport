@@ -34,7 +34,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 Status: **blocked** · Prerequisites: T00
 
-Typed Core calls/streams/capabilities with no legacy fallback or parallel remote manager.
+Typed Core calls/streams/capabilities with explicit runtime targets and no new remote manager; existing Herdr 1 routes remain allowed under D58.
 
 Requirements: SP-003, SP-004, SP-005, SP-006, SP-019, SP-020
 
@@ -48,7 +48,7 @@ Gates this task must close: G-MACHINE
 
 Status: **in_progress** · Prerequisites: T02
 
-Migrate readers from legacy snapshots; implement namespaced versioned presentation documents and local view preferences.
+Keep each view authoritative for its selected runtime; retain Herdr 1 snapshots and implement namespaced Core presentation documents and local view preferences. Core-only default startup is no longer required under D58.
 
 Requirements: SP-002, SP-007, SP-013, SP-018, SP-024
 
@@ -76,7 +76,7 @@ Gates this task must close: G-LINK
 
 Status: **in_progress** · Prerequisites: T03
 
-Local/remote Core terminal attach, input and window lifecycle through retained renderer; process survival proved.
+Prove supported local/remote Herdr 1 and Core terminal attach, input, window lifecycle and process survival through the retained renderer; record runtime-specific coverage.
 
 Requirements: SP-002, SP-008, SP-012, SP-013, SP-018, SP-020
 
@@ -104,7 +104,7 @@ Gates this task must close: G-CHAT
 
 Status: **blocked** · Prerequisites: T02, T03
 
-Preserve host/file/service UX through verified Core routes; no public rebinding or parallel transport workaround.
+Preserve host/file/service UX through separately verified Herdr 1 or Core routes; no public rebinding or new transport workaround. Core-specific gaps remain until verified or explicitly rescoped with evidence.
 
 Requirements: SP-006, SP-014, SP-019, SP-026
 
@@ -142,7 +142,7 @@ Gates to investigate: none additional
 
 Gates this task must close: none; record findings without claiming full parity
 
-## T10 — Delete legacy/mobile remnants and finalize dependencies
+## T10 — Delete mobile and excluded remnants and finalize dependencies
 
 Status: **in_progress** · Prerequisites: T04, T05, T06, T07, T08, T09
 

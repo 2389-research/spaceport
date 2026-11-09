@@ -1,5 +1,7 @@
 # Spaceport as one system
 
+Decision D58 permits Herdr 1 alongside Core. The Core topology below describes Core routes. Existing Herdr 1 cell/snapshot, workspace and host-connection paths may remain for Herdr 1 sessions. Every operation retains its exact runtime target; this does not authorize a new transport manager, session migration or runtime installation. Core-specific capability gaps remain scoped to Core until another supported route is separately proved.
+
 ## 1. Organizing idea: an observable client, not a second brain
 
 Spaceport should give an operator—human or agent—the same reliable loop:
@@ -41,7 +43,7 @@ The chat branch is **capability-gated**. Its existing host-side attach protocol 
 
 ### Layer A — External authority
 
-Core owns machine registrations, process identity/lifecycle, terminal streams, program-reported status and supported file/document operations. Agent programs own agent sessions, models, permissions and conversation state. Tailscale owns network membership/routing. Spaceport does not duplicate these policies. [S01–S03]
+Each selected runtime owns its processes and lifecycle. Core owns machine registrations, terminal streams, program-reported status and supported file/document operations for Core sessions. Herdr 1 supplies its existing native workspace, snapshot and terminal contracts for Herdr 1 sessions. Agent programs own agent sessions, models, permissions and conversation state. Tailscale owns network membership/routing. Spaceport does not duplicate these policies. [D58; S01–S04, S09]
 
 ### Layer B — Narrow Core adapter
 
@@ -49,7 +51,7 @@ Reuse and extend `sheprd-core-client` to call the methods the selected Core actu
 
 ### Layer C — Session and view projection
 
-Reuse `sheprd-session` and extract remaining view readers away from legacy `ClientShell*` snapshots. Produce immutable or coherently published view revisions. A reducer applies backend facts and produces view changes; it does not launch processes.
+Reuse existing session infrastructure and retain `ClientShell*` snapshots for Herdr 1 views. Use Core projections for Core views. Produce immutable or coherently published view revisions without mixing runtime identities. A reducer applies backend facts and produces view changes; it does not launch processes.
 
 Store presentation grouping in a namespaced Core document; maintain local window geometry/preferences separately. Do not create a workspace database or treat a local list as authoritative remote execution state. Terminal and document reads have different versions; the combined view must expose that it is a **composite observation**, not an atomic distributed snapshot.
 
@@ -67,20 +69,20 @@ Logical layers are responsibility boundaries, not a mandate for a new crate per 
 
 | Fact or operation | Authority | Spaceport role |
 |---|---|---|
-| Process/terminal existence and termination | Core | Inspect, render, send an explicit supported request |
-| Remote SSH catalog and retry policy | Core | Display/edit via `machine.*`; reconnect only its local Core link |
+| Process/terminal existence and termination | Selected Herdr runtime | Inspect, render, send an explicit supported request |
+| Remote SSH catalog and retry policy | Core for Core routes; existing Herdr 1 connector for Herdr 1 routes | Use the selected runtime's established infrastructure; no new manager |
 | Agent conversation, queues, model and approval policy | Agent/verified host adapter | Render and forward supported user interaction |
-| Workspace grouping metadata | Spaceport view schema, stored by Core `doc.*` | Versioned presentation operations, no execution ownership |
+| Workspace grouping metadata | Native Herdr 1 workspace or Spaceport schema stored by Core `doc.*` | Keep runtime identity explicit; grouping changes do not implicitly terminate sessions |
 | Window position, theme, selected view | Spaceport local preferences | Persist/restore presentation intent |
 | Event observation and notification deduplication | Reconstructable client projection | Bounded in-memory processing, no history warehouse |
-| Terminal cell state | Pure emulator from Core stream | Render and discard/rebuild when appropriate |
+| Terminal cell state | Herdr 1 cell protocol or pure emulator from Core stream | Preserve the selected path and rebuild when appropriate |
 | Existing service forward | Backend-supported route | Show state and open externally; gate absent route |
 | User/provider credentials | Existing OS/runtime/agent owners | Do not import or create a new credential subsystem |
 | Spaceport release/update identity | Spaceport release configuration | Sign and update only Spaceport |
 
 ## 4. Identity is not a label
 
-A runtime reference includes the selected **Core identity**, machine route/identity when available, backend terminal ID/address, and the client connection epoch for freshness. Names are display hints. A persistent Core ID is not a boot ID. Core event sequences restart with a process, so every reconnection invalidates sequence continuity and obtains a fresh snapshot. [S02, S12]
+A runtime reference identifies its backend before naming a session. Core references include the selected **Core identity**, machine route/identity when available, backend terminal ID/address and client connection epoch. Herdr 1 references retain the exact connection target, daemon boot and workspace/tab/pane identity. Names are display hints. A persistent Core ID is not a boot ID. Core event sequences restart with a process, so every reconnection invalidates sequence continuity and obtains a fresh snapshot. [D58; S02, S09, S12]
 
 Use a client-generated connection epoch as an observation fence, not as invented backend authority. Keep native identity fields intact. If a remote identity cannot be established, expose the narrower identity guarantee and reject unsafe ambiguous automation. A machine alias change must not silently redirect a queued or delayed action.
 
@@ -106,7 +108,7 @@ intent + explicit target
   → observed postcondition, or explicitly unknown outcome
 ```
 
-A display action can often be confirmed locally. A process launch needs Core evidence. A prompt send may only prove transport acceptance, not model execution. A timed-out mutation is not retried automatically unless the actual protocol guarantees idempotency for that operation. Do not implement an “exactly once” claim with a client UUID.
+A display action can often be confirmed locally. A process launch needs evidence from its selected runtime. A prompt send may only prove transport acceptance, not model execution. A timed-out mutation is not retried automatically unless the actual protocol guarantees idempotency for that operation. Do not implement an “exactly once” claim with a client UUID.
 
 For workspace metadata, Core's document version is a real CAS boundary. For terminal actions, a locally checked revision is not an atomic remote precondition. Report the difference; do not advertise capabilities the server does not implement.
 

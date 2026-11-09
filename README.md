@@ -12,14 +12,16 @@ maps retained and excluded source routes at a named revision.
 The target app keeps native terminals, rich chats, workspaces, customization,
 file interactions, service access, notifications, diagnostics, and a local
 desktop CLI. It removes the old IDE, Git, GitHub, embedded browser, cloud
-provisioning, Teleport, orchestration, mod, scheduler, Herdr 1, and phone control
+provisioning, Teleport, orchestration, mod, scheduler, and phone control
 features. This branch still contains some of those paths; a build is not proof
 that the fork meets the specification.
 
-Spaceport uses a **separately installed Herdr Core** for terminal runtime and
-machine connections. Tailscale is external. Spaceport does not install or update
-Core. Core does not provide the old daemon's workspace model, so Spaceport owns
-a presentation document. Native rich chat needs a verified host-side adapter
+Spaceport permits **separately installed Herdr 1 and Herdr Core** runtimes.
+Existing Herdr 1 startup may remain to preserve the desktop UX. Each session
+keeps its owning runtime; Spaceport does not install, update or migrate either
+runtime. Tailscale is external. Core routes use Core's machine connections and
+Spaceport presentation documents; Herdr 1 may use its native workspace model.
+Native rich chat needs a verified host-side adapter
 route; remote parity, forwarding, file transfer, native platform behavior, and
 production release identity still have [open gates](docs/spaceport/plan/gaps.json).
 
