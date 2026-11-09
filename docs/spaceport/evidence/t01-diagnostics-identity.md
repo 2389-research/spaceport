@@ -26,3 +26,9 @@ side-by-side install were not exercised. A42 remains `not_run`, T01 remains
 `in_progress`, and G-RELEASE remains open. The broad upstream crate/package
 names and other stale sections of the old crate README need their own route
 review; this cut does not claim full product rebranding.
+
+Integrated as `a0bf348e6` after the T04 direct-opener cut. On the combined
+branch, the full diagnostics suite again passed 23 tests with one ignored
+entry, and `cargo +1.99.0 check -p sheprd-gpui --all-targets --locked
+--offline --quiet` passed on macOS. These checks do not cover the Windows
+crash filter or a packaged desktop launch.

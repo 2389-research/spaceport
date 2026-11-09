@@ -193,3 +193,9 @@ The PR/Issues/Tasks Activity panels, `ui panel` CLI/wire names,
 `poll_orchestrators`, GitLab account flow and `sheprd-orchestrator` worker still
 run. T04 remains blocked by G-LINK; A29 and A30 remain `not_run`. No release
 or full negative-reachability claim follows from this bounded cut.
+
+Integrated as `4853690b5`; the separate diagnostics fix landed as
+`a0bf348e6`. A combined macOS `cargo +1.99.0 check -p sheprd-gpui
+--all-targets --locked --offline --quiet` passed. The full diagnostics suite
+then passed 23 tests with one deliberately ignored child entry. This checks
+compilation and the diagnostics regression, not native Activity reachability.
