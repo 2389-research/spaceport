@@ -146,7 +146,6 @@ use sheprd_commands as controls;
 // The log file and crash reports, without GPUI.
 use sheprd_diagnostics::{self as diagnostics, crash};
 // Git status, without GPUI.
-use sheprd_vcs::git;
 // Shared with herdr-client's own SSH and probe children.
 use sheprd_client::{local_path, login_env};
 // Host scripts and Teleport's core.

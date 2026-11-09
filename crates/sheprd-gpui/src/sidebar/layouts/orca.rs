@@ -8,7 +8,7 @@ use super::{
     super::{
         cell::{AgentRow, RowContext, RowLayout, RowState, WorkspaceRow},
         line_height,
-        row::{Elbow, RowBadge, RowKind, RowTree, TokenLook, guide, token_column},
+        row::{Elbow, RowKind, RowTree, TokenLook, guide, token_column},
         scaled,
         tokens::ResolvedToken,
         wash::HostMark,
@@ -151,7 +151,7 @@ impl RowLayout for Orca {
             ..*cx
         });
         let cx = faded.as_ref().unwrap_or(cx);
-        let (branch, status, upstream) = (row.branch(), row.status(), row.upstream());
+        let (branch, status) = (row.branch(), row.status());
         let WorkspaceRow {
             label,
             tree,
@@ -176,14 +176,12 @@ impl RowLayout for Orca {
         let width = inner(cx, indent);
         // Children are named by their branch already; repeating it is noise.
         let branch = branch.filter(|branch| *branch != label);
-        let dirty = badge.as_ref().is_some_and(|badge| badge.dirty);
         let muted = badge.as_ref().is_some_and(|badge| badge.muted);
         let dirty_size = (line * 0.7).round();
         let worktree = parts::worktree(label, &icon, dirty_size);
         let meta = branch.is_some()
             || cx.host.is_some()
-            || badge.as_ref().is_some_and(RowBadge::checkout_marks)
-            || upstream.is_some();
+            || badge.as_ref().is_some_and(|badge| badge.noted);
         // The repository's own checkout is the group's primary card.
         let primary = (grouped && tree == RowTree::None).then(|| {
             div()
@@ -223,10 +221,6 @@ impl RowLayout for Orca {
                 .when_some(primary, |text, primary| {
                     let width = (7. * glyph).ceil() + 10.;
                     text.fixed(width, parts::first_line(width, primary.w(px(width)), cx))
-                })
-                .when(dirty, |text| {
-                    let mark = parts::dirty(label, dirty_size, theme);
-                    text.fixed(dirty_size, parts::first_line(dirty_size, mark, cx))
                 })
                 .when_some(fold, |text, fold| {
                     let size = scaled(font, 14.);
@@ -274,12 +268,6 @@ impl RowLayout for Orca {
                     line.fill(div().debug_selector(|| format!("detail-{label}")), branch)
                 }
                 None => line.spacer(),
-            })
-            .when_some(upstream, |line, upstream| {
-                line.fixed(upstream.width(glyph), upstream.element(label, glyph, theme))
-            })
-            .when(dirty, |line| {
-                line.fixed(dirty_size, parts::dirty(label, dirty_size, theme))
             });
         let padding = if meta { 5. } else { 7. };
         card(label, state, indent, 8., (theme, cx.mark))

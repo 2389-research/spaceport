@@ -1,17 +1,15 @@
 use super::*;
 use crate::config::{LayoutMode, StatusIcons};
-use crate::git::{Counted, Status};
 
 /// The marks a row draws beside its text: the status dot (Superset's on its
 /// slot), the repository icon or Superset's slot, the agent's icon, and the
-/// uncommitted work mark.
+/// note and mute marks.
 const MARKS: &[&str] = &[
     "mark-herdr",
     "dot-herdr",
     "github-herdr",
     "icon-herdr",
     "agent-icon-agent-p0",
-    "dirty-agent-launcher",
 ];
 
 /// Each mark's bounds, the fold chevron's, and what they sit beside, at
@@ -60,21 +58,6 @@ fn marks_grow_with_the_sidebar_font(cx: &mut gpui::TestAppContext) {
             view.config.layout.mode = mode;
             view.config.status_icons = StatusIcons::Dots;
             view.sidebar_width = Some(400.);
-            let input = crate::pull_request::Input {
-                checkout: None,
-                repo_key: Some(REPO_KEY.into()),
-                branch: "develop".into(),
-            };
-            let counted = Counted {
-                lines: Status {
-                    additions: 3,
-                    deletions: 1,
-                    untracked: 0,
-                },
-                dirty: true,
-            };
-            view.git
-                .seed_counts(input, counted, std::time::Instant::now());
             view
         });
         cx.simulate_resize(size(px(800.), px(900.)));
@@ -128,7 +111,6 @@ fn marks_grow_with_the_sidebar_font(cx: &mut gpui::TestAppContext) {
             ("dot-herdr", "row-herdr"),
             ("github-herdr", "row-herdr"),
             ("icon-herdr", "row-herdr"),
-            ("dirty-agent-launcher", "row-agent-launcher"),
         ] {
             let (Some(mark), Some(row)) = (bounds(&large, probe), bounds(&large, row)) else {
                 continue;

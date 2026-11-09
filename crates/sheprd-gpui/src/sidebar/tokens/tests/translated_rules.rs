@@ -21,7 +21,6 @@ fn state_rules_match_the_english_status_in_every_language() {
             label: "herdr",
             branch: None,
             status: AgentStatus::Blocked,
-            ahead_behind: None,
             tokens: &[],
             indented: false,
         },

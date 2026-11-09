@@ -7,7 +7,7 @@ fn layout(text: &str) -> anyhow::Result<SidebarLayout> {
 #[test]
 fn configured_default_rows_match_typed_defaults() -> anyhow::Result<()> {
     let text = "[ui.sidebar.agents]\nrows = [[\"state_icon\", \"machine\", \"workspace\", \"tab\"], [\"agent\"]]\n\
-                [ui.sidebar.spaces]\nrows = [[\"state_icon\", \"workspace\"], [\"branch\", \"git_status\"]]\n";
+                [ui.sidebar.spaces]\nrows = [[\"state_icon\", \"workspace\"], [\"branch\"]]\n";
     assert_eq!(layout(text)?, SidebarLayout::default());
     Ok(())
 }

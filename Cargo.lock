@@ -8477,7 +8477,6 @@ dependencies = [
  "sheprd-remote",
  "sheprd-updater",
  "sheprd-usage",
- "sheprd-vcs",
  "skrifa 0.49.0",
  "socket2",
  "syntect",
@@ -8610,19 +8609,6 @@ dependencies = [
  "url",
  "uuid",
  "zeroize",
-]
-
-[[package]]
-name = "sheprd-vcs"
-version = "0.1.0"
-dependencies = [
- "secrecy",
- "serde_json",
- "sheprd-client",
- "sheprd-github",
- "tempfile",
- "thiserror 2.0.21",
- "tracing",
 ]
 
 [[package]]

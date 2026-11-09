@@ -1,5 +1,3 @@
-//! Repository input helpers for local pull request reads.
+//! Repository command helper for the remaining explicit project picker.
 
-pub(crate) use sheprd_github::pull_request::{
-    Input, Origin, repository_input, run, workspace_input,
-};
+pub(crate) use sheprd_github::pull_request::run;

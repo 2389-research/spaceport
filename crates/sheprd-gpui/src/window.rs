@@ -80,7 +80,7 @@ mod tests;
 #[cfg(feature = "integration-test")]
 use crate::smoke;
 use crate::{
-    avatars, config, endpoint, git, menu,
+    avatars, config, endpoint, menu,
     navigation::OwnedNavigationTarget,
     preferences,
     presentation::Presentation,
@@ -186,9 +186,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) flash: Option<(Flash, std::time::Instant)>,
     pub(crate) flash_motion: flash::Motion,
     pub(crate) focus: FocusHandle,
-    pub(crate) git: git::Git,
-    /// Where the titlebar's Git button last painted. The window owns it so a
-    /// shortcut and a click open the Git menu at the same place.
     /// Unknown keys in the GUI config, ignored but reported; follows `config`.
     pub(crate) gui_config_diagnostic: crate::config_diagnostic::ConfigDiagnostic,
     pub(crate) held_keys: crate::terminal::HeldKeys,
@@ -592,9 +589,6 @@ impl SheprdWindow {
                 .and_then(|s| s.focused_pane_id.clone())
         {
             self.discard_composition(cx);
-        }
-        if self.update_git() {
-            cx.notify();
         }
         self.poll_devices_overview(cx);
         self.poll_core_terminals(window, cx);

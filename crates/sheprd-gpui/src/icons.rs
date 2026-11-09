@@ -143,27 +143,6 @@ pub(crate) fn status_icon(
     Some(STATUS_ICONS[set * 5 + status].0)
 }
 
-/// Shared working-tree marker, distinct from the daemon's activity dots.
-pub(super) fn uncommitted(theme: &crate::config::Theme, size: f32) -> gpui::Div {
-    use gpui::{div, prelude::*, px, rgb, rgba, svg};
-    div()
-        .size(px(size))
-        .flex_none()
-        .flex()
-        .items_center()
-        .justify_center()
-        .rounded(px(crate::config::corners::SMALL))
-        .bg(rgba((theme.palette[3] << 8) | 0x30))
-        .border_1()
-        .border_color(rgba((theme.palette[3] << 8) | 0x90))
-        .child(
-            svg()
-                .path("icons/pencil.svg")
-                .size(px(size - 4.))
-                .text_color(rgb(theme.ink(theme.palette[3]))),
-        )
-}
-
 /// A checkout the user keeps a note on, beside the working-tree marker and
 /// in a hue of its own so the two never read as one.
 pub(super) fn note(theme: &crate::config::Theme, size: f32) -> gpui::Div {

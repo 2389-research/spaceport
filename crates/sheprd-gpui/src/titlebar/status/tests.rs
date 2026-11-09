@@ -110,14 +110,6 @@ fn header_keeps_controls_reachable(cx: &mut TestAppContext) {
                 text: "Account usage 25% weekly 10%".into(),
                 accent: false,
             }];
-            view.git = crate::git::Git::fixture(
-                crate::pull_request::Input {
-                    checkout: None,
-                    repo_key: Some("/fixture/.git".into()),
-                    branch: "main".into(),
-                },
-                crate::git::Status::default(),
-            );
             cx.notify();
         })
     });

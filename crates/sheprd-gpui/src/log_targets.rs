@@ -19,7 +19,6 @@ pub(crate) const LOG_TARGETS: &[&str] = &[
     "sheprd_terminal",
     "sheprd_updater",
     "sheprd_usage",
-    "sheprd_vcs",
     // keep-sorted end
 ];
 

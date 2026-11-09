@@ -6,7 +6,7 @@ use super::{SheprdWindow, SurfaceSignal, function_keys, prefix};
 #[cfg(feature = "integration-test")]
 use crate::smoke;
 use crate::{
-    WINDOW_TITLE, avatars, endpoint, git, log_window, menu, preferences, sessions, sidebar,
+    WINDOW_TITLE, avatars, endpoint, log_window, menu, preferences, sessions, sidebar,
     state::LiveState,
     terminal::{Selection, WheelAccumulator},
     updater,
@@ -183,7 +183,6 @@ impl SheprdWindow {
             flash: None,
             flash_motion: Default::default(),
             focus,
-            git: git::Git::default(),
             gui_config_diagnostic,
             held_keys: Default::default(),
             hover: None,

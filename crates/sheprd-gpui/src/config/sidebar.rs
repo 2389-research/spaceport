@@ -106,7 +106,7 @@ impl Default for SpaceLayout {
         Self {
             rows: vec![
                 plain([SpaceToken::StateIcon, SpaceToken::Workspace]),
-                plain([SpaceToken::Branch, SpaceToken::GitStatus]),
+                plain([SpaceToken::Branch]),
             ],
             row_gap: 0,
         }
@@ -226,7 +226,7 @@ where
             return Err(serde::de::Error::custom(SidebarConfigError::TooManyRules));
         }
         let token = name.parse::<T>().map_err(serde::de::Error::custom)?;
-        if !rules.is_empty() && matches!(name.as_str(), "state_icon" | "git_status") {
+        if !rules.is_empty() && name == "state_icon" {
             return Err(serde::de::Error::custom(
                 SidebarConfigError::RulesOnFixedToken,
             ));
@@ -293,7 +293,6 @@ pub enum SpaceToken {
     StateText,
     Workspace,
     Branch,
-    GitStatus,
     Custom(String),
 }
 
@@ -306,7 +305,6 @@ impl FromStr for SpaceToken {
             "state_text" => Self::StateText,
             "workspace" => Self::Workspace,
             "branch" => Self::Branch,
-            "git_status" => Self::GitStatus,
             _ => Self::Custom(custom_token(name)?),
         })
     }

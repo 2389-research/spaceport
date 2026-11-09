@@ -20,7 +20,6 @@ pub(super) struct ResolvedToken {
 pub(super) enum TokenKind {
     StateIcon,
     Text(SharedString, TextRole),
-    GitStatus { ahead: usize, behind: usize },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -159,7 +158,6 @@ pub(super) struct SpaceContext<'a> {
     pub(super) label: &'a str,
     pub(super) branch: Option<&'a str>,
     pub(super) status: AgentStatus,
-    pub(super) ahead_behind: Option<(usize, usize)>,
     pub(super) tokens: &'a [(String, String)],
     pub(super) indented: bool,
 }
@@ -177,12 +175,8 @@ pub(super) fn space_rows(
             SpaceToken::StateIcon => TokenKind::StateIcon,
             SpaceToken::StateText => text(&state, TextRole::Status),
             SpaceToken::Workspace => text(context.label, TextRole::Workspace),
-            SpaceToken::Branch | SpaceToken::GitStatus if context.indented => return None,
+            SpaceToken::Branch if context.indented => return None,
             SpaceToken::Branch => text(context.branch?, TextRole::Secondary),
-            SpaceToken::GitStatus => {
-                let (ahead, behind) = context.ahead_behind.filter(|(a, b)| *a > 0 || *b > 0)?;
-                TokenKind::GitStatus { ahead, behind }
-            }
             SpaceToken::Custom(name) => text(tokens.get(name.as_str())?, TextRole::Muted),
         })
     });
@@ -192,12 +186,9 @@ pub(super) fn space_rows(
     rows
 }
 
-/// Upstream joins tokens with a middle dot, except after the state icon and
-/// before the git counters, which sit a single space apart.
-pub(super) fn separator(previous: &ResolvedToken, current: &ResolvedToken) -> &'static str {
-    if matches!(previous.kind, TokenKind::StateIcon)
-        || matches!(current.kind, TokenKind::GitStatus { .. })
-    {
+/// Text tokens join with a middle dot; a leading state icon takes one space.
+pub(super) fn separator(previous: &ResolvedToken, _current: &ResolvedToken) -> &'static str {
+    if matches!(previous.kind, TokenKind::StateIcon) {
         " "
     } else {
         " \u{b7} "
@@ -205,10 +196,10 @@ pub(super) fn separator(previous: &ResolvedToken, current: &ResolvedToken) -> &'
 }
 
 /// Glyph budget for each token of a row that must fit `available` glyphs,
-/// or `None` for a token dropped entirely. Fixed-width tokens (the icon and
-/// the git counters) always stay. When even one glyph per text token does not
+/// or `None` for a token dropped entirely. Fixed-width icons always stay.
+/// When even one glyph per text token does not
 /// fit, text tokens are dropped from the left until the rest fit, then the
-/// survivors grow a glyph at a time in turn, as upstream shares a line.
+/// survivors grow a glyph at a time in turn.
 pub(super) fn budgets(
     row: &[ResolvedToken],
     fixed_width: impl Fn(&TokenKind) -> usize,

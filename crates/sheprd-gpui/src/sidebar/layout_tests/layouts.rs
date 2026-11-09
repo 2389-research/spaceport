@@ -1,16 +1,4 @@
 use super::*;
-use crate::git::{Counted, Status};
-
-/// [`snapshot`] with the main checkout behind its upstream, one child
-/// diverged, and another in sync.
-#[cfg(test)]
-fn snapshot_with_upstream() -> ClientShellSnapshot {
-    let mut snapshot = snapshot(6);
-    for (index, counts) in [(0, (0, 18)), (4, (2, 3)), (5, (0, 0))] {
-        snapshot.workspaces[index].git_ahead_behind = Some(counts);
-    }
-    snapshot
-}
 
 #[cfg(test)]
 /// Every layout keeps its text inside the box it was measured for and its
@@ -19,14 +7,7 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
     use crate::config::LayoutMode;
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
-        view.live.snapshot = Some(Arc::new(snapshot_with_upstream()));
-        let input = crate::pull_request::Input {
-            checkout: None,
-            repo_key: Some(REPO_KEY.into()),
-            branch: "worktree/sidebar-child".into(),
-        };
-        let now = std::time::Instant::now();
-        view.git.seed_probe(input, true, now);
+        view.live.snapshot = Some(Arc::new(snapshot(6)));
         // And a note, marked and read under the row.
         crate::worktree_notes::Notes::update(cx, |notes| {
             notes.set(
@@ -92,22 +73,13 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
                         "{context}: {name}"
                     );
                 }
-                // Minimal rows show no uncommitted work.
-                if mode != LayoutMode::Minimal {
-                    let row = cx.debug_bounds("row-sidebar-child").unwrap();
-                    let dirty = cx.debug_bounds("dirty-sidebar-child").unwrap();
-                    assert!(dirty.right() <= row.right(), "{context}: {dirty:?} {row:?}");
+                let row = cx.debug_bounds("row-sidebar-child").unwrap();
+                if let Some(badge) = cx.debug_bounds("badge-sidebar-child") {
+                    assert!(badge.right() <= row.right(), "{context}: {badge:?} {row:?}");
                     assert!(
-                        dirty.bottom() <= row.bottom(),
-                        "{context}: {dirty:?} {row:?}"
+                        badge.bottom() <= row.bottom(),
+                        "{context}: {badge:?} {row:?}"
                     );
-                    if let Some(badge) = cx.debug_bounds("badge-sidebar-child") {
-                        assert!(badge.right() <= row.right(), "{context}: {badge:?} {row:?}");
-                        assert!(
-                            badge.bottom() <= row.bottom(),
-                            "{context}: {badge:?} {row:?}"
-                        );
-                    }
                 }
                 // Every layout reads the note on a line under its row.
                 let row = cx.debug_bounds("row-sidebar-child").unwrap();
@@ -116,30 +88,7 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
                     .unwrap_or_else(|| panic!("{context}: no note line"));
                 assert_eq!(line.top(), row.bottom(), "{context}: note line");
                 assert!(line.right() <= sidebar.right(), "{context}: note line");
-                // Minimal rows leave upstream counts off too; the rest keep
-                // them inside the row, and never on a branch in sync.
-                if mode != LayoutMode::Minimal {
-                    for (key, row, upstream) in [
-                        ("herdr", "row-herdr", "upstream-herdr"),
-                        (
-                            "sidebar-child",
-                            "row-sidebar-child",
-                            "upstream-sidebar-child",
-                        ),
-                    ] {
-                        let row = cx.debug_bounds(row).unwrap();
-                        let upstream = cx
-                            .debug_bounds(upstream)
-                            .unwrap_or_else(|| panic!("{context}: no upstream on {key}"));
-                        assert!(upstream.right() <= row.right(), "{context}: {key}");
-                        assert!(upstream.bottom() <= row.bottom(), "{context}: {key}");
-                    }
-                }
-                assert!(
-                    cx.debug_bounds("upstream-sidebar-child-with-a-long-readable-branch-name")
-                        .is_none(),
-                    "{context}"
-                );
+                assert!(cx.debug_bounds("upstream-herdr").is_none(), "{context}");
                 // Only the focused workspace draws a selection mark in the
                 // layouts whose highlight exists only while selected.
                 assert!(cx.debug_bounds("highlight-herdr").is_some() || mode == LayoutMode::Orca);
@@ -169,29 +118,11 @@ fn minimal_layout_fits_the_sidebar(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
-fn sidebar_densities_keep_details_and_badges_within_their_rows(cx: &mut gpui::TestAppContext) {
+fn sidebar_densities_keep_details_and_marks_within_their_rows(cx: &mut gpui::TestAppContext) {
     use crate::config::{Density, LayoutMode, Style};
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
         view.live.snapshot = Some(Arc::new(snapshot(6)));
-        let input = crate::pull_request::Input {
-            checkout: None,
-            repo_key: Some(REPO_KEY.into()),
-            branch: "worktree/sidebar-child".into(),
-        };
-        let now = std::time::Instant::now();
-        view.git.seed_counts(
-            input,
-            Counted {
-                lines: Status {
-                    additions: 234,
-                    deletions: 567,
-                    untracked: 0,
-                },
-                dirty: true,
-            },
-            now,
-        );
         view
     });
     cx.simulate_resize(size(px(800.), px(900.)));
@@ -219,7 +150,7 @@ fn sidebar_densities_keep_details_and_badges_within_their_rows(cx: &mut gpui::Te
                     full_draw(window, cx).clear(cx);
                     let probes = &cx.global::<TextProbes>().0;
                     assert_eq!(probes.contains_key("main"), !compact);
-                    for text in ["worktree/sidebar-child", "+234", "-567"] {
+                    for text in ["worktree/sidebar-child"] {
                         assert_eq!(probes.contains_key(text), comfortable, "{text}");
                     }
                     for text in ["Claude Code"] {
@@ -295,12 +226,8 @@ fn sidebar_densities_keep_details_and_badges_within_their_rows(cx: &mut gpui::Te
                 );
                 assert!(cx.debug_bounds("detail-agent-p0").is_some());
                 let row = cx.debug_bounds("row-sidebar-child").unwrap();
-                let badge = cx.debug_bounds("badge-sidebar-child").unwrap();
-                assert_eq!(badge.right(), row.right() - px(padding));
-                assert!(badge.bottom() <= row.bottom());
-                let first = cx.debug_bounds("badge-line-sidebar-child").unwrap();
-                assert!(cx.debug_bounds("name-sidebar-child").unwrap().right() <= first.left());
-                assert!(cx.debug_bounds("dirty-sidebar-child").is_some());
+                assert!(cx.debug_bounds("name-sidebar-child").unwrap().right() <= row.right());
+                assert!(cx.debug_bounds("dirty-sidebar-child").is_none());
                 // Rounded rows hang worktrees from the same guide as flat
                 // ones, under the parent's label column.
                 let gutter = cx.debug_bounds("tree-sidebar-child").unwrap();
@@ -438,57 +365,27 @@ fn every_layout_looks_different(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
-fn upstream_counts_follow_the_branch_or_trail_one_line_rows(cx: &mut gpui::TestAppContext) {
-    use crate::config::{Density, LayoutMode, Style};
-    let (view, cx) = cx.add_window_view(|window, cx| {
+fn git_looking_branch_stays_plain_text_without_status_marks(cx: &mut gpui::TestAppContext) {
+    let (_view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
-        view.live.snapshot = Some(Arc::new(snapshot_with_upstream()));
+        let mut state = snapshot(6);
+        state.workspaces[0].branch = Some("git/diff-looks-like-code".into());
+        state.workspaces[0].git_ahead_behind = Some((4, 3));
+        view.live.snapshot = Some(Arc::new(state));
         view
     });
     cx.simulate_resize(size(px(800.), px(900.)));
     cx.run_until_parked();
-    let draw = |density, cx: &mut gpui::VisualTestContext| {
-        view.update(cx, |view, cx| {
-            view.config.layout.mode = LayoutMode::Classic {
-                density,
-                style: Style::Flat,
-            };
-            view.sidebar_width = Some(320.);
-            cx.notify();
-        });
-        cx.update(|window, cx| {
-            cx.default_global::<TextProbes>().0.clear();
-            full_draw(window, cx).clear(cx);
-            let probes = &cx.global::<TextProbes>().0;
-            assert!(probes.contains_key("\u{2193}18"), "{density:?}");
-            assert!(probes.contains_key("\u{2191}2"), "{density:?}");
-            assert!(probes.contains_key("\u{2193}3"), "{density:?}");
-            assert!(!probes.contains_key("\u{2191}0"), "{density:?}");
-        });
-    };
-
-    // Like the TUI's `main ↓18`: the counts sit right after the branch on
-    // the repository's second line, not pushed to the row's edge.
-    draw(Density::Normal, cx);
-    let detail = cx.debug_bounds("detail-herdr").unwrap();
-    let name = cx.debug_bounds("name-herdr").unwrap();
-    let upstream = cx.debug_bounds("upstream-herdr").unwrap();
-    assert!(upstream.top() >= name.bottom());
-    assert!(upstream.left() >= detail.right());
-    assert!(upstream.left() - detail.right() < px(20.));
-    assert!(upstream.right() < cx.debug_bounds("row-herdr").unwrap().right() - px(100.));
-    // A one-line worktree child keeps them in a trailing column instead.
-    let child = cx.debug_bounds("name-sidebar-child").unwrap();
-    let trailing = cx.debug_bounds("upstream-sidebar-child").unwrap();
-    assert_eq!(trailing.top(), child.top());
-    assert!(trailing.left() >= child.right());
-
-    // Compact rows have no branch line, so the repository's counts trail
-    // its name on the one line it has.
-    draw(Density::Compact, cx);
-    let name = cx.debug_bounds("name-herdr").unwrap();
-    let upstream = cx.debug_bounds("upstream-herdr").unwrap();
-    assert_eq!(upstream.top(), name.top());
-    assert!(upstream.left() >= name.right());
-    assert!(cx.debug_bounds("detail-herdr").is_none());
+    cx.update(|window, cx| {
+        cx.default_global::<TextProbes>().0.clear();
+        full_draw(window, cx).clear(cx);
+        assert!(
+            cx.global::<TextProbes>()
+                .0
+                .contains_key("git/diff-looks-like-code")
+        );
+    });
+    assert!(cx.debug_bounds("upstream-herdr").is_none());
+    assert!(cx.debug_bounds("dirty-herdr").is_none());
+    assert!(cx.debug_bounds("counts-herdr").is_none());
 }

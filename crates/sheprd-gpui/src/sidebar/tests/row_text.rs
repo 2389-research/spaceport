@@ -216,19 +216,6 @@ fn cells_hand_their_state_and_data_to_the_layout() {
 }
 
 #[test]
-fn upstream_counts_show_only_drift_and_size_to_what_they_print() {
-    use super::super::row::Upstream;
-    // In sync, no upstream, or a daemon config without `git_status`.
-    assert_eq!(Upstream::new(None), None);
-    assert_eq!(Upstream::new(Some((0, 0))), None);
-    // `↓18`, `↑2`, and `↑2 ↓18` at one unit per glyph.
-    assert_eq!(Upstream::new(Some((0, 18))).unwrap().width(1.), 3.);
-    assert_eq!(Upstream::new(Some((2, 0))).unwrap().width(1.), 2.);
-    assert_eq!(Upstream::new(Some((2, 18))).unwrap().width(1.), 6.);
-    assert_eq!(Upstream::new(Some((2, 18))).unwrap().width(7.5), 45.);
-}
-
-#[test]
 fn text_fallback_skips_missing_and_blank_metadata() {
     assert_eq!(first_text([None, Some(" \t"), Some(" main ")], ""), "main");
     assert_eq!(first_text([None, Some("")], ""), "");

@@ -89,12 +89,6 @@ impl<'a> Line<'a> {
         self.push(div(), content, width, Fit::Fixed)
     }
 
-    /// A group that is clipped from the right when the line is short. The
-    /// width applies to the group itself, so its bounds are what shows.
-    pub(super) fn shrink(self, width: f32, group: Div) -> Self {
-        self.push(group, Content::Shell, width, Fit::Shrink(1.))
-    }
-
     /// Text sized to its content, up to `share` of the line. `glyph` is the
     /// width of one glyph at the size the shell sets.
     pub(super) fn label(
@@ -369,10 +363,6 @@ pub(super) fn worktree(key: &str, icon: &RowIcon, size: f32) -> Option<Div> {
             .flex_none()
             .child(self::icon("icons/git-branch.svg", size, *hue)),
     )
-}
-
-pub(super) fn dirty(key: &str, size: f32, theme: &Theme) -> Div {
-    crate::icons::uncommitted(theme, size).debug_selector(|| format!("dirty-{key}"))
 }
 
 /// Where an agent runs, as one muted label: host, workspace, and tab.

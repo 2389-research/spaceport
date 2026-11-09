@@ -44,7 +44,7 @@ fn invisible_marks_in_daemon_labels_drive_rules_and_withdrawn_tokens_drop_rows()
 #[test]
 fn a_home_mark_in_a_workspace_label_makes_its_row_the_group_head() {
     let layout = space_layout(&format!(
-        r#"rows = [["state_icon", {{ token = "workspace", rules = [{{ contains = "{HOME}", bold = true }}] }}, {{ token = "branch", dim = true }}, "git_status"]]"#
+        r#"rows = [["state_icon", {{ token = "workspace", rules = [{{ contains = "{HOME}", bold = true }}] }}, {{ token = "branch", dim = true }}]]"#
     ));
     let row = |label: &str| {
         space_rows(
@@ -53,7 +53,6 @@ fn a_home_mark_in_a_workspace_label_makes_its_row_the_group_head() {
                 label,
                 branch: Some("main"),
                 status: AgentStatus::Idle,
-                ahead_behind: None,
                 tokens: &[],
                 indented: false,
             },

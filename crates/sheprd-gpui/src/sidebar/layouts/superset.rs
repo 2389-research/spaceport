@@ -1,5 +1,5 @@
 //! Superset's single-line rows: one icon slot that reports the row's state,
-//! the name, and local change counts on the right. The focused
+//! the name, and note and mute marks on the right. The focused
 //! row is filled and marked with a stripe down its leading edge. Rows Herdr's
 //! sidebar config defines replace the name with its lines; the slot keeps its
 //! dot only when those lines lead with the status.
@@ -231,7 +231,7 @@ fn text_color(state: RowState, theme: &Theme) -> u32 {
 
 impl RowLayout for Superset {
     fn workspace(&self, row: WorkspaceRow<'_>, state: RowState, cx: &RowContext<'_>) -> Div {
-        let (status, upstream) = (row.status(), row.upstream());
+        let status = row.status();
         let WorkspaceRow {
             label,
             tree,
@@ -251,8 +251,6 @@ impl RowLayout for Superset {
             } else {
                 cx.look.density.card_indent()
             };
-        let changes = badge.as_ref().and_then(|badge| badge.counts.as_ref());
-        let dirty = badge.as_ref().is_some_and(|badge| badge.dirty);
         let muted = badge.as_ref().is_some_and(|badge| badge.muted);
         let dirty_size = (line_height(cx.font) * 0.75).round();
         let size = m.icon * GLYPH;
@@ -281,11 +279,6 @@ impl RowLayout for Superset {
         } else {
             slot(label, glyph, slot_dot, &m, cx)
         };
-        let counts = if state.selected {
-            (theme.ink(theme.palette[2]), theme.ink(theme.palette[1]))
-        } else {
-            (theme.muted, theme.muted)
-        };
         let line = Line::new(cx.look.content_width(cx.width) - indent, m.gap).fixed(m.icon, slot);
         let line = if lines.is_empty() {
             line.fill(
@@ -294,11 +287,6 @@ impl RowLayout for Superset {
                     .text_color(rgb(text_color(state, theme))),
                 label,
             )
-            // Configured rows show the counts only through `git_status`.
-            .when_some(upstream, |line, upstream| {
-                let glyph = glyph_at(cx.font, cx.font.size);
-                line.fixed(upstream.width(glyph), upstream.element(label, glyph, theme))
-            })
         } else {
             line.fill_with(|width| {
                 token_column(
@@ -317,15 +305,6 @@ impl RowLayout for Superset {
         let line = line
             .when(muted, |line| {
                 line.fixed(dirty_size, parts::muted(label, dirty_size, theme))
-            })
-            // Local counts take the dirty mark's place, in a chip of its hue.
-            .when(dirty && changes.is_none(), |line| {
-                line.fixed(dirty_size, parts::dirty(label, dirty_size, theme))
-            })
-            .when_some(changes, |line, changes| {
-                let (glyph, icon) = (m.glyph, (dirty_size * 0.8).round());
-                let chip = changes.chip(label, glyph, icon, counts, theme);
-                line.shrink(changes.chip_width(glyph, icon), chip.text_size(px(m.small)))
             })
             .when_some(fold, |line, fold| {
                 let width = m.icon * 0.6;

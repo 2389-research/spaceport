@@ -17,13 +17,16 @@ pub(in super::super) struct Herdr;
 impl RowLayout for Herdr {
     fn workspace(&self, row: WorkspaceRow<'_>, state: RowState, cx: &RowContext<'_>) -> Div {
         let density = cx.look.density;
-        let badge_lines = row.badge.as_ref().map_or(0, |badge| badge.lines(&density));
+        let badge_lines = row
+            .badge
+            .as_ref()
+            .map_or(0, super::super::row::RowBadge::lines);
         let text_lines = if row.lines.is_empty() {
             if density.workspace_details() { 2 } else { 1 }
         } else {
             row.lines.len().max(badge_lines).max(1)
         };
-        let (branch, status, upstream) = (row.branch().unwrap_or(""), row.status(), row.upstream());
+        let (branch, status) = (row.branch().unwrap_or(""), row.status());
         let WorkspaceRow {
             label,
             tree,
@@ -55,7 +58,6 @@ impl RowLayout for Herdr {
             icon,
             arrow,
             badge,
-            upstream,
             None,
             &lines,
             cx,
@@ -81,7 +83,6 @@ impl RowLayout for Herdr {
             RowTree::None,
             false,
             RowIcon::None,
-            None,
             None,
             None,
             agent.status_text.as_deref(),

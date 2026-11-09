@@ -2,8 +2,7 @@
 //! built-in name and detail lines.
 
 use super::{
-    RowIcon, RowKind, agent_icon_size, agent_mark, label_text, place_line, row_text,
-    shared_label_text,
+    RowIcon, RowKind, agent_icon_size, agent_mark, place_line, row_text, shared_label_text,
 };
 use crate::{
     config::Theme,
@@ -62,16 +61,10 @@ pub(crate) fn styled(
     (color, weight)
 }
 
-/// Status icons and git counters retain their full width when text truncates.
+/// Status icons retain their full width when text truncates.
 fn fixed_glyphs(kind: &TokenKind, glyph: f32, status_width: f32) -> usize {
     match kind {
         TokenKind::StateIcon => (status_width / glyph).ceil() as usize,
-        TokenKind::GitStatus { ahead, behind } => {
-            let count = |n: &usize| format!("{n}").chars().count() + 1;
-            usize::from(*ahead > 0) * count(ahead)
-                + usize::from(*behind > 0) * count(behind)
-                + usize::from(*ahead > 0 && *behind > 0)
-        }
         _ => 0,
     }
 }
@@ -125,23 +118,6 @@ fn token_line(row: &[ResolvedToken], look: TokenLook, width: f32, cx: &RowContex
                     )
                     .debug_selector(|| "inline-status-mark".into()),
                 ),
-            TokenKind::GitStatus { ahead, behind } => cell.flex().gap(px(glyph)).children(
-                [("↑", *ahead, 2), ("↓", *behind, 1)]
-                    .into_iter()
-                    .filter(|(_, count, _)| *count > 0)
-                    .map(|(arrow, count, palette)| {
-                        let (color, weight) = styled(
-                            (theme.ink(theme.palette[palette]), FontWeight::NORMAL),
-                            token.style,
-                            theme,
-                        );
-                        div()
-                            .flex_none()
-                            .text_color(rgb(color))
-                            .font_weight(weight)
-                            .child(label_text(&format!("{arrow}{count}")))
-                    }),
-            ),
             // Only text the budget cuts short truncates. An emoji's font is wider
             // than two estimated glyphs, so a label that fits by its display
             // width may overhang its cell slightly rather than collapse to "…".

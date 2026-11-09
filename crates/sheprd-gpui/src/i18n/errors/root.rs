@@ -165,7 +165,6 @@ impl Localize for Error {
             Self::UnsupportedCommand => fl!("error-unsupported-command"),
             Self::Update(error) => error.localize(),
             Self::Usage(error) => error.localize(),
-            Self::Vcs(error) => error.localize(),
             #[cfg(any(target_os = "macos", windows))]
             Self::WebView(error) => fl!("error-web-view", error = error.to_string()),
             #[cfg(any(target_os = "macos", windows))]

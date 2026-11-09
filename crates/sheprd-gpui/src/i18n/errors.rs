@@ -43,7 +43,6 @@ mod system_load;
 pub(crate) mod tests;
 mod updater;
 mod usage;
-mod vcs;
 mod worktree_identity;
 mod worktree_scripts;
 mod wsl_drop;

@@ -19,7 +19,6 @@ fn texts(rows: &[Vec<ResolvedToken>]) -> Vec<Vec<String>> {
             row.iter()
                 .map(|token| match &token.kind {
                     TokenKind::StateIcon => "<icon>".to_owned(),
-                    TokenKind::GitStatus { ahead, behind } => format!("{ahead}/{behind}"),
                     kind => kind.text().unwrap().to_string(),
                 })
                 .collect()
@@ -123,29 +122,24 @@ claude = [[{ token = "$pct", rules = [{ gt = 90, hide = true }, { gt = 80, fg = 
 }
 
 #[test]
-fn space_rows_hide_git_details_under_a_parent_and_take_custom_tokens() {
+fn space_rows_keep_branch_text_and_custom_tokens() {
     let layout = SidebarLayout::default().spaces;
-    let context = |indented, ahead_behind, tokens| SpaceContext {
+    let context = |indented, tokens| SpaceContext {
         label: "fix-sidebar",
-        branch: Some("worktree/fix-sidebar"),
+        branch: Some("git/diff-looks-like-code"),
         status: AgentStatus::Working,
-        ahead_behind,
         tokens,
         indented,
     };
     assert_eq!(
-        texts(&space_rows(&layout, context(false, Some((2, 0)), &[]))),
+        texts(&space_rows(&layout, context(false, &[]))),
         [
             vec!["<icon>", "fix-sidebar"],
-            vec!["worktree/fix-sidebar", "2/0"]
+            vec!["git/diff-looks-like-code"]
         ]
     );
     assert_eq!(
-        texts(&space_rows(&layout, context(false, Some((0, 0)), &[]))),
-        [vec!["<icon>", "fix-sidebar"], vec!["worktree/fix-sidebar"]]
-    );
-    assert_eq!(
-        texts(&space_rows(&layout, context(true, Some((2, 1)), &[]))),
+        texts(&space_rows(&layout, context(true, &[]))),
         [vec!["<icon>", "fix-sidebar"]]
     );
     let tokens = [
@@ -154,7 +148,7 @@ fn space_rows_hide_git_details_under_a_parent_and_take_custom_tokens() {
     ];
     let custom = space_layout(r#"rows = [["state_text", "$jj", "$none"]]"#);
     assert_eq!(
-        texts(&space_rows(&custom, context(true, None, &tokens))),
+        texts(&space_rows(&custom, context(true, &tokens))),
         [vec!["working", "clean"]]
     );
 }
@@ -163,31 +157,20 @@ fn space_rows_hide_git_details_under_a_parent_and_take_custom_tokens() {
 fn budgets_drop_leftmost_text_first_then_share_the_rest() {
     let fixed = |kind: &TokenKind| match kind {
         TokenKind::StateIcon => 1,
-        TokenKind::GitStatus { .. } => 2,
         _ => 0,
     };
     let row = [
         ResolvedToken::unstyled(TokenKind::StateIcon),
         ResolvedToken::unstyled(TokenKind::Text("remote".into(), TextRole::Secondary)),
         ResolvedToken::unstyled(TokenKind::Text("herdr-gpui".into(), TextRole::Workspace)),
-        ResolvedToken::unstyled(TokenKind::GitStatus {
-            ahead: 1,
-            behind: 0,
-        }),
     ];
-    // icon(1) + " " + remote(6) + " · " + herdr-gpui(10) + " " + git(2) = 24
-    assert_eq!(
-        budgets(&row, fixed, 30),
-        [Some(1), Some(6), Some(10), Some(2)]
-    );
-    assert_eq!(
-        budgets(&row, fixed, 20),
-        [Some(1), Some(6), Some(6), Some(2)]
-    );
-    assert_eq!(budgets(&row, fixed, 8), [Some(1), None, Some(3), Some(2)]);
-    assert_eq!(budgets(&row, fixed, 6), [Some(1), None, Some(1), Some(2)]);
-    assert_eq!(budgets(&row, fixed, 4), [Some(1), None, None, Some(2)]);
-    assert_eq!(budgets(&row, fixed, 0), [Some(1), None, None, Some(2)]);
+    // The icon stays fixed while the two text tokens share remaining room.
+    assert_eq!(budgets(&row, fixed, 30), [Some(1), Some(6), Some(10)]);
+    assert_eq!(budgets(&row, fixed, 20), [Some(1), Some(6), Some(9)]);
+    assert_eq!(budgets(&row, fixed, 8), [Some(1), Some(2), Some(1)]);
+    assert_eq!(budgets(&row, fixed, 6), [Some(1), None, Some(4)]);
+    assert_eq!(budgets(&row, fixed, 4), [Some(1), None, Some(2)]);
+    assert_eq!(budgets(&row, fixed, 0), [Some(1), None, None]);
     assert_eq!(budgets(&[], fixed, 5), Vec::<Option<usize>>::new());
 }
 

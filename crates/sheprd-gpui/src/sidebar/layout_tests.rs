@@ -55,7 +55,6 @@ mod layouts;
 #[cfg(test)]
 mod listening_ports;
 #[cfg(test)]
-mod local_counts_chip;
 #[cfg(test)]
 mod mark_sizes;
 #[cfg(test)]
@@ -121,7 +120,6 @@ mod update_notes_scrollbar;
 #[cfg(test)]
 mod update_panel;
 #[cfg(test)]
-mod upstream;
 #[cfg(test)]
 mod workspace_click_hover;
 #[cfg(test)]
@@ -630,7 +628,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         config_load: None,
         config_watch: None,
         config_load_revision: 0,
-        git: Default::default(),
         deliveries: Default::default(),
         notice_overflow: Default::default(),
         overview: Default::default(),

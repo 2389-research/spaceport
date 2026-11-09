@@ -38,7 +38,6 @@ mod system_load;
 mod terminal_attach;
 mod updater;
 mod usage;
-mod vcs;
 mod worktree_identity;
 mod worktree_scripts;
 mod wsl_drop;

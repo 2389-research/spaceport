@@ -21,7 +21,7 @@ use unicode_width::UnicodeWidthStr;
 mod badge;
 mod configured;
 
-pub(super) use badge::{Counts, RowBadge, Upstream};
+pub(super) use badge::RowBadge;
 use configured::configured_lines;
 pub(super) use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, token_column,
@@ -418,7 +418,6 @@ pub(super) fn row(
     workspace_icon: RowIcon,
     arrow: Option<Stateful<Div>>,
     badge: Option<RowBadge>,
-    upstream: Option<Upstream>,
     // The status word the daemon's `state_text` token asks to show, when its
     // sidebar config names it. Painted at the row's trailing edge in the dot's
     // color so a status reads at a glance, not only by hue.
@@ -434,7 +433,7 @@ pub(super) fn row(
     let show_status = !configured || leading_icon.is_some() || removing;
     let status_text = status_text.filter(|_| !configured);
     let text_lines = if configured {
-        let badge_lines = badge.as_ref().map_or(0, |badge| badge.lines(&layout));
+        let badge_lines = badge.as_ref().map_or(0, RowBadge::lines);
         lines.len().max(badge_lines)
     } else {
         0
@@ -477,23 +476,11 @@ pub(super) fn row(
     let available = (look.content_width(width) - status_gutter - indent - arrow_reserve).max(0.);
     // Narrow sidebars and large fonts can leave less room than a badge needs.
     // Clip its column within the row rather than painting over the terminal.
-    let badge_width = badge.as_ref().map_or(0., |badge| {
-        badge.width(font, &layout).min((available - gap).max(0.))
-    });
-    // The label's first line yields only the badge's first line; the counts
-    // under it take their room from the second line. A fold chevron is a
-    // click target as tall as the row, so beside one the label still yields
-    // the whole column.
-    let hanging = badge.as_ref().filter(|_| arrow.is_none());
-    let badge_first = hanging.map_or(badge_width, |badge| {
-        badge.first_width(font, &layout).min(badge_width)
-    });
-    let counts_reserve = hanging
-        .map(|badge| badge.counts_width(font, &layout).min(badge_width))
-        .filter(|width| *width > 0.)
-        .map_or(0., |width| width + gap);
-    let pr_reserve = if badge.is_some() {
-        badge_first + gap
+    let badge_width = badge
+        .as_ref()
+        .map_or(0., |badge| badge.width(font).min((available - gap).max(0.)));
+    let badge_reserve = if badge.is_some() {
+        badge_width + gap
     } else {
         0.
     };
@@ -503,7 +490,7 @@ pub(super) fn row(
     let status_width = status_text.map_or(0., |text| {
         (text.width() as f32 * glyph_width(font))
             .ceil()
-            .min((available - pr_reserve - gap).max(0.))
+            .min((available - badge_reserve - gap).max(0.))
     });
     let status_reserve = if status_text.is_some() {
         status_width + gap
@@ -511,26 +498,8 @@ pub(super) fn row(
         0.
     };
     let status_color = indicators.color(status);
-    let glyph = glyph_width(font);
-    // A workspace's second line carries the counts after its branch, as the
-    // TUI does. A one-line row has no branch line, so a trailing column keeps
-    // them visible in compact densities and on worktree children.
-    // Configured rows show the counts only through their `git_status` token.
-    let upstream = upstream.filter(|_| !configured);
-    let upstream_inline = upstream.filter(|_| show_detail && kind == RowKind::Workspace);
-    let upstream_trailing = upstream.filter(|_| upstream_inline.is_none());
-    let upstream_width = upstream_trailing.map_or(0., |upstream| {
-        upstream
-            .width(glyph)
-            .min((available - pr_reserve - status_reserve - gap).max(0.))
-    });
-    let upstream_reserve = if upstream_trailing.is_some() {
-        upstream_width + gap
-    } else {
-        0.
-    };
-    let label_width = (available - pr_reserve - status_reserve - upstream_reserve).max(0.);
-    let detail_limit = label_width.min((available - counts_reserve).max(0.));
+    let label_width = (available - badge_reserve - status_reserve).max(0.);
+    let detail_limit = label_width;
     let agent_icon = match kind {
         RowKind::Agent(icon) => Some(icon),
         RowKind::Workspace => None,
@@ -661,40 +630,15 @@ pub(super) fn row(
                                             font,
                                         ))
                                     })
-                                    .when(upstream_inline.is_none(), |line| {
-                                        line.child(
-                                            div()
-                                                .debug_selector(|| format!("detail-{key}"))
-                                                .ms(px(detail_x))
-                                                .w(px(room))
-                                                .truncate()
-                                                .text_color(rgb(detail_color))
-                                                .child(label_text(detail)),
-                                        )
-                                    })
-                                    .when_some(upstream_inline, |line, upstream| {
-                                        line.child(
-                                            div()
-                                                .ms(px(detail_x))
-                                                .w(px(room))
-                                                .flex()
-                                                .items_center()
-                                                .overflow_hidden()
-                                                .child(
-                                                    div()
-                                                        .debug_selector(|| format!("detail-{key}"))
-                                                        .min_w_0()
-                                                        .flex_shrink(1.)
-                                                        .truncate()
-                                                        .text_color(rgb(detail_color))
-                                                        .child(label_text(detail)),
-                                                )
-                                                .when(!detail.is_empty(), |line| {
-                                                    line.gap(px(glyph))
-                                                })
-                                                .child(upstream.inline_element(key, glyph, theme)),
-                                        )
-                                    }),
+                                    .child(
+                                        div()
+                                            .debug_selector(|| format!("detail-{key}"))
+                                            .ms(px(detail_x))
+                                            .w(px(room))
+                                            .truncate()
+                                            .text_color(rgb(detail_color))
+                                            .child(label_text(detail)),
+                                    ),
                             )
                         })
                 }),
@@ -713,33 +657,10 @@ pub(super) fn row(
                     .child(div().w(px(status_width)).truncate().child(label_text(text))),
             )
         })
-        .when_some(upstream_trailing, |row, upstream| {
-            row.child(
-                div()
-                    .w(px(upstream_width))
-                    .flex_none()
-                    .h(px(line_height(font)))
-                    .row()
-                    .items_center()
-                    .overflow_hidden()
-                    .child(upstream.element(key, glyph, theme)),
-            )
-        })
         // The collapse column comes first so the badge can hug the row's edge.
         .when_some(arrow, |row, arrow| row.child(arrow))
         .when_some(badge, |row, badge| {
-            let element = badge.element(key, badge_width, font, theme, &layout);
-            if badge_first >= badge_width {
-                return row.child(element);
-            }
-            // Only the first line holds its place in the flow; the wider counts
-            // line hangs at the row's edge, beside the shortened detail line.
-            row.child(div().w(px(badge_first)).flex_none()).child(
-                element
-                    .absolute()
-                    .top(px(content_top))
-                    .inset_e(px(content_x)),
-            )
+            row.child(badge.element(key, badge_width, font, theme))
         })
 }
 

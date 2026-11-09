@@ -8,11 +8,7 @@
 //! comes from the daemon alone, so a checkout the daemon restored while it was
 //! unavailable keeps its group.
 
-use super::{
-    RowBadge,
-    agents::status_priority,
-    row::{Counts, first_text},
-};
+use super::{RowBadge, agents::status_priority, row::first_text};
 use sheprd_client::protocol::{AgentStatus, ClientShellWorkspace};
 use std::collections::{HashMap, HashSet};
 
@@ -94,33 +90,10 @@ pub(super) fn visible_workspace_entries(
         .collect()
 }
 
-/// Local change counts, dirty, note and mute marks for a worktree row.
-/// Rendering only reads the Git probe; a missing entry shows no guessed state.
-/// The probe is absent on another device. Every workspace can carry a mute.
-pub(super) fn workspace_badge(
-    workspace: &ClientShellWorkspace,
-    git: Option<&crate::git::Git>,
-    (note, muted): (Option<&str>, bool),
-) -> Option<RowBadge> {
-    let checkout = workspace
-        .worktree
-        .as_ref()
-        .map(|tree| tree.key.as_str())
-        .zip(workspace.branch.as_deref());
-    let Some((key, branch)) = checkout else {
-        return RowBadge::new(None, false, false, muted);
-    };
-    // Untracked files have no line counts; the dirty mark still shows them.
-    let counts = git
-        .and_then(|git| git.counts(key, branch))
-        .filter(|status| status.additions > 0 || status.deletions > 0)
-        .map(|status| Counts::new(status.additions, status.deletions));
-    RowBadge::new(
-        counts,
-        git.and_then(|git| git.dirty(key, branch)).unwrap_or(false),
-        note.is_some(),
-        muted,
-    )
+/// Note and mute marks for a workspace row. Notes belong to a checkout;
+/// every workspace can carry a mute.
+pub(super) fn workspace_badge((note, muted): (Option<&str>, bool)) -> Option<RowBadge> {
+    RowBadge::new(note.is_some(), muted)
 }
 
 /// The note the user keeps on a workspace's checkout, if it has one.
