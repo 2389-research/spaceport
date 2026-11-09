@@ -1,5 +1,10 @@
 # Security Policy
 
+Spaceport is an unreleased development fork with no verified private reporting
+channel or supported release. The Sheprd policy below is retained as upstream
+reference; its advisory form is not a Spaceport reporting channel. A Spaceport
+owner must configure a private contact and replace this policy before release.
+
 ## Supported Versions
 
 Sheprd uses calendar-versioned releases. Only the current
