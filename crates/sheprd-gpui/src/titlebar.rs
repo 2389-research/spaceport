@@ -13,7 +13,7 @@ pub(crate) use decorations::show_controls;
 
 use crate::direction::Logical;
 use crate::i18n::fl;
-use crate::{SheprdWindow, fonts::StyledFont, menu::Page};
+use crate::{SheprdWindow, menu::Page};
 use gpui::{prelude::*, *};
 
 /// Avatar or signed-out GitHub icon. Smaller than the hit target, which stays a
@@ -35,11 +35,6 @@ pub(super) const HEIGHT: f32 = 34.;
 /// mouse buttons still travel.
 const NAVIGATION_MIN_WIDTH: f32 = 320.;
 
-/// The narrowest window that spells out commits without a pull request. Below
-/// it the words would push the Git button and the account out of the window,
-/// so the Git icon takes their color instead, which needs no room.
-const UNOPENED_NOTE_MIN_WIDTH: f32 = 720.;
-
 impl SheprdWindow {
     fn open_profile(&mut self, connect: bool, window: &mut Window, cx: &mut Context<Self>) {
         let shown = self.menu.page == Some(Page::GitHub);
@@ -53,232 +48,6 @@ impl SheprdWindow {
             self.start_github();
         }
         cx.notify();
-    }
-
-    /// Git actions for the focused checkout, left of the account slot. Hidden
-    /// when no local checkout is tracked, so remote endpoints show no control
-    /// that cannot act.
-    ///
-    /// One set of counts only, so two "+N -M" pairs can never sit side by side
-    /// meaning different things. A branch with a prefetched pull request shows
-    /// that pull request, exactly as its sidebar row does, and a badge when the
-    /// checkout also has uncommitted work; the popup says how much. A branch
-    /// without one shows what a commit would include right now, and says so
-    /// when commits are waiting for a pull request: a clean tree alone would
-    /// leave the slot empty though there is still work to send.
-    fn render_git_button(&self, window: &Window, cx: &mut Context<Self>) -> Option<Div> {
-        self.git.tracked()?;
-        let theme = &self.theme;
-        let font = &self.config.ui;
-        let background = rgb(theme.surface).blend(rgba(0xffffff1a));
-        let status = self.git.status();
-        let running = self.git.running().is_some();
-        let anchor = self.git_anchor.clone();
-        let unopened = self.git_unopened_commits();
-        let note =
-            unopened.filter(|_| f32::from(window.viewport_size().width) >= UNOPENED_NOTE_MIN_WIDTH);
-        let pr = self
-            .git_pull_request()
-            .filter(|_| unopened.is_none())
-            .map(|pr| {
-                (
-                    format!("#{}", pr.number),
-                    crate::pull_request::color(&pr, theme),
-                    pr.additions,
-                    pr.deletions,
-                    pr.url.clone(),
-                )
-            });
-        Some(
-            div()
-                .debug_selector(|| "titlebar-git-slot".into())
-                .row()
-                .items_center()
-                .flex_none()
-                .h_full()
-                .pe(px(2.))
-                .gap(px(4.))
-                .text_font(font)
-                .text_size(px(font.size))
-                .text_color(rgb(theme.foreground))
-                .when_some(note, |button, commits| {
-                    button.child(
-                        div()
-                            .id("titlebar-git-unopened")
-                            .debug_selector(|| "titlebar-git-unopened".into())
-                            .row()
-                            .items_center()
-                            .flex_none()
-                            .h(px(24.))
-                            .px(px(6.))
-                            .rounded(px(crate::config::corners::CONTROL))
-                            .cursor_pointer()
-                            .hover(|link| {
-                                link.bg(background.blend(rgba((theme.foreground << 8) | 0x14)))
-                            })
-                            .text_color(rgb(crate::pull_request::unopened_color(theme)))
-                            .child(fl!("titlebar-unopened", commits = commits))
-                            .on_mouse_down(
-                                MouseButton::Left,
-                                cx.listener(|this, event: &MouseDownEvent, window, cx| {
-                                    cx.stop_propagation();
-                                    this.open_git_menu_on_pull_request(event.position, window, cx);
-                                }),
-                            ),
-                    )
-                })
-                .map(|button| match pr {
-                    Some((number, color, additions, deletions, url)) => button
-                        .child(
-                            div()
-                                .id("titlebar-git-pr-link")
-                                .debug_selector(|| "titlebar-git-pr-link".into())
-                                .row()
-                                .items_center()
-                                .gap(px(4.))
-                                .h(px(24.))
-                                .px(px(6.))
-                                .rounded(px(crate::config::corners::CONTROL))
-                                .cursor_pointer()
-                                .hover(|link| {
-                                    link.bg(background.blend(rgba((theme.foreground << 8) | 0x14)))
-                                })
-                                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                                .on_click(move |_, _, cx| {
-                                    cx.stop_propagation();
-                                    cx.open_url(&url);
-                                })
-                                .child(
-                                    div()
-                                        .debug_selector(|| "titlebar-git-pr".into())
-                                        .text_color(rgb(color))
-                                        .child(number),
-                                )
-                                .child(
-                                    div()
-                                        .debug_selector(|| "titlebar-git-pr-lines".into())
-                                        .row()
-                                        .child(
-                                            div()
-                                                .debug_selector(|| {
-                                                    "titlebar-git-pr-additions".into()
-                                                })
-                                                .text_color(rgb(theme.ink(theme.palette[2])))
-                                                .child(format!(
-                                                    "+{}",
-                                                    crate::sidebar::compact(additions)
-                                                )),
-                                        )
-                                        .child(div().text_color(rgb(theme.muted)).child("/"))
-                                        .child(
-                                            div()
-                                                .debug_selector(|| {
-                                                    "titlebar-git-pr-deletions".into()
-                                                })
-                                                .text_color(rgb(theme.ink(theme.palette[1])))
-                                                .child(format!(
-                                                    "-{}",
-                                                    crate::sidebar::compact(deletions)
-                                                )),
-                                        ),
-                                ),
-                        )
-                        // The pull request's churn is history; the badge
-                        // says work is still sitting in the checkout.
-                        .when(status.is_some_and(|status| status.dirty()), |button| {
-                            button.child(
-                                crate::icons::uncommitted(theme, 18.)
-                                    .debug_selector(|| "titlebar-git-dirty".into()),
-                            )
-                        }),
-                    None => button.when_some(
-                        status.filter(|status| status.dirty()),
-                        |button, status| {
-                            button
-                                .when(status.additions > 0, |button| {
-                                    button.child(
-                                        div()
-                                            .debug_selector(|| "titlebar-git-additions".into())
-                                            .text_color(rgb(theme.ink(theme.palette[2])))
-                                            .child(format!("+{}", status.additions)),
-                                    )
-                                })
-                                .when(status.deletions > 0, |button| {
-                                    button.child(
-                                        div()
-                                            .debug_selector(|| "titlebar-git-deletions".into())
-                                            .text_color(rgb(theme.ink(theme.palette[1])))
-                                            .child(format!("-{}", status.deletions)),
-                                    )
-                                })
-                                .child(
-                                    crate::icons::uncommitted(theme, 18.)
-                                        .debug_selector(|| "titlebar-git-dirty".into()),
-                                )
-                        },
-                    ),
-                })
-                .child(
-                    div()
-                        .id("titlebar-git")
-                        .debug_selector(|| "titlebar-git".into())
-                        .relative()
-                        .row()
-                        .items_center()
-                        .gap(px(4.))
-                        .h(px(24.))
-                        .px(px(6.))
-                        .rounded(px(crate::config::corners::CONTROL))
-                        .cursor_pointer()
-                        .hover(|button| {
-                            button.bg(background.blend(rgba((theme.foreground << 8) | 0x14)))
-                        })
-                        .child(
-                            svg()
-                                .path("icons/git-branch.svg")
-                                .size(px(14.))
-                                .flex_none()
-                                .debug_selector(|| "titlebar-git-icon".into())
-                                .text_color(rgb(if running {
-                                    theme.ink(theme.palette[3])
-                                } else if unopened.is_some() {
-                                    crate::pull_request::unopened_color(theme)
-                                } else {
-                                    theme.muted
-                                })),
-                        )
-                        .child(
-                            svg()
-                                .path("icons/chevron-down.svg")
-                                .size(px(12.))
-                                .flex_none()
-                                .text_color(rgb(theme.muted)),
-                        )
-                        .child(
-                            canvas(
-                                |_, _, _| (),
-                                move |bounds, _, _, _| anchor.set(bounds.center()),
-                            )
-                            .absolute()
-                            .inset_0()
-                            .size_full(),
-                        )
-                        .on_mouse_down(
-                            MouseButton::Left,
-                            cx.listener(|this, event: &MouseDownEvent, window, cx| {
-                                cx.stop_propagation();
-                                match this.git_unopened_commits() {
-                                    Some(_) => this.open_git_menu_on_pull_request(
-                                        event.position,
-                                        window,
-                                        cx,
-                                    ),
-                                    None => this.open_git_menu(event.position, window, cx),
-                                }
-                            }),
-                        ),
-                ),
-        )
     }
 
     pub(super) fn render_titlebar(
@@ -350,8 +119,7 @@ impl SheprdWindow {
             .into_any_element()
     }
 
-    /// What ends the bar: git actions, the account, and the window controls
-    /// a client-decorated window draws.
+    /// What ends the bar: the account and client-drawn window controls.
     fn titlebar_end(&self, window: &Window, cx: &mut Context<Self>) -> Div {
         let image = self
             .pr_profile()
@@ -365,7 +133,6 @@ impl SheprdWindow {
             .row()
             .flex_none()
             .items_center()
-            .children(self.render_git_button(window, cx))
             .child(
                 div()
                     .debug_selector(|| "titlebar-account-slot".into())
@@ -637,8 +404,7 @@ pub(crate) fn sidebar_glyph(expanded: bool, theme: &crate::config::Theme) -> Div
 #[cfg(test)]
 mod tests;
 
-#[cfg(test)]
-mod git_button_tests;
-#[cfg(test)]
 #[cfg(all(test, target_os = "macos"))]
 mod native_chrome_tests;
+#[cfg(test)]
+mod removed_git_tests;

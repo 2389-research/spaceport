@@ -127,15 +127,14 @@ fn header_keeps_controls_reachable(cx: &mut TestAppContext) {
             window.refresh();
             let _ = window.draw(cx);
         });
-        let git = cx.debug_bounds("titlebar-git").unwrap();
         let avatar = cx.debug_bounds("titlebar-avatar").unwrap();
-        assert!(git.right() <= avatar.left());
+        assert!(cx.debug_bounds("titlebar-git").is_none());
         assert_eq!(avatar.right(), px(width - 6.));
         let status = cx.debug_bounds("titlebar-status").unwrap();
         // Clear of the leading controls, whatever room the platform
         // leaves before them.
         assert!(status.left() >= cx.debug_bounds("toggle-sidebar").unwrap().right());
-        assert!(status.right() <= git.left());
+        assert!(status.right() <= avatar.left());
     }
 }
 

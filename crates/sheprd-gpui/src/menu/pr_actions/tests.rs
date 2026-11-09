@@ -30,7 +30,10 @@ fn open(
                 view.git_open_pull_request()
                     .and_then(|pr| crate::pr_actions::Target::try_from(&*pr).ok()),
             );
-            view.open_git_menu(point(px(860.), px(20.)), window, cx);
+            view.menu.anchor = point(px(860.), px(20.));
+            view.menu.page = Some(Page::Git);
+            window.focus(&view.menu.focus, cx);
+            cx.notify();
         })
     });
     (view, cx)

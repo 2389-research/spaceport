@@ -189,7 +189,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) git: git::Git,
     /// Where the titlebar's Git button last painted. The window owns it so a
     /// shortcut and a click open the Git menu at the same place.
-    pub(crate) git_anchor: std::rc::Rc<std::cell::Cell<Point<Pixels>>>,
     /// Unknown keys in the GUI config, ignored but reported; follows `config`.
     pub(crate) gui_config_diagnostic: crate::config_diagnostic::ConfigDiagnostic,
     pub(crate) held_keys: crate::terminal::HeldKeys,

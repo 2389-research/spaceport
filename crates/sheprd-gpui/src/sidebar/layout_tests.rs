@@ -640,7 +640,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         config_watch: None,
         config_load_revision: 0,
         git: Default::default(),
-        git_anchor: Default::default(),
         deliveries: Default::default(),
         notes_width: crate::panel_resize::NOTES,
         notice_overflow: Default::default(),

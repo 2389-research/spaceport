@@ -1,5 +1,5 @@
-//! The `en-XA` leak test (`crate::i18n::leak_tests`) for the title bar's
-//! Git popup and its commit dialog: each draws only translated messages,
+//! The `en-XA` leak test (`crate::i18n::leak_tests`) for the Git popup and
+//! its commit dialog: each draws only translated messages,
 //! except for the branch and what GitHub reports of its pull request.
 use super::*;
 use crate::i18n::leak_tests::{assert_translated, draw, under_en_xa};
@@ -38,7 +38,7 @@ fn the_git_popup_and_commit_dialog_show_only_messages_under_en_xa() {
         recorder.take();
         let pr = crate::pull_request::fixture().unwrap();
         let data = cut([
-            // The title bar's Git chip names the repository.
+            // The Git popup names the repository.
             "agent-launcher".to_owned(),
             "develop".to_owned(),
             pr.title.clone(),
@@ -47,8 +47,8 @@ fn the_git_popup_and_commit_dialog_show_only_messages_under_en_xa() {
             pr.merge_status().to_owned(),
             pr.checks_summary.clone(),
         ]);
-        cx.update(|window, cx| {
-            view.update(cx, |view, cx| {
+        cx.update(|_, cx| {
+            view.update(cx, |view, _| {
                 view.git = crate::git::Git::fixture(input(), status(12, 3, 2));
                 view.menu.github = crate::github::Auth::connected_fixture();
                 view.seed_pr(input(), pr, std::time::Instant::now());
@@ -56,7 +56,8 @@ fn the_git_popup_and_commit_dialog_show_only_messages_under_en_xa() {
                     view.git_open_pull_request()
                         .and_then(|pr| crate::pr_actions::Target::try_from(&*pr).ok()),
                 );
-                view.open_git_menu(point(px(860.), px(20.)), window, cx);
+                view.menu.anchor = point(px(860.), px(20.));
+                view.menu.page = Some(Page::Git);
             })
         });
         draw(cx);

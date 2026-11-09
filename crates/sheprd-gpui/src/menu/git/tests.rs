@@ -6,7 +6,6 @@ use gpui::{TestAppContext, VisualTestContext, point, px, size};
 use std::sync::Arc;
 
 mod en_xa;
-mod unopened;
 
 fn status(additions: u64, deletions: u64, untracked: u64) -> Status {
     Status {
@@ -81,8 +80,8 @@ fn a_cached_pull_request_is_named_and_only_an_open_one_can_be_opened(cx: &mut Te
         repo_key: Some(REPO_KEY.into()),
         branch: "develop".into(),
     };
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
+    cx.update(|_, cx| {
+        view.update(cx, |view, _| {
             view.git = crate::git::Git::fixture(input.clone(), status(146, 42, 0));
             assert!(
                 view.git_pull_request().is_none(),
@@ -96,7 +95,8 @@ fn a_cached_pull_request_is_named_and_only_an_open_one_can_be_opened(cx: &mut Te
                 view.git_rows().last().map(|(_, label)| label.clone()),
                 Some("Open pull request #\u{2068}8\u{2069}".into())
             );
-            view.open_git_menu(point(px(900.), px(20.)), window, cx);
+            view.menu.anchor = point(px(900.), px(20.));
+            view.menu.page = Some(Page::Git);
         })
     });
     cx.update(|window, cx| {
@@ -181,8 +181,8 @@ fn the_popup_says_when_it_is_waiting_on_github(cx: &mut TestAppContext) {
             let _ = window.draw(cx);
         })
     };
-    cx.update(|window, cx| {
-        view.update(cx, |view, cx| {
+    cx.update(|_, cx| {
+        view.update(cx, |view, _| {
             view.git = crate::git::Git::fixture(input.clone(), status(0, 0, 0));
             view.menu.github = crate::github::Auth::connected_fixture();
             view.menu.pr_cache.scope(
@@ -194,7 +194,8 @@ fn the_popup_says_when_it_is_waiting_on_github(cx: &mut TestAppContext) {
             view.menu
                 .pr_cache
                 .refresh(input.clone(), std::time::Instant::now());
-            view.open_git_menu(point(px(900.), px(20.)), window, cx);
+            view.menu.anchor = point(px(900.), px(20.));
+            view.menu.page = Some(Page::Git);
         })
     });
     draw(cx);
@@ -228,7 +229,8 @@ fn the_commit_dialog_ends_in_a_button_row(cx: &mut TestAppContext) {
                 },
                 status(12, 3, 1),
             );
-            view.open_git_menu(point(px(860.), px(20.)), window, cx);
+            view.menu.anchor = point(px(860.), px(20.));
+            view.menu.page = Some(Page::Git);
             view.activate_git_row(Row::Commit, window, cx);
             cx.notify();
         })
@@ -265,7 +267,8 @@ fn the_menu_commits_through_a_dialog_and_refuses_an_empty_message(cx: &mut TestA
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.git = crate::git::Git::fixture(input.clone(), status(12, 3, 1));
-            view.open_git_menu(point(px(900.), px(20.)), window, cx);
+            view.menu.anchor = point(px(900.), px(20.));
+            view.menu.page = Some(Page::Git);
             assert_eq!(view.menu.page, Some(Page::Git));
             let rows: Vec<_> = view
                 .git_rows()
