@@ -846,13 +846,14 @@ impl SheprdWindow {
     }
 
     pub(crate) fn surface_activation_ready(&self) -> bool {
-        self.endpoints[self.selected_endpoint]
-            .connection
-            .handle
-            .is_some()
-            && self.endpoints[self.selected_endpoint].surface_requested()
-            && self.pending_releases.is_empty()
-            && self.live.surface_ready()
+        self.endpoints
+            .get(self.selected_endpoint)
+            .is_some_and(|endpoint| {
+                endpoint.connection.handle.is_some()
+                    && endpoint.surface_requested()
+                    && self.pending_releases.is_empty()
+                    && self.live.surface_ready()
+            })
     }
 }
 

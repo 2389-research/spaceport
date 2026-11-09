@@ -196,7 +196,8 @@
         "evidence/t03-local-core-selection.md",
         "evidence/t03-core-window-list-identity.md",
         "evidence/t03-core-reconnect-overlay.md",
-        "evidence/t03-exact-core-hub.md"
+        "evidence/t03-exact-core-hub.md",
+        "evidence/t03-core-join-without-legacy-endpoint.md"
       ],
       "must_close_gaps": []
     },

@@ -450,11 +450,14 @@ impl SheprdWindow {
     /// Runs every window tick: joins Core for local metadata and restored tabs,
     /// places a started terminal, gives each shown pane its view, and takes new screens.
     pub(crate) fn poll_core_terminals(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        if self.endpoints.iter().any(|endpoint| {
-            endpoint.id == crate::endpoint::LOCAL
-                && matches!(endpoint.connection.target, ConnectTarget::Local)
-        }) {
-            // A plain local window reads an already-running Core's metadata.
+        if self.selected_core_group().is_some()
+            || self.endpoints.iter().any(|endpoint| {
+                endpoint.id == crate::endpoint::LOCAL
+                    && matches!(endpoint.connection.target, ConnectTarget::Local)
+            })
+        {
+            // A selected Core group has its own exact hub identity. A plain
+            // local window may also read an already-running Core's metadata.
             // Joining cannot start a runtime or change the legacy endpoint.
             self.core_terminals.hub.connect(Start::Join);
         }
