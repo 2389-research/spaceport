@@ -1,4 +1,6 @@
-"""Release CLI smoke check against a mock executable; no Cargo or real app."""
+"""ABOUTME: Tests the smoke checker's validation and timeout failures.
+ABOUTME: Child output fixtures test the checker; real app checks run separately.
+"""
 import contextlib
 import importlib.util
 import io
@@ -38,7 +40,7 @@ elif args == ["browser", "open", "https://a.test/"]:
     if broken == "browser-open":
         print("Opened page")
     else:
-        sys.stderr.write("Unknown browser command\n" + usage)
+        sys.stderr.write("Unknown option: browser\n" + usage)
         sys.exit(2)
 else:
     sys.stderr.write(f"Unknown option: {args[0]}\n" + usage)
@@ -60,7 +62,7 @@ class SmokeCliTests(unittest.TestCase):
         with mock.patch.dict(os.environ, dict(self.environ, MOCK_BREAK=broken), clear=True):
             SMOKE.smoke(self.executable)
 
-    def test_a_release_build_passes(self):
+    def test_checker_accepts_a_valid_output_contract(self):
         self.smoke()
 
     def test_each_broken_behavior_fails(self):

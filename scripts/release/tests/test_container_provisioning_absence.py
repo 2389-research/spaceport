@@ -27,8 +27,11 @@ class ContainerProvisioningAbsence(unittest.TestCase):
         for name in ("pub fn add_device(", "pub fn adopt(", "pub fn provision("):
             with self.subTest(name=name):
                 self.assertFalse(name in setup, name)
-        self.assertNotIn("dispatch_sandboxes", source("crates/sheprd-gpui/src/dispatch/hosts.rs"))
-        self.assertNotIn("Destination::Sandbox", source("crates/sheprd-gpui/src/menu/workspace/dispatch.rs"))
+        for relative in ("dispatch/hosts.rs", "menu/workspace/dispatch.rs"):
+            self.assertFalse((ROOT / "crates/sheprd-gpui/src" / relative).exists())
+        for path in (ROOT / "crates/sheprd-gpui/src").rglob("*.rs"):
+            self.assertNotIn("dispatch_sandboxes", path.read_text(), str(path))
+            self.assertNotIn("Destination::Sandbox", path.read_text(), str(path))
 
     def test_container_image_entry_points_are_unreachable(self):
         settings = source("crates/sheprd-gpui/src/settings_window.rs")

@@ -1,5 +1,5 @@
 """ABOUTME: Checks that excluded native Teleport UI cannot start or render.
-ABOUTME: Keeps Core machine catalog and existing exact-target follow routes visible.
+ABOUTME: Keeps Core machine catalog and exact group window routes visible.
 """
 
 from pathlib import Path
@@ -31,14 +31,14 @@ class TeleportNativeAbsence(unittest.TestCase):
         for source in (ROOT / "crates/sheprd-gpui/src").rglob("*.rs"):
             self.assertNotIn("teleported.json", source.read_text(), source)
 
-    def test_retained_machine_and_follow_seams_remain(self):
+    def test_retained_machine_and_exact_group_window_seams_remain(self):
         catalog = (ROOT / "crates/sheprd-gpui/src/core_terminals.rs").read_text()
-        follow = (ROOT / "crates/sheprd-gpui/src/window/target_follow.rs").read_text()
-        carry = (ROOT / "crates/sheprd-gpui/src/pane_menu/carry.rs").read_text()
+        launch = (ROOT / "crates/sheprd-gpui/src/app.rs").read_text()
         self.assertIn("fn machine_catalog", catalog)
-        self.assertIn("endpoint_id", follow)
-        self.assertIn("pane_id", follow)
-        self.assertIn("Follow::pane", carry)
+        self.assertIn("WindowLaunch::Core(key)", launch)
+        self.assertIn("core_group_workspace(key, cx)", launch)
+        for relative in ("window/target_follow.rs", "pane_menu/carry.rs"):
+            self.assertFalse((ROOT / "crates/sheprd-gpui/src" / relative).exists())
 
 
 if __name__ == "__main__":

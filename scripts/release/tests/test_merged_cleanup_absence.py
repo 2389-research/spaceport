@@ -1,5 +1,5 @@
 """ABOUTME: Guards against automatic deletion of merged worktree checkouts.
-ABOUTME: Keeps the explicit delete dialog and its target checks reachable.
+ABOUTME: Keeps presentation-group deletion behind its explicit dialog.
 """
 
 from pathlib import Path
@@ -24,12 +24,14 @@ class MergedCleanupAbsence(unittest.TestCase):
             with self.subTest(relative=relative):
                 self.assertNotIn(marker, (GUI / relative).read_text())
 
-    def test_explicit_removal_still_requires_the_dialog_route(self):
+    def test_group_deletion_keeps_the_dialog_without_checkout_removal(self):
         workspace = (GUI / "src/menu/workspace.rs").read_text()
-        requests = (GUI / "src/menu/workspace/requests.rs").read_text()
-        self.assertIn("fn open_workspace_dialog(", workspace)
-        self.assertIn("Method::WorktreeRemove", workspace)
-        self.assertIn("fn submit_workspace_dialog(", requests)
+        groups = (GUI / "src/core_terminals/workspace_ui.rs").read_text()
+        self.assertNotIn("Method::WorktreeRemove", workspace)
+        self.assertIn("fn open_core_workspace_delete(", groups)
+        self.assertIn("fn submit_core_workspace_dialog(", groups)
+        self.assertIn("Some(Page::CoreWorkspaceDelete)", groups)
+        self.assertIn("edit::Edit::Delete { id: target.id }", groups)
 
 
 if __name__ == "__main__":

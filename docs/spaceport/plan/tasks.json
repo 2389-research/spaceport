@@ -344,6 +344,7 @@
         "evidence/t04-gix-dependency-cleanup.md",
         "evidence/t04-github-desktop-dependency.md",
         "evidence/t04-github-crate-removal.md",
+        "evidence/t04-release-contract-regressions.md",
         "evidence/t04-browser-control-family-removal.md",
         "evidence/t04-browser-tab-protocol-removal.md",
         "evidence/t04-chat-html-system-open.md",

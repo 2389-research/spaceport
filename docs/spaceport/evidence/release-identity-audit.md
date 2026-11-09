@@ -1,5 +1,7 @@
 # T12 release identity audit: source state
 
+Current test-suite correction: `evidence/t04-release-contract-regressions.md` records the later 241-test release Python suite pass (eight skips) and a real development-binary CLI smoke pass. This supersedes the inherited red suite result in the GitHub removal evidence, while leaving all identity, signing and native package gates open.
+
 T12 is blocked. This is a source audit of the current development branch, not a package or update test. No release or user installation was changed.
 The [native platform results](native-platform-results.md) record the macOS
 fixture failures and the unrun Windows/Linux gates.
