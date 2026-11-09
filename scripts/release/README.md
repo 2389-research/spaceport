@@ -145,9 +145,12 @@ notary service, and these environment variables:
 
 Test P12 import with Apple's `security` tool before using hosted signing;
 an OpenSSL roundtrip alone does not establish Apple importer compatibility.
-This preview change has not verified the supplied P12 through a temporary
-keychain or a hosted run. Local installed-identity mode reuses the existing
-certificate and does not export or import a P12.
+The local `20261109.1` preview imported the supplied matching P12 into a
+temporary keychain, signed successfully and restored the keychain search list;
+the login keychain stayed locked. This does not qualify a hosted run. See the
+[artifact evidence](../../docs/spaceport/evidence/t12-macos-signed-preview.md).
+Local installed-identity mode reuses the existing certificate and does not
+export or import a P12; it requires access to that keychain's signing key.
 
 Use a trusted disposable signing runner and trusted binaries. Do not use shell
 tracing around secret setup. The script uses a private temporary directory and
