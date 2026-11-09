@@ -33,47 +33,6 @@ pane-menu-move-heading = Move pane to
 pane-menu-new-tab = New Tab
 pane-menu-new-workspace = New Workspace
 
-# Moving the pane to another device. $device is a device's name.
-pane-menu-carry-session-only = Agent Session Only
-pane-menu-carry-new-worktree = New Worktree
-pane-menu-carry-checking = Checking the agent session and home directory…
-pane-menu-carry-failed = Moving the pane failed: { $error }
-# $destination names the device and place the pane moved to.
-pane-menu-carry-moved = Moved to { $destination }
-# $first is the first warning, from teleport.ftl's teleport-warning-*.
-pane-menu-carry-moved-warnings = { $count ->
-        [one] Moved to { $destination } with a warning: { $first }
-       *[other] Moved to { $destination } with { $count } warnings: { $first }
-    }
-pane-menu-carry-title = Move pane to { $destination }
-pane-menu-carry-reviewing = Checking the destination and the pane's program…
-pane-menu-carry-move = Move
-# $directory is the agent's working directory on the other device.
-pane-menu-carry-session-cwd = New workspace in { $directory }
-pane-menu-carry-session-note = Only the agent session moves. No files are copied.
-pane-menu-carry-closes = The pane here closes once it runs there.
-pane-menu-carry-branch = Branch { $branch }, in a new worktree
-pane-menu-carry-branch-in-use = A new branch from { $branch }, which is in use there
-pane-menu-carry-branch-commit = A new branch from this commit
-# $checkout is a workspace on the other device.
-pane-menu-carry-tab-fast-forward = A new tab in { $checkout }, fast-forwarded to this commit first
-pane-menu-carry-tab = A new tab in { $checkout }
-# $repository is the repository's name.
-pane-menu-carry-into = Into { $repository }
-# What the checkout holds that the move copies.
-pane-menu-carry-state = { $unpushed ->
-        [one] { $unpushed } unpushed commit
-       *[other] { $unpushed } unpushed commits
-    }, { $changed ->
-        [one] { $changed } changed file
-       *[other] { $changed } changed files
-    }, { $untracked } untracked
-pane-menu-carry-copied = The changes are copied: this checkout keeps them. The pane here closes once it runs there.
-pane-menu-carry-starting = Starting
-pane-menu-carry-keeps-going = Closing this menu does not stop the move.
-pane-menu-carry-moving = Moving…
-pane-menu-carry-close = Close
-
 # The processes under the pane.
 pane-menu-processes-title = Processes
 # $pane is the pane's custom label.

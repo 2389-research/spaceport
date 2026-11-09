@@ -6,10 +6,10 @@ use std::sync::Arc;
 
 pub(crate) mod close_option;
 mod en_xa;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+mod excluded_carry;
 mod menu_width;
 // Moves run POSIX host scripts and are never offered on other clients.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
-mod carry;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod moves;
 

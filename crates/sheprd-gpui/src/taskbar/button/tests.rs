@@ -63,7 +63,7 @@ fn progress_maps_to_the_taskbar_bar() {
         Bar::Value(250)
     );
     assert_eq!(
-        Bar::from_progress(Some(Progress::Working(2.))),
+        Bar::from_progress(Some(Progress::Fraction(2.))),
         Bar::Value(1000)
     );
     assert_eq!(

@@ -91,48 +91,6 @@ pub enum Error {
     DevelopmentSession,
     #[error("The workspace is no longer open on its host")]
     WorkspaceGone,
-    #[error("The pane is no longer open on its host")]
-    PaneGone,
-    /// Carrying a pane needs the same repository, matched by a shared
-    /// remote, already open on the destination.
-    #[error("The repository is not open on {host}")]
-    RepositoryNotOpen { host: String },
-    #[error("The checkout here has new commits since the review; review the move again")]
-    SourceMoved,
-    /// The pane works in `path`, outside its space's checkout, so carrying
-    /// that checkout would not carry what the pane uses.
-    #[error("The pane is in {path}, outside its space's checkout; change back into it first")]
-    OutsideCheckout { path: String },
-    // keep-sorted start
-    #[error(
-        "The directory {path} is missing on the destination; create it there before moving (no files are copied)"
-    )]
-    DestinationDirectoryMissing { path: String },
-    #[error(
-        "The pane is in {path}, outside its host's home directory; only home-relative directories can move"
-    )]
-    OutsideHome { path: String },
-    #[error("The agent is working. Move it once it is idle.")]
-    SessionAgentWorking,
-    #[error("The pane's working directory could not be read")]
-    SessionCwdUnavailable,
-    /// `pane run` was accepted, but the agent never became the destination
-    /// pane's foreground program (e.g. its `cd` failed there).
-    #[error("{agent} did not start on {host}; the pane here keeps running")]
-    SessionNotStarted { agent: &'static str, host: String },
-    #[error("{agent} is not installed on {host}; a session-only move needs the same agent")]
-    SessionProgramMissing { agent: &'static str, host: String },
-    #[error("Only an agent with a transferable session can move without a Git repository")]
-    SessionRequired,
-    #[error("{cause}; the new workspace {workspace_id} could not be closed")]
-    SessionWorkspaceLeftBehind {
-        workspace_id: String,
-        #[source]
-        cause: Box<Error>,
-    },
-    #[error("The pane's session or directory changed since the review; review the move again")]
-    SourceSessionChanged,
-    // keep-sorted end
     #[error("The worker running this move stopped before it finished")]
     WorkerStopped,
     #[error("The space is no longer open on {host}")]

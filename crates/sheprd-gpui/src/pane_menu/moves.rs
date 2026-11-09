@@ -46,7 +46,7 @@ impl PaneMenu {
     /// How many rows the current page lists.
     pub(super) fn rows(&self, page: Option<Page>) -> usize {
         if page == Some(Page::MovePane) {
-            self.target.destinations().len() + self.target.devices.len()
+            self.target.destinations().len()
         } else {
             self.actions().len()
         }
@@ -111,28 +111,6 @@ impl SheprdWindow {
 
     /// Shows the move picker in place of the menu's rows.
     pub(super) fn open_move_picker(&mut self, cx: &mut Context<Self>) {
-        let availability = self
-            .menu
-            .pane
-            .as_ref()
-            .filter(|pane| {
-                pane.target.repository.is_none()
-                    && !pane.target.devices.is_empty()
-                    && pane.carry_availability.is_none()
-            })
-            .and_then(|pane| {
-                let seen =
-                    super::carry::PaneState::of(self.live.snapshot.as_deref()?, &pane.target.pane);
-                Some(super::carry::Availability::check(
-                    self.carry_origin(&pane.target).ok()?,
-                    seen,
-                ))
-            });
-        if let Some(availability) = availability
-            && let Some(pane) = &mut self.menu.pane
-        {
-            pane.carry_availability = Some(availability);
-        }
         if let Some(pane) = &mut self.menu.pane {
             pane.selected = None;
             pane.error = None;
@@ -238,11 +216,8 @@ impl SheprdWindow {
         let Some(index) = pane.selected else {
             return;
         };
-        let mut here = pane.target.destinations();
-        if index < here.len() {
-            self.move_pane(here.swap_remove(index).destination, window, cx);
-        } else if let Some(device) = pane.target.devices.get(index - here.len()).cloned() {
-            self.review_carry(&device, cx);
+        if let Some(choice) = pane.target.destinations().get(index) {
+            self.move_pane(choice.destination.clone(), window, cx);
         }
     }
 
@@ -300,9 +275,7 @@ impl SheprdWindow {
                     }
                 }))
         };
-        let here = pane.target.destinations();
-        let local = here.len();
-        for (index, choice) in here.into_iter().enumerate() {
+        for (index, choice) in pane.target.destinations().into_iter().enumerate() {
             let destination = choice.destination;
             body = body.child(
                 row(index)
@@ -316,37 +289,6 @@ impl SheprdWindow {
                             return;
                         }
                         this.move_pane(destination.clone(), window, cx)
-                    })),
-            );
-        }
-        // A working agent cannot leave yet; its rows say so when chosen.
-        let busy = self
-            .live
-            .snapshot
-            .as_deref()
-            .is_some_and(|snapshot| super::carry::busy(snapshot, &pane.target.pane));
-        for (offset, device) in pane.target.devices.iter().enumerate() {
-            let index = local + offset;
-            let chosen = device.clone();
-            body = body.child(
-                row(index)
-                    .when(
-                        busy || pane
-                            .carry_availability
-                            .as_ref()
-                            .is_some_and(super::carry::Availability::muted),
-                        |row| row.text_color(rgb(self.theme.muted)),
-                    )
-                    .child(destination_label(
-                        index,
-                        Some(device.label.clone()),
-                        device.place.clone(),
-                    ))
-                    .on_click(cx.listener(move |this, event: &ClickEvent, _, cx| {
-                        if event.click_count() > 1 {
-                            return;
-                        }
-                        this.review_carry(&chosen, cx)
                     })),
             );
         }

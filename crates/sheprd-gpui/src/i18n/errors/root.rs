@@ -114,7 +114,6 @@ impl Localize for Error {
             #[cfg(target_os = "macos")]
             Self::PageStack => fl!("error-page-stack"),
             Self::Palette(error) => error.localize(),
-            Self::PaneCarry(error) => error.localize(),
             Self::PaneImageDecode(_) => fl!("error-pane-image-decode"),
             Self::PaneImageLimit => fl!("error-pane-image-limit"),
             Self::PaneMove(error) => error.localize(),

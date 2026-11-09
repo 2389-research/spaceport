@@ -605,8 +605,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         navigations: Default::default(),
         worktree_script: None,
         wsl_paste: None,
-        target_follow: None,
-        pane_carry: None,
         selection: None,
         selection_follow: Default::default(),
         find: None,

@@ -40,49 +40,6 @@ impl Localize for Error {
             Self::UnsupportedHost => fl!("error-remote-teleport-unsupported-host"),
             Self::DevelopmentSession => fl!("error-remote-teleport-development-session"),
             Self::WorkspaceGone => fl!("error-remote-teleport-workspace-gone"),
-            Self::PaneGone => fl!("error-remote-teleport-pane-gone"),
-            Self::RepositoryNotOpen { host } => {
-                fl!(
-                    "error-remote-teleport-repository-not-open",
-                    host = host.as_str()
-                )
-            }
-            Self::SourceMoved => fl!("error-remote-teleport-source-moved"),
-            Self::OutsideCheckout { path } => {
-                fl!(
-                    "error-remote-teleport-outside-checkout",
-                    path = path.as_str()
-                )
-            }
-            Self::DestinationDirectoryMissing { path } => fl!(
-                "error-remote-teleport-destination-directory-missing",
-                path = path.as_str()
-            ),
-            Self::OutsideHome { path } => {
-                fl!("error-remote-teleport-outside-home", path = path.as_str())
-            }
-            Self::SessionAgentWorking => fl!("error-remote-teleport-session-agent-working"),
-            Self::SessionCwdUnavailable => fl!("error-remote-teleport-session-cwd-unavailable"),
-            Self::SessionNotStarted { agent, host } => fl!(
-                "error-remote-teleport-session-not-started",
-                agent = *agent,
-                host = host.as_str()
-            ),
-            Self::SessionProgramMissing { agent, host } => fl!(
-                "error-remote-teleport-session-program-missing",
-                agent = *agent,
-                host = host.as_str()
-            ),
-            Self::SessionRequired => fl!("error-remote-teleport-session-required"),
-            Self::SessionWorkspaceLeftBehind {
-                workspace_id,
-                cause,
-            } => fl!(
-                "error-remote-teleport-session-workspace-left-behind",
-                error = cause.localize(),
-                workspace = workspace_id.as_str()
-            ),
-            Self::SourceSessionChanged => fl!("error-remote-teleport-source-session-changed"),
             Self::WorkerStopped => fl!("error-remote-teleport-worker-stopped"),
             Self::SpaceGone { host } => {
                 fl!("error-remote-teleport-space-gone", host = host.as_str())

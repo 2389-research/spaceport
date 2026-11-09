@@ -14,9 +14,6 @@ pub(crate) enum Page {
     /// The Linux window's application menu, from the native menu definitions.
     Application,
     AppUpdate,
-    /// Reviewing, then following, a move of the pane menu's pane to another
-    /// device.
-    CarryPane,
     ConfirmClose,
     CoreWorkspaceActions,
     CoreWorkspaceCreate,
@@ -130,7 +127,6 @@ impl Page {
                 | Self::Pane
                 | Self::RenamePane
                 | Self::MovePane
-                | Self::CarryPane
                 | Self::PaneProcesses
                 | Self::KillProcesses
                 | Self::Host
@@ -151,7 +147,6 @@ impl Page {
             Self::Pane
                 | Self::RenamePane
                 | Self::MovePane
-                | Self::CarryPane
                 | Self::PaneProcesses
                 | Self::KillProcesses
         )

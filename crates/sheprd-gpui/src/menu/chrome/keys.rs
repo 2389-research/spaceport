@@ -71,10 +71,6 @@ impl SheprdWindow {
             self.git_key(event, window, cx);
             return;
         }
-        if self.menu.page == Some(Page::CarryPane) {
-            self.carry_key(event, window, cx);
-            return;
-        }
         if self.menu.page == Some(Page::DeviceTheme) {
             self.device_theme_key(event, window, cx);
             return;

@@ -32,7 +32,6 @@ impl Page {
             Self::AgentSkill => fl!("menu-page-install-the-agent-skill"),
             Self::Application => fl!("menu-page-menu"),
             Self::AppUpdate | Self::Update => fl!("menu-page-update"),
-            Self::CarryPane => fl!("menu-page-move-pane-to-another-device"),
             Self::CoreWorkspaceActions => fl!("core-workspace-actions"),
             Self::CoreWorkspaceCreate => fl!("menu-page-new-workspace"),
             Self::CoreWorkspaceDelete => fl!("core-workspace-delete-title"),

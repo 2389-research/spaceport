@@ -438,7 +438,6 @@ impl SheprdWindow {
                         | Page::Pane
                         | Page::RenamePane
                         | Page::MovePane
-                        | Page::CarryPane
                         | Page::PaneProcesses
                         | Page::KillProcesses
                         | Page::Host
@@ -678,8 +677,6 @@ impl SheprdWindow {
             Page::CoreWorkspaceCreate | Page::CoreWorkspaceDelete | Page::CoreWorkspaceRename
         ) {
             panel = panel.child(self.render_core_workspace_dialog(cx));
-        } else if page == Page::CarryPane {
-            panel = panel.child(self.render_carry(cx));
         } else if page == Page::Git {
             panel = panel.child(self.render_git_menu(cx));
         } else if page == Page::GitCommit {

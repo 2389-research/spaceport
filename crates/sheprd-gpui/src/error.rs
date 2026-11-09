@@ -184,8 +184,6 @@ pub enum Error {
     PageStack,
     #[error(transparent)]
     Palette(#[from] crate::palette::Error),
-    #[error(transparent)]
-    PaneCarry(#[from] crate::pane_menu::carry::Refusal),
     #[error("Could not decode an image a pane placed.")]
     PaneImageDecode(#[source] image::ImageError),
     #[error("An image a pane placed exceeds the decoded size limit.")]

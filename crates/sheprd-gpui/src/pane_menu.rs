@@ -9,7 +9,6 @@ use gpui::{prelude::*, *};
 use serde_json::{Value, json};
 use sheprd_client::{Method, protocol::ClientShellSnapshot};
 
-pub(crate) mod carry;
 mod moves;
 mod processes;
 
@@ -34,10 +33,6 @@ struct Target {
     right_click_passthrough: bool,
     /// Existing tabs, and new tabs in other workspaces, the pane can move to.
     choices: Vec<crate::pane_move::Choice>,
-    /// The repository holding the pane, which another device must have open.
-    repository: Option<carry::PaneRepository>,
-    /// Other devices the pane can move to, listed after `choices`.
-    devices: Vec<carry::Device>,
 }
 
 impl Target {
@@ -65,8 +60,6 @@ impl Target {
             focused: focused.cloned(),
             right_click_passthrough: pane.right_click_passthrough,
             choices: crate::pane_move::choices(snapshot, &pane.tab_id),
-            repository: carry::PaneRepository::of(snapshot, &pane.workspace_id),
-            devices: Vec::new(),
         };
         target.validate(snapshot).ok()?;
         Some(target)
@@ -201,10 +194,7 @@ impl PaneMenu {
             .filter(|action| match action {
                 Action::Swap => self.target.focused.is_some(),
                 Action::MoveToNewTab | Action::MoveToNewWorkspace => self.movable,
-                Action::MoveTo => {
-                    self.movable
-                        && !(self.target.choices.is_empty() && self.target.devices.is_empty())
-                }
+                Action::MoveTo => self.movable && !self.target.choices.is_empty(),
                 Action::Processes => self.daemon.is_some(),
                 _ => true,
             })
@@ -221,7 +211,6 @@ pub(super) struct PaneMenu {
     /// The daemon to ask for the pane's processes, when they run here.
     daemon: Option<crate::processes::Daemon>,
     processes: Option<processes::PaneProcesses>,
-    carry_availability: Option<carry::Availability>,
     /// Whether this endpoint's host can run `herdr pane move`.
     movable: bool,
     /// The move in flight, which keeps the menu from starting another.
@@ -265,7 +254,7 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(mut target) = self
+        let Some(target) = self
             .live
             .snapshot
             .as_ref()
@@ -273,7 +262,6 @@ impl SheprdWindow {
         else {
             return;
         };
-        target.devices = self.carry_devices(target.repository.as_ref());
         if !self.open_menu(window, cx) {
             return;
         }
@@ -290,7 +278,6 @@ impl SheprdWindow {
             error: None,
             daemon,
             processes: None,
-            carry_availability: None,
             movable,
             moving: None,
             scroll: ScrollHandle::new(),

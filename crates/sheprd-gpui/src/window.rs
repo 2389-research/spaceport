@@ -53,7 +53,6 @@ mod tab_float;
 mod tab_ghost;
 mod tab_strip;
 mod tab_tear;
-pub(crate) mod target_follow;
 mod toasts;
 mod transfers;
 pub(crate) mod wsl_drop;
@@ -253,8 +252,6 @@ pub(crate) struct SheprdWindow {
     /// The activity bar's Overview page.
     pub(crate) overview: crate::overview::Page,
     pub(crate) painter: std::rc::Rc<std::cell::RefCell<terminal_painter::TerminalPainter>>,
-    /// A pane moving to another device; a move outlives its menu.
-    pub(crate) pane_carry: Option<crate::pane_menu::carry::Carry>,
     pub(crate) pending_images: Vec<images::PendingImage>,
     pub(crate) pending_input: pending_input::PendingInput,
     pub(crate) pending_navigation: Option<OwnedNavigationTarget>,
@@ -340,8 +337,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) system_load: crate::system_load::SystemLoad,
     /// A press on a tab that may lift it for reordering.
     pub(crate) tab_drag: Option<tab_drag::TabDrag>,
-    /// The exact destination of a completed operation, until it is focused.
-    pub(crate) target_follow: Option<target_follow::Follow>,
     pub(crate) terminal_mouse: Option<mouse::Gesture>,
     pub(crate) theme: config::Theme,
     /// The system appearance `theme` was loaded for, which is what Herdr is
@@ -596,8 +591,6 @@ impl SheprdWindow {
         self.cancel_stale_image();
         self.poll_file_transfer(cx);
         self.update_workspace_dialog(window, cx);
-        self.follow_target(cx);
-        self.poll_carry(window, cx);
         crate::link::follow::poll(self, window, cx);
         #[cfg(windows)]
         crate::jump_list::JumpList::observe(window.window_handle().window_id(), self, cx);

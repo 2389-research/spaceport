@@ -59,7 +59,7 @@ impl Bar {
         match progress {
             None => Self::None,
             Some(Progress::Busy) => Self::Busy,
-            Some(Progress::Fraction(done) | Progress::Working(done)) => {
+            Some(Progress::Fraction(done)) => {
                 Self::Value((f64::from(done.clamp(0., 1.)) * Self::TOTAL as f64).round() as u64)
             }
         }

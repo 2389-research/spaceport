@@ -10,9 +10,6 @@ pub(crate) enum Progress {
     Busy,
     /// A settled fraction.
     Fraction(f32),
-    /// A fraction whose current part is still running, so the fill pulses
-    /// and the bar never looks stalled during one long part.
-    Working(f32),
 }
 
 /// A bar selectable as `name`, with its fill as `{name}-fill`.
@@ -24,14 +21,6 @@ pub(crate) fn bar(name: &'static str, progress: Progress, accent: Hsla, track: H
         .bg(accent);
     let fill = match progress {
         Progress::Fraction(fraction) => fill.w(relative(fraction.clamp(0., 1.))).into_any_element(),
-        Progress::Working(fraction) => fill
-            .w(relative(fraction.clamp(0., 1.)))
-            .with_animation(
-                ElementId::Name(format!("{name}-pulse").into()),
-                Animation::new(crate::motion::duration(Duration::from_millis(1600))).repeat(),
-                |fill, delta| fill.opacity(0.7 + 0.3 * (delta * std::f32::consts::TAU).cos()),
-            )
-            .into_any_element(),
         Progress::Busy => fill
             .absolute()
             .w(relative(0.3))

@@ -301,6 +301,7 @@
         "evidence/t04-worktree-source-landing-removal.md",
         "evidence/t04-fan-out-removal.md",
         "evidence/t04-workspace-dispatch-removal.md",
+        "evidence/t04-pane-carry-removal.md",
         "evidence/t04-px0-editor-dependency.md",
         "evidence/t04-px0-editor-removal.md",
         "evidence/t05-core-default-observation.md"
