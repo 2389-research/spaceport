@@ -1,0 +1,121 @@
+{
+  "base_commit": "d96d7d9a6",
+  "scope": "Local source/dependency/lint observations; no backend or desktop parity claim",
+  "dependency_delta": {
+    "removed_packages": [
+      [
+        "aes",
+        "0.9.3"
+      ],
+      [
+        "block-padding",
+        "0.4.2"
+      ],
+      [
+        "cbc",
+        "0.2.1"
+      ],
+      [
+        "cipher",
+        "0.5.2"
+      ],
+      [
+        "cmov",
+        "0.5.4"
+      ],
+      [
+        "cpubits",
+        "0.1.1"
+      ],
+      [
+        "ctutils",
+        "0.4.6"
+      ],
+      [
+        "fallible-iterator",
+        "0.3.0"
+      ],
+      [
+        "fallible-streaming-iterator",
+        "0.1.9"
+      ],
+      [
+        "hashlink",
+        "0.12.2"
+      ],
+      [
+        "hmac",
+        "0.13.0"
+      ],
+      [
+        "inout",
+        "0.2.2"
+      ],
+      [
+        "libsqlite3-sys",
+        "0.38.2"
+      ],
+      [
+        "pbkdf2",
+        "0.13.0"
+      ],
+      [
+        "rsqlite-vfs",
+        "0.1.1"
+      ],
+      [
+        "rusqlite",
+        "0.40.2"
+      ],
+      [
+        "sha1",
+        "0.11.0"
+      ],
+      [
+        "sqlite-wasm-rs",
+        "0.5.5"
+      ],
+      [
+        "vcpkg",
+        "0.2.15"
+      ]
+    ],
+    "added_packages": []
+  },
+  "display_metadata": {
+    "source_revision": "d96d7d9a6",
+    "capture_revision": "d5c4bcb45",
+    "oracle": "Original executable registry::all().map(|provider| provider.service().meta()) ordered five-field capture; no fetch invoked",
+    "fixture": "crates/sheprd-usage/src/tests/fixtures/provider_metadata.json",
+    "fixture_sha256": "8490c3630180939735ad3b2074dc6b03abbe9d93c95880331e1995877556bd9a",
+    "entries": 87,
+    "comparison_test": "tests::display_contract::ordered_metadata_matches_original_runtime_getters",
+    "test_log": "/tmp/provider-review-green-usage.log",
+    "corrected_ids": [
+      "qwencloud",
+      "gemini",
+      "antigravity",
+      "typesafe"
+    ],
+    "previous_claim_retracted": "Prior regex extraction/comparison shared the same blind spots: multiline calls with trailing commas and constant arguments. It falsely reported equality and missed four links. The permanent test now compares actual getters to independently captured original getter data.",
+    "identical_ordered_display_metadata": true,
+    "result": "passed through permanent Rust runtime-getter comparison"
+  },
+  "strict_app_clippy": {
+    "baseline_log": "/tmp/spaceport-final-clippy.jsonl",
+    "tested_log": "/tmp/provider-lint-app.jsonl",
+    "baseline_diagnostics": 253,
+    "tested_diagnostics": 253,
+    "new_groups": [],
+    "removed_groups": [],
+    "tested_commit": "cb9b6a97c44a10b69a0c340f0a3a95600594abf3"
+  },
+  "initial_code_commit": "cb9b6a97c44a10b69a0c340f0a3a95600594abf3",
+  "code_commit": "2d2f11a0b794144687f0d7f9b9801a914f191a99",
+  "review": {
+    "result": "approved",
+    "scope": "Bounded provider removal and metadata/shell fixes; not native/runtime/release parity",
+    "critical_findings": [],
+    "important_findings": []
+  }
+}

@@ -361,7 +361,8 @@
         "evidence/t04-native-browser-engine-removal.md",
         "evidence/t04-combined-ui-regressions.md",
         "evidence/t01-t04-pseudo-locale-fixtures.md",
-        "evidence/integrated-removals-0fd548118.md"
+        "evidence/integrated-removals-0fd548118.md",
+        "evidence/t04-provider-implementation-removal.md"
       ],
       "must_close_gaps": [
         "G-LINK"
@@ -553,7 +554,8 @@
         "evidence/t04-usage-tail-dependency.md",
         "evidence/t08-devices-overview-boundary.md",
         "evidence/t08-resource-dashboard-removal.md",
-        "evidence/integrated-removals-0fd548118.md"
+        "evidence/integrated-removals-0fd548118.md",
+        "evidence/t04-provider-implementation-removal.md"
       ],
       "must_close_gaps": [
         "G-OBS"

@@ -218,7 +218,7 @@
       "sources": [
         "S09"
       ],
-      "constraint": "Preserve only reported values and generic primitives independently needed by kept features.",
+      "constraint": "Compiled provider fetch/probe/sign-in graph removed; passive metadata/report models and bounded port-inspection shell remain. Authoritative usage parity is still gated on G-OBS. Generic credentials-crate tail remains a separate extraction. See evidence/t04-provider-implementation-removal.md.",
       "audit_status": "in_progress"
     },
     {
