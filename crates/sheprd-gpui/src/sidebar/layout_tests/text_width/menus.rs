@@ -21,46 +21,17 @@ pub(super) fn check_workspace_menu_rows(
         assert!(view.read(cx).menu.page == Some(crate::menu::Page::Workspace));
         assert_eq!(view.read(cx).live.snapshot.as_deref(), Some(before));
     });
-    assert!(cx.debug_bounds("workspace-menu-Close group").is_some());
+    assert!(cx.debug_bounds("workspace-menu-Close group").is_none());
     assert!(cx.debug_bounds("workspace-menu-Open worktree...").is_some());
-    // Tiles stack a 20px icon over a centred caption.
-    for (label, tile, icon, text) in [
-        (
-            "Rename",
-            "workspace-menu-Rename",
-            "workspace-menu-icon-Rename",
-            "workspace-menu-label-Rename",
-        ),
-        (
-            "Close group",
-            "workspace-menu-Close group",
-            "workspace-menu-icon-Close group",
-            "workspace-menu-label-Close group",
-        ),
-    ] {
-        let tile = cx.debug_bounds(tile).unwrap();
-        let icon = cx.debug_bounds(icon).unwrap();
-        let text = cx.debug_bounds(text).unwrap();
-        assert_eq!(icon.size, size(px(20.), px(20.)), "{label}");
-        assert!(
-            icon.bottom() <= text.top(),
-            "{label}: icon must sit above caption"
-        );
-        assert!(
-            (icon.center().x - tile.center().x).abs() <= px(1.),
-            "{label}"
-        );
-        assert!(
-            tile.contains(&text.origin) && text.right() <= tile.right(),
-            "{label}"
-        );
-    }
-    // The two tiles share one top edge, in grid order.
+    // The retained Rename tile stacks its icon over a centered caption.
     let rename = cx.debug_bounds("workspace-menu-Rename").unwrap();
-    let close = cx.debug_bounds("workspace-menu-Close group").unwrap();
-    assert_eq!(rename.top(), close.top());
-    assert!(rename.right() <= close.left());
-    // Rarer actions lead with a 16px icon, in the delete strip's column.
+    let rename_icon = cx.debug_bounds("workspace-menu-icon-Rename").unwrap();
+    let rename_text = cx.debug_bounds("workspace-menu-label-Rename").unwrap();
+    assert_eq!(rename_icon.size, size(px(20.), px(20.)));
+    assert!(rename_icon.bottom() <= rename_text.top());
+    assert!((rename_icon.center().x - rename.center().x).abs() <= px(1.));
+    assert!(rename.contains(&rename_text.origin) && rename_text.right() <= rename.right());
+    // The worktree row leads with a smaller icon beneath the Rename tile.
     let label = "workspace-menu-Open worktree...";
     let row = cx.debug_bounds(label).unwrap();
     let icon = cx
@@ -79,7 +50,7 @@ pub(super) fn check_workspace_menu_rows(
         (icon.center().y - row.center().y).abs() <= px(1.),
         "{label}"
     );
-    assert!(close.bottom() <= row.top(), "rows sit below the tiles");
+    assert!(rename.bottom() <= row.top(), "rows sit below the tile");
     crate::menu::workspace_tests::check_menu_interactions(view, cx);
     parent
 }

@@ -312,6 +312,7 @@
         "evidence/t04-open-checkout-link-removal.md",
         "evidence/t04-cli-folder-open-removal.md",
         "evidence/t04-integrated-route-cuts.md",
+        "evidence/t04-integrated-sidebar-regressions.md",
         "evidence/t04-palette-clone-removal.md",
         "evidence/t04-git-read-close-dependency.md",
         "evidence/t04-github-account-entry-cut.md",
