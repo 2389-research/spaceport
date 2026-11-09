@@ -1,22 +1,17 @@
-//! Working-tree status and Git write operations for local checkouts.
+//! Read-only working-tree status for local checkouts.
 //!
 //! One worker thread owns every child process, so the UI thread only queues a
 //! request and reads the result on a later tick. The focused checkout gets a
 //! counted status; every other listed workspace gets a cheaper dirty probe,
 //! round-robin and rate limited, so the sidebar can mark uncommitted work
 //! without a process per row per frame. When the sidebar shows local change
-//! counts, the probe counts lines instead, on the same schedule. Commit, push and pull request creation
-//! are explicit user actions and are never retried or replayed automatically.
+//! counts, the probe counts lines instead, on the same schedule.
 mod ahead;
 mod error;
 
 pub use ahead::Ahead;
 pub use error::Error;
-use secrecy::SecretString;
-use sheprd_github::{
-    Tokens,
-    pull_request::{Input, base_repository, clean, local_checkout, run, run_bytes},
-};
+use sheprd_github::pull_request::{Input, clean, local_checkout, run, run_bytes};
 use std::{
     collections::VecDeque,
     process::Command,
@@ -42,23 +37,9 @@ const PROBE_BACKOFF: Duration = Duration::from_secs(300);
 const SCAN_INTERVAL: Duration = Duration::from_secs(1);
 const CACHE_LIMIT: usize = 128;
 const STATUS_TIMEOUT: Duration = Duration::from_secs(15);
-/// Signing a commit or authenticating a push can wait on a hardware key.
-const OPERATION_TIMEOUT: Duration = Duration::from_secs(180);
-const API_TIMEOUT: Duration = Duration::from_secs(30);
-const MESSAGE_LIMIT: usize = 4096;
-const TITLE_LIMIT: usize = 256;
 
-const REPOSITORY_QUERY: &str = r#"query($owner: String!, $repo: String!) {
-  repository(owner: $owner, name: $repo) { id defaultBranchRef { name } }
-}"#;
-const CREATE_MUTATION: &str = r#"mutation($repository: ID!, $base: String!, $head: String!, $title: String!, $body: String!) {
-  createPullRequest(input: {repositoryId: $repository, baseRefName: $base, headRefName: $head, title: $title, body: $body}) {
-    pullRequest { number url }
-  }
-}"#;
-
-/// Tracked line changes against HEAD plus the untracked entries `git add -A`
-/// would also stage, so the chrome never understates what a commit includes.
+/// Tracked line changes against HEAD plus untracked entries, so the sidebar
+/// can show both kinds of local changes.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Status {
     pub additions: u64,
@@ -72,31 +53,6 @@ impl Status {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Action {
-    Commit(String),
-    Push,
-    CreatePullRequest,
-}
-
-impl Action {
-    pub fn running_label(&self) -> &'static str {
-        match self {
-            Self::Commit(_) => "Committing...",
-            Self::Push => "Pushing...",
-            Self::CreatePullRequest => "Creating pull request...",
-        }
-    }
-}
-
-/// What an action achieved, in the user's terms. `url` is offered as a link
-/// rather than opened by the worker.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Outcome {
-    pub message: String,
-    pub url: Option<String>,
-}
-
 enum Job {
     Status,
     /// Is there anything to commit? Cheaper than counting lines, and all a
@@ -106,7 +62,6 @@ enum Job {
     Counts,
     /// A checkout's commits beyond its default branch.
     Ahead,
-    Run(Action, Option<Tokens>),
 }
 
 enum Completion {
@@ -114,7 +69,6 @@ enum Completion {
     Dirty(crate::Result<bool>),
     Counts(crate::Result<Counted>),
     Ahead(crate::Result<Option<Ahead>>),
-    Action(crate::Result<Outcome>),
 }
 
 /// A listed checkout's line counts against HEAD, and whether it has anything
@@ -167,9 +121,7 @@ pub struct Git {
     input: Option<Input>,
     status: Option<Status>,
     due: Option<Instant>,
-    running: Option<Action>,
     error: Option<String>,
-    outcome: Option<Outcome>,
     probes: Vec<Probe>,
     /// Listed checkouts are counted rather than only probed for dirt.
     counted: bool,
@@ -224,16 +176,8 @@ impl Git {
         self.status
     }
 
-    pub fn running(&self) -> Option<&Action> {
-        self.running.as_ref()
-    }
-
     pub fn error(&self) -> Option<&str> {
         self.error.as_deref()
-    }
-
-    pub fn outcome(&self) -> Option<&Outcome> {
-        self.outcome.as_ref()
     }
 
     /// Follow the focused checkout and schedule the next read-only refresh.
@@ -242,12 +186,9 @@ impl Git {
     pub fn track(&mut self, input: Option<Input>, refresh: bool, now: Instant) -> bool {
         let mut changed = false;
         if self.input != input {
-            // A running action keeps running: its result still belongs to the
-            // checkout it was started for and is reported against that input.
             self.input = input;
             self.status = None;
             self.error = None;
-            self.outcome = None;
             self.due = Some(now);
             changed = true;
         }
@@ -405,27 +346,6 @@ impl Git {
         self.ahead.get(self.input.as_ref()?)
     }
 
-    /// Queue an explicit user action against the tracked checkout.
-    pub fn start(&mut self, action: Action, token: Option<Tokens>) -> crate::Result<()> {
-        if self.running.is_some() {
-            return Err(Error::Busy.into());
-        }
-        let input = self.input.clone().ok_or(Error::NoCheckout)?;
-        if let Action::Commit(message) = &action
-            && (message.trim().is_empty() || message.len() > MESSAGE_LIMIT)
-        {
-            return Err(Error::CommitMessage.into());
-        }
-        if matches!(action, Action::CreatePullRequest) && token.is_none() {
-            return Err(sheprd_github::Error::Authentication.into());
-        }
-        self.error = None;
-        self.outcome = None;
-        self.running = Some(action.clone());
-        self.waiting = Some((input, Job::Run(action, token)));
-        Ok(())
-    }
-
     pub fn poll(&mut self, now: Instant) -> bool {
         let mut changed = false;
         if let Some(worker) = &self.worker {
@@ -444,9 +364,7 @@ impl Git {
                         }
                         Completion::Status(Err(error)) => {
                             self.status = None;
-                            if self.running.is_none() {
-                                self.error = Some(error.to_string());
-                            }
+                            self.error = Some(error.to_string());
                             self.due = Some(now + ERROR_BACKOFF);
                         }
                         Completion::Dirty(result) => {
@@ -465,25 +383,12 @@ impl Git {
                             };
                             self.ahead.record(input, result.ok().flatten(), now + wait);
                         }
-                        Completion::Action(result) => {
-                            self.running = None;
-                            match result {
-                                Ok(outcome) => self.outcome = Some(outcome),
-                                Err(error) => self.error = Some(error.to_string()),
-                            }
-                            // A commit or push changed the tree it reported on.
-                            if self.input.as_ref() == Some(&input) {
-                                self.due = Some(now);
-                            }
-                            self.ahead.expire(&input, now);
-                        }
                     }
                 }
                 Err(mpsc::TryRecvError::Disconnected) => {
                     self.busy = false;
                     self.waiting = None;
                     self.worker = None;
-                    self.running = None;
                     self.error = Some(Error::Worker.to_string());
                     self.due = Some(now + ERROR_BACKOFF);
                     return true;
@@ -528,7 +433,6 @@ impl Git {
                     }) {
                     Ok(_) => self.worker = Some(Worker { requests, results }),
                     Err(source) => {
-                        self.running = None;
                         self.error = Some(
                             Error::Process {
                                 operation: "start the Git worker",
@@ -550,7 +454,6 @@ impl Git {
                     }
                     Err(mpsc::TrySendError::Disconnected(_)) => {
                         self.worker = None;
-                        self.running = None;
                         self.error = Some(Error::Worker.to_string());
                         self.due = Some(now + ERROR_BACKOFF);
                         changed = true;
@@ -572,10 +475,6 @@ fn execute(input: &Input, job: Job, cancelled: &impl Fn() -> bool) -> Completion
             Completion::Counts(counted(input, Instant::now() + STATUS_TIMEOUT, cancelled))
         }
         Job::Ahead => Completion::Ahead(ahead::read(input, STATUS_TIMEOUT, cancelled)),
-        // Writes are never cancelled: killing `git commit` or `git push`
-        // halfway through can leave an index lock or a half-written ref behind,
-        // so only their own deadline ends them.
-        Job::Run(action, token) => Completion::Action(perform(input, action, token, &|| false)),
     }
 }
 
@@ -683,168 +582,6 @@ pub fn parse_numstat(text: &str) -> Status {
         status.deletions = status.deletions.saturating_add(deletions.unwrap_or(0));
     }
     status
-}
-
-fn perform(
-    input: &Input,
-    action: Action,
-    token: Option<Tokens>,
-    cancelled: &impl Fn() -> bool,
-) -> crate::Result<Outcome> {
-    let deadline = Instant::now() + OPERATION_TIMEOUT;
-    let checkout = local_checkout(input, deadline, cancelled)?;
-    match action {
-        Action::Commit(message) => commit(&checkout, &message, deadline, cancelled),
-        Action::Push => push(&checkout, &input.branch, deadline, cancelled),
-        Action::CreatePullRequest => {
-            let token = token.ok_or(sheprd_github::Error::Authentication)?;
-            create_pull_request(&checkout, &input.branch, &token, deadline, cancelled)
-        }
-    }
-}
-
-fn commit(
-    checkout: &str,
-    message: &str,
-    deadline: Instant,
-    cancelled: &impl Fn() -> bool,
-) -> crate::Result<Outcome> {
-    if !checkout_status(checkout, deadline, cancelled)?.dirty() {
-        return Err(Error::NothingToCommit.into());
-    }
-    git(
-        checkout,
-        &["add", "-A"],
-        "stage changes",
-        deadline,
-        cancelled,
-    )?;
-    git(
-        checkout,
-        &["commit", "-m", message],
-        "commit",
-        deadline,
-        cancelled,
-    )?;
-    let head = git(
-        checkout,
-        &["log", "-1", "--pretty=format:%h %s"],
-        "read the new commit",
-        deadline,
-        cancelled,
-    )?;
-    Ok(Outcome {
-        message: format!("Committed {}", clean(&head)),
-        url: None,
-    })
-}
-
-fn push(
-    checkout: &str,
-    branch: &str,
-    deadline: Instant,
-    cancelled: &impl Fn() -> bool,
-) -> crate::Result<Outcome> {
-    git(
-        checkout,
-        &["push", "--set-upstream", "origin", branch],
-        "push",
-        deadline,
-        cancelled,
-    )?;
-    Ok(Outcome {
-        message: format!("Pushed {branch} to origin"),
-        url: None,
-    })
-}
-
-fn create_pull_request(
-    checkout: &str,
-    branch: &str,
-    tokens: &Tokens,
-    deadline: Instant,
-    cancelled: &impl Fn() -> bool,
-) -> crate::Result<Outcome> {
-    // A fork checkout opens its pull request against `upstream`, from the
-    // branch pushed to its own `origin` below. The fork's owner opens it, so
-    // that owner's account sends the mutation.
-    let base = base_repository(checkout, deadline, cancelled)?;
-    let head = base.head(branch)?;
-    let token: &SecretString = tokens.for_owner(base.fork_owner.as_deref().unwrap_or(&base.owner));
-    let title = clean(&git(
-        checkout,
-        &["log", "-1", "--pretty=format:%s"],
-        "read the commit subject",
-        deadline,
-        cancelled,
-    )?);
-    let title: String = title.trim().chars().take(TITLE_LIMIT).collect();
-    if title.is_empty() {
-        return Err(Error::PullRequestTitle.into());
-    }
-    // The head ref must exist on GitHub before a pull request can reference it.
-    git(
-        checkout,
-        &["push", "--set-upstream", "origin", branch],
-        "push",
-        deadline,
-        cancelled,
-    )?;
-    let mut cooldown = None;
-    let repository = sheprd_github::graphql(
-        "create_pr_repository",
-        token,
-        REPOSITORY_QUERY,
-        serde_json::json!({"owner": base.owner, "repo": base.repo}),
-        API_TIMEOUT,
-        cancelled,
-        &mut cooldown,
-    )?;
-    let id = repository["data"]["repository"]["id"]
-        .as_str()
-        .filter(|id| !id.is_empty())
-        .ok_or(sheprd_github::Error::from(
-            sheprd_github::pull_request::Error::Repository,
-        ))?
-        .to_owned();
-    let default_branch = repository["data"]["repository"]["defaultBranchRef"]["name"]
-        .as_str()
-        .filter(|name| !name.is_empty())
-        .ok_or(sheprd_github::Error::from(
-            sheprd_github::pull_request::Error::Repository,
-        ))?
-        .to_owned();
-    if base.is_own_base(branch, &default_branch) {
-        return Err(Error::PullRequestBase.into());
-    }
-    let created = sheprd_github::graphql(
-        "create_pr",
-        token,
-        CREATE_MUTATION,
-        serde_json::json!({
-            "repository": id, "base": default_branch, "head": head, "title": title, "body": ""
-        }),
-        API_TIMEOUT,
-        cancelled,
-        &mut cooldown,
-    )?;
-    parse_created(&created, &base.owner, &base.repo)
-}
-
-fn parse_created(response: &serde_json::Value, owner: &str, repo: &str) -> crate::Result<Outcome> {
-    let pr = &response["data"]["createPullRequest"]["pullRequest"];
-    let number = pr["number"].as_u64().filter(|number| *number > 0);
-    let url = pr["url"].as_str().unwrap_or_default();
-    let expected = number.map(|number| format!("https://github.com/{owner}/{repo}/pull/{number}"));
-    if expected.as_deref() != Some(url) {
-        return Err(
-            sheprd_github::Error::from(sheprd_github::pull_request::Error::Identity).into(),
-        );
-    }
-    Ok(Outcome {
-        message: format!("Opened pull request #{}", number.unwrap_or_default()),
-        url: expected,
-    })
 }
 
 /// Every Git child runs through the shared process policy: no shell, no

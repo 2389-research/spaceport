@@ -67,10 +67,6 @@ impl SheprdWindow {
                 return;
             }
         }
-        if self.menu.page == Some(Page::Git) {
-            self.git_key(event, window, cx);
-            return;
-        }
         if self.menu.page == Some(Page::DeviceTheme) {
             self.device_theme_key(event, window, cx);
             return;
@@ -229,7 +225,6 @@ impl SheprdWindow {
             {
                 self.submit_core_workspace_dialog(cx)
             }
-            "enter" if self.menu.page == Some(Page::GitCommit) => self.submit_git_commit(cx),
             // The tiles read row by row, so left and right walk the same
             // order as up and down.
             "up" | "down" | "left" | "right" if self.menu.page == Some(Page::Workspace) => {

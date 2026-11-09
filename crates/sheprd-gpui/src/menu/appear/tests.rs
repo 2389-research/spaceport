@@ -125,8 +125,8 @@ fn a_closed_page_lets_go_of_what_it_read_once_it_has_gone() {
     let start = Instant::now();
     let mut appear = live();
     let anchor = Shown::Popover(point(px(200.), px(40.)));
-    appear.observe(Some(anchor), Some(Page::Git), start);
-    appear.keep(Page::Git, Kept::default());
+    appear.observe(Some(anchor), Some(Page::Devices), start);
+    appear.keep(Page::Devices, Kept::default());
     appear.observe(None, None, start);
     appear.settle(start);
     assert!(appear.kept.is_some(), "kept while it goes");
@@ -185,7 +185,9 @@ fn all_devices_draws_lower_while_it_rises(cx: &mut gpui::TestAppContext) {
 }
 
 #[gpui::test]
-fn the_git_popover_is_drawn_as_it_goes_and_leaves_the_menu_reset(cx: &mut gpui::TestAppContext) {
+fn the_devices_popover_is_drawn_as_it_goes_and_leaves_the_menu_reset(
+    cx: &mut gpui::TestAppContext,
+) {
     use crate::sidebar::layout_tests::fixture_window;
     let (view, cx) = cx.add_window_view(fixture_window);
     let draw = |cx: &mut gpui::VisualTestContext| {
@@ -197,8 +199,8 @@ fn the_git_popover_is_drawn_as_it_goes_and_leaves_the_menu_reset(cx: &mut gpui::
     view.update(cx, |view, _| {
         view.menu.appear.live = true;
         view.menu.anchor = point(px(200.), px(40.));
-        view.menu.page = Some(Page::Git);
-        view.menu.error = Some("push failed".into());
+        view.menu.page = Some(Page::Devices);
+        view.menu.error = Some("device failed".into());
     });
     draw(cx);
     assert!(cx.debug_bounds("menu-leaving-shield").is_none());
@@ -211,7 +213,7 @@ fn the_git_popover_is_drawn_as_it_goes_and_leaves_the_menu_reset(cx: &mut gpui::
         // start is set as well as observed.
         let later = motion::now() + std::time::Duration::from_secs(3600);
         view.menu.appear.observe(None, None, later);
-        view.menu.appear.leaving = Some((Page::Git, later));
+        view.menu.appear.leaving = Some((Page::Devices, later));
     });
     draw(cx);
     // The copy going away was drawn, shielded, and the menu's own state is

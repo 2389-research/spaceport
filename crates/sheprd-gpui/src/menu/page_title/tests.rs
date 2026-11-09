@@ -42,8 +42,6 @@ fn every_page_title_is_a_message_under_en_xa() {
             Page::Devices,
             Page::DeviceTheme,
             Page::ForwardPort,
-            Page::Git,
-            Page::GitCommit,
             Page::GitHub,
             Page::Group,
             Page::Host,

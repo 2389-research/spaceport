@@ -180,64 +180,6 @@ fn a_changed_checkout_drops_its_predecessors_status() {
 }
 
 #[test]
-fn one_action_runs_at_a_time_and_reports_its_own_result() {
-    let mut peer = Peer::new();
-    let now = Instant::now();
-    peer.git.track(Some(input("feature")), true, now);
-    assert!(matches!(
-        peer.git.start(Action::Commit("  ".into()), None),
-        Err(crate::Error::Git(Error::CommitMessage))
-    ));
-    assert!(matches!(
-        peer.git.start(Action::CreatePullRequest, None),
-        Err(crate::Error::GitHub(sheprd_github::Error::Authentication))
-    ));
-    peer.git
-        .start(Action::Commit("subject".into()), None)
-        .unwrap();
-    assert!(matches!(
-        peer.git.start(Action::Push, None),
-        Err(crate::Error::Git(Error::Busy))
-    ));
-    peer.git.poll(now);
-    let (requested, job) = peer.request();
-    assert!(matches!(job, Job::Run(Action::Commit(message), None) if message == "subject"));
-    // Switching workspaces mid-commit must not cancel or misreport it.
-    peer.git.track(Some(input("other")), true, now);
-    peer.complete(
-        requested,
-        Completion::Action(Ok(Outcome {
-            message: "Committed abc1234 subject".into(),
-            url: None,
-        })),
-        now,
-    );
-    assert_eq!(
-        peer.git.outcome().map(|outcome| outcome.message.as_str()),
-        Some("Committed abc1234 subject")
-    );
-    assert!(peer.git.running().is_none());
-    peer.git.start(Action::Push, None).unwrap();
-    peer.git.poll(now);
-    let (requested, _) = peer.request();
-    peer.complete(
-        requested,
-        Completion::Action(Err(Error::Failed {
-            operation: "push",
-            details: "rejected".into(),
-        }
-        .into())),
-        now,
-    );
-    assert!(peer.git.outcome().is_none());
-    assert!(
-        peer.git
-            .error()
-            .is_some_and(|error| error.contains("rejected"))
-    );
-}
-
-#[test]
 fn listed_checkouts_are_probed_round_robin_and_forgotten_when_they_go() {
     let mut peer = Peer::new();
     let now = Instant::now();
@@ -269,7 +211,11 @@ fn listed_checkouts_are_probed_round_robin_and_forgotten_when_they_go() {
     let (requested, _) = peer.request();
     peer.complete(
         requested,
-        Completion::Dirty(Err(Error::NoCheckout.into())),
+        Completion::Dirty(Err(Error::Failed {
+            operation: "read working tree state",
+            details: "test failure".into(),
+        }
+        .into())),
         now + PROBE_REFRESH,
     );
     assert_eq!(peer.git.dirty("/repo/.git", "other"), None);
@@ -310,44 +256,14 @@ fn the_probe_cache_is_bounded() {
 }
 
 #[test]
-fn a_stopped_worker_is_reported_and_does_not_strand_an_action() {
+fn a_stopped_worker_reports_the_read_failure() {
     let mut peer = Peer::new();
     let now = Instant::now();
     peer.git.track(Some(input("feature")), true, now);
-    peer.git.start(Action::Push, None).unwrap();
     peer.git.poll(now);
-    let _ = peer.request();
+    let (_, job) = peer.request();
+    assert!(matches!(job, Job::Status));
     drop(peer.outgoing);
     assert!(peer.git.poll(now));
-    assert!(peer.git.running().is_none());
     assert_eq!(peer.git.error(), Some(Error::Worker.to_string().as_str()));
-}
-
-#[test]
-fn created_pull_requests_must_match_their_repository() {
-    let response = |url: &str, number: u64| serde_json::json!({"data":{"createPullRequest":{"pullRequest":{"number":number,"url":url}}}});
-    let outcome = parse_created(
-        &response("https://github.com/example/project/pull/7", 7),
-        "example",
-        "project",
-    )
-    .unwrap();
-    assert_eq!(outcome.message, "Opened pull request #7");
-    assert_eq!(
-        outcome.url.as_deref(),
-        Some("https://github.com/example/project/pull/7")
-    );
-    for (url, number) in [
-        ("https://github.com/other/project/pull/7", 7),
-        ("https://github.com/example/project/pull/8", 7),
-        ("https://example.com/example/project/pull/7", 7),
-        ("https://github.com/example/project/pull/0", 0),
-    ] {
-        assert!(matches!(
-            parse_created(&response(url, number), "example", "project"),
-            Err(crate::Error::GitHub(sheprd_github::Error::PullRequest(
-                sheprd_github::pull_request::Error::Identity
-            )))
-        ));
-    }
 }

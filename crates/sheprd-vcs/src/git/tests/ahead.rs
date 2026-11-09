@@ -259,16 +259,3 @@ fn nothing_is_read_until_a_lookup_could_use_it() {
     peer.git.poll(now);
     assert!(peer.incoming.try_recv().is_err());
 }
-
-#[test]
-fn a_finished_action_asks_again_at_the_next_scan() {
-    let mut cache = crate::git::ahead::Cache::default();
-    let now = Instant::now();
-    let listed = [input("feature")];
-    cache.record(input("feature"), None, now + PROBE_REFRESH);
-    cache.schedule(&listed, true, now);
-    assert_eq!(cache.next(), None);
-    cache.expire(&input("feature"), now);
-    cache.schedule(&listed, true, now);
-    assert_eq!(cache.next(), Some(input("feature")));
-}

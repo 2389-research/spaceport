@@ -113,16 +113,6 @@ impl SheprdWindow {
         self.pr_profile().map(|main| self.tokens_over(main))
     }
 
-    /// The same with this computer's main account, for work that reads only
-    /// local checkouts.
-    pub(crate) fn main_tokens(&self) -> Option<Tokens> {
-        self.menu
-            .github
-            .profile
-            .as_ref()
-            .map(|main| self.tokens_over(main))
-    }
-
     pub(crate) fn tokens_over(&self, main: &Profile) -> Tokens {
         Tokens::new(
             main,

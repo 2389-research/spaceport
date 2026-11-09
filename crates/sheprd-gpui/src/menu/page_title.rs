@@ -12,7 +12,6 @@ impl Page {
     pub(crate) fn accessible_role(self) -> Role {
         match self {
             Self::Application
-            | Self::Git
             | Self::Group
             | Self::Host
             | Self::Menu
@@ -50,8 +49,6 @@ impl Page {
                 WorkspaceAction::Note => fl!("menu-page-worktree-note"),
             },
             Self::ForwardPort => fl!("menu-page-forward-port"),
-            Self::Git => fl!("menu-page-git"),
-            Self::GitCommit => fl!("menu-page-commit"),
             Self::GitHub => fl!("menu-page-github-account"),
             Self::Group => fl!("menu-page-tab-actions"),
             Self::Host => fl!("menu-page-device"),

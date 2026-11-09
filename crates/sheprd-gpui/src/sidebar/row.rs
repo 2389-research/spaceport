@@ -21,7 +21,6 @@ use unicode_width::UnicodeWidthStr;
 mod badge;
 mod configured;
 
-pub(crate) use badge::compact;
 pub(super) use badge::{Counts, PrBadge, RowBadge, Upstream};
 use configured::configured_lines;
 pub(super) use configured::{

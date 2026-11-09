@@ -406,19 +406,6 @@ impl SheprdWindow {
                     .overflow_hidden()
                     .shadow_lg()
             })
-            .when(matches!(page, Page::Git | Page::GitCommit), |panel| {
-                panel
-                    .w((viewport.width - px(24.))
-                        .max(px(0.))
-                        .min(px(if page == Page::Git { 340. } else { 420. })))
-                    .max_h((viewport.height - px(24.)).max(px(0.)))
-                    .when(page == Page::Git, |panel| {
-                        let top = crate::titlebar::HEIGHT + 6.;
-                        panel
-                            .max_h((viewport.height - px(top + 12.)).max(px(0.)))
-                            .shadow_lg()
-                    })
-            })
             .when(
                 matches!(
                     page,
@@ -666,10 +653,6 @@ impl SheprdWindow {
             Page::CoreWorkspaceCreate | Page::CoreWorkspaceDelete | Page::CoreWorkspaceRename
         ) {
             panel = panel.child(self.render_core_workspace_dialog(cx));
-        } else if page == Page::Git {
-            panel = panel.child(self.render_git_menu(cx));
-        } else if page == Page::GitCommit {
-            panel = panel.child(self.render_git_commit(cx));
         } else if matches!(
             page,
             Page::Host
@@ -756,11 +739,7 @@ impl SheprdWindow {
             )
         });
         let placed = if pointer_anchored {
-            let position = if page == Page::Git {
-                point(self.menu.anchor.x, px(crate::titlebar::HEIGHT + 6.))
-            } else {
-                self.menu.anchor
-            };
+            let position = self.menu.anchor;
             anchored()
                 .position(position)
                 // A menu hangs toward the end from the pointer, and toward

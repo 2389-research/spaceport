@@ -27,9 +27,6 @@ pub(crate) enum Page {
     Dialog(WorkspaceAction),
     /// Names a saved SSH device's port to forward to this computer.
     ForwardPort,
-    /// Titlebar Git actions for the focused checkout, and its commit dialog.
-    Git,
-    GitCommit,
     GitHub,
     /// A group's "…" menu: opening tabs other than a terminal, closing
     /// tabs, and splitting.
@@ -123,8 +120,6 @@ impl Page {
                 | Self::Host
                 | Self::RemoveDevice
                 | Self::RemoveWsl
-                | Self::Git
-                | Self::GitCommit
         )
     }
 

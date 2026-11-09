@@ -58,9 +58,6 @@ fn repositories_an_additional_account_owns_are_read_with_it(cx: &mut TestAppCont
                 view.menu.github_accounts[0].covered(),
                 ["fabien_microsoft", "emu-org", "listed-owner"]
             );
-            // Local-only work reads with the same accounts.
-            assert!(view.main_tokens().unwrap().same(&tokens));
-
             // Without a main sign-in nothing is read, as before.
             view.menu.github = Auth::default();
             assert!(view.pr_tokens().is_none());

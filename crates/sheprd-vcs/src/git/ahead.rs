@@ -75,13 +75,6 @@ impl Cache {
         }
     }
 
-    /// Ask again at the next scan: a commit or push moved what it read.
-    pub(super) fn expire(&mut self, input: &Input, now: Instant) {
-        if let Some(entry) = self.entries.iter_mut().find(|entry| entry.input == *input) {
-            entry.due = now;
-        }
-    }
-
     pub(super) fn get(&self, input: &Input) -> Option<&Ahead> {
         self.entries
             .iter()

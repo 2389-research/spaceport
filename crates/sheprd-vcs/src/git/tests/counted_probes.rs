@@ -57,7 +57,11 @@ fn counting_listed_checkouts_reprobes_dirty_answers_and_keeps_the_backoff() {
     assert!(matches!(job, Job::Counts));
     peer.complete(
         requested,
-        Completion::Counts(Err(Error::NoCheckout.into())),
+        Completion::Counts(Err(Error::Failed {
+            operation: "read working tree state",
+            details: "test failure".into(),
+        }
+        .into())),
         due,
     );
     assert_eq!(peer.git.counts("/repo/.git", "other"), None);

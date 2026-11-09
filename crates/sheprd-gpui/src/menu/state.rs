@@ -5,7 +5,7 @@
 
 // i18n: migrated
 use super::endpoint_error;
-use super::{Page, WorkspaceMenuAction, WorkspaceTarget, git, github};
+use super::{Page, WorkspaceMenuAction, WorkspaceTarget, github};
 use crate::dialog_input::DialogInput;
 use crate::i18n::fl;
 use gpui::{App, Bounds, Entity, FocusHandle, Pixels, Point, ScrollHandle, Subscription};
@@ -98,7 +98,6 @@ pub(crate) struct MenuState {
     pub focus: FocusHandle,
     pub(super) selected: Option<usize>,
     pub(super) workspace_selected: Option<WorkspaceMenuAction>,
-    pub(super) git_selected: Option<git::Row>,
     pub(super) target: Option<WorkspaceTarget>,
     pub input: Option<DialogInput>,
     pub(crate) error: Option<String>,
@@ -328,7 +327,6 @@ impl MenuState {
             focus: cx.focus_handle(),
             selected: None,
             workspace_selected: None,
-            git_selected: None,
             target: None,
             input: None,
             error: None,
@@ -415,7 +413,6 @@ impl MenuState {
         self.shortcut_editor = None;
         self.selected = None;
         self.workspace_selected = None;
-        self.git_selected = None;
         self.target = None;
         self.input = None;
         self.error = None;
