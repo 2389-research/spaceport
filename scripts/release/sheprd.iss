@@ -119,19 +119,6 @@ Root: HKCU; Subkey: "Software\Classes\AppUserModelId\{#AppUserModelID}"; Flags: 
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "{#StartupName}"; Flags: uninsdeletevalue dontcreatekey
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run"; ValueName: "{#StartupName}"; Flags: uninsdeletevalue dontcreatekey
 
-; "Open in Sheprd" on a folder, and on the background inside one, for this
-; user only. The launcher runs `spaceport open`, which opens the folder as
-; Open Project does and starts the app first when it is not running; running
-; spaceport.exe directly would flash a console window on every click.
-; Windows 11 lists these under "Show more options": its compact menu only shows
-; commands of packaged apps. Removed on uninstall.
-Root: HKCU; Subkey: "Software\Classes\Directory\shell\HerdrUI"; ValueType: string; ValueName: ""; ValueData: "{cm:OpenIn,{#AppName}}"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "Software\Classes\Directory\shell\HerdrUI"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\{#AppExe}"",0"
-Root: HKCU; Subkey: "Software\Classes\Directory\shell\HerdrUI\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#Launcher}"" open ""%V"""
-Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\HerdrUI"; ValueType: string; ValueName: ""; ValueData: "{cm:OpenIn,{#AppName}}"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\HerdrUI"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\{#AppExe}"",0"
-Root: HKCU; Subkey: "Software\Classes\Directory\Background\shell\HerdrUI\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#Launcher}"" open ""%V"""
-
 ; Shortcuts open the launcher, so the app starts without a console window.
 [Icons]
 Name: "{userprograms}\{#AppName}"; Filename: "{app}\{#Launcher}"; WorkingDir: "{app}"; IconFilename: "{app}\{#AppExe}"; AppUserModelID: "{#AppUserModelID}"

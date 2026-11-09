@@ -46,9 +46,6 @@ fn family(name: &str) -> &'static str {
         "app" => {
             "spaceport app focus|hide|quit\n    Bring the app forward, hide it, or quit it. Quitting leaves Herdr\n    and its terminals running."
         }
-        "open" => {
-            "spaceport open DIR\n    Open the folder as Open Project in the command palette does: focus its\n    workspace, or start one there, and bring the window forward. DIR must\n    be an existing folder. With no Spaceport running, starts it and waits up\n    to 20 seconds for its window to reach the local Herdr (exit 7 past that)."
-        }
         "window" => {
             "spaceport window [list]\n    The app's windows, with IDs for --window.\nspaceport window new\n    Open another window on the target selected by --window, the caller's\n    host, or the frontmost/default target.\nspaceport window focus ID\nspaceport window fullscreen [on|off|toggle]\nspaceport window size [WIDTHxHEIGHT]\n    Print the window's size, or resize it. Windows cannot be moved.\nspaceport window detach|reconnect\n    Detach from, or reconnect to, the window's selected host."
         }

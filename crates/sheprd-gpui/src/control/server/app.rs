@@ -149,7 +149,6 @@ pub(super) fn app(call: Call<AppOp>, cx: &mut App) -> Response {
             }
             Err(response) => response,
         },
-        AppOp::Open { path } => open(&call.caller, path, cx),
         AppOp::Hide => {
             cx.hide();
             Response::done("Hid Spaceport")
@@ -163,44 +162,6 @@ pub(super) fn app(call: Call<AppOp>, cx: &mut App) -> Response {
             .detach();
             Response::done("Quitting Spaceport; Herdr and its terminals keep running")
         }
-    }
-}
-
-/// `open DIR`: the folder's workspace, focused or created through the
-/// palette's Open Project, in the window brought forward. The caller
-/// resolved the path; the palette checks it again before Herdr sees it.
-fn open(caller: &Caller, path: String, cx: &mut App) -> Response {
-    let handle = match window_for(caller, cx) {
-        Ok(handle) => handle,
-        Err(response) => return response,
-    };
-    let opened = in_free_window(caller, cx, |view, window, cx| {
-        open_in(view, path, window, cx)
-    });
-    if matches!(opened, Response::Done { .. }) {
-        activate(handle, cx);
-    }
-    opened
-}
-
-/// The window's part of `open`, once no dialog holds it.
-fn open_in(
-    view: &mut SheprdWindow,
-    path: String,
-    window: &mut Window,
-    cx: &mut gpui::Context<SheprdWindow>,
-) -> Response {
-    match view.open_project_at(path.clone().into(), window, cx) {
-        Ok(()) => Response::done(format!("Opening {path} in Spaceport")),
-        // The window has not reached its local Herdr yet, as right after the
-        // app starts; a caller may try again shortly.
-        Err(crate::Error::Palette(
-            crate::palette::Error::ConnectionNotReady | crate::palette::Error::HostUnavailable,
-        )) => Response::error(
-            ErrorCode::Busy,
-            "The window is not connected to the local Herdr yet",
-        ),
-        Err(error) => Response::error(ErrorCode::Failed, error.to_string()),
     }
 }
 

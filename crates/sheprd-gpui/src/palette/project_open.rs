@@ -6,43 +6,9 @@ use crate::{NavigationTarget, Result, SheprdWindow};
 use gpui::{Context, Window};
 use serde_json::{Value, json};
 use sheprd_client::{Method, protocol::ClientShellSnapshot};
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 impl SheprdWindow {
-    /// `spaceport open DIR`: opens the palette on its projects and opens
-    /// `path` there as if it had been chosen, so the folder's workspace is
-    /// focused, or created, exactly as Open Project does. Refused, with the
-    /// palette closed again, while the window has no local Herdr to open it
-    /// on; the folder is validated off this thread as for any project.
-    pub(crate) fn open_project_at(
-        &mut self,
-        path: PathBuf,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Result<()> {
-        self.open_palette(super::Filter::Projects, window, cx);
-        let target = self
-            .menu
-            .palette
-            .as_ref()
-            .ok_or(Error::HostUnavailable)?
-            .local_target
-            .clone();
-        if let Err(error) = target
-            .ok_or(Error::ConnectionNotReady.into())
-            .and_then(|target| self.local_project_connection(&target))
-        {
-            self.dismiss_menu(window, cx);
-            return Err(error);
-        }
-        let label = path.file_name().map_or_else(
-            || path.display().to_string(),
-            |name| name.to_string_lossy().into_owned(),
-        );
-        self.activate_project(projects::Project { path, label }, window, cx);
-        Ok(())
-    }
-
     pub(super) fn load_palette_projects(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let Some(palette) = &mut self.menu.palette else {
             return;

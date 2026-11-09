@@ -1,4 +1,4 @@
-"""site/install.ps1: its Start menu shortcut, taskbar identity, and Explorer entry."""
+"""site/install.ps1: its Start menu shortcut and taskbar identity."""
 from pathlib import Path
 import os
 import re
@@ -69,9 +69,8 @@ class InstallScriptTests(unittest.TestCase):
                 self.assertNotIn("Automate", source.read_text(encoding="utf-8"))
 
     @unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell.exe"), "needs Windows PowerShell")
-    def test_shortcut_and_explorer_entry_leave_other_link_schemes_alone(self):
-        # Releases up to 20261016.1 ship spaceport.exe alone (#632): there
-        # the shortcut opens it and an existing Explorer entry goes away.
+    def test_shortcut_leaves_existing_explorer_verbs_and_link_schemes_alone(self):
+        # Releases up to 20261016.1 ship spaceport.exe alone (#632).
         for has_launcher in (False, True):
             key = rf"Software\HerdrInstallPs1Test-{os.getpid()}-{has_launcher}"
             with self.subTest(has_launcher=has_launcher), \
@@ -94,7 +93,7 @@ class InstallScriptTests(unittest.TestCase):
                     rf"$schemes = @('HKCU:\{key}\Scheme', 'HKCU:\{key}\LegacyScheme')",
                     "$ownedShortcuts = @()",
                     # Other handlers must survive either install shape.
-                    r'foreach ($verb in $verbs) { New-Item -Force -Path "$verb\command" | Out-Null }',
+                    r'foreach ($verb in $verbs) { New-Item -Force -Path "$verb\command" | Out-Null; Set-Item -LiteralPath "$verb\command" -Value "other-app" }',
                     r'foreach ($scheme in $schemes) { New-Item -Force -Path "$scheme\shell\open\command" | Out-Null; Set-Item -LiteralPath "$scheme\shell\open\command" -Value "other-app" }',
                     install_steps().replace("[Environment]::GetFolderPath('Programs')", "$env:HERDR_TEST_DIR"),
                     "'target=' + (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut).TargetPath",
@@ -123,17 +122,10 @@ class InstallScriptTests(unittest.TestCase):
                 self.assertTrue(os.path.samefile(target, launcher if has_launcher else dest / "spaceport.exe"),
                                 target)
                 if has_launcher:
-                    self.assertEqual(len(verbs), 2, result.stdout)
-                    for verb in verbs:
-                        program, rest = verb[1:].split('"', 1)
-                        self.assertTrue(os.path.samefile(program, launcher), verb)
-                        self.assertEqual(rest, ' open "%V"')
                     self.assertIn("spaceport-launcher.exe", message)
-                    self.assertIn("Open in Sheprd", message)
                 else:
-                    self.assertEqual(verbs, [], result.stdout)
                     self.assertNotIn("launcher", message)
-                    self.assertNotIn("Open in Sheprd", message)
+                self.assertEqual(verbs, ["other-app", "other-app"], result.stdout)
                 self.assertEqual(schemes, ["other-app", "other-app"], result.stdout)
 
 

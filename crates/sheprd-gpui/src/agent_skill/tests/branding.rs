@@ -23,10 +23,10 @@ fn spaceport_skill_owns_only_its_new_name_and_marker() {
 fn commands_are_substituted_once_even_when_the_install_path_ends_in_the_command() {
     assert_eq!(
         substitute_command(
-            "spaceport open .\nspaceport open .",
+            "spaceport status\nspaceport status",
             "spaceport",
             "/opt/bin/spaceport"
         ),
-        "/opt/bin/spaceport open .\n/opt/bin/spaceport open ."
+        "/opt/bin/spaceport status\n/opt/bin/spaceport status"
     );
 }

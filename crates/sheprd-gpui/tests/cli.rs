@@ -8,6 +8,8 @@ mod clipboard;
 mod orchestrator;
 #[path = "cli/phone.rs"]
 mod phone;
+#[path = "cli/removed_project_open.rs"]
+mod removed_project_open;
 
 use std::{
     process::{Child, Command, Output, Stdio},

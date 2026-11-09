@@ -65,12 +65,6 @@ pub enum AppOp {
     Hide,
     /// Quit the app; Herdr and its terminals keep running.
     Quit,
-    /// Bring the window forward and open or focus the workspace of a
-    /// folder, as the palette's Open Project does. `path` is absolute and
-    /// canonical, resolved by the caller, and checked again by the app.
-    Open {
-        path: String,
-    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -181,23 +181,6 @@ def link_handler(scheme="sheprd"):
         return None
 
 
-FOLDER_VERBS = (r"Software\Classes\Directory\shell\HerdrUI",
-                r"Software\Classes\Directory\Background\shell\HerdrUI")
-
-
-def folder_verbs():
-    """The commands of the "Open in Sheprd" folder verbs that exist for
-    this user."""
-    import winreg
-    commands = []
-    for name in FOLDER_VERBS:
-        try:
-            commands.append(winreg.QueryValue(winreg.HKEY_CURRENT_USER, name + r"\command"))
-        except FileNotFoundError:
-            pass
-    return commands
-
-
 # Where Settings > General > Launch at login, and Task Manager's Startup apps
 # switch, name the app; the installer creates neither and removes both.
 STARTUP_KEYS = (r"Software\Microsoft\Windows\CurrentVersion\Run",
@@ -327,9 +310,6 @@ def check_installation(app, signed_installer):
         handler = link_handler(scheme)
         if handler != f'"{launcher}" "%1"':
             raise ValueError(f"Installer registered {scheme}:// links wrongly: {handler}")
-    verbs = folder_verbs()
-    if verbs != [f'"{launcher}" open "%V"'] * len(FOLDER_VERBS):
-        raise ValueError(f"Installer registered Open in Sheprd wrongly: {verbs}")
     # Launch at login is off until the user turns it on.
     if startup_entries():
         raise ValueError(f"Installer wrote a startup entry: {startup_entries()}")
@@ -377,10 +357,10 @@ def uninstall(app, env):
     deadline = time.monotonic() + 120
     while (app.exists() or shortcut.exists() or entry in user_path_entries()
            or uninstall_entry() is not None or any(link_handler(scheme) is not None for scheme in ("sheprd", "herdr-gpui"))
-           or folder_verbs() or startup_entries()):
+           or startup_entries()):
         if time.monotonic() > deadline:
             raise ValueError("Uninstaller left the app directory, its shortcut, its PATH entry, "
-                             "its Uninstall entry, its link handler, Open in Sheprd, "
+                             "its Uninstall entry, its link handler, "
                              "or its startup entry behind")
         time.sleep(1)
 

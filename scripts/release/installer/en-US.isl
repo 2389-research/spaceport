@@ -8,4 +8,3 @@
 [CustomMessages]
 AddToPath=Add sheprd to PATH, for terminals and agents
 ; The folder context menu's command; %1 is the app's name.
-OpenIn=Open in %1
