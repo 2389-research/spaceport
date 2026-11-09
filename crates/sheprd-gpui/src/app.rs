@@ -243,7 +243,7 @@ pub(crate) fn open_additional_core_window(key: CoreGroupKey, cx: &mut App) {
     open_additional_core_window_then(
         key,
         None,
-        |_, _, _| {},
+        |_, _, _| true,
         |_| {},
         cx,
         #[cfg(feature = "integration-test")]
@@ -251,10 +251,12 @@ pub(crate) fn open_additional_core_window(key: CoreGroupKey, cx: &mut App) {
     );
 }
 
+/// An arrival callback rejects a stale handoff by closing its window and
+/// returning false, so no Core join or window activation follows it.
 pub(crate) fn open_additional_core_window_then(
     key: CoreGroupKey,
     placement: Option<Placement>,
-    then: impl FnOnce(&mut SheprdWindow, &mut Window, &mut Context<SheprdWindow>) + 'static,
+    then: impl FnOnce(&mut SheprdWindow, &mut Window, &mut Context<SheprdWindow>) -> bool + 'static,
     failed: impl FnOnce(&mut App) + 'static,
     cx: &mut App,
     #[cfg(feature = "integration-test")] fixture: bool,
@@ -273,7 +275,9 @@ pub(crate) fn open_additional_core_window_then(
                 let sound = shared_sound(cx);
                 let _ = handle.update(cx, |view, window, cx| {
                     view.use_sound(sound);
-                    then(view, window, cx);
+                    if !then(view, window, cx) {
+                        return;
+                    }
                     view.core_terminals.hub.connect(Start::Join);
                     window.activate_window();
                 });

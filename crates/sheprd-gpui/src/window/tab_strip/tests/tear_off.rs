@@ -4,9 +4,11 @@ use {
     super::*,
     crate::{
         browser::{Pick, Store, TabId},
-        window::tab_tear::{TornOff, TornTab, remote_session},
+        window::tab_tear::{TornOff, TornRoute, TornTab, remote_session},
     },
 };
+
+mod core;
 
 /// Past the bottom right of the 1600 by 600 window.
 const OUTSIDE: Point<Pixels> = point(px(1800.), px(900.));
@@ -320,11 +322,18 @@ fn a_tab_from_a_saved_host_waits_for_the_host_to_be_listed(cx: &mut TestAppConte
     carry_to(cx, "tab-c", OUTSIDE);
     drop_at(cx, OUTSIDE);
     let mut torn = torn(cx).remove(0);
-    torn.endpoint = "ssh:remote".into();
-    torn.session = sheprd_client::ConnectTarget::Ssh {
-        target: "user@remote".into(),
-        session: "default".into(),
-    };
+    if let TornRoute::Legacy {
+        endpoint, session, ..
+    } = &mut torn.route
+    {
+        *endpoint = "ssh:remote".into();
+        *session = sheprd_client::ConnectTarget::Ssh {
+            target: "user@remote".into(),
+            session: "default".into(),
+        };
+    } else {
+        panic!("legacy fixture must keep its route");
+    }
 
     let fresh = cx
         .update(|window, cx| cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)));
@@ -355,7 +364,11 @@ fn a_tab_from_a_host_no_longer_saved_is_given_up(cx: &mut TestAppContext) {
     carry_to(cx, "tab-c", OUTSIDE);
     drop_at(cx, OUTSIDE);
     let mut torn = torn(cx).remove(0);
-    torn.endpoint = "ssh:gone".into();
+    if let TornRoute::Legacy { endpoint, .. } = &mut torn.route {
+        *endpoint = "ssh:gone".into();
+    } else {
+        panic!("legacy fixture must keep its route");
+    }
     let fresh = cx
         .update(|window, cx| cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)));
     cx.update(|window, cx| fresh.update(cx, |view, cx| view.arrive(torn, window, cx)));

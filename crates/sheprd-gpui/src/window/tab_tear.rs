@@ -1,16 +1,12 @@
-//! Carrying a tab out of the window to open it in a new one, as a web
-//! browser does. Herdr lists a workspace's tabs in every client and cannot
-//! move one to another workspace, so the tab stays where it is: the new
-//! window is another client of the same daemon that goes to the tab's
-//! workspace and hides that workspace's other tabs, while this one moves on
-//! to a neighbour and hides the tab. Tabs opened later show in both. When
-//! the new window closes, the tab is listed again in the one it left.
+//! Carrying a tab out of the window opens another view of its exact endpoint
+//! or Core group. The tab's runtime stays where it is; only the two windows'
+//! visible tab lists change. Closing the new window gives the tab back.
 
 use super::{SheprdWindow, tab_drag::TabDrag};
 use crate::{
     NavigationTarget,
     app::Placement,
-    browser::{Pick, Scope, Store},
+    browser::{CoreGroupKey, Pick, Scope, Store},
     window_state::WindowState,
 };
 use gpui::{Bounds, Context, Subscription, WeakEntity, Window};
@@ -19,13 +15,7 @@ use sheprd_client::ConnectTarget;
 /// A tab carried out of a window, and where the window that shows it opens.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct TornTab {
-    /// The daemon the new window connects to, as New Window's does.
-    pub(crate) target: ConnectTarget,
-    /// The host the tab belongs to, which the new window shows.
-    pub(super) endpoint: String,
-    /// What that host's endpoint was connected to, naming the session it
-    /// showed, which the new window's may not.
-    pub(super) session: ConnectTarget,
+    pub(super) route: TornRoute,
     pub(crate) pick: Pick,
     /// The workspace the tab belongs to, as the window it left keys it.
     pub(crate) workspace: (Scope, String),
@@ -36,6 +26,18 @@ pub(crate) struct TornTab {
     /// closes.
     pub(crate) from: WeakEntity<SheprdWindow>,
     pub(crate) placement: Placement,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) enum TornRoute {
+    /// The document observation must still name this group when the new
+    /// window accepts the tab; reconnecting makes an old handoff stale.
+    Core { key: CoreGroupKey, epoch: u64 },
+    Legacy {
+        target: ConnectTarget,
+        endpoint: String,
+        session: ConnectTarget,
+    },
 }
 
 /// The tabs torn off in a test, which opens no windows.
@@ -55,18 +57,40 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(workspace) = self.browser_key() else {
+        let Some(workspace) = self.active_browser_key(cx) else {
             return;
+        };
+        let route = if let Some(key) = self.selected_core_group() {
+            let (Pick::Page(id), Some(epoch)) = (&drag.pick, Self::core_workspace_epoch(cx)) else {
+                return;
+            };
+            if cx
+                .try_global::<Store>()
+                .and_then(|store| store.get(*id))
+                .and_then(|tab| tab.core_group())
+                .as_ref()
+                != Some(key)
+            {
+                return;
+            }
+            TornRoute::Core {
+                key: key.clone(),
+                epoch,
+            }
+        } else {
+            TornRoute::Legacy {
+                target: self.endpoints[0].connection.target.clone(),
+                endpoint: self.endpoints[self.selected_endpoint].id.clone(),
+                session: self.endpoints[self.selected_endpoint]
+                    .connection
+                    .target
+                    .clone(),
+            }
         };
         let frame = window.bounds();
         let bounds = Bounds::new(frame.origin + (drag.pointer - drag.origin), frame.size);
         let torn = TornTab {
-            target: self.endpoints[0].connection.target.clone(),
-            endpoint: self.endpoints[self.selected_endpoint].id.clone(),
-            session: self.endpoints[self.selected_endpoint]
-                .connection
-                .target
-                .clone(),
+            route,
             pick: drag.pick.clone(),
             others: self
                 .open_workspace_tabs(cx)
@@ -87,16 +111,32 @@ impl SheprdWindow {
         #[cfg(not(test))]
         {
             let (from, pick) = (torn.from.clone(), torn.pick.clone());
-            crate::app::open_additional_window_then(
-                torn.target.clone(),
-                Some(torn.placement),
-                move |view, window, cx| view.arrive(torn, window, cx),
-                move |cx| {
-                    // A window already closed has nothing to list it in.
-                    let _ = from.update(cx, |this, cx| this.untear(&workspace, &pick, cx));
-                },
-                cx,
-            );
+            let route = torn.route.clone();
+            let placement = torn.placement;
+            let failed = move |cx: &mut gpui::App| {
+                // A window already closed has nothing to list it in.
+                let _ = from.update(cx, |this, cx| this.untear(&workspace, &pick, cx));
+            };
+            match route {
+                TornRoute::Legacy { target, .. } => crate::app::open_additional_window_then(
+                    target,
+                    Some(placement),
+                    move |view, window, cx| {
+                        view.arrive(torn, window, cx);
+                    },
+                    failed,
+                    cx,
+                ),
+                TornRoute::Core { key, .. } => crate::app::open_additional_core_window_then(
+                    key,
+                    Some(placement),
+                    move |view, window, cx| view.arrive(torn, window, cx),
+                    failed,
+                    cx,
+                    #[cfg(feature = "integration-test")]
+                    false,
+                ),
+            }
         }
     }
 
@@ -125,11 +165,41 @@ impl SheprdWindow {
         })
     }
 
-    /// Goes to the tab `torn` names, in a window just opened for it. A page
-    /// is chosen against its workspace at once, to show once the window
-    /// gets there. The window lists only this machine's daemon until its
-    /// saved hosts are read, so the way there waits for the tab's host.
-    pub(crate) fn arrive(&mut self, torn: TornTab, window: &mut Window, cx: &mut Context<Self>) {
+    /// Accepts a Core tab only in the exact fresh group and observation
+    /// epoch. A legacy host may need to wait until its catalog entry loads.
+    pub(crate) fn arrive(
+        &mut self,
+        torn: TornTab,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if let TornRoute::Core { key, epoch } = &torn.route {
+            let valid = self.selected_core_group() == Some(key)
+                && Self::core_workspace_epoch(cx) == Some(*epoch)
+                && self.core_group_available(key, cx)
+                && matches!(&torn.pick, Pick::Page(id) if cx.try_global::<Store>().and_then(|store| store.get(*id)).and_then(|tab| tab.core_group()).as_ref() == Some(key));
+            if !valid {
+                let _ = torn
+                    .from
+                    .update(cx, |from, cx| from.untear(&torn.workspace, &torn.pick, cx));
+                window.remove_window();
+                return false;
+            }
+            self.browser.saved.remove(&torn.workspace);
+            if let Pick::Page(id) = &torn.pick {
+                self.show_browser_tab(*id, window, cx);
+            }
+            self.browser
+                .hidden
+                .hide(torn.workspace.clone(), torn.others.iter().cloned());
+            let holder = window.window_handle().window_id();
+            let _ = torn.from.update(cx, |from, _| {
+                from.browser
+                    .hidden
+                    .hold(&torn.workspace, &torn.pick, holder);
+            });
+            return true;
+        }
         // The workspace's saved split would show the tabs this window
         // hides, so it is dropped before the page is shown in it.
         self.browser.saved.remove(&torn.workspace);
@@ -144,9 +214,10 @@ impl SheprdWindow {
         });
         self.arrival = Some(torn);
         self.land_arrival(false, cx);
+        true
     }
 
-    /// Goes where the waiting torn-off tab is, once its host is listed:
+    /// Goes where a waiting legacy tab is, once its host is listed:
     /// the session it showed there, then the tab, or a page's workspace,
     /// with the workspace's other tabs hidden and unsplit.
     /// The navigation itself waits for the surface. After the saved hosts
@@ -155,10 +226,16 @@ impl SheprdWindow {
         let Some(torn) = self.arrival.take() else {
             return;
         };
+        let TornRoute::Legacy {
+            endpoint, session, ..
+        } = &torn.route
+        else {
+            return;
+        };
         if !self
             .endpoints
             .iter()
-            .any(|endpoint| endpoint.id == torn.endpoint && endpoint.enabled)
+            .any(|entry| entry.id == *endpoint && entry.enabled)
         {
             if !listed {
                 self.arrival = Some(torn);
@@ -168,8 +245,8 @@ impl SheprdWindow {
         self.browser
             .hidden
             .hide(torn.workspace.clone(), torn.others.iter().cloned());
-        if let Some(session) = remote_session(&torn.session) {
-            self.select_device_session(&torn.endpoint, session, cx);
+        if let Some(session) = remote_session(session) {
+            self.select_device_session(endpoint, session, cx);
         }
         let target = match &torn.pick {
             Pick::Herdr(tab) => NavigationTarget::Tab(tab.clone()),
@@ -180,7 +257,7 @@ impl SheprdWindow {
                 NavigationTarget::Workspace(tab.workspace_id.clone())
             }
         };
-        self.navigate_endpoint(&torn.endpoint, target.as_deref(), cx);
+        self.navigate_endpoint(endpoint, target.as_deref(), cx);
     }
 }
 

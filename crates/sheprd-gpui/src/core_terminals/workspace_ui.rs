@@ -187,7 +187,7 @@ impl SheprdWindow {
         }
     }
 
-    fn core_workspace_epoch(cx: &App) -> Option<u64> {
+    pub(crate) fn core_workspace_epoch(cx: &App) -> Option<u64> {
         cx.try_global::<observation::Observation>()
             .map(|observation| observation.projection().epoch())
     }

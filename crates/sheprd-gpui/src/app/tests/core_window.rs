@@ -40,7 +40,10 @@ fn additional_core_window_keeps_exact_group_without_legacy_endpoint(cx: &mut gpu
         super::super::open_additional_core_window_then(
             key.clone(),
             None,
-            |view, _, _| view.core_terminals.hub.set_join_for_test(private_join),
+            |view, _, _| {
+                view.core_terminals.hub.set_join_for_test(private_join);
+                true
+            },
             |_| panic!("Core group was available"),
             cx,
             true,
@@ -104,6 +107,49 @@ fn additional_core_window_refuses_a_different_hub(cx: &mut gpui::TestAppContext)
         assert!(opened.is_err());
         assert_eq!(main_windows(cx).len(), 1);
     });
+}
+
+#[gpui::test]
+fn rejected_core_window_handoff_skips_join(cx: &mut gpui::TestAppContext) {
+    let group = Uuid::from_u128(73);
+    let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
+    let (_, cx) = cx.add_window_view(fixture_window);
+    let before = cx.update(|_, cx| main_windows(cx));
+    cx.update(|_, cx| {
+        core_terminals::set_document_for_test_as(
+            cx,
+            "hub-a",
+            Doc {
+                value: serde_json::json!({"schema_version": 1, "workspaces": [
+                    {"id": group, "label": "Core group"}
+                ]}),
+                version: 3,
+            },
+        );
+        super::super::open_additional_core_window_then(
+            key,
+            None,
+            |view, _, _| {
+                view.core_terminals.hub.set_join_for_test(private_join);
+                false
+            },
+            |_| panic!("Core group was available"),
+            cx,
+            true,
+        );
+    });
+    cx.run_until_parked();
+    let second = cx
+        .update(|_, cx| main_windows(cx))
+        .into_iter()
+        .find(|window| !before.contains(window))
+        .unwrap();
+    second
+        .update(cx, |view, window, _| {
+            assert!(matches!(view.core_terminals.hub.state(), State::Idle));
+            window.remove_window();
+        })
+        .unwrap();
 }
 
 fn main_windows(cx: &gpui::App) -> Vec<gpui::WindowHandle<SheprdWindow>> {
