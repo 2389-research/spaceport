@@ -151,23 +151,6 @@ fn saved_tabs_round_trip_and_invalid_files_are_rejected() {
     }
 }
 
-#[test]
-fn pane_origin_selects_only_its_tabs() {
-    let mut store = Store::default();
-    let scope = Scope::endpoint("local");
-    let page = url("https://a.test/");
-    let mine = store
-        .open(scope.clone(), "w_1", page.clone(), Some("w_1:p1".into()))
-        .unwrap();
-    let theirs = store
-        .open(scope.clone(), "w_1", page.clone(), Some("w_1:p2".into()))
-        .unwrap();
-    let ids: Vec<_> = store.opened_by("w_1:p1").map(|tab| tab.id).collect();
-    assert_eq!(ids, [mine]);
-    let other_ids: Vec<_> = store.opened_by("w_1:p2").map(|tab| tab.id).collect();
-    assert_eq!(other_ids, [theirs]);
-}
-
 /// Old VS Code spellings still parse so they cannot discard other saved tabs.
 #[test]
 fn saved_vs_code_tabs_parse_but_do_not_restore() {

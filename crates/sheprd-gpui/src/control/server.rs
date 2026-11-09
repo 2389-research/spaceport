@@ -3,7 +3,6 @@
 //! answered at once; a request that waits for a condition is parked as a
 //! [`Watch`] and checked on every tick.
 mod app;
-mod browser;
 mod chat;
 mod events;
 mod hosts;
@@ -18,7 +17,6 @@ use super::{
     socket, socket_path, valid_caller,
 };
 use crate::SheprdWindow;
-use browser::reload;
 use gpui::{App, Context, Window, WindowHandle};
 use std::{
     path::Path,
@@ -223,7 +221,7 @@ pub(super) fn in_free_window(
 /// where the work is app-wide.
 fn named_window(request: &Request) -> Option<u64> {
     match request {
-        Request::Reload(caller) | Request::Status(caller) => caller.window,
+        Request::Status(caller) => caller.window,
         Request::App(call) => call.caller.window,
         Request::Window(call) => call.caller.window,
         Request::Ui(call) => call.caller.window,
@@ -263,7 +261,6 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
         return;
     }
     match incoming.request.clone() {
-        Request::Reload(caller) => incoming.respond(reload(&caller, cx)),
         Request::Status(caller) => incoming.respond(app::status(&caller, cx)),
         Request::App(call) => incoming.respond(app::app(call, cx)),
         Request::Window(call) => incoming.respond(app::window(call, cx)),

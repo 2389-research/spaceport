@@ -190,14 +190,8 @@ fn native_test_flag_requires_explicit_socket() {
 }
 
 #[test]
-fn browser_commands_answer_without_a_window() {
-    let output = cli(&["browser", "--help"]);
-    assert!(output.status.success(), "{output:?}");
-    let help = String::from_utf8(output.stdout).unwrap();
-    assert!(!help.contains("browser open URL"), "{help}");
-    assert!(help.contains("3 Spaceport not running"), "{help}");
-
-    let output = cli(&["browser", "skill"]);
+fn skill_command_answers_without_a_window() {
+    let output = cli(&["skill"]);
     assert!(output.status.success(), "{output:?}");
     let skill = String::from_utf8(output.stdout).unwrap();
     assert!(skill.starts_with("---\nname: spaceport\n"), "{skill}");
@@ -214,19 +208,16 @@ fn browser_commands_answer_without_a_window() {
         "{command}"
     );
     assert!(!command.starts_with("sheprd status"), "{command}");
-
-    usage_error(&["browser", "open"], "Unknown browser command: open");
-    usage_error(&["browser", "eval"], "Unknown browser command: eval");
 }
 
 #[test]
-fn browser_open_is_rejected_before_socket_lookup() {
+fn browser_commands_are_rejected_before_socket_lookup() {
     let state = tempfile::tempdir().unwrap();
-    for target in ["file:///etc/passwd", "localhost:3000"] {
-        let output = cli_in(&["browser", "open", target], Some(state.path()));
+    for command in ["open", "eval", "reload", "list", "skill", "--help"] {
+        let output = cli_in(&["browser", command], Some(state.path()));
         assert_eq!(output.status.code(), Some(2), "{output:?}");
         assert!(
-            String::from_utf8_lossy(&output.stderr).contains("Unknown browser command: open"),
+            String::from_utf8_lossy(&output.stderr).contains("Unknown option: browser"),
             "{output:?}"
         );
         assert!(output.stdout.is_empty(), "{output:?}");
@@ -268,7 +259,7 @@ fn removed_design_feedback_is_rejected_before_socket_lookup() {
     let output = cli_in(&["browser", "feedback"], Some(state.path()));
     assert_eq!(output.status.code(), Some(2), "{output:?}");
     assert!(
-        String::from_utf8_lossy(&output.stderr).contains("Unknown browser command"),
+        String::from_utf8_lossy(&output.stderr).contains("Unknown option: browser"),
         "{output:?}"
     );
     usage_error(&["feedback"], "Unknown option: feedback");

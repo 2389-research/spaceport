@@ -79,7 +79,7 @@ def smoke(executable):
         check_usage_error(executable, state, ["--session", "old"], "Unknown option: --session")
         check_usage_error(executable, state, ["--dev"], "Unknown option: --dev")
         check_usage_error(executable, state, ["--integration-test"], "Unknown option: --integration-test")
-        check_usage_error(executable, state, ["browser", "open", "https://a.test/"], "Unknown browser command")
+        check_usage_error(executable, state, ["browser", "open", "https://a.test/"], "Unknown option: browser")
 
 
 def main(argv=None):

@@ -38,7 +38,7 @@ fn page_tab(id: u64, cx: &App) -> Result<Tab, Response> {
     if !kind(&tab).is_some_and(TabKind::is_page) {
         return Err(Response::error(
             ErrorCode::InvalidRequest,
-            format!("Tab {id} is not a page; `browser list` lists them"),
+            format!("Tab {id} is not a page; `tab list` lists the app's tabs"),
         ));
     }
     Ok(tab)

@@ -1,20 +1,9 @@
-//! Workspace navigation and page reload for retained tab commands.
+//! Workspace navigation for retained tab commands.
 
-use crate::{NavigationTarget, SheprdWindow, browser::TabId};
+use crate::{NavigationTarget, SheprdWindow};
 use gpui::Context;
 
 impl SheprdWindow {
-    /// Reloads this window's pages for `tabs`, as an agent asks after
-    /// editing a page it showed.
-    pub(crate) fn reload_browser_tabs(&mut self, tabs: &[TabId]) {
-        #[cfg(any(target_os = "macos", windows))]
-        for id in tabs {
-            self.browser.pages.reload(*id);
-        }
-        #[cfg(not(any(target_os = "macos", windows)))]
-        let _ = tabs;
-    }
-
     /// Whether the window shows `workspace` of endpoint `index` now.
     pub(crate) fn shows_workspace(&self, index: usize, workspace: &str) -> bool {
         index == self.selected_endpoint

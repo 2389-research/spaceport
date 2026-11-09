@@ -33,7 +33,8 @@ use serde::{Deserialize, Serialize};
 /// 30: removed `app.open` and `work.script.archive` requests.
 /// 31: removed design feedback and page-note requests and responses.
 /// 32: removed worktree script control requests.
-pub const PROTOCOL_VERSION: u32 = 32;
+/// 33: removed the browser reload request and reply.
+pub const PROTOCOL_VERSION: u32 = 33;
 
 /// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;
@@ -43,8 +44,6 @@ pub const MAX_WAIT_SECONDS: u64 = 600;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "method", deny_unknown_fields)]
 pub enum Request {
-    #[serde(rename = "browser.reload")]
-    Reload(Caller),
     #[serde(rename = "status")]
     Status(Caller),
     #[serde(rename = "app")]
@@ -79,7 +78,7 @@ pub struct LinkOp {
     pub url: String,
 }
 
-/// A request of a family other than the browser's: who asks, and what.
+/// A request of a command family: who asks, and what.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Call<T> {
@@ -145,9 +144,6 @@ pub enum ErrorCode {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum Response {
-    Reloaded {
-        tabs: usize,
-    },
     Status(app::Status),
     /// Done; the message says what happened, for a person.
     Done {
@@ -200,6 +196,7 @@ mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
 
+    mod removed_browser;
     mod removed_phone;
 
     #[test]
@@ -223,11 +220,11 @@ mod tests {
 
     #[test]
     fn requests_have_a_stable_wire_form() {
-        let reload: Request =
-            serde_json::from_str(r#"{"method":"browser.reload","pane_id":"w_1:p1"}"#).unwrap();
+        let status: Request =
+            serde_json::from_str(r#"{"method":"status","pane_id":"w_1:p1"}"#).unwrap();
         assert!(matches!(
-            reload,
-            Request::Reload(Caller {
+            status,
+            Request::Status(Caller {
                 pane_id: Some(_),
                 ..
             })
@@ -259,7 +256,7 @@ mod tests {
     fn responses_round_trip() {
         for response in [
             Response::error(ErrorCode::WorkspaceNotFound, "No window shows w_9"),
-            Response::Reloaded { tabs: 2 },
+            Response::done("ok"),
         ] {
             let text = serde_json::to_string(&response).unwrap();
             assert_eq!(serde_json::from_str::<Response>(&text).unwrap(), response);

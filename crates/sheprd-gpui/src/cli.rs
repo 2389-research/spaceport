@@ -38,16 +38,6 @@ pub enum CliError {
     DuplicateSocket,
     #[error("Unknown option: {}", .0.to_string_lossy())]
     UnknownOption(OsString),
-    #[error("browser requires a command: reload, list, skill, or --help")]
-    MissingBrowserCommand,
-    #[error("Unknown browser command: {}", .0.to_string_lossy())]
-    UnknownBrowserCommand(OsString),
-    #[error("browser navigate requires one URL")]
-    MissingUrl,
-    #[error("Unexpected browser argument: {}", .0.to_string_lossy())]
-    UnexpectedArgument(OsString),
-    #[error("browser arguments must be UTF-8")]
-    InvalidBrowserEncoding(OsString),
     #[error("{0} requires a value")]
     MissingValue(&'static str),
     #[error("{0} may only be specified once")]

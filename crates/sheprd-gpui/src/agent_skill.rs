@@ -244,14 +244,6 @@ impl AgentSkill {
             )
             .detach();
         }
-        // The notes prompt names the executable, which `executable` finds on
-        // disk; resolve it now, off the UI thread, rather than on first use.
-        #[cfg(any(target_os = "macos", windows))]
-        cx.background_executor()
-            .spawn(async {
-                crate::control::reload_command();
-            })
-            .detach();
     }
 
     /// Applies the settings' `[agent_skill] install`, as loaded or edited.

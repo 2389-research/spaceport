@@ -2,6 +2,7 @@
 use super::*;
 use crate::protocol::{
     Call, Caller, MAX_WAIT_SECONDS,
+    app::AppOp,
     events::{EventsOp, Reply},
 };
 use test_support::{Address, address};
@@ -14,8 +15,11 @@ mod pipe;
 #[cfg(unix)]
 mod unix;
 
-fn reload() -> Request {
-    Request::Reload(Caller::default())
+fn focus_request() -> Request {
+    Request::App(Call {
+        caller: Caller::default(),
+        op: AppOp::Focus,
+    })
 }
 
 fn waiting_events(wait_seconds: u64) -> Request {
@@ -46,11 +50,13 @@ fn a_request_reaches_the_ui_and_its_answer_reaches_the_caller() {
     let server = Server::bind(&address.path).unwrap();
     let caller = thread::spawn({
         let path = address.path.clone();
-        move || call(&path, &reload())
+        move || call(&path, &focus_request())
     });
     let incoming = server.next().unwrap();
-    assert_eq!(incoming.request, reload());
-    let expected = Response::Reloaded { tabs: 1 };
+    assert_eq!(incoming.request, focus_request());
+    let expected = Response::Done {
+        message: "focused".into(),
+    };
     incoming.respond(expected.clone());
     assert_eq!(caller.join().unwrap().unwrap(), expected);
 }
@@ -102,15 +108,16 @@ fn a_waiting_caller_does_not_hold_up_the_next_one() {
     // While the first caller waits for the user, another is answered.
     let next = thread::spawn({
         let path = address.path.clone();
-        move || call(&path, &reload())
+        move || call(&path, &focus_request())
     });
-    server
-        .next()
-        .unwrap()
-        .respond(Response::Reloaded { tabs: 0 });
+    server.next().unwrap().respond(Response::Done {
+        message: "focused".into(),
+    });
     assert_eq!(
         next.join().unwrap().unwrap(),
-        Response::Reloaded { tabs: 0 }
+        Response::Done {
+            message: "focused".into()
+        }
     );
     let expired = Response::Events {
         reply: Reply::Events {
@@ -131,7 +138,7 @@ fn event_waits_are_bounded() {
         wait(u64::MAX),
         ANSWER_TIMEOUT + Duration::from_secs(MAX_WAIT_SECONDS)
     );
-    assert_eq!(answer_timeout(&reload()), ANSWER_TIMEOUT);
+    assert_eq!(answer_timeout(&focus_request()), ANSWER_TIMEOUT);
 }
 
 #[test]
@@ -140,7 +147,7 @@ fn an_answer_over_the_bound_is_refused() {
     let server = Server::bind(&address.path).unwrap();
     let caller = thread::spawn({
         let path = address.path.clone();
-        move || call(&path, &reload())
+        move || call(&path, &focus_request())
     });
     server.next().unwrap().respond(Response::Done {
         message: "n".repeat(MAX_MESSAGE),
@@ -159,7 +166,7 @@ fn an_answer_over_the_bound_is_refused() {
 fn a_missing_server_is_reported_as_unavailable() {
     let address = address();
     assert!(matches!(
-        call(&address.path, &reload()),
+        call(&address.path, &focus_request()),
         Err(crate::Error::Unavailable { .. })
     ));
 }

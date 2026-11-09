@@ -3,7 +3,6 @@
 //! CLI already drives workspaces, tabs, panes, agents, and notifications;
 //! these cover what only this client knows or draws.
 mod app;
-mod browser;
 mod chat;
 mod hosts;
 mod settings;
@@ -12,9 +11,8 @@ mod work;
 
 use super::CliError;
 pub(crate) use super::args::Args;
-pub use crate::control::{Cursor, EventKind, FontSize, Size, Sound, Switch, ZoomChange};
+pub use crate::control::{Cursor, EventKind, FontSize, Size, Sound, Switch};
 pub use app::{AppCommand, UiCommand, WindowCommand};
-pub use browser::BrowserCommand;
 pub use chat::ChatCommand;
 pub use hosts::{HostCommand, PortsCommand};
 pub use settings::{
@@ -43,7 +41,6 @@ pub enum ControlCommand {
     Help(Option<&'static str>),
     Status,
     Skill,
-    Browser(BrowserCommand),
     App(AppCommand),
     Window(WindowCommand),
     Ui(UiCommand),
@@ -101,7 +98,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
         "Whether Spaceport runs, its version, windows, and hosts",
     ),
     ("skill", "Print the agent skill describing these commands"),
-    ("browser", "Browser tabs: reload, list, navigate"),
     ("app", "Bring the app forward, hide it, or quit it"),
     (
         "window",
@@ -199,16 +195,6 @@ pub fn parse(
         .find(|name| family == *name)
         .ok_or(CliError::UnknownOption(family))?;
     let mut args = Args::new(rest, family);
-    // Browser help stays as it was: any `--help` prints the browser usage.
-    if family == "browser" {
-        let json = args.flag("--json");
-        let window = args.number("--window", 0..=u64::MAX)?;
-        return Ok(Invocation {
-            command: ControlCommand::Browser(browser::parse(&mut args)?),
-            json,
-            window,
-        });
-    }
     if args.wants_help() {
         return Ok(Invocation {
             command: ControlCommand::Help(Some(family)),

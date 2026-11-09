@@ -1,12 +1,12 @@
 ---
 name: spaceport
-description: "Use Spaceport client commands for native chat, files, notes, settings, and window state inside Herdr. The browser page-open command has been removed; share a URL or file path for the user to open."
+description: "Use Spaceport client commands for native chat, files, notes, settings, and window state inside Herdr. The browser commands have been removed; share a URL or file path for the user to open."
 ---
 <!-- spaceport-managed-skill v1: Spaceport keeps this file up to date. Edit a copy under another name to keep your changes. -->
 
 # Spaceport client commands
 
-The local `spaceport browser open` command has been removed. Share a web URL or
+The browser command family has been removed. Share a web URL or
 file path with the user for their system handler. Native chat supports Markdown,
 Mermaid, and the fixed `herdr-ui` control catalog.
 

@@ -10,29 +10,6 @@ Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
 4 nothing yet (no event), 5 not found, 6 busy (a dialog is open),
 7 timed out, 8 unsupported on this platform or by this app version.";
 
-const BROWSER: &str = "\
-spaceport browser reload
-    Reload the pages this pane opened, for example after editing the file.
-spaceport browser list
-    List page tabs with their IDs.
-spaceport browser close|back|forward|text TAB
-    Close a page tab, go back or forward in it, or print its visible text.
-spaceport browser navigate TAB URL
-    Load another web address in a page tab.
-spaceport browser zoom TAB +|-|reset|PERCENT
-    Zoom a page tab in or out a step, back to 100%, or to PERCENT (50-300),
-    as the font size keys do while it is focused. The tab keeps its zoom.
-spaceport browser screenshot TAB PATH
-    Save a PNG of the page (macOS).
-spaceport browser skill
-    Print the agent skill that explains these commands.
-spaceport browser example
-    Print an example explainer page built on the kit Spaceport serves to local
-    pages at /.herdr/kit.css and /.herdr/kit.js.
-Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
-4 nothing yet, 5 no such tab or workspace, 6 busy, 7 timed out,
-8 unsupported on this platform.";
-
 fn family(name: &str) -> &'static str {
     match name {
         "status" => {
@@ -129,7 +106,6 @@ fn family(name: &str) -> &'static str {
 /// Usage for one family, or the list of families.
 pub(super) fn usage(name: Option<&str>) -> String {
     match name {
-        Some("browser") => BROWSER.to_owned(),
         Some(name) => format!("{}\n\n{COMMON}", family(name)),
         None => {
             let mut text = String::from("spaceport COMMAND ... [--json] [--window ID]\n\n");

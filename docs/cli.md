@@ -85,13 +85,6 @@ legacy launch target; it does not yet join the selected Core hub.
 | --- | --- |
 | `tab [list]` | Current page, Devices, and Core terminal tabs with IDs; retired specialized tabs are omitted |
 | `tab focus\|close ID` | |
-| `browser reload` | See [browser tabs](../crates/sheprd-gpui/README.md#browser-tabs) |
-| `browser list` | Page tabs only |
-| `browser navigate ID URL` | Load another address in a page tab |
-| `browser back\|forward ID` | |
-| `browser zoom ID +\|-\|reset\|PERCENT` | Zoom a page tab a step, back to 100%, or to 50-300%; the tab keeps it |
-| `browser text ID` | The page's visible text |
-| `browser screenshot ID PATH` | A PNG of the visible page, at most 2000 px a side (macOS) |
 | `devices` | The Devices overview |
 
 ### Worktrees and agents
@@ -219,9 +212,9 @@ The request is `{"method": "link", "caller", "op": {"url"}}`.
 
 One JSON request line, one JSON response line, then the socket closes. A
 request is `{"method", "caller", "op"}`, where `caller` carries the pane,
-workspace, daemon socket, and window, and `op` is tagged with `"op"`. Browser
-`browser.reload` keeps its flat form. `status` reports the protocol version,
-currently 31. Requests and responses are bounded to 256 KiB, a request that
+workspace, daemon socket, and window, and `op` is tagged with `"op"`.
+`status` reports the protocol version, currently 33. Requests and responses
+are bounded to 256 KiB, a request that
 waits says for how long (at most 600 seconds), and the app answers at most a
 few requests at a time.
 

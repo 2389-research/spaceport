@@ -7,7 +7,7 @@ mod branding;
 fn the_skill_is_marked_and_names_this_executable() {
     assert!(SKILL.starts_with("---\nname: spaceport\n"));
     assert!(managed(SKILL));
-    assert!(SKILL.contains("local `spaceport browser open` command has been removed"));
+    assert!(SKILL.contains("The browser command family has been removed"));
     assert_eq!(text(None), SKILL);
     let bundled = text(Some(Path::new(
         "/Applications/Herdr.app/Contents/MacOS/Herdr",
@@ -83,7 +83,7 @@ fn description(skill: &str) -> &str {
 
 #[test]
 fn the_skill_does_not_promise_local_page_open() {
-    assert!(SKILL.contains("The local `spaceport browser open` command has been removed"));
+    assert!(SKILL.contains("The browser command family has been removed"));
     assert!(!SKILL.contains("SSH host with the installed shim"));
     assert!(!SKILL.contains("spaceport browser open ./"));
     assert!(!SKILL.contains("HerdrKit.scenario("));

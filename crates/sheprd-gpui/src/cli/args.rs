@@ -34,18 +34,13 @@ impl Args {
         self.command
     }
 
-    /// Everything left, in order, for a parser of its own.
-    pub(crate) fn take_all(&mut self) -> impl Iterator<Item = OsString> + use<> {
-        std::mem::take(&mut self.rest).into_iter()
-    }
-
     /// The next word, which names a subcommand.
     pub(crate) fn verb(&mut self) -> Option<OsString> {
         self.rest.pop_front()
     }
 
     /// Whether `--help` or `-h` appears anywhere, which wins over every
-    /// other argument as it does for the browser commands.
+    /// other argument for commands that support help.
     pub(crate) fn wants_help(&self) -> bool {
         self.rest.iter().any(|arg| arg == "--help" || arg == "-h")
     }

@@ -1,13 +1,12 @@
 use super::*;
-use control::BrowserCommand;
 
-mod browser_zoom;
 mod chat;
 mod control_commands;
 mod development_links;
 mod language;
 mod links;
 mod removed_automation;
+mod removed_browser;
 mod removed_checkpoint;
 mod removed_cloud;
 mod removed_code_edit;
@@ -41,79 +40,6 @@ fn build_info_is_an_informational_mode() {
             env!("HERDR_BUILD_PR"),
             "\n"
         )
-    );
-}
-
-/// A browser command as the parser should produce it: text output, the
-/// default window.
-fn browser(command: BrowserCommand) -> LaunchMode {
-    LaunchMode::Control(control::Invocation {
-        command: control::ControlCommand::Browser(command),
-        json: false,
-        window: None,
-    })
-}
-
-#[test]
-fn removed_browser_open_command_is_rejected() {
-    assert!(matches!(
-        LaunchOptions::parse(["browser", "open", "https://a.test/"]),
-        Err(CliError::UnknownBrowserCommand(_))
-    ));
-}
-
-#[test]
-fn removed_design_feedback_commands_are_rejected() {
-    assert!(matches!(
-        LaunchOptions::parse(["browser", "feedback"]),
-        Err(CliError::UnknownBrowserCommand(_))
-    ));
-    assert_eq!(
-        LaunchOptions::parse(["--mockup"]).unwrap_err(),
-        CliError::UnknownOption("--mockup".into())
-    );
-}
-
-#[test]
-fn browser_commands_never_start_the_gui() {
-    let mode = |args: &[&str]| LaunchOptions::parse(args.iter().copied()).map(|o| o.mode);
-    assert_eq!(
-        mode(&["browser", "skill"]).unwrap(),
-        browser(BrowserCommand::Skill)
-    );
-    assert_eq!(
-        mode(&["browser", "example"]).unwrap(),
-        browser(BrowserCommand::Example)
-    );
-    assert_eq!(
-        mode(&["browser", "reload"]).unwrap(),
-        browser(BrowserCommand::Reload)
-    );
-    assert_eq!(
-        mode(&["browser", "--help"]).unwrap(),
-        browser(BrowserCommand::Help)
-    );
-    for (args, expected) in [
-        (&["browser"][..], CliError::MissingBrowserCommand),
-        (
-            &["browser", "eval"],
-            CliError::UnknownBrowserCommand("eval".into()),
-        ),
-        (
-            &["browser", "skill", "x"],
-            CliError::UnexpectedArgument("x".into()),
-        ),
-        (
-            &["browser", "reload", "x"],
-            CliError::UnexpectedArgument("x".into()),
-        ),
-    ] {
-        assert_eq!(mode(args).unwrap_err(), expected, "{args:?}");
-    }
-    // Only a leading "browser" is the subcommand.
-    assert_eq!(
-        mode(&["--dev", "browser"]).unwrap_err(),
-        CliError::UnknownOption("--dev".into())
     );
 }
 

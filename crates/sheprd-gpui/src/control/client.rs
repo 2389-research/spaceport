@@ -2,7 +2,6 @@
 //! the running app (or read the app's files), and print the answer as text
 //! or, with `--json`, as one JSON document.
 mod app;
-mod browser;
 mod chat;
 mod events;
 mod help;
@@ -17,7 +16,7 @@ use super::{
     protocol::{Call, Caller, Request, Response},
 };
 use super::{socket, socket_path};
-use crate::cli::control::{BrowserCommand, ControlCommand, Invocation};
+use crate::cli::control::{ControlCommand, Invocation};
 use serde::Serialize;
 use std::{io::IsTerminal as _, process::ExitCode};
 
@@ -332,22 +331,13 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
             println!("{}", help::usage(family));
             return ExitCode::SUCCESS;
         }
-        ControlCommand::Browser(BrowserCommand::Help) => {
-            println!("{}", help::usage(Some("browser")));
-            return ExitCode::SUCCESS;
-        }
-        ControlCommand::Skill | ControlCommand::Browser(BrowserCommand::Skill) => {
+        ControlCommand::Skill => {
             print!(
                 "{}",
                 crate::agent_skill::text(crate::agent_skill::executable().as_deref())
             );
             return ExitCode::SUCCESS;
         }
-        ControlCommand::Browser(BrowserCommand::Example) => {
-            print!("{}", browser::EXAMPLE);
-            return ExitCode::SUCCESS;
-        }
-        ControlCommand::Browser(command) => browser::run(command, &context),
         ControlCommand::Status => app::status(&context),
         ControlCommand::App(command) => app::app(command, &context),
         ControlCommand::Window(command) => app::window(command, &context),

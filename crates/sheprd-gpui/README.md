@@ -2146,8 +2146,7 @@ come back after a restart; closing a workspace in Herdr removes its tabs.
   to those commands zoom a page that has the keyboard too, as Safari's do,
   so the page cannot take them for itself. Each tab keeps its own zoom, saved with it, and every window's
   page for the tab follows it. A zoomed page's toolbar shows its zoom;
-  clicking it returns to 100%. An agent zooms a tab with
-  `spaceport browser zoom`.
+  clicking it returns to 100%.
 - Close Tab and Close Pane close the browser tab being shown, without asking.
   Clicking a Herdr tab, or switching Herdr tabs in the workspace, shows its
   terminal again. Next Tab, Previous Tab, and the tab numbers count browser
@@ -2188,7 +2187,7 @@ outcome, placeholders, and mockup variants with **Pick** buttons that copy the c
 page matches the app and follows a theme change on its next load. Dotted
 paths are never read from the page's folder, so these cannot hide a file of
 the page's own. Opened elsewhere, the kit falls back to its own light and
-dark colors. `spaceport browser example` prints a complete page built on it.
+dark colors.
 The kit inserts every text as text, never as HTML.
 
 Agents only use what they know about, so the app offers, once, to install a
@@ -2214,12 +2213,12 @@ removed; a skill of the same name you wrote yourself is left alone.
   Preferences or the palette still works when you choose to. An older
   `install = "ask"` entry must be changed to `"local"` or `"off"`.
 
-`spaceport browser skill` prints the same text, for example to install it
+`spaceport skill` prints the same text, for example to install it
 elsewhere:
 
 ```sh
 mkdir -p ~/.claude/skills/spaceport
-spaceport browser skill > ~/.claude/skills/spaceport/SKILL.md
+spaceport skill > ~/.claude/skills/spaceport/SKILL.md
 ```
 
 ## Chats

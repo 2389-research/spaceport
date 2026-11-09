@@ -26,20 +26,6 @@ pub(crate) use sheprd_control_protocol::Error;
 use sheprd_control_protocol::{protocol, socket};
 use std::path::{Path, PathBuf};
 
-#[cfg(any(target_os = "macos", windows))]
-/// The command that reloads a caller's pages, for the notes prompt.
-pub(crate) fn reload_command() -> String {
-    static COMMAND: std::sync::OnceLock<String> = std::sync::OnceLock::new();
-    COMMAND
-        .get_or_init(|| {
-            format!(
-                "{} browser reload",
-                crate::agent_skill::command(crate::agent_skill::executable().as_deref())
-            )
-        })
-        .clone()
-}
-
 /// Where this user's app listens: a socket in its state directory, or a
 /// named pipe on Windows.
 fn socket_path() -> crate::Result<PathBuf> {
