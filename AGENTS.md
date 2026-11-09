@@ -290,6 +290,8 @@ just test-perf
 
 ## Git And Handoff
 
+- Create future task worktrees under the main checkout's `.worktrees/<task>` directory. Keep that directory ignored. Preserve active worktrees during cleanup; remove only confirmed inactive worktrees without discarding uncommitted work or branch history.
+
 - Only commit, push, or create/update a PR when requested. Do not amend, force-push, discard changes, or clean up other worktrees without explicit authorization.
 - Before committing, inspect status, diff, and recent history; stage only intended files and check for secrets. Do not bypass hooks or signing when they fail.
 - Use conventional commit subjects (`feat`, `fix`, `refactor`, `test`, `docs`, `chore`). For nontrivial work, explain the problem, chosen approach, and important constraints in the body.
