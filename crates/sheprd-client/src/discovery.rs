@@ -117,10 +117,7 @@ impl ConnectTarget {
     /// so its paths, processes, and files are not
     /// this machine's.
     pub fn is_remote(&self) -> bool {
-        match self {
-            Self::Ssh { .. } | Self::Wsl { .. } => true,
-            _ => false,
-        }
+        matches!(self, Self::Ssh { .. } | Self::Wsl { .. })
     }
 
     /// The session a remote target attaches to.
