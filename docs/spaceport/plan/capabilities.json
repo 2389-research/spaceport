@@ -77,8 +77,8 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_crud_and_selection_headless_passed; local_membership_ui_disjoint_rebase_and_same_group_refusal_passed_private_core; terminal_run_then_failed_manual_add_keeps_ungrouped_picker_and_pid; remote_doc_id_route_reconnect_and_missed_passed_private_core_client; app_remote_document_reader_notice_and_reconnect_passed_private_core; local_core_group_saved_tab_and_cli_focus_headless_passed; selected_core_group_reconnect_overlay_and_exact_hub_binding_headless_passed; native_remote_reader_grouped_launch_partial_result_and_tear_off_not_run; core_only_window_constructor_not_run; unknown_outcome_ui_guard_seeded_only",
-      "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md", "evidence/t03-workspace-document.md", "evidence/t03-observation.md", "evidence/t03-document-edits.md", "evidence/t03-workspace-ui.md", "evidence/t03-remote-document-route.md", "evidence/t03-remote-document-reader.md", "evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md", "evidence/t03-core-reconnect-overlay.md", "evidence/t03-exact-core-hub.md"]
+      "runtime_test_status": "document_cas_and_notice_passed_private_core_macos; core_group_crud_and_selection_headless_passed; local_membership_ui_disjoint_rebase_and_same_group_refusal_passed_private_core; terminal_run_then_failed_manual_add_keeps_ungrouped_picker_and_pid; remote_doc_id_route_reconnect_and_missed_passed_private_core_client; app_remote_document_reader_notice_and_reconnect_passed_private_core; local_core_group_saved_tab_and_cli_focus_headless_passed; selected_core_group_reconnect_overlay_and_exact_hub_binding_headless_passed; core_only_additional_window_constructor_and_cli_new_window_exact_group_headless_passed; native_remote_reader_grouped_launch_partial_result_and_tear_off_not_run; core_only_native_window_not_run; unknown_outcome_ui_guard_seeded_only",
+      "runtime_evidence": ["evidence/t00-core-test.log", "evidence/t02-document-route.md", "evidence/t02-document-events.md", "evidence/t03-workspace-document.md", "evidence/t03-observation.md", "evidence/t03-document-edits.md", "evidence/t03-workspace-ui.md", "evidence/t03-remote-document-route.md", "evidence/t03-remote-document-reader.md", "evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md", "evidence/t03-core-reconnect-overlay.md", "evidence/t03-exact-core-hub.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
     },
     {
       "id": "CAP-CHAT",
@@ -155,8 +155,8 @@
       ],
       "gaps": [],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "headless_core_catalog_status_and_explicit_window_refusal_passed; real_binary_cli_parser_and_missing_app_suite_15_passed_macos; native_window_control_not_run",
-      "runtime_evidence": ["evidence/t09-core-catalog-status.md", "evidence/t04-legacy-launch-flags.md", "evidence/t04-code-open-route.md", "evidence/t04-browser-control-open.md"]
+      "runtime_test_status": "headless_core_catalog_status_and_explicit_window_refusal_passed; core_group_cli_new_window_exact_target_headless_passed; real_binary_cli_suite_20_passed_macos; native_window_control_not_run",
+      "runtime_evidence": ["evidence/t09-core-catalog-status.md", "evidence/t04-legacy-launch-flags.md", "evidence/t04-code-open-route.md", "evidence/t04-browser-control-open.md", "evidence/t03-core-cli-window-target.md"]
     },
     {
       "id": "CAP-UPDATE",
