@@ -16,33 +16,6 @@ const PREVIEW_ORIGINS: [&str; 3] = [
     "http://herdr-preview.localhost/",
     "https://herdr-preview.localhost/",
 ];
-
-/// The frame a page's message came from, by its address. wry gives every
-/// frame of every page `window.ipc`, so only this tells a local page's own
-/// script from a web page it embeds or is navigating to.
-#[cfg(any(target_os = "macos", windows, test))]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum PostedFrom {
-    /// A frame showing a local file through the preview scheme.
-    Preview,
-    /// Any other frame: a web page, `about:` frames, or an unknown address.
-    Elsewhere,
-}
-
-#[cfg(any(target_os = "macos", windows, test))]
-impl PostedFrom {
-    pub(crate) fn of(frame_url: &str) -> Self {
-        if PREVIEW_ORIGINS
-            .iter()
-            .any(|origin| frame_url.starts_with(origin))
-        {
-            Self::Preview
-        } else {
-            Self::Elsewhere
-        }
-    }
-}
-
 #[cfg(any(target_os = "macos", windows, test))]
 /// Everything but unreserved characters is escaped in a path segment.
 const SEGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC

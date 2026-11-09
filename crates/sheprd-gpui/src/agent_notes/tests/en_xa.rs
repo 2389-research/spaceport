@@ -1,20 +1,5 @@
-//! The `en-XA` leak test for the notes text other views draw: the Send
-//! button, the line under waiting notes, and the reasons notes were kept.
+//! The `en-XA` leak test for the reasons feedback was kept.
 use super::*;
-use crate::i18n::leak_tests::under_en_xa;
-use sheprd_i18n::pseudo::is_marked;
-
-#[test]
-fn the_send_button_and_queued_lines_are_messages() {
-    under_en_xa("agent notes en-XA leak", |_, _| {
-        for label in [send_label(2, 0), send_label(2, 2), send_label(3, 1)] {
-            assert!(is_marked(&label), "not a message: {label}");
-        }
-        for queued in [Queued::UntilIdle, Queued::ForFeedback] {
-            assert!(is_marked(&queued.label()), "not a message: {queued:?}");
-        }
-    });
-}
 
 #[test]
 fn each_reason_notes_were_kept_has_its_own_sentence() {

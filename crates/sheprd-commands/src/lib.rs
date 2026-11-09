@@ -79,8 +79,6 @@ pub enum Command {
     Logs,
     About,
     OpenNotificationTarget,
-    /// Annotate mode on the page in view.
-    ToggleAnnotate,
     InstallBrowserSkill,
     SplitEditor,
     ToggleFullScreen,
@@ -662,11 +660,6 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-about",
     },
     CommandInfo {
-        command: Command::ToggleAnnotate,
-        name: "toggle_annotate",
-        message: "commands-toggle-annotate",
-    },
-    CommandInfo {
         command: Command::InstallBrowserSkill,
         name: "install_browser_skill",
         message: "commands-install-browser-skill",
@@ -861,7 +854,6 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::Logs
         | Command::About
         | Command::OpenNotificationTarget
-        | Command::ToggleAnnotate
         | Command::InstallBrowserSkill
         | Command::SplitEditor
         | Command::ToggleFullScreen

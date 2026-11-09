@@ -2221,9 +2221,8 @@ come back after a restart; closing a workspace in Herdr removes its tabs.
   Pages cannot navigate to other schemes
   (so `file:` and applications' custom URL schemes stay closed), downloads are
   refused, and a page's new windows open as new browser tabs. The only
-  messages a page can send the app are annotation picks, which fill a draft
-  note and nothing else, and its icon, which shows on its tab; the app runs
-  only its own scripts in pages. On
+  message a page can send the app is its icon, which shows on its tab; the
+  app runs only its own scripts in pages. On
   Windows, a frame inside a page that links to an application's URL scheme
   gets WebView2's own confirmation prompt rather than being refused outright.
 - Pages are native web views (WebKit on macOS, WebView2 on Windows). On
@@ -2241,93 +2240,14 @@ come back after a restart; closing a workspace in Herdr removes its tabs.
   whole editor area, so they stay visible and clickable. A page that none of
   these reach keeps showing.
 - Linux has no embedded pages yet: browser tab requests open the system
-  browser, and local files and annotations are unavailable.
-
-### Annotating A Page
-
-**Annotate** in a browser tab's toolbar lets you pin notes to a page and send
-them to the agent that opened it, so it can change the page. Bind
-`toggle_annotate` under `[keybindings]` to start or stop annotating the page
-in view from the keyboard; it has no default key.
-
-- Hover to outline an element and click to pick it, or select text. For
-  anything else, draw a region: turn on **Region** in the notes panel and
-  drag, or Shift-drag at any time. Links do not follow while annotating.
-  **Note on page** writes a note about the whole page. Escape drops the
-  current pick; a second Escape stops annotating.
-- On macOS each pick also takes a screenshot of that part of the page, as it
-  looks on screen and without the annotation overlay, shown in the note. It
-  comes from WebKit's own snapshot, the one place the app calls WebKit
-  directly (`browser/snapshot.rs`). Screenshots are saved when you send, as
-  private files in `$XDG_STATE_HOME/herdr/gpui/annotations/`, removed after a
-  week, and the prompt names each file. Windows notes have no screenshots.
-- Notes are written in the panel beside the page, not in the page, so the
-  page never sees them. Queued notes are numbered on the page. Up to 20 wait
-  per tab. The panel slides open and closed; a new note grows into it, and
-  its number pops onto the page unless the system asks for reduced motion.
-- **Send to agent** turns them into one prompt: the page, then for each note
-  the element's selector path, text, and a short HTML snippet (for a region:
-  its position, the container and elements it covers, and their text), its
-  screenshot, and your note.
-  Page text is cleaned of control characters and marked as quoted data.
-  **Copy** puts the same prompt on the clipboard instead.
-- When the agent takes the notes, its tab replaces the page and its pane
-  takes the focus, so you see it pick them up. Notes held for a busy agent
-  do this once they are pasted; an agent in another workspace is brought up
-  once the window arrives there. Notes from a mockup window bring the Herdr
-  UI window forward the same way. Notes that are kept for `browser
-  feedback` or copied leave the page where it is.
-- Sent notes stay listed, dimmed and marked sent, so a note can be changed
-  and sent again. Click a note's text to edit it in the composer; saving it
-  marks it unsent. Send then delivers only the notes not sent yet (**Send 2
-  new**), or every note again once all were sent (**Resend all**), and Copy
-  copies the same ones. **Clear sent** removes the sent notes, ending the
-  round. Another Send waits while screenshots are saving, delivery is pending,
-  or the previous batch is still waiting to be collected through `browser feedback`.
-  While a batch waits for a busy agent or for `browser feedback`, the panel
-  says so and offers **Withdraw** in place of Send: it takes the batch back
-  before the agent has it and marks its notes unsent, so you can edit them and
-  send again. A batch already typed into the pane cannot be withdrawn, and
-  nothing joins an agent's running turn: Herdr offers this client no way to
-  prompt an agent mid-run, so busy agents get notes once they are idle.
-- The prompt goes to the agent one way only. An agent waiting in
-  `browser feedback --wait` receives it there. Otherwise it is typed into the
-  agent's pane and submitted once Herdr reports the agent idle (or still
-  working after two minutes). It is never typed into a pane where Herdr sees no
-  running agent, since Enter there would run it in a shell, nor into an agent
-  that is asking you a question; those notes wait for `browser feedback`, as
-  do notes for a pane this window does not show. Notes written in a session
-  that is no longer shown are copied, never handed to another session's
-  agent.
-- Feedback is scoped to the caller's daemon socket and pane together, so two
-  local sessions with the same pane ID cannot take each other's notes. Use the
-  matching CLI build: older pane-only feedback requests are rejected rather
-  than guessed. The mockup receiver still watches its file fallback when an
-  older running app rejects scoped feedback.
-- Tabs you open yourself have no agent to send to; **Copy** is offered
-  instead.
-- A local page can also queue a result for its agent with
-  `herdr.send(summary, data)`, for example the mockup variant you picked.
-  It appears in the notes panel as **Page result**, with a hint to add a note,
-  and goes to the agent only when you press Send, as "The page sent a result"
-  followed by the summary and the data as JSON. A newer result replaces an
-  unsent one and keeps the note you added to it. The bridge is injected only into local pages, only while they
-  show the preview scheme. Any frame can still post to the app, so it checks
-  the frame that sent each result and drops it unless that frame shows a
-  local file: a web page embedded in the local page, or one it is navigating
-  to, cannot send.
-  The summary is one cleaned line of at most 300 characters; data over 8 KB
-  is refused rather than cut. `herdr.send` returns false for a result the
-  app would refuse, so the page can say so; whether the app kept one it was
-  handed shows in the window, as the note or a warning.
+  browser, and local files are unavailable.
 
 ### Explainer Kit
 
 Local pages can load a small kit the app serves at `/.herdr/kit.css` and
 `/.herdr/kit.js`, for interactive explainers and UI mockups: segmented
 controls, a row of steps with their status, the selected step's detail, an
-outcome, placeholders, and mockup variants with **Pick** buttons that call
-`herdr.send`. `/.herdr/theme.css` carries the window's theme colors, so the
+outcome, placeholders, and mockup variants with **Pick** buttons that copy the chosen result for manual sharing. `/.herdr/theme.css` carries the window's theme colors, so the
 page matches the app and follows a theme change on its next load. Dotted
 paths are never read from the page's folder, so these cannot hide a file of
 the page's own. Opened elsewhere, the kit falls back to its own light and

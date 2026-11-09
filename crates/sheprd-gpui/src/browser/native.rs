@@ -43,14 +43,8 @@ pub(crate) enum Event<P = TabId> {
     /// A popup's script closed it, which closes its tab.
     #[cfg(target_os = "macos")]
     Closed(P),
-    /// A screenshot for a note, as TIFF bytes, or `None` when WebKit had
-    /// none. Only macOS takes them.
-    #[cfg(target_os = "macos")]
-    Captured(P, u64, Option<Vec<u8>>),
-    /// A message the annotation picker or the page bridge posted, and the
-    /// frame that posted it. Any script in any frame can post one, so it is
-    /// parsed as untrusted input.
-    Posted(P, String, super::PostedFrom),
+    /// A bounded message from a page script, parsed as untrusted input.
+    Posted(P, String),
 }
 
 /// The page a report came from. A popup's page exists before its tab does,
@@ -78,9 +72,7 @@ impl Event<Source> {
             Self::Opened(source, url, popup, page) => Event::Opened(tab(source)?, url, popup, page),
             #[cfg(target_os = "macos")]
             Self::Closed(source) => Event::Closed(tab(source)?),
-            #[cfg(target_os = "macos")]
-            Self::Captured(source, capture, tiff) => Event::Captured(tab(source)?, capture, tiff),
-            Self::Posted(source, body, from) => Event::Posted(tab(source)?, body, from),
+            Self::Posted(source, body) => Event::Posted(tab(source)?, body),
         })
     }
 }
@@ -345,14 +337,7 @@ impl Pages {
             | Location::Devices
             | Location::CoreTerminal { .. } => None,
         };
-        // Only a local page, which the agent wrote, gets `herdr.send`.
-        let bridge = if root.is_some() {
-            super::annotate::BRIDGE
-        } else {
-            ""
-        };
         let builder = with_handlers(wry::WebViewBuilder::new(), Source::Tab(id), &self.outbox)
-            .with_initialization_script(bridge)
             .with_url(location.page_url())
             .with_asynchronous_custom_protocol(
                 PREVIEW_SCHEME.into(),
@@ -361,11 +346,9 @@ impl Pages {
                 },
             )
             .with_ipc_handler(move |request| {
-                // wry names the frame that posted, not the page's main frame.
-                let from = super::PostedFrom::of(&request.uri().to_string());
                 let body = request.into_body();
                 if body.len() <= MAX_POST_BYTES {
-                    report(&posted, Event::Posted(Source::Tab(id), body, from));
+                    report(&posted, Event::Posted(Source::Tab(id), body));
                 }
             });
         // Window has an inherent `window_handle` of its own.
@@ -584,25 +567,6 @@ impl Pages {
         }
     }
 
-    /// Captures `rect` of the page, reporting it as `Event::Captured` with
-    /// `capture` to match it to its note. Returns whether one was asked for:
-    /// only macOS can take them.
-    pub(crate) fn capture(&self, id: TabId, rect: super::annotate::Rect, capture: u64) -> bool {
-        #[cfg(target_os = "macos")]
-        if let Some(page) = self.pages.get(&id) {
-            let sender = self.outbox.sender.clone();
-            // The picker measures `rect` in CSS pixels, which a zoomed page
-            // draws larger in the view.
-            let rect = page.drawn_zoom().view_rect(rect);
-            super::snapshot::capture(page.raw(), rect, move |tiff| {
-                report(&sender, Event::Captured(Source::Tab(id), capture, tiff));
-            });
-            return true;
-        }
-        let _ = (id, rect, capture);
-        false
-    }
-
     /// The tab whose shown page holds the window's keyboard, if one does.
     pub(crate) fn keyboard_page(&self) -> Option<TabId> {
         self.shown
@@ -617,13 +581,6 @@ impl Pages {
             if let (Some(page), Some(zoom)) = (self.pages.get(id), zoom(*id)) {
                 page.zoom(zoom);
             }
-        }
-    }
-
-    /// Hands the keyboard back from the page to the window.
-    pub(crate) fn blur(&self, id: TabId) {
-        if let Some(page) = self.pages.get(&id) {
-            page.blur();
         }
     }
 

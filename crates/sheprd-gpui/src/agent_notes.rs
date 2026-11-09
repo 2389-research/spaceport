@@ -1,10 +1,8 @@
-//! Delivering notes the user wrote to the agent they are about, whether they
-//! annotate a page the agent showed or review the changes it made. A batch
-//! goes one way only: to the agent when it waits in `browser feedback
+//! Delivering feedback sent over the control socket to an agent. A batch goes one
+//! way only: to the agent when it waits in `browser feedback
 //! --wait`, otherwise pasted into its pane once it is idle, and kept for
 //! `browser feedback` when its pane is gone or must not be typed into.
-//! Until a pane or `browser feedback` takes a tab's batch, the tab can
-//! withdraw it. Nothing joins a running turn: the daemon offers this client
+//! Nothing joins a running turn: the daemon offers this client
 //! no method to prompt an agent mid-run, only the pane input it types into.
 // i18n: migrated
 use crate::i18n::fl;
@@ -23,7 +21,7 @@ use sheprd_client::protocol::{
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Arc, Weak},
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -51,99 +49,6 @@ fn collect_copy(collected: &mut Vec<Copies>, group: Option<Copies>, text: Option
     group.extend([text]);
     if !collected.iter().any(|other| Rc::ptr_eq(&other.0, &group.0)) {
         collected.push(group);
-    }
-}
-
-/// One Send from a tab. A note records the send that delivered it, so
-/// withdrawing that send marks exactly its notes unsent again, not an equal
-/// note an earlier send delivered.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(crate) struct SendId(u64);
-
-/// A tab cannot resend while its previous batch is saving, waiting for an
-/// agent, or still held for feedback. The delivery owns the strong reference.
-#[derive(Default)]
-pub(crate) struct PendingSend {
-    live: Weak<()>,
-    last: SendId,
-}
-
-/// Where a tab's batch waits while it can still be withdrawn.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Queued {
-    /// In this window, for its agent to stop working.
-    UntilIdle,
-    /// For the agent to fetch with `browser feedback`.
-    ForFeedback,
-}
-
-impl Queued {
-    pub(crate) fn label(self) -> String {
-        match self {
-            Self::UntilIdle => fl!("agent-notes-queued-until-idle"),
-            Self::ForFeedback => fl!("agent-notes-kept-for-feedback"),
-        }
-    }
-}
-
-/// Whether `pending` is the batch `live` follows. The weak reference keeps
-/// the allocation, so another batch cannot reuse its address.
-pub(crate) fn carries(pending: Option<&Arc<()>>, live: &Weak<()>) -> bool {
-    pending.is_some_and(|pending| std::ptr::eq(Arc::as_ptr(pending), live.as_ptr()))
-}
-
-impl PendingSend {
-    /// Starts a send, unless the previous batch is still pending, naming it
-    /// for the notes it carries.
-    pub(crate) fn start(&mut self) -> Option<(SendId, Arc<()>)> {
-        if self.is_pending() {
-            return None;
-        }
-        let pending = Arc::new(());
-        self.live = Arc::downgrade(&pending);
-        self.last = SendId(self.last.0 + 1);
-        Some((self.last, pending))
-    }
-
-    /// Whether the last batch is still saving, queued, or on its way.
-    pub(crate) fn is_pending(&self) -> bool {
-        self.live.strong_count() > 0
-    }
-
-    /// Where the batch waits, while no agent has it yet.
-    pub(crate) fn queued(
-        &self,
-        deliveries: &Deliveries,
-        feedback: Option<&Feedback>,
-    ) -> Option<Queued> {
-        if deliveries
-            .queue
-            .iter()
-            .any(|delivery| carries(delivery.pending.as_ref(), &self.live))
-        {
-            Some(Queued::UntilIdle)
-        } else if feedback.is_some_and(|feedback| feedback.holds(&self.live)) {
-            Some(Queued::ForFeedback)
-        } else {
-            None
-        }
-    }
-
-    /// Takes the batch back before any agent has it, leaving every other
-    /// batch queued in its order, and returns the send whose notes it
-    /// carried. `None` once it was pasted, fetched, or dropped.
-    pub(crate) fn withdraw(
-        &mut self,
-        deliveries: &mut Deliveries,
-        feedback: Option<&mut Feedback>,
-    ) -> Option<SendId> {
-        let queued = deliveries.queue.len();
-        deliveries
-            .queue
-            .retain(|delivery| !carries(delivery.pending.as_ref(), &self.live));
-        let withdrawn = deliveries.queue.len() < queued
-            || feedback.is_some_and(|feedback| feedback.withdraw(&self.live));
-        withdrawn.then_some(self.last)
     }
 }
 
@@ -238,28 +143,6 @@ pub(crate) fn agent<'a>(
         .agents
         .iter()
         .find(|agent| agent.pane_id == pane_id)
-}
-
-/// Which of a list's notes Send delivers, given whether each was sent: the
-/// ones not sent yet, or all of them again once every one was. Sent notes
-/// stay listed, so an edit or a lost paste can be sent again.
-pub(crate) fn round(sent: impl IntoIterator<Item = bool>) -> Vec<usize> {
-    let sent: Vec<bool> = sent.into_iter().collect();
-    let new: Vec<usize> = (0..sent.len()).filter(|&index| !sent[index]).collect();
-    if new.is_empty() {
-        (0..sent.len()).collect()
-    } else {
-        new
-    }
-}
-
-/// What the Send button says for `total` notes, `unsent` of them not sent.
-pub(crate) fn send_label(total: usize, unsent: usize) -> String {
-    match unsent {
-        0 => fl!("agent-notes-resend-all"),
-        _ if unsent == total => fl!("agent-notes-send"),
-        _ => fl!("agent-notes-send-new", count = unsent),
-    }
 }
 
 /// Notes as they may be typed into a pane. Each kind of note cleans the
@@ -408,34 +291,6 @@ impl SheprdWindow {
         };
         self.show_flash(flash, cx);
         delivered
-    }
-
-    /// Delivers notes written in `origin`'s session to the agent in `pane`
-    /// there. Once that session is no longer shown, its pane ID may name
-    /// another pane, so the notes come back to copy instead.
-    pub(crate) fn deliver_from(
-        &mut self,
-        origin: Option<&Origin>,
-        pane: Option<String>,
-        text: String,
-        pending: Option<Arc<()>>,
-        cx: &mut Context<Self>,
-    ) -> Delivered {
-        let Some(pane_id) = pane else {
-            return self.deliver_notes(None, text, pending, None, cx);
-        };
-        if !origin.is_some_and(|origin| origin.current(self)) {
-            self.show_flash(Flash::warning(fl!("agent-notes-session-not-shown")), cx);
-            return Delivered::Copy(typable(&text));
-        }
-        let scope = crate::browser::scope(&self.endpoints[self.selected_endpoint]);
-        self.deliver_notes(
-            Some(FeedbackKey { scope, pane_id }),
-            text,
-            pending,
-            None,
-            cx,
-        )
     }
 
     /// Delivers notes a control request sent, if this window shows the

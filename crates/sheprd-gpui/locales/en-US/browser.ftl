@@ -2,16 +2,12 @@
 # workspace's terminals.
 
 browser-unsupported = Browser tabs need macOS or Windows
-browser-no-pages = This build cannot show pages
 browser-open-workspace-first = Open a workspace first
 browser-too-many-tabs = Too many browser tabs are open
 
 # The address field above a page.
 browser-address-placeholder = Enter an address
 browser-address-invalid = Not an http or https address
-
-# The button that starts or stops taking notes on the page for an agent.
-browser-annotate = Annotate
 
 # What a tab shows where its page is not there yet. $error is why the
 # system could not create the page, in its own words.

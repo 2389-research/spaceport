@@ -7,11 +7,6 @@
 //! overlays reaches.
 // i18n: migrated
 
-#[cfg(any(target_os = "macos", windows, test))]
-mod annotate;
-// Linux builds show no pages, so there is nothing to annotate there.
-#[cfg(any(target_os = "macos", windows))]
-mod annotate_view;
 #[cfg(windows)]
 mod building;
 #[cfg(any(target_os = "macos", windows))]
@@ -60,8 +55,6 @@ mod view_tests;
 mod zoom;
 
 #[cfg(any(target_os = "macos", windows))]
-pub(crate) use annotate_view::Annotations;
-#[cfg(any(target_os = "macos", windows))]
 pub(crate) use chat_pages::chat_page_visible;
 pub(crate) use closed::ClosedHerdrTab;
 pub(crate) use feedback::{Batch, Feedback, FeedbackKey};
@@ -71,8 +64,6 @@ pub(crate) use group_motion::Fold;
 pub(crate) use groups::GroupIds;
 pub(crate) use groups::{GroupId, Pick, Shown, Slot};
 pub(crate) use layouts::Layouts;
-#[cfg(any(target_os = "macos", windows))]
-pub(crate) use location::PostedFrom;
 #[cfg(test)]
 pub(crate) use location::RetiredOrchestratorRepo;
 pub(crate) use location::{LocalFile, Location};

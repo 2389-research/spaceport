@@ -326,7 +326,7 @@
       "scenario": "Open URLs/services/files and inspect packaged/runtime dependencies.",
       "expected": "System browser/handler opens; embedded browser, browser annotation and editor webviews are absent.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t04-visual-annotation-removal.md"]
     },
     {
       "id": "A29",

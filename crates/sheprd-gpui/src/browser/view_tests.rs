@@ -30,8 +30,8 @@ fn window(cx: &mut gpui::TestAppContext) -> (Entity<SheprdWindow>, &mut VisualTe
     })
 }
 
-/// The `toggle_annotate` binding; only builds that show pages can arm it.
-mod annotate_command;
+#[cfg(any(target_os = "macos", windows))]
+mod removed_visual_notes;
 
 /// Needs a build that shows pages: elsewhere a new tab opens nothing.
 #[cfg(any(target_os = "macos", windows))]
@@ -47,15 +47,6 @@ mod divider_grip;
 /// Editor groups. Blank browser tabs need no native page, so none is
 /// created, and a split alone needs no page at all.
 mod groups;
-
-/// Notes need a page to annotate, which Linux builds do not show.
-#[cfg(any(target_os = "macos", windows))]
-mod notes;
-
-/// Results a local page sends with `herdr.send`, queued as notes. Notes
-/// belong to pages, which Linux builds do not show.
-#[cfg(any(target_os = "macos", windows))]
-mod page_results;
 
 /// Middle-clicking a strip's tab closes it.
 mod middle_click;

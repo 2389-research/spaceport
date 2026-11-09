@@ -137,70 +137,6 @@ impl SheprdWindow {
             _ => None,
         };
         #[cfg(any(target_os = "macos", windows))]
-        let (annotate_button, panel) = {
-            let annotating = self.browser.annotations.armed(id);
-            // The panel slides open and closed beside the page: its content
-            // keeps its width and the edge moves.
-            let shown = self
-                .browser
-                .annotations
-                .panel_shown(id, crate::motion::now());
-            let panel = (shown > 0.).then(|| {
-                div()
-                    .flex_none()
-                    .h_full()
-                    .w(px(self.notes_panel_width() * shown))
-                    .overflow_hidden()
-                    .child(self.render_annotations(tab, cx))
-                    .into_any_element()
-            });
-            let button = {
-                // Annotating needs the page itself, so a blank tab or a
-                // build without pages has nothing to annotate.
-                let enabled = loaded && crate::browser::EMBEDDED;
-                let color = if annotating {
-                    self.theme.text_on(self.theme.primary_wash())
-                } else if enabled {
-                    self.theme.foreground
-                } else {
-                    self.theme.muted
-                };
-                div()
-                    .id("browser-annotate")
-                    .debug_selector(move || slot.selector("browser-annotate"))
-                    .flex_none()
-                    .flex()
-                    .items_center()
-                    .gap(px(4.))
-                    .h(px(24.))
-                    .px(px(6.))
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .when(annotating, |button| {
-                        button.bg(rgb(self.theme.primary_wash()))
-                    })
-                    .text_color(rgb(color))
-                    .child(
-                        svg()
-                            .path("icons/pencil.svg")
-                            .size(px(13.))
-                            .text_color(rgb(color)),
-                    )
-                    .child(fl!("browser-annotate"))
-                    .when(enabled, |button| {
-                        button
-                            .cursor_pointer()
-                            .hover(|s| s.bg(rgb(self.theme.active)))
-                            .on_click(cx.listener(move |this, _, window, cx| {
-                                this.toggle_annotating(id, window, cx);
-                            }))
-                    })
-            };
-            (Some(button), panel)
-        };
-        // Linux builds show no pages, so there is nothing to annotate.
-        #[cfg(not(any(target_os = "macos", windows)))]
-        let (annotate_button, panel): (Option<Stateful<Div>>, Option<AnyElement>) = (None, None);
-        #[cfg(any(target_os = "macos", windows))]
         let page = self.browser.pages.element(id);
         #[cfg(not(any(target_os = "macos", windows)))]
         let page: Option<AnyView> = None;
@@ -297,7 +233,6 @@ impl SheprdWindow {
                     }),
             )
             .children(self.zoom_chip(slot, tab, cx))
-            .children(annotate_button)
             .child(self.toolbar_button(
                 slot,
                 "browser-external",
@@ -352,8 +287,7 @@ impl SheprdWindow {
                     .flex()
                     .flex_1()
                     .min_h_0()
-                    .child(div().flex().flex_col().flex_1().min_w_0().child(content))
-                    .children(panel),
+                    .child(div().flex().flex_col().flex_1().min_w_0().child(content)),
             );
         self.with_ground(browser, rgb(self.theme.background))
     }

@@ -414,16 +414,6 @@ impl SheprdWindow {
                 self.reopen_closed_tab(window, cx);
                 return;
             }
-            Command::ToggleAnnotate => {
-                #[cfg(any(target_os = "macos", windows))]
-                self.toggle_shown_annotating(window, cx);
-                #[cfg(not(any(target_os = "macos", windows)))]
-                self.show_flash(
-                    Flash::warning(fl!("window-notices-annotate-pages-unsupported")),
-                    cx,
-                );
-                return;
-            }
             Command::SplitEditor => {
                 self.split_active_group(window, cx);
                 return;

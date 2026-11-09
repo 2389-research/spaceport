@@ -281,7 +281,7 @@ impl Tab {
                 .origin
                 .as_ref()
                 .is_none_or(|pane| !pane.is_empty() && pane.len() <= 256)
-            // Editor tabs are not annotation destinations for terminal agents.
+            // Editor tabs do not have a terminal agent to own them.
             && (!self.place.is_editor() || self.origin.is_none())
     }
 

@@ -773,11 +773,7 @@ impl Render for SheprdWindow {
         let content = self.render_groups(groups, window, cx);
         let content = section.unwrap_or_else(|| self.zen_column(content));
         // Not `||`: asking forgets group motion that has finished.
-        if self.groups_moving()
-            | self.tabs_growing()
-            | self.annotations_moving()
-            | self.chrome_sliding()
-            | self.flash_moving()
+        if self.groups_moving() | self.tabs_growing() | self.chrome_sliding() | self.flash_moving()
         {
             window.request_animation_frame();
         }

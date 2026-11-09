@@ -1,4 +1,4 @@
-//! Captures part of a page as it looks on screen, for a note's screenshot.
+//! Captures part of a page as it looks on screen.
 //!
 //! This is the one place the app calls WebKit directly, and it needs
 //! `unsafe`: `WKWebView.takeSnapshotWithConfiguration:completionHandler:`
@@ -10,7 +10,6 @@
 //! capture, turning the image into PNG, is safe code.
 #![allow(unsafe_code)]
 
-use super::annotate::Rect;
 use block2::RcBlock;
 use objc2::MainThreadMarker;
 use objc2_app_kit::NSImage;
@@ -23,11 +22,18 @@ use wry::WebViewExtMacOS as _;
 /// Longest side of a saved screenshot, in pixels.
 const MAX_SIDE: u32 = 2000;
 
+/// The part of a page to capture, in web view points.
+pub(crate) struct Rect {
+    pub(crate) x: f64,
+    pub(crate) y: f64,
+    pub(crate) width: f64,
+    pub(crate) height: f64,
+}
+
 /// Asks WebKit for `rect`, in the web view's points (the viewport's CSS pixels
 /// scaled by the page's zoom), and calls `done` with the image's TIFF bytes,
 /// or `None` when WebKit has none. WebKit
-/// answers on the main thread after the page's next screen update, so the
-/// annotation overlay hidden before this call is not in the picture.
+/// answers on the main thread after the page's next screen update.
 pub(crate) fn capture(
     view: &wry::WebView,
     rect: Rect,

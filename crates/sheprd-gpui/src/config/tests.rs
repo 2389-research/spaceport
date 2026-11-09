@@ -75,6 +75,7 @@ mod terminal_padding;
 mod theme_files;
 mod themes;
 mod update_channel;
+mod visual_annotations;
 mod worktrees;
 mod zen;
 

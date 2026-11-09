@@ -332,7 +332,6 @@ impl SheprdWindow {
                 | Command::ClosePane
                 | Command::CloseTab
                 | Command::ReopenClosedTab
-                | Command::ToggleAnnotate
                 | Command::SplitEditor
                 | Command::MoveTabPrevious
                 | Command::MoveTabNext

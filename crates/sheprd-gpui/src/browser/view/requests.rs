@@ -160,7 +160,7 @@ impl SheprdWindow {
         let Some(bounds) = self.browser.pages.drawn_at(id) else {
             return false;
         };
-        let rect = crate::browser::annotate::Rect {
+        let rect = crate::browser::snapshot::Rect {
             x: 0.,
             y: 0.,
             width: f64::from(f32::from(bounds.size.width)),

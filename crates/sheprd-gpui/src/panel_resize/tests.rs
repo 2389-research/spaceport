@@ -9,7 +9,7 @@ fn bounds(left: f32, width: f32) -> Bounds<Pixels> {
 #[test]
 fn dragging_an_edge_follows_the_pointer_from_the_panel_s_far_side() {
     let mut notes = PanelWidth::new(300., 200.);
-    assert_eq!((notes.width(0.), notes.chosen()), (300., None));
+    assert_eq!(notes.width(0.), 300.);
     // A right-hand panel at 900..1200 dragged by its left edge to 800.
     assert!(notes.drag(Side::Right, bounds(900., 300.), px(800.)));
     assert_eq!(notes.width(0.), 400.);
@@ -25,31 +25,16 @@ fn dragging_an_edge_follows_the_pointer_from_the_panel_s_far_side() {
     navigation.drag(Side::Left, bounds(0., 184.), px(260.));
     assert_eq!(navigation.width(0.), 260.);
     navigation.reset();
-    assert_eq!((navigation.width(0.), navigation.chosen()), (184., None));
+    assert_eq!(navigation.width(0.), 184.);
 }
 
 #[test]
 fn a_panel_keeps_to_its_share_of_a_narrow_window() {
     let mut notes = PanelWidth::new(300., 200.);
-    notes.restore(Some(900.));
+    notes.drag(Side::Right, bounds(0., 300.), px(-600.));
     assert_eq!(notes.width(2000.), 900.);
     assert_eq!(notes.width(1000.), 600.);
     // The minimum holds while the window has room for it.
     assert_eq!(notes.width(300.), 200.);
     assert_eq!(notes.width(150.), 150.);
-}
-
-#[test]
-fn saved_widths_are_checked_when_restored() {
-    let mut notes = PanelWidth::new(300., 200.);
-    notes.restore(Some(420.));
-    assert_eq!(notes.chosen(), Some(420.));
-    notes.restore(Some(50.));
-    assert_eq!(notes.width(0.), 200.);
-    for unusable in [f32::NAN, f32::INFINITY, -1., 0.] {
-        notes.restore(Some(unusable));
-        assert_eq!(notes.chosen(), None, "{unusable}");
-    }
-    notes.restore(Some(1e9));
-    assert_eq!(notes.width(0.), MAX_WIDTH);
 }

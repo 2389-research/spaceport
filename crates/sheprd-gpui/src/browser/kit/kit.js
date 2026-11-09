@@ -5,7 +5,7 @@
 //   HerdrKit.scenario(root, spec)   controls, steps, detail and outcome
 //   HerdrKit.segmented(options)     a row of mutually exclusive buttons
 //   HerdrKit.variants(root, list)   mockup variants with Pick buttons
-//   HerdrKit.send(summary, data)    hand the agent a result (herdr.send)
+//   HerdrKit.send(summary, data)    copy a result for manual sharing
 //   HerdrKit.rich(text)             `code` and **bold** in plain text
 //   HerdrKit.h(tag, props, ...kids) build an element
 (function () {
@@ -64,25 +64,22 @@
     toast.timer = setTimeout(function () { node.removeAttribute("data-shown"); }, 2200);
   }
 
-  // Hands the agent a result through Sheprd, which queues it in the
-  // page's notes for the user to send. Elsewhere it is copied instead.
+  // Copies a result for manual sharing.
   function send(summary, data) {
-    if (window.herdr) {
-      // Sheprd says itself whether it kept the result, in its notes panel
-      // or a warning, so the page never claims a result the app refused.
-      if (window.herdr.send(summary, data)) return true;
-      toast("Not sent: a result needs a summary or data, at most " +
-        Math.floor(window.herdr.maxDataBytes / 1024) + " KB of JSON");
+    var text;
+    try {
+      text = summary + (data === undefined ? "" : "\n" + JSON.stringify(data, null, 2));
+    } catch (_) {
+      toast("Could not copy result: " + summary);
       return false;
     }
-    var text = summary + (data === undefined ? "" : "\n" + JSON.stringify(data, null, 2));
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(
-        function () { toast("Not in Sheprd: copied the result"); },
-        function () { toast("Not in Sheprd: " + summary); }
+        function () { toast("Result copied"); },
+        function () { toast("Could not copy result: " + summary); }
       );
     } else {
-      toast("Not in Sheprd: " + summary);
+      toast("Could not copy result: " + summary);
     }
     return false;
   }
@@ -280,6 +277,5 @@
     segmented: segmented,
     scenario: scenario,
     variants: variants,
-    inHerdr: Boolean(window.herdr && window.herdr.available),
   });
 })();

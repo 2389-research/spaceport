@@ -228,7 +228,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) navigations: smoke::Navigations,
     /// The revision of the app-wide network reading this window last drew.
     pub(crate) network_quality_seen: u64,
-    pub(crate) notes_width: crate::panel_resize::PanelWidth,
     /// Which notice cards had lines too long for their row when last laid out.
     pub(crate) notice_overflow: std::rc::Rc<config_diagnostic::Overflow>,
     pub(crate) options: ConnectOptions,
@@ -450,9 +449,6 @@ impl SheprdWindow {
         }
         if !self.sidebar_split_modified {
             self.sidebar_split = chrome.sidebar_split;
-        }
-        if self.notes_width.chosen().is_none() {
-            self.notes_width.restore(chrome.notes_width);
         }
         // A device dragged before the stored order loaded keeps its place.
         if self.device_order.is_empty() {

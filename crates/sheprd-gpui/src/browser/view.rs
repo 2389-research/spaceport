@@ -1,8 +1,6 @@
 //! The window side of browser tabs: their entries in the tab strip, the page
 //! and its toolbar in a group where the terminal would be, and requests to
 //! open one.
-#[cfg(any(target_os = "macos", windows))]
-use super::Annotations;
 use super::{
     Location, Scope, Store, TabId, WebUrl,
     groups::{GroupId, GroupIds, Layout, Pick, SavedLayout},
@@ -77,8 +75,6 @@ pub(crate) struct Browser {
     /// missing from the next snapshot of the same boot, in a workspace still
     /// open, was closed and can be reopened.
     pub(super) herdr_tabs: Option<(Scope, String, u64, Vec<super::ClosedHerdrTab>)>,
-    #[cfg(any(target_os = "macos", windows))]
-    pub(super) annotations: Annotations,
     /// The menu page open when pages were last presented, which the menu's
     /// measured cover belongs to. Windows pages draw above the window, so
     /// those a menu covers hide.
@@ -125,8 +121,6 @@ impl Browser {
             failed: HashMap::new(),
             workspaces: None,
             herdr_tabs: None,
-            #[cfg(any(target_os = "macos", windows))]
-            annotations: Annotations::default(),
             #[cfg(windows)]
             cover_page: None,
             #[cfg(windows)]
@@ -223,17 +217,6 @@ impl SheprdWindow {
         #[cfg(any(target_os = "macos", windows))]
         self.browser.pages.retain(|id| !gone(id));
         self.browser.failed.retain(|id, _| !gone(*id));
-        #[cfg(any(target_os = "macos", windows))]
-        let annotated: Vec<TabId> = self
-            .browser
-            .annotations
-            .ids()
-            .filter(|id| gone(*id))
-            .collect();
-        #[cfg(any(target_os = "macos", windows))]
-        for id in annotated {
-            self.browser.annotations.forget(id);
-        }
     }
 
     /// Opens a tab in the focused workspace for browser layout tests.
@@ -398,15 +381,9 @@ impl SheprdWindow {
                     if let Some(location) = visited {
                         Store::update(cx, |store| store.visited(id, Some(location), None));
                     }
-                    self.page_loaded(id);
                     self.browser.pages.script(id, &super::favicon::script());
                 }
-                Event::Posted(id, body, from) => match super::favicon::Favicon::parse(&body) {
-                    Some(favicon) => self.page_favicon(id, favicon, window, cx),
-                    None => self.page_posted(id, &body, from, window, cx),
-                },
-                #[cfg(target_os = "macos")]
-                Event::Captured(id, capture, tiff) => self.page_captured(id, capture, tiff, cx),
+                Event::Posted(id, body) => self.apply_page_post(id, &body, window, cx),
                 Event::NewWindow(id, url) => {
                     if let Ok(url) = WebUrl::try_from(url.as_str())
                         && let Some(opened) = self.open_beside(id, url, cx)
@@ -432,6 +409,20 @@ impl SheprdWindow {
                 #[cfg(target_os = "macos")]
                 Event::Closed(id) => self.close_browser_tab(id, window, cx),
             }
+        }
+    }
+
+    /// Page IPC supplies only tab icons. Its body is untrusted page content.
+    #[cfg(any(target_os = "macos", windows))]
+    pub(in crate::browser) fn apply_page_post(
+        &mut self,
+        id: TabId,
+        body: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(favicon) = super::favicon::Favicon::parse(body) {
+            self.page_favicon(id, favicon, window, cx);
         }
     }
 
@@ -505,15 +496,6 @@ impl SheprdWindow {
             )
         })?;
         Some((group, opened))
-    }
-
-    /// Whether a notes panel or a note is still moving, so the window draws
-    /// another frame. Only builds that show pages have either.
-    pub(crate) fn annotations_moving(&self) -> bool {
-        #[cfg(any(target_os = "macos", windows))]
-        return self.browser.annotations.moving(crate::motion::now());
-        #[cfg(not(any(target_os = "macos", windows)))]
-        false
     }
 }
 

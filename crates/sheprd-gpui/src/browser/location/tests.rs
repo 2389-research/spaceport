@@ -17,27 +17,6 @@ fn old_source_payload_is_checked_before_its_tab_is_discarded() {
     }
 }
 
-#[test]
-fn only_preview_frames_count_as_local() {
-    for local in [
-        "herdr-preview://localhost/index.html",
-        "http://herdr-preview.localhost/docs/a.html",
-        "https://herdr-preview.localhost/",
-    ] {
-        assert_eq!(PostedFrom::of(local), PostedFrom::Preview, "{local}");
-    }
-    for other in [
-        "https://evil.test/",
-        "https://herdr-preview.localhost.evil.test/",
-        "http://evil.test/?u=herdr-preview://localhost/",
-        "about:srcdoc",
-        "about:blank",
-        "",
-    ] {
-        assert_eq!(PostedFrom::of(other), PostedFrom::Elsewhere, "{other}");
-    }
-}
-
 #[cfg(unix)]
 fn file(path: &str) -> crate::Result<LocalFile> {
     LocalFile::new(Path::new(path), Some(Path::new("/Users/me")))

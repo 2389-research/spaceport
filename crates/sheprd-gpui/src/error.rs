@@ -100,8 +100,6 @@ pub enum Error {
     ImageSize,
     #[error("The image exceeds Herdr's {limit}-byte upload limit.")]
     ImageTooLarge { limit: usize },
-    #[error("The page reported an invalid annotation")]
-    InvalidAnnotation,
     #[error("Invalid saved browser tabs")]
     InvalidBrowserTabs,
     #[error("Browser tabs open only http and https addresses with a host, of at most 8 KiB.")]

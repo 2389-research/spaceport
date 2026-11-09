@@ -125,7 +125,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (Reconnect, &[]),
         (Quit, &["cmd-q"]),
         (About, &[]),
-        (ToggleAnnotate, &[]),
         (InstallBrowserSkill, &[]),
         (SplitEditor, &["cmd-\\"]),
         (ToggleFullScreen, &["ctrl-cmd-f"]),
@@ -228,7 +227,6 @@ fn gui_commands_never_send_daemon_requests() {
         Command::NextAgent,
         Command::AgentNumber(1),
         Command::ReloadConfig,
-        Command::ToggleAnnotate,
     ] {
         assert!(request(command, &s).is_none(), "{command:?}");
     }
@@ -575,3 +573,4 @@ fn tab_moves_wrap_and_stay_in_workspace() {
 mod messages;
 mod removed_mods;
 mod terminal_annotations;
+mod visual_annotations;

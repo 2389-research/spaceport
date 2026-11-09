@@ -4,12 +4,7 @@
 # "browser feedback" is a command name and stays as written.
 
 # The Send button: every note was sent, none was, or $count are new.
-agent-notes-resend-all = Resend all
-agent-notes-send = Send to agent
-agent-notes-send-new = Send { $count } new
 # The line under notes that wait.
-agent-notes-queued-until-idle = Queued until the agent is idle
-agent-notes-kept-for-feedback = Kept for `browser feedback`
 
 ## Where a batch went
 
@@ -17,7 +12,6 @@ agent-notes-copied-no-agent = No agent to send to, so the notes were copied
 agent-notes-sent-waiting = Notes sent to the waiting agent
 agent-notes-will-send = Notes will go to the agent once it is idle
 agent-notes-sent = Notes sent to the agent
-agent-notes-session-not-shown = The agent's session is not shown here; notes copied
 agent-notes-daemon-not-selected = The original daemon is not selected; pending notes copied
 # Notes no agent took, kept for the agent to fetch: $reason says why.
 agent-notes-kept =
