@@ -122,7 +122,7 @@ fn qa_menu_shows_only_with_its_feature_flag() {
             .map(|menu| menu.name.to_string())
             .collect()
     };
-    let mut expected = vec!["Sheprd", "File", "Edit", "View", "Terminal", "Window"];
+    let mut expected = vec!["Spaceport", "File", "Edit", "View", "Terminal", "Window"];
     assert_eq!(names(&config), expected);
     config.features.qa_menu = true;
     expected.push("QA");
@@ -341,20 +341,20 @@ fn macos_menus_carry_hide_and_minimize(cx: &mut gpui::TestAppContext) {
     let menus = menus(&Config::default());
     let herdr = menus
         .iter()
-        .find(|menu| menu.name.as_ref() == "Sheprd")
+        .find(|menu| menu.name.as_ref() == "Spaceport")
         .unwrap();
     assert_eq!(
         action_names(herdr),
         [
-            "About Sheprd",
+            "About Spaceport",
             "Command Palette",
             "Settings",
             "Keyboard Shortcuts",
             "Check for Updates...",
-            "Hide Sheprd",
+            "Hide Spaceport",
             "Hide Others",
             "Show All",
-            "Quit Sheprd",
+            "Quit Spaceport",
         ]
     );
     // Hiding sits apart from quitting.
@@ -397,17 +397,17 @@ fn hide_and_minimize_are_macos_only() {
     let menus = menus(&Config::default());
     let herdr = menus
         .iter()
-        .find(|menu| menu.name.as_ref() == "Sheprd")
+        .find(|menu| menu.name.as_ref() == "Spaceport")
         .unwrap();
     assert_eq!(
         action_names(herdr),
         [
-            "About Sheprd",
+            "About Spaceport",
             "Command Palette",
             "Settings",
             "Keyboard Shortcuts",
             "Check for Updates...",
-            "Quit Sheprd",
+            "Quit Spaceport",
         ]
     );
     let window = menus

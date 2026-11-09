@@ -10,7 +10,7 @@ fn shared_action_dispatches_after_dismissal(cx: &mut TestAppContext) {
         })
     });
     draw(cx);
-    let about = cx.debug_bounds("application-item-About Sheprd").unwrap();
+    let about = cx.debug_bounds("application-item-About Spaceport").unwrap();
     cx.simulate_click(about.center(), Modifiers::none());
     cx.run_until_parked();
     draw(cx);
@@ -138,12 +138,12 @@ fn app_wide_actions_such_as_quit_stay_enabled(cx: &mut TestAppContext) {
             .items
             .iter()
             .position(
-                |item| matches!(item, OwnedMenuItem::Action { name, .. } if name == "Quit Sheprd"),
+                |item| matches!(item, OwnedMenuItem::Action { name, .. } if name == "Quit Spaceport"),
             )
             .unwrap();
         assert!(menu.selectable().contains(&quit));
     });
-    let item = cx.debug_bounds("application-item-Quit Sheprd").unwrap();
+    let item = cx.debug_bounds("application-item-Quit Spaceport").unwrap();
     cx.simulate_click(item.center(), Modifiers::none());
     cx.run_until_parked();
     assert_eq!(quits.get(), 1);

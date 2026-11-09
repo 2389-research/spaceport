@@ -12,8 +12,14 @@ fn the_about_box_draws_only_messages() {
         cx.update(|window, cx| view.update(cx, |view, cx| view.open_about(window, cx)));
         cx.update(|window, _| window.refresh());
         draw(cx);
+        let lines = uncut(recorder.take());
+        assert!(
+            lines
+                .iter()
+                .any(|line| line == crate::constants::WINDOW_TITLE)
+        );
         let names = [
-            "Sheprd",
+            crate::constants::WINDOW_TITLE,
             "Herdr",
             "herdr.dev",
             "GitHub",
@@ -23,6 +29,6 @@ fn the_about_box_draws_only_messages() {
             env!("HERDR_BUILD_BRANCH"),
         ]
         .map(str::to_owned);
-        assert_translated("About", &uncut(recorder.take()), &names);
+        assert_translated("About", &lines, &names);
     });
 }

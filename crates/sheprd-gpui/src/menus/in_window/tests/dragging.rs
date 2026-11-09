@@ -38,7 +38,7 @@ fn background_presses_reach_window_chrome_but_menu_buttons_do_not(cx: &mut TestA
     });
     let view = root.read_with(cx, |root, _| root.view.clone());
     for (width, selector) in [
-        (1200., "application-menu-Sheprd"),
+        (1200., "application-menu-Spaceport"),
         (360., "application-menu-Menu"),
     ] {
         cx.simulate_resize(size(px(width), px(500.)));

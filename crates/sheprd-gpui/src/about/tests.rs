@@ -23,18 +23,18 @@ fn copyright_tracks_the_repository_notice() {
 fn about_leads_the_application_menu() {
     let menus = crate::menus(&crate::config::Config::default());
     let application = menus.first().unwrap();
-    assert_eq!(application.name.as_ref(), "Sheprd");
+    assert_eq!(application.name.as_ref(), "Spaceport");
     let MenuItem::Action { name, action, .. } = application.items.first().unwrap() else {
         panic!("the application menu must start with an action");
     };
-    assert_eq!(name.as_ref(), "About Sheprd");
+    assert_eq!(name.as_ref(), "About Spaceport");
     assert!(action.partial_eq(&crate::RunCommand {
         command: crate::controls::Command::About,
     }));
     assert!(matches!(application.items[1], MenuItem::Separator));
     assert!(matches!(
         application.items.last().unwrap(),
-        MenuItem::Action { name, .. } if name.as_ref() == "Quit Sheprd"
+        MenuItem::Action { name, .. } if name.as_ref() == "Quit Spaceport"
     ));
 }
 

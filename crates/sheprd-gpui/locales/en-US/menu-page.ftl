@@ -1,6 +1,6 @@
 # What a screen reader calls each popup page: a menu or a dialog.
 
-menu-page-about-herdr-ui = About Sheprd
+menu-page-about-herdr-ui = About Spaceport
 menu-page-add-device = Add device
 menu-page-add-wsl-distribution = Add WSL distribution
 menu-page-install-the-agent-skill = Install the agent skill

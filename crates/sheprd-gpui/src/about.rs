@@ -58,7 +58,7 @@ impl SheprdWindow {
                     .text_size(px(font.size * 1.8))
                     .line_height(px(font.size * 2.2))
                     .font_weight(FontWeight::SEMIBOLD)
-                    .child("Sheprd"), // i18n: data
+                    .child(crate::constants::WINDOW_TITLE), // i18n: data
             )
             .child(
                 div()
