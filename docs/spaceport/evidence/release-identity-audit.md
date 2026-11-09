@@ -1,15 +1,18 @@
 # T12 release identity audit: source state
 
-Current transition: D60 authorizes removal of the inherited custom updater;
-[the removal evidence](t12-custom-updater-removal.md) records its progress and
-qualification. Engine-specific paths and results below describe earlier
-snapshots, not a functioning current Spaceport update route. Production
-identity, platform/package update ownership, signatures and native update
-qualification remain open; deleting the engine does not close those gates.
+Current scope: D60 removed the inherited custom updater; D61 adds a bounded
+macOS signed preview route with approved ID `ai.2389.spaceport` and 2389 Team
+`HD9NM9NSMK`. [Preview evidence](t12-macos-signed-preview.md) records actual
+qualification; [removal evidence](t12-custom-updater-removal.md) records the
+updater cut. Ordinary development uses `spaceport.development`. The inherited
+production release route remains blocked. Earlier tables below are historical
+snapshots: their deleted updater paths and unresolved macOS signing inputs do
+not describe current source. Platform/package updates, native installations
+and public release qualification remain open.
 
-The canonical development bundle now uses `Spaceport.app` and Spaceport bundle display names; `t01-dev-bundle-name.md` records the recipe and native artifact checks. The production plist, packaging names and release identities described below remain separate open gates.
+The canonical development bundle now uses `Spaceport.app` and Spaceport bundle display names; `t01-dev-bundle-name.md` records the recipe and native artifact checks. The historical production plist, packaging names and release identities below remain targets for general-release and other-platform qualification; D61 macOS preview evidence is separate.
 
-Current test-suite correction: `evidence/t04-release-contract-regressions.md` records the later 241-test release Python suite pass (eight skips) and a real development-binary CLI smoke pass. This supersedes the inherited red suite result in the GitHub removal evidence, while leaving all identity, signing and native package gates open.
+Current test-suite correction: `evidence/t04-release-contract-regressions.md` records the later 241-test release Python suite pass (eight skips) and a real development-binary CLI smoke pass. This supersedes the inherited red suite result in the GitHub removal evidence, while leaving general-production, updater and other-platform qualification gates open; D61 preview signing is recorded separately.
 
 T12 is blocked. This is a source audit of the current development branch, not a package or update test. No release or user installation was changed.
 The [native platform results](native-platform-results.md) record the macOS

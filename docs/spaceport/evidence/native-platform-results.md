@@ -1,8 +1,8 @@
 # Native platform results: development fork
 
 This is the observed native desktop state, not a release qualification. Test
-processes used isolated fixture paths. No signed package, personal daemon,
-installed Core or real tailnet was changed.
+processes used isolated fixture paths. Earlier fixture checks did not change any installed package, personal daemon,
+installed Core or real tailnet.
 
 | Platform | Native evidence | Open gate |
 | --- | --- | --- |
@@ -24,3 +24,13 @@ earlier failure to an inactive AppKit test process and records the missing
 upstream comparison. The newer page fixture found a visible, regular-policy
 window while `loginwindow` was frontmost. This does not classify the cause or
 close A49.
+
+## D61 macOS signed preview
+
+[Preview `20261109.1`](t12-macos-signed-preview.md) records an actual arm64 debug
+Developer ID app and DMG, both accepted by Apple notarization with stapled tickets
+and Gatekeeper acceptance. The exact shipped executable passed its CLI smoke
+from a read-only DMG mount. This is packaging/signing evidence, not a native GUI
+journey or installation: no final preview window was launched. The earlier UI
+activation results above still apply only to their named revisions. Windows
+signing was deferred for this task; the full platform gates remain open.

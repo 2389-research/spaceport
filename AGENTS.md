@@ -15,6 +15,11 @@ governs the fork.
 Decision D60 removes the inherited custom updater. App version reporting and
 the unconfigured-production-release refusal live in the app's constants;
 verified platform/package update replacements remain a T12 release gate.
+Decision D61 adds an explicit macOS signed preview route as `ai.2389.spaceport`;
+ordinary development remains `spaceport.development`. It does not enable the
+inherited production release pipeline, publishing or an updater. See
+[`t12-macos-signed-preview.md`](docs/spaceport/evidence/t12-macos-signed-preview.md)
+for actual artifact qualification and remaining gates.
 
 ## Priorities
 

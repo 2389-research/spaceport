@@ -778,7 +778,8 @@
         "evidence/native-platform-results.md",
         "evidence/t12-upstream-site-mirrors.md",
         "evidence/t12-site-publication-ownership.md",
-        "evidence/t12-custom-updater-removal.md"
+        "evidence/t12-custom-updater-removal.md",
+        "evidence/t12-macos-signed-preview.md"
       ],
       "must_close_gaps": [
         "G-RELEASE",
