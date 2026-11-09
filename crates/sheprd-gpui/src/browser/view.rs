@@ -1,8 +1,10 @@
 //! The window side of browser tabs: their entries in the tab strip, the page
 //! and its toolbar in a group where the terminal would be, and requests to
 //! open one.
+#[cfg(test)]
+use super::Location;
 use super::{
-    Location, Scope, Store, TabId, WebUrl,
+    Scope, Store, TabId, WebUrl,
     groups::{GroupId, GroupIds, Layout, Pick, SavedLayout},
 };
 use crate::{SheprdWindow, search_input::SearchInput};
@@ -381,11 +383,6 @@ impl SheprdWindow {
                     self.browser.pages.script(id, &super::favicon::script());
                 }
                 Event::Posted(id, body) => self.apply_page_post(id, &body, window, cx),
-                Event::NewWindow(id, url) => {
-                    if let Ok(url) = WebUrl::try_from(url.as_str()) {
-                        self.open_page_externally(id, url, cx);
-                    }
-                }
             }
         }
     }
@@ -451,19 +448,6 @@ impl SheprdWindow {
         {
             let _ = id;
             None
-        }
-    }
-
-    /// Opens a page's new-window URL through the system handler only while
-    /// its source tab is still a page in the shared store.
-    #[cfg(any(target_os = "macos", windows))]
-    fn open_page_externally(&self, opener: TabId, url: WebUrl, cx: &mut Context<Self>) {
-        if store(cx)
-            .and_then(|store| store.get(opener))
-            .and_then(|tab| tab.location.as_ref())
-            .is_some_and(Location::is_page)
-        {
-            cx.open_url(url.as_str());
         }
     }
 }

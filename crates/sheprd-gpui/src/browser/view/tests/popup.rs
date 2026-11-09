@@ -3,7 +3,7 @@ use crate::sidebar::layout_tests::{fixture_window, snapshot};
 use std::sync::Arc;
 
 #[gpui::test]
-fn page_new_window_opens_exact_url_without_creating_a_tab(cx: &mut gpui::TestAppContext) {
+fn page_new_window_does_not_open_a_valid_https_url_or_create_a_tab(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
         let mut shown = snapshot(40);
@@ -28,45 +28,21 @@ fn page_new_window_opens_exact_url_without_creating_a_tab(cx: &mut gpui::TestApp
         })
     });
     let before = cx.update(|_, cx| cx.global::<Store>().tabs().count());
-    let url = WebUrl::try_from("https://example.test/login?state=kept#step").unwrap();
-    cx.update(|_, cx| {
-        view.update(cx, |view, cx| view.open_page_externally(opener, url, cx));
+    let response = cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            let response = view
+                .browser
+                .pages
+                .request_new_window_for_test("https://example.test/login?state=kept#step");
+            view.apply_page_events(window, cx);
+            response
+        })
     });
-    assert_eq!(
-        cx.opened_url().as_deref(),
-        Some("https://example.test/login?state=kept#step")
-    );
+    assert!(matches!(response, wry::NewWindowResponse::Deny));
+    assert!(cx.opened_url().is_none());
     assert_eq!(
         cx.update(|_, cx| cx.global::<Store>().tabs().count()),
         before
     );
-}
-
-#[gpui::test]
-fn page_new_window_ignores_a_closed_opener(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(|window, cx| fixture_window(window, cx));
-    let opener = cx.update(|_, cx| {
-        Store::update(cx, |store| {
-            let id = store
-                .open(
-                    crate::browser::Scope::Legacy("closed".into()),
-                    "w0",
-                    Some(Location::Web {
-                        url: WebUrl::try_from("https://opener.test/").unwrap(),
-                    }),
-                    None,
-                )
-                .unwrap();
-            store.close(id);
-            id
-        })
-    });
-    let url = WebUrl::try_from("https://example.test/login").unwrap();
-    cx.update(|_, cx| {
-        view.update(cx, |view, cx| {
-            view.open_page_externally(opener, url, cx);
-        });
-    });
-    assert!(cx.opened_url().is_none());
-    assert_eq!(cx.update(|_, cx| cx.global::<Store>().tabs().count()), 0);
+    assert!(cx.update(|_, cx| cx.global::<Store>().get(opener).is_some()));
 }

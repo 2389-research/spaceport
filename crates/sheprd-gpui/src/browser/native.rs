@@ -28,8 +28,6 @@ const EVENT_CAPACITY: usize = 64;
 pub(crate) enum Event {
     Title(TabId, String),
     Loaded(TabId, String),
-    /// The page asked for a new window; the window opens its URL externally.
-    NewWindow(TabId, String),
     /// A bounded message from a page script, parsed as untrusted input.
     Posted(TabId, String),
 }
@@ -93,7 +91,6 @@ impl Default for Pages {
 }
 
 /// Where a page's handlers send what it reports.
-#[derive(Clone)]
 struct Outbox {
     sender: SyncSender<Event>,
 }
@@ -110,11 +107,11 @@ fn with_handlers<'a>(
     id: TabId,
     outbox: &Outbox,
 ) -> wry::WebViewBuilder<'a> {
-    let (title, loaded, popup) = (outbox.sender.clone(), outbox.sender.clone(), outbox.clone());
+    let (title, loaded) = (outbox.sender.clone(), outbox.sender.clone());
     builder
         .with_devtools(cfg!(debug_assertions))
         .with_navigation_handler(|url| navigable(&url))
-        .with_new_window_req_handler(move |url, _| new_window(id, url, &popup))
+        .with_new_window_req_handler(|url, _| deny_new_window(&url))
         // Nothing a page offers is saved to disk.
         .with_download_started_handler(|_, _| false)
         .with_document_title_changed_handler(move |text| {
@@ -127,10 +124,9 @@ fn with_handlers<'a>(
         })
 }
 
-/// A page cannot create a child web view. Its requested URL is reported to
-/// the window, which validates it before opening it in the system handler.
-fn new_window(opener: TabId, url: String, outbox: &Outbox) -> wry::NewWindowResponse {
-    report(&outbox.sender, Event::NewWindow(opener, url));
+/// A page request may come from script without a click, so neither a child
+/// view nor an external URL is opened from it.
+fn deny_new_window(_url: &str) -> wry::NewWindowResponse {
     wry::NewWindowResponse::Deny
 }
 
@@ -145,6 +141,14 @@ fn navigable(url: &str) -> bool {
 }
 
 impl Pages {
+    #[cfg(test)]
+    pub(in crate::browser) fn request_new_window_for_test(
+        &self,
+        url: &str,
+    ) -> wry::NewWindowResponse {
+        deny_new_window(url)
+    }
+
     /// The tabs this window has a page for, or is building one for.
     pub(crate) fn ids(&self) -> impl Iterator<Item = TabId> + '_ {
         self.pages.keys().chain(self.building.keys()).copied()
@@ -495,17 +499,12 @@ mod tests {
     }
 
     #[test]
-    fn new_window_request_denies_a_child_view_and_reports_its_url() {
+    fn new_window_request_denies_a_child_view_without_reporting_an_event() {
         let pages = Pages::default();
-        let opener = TabId::test(5);
         let url = "https://example.test/login?state=kept#step";
         assert!(matches!(
-            new_window(opener, url.to_owned(), &pages.outbox),
+            pages.request_new_window_for_test(url),
             wry::NewWindowResponse::Deny
-        ));
-        assert!(matches!(
-            pages.next_event(),
-            Some(Event::NewWindow(id, address)) if id == opener && address == url
         ));
         assert!(pages.next_event().is_none());
     }
