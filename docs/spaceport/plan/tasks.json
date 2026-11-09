@@ -307,6 +307,7 @@
         "evidence/t04-git-titlebar-route-removal.md",
         "evidence/t04-native-pr-actions-removal.md",
         "evidence/t04-native-git-mutations-removal.md",
+        "evidence/t04-open-checkout-link-removal.md",
         "evidence/t04-git-read-close-dependency.md",
         "evidence/t04-github-account-entry-cut.md",
         "evidence/t04-profile-popup-account-dependency.md",

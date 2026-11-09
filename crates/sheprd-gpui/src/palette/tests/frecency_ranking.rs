@@ -96,7 +96,7 @@ fn go_to_rows_are_remembered_by_durable_or_boot_scoped_keys() {
     let workspace = &snapshot.workspaces[0];
     assert_eq!(
         key(NavigationTarget::Workspace(workspace.workspace_id.clone())),
-        launch_root(&snapshot, &workspace.workspace_id).map(|root| Key::Workspace {
+        projects::launch_root(&snapshot, &workspace.workspace_id).map(|root| Key::Workspace {
             endpoint: crate::endpoint::LOCAL.into(),
             root: root.into(),
             branch: workspace.branch.clone(),

@@ -96,23 +96,13 @@ fn the_workspace_popover_and_its_dialogs_show_only_messages_under_en_xa() {
 }
 
 #[test]
-fn opening_a_link_or_a_checkout_asks_only_in_messages_under_en_xa() {
+fn opening_an_external_link_asks_only_in_messages_under_en_xa() {
     under_en_xa("open link en-XA leak", |cx, recorder| {
         let (view, cx) = window(cx);
         recorder.take();
-        let path = "/tmp/checkout";
-        cx.update(|window, cx| {
-            view.update(cx, |view, cx| {
-                view.ask_to_open_checkout(path.into(), window, cx)
-            })
-        });
-        draw(cx);
-        assert_translated("Open checkout", &recorder.take(), &[path.into()]);
-
         let url = "zed://file/tmp/checkout";
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
-                view.dismiss_menu(window, cx);
                 let url = crate::terminal::ExternalUrl::try_from(url).unwrap();
                 view.ask_to_open_link(url, window, cx);
             })

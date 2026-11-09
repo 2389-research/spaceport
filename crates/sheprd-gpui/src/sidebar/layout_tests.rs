@@ -700,7 +700,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         cell_width: 9.,
         hovered_terminal_link: false,
         pressed_terminal_link: None,
-        link_complaint: None,
         links: Default::default(),
         terminal_mouse: None,
         scrollbar_drag: None,

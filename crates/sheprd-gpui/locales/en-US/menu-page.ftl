@@ -24,7 +24,6 @@ menu-page-keyboard-shortcuts = Keyboard shortcuts
 menu-page-end-processes = End processes
 menu-page-move-pane = Move pane
 menu-page-move-tab = Move tab
-menu-page-open-checkout = Open checkout
 menu-page-open-link = Open link
 menu-page-command-palette = Command palette
 menu-page-pane = Pane

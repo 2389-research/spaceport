@@ -57,7 +57,6 @@ impl Page {
             Self::Menu => fl!("menu-page-menu"),
             Self::MovePane => fl!("menu-page-move-pane"),
             Self::MoveTab => fl!("menu-page-move-tab"),
-            Self::OpenCheckout => fl!("menu-page-open-checkout"),
             Self::OpenLink => fl!("menu-page-open-link"),
             Self::Palette => fl!("menu-page-command-palette"),
             Self::Pane => fl!("menu-page-pane"),

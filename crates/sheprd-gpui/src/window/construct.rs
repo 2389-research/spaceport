@@ -200,7 +200,6 @@ impl SheprdWindow {
             last_input: None,
             last_pointer: None,
             last_queued_options: None,
-            link_complaint: None,
             links: Default::default(),
             listening_ports: Default::default(),
             live: LiveState::default(),

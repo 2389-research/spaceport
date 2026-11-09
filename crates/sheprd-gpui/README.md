@@ -3836,23 +3836,15 @@ Windows cross-check.
   fraction; steps without one show the moving bar. Checks the app runs on its
   own, and dialogs waiting for you, show nothing.
 - **Jump list.** Right-click the taskbar button, or the Start menu entry, for
-  the Git checkouts of the workspaces you last focused on this computer, under
-  **Recent workspaces**, and a **Show DEVICE** task for each device. Each entry
+  a **Show DEVICE** task for each device. Each entry
   is a `spaceport://` link (below) passed to the executable, so it reaches
-  the running app, or starts it. Windows shows recent workspaces only while **Settings > Personalization >
-  Start > Show recently opened items in Start, Jump Lists, and File Explorer**
-  is on; with it off, only the devices are listed. An entry you remove from the
-  list is forgotten. The recent checkouts are kept in `jump-list.json` in the
-  state directory.
+  the running app, or starts it. An entry you remove from the list is omitted.
 - **`spaceport://` links.** Development builds accept the scheme as an
   argument, without registering a handler in the user's account.
-  `spaceport://open?path=C:\src\repo` shows a local Git checkout or worktree:
-  the workspace already open there, or, after you agree in the window, a new
-  one (the repository's scripts are not trusted). `spaceport://device?id=ID`
-  switches to a device by the ID `host list` prints. A link is untrusted input:
-  only those shapes are accepted, paths must be absolute drive paths (never
-  `\\server\share`, which would send your credentials to that server, nor
-  `..`), and a link never runs a command. A jump-list shortcut starts the
+  `spaceport://device?id=ID` switches to a device by the ID `host list` prints;
+  `spaceport://notification?tag=TAG` opens a pane from this app's notification.
+  A link is untrusted input: only those shapes are accepted, and a link never
+  runs a command. A jump-list shortcut starts the
   installed windowed launcher when present; a source build uses its current
   executable. The executable hands the link to the running app over the
   control pipe, or starts the app and follows it once connected. See

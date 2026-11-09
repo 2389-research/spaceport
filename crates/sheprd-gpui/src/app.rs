@@ -395,9 +395,9 @@ pub(crate) fn run() -> std::process::ExitCode {
     } else {
         crate::notification_mutes::Mutes::default()
     };
-    // Nor with the user's jump list, which they would replace.
+    // Windows jump list tasks are published only on a normal launch.
     #[cfg(windows)]
-    let jump_list = (mode == LaunchMode::Normal).then(crate::jump_list::JumpList::load);
+    let jump_list = (mode == LaunchMode::Normal).then(crate::jump_list::JumpList::default);
     // Nor with which palette rows the user chooses.
     let palette_frecency = if mode == LaunchMode::Normal {
         crate::palette::Frecency::load()

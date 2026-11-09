@@ -30,7 +30,6 @@ mod preview;
 mod project_create;
 mod project_open;
 mod projects;
-pub(crate) use projects::launch_root;
 mod render;
 mod resume;
 pub(crate) use resume::Resume;

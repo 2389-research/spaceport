@@ -1,5 +1,5 @@
-//! The jump list worker: saves the recent checkouts and hands the entries to
-//! the shell through `ICustomDestinationList`. It runs on its own thread, in
+//! The jump list worker hands device tasks to the shell through
+//! `ICustomDestinationList`. It runs on its own thread, in
 //! a multithreaded COM apartment of its own, so the UI thread's apartment and
 //! its message loop are never involved.
 //!
@@ -8,15 +8,15 @@
 //! outlive the call.
 #![allow(unsafe_code)]
 
-use super::{Entries, Item, Mailbox, Saved};
-use crate::{constants::APP_ID, link::Link, state_file};
+use super::{Entries, Item, Mailbox};
+use crate::{constants::APP_ID, link::Link};
 use std::{
     path::Path,
     sync::{Mutex, mpsc},
 };
 use windows::{
     Win32::{
-        Foundation::{E_ACCESSDENIED, PROPERTYKEY},
+        Foundation::PROPERTYKEY,
         System::Com::{
             CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
             CoUninitialize, StructuredStorage::PROPVARIANT,
@@ -56,12 +56,7 @@ impl Drop for Apartment {
     }
 }
 
-pub(super) fn run(
-    wake: &mpsc::Receiver<()>,
-    mailbox: &Mutex<Mailbox>,
-    path: Option<&Path>,
-    exe: Option<&Path>,
-) {
+pub(super) fn run(wake: &mpsc::Receiver<()>, mailbox: &Mutex<Mailbox>, exe: Option<&Path>) {
     let Some(exe) = exe else {
         tracing::warn!("The jump list is off: this executable was not found");
         return;
@@ -73,15 +68,15 @@ pub(super) fn run(
     }
     let _apartment = Apartment;
     for () in wake {
-        let Some((entries, mut recent)) = mailbox
+        let Some(entries) = mailbox
             .lock()
             .ok()
             .and_then(|mut mailbox| mailbox.pending.take())
         else {
             continue;
         };
-        let removed = match publish(&entries, exe) {
-            Ok(removed) => removed,
+        match publish(&entries, exe) {
+            Ok(()) => {}
             Err(error) => {
                 tracing::warn!(error = ?error, "Cannot update the jump list; trying again later");
                 if let Ok(mut mailbox) = mailbox.lock() {
@@ -90,27 +85,12 @@ pub(super) fn run(
                 continue;
             }
         };
-        if !removed.is_empty() {
-            recent.retain(|entry| {
-                !removed.contains(&Link::Open {
-                    path: entry.path.clone(),
-                })
-            });
-            if let Ok(mut mailbox) = mailbox.lock() {
-                mailbox.removed.extend(removed);
-            }
-        }
-        if let Some(path) = path
-            && let Err(error) = state_file::write(path, &Saved { recent })
-        {
-            tracing::warn!(%error, "Cannot save the jump list");
-        }
     }
 }
 
 /// Replaces the jump list, leaving out what the user removed from it since
-/// the last one, as the shell requires; returns those links.
-fn publish(entries: &Entries, exe: &Path) -> Result<Vec<Link>, Error> {
+/// the last one, as the shell requires.
+fn publish(entries: &Entries, exe: &Path) -> Result<(), Error> {
     // SAFETY: the documented class and interface pair, in this thread's
     // apartment.
     let list: ICustomDestinationList =
@@ -124,19 +104,6 @@ fn publish(entries: &Entries, exe: &Path) -> Result<Vec<Link>, Error> {
     let removed: IObjectArray = unsafe { list.BeginList(&mut slots)? };
     let removed = removed_links(&removed)?;
     let exe = HSTRING::from(exe.as_os_str());
-    if let Some(recent) = collection(&exe, &entries.recent, &removed)? {
-        // SAFETY: the name outlives the call.
-        match unsafe { list.AppendCategory(&HSTRING::from("Recent workspaces"), &recent) } {
-            Ok(()) => {}
-            // The user turned off "Show recently opened items in Start, Jump
-            // Lists, and File Explorer"; the shell then refuses categories,
-            // and recent workspaces are left out as that setting asks.
-            Err(error) if error.code() == E_ACCESSDENIED => {
-                tracing::debug!("Recent items are turned off; the jump list lists devices only");
-            }
-            Err(error) => return Err(error.into()),
-        }
-    }
     // Tasks are shown whatever that setting is.
     if let Some(devices) = collection(&exe, &entries.devices, &removed)? {
         // SAFETY: a live object array.
@@ -144,7 +111,7 @@ fn publish(entries: &Entries, exe: &Path) -> Result<Vec<Link>, Error> {
     }
     // SAFETY: finishes the list `BeginList` started.
     unsafe { list.CommitList()? };
-    Ok(removed)
+    Ok(())
 }
 
 /// Shortcuts for the items the user has not removed, or `None` when none is
@@ -185,10 +152,6 @@ fn shell_link(exe: &HSTRING, item: &Item) -> windows::core::Result<Option<IShell
         link.SetPath(exe)?;
         link.SetArguments(&HSTRING::from(arguments))?;
         link.SetDescription(&HSTRING::from(item.link.to_url()))?;
-        if matches!(item.link, Link::Open { .. }) {
-            // The folder icon, as Explorer's own jump lists show.
-            link.SetIconLocation(&HSTRING::from(r"%SystemRoot%\System32\shell32.dll"), 3)?;
-        }
         let store: IPropertyStore = link.cast()?;
         store.SetValue(&TITLE, &PROPVARIANT::from(item.title.as_str()))?;
         store.Commit()?;

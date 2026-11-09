@@ -226,14 +226,12 @@ exactly at the running executable and have not been verified on Windows.
 
 | Link | What the app does |
 | --- | --- |
-| `spaceport://open?path=PATH` | Focus the workspace showing the Git checkout or worktree at `PATH`, or ask in the window before opening one there |
 | `spaceport://device?id=ID` | Show the device `host list` names `ID` |
 | `spaceport://notification?tag=TAG` | Open the pane of a notification this app posted |
 
 A link is untrusted input, checked by the command and again by the app: only
-those shapes, each parameter once, bounded lengths, no control characters, and
-an absolute local path without `..` (on Windows a drive path, never a UNC or
-`\\?\` one). A link only ever shows something; it never runs a command. A
+those shapes, each parameter once, bounded lengths, and no control characters.
+A link only ever shows something; it never runs a command. A
 refused link exits 2, an unknown device or notification 5, as for commands.
 The request is `{"method": "link", "caller", "op": {"url"}}`.
 

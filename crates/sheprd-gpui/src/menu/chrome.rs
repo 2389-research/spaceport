@@ -534,7 +534,7 @@ impl SheprdWindow {
             .when(
                 matches!(
                     page,
-                    Page::AgentSkill | Page::VersionMismatch | Page::OpenCheckout | Page::OpenLink
+                    Page::AgentSkill | Page::VersionMismatch | Page::OpenLink
                 ),
                 |panel| {
                     panel
@@ -694,8 +694,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_worktree_script(cx));
         } else if page == Page::OpenLink {
             panel = panel.child(self.render_open_link(cx));
-        } else if page == Page::OpenCheckout {
-            panel = panel.child(self.render_open_checkout(cx));
         } else {
             panel = panel.child(self.render_release_notes(cx));
         }

@@ -1,4 +1,3 @@
-#![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{control::protocol::Caller, sidebar::layout_tests::fixture_window};
 use gpui::TestAppContext;
@@ -24,7 +23,7 @@ fn links_are_parsed_again_and_only_show_things(cx: &mut TestAppContext) {
         // Any local process can send one, so the app checks it too.
         for url in [
             "spaceport://run?command=calc",
-            "spaceport://open?path=relative",
+            "spaceport://open?path=/checkout",
             "https://example.com",
         ] {
             assert_eq!(
@@ -53,51 +52,13 @@ fn links_are_parsed_again_and_only_show_things(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-fn opening_a_checkout_needs_this_computers_herdr(cx: &mut TestAppContext) {
-    let handle = cx.add_window(fixture_window);
-    let path = if cfg!(windows) {
-        r"C:\checkout"
-    } else {
-        "/checkout"
-    };
-    handle
-        .update(cx, |view, _, _| {
-            view.live.status = crate::state::ConnectionStatus::Disconnected;
-        })
-        .unwrap();
-    cx.update(|cx| {
-        assert_eq!(
-            code(&serve(link(&Link::Open { path: path.into() }.to_url()), cx)),
-            Some(ErrorCode::Busy)
-        );
-    });
-}
-
-#[gpui::test]
-fn a_checkout_link_uses_a_window_connected_to_this_computer(cx: &mut TestAppContext) {
-    use crate::state::ConnectionStatus;
-    let status = |cx: &mut TestAppContext,
-                  handle: gpui::WindowHandle<crate::SheprdWindow>,
-                  status: ConnectionStatus| {
-        handle
-            .update(cx, |view, _, _| view.live.status = status)
-            .unwrap();
-    };
-    let detached = cx.add_window(fixture_window);
-    status(cx, detached, ConnectionStatus::Disconnected);
-    let connected = cx.add_window(fixture_window);
-    status(cx, connected, ConnectionStatus::Connected);
-    let path = if cfg!(windows) {
-        r"C:\checkout"
-    } else {
-        "/checkout"
-    };
-    let url = Link::Open { path: path.into() }.to_url();
-    // The detached window cannot open it, but the other one can.
-    let response = cx.update(|cx| serve(link(&url), cx));
-    assert!(matches!(response, Response::Done { .. }), "{response:?}");
-    // `--window` names exactly that window, even a detached one.
-    let mut call = link(&url);
-    call.caller.window = Some(detached.window_id().as_u64());
-    cx.update(|cx| assert_eq!(code(&serve(call, cx)), Some(ErrorCode::Busy)));
+fn a_device_link_keeps_the_caller_window_target(cx: &mut TestAppContext) {
+    let first = cx.add_window(fixture_window);
+    cx.add_window(fixture_window);
+    let mut call = link("spaceport://device?id=local");
+    call.caller.window = Some(first.window_id().as_u64());
+    cx.update(|cx| assert!(matches!(serve(call, cx), Response::Done { .. })));
+    let mut missing = link("spaceport://device?id=local");
+    missing.caller.window = Some(u64::MAX);
+    cx.update(|cx| assert_eq!(code(&serve(missing, cx)), Some(ErrorCode::NotFound)));
 }

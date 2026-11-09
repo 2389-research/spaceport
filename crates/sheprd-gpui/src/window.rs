@@ -211,10 +211,6 @@ pub(crate) struct SheprdWindow {
     /// The last pointer position over the panes, so a move event that did not move is not use.
     pub(crate) last_pointer: Option<Point<Pixels>>,
     pub(crate) last_queued_options: Option<ConnectOptions>,
-    /// The status line text the last link this window failed to follow
-    /// left, so following the next one can clear it without touching an
-    /// unrelated error.
-    pub(crate) link_complaint: Option<String>,
     pub(crate) links: links::DaemonLinks,
     pub(crate) listening_ports: crate::listening_ports::ListeningPorts,
     pub(crate) live: LiveState,
@@ -579,7 +575,7 @@ impl SheprdWindow {
         self.update_workspace_dialog(window, cx);
         crate::link::follow::poll(self, window, cx);
         #[cfg(windows)]
-        crate::jump_list::JumpList::observe(window.window_handle().window_id(), self, cx);
+        crate::jump_list::JumpList::observe(self, cx);
         #[cfg(windows)]
         crate::taskbar::button::set_progress(
             window.window_handle().window_id(),

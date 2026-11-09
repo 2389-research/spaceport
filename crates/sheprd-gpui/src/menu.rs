@@ -10,7 +10,6 @@ pub(crate) mod devices;
 mod git;
 mod github;
 mod mute;
-mod open_checkout;
 mod open_link;
 mod page;
 mod page_title;

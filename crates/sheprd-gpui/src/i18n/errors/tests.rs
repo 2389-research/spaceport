@@ -21,7 +21,6 @@ mod github;
 mod keymap;
 #[cfg(windows)]
 mod launch_at_login;
-mod link;
 mod listening_ports;
 mod notification_mutes;
 mod overview;
