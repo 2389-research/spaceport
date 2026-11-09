@@ -72,6 +72,7 @@ mod tab_labels;
 mod tab_layout;
 mod terminal_annotations;
 mod terminal_padding;
+mod theme_directory;
 mod theme_files;
 mod themes;
 mod update_channel;

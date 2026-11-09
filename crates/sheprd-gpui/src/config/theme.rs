@@ -84,8 +84,11 @@ impl<'a> ThemeName<'a> {
 }
 
 fn theme_directories() -> Result<Vec<PathBuf>> {
-    let root = config_root()?;
-    let mut directories = vec![root.join("herdr/themes"), root.join("ghostty/themes")];
+    Ok(theme_directories_at(&config_root()?))
+}
+
+pub(super) fn theme_directories_at(root: &Path) -> Vec<PathBuf> {
+    let mut directories = vec![root.join("spaceport/themes"), root.join("ghostty/themes")];
     if let Some(resources) = env::var_os("GHOSTTY_RESOURCES_DIR").filter(|value| !value.is_empty())
     {
         directories.push(PathBuf::from(resources).join("themes"));
@@ -110,7 +113,7 @@ fn theme_directories() -> Result<Vec<PathBuf>> {
         ),
         None => {}
     }
-    Ok(directories)
+    directories
 }
 
 impl Config {

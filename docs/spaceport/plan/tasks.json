@@ -87,7 +87,8 @@
         "evidence/t01-control-copy-cut.md",
         "evidence/t01-control-protocol-copy.md",
         "evidence/t01-desktop-copy-cut.md",
-        "evidence/t01-diagnostics-identity.md"
+        "evidence/t01-diagnostics-identity.md",
+        "evidence/t01-theme-source-isolation.md"
       ],
       "must_close_gaps": []
     },
