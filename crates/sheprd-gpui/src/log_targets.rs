@@ -11,7 +11,6 @@ pub(crate) const LOG_TARGETS: &[&str] = &[
     "sheprd_core_client",
     "sheprd_credentials",
     "sheprd_diagnostics",
-    "sheprd_github",
     "sheprd_gpui",
     "sheprd_i18n",
     "sheprd_protocol",

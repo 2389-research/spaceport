@@ -17,7 +17,6 @@ mod credentials;
 mod daemon;
 mod devices;
 mod file_drop;
-mod github;
 mod keymap;
 #[cfg(windows)]
 mod launch_at_login;

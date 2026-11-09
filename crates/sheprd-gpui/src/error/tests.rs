@@ -2,19 +2,6 @@ use super::*;
 use std::{error::Error as _, path::Path};
 
 #[test]
-fn github_network_message_names_the_transport_failure() {
-    let error = sheprd_github::Error::Network(ureq::Error::Io(io::Error::other(
-        "invalid peer certificate: UnknownIssuer",
-    )));
-    let message = error.to_string();
-    assert!(message.starts_with("GitHub network request failed or timed out"));
-    assert!(
-        message.contains("invalid peer certificate: UnknownIssuer"),
-        "{message}"
-    );
-}
-
-#[test]
 fn updater_wrapper_preserves_source_chain() {
     let error = Error::from(crate::updater::Error::Io(io::Error::from(
         io::ErrorKind::BrokenPipe,
@@ -31,23 +18,7 @@ fn updater_wrapper_preserves_source_chain() {
 }
 
 #[test]
-fn github_failures_keep_typed_sources_and_redact_parser_diagnostics() -> anyhow::Result<()> {
-    let source = serde_json::from_str::<u64>("\"fixture-private-value\"")
-        .err()
-        .ok_or_else(|| anyhow::anyhow!("expected JSON type error"))?;
-    let error = Error::from(sheprd_github::Error::json(source));
-    assert!(matches!(
-        error,
-        Error::GitHub(sheprd_github::Error::Json(_))
-    ));
-    assert!(!format!("{error} {error:?}").contains("fixture-private-value"));
-    assert!(
-        error
-            .source()
-            .and_then(|source| source.source())
-            .is_some_and(|source| source.is::<serde_json::Error>())
-    );
-
+fn credential_failures_keep_typed_sources() {
     let error = Error::Credentials(sheprd_credentials::Error::Io(io::Error::from(
         io::ErrorKind::PermissionDenied,
     )));
@@ -57,11 +28,6 @@ fn github_failures_keep_typed_sources_and_redact_parser_diagnostics() -> anyhow:
             .and_then(|source| source.downcast_ref::<io::Error>())
             .is_some_and(|source| source.kind() == io::ErrorKind::PermissionDenied)
     );
-    let error = sheprd_github::Error::Read(io::Error::from(io::ErrorKind::TimedOut));
-    assert!(
-        matches!(&error, sheprd_github::Error::Read(source) if source.kind() == io::ErrorKind::TimedOut)
-    );
-    Ok(())
 }
 
 #[test]

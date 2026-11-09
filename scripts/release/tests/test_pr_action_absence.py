@@ -1,8 +1,9 @@
 """ABOUTME: Checks that native pull request actions have no shipped route.
-ABOUTME: Keeps read-only pull request and account owners available for later cuts.
+ABOUTME: Keeps GitHub's library out of the Spaceport desktop app.
 """
 
 from pathlib import Path
+import tomllib
 import unittest
 
 
@@ -23,14 +24,17 @@ class PullRequestActionAbsence(unittest.TestCase):
                         self.assertNotIn(marker, text)
         self.assertNotIn("mutation(", (ROOT / "crates/sheprd-github/src/http.rs").read_text())
 
-    def test_read_only_owners_remain(self):
-        for path in (
-            "crates/sheprd-github/src/pull_request.rs",
-            "crates/sheprd-gpui/src/menu/github.rs",
-            "crates/sheprd-gpui/src/menu/git.rs",
-        ):
-            with self.subTest(path=path):
-                self.assertTrue((ROOT / path).is_file())
+    def test_github_library_has_no_desktop_route(self):
+        app = ROOT / "crates/sheprd-gpui"
+        manifest = tomllib.loads((app / "Cargo.toml").read_text())
+        for section in ("dependencies", "dev-dependencies"):
+            with self.subTest(section=section):
+                self.assertNotIn("sheprd-github", manifest[section])
+        self.assertNotIn("sheprd-github/test-support", manifest["features"]["integration-test"])
+        for source in (app / "src").rglob("*.rs"):
+            with self.subTest(path=source.relative_to(ROOT)):
+                self.assertNotIn("sheprd_github", source.read_text())
+        self.assertFalse((app / "locales/en-US/error-github.ftl").exists())
 
 
 if __name__ == "__main__":

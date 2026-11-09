@@ -66,8 +66,6 @@ pub enum Error {
     EmptyWorkspaceLabel,
     #[error(transparent)]
     FileDrop(#[from] crate::window::file_drop::Error),
-    #[error(transparent)]
-    GitHub(#[from] sheprd_github::Error),
     #[error("Oversized GIF, WebP, and animated PNG images cannot be resized safely.")]
     ImageAnimationResize,
     #[error("Could not decode the oversized image.")]
@@ -279,7 +277,6 @@ pub enum Error {
 }
 
 mod config;
-mod github;
 mod path;
 mod remote;
 

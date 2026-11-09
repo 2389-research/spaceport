@@ -49,7 +49,6 @@ impl Localize for Error {
             Self::EmptyTabName => fl!("error-empty-tab-name"),
             Self::EmptyWorkspaceLabel => fl!("error-empty-workspace-label"),
             Self::FileDrop(error) => error.localize(),
-            Self::GitHub(error) => error.localize(),
             Self::ImageAnimationResize => fl!("error-image-animation-resize"),
             Self::ImageDecode(_) => fl!("error-image-decode"),
             Self::ImageDecodeLimit => fl!("error-image-decode-limit"),

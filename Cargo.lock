@@ -7761,7 +7761,6 @@ dependencies = [
  "sheprd-core-client",
  "sheprd-credentials",
  "sheprd-diagnostics",
- "sheprd-github",
  "sheprd-i18n",
  "sheprd-remote",
  "sheprd-updater",
