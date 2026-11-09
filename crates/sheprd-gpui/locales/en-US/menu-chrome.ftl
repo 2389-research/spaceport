@@ -12,7 +12,6 @@ menu-chrome-workspaces = workspaces
 menu-chrome-reload-gui-config = reload GUI config
 menu-chrome-app-updates = app updates
 menu-chrome-preview-app-update = preview app update
-menu-chrome-github-sign-in = GitHub sign-in
 menu-chrome-about = about
 # Asks the connected Herdr daemon to reread its config file.
 menu-chrome-reload-daemon-config = reload daemon config

@@ -1,0 +1,16 @@
+//! The application menu keeps its general actions without exposing sign-in.
+//! Profile access in the titlebar has its own interaction test.
+
+use crate::sidebar::layout_tests::fixture_window;
+
+#[gpui::test]
+fn application_menu_keeps_settings_and_excludes_github_sign_in(cx: &mut gpui::TestAppContext) {
+    let (view, cx) = cx.add_window_view(fixture_window);
+    view.read_with(cx, |view, _| {
+        let items = view.menu_items();
+        assert!(items.contains(&"settings"));
+        assert!(items.contains(&"shortcuts"));
+        assert!(items.contains(&"themes"));
+        assert!(!items.contains(&"GitHub sign-in"));
+    });
+}

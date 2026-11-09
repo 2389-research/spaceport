@@ -36,17 +36,12 @@ pub(super) const HEIGHT: f32 = 34.;
 const NAVIGATION_MIN_WIDTH: f32 = 320.;
 
 impl SheprdWindow {
-    fn open_profile(&mut self, connect: bool, window: &mut Window, cx: &mut Context<Self>) {
+    fn open_profile(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let shown = self.menu.page == Some(Page::GitHub);
         if !shown && !self.open_menu(window, cx) {
             return;
         }
         self.menu.page = Some(Page::GitHub);
-        // A device already covered by the main account opens the page rather
-        // than starting a second sign-in for itself.
-        if connect && self.pr_profile().is_none() && !self.github_auth().loading_profile() {
-            self.start_github();
-        }
         cx.notify();
     }
 
@@ -181,13 +176,13 @@ impl SheprdWindow {
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .on_click(cx.listener(|this, _, window, cx| {
                                 cx.stop_propagation();
-                                this.open_profile(true, window, cx);
+                                this.open_profile(window, cx);
                             }))
                             .on_mouse_down(
                                 MouseButton::Right,
                                 cx.listener(|this, _, window, cx| {
                                     cx.stop_propagation();
-                                    this.open_profile(false, window, cx);
+                                    this.open_profile(window, cx);
                                 }),
                             )
                             .child(

@@ -338,7 +338,7 @@
       "scenario": "Invoke removed commands/config/UI and render plain git/diff/source text in terminals/chat.",
       "expected": "Specialized Git/IDE/review behavior is absent; ordinary content is unchanged; developer CI still works.",
       "status": "not_run",
-      "evidence": ["evidence/t04-code-edit-route.md", "evidence/t04-source-view-removal.md", "evidence/t04-cli-source-search-removal.md", "evidence/t04-code-index-removal.md", "evidence/t04-terminal-editor-removal.md", "evidence/t04-review-control-removal.md", "evidence/t04-native-review-removal.md", "evidence/t04-checkpoint-cli-removal.md", "evidence/t04-checkpoint-ui-removal.md", "evidence/t04-checkpoint-worker-removal.md", "evidence/t04-security-section-removal.md", "evidence/t04-fan-out-removal.md", "evidence/t04-workspace-dispatch-removal.md", "evidence/t04-pane-carry-removal.md", "evidence/t04-native-dispatch-dependency.md", "evidence/t04-native-activity-removal.md", "evidence/t04-git-command-route-removal.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-native-git-mutations-removal.md"]
+      "evidence": ["evidence/t04-code-edit-route.md", "evidence/t04-source-view-removal.md", "evidence/t04-cli-source-search-removal.md", "evidence/t04-code-index-removal.md", "evidence/t04-terminal-editor-removal.md", "evidence/t04-review-control-removal.md", "evidence/t04-native-review-removal.md", "evidence/t04-checkpoint-cli-removal.md", "evidence/t04-checkpoint-ui-removal.md", "evidence/t04-security-section-removal.md", "evidence/t04-fan-out-removal.md", "evidence/t04-workspace-dispatch-removal.md", "evidence/t04-pane-carry-removal.md", "evidence/t04-native-dispatch-dependency.md", "evidence/t04-native-activity-removal.md", "evidence/t04-git-command-route-removal.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-native-git-mutations-removal.md", "evidence/t04-github-account-entry-cut.md"]
     },
     {
       "id": "A30",
@@ -384,7 +384,7 @@
       "scenario": "Compare retained desktop views, menus, settings, sidebar and rich chat against reference fixtures.",
       "expected": "Only approved deletions, rebrand and necessary capability adaptations differ; no unrequested redesign.",
       "status": "not_run",
-      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md"]
+      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-github-account-entry-cut.md"]
     },
     {
       "id": "A34",

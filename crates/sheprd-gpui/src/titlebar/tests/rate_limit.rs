@@ -30,7 +30,7 @@ fn rate_limit_dot_and_dialog_survive_narrow_layout_and_clear_after_reset(cx: &mu
         let button = cx.debug_bounds("titlebar-avatar").unwrap();
         let dot = cx.debug_bounds("titlebar-avatar-attention").unwrap();
         assert!(button.contains(&dot.center()));
-        cx.update(|window, cx| view.update(cx, |view, cx| view.open_profile(false, window, cx)));
+        cx.update(|window, cx| view.update(cx, |view, cx| view.open_profile(window, cx)));
         cx.update(|window, cx| {
             window.refresh();
             window.draw(cx).clear(cx);

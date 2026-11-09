@@ -106,7 +106,6 @@ impl SheprdWindow {
             "reload GUI config",  // i18n: data
             "app updates",        // i18n: data
             "preview app update", // i18n: data
-            "GitHub sign-in",     // i18n: data
             "about",
         ];
         if self.live.status.is_connected() {
@@ -134,7 +133,6 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) {
         match item {
-            "GitHub sign-in" => self.menu.page = Some(Page::GitHub), // i18n: data
             "about" => self.open_about(window, cx),
             "settings" => self.open_preferences(window, cx),
             "shortcuts" => self.open_keybinds(window, cx),
@@ -851,7 +849,6 @@ fn menu_item_label(item: &str) -> String {
         "reload GUI config" => fl!("menu-chrome-reload-gui-config"), // i18n: data
         "app updates" => fl!("menu-chrome-app-updates"),             // i18n: data
         "preview app update" => fl!("menu-chrome-preview-app-update"), // i18n: data
-        "GitHub sign-in" => fl!("menu-chrome-github-sign-in"),       // i18n: data
         "about" => fl!("menu-chrome-about"),
         "reload daemon config" => fl!("menu-chrome-reload-daemon-config"), // i18n: data
         "update ready" => fl!("menu-chrome-update-ready"),                 // i18n: data

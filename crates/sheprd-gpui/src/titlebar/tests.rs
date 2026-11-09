@@ -146,9 +146,32 @@ fn profile_slot_bounds_and_context_menu_do_not_start_auth(cx: &mut TestAppContex
         view.update(cx, |view, cx| {
             view.dismiss_menu(window, cx);
             view.menu.github = crate::github::Auth::connected_fixture();
-            view.open_profile(true, window, cx);
+            view.open_profile(window, cx);
             assert!(view.menu.github.connected());
             assert!(!view.menu.github.busy());
         })
+    });
+}
+
+#[gpui::test]
+fn left_click_opens_profile_without_starting_github_sign_in(cx: &mut TestAppContext) {
+    // An invalid client ID makes a stray sign-in attempt fail before network I/O.
+    assert!(std::env::var_os("HERDR_GITHUB_OAUTH_CLIENT_ID").is_none());
+    let (view, cx) = cx.add_window_view(header_window);
+    cx.update(|_, cx| {
+        view.update(cx, |view, _| {
+            view.config.github.oauth_client_id = Some("invalid client".into());
+        })
+    });
+    cx.update(|window, cx| {
+        window.refresh();
+        window.draw(cx).clear(cx);
+    });
+    let hit = cx.debug_bounds("titlebar-avatar").unwrap();
+    cx.simulate_click(hit.center(), Modifiers::default());
+    view.read_with(cx, |view, _| {
+        assert_eq!(view.menu.page, Some(Page::GitHub));
+        assert!(!view.menu.github.failed);
+        assert!(view.menu.github.message.is_none());
     });
 }

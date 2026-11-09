@@ -30,6 +30,8 @@ mod worktree_open;
 mod worktree_shortcut;
 
 #[cfg(test)]
+mod account_route_tests;
+#[cfg(test)]
 mod announcement_tests;
 #[cfg(test)]
 mod en_xa_tests;
