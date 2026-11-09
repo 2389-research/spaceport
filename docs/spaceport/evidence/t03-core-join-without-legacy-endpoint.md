@@ -7,16 +7,15 @@ list contained a local Herdr 1 target. That prerequisite was unrelated to the
 Core group and prevented its own reconnection path from running without the
 legacy target.
 
-The focused headless test uses a fresh document for hub `hub-a`, selects its
-exact Core group, then clears the fixture's legacy endpoints before polling.
-It also clears the fixture's legacy snapshot, which a Core-only window would
-not have.
-Its connector records the requested start mode and returns `NotInstalled`, so
-it cannot dial or start a personal runtime. Before the change, the test failed
-with zero calls instead of the expected `Start::Join`. The production change
-allows a selected Core group to request the existing Hub join, while the
-preexisting plain-local metadata route remains. The Hub's exact-ID binding
-still refuses a foreign handshake and converts start requests to join-only.
+The focused headless test uses a fresh document for hub `hub-a` and selects its
+exact Core group. Its first RED form retained the fixture's non-local Socket
+endpoint and failed with zero calls instead of the expected `Start::Join`.
+The final form clears all fixture endpoints and its legacy snapshot before
+polling, as a Core-only window would. Its connector records the requested
+start mode and returns `NotInstalled`, so it cannot dial or start a personal
+runtime. The production change allows a selected Core group to request the
+existing Hub join. The plain-local metadata route remains. The Hub's exact-ID
+binding still refuses a foreign handshake and converts starts to join-only.
 
 The zero-endpoint probe then exposed a render crash in
 `surface_activation_ready`: it indexed the selected legacy endpoint to decide
