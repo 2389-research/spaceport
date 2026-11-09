@@ -252,13 +252,9 @@ impl Pages {
         self.pages.keys().chain(self.building.keys()).copied()
     }
 
+    #[cfg(all(windows, feature = "integration-test"))]
     pub(crate) fn contains(&self, id: TabId) -> bool {
         self.pages.contains_key(&id)
-    }
-
-    /// Tab `id`'s page, for the control requests.
-    pub(crate) fn page(&self, id: TabId) -> Option<&Rc<Page>> {
-        self.pages.get(&id)
     }
 
     /// The element tab `id`'s page lays out in, if the window has the page.
@@ -272,12 +268,6 @@ impl Pages {
         self.drawn.clone()
     }
 
-    /// Where tab `id`'s page drew last, if it is laid out.
-    #[cfg(target_os = "macos")]
-    pub(crate) fn drawn_at(&self, id: TabId) -> Option<gpui::Bounds<gpui::Pixels>> {
-        self.drawn.borrow().get(&id).copied()
-    }
-
     /// Starts the next frame's record of where pages draw. The window calls
     /// it as it presents the pages, before they lay out.
     pub(crate) fn next_frame(&self) {
@@ -287,12 +277,6 @@ impl Pages {
     /// Whether tab `id`'s page is being built.
     pub(crate) fn is_building(&self, id: TabId) -> bool {
         self.building.contains_key(&id)
-    }
-
-    /// Whether tab `id`'s page is on screen, not hidden.
-    #[cfg(target_os = "macos")]
-    pub(crate) fn is_shown(&self, id: TabId) -> bool {
-        self.shown.contains(&id)
     }
 
     /// Creates the page for `tab` if this window has not shown it yet and it

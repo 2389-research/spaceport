@@ -35,7 +35,7 @@ fn tabs_are_listed_one_per_line() {
 #[test]
 fn opened_tabs_say_where() {
     let output = opened(
-        "/src/main.rs",
+        "the Devices overview",
         Response::Tab {
             reply: Reply::Opened {
                 id: 7,
@@ -44,13 +44,16 @@ fn opened_tabs_say_where() {
         },
     )
     .unwrap();
-    assert_eq!(output.text, "Opened /src/main.rs in tab 7 of workspace w_1");
+    assert_eq!(
+        output.text,
+        "Opened the Devices overview in tab 7 of workspace w_1"
+    );
     assert_eq!(output.json["id"], 7);
     assert!(
         opened(
             "x",
             Response::Tab {
-                reply: Reply::Text { text: "x".into() }
+                reply: Reply::Tabs { tabs: Vec::new() }
             }
         )
         .is_err()

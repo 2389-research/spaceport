@@ -338,6 +338,7 @@
         "evidence/t04-repository-avatar-removal.md",
         "evidence/t04-gix-dependency-cleanup.md",
         "evidence/t04-browser-control-family-removal.md",
+        "evidence/t04-browser-tab-protocol-removal.md",
         "evidence/t03-sidebar-terminal-fallback.md",
         "evidence/t05-core-default-observation.md"
       ],

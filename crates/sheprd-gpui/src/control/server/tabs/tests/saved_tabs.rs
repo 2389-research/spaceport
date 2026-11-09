@@ -30,23 +30,13 @@ fn restored_tabs_keep_exact_cli_targets_and_reserve_retired_ids(cx: &mut gpui::T
     cx.cx.update(|cx| {
         let Response::Tab {
             reply: Reply::Tabs { tabs },
-        } = list(false, cx)
+        } = list(cx)
         else {
             panic!("not tabs")
         };
         assert_eq!(
             tabs.iter().map(|tab| tab.id).collect::<Vec<_>>(),
             [u64::from(core), u64::from(page)]
-        );
-        let Response::Tab {
-            reply: Reply::Tabs { tabs },
-        } = list(true, cx)
-        else {
-            panic!("not pages")
-        };
-        assert_eq!(
-            tabs.iter().map(|tab| tab.id).collect::<Vec<_>>(),
-            [u64::from(page)]
         );
         for id in [retired, TabId::test(u64::from(retired) + 1)] {
             assert!(matches!(

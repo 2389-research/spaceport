@@ -1,7 +1,6 @@
-//! `tab`, `devices`, and page requests.
+//! `tab` and `devices` requests.
 //! The Store keeps app tabs; caller targets still select their workspace.
 mod arrive;
-mod page;
 
 use super::{Watches, main_windows, not_found, socket, valid_caller};
 use crate::{
@@ -29,15 +28,9 @@ pub(super) fn serve(
         return;
     }
     match call.op {
-        TabOp::List { pages } => incoming.respond(list(pages, cx)),
+        TabOp::List {} => incoming.respond(list(cx)),
         TabOp::Focus { id } => incoming.respond(focus(&caller, id, cx)),
         TabOp::Close { id } => incoming.respond(close(&caller, id, cx)),
-        TabOp::Navigate { id, url } => incoming.respond(page::navigate(&caller, id, &url, cx)),
-        TabOp::Back { id } => incoming.respond(page::history(&caller, id, false, cx)),
-        TabOp::Forward { id } => incoming.respond(page::history(&caller, id, true, cx)),
-        TabOp::Text { id } => page::text(caller, id, incoming, watches, cx),
-        TabOp::Screenshot { id, path } => page::screenshot(caller, id, path, incoming, watches, cx),
-        TabOp::Zoom { id, change } => incoming.respond(page::zoom(&caller, id, change, cx)),
         TabOp::Devices => arrive::devices(&caller, incoming, watches, cx),
     }
 }
@@ -102,16 +95,10 @@ fn info(tab: &Tab) -> Option<TabInfo> {
     })
 }
 
-fn list(pages: bool, cx: &App) -> Response {
+fn list(cx: &App) -> Response {
     let tabs = cx
         .try_global::<Store>()
-        .map(|store| {
-            store
-                .tabs()
-                .filter_map(info)
-                .filter(|tab| !pages || tab.kind.is_page())
-                .collect()
-        })
+        .map(|store| store.tabs().filter_map(info).collect())
         .unwrap_or_default();
     Response::Tab {
         reply: Reply::Tabs { tabs },

@@ -38,8 +38,6 @@ mod popup;
 #[cfg(any(target_os = "macos", windows))]
 mod preview;
 #[cfg(target_os = "macos")]
-mod snapshot;
-#[cfg(target_os = "macos")]
 mod stacking;
 mod store;
 mod tab_appear;
@@ -68,9 +66,6 @@ pub(crate) use location::{LocalFile, Location};
 pub(crate) use native::Pages;
 #[cfg(target_os = "macos")]
 pub(crate) use page_keys::bind as bind_page_keys;
-/// A page screenshot as PNG, for `browser screenshot`.
-#[cfg(target_os = "macos")]
-pub(crate) use snapshot::png as page_png;
 pub(crate) use store::{CoreGroupKey, Scope, Store, Tab, TabId};
 pub(crate) use tab_appear::{Leaving, Listed};
 pub(crate) use tab_scroll::{Thumb, ThumbDrag};

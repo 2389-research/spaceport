@@ -2,6 +2,7 @@
 use super::*;
 use crate::protocol::{Call, Caller, Request, Response};
 
+mod removed_browser;
 mod removed_code_edit;
 mod removed_orchestrator;
 mod removed_px0;
@@ -19,28 +20,9 @@ fn round_trip(op: TabOp) {
 #[test]
 fn tab_operations_round_trip() {
     for op in [
-        TabOp::List { pages: true },
+        TabOp::List {},
         TabOp::Focus { id: 3 },
         TabOp::Close { id: 3 },
-        TabOp::Navigate {
-            id: 3,
-            url: "https://a.test/".into(),
-        },
-        TabOp::Back { id: 3 },
-        TabOp::Forward { id: 3 },
-        TabOp::Text { id: 3 },
-        TabOp::Screenshot {
-            id: 3,
-            path: "/tmp/a.png".into(),
-        },
-        TabOp::Zoom {
-            id: 3,
-            change: ZoomChange::Percent { percent: 150 },
-        },
-        TabOp::Zoom {
-            id: 3,
-            change: ZoomChange::Reset,
-        },
         TabOp::Devices,
     ] {
         round_trip(op);
@@ -59,19 +41,9 @@ fn tab_requests_have_a_stable_wire_form() {
     assert_eq!(call.op, TabOp::Devices);
     assert_eq!(
         serde_json::from_str::<TabOp>(r#"{"op":"list"}"#).unwrap(),
-        TabOp::List { pages: false }
-    );
-    assert_eq!(
-        serde_json::from_str::<TabOp>(r#"{"op":"zoom","id":1,"change":{"change":"in"}}"#).unwrap(),
-        TabOp::Zoom {
-            id: 1,
-            change: ZoomChange::In
-        }
+        TabOp::List {}
     );
     for invalid in [
-        r#"{"op":"zoom","id":1}"#,
-        r#"{"op":"zoom","id":1,"change":{"change":"percent"}}"#,
-        r#"{"op":"zoom","id":1,"change":{"change":"twice"}}"#,
         r#"{"op":"eval","id":1}"#,
         r#"{"op":"text","id":1,"script":"alert(1)"}"#,
         r#"{"op":"focus"}"#,
@@ -87,7 +59,7 @@ fn removed_code_open_wire_operation_is_rejected() {
 }
 
 #[test]
-fn page_and_arrival_operations_extend_the_answer_timeout() {
+fn devices_arrival_extends_the_answer_timeout() {
     let wait = |op: TabOp| {
         Request::Tab(Call {
             caller: Caller::default(),
@@ -95,14 +67,6 @@ fn page_and_arrival_operations_extend_the_answer_timeout() {
         })
         .wait_seconds()
     };
-    assert_eq!(wait(TabOp::Text { id: 1 }), PAGE_WAIT_SECONDS);
-    assert_eq!(
-        wait(TabOp::Screenshot {
-            id: 1,
-            path: "/a.png".into()
-        }),
-        PAGE_WAIT_SECONDS
-    );
     assert_eq!(wait(TabOp::Devices), ARRIVE_WAIT_SECONDS);
     assert_eq!(wait(TabOp::Focus { id: 1 }), 0);
 }
@@ -123,9 +87,6 @@ fn replies_round_trip() {
         Reply::Opened {
             id: 7,
             workspace: "w_1".into(),
-        },
-        Reply::Text {
-            text: "Hello\nworld".into(),
         },
     ] {
         let response = Response::Tab { reply };
@@ -158,6 +119,5 @@ fn kinds_are_named_as_json_spells_them() {
             serde_json::to_string(&kind).unwrap(),
             format!("\"{}\"", kind.name())
         );
-        assert_eq!(kind.is_page(), matches!(kind, TabKind::Web | TabKind::File));
     }
 }

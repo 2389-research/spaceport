@@ -80,7 +80,7 @@ fn tabs_are_listed_focused_and_closed(cx: &mut gpui::TestAppContext) {
     cx.cx.update(|cx| {
         let Response::Tab {
             reply: Reply::Tabs { tabs },
-        } = list(false, cx)
+        } = list(cx)
         else {
             panic!("not a tab list");
         };
@@ -88,15 +88,6 @@ fn tabs_are_listed_focused_and_closed(cx: &mut gpui::TestAppContext) {
             tabs.iter().map(|tab| tab.id).collect::<Vec<_>>(),
             [u64::from(page), u64::from(devices)]
         );
-        let Response::Tab {
-            reply: Reply::Tabs { tabs },
-        } = list(true, cx)
-        else {
-            panic!("not a tab list");
-        };
-        assert_eq!(tabs.len(), 1);
-        assert_eq!(tabs[0].kind, TabKind::Web);
-
         // A tab of another workspace the window lists is shown there.
         assert!(matches!(
             focus(&caller, devices.into(), cx),

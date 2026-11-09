@@ -213,9 +213,9 @@ The request is `{"method": "link", "caller", "op": {"url"}}`.
 One JSON request line, one JSON response line, then the socket closes. A
 request is `{"method", "caller", "op"}`, where `caller` carries the pane,
 workspace, daemon socket, and window, and `op` is tagged with `"op"`.
-`status` reports the protocol version, currently 33. Requests and responses
-are bounded to 256 KiB, a request that
-waits says for how long (at most 600 seconds), and the app answers at most a
+`status` reports the protocol version, currently 34. Requests and responses
+are bounded to 256 KiB. A request that waits says for how long (at most 600
+seconds), and the app answers at most a
 few requests at a time.
 
 ### Windows

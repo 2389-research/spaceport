@@ -27,18 +27,13 @@ fn describe(tabs: &[TabInfo]) -> String {
     text.trim_end().to_owned()
 }
 
-pub(super) fn list(pages: bool, context: &Context) -> crate::Result<Output> {
-    match context.call(Request::Tab, TabOp::List { pages })? {
+pub(super) fn list(context: &Context) -> crate::Result<Output> {
+    match context.call(Request::Tab, TabOp::List {})? {
         Response::Tab {
             reply: Reply::Tabs { tabs },
         } => {
             if tabs.is_empty() {
-                let text = if pages {
-                    "No page tabs are open"
-                } else {
-                    "No app tabs are open"
-                };
-                return Output::data(text, &tabs);
+                return Output::data("No app tabs are open", &tabs);
             }
             Output::data(describe(&tabs), &tabs)
         }
@@ -48,7 +43,7 @@ pub(super) fn list(pages: bool, context: &Context) -> crate::Result<Output> {
 
 pub(super) fn tab(command: TabCommand, context: &Context) -> crate::Result<Output> {
     match command {
-        TabCommand::List => list(false, context),
+        TabCommand::List => list(context),
         TabCommand::Focus { id } => context.act(Request::Tab, TabOp::Focus { id }),
         TabCommand::Close { id } => context.act(Request::Tab, TabOp::Close { id }),
     }

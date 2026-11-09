@@ -1,9 +1,6 @@
-//! The app's own tabs: pages and the
-//! Devices overview, which Herdr does not know about.
+//! The app's own tabs and Devices overview, which Herdr does not know about.
 use serde::{Deserialize, Serialize};
 
-/// How long a page may take to hand back its text or picture.
-pub const PAGE_WAIT_SECONDS: u64 = 15;
 /// How long the window may take to switch to the caller's workspace before
 /// opening a tab there.
 pub const ARRIVE_WAIT_SECONDS: u64 = 5;
@@ -11,57 +8,17 @@ pub const ARRIVE_WAIT_SECONDS: u64 = 5;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum TabOp {
-    /// Every app tab, or only browser pages.
-    List {
-        #[serde(default)]
-        pages: bool,
-    },
-    Focus {
-        id: u64,
-    },
-    Close {
-        id: u64,
-    },
-    /// Load a web address in an existing page tab.
-    Navigate {
-        id: u64,
-        url: String,
-    },
-    Back {
-        id: u64,
-    },
-    Forward {
-        id: u64,
-    },
-    /// The page's visible text, as the user would select it.
-    Text {
-        id: u64,
-    },
-    /// A PNG of the page, written to `path`.
-    Screenshot {
-        id: u64,
-        path: String,
-    },
-    /// How large a page tab draws its page.
-    Zoom {
-        id: u64,
-        change: ZoomChange,
-    },
+    List {},
+    Focus { id: u64 },
+    Close { id: u64 },
     Devices,
 }
 
 impl TabOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
-            Self::Text { .. } | Self::Screenshot { .. } => PAGE_WAIT_SECONDS,
             Self::Devices => ARRIVE_WAIT_SECONDS,
-            Self::List { .. }
-            | Self::Focus { .. }
-            | Self::Close { .. }
-            | Self::Navigate { .. }
-            | Self::Back { .. }
-            | Self::Forward { .. }
-            | Self::Zoom { .. } => 0,
+            Self::List {} | Self::Focus { .. } | Self::Close { .. } => 0,
         }
     }
 }
@@ -86,11 +43,6 @@ impl TabKind {
             Self::Devices => "devices",
             Self::CoreTerminal => "core_terminal",
         }
-    }
-
-    /// Whether a page shows it: what `browser list` keeps.
-    pub fn is_page(self) -> bool {
-        matches!(self, Self::Web | Self::File)
     }
 }
 
@@ -122,21 +74,8 @@ pub struct TabInfo {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Reply {
-    Tabs {
-        tabs: Vec<TabInfo>,
-    },
-    Opened {
-        id: u64,
-        workspace: String,
-    },
-    Text {
-        text: String,
-    },
-    /// The zoom a page tab draws at now, in percent.
-    Zoom {
-        id: u64,
-        percent: u16,
-    },
+    Tabs { tabs: Vec<TabInfo> },
+    Opened { id: u64, workspace: String },
 }
 
 #[cfg(test)]
