@@ -19,6 +19,7 @@ use anyhow::Result;
 use gpui::{prelude::*, *};
 use sheprd_client::ConnectTarget;
 
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum WindowLaunch {
     Legacy(ConnectTarget),
     Core(CoreGroupKey),

@@ -2,6 +2,7 @@
 use super::{in_free_window, in_window, main_windows, window_for};
 use crate::{
     SheprdWindow,
+    app::WindowLaunch,
     constants::APP_VERSION,
     control::protocol::{
         Call, Caller, ErrorCode, PROTOCOL_VERSION, Response,
@@ -165,16 +166,34 @@ pub(super) fn app(call: Call<AppOp>, cx: &mut App) -> Response {
     }
 }
 
-/// What `window new` connects to: the launch target of the window
-/// `--window` names; else the caller's own daemon when it runs in a Herdr
-/// pane, as a window that knows it names it or else by its socket; outside
-/// Herdr, the frontmost window's launch target.
-fn new_window_target(caller: &Caller, cx: &mut App) -> Result<ConnectTarget, Response> {
+/// The selected Core group or legacy launch endpoint of a window.
+fn launch_for_window(view: &SheprdWindow, cx: &App) -> Result<WindowLaunch, Response> {
+    if let Some(key) = view.selected_core_group() {
+        return view
+            .core_group_available(key, cx)
+            .then(|| WindowLaunch::Core(key.clone()))
+            .ok_or_else(|| {
+                Response::error(
+                    ErrorCode::NotFound,
+                    "Selected Core group is no longer available",
+                )
+            });
+    }
+    view.endpoints
+        .first()
+        .map(|endpoint| WindowLaunch::Legacy(endpoint.connection.target.clone()))
+        .ok_or_else(|| Response::error(ErrorCode::NotFound, "Window has no launch target"))
+}
+
+/// `--window` names a window's exact selected target. Otherwise a daemon
+/// socket names the caller's legacy host; outside a pane, use the frontmost
+/// window's selected target or the local default when no window exists.
+fn new_window_target(caller: &Caller, cx: &mut App) -> Result<WindowLaunch, Response> {
     if caller.window.is_some() {
         let handle = window_for(caller, cx)?;
         return handle
-            .read_with(cx, |view, _| view.endpoints[0].connection.target.clone())
-            .map_err(|_| Response::error(ErrorCode::NoWindow, "The window closed"));
+            .read_with(cx, launch_for_window)
+            .map_err(|_| Response::error(ErrorCode::NoWindow, "The window closed"))?;
     }
     if let Some(daemon) = caller.daemon_socket.as_deref() {
         let daemon = std::path::Path::new(daemon);
@@ -191,16 +210,16 @@ fn new_window_target(caller: &Caller, cx: &mut App) -> Result<ConnectTarget, Res
                 .ok()
                 .flatten()
         });
-        return Ok(known.unwrap_or_else(|| ConnectTarget::Socket(daemon.to_owned())));
+        return Ok(WindowLaunch::Legacy(
+            known.unwrap_or_else(|| ConnectTarget::Socket(daemon.to_owned())),
+        ));
     }
-    Ok(main_windows(cx)
-        .first()
-        .and_then(|handle| {
-            handle
-                .read_with(cx, |view, _| view.endpoints[0].connection.target.clone())
-                .ok()
-        })
-        .unwrap_or(ConnectTarget::Local))
+    let Some(handle) = main_windows(cx).first().copied() else {
+        return Ok(WindowLaunch::Legacy(ConnectTarget::Local));
+    };
+    handle
+        .read_with(cx, launch_for_window)
+        .map_err(|_| Response::error(ErrorCode::NoWindow, "The window closed"))?
 }
 
 pub(super) fn window(call: Call<WindowOp>, cx: &mut App) -> Response {
@@ -216,7 +235,10 @@ pub(super) fn window(call: Call<WindowOp>, cx: &mut App) -> Response {
                 Ok(target) => target,
                 Err(response) => return response,
             };
-            crate::open_additional_window(target, cx);
+            match target {
+                WindowLaunch::Legacy(target) => crate::open_additional_window(target, cx),
+                WindowLaunch::Core(key) => crate::app::open_additional_core_window(key, cx),
+            }
             // Opened after this answer; a failure is only logged.
             Response::done("Asked for a new window; `window list` shows it once open")
         }

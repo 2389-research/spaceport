@@ -4,6 +4,7 @@ use crate::control::protocol::app::Switch;
 
 mod core_catalog;
 mod core_window;
+mod core_window_new;
 
 fn call<T>(op: T) -> Call<T> {
     Call {
@@ -108,12 +109,12 @@ fn a_new_window_joins_the_callers_own_session(cx: &mut gpui::TestAppContext) {
         // swapped for the default session.
         assert_eq!(
             new_window_target(&pane, cx).unwrap(),
-            ConnectTarget::Socket("/tmp/herdr-foo.sock".into())
+            WindowLaunch::Legacy(ConnectTarget::Socket("/tmp/herdr-foo.sock".into()))
         );
         // Outside Herdr, with no window, the local default.
         assert_eq!(
             new_window_target(&Caller::default(), cx).unwrap(),
-            ConnectTarget::Local
+            WindowLaunch::Legacy(ConnectTarget::Local)
         );
         // A named window must exist: never a guess at another session.
         let named = Caller {

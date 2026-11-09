@@ -20,7 +20,7 @@ fn family(name: &str) -> &'static str {
             "spaceport app focus|hide|quit\n    Bring the app forward, hide it, or quit it. Quitting leaves Herdr\n    and its terminals running."
         }
         "window" => {
-            "spaceport window [list]\n    The app's windows, with IDs for --window.\nspaceport window new\n    Open another window on the target selected by --window, the caller's\n    host, or the frontmost/default target.\nspaceport window focus ID\nspaceport window fullscreen [on|off|toggle]\nspaceport window size [WIDTHxHEIGHT]\n    Print the window's size, or resize it. Windows cannot be moved.\nspaceport window detach|reconnect\n    Detach from, or reconnect to, the window's selected host."
+            "spaceport window [list]\n    The app's windows, with IDs for --window.\nspaceport window new\n    Open another window on the selected window's exact Core group or legacy\n    launch target, the caller's host, or the frontmost/default target. A\n    stale Core group is refused before the window opens.\nspaceport window focus ID\nspaceport window fullscreen [on|off|toggle]\nspaceport window size [WIDTHxHEIGHT]\n    Print the window's size, or resize it. Windows cannot be moved.\nspaceport window detach|reconnect\n    Detach from, or reconnect to, the window's selected host."
         }
         "ui" => {
             "spaceport ui sidebar [on|off|toggle]\nspaceport ui statusbar [on|off|toggle]\nspaceport ui font-size +|-|reset|POINTS\nspaceport ui panel workspaces|overview|automations|usage\n    For this window and session; settings are changed with `config`."

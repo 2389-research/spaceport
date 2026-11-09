@@ -105,7 +105,7 @@
       "scenario": "Quit and reopen with surviving, missing and renamed remote terminal/workspace references.",
       "expected": "Fresh authoritative state wins; surviving processes reattach; missing agents never restart.",
       "status": "not_run",
-      "evidence": ["evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md", "evidence/t03-exact-core-hub.md", "evidence/t03-core-join-without-legacy-endpoint.md", "evidence/t03-zero-endpoint-tick.md", "evidence/t03-core-window-constructor.md"]
+      "evidence": ["evidence/t03-remote-terminal-parity.md", "evidence/t03-typed-group-key.md", "evidence/t03-exact-core-hub.md", "evidence/t03-core-join-without-legacy-endpoint.md", "evidence/t03-zero-endpoint-tick.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
     },
     {
       "id": "A10",
@@ -279,7 +279,7 @@
       "scenario": "Disconnect and try mutations; restart the client while offline; inspect saved files.",
       "expected": "No queued operations or browsable persistent transcripts; stale data is labeled; layout prefs may remain.",
       "status": "not_run",
-      "evidence": ["evidence/t03-typed-group-key.md", "evidence/t03-core-window-list-identity.md", "evidence/t03-core-window-constructor.md"]
+      "evidence": ["evidence/t03-typed-group-key.md", "evidence/t03-core-window-list-identity.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
     },
     {
       "id": "A25",
@@ -384,7 +384,7 @@
       "scenario": "Compare retained desktop views, menus, settings, sidebar and rich chat against reference fixtures.",
       "expected": "Only approved deletions, rebrand and necessary capability adaptations differ; no unrequested redesign.",
       "status": "not_run",
-      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-github-account-entry-cut.md", "evidence/t04-profile-popup-account-dependency.md", "evidence/t04-github-account-state-removal.md", "evidence/t04-integrated-sidebar-regressions.md", "evidence/t04-repository-avatar-removal.md", "evidence/t03-sidebar-terminal-fallback.md", "evidence/t03-core-window-constructor.md"]
+      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-github-account-entry-cut.md", "evidence/t04-profile-popup-account-dependency.md", "evidence/t04-github-account-state-removal.md", "evidence/t04-integrated-sidebar-regressions.md", "evidence/t04-repository-avatar-removal.md", "evidence/t03-sidebar-terminal-fallback.md", "evidence/t03-core-window-constructor.md", "evidence/t03-core-cli-window-target.md"]
     },
     {
       "id": "A34",

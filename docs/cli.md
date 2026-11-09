@@ -62,7 +62,7 @@ Every command accepts:
 | `status` | Whether the app runs, its version and control protocol, windows and hosts, plus the observed Core machine catalog's state, epoch and count |
 | `app focus\|hide\|quit` | Bring the app forward, hide it, or quit it (Herdr keeps running) |
 | `window [list]` | Windows with their IDs, size, selected legacy workspace or exact Core presentation group, and hosts; stale Core group data is marked |
-| `window new` | Another window on the target selected by `--window`, the caller's host, or the frontmost/default target |
+| `window new` | Another window on the exact Core group or legacy launch target of the window selected by `--window`, the caller's host, or the frontmost/default target |
 | `window focus ID` | Bring a window forward |
 | `window fullscreen [on\|off\|toggle]` | |
 | `window size [WIDTHxHEIGHT]` | Print or set the window's size; windows cannot be moved |
@@ -76,8 +76,10 @@ Every command accepts:
 When a Core presentation group is selected, `window list` reports its exact
 hub, document, group and optional machine identity. It marks the group stale
 when it is unavailable in a fresh observation of the matching hub. The host
-rows still describe the legacy endpoint catalog. `window new` still uses the
-legacy launch target; it does not yet join the selected Core hub.
+rows still describe the legacy endpoint catalog. `window new` joins the
+selected Core hub and group when its current observation still confirms that
+exact target. It refuses a stale selection before asking for a new window.
+Legacy windows keep their existing launch target.
 
 ### The app's own tabs
 
