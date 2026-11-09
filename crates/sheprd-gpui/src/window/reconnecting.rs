@@ -13,10 +13,14 @@ const MAX_REASON: usize = 240;
 const DIM_ALPHA: u32 = 0xa0;
 
 impl SheprdWindow {
-    /// Whether the card shows. A replacement connection's snapshot ends the
-    /// outage before its first frame, so the card stays over the old picture
-    /// until that frame lands.
+    /// Whether the legacy connection card shows. Core groups report their
+    /// own connection and document state; a legacy outage cannot cover them.
+    /// A replacement legacy snapshot keeps this card over the old picture
+    /// until its first frame lands.
     pub(crate) fn reconnecting(&self) -> bool {
+        if self.selected_core_group().is_some() {
+            return false;
+        }
         self.endpoints[self.selected_endpoint].outage().is_some() || self.presentation.stale()
     }
 

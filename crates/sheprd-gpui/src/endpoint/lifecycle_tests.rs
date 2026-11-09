@@ -20,6 +20,7 @@ mod atomic_projection;
 mod background_commands;
 mod close_pane;
 mod close_sequence;
+mod core_reconnect_overlay;
 mod core_terminal_hosts;
 mod dead_keys;
 mod endpoint_switch;
