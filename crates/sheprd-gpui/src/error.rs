@@ -177,7 +177,7 @@ pub enum Error {
     Processes(#[from] crate::processes::Error),
     #[error("XDG_CONFIG_HOME must be an absolute path")]
     RelativeConfigRoot,
-    /// A remote host script or Teleport failure.
+    /// A remote host script failure.
     #[error(transparent)]
     Remote(#[from] sheprd_remote::Error),
     #[error("Could not install the agent tools on the SSH host: {0}")]

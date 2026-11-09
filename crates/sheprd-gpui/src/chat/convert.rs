@@ -20,10 +20,6 @@ use super::{Route, discovery, existing, restore::plan};
 use crate::{
     SheprdWindow,
     i18n::{Localize, fl},
-    teleport::{
-        self, AgentKind, Envelope, Host, ProcessInfo, ProcessInfoResult, SessionKind,
-        snapshot::PaneStatus,
-    },
     window::Flash,
 };
 use gpui::Context;
@@ -31,6 +27,11 @@ use sheprd_chat_protocol::{Agent, restore};
 use sheprd_client::{
     protocol::{AgentStatus, ClientShellAgent, ClientShellSnapshot},
     shell_quote,
+};
+use sheprd_remote::{
+    agent::AgentKind,
+    host_script::{self, Host},
+    snapshot::{Envelope, PaneStatus, ProcessInfo, ProcessInfoResult, SessionKind},
 };
 use std::{
     path::{Path, PathBuf},
@@ -102,7 +103,7 @@ fn tab_pane<'a>(snapshot: &'a ClientShellSnapshot, workspace: &str, tab: &str) -
 /// Whether the host's own answer, fresher than the window's snapshot, still
 /// shows `agent` settled in the pane. Only a turn known to be over may end:
 /// an agent waiting for an answer, or one the daemon cannot place, stays.
-fn settled(pane: &teleport::snapshot::Pane, agent: Agent) -> Result<(), Error> {
+fn settled(pane: &sheprd_remote::snapshot::Pane, agent: Agent) -> Result<(), Error> {
     if pane.agent.as_deref() != Some(agent.name()) {
         return Err(Error::Moved);
     }
@@ -173,7 +174,7 @@ fn remote_line(words: &[&str]) -> Option<String> {
 
 /// The session in the pane, as Herdr's own integration for `agent` reported
 /// it, and in a form `herdr-acp --resume` takes.
-fn session(pane: &teleport::snapshot::Pane, agent: Agent) -> Result<String, Error> {
+fn session(pane: &sheprd_remote::snapshot::Pane, agent: Agent) -> Result<String, Error> {
     let reported = pane.agent_session.as_ref().ok_or(Error::NoSession(agent))?;
     AgentKind::parse(agent.name())
         .filter(|kind| kind.accepts(reported))
@@ -192,7 +193,7 @@ fn shell_in_front(info: &ProcessInfo) -> bool {
 /// continue. Claude's flags ride along, as the model the terminal agent was
 /// started with; the other agents run a server with flags of its own.
 fn resume(
-    pane: &teleport::snapshot::Pane,
+    pane: &sheprd_remote::snapshot::Pane,
     info: &ProcessInfo,
     agent: Agent,
 ) -> Result<Resume, Error> {
@@ -275,7 +276,7 @@ fn run(request: &Request, cancelled: &AtomicBool) -> Result<String, Error> {
         program,
         scope,
     } = request;
-    let host = teleport::host_for(&scope.target).map_err(existing::Error::from)?;
+    let host = host_script::host_for(&scope.target).map_err(existing::Error::from)?;
     let snapshot = existing::snapshot(&host, cancelled)?.snapshot;
     let found = snapshot.pane(pane).ok_or(Error::Moved)?;
     settled(found, *agent)?;

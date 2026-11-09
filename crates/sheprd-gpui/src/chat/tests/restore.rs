@@ -11,10 +11,10 @@ use crate::chat::restore::{
     },
     spawn,
 };
-use crate::teleport::ProcessInfo;
 use serde_json::json;
 use sheprd_chat_protocol::{Agent, EndpointId, restore::Record};
 use sheprd_client::protocol::{ClientShellPane, ClientShellSnapshot};
+use sheprd_remote::snapshot::ProcessInfo;
 use std::collections::HashSet;
 use std::path::Path;
 

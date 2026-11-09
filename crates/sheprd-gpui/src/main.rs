@@ -100,7 +100,6 @@ mod storage_warning;
 mod tab_layout;
 mod tab_menu;
 mod taskbar;
-mod teleport;
 mod terminal;
 mod terminal_painter;
 mod text_editing;
@@ -139,7 +138,7 @@ use sheprd_diagnostics::{self as diagnostics, crash};
 // Git status, without GPUI.
 // Shared with herdr-client's own SSH and probe children.
 use sheprd_client::{local_path, login_env};
-// Host scripts and Teleport's core.
+// Shared host scripts and agent metadata.
 
 pub(crate) use {
     actions::{

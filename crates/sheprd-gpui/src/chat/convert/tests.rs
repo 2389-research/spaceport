@@ -8,7 +8,7 @@ mod stopping;
 /// A Claude session as Herdr's own integration reports it.
 const SESSION: &str = "0c6f0c39-3c1e-4b7e-9a51-6d1b8e2d7f10";
 
-fn pane(value: serde_json::Value) -> teleport::snapshot::Pane {
+fn pane(value: serde_json::Value) -> sheprd_remote::snapshot::Pane {
     let mut pane = serde_json::json!({
         "pane_id": "w1:p1",
         "tab_id": "w1:t1",

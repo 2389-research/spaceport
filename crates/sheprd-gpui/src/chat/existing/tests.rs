@@ -159,7 +159,7 @@ fn detects_actual_agent_programs_not_arguments_to_other_programs() {
     assert!(!is_agent(Agent::Codex, &args(&["claude"])));
 }
 
-fn process_info(rows: &[(u32, &[&str])]) -> teleport::ProcessInfo {
+fn process_info(rows: &[(u32, &[&str])]) -> sheprd_remote::snapshot::ProcessInfo {
     serde_json::from_value(serde_json::json!({
         "shell_pid":1,"foreground_process_group_id":10,
         "foreground_processes":rows.iter().map(|(pid, argv)| serde_json::json!({

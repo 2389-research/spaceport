@@ -1,6 +1,6 @@
 //! Notes the user keeps on checkouts, to remember what each of many worktrees
 //! is for or waiting on. They belong to this client alone: never sent to the
-//! daemon nor written into the repository. Like teleport marks they are keyed
+//! daemon nor written into the repository. They are keyed
 //! by endpoint, repository, and branch, because workspace IDs do not survive
 //! a daemon restart. Every window shows the same notes.
 use crate::state_file;
