@@ -8529,32 +8529,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sheprd-orchestrator"
-version = "0.1.0"
-dependencies = [
- "base64 0.23.1",
- "chrono",
- "gix",
- "percent-encoding",
- "rusqlite",
- "rustix",
- "secrecy",
- "serde",
- "serde_json",
- "sheprd-client",
- "sheprd-credentials",
- "sheprd-github",
- "sheprd-remote",
- "tempfile",
- "thiserror 2.0.21",
- "tracing",
- "ureq",
- "url",
- "uuid",
- "zeroize",
-]
-
-[[package]]
 name = "sheprd-protocol"
 version = "0.1.0"
 dependencies = [

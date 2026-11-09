@@ -266,6 +266,7 @@
         "evidence/t04-orchestrator-control-removal.md",
         "evidence/t04-native-dispatch-dependency.md",
         "evidence/t04-native-activity-removal.md",
+        "evidence/t04-orchestrator-crate-removal.md",
         "evidence/t04-legacy-launch-flags.md",
         "evidence/t04-legacy-window-session.md",
         "evidence/t04-default-bridge-dependency.md",
