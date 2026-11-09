@@ -101,7 +101,9 @@ fn a_refused_handshake_is_announced_once_and_copies_the_command(cx: &mut gpui::T
 }
 
 #[gpui::test]
-fn a_newer_daemon_offers_the_app_update(cx: &mut gpui::TestAppContext) {
+fn a_newer_daemon_reports_the_mismatch_without_an_unavailable_update_action(
+    cx: &mut gpui::TestAppContext,
+) {
     let (view, cx) = cx.add_window_view(fixture_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
@@ -114,6 +116,7 @@ fn a_newer_daemon_offers_the_app_update(cx: &mut gpui::TestAppContext) {
         full_draw(window, cx).clear(cx);
     });
     assert!(cx.debug_bounds("version-mismatch-command").is_none());
+    assert!(cx.debug_bounds("version-mismatch-action").is_none());
     cx.simulate_keystrokes("enter");
-    cx.update(|_, cx| assert_eq!(view.read(cx).menu.page, Some(Page::AppUpdate)));
+    cx.update(|_, cx| assert_eq!(view.read(cx).menu.page, Some(Page::VersionMismatch)));
 }

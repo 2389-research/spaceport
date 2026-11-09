@@ -76,7 +76,6 @@ mod terminal_padding;
 mod theme_directory;
 mod theme_files;
 mod themes;
-mod update_channel;
 mod visual_annotations;
 mod worktrees;
 mod zen;
@@ -112,3 +111,5 @@ impl Drop for TempDirectory {
         let _ = fs::remove_dir_all(&self.0);
     }
 }
+
+mod removed_updater;

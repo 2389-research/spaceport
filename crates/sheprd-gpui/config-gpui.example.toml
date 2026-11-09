@@ -202,11 +202,6 @@ project_roots = []
 # Play the system alert sound.
 # sound = false
 
-# Which releases the in-app updater offers. "beta" also installs prereleases,
-# which are promoted to stable once they prove out; Homebrew only sees stable.
-# [updates]
-# channel = "stable"
-
 # Where the managed agent skill may go on its own, over the answer saved when
 # the app asked. "local" (the default) offers and refreshes it only on this
 # computer; "off" never offers or refreshes it. Settings and the palette

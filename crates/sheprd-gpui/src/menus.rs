@@ -6,18 +6,17 @@
 pub(crate) mod in_window;
 
 use crate::i18n::fl;
+#[cfg(target_os = "macos")]
+use crate::{Hide, HideOthers, Minimize, ShowAll};
 use crate::{
-    CheckForUpdates, PlaySound, Quit, RunCommand, ShowLogs, ShowUpdatePreview,
+    PlaySound, Quit, RunCommand, ShowLogs,
     actions::{
         Copy, Cut, Paste, RingBellPreview, SelectAll, SetChatLayout, SetLayout, SetTabLayout,
-        ShowToastPreview, ShowUpdateDownloadPreview, ShowUpdateHomebrewPreview, TogglePseudoLocale,
-        ToggleSlowAnimations,
+        ShowToastPreview, TogglePseudoLocale, ToggleSlowAnimations,
     },
     config::{ChatLayoutMode, Config, LayoutMode, TabLayoutMode},
     controls::Command,
 };
-#[cfg(target_os = "macos")]
-use crate::{Hide, HideOthers, Minimize, ShowAll};
 use gpui::{App, Menu, MenuItem, OsAction};
 use sheprd_client::protocol::SemanticNotificationKind;
 use sheprd_i18n::Pseudo;
@@ -121,7 +120,6 @@ pub(crate) fn menus(config: &Config) -> Vec<Menu> {
                         command: Command::Keybinds,
                     },
                 ),
-                MenuItem::action(fl!("menus-check-for-updates"), CheckForUpdates),
                 // macOS reserves Hide for every app; without these items
                 // Cmd-H has no key equivalent and does nothing.
                 #[cfg(target_os = "macos")]
@@ -396,9 +394,6 @@ fn qa_menu() -> Menu {
         name: fl!("menus-qa").into(),
         disabled: false,
         items: vec![
-            MenuItem::action(fl!("menus-qa-update-available"), ShowUpdatePreview),
-            MenuItem::action(fl!("menus-qa-update-download"), ShowUpdateDownloadPreview),
-            MenuItem::action(fl!("menus-qa-update-homebrew"), ShowUpdateHomebrewPreview),
             MenuItem::action(fl!("menus-qa-play-sound"), PlaySound),
             MenuItem::action(fl!("menus-qa-ring-bell"), RingBellPreview),
             MenuItem::action(fl!("menus-qa-slow-animations"), ToggleSlowAnimations)

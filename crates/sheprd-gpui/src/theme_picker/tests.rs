@@ -44,9 +44,6 @@ fn saving_blocks_cancel_replacement_and_reload_until_reconciled(cx: &mut TestApp
                 view.open_keybinds(window, cx);
                 view.open_theme_picker(window, cx);
                 view.open_palette(crate::palette::Filter::All, window, cx);
-                view.open_app_update(false, window, cx);
-                view.open_app_update(true, window, cx);
-                assert!(view.update_preview.is_none());
                 let snapshot: sheprd_client::protocol::ClientShellSnapshot =
                     serde_json::from_str(include_str!(
                         "../../../sheprd-protocol/tests/fixtures/endpoint-snapshot-v1.json"

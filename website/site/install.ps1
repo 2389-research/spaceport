@@ -9,8 +9,9 @@
 # %LOCALAPPDATA%\Programs\Herdr UI and AppUserModelID so.pen.herdr-gpui remain
 # unchanged for compatibility. It adds the directory to the user PATH and a
 # Sheprd Start menu shortcut. It never starts or stops terminal daemons, changes
-# services or settings, or upgrades a personal Herdr installation. Signed copies
-# update through Check for Updates; rerunning this also updates.
+# services or settings, or upgrades a personal Herdr installation.
+# This inherited installer targets Sheprd, not Spaceport. The fork's custom
+# in-app updater has been removed.
 #
 # To uninstall, run it with -Uninstall:
 #

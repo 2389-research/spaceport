@@ -26,5 +26,4 @@ version-mismatch-client-old-unknown = { $place ->
 # $command is the command copied to the clipboard.
 version-mismatch-copied = Copied `{ $command }`
 version-mismatch-copy = Copy Command
-version-mismatch-check = Check for Updates
 version-mismatch-dismiss = Dismiss

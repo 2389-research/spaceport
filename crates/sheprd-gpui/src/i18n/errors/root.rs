@@ -157,7 +157,6 @@ impl Localize for Error {
             Self::TomlEdit(error) => error.to_string(),
             Self::Tunnel(error) => error.localize(),
             Self::UnsupportedCommand => fl!("error-unsupported-command"),
-            Self::Update(error) => error.localize(),
             Self::Usage(error) => error.localize(),
             Self::WorkspaceDocument(error) => error.to_string(),
             Self::WorkspaceRepositoryChanged => fl!("error-workspace-repository-changed"),

@@ -118,7 +118,7 @@ impl SheprdWindow {
                 );
                 self.dismiss_menu(window, cx);
             }
-            VersionMismatch::ClientOutdated { .. } => self.open_app_update(false, window, cx),
+            VersionMismatch::ClientOutdated { .. } => {}
         }
     }
 
@@ -172,21 +172,21 @@ impl SheprdWindow {
                     .flex_wrap()
                     .gap(px(8.))
                     .p(px(8.))
-                    .child(
-                        button(
-                            "version-mismatch-action",
-                            if daemon {
-                                fl!("version-mismatch-copy")
-                            } else {
-                                fl!("version-mismatch-check")
-                            },
-                            true,
+                    .when(daemon, |row| {
+                        row.child(
+                            button(
+                                "version-mismatch-action",
+                                fl!("version-mismatch-copy"),
+                                true,
+                            )
+                            .on_click(cx.listener(
+                                |this, _, window, cx| {
+                                    cx.stop_propagation();
+                                    this.act_on_version_mismatch(window, cx);
+                                },
+                            )),
                         )
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            cx.stop_propagation();
-                            this.act_on_version_mismatch(window, cx);
-                        })),
-                    )
+                    })
                     .child(
                         button(
                             "version-mismatch-dismiss",

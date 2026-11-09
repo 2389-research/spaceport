@@ -88,7 +88,7 @@ use crate::{
     sessions, sidebar,
     state::LiveState,
     terminal::{Selection, WheelAccumulator},
-    terminal_painter, updater,
+    terminal_painter,
 };
 use gpui::{prelude::*, *};
 use sheprd_client::ConnectOptions;
@@ -122,11 +122,6 @@ pub(crate) struct SheprdWindow {
     /// stored session. Until then the daemon's `ui.agent_panel_sort` decides,
     /// including after a config reload, as upstream's manual override does.
     pub(crate) agent_sort_modified: bool,
-    /// The App Updates dialog's own notes cache, so scrolling and redraws do not
-    /// re-parse the release body.
-    pub(crate) app_update_notes: crate::release_notes::Prepared,
-    /// Where the App Updates notes are scrolled, read back to draw their bar.
-    pub(crate) app_update_notes_scroll: ScrollHandle,
     /// A tab torn off another window, waiting for its host to be listed.
     pub(crate) arrival: Option<tab_tear::TornTab>,
     /// The picture and platform appearance `[backdrop]` asks for.
@@ -324,8 +319,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) toasts_hidden: bool,
     /// SSH tunnels to remote ports that listen on their host's loopback only.
     pub(crate) tunnels: crate::listening_ports::Tunnels,
-    pub(crate) update_preview: Option<updater::State>,
-    pub(crate) updater: updater::Updater,
     pub(crate) usage: crate::usage::Usage,
     /// Whether the selected endpoint's refused handshake was announced. Reset
     /// once it has none, so a later refusal is announced again.
@@ -459,19 +452,6 @@ impl SheprdWindow {
     }
 
     fn tick(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.updater.set_channel(self.config.updates.channel);
-        if self.updater.poll() {
-            match self.updater.commit_restart() {
-                Ok(true) => {
-                    cx.quit();
-                    return;
-                }
-                Ok(false) => {}
-                // i18n: data
-                Err(error) => eprintln!("App update restart failed: {error}"),
-            }
-            cx.notify();
-        }
         if let Some(chrome) = self.sidebar_preferences.as_mut().and_then(|p| p.loaded()) {
             self.apply_stored_chrome(chrome);
             cx.notify();

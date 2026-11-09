@@ -96,19 +96,11 @@ files plus `SHA256SUMS`. Publication checks the complete
 set and downloaded draft bytes before making it public. Enable GitHub immutable releases before
 dispatch; the workflow never replaces a tag, release, or published asset.
 
-The in-app updater separately authenticates `update-manifest.json` with the
-embedded Ed25519 public key and raw `update-manifest.sig`. Sigstore sidecars
-`update-manifest.json.sig` and `update-manifest.sig.sig` are separate signatures,
-not the updater's trust anchor. Linux manual `Sheprd-VERSION-TARGET.tar.gz` archives
-include desktop files and notices; `sheprd-VERSION-TARGET-update.tar.gz`
-contains only the replacement executable. Linux packages and Windows installers
-are authenticated the same way through `package-manifest.json` and
-`windows-manifest.json`; a Windows installer must also carry a valid Authenticode
-signature from the publisher the app was built to expect before it runs. See
-[App Updates](docs/updating.md) for key configuration, archive validation, and
-native QA requirements.
+Spaceport has removed the inherited custom updater and its signed manifests.
+Updates remain a blocked release requirement until independent identity,
+platform verification and a replacement update route are configured and tested.
+Development builds cannot compile with `HERDR_RELEASE_VERSION` set.
 
-The rename does not rotate the updater key or platform signing identities.
 Historical releases from `penso/herdr-gpui` retain their original asset names and
 provenance identity; verify them against that repository's workflow, not by
 substituting the new slug into an old certificate. New publication uses

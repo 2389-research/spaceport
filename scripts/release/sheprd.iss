@@ -32,9 +32,8 @@
 #define StartupName "Herdr UI"
 #define AppExe "spaceport.exe"
 #define Launcher "spaceport-launcher.exe"
-; The app's AppUserModelID (sheprd_updater::APP_ID), which each window carries with
-; relaunch properties naming the launcher (src/taskbar.rs). Shortcuts carry it
-; too, so a pinned shortcut and the window share one taskbar button.
+; Inherited package AppUserModelID. Spaceport's production identity remains
+; unconfigured; this installer is not approved for Spaceport distribution.
 #define AppUserModelID "so.pen.herdr-gpui"
 #define Icons "..\..\assets\icons"
 
@@ -48,7 +47,7 @@ AppVerName={#AppName} {#Version}
 AppPublisher=Herdr UI
 AppPublisherURL=https://sheprd.org
 AppSupportURL=https://github.com/sheprd-labs/sheprd/issues
-; The deployed bridge only updates this directory.
+; Preserve the existing installation directory across package upgrades.
 DefaultDirName={localappdata}\Programs\Herdr UI
 DisableDirPage=yes
 DisableProgramGroupPage=yes
@@ -126,19 +125,10 @@ Name: "{userdesktop}\{#AppName}"; Filename: "{app}\{#Launcher}"; WorkingDir: "{a
 
 [Run]
 Filename: "{app}\{#Launcher}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
-; The app's in-app update runs Setup silently with /RELAUNCH=1 and quits; this
-; starts the updated app, through the launcher, once its files are in place.
-Filename: "{app}\{#Launcher}"; WorkingDir: "{app}"; Flags: nowait; Check: RelaunchRequested
 
 [Code]
 const
   EnvironmentKey = 'Environment';
-
-{ Set by the app's own updater, which has quit for the install. }
-function RelaunchRequested(): Boolean;
-begin
-  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
-end;
 
 function UserPath(): String;
 begin

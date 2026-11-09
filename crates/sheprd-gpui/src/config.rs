@@ -40,7 +40,6 @@ mod tab_labels;
 pub(crate) mod tab_layout;
 pub(crate) use sidebar_style::parse_hex;
 mod theme;
-mod updates;
 pub(crate) mod watch;
 mod worktrees;
 mod zen;
@@ -95,7 +94,6 @@ pub use tab_layout::TabLayoutMode;
 pub use theme::Theme;
 pub(crate) use theme::ThemeName;
 pub(crate) use theme::mix;
-pub use updates::{UpdateChannel, UpdatesConfig};
 pub use zen::{Zen, ZenWidth};
 
 const DEFAULT_CONFIG: &str = include_str!("../config-gpui.example.toml");
@@ -223,8 +221,6 @@ pub struct Config {
     /// ignored, as Herdr ignores its own, so a config written by a newer
     /// build or with a typo still loads; `diagnostic` reports them.
     pub unknown_keys: Vec<String>,
-    /// Which releases the in-app updater offers.
-    pub updates: UpdatesConfig,
     pub usage: crate::usage::UsageConfig,
     /// How linked worktrees are marked apart from their main checkout.
     pub worktrees: crate::worktree_identity::Worktrees,
@@ -305,7 +301,6 @@ impl Default for Config {
             theme: "Default".into(), // i18n: data
             ui: font(ui, 12.0),
             unknown_keys: Vec::new(),
-            updates: UpdatesConfig::default(),
             usage: crate::usage::UsageConfig::default(),
             worktrees: crate::worktree_identity::Worktrees::default(),
             zen: Zen::default(),
@@ -362,7 +357,6 @@ struct Settings {
     terminal: FontSettings,
     theme: Option<String>,
     ui: FontSettings,
-    updates: UpdatesConfig,
     usage: crate::usage::UsageConfig,
     worktrees: worktrees::WorktreeSettings,
     zen: zen::ZenSettings,
@@ -589,6 +583,12 @@ impl Config {
         {
             return Err(Error::RemovedGitHub.into());
         }
+        if unknown_keys
+            .iter()
+            .any(|key| key == "updates" || key.starts_with("updates."))
+        {
+            return Err(Error::RemovedUpdates.into());
+        }
         unknown_keys.sort();
         unknown_keys.dedup();
         let mut config = Self {
@@ -612,7 +612,6 @@ impl Config {
         config.clipboard_toast = settings.clipboard_toast.resolve(base.clipboard_toast);
         config.bell = settings.bell;
         config.sound = settings.sound;
-        config.updates = settings.updates;
         config.sidebar_layout = base.sidebar_layout.clone();
         let (padding_x, padding_y) = settings.terminal.take_padding();
         config.terminal_padding = Padding::resolve(

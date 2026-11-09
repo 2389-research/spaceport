@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-credentials", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-terminal", "crates/sheprd-updater", "crates/sheprd-usage"]
+members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-credentials", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-terminal", "crates/sheprd-usage"]
 resolver = "2"
 
 [workspace.package]
@@ -43,7 +43,6 @@ cocoa                = "0.27"
 config_loader        = { default-features = false, features = ["toml"], package = "config", version = "0.15.25" }
 core-graphics        = "0.25"
 crossbeam-channel    = "0.5"
-ed25519-dalek        = { default-features = false, features = ["std"], version = "2.2" }
 flate2               = "1"
 # Use the same strict macOS family lookup as GPUI, including legacy aliases.
 font-kit             = { package = "zed-font-kit", version = "=0.14.1-zed" }
@@ -78,7 +77,6 @@ sheprd-i18n           = { path = "crates/sheprd-i18n" }
 sheprd-protocol       = { path = "crates/sheprd-protocol" }
 sheprd-remote         = { default-features = false, path = "crates/sheprd-remote" }
 sheprd-terminal       = { path = "crates/sheprd-terminal" }
-sheprd-updater        = { path = "crates/sheprd-updater" }
 sheprd-usage          = { path = "crates/sheprd-usage" }
 interprocess         = "2.4.2"
 # Local interface addresses, so Bonjour discovery skips this machine; the

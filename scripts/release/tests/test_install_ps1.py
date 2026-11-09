@@ -1,7 +1,7 @@
 """site/install.ps1: its Start menu shortcut and taskbar identity."""
 from pathlib import Path
 import os
-import re
+import plistlib
 import shutil
 import subprocess
 import sys
@@ -14,8 +14,8 @@ ISS = ROOT / "scripts/release/sheprd.iss"
 
 
 def app_id():
-    identity = (ROOT / "crates/sheprd-updater/src/lib.rs").read_text(encoding="utf-8")
-    return re.search(r'^pub const APP_ID: &str = "([^"]+)";$', identity, re.M).group(1)
+    with (ROOT / "assets/macos/Info.plist").open("rb") as source:
+        return plistlib.load(source)["CFBundleIdentifier"]
 
 
 def snippet():
@@ -35,7 +35,7 @@ def install_steps():
 
 
 class InstallScriptTests(unittest.TestCase):
-    def test_shortcut_gets_the_apps_and_installers_user_model_id(self):
+    def test_shortcut_and_installer_keep_packaging_user_model_id(self):
         install = INSTALL.read_text(encoding="utf-8")
         self.assertIn(f"[HerdrShortcut]::SetAppUserModelId($shortcut, '{app_id()}')", install)
         iss = ISS.read_text(encoding="utf-8")

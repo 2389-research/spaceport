@@ -1,12 +1,11 @@
 //! Settings and app services: config, themes, fonts, shortcuts, keeping the
-//! machine awake, sounds, updates, and integrations. Reading and changing
+//! machine awake, sounds and integrations. Reading and changing
 //! the settings files, listing themes and sounds, the agent skill, logs, and
 //! diagnostics need no running app, so the command line does those itself.
 use super::app::Switch;
 use serde::{Deserialize, Serialize};
 
-/// Listing installed fonts or integrations, or asking for the latest
-/// release, can take a few seconds.
+/// Listing installed fonts or integrations can take a few seconds.
 const LIST_WAIT_SECONDS: u64 = 15;
 /// Saving a theme or a font waits for the file lock other saves may hold.
 const SAVE_WAIT_SECONDS: u64 = 10;
@@ -45,9 +44,6 @@ pub enum SettingsOp {
         sound: Sound,
     },
     Bell,
-    /// Ask for the latest release; never downloads or installs.
-    CheckUpdate,
-    Update,
     /// The integrations Herdr offers the selected host.
     Integrations,
     /// The locale the windows show, and what chose it. Changing the
@@ -58,7 +54,7 @@ pub enum SettingsOp {
 impl SettingsOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
-            Self::Fonts | Self::Integrations | Self::CheckUpdate => LIST_WAIT_SECONDS,
+            Self::Fonts | Self::Integrations => LIST_WAIT_SECONDS,
             Self::Theme { .. } | Self::Font { .. } => SAVE_WAIT_SECONDS,
             _ => 0,
         }
@@ -140,16 +136,6 @@ pub enum Reply {
         /// Seconds until a timed hold ends, when one was set.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         seconds: Option<u64>,
-    },
-    /// `state` is "disabled", "idle", "checking", "current", "available",
-    /// "downloading", "ready", "installing", "homebrew", "upgrading",
-    /// "restart", "restarting", "cancelling", or "error".
-    Update {
-        state: String,
-        latest: Option<String>,
-        /// Why updates are disabled, or what failed.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        detail: Option<String>,
     },
     Integrations {
         integrations: Vec<IntegrationInfo>,

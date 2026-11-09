@@ -369,7 +369,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         } => events::events(after, follow, wait, kinds, &context),
         ControlCommand::Wait { what, timeout } => events::wait(what, timeout, &context),
         ControlCommand::Logs { path, lines } => local::logs(path, lines),
-        ControlCommand::Update(command) => settings::update(command, &context),
         ControlCommand::Diagnostics { output } => local::diagnostics(&output),
         ControlCommand::Integrations(command) => settings::integrations(command, &context),
     };

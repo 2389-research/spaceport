@@ -2,12 +2,10 @@ use super::{
     caffeine::{Timer, remaining, set_timed, state_name, supersede, timed},
     keys::reach_name,
     saves::font_names,
-    services::describe,
 };
 use crate::{
     caffeine::{Cup, Mode},
     keymap::Reach,
-    updater::State,
 };
 use std::time::{Duration, Instant};
 
@@ -81,40 +79,6 @@ fn every_reach_has_a_stable_name() {
     for (reach, name) in reaches {
         assert_eq!(reach_name(reach), name);
     }
-}
-
-#[test]
-fn update_states_are_named_with_their_version_or_reason() {
-    assert_eq!(
-        describe(&State::Disabled(crate::updater::Disabled::Secondary)),
-        (
-            "disabled",
-            Some(crate::updater::Disabled::Secondary.to_string()),
-            None
-        )
-    );
-    assert_eq!(describe(&State::Checking), ("checking", None, None));
-    assert_eq!(
-        describe(&State::Available {
-            version: "1.2.0".into(),
-            notes: "notes".into()
-        }),
-        ("available", None, Some("1.2.0"))
-    );
-    assert_eq!(
-        describe(&State::Error(crate::updater::Error::HttpStatus(503).into())),
-        (
-            "error",
-            Some("Update request returned HTTP 503".to_owned()),
-            None
-        )
-    );
-    assert_eq!(
-        describe(&State::Upgrading {
-            detail: crate::updater::Progress::Starting
-        }),
-        ("upgrading", Some("Starting Homebrew...".to_owned()), None)
-    );
 }
 
 #[gpui::test]

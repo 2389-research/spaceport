@@ -109,29 +109,3 @@ pub(super) fn sound_use(sound: Sound) -> &'static str {
         Sound::Request => "when an agent needs you",
     }
 }
-
-pub(super) fn update(state: &str, latest: Option<&str>, detail: Option<&str>) -> String {
-    let latest = latest.unwrap_or("A newer release");
-    match state {
-        "disabled" => format!(
-            "Updates are off in this build: {}",
-            detail.unwrap_or("no reason given")
-        ),
-        "idle" => "No update check has finished yet".to_owned(),
-        "checking" => "Checking for the latest release".to_owned(),
-        "current" => "Spaceport is up to date".to_owned(),
-        "available" => format!("{latest} is available; update from Spaceport"),
-        "downloading" => format!("{latest} is downloading"),
-        "ready" => format!("{latest} is downloaded; install it from Spaceport"),
-        "homebrew" => format!("{latest} is available; upgrade it with Homebrew"),
-        "restart" => format!("{latest} is installed; restart Spaceport to use it"),
-        "error" => format!(
-            "The last update check failed: {}",
-            detail.unwrap_or("unknown error")
-        ),
-        state => match detail {
-            Some(detail) => format!("Updates: {state} ({detail})"),
-            None => format!("Updates: {state}"),
-        },
-    }
-}

@@ -19,10 +19,6 @@ actions!(
         PlaySound,
         RingBellPreview,
         ShowLogs,
-        CheckForUpdates,
-        ShowUpdatePreview,
-        ShowUpdateDownloadPreview,
-        ShowUpdateHomebrewPreview,
         ToggleSlowAnimations
     ]
 );

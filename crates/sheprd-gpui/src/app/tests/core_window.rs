@@ -97,13 +97,8 @@ fn additional_core_window_refuses_a_different_hub(cx: &mut gpui::TestAppContext)
             },
         );
         let key = CoreGroupKey::new("hub-b", None, "spaceport", group).unwrap();
-        let opened = super::super::open_window_placed(
-            super::super::WindowLaunch::Core(key),
-            crate::updater::Updater::secondary(),
-            None,
-            cx,
-            true,
-        );
+        let opened =
+            super::super::open_window_placed(super::super::WindowLaunch::Core(key), None, cx, true);
         assert!(opened.is_err());
         assert_eq!(main_windows(cx).len(), 1);
     });

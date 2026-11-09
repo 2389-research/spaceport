@@ -29,28 +29,3 @@ fn taskbar_follows_the_copy_until_it_is_cancelled(cx: &mut TestAppContext) {
     });
     peer.sentinel(&view, cx);
 }
-
-#[test]
-fn only_updates_the_user_started_show_on_the_taskbar() {
-    use crate::{update_panel::taskbar_progress, updater::State};
-    let downloading = |received, total| State::Downloading { received, total };
-    assert_eq!(
-        taskbar_progress(&downloading(50, 200)),
-        Some(Progress::Fraction(0.25))
-    );
-    assert_eq!(
-        taskbar_progress(&downloading(300, 200)),
-        Some(Progress::Fraction(1.))
-    );
-    assert_eq!(taskbar_progress(&downloading(0, 0)), Some(Progress::Busy));
-    assert_eq!(taskbar_progress(&State::Installing), Some(Progress::Busy));
-    for state in [
-        State::Checking,
-        State::Idle,
-        State::Restart {
-            version: "1".into(),
-        },
-    ] {
-        assert_eq!(taskbar_progress(&state), None);
-    }
-}

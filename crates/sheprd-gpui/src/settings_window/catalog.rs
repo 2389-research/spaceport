@@ -343,12 +343,6 @@ pub(super) const CATALOG: &[Entry] = &[
     )
     .only(Availability::Windows),
     entry(
-        Section::General,
-        "general-update-beta",
-        "settings-general-update-beta",
-        "settings-general-update-beta-description",
-    ),
-    entry(
         Section::Tabs,
         "tabs-layout",
         "settings-tabs-layout",

@@ -1,6 +1,5 @@
 //! General: interface toggles, the optional `[features]` flags, clipboard
-//! feedback, the browser skill, launch at login (Windows)
-//! and the update channel.
+//! feedback, the browser skill and launch at login (Windows).
 // i18n: migrated
 use super::{
     CLIPBOARD_POSITIONS, SettingsWindow, on_off, on_off_choices, on_value, position_name,
@@ -9,10 +8,7 @@ use super::{
 use crate::settings_window::inputs::{DropdownField, NumberField};
 use crate::{
     agent_skill::{AgentSkill, Choice},
-    config::{
-        ChatLauncher, ChatLayoutMode, ClipboardToast, Feature, UpdateChannel,
-        preferences::Preference,
-    },
+    config::{ChatLauncher, ChatLayoutMode, ClipboardToast, Feature, preferences::Preference},
     herdr_settings::Edit,
     i18n::{self, fl},
 };
@@ -39,7 +35,6 @@ impl SettingsWindow {
             .and_then(|p| CLIPBOARD_POSITIONS.iter().position(|(c, _)| *c == p));
         let position_names = position_names(&CLIPBOARD_POSITIONS);
         let base_position = position_name(&CLIPBOARD_POSITIONS, &base.1);
-        let beta = self.config.updates.channel == UpdateChannel::Beta;
         let installed = AgentSkill::choice(cx) == Some(Choice::Installed);
         let (skill_id, skill_label, choice) = if installed {
             (
@@ -252,29 +247,6 @@ impl SettingsWindow {
                 ),
             )
             .children(self.startup_rows(cx))
-            .child(ui::section(
-                theme,
-                &fl!("settings-general-section-updates"),
-                None,
-            ))
-            .child(
-                ui::row(
-                    theme,
-                    "general-update-beta",
-                    fl!("settings-general-update-beta"),
-                )
-                .description(fl!("settings-general-update-beta-description"))
-                .switch(self.preference_toggle(
-                    "general-update-beta-toggle",
-                    beta,
-                    Preference::UpdateChannel(if beta {
-                        UpdateChannel::Stable
-                    } else {
-                        UpdateChannel::Beta
-                    }),
-                    cx,
-                )),
-            )
     }
 
     /// Windows' **Launch at login**; other platforms have no such setting yet.

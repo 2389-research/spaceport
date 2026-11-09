@@ -17,7 +17,7 @@ pub use chat::ChatCommand;
 pub use hosts::{HostCommand, PortsCommand};
 pub use settings::{
     CaffeineCommand, ConfigCommand, IntegrationsCommand, KeybindsCommand, LanguageCommand,
-    SoundCommand, ThemeCommand, UpdateCommand,
+    SoundCommand, ThemeCommand,
 };
 use std::ffi::OsString;
 pub use tabs::TabCommand;
@@ -82,7 +82,6 @@ pub enum ControlCommand {
         path: bool,
         lines: usize,
     },
-    Update(UpdateCommand),
     Diagnostics {
         output: std::path::PathBuf,
     },
@@ -137,7 +136,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ),
     ("commands", "List the commands `run` accepts"),
     ("logs", "Print or locate the app's log"),
-    ("update", "Check for an app update; never installs"),
     ("diagnostics", "Write a redacted bundle for a bug report"),
     ("integrations", "Agent integrations and the agent skill"),
 ];
@@ -278,7 +276,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
                 .number("--lines", 1..=crate::diagnostics::TAIL_RECORDS)?
                 .unwrap_or(100),
         },
-        "update" => ControlCommand::Update(settings::update(args)?),
         "diagnostics" => {
             match args.verb().as_ref().and_then(|verb| verb.to_str()) {
                 Some("bundle") => {}

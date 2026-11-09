@@ -24,11 +24,11 @@ fn every_request_names_its_window_by_the_same_field() {
         window: Some(7),
         ..Caller::default()
     };
-    let update = Request::Settings(Call {
+    let settings = Request::Settings(Call {
         caller: caller.clone(),
-        op: SettingsOp::Update,
+        op: SettingsOp::Integrations,
     });
-    assert_eq!(named_window(&update), Some(7));
+    assert_eq!(named_window(&settings), Some(7));
     assert_eq!(named_window(&Request::Status(caller)), Some(7));
     assert_eq!(named_window(&Request::Status(Caller::default())), None);
 }

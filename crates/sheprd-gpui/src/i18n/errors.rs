@@ -39,7 +39,6 @@ mod setup_relay;
 mod sound;
 #[cfg(test)]
 pub(crate) mod tests;
-mod updater;
 mod usage;
 mod worktree_identity;
 mod wsl_drop;

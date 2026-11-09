@@ -64,6 +64,8 @@ pub enum Error {
     RemovedChangeCounts,
     #[error("[github] account settings were removed; remove this table from config-gpui.toml")]
     RemovedGitHub,
+    #[error("Custom updater settings have been removed; remove [updates] from the configuration")]
+    RemovedUpdates,
     #[error("line {line}: {key}: {source}")]
     ThemeLine {
         line: usize,

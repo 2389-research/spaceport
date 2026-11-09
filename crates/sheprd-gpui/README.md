@@ -19,8 +19,7 @@ The daemons own terminal processes, so closing Sheprd leaves sessions running.
 The desktop command is `sheprd`; companion commands use `sheprd-*`. Helper
 discovery also accepts installed `herdr-*` companions, including on SSH hosts.
 Existing configuration, state, credentials, service names, and managed-skill
-identities remain in place. Releases retain the legacy executable entry points
-required by installed updaters. The Spaceport development fork accepts
+identities belong to the upstream release. The Spaceport development fork accepts
 `spaceport://` links only; no OS-wide handler is installed for it. See
 [upgrade compatibility](../../docs/rebranding.md) for the upstream release.
 
@@ -154,38 +153,11 @@ are not restored. Geometry is stored in `window-state.json` under
 (`%LOCALAPPDATA%\herdr\gpui` on Windows when `HOME` is unset). Native
 test modes skip this state. Up to 64 main windows are restored.
 
-The Rust GitHub updater verifies signed archive manifests and presents a shared
-GPUI panel through **app updates** in the sidebar menu or **Herdr > Check for
-Updates...**. Background offers change the status version label without taking
-focus. **Download** and **Install Update** are separate approvals; closing the
-panel does not cancel work. Explicit **Cancel** requests cancellation.
-The panel shows archive download progress and an animated bar for work without a
-known percentage. Homebrew-managed installs use `brew upgrade --cask` on their cask;
-if the installed version is behind the offer, `brew update` refreshes metadata
-before one retry. Linux distribution installs download the signed package matching
-the owning package manager and invoke APT, DNF, or pacman through PolicyKit.
-Package-manager upgrades cannot be cancelled mid-install and offer **Restart**
-on completion. Standalone installs restart as part of installation.
-The existing UI timer polls the updater mailbox; workers own blocking work, and
-the restart helper is dispatched before CLI parsing or GPUI startup.
-
-Only normal launches with a calendar release version `YYYYMMDD.COUNTER` (tag
-`vYYYYMMDD.COUNTER`) and embedded public signing key start the service. Test
-fixtures use a disabled, worker-free updater. Update targets are macOS app
-bundles, published Linux `.deb`, `.rpm`, and Arch packages, and user-owned Linux
-executables under `HOME` on x86_64/aarch64 GNU systems.
-**QA > Show app update available** and the sidebar's **preview app update** use
-independent synthetic version `9999.0.0`: Download becomes Ready and Install Update
-only dismisses the panel. No preview action reaches the updater service or quits.
-**QA > Show update download progress (50%)** displays a half-filled bar;
-**QA > Show Homebrew update progress** displays the animated activity bar.
-Both remain visible until dismissed and never run a real update.
-See [update setup and QA](../../docs/updating.md).
-The protected release workflow builds both macOS and both Linux architectures
-with the required public key. Linux manual `Herdr-VERSION-TARGET.tar.gz` archives
-include desktop integration and notices; updater-only
-`herdr-gpui-VERSION-TARGET-update.tar.gz` archives contain one executable.
-Native two-version update/restart QA remains pending.
+The inherited custom updater has been removed. App updates remain a required
+release gate; no replacement engine or package-manager ownership policy is
+configured. Development builds report `dev`, and `HERDR_RELEASE_VERSION`
+refuses compilation until Spaceport's independent release identity is configured.
+The removed `update` command and `[updates]` settings are rejected.
 
 The **QA** menu is off by default in every build, including published
 releases; turn on **Settings > General > QA menu** (`qa_menu = true` under `[features]`) to show it. The menu bar
@@ -198,7 +170,7 @@ delay, active-target suppression, and agent evidence checks. It uses the configu
 corner, normal kind-specific lifetime, and dismiss button.
 NeedsAttention and Finished previews retain the current target,
 when available, so clicking them tests normal navigation; other previews are inert.
-Creating previews does not contact the daemon or updater. Close any in-app
+Creating previews does not contact the daemon. Close any in-app
 panel first: toasts remain hidden while a panel is open.
 
 **Send notification in 3 seconds** waits long enough to switch to another app,
@@ -457,7 +429,7 @@ A daemon that refuses the handshake because it is too old, or newer than this
 app supports, opens a notice naming the host, its reported version, and which
 side to update. For an old daemon it shows `herdr update`, which **Copy Command**
 puts on the clipboard; nothing runs it, since updating may stop that host's
-sessions. For a newer daemon, **Check for Updates** opens the app updater. The
+sessions. For a newer daemon, the notice reports the client mismatch without an update action. The
 notice appears once per refused endpoint, retries continue with backoff so an
 updated daemon reconnects on its own, and the device list reads "Herdr update
 needed" or "app update needed" until a handshake succeeds.
@@ -1175,11 +1147,6 @@ Catalog channels retain typed errors, and rename results share errors with `Arc`
 across cloned UI snapshots. Strings are produced at presentation boundaries, not
 as internal error transport. `anyhow` is reserved for framework boundaries and
 test harnesses, not internal catch-all errors.
-Updater workers and the restart helper use typed `sheprd_updater::Error` variants, preserving
-sources and recovery context while keeping remote diagnostics out of display text.
-Active regression tests cover typed sources, redaction, and recovery failures;
-the standalone updater harness includes these tests without GPUI dependencies.
-
 ## Notification Sounds
 
 Sounds share the **local TUI configuration**, not `config-gpui.toml` or a remote
@@ -3446,12 +3413,7 @@ Still missing, and not faked with labels that do nothing:
   than the terminal as focused until the window is activated again. This is
   in GPUI's Windows adapter setup, not in this app.
 
-In-app updates download the release's signed per-user installer, check it
-against `windows-manifest.json` and its Authenticode publisher, and run it
-silently; Setup restarts the app (see
-[App Updates](../../docs/updating.md#windows-installers)). Only the copy in
-`%LOCALAPPDATA%\Programs\Herdr UI` updates itself. The app registers with Restart
-Manager, never after a crash or hang; the `herdr-gpui.exe --restart-manager`
+The app registers with Windows Restart Manager, never after a crash or hang; the `spaceport.exe --restart-manager`
 Windows starts hands off to the launcher (`src/restart_manager.rs`). A crash
 leaves a minidump and a report beside the log; see [crash reports](#crash-reports).
 
@@ -3527,10 +3489,8 @@ Windows cross-check.
   system's small-icon size, set on every window (windows group into one
   button), and cleared at zero. Screen readers hear "N agents need attention".
 - **Taskbar progress.** A window's button fills in while it copies dropped
-  files to an SSH host, teleports a worktree, moves a pane to another host, or
-  downloads and installs an app update. Copies and downloads show their real
-  fraction; steps without one show the moving bar. Checks the app runs on its
-  own, and dialogs waiting for you, show nothing.
+  files to an SSH host. Copies show their real fraction, or a moving bar until
+  their size is known. Cancelled transfers clear the indicator.
 - **Jump list.** Right-click the taskbar button, or the Start menu entry, for
   a **Show DEVICE** task for each device. Each entry
   is a `spaceport://` link (below) passed to the executable, so it reaches

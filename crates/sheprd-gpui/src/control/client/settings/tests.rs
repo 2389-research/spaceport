@@ -68,26 +68,6 @@ fn caffeine_and_durations_read_plainly() {
 }
 
 #[test]
-fn update_states_say_what_to_do() {
-    assert_eq!(
-        text::update("disabled", None, Some("Local build")),
-        "Updates are off in this build: Local build"
-    );
-    assert_eq!(
-        text::update("available", Some("1.4.0"), None),
-        "1.4.0 is available; update from Spaceport"
-    );
-    assert_eq!(
-        text::update("current", None, None),
-        "Spaceport is up to date"
-    );
-    assert_eq!(
-        text::update("error", None, Some("offline")),
-        "The last update check failed: offline"
-    );
-}
-
-#[test]
 fn the_selected_theme_is_marked() {
     assert_eq!(
         text::themes(&["Default".into(), "Nord".into()], "Nord"),

@@ -81,9 +81,9 @@ class ReleaseTargets(unittest.TestCase):
         for name in ("checks", "build"):
             self.assertIn("bash scripts/install-linux-deps.sh", jobs[name])
         self.assertIn('HERDR_TEST_NFPM=$(bash scripts/release/install-nfpm.sh "$RUNNER_TEMP/nfpm")', jobs["checks"])
-        # The release gate requires this job, and the release workflow no
-        # longer runs the update manifest contract itself.
-        self.assertIn("python3 -m unittest discover -s scripts -p 'test_*manifest.py' -v", jobs["checks"])
+        # The release gate requires this job, including retained packaging
+        # and removed-feature absence checks.
+        self.assertIn("python3 -m unittest discover -s scripts/release/tests -v", jobs["checks"])
         windows = jobs["windows"]
         self.assertIn("        runner: [windows-2025, windows-11-arm]\n", windows)
         self.assertIn("    runs-on: ${{ matrix.runner }}\n", windows)
@@ -102,7 +102,7 @@ class ReleaseTargets(unittest.TestCase):
                 self.assertIn(f"        if: matrix.features == '{leg}'\n        run: {command}\n", jobs[name])
         for command in ("python3 -m unittest discover -s scripts/release/tests -v",
                         "bash scripts/check-file-size.sh", "python3 scripts/check-sorted.py",
-                        "python3 .claude/skills/gpui-mockup/scripts/test_wait.py"):
+                        "python3 scripts/release/test-release-security.py"):
             self.assertEqual(jobs["checks"].count(command), 1, command)
         self.assertNotIn("--release", windows)
         self.assertNotIn("cargo build", windows)
@@ -226,9 +226,8 @@ class ReleaseTargets(unittest.TestCase):
             # signing is set up; the tested unsigned ones only until then.
             choice = ("name: ${{ needs.validate.outputs.windows_signed == 'true' && 'windows-signed' "
                       f"|| 'windows-package' }}}}-{target}\n")
-            for name in ("sign", "attest"):
-                self.assertIn(choice, jobs[name], name)
-                self.assertNotIn(f"name: windows-package-{target}\n", jobs[name], name)
+            self.assertIn(choice, jobs["attest"])
+            self.assertNotIn(f"name: windows-package-{target}\n", jobs["attest"])
         for name in ("sign", "attest"):
             self.assertRegex(jobs[name], r"    needs: \[[^]]*\bwindows\b")
         attest = jobs["attest"].replace("${{ needs.validate.outputs.version }}", VERSION)
@@ -338,30 +337,19 @@ class ReleaseTargets(unittest.TestCase):
                          jobs["homebrew"].replace(" &&\n      needs.validate.outputs.channel == 'stable'", "")
                          .replace("    needs: [validate, publish]\n", ""))
 
-    def test_updater_signing_boundary(self):
+    def test_release_identity_boundary_without_custom_updater(self):
         workflow = (ROOT / ".github/workflows/release.yml").read_text()
         sections = re.split(r"^  ([a-z-]+):\n", workflow.split("\njobs:\n", 1)[1], flags=re.M)
         jobs = dict(zip(sections[1::2], sections[2::2]))
-        self.assertIn("scripts/update-manifest.py validate-public-key", jobs["validate"])
+        self.assertNotIn("scripts/update-manifest.py", workflow)
+        self.assertNotIn("HERDR_UPDATE_", workflow)
         # The publishable version is derived from GitHub's own tags, never dispatched.
         self.assertNotIn("inputs.VERSION", workflow)
         self.assertIn('python3 scripts/release/next-version.py "$(date -u +%Y%m%d)"', jobs["validate"])
         self.assertIn('[[ "$version" =~ ^[1-9][0-9]{7}\\.[1-9][0-9]*$ ]]', jobs["validate"])
         for name in ("macos-build", "linux"):
             self.assertIn("HERDR_RELEASE_VERSION: ${{ needs.validate.outputs.version }}", jobs[name])
-            self.assertIn("HERDR_UPDATE_PUBLIC_KEY: ${{ vars.HERDR_UPDATE_PUBLIC_KEY }}", jobs[name])
-        for name, job in jobs.items():
-            if name != "sign":
-                self.assertNotIn("secrets.HERDR_UPDATE_SIGNING_KEY", job)
         sign = jobs["sign"]
-        self.assertEqual(sign.count("secrets.HERDR_UPDATE_SIGNING_KEY"), 1)
-        self.assertIn('create dist "$VERSION" --require-all-targets', sign)
-        self.assertIn("unset HERDR_UPDATE_SIGNING_KEY", sign)
-        for target in ("x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"):
-            self.assertIn(f"name: linux-package-{target}\n", sign)
-        for name in ("update-manifest.json", "update-manifest.sig"):
-            self.assertIn(f"            dist/{name}\n", sign)
-        self.assertIn('test "$(wc -c < dist/update-manifest.sig | tr -d \' \')" = 64', sign)
         self.assertNotIn("host-manifest", sign)
         self.assertNotIn("build-host.sh", jobs["linux"])
 
@@ -420,10 +408,6 @@ class WindowsTrust(unittest.TestCase):
         self.assertIn("windows_signed: ${{ steps.windows-signing.outputs.signed }}", validate)
         self.assertIn("WINDOWS_SIGNING_SUBJECT: ${{ vars.WINDOWS_SIGNING_SUBJECT }}", validate)
         self.assertIn('if [[ -n "$WINDOWS_SIGNING_SUBJECT" ]]; then', validate)
-        # Unset, the build names no publisher, so its updater stays off; it
-        # must not refuse to build.
-        self.assertIn("HERDR_WINDOWS_SIGNER: ${{ vars.WINDOWS_SIGNING_SUBJECT }}", jobs["windows"])
-        self.assertNotIn("test -n \"$HERDR_WINDOWS_SIGNER\"", jobs["windows"])
         self.assertIn("needs.validate.outputs.windows_signed == 'true'", jobs["windows-sign"])
         # A skipped signing job may stand in for a successful one only when
         # signing is off; a failed or cancelled one still stops the release.
@@ -527,7 +511,7 @@ class ReleaseSecurity(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name)
         for name in MANIFEST.base_names(VERSION):
-            data = b"s" * 64 if name in MANIFEST.UPDATER_SIGNATURES else name.encode()
+            data = name.encode()
             (self.path / name).write_bytes(data)
             for algorithm in ("sha256", "sha512"):
                 checksum = hashlib.new(algorithm, data).hexdigest()
@@ -554,12 +538,7 @@ class ReleaseSecurity(unittest.TestCase):
             "Sheprd-20260920.1-x86_64-pc-windows-msvc.zip",
             "Sheprd-20260920.1-aarch64-pc-windows-msvc.zip",
             "Sheprd-20260920.1-x86_64-pc-windows-msvc-setup.exe",
-            "Sheprd-20260920.1-aarch64-pc-windows-msvc-setup.exe",
-            "sheprd-20260920.1-macos-universal.app.tar.gz",
-            "sheprd-20260920.1-x86_64-unknown-linux-gnu-update.tar.gz",
-            "sheprd-20260920.1-aarch64-unknown-linux-gnu-update.tar.gz",
-            "update-manifest.json", "update-manifest.sig", "package-manifest.json", "package-manifest.sig",
-            "windows-manifest.json", "windows-manifest.sig"})
+            "Sheprd-20260920.1-aarch64-pc-windows-msvc-setup.exe"})
         # Five files per base asset; SHA256SUMS lists all but itself.
         assets = len(MANIFEST.base_names(VERSION)) * 5 + len(MANIFEST.package_aliases(VERSION))
         self.assertEqual(len((self.path / "SHA256SUMS").read_text().splitlines()), assets)
@@ -584,15 +563,6 @@ class ReleaseSecurity(unittest.TestCase):
     def test_extra_asset(self):
         (self.path / "unexpected").write_text("extra")
         self.run_manifest("verify", False)
-
-    def test_raw_updater_signature_length(self):
-        for name in MANIFEST.UPDATER_SIGNATURES:
-            path = self.path / name
-            for size in (1, 63, 65, 128):
-                path.write_bytes(b"s" * size)
-                with self.subTest(name=name, size=size), self.assertRaisesRegex(ValueError, "raw 64-byte"):
-                    MANIFEST.check_files(self.path, MANIFEST.asset_names(VERSION) + ["SHA256SUMS"])
-            path.write_bytes(b"s" * 64)
 
     def test_corrupt_sidecar(self):
         (self.path / (MANIFEST.base_names(VERSION)[0] + ".sha512")).write_text("invalid")
@@ -627,8 +597,9 @@ class ReleaseSecurity(unittest.TestCase):
         self.assertIn(b"missing, empty, or symlink", result.stdout)
         self.assertNotIn(b"Signing:", result.stdout)
 
-    def test_sign_action_preserves_raw_updater_signature(self):
-        raw = (self.path / "update-manifest.sig").read_bytes()
+    def test_sign_action_preserves_artifact_bytes(self):
+        artifact = MANIFEST.base_names(VERSION)[0]
+        raw = (self.path / artifact).read_bytes()
         for path in self.path.iterdir():
             if path.name not in MANIFEST.base_names(VERSION) + list(MANIFEST.package_aliases(VERSION)):
                 path.unlink()
@@ -648,9 +619,9 @@ printf 'mock Sigstore certificate\\n' > "$6"
             subprocess.run(["bash", "-c", code], cwd=self.path, check=True, capture_output=True,
                            env=dict(os.environ, PATH=f"{temp}:{os.environ['PATH']}",
                                     FILES_PATTERN=" ".join(MANIFEST.base_names(VERSION))))
-        self.assertEqual((self.path / "update-manifest.sig").read_bytes(), raw)
-        for name in ("update-manifest.json.sig", "update-manifest.sig.sig"):
-            self.assertEqual((self.path / name).read_text(), "mock Sigstore signature\n")
+        self.assertEqual((self.path / artifact).read_bytes(), raw)
+        for name in MANIFEST.base_names(VERSION):
+            self.assertEqual((self.path / (name + ".sig")).read_text(), "mock Sigstore signature\n")
         self.run_manifest("create")
         self.run_manifest("verify")
 

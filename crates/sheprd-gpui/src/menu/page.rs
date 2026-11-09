@@ -13,7 +13,6 @@ pub(crate) enum Page {
     AgentSkill,
     /// The Linux window's application menu, from the native menu definitions.
     Application,
-    AppUpdate,
     ConfirmClose,
     CoreWorkspaceActions,
     CoreWorkspaceCreate,

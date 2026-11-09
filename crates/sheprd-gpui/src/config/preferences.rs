@@ -48,8 +48,6 @@ pub(crate) enum Preference {
     /// `[sound] volume`, in percent.
     SoundVolume(u8),
     StatusBar(status_bar::Edit),
-    /// `[updates] channel`: whether the updater also offers beta releases.
-    UpdateChannel(UpdateChannel),
     /// One `[features]` flag.
     Feature(Feature, bool),
     /// `None` removes the override so the layout preset's value applies.
@@ -277,9 +275,6 @@ impl Config {
                         return Err(Error::InvalidSoundVolume.into());
                     }
                     (Some("sound"), "volume", Some(i64::from(value).into()))
-                }
-                Preference::UpdateChannel(channel) => {
-                    (Some("updates"), "channel", Some(channel.as_str().into()))
                 }
                 Preference::Feature(feature, value) => {
                     (Some("features"), feature.key(), Some(value.into()))

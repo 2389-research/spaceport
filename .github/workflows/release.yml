@@ -97,15 +97,9 @@ jobs:
           [[ "$version" =~ ^[1-9][0-9]{7}\.[1-9][0-9]*$ ]]
           printf 'version=%s\nsha=%s\nchannel=%s\n' "$version" "$EXPECTED_SHA" "$CHANNEL" >> "$GITHUB_OUTPUT"
           printf 'Publishing %s v%s\n' "$CHANNEL" "$version"
-      - name: Validate embedded updater public key
-        env:
-          HERDR_UPDATE_PUBLIC_KEY: ${{ vars.HERDR_UPDATE_PUBLIC_KEY }}
-        run: python3 scripts/update-manifest.py validate-public-key
       # Windows signing is on once its publisher, the WINDOWS_SIGNING_SUBJECT
       # repository variable, is set; windows-sign then requires the Azure
-      # variables too. Until then Windows ships unsigned and skips winget, and
-      # those builds name no publisher, so their in-app updater stays off
-      # (sheprd-updater/src/windows.rs) rather than trusting an unsigned installer.
+      # variables too. Until then Windows ships unsigned and skips winget.
       - id: windows-signing
         env:
           WINDOWS_SIGNING_SUBJECT: ${{ vars.WINDOWS_SIGNING_SUBJECT }}
@@ -114,7 +108,7 @@ jobs:
             echo "signed=true" >> "$GITHUB_OUTPUT"
           else
             echo "signed=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::WINDOWS_SIGNING_SUBJECT is not set: Windows ships unsigned, without winget or in-app updates"
+            echo "::warning::WINDOWS_SIGNING_SUBJECT is not set: Windows ships unsigned, without winget"
           fi
 
   # The release jobs build and package; formatting, lints and the test suites
@@ -178,7 +172,6 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: '14.2'
       TARGET: ${{ matrix.target }}
       HERDR_RELEASE_VERSION: ${{ needs.validate.outputs.version }}
-      HERDR_UPDATE_PUBLIC_KEY: ${{ vars.HERDR_UPDATE_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -235,7 +228,6 @@ jobs:
       VERSION: ${{ needs.validate.outputs.version }}
       TARGET: ${{ matrix.target }}
       HERDR_RELEASE_VERSION: ${{ needs.validate.outputs.version }}
-      HERDR_UPDATE_PUBLIC_KEY: ${{ vars.HERDR_UPDATE_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -262,8 +254,6 @@ jobs:
         run: |
           mkdir dist
           bash scripts/release/package-linux.sh "$VERSION" "$TARGET" "target/$TARGET/release/spaceport" dist "target/$TARGET/release/THIRD-PARTY-NOTICES.txt"
-          python3 scripts/update-manifest.py package-linux "target/$TARGET/release/spaceport" "$TARGET" "$VERSION" \
-            "dist/sheprd-$VERSION-$TARGET-update.tar.gz"
       # The .deb, .rpm and Arch packages repackage the manual archive's exact
       # files under /usr, so every Linux format ships the same binary.
       - name: Package distribution formats from the manual archive
@@ -284,14 +274,12 @@ jobs:
             dist/Herdr-${{ needs.validate.outputs.version }}-${{ matrix.target }}.deb
             dist/Herdr-${{ needs.validate.outputs.version }}-${{ matrix.target }}.rpm
             dist/Herdr-${{ needs.validate.outputs.version }}-${{ matrix.target }}.pkg.tar.zst
-            dist/sheprd-${{ needs.validate.outputs.version }}-${{ matrix.target }}-update.tar.gz
           if-no-files-found: error
           retention-days: 7
 
   # The executable is built and its CLI smoke-tested here, and windows-sign
   # Authenticode-signs exactly these bytes. Nothing runs its window or a live
-  # daemon. Signed releases list the installers in windows-manifest.json, so
-  # installed copies update in the app. No credentials reach this job or its
+  # daemon. No credentials reach this job or its
   # build scripts.
   windows:
     name: Windows (${{ matrix.target }})
@@ -312,12 +300,6 @@ jobs:
       VERSION: ${{ needs.validate.outputs.version }}
       TARGET: ${{ matrix.target }}
       HERDR_RELEASE_VERSION: ${{ needs.validate.outputs.version }}
-      HERDR_UPDATE_PUBLIC_KEY: ${{ vars.HERDR_UPDATE_PUBLIC_KEY }}
-      # The publisher the in-app updater requires on a downloaded installer
-      # (sheprd-updater/src/windows.rs); windows-sign checks the release is signed by it.
-      # A repository variable: this job is outside the release environment.
-      # Empty while signing is not set up, which turns that build's updater off.
-      HERDR_WINDOWS_SIGNER: ${{ vars.WINDOWS_SIGNING_SUBJECT }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -601,78 +583,11 @@ jobs:
           APPLE_API_ISSUER_ID: ${{ vars.APPLE_API_ISSUER_ID }}
           MACOS_SIGNING_IDENTITY: ${{ vars.MACOS_SIGNING_IDENTITY }}
         run: bash scripts/release/sign-macos.sh "$VERSION" dist/Sheprd.app dist
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: linux-package-x86_64-unknown-linux-gnu
-          path: dist
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: linux-package-aarch64-unknown-linux-gnu
-          path: dist
-      # The Authenticode-signed installers, so the Windows manifest lists the
-      # exact bytes users download and the in-app updater runs; the tested
-      # unsigned ones while signing is not set up, which no build's updater
-      # accepts (none names a publisher, and signed ones check it).
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: ${{ needs.validate.outputs.windows_signed == 'true' && 'windows-signed' || 'windows-package' }}-x86_64-pc-windows-msvc
-          path: windows
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: ${{ needs.validate.outputs.windows_signed == 'true' && 'windows-signed' || 'windows-package' }}-aarch64-pc-windows-msvc
-          path: windows
-      - name: Generate and verify signed update manifest
-        env:
-          HERDR_UPDATE_PUBLIC_KEY: ${{ vars.HERDR_UPDATE_PUBLIC_KEY }}
-          HERDR_UPDATE_SIGNING_KEY: ${{ secrets.HERDR_UPDATE_SIGNING_KEY }}
-        run: |
-          set -euo pipefail
-          set +x
-          OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
-          "$OPENSSL" version | grep -q '^OpenSSL 3\.'
-          umask 077
-          KEY_DIR="$(mktemp -d "$RUNNER_TEMP/update-key.XXXXXX")"
-          trap 'rm -rf "$KEY_DIR"' EXIT
-          test -n "$HERDR_UPDATE_SIGNING_KEY"
-          printf '%s' "$HERDR_UPDATE_SIGNING_KEY" > "$KEY_DIR/private.pem"
-          unset HERDR_UPDATE_SIGNING_KEY
-          python3 scripts/update-manifest.py check-key "$OPENSSL" "$KEY_DIR/private.pem"
-          python3 scripts/update-manifest.py create dist "$VERSION" --require-all-targets
-          "$OPENSSL" pkeyutl -sign -rawin -inkey "$KEY_DIR/private.pem" -passin pass: \
-            -in dist/update-manifest.json -out dist/update-manifest.sig
-          "$OPENSSL" pkey -in "$KEY_DIR/private.pem" -passin pass: -pubout -out "$KEY_DIR/public.pem"
-          "$OPENSSL" pkeyutl -verify -rawin -pubin -inkey "$KEY_DIR/public.pem" \
-            -in dist/update-manifest.json -sigfile dist/update-manifest.sig
-          test "$(wc -c < dist/update-manifest.sig | tr -d ' ')" = 64
-          # Keep schema 1 unchanged for installed clients; package updaters use
-          # their own signed manifest with only the six legacy Herdr package
-          # names: the deployed bridge still selects those exact filenames.
-          python3 scripts/update-manifest.py create dist "$VERSION" --packages
-          "$OPENSSL" pkeyutl -sign -rawin -inkey "$KEY_DIR/private.pem" -passin pass: \
-            -in dist/package-manifest.json -out dist/package-manifest.sig
-          "$OPENSSL" pkeyutl -verify -rawin -pubin -inkey "$KEY_DIR/public.pem" \
-            -in dist/package-manifest.json -sigfile dist/package-manifest.sig
-          test "$(wc -c < dist/package-manifest.sig | tr -d ' ')" = 64
-          # Windows installers get a third manifest (schema 3) for the same reason.
-          python3 scripts/update-manifest.py create windows "$VERSION" --windows
-          mv windows/windows-manifest.json dist/
-          "$OPENSSL" pkeyutl -sign -rawin -inkey "$KEY_DIR/private.pem" -passin pass: \
-            -in dist/windows-manifest.json -out dist/windows-manifest.sig
-          "$OPENSSL" pkeyutl -verify -rawin -pubin -inkey "$KEY_DIR/public.pem" \
-            -in dist/windows-manifest.json -sigfile dist/windows-manifest.sig
-          test "$(wc -c < dist/windows-manifest.sig | tr -d ' ')" = 64
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: macos-signed
           path: |
             dist/Sheprd-${{ needs.validate.outputs.version }}-universal-apple-darwin.dmg
-            dist/sheprd-${{ needs.validate.outputs.version }}-macos-universal.app.tar.gz
-            dist/update-manifest.json
-            dist/update-manifest.sig
-            dist/package-manifest.json
-            dist/package-manifest.sig
-            dist/windows-manifest.json
-            dist/windows-manifest.sig
           if-no-files-found: error
           retention-days: 7
 
@@ -743,7 +658,7 @@ jobs:
       - uses: ./.github/actions/sign-artifacts # zizmor: ignore[self-repository]
         with:
           working-directory: dist
-          files: Sheprd-${{ needs.validate.outputs.version }}-universal-apple-darwin.dmg Sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz Sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu.deb Sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu.rpm Sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu.pkg.tar.zst Sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu.tar.gz Sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu.deb Sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu.rpm Sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu.pkg.tar.zst Sheprd-${{ needs.validate.outputs.version }}-x86_64-pc-windows-msvc.zip Sheprd-${{ needs.validate.outputs.version }}-aarch64-pc-windows-msvc.zip Sheprd-${{ needs.validate.outputs.version }}-x86_64-pc-windows-msvc-setup.exe Sheprd-${{ needs.validate.outputs.version }}-aarch64-pc-windows-msvc-setup.exe Sheprd-${{ needs.validate.outputs.version }}.cdx.json sheprd-${{ needs.validate.outputs.version }}-macos-universal.app.tar.gz sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu-update.tar.gz sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu-update.tar.gz update-manifest.json update-manifest.sig package-manifest.json package-manifest.sig windows-manifest.json windows-manifest.sig
+          files: Sheprd-${{ needs.validate.outputs.version }}-universal-apple-darwin.dmg Sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz Sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu.deb Sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu.rpm Sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu.pkg.tar.zst Sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu.tar.gz Sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu.deb Sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu.rpm Sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu.pkg.tar.zst Sheprd-${{ needs.validate.outputs.version }}-x86_64-pc-windows-msvc.zip Sheprd-${{ needs.validate.outputs.version }}-aarch64-pc-windows-msvc.zip Sheprd-${{ needs.validate.outputs.version }}-x86_64-pc-windows-msvc-setup.exe Sheprd-${{ needs.validate.outputs.version }}-aarch64-pc-windows-msvc-setup.exe Sheprd-${{ needs.validate.outputs.version }}.cdx.json
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
@@ -761,15 +676,6 @@ jobs:
             dist/Sheprd-${{ needs.validate.outputs.version }}-x86_64-pc-windows-msvc-setup.exe
             dist/Sheprd-${{ needs.validate.outputs.version }}-aarch64-pc-windows-msvc-setup.exe
             dist/Sheprd-${{ needs.validate.outputs.version }}.cdx.json
-            dist/sheprd-${{ needs.validate.outputs.version }}-macos-universal.app.tar.gz
-            dist/sheprd-${{ needs.validate.outputs.version }}-x86_64-unknown-linux-gnu-update.tar.gz
-            dist/sheprd-${{ needs.validate.outputs.version }}-aarch64-unknown-linux-gnu-update.tar.gz
-            dist/update-manifest.json
-            dist/update-manifest.sig
-            dist/package-manifest.json
-            dist/package-manifest.sig
-            dist/windows-manifest.json
-            dist/windows-manifest.sig
       - run: python3 scripts/release/artifact-manifest.py create "$VERSION" dist
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -831,8 +737,8 @@ jobs:
           PY
           gh api repos/sheprd-labs/sheprd/git/refs -X POST \
             -f "ref=refs/tags/v$VERSION" -f "sha=$RELEASE_SHA"
-          # A beta is a GitHub prerelease: /releases/latest, and so the stable
-          # updater channel and Homebrew, never see it until promote.yml flips it.
+          # A beta is a GitHub prerelease kept out of /releases/latest and
+          # Homebrew until promote.yml flips it.
           channel=()
           title="Sheprd $VERSION"
           if [[ "$CHANNEL" == beta ]]; then

@@ -12,6 +12,8 @@ mod phone;
 mod removed_project_open;
 #[path = "cli/removed_scripts.rs"]
 mod removed_scripts;
+#[path = "cli/removed_updater.rs"]
+mod removed_updater;
 
 use std::{
     process::{Child, Command, Output, Stdio},
