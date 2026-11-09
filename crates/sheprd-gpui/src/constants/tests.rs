@@ -4,7 +4,14 @@ use super::*;
 
 #[test]
 fn running_development_app_has_its_own_os_identity() {
-    assert_eq!(APP_ID, "spaceport.development");
+    if option_env!("SPACEPORT_MACOS_PREVIEW_VERSION").is_some() {
+        assert_eq!(
+            (APP_ID, RELEASE_BUILD),
+            (include_str!("../../macos-preview-app-id").trim(), false)
+        );
+    } else {
+        assert_eq!(APP_ID, include_str!("../../development-app-id").trim());
+    }
     assert_eq!(LINUX_APP_ID, APP_ID);
     assert_ne!(APP_ID, "so.pen.herdr-gpui");
     assert_eq!(WINDOW_TITLE, "Spaceport");

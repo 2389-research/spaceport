@@ -2,8 +2,10 @@
 
 **Spaceport development status:** These are inherited Sheprd packaging notes,
 not instructions to release this fork. The current release build rejects
-`HERDR_RELEASE_VERSION` because production Spaceport app IDs, signing keys,
-update source, icons, and native package checks are unresolved. See the
+`HERDR_RELEASE_VERSION` because general production identity, update delivery,
+icons, and native package checks remain unresolved. The separate macOS preview
+route below uses the approved 2389 Developer ID inputs and `ai.2389.spaceport`;
+that approval does not enable general production releases. See the
 [release identity audit](../../docs/spaceport/evidence/release-identity-audit.md)
 and [open gates](../../docs/spaceport/plan/gaps.json). Do not run a publish or
 install route from this branch. The inherited custom updater, its feeds and
@@ -16,6 +18,32 @@ or publish artifacts. Output directories must already exist. Existing
 artifacts are refused. Versions are calendar versions `YYYYMMDD.COUNTER`: an
 eight-digit UTC date and a same-day counter starting at 1, without `v`,
 prerelease/build suffixes, or leading zeros.
+
+## Spaceport macOS previews
+
+The separate `macos-preview.yml` workflow builds and signs **macOS arm64 previews only**.
+It accepts manual runs by `harperreed` on `harperreed/spaceport` main with an exact
+commit SHA and explicit `YYYYMMDD.COUNTER` version. The unsigned build job has no
+signing secrets and runs `smoke-cli.py` on its actual executable. A second job uses
+the protected `macos-preview` environment and only that run's checksummed artifact.
+Configure required owner review and main-only deployment rules for that environment
+before running it. This change does not provision the environment or upload secrets.
+It uploads workflow artifacts; it creates no GitHub release or update feed.
+A read-only history check rejects reruns and any earlier run using the exact
+version, even if that run failed before signing. It requires complete, unchanged
+history within 1,000 runs and refuses API failure, truncation or unknown titles.
+The serialized workflow checks again before signing. This conservative reservation
+is not a backend exactly-once guarantee: keep history and receipts, and never delete
+a reservation to force another submission.
+
+Preview builds use `SPACEPORT_MACOS_PREVIEW_VERSION`, `ai.2389.spaceport`, and
+`Spaceport.app`. The compile-time selector rejects other target operating systems
+and malformed versions. The app ID files beside `crates/sheprd-gpui/build.rs` are
+the source for compiled and bundle identities; a final newline is allowed.
+Ordinary `just bundle` builds retain `spaceport.development`. The general
+`HERDR_RELEASE_VERSION` refusal and credential `RELEASE_BUILD` policy remain in
+force. Preview signing grants no provider credential reads or automatic skill install.
+The existing three-line `--build-info` output remains unchanged.
 
 ## Build Identity
 
@@ -84,13 +112,13 @@ without one. For documentation-only commits, start a full run with
 cargo install cargo-about --version 0.9.2 --locked --features cli
 python3 scripts/release/generate-notices.py OUTPUT_DIR/THIRD-PARTY-NOTICES.txt
 bash scripts/release/package-macos.sh VERSION ARM64_BINARY X86_64_BINARY OUTPUT_DIR OUTPUT_DIR/THIRD-PARTY-NOTICES.txt
-bash scripts/release/sign-macos.sh VERSION OUTPUT_DIR/Sheprd.app OUTPUT_DIR
+bash scripts/release/sign-macos.sh VERSION OUTPUT_DIR/Spaceport.app OUTPUT_DIR universal import
 bash scripts/release/package-linux.sh VERSION TARGET BINARY OUTPUT_DIR OUTPUT_DIR/THIRD-PARTY-NOTICES.txt
 bash scripts/release/render-cask.sh VERSION SHA256 [TOKEN] > /path/to/rendered/TOKEN.rb
 ```
 
 macOS assembly requires Apple command-line tools. It produces unsigned
-`Sheprd.app`, containing the universal GUI, plist, icon, root `LICENSE` and `NOTICE`,
+`Spaceport.app`, containing the arm64 or universal GUI, plist, icon, root `LICENSE` and `NOTICE`,
 protocol license/attribution, Octicons license, and third-party notices.
 Both plist versions are set to the supplied version.
 The package floor is macOS 14.2 (`LSMinimumSystemVersion`; Homebrew can only
@@ -108,18 +136,18 @@ notary service, and these environment variables:
 
 - `MACOS_CERTIFICATE_P12_BASE64`: base64-encoded Developer ID Application P12.
 - `MACOS_CERTIFICATE_PASSWORD`: nonempty P12 password.
-- `MACOS_SIGNING_IDENTITY`: full `Developer ID Application: ...` identity.
+- `MACOS_SIGNING_IDENTITY`: `Developer ID Application: 2389 Research, Inc (HD9NM9NSMK)`
+  or the installed certificate SHA1 `FF599C9C778C879ECB7DC8AEF258890A1268F7E6`.
 - `APPLE_API_PRIVATE_KEY`: literal multiline App Store Connect API `.p8` contents,
   not a filename or base64 value.
 - `APPLE_API_KEY_ID`: API key ID.
 - `APPLE_API_ISSUER_ID`: team API issuer UUID.
 
-Test P12 import with Apple's `security` tool, not only an OpenSSL roundtrip.
-Some modern OpenSSL exports are rejected by Apple's importer with a misleading
-MAC/password error. The provisioned pair uses password-protected PBE-SHA1-3DES for
-key/certificate encryption and SHA-1 for the P12 MAC; both local and CI exports
-were validated in a temporary keychain. This archive compatibility setting does
-not change the executable's code-signing algorithm.
+Test P12 import with Apple's `security` tool before using hosted signing;
+an OpenSSL roundtrip alone does not establish Apple importer compatibility.
+This preview change has not verified the supplied P12 through a temporary
+keychain or a hosted run. Local installed-identity mode reuses the existing
+certificate and does not export or import a P12.
 
 Use a trusted disposable signing runner and trusted binaries. Do not use shell
 tracing around secret setup. The script uses a private temporary directory and
@@ -137,10 +165,10 @@ Packaging takes the chat helper from beside each architecture's `spaceport`.
 Herdr Core is separately installed. The helper is signed first without the
 app's entitlements, then `spaceport`, then the bundle, all with hardened runtime and secure
 timestamps. The zipped app must receive JSON status `Accepted`, then the app is
-stapled and validated. The DMG contains `Sheprd.app` and an `/Applications` symlink;
+stapled and validated. The DMG contains `Spaceport.app` and an `/Applications` symlink;
 it is signed, separately notarized, stapled, and checked with codesign and
 Gatekeeper before publishing the local output filename:
-`Sheprd-VERSION-universal-apple-darwin.dmg`. Any failed operation aborts.
+`Spaceport-VERSION-ARCHITECTURE-apple-darwin.dmg`. Any failed operation aborts.
 Existing DMG outputs are refused before loading credentials.
 
 Linux targets are `x86_64-unknown-linux-gnu` or `aarch64-unknown-linux-gnu`.
@@ -335,7 +363,8 @@ warning is the only sign a lost token leaves.
 
 ## Artifact Signing
 
-These scripts retain inherited Sheprd package identities. Ordinary CI accepts
+The blocked public-release scripts retain inherited Sheprd package identities;
+the separate macOS preview route uses the Spaceport identity described above. Ordinary CI accepts
 both `penso/herdr-gpui` and `sheprd-labs/sheprd` so
 the rename can be validated before transfer; release/promotion dispatch and
 publication are restricted to `sheprd-labs/sheprd`, with the same `penso` owner
@@ -347,9 +376,9 @@ Actions deploy job.
 
 The compatibility exceptions are intentional:
 
-- macOS bundles are `Sheprd.app`, with **only** `Contents/MacOS/spaceport` as the
-  main executable. Keep signing ID `so.pen.herdr-gpui` (and `.dev` locally),
-  Developer ID team and all signing keys. There is no `Herdr` executable alias.
+- macOS preview bundles are `Spaceport.app`, with `spaceport` and `sheprd-acp`,
+  signed for Team `HD9NM9NSMK`. The preview does not approve inherited Homebrew
+  destinations or any public release identity.
 - Homebrew publishes `sheprd-labs/tap/sheprd` for new installs. For existing ones,
   `penso/tap/herdr-gpui` installs `Sheprd.app` to
   **`Herdr.app`**, preserving its existing installation destination. The cask exposes
@@ -368,8 +397,8 @@ The compatibility exceptions are intentional:
   `sheprd://` nor `herdr-gpui://` scheme.
   Setup gracefully stops automation running under either executable name.
 - Runtime service/state identities and the upstream `herdr-core` / `hc` and
-  `herdr` command remain compatible. The `HERDR_*` signing/build variables and
-  local `herdr_sign` hook keep their deployed names.
+  `herdr` command remain compatible. Preview signing uses the explicit environment
+  interface above; no local `.envrc` or signing hook is sourced.
 
 `scripts/verify-release.sh --legacy` selects legacy package names and the
 `penso/herdr-gpui` Sigstore/provenance identity. Default verification requires
@@ -503,55 +532,61 @@ presence of a report or a configured allowlist as legal approval. Where review
 finds missing upstream notices, add version-bound evidence with provenance rather
 than fabricated fallback text or a broad license exception.
 
-## Local DMG
+## Local macOS preview
 
-`just dmg VERSION` (or `bash scripts/release/build-macos.sh VERSION`) builds both
-architectures locally, assembles the app, and signs/notarizes it without publishing.
-Use macOS with Xcode command-line tools, the pinned Rust toolchain, `jq`,
-`cargo-about 0.9.2` installed as above, and the
-signing prerequisites above. Install both targets explicitly first:
+Use Apple Silicon macOS with Xcode command-line tools, the pinned Rust toolchain,
+`jq`, and `cargo-about 0.9.2`. The build command takes explicit profile, architecture,
+and signing mode; its defaults are **debug arm64 unsigned**:
 
 ```sh
-rustup target add aarch64-apple-darwin x86_64-apple-darwin
-just dmg 20260920.1
+bash scripts/release/build-macos.sh VERSION debug arm64 unsigned
+bash scripts/release/build-macos.sh VERSION debug arm64 installed
+# The just recipe always requests installed-identity signing:
+just dmg VERSION debug arm64
 ```
 
-Any valid `YYYYMMDD.COUNTER` version works locally; only the release workflow
-derives and publishes versions. Builds use `--locked`, `--target-dir target`, and
-`MACOSX_DEPLOYMENT_TARGET=14.2` and `HERDR_RELEASE_VERSION=VERSION` on both targets.
-All six Apple signing variables listed above are removed from Cargo's
-environment, including metadata queries. No local `.envrc` is sourced
-until both builds and unsigned assembly succeed.
-Build dependencies use `CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none`:
-Apple stripping produced unloadable, misaligned proc-macro dylibs during local
-Intel cross-compilation. The setting does not disable optimization or change
-stripping policy for the distributed executable.
+For `installed`, supply `MACOS_SIGNING_IDENTITY`, `APPLE_API_KEY_PATH` (the existing
+`.p8` file path), `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER_ID` through a trusted
+process environment. This mode neither imports certificates nor changes keychains.
+`import` uses the six protected-environment inputs listed above and a temporary
+keychain; the P12 must contain only the selected Developer ID Application identity.
+No `.envrc` is needed or sourced. Never put private key contents or passwords in
+shell history. The signer rejects the wrong app, Team selection or architecture
+before opening credentials, then verifies the signed app's actual Team and ID.
 
-A missing root `.envrc` fails before building. This ignored file contains **no
-credentials** and defines `herdr_sign VERSION APP OUT`, calling the ignored
-`.envrc.sign.rb` helper. The helper and its credential storage are machine-specific:
-cloning this repository does not replicate or provision them. Provision them
-separately on a trusted signing machine; do not commit either file or credentials,
-and do not export signing secrets globally through direnv.
+`release` selects optimized compilation; `universal` also builds the Intel target
+(which must first be installed with `rustup target add x86_64-apple-darwin`).
+The arm64 executable receives CLI smoke checks. Intel cross-compilation and lipo
+validation do not establish Intel-native runtime correctness. Debug artifacts are
+labelled in `SpaceportBuildProfile`, their output directory and the DMG JSON record.
+Builds use `--locked`, `CARGO_INCREMENTAL=0`, `MACOSX_DEPLOYMENT_TARGET=14.2`, and
+`CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none`. All Apple signing variables,
+including the private-key path, are removed before Cargo and notice generation.
+Only `spaceport` and `sheprd-acp` ship; no Herdr daemon is installed or bundled.
 
-Alternatively, define `herdr_sign` in your ignored `.envrc` to invoke
-`bash scripts/release/sign-macos.sh "$@"` with the six variables supplied directly
-to that command's environment by your credential manager (`env NAME=value ...
-bash scripts/release/sign-macos.sh "$@"`). Retrieve them only inside the function,
-not when sourcing `.envrc`; never put literal credentials in shell history or the
-file. This direct environment interface does not require the machine-local Ruby
-helper.
+Output lives in `target/distribution/VERSION-PROFILE-ARCHITECTURE`. Unsigned mode
+returns `Spaceport.app`; signing returns `Spaceport-VERSION-ARCHITECTURE-apple-darwin.dmg`
+and a `.dmg.json` record with SHA256, app ID, Team, version, profile and architecture.
+The adjacent `Spaceport.app` remains the unsigned assembly; the DMG contains its
+signed and stapled copy. Existing output directories are never overwritten.
 
-Output is an unsigned assembly at `target/distribution/VERSION/Sheprd.app` and the
-signed, notarized
-`Sheprd-VERSION-universal-apple-darwin.dmg` in the same directory when using
-`sign-macos.sh`. Local packaging does not publish anything. An existing version
-directory (including a symlink) is refused before building and checked again before
-promotion. Notices, assembly, and signing use a temporary directory under
-`target/distribution`, cleaned on failure so the command can be retried directly.
-Only after signing succeeds and produces a nonempty DMG is the directory promoted
-to `VERSION`. Helper diagnostics remain visible on stderr; the final DMG path is
-printed on stdout after promotion. Existing version artifacts are never overwritten.
+Notarization submits each app ZIP and DMG **once**, saves the returned UUID, then
+waits on that UUID. Immutable version/architecture reservations and archive SHA256
+receipts live in ignored `target/notarization` (override with an absolute
+`SPACEPORT_NOTARY_RECEIPTS`). Versions are unique across debug and release profiles.
+Receipts survive failure and cancellation; repeated versions refuse a new submit,
+even when signing timestamps change the bytes. Pending/rejected results retain
+status and rejection logs. A missing UUID means **outcome unknown**, never permission
+to submit again. Inspect Apple history and the retained receipt before taking any
+further action. There is no automatic resume or re-submit command. Keep/download
+receipts from a hosted run before any later manual run; hosted runners have no
+cross-run local state. The history guard also refuses repeat versions; downloaded
+artifacts provide evidence, not an automatic recovery mechanism.
+
+Temporary signing credentials are removed on exit/INT/TERM, and imported keychains'
+original search list is restored. SIGKILL and power loss cannot run cleanup.
+The route builds, signs, notarizes and retains artifacts only: no app launch,
+installation, updater setup or public publishing occurs.
 
 ## Contributor CI Approval
 

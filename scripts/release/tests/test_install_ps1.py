@@ -1,7 +1,7 @@
 """site/install.ps1: its Start menu shortcut and taskbar identity."""
 from pathlib import Path
 import os
-import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -14,8 +14,7 @@ ISS = ROOT / "scripts/release/sheprd.iss"
 
 
 def app_id():
-    with (ROOT / "assets/macos/Info.plist").open("rb") as source:
-        return plistlib.load(source)["CFBundleIdentifier"]
+    return re.search(r'#define AppUserModelID "([^"]+)"', ISS.read_text())[1]
 
 
 def snippet():

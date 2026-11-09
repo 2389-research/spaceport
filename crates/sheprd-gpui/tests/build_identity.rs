@@ -217,6 +217,19 @@ fn second_cargo_build_is_fresh_for_archive_ordinary_and_linked_checkouts() {
             include_str!("../release_version.rs"),
         )
         .unwrap();
+        for (name, contents) in [
+            (
+                "preview_identity.rs",
+                include_str!("../preview_identity.rs"),
+            ),
+            ("development-app-id", include_str!("../development-app-id")),
+            (
+                "macos-preview-app-id",
+                include_str!("../macos-preview-app-id"),
+            ),
+        ] {
+            fs::write(path.join(name), contents).unwrap();
+        }
         // The real module needs fluent-syntax and the app's locales.
         fs::write(
             path.join("locales.rs"),
