@@ -13,6 +13,7 @@ pub(crate) struct Tally {
     pub blocked: usize,
     pub done: usize,
     pub idle: usize,
+    pub unknown: usize,
 }
 
 impl Tally {
@@ -23,14 +24,15 @@ impl Tally {
                 AgentStatus::Working => tally.working += 1,
                 AgentStatus::Blocked => tally.blocked += 1,
                 AgentStatus::Done => tally.done += 1,
-                AgentStatus::Idle | AgentStatus::Unknown => tally.idle += 1,
+                AgentStatus::Idle => tally.idle += 1,
+                AgentStatus::Unknown => tally.unknown += 1,
             }
         }
         tally
     }
 
     pub fn total(self) -> usize {
-        self.working + self.blocked + self.done + self.idle
+        self.working + self.blocked + self.done + self.idle + self.unknown
     }
 
     pub fn counts(self) -> Counts {
@@ -54,6 +56,7 @@ impl Tally {
             blocked: self.blocked + other.blocked,
             done: self.done + other.done,
             idle: self.idle + other.idle,
+            unknown: self.unknown + other.unknown,
         }
     }
 }

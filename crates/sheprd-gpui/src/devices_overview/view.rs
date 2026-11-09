@@ -108,6 +108,7 @@ impl Look<'_> {
             ))
             .child(item(AgentStatus::Done, fl!("devices-overview-legend-done")))
             .child(item(AgentStatus::Idle, fl!("devices-overview-legend-idle")))
+            .child(item(AgentStatus::Unknown, fl!("sidebar-status-unknown")))
     }
 }
 
@@ -320,7 +321,7 @@ fn totals(look: &Look, devices: &[Device]) -> Div {
         .iter()
         .filter(|device| matches!(device.link, Link::Offline | Link::Connecting))
         .count();
-    let cells: [(String, String, String, Option<AgentStatus>); 4] = [
+    let cells = [
         (
             fl!("devices-overview-working"),
             tally.working.to_string(),
@@ -338,6 +339,12 @@ fn totals(look: &Look, devices: &[Device]) -> Div {
             (tally.idle + tally.done).to_string(),
             fl!("devices-overview-ready"),
             Some(AgentStatus::Idle),
+        ),
+        (
+            fl!("sidebar-status-unknown"),
+            tally.unknown.to_string(),
+            String::new(),
+            Some(AgentStatus::Unknown),
         ),
         (
             fl!("devices-overview-online"),
@@ -361,8 +368,7 @@ fn totals(look: &Look, devices: &[Device]) -> Div {
                 .map(|(index, (title, value, detail, status))| {
                     div()
                         .flex_1()
-                        // Narrow enough that all four share a row in a
-                        // narrow tab; the detail line truncates first.
+                        // The detail line truncates before a card grows.
                         .min_w(px(100.))
                         .p_3()
                         .flex()

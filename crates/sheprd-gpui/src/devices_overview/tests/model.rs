@@ -2,17 +2,11 @@ use crate::devices_overview::{Device, Link, Tally, chart::padded, history::STEPS
 use sheprd_client::protocol::AgentStatus::{self, Blocked, Done, Idle, Unknown, Working};
 
 #[test]
-fn a_tally_counts_unknown_agents_as_idle() {
+fn a_tally_keeps_unknown_agents_out_of_idle() {
     let tally = Tally::of([Working, Working, Blocked, Done, Idle, Unknown]);
-    assert_eq!(
-        tally,
-        Tally {
-            working: 2,
-            blocked: 1,
-            done: 1,
-            idle: 2,
-        }
-    );
+    assert_eq!(tally.idle, 1);
+    assert_eq!(tally.unknown, 1);
+    assert_eq!(tally.add(tally).unknown, 2);
     assert_eq!(tally.total(), 6);
     let counts = tally.counts();
     assert_eq!((counts.working, counts.blocked), (2, 1));
@@ -31,6 +25,7 @@ fn devices_sum_into_the_totals() {
             blocked: 1,
             done: 1,
             idle: 1,
+            unknown: 0,
         }
     );
 }
