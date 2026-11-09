@@ -22,39 +22,17 @@ fn the_services_words_stay_as_they_are() {
 }
 
 #[test]
-fn wayfinder_reads_as_it_did() {
-    let state = |status: &str, models: usize, mode: &str| {
-        english(
-            Text::message("usage-wayfinder-gateway-state")
-                .arg("status", status)
-                .arg("models", models)
-                .arg("mode", mode),
-        )
-    };
-    assert_eq!(state("degraded", 2, "live"), "degraded · 2 models");
-    assert_eq!(state("ok", 1, "both"), "ok · 1 model · offline · dry run");
-    assert_eq!(state("ok", 3, "offline"), "ok · 3 models · offline");
-    assert_eq!(state("ok", 3, "dry-run"), "ok · 3 models · dry run");
-    let degraded =
-        |missing: usize| english(Text::message("usage-wayfinder-degraded").arg("missing", missing));
-    assert_eq!(degraded(0), "Degraded");
-    assert_eq!(degraded(1), "Degraded, 1 key missing");
-    assert_eq!(degraded(3), "Degraded, 3 keys missing");
-    assert_eq!(
-        english(Text::message("usage-wayfinder-account").arg("models", 2)),
-        "2 models · local gateway"
-    );
+fn report_message_arguments_keep_nested_localization() {
     assert_eq!(
         english(
-            Text::message("usage-wayfinder-saved-value")
-                .arg("amount", "$4.12")
-                .arg("percent", "73.3")
+            Text::message("usage-updated-ago").arg(
+                "time",
+                Text::message("usage-countdown-hours")
+                    .arg("hours", 2)
+                    .arg("minutes", 30),
+            )
         ),
-        "$4.12 · 73.3% vs highest-cost route"
-    );
-    assert_eq!(
-        english(Text::message("usage-wayfinder-milliseconds").arg("time", "0.2")),
-        "0.2 ms"
+        "Updated 2h 30m ago",
     );
 }
 

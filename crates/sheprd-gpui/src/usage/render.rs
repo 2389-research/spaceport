@@ -29,7 +29,7 @@ impl SheprdWindow {
     pub(crate) fn render_usage(&self, cx: &mut Context<Self>) -> Option<impl IntoElement + use<>> {
         let entry = self.usage.current();
         let shown = entry
-            .map(|entry| entry.headline(self.usage.chosen()))
+            .map(|entry| entry.headline(self.usage.chosen(), &self.config.usage))
             .unwrap_or_default();
         // A host that could not be read at all says so, but only while
         // there is nothing older to show.
@@ -162,17 +162,7 @@ impl SheprdWindow {
                 );
             }));
         let Some(report) = &reading.report else {
-            // Waiting on Keychain access: the lock says why there are no
-            // numbers, and the click opens the panel that asks.
-            return segment.when(reading.access.is_some(), |segment| {
-                segment.child(
-                    svg()
-                        .path("icons/lock.svg")
-                        .size(px(11.))
-                        .flex_none()
-                        .text_color(rgb(theme.muted)),
-                )
-            });
+            return segment;
         };
         let mut labels = div()
             .flex()

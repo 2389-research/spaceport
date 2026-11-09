@@ -2,7 +2,7 @@
 # whose titles are in settings.ftl.
 
 settings-status-bar-section-items = Items
-settings-status-bar-usage-hint = Plan usage for signed-in AI services. Compact shows each service's tightest limit as one share; Detailed adds a meter and its two tightest windows.
+settings-status-bar-usage-hint = Reported plan usage for AI services. Compact shows each service's tightest limit as one share; Detailed adds a meter and its two tightest windows.
 settings-status-bar-note = Listening ports are under General. The version stays, since it says when an update is ready.
 
 ## Choices.

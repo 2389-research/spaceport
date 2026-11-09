@@ -341,7 +341,6 @@ pub(crate) static PROVIDER_ICONS: &[(&str, &[u8])] = &[
 /// generic mark.
 pub(crate) fn path(provider: super::Provider) -> &'static str {
     provider
-        .service()
         .meta()
         .icon
         .or_else(|| for_id(provider.id()))

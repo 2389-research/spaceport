@@ -17,7 +17,7 @@ fn usage_visibility_preserves_settings_and_rejects_invalid_tables() -> anyhow::R
     assert_eq!(fs::read_to_string(&path)?, original);
     for original in [
         "theme = 'Nord'\n",
-        "usage = { show = true, browser_cookies = false }\n",
+        "usage = { show = true, topbar = false }\n",
     ] {
         fs::write(&path, original)?;
         Config::save_usage_visibility_path(false, &path)?;

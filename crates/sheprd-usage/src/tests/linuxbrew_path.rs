@@ -1,5 +1,5 @@
 use super::*;
-use crate::probe::Shell;
+use crate::Shell;
 use std::process::{Command, Stdio};
 
 #[test]

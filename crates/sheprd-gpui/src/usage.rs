@@ -1,5 +1,5 @@
 //! Plan usage presentation in the status bar, panel, and Usage section.
-//! Core has no usage feed yet; shared host and shell types remain.
+//! No authoritative usage feed is connected; shared host and shell types remain.
 // i18n: migrated
 
 mod details;

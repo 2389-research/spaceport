@@ -3,7 +3,6 @@
 # shown as reported.
 
 usage-section-title = Usage
-usage-updating = Updating…
 usage-off = Plan usage display is off.
 usage-not-updated-yet = Not updated yet
 # $time is a countdown such as "2h 53m".
@@ -15,7 +14,7 @@ usage-panel-subtitle = { $updated } · { $host }
 
 # Status bar.
 usage-unavailable = Usage unavailable
-usage-core-unavailable-detail = Core does not report plan usage yet.
+usage-core-unavailable-detail = No authoritative usage feed is connected.
 # What a screen reader says for a service's segment.
 usage-segment = { $name } usage { $percent }% used
 usage-segment-idle = { $name } usage

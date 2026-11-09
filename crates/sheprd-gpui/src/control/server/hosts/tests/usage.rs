@@ -13,7 +13,6 @@ fn reading(id: &str, windows: Vec<Window>) -> Reading {
         provider,
         report: Some(Report::new(provider, Account::default(), windows)),
         error: None,
-        access: None,
     }
 }
 
@@ -27,7 +26,7 @@ fn the_usage_command_prints_named_windows_in_english() {
     let copilot = reading(
         "copilot",
         vec![Window::new(
-            Kind::Named(Text::message("usage-copilot-premium")),
+            Kind::Named(Text::message("usage-daily-spend")),
             40.,
             resets,
             None,
@@ -38,11 +37,7 @@ fn the_usage_command_prints_named_windows_in_english() {
         vec![
             Window::new(Kind::Weekly, 10., None, None),
             Window::new(
-                Kind::Named(
-                    Text::message("usage-doubao-window")
-                        .arg("plan", "agent")
-                        .arg("period", "weekly"),
-                ),
+                Kind::Named(Text::message("usage-updated-ago").arg("time", "3h")),
                 28.7,
                 None,
                 None,
@@ -57,7 +52,7 @@ fn the_usage_command_prints_named_windows_in_english() {
         .iter()
         .flat_map(|info| info.windows.iter().map(|window| window.label.as_str()))
         .collect();
-    assert_eq!(labels, ["Premium", "Weekly", "Agent weekly"]);
+    assert_eq!(labels, ["Daily spend", "Weekly", "Updated 3h ago"]);
     let json = serde_json::to_string(&Response::Host {
         reply: Reply::Usage {
             host: "Local".into(),
@@ -66,6 +61,6 @@ fn the_usage_command_prints_named_windows_in_english() {
         },
     })
     .unwrap();
-    assert!(json.contains(r#""label":"Agent weekly""#), "{json}");
+    assert!(json.contains(r#""label":"Updated 3h ago""#), "{json}");
     assert!(!json.contains("usage-"), "{json}");
 }
