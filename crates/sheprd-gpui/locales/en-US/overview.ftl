@@ -21,8 +21,6 @@ overview-row-detail = { $workspace } · { $detail }
 overview-wakes = Wakes { $time }
 # A tag on a row whose snooze ended.
 overview-woke = Woke
-# A failed orchestrator run; $title is its issue or pull request.
-overview-run-failed = Run failed: { $title }
 
 # Row actions.
 overview-reopen = Reopen
@@ -57,7 +55,7 @@ overview-elapsed-hours = { $hours }h
 overview-elapsed-days = { $days }d
 
 overview-empty-title = No agents to look at
-overview-empty = The Overview gathers the agents on every host this window connects to: those waiting on you and failed runs first, then finished work ready for review, working agents, and idle ones. Snooze or settle a row to put it aside; an agent you close waits under Closed to be reopened.
+overview-empty = The Overview gathers the agents on every host this window connects to: those waiting on you first, then finished work ready for review, working agents, and idle ones. Snooze or settle a row to put it aside; an agent you close waits under Closed to be reopened.
 
 # The host column.
 overview-hosts = Hosts

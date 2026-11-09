@@ -1,6 +1,6 @@
 //! The activity bar's Overview: one page across the window's body for what
 //! needs the user on every host this window connects to. Agents waiting on
-//! the user and failed orchestrator runs lead, in a card of their own; then
+//! the user lead, in a card of their own; then
 //! finished ones ready for review, working agents by host, and idle ones.
 //! Rows can be pinned, snoozed until a time, or settled as finished
 //! (`marks`); agents that closed wait under Closed to be started again
@@ -8,7 +8,7 @@
 //! and ports, and folds away.
 //!
 //! Everything it shows is already in the window: the endpoints' snapshots,
-//! the orchestrator views' runs, the pull request prefetch, and the system
+//! the pull request prefetch, and the system
 //! load and port monitors. Drawing reads that prepared state only.
 // i18n: migrated
 
@@ -27,7 +27,7 @@ mod tests;
 pub(crate) use marks::Marks;
 pub(crate) use model::{Key, Open, Row, Sections, State};
 
-use crate::{SheprdWindow, i18n::fl, orchestrator::RunState, sidebar::ActivityPanel};
+use crate::{SheprdWindow, i18n::fl, sidebar::ActivityPanel};
 use gpui::{prelude::*, *};
 use std::{
     collections::{HashMap, HashSet},
@@ -101,7 +101,7 @@ impl Default for Page {
 
 impl SheprdWindow {
     /// Every row the page could list: each reachable host's agents, in
-    /// sidebar order, then the open orchestrators' failed runs.
+    /// sidebar order.
     pub(crate) fn overview_rows(&self, cx: &App) -> Vec<Row> {
         let mut rows = Vec::new();
         for (index, endpoint) in self.endpoints.iter().enumerate() {
@@ -128,57 +128,6 @@ impl SheprdWindow {
                 pr,
                 crate::notification_mutes::Mutes::any(cx),
             ));
-        }
-        let mut runs = HashSet::new();
-        for (tab, view) in self.orchestrator_views() {
-            for (target, items, listed) in view.read(cx).listed() {
-                let host = self
-                    .endpoints
-                    .iter()
-                    .find(|endpoint| endpoint.connection.target == *target)
-                    .map(|endpoint| (endpoint.label.clone(), endpoint.id.clone()))
-                    .unwrap_or_default();
-                for run in listed {
-                    if run.state != RunState::Failed || !runs.insert(run.id.clone()) {
-                        continue;
-                    }
-                    let item = items
-                        .iter()
-                        .find(|item| item.key.canonical() == run.item_key);
-                    let title = item.map_or_else(
-                        || crate::orchestrator::key_label(&run.item_key),
-                        |item| format!("{} {}", item.identifier, item.title),
-                    );
-                    rows.push(Row {
-                        key: Key::Run { id: run.id.clone() },
-                        state: State::Failed,
-                        title: fl!("overview-run-failed", title = title),
-                        detail: run
-                            .message
-                            .as_deref()
-                            .map(|message| crate::notifications::safe_text(message, 200))
-                            .unwrap_or_else(|| run.agent.clone()),
-                        identity: None,
-                        workspace: run
-                            .workspace
-                            .as_ref()
-                            .and_then(|workspace| workspace.path.as_deref())
-                            .and_then(|path| path.file_name())
-                            .map(|name| name.to_string_lossy().into_owned())
-                            .unwrap_or_default(),
-                        branch: run
-                            .workspace
-                            .as_ref()
-                            .map(|workspace| workspace.branch.clone()),
-                        host: host.0.clone(),
-                        endpoint: host.1.clone(),
-                        since: Some(run.updated_at.into()),
-                        pr: None,
-                        open: Open::Run(tab),
-                        muted: false,
-                    });
-                }
-            }
         }
         rows
     }
@@ -327,35 +276,30 @@ impl SheprdWindow {
             .unwrap_or(self.viewport_width < NARROW)
     }
 
-    /// Shows what a row stands for: an agent's pane among the terminals, or
-    /// a run's item in the Issues section.
+    /// Shows the agent's pane among the terminals.
     fn open_overview_row(&mut self, row: &Row, window: &mut Window, cx: &mut Context<Self>) {
         self.overview.menu = None;
         Marks::update(cx, |marks| marks.seen(&row.key));
-        match &row.open {
-            Open::Pane {
-                endpoint,
-                pane,
-                tab,
-                workspace,
-            } => {
-                // Read before navigating, which may switch devices.
-                let on_screen = self.endpoints[self.selected_endpoint].id == *endpoint
-                    && self
-                        .browser_key()
-                        .is_some_and(|(_, shown)| shown == *workspace);
-                self.show_activity_panel(ActivityPanel::Workspaces, window, cx);
-                self.activity.return_to = Some(ActivityPanel::Overview);
-                self.navigate_endpoint(endpoint, crate::NavigationTarget::Pane(pane), cx);
-                // An agent in the tab already focused moves nothing, so show
-                // it here, as the Devices overview does.
-                if on_screen {
-                    self.terminal_focus_moved(tab, false, cx);
-                }
-                window.focus(&self.focus, cx);
-            }
-            Open::Run(_) => self.show_activity_panel(ActivityPanel::Issues, window, cx),
+        let Open::Pane {
+            endpoint,
+            pane,
+            tab,
+            workspace,
+        } = &row.open;
+        // Read before navigating, which may switch devices.
+        let on_screen = self.endpoints[self.selected_endpoint].id == *endpoint
+            && self
+                .browser_key()
+                .is_some_and(|(_, shown)| shown == *workspace);
+        self.show_activity_panel(ActivityPanel::Workspaces, window, cx);
+        self.activity.return_to = Some(ActivityPanel::Overview);
+        self.navigate_endpoint(endpoint, crate::NavigationTarget::Pane(pane), cx);
+        // An agent in the tab already focused moves nothing, so show
+        // it here, as the Devices overview does.
+        if on_screen {
+            self.terminal_focus_moved(tab, false, cx);
         }
+        window.focus(&self.focus, cx);
         cx.notify();
     }
 
@@ -369,10 +313,7 @@ impl SheprdWindow {
             endpoint,
             workspace,
             ..
-        } = &agent.row.open
-        else {
-            return;
-        };
+        } = &agent.row.open;
         let current = self.endpoints.iter().enumerate().any(|(index, host)| {
             let live = if index == self.selected_endpoint {
                 &self.live

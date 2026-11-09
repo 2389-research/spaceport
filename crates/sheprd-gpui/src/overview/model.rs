@@ -1,13 +1,12 @@
 //! What the Overview lists, gathered from the window's prepared state before
-//! drawing: every connected host's agents and the open orchestrators' failed
-//! runs, each with a key that outlives a daemon restart, and the page's
+//! drawing: every connected host's agents with a key that outlives a daemon
+//! restart, and the page's
 //! sections once the user's marks sort them.
 
 use super::marks::{Hold, Marks};
 use crate::{
     endpoint::Endpoint,
     notification_mutes::{Daemon, Mutes},
-    orchestrator::ViewId,
     state::LiveState,
 };
 use serde::{Deserialize, Serialize};
@@ -28,9 +27,8 @@ pub(crate) enum Key {
         checkout: String,
         agent: String,
     },
-    Run {
-        id: String,
-    },
+    /// Legacy saved mark shape. No live row uses this key.
+    Run { id: String },
 }
 
 impl Key {
@@ -105,8 +103,6 @@ pub(crate) enum Open {
         tab: String,
         workspace: String,
     },
-    /// The orchestrator view that lists the run.
-    Run(ViewId),
 }
 
 /// A checkout's pull request as the prefetch last saw it.
@@ -120,11 +116,11 @@ pub(crate) struct Pr {
 pub(crate) struct Row {
     pub key: Key,
     pub state: State,
-    /// What the agent says it does, or the run's item.
+    /// What the agent says it does.
     pub title: String,
-    /// The agent's name and status words, or why the run stopped.
+    /// The agent's name and status words.
     pub detail: String,
-    /// The agent's identity, for its icon; None for a run.
+    /// The agent's identity, for its icon.
     pub identity: Option<String>,
     pub workspace: String,
     pub branch: Option<String>,

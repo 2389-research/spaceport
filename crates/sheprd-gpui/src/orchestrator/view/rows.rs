@@ -517,26 +517,6 @@ pub(crate) fn pull_request_rows(
     rows
 }
 
-/// What a run's item is called when the item is not listed, such as a
-/// closed issue: `#375` for an issue or GitHub pull request, `!375` for a
-/// GitLab merge request or Azure DevOps pull request, else its id.
-pub(crate) fn key_label(key: &str) -> String {
-    let native = key
-        .rsplit(':')
-        .next()
-        .unwrap_or(key)
-        .replace("%3A", ":")
-        .replace("%25", "%");
-    let number = native.strip_prefix("pr/").unwrap_or(&native);
-    if !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit()) {
-        let merge_request =
-            native.starts_with("pr/") && (key.starts_with("gitlab:") || key.starts_with("azure:"));
-        format!("{}{number}", if merge_request { '!' } else { '#' })
-    } else {
-        native
-    }
-}
-
 /// What a pull request waits on, which groups the list: a review asked of
 /// the user first, then the user's own to fix, those ready to merge, the
 /// rest, and closed ones last.

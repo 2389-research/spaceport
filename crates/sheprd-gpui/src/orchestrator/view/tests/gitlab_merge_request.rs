@@ -66,13 +66,6 @@ fn a_merge_request_has_no_github_pages_or_review(cx: &mut gpui::TestAppContext) 
     assert!(cx.debug_bounds("orchestrator-detail-review").is_some());
 }
 
-#[test]
-fn an_unlisted_merge_request_is_called_by_its_bang_number() {
-    assert_eq!(key_label("gitlab:gitlab.com:g/app:pr/7"), "!7");
-    assert_eq!(key_label("gitlab:gitlab.com:g/app:7"), "#7");
-    assert_eq!(key_label("github:github.com:g/app:pr/7"), "#7");
-}
-
 #[gpui::test]
 fn a_gitlab_repository_does_not_offer_the_github_mine_identity(cx: &mut gpui::TestAppContext) {
     let (_dir, view, cx) = empty::open(cx);

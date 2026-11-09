@@ -85,16 +85,72 @@ fn marks_are_saved_and_read_back() {
     let path = dir.path().join("overview-marks.json");
     let mut marks = Marks::at(Some(path.clone()));
     marks.snooze(&key("codex"), State::Blocked, at(1_234));
-    marks.toggle_pin(&Key::Run { id: "run-1".into() });
+    marks.toggle_pin(&key("claude"));
     marks.finish();
     let read = Marks::at(Some(path.clone()));
     assert_eq!(
         read.get(&key("codex")).unwrap().hold(State::Blocked, at(0)),
         Some(Hold::Snoozed { until: at(1_234) })
     );
-    assert!(read.get(&Key::Run { id: "run-1".into() }).unwrap().pinned);
+    assert!(read.get(&key("claude")).unwrap().pinned);
 
     // A damaged file starts empty rather than failing.
     std::fs::write(&path, b"{\"marks\": 3}").unwrap();
     assert!(Marks::at(Some(path)).get(&key("codex")).is_none());
+}
+
+#[test]
+fn retired_run_marks_do_not_load_or_erase_agent_marks() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("overview-marks.json");
+    let saved = serde_json::json!({"marks": [
+        {"key": {"kind": "run", "id": "old-run"}, "pinned": true},
+        {"key": {"kind": "agent", "endpoint": "local", "checkout": "herdr", "agent": "codex"}, "pinned": true}
+    ]});
+    let bytes = serde_json::to_vec(&saved).unwrap();
+    std::fs::write(&path, &bytes).unwrap();
+
+    let mut marks = Marks::at(Some(path.clone()));
+    assert!(
+        marks
+            .get(&Key::Run {
+                id: "old-run".into()
+            })
+            .is_none()
+    );
+    assert!(marks.get(&key("codex")).unwrap().pinned);
+    marks.finish();
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+}
+
+#[test]
+fn malformed_retired_run_mark_does_not_erase_agent_marks() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("overview-marks.json");
+    let saved = serde_json::json!({"marks": [
+        {"key": {"kind": "run", "id": ""}, "pinned": true},
+        {"key": {"kind": "agent", "endpoint": "local", "checkout": "herdr", "agent": "codex"}, "pinned": true}
+    ]});
+    let bytes = serde_json::to_vec(&saved).unwrap();
+    std::fs::write(&path, &bytes).unwrap();
+
+    let mut marks = Marks::at(Some(path.clone()));
+    assert!(marks.get(&key("codex")).unwrap().pinned);
+    marks.finish();
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+}
+
+#[test]
+fn malformed_agent_mark_still_rejects_saved_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("overview-marks.json");
+    let saved = serde_json::json!({"marks": [
+        {"key": {"kind": "agent", "endpoint": "", "checkout": "herdr", "agent": "old"}, "pinned": true},
+        {"key": {"kind": "agent", "endpoint": "local", "checkout": "herdr", "agent": "codex"}, "pinned": true}
+    ]});
+    std::fs::write(&path, serde_json::to_vec(&saved).unwrap()).unwrap();
+
+    let mut marks = Marks::at(Some(path));
+    assert!(marks.get(&key("codex")).is_none());
+    marks.finish();
 }

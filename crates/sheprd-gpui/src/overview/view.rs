@@ -379,11 +379,7 @@ impl SheprdWindow {
                 .into_any_element(),
             state => look.dot(state.status()).into_any_element(),
         };
-        let icon = if row.identity.is_none() && matches!(row.open, super::Open::Run(_)) {
-            "icons/fan-out.svg"
-        } else {
-            AgentIcon::from_identity(row.identity.as_deref()).path()
-        };
+        let icon = AgentIcon::from_identity(row.identity.as_deref()).path();
         let second = match shelf {
             Shelf::Snoozed(until) => {
                 fl!("overview-wakes", time = presets::wakes(until, &frame.local))

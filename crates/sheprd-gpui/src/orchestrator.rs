@@ -10,9 +10,7 @@ mod view;
 
 pub(crate) use host::{LiveCache, Orchestrator, ViewId};
 pub(crate) use sheprd_orchestrator::*;
-pub(crate) use view::{
-    Event, GitLabRead, List, LiveAgent, Look, OrchestratorView, RepoSpec, key_label,
-};
+pub(crate) use view::{Event, GitLabRead, List, LiveAgent, Look, OrchestratorView, RepoSpec};
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]

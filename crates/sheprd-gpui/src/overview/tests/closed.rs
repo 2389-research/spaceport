@@ -108,9 +108,8 @@ fn a_twin_still_running_keeps_its_closed_namesake_listed() {
     let mut closed = Closed::default();
     let (mut shown, mut rows) = report("b1", &["a"]);
     let mut twin = rows[0].clone();
-    if let Open::Pane { pane, .. } = &mut twin.open {
-        *pane = "pane-twin".into();
-    }
+    let Open::Pane { pane, .. } = &mut twin.open;
+    *pane = "pane-twin".into();
     rows.push(twin.clone());
     closed.observe("local", &shown, &rows, at(10));
     shown.panes.clear();
@@ -127,9 +126,8 @@ fn twins() -> (ClientShellSnapshot, Vec<Row>) {
     pane.foreground_cwd = Some("/src/herdr/twin".into());
     shown.panes.push(pane);
     let mut twin = rows[0].clone();
-    if let Open::Pane { pane, .. } = &mut twin.open {
-        *pane = "pane-twin".into();
-    }
+    let Open::Pane { pane, .. } = &mut twin.open;
+    *pane = "pane-twin".into();
     rows.push(twin);
     (shown, rows)
 }

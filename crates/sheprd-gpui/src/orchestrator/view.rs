@@ -31,7 +31,7 @@ mod tests;
 pub(crate) use look::Look;
 use pane::{PANE_DEFAULT, PaneDrag, Resize};
 pub(crate) use repo::RepoSpec;
-pub(crate) use rows::{LiveAgent, Tab as List, key_label};
+pub(crate) use rows::{LiveAgent, Tab as List};
 
 use super::{Notice, Provider, Request, Service, Snapshot, SyncState};
 use crate::{

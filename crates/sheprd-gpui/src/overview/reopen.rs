@@ -51,11 +51,9 @@ pub(crate) struct Job {
 }
 
 impl Job {
-    fn new(agent: &closed::Agent, kind: AgentKind, now: Instant) -> Option<Self> {
-        let super::Open::Pane { workspace, .. } = &agent.row.open else {
-            return None;
-        };
-        Some(Self {
+    fn new(agent: &closed::Agent, kind: AgentKind, now: Instant) -> Self {
+        let super::Open::Pane { workspace, .. } = &agent.row.open;
+        Self {
             boot: agent.boot.clone(),
             closed: agent.id,
             endpoint: agent.row.endpoint.clone(),
@@ -64,7 +62,7 @@ impl Job {
             line: command_line(kind),
             deadline: now + DEADLINE,
             sent: None,
-        })
+        }
     }
 
     /// Runs the job out of time, for tests of what a timeout does.
@@ -88,7 +86,7 @@ impl SheprdWindow {
         let Some(agent) = self.overview.closed.get(id) else {
             return;
         };
-        let Some(job) = kind(agent).and_then(|kind| Job::new(agent, kind, Instant::now())) else {
+        let Some(job) = kind(agent).map(|kind| Job::new(agent, kind, Instant::now())) else {
             return;
         };
         if self.script_slot_busy() {

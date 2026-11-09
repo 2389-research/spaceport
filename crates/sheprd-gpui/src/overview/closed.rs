@@ -48,11 +48,9 @@ pub(crate) struct Closed {
 }
 
 /// The pane an agent row stands in.
-fn pane(row: &Row) -> Option<&str> {
-    match &row.open {
-        Open::Pane { pane, .. } => Some(pane),
-        Open::Run(_) => None,
-    }
+fn pane(row: &Row) -> &str {
+    let Open::Pane { pane, .. } = &row.open;
+    pane
 }
 
 /// The folder a row's pane runs in: its foreground process's, else the
@@ -61,7 +59,7 @@ fn cwd(snapshot: &ClientShellSnapshot, row: &Row) -> Option<String> {
     let pane = snapshot
         .panes
         .iter()
-        .find(|shown| Some(shown.pane_id.as_str()) == pane(row))?;
+        .find(|shown| shown.pane_id == pane(row))?;
     [&pane.foreground_cwd, &pane.cwd]
         .into_iter()
         .flatten()
@@ -83,7 +81,7 @@ impl Closed {
     ) {
         let current: Vec<(Row, Option<String>)> = rows
             .into_iter()
-            .filter(|row| row.endpoint == endpoint && pane(row).is_some())
+            .filter(|row| row.endpoint == endpoint)
             .map(|row| (row.clone(), cwd(snapshot, row)))
             .collect();
         let seen = Seen {

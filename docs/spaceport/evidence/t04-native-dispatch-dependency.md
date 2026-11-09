@@ -12,7 +12,7 @@ remain `not_run`.
 - `orchestrator/section.rs` creates a view before the first Activity click to
   count issues and pull requests. `sidebar/activity.rs` and
   `sidebar/activity/counts.rs` show and count Pull requests, Issues, and Tasks.
-  `overview.rs` also reads failed runs from the same views.
+  Step 3a removed the separate failed-run projection from `overview.rs`.
 - `group_menu.rs`, `menu/workspace.rs`, `menu/settings.rs`,
   `window/commands.rs`, and `sheprd-commands/src/lib.rs` still open the native
   section. `ui panel pull-requests|issues|tasks` remains in
@@ -45,12 +45,13 @@ remain `not_run`.
 2. Verify mixed saved tab and chrome fixtures. Keep retired tab IDs reserved,
    preserve Core/page tabs and exact target behavior, and map retired Activity
    choices to a retained section without rewriting a user's saved file.
-3. In one code cut, remove Activity PR/Issues/Tasks and Overview run rows,
-   menus/commands/CLI/wire, the tick worker, its state and events, GitLab
-   account UI/config, and exclusive assets, locales, docs, tests and backend
-   modules. Preserve generic credentials, Core groups/tabs, terminal/chat,
-   manual file actions and system URL/file opening. Audit Git status and
-   separate PR actions after this cut; they are still reachable and excluded.
+3. Remove the Overview failed-run rows and their direct actions in a bounded
+   cut; then remove Activity PR/Issues/Tasks, menus/commands/CLI/wire, the tick
+   worker, its state and events, GitLab account UI/config, and exclusive
+   assets, locales, docs, tests and backend modules as one coherent route.
+   Preserve generic credentials, Core groups/tabs, terminal/chat, manual file
+   actions and system URL/file opening. Audit Git status and separate PR
+   actions after this cut; they are still reachable and excluded.
 
 Removing just `poll_orchestrators` would leave a visible section with no data.
 Before step 1, removing just the native section would have left the excluded
@@ -87,6 +88,60 @@ the later Orchestrator worker/CLI/UI deletion or A29/A30 acceptance.
 sheprd-gpui --all-targets` passed without new warnings. The Cargo test build
 emitted the pre-existing macOS compact-unwind linker and `block`
 future-compatibility warnings.
+
+## Step 3a: Overview failed-run route
+
+Source: isolated worktree at integration commit `ecca86a33`, with the T04
+context packet from `tools/spec.py context T04`. Direct references, typed
+variants, strings, saved settings, tests and crate dependencies were traced
+before editing. No Core or real account endpoint was used.
+
+The retained Overview page previously appended every failed Orchestrator run
+to its host-agent rows, with a `Run` open target that jumped to Issues. That
+made an excluded dispatch result visible and navigable outside the Activity
+PR/Issues/Tasks sections. `overview_rows` now reads host agents only. `Open`
+has only the pane target; the run icon, issue jump and unused fallback item
+label are gone. The English Overview empty text no longer promises failed
+runs. This does not change the retained device Overview's two-hour chart or
+history in `devices_overview/chart.rs` and `history.rs`; its Core source is
+still G-OBS blocked, so this cut makes no Core activity claim.
+
+Old `overview-marks.json` files can contain pinned run marks beside agent
+marks. The Run key remains a decode-only shape so the whole file still parses.
+Loading filters run marks in memory, keeps agent marks, and does not rewrite
+the file. The focused test failed before the filter because the old run pin
+loaded. The route's typed `Open::Run` variant is deleted, so no Overview row
+can navigate to Issues through that path. The active Activity sections,
+`poll_orchestrators`, GitLab account flow and `sheprd-orchestrator` worker remain
+reachable. T04 is still blocked by G-LINK; A29 and A30 remain `not_run`.
+
+Review found a second saved-state edge: validation ran before the retired Run
+filter. A run mark with an empty ID discarded the whole file, including valid
+agent marks. A second test failed on that case. The parser now checks the
+original total mark bound, filters decoded retired run marks, then validates
+the retained marks. A malformed active agent mark still rejects the file,
+and the tests check that loading never changes its exact bytes.
+
+`sheprd-orchestrator` still supplies the live Activity views, GitLab account
+types and error mapping; deleting the crate here would break those routes.
+Its `cache` and `private_file` modules also require a separate ownership audit
+before a later crate removal. The app's avatar cache is a separate module.
+
+Verification for this cut: the new saved-mark regression failed before the
+filter and passed after it. `cargo +1.99.0 test -p sheprd-gpui overview::tests
+--locked --offline --quiet` passed 83 tests after the parser fix, including
+retained device Overview history/chart behavior. The Core saved-group identity filter passed
+3 tests; `usage::tests` passed 102 tests. No new Rust warnings appeared; the
+macOS compact-unwind linker and `block` future-compatibility warnings remain.
+The exact-byte saved-file assertion passed before the parser fix, and the
+`overview::tests::marks` filter then passed all 9 tests, including both
+malformed-key contracts. `just format-check`, `just check-file-size`,
+`just check-sorted`, `git diff --check`, package `tools/spec.py check`, and
+all 21 package tool tests passed. The first package command with system
+Python lacked `jsonschema`; rerunning through the existing package virtual
+environment passed. No native macOS window check ran: the desktop was at
+the login window in this session. A29/A30 still need full negative reachability and
+native-platform evidence.
 
 ## Verification for the original audit
 

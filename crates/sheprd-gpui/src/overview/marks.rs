@@ -5,7 +5,7 @@
 //!
 //! A hold lasts until the row needs a look again: a snooze until its time,
 //! then the row comes back marked as woken; either hold as soon as its row
-//! turns blocked, failed, or working from the state it was held in.
+//! turns blocked or working from the state it was held in.
 
 use super::{
     Error,
@@ -98,10 +98,19 @@ struct Saved {
 
 fn parse(bytes: &[u8]) -> Result<Vec<Mark>, Error> {
     let saved: Saved = serde_json::from_slice(bytes)?;
-    if saved.marks.len() > MAX_MARKS || !saved.marks.iter().all(Mark::valid) {
+    if saved.marks.len() > MAX_MARKS {
         return Err(Error::InvalidMarks);
     }
-    Ok(saved.marks)
+    // Old run keys can still be decoded so they do not invalidate agent marks.
+    let marks: Vec<_> = saved
+        .marks
+        .into_iter()
+        .filter(|mark| !matches!(mark.key, Key::Run { .. }))
+        .collect();
+    if !marks.iter().all(Mark::valid) {
+        return Err(Error::InvalidMarks);
+    }
+    Ok(marks)
 }
 
 /// The app's marks, least recently changed first.
