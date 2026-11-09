@@ -1,6 +1,6 @@
 //! `events` and `wait`. Events are found by comparing, every tick, what the
 //! app shows with what it showed the tick before, so no feature has to
-//! report them: windows, the app's tabs, kept notes, worktree notes, and
+//! report them: windows, the app's tabs, worktree notes, and
 //! host status. The log is bounded; a slow reader misses the oldest.
 use super::{Watches, main_windows, socket, window_for};
 use crate::{
@@ -27,8 +27,6 @@ struct Seen {
     windows: Vec<u64>,
     active: Option<u64>,
     tabs: BTreeMap<u64, String>,
-    /// Kept batches by number, with the pane each is for.
-    kept: Vec<(u64, String)>,
     notes: u64,
     /// `(window, host)` to status.
     hosts: BTreeMap<(u64, String), String>,
@@ -117,12 +115,6 @@ fn look(cx: &mut App) -> Seen {
             .map(|tab| (u64::from(tab.id), tab.workspace_id.clone()))
             .collect();
     }
-    if let Some(feedback) = cx.try_global::<crate::browser::Feedback>() {
-        seen.kept = feedback
-            .kept()
-            .map(|(added, target)| (added, target.pane_id.clone()))
-            .collect();
-    }
     seen.notes = crate::worktree_notes::Notes::of(cx).map_or(0, |notes| notes.revision());
     seen
 }
@@ -156,12 +148,6 @@ fn compare(log: &mut Log, before: &Seen, now: &Seen) {
                 Some(workspace.clone()),
             );
         }
-    }
-    // Every batch kept since the last tick, even when the queue was full
-    // and dropped an older one to make room.
-    let newest = before.kept.last().map_or(0, |(added, _)| *added);
-    for (_, pane) in now.kept.iter().filter(|(added, _)| *added > newest) {
-        log.push(EventKind::Feedback, pane.clone(), None);
     }
     if now.notes != before.notes {
         log.push(EventKind::Note, now.notes.to_string(), None);

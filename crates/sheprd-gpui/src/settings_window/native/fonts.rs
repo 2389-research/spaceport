@@ -1,5 +1,5 @@
 //! Native font section checks: inline role rows, picker, and size editing.
-#[cfg(feature = "mockup")]
+#[cfg(feature = "integration-test")]
 use super::super::themes;
 use super::*;
 use crate::{config::FontFace, font_picker::FontTarget};
@@ -79,7 +79,7 @@ pub(super) async fn verify_fonts(
             anyhow::Ok((path, bytes))
         })
         .await?;
-    #[cfg(feature = "mockup")]
+    #[cfg(feature = "integration-test")]
     if expected.width == px(960.) && std::env::var_os("HERDR_TEST_SETTINGS_CAPTURE").is_some() {
         settings.update(cx, |view, _, cx| {
             view.accept_theme_choice(
@@ -175,7 +175,7 @@ pub(super) async fn verify_fonts(
                 .await;
         }
     }
-    #[cfg(feature = "mockup")]
+    #[cfg(feature = "integration-test")]
     if expected.width == px(960.) {
         capture_settings(settings, "fonts.png", cx).await?;
     }
@@ -263,7 +263,7 @@ pub(super) async fn verify_fonts(
                     .timer(Duration::from_millis(10))
                     .await;
             }
-            #[cfg(feature = "mockup")]
+            #[cfg(feature = "integration-test")]
             if expected.width == px(960.) {
                 capture_settings(settings, "font-picker.png", cx).await?;
             }

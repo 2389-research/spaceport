@@ -16,27 +16,12 @@ pub enum LaunchMode {
     /// Hand a `spaceport://` link to the running app, or start the app
     /// and follow it there.
     Link(crate::link::Link),
-    /// Show the UI variants compiled in from `HERDR_MOCKUP_FILE`.
-    #[cfg(feature = "mockup")]
-    Mockup(MockupOptions),
     #[cfg(feature = "integration-test")]
     Integration,
     #[cfg(feature = "integration-test")]
     Sidebar,
     #[cfg(feature = "integration-test")]
     Performance,
-}
-
-/// `spaceport --mockup [--feedback PATH] [--capture PATH]`: never connects
-/// to a daemon.
-#[cfg(feature = "mockup")]
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct MockupOptions {
-    /// Where "Send to agent" writes the user's picks and notes when the running
-    /// Sheprd cannot hand them to the calling pane's agent.
-    pub feedback: Option<std::path::PathBuf>,
-    /// Where to save a PNG of the window once it has drawn.
-    pub capture: Option<std::path::PathBuf>,
 }
 
 #[derive(Debug)]
@@ -53,14 +38,12 @@ pub enum CliError {
     DuplicateSocket,
     #[error("Unknown option: {}", .0.to_string_lossy())]
     UnknownOption(OsString),
-    #[error("browser requires a command: reload, feedback, skill, or --help")]
+    #[error("browser requires a command: reload, list, skill, or --help")]
     MissingBrowserCommand,
     #[error("Unknown browser command: {}", .0.to_string_lossy())]
     UnknownBrowserCommand(OsString),
     #[error("browser navigate requires one URL")]
     MissingUrl,
-    #[error("--wait requires a number of seconds")]
-    InvalidWait,
     #[error("Unexpected browser argument: {}", .0.to_string_lossy())]
     UnexpectedArgument(OsString),
     #[error("browser arguments must be UTF-8")]
@@ -92,12 +75,6 @@ pub enum CliError {
     Link(#[from] crate::link::Error),
     #[error("a spaceport:// link must be the only argument")]
     LinkArguments,
-    #[cfg(feature = "mockup")]
-    #[error("{0} requires a path")]
-    MissingMockupPath(&'static str),
-    #[cfg(feature = "mockup")]
-    #[error("{0} may only be specified once")]
-    DuplicateMockupPath(&'static str),
     #[cfg(feature = "integration-test")]
     #[error("native test modes are mutually exclusive and may only be specified once")]
     ConflictingTestModes,
@@ -131,28 +108,6 @@ pub fn build_info() -> &'static str {
     &record[PREFIX_LEN..record.len() - 1]
 }
 
-/// The arguments after a leading `--mockup`. Paths stay OS strings.
-#[cfg(feature = "mockup")]
-fn parse_mockup(mut args: impl Iterator<Item = OsString>) -> Result<LaunchMode, CliError> {
-    let mut options = MockupOptions::default();
-    while let Some(arg) = args.next() {
-        let (flag, slot) = match arg.to_str() {
-            Some("--help" | "-h") => return Ok(LaunchMode::Help),
-            Some("--feedback") => ("--feedback", &mut options.feedback),
-            Some("--capture") => ("--capture", &mut options.capture),
-            _ => return Err(CliError::UnknownOption(arg)),
-        };
-        let path = args
-            .next()
-            .filter(|value| !value.is_empty() && !value.as_encoded_bytes().starts_with(b"-"))
-            .ok_or(CliError::MissingMockupPath(flag))?;
-        if slot.replace(path.into()).is_some() {
-            return Err(CliError::DuplicateMockupPath(flag));
-        }
-    }
-    Ok(LaunchMode::Mockup(options))
-}
-
 impl LaunchOptions {
     pub fn parse(args: impl IntoIterator<Item = impl Into<OsString>>) -> Result<Self, CliError> {
         let mut args = args.into_iter().map(Into::into).peekable();
@@ -172,14 +127,6 @@ impl LaunchOptions {
             return Ok(Self {
                 target: ConnectTarget::Local,
                 mode: LaunchMode::Link(crate::link::Link::parse(&link)?),
-            });
-        }
-        #[cfg(feature = "mockup")]
-        if args.peek().is_some_and(|arg| arg == "--mockup") {
-            args.next();
-            return Ok(Self {
-                target: ConnectTarget::Local,
-                mode: parse_mockup(args)?,
             });
         }
         let mut socket = None;

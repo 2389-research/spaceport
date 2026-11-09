@@ -54,9 +54,7 @@ mod middle_click;
 /// Pages a control request opens, only in a workspace the window shows.
 mod requests;
 
-/// Notes a control request sends, only to a pane the window shows.
-mod requested_notes;
-
+/// Explicit URL and file opening through the system handler.
 mod system_open;
 /// Browser tabs in a group's strip: reordering and growing in.
 mod tab_strip;

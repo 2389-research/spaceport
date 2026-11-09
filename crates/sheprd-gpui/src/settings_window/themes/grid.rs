@@ -72,7 +72,7 @@ impl SettingsWindow {
     }
 
     /// True once no palette load is pending and every visible card has one.
-    #[cfg(all(feature = "integration-test", feature = "mockup", target_os = "macos"))]
+    #[cfg(all(feature = "integration-test", target_os = "macos"))]
     pub(in crate::settings_window) fn grid_ready(&self) -> bool {
         let grid = &self.themes.grid;
         !grid.running && !grid.queued && self.visible_palettes_cached()

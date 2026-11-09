@@ -1,4 +1,4 @@
-//! `browser ...`: page tabs, and the notes the user sends from them.
+//! `browser ...`: page tabs.
 use super::{Args, CliError, ZoomChange};
 use std::ffi::OsString;
 
@@ -6,10 +6,6 @@ use std::ffi::OsString;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BrowserCommand {
     Reload,
-    /// Waits up to `wait` seconds for notes; zero only checks.
-    Feedback {
-        wait: u64,
-    },
     Skill,
     /// Prints the explainer kit's example page.
     Example,
@@ -128,23 +124,6 @@ pub(super) fn parse(args: &mut Args) -> Result<BrowserCommand, CliError> {
                 },
                 args,
             );
-        }
-        Some("feedback") => {
-            let mut wait = 0;
-            while let Some(arg) = args.next() {
-                match arg.to_str() {
-                    Some("--help" | "-h") => return Ok(BrowserCommand::Help),
-                    Some("--wait") => {
-                        wait = args
-                            .next()
-                            .and_then(|value| value.to_str()?.parse::<u64>().ok())
-                            .filter(|seconds| *seconds > 0)
-                            .ok_or(CliError::InvalidWait)?;
-                    }
-                    _ => return Err(CliError::UnexpectedArgument(arg)),
-                }
-            }
-            return Ok(BrowserCommand::Feedback { wait });
         }
         _ => return Err(CliError::UnknownBrowserCommand(command)),
     }

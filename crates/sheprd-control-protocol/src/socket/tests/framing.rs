@@ -43,16 +43,16 @@ fn a_written_message_is_one_line_the_reader_takes_back() {
 
 #[test]
 fn an_answer_must_leave_room_for_its_newline() {
-    assert!(fits(&Response::Feedback {
-        text: Some("n".into()),
+    assert!(fits(&Response::Done {
+        message: "n".into()
     }));
-    let overhead = serde_json::to_vec(&Response::Feedback {
-        text: Some(String::new()),
+    let overhead = serde_json::to_vec(&Response::Done {
+        message: String::new(),
     })
     .unwrap()
     .len();
-    let text = |len| Response::Feedback {
-        text: Some("n".repeat(len)),
+    let text = |len| Response::Done {
+        message: "n".repeat(len),
     };
     assert!(fits(&text(MAX_MESSAGE - overhead - 1)));
     assert!(!fits(&text(MAX_MESSAGE - overhead)));

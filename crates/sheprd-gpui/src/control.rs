@@ -1,5 +1,5 @@
 //! Lets processes on this machine, such as an agent in a Herdr pane, drive
-//! the parts of the app Herdr cannot: hear back page notes, open the app's own tabs, and read or change
+//! the parts of the app Herdr cannot: open the app's own tabs, and read or change
 //! state only this client keeps. Herdr itself has no way to reach a client,
 //! so the app listens on a socket of its own and `spaceport <command> ...`
 //! talks to it. Only this user's local processes can reach it: an agent on
@@ -11,13 +11,10 @@ mod server;
 use crate::SheprdWindow;
 #[cfg(windows)]
 pub(crate) use client::send_focus;
-#[cfg(feature = "mockup")]
-pub(crate) use client::send_notes;
 pub(crate) use client::{run, send_link, status as exit_status};
 use gpui::App;
 use protocol::Caller;
 pub use protocol::ErrorCode;
-pub(crate) use protocol::NotesTo;
 pub(crate) use protocol::Response;
 pub use protocol::{
     app::{FontSize, Size, Switch},
@@ -52,11 +49,10 @@ fn socket_path() -> crate::Result<PathBuf> {
 }
 
 /// What a request asks the windows to find: a workspace, optionally of one
-/// particular local daemon, and the pane asking.
+/// particular local daemon.
 pub(crate) struct Target<'a> {
     pub daemon: Option<&'a Path>,
     pub workspace: Option<&'a str>,
-    pub pane: Option<&'a str>,
 }
 
 impl Target<'_> {

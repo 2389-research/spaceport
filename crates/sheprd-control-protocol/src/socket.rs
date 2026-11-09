@@ -2,14 +2,14 @@
 //! pipe on Windows. A worker accepts connections and serves each on a
 //! thread of its own, up to a bound: it reads one bounded request, hands it
 //! to the UI through a bounded queue, and writes back the answer the UI
-//! gives it. A feedback request may wait minutes for the user, so
-//! connections cannot share one thread.
+//! gives it. Waiting requests may take minutes, so connections cannot
+//! share one thread.
 #[cfg(windows)]
 mod pipe;
 #[cfg(unix)]
 mod unix;
 
-use crate::protocol::{ErrorCode, FeedbackRequest, MAX_MESSAGE, Request, Response};
+use crate::protocol::{ErrorCode, MAX_MESSAGE, Request, Response};
 #[cfg(windows)]
 use pipe as transport;
 use std::{
@@ -81,10 +81,6 @@ struct Reply {
 
 pub enum Event {
     Request(Incoming),
-    Undelivered {
-        request: FeedbackRequest,
-        text: String,
-    },
 }
 
 impl Incoming {
@@ -99,7 +95,7 @@ impl Incoming {
             .live
     }
 
-    /// Return ownership if the worker stopped waiting, so notes can be kept.
+    /// Return ownership if the worker stopped waiting.
     pub fn try_respond(self, response: Response) -> Result<(), Response> {
         let reply = self
             .reply
@@ -188,7 +184,6 @@ impl Server {
     pub fn next(&self) -> Option<Incoming> {
         match self.requests.recv_timeout(Duration::from_secs(5)).ok()? {
             Event::Request(incoming) => Some(incoming),
-            Event::Undelivered { .. } => None,
         }
     }
 }
@@ -264,21 +259,17 @@ fn refuse(stream: &Connection) {
 /// Serves one request on a connection whose timeouts are already set.
 fn serve(stream: &Connection, queue: &SyncSender<Event>) {
     let request = read_line(stream).and_then(|line| Ok(serde_json::from_slice::<Request>(&line)?));
-    let (request, response) = match request {
+    let response = match request {
         Ok(request) => {
             if let Err(error) = stream.watch(true) {
                 tracing::debug!(%error, "Control disconnect monitoring failed");
                 return;
             }
-            let response = answer(request.clone(), queue, stream);
-            (Some(request), response)
+            answer(request, queue, stream)
         }
-        Err(error) => (
-            None,
-            Response::error(ErrorCode::InvalidRequest, error.to_string()),
-        ),
+        Err(error) => Response::error(ErrorCode::InvalidRequest, error.to_string()),
     };
-    finish_response(stream, queue, request, response);
+    finish_response(stream, response);
 }
 
 /// Whether an answer fits the bound the caller reads with, newline included.
@@ -286,25 +277,12 @@ fn fits(response: &Response) -> bool {
     serde_json::to_vec(response).is_ok_and(|bytes| bytes.len() < MAX_MESSAGE)
 }
 
-fn finish_response(
-    stream: &Connection,
-    queue: &SyncSender<Event>,
-    request: Option<Request>,
-    response: Response,
-) {
+fn finish_response(stream: &Connection, response: Response) {
     // A feature that would send more is refused here rather than cut off
-    // mid-line. Notes that cannot go out are kept again, as on any failed write.
+    // mid-line.
     let response = if fits(&response) {
         response
     } else {
-        if let (Some(Request::Feedback(request)), Response::Feedback { text: Some(text) }) =
-            (&request, response)
-        {
-            let _ = queue.send(Event::Undelivered {
-                request: request.clone(),
-                text,
-            });
-        }
         tracing::warn!("Control answer over {MAX_MESSAGE} bytes refused");
         Response::error(
             ErrorCode::Failed,
@@ -317,13 +295,6 @@ fn finish_response(
         .and_then(|()| write_line(stream, &response));
     if let Err(error) = written {
         tracing::debug!(%error, "Control response failed");
-        if let (Some(Request::Feedback(request)), Response::Feedback { text: Some(text) }) =
-            (request, response)
-        {
-            // Bounded backpressure is safe here, off the UI thread. The queue
-            // and connection limits also bound notes awaiting their return.
-            let _ = queue.send(Event::Undelivered { request, text });
-        }
     }
 }
 

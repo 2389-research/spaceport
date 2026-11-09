@@ -29,7 +29,7 @@ pub(super) fn probe(index: usize) -> impl IntoElement {
     .size_full()
 }
 
-#[cfg(feature = "mockup")]
+#[cfg(feature = "integration-test")]
 async fn capture_settings(
     settings: WindowHandle<SettingsWindow>,
     extension: &str,
@@ -97,7 +97,7 @@ pub(crate) async fn verify_native(
     source: WindowHandle<SheprdWindow>,
     cx: &mut AsyncApp,
 ) -> Result<()> {
-    #[cfg(feature = "mockup")]
+    #[cfg(feature = "integration-test")]
     let capture = std::env::var_os("HERDR_TEST_SETTINGS_CAPTURE").map(std::path::PathBuf::from);
     let before = source.update(cx, |view, _, _| view.input_probe)?;
     AnyWindowHandle::from(source).update(cx, |_, window, cx| -> Result<()> {
@@ -243,7 +243,7 @@ pub(crate) async fn verify_native(
             if section == Section::Fonts {
                 verify_fonts(settings, source, expected, cx).await?;
             }
-            #[cfg(feature = "mockup")]
+            #[cfg(feature = "integration-test")]
             if std::env::var_os("HERDR_TEST_SETTINGS_CAPTURE").is_some()
                 && matches!(section, Section::Sidebar | Section::General)
             {
@@ -337,7 +337,7 @@ pub(crate) async fn verify_native(
                         .timer(Duration::from_millis(10))
                         .await;
                 }
-                #[cfg(feature = "mockup")]
+                #[cfg(feature = "integration-test")]
                 if columns == 4 && std::env::var_os("HERDR_TEST_SETTINGS_CAPTURE").is_some() {
                     let deadline = Instant::now() + Duration::from_secs(5);
                     while !settings.update(cx, |view, _, _| view.grid_ready())? {
@@ -361,7 +361,7 @@ pub(crate) async fn verify_native(
     let (filtered, unfiltered) = verify_themes(
         settings,
         source,
-        #[cfg(feature = "mockup")]
+        #[cfg(feature = "integration-test")]
         capture,
         cx,
     )

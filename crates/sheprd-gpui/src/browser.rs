@@ -14,7 +14,6 @@ mod chat_pages;
 mod closed;
 #[cfg(any(target_os = "macos", windows))]
 mod favicon;
-mod feedback;
 mod group_motion;
 mod group_settle;
 mod groups;
@@ -57,8 +56,6 @@ mod zoom;
 #[cfg(any(target_os = "macos", windows))]
 pub(crate) use chat_pages::chat_page_visible;
 pub(crate) use closed::ClosedHerdrTab;
-pub(crate) use feedback::{Batch, Feedback, FeedbackKey};
-pub(crate) use feedback::{TAKE_BUDGET, json_size};
 pub(crate) use group_motion::Fold;
 #[cfg(test)]
 pub(crate) use groups::GroupIds;

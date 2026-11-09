@@ -85,7 +85,7 @@ legacy launch target; it does not yet join the selected Core hub.
 | --- | --- |
 | `tab [list]` | Current page, Devices, and Core terminal tabs with IDs; retired specialized tabs are omitted |
 | `tab focus\|close ID` | |
-| `browser reload\|feedback` | See [browser tabs](../crates/sheprd-gpui/README.md#browser-tabs) |
+| `browser reload` | See [browser tabs](../crates/sheprd-gpui/README.md#browser-tabs) |
 | `browser list` | Page tabs only |
 | `browser navigate ID URL` | Load another address in a page tab |
 | `browser back\|forward ID` | |
@@ -101,7 +101,6 @@ legacy launch target; it does not yet join the selected Core hub.
 | `notes [list]` | Every worktree note |
 | `notes get\|clear`, `notes set TEXT` | The note on your checkout (its repository and branch) |
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
-| `feedback [--wait S]` | Page notes the user sent your pane |
 | `scripts [list]` | The repository's `.herdr/worktree.toml` scripts (no app needed) |
 | `scripts setup\|run` | Run one in a new tab; an unseen script still asks first. |
 | `chat [status]` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
@@ -223,9 +222,8 @@ The request is `{"method": "link", "caller", "op": {"url"}}`.
 One JSON request line, one JSON response line, then the socket closes. A
 request is `{"method", "caller", "op"}`, where `caller` carries the pane,
 workspace, daemon socket, and window, and `op` is tagged with `"op"`. Browser
-requests keep their original flat form (`browser.open`, `browser.reload`,
-`browser.feedback`, `notes.send`). `status` reports the protocol version,
-currently 30. Requests and responses are bounded to 256 KiB, a request that
+`browser.reload` keeps its flat form. `status` reports the protocol version,
+currently 31. Requests and responses are bounded to 256 KiB, a request that
 waits says for how long (at most 600 seconds), and the app answers at most a
 few requests at a time.
 

@@ -1,7 +1,7 @@
 //! The app's side of the control socket: requests are answered on the UI
 //! thread, a few at a time, from the windows and the app's globals. Most are
-//! answered at once; a request that waits for something (notes, an event, a
-//! page) is parked as a [`Watch`] and checked on every tick.
+//! answered at once; a request that waits for a condition is parked as a
+//! [`Watch`] and checked on every tick.
 mod app;
 mod browser;
 mod chat;
@@ -17,19 +17,16 @@ use super::{
     protocol::{Caller, ErrorCode, MAX_WAIT_SECONDS, Request, Response},
     socket, socket_path, valid_caller,
 };
-use crate::{
-    SheprdWindow,
-    browser::{Feedback, FeedbackKey, Scope},
-};
-use browser::{feedback, notes, reload, serve_waiters};
+use crate::SheprdWindow;
+use browser::reload;
 use gpui::{App, Context, Window, WindowHandle};
 use std::{
     path::Path,
     time::{Duration, Instant},
 };
 
-/// Requests parked at once, besides feedback waiters; the socket's own
-/// connection bound keeps the real number lower.
+/// Requests parked at once; the socket's own connection bound keeps the
+/// real number lower.
 const MAX_WATCHES: usize = 16;
 
 /// Looks for a parked request's answer; `None` keeps it waiting.
@@ -111,7 +108,6 @@ fn deadline(wait: Duration, now: Instant) -> Instant {
 /// Everything the serving loop keeps between ticks.
 #[derive(Default)]
 struct State {
-    waiters: Vec<browser::Waiter>,
     watches: Watches,
 }
 
@@ -185,7 +181,6 @@ pub(super) fn target(caller: &Caller) -> Target<'_> {
     Target {
         daemon: caller.daemon_socket.as_deref().map(Path::new),
         workspace: caller.workspace_id.as_deref(),
-        pane: caller.pane_id.as_deref(),
     }
 }
 
@@ -229,8 +224,6 @@ pub(super) fn in_free_window(
 fn named_window(request: &Request) -> Option<u64> {
     match request {
         Request::Reload(caller) | Request::Status(caller) => caller.window,
-        Request::Notes(notes) => notes.caller.window,
-        Request::Feedback(_) => None,
         Request::App(call) => call.caller.window,
         Request::Window(call) => call.caller.window,
         Request::Ui(call) => call.caller.window,
@@ -271,8 +264,6 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
     }
     match incoming.request.clone() {
         Request::Reload(caller) => incoming.respond(reload(&caller, cx)),
-        Request::Feedback(request) => feedback(&request, incoming, &mut state.waiters, cx),
-        Request::Notes(request) => incoming.respond(notes(&request, cx)),
         Request::Status(caller) => incoming.respond(app::status(&caller, cx)),
         Request::App(call) => incoming.respond(app::app(call, cx)),
         Request::Window(call) => incoming.respond(app::window(call, cx)),
@@ -286,20 +277,6 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
         Request::Link(call) => incoming.respond(links::serve(call, cx)),
         Request::Chat(call) => incoming.respond(chat::serve(call, cx)),
     }
-}
-
-fn keep_undelivered(request: super::protocol::FeedbackRequest, text: String, cx: &mut App) {
-    let Some(daemon) = request.daemon_socket else {
-        return;
-    };
-    cx.default_global::<Feedback>()
-        .keep_again(crate::browser::Batch {
-            target: FeedbackKey {
-                scope: Scope::local(Path::new(&daemon)),
-                pane_id: request.pane_id,
-            },
-            text,
-        });
 }
 
 /// Starts answering requests. A second app instance leaves the first one's
@@ -327,19 +304,14 @@ pub(crate) fn install(cx: &mut App) {
             timer.timer(Duration::from_millis(50)).await;
             cx.update(|cx| {
                 events::record(cx);
-                serve_waiters(&mut state.waiters, cx);
                 for event in server.drain() {
                     match event {
                         socket::Event::Request(incoming) if incoming.is_live() => {
                             serve(incoming, &mut state, cx);
                         }
                         socket::Event::Request(_) => {}
-                        socket::Event::Undelivered { request, text } => {
-                            keep_undelivered(request, text, cx);
-                        }
                     }
                 }
-                serve_waiters(&mut state.waiters, cx);
                 state.watches.serve(cx);
             });
         }

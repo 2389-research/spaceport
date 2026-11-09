@@ -42,8 +42,6 @@ pub enum EventKind {
     WindowFocused,
     TabOpened,
     TabClosed,
-    /// Notes were kept for a pane's `feedback`.
-    Feedback,
     /// A worktree note changed.
     Note,
     /// A host's connection status changed.
@@ -57,7 +55,6 @@ impl EventKind {
         Self::WindowFocused,
         Self::TabOpened,
         Self::TabClosed,
-        Self::Feedback,
         Self::Note,
         Self::Host,
     ];
@@ -69,7 +66,6 @@ impl EventKind {
             Self::WindowFocused => "window_focused",
             Self::TabOpened => "tab_opened",
             Self::TabClosed => "tab_closed",
-            Self::Feedback => "feedback",
             Self::Note => "note",
             Self::Host => "host",
         }

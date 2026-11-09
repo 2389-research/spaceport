@@ -1,6 +1,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 use super::*;
-use crate::protocol::{Caller, FeedbackRequest, MAX_WAIT_SECONDS};
+use crate::protocol::{
+    Call, Caller, MAX_WAIT_SECONDS,
+    events::{EventsOp, Reply},
+};
 use test_support::{Address, address};
 
 mod cancellation;
@@ -13,6 +16,18 @@ mod unix;
 
 fn reload() -> Request {
     Request::Reload(Caller::default())
+}
+
+fn waiting_events(wait_seconds: u64) -> Request {
+    Request::Events(Call {
+        caller: Caller::default(),
+        op: EventsOp::Poll {
+            after: None,
+            instance: None,
+            wait_seconds,
+            kinds: Vec::new(),
+        },
+    })
 }
 
 /// Both ends of one connection: the server's, timeouts set, and a caller's.
@@ -80,19 +95,10 @@ fn a_waiting_caller_does_not_hold_up_the_next_one() {
     let server = Server::bind(&address.path).unwrap();
     let waiting = thread::spawn({
         let path = address.path.clone();
-        move || {
-            call(
-                &path,
-                &Request::Feedback(FeedbackRequest {
-                    pane_id: "w_1:p1".into(),
-                    daemon_socket: Some("/tmp/daemon.sock".into()),
-                    wait_seconds: 30,
-                }),
-            )
-        }
+        move || call(&path, &waiting_events(30))
     });
     let parked = server.next().unwrap();
-    assert!(matches!(parked.request, Request::Feedback(_)));
+    assert!(matches!(parked.request, Request::Events(_)));
     // While the first caller waits for the user, another is answered.
     let next = thread::spawn({
         let path = address.path.clone();
@@ -106,22 +112,20 @@ fn a_waiting_caller_does_not_hold_up_the_next_one() {
         next.join().unwrap().unwrap(),
         Response::Reloaded { tabs: 0 }
     );
-    parked.respond(Response::Feedback { text: None });
-    assert_eq!(
-        waiting.join().unwrap().unwrap(),
-        Response::Feedback { text: None }
-    );
+    let expired = Response::Events {
+        reply: Reply::Events {
+            events: Vec::new(),
+            next: 0,
+            instance: 0,
+        },
+    };
+    parked.respond(expired.clone());
+    assert_eq!(waiting.join().unwrap().unwrap(), expired);
 }
 
 #[test]
-fn feedback_waits_are_bounded() {
-    let wait = |wait_seconds| {
-        answer_timeout(&Request::Feedback(FeedbackRequest {
-            pane_id: "p".into(),
-            daemon_socket: Some("/tmp/daemon.sock".into()),
-            wait_seconds,
-        }))
-    };
+fn event_waits_are_bounded() {
+    let wait = |wait_seconds| answer_timeout(&waiting_events(wait_seconds));
     assert_eq!(wait(5), ANSWER_TIMEOUT + Duration::from_secs(5));
     assert_eq!(
         wait(u64::MAX),
@@ -131,22 +135,15 @@ fn feedback_waits_are_bounded() {
 }
 
 #[test]
-fn an_answer_over_the_bound_is_refused_and_its_notes_kept() {
+fn an_answer_over_the_bound_is_refused() {
     let address = address();
     let server = Server::bind(&address.path).unwrap();
-    let request = FeedbackRequest {
-        pane_id: "w_1:p1".into(),
-        daemon_socket: Some("/tmp/daemon.sock".into()),
-        wait_seconds: 0,
-    };
     let caller = thread::spawn({
         let path = address.path.clone();
-        let request = request.clone();
-        move || call(&path, &Request::Feedback(request))
+        move || call(&path, &reload())
     });
-    let notes = "n".repeat(MAX_MESSAGE);
-    server.next().unwrap().respond(Response::Feedback {
-        text: Some(notes.clone()),
+    server.next().unwrap().respond(Response::Done {
+        message: "n".repeat(MAX_MESSAGE),
     });
     assert!(matches!(
         caller.join().unwrap().unwrap(),
@@ -155,15 +152,7 @@ fn an_answer_over_the_bound_is_refused_and_its_notes_kept() {
             ..
         }
     ));
-    let deadline = Instant::now() + Duration::from_secs(5);
-    loop {
-        if let Some(Event::Undelivered { text, .. }) = server.drain().next() {
-            assert_eq!(text, notes, "the notes are kept again");
-            break;
-        }
-        assert!(Instant::now() < deadline, "the notes were lost");
-        thread::sleep(Duration::from_millis(10));
-    }
+    assert!(server.drain().next().is_none());
 }
 
 #[test]

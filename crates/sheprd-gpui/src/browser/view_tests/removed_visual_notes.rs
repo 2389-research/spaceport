@@ -25,12 +25,7 @@ fn page_send_message_cannot_queue_agent_feedback(cx: &mut gpui::TestAppContext) 
             );
         });
     });
-    view.read_with(cx, |view, _| assert_eq!(view.deliveries.len(), 0));
-    assert_eq!(
-        cx.update(|_, cx| {
-            cx.try_global::<crate::browser::Feedback>()
-                .map_or(0, |feedback| feedback.kept().count())
-        }),
-        0
-    );
+    view.read_with(cx, |view, _| {
+        assert!(view.tab_favicon(crate::browser::TabId::test(0)).is_none());
+    });
 }

@@ -52,10 +52,6 @@ pub enum ControlCommand {
     Chat(ChatCommand),
     Notes(NotesCommand),
     Worktree(WorktreeCommand),
-    /// Every kind of note the user sent this pane: page, review, terminal.
-    Feedback {
-        wait: u64,
-    },
     /// List the scripts, or run one.
     Scripts {
         kind: Option<Script>,
@@ -109,10 +105,7 @@ pub const FAMILIES: &[(&str, &str)] = &[
         "Whether Spaceport runs, its version, windows, and hosts",
     ),
     ("skill", "Print the agent skill describing these commands"),
-    (
-        "browser",
-        "Browser tabs: reload, list, navigate, page notes",
-    ),
+    ("browser", "Browser tabs: reload, list, navigate"),
     ("app", "Bring the app forward, hide it, or quit it"),
     (
         "window",
@@ -127,10 +120,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ),
     ("notes", "Notes kept on worktrees"),
     ("worktree", "Mute or unmute the caller's worktree"),
-    (
-        "feedback",
-        "Notes the user sent this pane, from pages, reviews, or terminals",
-    ),
     ("scripts", "A repository's worktree setup and run scripts"),
     ("host", "List the window's hosts, show one, or mute one"),
     (
@@ -152,7 +141,7 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("sound", "List or play notification sounds"),
     ("bell", "Ring the terminal bell"),
     ("events", "What happened in the app, as a stream"),
-    ("wait", "Wait for feedback, a window, or a tab to close"),
+    ("wait", "Wait for a window or a tab to close"),
     (
         "run",
         "Run any app command by name, as the command palette does",
@@ -258,9 +247,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
         "chat" => ControlCommand::Chat(chat::chat(args)?),
         "notes" => ControlCommand::Notes(work::notes(args)?),
         "worktree" => ControlCommand::Worktree(work::worktree(args)?),
-        "feedback" => ControlCommand::Feedback {
-            wait: wait_option(args, "--wait")?,
-        },
         "scripts" => ControlCommand::Scripts {
             kind: work::script_kind(args)?,
         },

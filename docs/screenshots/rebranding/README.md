@@ -2,7 +2,7 @@
 
 These after captures were taken on macOS on 2026-11-03 from the isolated
 native sidebar fixture, using its existing GPU capture facility with the
-`integration-test,mockup` features. They contain fixture settings rather than
+`integration-test` feature. They contain fixture settings rather than
 personal sessions. The capture run passed; the separate `just test-sidebar`
 run passed all three tests.
 

@@ -31,12 +31,12 @@ use serde::{Deserialize, Serialize};
 /// 28: window listings report selected Core presentation group identity.
 /// 29: removed native PR, issue, and task activity panel control targets.
 /// 30: removed `app.open` and `work.script.archive` requests.
-pub const PROTOCOL_VERSION: u32 = 30;
+/// 31: removed design feedback and page-note requests and responses.
+pub const PROTOCOL_VERSION: u32 = 31;
 
-/// Bounds a request and a response alike. A response can carry a batch of
-/// notes, each with a bounded snippet of the page.
+/// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;
-/// The longest `browser feedback --wait`, in seconds.
+/// The longest control wait, in seconds.
 pub const MAX_WAIT_SECONDS: u64 = 600;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,10 +44,6 @@ pub const MAX_WAIT_SECONDS: u64 = 600;
 pub enum Request {
     #[serde(rename = "browser.reload")]
     Reload(Caller),
-    #[serde(rename = "browser.feedback")]
-    Feedback(FeedbackRequest),
-    #[serde(rename = "notes.send")]
-    Notes(NotesRequest),
     #[serde(rename = "status")]
     Status(Caller),
     #[serde(rename = "app")]
@@ -95,7 +91,6 @@ impl Request {
     /// requests wait for the user, a page, or an event on purpose.
     pub fn wait_seconds(&self) -> u64 {
         let wait = match self {
-            Self::Feedback(request) => request.wait_seconds,
             Self::Events(call) => call.op.wait_seconds(),
             Self::Tab(call) => call.op.wait_seconds(),
             Self::Host(call) => call.op.wait_seconds(),
@@ -110,7 +105,7 @@ impl Request {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Caller {
-    /// The caller's `HERDR_PANE_ID`, which notes on its pages go back to.
+    /// The caller's `HERDR_PANE_ID`.
     #[serde(default)]
     pub pane_id: Option<String>,
     /// The Herdr workspace to open the tab in, normally the caller's own
@@ -125,38 +120,6 @@ pub struct Caller {
     /// The window to act in, by the ID `window list` reports.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub window: Option<u64>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct FeedbackRequest {
-    pub pane_id: String,
-    /// Absent in older clients; never treated as a wildcard for a daemon.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub daemon_socket: Option<String>,
-    /// How long to wait for notes when none are waiting, at most
-    /// `MAX_WAIT_SECONDS`.
-    pub wait_seconds: u64,
-}
-
-/// Notes the user wrote outside a window, such as in a UI mockup, for the
-/// agent in the caller's pane. They go the way page notes do.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct NotesRequest {
-    pub caller: Caller,
-    pub text: String,
-}
-
-/// Where sent notes went.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum NotesTo {
-    /// To the agent: a window showing its pane types them in once it is
-    /// idle, or a waiting `browser feedback --wait` takes them.
-    Agent,
-    /// Kept for `browser feedback`, since no window can type into an agent there.
-    Kept,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -183,13 +146,6 @@ pub enum ErrorCode {
 pub enum Response {
     Reloaded {
         tabs: usize,
-    },
-    /// Notes the user sent to the caller, or `None` when there are none.
-    Feedback {
-        text: Option<String>,
-    },
-    NotesSent {
-        to: NotesTo,
     },
     Status(app::Status),
     /// Done; the message says what happened, for a person.
@@ -252,33 +208,20 @@ mod tests {
     }
 
     #[test]
-    fn requests_have_a_stable_wire_form() {
-        let feedback: Request = serde_json::from_str(
-            r#"{"method":"browser.feedback","pane_id":"w_1:p1","wait_seconds":30}"#,
-        )
-        .unwrap();
-        assert_eq!(
-            feedback,
-            Request::Feedback(FeedbackRequest {
-                daemon_socket: None,
-                pane_id: "w_1:p1".into(),
-                wait_seconds: 30
-            })
-        );
-        let notes: Request = serde_json::from_str(
+    fn removed_design_feedback_requests_are_rejected() {
+        for request in [
+            r#"{"method":"browser.feedback","pane_id":"w_1:p1","wait_seconds":0}"#,
             r#"{"method":"notes.send","caller":{"pane_id":"w_1:p1"},"text":"Picked: B"}"#,
-        )
-        .unwrap();
-        assert_eq!(
-            notes,
-            Request::Notes(NotesRequest {
-                caller: Caller {
-                    pane_id: Some("w_1:p1".into()),
-                    ..Caller::default()
-                },
-                text: "Picked: B".into(),
-            })
-        );
+        ] {
+            assert!(
+                serde_json::from_str::<Request>(request).is_err(),
+                "{request}"
+            );
+        }
+    }
+
+    #[test]
+    fn requests_have_a_stable_wire_form() {
         let reload: Request =
             serde_json::from_str(r#"{"method":"browser.reload","pane_id":"w_1:p1"}"#).unwrap();
         assert!(matches!(
@@ -316,12 +259,6 @@ mod tests {
         for response in [
             Response::error(ErrorCode::WorkspaceNotFound, "No window shows w_9"),
             Response::Reloaded { tabs: 2 },
-            Response::Feedback {
-                text: Some("1. Note".into()),
-            },
-            Response::Feedback { text: None },
-            Response::NotesSent { to: NotesTo::Agent },
-            Response::NotesSent { to: NotesTo::Kept },
         ] {
             let text = serde_json::to_string(&response).unwrap();
             assert_eq!(serde_json::from_str::<Response>(&text).unwrap(), response);

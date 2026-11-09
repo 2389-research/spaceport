@@ -179,7 +179,7 @@ fn host_and_settings_commands() {
             "--kind",
             "tab-opened",
             "--kind",
-            "feedback",
+            "note",
             "--wait",
             "5"
         ]),
@@ -187,7 +187,7 @@ fn host_and_settings_commands() {
             after: None,
             follow: false,
             wait: 5,
-            kinds: vec![control::EventKind::TabOpened, control::EventKind::Feedback],
+            kinds: vec![control::EventKind::TabOpened, control::EventKind::Note],
         }
     );
     assert_eq!(

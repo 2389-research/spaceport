@@ -63,6 +63,18 @@ fn removed_browser_open_command_is_rejected() {
 }
 
 #[test]
+fn removed_design_feedback_commands_are_rejected() {
+    assert!(matches!(
+        LaunchOptions::parse(["browser", "feedback"]),
+        Err(CliError::UnknownBrowserCommand(_))
+    ));
+    assert_eq!(
+        LaunchOptions::parse(["--mockup"]).unwrap_err(),
+        CliError::UnknownOption("--mockup".into())
+    );
+}
+
+#[test]
 fn browser_commands_never_start_the_gui() {
     let mode = |args: &[&str]| LaunchOptions::parse(args.iter().copied()).map(|o| o.mode);
     assert_eq!(
@@ -76,14 +88,6 @@ fn browser_commands_never_start_the_gui() {
     assert_eq!(
         mode(&["browser", "reload"]).unwrap(),
         browser(BrowserCommand::Reload)
-    );
-    assert_eq!(
-        mode(&["browser", "feedback"]).unwrap(),
-        browser(BrowserCommand::Feedback { wait: 0 })
-    );
-    assert_eq!(
-        mode(&["browser", "feedback", "--wait", "300"]).unwrap(),
-        browser(BrowserCommand::Feedback { wait: 300 })
     );
     assert_eq!(
         mode(&["browser", "--help"]).unwrap(),
@@ -102,19 +106,6 @@ fn browser_commands_never_start_the_gui() {
         (
             &["browser", "reload", "x"],
             CliError::UnexpectedArgument("x".into()),
-        ),
-        (&["browser", "feedback", "--wait"], CliError::InvalidWait),
-        (
-            &["browser", "feedback", "--wait", "0"],
-            CliError::InvalidWait,
-        ),
-        (
-            &["browser", "feedback", "--wait", "soon"],
-            CliError::InvalidWait,
-        ),
-        (
-            &["browser", "feedback", "now"],
-            CliError::UnexpectedArgument("now".into()),
         ),
     ] {
         assert_eq!(mode(args).unwrap_err(), expected, "{args:?}");
@@ -185,90 +176,6 @@ fn socket_paths_need_not_be_utf8() {
     assert_eq!(
         error.to_string(),
         format!("Unknown option: {}", path.to_string_lossy())
-    );
-}
-
-#[cfg(feature = "mockup")]
-#[test]
-fn mockup_mode_takes_feedback_and_capture_paths() {
-    let mode = |args: &[&str]| LaunchOptions::parse(args.iter().copied()).map(|o| o.mode);
-    assert_eq!(
-        mode(&["--mockup"]).unwrap(),
-        LaunchMode::Mockup(MockupOptions::default())
-    );
-    assert_eq!(
-        mode(&[
-            "--mockup",
-            "--capture",
-            "/tmp/m/shot.png",
-            "--feedback",
-            "/tmp/m/feedback.md"
-        ])
-        .unwrap(),
-        LaunchMode::Mockup(MockupOptions {
-            feedback: Some("/tmp/m/feedback.md".into()),
-            capture: Some("/tmp/m/shot.png".into()),
-        })
-    );
-    assert_eq!(mode(&["--mockup", "-h"]).unwrap(), LaunchMode::Help);
-    for (args, expected, message) in [
-        (
-            &["--mockup", "--feedback"][..],
-            CliError::MissingMockupPath("--feedback"),
-            "--feedback requires a path",
-        ),
-        (
-            &["--mockup", "--capture", "--dev"],
-            CliError::MissingMockupPath("--capture"),
-            "--capture requires a path",
-        ),
-        (
-            &["--mockup", "--feedback", "a", "--feedback", "b"],
-            CliError::DuplicateMockupPath("--feedback"),
-            "--feedback may only be specified once",
-        ),
-        (
-            &["--mockup", "--capture", "a", "--capture", "b"],
-            CliError::DuplicateMockupPath("--capture"),
-            "--capture may only be specified once",
-        ),
-        (
-            &["--mockup", "--dev"],
-            CliError::UnknownOption("--dev".into()),
-            "Unknown option: --dev",
-        ),
-    ] {
-        let error = mode(args).unwrap_err();
-        assert_eq!(error, expected, "{args:?}");
-        assert_eq!(error.to_string(), message);
-    }
-    // Like `browser`, only a leading `--mockup` selects the mode, so it
-    // can never be mixed with connection options.
-    assert_eq!(
-        mode(&["--dev", "--mockup"]).unwrap_err(),
-        CliError::UnknownOption("--mockup".into())
-    );
-}
-
-#[cfg(all(feature = "mockup", unix))]
-#[test]
-fn mockup_paths_need_not_be_utf8() {
-    use std::os::unix::ffi::OsStringExt;
-    let path = OsString::from_vec(b"/tmp/mockup-\xff".to_vec());
-    let options = LaunchOptions::parse([
-        OsString::from("--mockup"),
-        "--feedback".into(),
-        path.clone(),
-        "--capture".into(),
-        path.clone(),
-    ])
-    .unwrap();
-    assert_eq!(
-        options.mode,
-        LaunchMode::Mockup(MockupOptions {
-            feedback: Some(path.clone().into()),
-            capture: Some(path.into()),
-        })
     );
 }
 

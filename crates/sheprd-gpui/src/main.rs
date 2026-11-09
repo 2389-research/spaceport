@@ -6,7 +6,6 @@
 mod about;
 mod accessibility;
 mod actions;
-mod agent_notes;
 mod agent_skill;
 mod ago;
 mod app;
@@ -65,8 +64,6 @@ mod log_window;
 mod mark_layer;
 mod menu;
 mod menus;
-#[cfg(feature = "mockup")]
-mod mockup;
 mod motion;
 mod multiline_input;
 mod navigation;

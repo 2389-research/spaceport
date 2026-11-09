@@ -1364,8 +1364,8 @@ the authenticated user's avatar when connected. It consumes clicks so
 double-clicking it does not invoke the title-bar action.
 The header and clearance remain in fullscreen so the body layout stays stable.
 On Windows and Linux the main window shows the same header below the native
-frame, with an 8px lead in place of the traffic-light clearance; Settings,
-Logs, and the mockup board rely on the native frame alone.
+frame, with an 8px lead in place of the traffic-light clearance; Settings
+and Logs rely on the native frame alone.
 
 Some Linux compositors, GNOME's Wayland session among them, draw no frame for
 other applications, and GPUI falls back to client-side decorations there.

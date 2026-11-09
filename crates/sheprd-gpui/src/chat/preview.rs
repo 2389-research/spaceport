@@ -284,20 +284,10 @@ async fn run(
         handle.update(cx, |view, _, cx| selection::Probe::ready(view, cx))??;
     }
     if let Some(path) = options.capture {
-        #[cfg(feature = "mockup")]
-        {
-            let pixels = handle.update(cx, |_, window, _| window.render_to_image())??;
-            cx.background_spawn(async move { pixels.save(&path) })
-                .await
-                .context("saving native fixture screenshot")?;
-        }
-        #[cfg(not(feature = "mockup"))]
-        {
-            let _ = path;
-            bail!(
-                "native screenshot capture requires the mockup feature; capture the test window externally"
-            );
-        }
+        let pixels = handle.update(cx, |_, window, _| window.render_to_image())??;
+        cx.background_spawn(async move { pixels.save(&path) })
+            .await
+            .context("saving native fixture screenshot")?;
     }
     handle.update(cx, |view, _, _| {
         if let Some(pane) = view.chats.pane(PANE) {

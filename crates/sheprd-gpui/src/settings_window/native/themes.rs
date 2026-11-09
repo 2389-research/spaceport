@@ -7,7 +7,7 @@ use super::*;
 pub(super) async fn verify_themes(
     settings: WindowHandle<SettingsWindow>,
     source: WindowHandle<SheprdWindow>,
-    #[cfg(feature = "mockup")] capture: Option<std::path::PathBuf>,
+    #[cfg(feature = "integration-test")] capture: Option<std::path::PathBuf>,
     cx: &mut AsyncApp,
 ) -> Result<(usize, usize)> {
     settings.update(cx, |view, window, cx| {
@@ -235,7 +235,7 @@ pub(super) async fn verify_themes(
         window.draw(cx).clear(cx);
     })?;
 
-    #[cfg(feature = "mockup")]
+    #[cfg(feature = "integration-test")]
     if let Some(path) = capture {
         ensure!(
             path.is_absolute(),

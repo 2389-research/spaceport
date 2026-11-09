@@ -161,7 +161,6 @@ impl SheprdWindow {
             copy_mode: None,
             core_terminals: Default::default(),
             daemon_text: Default::default(),
-            deliveries: Default::default(),
             device_drag: None,
             device_filter: Default::default(),
             device_order: Vec::new(),

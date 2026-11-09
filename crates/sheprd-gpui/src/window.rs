@@ -157,7 +157,6 @@ pub(crate) struct SheprdWindow {
     /// Prepared daemon announcement and release notes text.
     pub(crate) daemon_text: crate::release_notes::DaemonText,
     /// Notes waiting for their agents to be ready for them.
-    pub(crate) deliveries: crate::agent_notes::Deliveries,
     /// A press on a device's header that may lift it for reordering.
     pub(crate) device_drag: Option<sidebar::DeviceDrag>,
     /// The devices the sidebar lists.

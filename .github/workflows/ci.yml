@@ -185,9 +185,6 @@ jobs:
         run: |
           python3 scripts/test_check_i18n.py
           python3 scripts/check-i18n.py
-      - name: Test mockup feedback receiver
-        if: matrix.features == 'default'
-        run: python3 .claude/skills/gpui-mockup/scripts/test_wait.py
       - name: Lint every target and feature
         if: matrix.features == 'all'
         run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings

@@ -1,10 +1,10 @@
-//! `browser ...` and `feedback`.
-use super::{Context, Output, caller, notes_daemon, rejected, send, tabs, unexpected};
+//! `browser ...` commands.
+use super::{Context, Output, caller, rejected, send, tabs, unexpected};
 use crate::{
     browser::WebUrl,
     cli::control::{BrowserCommand, ZoomChange},
     control::protocol::{
-        ErrorCode, FeedbackRequest, MAX_WAIT_SECONDS, Request, Response,
+        ErrorCode, Request, Response,
         tabs::{Reply, TabOp},
     },
 };
@@ -25,32 +25,6 @@ fn reload() -> crate::Result<Output> {
             format!("Reloaded {tabs} browser tab(s)"),
             &serde_json::json!({ "tabs": tabs }),
         ),
-        response => Err(rejected(response)),
-    }
-}
-
-/// The user's page and review notes for this pane are kept for it whenever
-/// they could not be typed into the pane.
-pub(super) fn feedback(wait: u64, _: &Context) -> crate::Result<Output> {
-    let pane_id = super::env_id("HERDR_PANE_ID").ok_or(crate::control::Error::Rejected {
-        code: ErrorCode::InvalidRequest,
-        message: "feedback runs in the Herdr pane that should receive the notes".into(),
-    })?;
-    let request = Request::Feedback(FeedbackRequest {
-        pane_id,
-        daemon_socket: Some(notes_daemon()?),
-        wait_seconds: wait.min(MAX_WAIT_SECONDS),
-    });
-    match send(&request)? {
-        // Notes keep their line breaks: they are Markdown for the agent.
-        Response::Feedback { text: Some(text) } => {
-            Output::data(text.trim_end(), &serde_json::json!({ "notes": text }))
-        }
-        Response::Feedback { text: None } => Ok(Output::data(
-            "No notes from the user yet",
-            &serde_json::json!({ "notes": null }),
-        )?
-        .nothing()),
         response => Err(rejected(response)),
     }
 }
@@ -101,7 +75,6 @@ pub(super) fn run(command: BrowserCommand, context: &Context) -> crate::Result<O
             Ok(Output::message(""))
         }
         BrowserCommand::Reload => reload(),
-        BrowserCommand::Feedback { wait } => feedback(wait, context),
         BrowserCommand::List => tabs::list(true, context),
         BrowserCommand::Close { id } => context.act(Request::Tab, TabOp::Close { id }),
         BrowserCommand::Navigate { id, url } => {

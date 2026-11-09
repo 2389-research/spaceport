@@ -1,5 +1,9 @@
 # Plan: browser tabs on Linux
 
+Historical Sheprd plan. Spaceport's [product specification](spaceport/SPEC.md)
+excludes embedded browser and design-review feedback; this plan is not an
+implementation target for Spaceport.
+
 Hand this to an agent working on a Linux desktop. It describes where Linux
 stands today, the target, and a phased path, each phase shippable and
 verifiable on its own. Read `AGENTS.md` first; its rules apply throughout.

@@ -628,7 +628,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         config_load: None,
         config_watch: None,
         config_load_revision: 0,
-        deliveries: Default::default(),
         notice_overflow: Default::default(),
         overview: Default::default(),
         viewport_width: 0.,

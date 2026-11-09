@@ -5,7 +5,7 @@ use super::*;
 fn readers_get_what_came_after_their_sequence_number() {
     let mut log = Log::default();
     log.push(EventKind::TabOpened, "1", Some("w_1".into()));
-    log.push(EventKind::Feedback, "w_1:p1", None);
+    log.push(EventKind::Note, "w_1:p1", None);
     log.push(EventKind::TabClosed, "1", Some("w_1".into()));
     let all = log.after(0, &[]);
     assert_eq!(
@@ -68,34 +68,6 @@ fn changes_between_ticks_become_events() {
             (EventKind::Host, "local".to_owned()),
         ]
     );
-}
-
-#[test]
-fn every_newly_kept_batch_is_an_event_even_from_a_full_queue() {
-    let mut log = Log::default();
-    let kept = |batches: &[(u64, &str)]| Seen {
-        kept: batches
-            .iter()
-            .map(|(added, pane)| (*added, (*pane).to_owned()))
-            .collect(),
-        ..Seen::default()
-    };
-    // Two batches arrive between ticks, and the full queue drops its oldest:
-    // the count stays the same, and both still count.
-    compare(
-        &mut log,
-        &kept(&[(1, "p1"), (2, "p2")]),
-        &kept(&[(3, "p3"), (4, "p4")]),
-    );
-    let panes: Vec<_> = log
-        .after(0, &[EventKind::Feedback])
-        .into_iter()
-        .map(|event| event.subject)
-        .collect();
-    assert_eq!(panes, ["p3", "p4"]);
-    // A batch taken is no event; one kept after it is.
-    compare(&mut log, &kept(&[(3, "p3")]), &kept(&[(5, "p5")]));
-    assert_eq!(log.after(2, &[]).len(), 1);
 }
 
 #[test]

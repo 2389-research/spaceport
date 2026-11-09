@@ -147,7 +147,6 @@ pub(super) fn wait(what: WaitFor, timeout: u64, context: &Context) -> crate::Res
 
 fn wait_once(what: WaitFor, timeout: u64, context: &Context) -> crate::Result<Output> {
     let condition = match what {
-        WaitFor::Feedback => return super::browser::feedback(timeout, context),
         WaitFor::Window => Condition::Window,
         WaitFor::Online => Condition::Online,
         WaitFor::TabClosed(id) => Condition::TabClosed { id },

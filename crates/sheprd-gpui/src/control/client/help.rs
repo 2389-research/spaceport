@@ -7,16 +7,12 @@ acting in that window (IDs come from `window list`). By default a command
 acts in the window showing the caller's workspace (HERDR_WORKSPACE_ID), and
 exits 5 when no window shows it; outside Herdr, in the frontmost window.
 Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
-4 nothing yet (no notes, no event), 5 not found, 6 busy (a dialog is open),
+4 nothing yet (no event), 5 not found, 6 busy (a dialog is open),
 7 timed out, 8 unsupported on this platform or by this app version.";
 
 const BROWSER: &str = "\
 spaceport browser reload
     Reload the pages this pane opened, for example after editing the file.
-spaceport browser feedback [--wait SECONDS]
-    Print the notes the user sent about this pane's pages and have not been
-    delivered yet. With --wait, wait up to SECONDS (at most 600) for them.
-    Notes are otherwise typed into this pane as a prompt once it is idle.
 spaceport browser list
     List page tabs with their IDs.
 spaceport browser close|back|forward|text TAB
@@ -34,7 +30,7 @@ spaceport browser example
     Print an example explainer page built on the kit Spaceport serves to local
     pages at /.herdr/kit.css and /.herdr/kit.js.
 Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
-4 no notes (feedback), 5 no such tab or workspace, 6 busy, 7 timed out,
+4 nothing yet, 5 no such tab or workspace, 6 busy, 7 timed out,
 8 unsupported on this platform.";
 
 fn family(name: &str) -> &'static str {
@@ -66,9 +62,6 @@ fn family(name: &str) -> &'static str {
         }
         "worktree" => {
             "spaceport worktree [status]\n    Whether the caller's worktree is muted.\nspaceport worktree mute|unmute\n    Silence its notifications, or let them through again. Mutes stay in\n    this app; nothing reaches the daemon."
-        }
-        "feedback" => {
-            "spaceport feedback [--wait SECONDS]\n    Page and review notes sent to this pane that were not typed into it.\n    Exits 4 when there are none."
         }
         "scripts" => {
             "spaceport scripts [list]\n    The current directory's repository's worktree scripts\n    (.herdr/worktree.toml). Runs here; Spaceport need not run.\nspaceport scripts setup|run\n    Run one in a new tab of the caller's workspace (setup: linked worktrees\n    only). Spaceport asks before running a script it has not seen."
@@ -111,10 +104,10 @@ fn family(name: &str) -> &'static str {
         }
         "bell" => "spaceport bell\n    Ring the system bell, as a terminal bell does.",
         "events" => {
-            "spaceport events [--after CURSOR] [--wait SECONDS] [--kind KIND]... [--follow]\n    What happened since CURSOR, the INSTANCE:SEQ the last call printed:\n    windows and tabs opening and closing, notes, and host status. A cursor\n    from an earlier app run gets everything this run kept. --follow keeps\n    printing until interrupted. Kinds:\n    window_opened, window_closed, window_focused, tab_opened, tab_closed,\n    feedback, note, host."
+            "spaceport events [--after CURSOR] [--wait SECONDS] [--kind KIND]... [--follow]\n    What happened since CURSOR, the INSTANCE:SEQ the last call printed:\n    windows and tabs opening and closing, notes, and host status. A cursor\n    from an earlier app run gets everything this run kept. --follow keeps\n    printing until interrupted. Kinds:\n    window_opened, window_closed, window_focused, tab_opened, tab_closed,\n    note, host."
         }
         "wait" => {
-            "spaceport wait feedback|window|online|tab-closed ID [--timeout SECONDS]\n    Wait (default 60, at most 600 seconds). Exits 4 when time runs out."
+            "spaceport wait window|online|tab-closed ID [--timeout SECONDS]\n    Wait (default 60, at most 600 seconds). Exits 4 when time runs out."
         }
         "run" => {
             "spaceport run COMMAND\n    Run an app command by its [keybindings] name, as the command palette\n    does, for example toggle_sidebar. See `commands`."

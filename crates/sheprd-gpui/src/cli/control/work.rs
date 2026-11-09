@@ -19,7 +19,6 @@ pub enum NotesCommand {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WaitFor {
-    Feedback,
     Window,
     TabClosed(u64),
     Online,
@@ -80,10 +79,9 @@ pub(super) fn script_kind(args: &mut Args) -> Result<Option<Script>, CliError> {
 pub(super) fn wait_for(args: &mut Args) -> Result<WaitFor, CliError> {
     let verb = args.verb().ok_or(CliError::MissingArgument {
         command: "wait",
-        what: "feedback|window|tab-closed|online",
+        what: "window|tab-closed|online",
     })?;
     Ok(match verb.to_str() {
-        Some("feedback") => WaitFor::Feedback,
         Some("window") => WaitFor::Window,
         Some("online") => WaitFor::Online,
         Some("tab-closed") => WaitFor::TabClosed(

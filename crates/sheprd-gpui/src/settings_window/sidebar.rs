@@ -249,7 +249,7 @@ impl SettingsWindow {
     }
 
     /// Drops the live draft unwritten and shows the loaded values again.
-    #[cfg(all(feature = "integration-test", feature = "mockup", target_os = "macos"))]
+    #[cfg(all(feature = "integration-test", target_os = "macos"))]
     pub(super) fn discard_sidebar_draft(&mut self, cx: &mut Context<Self>) {
         self.sidebar_intent = None;
         self.sidebar_queued = false;

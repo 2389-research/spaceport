@@ -274,11 +274,6 @@ pub(crate) fn run() -> std::process::ExitCode {
     {
         return exit;
     }
-    // A separate app of its own: no daemon, control socket, stores, or updater.
-    #[cfg(feature = "mockup")]
-    if let LaunchMode::Mockup(options) = mode {
-        return crate::mockup::run(options);
-    }
     if mode == LaunchMode::BuildInfo {
         print!("{}", cli::build_info());
         return std::process::ExitCode::SUCCESS;
@@ -301,11 +296,6 @@ pub(crate) fn run() -> std::process::ExitCode {
         println!(
             // i18n: data
             "  --integration-test  Run native GUI checks (requires explicit --socket)\n  --sidebar-test      Run native sidebar fixtures without connecting to a daemon\n  --performance-test  Measure native dense-terminal hover/scroll without a daemon (macOS)"
-        );
-        #[cfg(feature = "mockup")]
-        println!(
-            // i18n: data
-            "  --mockup [--feedback PATH]\n                      Compare the UI variants built in from HERDR_MOCKUP_FILE; must come first"
         );
         return std::process::ExitCode::SUCCESS;
     }

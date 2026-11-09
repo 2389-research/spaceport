@@ -135,18 +135,6 @@ fn caller_daemon() -> crate::Result<Option<String>> {
     Ok(path.to_str().map(str::to_owned))
 }
 
-/// Notes must never fall back to pane-only routing, even in the default session.
-fn notes_daemon() -> crate::Result<String> {
-    let path = sheprd_client::ConnectTarget::Local.socket_path()?;
-    path.into_os_string().into_string().map_err(|_| {
-        crate::control::Error::Rejected {
-            code: ErrorCode::InvalidRequest,
-            message: "The daemon socket must be UTF-8 for control requests".into(),
-        }
-        .into()
-    })
-}
-
 pub(super) fn env_id(name: &str) -> Option<String> {
     std::env::var(name).ok().filter(|id| !id.is_empty())
 }
@@ -229,28 +217,6 @@ fn rejected(response: Response) -> crate::Error {
 pub(crate) fn unexpected(response: Response) -> crate::Error {
     tracing::debug!(?response, "Unexpected control response");
     crate::control::Error::NoResponse.into()
-}
-
-/// Sends the user's notes to the agent in this process's Herdr pane, through
-/// the running Sheprd. Blocking: call it off the UI thread.
-#[cfg(feature = "mockup")]
-pub(crate) fn send_notes(text: String) -> crate::Result<super::NotesTo> {
-    let mut caller = caller(None)?;
-    if caller.pane_id.is_none() {
-        return Err(crate::control::Error::Rejected {
-            code: ErrorCode::InvalidRequest,
-            message: "Not running in a Herdr pane".into(),
-        }
-        .into());
-    }
-    caller.daemon_socket = Some(notes_daemon()?);
-    match send(&Request::Notes(super::protocol::NotesRequest {
-        caller,
-        text,
-    }))? {
-        Response::NotesSent { to } => Ok(to),
-        response => Err(rejected(response)),
-    }
 }
 
 /// The exit status an error maps to.
@@ -393,7 +359,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Chat(command) => chat::chat(command, &context),
         ControlCommand::Notes(command) => work::notes(command, &context),
         ControlCommand::Worktree(command) => work::worktree(command, &context),
-        ControlCommand::Feedback { wait } => browser::feedback(wait, &context),
         ControlCommand::Scripts { kind } => work::scripts(kind, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),
         ControlCommand::Ports(command) => hosts::ports(command, &context),

@@ -261,19 +261,17 @@ fn code_edit_is_rejected_before_socket_lookup() {
 }
 
 #[test]
-fn feedback_needs_the_app_and_a_pane() {
+fn removed_design_feedback_is_rejected_before_socket_lookup() {
     let state = tempfile::tempdir().unwrap();
-    // Feedback belongs to the pane receiving the notes.
     let output = cli_in(&["browser", "feedback"], Some(state.path()));
-    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
     assert!(
-        String::from_utf8_lossy(&output.stderr).contains("runs in the Herdr pane"),
+        String::from_utf8_lossy(&output.stderr).contains("Unknown browser command"),
         "{output:?}"
     );
-    usage_error(
-        &["browser", "feedback", "--wait", "soon"],
-        "--wait requires a number of seconds",
-    );
+    usage_error(&["feedback"], "Unknown option: feedback");
+    usage_error(&["wait", "feedback"], "Unknown wait command");
+    usage_error(&["--mockup"], "Unknown option: --mockup");
 }
 
 #[test]

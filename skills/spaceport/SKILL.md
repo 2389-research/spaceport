@@ -19,7 +19,6 @@ for what only Spaceport shows or keeps.
 
 | To | Run |
 | --- | --- |
-| Get notes the user sent this pane (pages, reviews, terminals) | `spaceport feedback --wait 600` |
 | Keep a note on this worktree (repository and branch) | `spaceport notes set waiting on CI` |
 | Silence this worktree's notifications | `spaceport worktree mute` |
 | Silence a whole host's notifications | `spaceport host mute studio` |
