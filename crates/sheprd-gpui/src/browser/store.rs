@@ -334,6 +334,11 @@ fn parse_saved(bytes: &[u8]) -> crate::Result<Saved> {
 }
 
 impl Store {
+    #[cfg(test)]
+    pub(crate) fn restored_for_test(bytes: &[u8]) -> crate::Result<Self> {
+        Ok(Self::with_saved(parse_saved(bytes)?, None))
+    }
+
     fn path() -> Option<PathBuf> {
         crate::preferences::state_dir().map(|dir| dir.join("browser-tabs.json"))
     }

@@ -284,7 +284,7 @@ fn read_chrome(path: &Path) -> crate::Result<Chrome> {
         activity_panel: object
             .get("activity_panel")
             .and_then(serde_json::Value::as_str)
-            .and_then(crate::sidebar::ActivityPanel::parse),
+            .and_then(retained_activity_panel),
         activity_last_opened: last_opened(object.get("activity_last_opened_at")),
         sidebar_width,
         sidebar_split,
@@ -294,21 +294,44 @@ fn read_chrome(path: &Path) -> crate::Result<Chrome> {
     })
 }
 
+/// Old Activity choices have no section after Orchestrator is retired.
+/// Reading them changes only the in-memory choice, not the saved file.
+fn retained_activity_panel(name: &str) -> Option<crate::sidebar::ActivityPanel> {
+    use crate::sidebar::ActivityPanel;
+    ActivityPanel::parse(name).map(|panel| match panel {
+        ActivityPanel::Workspaces | ActivityPanel::Usage => panel,
+        ActivityPanel::Overview
+        | ActivityPanel::PullRequests
+        | ActivityPanel::Issues
+        | ActivityPanel::Tasks
+        | ActivityPanel::Automations => ActivityPanel::Workspaces,
+    })
+}
+
 /// When each section was last open. An unknown section or unreadable time is
 /// forgotten rather than failing the whole file; there are few sections.
 fn last_opened(
     value: Option<&serde_json::Value>,
 ) -> HashMap<crate::sidebar::ActivityPanel, DateTime<Utc>> {
-    value
+    let mut visits = HashMap::new();
+    for (name, at) in value
         .and_then(serde_json::Value::as_object)
         .into_iter()
         .flatten()
-        .filter_map(|(name, at)| {
-            let panel = crate::sidebar::ActivityPanel::parse(name)?;
-            let at = DateTime::parse_from_rfc3339(at.as_str()?).ok()?;
-            Some((panel, at.with_timezone(&Utc)))
-        })
-        .collect()
+    {
+        let Some((panel, at)) = retained_activity_panel(name).zip(
+            at.as_str()
+                .and_then(|at| DateTime::parse_from_rfc3339(at).ok()),
+        ) else {
+            continue;
+        };
+        let at = at.with_timezone(&Utc);
+        visits
+            .entry(panel)
+            .and_modify(|latest: &mut DateTime<Utc>| *latest = (*latest).max(at))
+            .or_insert(at);
+    }
+    visits
 }
 
 /// The stored device order. Anything but a list of IDs is forgotten rather

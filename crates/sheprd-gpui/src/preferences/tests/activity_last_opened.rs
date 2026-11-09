@@ -13,8 +13,8 @@ fn last_opened_times_round_trip_and_damaged_ones_are_forgotten() {
     let at = |text: &str| DateTime::parse_from_rfc3339(text).unwrap().to_utc();
     let chrome = Chrome {
         activity_last_opened: [
-            (ActivityPanel::PullRequests, at("2026-10-19T08:30:00Z")),
-            (ActivityPanel::Tasks, at("2026-10-18T22:00:00.250Z")),
+            (ActivityPanel::Workspaces, at("2026-10-19T08:30:00Z")),
+            (ActivityPanel::Usage, at("2026-10-18T22:00:00.250Z")),
         ]
         .into(),
         ..Chrome::default()
@@ -37,13 +37,33 @@ fn last_opened_times_round_trip_and_damaged_ones_are_forgotten() {
     let read = read_chrome(&path).unwrap();
     assert_eq!(
         read.activity_last_opened,
-        [(ActivityPanel::Issues, at("2026-10-19T08:00:00Z"))].into()
+        [(ActivityPanel::Workspaces, at("2026-10-19T08:00:00Z"))].into()
     );
     assert_eq!(read.sidebar_width, Some(250.));
     for stored in ["", r#", "activity_last_opened_at": []"#] {
         fs::write(&path, format!(r#"{{"sidebar_width_px": 250{stored}}}"#)).unwrap();
         assert!(read_chrome(&path).unwrap().activity_last_opened.is_empty());
     }
+}
+
+#[test]
+fn retired_activity_visits_merge_into_workspaces_without_writing_on_read() {
+    let directory = TestDirectory::new();
+    let path = directory.0.join("preferences.json");
+    let bytes = r#"{"activity_last_opened_at":{"workspaces":"2026-10-01T00:00:00Z","issues":"2026-10-03T00:00:00Z","tasks":"2026-10-02T00:00:00Z","usage":"2026-10-04T00:00:00Z"}}"#;
+    fs::write(&path, bytes).unwrap();
+    let chrome = read_chrome(&path).unwrap();
+    let at = |text: &str| DateTime::parse_from_rfc3339(text).unwrap().to_utc();
+    assert_eq!(chrome.activity_last_opened.len(), 2);
+    assert_eq!(
+        chrome.activity_last_opened.get(&ActivityPanel::Workspaces),
+        Some(&at("2026-10-03T00:00:00Z"))
+    );
+    assert_eq!(
+        chrome.activity_last_opened.get(&ActivityPanel::Usage),
+        Some(&at("2026-10-04T00:00:00Z"))
+    );
+    assert_eq!(fs::read_to_string(&path).unwrap(), bytes);
 }
 
 /// A section picked before the file loaded queues a save holding only this
@@ -59,7 +79,7 @@ fn visits_stored_before_a_save_that_raced_the_load_are_saved_again(cx: &mut Test
     write_chrome(
         &path,
         Chrome {
-            activity_last_opened: [(ActivityPanel::Tasks, stored)].into(),
+            activity_last_opened: [(ActivityPanel::Usage, stored)].into(),
             sidebar_width: Some(250.),
             ..Chrome::default()
         },
@@ -81,8 +101,8 @@ fn visits_stored_before_a_save_that_raced_the_load_are_saved_again(cx: &mut Test
         let read = read_chrome(&path).ok();
         let last_opened = read.as_ref().map(|chrome| &chrome.activity_last_opened);
         if last_opened.is_some_and(|last_opened| {
-            last_opened.get(&ActivityPanel::Tasks) == Some(&stored)
-                && last_opened.contains_key(&ActivityPanel::Issues)
+            last_opened.get(&ActivityPanel::Usage) == Some(&stored)
+                && last_opened.contains_key(&ActivityPanel::Workspaces)
         }) {
             assert_eq!(read.unwrap().sidebar_width, Some(250.));
             break;

@@ -6,7 +6,7 @@ use crate::sidebar::ActivityPanel;
 fn the_activity_panel_round_trips_and_an_unknown_one_is_forgotten() {
     let directory = TestDirectory::new();
     let path = directory.0.join("preferences.json");
-    for &panel in ActivityPanel::ALL {
+    for &panel in &[ActivityPanel::Workspaces, ActivityPanel::Usage] {
         let chrome = Chrome {
             activity_panel: Some(panel),
             sidebar_width: Some(250.),
@@ -25,5 +25,34 @@ fn the_activity_panel_round_trips_and_an_unknown_one_is_forgotten() {
         let read = read_chrome(&path).unwrap();
         assert_eq!(read.activity_panel, None, "{stored}");
         assert_eq!(read.sidebar_width, Some(250.), "{stored}");
+    }
+}
+
+#[core::prelude::v1::test]
+fn retired_activity_choice_falls_back_to_workspaces_in_memory() {
+    let directory = TestDirectory::new();
+    let path = directory.0.join("preferences.json");
+    for name in [
+        "overview",
+        "pull-requests",
+        "issues",
+        "tasks",
+        "automations",
+    ] {
+        let bytes = format!(r#"{{"sidebar_width_px":250,"activity_panel":"{name}"}}"#);
+        fs::write(&path, &bytes).unwrap();
+        assert_eq!(
+            read_chrome(&path).unwrap().activity_panel,
+            Some(ActivityPanel::Workspaces),
+            "{name}"
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), bytes);
+    }
+    for name in ["workspaces", "usage"] {
+        fs::write(&path, format!(r#"{{"activity_panel":"{name}"}}"#)).unwrap();
+        assert_eq!(
+            read_chrome(&path).unwrap().activity_panel,
+            ActivityPanel::parse(name)
+        );
     }
 }
