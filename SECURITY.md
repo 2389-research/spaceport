@@ -35,7 +35,6 @@ In scope:
   limits, bounds, and malformed or hostile payloads.
 - Socket discovery and connection handling in `crates/sheprd-client`, including
   socket peer validation, SSH target validation, and host/session selection.
-- Credential storage and redaction in `crates/sheprd-credentials`.
 - herdr-core stream handling and terminal emulation in `crates/sheprd-core-client`
   and `crates/sheprd-terminal`.
 - Anything in `crates/sheprd-gpui` that lets terminal content escape its pane:

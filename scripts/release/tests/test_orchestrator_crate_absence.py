@@ -1,5 +1,5 @@
 """ABOUTME: Keeps the retired Orchestrator backend out of the workspace.
-ABOUTME: Protects retained credential, avatar, and Core presentation owners.
+ABOUTME: Protects retained Core presentation owners.
 """
 
 from pathlib import Path
@@ -19,7 +19,6 @@ class OrchestratorCrateAbsence(unittest.TestCase):
 
     def test_retained_owners_stay_present(self):
         for relative in (
-            "crates/sheprd-credentials/src/lib.rs",
             "crates/sheprd-gpui/src/core_terminals.rs",
         ):
             with self.subTest(path=relative):

@@ -2,19 +2,6 @@ use super::*;
 use std::{error::Error as _, path::Path};
 
 #[test]
-fn credential_failures_keep_typed_sources() {
-    let error = Error::Credentials(sheprd_credentials::Error::Io(io::Error::from(
-        io::ErrorKind::PermissionDenied,
-    )));
-    assert!(
-        error
-            .source()
-            .and_then(|source| source.downcast_ref::<io::Error>())
-            .is_some_and(|source| source.kind() == io::ErrorKind::PermissionDenied)
-    );
-}
-
-#[test]
 fn io_context_retains_source_kind_and_cleanup_failure() {
     let error = Error::from(io::Error::new(io::ErrorKind::PermissionDenied, "denied"))
         .at_path(Path::new("config.toml"));

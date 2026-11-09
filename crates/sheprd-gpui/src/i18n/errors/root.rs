@@ -43,7 +43,6 @@ impl Localize for Error {
             Self::ConnectionBusy => fl!("error-connection-busy"),
             Self::ConnectionNotReady => fl!("error-connection-not-ready"),
             Self::Control(error) => error.localize(),
-            Self::Credentials(error) => error.localize(),
             Self::Daemon(error) => error.localize(),
             Self::Devices(error) => error.localize(),
             Self::EmptyTabName => fl!("error-empty-tab-name"),

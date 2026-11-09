@@ -13,7 +13,6 @@ mod client;
 mod clipboard;
 mod config;
 mod control;
-mod credentials;
 mod daemon;
 mod devices;
 mod file_drop;
