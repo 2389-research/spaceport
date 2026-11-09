@@ -14,6 +14,7 @@ use crate::{
     dialog_input::DialogInput,
     i18n::fl,
     menu::Page,
+    notifications::safe_text,
     window::Flash,
 };
 use gpui::{prelude::*, *};
@@ -181,6 +182,7 @@ impl SheprdWindow {
             .take()
             .is_some()
         {
+            self.core_terminals.hub.clear_exact();
             cx.notify();
         }
     }
@@ -211,12 +213,22 @@ impl SheprdWindow {
         if !self.core_group_available(&key, cx) {
             return;
         }
-        let selected = &mut self.core_terminals.workspace_ui.selected_group;
-        *selected = if selected.as_ref() == Some(&key) {
-            None
+        if self.selected_core_group() == Some(&key) {
+            self.core_terminals.workspace_ui.selected_group = None;
+            self.core_terminals.hub.clear_exact();
         } else {
-            Some(key)
-        };
+            if let Err(error) = self.core_terminals.hub.bind_exact(key.hub_core_id()) {
+                self.show_flash(
+                    Flash::warning(fl!(
+                        "core-workspace-target-error",
+                        reason = safe_text(&error.to_string(), 160)
+                    )),
+                    cx,
+                );
+                return;
+            }
+            self.core_terminals.workspace_ui.selected_group = Some(key);
+        }
         self.drop_group_terminals();
         cx.notify();
     }
@@ -275,6 +287,16 @@ impl SheprdWindow {
         if !self.core_group_available(key, cx) {
             return false;
         }
+        if let Err(error) = self.core_terminals.hub.bind_exact(key.hub_core_id()) {
+            self.show_flash(
+                Flash::warning(fl!(
+                    "core-workspace-target-error",
+                    reason = safe_text(&error.to_string(), 160)
+                )),
+                cx,
+            );
+            return false;
+        }
         self.core_terminals.workspace_ui.selected_group = Some(key.clone());
         self.drop_group_terminals();
         cx.notify();
@@ -287,6 +309,7 @@ impl SheprdWindow {
             .is_some_and(|key| !self.core_group_available(key, cx));
         if stale {
             self.core_terminals.workspace_ui.selected_group = None;
+            self.core_terminals.hub.clear_exact();
             cx.notify();
         }
     }

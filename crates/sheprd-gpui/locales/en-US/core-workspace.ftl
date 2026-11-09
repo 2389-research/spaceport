@@ -8,6 +8,7 @@ core-workspace-join-error = Could not connect to Core: { $reason }
 core-workspace-loading = Loading Core groups…
 core-workspace-error = Could not load Core groups: { $reason }
 core-workspace-stale = Core groups are not current. Wait for a refresh before editing.
+core-workspace-target-error = Could not open Core group: { $reason }
 core-workspace-unknown = Core did not confirm the edit ({ $reason }). Wait for a new document version before editing another group.
 core-workspace-uncertain = An earlier edit is still unconfirmed. Wait for a new document version before editing another group.
 core-workspace-worker-error = Could not start Core group edit: { $reason }

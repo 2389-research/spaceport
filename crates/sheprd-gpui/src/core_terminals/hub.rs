@@ -44,6 +44,8 @@ type Join = fn(Start) -> Result<CoreBackend, Error>;
 pub(crate) struct Hub {
     /// What the attempt in flight may do.
     attempt: Option<Start>,
+    /// Persistent Core identity for an exact existing-runtime view.
+    expected_core: Option<String>,
     /// When the last attempt failed.
     failed: Option<Instant>,
     join: Join,
@@ -60,9 +62,47 @@ impl Default for Hub {
 }
 
 impl Hub {
+    /// Fixes the expected persistent Core ID before a join without dialing.
+    /// A start already in flight cannot be made join-only after submission.
+    pub(crate) fn bind_exact(&mut self, core_id: &str) -> Result<(), Error> {
+        self.check_identity(core_id)?;
+        // A start already running cannot be turned into a join-only attempt.
+        if matches!(self.state, State::Connecting(_)) && self.attempt == Some(Start::IfMissing) {
+            return Err(Error::StartPending);
+        }
+        if let State::Ready(backend) = &self.state {
+            let actual = &backend.core().hello().core.id;
+            if actual != core_id {
+                return Err(Error::WrongCore {
+                    expected: core_id.to_owned(),
+                    actual: actual.clone(),
+                });
+            }
+        }
+        self.expected_core = Some(core_id.to_owned());
+        self.wants_start = false;
+        Ok(())
+    }
+
+    /// Releases the view's exact target when it leaves that Core group.
+    pub(crate) fn clear_exact(&mut self) {
+        self.expected_core = None;
+    }
+
+    fn check_identity(&self, core_id: &str) -> Result<(), Error> {
+        match self.expected_core.as_deref() {
+            Some(expected) if expected != core_id => Err(Error::WrongCore {
+                expected: expected.to_owned(),
+                actual: core_id.to_owned(),
+            }),
+            _ => Ok(()),
+        }
+    }
+
     fn with_join(join: Join) -> Self {
         Self {
             attempt: None,
+            expected_core: None,
             failed: None,
             join,
             state: State::Idle,
@@ -105,6 +145,12 @@ impl Hub {
     /// A join-only ask waits a moment after a failure; asking to start
     /// always tries, and upgrades a join-only attempt in flight.
     pub(crate) fn connect(&mut self, start: Start) {
+        // A view bound to one Core can rejoin, but must not start a replacement.
+        let start = if self.expected_core.is_some() {
+            Start::Join
+        } else {
+            start
+        };
         match &self.state {
             State::Ready(_) => return,
             State::Connecting(_) => {
@@ -140,7 +186,16 @@ impl Hub {
     pub(crate) fn poll(&mut self) -> bool {
         match &self.state {
             State::Connecting(outcome) => match outcome.try_recv() {
-                Ok(Ok(backend)) => self.state = State::Ready(backend),
+                Ok(Ok(backend)) => {
+                    let actual = &backend.core().hello().core.id;
+                    self.state = match self.check_identity(actual) {
+                        Ok(()) => State::Ready(backend),
+                        Err(error) => {
+                            self.failed = Some(Instant::now());
+                            State::Unavailable(Arc::new(error))
+                        }
+                    };
+                }
                 Ok(Err(_)) if std::mem::take(&mut self.wants_start) => {
                     self.state = State::Idle;
                     self.connect(Start::IfMissing);

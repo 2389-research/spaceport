@@ -83,6 +83,7 @@ fn a_closed_core_page_reopens_in_its_exact_group(cx: &mut gpui::TestAppContext) 
     });
 }
 
+mod hub_target;
 #[cfg(unix)]
 mod live;
 mod remote_selection;

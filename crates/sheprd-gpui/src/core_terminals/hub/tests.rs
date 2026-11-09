@@ -3,6 +3,8 @@
 use super::*;
 use std::sync::{Condvar, Mutex};
 
+mod target;
+
 /// Waits up to a few seconds for the hub's attempt to settle.
 fn settle(hub: &mut Hub) {
     let deadline = Instant::now() + Duration::from_secs(5);
