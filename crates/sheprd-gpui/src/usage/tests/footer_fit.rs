@@ -22,7 +22,6 @@ fn readings() -> Vec<Reading> {
             provider: provider(id),
             report: Some(report(provider(id), 90. - index as f64 * 10.)),
             error: None,
-            access: None,
         })
         .collect()
 }

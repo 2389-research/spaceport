@@ -166,8 +166,7 @@ fn usage(view: &SheprdWindow, now: SystemTime) -> Response {
     let usage: Vec<UsageInfo> = entry
         .map(|entry| {
             entry
-                .readings
-                .iter()
+                .visible_readings(&view.config.usage)
                 .map(|reading| usage_info(reading, now))
                 .collect()
         })
@@ -178,7 +177,7 @@ fn usage(view: &SheprdWindow, now: SystemTime) -> Response {
         Some(error.to_string())
     } else if usage.is_empty() {
         Some(format!(
-            "Plan usage is unavailable on {host}: Core has no usage feed"
+            "Plan usage is unavailable on {host}: no authoritative usage feed is connected"
         ))
     } else {
         None

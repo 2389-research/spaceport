@@ -1,5 +1,5 @@
 """ABOUTME: Ensures Azure cloud provisioning has no desktop route.
-ABOUTME: Preserves distinct Azure OpenAI and Core features.
+ABOUTME: Preserves distinct Azure OpenAI display identity and Core features.
 """
 
 from pathlib import Path
@@ -36,7 +36,9 @@ class AzureCloudSourceAbsence(unittest.TestCase):
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
         self.assertFalse((ROOT / "crates/sheprd-remote/src/container.rs").exists())
         self.assertFalse((ROOT / "crates/sheprd-gpui/src/i18n/errors/orchestrator_azure.rs").exists())
-        self.assertTrue((ROOT / "crates/sheprd-gpui/locales/en-US/usage-azureopenai.ftl").exists())
+        registry = (ROOT / "crates/sheprd-usage/src/registry.rs").read_text()
+        self.assertIn('id: "azureopenai"', registry)
+        self.assertIn('name: "Azure OpenAI"', registry)
 
 
 if __name__ == "__main__":

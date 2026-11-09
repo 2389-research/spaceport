@@ -37,9 +37,25 @@ class ProviderProbeAbsence(unittest.TestCase):
                 self.assertFalse("this.usage.allow(" in content, path)
                 self.assertFalse("KeychainGrants::grant(" in content, path)
 
+    def test_provider_fetch_graph_is_absent(self):
+        for path in ("providers", "providers.rs", "probe", "probe.rs", "cookies.rs", "service.rs"):
+            with self.subTest(path=path):
+                self.assertFalse((ROOT / "crates/sheprd-usage/src" / path).exists())
+        usage = source("crates/sheprd-usage/src/lib.rs")
+        for symbol in ("fn poll(", "fn refresh(", "fn allow(", "struct Worker", "struct Job"):
+            self.assertNotIn(symbol, usage)
+
+    def test_sign_in_config_is_absent(self):
+        example = source("crates/sheprd-gpui/config-gpui.example.toml")
+        for symbol in ("usage.providers", "browser_cookies", "OPENAI_ADMIN_KEY"):
+            self.assertNotIn(symbol, example)
+        manifest = source("crates/sheprd-usage/Cargo.toml")
+        for dependency in ("aes", "cbc", "pbkdf2", "rusqlite", "secrecy", "sha1", "sha2", "ureq", "zeroize"):
+            self.assertNotRegex(manifest, rf"(?m)^{dependency}\.workspace")
+
     def test_shared_host_and_usage_contract_remain(self):
         self.assertTrue((ROOT / "crates/sheprd-usage/src/model.rs").exists())
-        self.assertTrue((ROOT / "crates/sheprd-usage/src/probe/shell.rs").exists())
+        self.assertTrue((ROOT / "crates/sheprd-usage/src/shell.rs").exists())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/control/server/hosts.rs").exists())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/usage/section.rs").exists())
 

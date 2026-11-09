@@ -45,6 +45,7 @@ mod removed_github;
 mod removed_mods;
 mod removed_phone;
 mod removed_resource_dashboard;
+mod removed_usage_sign_in;
 mod removed_workspace_close;
 mod removed_worktree_cleanup;
 mod repository_icons;

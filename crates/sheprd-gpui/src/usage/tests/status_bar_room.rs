@@ -25,7 +25,6 @@ fn antigravity() -> Reading {
             ],
         )),
         error: None,
-        access: None,
     }
 }
 

@@ -2,7 +2,7 @@
 //! which account, which limit windows, how much of each is used, when each
 //! resets, and whatever else the agent's service reports.
 
-use super::{service::Service, text::Text};
+use super::text::Text;
 use sheprd_client::ConnectTarget;
 use std::{
     any::Any,
@@ -10,20 +10,17 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-/// The machine whose agent sign-ins are read. A remote host is asked over SSH
-/// and a WSL distribution through `wsl.exe`, so its own credentials are used
-/// and never leave it.
+/// A host identity shared by usage presentation and listening-port inspection.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Host {
     Local,
     Ssh(String),
-    /// A WSL distribution, asked through a `wsl.exe` shell as a remote host
-    /// is over SSH: its files and sign-ins are its own, not this machine's.
+    /// A WSL distribution, addressed through `wsl.exe`.
     Wsl(String),
 }
 
 impl Host {
-    /// The host whose sign-ins a device's usage comes from.
+    /// The host addressed by the selected runtime connection.
     pub fn of(target: &ConnectTarget) -> Option<Self> {
         match target {
             ConnectTarget::Ssh { target, .. } => Some(Self::Ssh(target.clone())),
@@ -35,22 +32,29 @@ impl Host {
     }
 }
 
-/// A registered provider. Only [`super::registry`] makes one, so each value
-/// is a real [`Service`]; two are equal when their ids are.
+/// Static labels and links for reports the native UI knows how to present.
+#[derive(Debug)]
+pub struct Meta {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub icon: Option<&'static str>,
+    pub dashboard: Option<&'static str>,
+    pub status_page: Option<&'static str>,
+}
+
+/// A display identity from the registry, with no fetch implementation.
 #[derive(Clone, Copy)]
-pub struct Provider(pub(super) &'static dyn Service);
+pub struct Provider(pub(super) &'static Meta);
 
 impl Provider {
-    pub fn service(self) -> &'static dyn Service {
+    pub fn meta(self) -> &'static Meta {
         self.0
     }
-
     pub fn id(self) -> &'static str {
-        self.0.meta().id
+        self.0.id
     }
-
     pub fn name(self) -> &'static str {
-        self.0.meta().name
+        self.0.name
     }
 }
 
@@ -372,8 +376,7 @@ pub fn group(value: i64) -> String {
     out
 }
 
-/// A provider's own data for its own [`Service::render`], beyond what the
-/// shared fields carry. It crosses from the worker thread, so it is shared.
+/// Additional report data understood by the native panel, beyond the shared fields.
 pub type Detail = Arc<dyn Any + Send + Sync>;
 
 #[derive(Clone)]

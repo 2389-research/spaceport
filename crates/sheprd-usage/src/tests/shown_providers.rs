@@ -6,7 +6,6 @@ fn the_status_bar_orders_providers_by_selection_and_usage() {
         provider: provider(id),
         report: used.map(|used| report(provider(id), used)),
         error: None,
-        access: None,
     };
     let mut entry = super::super::Entry {
         readings: vec![
@@ -27,11 +26,10 @@ fn the_status_bar_orders_providers_by_selection_and_usage() {
             vec![],
         )),
         error: None,
-        access: None,
     });
     let ids = |chosen: Option<&str>| {
         entry
-            .headline(chosen.map(provider))
+            .headline(chosen.map(provider), &UsageConfig::default())
             .iter()
             .map(|reading| reading.provider.id())
             .collect::<Vec<_>>()
@@ -51,13 +49,11 @@ fn panel_tabs_leave_out_sign_ins_with_nothing_to_show() {
         provider: provider(id),
         report: Some(report(provider(id), 5.)),
         error: None,
-        access: None,
     };
     let without = |id: &str| Reading {
         provider: provider(id),
         report: None,
         error: Some(Error::NoPlan.into()),
-        access: None,
     };
     let entry = super::super::Entry {
         readings: vec![with("codex"), without("gemini"), without("cursor")],

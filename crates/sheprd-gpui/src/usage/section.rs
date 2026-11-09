@@ -103,7 +103,7 @@ impl SheprdWindow {
             );
         }
         for reading in readings {
-            let service = reading.provider.service();
+            let meta = reading.provider.meta();
             let account = reading
                 .report
                 .as_ref()
@@ -129,7 +129,7 @@ impl SheprdWindow {
                             div()
                                 .flex_1()
                                 .font_weight(FontWeight::SEMIBOLD)
-                                .child(service.meta().name),
+                                .child(meta.name),
                         )
                         .children(account.plan.map(|plan| {
                             div()

@@ -61,7 +61,7 @@ const HOUR: Duration = Duration::from_secs(3600);
 /// A report with every kind of line the panel draws: a session window on
 /// pace, a weekly one ahead of it, a window the service names, a balance
 /// with a total, one a provider names counted in credits, and facts and
-/// shares a provider names (Wayfinder's), with the route names it reports.
+/// shares with localized headings and the route names the service reports.
 fn full(provider: Provider) -> Report {
     let now = SystemTime::now();
     let mut report = Report::new(
@@ -86,29 +86,28 @@ fn full(provider: Provider) -> Report {
     );
     // A balance a provider names, counted in credits.
     report.balances.push(Balance::new(
-        Text::message("usage-wayfinder-saved"),
+        Text::message("usage-daily-spend"),
         1_250.,
         Unit::Count(Count::Credits),
     ));
     report.with_sections([
         Section::Facts {
-            title: Text::message("usage-report-usage"),
+            title: Text::message("usage-section-title"),
             facts: vec![
                 (
-                    Text::message("usage-wayfinder-gateway"),
-                    Text::message("usage-wayfinder-gateway-state")
-                        .arg("status", "ok")
-                        .arg("models", 2)
-                        .arg("mode", "offline"),
+                    Text::message("usage-status-page"),
+                    Text::message("usage-updated-ago").arg("time", "2h"),
                 ),
                 (
-                    Text::message("usage-wayfinder-decision"),
-                    Text::message("usage-wayfinder-milliseconds").arg("time", "0.2"),
+                    Text::message("usage-dashboard"),
+                    Text::message("usage-countdown-hours")
+                        .arg("hours", 2)
+                        .arg("minutes", 30),
                 ),
             ],
         },
         Section::Shares {
-            title: Text::message("usage-wayfinder-requests-by-route"),
+            title: Text::message("usage-section-title"),
             shares: vec![(Text::service("local"), 71.), (Text::service("cloud"), 29.)],
         },
     ])
@@ -118,11 +117,9 @@ fn full(provider: Provider) -> Report {
 const REPORTING: [&str; 4] = ["claude", "openai", "codex", "copilot"];
 
 /// A fifth provider without a report, to cover unavailable presentation.
-fn configurable() -> Provider {
+fn unavailable_provider() -> Provider {
     registry::all()
-        .find(|provider| {
-            !provider.service().meta().settings.is_empty() && !REPORTING.contains(&provider.id())
-        })
+        .find(|provider| !REPORTING.contains(&provider.id()))
         .unwrap()
 }
 
@@ -154,32 +151,27 @@ fn readings() -> Vec<Reading> {
             provider: claude,
             report: Some(full(claude).with_detail(others())),
             error: None,
-            access: None,
         },
         Reading {
             provider: openai,
             report: Some(full(openai).with_detail(daily)),
             // A failed refresh over an older report.
             error: Some(Arc::new(sheprd_usage::Error::Status(503))),
-            access: None,
         },
         Reading {
             provider: codex,
             report: None,
             error: None,
-            access: None,
         },
         Reading {
             provider: copilot,
             report: None,
             error: Some(Arc::new(sheprd_usage::Error::Status(429))),
-            access: None,
         },
         Reading {
-            provider: configurable(),
+            provider: unavailable_provider(),
             report: None,
-            error: Some(Arc::new(sheprd_usage::Error::NotSignedIn)),
-            access: None,
+            error: Some(Arc::new(sheprd_usage::Error::Unavailable)),
         },
     ]
 }
@@ -202,7 +194,7 @@ fn data(readings: &[Reading], host: &str) -> Vec<String> {
         "cloud".into(),
     ];
     for reading in readings {
-        let meta = reading.provider.service().meta();
+        let meta = reading.provider.meta();
         data.push(meta.name.into());
         data.push(reading.provider.name().into());
     }
@@ -257,9 +249,9 @@ fn usage_shows_only_messages_and_what_services_report() {
             });
             draw(cx);
             let drawn = recorder.take();
-            if provider == configurable() {
+            if provider == unavailable_provider() {
                 // Its own reading has an error and no reported limits.
-                let missing = sheprd_usage::Error::NotSignedIn.localize();
+                let missing = sheprd_usage::Error::Unavailable.localize();
                 assert!(
                     drawn.iter().any(|text| text.contains(&missing)),
                     "{drawn:?}"

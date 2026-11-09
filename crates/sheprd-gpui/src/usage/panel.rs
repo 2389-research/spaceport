@@ -92,7 +92,7 @@ impl SheprdWindow {
             .track_scroll(&self.menu.usage_scroll)
             .px(px(6.))
             .py(px(4.));
-        let service = provider.service();
+        let meta = provider.meta();
         let account = reading
             .and_then(|r| r.report.as_ref())
             .map(|report| report.account.clone())
@@ -100,13 +100,7 @@ impl SheprdWindow {
         let updated = entry
             .and_then(|entry| entry.updated)
             .map(|at| text::updated(now.duration_since(at).unwrap_or_default()))
-            .unwrap_or_else(|| {
-                if self.usage.busy() {
-                    fl!("usage-updating")
-                } else {
-                    fl!("usage-not-updated-yet")
-                }
-            });
+            .unwrap_or_else(|| fl!("usage-not-updated-yet"));
         let host = self
             .endpoints
             .get(self.selected_endpoint)
@@ -128,7 +122,7 @@ impl SheprdWindow {
                             div()
                                 .text_size(px(font.size * 1.25))
                                 .font_weight(FontWeight::SEMIBOLD)
-                                .child(service.meta().name),
+                                .child(meta.name),
                         )
                         .child(
                             div()
@@ -159,7 +153,6 @@ impl SheprdWindow {
                 ),
         );
         let errors = reading
-            .filter(|r| r.access.is_none())
             .and_then(|r| r.error.as_deref())
             .into_iter()
             .chain(entry.and_then(|entry| entry.error.as_deref()))
@@ -190,7 +183,7 @@ impl SheprdWindow {
         }
         let body = view
             .child(rule())
-            .children(service.meta().dashboard.map(|url| {
+            .children(meta.dashboard.map(|url| {
                 self.usage_action(
                     "usage-dashboard",
                     "icons/chart.svg",
@@ -198,7 +191,7 @@ impl SheprdWindow {
                     move |_, _, cx| cx.open_url(url),
                 )
             }))
-            .children(service.meta().status_page.map(|url| {
+            .children(meta.status_page.map(|url| {
                 self.usage_action(
                     "usage-status",
                     "icons/pulse.svg",

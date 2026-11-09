@@ -204,7 +204,7 @@ fn unknown_keys_are_ignored_and_reported() -> anyhow::Result<()> {
              [notifications]\nenabled = true\nsound = 'ping'\n\
              [clipboard_toast]\nduration = 3\n[features]\nnew_flag = true\n\
              [layout]\nsidebar_gap = 4\nshadow = true\n\
-             [usage.providers.future]\ntoken = 'y'",
+             [usage]\nshow_providers = ['future']",
     )?;
     assert_eq!(config.theme, "Nord");
     assert_eq!(config.terminal.size, 18.);
@@ -220,7 +220,7 @@ fn unknown_keys_are_ignored_and_reported() -> anyhow::Result<()> {
             "layout.shadow",
             "notifications.sound",
             "terminal.ligatures",
-            "usage.providers.future",
+            "usage.show_providers.future",
         ]
     );
     assert_eq!(
