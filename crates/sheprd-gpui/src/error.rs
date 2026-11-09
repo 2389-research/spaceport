@@ -52,8 +52,6 @@ pub enum Error {
     #[error(transparent)]
     Control(#[from] crate::control::Error),
     #[error(transparent)]
-    Credentials(#[from] sheprd_credentials::Error),
-    #[error(transparent)]
     Daemon(#[from] crate::daemon::Error),
     #[error(transparent)]
     Devices(#[from] crate::menu::devices::Error),

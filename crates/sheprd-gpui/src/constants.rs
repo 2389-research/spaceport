@@ -25,9 +25,9 @@ pub(crate) const TAB_WIDTH: f32 = 64.;
 // The reference strip is a shallow band: chrome, not a toolbar.
 pub(crate) const TAB_HEIGHT: f32 = 24.;
 
-// Whether this is a signed release, which the credential store keys Keychain
-// access off; defined once there.
-pub(crate) use sheprd_credentials::RELEASE_BUILD;
+// Legacy production-build policy for automatic skill management and issue reporting.
+// Signed macOS previews keep this false.
+pub(crate) const RELEASE_BUILD: bool = option_env!("HERDR_RELEASE_VERSION").is_some();
 
 // The git commit hash embedded by build.rs for source/dev builds.
 pub(crate) const BUILD_COMMIT: Option<&str> = option_env!("HERDR_BUILD_COMMIT");

@@ -52,7 +52,6 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-control-protocol` | The control socket between `spaceport <command>` and the running app: request and response types, bounds, and the Unix socket or named pipe; no GPUI |
 | `crates/sheprd-commands` | The command catalog: each command's name, default shortcuts per platform, and the daemon request it becomes against a snapshot; no GPUI (the app binds the keys and runs window commands) |
 | `crates/sheprd-usage` | Passive usage report models and display metadata, plus the bounded shell helper retained by port scanning; no provider probes, sign-in configuration, credential/cookie readers, fetch worker or GPUI |
-| `crates/sheprd-credentials` | Credential store policy, the macOS Keychain, Linux Secret Service, Windows Credential Manager, and the private `0600` file; no GPUI |
 | `crates/sheprd-remote` | Machines beyond this computer's daemon: the cloud providers (one feature each), their config tables and saved devices, running scripts on any host, and Teleport's core; no GPUI (the app runs its jobs and draws its views) |
 | `crates/sheprd-remote-control` | Remote control from a phone. With the `server` feature, the `sheprd-remote-control` daemon: HTTPS with its own CA, dual-approval pairing, Web Push, and chats and terminal tabs through Herdr's API socket. Without it, what Sheprd uses: the daemon's control protocol, the `[remote]` config table, the user service install, and the pairing state; no GPUI, and no Tokio without `server` |
 | `crates/sheprd-nearby` | `sheprd-nearby` on Linux and Windows: Sheprd's Bluetooth helper for nearby pairing and presence, BlueZ over `zbus` or WinRT's GATT server, speaking the macOS Swift helper's stdio protocol (`macos/sheprd-nearby`); no GPUI or Tokio |
@@ -99,7 +98,7 @@ at the same spot, or both bumping one hard-coded count.
   the crate's root `Error`, as `pane_move` and `backdrop` do, rather than a
   run of variants in `error.rs`. The root enum stays sorted. Callers name it
   `feature::Error`, never through an `as FeatureError` alias.
-- Wrap another crate's error the same way (`Credentials(#[from] sheprd_credentials::Error)`).
+- Wrap another crate's error the same way (`Client(#[from] sheprd_client::Error)`).
   Do not mirror its variants in the app's root and convert one by one: each
   failure has one definition, and callers match the nested variant.
 - Shared state structs (`SheprdWindow`, `Config`, `herdr_settings::Settings`)
