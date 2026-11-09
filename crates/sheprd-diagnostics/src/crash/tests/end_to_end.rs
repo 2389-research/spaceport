@@ -3,7 +3,7 @@
 use super::*;
 use std::process::{Command, Stdio};
 
-const CHILD: &str = "HERDR_GPUI_CRASH_CHILD";
+const CHILD: &str = "SPACEPORT_CRASH_CHILD";
 /// An application-defined exception code (bit 29 set), which no system
 /// component raises.
 #[cfg(windows)]
@@ -98,7 +98,7 @@ fn crash(kind: &str, state: &Path) -> PathBuf {
         .status()
         .unwrap();
     assert!(!status.success(), "the child did not crash");
-    state.join("herdr").join("gpui").join("logs")
+    state.join("spaceport").join("logs")
 }
 
 fn only(dir: &Path, extension: &str) -> PathBuf {
@@ -119,11 +119,11 @@ fn a_panic_leaves_a_report_and_a_flushed_log_record() {
     );
     assert!(report.contains("end_to_end.rs"), "{report}");
     assert!(report.contains("\nbacktrace:\n"), "{report}");
-    let log = fs::read_to_string(logs.join("herdr-gpui.jsonl")).unwrap();
+    let log = fs::read_to_string(logs.join("spaceport.jsonl")).unwrap();
     let name = report_path.file_name().unwrap().to_str().unwrap();
     let record = log
         .lines()
-        .find(|line| line.contains("Sheprd panicked"))
+        .find(|line| line.contains("Spaceport panicked"))
         .unwrap_or_else(|| panic!("no panic record in\n{log}"));
     assert!(record.contains(name) && record.contains("deliberate test panic"));
     #[cfg(windows)]
@@ -147,8 +147,8 @@ fn an_unhandled_exception_leaves_a_dump_and_a_report() {
         report.contains(&format!("unhandled exception {TEST_EXCEPTION:#010x}")),
         "{report}"
     );
-    let log = fs::read_to_string(logs.join("herdr-gpui.jsonl")).unwrap();
-    assert!(log.contains("Sheprd crashed"), "{log}");
+    let log = fs::read_to_string(logs.join("spaceport.jsonl")).unwrap();
+    assert!(log.contains("Spaceport crashed"), "{log}");
 }
 
 #[cfg(windows)]

@@ -2690,13 +2690,14 @@ attention can keep the badge visible. This QA setting is not saved.
 ## Logs
 
 The client's own logs are written to
-`$XDG_STATE_HOME/herdr/gpui/logs/herdr-gpui.jsonl` (falling back to
-`$HOME/.local/state`, or `%LOCALAPPDATA%` on Windows when `HOME` is unset), one
+`$XDG_STATE_HOME/spaceport/logs/spaceport.jsonl` (falling back to
+`$HOME/.local/state/spaceport/logs/spaceport.jsonl`, or
+`%LOCALAPPDATA%/spaceport/logs/spaceport.jsonl` on Windows when `HOME` is unset), one
 JSON record per line, readable only by you on Unix. Windows installations with
-`HOME` set retain their existing state directory after upgrading. If both
+`HOME` set use that Spaceport state directory. If both
 `HOME` and `LOCALAPPDATA` are missing, Windows uses
 `%USERPROFILE%\AppData\Local`. Empty variables are treated as unset. Past
-16 MiB the file is rotated to `herdr-gpui.1.jsonl`, replacing the previous one,
+16 MiB the file is rotated to `spaceport.1.jsonl`, replacing the previous one,
 so at most two files are kept. Logs are not held in memory: **Window > Logs**
 reads the newest 5,000 records of the file while it is open, including earlier
 runs, and filters, copies, or exports them. Nothing is uploaded. Logging never
@@ -2708,14 +2709,14 @@ available, nothing is saved and the window says so.
 
 If the app panics, it writes `crash-YYYYMMDD-HHMMSS.mmm-PID.txt` (the time in UTC) beside the log
 before it exits. The report has the version, platform, thread, panic message,
-source location, and a backtrace. The app also writes a `Sheprd panicked`
+source location, and a backtrace. The app also writes a `Spaceport panicked`
 error record to the log, naming the report, and waits up to two seconds for the
 log writer to save it. Release builds ship without debug symbols, so their
 backtraces are mostly addresses; the message and location are exact. On Windows
 it also writes a minidump, `crash-….dmp`, for a panic and for a crash Rust never
 sees, such as an access violation or a stack overflow (an unhandled-exception
 filter; `src/crash/windows.rs`). Such a crash gets a short `.txt` report with the
-exception code and address, and a `Sheprd crashed` record. A dump holds every
+exception code and address, and a `Spaceport crashed` record. A dump holds every
 thread's stack and registers but not the heap. A thread started at launch writes
 it, because the crashing thread may have no stack left. Windows Error Reporting
 still runs afterwards. Only the five newest reports and three newest dumps are

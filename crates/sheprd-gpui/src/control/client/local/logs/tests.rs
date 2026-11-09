@@ -21,7 +21,7 @@ fn messages(records: &[Arc<Record>]) -> Vec<&str> {
 #[test]
 fn the_tail_takes_the_newest_records_and_reaches_into_the_rotated_file() {
     let dir = tempfile::tempdir().unwrap();
-    let current = dir.path().join("herdr-gpui.jsonl");
+    let current = dir.path().join("spaceport.jsonl");
     let previous = previous_log_file(&current);
     assert!(tail(&previous, &current, 10).unwrap().is_empty());
 
@@ -41,7 +41,7 @@ fn the_tail_takes_the_newest_records_and_reaches_into_the_rotated_file() {
 #[test]
 fn records_print_one_line_each_and_unreadable_lines_are_skipped() {
     let dir = tempfile::tempdir().unwrap();
-    let current = dir.path().join("herdr-gpui.jsonl");
+    let current = dir.path().join("spaceport.jsonl");
     write(&current, &["first"]);
     let mut text = std::fs::read_to_string(&current).unwrap();
     text.push_str("not json\n");
@@ -59,7 +59,7 @@ fn records_print_one_line_each_and_unreadable_lines_are_skipped() {
 #[test]
 fn a_current_file_longer_than_the_reader_keeps_never_reaches_into_the_rotated_one() {
     let dir = tempfile::tempdir().unwrap();
-    let current = dir.path().join("herdr-gpui.jsonl");
+    let current = dir.path().join("spaceport.jsonl");
     let previous = previous_log_file(&current);
     write(&previous, &["rotated"]);
     // Enough records to pass the reader's byte window, so only its end is read.

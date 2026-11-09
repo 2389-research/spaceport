@@ -219,7 +219,7 @@ fn report_exception(dir: &Path, version: &str, code: i32, address: usize) {
         exception = message,
         location,
         report = name,
-        "Sheprd crashed"
+        "Spaceport crashed"
     );
     crate::flush(FLUSH);
 }

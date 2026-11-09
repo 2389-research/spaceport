@@ -366,7 +366,7 @@ impl LogWindow {
         let minimum = self.minimum;
         let dropped = self.dropped;
         let picker = save
-            .then(|| cx.prompt_for_new_path(std::path::Path::new("."), Some("herdr-gpui.jsonl")));
+            .then(|| cx.prompt_for_new_path(std::path::Path::new("."), Some("spaceport.jsonl")));
         cx.spawn(async move |this, cx| {
             let path = match picker {
                 Some(picker) => match picker.await {

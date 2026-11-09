@@ -43,7 +43,7 @@ fn a_report_names_the_build_place_and_backtrace() {
         "   0: sheprd_gpui::app::run",
     );
     for expected in [
-        "Sheprd crash report\n",
+        "Spaceport crash report\n",
         "version: 1.2.3\n",
         "thread: main\n",
         "location: src/app.rs:1:2\n",
@@ -63,7 +63,7 @@ fn only_the_newest_reports_are_kept_and_nothing_else_is_touched() {
     for name in &names {
         write_new(&dir.path().join(name), "report").unwrap();
     }
-    let unrelated = ["herdr-gpui.jsonl", "crash-notes.md", "other-20200101.txt"];
+    let unrelated = ["spaceport.jsonl", "crash-notes.md", "other-20200101.txt"];
     for name in unrelated {
         fs::write(dir.path().join(name), "keep").unwrap();
     }

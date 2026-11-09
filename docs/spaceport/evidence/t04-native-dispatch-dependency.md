@@ -185,9 +185,9 @@ A separate `sheprd-diagnostics` test run was red: 22 passed, 1 failed, 1
 ignored. Its crash test looks under `<XDG_STATE_HOME>/herdr/gpui/logs`, while
 `sheprd_client::local_path::state_dir()` now returns
 `<XDG_STATE_HOME>/spaceport`; the test and diagnostics source were unchanged
-by this cut. The source-path mismatch exists at `c66dc64e2` and needs a
-separate identity/diagnostics fix. No native macOS window test ran because
-the desktop was at the login window.
+by this cut. The source-path mismatch exists at `c66dc64e2`; the separate
+[T01 diagnostics cut](t01-diagnostics-identity.md) fixes it. No native macOS
+window test ran because the desktop was at the login window.
 
 The PR/Issues/Tasks Activity panels, `ui panel` CLI/wire names,
 `poll_orchestrators`, GitLab account flow and `sheprd-orchestrator` worker still

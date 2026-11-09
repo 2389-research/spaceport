@@ -1,10 +1,11 @@
 //! Client logs, stored on disk rather than in memory. Capture never blocks the
 //! emitting thread: each event is serialized to one JSON line of at most 4096
 //! bytes and offered to a bounded queue drained by a dedicated writer thread,
-//! which appends to `<state>/herdr/gpui/logs/herdr-gpui.jsonl` and rotates it to
-//! `herdr-gpui.1.jsonl` beyond 16 MiB. A full queue or failed write drops lines
-//! and counts them. No uploads, environment filters, or stderr. Span context
-//! includes names, not fields; arbitrary field Debug implementations must
+//! which appends to `logs/spaceport.jsonl` under Spaceport's state directory
+//! and rotates it to `spaceport.1.jsonl` beyond 16 MiB. A full queue or
+//! failed write drops lines and counts them. No uploads, environment filters,
+//! or stderr. Span context includes names, not fields; arbitrary field Debug
+//! implementations must
 //! cooperate with fmt errors.
 //!
 //! Only events whose target is one of the crates `init` names are kept, so a
@@ -40,8 +41,8 @@ use tracing_subscriber::{Layer, layer::Context, prelude::*, registry::LookupSpan
 
 const MAX_BYTES: usize = 4096;
 const TIMESTAMP_FORMAT: &str = "[%Y-%m-%d %H:%M:%S]";
-const FILE_NAME: &str = "herdr-gpui.jsonl";
-const PREVIOUS_FILE_NAME: &str = "herdr-gpui.1.jsonl";
+const FILE_NAME: &str = "spaceport.jsonl";
+const PREVIOUS_FILE_NAME: &str = "spaceport.1.jsonl";
 /// Lines waiting for the writer; beyond this, capture drops rather than blocks.
 const QUEUE: usize = 4096;
 const MAX_FILE_BYTES: u64 = 16 * 1024 * 1024;

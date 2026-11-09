@@ -19,7 +19,7 @@ fn the_newest_crash_reports_are_quoted_and_redacted() {
     ] {
         report(dir.path(), stamp, body);
     }
-    std::fs::write(dir.path().join("herdr-gpui.jsonl"), "not a report").unwrap();
+    std::fs::write(dir.path().join("spaceport.jsonl"), "not a report").unwrap();
     let text = redactor().redact(&crash_reports(dir.path()));
     assert_eq!(
         text,

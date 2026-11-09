@@ -82,7 +82,7 @@ fn record(dir: &Path, version: &str, info: &PanicHookInfo<'_>) {
             thread,
             report = name,
             backtrace = %backtrace,
-            "Sheprd panicked"
+            "Spaceport panicked"
         ),
         Err(error) => tracing::error!(
             panic = message,
@@ -90,7 +90,7 @@ fn record(dir: &Path, version: &str, info: &PanicHookInfo<'_>) {
             thread,
             %error,
             backtrace = %backtrace,
-            "Sheprd panicked; the crash report could not be written"
+            "Spaceport panicked; the crash report could not be written"
         ),
     }
     #[cfg(windows)]
@@ -115,7 +115,7 @@ fn report(
     location: &str,
     backtrace: &str,
 ) -> String {
-    let mut text = String::from("Sheprd crash report\n\n");
+    let mut text = String::from("Spaceport crash report\n\n");
     let _ = writeln!(text, "version: {version}");
     let _ = writeln!(
         text,
