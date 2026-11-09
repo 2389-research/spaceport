@@ -15,7 +15,6 @@ use crate::config::{FontConfig, Theme};
 use crate::direction::Logical;
 use gpui::{prelude::*, *};
 use sheprd_client::protocol::AgentStatus;
-use std::sync::Arc;
 use unicode_width::UnicodeWidthStr;
 
 mod badge;
@@ -27,31 +26,27 @@ pub(super) use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, token_column,
 };
 
-/// What a row shows in its leading icon slot: a repository owner's avatar when
-/// one is cached, the GitHub mark while it is not, an empty slot for a folder
-/// that is not a Git checkout, so its name lines up with the rows around it,
-/// and nothing for a row that reserves no slot at all: a child row, or any
-/// row while the repository icons are turned off. A linked worktree that is
-/// not nested under its main checkout shows the branch glyph in its own hue
-/// instead, so it never relies on colour alone.
+/// What a row shows in its leading icon slot: a neutral repository icon, an
+/// empty slot for a folder outside a checkout, or no slot for a child row or
+/// a disabled icon setting. A linked worktree standing alone shows its branch
+/// glyph so it never relies on colour alone.
 pub(super) enum RowIcon {
     None,
     Blank,
-    Mark,
-    Avatar(Arc<Image>),
+    Repository,
     Worktree(u32),
 }
 
 impl RowIcon {
     /// Whether the slot shows something; a blank one only keeps the room.
     pub(super) fn draws(&self) -> bool {
-        matches!(self, Self::Mark | Self::Avatar(_) | Self::Worktree(_))
+        matches!(self, Self::Repository | Self::Worktree(_))
     }
 
     fn slot(self, key: &str, font: &FontConfig, color: u32) -> Div {
         let probe = match self {
             Self::Worktree(_) => "worktree-icon",
-            _ => "github",
+            _ => "workspace-icon",
         };
         let size = scaled(font, 12.);
         div()
@@ -65,32 +60,24 @@ impl RowIcon {
             .child(self.element(color))
     }
 
-    /// The icon filling its parent, or nothing for rows without one. An
-    /// avatar still loading or failing to decode shows the mark instead.
+    /// The icon filling its parent, or nothing for rows without one.
     pub(super) fn element(self, color: u32) -> AnyElement {
         match self {
             Self::None | Self::Blank => Empty.into_any_element(),
-            Self::Mark => github_mark(color).size_full().into_any_element(),
+            Self::Repository => repository_icon(color).size_full().into_any_element(),
             Self::Worktree(hue) => svg()
                 .path("icons/git-branch.svg")
                 .size_full()
                 .text_color(rgb(hue))
                 .into_any_element(),
-            Self::Avatar(image) => img(image)
-                .size_full()
-                .rounded_full()
-                .with_fallback(move || github_mark(color).size_full().into_any_element())
-                .with_loading(move || github_mark(color).size_full().into_any_element())
-                .into_any_element(),
         }
     }
 }
 
-/// The mark paints as vector rather than a rasterized image, so it stays sharp
-/// at every size it stands in for an avatar.
-pub(crate) fn github_mark(color: u32) -> Svg {
+/// A vector folder remains legible at the small sidebar size.
+fn repository_icon(color: u32) -> Svg {
     svg()
-        .path("icons/github.svg")
+        .path("icons/folder.svg")
         .flex_none()
         .text_color(rgb(color))
 }

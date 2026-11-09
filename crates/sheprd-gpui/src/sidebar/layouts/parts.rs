@@ -350,8 +350,8 @@ pub(super) fn muted(key: &str, size: f32, theme: &Theme) -> Div {
 }
 
 /// The branch glyph a linked worktree standing alone leads its name with,
-/// in the hue its icon carries. These rows have no avatar slot, so every
-/// other icon draws nothing.
+/// in the hue its icon carries. These rows have no repository icon slot;
+/// other icons draw nothing here.
 pub(super) fn worktree(key: &str, icon: &RowIcon, size: f32) -> Option<Div> {
     let RowIcon::Worktree(hue) = icon else {
         return None;

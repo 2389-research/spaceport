@@ -6,7 +6,7 @@ use super::{SheprdWindow, SurfaceSignal, function_keys, prefix};
 #[cfg(feature = "integration-test")]
 use crate::smoke;
 use crate::{
-    WINDOW_TITLE, avatars, endpoint, log_window, menu, preferences, sessions, sidebar,
+    WINDOW_TITLE, endpoint, log_window, menu, preferences, sessions, sidebar,
     state::LiveState,
     terminal::{Selection, WheelAccumulator},
     updater,
@@ -143,7 +143,6 @@ impl SheprdWindow {
             app_update_notes: Default::default(),
             app_update_notes_scroll: ScrollHandle::new(),
             arrival: None,
-            avatars: None,
             backdrop: Default::default(),
             bell: crate::bell::Bell::default(),
             bounds: Bounds::default(),
@@ -304,7 +303,6 @@ impl SheprdWindow {
             .socket_path()
             .ok()
             .map(|path| preferences::Preferences::new(&path));
-        this.avatars = Some(avatars::Avatars::new());
         this.reconnect(cx);
         log_window::set_appearance(&this.config, &this.theme, cx);
         this.load_gui_config(cx);

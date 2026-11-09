@@ -81,7 +81,7 @@ mod tests;
 #[cfg(feature = "integration-test")]
 use crate::smoke;
 use crate::{
-    avatars, config, endpoint, menu,
+    config, endpoint, menu,
     navigation::OwnedNavigationTarget,
     preferences,
     presentation::Presentation,
@@ -129,7 +129,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) app_update_notes_scroll: ScrollHandle,
     /// A tab torn off another window, waiting for its host to be listed.
     pub(crate) arrival: Option<tab_tear::TornTab>,
-    pub(crate) avatars: Option<avatars::Avatars>,
     /// The picture and platform appearance `[backdrop]` asks for.
     pub(crate) backdrop: backdrop::State,
     pub(crate) bell: crate::bell::Bell,
@@ -472,13 +471,6 @@ impl SheprdWindow {
                 // i18n: data
                 Err(error) => eprintln!("App update restart failed: {error}"),
             }
-            cx.notify();
-        }
-        if self
-            .avatars
-            .as_mut()
-            .is_some_and(|avatars| avatars.poll(std::time::Instant::now()))
-        {
             cx.notify();
         }
         if let Some(chrome) = self.sidebar_preferences.as_mut().and_then(|p| p.loaded()) {

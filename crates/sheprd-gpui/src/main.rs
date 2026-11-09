@@ -13,7 +13,6 @@ mod app;
 mod app_badge;
 mod app_icon;
 mod automations;
-mod avatars;
 mod backdrop;
 mod bell;
 mod browser;

@@ -17,10 +17,7 @@ use super::{
 };
 use crate::direction::Logical;
 use crate::i18n::fl;
-use crate::{
-    Command, NavigationTarget, SheprdWindow, avatars::Checkout, config::AgentsPlacement,
-    fonts::StyledFont,
-};
+use crate::{Command, NavigationTarget, SheprdWindow, config::AgentsPlacement, fonts::StyledFont};
 use gpui::{prelude::*, *};
 
 mod agent_rows;
@@ -420,22 +417,17 @@ impl SheprdWindow {
                         tree,
                         // A child hangs from the main checkout on the guide
                         // lines; one standing alone has no line to hang from,
-                        // so it takes the branch glyph where the owner's
-                        // avatar sat.
+                        // so it takes the branch glyph where the repository
+                        // icon sits.
                         icon: if let Some(glyph) = worktree_glyph.filter(|_| linked && !indented) {
                             RowIcon::Worktree(glyph)
                         } else if indented || !self.config.show_repository_icons {
                             RowIcon::None
                         } else if workspace.branch.is_none() {
-                            // Not a Git checkout, so no mark that reads as one.
+                            // Keep the icon slot aligned with checkout rows.
                             RowIcon::Blank
                         } else {
-                            let target = &endpoint.connection.target;
-                            self.avatars
-                                .as_ref()
-                                .zip(Checkout::of(endpoint_index == 0, target, workspace))
-                                .and_then(|(avatars, checkout)| avatars.image(checkout))
-                                .map_or(RowIcon::Mark, RowIcon::Avatar)
+                            RowIcon::Repository
                         },
                         fold,
                         grouped,

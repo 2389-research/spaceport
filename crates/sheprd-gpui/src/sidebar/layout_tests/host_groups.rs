@@ -39,8 +39,8 @@ fn multi_host_rows_scope_duplicate_ids_and_keep_agents_when_host_collapses(
         "workspace-ssh:test-w0",
         "agent-local-p0",
         "agent-ssh:test-p0",
-        "github-herdr",
-        "github-remote workspace",
+        "workspace-icon-herdr",
+        "workspace-icon-remote workspace",
     ] {
         assert!(cx.debug_bounds(selector).is_some(), "missing {selector}");
     }
@@ -66,8 +66,8 @@ fn multi_host_rows_scope_duplicate_ids_and_keep_agents_when_host_collapses(
         }
     });
     for (icon, title) in [
-        ("github-herdr", "name-herdr"),
-        ("github-remote workspace", "name-remote workspace"),
+        ("workspace-icon-herdr", "name-herdr"),
+        ("workspace-icon-remote workspace", "name-remote workspace"),
     ] {
         let icon = cx.debug_bounds(icon).unwrap();
         let title = cx.debug_bounds(title).unwrap();

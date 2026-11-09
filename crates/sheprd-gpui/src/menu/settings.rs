@@ -252,11 +252,6 @@ impl SheprdWindow {
                         this.local_error = Some(message);
                     }
                 }
-                // A config another build wrote, such as a setting this version
-                // does not know, must not sign GitHub out: restore the saved
-                // credential under the settings already in effect.
-                if this.avatars.is_some() {
-                }
                 cx.notify();
             });
         }));

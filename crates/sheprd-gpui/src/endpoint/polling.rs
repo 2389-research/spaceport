@@ -3,13 +3,12 @@
 use super::{ACTIVATION_TIMEOUT, LOCAL, Redraw};
 use crate::{
     SheprdWindow,
-    avatars::Checkout,
     i18n::{Localize, fl},
     notification_mutes::{Daemon, Mutes},
     state::{Answer, DialogResponse},
 };
 use gpui::{ClipboardItem, Context};
-use sheprd_client::{ConnectTarget, RemoteHost};
+use sheprd_client::RemoteHost;
 use std::time::Instant;
 
 impl SheprdWindow {
@@ -89,12 +88,6 @@ impl SheprdWindow {
         // OSC 52 writes are drained per endpoint so they are written once and
         // never linger in a live state that a later poll would re-read.
         let mut clipboard_writes = std::collections::VecDeque::new();
-        // A device removed from the catalog is never followed again, so its
-        // avatar reads stop here rather than dialing a deleted host.
-        if let Some(avatars) = &mut self.avatars {
-            let endpoints = &self.endpoints;
-            avatars.keep_links(|id| endpoints.iter().any(|endpoint| endpoint.id == id));
-        }
         for (index, endpoint) in self.endpoints.iter_mut().enumerate() {
             let updated = endpoint.poll(Instant::now());
             // Nothing to keep current, or to silence, while nothing is muted.
@@ -141,42 +134,6 @@ impl SheprdWindow {
                 },
             );
             changed = changed.max(updated);
-            // An SSH device's avatar reads follow its connection, before any
-            // request below, so a reconnection's first snapshot asks again.
-            if let (Some(avatars), ConnectTarget::Ssh { target, .. }) =
-                (&mut self.avatars, &endpoint.connection.target)
-            {
-                avatars.follow(&endpoint.id, target, endpoint.online_since());
-            }
-            // Remote cwd strings must never be resolved against this machine's
-            // Git repos; `Checkout::of` reads a saved SSH device's over SSH.
-            // A failed read is asked again once due, even on an idle host that
-            // sends no new snapshot.
-            let now = Instant::now();
-            if endpoint.online_since().is_some()
-                && let (Some(avatars), Some(snapshot)) =
-                    (&mut self.avatars, &endpoint.live.snapshot)
-                && (updated == Redraw::Window
-                    || matches!(&endpoint.connection.target,
-                        ConnectTarget::Ssh { target, .. } if avatars.retry_due(target, now)))
-            {
-                let target = &endpoint.connection.target;
-                for workspace in &snapshot.workspaces {
-                    if let Some(checkout) = Checkout::of(index == 0, target, workspace) {
-                        avatars.request(checkout, now);
-                    }
-                }
-                if let ConnectTarget::Ssh { target: host, .. } = target {
-                    avatars.forget_unlisted(host, |dir| {
-                        snapshot.workspaces.iter().any(|workspace| {
-                            matches!(
-                                Checkout::of(index == 0, target, workspace),
-                                Some(Checkout::Ssh { dir: listed, .. }) if listed == dir
-                            )
-                        })
-                    });
-                }
-            }
             if endpoint.enabled
                 && !endpoint.detached
                 && endpoint.connection.handle.is_none()

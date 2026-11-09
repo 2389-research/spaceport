@@ -333,6 +333,7 @@
         "evidence/t04-px0-editor-removal.md",
         "evidence/t04-git-read-route-removal.md",
         "evidence/t04-script-cli-removal.md",
+        "evidence/t04-repository-avatar-removal.md",
         "evidence/t05-core-default-observation.md"
       ],
       "must_close_gaps": [

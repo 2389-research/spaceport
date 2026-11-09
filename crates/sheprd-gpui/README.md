@@ -39,7 +39,7 @@ and an already trusted host key. For hosts that need MFA or a password, configur
 `ControlMaster auto` with a `ControlPath` in `~/.ssh/config` and authenticate once
 with `ssh HOST` in a terminal: the app reuses that master connection while it lives.
 Otherwise, on macOS and Linux, the app's own short commands on a host (Git reads,
-avatars, usage, scripts) share one SSH login per host instead of a login each, so
+usage, scripts) share one SSH login per host instead of a login each, so
 hosts that rate-limit new SSH connections (a firewall `limit` rule, sshd's
 `MaxStartups`) are not flooded; large host transfers get a second
 login of their own, and terminals keep their own connection. These shared logins
@@ -51,7 +51,7 @@ Set `ForwardAgent yes` only for trusted hosts;
 Herdr servers that support it then keep remote panes' `SSH_AUTH_SOCK` working
 across reconnects. A failed host is retried with backoff capped at 30 seconds.
 Runtime dependencies include GPUI, `sheprd-client`, `serde_json` for API parameters,
-`ureq` for background GitHub owner avatar downloads, and `serde`/`config` (aliased
+`ureq` for chat visuals, and `serde`/`config` (aliased
 as `config_loader`, TOML-only) for GUI configuration. `toml` preserves strict
 field types during deserialization; `toml_edit` preserves comments on settings saves.
 
@@ -786,10 +786,10 @@ clears the search. Set top-level `show_sidebar_search = false`, or turn off
 **Show search** in **Settings > Sidebar**, to hide it.
 
 In the Normal, Compact, and Comfortable layouts and in Superset, each space's
-sidebar row starts with its repository owner's avatar, or the GitHub mark;
-Orca and Minimal draw neither. Set top-level `show_repository_icons = false`,
-or turn off **Show repository icons** in **Settings > Sidebar**, to leave
-both out and give the name their room. The Superset layout
+sidebar row starts with a neutral repository icon;
+Orca and Minimal draw no repository icon. Set top-level `show_repository_icons = false`,
+or turn off **Show repository icons** in **Settings > Sidebar**, to hide it
+and give the name its room. The Superset layout
 keeps its icon slot and draws its branch glyph there instead.
 
 `[usage]` provides independent switches in `config-gpui.local.toml`:
@@ -1637,7 +1637,7 @@ the app reads no Git of its own for this.
   colour, and selection, hover and status marks look as before. A linked
   worktree standing alone, with its main checkout not open, has no line to
   hang from, so it shows the branch glyph, in the theme's blue (the hue its
-  notes use), where a repository row shows its owner's avatar. Screen
+  notes use), where a repository row shows its neutral folder icon. Screen
   readers hear "linked worktree" after its name.
 - In the workspace, when `apply_to` includes `"terminal"`, a 2-pixel rule in
   the same blue lies along the tab strip's edge that meets the terminals. It
@@ -2552,16 +2552,9 @@ Ctrl+Shift+U is left unbound for
   host groups. Drag the divider between Spaces and Agents up or down to resize
   their sections; double-click it to restore an even split. The split is saved
   across launches and retained while Agents is hidden.
-  Local workspace titles show repository owner avatars; remote
-  workspaces use the GitHub fallback mark without resolving remote paths locally.
-  `show_repository_icons = false` leaves both out. An owner's avatar is read
-  from `github.com/OWNER.png`, following its one redirect only to an account's
-  picture by ID on `avatars.githubusercontent.com`, so an organization whose
-  by-login picture is GitHub's default octocat shows its own.
-  Profile and owner avatars share a bounded public-image disk cache with 24-hour
-  stale-while-refresh behavior; see [avatar caching](../../README.md#native-github-sign-in)
-  for limits, location, and the startup authentication requirement. Neither cache
-  reads nor downloads block rendering; sign-out discards profile refresh results.
+  Checkout rows use a neutral repository icon on local and remote workspaces.
+  `show_repository_icons = false` hides it. The sidebar does not read Git
+  remotes or fetch owner avatars to draw these rows.
 - In-app sidebar menu for settings, keybinds, config reload, update information,
   and detach/reconnect. The standalone Settings window combines shared Herdr settings,
   daemon agent integrations, editable native fonts, and general configuration.
@@ -3558,42 +3551,6 @@ Still missing, and not faked with labels that do nothing:
   menu), AccessKit can miss the first activation and report the window rather
   than the terminal as focused until the window is activated again. This is
   in GPUI's Windows adapter setup, not in this app.
-
-### Saved sign-ins and the avatar cache
-
-GitHub sign-ins are kept in Windows Credential Manager, which plays the part
-of the Keychain and the Secret Service. Each account is one generic credential,
-`dev.herdr.gpui.github/github.com` for the main account,
-`dev.herdr.gpui.github/github.com/host/<device-id>` for a device's own, and
-`dev.herdr.gpui.github/github.com/account/<id>` for an additional account, holding
-exactly what the other keyrings hold: the device-flow token pair with its
-expiry, or only the GitHub CLI marker, never the CLI's token. Entries are
-persisted for your Windows account on this computer only
-(`CRED_PERSIST_LOCAL_MACHINE`), so they survive restarts and sign-outs of
-Windows but never roam to other computers in a domain, and other Windows users
-cannot read them. They are listed under **Windows Credentials** in Control
-Panel's Credential Manager; signing out in the app removes them. All windows
-share one credential through the same in-process lock as elsewhere, so a
-single-use refresh token is rotated once. A secret larger than Credential
-Manager's 2,560-byte limit is refused with an error rather than truncated. There
-is no private-file store here, so `allow_plaintext_credentials` changes nothing,
-and `GH_TOKEN` / `GITHUB_TOKEN` still take precedence for the main account. The
-`Cred*` calls are the only `unsafe` code involved (`crates/sheprd-credentials/src/credential_manager.rs`):
-neither the standard library nor the workspace's dependencies wrap them, and the
-maintained wrapper crates would add a second `windows-sys` version.
-
-Profile and owner avatars are cached on disk in
-`%LOCALAPPDATA%\herdr\gpui\cache\avatars-v1`, with the same 128 slots, 1 MB
-entry limit, and 24-hour stale-while-refresh behavior as on Unix.
-`XDG_CACHE_HOME` is not honoured for it. A non-blocking `File::try_lock` on the
-directory's `lock` file keeps one writer at a time, and a contended cache is a
-miss rather than a wait. Entries are opened without following reparse points,
-and a symbolic link or junction, whether an entry or the directory itself, is
-refused. There is no ownership or mode check, unlike Unix: the directory is
-always inside your profile, whose inherited access list lets only you, SYSTEM,
-and Administrators create, replace, or link files there, and anyone else who
-could would already be able to replace the app itself.
-
 
 In-app updates download the release's signed per-user installer, check it
 against `windows-manifest.json` and its Authenticode publisher, and run it

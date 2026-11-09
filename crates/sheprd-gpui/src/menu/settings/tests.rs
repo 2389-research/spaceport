@@ -246,7 +246,6 @@ fn config_reload_toggles_tab_flags_and_preserves_them_on_failure(cx: &mut gpui::
 fn failed_config_load_keeps_the_current_window_settings(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     view.update(cx, |view, cx| {
-        view.avatars = Some(crate::avatars::Avatars::new());
         view.load_gui_config_with(|| Err(crate::Error::MissingHome), cx);
     });
     cx.run_until_parked();

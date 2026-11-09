@@ -7,7 +7,7 @@ use crate::config::{LayoutMode, StatusIcons};
 const MARKS: &[&str] = &[
     "mark-herdr",
     "dot-herdr",
-    "github-herdr",
+    "workspace-icon-herdr",
     "icon-herdr",
     "agent-icon-agent-p0",
 ];
@@ -109,7 +109,7 @@ fn marks_grow_with_the_sidebar_font(cx: &mut gpui::TestAppContext) {
         for (probe, row) in [
             ("mark-herdr", "row-herdr"),
             ("dot-herdr", "row-herdr"),
-            ("github-herdr", "row-herdr"),
+            ("workspace-icon-herdr", "row-herdr"),
             ("icon-herdr", "row-herdr"),
         ] {
             let (Some(mark), Some(row)) = (bounds(&large, probe), bounds(&large, row)) else {
@@ -125,7 +125,7 @@ fn marks_grow_with_the_sidebar_font(cx: &mut gpui::TestAppContext) {
         }
         for measured in [&small, &large] {
             let name = bounds(measured, "name-herdr").unwrap();
-            for probe in ["mark-herdr", "github-herdr"] {
+            for probe in ["mark-herdr", "workspace-icon-herdr"] {
                 let mark = bounds(measured, probe).unwrap();
                 assert!(
                     (mark.center().y - name.center().y).abs() <= px(0.5),
@@ -135,7 +135,7 @@ fn marks_grow_with_the_sidebar_font(cx: &mut gpui::TestAppContext) {
         }
         let reserve = |measured: &[(&str, Option<Bounds<Pixels>>)]| {
             bounds(measured, "name-herdr").unwrap().left()
-                - bounds(measured, "github-herdr").unwrap().left()
+                - bounds(measured, "workspace-icon-herdr").unwrap().left()
         };
         assert_eq!(reserve(&small), px(crate::sidebar::ICON_RESERVE));
         assert_eq!(reserve(&large), px(2. * crate::sidebar::ICON_RESERVE));

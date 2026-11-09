@@ -54,16 +54,16 @@ pub(super) fn check_row_geometry(cx: &mut gpui::VisualTestContext) {
     let spaces = cx.debug_bounds("spaces-scroll").unwrap();
     let agents = cx.debug_bounds("agents-scroll").unwrap();
     assert_eq!(sidebar.size.width, px(232.));
-    let icon = cx.debug_bounds("github-herdr").unwrap();
+    let icon = cx.debug_bounds("workspace-icon-herdr").unwrap();
     let title = cx.debug_bounds("name-herdr").unwrap();
     let detail = cx.debug_bounds("detail-herdr").unwrap();
     assert_eq!(icon.size, size(px(12.), px(12.)));
     assert_eq!(title.left(), icon.right() + px(6.));
     assert_eq!(icon.left(), detail.left());
     assert_eq!(title.right(), detail.right());
-    assert!(cx.debug_bounds("github-agent-launcher").is_some());
-    assert!(cx.debug_bounds("github-sidebar-child").is_none());
-    assert!(cx.debug_bounds("github-review").is_none());
+    assert!(cx.debug_bounds("workspace-icon-agent-launcher").is_some());
+    assert!(cx.debug_bounds("workspace-icon-sidebar-child").is_none());
+    assert!(cx.debug_bounds("workspace-icon-review").is_none());
     let footer = cx.debug_bounds("device-footer").unwrap();
     // The search field above the spaces list is that half's share too.
     let field = cx.debug_bounds("sidebar-search").unwrap();
@@ -286,7 +286,7 @@ pub(super) fn check_scaled_sidebar(view: &Entity<SheprdWindow>, cx: &mut gpui::V
     );
     let title = cx.debug_bounds("name-herdr").unwrap();
     let detail = cx.debug_bounds("detail-herdr").unwrap();
-    let icon = cx.debug_bounds("github-herdr").unwrap();
+    let icon = cx.debug_bounds("workspace-icon-herdr").unwrap();
     assert_eq!(title.bottom(), detail.top());
     assert_eq!(detail.size.height, px(line_height));
     // The status dot and the icon grow with the font, and the name yields to

@@ -243,7 +243,7 @@ fn only_the_flat_layouts_draw_guides_without_worktrees() {
 
 /// `apply_to` without `sidebar` leaves every layout as Herdr draws it
 /// without the marks: the flat ones keep their tree, the rest drop their
-/// guides, and the row standing alone gets the owner's avatar back.
+/// guides, and the row standing alone keeps the neutral repository icon.
 #[gpui::test]
 fn turning_the_sidebar_off_leaves_rows_unmarked(cx: &mut gpui::TestAppContext) {
     for mode in [
@@ -262,11 +262,11 @@ fn turning_the_sidebar_off_leaves_rows_unmarked(cx: &mut gpui::TestAppContext) {
         );
     }
     let cx = draw(cx, LayoutMode::default(), Worktrees::new(None, &[]), true);
-    assert!(probe(cx, format!("github-{ALONE}")).is_some());
+    assert!(probe(cx, format!("workspace-icon-{ALONE}")).is_some());
 }
 
 /// In Herdr's own rows a linked worktree standing alone takes the branch
-/// glyph in the slot its owner's avatar used, so it never relies on colour
+/// glyph in the slot the repository icon uses, so it never relies on colour
 /// alone, even with the repository icons off. A nested child hangs from its
 /// guide and keeps its geometry.
 #[gpui::test]
@@ -284,9 +284,9 @@ fn a_linked_worktree_standing_alone_leads_with_the_branch_glyph(cx: &mut gpui::T
             assert!(glyph.right() <= name.left(), "{mode}");
             assert!(name.right() <= row.right(), "{mode}");
             assert_eq!(glyph.size, size(px(12.), px(12.)), "{mode}");
-            assert!(probe(cx, format!("github-{ALONE}")).is_none());
-            // The main checkout's avatar slot is where it was.
-            let main = probe(cx, format!("github-{MAIN}"));
+            assert!(probe(cx, format!("workspace-icon-{ALONE}")).is_none());
+            // The main checkout's icon slot is where it was.
+            let main = probe(cx, format!("workspace-icon-{MAIN}"));
             assert_eq!(main.is_some(), icons, "{mode}");
             if let Some(main) = main {
                 assert_eq!(main.left(), glyph.left(), "{mode}");
@@ -301,11 +301,11 @@ fn a_linked_worktree_standing_alone_leads_with_the_branch_glyph(cx: &mut gpui::T
     }
 }
 
-/// The layouts without Herdr's avatar slot lead a linked worktree standing
+/// The layouts without a repository icon slot lead a linked worktree standing
 /// alone with the branch glyph too, on their own rows and on configured
 /// ones, so it never has neither a guide nor a glyph.
 #[gpui::test]
-fn rows_without_an_avatar_slot_lead_with_the_branch_glyph(cx: &mut gpui::TestAppContext) {
+fn rows_without_a_repository_icon_slot_lead_with_the_branch_glyph(cx: &mut gpui::TestAppContext) {
     for mode in [LayoutMode::Minimal, LayoutMode::Orca] {
         for rows in [None, Some(r#"[["state_icon", "workspace"]]"#)] {
             let cx = draw_rows(cx, mode, Worktrees::default(), true, rows);

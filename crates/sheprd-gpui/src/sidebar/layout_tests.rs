@@ -732,7 +732,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         sidebar_modified: false,
         agent_sort: Default::default(),
         agent_sort_modified: false,
-        avatars: None,
         #[cfg(feature = "integration-test")]
         input_probe: crate::smoke::InputProbe::default(),
         sidebar_scroll: Default::default(),
