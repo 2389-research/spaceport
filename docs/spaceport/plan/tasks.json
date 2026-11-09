@@ -203,6 +203,7 @@
         "evidence/t03-zero-endpoint-tick.md",
         "evidence/t03-core-window-constructor.md",
         "evidence/t03-core-cli-window-target.md",
+      "evidence/t03-core-default-startup-bootstrap.md",
         "evidence/t03-sidebar-terminal-fallback.md"
       ],
       "must_close_gaps": []
