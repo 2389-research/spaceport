@@ -14,10 +14,13 @@ responses now use Spaceport, including busy, shutdown and timeout replies.
 The error comment names `spaceport <command>`.
 
 The control protocol suite passed 61/61 after the fix. The GPUI control
-filter passed 108/108 after a scoped rebuild of the changed protocol crate.
+filter passed 107/107 after a scoped rebuild of the changed protocol crate.
 An all-target, all-feature workspace check passed with no new source warning.
 The first real CLI integration run found one stale `Sheprd is not running`
 fixture; updating that expected text made the full suite pass 20/20.
+The pre-integration app filter had 108 tests before the script cut removed
+its obsolete local error-description helper and test. The integrated
+all-feature workspace check and 107-test control filter passed.
 Native product-copy and side-by-side install checks have not run;
 A42 remains `not_run` and T01 remains `in_progress`. Production identity and
 signing stay gated by G-RELEASE. No installed app, personal socket, or user

@@ -25,7 +25,7 @@ config re-export, which was removed. An all-target, all-feature workspace
 `cargo check --locked --offline` passed with no new source warning. The real
 CLI integration suite passed 20/20, including a new test that the removed
 commands exit before any app or socket startup. The
-broader app control filter passed 108/108 after the separate T01 control-copy
+broader app control filter passed 107/107 after the separate T01 control-copy
 fix described in `t01-control-protocol-copy.md`.
 
 `just format-check`, `check-file-size`, `check-sorted`, and `check-i18n`
@@ -34,3 +34,10 @@ passed. The inherited macOS compact-unwind linker warning
 and `block v0.1.6` future-compatibility notice remain. Native macOS, Windows,
 and Linux tests did not run. No installed Core, user daemon, personal
 checkout, or user state was changed.
+
+After integration with the T03 Core join cut, the all-target, all-feature
+workspace check, exact Core join test 1/1, control filter 107/107, and real
+CLI integration suite 20/20 passed.
+The 108-test pre-integration control run still contained a test of the now
+unused local error-description helper; its removal explains the one-test
+count change.
