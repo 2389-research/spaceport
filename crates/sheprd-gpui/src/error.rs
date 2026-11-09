@@ -133,8 +133,6 @@ pub enum Error {
     LinkOnAnotherHost { host: String },
     #[error(transparent)]
     ListeningPorts(#[from] crate::listening_ports::Error),
-    #[error("Git could not run")]
-    LocalGit(#[source] io::Error),
     #[error("Worktree notes stay in this app and are never sent to the daemon")]
     LocalWorktreeNote,
     #[error("Could not read the log {}: {source}", path.display())]
@@ -157,8 +155,6 @@ pub enum Error {
     NotConnected,
     #[error(transparent)]
     NotificationMutes(#[from] crate::notification_mutes::Error),
-    #[error("The current directory is not in a Git checkout.")]
-    NotInCheckout,
     #[error(transparent)]
     Overview(#[from] crate::overview::Error),
     #[cfg(target_os = "macos")]

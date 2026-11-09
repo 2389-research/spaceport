@@ -48,7 +48,6 @@ error-invalid-worktree-notes = Invalid saved worktree notes
 error-linked-file-missing = File not found: { $path }
 # $host is the computer a terminal link names.
 error-link-on-another-host = This link names a file on another computer, { $host }. It is not opened from here.
-error-local-git = Git could not run
 error-local-worktree-note = Worktree notes stay in this app and are never sent to the daemon
 error-log-read = Could not read the log { $path }: { $error }
 error-malformed-link = This link's address is not valid, so it opens nothing.
@@ -59,7 +58,6 @@ error-missing-state-root = neither XDG_STATE_HOME nor HOME is set
 error-no-snapshot = No current daemon snapshot.
 error-no-tab = No tab selected.
 error-not-connected = Not connected to a daemon.
-error-not-in-checkout = The current directory is not in a Git checkout.
 error-page-stack = The window has no view to place a page beneath
 error-pane-image-decode = Could not decode an image a pane placed.
 error-pane-image-limit = An image a pane placed exceeds the decoded size limit.

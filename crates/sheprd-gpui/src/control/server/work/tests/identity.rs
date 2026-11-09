@@ -36,19 +36,6 @@ fn callers_resolve_to_their_checkout_by_repository_and_branch(cx: &mut gpui::Tes
                 Some("w3".into());
             let focused = find(view, &caller(None)).ok().unwrap();
             assert_eq!(focused.workspace.workspace_id, "w3");
-            assert_eq!(
-                selected_workspace(view, &caller(None)).ok().as_deref(),
-                Some("w3")
-            );
-            view.live.status = crate::state::ConnectionStatus::Disconnected;
-            assert_eq!(
-                selected_workspace(view, &caller(None))
-                    .err()
-                    .as_ref()
-                    .and_then(error_code),
-                Some(ErrorCode::Busy),
-                "dialogs act through a live connection"
-            );
         })
     });
 }

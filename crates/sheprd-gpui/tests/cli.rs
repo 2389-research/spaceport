@@ -10,6 +10,8 @@ mod orchestrator;
 mod phone;
 #[path = "cli/removed_project_open.rs"]
 mod removed_project_open;
+#[path = "cli/removed_scripts.rs"]
+mod removed_scripts;
 
 use std::{
     process::{Child, Command, Output, Stdio},
@@ -314,7 +316,7 @@ fn control_commands_report_a_missing_app_by_status_and_in_json() {
         .tempdir_in(parent)
         .unwrap();
     // The state directory names a socket, or on Windows a pipe, of its own.
-    let (status, code, message) = (3, "not_running", "Sheprd is not running");
+    let (status, code, message) = (3, "not_running", "Spaceport is not running");
     let output = cli_in(&["status"], Some(state.path()));
     assert_eq!(output.status.code(), Some(status), "{output:?}");
     let stderr = String::from_utf8(output.stderr).unwrap();

@@ -1,36 +1,16 @@
-//! `notes`, `worktree`, and `scripts`.
-mod here;
-mod scripts;
+//! Worktree notes and notification mutes.
 #[cfg(test)]
 mod tests;
 
 use super::{Context, Output, unexpected};
 use crate::{
-    cli::control::{NotesCommand, Script, WorktreeCommand},
-    control::{
-        ErrorCode,
-        protocol::{
-            Request, Response,
-            work::{MuteInfo, NoteInfo, Reply, WorkOp},
-        },
+    cli::control::{NotesCommand, WorktreeCommand},
+    control::protocol::{
+        Request, Response,
+        work::{MuteInfo, NoteInfo, Reply, WorkOp},
     },
 };
 use std::fmt::Write as _;
-
-/// The display boundary for errors of the commands this process runs itself:
-/// the message with its causes, and the exit status the refusal deserves.
-fn rejected(error: impl Into<crate::Error>) -> crate::Error {
-    let error = error.into();
-    let code = match &error {
-        crate::Error::NotInCheckout => ErrorCode::InvalidRequest,
-        _ => ErrorCode::Failed,
-    };
-    crate::control::Error::Rejected {
-        code,
-        message: crate::control::describe_error(&error),
-    }
-    .into()
-}
 
 /// A repository's name from its Git common directory: the directory the
 /// `.git` is in, or a bare repository's own name.
@@ -118,12 +98,5 @@ pub(super) fn worktree(command: WorktreeCommand, context: &Context) -> crate::Re
             reply: Reply::Mute { mute },
         } => Output::data(describe_mute(&mute), &mute),
         response => Err(unexpected(response)),
-    }
-}
-
-pub(super) fn scripts(kind: Option<Script>, context: &Context) -> crate::Result<Output> {
-    match kind {
-        None => scripts::list(),
-        Some(kind) => context.act(Request::Work, WorkOp::Script { kind }),
     }
 }

@@ -2,7 +2,6 @@
 use super::*;
 use crate::sidebar::layout_tests::{REPO_KEY, fixture_window, snapshot};
 
-mod dialogs;
 mod identity;
 mod list_budget;
 mod muting;

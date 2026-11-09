@@ -12,7 +12,7 @@ fn work_requests_have_a_stable_wire_form() {
         WorkOp::Notes,
         WorkOp::Note,
         WorkOp::SetNote { text: "x".into() },
-        WorkOp::Script { kind: Script::Run },
+        WorkOp::MuteStatus,
     ] {
         let request = Request::Work(Call {
             caller: Caller::default(),
@@ -29,6 +29,8 @@ fn malformed_work_requests_are_rejected() {
         r#"{"method":"work","caller":{},"op":{"op":"restore"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"script","kind":"deploy"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"script","kind":"archive"}}"#,
+        r#"{"method":"work","caller":{},"op":{"op":"script","kind":"setup"}}"#,
+        r#"{"method":"work","caller":{},"op":{"op":"script","kind":"run"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"set_note"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"fan_out","prompt":"x","agents":[["claude",300]]}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"launch"}}"#,

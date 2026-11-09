@@ -223,10 +223,10 @@ fn answer(request: Request, queue: &SyncSender<Event>, stream: &Connection) -> R
     })) {
         Ok(()) => {}
         Err(TrySendError::Full(_)) => {
-            return Response::error(ErrorCode::Busy, "Sheprd is handling other requests");
+            return Response::error(ErrorCode::Busy, "Spaceport is handling other requests");
         }
         Err(TrySendError::Disconnected(_)) => {
-            return Response::error(ErrorCode::NoWindow, "Sheprd is shutting down");
+            return Response::error(ErrorCode::NoWindow, "Spaceport is shutting down");
         }
     }
     let until = Instant::now() + timeout;
@@ -242,7 +242,7 @@ fn answer(request: Request, queue: &SyncSender<Event>, stream: &Connection) -> R
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             reply.live = false;
             return answer.try_recv().unwrap_or_else(|_| {
-                Response::error(ErrorCode::Timeout, "Sheprd did not answer in time")
+                Response::error(ErrorCode::Timeout, "Spaceport did not answer in time")
             });
         }
     }
@@ -250,7 +250,7 @@ fn answer(request: Request, queue: &SyncSender<Event>, stream: &Connection) -> R
 
 /// Answers a connection over the bound without reading it.
 fn refuse(stream: &Connection) {
-    let busy = Response::error(ErrorCode::Busy, "Sheprd is handling other requests");
+    let busy = Response::error(ErrorCode::Busy, "Spaceport is handling other requests");
     if let Err(error) = write_line(stream, &busy) {
         tracing::debug!(%error, "Control refusal failed");
     }
@@ -286,7 +286,7 @@ fn finish_response(stream: &Connection, response: Response) {
         tracing::warn!("Control answer over {MAX_MESSAGE} bytes refused");
         Response::error(
             ErrorCode::Failed,
-            format!("Sheprd's answer is larger than {MAX_MESSAGE} bytes"),
+            format!("Spaceport's answer is larger than {MAX_MESSAGE} bytes"),
         )
     };
     let written = stream

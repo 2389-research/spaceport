@@ -21,7 +21,6 @@ pub use protocol::{
     events::{Cursor, EventKind},
     settings::Sound,
     tabs::ZoomChange,
-    work::Script,
 };
 pub(crate) use sheprd_control_protocol::Error;
 use sheprd_control_protocol::{protocol, socket};
@@ -82,18 +81,6 @@ fn plain_path(value: &str) -> bool {
     !value.is_empty() && value.len() <= 4096 && !value.chars().any(char::is_control)
 }
 
-/// Show an error and its causes at the control reply boundary.
-fn describe_error(error: &dyn std::error::Error) -> String {
-    let mut text = error.to_string();
-    let mut source = error.source();
-    while let Some(cause) = source {
-        text.push_str(": ");
-        text.push_str(&cause.to_string());
-        source = cause.source();
-    }
-    text
-}
-
 fn valid_caller(caller: &Caller) -> bool {
     caller
         .workspace_id
@@ -120,8 +107,6 @@ pub(crate) use server::install;
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    mod error_chain;
 
     #[test]
     fn echoed_identifiers_are_short_and_printable() {

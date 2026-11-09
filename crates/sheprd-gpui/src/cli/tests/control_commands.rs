@@ -1,7 +1,7 @@
 use super::*;
 use control::{
     AppCommand, ConfigCommand, ControlCommand, FontSize, Invocation, NotesCommand, PortsCommand,
-    Script, Size, Switch, UiCommand, WaitFor, WindowCommand,
+    Size, Switch, UiCommand, WaitFor, WindowCommand,
 };
 
 fn parse(args: &[&str]) -> Result<Invocation, CliError> {
@@ -107,19 +107,17 @@ fn work_commands() {
         command(&["notes", "set", "waiting", "on", "review"]),
         ControlCommand::Notes(NotesCommand::Set("waiting on review".into()))
     );
-    assert_eq!(
-        command(&["scripts", "setup"]),
-        ControlCommand::Scripts {
-            kind: Some(Script::Setup)
-        }
-    );
-    assert_eq!(
-        parse(&["scripts", "archive"]).unwrap_err(),
-        CliError::UnknownCommand {
-            family: "scripts",
-            command: "archive".into()
-        }
-    );
+    for args in [
+        &["scripts"][..],
+        &["scripts", "list"],
+        &["scripts", "setup"],
+        &["scripts", "run"],
+    ] {
+        assert_eq!(
+            parse(args).unwrap_err(),
+            CliError::UnknownOption("scripts".into())
+        );
+    }
     assert_eq!(
         command(&["wait", "tab-closed", "4", "--timeout", "5"]),
         ControlCommand::Wait {

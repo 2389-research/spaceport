@@ -17,7 +17,7 @@ mod error;
 mod launch;
 mod trust;
 
-pub(crate) use config::{Config, PATH as CONFIG_PATH, read as read_config};
+pub(crate) use config::Config;
 pub(crate) use error::Error;
 pub(crate) use launch::{Checkout, command_line, created_tab};
 pub(crate) use trust::{Grant, Trust};

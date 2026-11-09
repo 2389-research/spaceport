@@ -1,12 +1,8 @@
-//! `notes`, `worktree`, and `scripts`.
+//! Worktree notes and notification mutes.
 //!
-//! Every command acts on the caller's checkout: the workspace of the caller's
-//! pane on the caller's daemon, else the workspace the window focuses. A
-//! checkout is named by endpoint, repository (Git common directory), and
-//! branch, never by workspace ID, which does not survive a daemon restart.
-//! Flows that change things for real only open the app's own dialog, already
-//! pointed at that checkout; the user confirms them there.
-mod flows;
+//! Per-checkout requests resolve the caller's workspace on its named daemon,
+//! or the focused workspace when the caller names none. Notes use endpoint,
+//! repository and branch identity so a restarted daemon cannot retarget them.
 mod mute;
 mod notes;
 #[cfg(test)]
@@ -29,9 +25,6 @@ pub(super) fn serve(call: Call<WorkOp>, incoming: socket::Incoming, _: &mut Watc
         WorkOp::MuteStatus => in_window(&caller, cx, |view, _, cx| mute::status(view, &caller, cx)),
         WorkOp::Mute { muted } => in_window(&caller, cx, |view, _, cx| {
             mute::set(view, &caller, muted, cx)
-        }),
-        WorkOp::Script { kind } => in_window(&caller, cx, |view, _, cx| {
-            flows::script(view, &caller, kind, cx)
         }),
     };
     incoming.respond(response);
@@ -79,26 +72,4 @@ pub(super) fn find<'a>(view: &'a SheprdWindow, caller: &Caller) -> Result<Found<
         snapshot,
         workspace,
     })
-}
-
-/// The caller's workspace ID, when it is on the window's selected, connected
-/// host: dialogs act through that host's connection alone.
-pub(super) fn selected_workspace(view: &SheprdWindow, caller: &Caller) -> Result<String, Response> {
-    let found = find(view, caller)?;
-    if found.index != view.selected_endpoint {
-        return Err(Response::error(
-            ErrorCode::InvalidRequest,
-            format!(
-                "Workspace {} is on host {}, which the window is not showing; select it first",
-                found.workspace.workspace_id, view.endpoints[found.index].label
-            ),
-        ));
-    }
-    if !view.live.status.is_connected() {
-        return Err(Response::error(
-            ErrorCode::Busy,
-            "Spaceport is not connected to that host right now",
-        ));
-    }
-    Ok(found.workspace.workspace_id.clone())
 }

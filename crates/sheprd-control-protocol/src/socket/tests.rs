@@ -145,13 +145,13 @@ fn an_answer_over_the_bound_is_refused() {
     server.next().unwrap().respond(Response::Done {
         message: "n".repeat(MAX_MESSAGE),
     });
-    assert!(matches!(
+    assert_eq!(
         caller.join().unwrap().unwrap(),
-        Response::Error {
-            code: ErrorCode::Failed,
-            ..
-        }
-    ));
+        Response::error(
+            ErrorCode::Failed,
+            format!("Spaceport's answer is larger than {MAX_MESSAGE} bytes")
+        )
+    );
     assert!(server.drain().next().is_none());
 }
 

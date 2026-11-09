@@ -1,5 +1,5 @@
-//! `notes`, `scripts`, and `wait`.
-use super::{Args, CliError, Script, unknown};
+//! `notes`, `worktree`, and `wait`.
+use super::{Args, CliError, unknown};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WorktreeCommand {
@@ -61,18 +61,6 @@ pub(super) fn notes(args: &mut Args) -> Result<NotesCommand, CliError> {
         )?)?),
         Some("clear") => NotesCommand::Clear,
         _ => return Err(unknown("notes", verb)),
-    })
-}
-
-pub(super) fn script_kind(args: &mut Args) -> Result<Option<Script>, CliError> {
-    let Some(verb) = args.verb() else {
-        return Ok(None);
-    };
-    Ok(match verb.to_str() {
-        Some("list") => None,
-        Some("setup") => Some(Script::Setup),
-        Some("run") => Some(Script::Run),
-        _ => return Err(unknown("scripts", verb)),
     })
 }
 

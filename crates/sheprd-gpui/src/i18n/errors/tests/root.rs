@@ -65,7 +65,6 @@ fn every_own_variant_has_a_message() {
         Error::LinkOnAnotherHost {
             host: "build-box".into(),
         },
-        Error::LocalGit(io()),
         Error::LocalWorktreeNote,
         Error::LogRead {
             path: path.clone(),
@@ -77,7 +76,6 @@ fn every_own_variant_has_a_message() {
         Error::NoSnapshot,
         Error::NoTab,
         Error::NotConnected,
-        Error::NotInCheckout,
         Error::PaneImageDecode(image()),
         Error::PaneImageLimit,
         Error::Path {

@@ -12,7 +12,7 @@ mod work;
 
 use super::CliError;
 pub(crate) use super::args::Args;
-pub use crate::control::{Cursor, EventKind, FontSize, Script, Size, Sound, Switch, ZoomChange};
+pub use crate::control::{Cursor, EventKind, FontSize, Size, Sound, Switch, ZoomChange};
 pub use app::{AppCommand, UiCommand, WindowCommand};
 pub use browser::BrowserCommand;
 pub use chat::ChatCommand;
@@ -52,10 +52,6 @@ pub enum ControlCommand {
     Chat(ChatCommand),
     Notes(NotesCommand),
     Worktree(WorktreeCommand),
-    /// List the scripts, or run one.
-    Scripts {
-        kind: Option<Script>,
-    },
     Host(HostCommand),
     Ports(PortsCommand),
     Processes {
@@ -120,7 +116,6 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ),
     ("notes", "Notes kept on worktrees"),
     ("worktree", "Mute or unmute the caller's worktree"),
-    ("scripts", "A repository's worktree setup and run scripts"),
     ("host", "List the window's hosts, show one, or mute one"),
     (
         "ports",
@@ -247,9 +242,6 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
         "chat" => ControlCommand::Chat(chat::chat(args)?),
         "notes" => ControlCommand::Notes(work::notes(args)?),
         "worktree" => ControlCommand::Worktree(work::worktree(args)?),
-        "scripts" => ControlCommand::Scripts {
-            kind: work::script_kind(args)?,
-        },
         "host" => ControlCommand::Host(hosts::host(args)?),
         "ports" => ControlCommand::Ports(hosts::ports(args)?),
         "processes" => ControlCommand::Processes {

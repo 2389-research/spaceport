@@ -1,5 +1,4 @@
-//! Worktree notes and scripts targeted at the caller's checkout.
-//! Untrusted scripts still require confirmation in the app.
+//! Worktree notes and notification mutes targeted at the caller's checkout.
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -15,16 +14,6 @@ pub enum WorkOp {
     MuteStatus,
     /// Mute or unmute the caller's workspace.
     Mute { muted: bool },
-    /// Run one of the caller's repository's worktree scripts in a new tab.
-    /// An untrusted script still asks the user first.
-    Script { kind: Script },
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Script {
-    Setup,
-    Run,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

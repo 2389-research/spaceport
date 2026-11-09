@@ -359,7 +359,6 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Chat(command) => chat::chat(command, &context),
         ControlCommand::Notes(command) => work::notes(command, &context),
         ControlCommand::Worktree(command) => work::worktree(command, &context),
-        ControlCommand::Scripts { kind } => work::scripts(kind, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),
         ControlCommand::Ports(command) => hosts::ports(command, &context),
         ControlCommand::Processes { pane } => local::processes(pane.as_deref()),

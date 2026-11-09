@@ -101,8 +101,6 @@ legacy launch target; it does not yet join the selected Core hub.
 | `notes [list]` | Every worktree note |
 | `notes get\|clear`, `notes set TEXT` | The note on your checkout (its repository and branch) |
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
-| `scripts [list]` | The repository's `.herdr/worktree.toml` scripts (no app needed) |
-| `scripts setup\|run` | Run one in a new tab; an unseen script still asks first. |
 | `chat [status]` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
 | `chat convert [--pane ID]` | Move the terminal agent in your pane (or ID, else the focused one) into a `sheprd-acp` chat in the same pane, keeping its conversation (see [Moving a terminal agent into a chat](rich-chat.md#moving-a-terminal-agent-into-a-chat)). Returns once the move has started; `chat` shows the chat when it attaches. Exits 6 while the agent works, 5 when the pane has no terminal agent, and 8 for an agent or pane that cannot move |
 | `chat show\|hide\|toggle [--pane ID]` | Show the native chat view over your pane (or ID, else the focused one), or its terminal |
@@ -179,9 +177,10 @@ spaceport wait window            # also waits for the app to start
 
 ## What stays in the app
 
-Commands never bypass a confirmation. Fanning out a prompt and running a
-worktree script the app has not seen open the app's
-own dialog, pointed at your checkout; the user confirms there.
+Commands never bypass a confirmation. The inherited worktree script menu
+still asks before running an untrusted script; removing that menu is an open
+Spaceport task.
+
 The development build still has an inherited Herdr 1 startup path; removing it
 is an open Spaceport task. The Core path may start only a separately installed,
 trusted Core when needed. Spaceport packages do not bundle or upgrade Core.

@@ -32,7 +32,8 @@ use serde::{Deserialize, Serialize};
 /// 29: removed native PR, issue, and task activity panel control targets.
 /// 30: removed `app.open` and `work.script.archive` requests.
 /// 31: removed design feedback and page-note requests and responses.
-pub const PROTOCOL_VERSION: u32 = 31;
+/// 32: removed worktree script control requests.
+pub const PROTOCOL_VERSION: u32 = 32;
 
 /// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;

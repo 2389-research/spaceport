@@ -39,8 +39,5 @@ back as `{"error": {"code", "message"}}`. Exit statuses are the ones in the
 table above. A command acts in the window that shows your workspace; it
 exits 5 rather than act in another session's window.
 
-Some commands only open the app's dialog and the user confirms there:
-fanning out a prompt and running a worktree script the app has not seen. Say so
-when you run one, instead of waiting for it to finish. Run
-`spaceport --help` to list every command, and `spaceport COMMAND --help`
+Run `spaceport --help` to list every command, and `spaceport COMMAND --help`
 for one.

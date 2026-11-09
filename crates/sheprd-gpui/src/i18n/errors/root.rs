@@ -88,7 +88,6 @@ impl Localize for Error {
                 fl!("error-link-on-another-host", host = host.as_str())
             }
             Self::ListeningPorts(error) => error.localize(),
-            Self::LocalGit(_) => fl!("error-local-git"),
             Self::LocalWorktreeNote => fl!("error-local-worktree-note"),
             Self::LogRead { path: file, source } => fl!(
                 "error-log-read",
@@ -102,7 +101,6 @@ impl Localize for Error {
             Self::NoTab => fl!("error-no-tab"),
             Self::NotConnected => fl!("error-not-connected"),
             Self::NotificationMutes(error) => error.localize(),
-            Self::NotInCheckout => fl!("error-not-in-checkout"),
             Self::Overview(error) => error.localize(),
             #[cfg(target_os = "macos")]
             Self::PageStack => fl!("error-page-stack"),
