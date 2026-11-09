@@ -11,10 +11,9 @@ mod en_xa;
 mod excluded_creation;
 mod excluded_remote_workspace;
 mod left_checkout;
-mod left_checkout_lookup;
 mod mute;
 mod naming;
-mod pull_requests;
+mod no_pull_request;
 mod removed_checkpoints;
 mod removed_orchestrator;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -133,99 +132,6 @@ pub(crate) fn submit_focus_change(
         );
     }
     view.dismiss_menu(window, cx);
-}
-
-pub(crate) fn check_pr_fences(view: &gpui::Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
-    use std::sync::{Arc, Mutex};
-    cx.update(|_, cx| {
-        view.update(cx, |view, _| {
-            view.menu.github = crate::github::Auth::connected_fixture();
-            let snapshot = view.live.snapshot.clone();
-            let inbox = view.endpoints[view.selected_endpoint]
-                .connection
-                .inbox
-                .clone();
-            let status = view.live.status;
-            let target_id = view.menu.target.as_ref().unwrap().id.clone();
-            for change in 0..5 {
-                view.live.snapshot = snapshot.clone();
-                view.live.status = status;
-                view.endpoints[view.selected_endpoint].connection.inbox = inbox.clone();
-                view.menu.pr_connection = Some(Arc::downgrade(&inbox));
-                view.menu.pr.value = Some(crate::pull_request::fixture().unwrap());
-                view.menu.pr.message = None;
-                let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
-                match change {
-                    0 => snapshot.boot_id = "restarted".into(),
-                    1 => snapshot
-                        .workspaces
-                        .retain(|workspace| workspace.workspace_id != target_id),
-                    2 => {
-                        snapshot
-                            .workspaces
-                            .iter_mut()
-                            .find(|workspace| workspace.workspace_id == target_id)
-                            .unwrap()
-                            .branch = Some("other".into())
-                    }
-                    3 => {
-                        view.endpoints[view.selected_endpoint].connection.inbox =
-                            Arc::new(Mutex::new(Default::default()))
-                    }
-                    _ => view.live.status = crate::state::ConnectionStatus::Detached,
-                }
-                assert!(view.update_workspace_pr());
-                assert!(view.menu.pr.value.is_none());
-            }
-            view.live.snapshot = snapshot;
-            view.live.status = status;
-            view.endpoints[view.selected_endpoint].connection.inbox = inbox;
-            view.menu.pr_connection = None;
-            view.menu.pr.clear();
-            let connection_target = view.endpoints[view.selected_endpoint]
-                .connection
-                .target
-                .clone();
-            let local_peer = view.live.local_daemon_peer;
-            for target in [
-                sheprd_client::ConnectTarget::Local,
-                sheprd_client::ConnectTarget::Socket("/local-or-forwarded.sock".into()),
-            ] {
-                view.endpoints[view.selected_endpoint].connection.target = target;
-                view.live.local_daemon_peer = false;
-                view.refresh_workspace_pr();
-                assert!(
-                    view.menu
-                        .pr
-                        .message
-                        .as_deref()
-                        .unwrap()
-                        .contains("requires your owned local session socket")
-                );
-                view.live.local_daemon_peer = true;
-                view.refresh_workspace_pr();
-                // Menu open is cache-only; the worker resolves the checkout from Git.
-                assert!(view.menu.pr.loading);
-                assert!(view.menu.pr.message.is_none());
-            }
-            view.refresh_workspace_pr();
-            assert!(
-                view.menu.pr.loading,
-                "local daemon uses Git registry worker"
-            );
-            assert!(
-                view.live.dialog_response.is_none(),
-                "no daemon request or dialog slot registration"
-            );
-            assert!(
-                view.menu.pr_connection.is_some(),
-                "fallback keeps reconnect fence"
-            );
-            view.endpoints[view.selected_endpoint].connection.target = connection_target;
-            view.live.local_daemon_peer = local_peer;
-            view.menu.pr.clear();
-        })
-    });
 }
 
 pub(crate) fn check_menu_interactions(

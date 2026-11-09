@@ -21,7 +21,7 @@ use unicode_width::UnicodeWidthStr;
 mod badge;
 mod configured;
 
-pub(super) use badge::{Counts, PrBadge, RowBadge, Upstream};
+pub(super) use badge::{Counts, RowBadge, Upstream};
 use configured::configured_lines;
 pub(super) use configured::{
     TokenLook, configured_status, configured_status_style, leading_status, token_column,

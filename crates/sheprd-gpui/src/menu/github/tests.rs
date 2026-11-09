@@ -7,7 +7,6 @@ mod accounts;
 mod en_xa;
 mod github_cli;
 mod installation;
-mod quota_countdown;
 
 #[gpui::test]
 fn successful_signin_dismisses_only_the_signin_panel_and_restores_focus(cx: &mut TestAppContext) {
@@ -80,14 +79,10 @@ fn a_host_uses_its_own_account_and_falls_back_to_the_main_one(cx: &mut TestAppCo
         view.update(cx, |view, cx| {
             view.menu.github = crate::github::Auth::connected_fixture();
             select_host(view, crate::github::Auth::default());
-            // Without its own sign-in, the host reads PRs as the main account
-            // while the page offers a separate one for this device.
+            // Without its own sign-in, the profile slot shows the main
+            // account while the page offers a separate one for this device.
             assert!(!view.github_auth().connected());
-            assert_eq!(login(view.pr_profile()), Some("fixture-user"));
-            assert_eq!(
-                view.pr_origin(),
-                Some(crate::pull_request::Origin::Ssh("me@work".into()))
-            );
+            assert_eq!(login(view.account_profile()), Some("fixture-user"));
             view.open_menu(window, cx);
             view.menu.page = Some(crate::menu::Page::GitHub);
             assert!(view.github_actions().contains(&Action::Start));
@@ -95,15 +90,15 @@ fn a_host_uses_its_own_account_and_falls_back_to_the_main_one(cx: &mut TestAppCo
             let mut work = crate::github::Auth::connected_fixture();
             work.profile.as_mut().unwrap().login = "work-user".into();
             view.menu.github_hosts.insert(HOST.into(), work);
-            assert_eq!(login(view.pr_profile()), Some("work-user"));
+            assert_eq!(login(view.account_profile()), Some("work-user"));
 
             // Signing out on the host's page leaves the main account alone.
             view.github_action(Action::SignOut, window, cx);
             assert!(!view.menu.github_hosts[HOST].connected());
             assert!(view.menu.github.connected());
-            assert_eq!(login(view.pr_profile()), Some("fixture-user"));
+            assert_eq!(login(view.account_profile()), Some("fixture-user"));
 
-            // Back on Local, the page and lookups use the main account.
+            // Back on Local, the page uses the main account.
             view.selected_endpoint = 0;
             assert!(std::ptr::eq(view.github_auth(), &view.menu.github));
         });
@@ -111,7 +106,7 @@ fn a_host_uses_its_own_account_and_falls_back_to_the_main_one(cx: &mut TestAppCo
 }
 
 #[gpui::test]
-fn host_note_names_the_account_pull_requests_use(cx: &mut TestAppContext) {
+fn host_note_names_the_selected_device_account(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {

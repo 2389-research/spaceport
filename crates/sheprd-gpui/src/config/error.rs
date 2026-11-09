@@ -60,6 +60,8 @@ pub enum Error {
     MigrationConflict { original: PathBuf, local: PathBuf },
     #[error("preferences must be an object")]
     PreferencesNotObject,
+    #[error("sidebar.change_counts was removed; remove this setting")]
+    RemovedChangeCounts,
     #[error("line {line}: {key}: {source}")]
     ThemeLine {
         line: usize,
@@ -76,7 +78,7 @@ pub enum Error {
     TooManyDevices(usize),
     #[error("{0}.fallback must list at most 8 families")]
     TooManyFontFallbacks(&'static str),
-    #[error("Sheprd has no setting {}; config-gpui.toml lists every setting", .0.join(", "))]
+    #[error("Spaceport has no setting {}; config-gpui.toml lists every setting", .0.join(", "))]
     UnknownKeys(Vec<String>),
     #[error("Unknown sidebar layout {0:?}")]
     UnknownLayout(String),

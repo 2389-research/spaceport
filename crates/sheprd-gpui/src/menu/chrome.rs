@@ -635,13 +635,7 @@ impl SheprdWindow {
         } else if page == Page::GitHub {
             panel = panel.child(self.render_github_auth(cx));
         } else if page == Page::Workspace {
-            // The PR card's text width: the panel's inset and border, and the
-            // card's own margin, border, and padding.
-            panel =
-                panel.child(self.render_workspace_popover(
-                    (popover.unwrap_or_default() - px(36.)).max(px(0.)),
-                    cx,
-                ));
+            panel = panel.child(self.render_workspace_popover(cx));
         } else if let Page::Dialog(action) = page {
             panel = panel.child(self.render_workspace_dialog(action, cx));
         } else if page == Page::CoreWorkspaceActions {

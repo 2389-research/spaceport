@@ -39,16 +39,10 @@ fn agents_of_a_muted_workspace_or_tab_are_marked() {
     endpoint.live.status = ConnectionStatus::Connected;
     let daemon = Daemon::of(&endpoint);
     let muted = |mutes: Option<&Mutes>| {
-        model::agent_rows(
-            &endpoint,
-            &endpoint.live,
-            &Default::default(),
-            |_, _| None,
-            mutes,
-        )
-        .into_iter()
-        .map(|row| row.muted)
-        .collect::<Vec<_>>()
+        model::agent_rows(&endpoint, &endpoint.live, &Default::default(), mutes)
+            .into_iter()
+            .map(|row| row.muted)
+            .collect::<Vec<_>>()
     };
     assert_eq!(muted(None), [false, false]);
     let mut mutes = Mutes::default();

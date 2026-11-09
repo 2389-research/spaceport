@@ -3,6 +3,6 @@
 //! (`avatars::ProfileAvatars`) and draws the menus.
 
 pub(crate) use sheprd_github::{
-    Access, Account, Auth, Installation, Note, Profile, Source, Store, Tokens, VERIFY_URL, forget,
+    Access, Account, Auth, Installation, Note, Profile, Source, Store, VERIFY_URL, forget,
     select_store, store_note,
 };

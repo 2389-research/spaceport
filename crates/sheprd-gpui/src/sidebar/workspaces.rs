@@ -11,9 +11,8 @@
 use super::{
     RowBadge,
     agents::status_priority,
-    row::{Counts, PrBadge, first_text},
+    row::{Counts, first_text},
 };
-use crate::config::{ChangeCounts, Theme};
 use sheprd_client::protocol::{AgentStatus, ClientShellWorkspace};
 use std::collections::{HashMap, HashSet};
 
@@ -95,20 +94,13 @@ pub(super) fn visible_workspace_entries(
         .collect()
 }
 
-/// Cached pull request, change counts, dirty, and note marks for a worktree row, if
-/// the prefetch and the Git probe already have them. Rendering only reads: a missing entry
-/// simply shows nothing, never a stale or guessed state. `git` carries which counts to show:
-/// the pull request's, or the checkout's uncommitted lines, never both. Its cache is `None`
-/// for a row on another device: it only ever probes this machine's checkouts.
-/// `pr` pairs the PR cache with the view of the device the row is on, whether
-/// or not it is selected, and is `None` for a device whose pull requests are
-/// not looked up. Any workspace, Git checkout or not, carries its muted mark.
+/// Local change counts, dirty, note and mute marks for a worktree row.
+/// Rendering only reads the Git probe; a missing entry shows no guessed state.
+/// The probe is absent on another device. Every workspace can carry a mute.
 pub(super) fn workspace_badge(
     workspace: &ClientShellWorkspace,
-    pr: Option<(&crate::pull_request::Cache, &crate::pull_request::View)>,
-    git: (Option<&crate::git::Git>, ChangeCounts),
+    git: Option<&crate::git::Git>,
     (note, muted): (Option<&str>, bool),
-    theme: &Theme,
 ) -> Option<RowBadge> {
     let checkout = workspace
         .worktree
@@ -116,31 +108,14 @@ pub(super) fn workspace_badge(
         .map(|tree| tree.key.as_str())
         .zip(workspace.branch.as_deref());
     let Some((key, branch)) = checkout else {
-        return RowBadge::new(None, None, false, false, muted);
+        return RowBadge::new(None, false, false, muted);
     };
-    let (git, counts) = git;
-    let ahead = git.and_then(|git| git.ahead(key, branch));
-    // Commits past a merged pull request need a new one, so its number and
-    // counts give way rather than read as covering them.
-    let unopened = pr
-        .zip(ahead)
-        .is_some_and(|((cache, view), ahead)| cache.unopened(view, key, branch, &ahead.head));
-    let pr = pr
-        .filter(|_| !unopened)
-        .and_then(|(cache, view)| cache.peek(view, key, branch));
-    let counts = match counts {
-        ChangeCounts::PullRequest => pr
-            .as_ref()
-            .map(|pr| Counts::new(pr.additions, pr.deletions)),
-        // Untracked files have no line counts; the dirty mark still shows them.
-        ChangeCounts::Local => git
-            .and_then(|git| git.counts(key, branch))
-            .filter(|status| status.additions > 0 || status.deletions > 0)
-            .map(|status| Counts::local(status.additions, status.deletions)),
-    };
+    // Untracked files have no line counts; the dirty mark still shows them.
+    let counts = git
+        .and_then(|git| git.counts(key, branch))
+        .filter(|status| status.additions > 0 || status.deletions > 0)
+        .map(|status| Counts::new(status.additions, status.deletions));
     RowBadge::new(
-        pr.map(|pr| PrBadge::new(&pr, theme))
-            .or_else(|| unopened.then(|| PrBadge::unopened(theme))),
         counts,
         git.and_then(|git| git.dirty(key, branch)).unwrap_or(false),
         note.is_some(),

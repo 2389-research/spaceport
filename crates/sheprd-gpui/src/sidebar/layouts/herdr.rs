@@ -1,6 +1,6 @@
 //! Herdr's own rows, after its terminal client: a status dot, the name over
-//! its branch or agent, tree guides for worktrees, and the pull request on
-//! the right edge. Density and style decide spacing and which lines show.
+//! its branch or agent, tree guides for worktrees, and local marks on the
+//! right edge. Density and style decide spacing and which lines show.
 
 use super::super::{
     ARROW_RESERVE,

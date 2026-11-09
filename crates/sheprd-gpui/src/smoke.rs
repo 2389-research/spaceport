@@ -6,7 +6,7 @@ use crate::{
 // The window, menu, and icon checks below need an active desktop, so they and
 // everything only they reach are built for macOS alone.
 #[cfg(target_os = "macos")]
-use crate::{ConnectionStatus, app_icon, endpoint, menu, pull_request};
+use crate::{ConnectionStatus, app_icon, endpoint, menu};
 use anyhow::{Context as _, Result, anyhow, bail};
 #[cfg(target_os = "macos")]
 use gpui::prelude::*;

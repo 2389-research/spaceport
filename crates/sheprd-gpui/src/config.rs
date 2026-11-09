@@ -82,7 +82,7 @@ use serde::Deserialize;
 pub(crate) use sidebar::{
     AgentLayout, AgentToken, Rows, SidebarLayout, SpaceLayout, SpaceToken, TokenStyle,
 };
-pub(crate) use sidebar_style::{ChangeCounts, DeviceFooter};
+pub(crate) use sidebar_style::DeviceFooter;
 pub use sidebar_style::{SelectMode, SidebarOverrides, SidebarStyle};
 pub use ssh_hosts::SshConfig;
 pub use status_bar::StatusBar;

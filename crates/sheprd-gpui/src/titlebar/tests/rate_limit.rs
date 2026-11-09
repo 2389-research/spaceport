@@ -1,5 +1,4 @@
 use super::*;
-use std::time::{Duration, Instant};
 
 #[gpui::test]
 fn rate_limit_dot_and_dialog_survive_narrow_layout_and_clear_after_reset(cx: &mut TestAppContext) {
@@ -11,12 +10,8 @@ fn rate_limit_dot_and_dialog_survive_narrow_layout_and_clear_after_reset(cx: &mu
                 limit: 5000,
                 used: 5000,
                 remaining: 0,
-                reset: None,
+                reset: Some(chrono::Utc::now() + chrono::Duration::minutes(29)),
             });
-            view.menu.pr_cache.seed_rate_limit(
-                "fixture-user",
-                Instant::now() + Duration::from_secs(29 * 60),
-            );
             assert!(view.github_rate_limit_message().unwrap().contains("29"));
             cx.notify();
         })
@@ -41,9 +36,12 @@ fn rate_limit_dot_and_dialog_survive_narrow_layout_and_clear_after_reset(cx: &mu
     }
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
-            view.menu
-                .pr_cache
-                .seed_rate_limit("fixture-user", Instant::now());
+            view.menu.github.seed_quota(sheprd_github::quota::Quota {
+                limit: 5000,
+                used: 0,
+                remaining: 5000,
+                reset: None,
+            });
             assert!(view.github_rate_limit_message().is_none());
             cx.notify();
         })

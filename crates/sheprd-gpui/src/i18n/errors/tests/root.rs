@@ -53,7 +53,6 @@ fn every_own_variant_has_a_message() {
         Error::ImageSize,
         Error::ImageTooLarge { limit: 2048 },
         Error::InvalidAnnotation,
-        Error::InvalidBranchName,
         Error::InvalidBrowserTabs,
         Error::InvalidBrowserUrl,
         Error::InvalidCodeFile,

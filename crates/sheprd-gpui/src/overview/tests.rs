@@ -12,7 +12,7 @@ mod poll;
 mod presets;
 mod sections;
 
-use super::{Key, Open, Row, State, model::Pr};
+use super::{Key, Open, Row, State};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 fn key(agent: &str) -> Key {
@@ -35,7 +35,6 @@ fn row(agent: &str, state: State) -> Row {
         host: "MacBook Pro".into(),
         endpoint: "local".into(),
         since: None,
-        pr: None::<Pr>,
         open: Open::Pane {
             endpoint: "local".into(),
             pane: format!("pane-{agent}"),

@@ -32,8 +32,6 @@ impl SheprdWindow {
         };
         let focus = cx.focus_handle();
         window.focus(&focus, cx);
-        // Created by the first window; each later one shares its PR answers.
-        cx.default_global::<crate::pull_request::Shared>();
         let weak = cx.weak_entity();
         let (initial_theme, initial_icons, initial_rail) = cx
             .try_global::<crate::app::InitialAppearance>()

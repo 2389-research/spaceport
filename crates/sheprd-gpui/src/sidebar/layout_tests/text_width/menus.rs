@@ -1,4 +1,4 @@
-//! Workspace context menu, PR menu, menu anchor, and rename dialog checks.
+//! Workspace context menu, menu anchor, and rename dialog checks.
 use super::*;
 use gpui::MouseButton;
 
@@ -22,7 +22,7 @@ pub(super) fn check_workspace_menu_rows(
         assert_eq!(view.read(cx).live.snapshot.as_deref(), Some(before));
     });
     assert!(cx.debug_bounds("workspace-menu-Close group").is_some());
-    assert!(cx.debug_bounds("workspace-menu-New worktree").is_some());
+    assert!(cx.debug_bounds("workspace-menu-Open worktree...").is_some());
     // Tiles stack a 20px icon over a centred caption.
     for (label, tile, icon, text) in [
         (
@@ -36,12 +36,6 @@ pub(super) fn check_workspace_menu_rows(
             "workspace-menu-Close group",
             "workspace-menu-icon-Close group",
             "workspace-menu-label-Close group",
-        ),
-        (
-            "New worktree",
-            "workspace-menu-New worktree",
-            "workspace-menu-icon-New worktree",
-            "workspace-menu-label-New worktree",
         ),
     ] {
         let tile = cx.debug_bounds(tile).unwrap();
@@ -61,13 +55,11 @@ pub(super) fn check_workspace_menu_rows(
             "{label}"
         );
     }
-    // Same row: the three tiles share one top edge, in grid order.
-    let new = cx.debug_bounds("workspace-menu-New worktree").unwrap();
+    // The two tiles share one top edge, in grid order.
     let rename = cx.debug_bounds("workspace-menu-Rename").unwrap();
     let close = cx.debug_bounds("workspace-menu-Close group").unwrap();
-    assert_eq!(new.top(), rename.top());
-    assert!(new.right() <= rename.left());
-    assert!(rename.bottom() <= close.top());
+    assert_eq!(rename.top(), close.top());
+    assert!(rename.right() <= close.left());
     // Rarer actions lead with a 16px icon, in the delete strip's column.
     let label = "workspace-menu-Open worktree...";
     let row = cx.debug_bounds(label).unwrap();
@@ -89,59 +81,7 @@ pub(super) fn check_workspace_menu_rows(
     );
     assert!(close.bottom() <= row.top(), "rows sit below the tiles");
     crate::menu::workspace_tests::check_menu_interactions(view, cx);
-    // PR data is fixture-only: no daemon, local Git, or GitHub calls in layout tests.
-    crate::menu::workspace_tests::check_pr_fences(view, cx);
     parent
-}
-
-pub(super) fn check_pr_menu(view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
-    for width in [320., 800.] {
-        cx.simulate_resize(size(px(width), px(600.)));
-        for state in 0..5 {
-            cx.update(|window, cx| {
-                view.update(cx, |view, cx| {
-                    view.menu.pr.clear();
-                    view.menu.pr.loading = state == 0;
-                    if state >= 2 {
-                        view.menu.github = crate::github::Auth::connected_fixture();
-                        view.menu.pr.value = Some(crate::pull_request::fixture().unwrap());
-                    }
-                    if state == 3 {
-                        view.menu.pr.message = Some("Authentication unavailable".into());
-                    }
-                    cx.notify();
-                });
-                full_draw(window, cx).clear(cx);
-            });
-            let panel = cx.debug_bounds("menu-panel").unwrap();
-            assert!(panel.left() >= px(0.) && panel.right() <= px(width));
-            assert!(panel.bottom() <= px(600.));
-            let open_row = cx.debug_bounds("workspace-menu-Open worktree...").unwrap();
-            // Preserve the content budget apart from the tile grid, the Open
-            // worktree and Run script rows, and the target header.
-            let row_height = cx.update(|_, cx| px(view.read(cx).config.ui.line_height() + 12.));
-            let header_height = cx
-                .debug_bounds("workspace-menu-header")
-                .unwrap()
-                .size
-                .height
-                + px(4.);
-            assert!((open_row.size.height - row_height).abs() <= px(1.));
-            let tiles = cx.debug_bounds("workspace-menu-tiles").unwrap().size.height;
-            assert!(
-                panel.size.height < px(320.) + row_height * 2. + header_height + tiles,
-                "PR menu should size to its content: {panel:?}"
-            );
-            assert!(cx.debug_bounds("workspace-pr").is_some());
-            if state >= 2 {
-                let title = cx.debug_bounds("workspace-pr-title").unwrap();
-                assert!(title.left() >= panel.left() && title.right() <= panel.right());
-            }
-        }
-    }
-    cx.update(|_, cx| {
-        view.update(cx, |view, _| view.menu.pr.clear());
-    });
 }
 
 pub(super) fn check_menu_anchor(view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {

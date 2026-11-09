@@ -1,5 +1,5 @@
 //! Orca's worktree cards: a status column beside the name, a quieter meta line
-//! with the host, branch, and pull request, and compact single-line agents.
+//! with the host and branch, and compact single-line agents.
 //! Cards are inset and rounded; the focused one is washed and outlined.
 //! Rows Herdr's sidebar config defines fill the card with its lines instead,
 //! beside the status column only when those lines lead with the status.
@@ -176,7 +176,6 @@ impl RowLayout for Orca {
         let width = inner(cx, indent);
         // Children are named by their branch already; repeating it is noise.
         let branch = branch.filter(|branch| *branch != label);
-        let pr = badge.as_ref().and_then(|badge| badge.pr.as_ref());
         let dirty = badge.as_ref().is_some_and(|badge| badge.dirty);
         let muted = badge.as_ref().is_some_and(|badge| badge.muted);
         let dirty_size = (line * 0.7).round();
@@ -228,10 +227,6 @@ impl RowLayout for Orca {
                 .when(dirty, |text| {
                     let mark = parts::dirty(label, dirty_size, theme);
                     text.fixed(dirty_size, parts::first_line(dirty_size, mark, cx))
-                })
-                .when_some(pr, |text, pr| {
-                    let (width, number) = parts::pr_number(label, pr, small, glyph);
-                    text.shrink(width, number.h(px(line)).text_size(px(small)))
                 })
                 .when_some(fold, |text, fold| {
                     let size = scaled(font, 14.);
@@ -285,10 +280,6 @@ impl RowLayout for Orca {
             })
             .when(dirty, |line| {
                 line.fixed(dirty_size, parts::dirty(label, dirty_size, theme))
-            })
-            .when_some(pr, |line, pr| {
-                let (width, number) = parts::pr_number(label, pr, small, glyph);
-                line.shrink(width, number)
             });
         let padding = if meta { 5. } else { 7. };
         card(label, state, indent, 8., (theme, cx.mark))

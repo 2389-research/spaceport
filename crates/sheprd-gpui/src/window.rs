@@ -600,9 +600,6 @@ impl SheprdWindow {
             self.discard_composition(cx);
         }
         self.poll_github(window, cx);
-        if self.update_workspace_pr() {
-            cx.notify();
-        }
         if self.update_git() {
             cx.notify();
         }

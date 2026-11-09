@@ -1,4 +1,5 @@
 use super::*;
+use crate::git::{Counted, Status};
 
 /// [`snapshot`] with the main checkout behind its upstream, one child
 /// diverged, and another in sync.
@@ -25,11 +26,6 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
             branch: "worktree/sidebar-child".into(),
         };
         let now = std::time::Instant::now();
-        let mut pr = crate::pull_request::fixture().unwrap();
-        pr.number = 7;
-        pr.additions = 234;
-        pr.deletions = 567;
-        view.seed_pr(input.clone(), pr, now);
         view.git.seed_probe(input, true, now);
         // And a note, marked and read under the row.
         crate::worktree_notes::Notes::update(cx, |notes| {
@@ -96,19 +92,22 @@ fn check_layouts(modes: &[crate::config::LayoutMode], cx: &mut gpui::TestAppCont
                         "{context}: {name}"
                     );
                 }
-                // Minimal rows show no pull request or uncommitted work.
+                // Minimal rows show no uncommitted work.
                 if mode != LayoutMode::Minimal {
                     let row = cx.debug_bounds("row-sidebar-child").unwrap();
-                    let badge = cx.debug_bounds("pr-sidebar-child").unwrap();
+                    let dirty = cx.debug_bounds("dirty-sidebar-child").unwrap();
+                    assert!(dirty.right() <= row.right(), "{context}: {dirty:?} {row:?}");
                     assert!(
-                        badge.right() <= row.right(),
-                        "{context}: badge {badge:?} {row:?}"
+                        dirty.bottom() <= row.bottom(),
+                        "{context}: {dirty:?} {row:?}"
                     );
-                    assert!(
-                        badge.bottom() <= row.bottom(),
-                        "{context}: badge {badge:?} {row:?}"
-                    );
-                    assert!(cx.debug_bounds("dirty-sidebar-child").is_some());
+                    if let Some(badge) = cx.debug_bounds("badge-sidebar-child") {
+                        assert!(badge.right() <= row.right(), "{context}: {badge:?} {row:?}");
+                        assert!(
+                            badge.bottom() <= row.bottom(),
+                            "{context}: {badge:?} {row:?}"
+                        );
+                    }
                 }
                 // Every layout reads the note on a line under its row.
                 let row = cx.debug_bounds("row-sidebar-child").unwrap();
@@ -181,12 +180,18 @@ fn sidebar_densities_keep_details_and_badges_within_their_rows(cx: &mut gpui::Te
             branch: "worktree/sidebar-child".into(),
         };
         let now = std::time::Instant::now();
-        let mut pr = crate::pull_request::fixture().unwrap();
-        pr.number = 7;
-        pr.additions = 234;
-        pr.deletions = 567;
-        view.seed_pr(input.clone(), pr, now);
-        view.git.seed_probe(input, true, now);
+        view.git.seed_counts(
+            input,
+            Counted {
+                lines: Status {
+                    additions: 234,
+                    deletions: 567,
+                    untracked: 0,
+                },
+                dirty: true,
+            },
+            now,
+        );
         view
     });
     cx.simulate_resize(size(px(800.), px(900.)));
@@ -217,7 +222,7 @@ fn sidebar_densities_keep_details_and_badges_within_their_rows(cx: &mut gpui::Te
                     for text in ["worktree/sidebar-child", "+234", "-567"] {
                         assert_eq!(probes.contains_key(text), comfortable, "{text}");
                     }
-                    for text in ["Claude Code", "#7"] {
+                    for text in ["Claude Code"] {
                         assert!(probes.contains_key(text), "{text}");
                     }
                 });
@@ -290,7 +295,7 @@ fn sidebar_densities_keep_details_and_badges_within_their_rows(cx: &mut gpui::Te
                 );
                 assert!(cx.debug_bounds("detail-agent-p0").is_some());
                 let row = cx.debug_bounds("row-sidebar-child").unwrap();
-                let badge = cx.debug_bounds("pr-sidebar-child").unwrap();
+                let badge = cx.debug_bounds("badge-sidebar-child").unwrap();
                 assert_eq!(badge.right(), row.right() - px(padding));
                 assert!(badge.bottom() <= row.bottom());
                 let first = cx.debug_bounds("badge-line-sidebar-child").unwrap();

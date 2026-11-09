@@ -64,7 +64,6 @@ mod mutes;
 #[cfg(test)]
 mod nested_agents;
 #[cfg(test)]
-mod other_device_prs;
 #[cfg(test)]
 mod palette;
 #[cfg(test)]
@@ -475,12 +474,6 @@ pub(crate) const REPO_KEY: &str = if cfg!(windows) {
 
 pub(crate) fn snapshot(workspace_count: usize) -> ClientShellSnapshot {
     snapshot_with_repo_key(workspace_count, REPO_KEY)
-}
-
-/// SSH fixtures describe the POSIX host, not the platform running the test.
-#[cfg(test)]
-pub(crate) fn ssh_snapshot(workspace_count: usize) -> ClientShellSnapshot {
-    snapshot_with_repo_key(workspace_count, "/fixture/agent-launcher/.git")
 }
 
 fn snapshot_with_repo_key(workspace_count: usize, repo_key: &str) -> ClientShellSnapshot {

@@ -51,6 +51,7 @@ fn every_config_variant_has_a_message() {
             local: PathBuf::from("/home/me/.config/herdr/config-gpui.local.toml"),
         },
         Error::PreferencesNotObject,
+        Error::RemovedChangeCounts,
         Error::ThemeLine {
             line: 12,
             key: "background".into(),

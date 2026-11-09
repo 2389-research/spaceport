@@ -582,47 +582,6 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                     clicked?;
                     let view = root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?;
                     if view.read(cx).menu.page != Some(menu::Page::Workspace) { bail!("right click did not open workspace menu"); }
-                    view.update(cx, |view, _| -> Result<()> {
-                        let mut pr = pull_request::fixture()?;
-                        pr.head_ref_name = "feature/a-deliberately-long-branch-name-for-the-compact-popover".repeat(3);
-                        view.workspace_pr_fixture(pr)?;
-                        Ok(())
-                    })?;
-                    cx.default_global::<sidebar::layout_tests::PaintedProbes>().0.clear();
-                    window.draw(cx).clear(cx);
-                    // The workspace actions and PR summary share a scrolling
-                    // popover. At the narrow size the summary starts below its
-                    // viewport; bring it into view before checking its glyphs.
-                    let menu::Cover::Panel(panel) = view.read(cx).menu.cover.get() else {
-                        bail!("workspace popover has no painted panel bounds");
-                    };
-                    window.dispatch_event(PlatformInput::Scroll(ScrollEvent {
-                        position: panel.center(),
-                        delta: ScrollDelta::Pixels(gpui::point(px(0.), -window.viewport_size().height)),
-                        ..Default::default()
-                    }), cx);
-                    cx.default_global::<sidebar::layout_tests::PaintedProbes>().0.clear();
-                    window.draw(cx).clear(cx);
-                    let probes = &cx.global::<sidebar::layout_tests::PaintedProbes>().0;
-                    for (text, probe) in probes.iter().filter(|(text, _)| text.starts_with("#8 ") || matches!(text.as_str(), "+1730" | "-31")) {
-                        if probe.glyph_text != probe.cached || probe.clipped || probe.glyph_text.is_empty() {
-                            bail!("native PR glyphs clipped: {text} {probe:?}");
-                        }
-                        if text.starts_with("#8 ") && (!probe.glyph_text.starts_with("#8 Improve") || !probe.glyph_text.ends_with('\u{2026}')) {
-                            bail!("native PR title did not truncate correctly: {probe:?}");
-                        }
-                    }
-                    if !probes.contains_key("+1730") || !probes.contains_key("-31") || !probes.keys().any(|text| text.starts_with("#8 ")) {
-                        bail!("native PR summary was not painted");
-                    }
-                    let title = probes.iter().find(|(text, _)| text.starts_with("#8 ")).map(|(_, probe)| probe).context("missing PR title")?;
-                    let additions = probes.get("+1730").context("missing PR additions")?;
-                    if additions.bounds.bottom() - title.bounds.top() > px(160.)
-                        || additions.bounds.bottom() > window.viewport_size().height
-                        || title.bounds.right() > window.viewport_size().width
-                    {
-                        bail!("native PR summary is oversized or outside the viewport");
-                    }
                     let before = view.read(cx).input_probe;
                     let steps = view.read(cx).native_workspace_dialog_steps(action)
                         .context("workspace dialog is absent from its menu")?;

@@ -62,6 +62,7 @@ impl Localize for Error {
                 local = local.display().to_string()
             ),
             Self::PreferencesNotObject => fl!("error-config-preferences-not-object"),
+            Self::RemovedChangeCounts => fl!("error-config-removed-change-counts"),
             Self::ThemeLine { line, key, source } => fl!(
                 "error-config-theme-line",
                 line = *line,

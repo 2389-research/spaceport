@@ -1,13 +1,13 @@
 //! Additional GitHub accounts on the GitHub page: one sign-in per
 //! `[github] accounts` entry, the strip that switches between them and the
 //! device's own account, adding and removing them, and signing in with a
-//! pasted token. Which account reads a repository is `github::Tokens`' rule.
+//! pasted token.
 
 use crate::i18n::fl;
 use crate::{
     SheprdWindow,
     config::{Config, GitHubAccount},
-    github::{Account, Auth, Profile, Tokens},
+    github::{Account, Auth},
     search_input::SearchInput,
 };
 use gpui::{prelude::*, *};
@@ -107,21 +107,6 @@ impl SheprdWindow {
             .find(|account| &account.id == id)
     }
 
-    /// The tokens pull requests on the selected device are read with: its
-    /// account (see `pr_profile`) and every signed-in additional account.
-    pub(crate) fn pr_tokens(&self) -> Option<Tokens> {
-        self.pr_profile().map(|main| self.tokens_over(main))
-    }
-
-    pub(crate) fn tokens_over(&self, main: &Profile) -> Tokens {
-        Tokens::new(
-            main,
-            self.menu.github_accounts.iter().filter_map(|account| {
-                Some((account.auth.profile.as_ref()?, account.owners.as_slice()))
-            }),
-        )
-    }
-
     /// Whether the page offers to add an account: once the device's own is
     /// signed in, or another additional one exists, and below the limit.
     pub(super) fn can_add_github_account(&self) -> bool {
@@ -179,8 +164,6 @@ impl SheprdWindow {
         // runs; the credential is deleted below rather than by this sign-in.
         self.menu.github_accounts.retain(|account| account.id != id);
         self.menu.github_account = None;
-        self.menu.pr_cache.clear();
-        self.menu.pr.clear();
         self.write_preference(
             move || {
                 crate::github::forget(store, &kind)?;

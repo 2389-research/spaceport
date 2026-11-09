@@ -110,22 +110,10 @@ impl SheprdWindow {
             } else {
                 &endpoint.live
             };
-            // Each device's answers are its own: another host may have the
-            // same checkout path and branch.
-            let view = self.endpoint_pr_view(index);
-            let pr = |key: &str, branch: &str| {
-                view.as_ref()
-                    .and_then(|view| self.menu.pr_cache.peek(view, key, branch))
-                    .map(|pr| model::Pr {
-                        number: pr.number,
-                        checks: pr.checks_outcome(),
-                    })
-            };
             rows.extend(model::agent_rows(
                 endpoint,
                 live,
                 &self.overview.since,
-                pr,
                 crate::notification_mutes::Mutes::any(cx),
             ));
         }

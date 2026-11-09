@@ -28,7 +28,6 @@ fn check_sidebar(fixture: Entity<SidebarFixture>, cx: &mut gpui::VisualTestConte
     let before = sidebar_rows::check_collapse_toggle(&view, cx);
     panels::check_keybinds_panel(&view, cx);
     let parent = menus::check_workspace_menu_rows(&view, &before, cx);
-    menus::check_pr_menu(&view, cx);
     menus::check_menu_anchor(&view, cx);
     menus::check_rename_dialog(&view, parent, cx);
 

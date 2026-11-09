@@ -1,13 +1,13 @@
 //! The Overview page as drawn: a summary line, then the list beside the
-//! host column. A row shows its state, agent, title, checkout, host, pull
-//! request, and how long it has been so; hovering it offers Snooze, Settle,
+//! host column. A row shows its state, agent, title, checkout, host,
+//! and how long it has been so; hovering it offers Snooze, Settle,
 //! Pin, and Open, or on a closed agent Reopen and Forget. With nothing to
 //! list, the page says what it is for.
 
 use super::{Marks, Row, Sections, State, presets};
 use crate::{
     SheprdWindow, config::corners, devices_overview::Look, fonts::StyledFont, i18n::fl,
-    icons::AgentIcon, pull_request::Outcome,
+    icons::AgentIcon,
 };
 use chrono::{DateTime, Local};
 use gpui::{prelude::*, *};
@@ -17,7 +17,6 @@ use std::time::SystemTime;
 const ROW_HEIGHT: f32 = 44.;
 const BRANCH_WIDTH: f32 = 170.;
 const HOST_WIDTH: f32 = 110.;
-const PR_WIDTH: f32 = 64.;
 const SINCE_WIDTH: f32 = 40.;
 /// The least a title keeps when the branch and host columns give way.
 const TITLE_MIN: f32 = 140.;
@@ -478,12 +477,6 @@ impl SheprdWindow {
             )
             .child(
                 div()
-                    .w(px(PR_WIDTH))
-                    .flex_none()
-                    .when_some(row.pr, |cell, pr| cell.child(pr_chip(look, pr))),
-            )
-            .child(
-                div()
                     .w(px(SINCE_WIDTH))
                     .flex_none()
                     .flex()
@@ -832,34 +825,4 @@ fn stressed_count(text: String, count: usize, color: u32) -> StyledText {
         .into_iter()
         .collect::<Vec<_>>();
     StyledText::new(text).with_highlights(highlights)
-}
-
-fn pr_chip(look: &Look, pr: super::model::Pr) -> Div {
-    let theme = look.theme;
-    let color = match pr.checks {
-        Some(Outcome::Failed) => Some(look.status(AgentStatus::Blocked)),
-        Some(Outcome::Pending) => Some(look.status(AgentStatus::Working)),
-        Some(Outcome::Passed) => Some(theme.ink(theme.palette[2])),
-        Some(Outcome::Skipped) | None => None,
-    };
-    div()
-        .flex_none()
-        .flex()
-        .items_center()
-        .gap(px(4.))
-        .px(px(5.))
-        .rounded(px(corners::SMALL))
-        .border_1()
-        .border_color(rgb(theme.active))
-        .child(
-            svg()
-                .path("icons/pull-request.svg")
-                .size(px(11.))
-                .flex_none()
-                .text_color(rgb(theme.muted)),
-        )
-        .child(look.mono(format!("#{}", pr.number)))
-        .when_some(color, |chip, color| {
-            chip.child(div().flex_none().size(px(6.)).rounded_full().bg(rgb(color)))
-        })
 }

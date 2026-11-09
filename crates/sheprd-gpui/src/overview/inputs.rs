@@ -34,7 +34,7 @@ impl PartialEq for Host {
 /// The inputs of the last rebuild. Snapshots and marks say exactly when they
 /// change. The second stands in for the rest: snoozes run out on whole
 /// seconds, the page's elapsed times roll over on a minute, and device
-/// labels and pull request answers have no revision to
+/// labels have no revision to
 /// compare, so those reach the rows within a second.
 #[derive(Debug, Default, PartialEq)]
 pub(super) struct Inputs {

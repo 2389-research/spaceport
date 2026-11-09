@@ -117,7 +117,7 @@ impl SheprdWindow {
     /// What ends the bar: the account and client-drawn window controls.
     fn titlebar_end(&self, window: &Window, cx: &mut Context<Self>) -> Div {
         let image = self
-            .pr_profile()
+            .account_profile()
             .and_then(|profile| self.menu.github_avatars.get(&profile.avatar_url));
         let attention = self.github_needs_attention();
         let rate_limit = self.github_rate_limit_message();

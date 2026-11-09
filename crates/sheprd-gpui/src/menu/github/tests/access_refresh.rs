@@ -100,7 +100,7 @@ fn switching_accounts_and_opening_approval_schedule_the_target_account(cx: &mut 
 }
 
 #[gpui::test]
-fn a_refresh_updates_its_own_routes_after_switching_tabs(cx: &mut TestAppContext) {
+fn a_refresh_keeps_its_account_after_switching_tabs(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
@@ -108,7 +108,6 @@ fn a_refresh_updates_its_own_routes_after_switching_tabs(cx: &mut TestAppContext
             add_account(view);
             view.menu.page = Some(crate::menu::Page::GitHub);
             view.select_github_account(Some(ID.into()));
-            let before = view.pr_tokens().unwrap();
             let mut profile = crate::github::Profile::fixture(
                 "fixture-user",
                 std::sync::Arc::new("fixture-token".into()),
@@ -131,12 +130,6 @@ fn a_refresh_updates_its_own_routes_after_switching_tabs(cx: &mut TestAppContext
                     .organizations
                     .is_none()
             );
-            let after = view.pr_tokens().unwrap();
-            assert!(
-                !after.same(&before),
-                "changed owners must fence cached PR results even with the same token"
-            );
-            assert_ne!(after.key(), before.key());
             view.select_github_account(Some(ID.into()));
             assert!(view.github_account_note().unwrap().contains("private-org"));
             assert!(view.github_attention().is_none());

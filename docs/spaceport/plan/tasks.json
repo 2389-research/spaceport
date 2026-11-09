@@ -311,6 +311,7 @@
         "evidence/t04-git-read-close-dependency.md",
         "evidence/t04-github-account-entry-cut.md",
         "evidence/t04-profile-popup-account-dependency.md",
+        "evidence/t04-pr-read-route-removal.md",
         "evidence/t04-merged-cleanup-removal.md",
         "evidence/t04-worktree-source-landing-removal.md",
         "evidence/t04-fan-out-removal.md",

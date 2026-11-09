@@ -4,8 +4,8 @@
 use super::{SettingsWindow, on_value, ui};
 use crate::{
     config::{
-        AgentsPlacement, ChangeCounts, Config, DeviceFooter, LayoutMode, SelectMode,
-        SidebarOverrides, preferences::Preference,
+        AgentsPlacement, Config, DeviceFooter, LayoutMode, SelectMode, SidebarOverrides,
+        preferences::Preference,
     },
     i18n::{self, fl},
     settings_window::{
@@ -253,32 +253,6 @@ impl SettingsWindow {
                     on_value(cx, |this, footer, _, cx| {
                         let mut intent = SidebarIntent::of(&this.config);
                         intent.style.device_footer = footer;
-                        this.commit_sidebar(intent, cx);
-                    }),
-                )),
-            )
-            .child(
-                ui::row(
-                    theme,
-                    "sidebar-change-counts",
-                    fl!("settings-sidebar-change-counts"),
-                )
-                .description(fl!("settings-sidebar-change-counts-description"))
-                .control(ui::segmented(
-                    theme,
-                    "sidebar-change-counts-control",
-                    &[
-                        (
-                            ChangeCounts::PullRequest,
-                            fl!("settings-sidebar-counts-pull-request"),
-                        ),
-                        (ChangeCounts::Local, fl!("settings-sidebar-counts-local")),
-                    ],
-                    Some(self.config.sidebar_style.change_counts),
-                    ready,
-                    on_value(cx, |this, counts, _, cx| {
-                        let mut intent = SidebarIntent::of(&this.config);
-                        intent.style.change_counts = counts;
                         this.commit_sidebar(intent, cx);
                     }),
                 )),

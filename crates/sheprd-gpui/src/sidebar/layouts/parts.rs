@@ -10,7 +10,7 @@
 use super::super::{
     cell::{RowContext, RowState},
     glyph_width, label_text, line_height,
-    row::{self, Counts, PrBadge, RowIcon, RowLift, removing_dot},
+    row::{self, RowIcon, RowLift, removing_dot},
     status_indicator,
     tokens::ResolvedToken,
 };
@@ -373,42 +373,6 @@ pub(super) fn worktree(key: &str, icon: &RowIcon, size: f32) -> Option<Div> {
 
 pub(super) fn dirty(key: &str, size: f32, theme: &Theme) -> Div {
     crate::icons::uncommitted(theme, size).debug_selector(|| format!("dirty-{key}"))
-}
-
-/// The row's `+additions -deletions`, colored or muted, and the width it
-/// needs at `glyph`.
-pub(super) fn counts(key: &str, counts: &Counts, glyph: f32, colors: (u32, u32)) -> (f32, Div) {
-    let glyphs = counts.glyphs();
-    let element = div()
-        .debug_selector(|| format!("pr-{key}"))
-        .flex()
-        .gap(px(glyph))
-        .child(
-            div()
-                .text_color(rgb(colors.0))
-                .child(label_text(&counts.additions)),
-        )
-        .child(
-            div()
-                .text_color(rgb(colors.1))
-                .child(label_text(&counts.deletions)),
-        );
-    ((glyphs as f32 * glyph).ceil(), element)
-}
-
-/// The pull request's number beside a branch mark, both in its state color,
-/// and the width it needs at `size`.
-pub(super) fn pr_number(key: &str, pr: &PrBadge, size: f32, glyph: f32) -> (f32, Div) {
-    let element = div()
-        .debug_selector(|| format!("pr-{key}"))
-        .row()
-        .items_center()
-        .gap(px(3.))
-        .text_color(rgb(pr.color))
-        .child(icon("icons/git-branch.svg", size, pr.color))
-        .child(label_text(&pr.number));
-    let width = size + 3. + (pr.number.chars().count() as f32 * glyph).ceil();
-    (width, element)
 }
 
 /// Where an agent runs, as one muted label: host, workspace, and tab.

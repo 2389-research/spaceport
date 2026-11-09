@@ -4,7 +4,6 @@ use crate::{
     github::{Account, Auth, Profile},
     menu::github::AdditionalAccount,
 };
-use secrecy::ExposeSecret;
 use std::sync::Arc;
 
 const ID: &str = "0123456789abcdef0123456789abcdef";
@@ -24,45 +23,6 @@ fn add_account(view: &mut crate::SheprdWindow, login: Option<&str>) {
         owners: vec!["listed-owner".into()],
         auth,
     }];
-}
-
-#[gpui::test]
-fn repositories_an_additional_account_owns_are_read_with_it(cx: &mut TestAppContext) {
-    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    cx.update(|_, cx| {
-        view.update(cx, |view, _| {
-            view.menu.github = Auth::connected_fixture();
-            add_account(view, None);
-            // Not signed in yet: everything stays with the main account.
-            let tokens = view.pr_tokens().unwrap();
-            assert_eq!(tokens.key(), "fixture-user");
-            assert_eq!(
-                tokens.for_owner("fabien_microsoft").expose_secret(),
-                "fixture-token"
-            );
-
-            add_account(view, Some("fabien_microsoft"));
-            let tokens = view.pr_tokens().unwrap();
-            assert_eq!(
-                tokens.key(),
-                "fixture-user,fabien_microsoft(fabien_microsoft emu-org listed-owner)"
-            );
-            for owner in ["fabien_microsoft", "emu-org", "listed-owner"] {
-                assert_eq!(tokens.for_owner(owner).expose_secret(), "emu-token");
-            }
-            assert_eq!(
-                tokens.for_owner("rust-lang").expose_secret(),
-                "fixture-token"
-            );
-            assert_eq!(
-                view.menu.github_accounts[0].covered(),
-                ["fabien_microsoft", "emu-org", "listed-owner"]
-            );
-            // Without a main sign-in nothing is read, as before.
-            view.menu.github = Auth::default();
-            assert!(view.pr_tokens().is_none());
-        });
-    });
 }
 
 #[gpui::test]

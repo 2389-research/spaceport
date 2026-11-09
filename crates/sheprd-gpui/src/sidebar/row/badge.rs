@@ -1,25 +1,20 @@
-//! The trailing badges a row reserves room for: its pull request, change
-//! counts, dirty, note, and muted marks, and the upstream drift
-//! counts.
+//! The trailing badges a row reserves room for: local change counts, dirty,
+//! note, muted, and upstream drift marks.
 
 use super::label_text;
 use crate::{
     config::{FontConfig, Theme},
-    i18n::fl,
     sidebar::{glyph_width, layout::SidebarMetrics, line_height},
 };
 use gpui::{prelude::*, *};
 
-/// What a row shows on its right edge: the cached pull request, the line
-/// counts `[sidebar] change_counts` picks, and whether the checkout has work
-/// that is not committed yet.
+/// Local change counts and marks on the right edge of a workspace row.
 pub(in crate::sidebar) struct RowBadge {
-    pub(in crate::sidebar) pr: Option<PrBadge>,
     pub(in crate::sidebar) counts: Option<Counts>,
     pub(in crate::sidebar) dirty: bool,
     /// The user keeps a note on this checkout. Card layouts leave it to the
     /// note's own line under the row, which leads with the same icon, rather
-    /// than squeeze their pull request number out of a narrow card.
+    /// than squeeze the workspace name in a narrow card.
     pub(in crate::sidebar) noted: bool,
     /// The user muted the workspace's notifications.
     pub(in crate::sidebar) muted: bool,
@@ -29,24 +24,22 @@ impl RowBadge {
     /// Whether it says anything about the checkout, beyond the workspace's
     /// mute, which card layouts put on the name's line instead.
     pub(in crate::sidebar) fn checkout_marks(&self) -> bool {
-        self.pr.is_some() || self.counts.is_some() || self.dirty || self.noted
+        self.counts.is_some() || self.dirty || self.noted
     }
 
     pub(in crate::sidebar) fn lines(&self, layout: &SidebarMetrics) -> usize {
-        1 + usize::from(self.counts.is_some() && layout.pr_counts())
+        1 + usize::from(self.counts.is_some() && layout.count_line())
     }
 
     /// Nothing to draw is nothing to reserve, so a row with none keeps its
     /// full label width.
     pub(in crate::sidebar) fn new(
-        pr: Option<PrBadge>,
         counts: Option<Counts>,
         dirty: bool,
         noted: bool,
         muted: bool,
     ) -> Option<Self> {
-        (pr.is_some() || counts.is_some() || dirty || noted || muted).then_some(Self {
-            pr,
+        (counts.is_some() || dirty || noted || muted).then_some(Self {
             counts,
             dirty,
             noted,
@@ -68,40 +61,33 @@ impl RowBadge {
         layout: &SidebarMetrics,
     ) -> f32 {
         let glyph = glyph_width(font);
-        let counts = self.counts.as_ref().filter(|_| layout.pr_counts());
-        counts.map_or(0., |counts| match counts.local {
-            true => counts.chip_width(glyph, chip_icon(font)),
-            false => (glyph * counts.glyphs() as f32).ceil(),
-        })
+        let counts = self.counts.as_ref().filter(|_| layout.count_line());
+        counts.map_or(0., |counts| counts.chip_width(glyph, chip_icon(font)))
     }
 
-    /// The first line's width: the marks and the pull request number. The
-    /// label's own first line only yields this much, not the counts' width.
+    /// The first line's mark width. The label's own first line only yields
+    /// this much, not the counts' width.
     pub(in crate::sidebar) fn first_width(
         &self,
         font: &FontConfig,
         layout: &SidebarMetrics,
     ) -> f32 {
         let glyph = glyph_width(font);
-        let number = self.pr.as_ref().map_or(0, |pr| pr.number.chars().count());
-        let pr = (glyph * number as f32).ceil();
-        // Reserve the icon and the gap before the PR number, even at small fonts.
         let mark = line_height(font) + glyph;
         let marks = [self.dirty && !self.chipped(layout), self.noted, self.muted]
             .into_iter()
             .filter(|mark| *mark)
             .count();
-        pr + mark * marks as f32
+        mark * marks as f32
     }
 
-    /// Local counts take the dirty mark's place, in a chip of its hue under
-    /// the number, wherever the counts line shows.
+    /// Local counts take the dirty mark's place in a chip of its hue.
     fn chipped(&self, layout: &SidebarMetrics) -> bool {
-        layout.pr_counts() && self.counts.as_ref().is_some_and(|counts| counts.local)
+        layout.count_line() && self.counts.is_some()
     }
 
-    /// The badge column at a row's trailing edge, `width` wide: the marks and
-    /// pull request number on the first line, its counts under them.
+    /// The badge column at a row's trailing edge, `width` wide: the marks on
+    /// the first line, with local counts underneath.
     pub(in crate::sidebar) fn element(
         self,
         key: &str,
@@ -112,14 +98,13 @@ impl RowBadge {
     ) -> Div {
         let chipped = self.chipped(layout);
         let Self {
-            pr,
             counts,
             dirty,
             noted,
             muted,
         } = self;
         div()
-            .debug_selector(|| format!("pr-{key}"))
+            .debug_selector(|| format!("badge-{key}"))
             .w(px(width))
             .flex_none()
             .flex()
@@ -155,84 +140,20 @@ impl RowBadge {
                             crate::icons::uncommitted(theme, (line_height(font) * 0.75).round())
                                 .debug_selector(|| format!("dirty-{key}")),
                         )
-                    })
-                    .when_some(pr.as_ref(), |line, badge| {
-                        line.child(
-                            div()
-                                .flex_none()
-                                .truncate()
-                                .text_color(rgb(badge.color))
-                                .child(label_text(&badge.number)),
-                        )
                     }),
             )
-            .when_some(counts.filter(|_| layout.pr_counts()), |column, badge| {
-                if badge.local {
-                    let colors = (theme.ink(theme.palette[2]), theme.ink(theme.palette[1]));
-                    let chip = badge.chip(key, glyph_width(font), chip_icon(font), colors, theme);
-                    return column.child(chip.h(px(line_height(font))));
-                }
-                column.child(
-                    div()
-                        .flex()
-                        .flex_none()
-                        .overflow_hidden()
-                        .child(
-                            div()
-                                .flex_none()
-                                .text_color(rgb(theme.ink(theme.palette[2])))
-                                .child(label_text(&badge.additions)),
-                        )
-                        .child(
-                            div()
-                                .flex_none()
-                                .text_color(rgb(theme.muted))
-                                .child(label_text("/")),
-                        )
-                        .child(
-                            div()
-                                .flex_none()
-                                .text_color(rgb(theme.ink(theme.palette[1])))
-                                .child(label_text(&badge.deletions)),
-                        ),
-                )
+            .when_some(counts.filter(|_| layout.count_line()), |column, badge| {
+                let colors = (theme.ink(theme.palette[2]), theme.ink(theme.palette[1]));
+                let chip = badge.chip(key, glyph_width(font), chip_icon(font), colors, theme);
+                column.child(chip.h(px(line_height(font))))
             })
     }
 }
 
-/// Cached pull request state for a worktree row: the number carries the
-/// lifecycle/readiness color.
-pub(in crate::sidebar) struct PrBadge {
-    pub(in crate::sidebar) number: String,
-    pub(in crate::sidebar) color: u32,
-}
-
-impl PrBadge {
-    pub(in crate::sidebar) fn new(pr: &crate::pull_request::PullRequest, theme: &Theme) -> Self {
-        Self {
-            number: format!("#{}", pr.number),
-            color: crate::pull_request::color(pr, theme),
-        }
-    }
-
-    /// Commits on the branch that no pull request carries yet, in the slot a
-    /// number would take, so every layout shows it where it shows a number.
-    pub(in crate::sidebar) fn unopened(theme: &Theme) -> Self {
-        Self {
-            number: fl!("sidebar-pull-request-unopened"),
-            color: crate::pull_request::unopened_color(theme),
-        }
-    }
-}
-
-/// `+additions` and `-deletions` under a row's badge: the pull request's or
-/// the working tree's, whichever `[sidebar] change_counts` picks.
+/// `+additions` and `-deletions` for the local working tree.
 pub(in crate::sidebar) struct Counts {
     pub(in crate::sidebar) additions: String,
     pub(in crate::sidebar) deletions: String,
-    /// The checkout's uncommitted lines rather than its pull request's. They
-    /// are drawn inside the dirty mark's chip, so the two never read alike.
-    pub(in crate::sidebar) local: bool,
 }
 
 /// Room inside a local counts chip: padding on each side, its one-pixel
@@ -244,14 +165,6 @@ impl Counts {
         Self {
             additions: format!("+{}", compact(additions)),
             deletions: format!("-{}", compact(deletions)),
-            local: false,
-        }
-    }
-
-    pub(in crate::sidebar) fn local(additions: u64, deletions: u64) -> Self {
-        Self {
-            local: true,
-            ..Self::new(additions, deletions)
         }
     }
 
@@ -391,8 +304,7 @@ impl Upstream {
 }
 
 /// Four digits of churn is already a big diff; abbreviate past that so the
-/// column stays narrow enough to leave the branch readable. The titlebar's Git
-/// badge reuses it so one PR reads the same in both places.
+/// column stays narrow enough to leave the branch readable.
 pub(crate) fn compact(lines: u64) -> String {
     match lines {
         0..=9999 => lines.to_string(),

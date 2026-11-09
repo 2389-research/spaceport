@@ -36,7 +36,6 @@ error-image-read-timeout = Reading the local image timed out (3 seconds).
 error-image-size = The image must not be empty.
 error-image-too-large = The image exceeds Herdr's { $limit }-byte upload limit.
 error-invalid-annotation = The page reported an invalid annotation
-error-invalid-branch-name = Invalid Git branch name. Use a name such as config-reload, without spaces or special ref characters.
 error-invalid-browser-tabs = Invalid saved browser tabs
 error-invalid-browser-url = Browser tabs open only http and https addresses with a host, of at most 8 KiB.
 error-invalid-code-file = An old source tab must name an absolute file path without control characters

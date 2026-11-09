@@ -102,10 +102,6 @@ pub enum Error {
     ImageTooLarge { limit: usize },
     #[error("The page reported an invalid annotation")]
     InvalidAnnotation,
-    #[error(
-        "Invalid Git branch name. Use a name such as config-reload, without spaces or special ref characters."
-    )]
-    InvalidBranchName,
     #[error("Invalid saved browser tabs")]
     InvalidBrowserTabs,
     #[error("Browser tabs open only http and https addresses with a host, of at most 8 KiB.")]

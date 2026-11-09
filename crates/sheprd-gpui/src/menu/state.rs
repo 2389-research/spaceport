@@ -9,7 +9,6 @@ use super::{Page, WorkspaceMenuAction, WorkspaceTarget, github};
 use crate::dialog_input::DialogInput;
 use crate::i18n::fl;
 use gpui::{App, Bounds, Entity, FocusHandle, Pixels, Point, ScrollHandle, Subscription};
-use sheprd_client::protocol::ClientShellSnapshot;
 
 /// What an open menu covers, as its last frame laid it out. Windows pages
 /// draw above GPUI and would hide it, so the ones it covers hide instead.
@@ -123,15 +122,9 @@ pub(crate) struct MenuState {
     pub(crate) group: Option<crate::group_menu::GroupMenu>,
     pub(crate) host: Option<super::devices::HostMenu>,
     pub(crate) pane: Option<crate::pane_menu::PaneMenu>,
-    pub(crate) pr: crate::pull_request::Lookup,
-    /// Also read by the sidebar, which paints each worktree's cached PR badge.
-    pub(crate) pr_cache: crate::pull_request::Cache,
-    pub(super) pr_cache_connection:
-        Option<std::sync::Weak<std::sync::Mutex<crate::state::LiveState>>>,
-    pub(super) pr_snapshot: Option<std::sync::Weak<ClientShellSnapshot>>,
     pub(crate) github: crate::github::Auth,
-    /// Saved SSH devices' own accounts, keyed by endpoint ID. A device without
-    /// one signed in looks up pull requests with `github`.
+    /// Saved SSH devices' own accounts, keyed by endpoint ID. The profile
+    /// slot falls back to `github` when a device has no own sign-in.
     pub(crate) github_hosts: std::collections::HashMap<String, crate::github::Auth>,
     /// One sign-in per `[github] accounts` entry, in config order.
     pub(crate) github_accounts: Vec<github::AdditionalAccount>,
@@ -152,7 +145,6 @@ pub(crate) struct MenuState {
     pub(crate) removing_devices: std::collections::HashSet<String>,
     pub(super) github_selected: Option<github::Action>,
     pub(super) github_scroll: ScrollHandle,
-    pub(super) pr_connection: Option<std::sync::Weak<std::sync::Mutex<crate::state::LiveState>>>,
     pub(crate) version_notice: Option<super::VersionNotice>,
 }
 
@@ -323,15 +315,6 @@ impl MenuState {
             palette_resume: None,
             palette_preview: true,
             close: None,
-            pr: Default::default(),
-            // Every window reads and refreshes the same answers.
-            pr_cache: cx
-                .try_global::<crate::pull_request::Shared>()
-                .map_or_else(Default::default, |shared| {
-                    crate::pull_request::Cache::shared(shared.0.clone())
-                }),
-            pr_cache_connection: None,
-            pr_snapshot: None,
             github: Default::default(),
             github_hosts: Default::default(),
             github_accounts: Vec::new(),
@@ -343,7 +326,6 @@ impl MenuState {
             removing_devices: Default::default(),
             github_selected: None,
             github_scroll: ScrollHandle::new(),
-            pr_connection: None,
             version_notice: None,
             tab: None,
             group: None,
@@ -401,8 +383,6 @@ impl MenuState {
         self.suggested_name = None;
         self.worktree_open = None;
         self.close = None;
-        self.pr.clear();
-        self.pr_connection = None;
     }
 }
 

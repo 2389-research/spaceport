@@ -66,7 +66,6 @@ impl Localize for Error {
             Self::ImageSize => fl!("error-image-size"),
             Self::ImageTooLarge { limit } => fl!("error-image-too-large", limit = *limit),
             Self::InvalidAnnotation => fl!("error-invalid-annotation"),
-            Self::InvalidBranchName => fl!("error-invalid-branch-name"),
             Self::InvalidBrowserTabs => fl!("error-invalid-browser-tabs"),
             Self::InvalidBrowserUrl => fl!("error-invalid-browser-url"),
             Self::InvalidCodeFile => fl!("error-invalid-code-file"),

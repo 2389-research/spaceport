@@ -105,13 +105,6 @@ pub(crate) enum Open {
     },
 }
 
-/// A checkout's pull request as the prefetch last saw it.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Pr {
-    pub number: u64,
-    pub checks: Option<crate::pull_request::Outcome>,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Row {
     pub key: Key,
@@ -130,7 +123,6 @@ pub(crate) struct Row {
     pub endpoint: String,
     /// When the row entered its state, as far as this client saw it.
     pub since: Option<SystemTime>,
-    pub pr: Option<Pr>,
     pub open: Open,
     /// The agent's workspace or tab is muted: listed, but counting for
     /// nothing in the activity bar.
@@ -215,7 +207,6 @@ pub(crate) fn agent_rows(
     endpoint: &Endpoint,
     live: &LiveState,
     since: &Since,
-    pr: impl Fn(&str, &str) -> Option<Pr>,
     mutes: Option<&Mutes>,
 ) -> Vec<Row> {
     if !endpoint.enabled || !live.status.is_connected() {
@@ -240,12 +231,6 @@ pub(crate) fn agent_rows(
             } else {
                 format!("{name} · {label}")
             };
-            let pr = snapshot
-                .workspaces
-                .iter()
-                .find(|shown| shown.workspace_id == agent.workspace_id)
-                .and_then(|shown| Some((shown.worktree.as_ref()?, shown.branch.as_deref()?)))
-                .and_then(|(tree, branch)| pr(&tree.key, branch));
             Row {
                 key: Key::Agent {
                     endpoint: endpoint.id.clone(),
@@ -261,7 +246,6 @@ pub(crate) fn agent_rows(
                 host: endpoint.label.clone(),
                 endpoint: endpoint.id.clone(),
                 since: since.get(&endpoint.id, &agent.pane_id),
-                pr,
                 open: Open::Pane {
                     endpoint: endpoint.id.clone(),
                     pane: agent.pane_id.clone(),

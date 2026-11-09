@@ -1,5 +1,5 @@
 //! Superset's single-line rows: one icon slot that reports the row's state,
-//! the name, and the pull request's change counts on the right. The focused
+//! the name, and local change counts on the right. The focused
 //! row is filled and marked with a stripe down its leading edge. Rows Herdr's
 //! sidebar config defines replace the name with its lines; the slot keeps its
 //! dot only when those lines lead with the status.
@@ -251,7 +251,6 @@ impl RowLayout for Superset {
             } else {
                 cx.look.density.card_indent()
             };
-        let pr = badge.as_ref().and_then(|badge| badge.pr.as_ref());
         let changes = badge.as_ref().and_then(|badge| badge.counts.as_ref());
         let dirty = badge.as_ref().is_some_and(|badge| badge.dirty);
         let muted = badge.as_ref().is_some_and(|badge| badge.muted);
@@ -262,13 +261,11 @@ impl RowLayout for Superset {
         } else {
             theme.muted
         };
-        // A pull request outranks the owner: its color is its state.
-        let glyph = match (pr, icon) {
-            (Some(pr), _) => parts::icon("icons/git-branch.svg", size, pr.color).into_any_element(),
-            (None, RowIcon::None) => {
+        let glyph = match icon {
+            RowIcon::None => {
                 parts::icon("icons/git-branch.svg", size, icon_color).into_any_element()
             }
-            (None, icon) => div()
+            icon => div()
                 .size(px(size))
                 .child(icon.element(icon_color))
                 .into_any_element(),
@@ -322,19 +319,13 @@ impl RowLayout for Superset {
                 line.fixed(dirty_size, parts::muted(label, dirty_size, theme))
             })
             // Local counts take the dirty mark's place, in a chip of its hue.
-            .when(
-                dirty && !changes.is_some_and(|changes| changes.local),
-                |line| line.fixed(dirty_size, parts::dirty(label, dirty_size, theme)),
-            )
+            .when(dirty && changes.is_none(), |line| {
+                line.fixed(dirty_size, parts::dirty(label, dirty_size, theme))
+            })
             .when_some(changes, |line, changes| {
-                if changes.local {
-                    let (glyph, icon) = (m.glyph, (dirty_size * 0.8).round());
-                    let chip = changes.chip(label, glyph, icon, counts, theme);
-                    return line
-                        .shrink(changes.chip_width(glyph, icon), chip.text_size(px(m.small)));
-                }
-                let (width, counts) = parts::counts(label, changes, m.glyph, counts);
-                line.shrink(width, counts.text_size(px(m.small)))
+                let (glyph, icon) = (m.glyph, (dirty_size * 0.8).round());
+                let chip = changes.chip(label, glyph, icon, counts, theme);
+                line.shrink(changes.chip_width(glyph, icon), chip.text_size(px(m.small)))
             })
             .when_some(fold, |line, fold| {
                 let width = m.icon * 0.6;

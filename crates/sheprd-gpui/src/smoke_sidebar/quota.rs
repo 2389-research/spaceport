@@ -13,12 +13,8 @@ pub(super) async fn run(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -
                     limit: 5000,
                     used: 5000,
                     remaining: 0,
-                    reset: None,
+                    reset: Some(chrono::Utc::now() + chrono::Duration::minutes(29)),
                 });
-                view.menu.pr_cache.seed_rate_limit(
-                    "fixture-user",
-                    Instant::now() + Duration::from_secs(29 * 60),
-                );
                 window.resize(size(px(width), px(600.)));
                 cx.notify();
                 Ok(())
@@ -61,9 +57,12 @@ pub(super) async fn run(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -
                     .await?;
             }
             handle.update(cx, |view, window, cx| -> Result<()> {
-                view.menu
-                    .pr_cache
-                    .seed_rate_limit("fixture-user", Instant::now());
+                view.menu.github.seed_quota(sheprd_github::quota::Quota {
+                    limit: 5000,
+                    used: 0,
+                    remaining: 5000,
+                    reset: None,
+                });
                 if view.github_rate_limit_message().is_some() {
                     bail!("warning survived reset");
                 }

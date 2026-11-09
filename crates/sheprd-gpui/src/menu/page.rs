@@ -88,7 +88,6 @@ pub(crate) enum WorkspaceMenuAction {
     /// it changes only the sidebar's own view, never the daemon's state.
     Collapse,
     Expand,
-    PullRequest,
     /// Run one of the repository's worktree scripts in a new tab.
     Script(crate::worktree_scripts::ScriptKind),
     /// Silence the workspace's notifications, or let them through again.
@@ -142,7 +141,6 @@ impl WorkspaceMenuAction {
     }
 
     /// Embedded icon for the row, so each action is recognizable before reading.
-    /// The pull request section draws its own header rather than a menu row.
     pub(crate) fn icon(self) -> Option<&'static str> {
         Some(match self {
             Self::Dialog(WorkspaceAction::Rename) => "icons/pencil.svg",
@@ -159,7 +157,6 @@ impl WorkspaceMenuAction {
             Self::Script(_) => "icons/play.svg",
             Self::Mute => crate::icons::MUTED,
             Self::Unmute => "icons/bell.svg",
-            Self::PullRequest => return None,
         })
     }
 }

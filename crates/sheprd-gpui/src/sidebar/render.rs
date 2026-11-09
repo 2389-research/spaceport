@@ -214,7 +214,6 @@ impl SheprdWindow {
                 continue;
             };
             let silenced = crate::notification_mutes::Mutes::silenced_in(cx, endpoint, snapshot);
-            let pr_view = self.endpoint_pr_view(endpoint_index);
             let collapsed_repos = if endpoint_index == 0 {
                 &self.collapsed_repos
             } else {
@@ -450,13 +449,8 @@ impl SheprdWindow {
                         grouped,
                         badge: workspace_badge(
                             workspace,
-                            pr_view.as_ref().map(|view| (&self.menu.pr_cache, view)),
-                            (
-                                (endpoint_index == 0).then_some(&self.git),
-                                self.config.sidebar_style.change_counts,
-                            ),
+                            (endpoint_index == 0).then_some(&self.git),
                             (note.as_deref(), muted),
-                            theme,
                         ),
                         removing: removing_row,
                         status: shown_status,

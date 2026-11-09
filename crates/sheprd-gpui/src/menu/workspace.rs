@@ -27,8 +27,6 @@ pub(crate) struct WorkspaceTarget {
     /// row folds a group even when another parent closes on its own.
     pub(super) heads_group: bool,
     pub(super) branch: Option<String>,
-    /// A linked checkout's branch when its main checkout acts for it.
-    pub(super) base: Option<String>,
     /// How worktree requests name the repository to the daemon.
     pub(super) source: Source,
     /// Whether the user muted the workspace's notifications when the menu
@@ -75,7 +73,6 @@ impl WorkspaceTarget {
             close_members: close_members(snapshot, workspace),
             heads_group: heads_group(snapshot, workspace),
             branch: workspace.branch.clone(),
-            base: None,
             source: Source::of(workspace),
             muted: false,
         }
@@ -125,17 +122,13 @@ impl WorkspaceTarget {
                 Err(RepositoryUnavailable::NotGit)
             };
         };
-        let branch = workspace
-            .branch
-            .clone()
-            .ok_or(RepositoryUnavailable::Detached)?;
+        if workspace.branch.is_none() {
+            return Err(RepositoryUnavailable::Detached);
+        }
         let main = main_checkout(snapshot, tree)
             .or_else(|| snapshot.workspaces.iter().find(|w| is_main_of(w, tree)))
             .ok_or(RepositoryUnavailable::MainCheckoutClosed)?;
-        let mut target = Self {
-            base: Some(branch),
-            ..Self::new(snapshot, main)
-        };
+        let mut target = Self::new(snapshot, main);
         // The linked checkout still names its repository. When the main
         // checkout's shell has wandered off, its directory is named instead,
         // since the daemon refuses a linked checkout as the source.
@@ -401,6 +394,21 @@ fn heads_group(snapshot: &ClientShellSnapshot, workspace: &ClientShellWorkspace)
 }
 
 impl SheprdWindow {
+    #[cfg(all(feature = "integration-test", target_os = "macos"))]
+    pub(crate) fn native_workspace_dialog_steps(&self, action: WorkspaceAction) -> Option<usize> {
+        let actions = self.workspace_menu_actions();
+        let target = actions
+            .iter()
+            .position(|item| *item == WorkspaceMenuAction::Dialog(action))?;
+        let selected = self
+            .menu
+            .workspace_selected
+            .and_then(|selected| actions.iter().position(|item| *item == selected));
+        Some(selected.map_or(target + 1, |selected| {
+            (target + actions.len() - selected) % actions.len()
+        }))
+    }
+
     /// The selected endpoint's workspace a workspace menu is open for. A
     /// hover menu can target a row that is not focused, so the row marks
     /// itself while the pointer is over the menu instead.
@@ -441,7 +449,6 @@ impl SheprdWindow {
         });
         self.menu.anchor = anchor;
         self.menu.page = Some(Page::Workspace);
-        self.refresh_workspace_pr();
         self.discard_composition(cx);
         window.focus(&self.menu.focus, cx);
         cx.notify();
@@ -639,7 +646,7 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) {
         // Every listing and request of the dialog goes through the main
-        // checkout; only the base remembers the linked checkout.
+        // checkout.
         // A linked checkout opens one only when its main checkout's shell has
         // wandered off; see `WorktreeShortcut::target`.
         if matches!(action, WorkspaceAction::OpenWorktree)
@@ -680,8 +687,6 @@ impl SheprdWindow {
             | WorkspaceAction::OpenWorktree => None,
         };
         self.menu.page = Some(Page::Dialog(action));
-        self.menu.pr.clear();
-        self.menu.pr_connection = None;
         self.menu.error = None;
         if action == WorkspaceAction::OpenWorktree {
             self.open_existing_worktrees(window, cx);
@@ -719,14 +724,11 @@ impl SheprdWindow {
     }
 
     pub(super) fn workspace_menu_actions(&self) -> Vec<WorkspaceMenuAction> {
-        let mut actions: Vec<_> = self
+        let actions: Vec<_> = self
             .workspace_items()
             .into_iter()
             .map(|(action, _)| action)
             .collect();
-        if self.pr_profile().is_some() && self.menu.pr.value.is_some() {
-            actions.push(WorkspaceMenuAction::PullRequest);
-        }
         actions
     }
 
@@ -754,7 +756,6 @@ impl SheprdWindow {
                 }
                 self.dismiss_menu(window, cx);
             }
-            WorkspaceMenuAction::PullRequest => self.open_workspace_pr(cx),
             WorkspaceMenuAction::Script(kind) => self.run_workspace_script(kind, window, cx),
         }
     }

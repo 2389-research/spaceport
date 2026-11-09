@@ -1,7 +1,6 @@
 //! The workspace popover: a header naming the workspace, with the toggle
 //! that mutes its notifications, a fixed grid of large action tiles, plain
-//! rows for the rarer actions, the destructive action set apart, and the pull
-//! request section below.
+//! rows for the rarer actions, and the destructive action set apart.
 
 // i18n: migrated
 use crate::i18n::fl;
@@ -199,11 +198,7 @@ impl SheprdWindow {
         needed.max(px(WIDTH)).min(room)
     }
 
-    pub(in crate::menu) fn render_workspace_popover(
-        &self,
-        pr_width: Pixels,
-        cx: &mut Context<Self>,
-    ) -> Div {
+    pub(in crate::menu) fn render_workspace_popover(&self, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
         let font = &self.config.ui;
         let items = self.workspace_items();
@@ -285,16 +280,13 @@ impl SheprdWindow {
         for (action, label) in destructive {
             panel = panel.child(self.render_workspace_danger(action, label, cx));
         }
-        if self.pr_profile().is_some() {
-            panel = panel.child(self.render_workspace_pr(pr_width, cx));
-        }
         panel
     }
 
     /// The header's toggle for the workspace's notifications, `action` with
     /// its menu `label`: what pressing it does, with the bell it leaves. In
-    /// the header, so muting adds no row that would push the pull request
-    /// card out of a short window; still first in the arrow keys' walk.
+    /// the header, so muting adds no row to a short window; still first
+    /// in the arrow keys' walk.
     /// Muted, it keeps the accent, so the state reads at a glance.
     pub(in crate::menu) fn render_workspace_mute(
         &self,

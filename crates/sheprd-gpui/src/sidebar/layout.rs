@@ -41,7 +41,7 @@ pub(crate) struct SidebarMetrics {
     pub(crate) footer_padding: f32,
     pub(crate) workspace_details: bool,
     pub(crate) child_details: bool,
-    pub(crate) pr_counts: bool,
+    pub(crate) count_line: bool,
     /// Horizontal space between the sidebar's edges and a row's highlight.
     pub(crate) inset: f32,
     /// Vertical space between neighbouring highlights, split above and below.
@@ -102,7 +102,7 @@ impl SidebarMetrics {
             footer_padding: 5.,
             workspace_details: true,
             child_details: true,
-            pr_counts: true,
+            count_line: true,
             ..Self::FLAT
         }
     }
@@ -124,7 +124,7 @@ impl SidebarMetrics {
             footer_padding: 3.,
             workspace_details: true,
             child_details: false,
-            pr_counts: false,
+            count_line: false,
             ..Self::FLAT
         }
     }
@@ -144,7 +144,7 @@ impl SidebarMetrics {
             footer_padding: 2.,
             workspace_details: false,
             child_details: false,
-            pr_counts: false,
+            count_line: false,
             ..Self::FLAT
         }
     }
@@ -165,7 +165,7 @@ impl SidebarMetrics {
         footer_padding: 0.,
         workspace_details: false,
         child_details: false,
-        pr_counts: false,
+        count_line: false,
         inset: 0.,
         spacing: 0.,
         style_padding: 0.,
@@ -226,8 +226,8 @@ impl SidebarMetrics {
     pub(super) fn child_details(&self) -> bool {
         self.child_details
     }
-    pub(super) fn pr_counts(&self) -> bool {
-        self.pr_counts
+    pub(super) fn count_line(&self) -> bool {
+        self.count_line
     }
     pub(super) fn header_padding(&self) -> f32 {
         self.header_padding

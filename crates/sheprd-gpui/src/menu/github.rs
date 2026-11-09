@@ -52,13 +52,25 @@ impl Action {
 }
 
 impl SheprdWindow {
+    #[cfg(any(test, feature = "integration-test"))]
+    pub(crate) fn github_fixture(
+        &mut self,
+        waiting: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.open_menu(window, cx);
+        self.menu.page = Some(super::Page::GitHub);
+        self.menu.github = Auth::fixture(waiting);
+        cx.notify();
+    }
+
     pub(crate) fn github_rate_limit_message(&self) -> Option<String> {
-        let now = std::time::Instant::now();
         let (profile, wait) = self
             .github_auths()
             .filter_map(|auth| {
                 let profile = auth.profile.as_ref()?;
-                self.github_rate_limit_wait(auth, now)
+                self.github_rate_limit_wait(auth)
                     .map(|wait| (profile, wait))
             })
             .max_by_key(|(_, wait)| *wait)?;
@@ -69,16 +81,10 @@ impl SheprdWindow {
         ))
     }
 
-    pub(crate) fn github_rate_limit_wait(
-        &self,
-        auth: &Auth,
-        now: std::time::Instant,
-    ) -> Option<std::time::Duration> {
-        let profile = auth.profile.as_ref()?;
-        self.menu.pr_cache.rate_limit_wait(&profile.login, now).max(
-            auth.quota()
-                .and_then(|quota| quota.retry_after(chrono::Utc::now())),
-        )
+    pub(crate) fn github_rate_limit_wait(&self, auth: &Auth) -> Option<std::time::Duration> {
+        auth.profile.as_ref()?;
+        auth.quota()
+            .and_then(|quota| quota.retry_after(chrono::Utc::now()))
     }
 
     /// The saved SSH device whose own account the GitHub page manages, when
@@ -134,15 +140,10 @@ impl SheprdWindow {
             .start(&config.github);
     }
 
-    /// The account pull requests on the selected device are read with: the
-    /// device's own sign-in when it has one, otherwise the main account.
-    pub(crate) fn pr_profile(&self) -> Option<&Profile> {
-        self.endpoint_pr_profile(self.selected_endpoint)
-    }
-
-    /// [`Self::pr_profile`] for any device, selected or not.
-    pub(crate) fn endpoint_pr_profile(&self, index: usize) -> Option<&Profile> {
-        self.endpoint_github_host(index)
+    /// The selected device's own sign-in when it has one, otherwise the
+    /// main account shown in the profile slot.
+    pub(crate) fn account_profile(&self) -> Option<&Profile> {
+        self.endpoint_github_host(self.selected_endpoint)
             .and_then(|id| self.menu.github_hosts.get(id)?.profile.as_ref())
             .or(self.menu.github.profile.as_ref())
     }
@@ -218,7 +219,6 @@ impl SheprdWindow {
         }
         let connected = self.github_auth().connected();
         let mut changed = self.menu.github.poll();
-        changed |= self.menu.pr_cache.poll_countdown(now);
         for auth in self.menu.github_hosts.values_mut() {
             changed |= auth.poll();
         }
@@ -306,8 +306,6 @@ impl SheprdWindow {
                 self.remove_github_account(cx);
             }
             Action::SignOut => {
-                self.menu.pr_cache.clear();
-                self.menu.pr.clear();
                 self.github_auth_mut().sign_out();
             }
             Action::Close => self.dismiss_menu(window, cx),
