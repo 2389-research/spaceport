@@ -1,5 +1,12 @@
 # Sheprd Native Workspace
 
+> **Historical upstream reference.** This guide describes Sheprd features and
+> release procedures that are still being removed from the Spaceport fork. It
+> is not a current Spaceport setup or support guide. Use the [Spaceport README](../../README.md)
+> and [specification](../../docs/spaceport/START_HERE.md) for the supported
+> scope, current checks, and open gates. Do not run the daemon stop, install,
+> or release commands below against a personal setup.
+
 A GPUI 0.3.10 (`gpui-pre`) workspace for terminals and AI agents on local,
 and SSH machines, with macOS support, Linux x86_64/ARM64 builds, and
 a Windows build with native CI coverage. See [Windows](#windows) for what is
