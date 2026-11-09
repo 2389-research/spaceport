@@ -126,6 +126,10 @@ impl SheprdWindow {
         items
     }
 
+    pub(super) fn profile_items(&self) -> &'static [&'static str] {
+        &["settings", "shortcuts", "themes", "about"]
+    }
+
     pub(super) fn activate_menu(
         &mut self,
         item: &str,
@@ -479,7 +483,7 @@ impl SheprdWindow {
                         | Page::DeviceTheme
                         | Page::Palette
                         | Page::AppUpdate
-                        | Page::GitHub
+                        | Page::Profile
                         | Page::AddDevice
                         | Page::AddWsl
                         | Page::Usage(_)
@@ -519,7 +523,7 @@ impl SheprdWindow {
                 panel.h(px(rail::HEIGHT * (font.size / 12.))
                     .min((viewport.height - px(32.)).max(px(0.))))
             })
-            .when(page == Page::GitHub, |panel| {
+            .when(page == Page::Profile, |panel| {
                 panel
                     .w((viewport.width - px(32.)).max(px(0.)).min(px(400.)))
                     .flex()
@@ -581,12 +585,37 @@ impl SheprdWindow {
                     }
                 }))
             });
-        if page == Page::Menu {
-            for (index, item) in self.menu_items().into_iter().enumerate() {
+        if matches!(page, Page::Menu | Page::Profile) {
+            let items = if page == Page::Profile {
+                self.profile_items().to_vec()
+            } else {
+                self.menu_items()
+            };
+            if page == Page::Profile {
+                panel = panel.child(
+                    div()
+                        .debug_selector(|| "profile-heading".into())
+                        .px(px(8.))
+                        .pt(px(8.))
+                        .pb(px(6.))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .child(fl!("menu-page-profile")),
+                );
+            }
+            for (index, item) in items.into_iter().enumerate() {
                 panel = panel.child(
                     div()
                         .id(item)
-                        .debug_selector(move || format!("menu-{item}"))
+                        .debug_selector(move || {
+                            format!(
+                                "{}-{item}",
+                                if page == Page::Profile {
+                                    "profile"
+                                } else {
+                                    "menu"
+                                }
+                            )
+                        })
                         .role(Role::MenuItem)
                         .aria_label(menu_item_label(item))
                         .when(Some(index) == self.menu.selected, |row| {
@@ -628,8 +657,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_add_wsl(compact_rail, cx));
         } else if page == Page::RemoveWsl {
             panel = panel.child(self.render_remove_wsl(cx));
-        } else if page == Page::GitHub {
-            panel = panel.child(self.render_github_auth(cx));
         } else if page == Page::Workspace {
             panel = panel.child(self.render_workspace_popover(cx));
         } else if let Page::Dialog(action) = page {

@@ -17,7 +17,6 @@ error-connection-not-ready = The connection is not ready. Try again.
 error-empty-tab-name = Enter a tab name.
 error-empty-workspace-label = Workspace label must not be empty.
 # $key is a config key, such as token.
-error-github-secret-in-config = [github] { $key } must not be in the config. Sign in from the app, or use GH_TOKEN / GITHUB_TOKEN.
 error-image-animation-resize = Oversized GIF, WebP, and animated PNG images cannot be resized safely.
 error-image-decode = Could not decode the oversized image.
 error-image-decode-limit = The image exceeds the resize pixel or decoded-memory limit.

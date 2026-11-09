@@ -43,7 +43,6 @@ mod error;
 mod find;
 mod font_picker;
 mod fonts;
-mod github;
 mod group_menu;
 mod group_terminals;
 mod herdr_settings;

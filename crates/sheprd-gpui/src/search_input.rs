@@ -87,6 +87,7 @@ impl SearchInput {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn set_masked(&mut self, masked: bool, cx: &mut Context<Self>) {
         self.masked = masked;
         self.layout = None;

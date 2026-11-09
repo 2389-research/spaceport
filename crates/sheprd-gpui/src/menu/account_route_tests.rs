@@ -14,3 +14,10 @@ fn application_menu_keeps_settings_and_excludes_github_sign_in(cx: &mut gpui::Te
         assert!(!items.contains(&"GitHub sign-in"));
     });
 }
+
+#[test]
+fn window_tick_and_popup_hold_no_account_worker() {
+    assert!(!include_str!("../window.rs").contains("poll_github("));
+    assert!(!include_str!("state.rs").contains("crate::github::Auth"));
+    assert!(!include_str!("chrome.rs").contains("render_github_auth("));
+}

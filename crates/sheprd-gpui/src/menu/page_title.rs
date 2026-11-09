@@ -15,6 +15,7 @@ impl Page {
             | Self::Group
             | Self::Host
             | Self::Menu
+            | Self::Profile
             | Self::Pane
             | Self::Tab
             | Self::CoreWorkspaceActions
@@ -47,7 +48,6 @@ impl Page {
                 WorkspaceAction::Note => fl!("menu-page-worktree-note"),
             },
             Self::ForwardPort => fl!("menu-page-forward-port"),
-            Self::GitHub => fl!("menu-page-github-account"),
             Self::Group => fl!("menu-page-tab-actions"),
             Self::Host => fl!("menu-page-device"),
             Self::Keybinds => fl!("menu-page-keyboard-shortcuts"),
@@ -59,6 +59,7 @@ impl Page {
             Self::Palette => fl!("menu-page-command-palette"),
             Self::Pane => fl!("menu-page-pane"),
             Self::PaneProcesses => fl!("menu-page-processes"),
+            Self::Profile => fl!("menu-page-profile"),
             Self::RemoveDevice => fl!("menu-page-remove-device"),
             Self::RemoveWsl => fl!("menu-page-remove-wsl-distribution"),
             Self::RenameDevice => fl!("menu-page-rename-device"),

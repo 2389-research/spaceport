@@ -9,7 +9,6 @@ use crate::i18n::fl;
 use crate::{
     SheprdWindow,
     config::{Config, KeybindingSource},
-    github::Account,
     menu::Page,
     search_input::SearchInput,
 };
@@ -27,7 +26,7 @@ enum Saved {
 }
 
 pub(crate) struct HostMenu {
-    /// The endpoint, as the window and its account slots key it.
+    /// The endpoint the window and device catalog key by.
     id: String,
     saved: Saved,
     label: String,
@@ -35,9 +34,6 @@ pub(crate) struct HostMenu {
     target: String,
     session: String,
     selected: Option<usize>,
-    /// Also delete the device's own GitHub sign-in. Offered only when it has
-    /// one, since its account panel disappears with the device.
-    forget_github: bool,
     /// The new name while renaming, or the port to forward.
     input: Option<Entity<SearchInput>>,
     renaming: bool,
@@ -149,7 +145,6 @@ impl SheprdWindow {
             target: target.to_owned(),
             session: session.to_owned(),
             selected: None,
-            forget_github: true,
             input: None,
             renaming: false,
             error: None,
@@ -167,14 +162,6 @@ impl SheprdWindow {
         self.menu.anchor = anchor;
         self.menu.page = Some(Page::Host);
         self.menu.host = Some(menu);
-    }
-
-    /// Whether the device has a GitHub sign-in of its own saved on this computer.
-    fn host_has_github(&self, id: &str) -> bool {
-        self.menu
-            .github_hosts
-            .get(id)
-            .is_some_and(|auth| auth.can_sign_out())
     }
 
     fn activate_host_menu(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
@@ -323,11 +310,6 @@ impl SheprdWindow {
             );
             return;
         };
-        let forget = host.forget_github && self.host_has_github(&host.id);
-        let store = self.menu.github_hosts.get(&host.id).map_or_else(
-            || crate::github::select_store(&self.config.github),
-            |auth| auth.store(),
-        );
         let HostMenu {
             id,
             saved,
@@ -337,35 +319,29 @@ impl SheprdWindow {
             ..
         } = host;
         tracing::info!(category = "device_remove", id, "Removing device");
-        // The outer result is the removal itself; the inner one, the GitHub
-        // credential that only matters once the device is gone.
         let background = cx.background_executor().spawn(async move {
             match saved {
                 // Offers no Remove.
-                Saved::Local => Ok(Ok(())),
+                Saved::Local => Ok(()),
                 Saved::Ssh { profile } => {
                     let _claim = setup::claim_saved(&target, &session)?;
                     setup::remove(&profile)?;
-                    Ok::<_, crate::Error>(match Account::host(&profile).filter(|_| forget) {
-                        Some(account) => crate::github::forget(store, &account).map_err(Into::into),
-                        None => Ok(()),
-                    })
+                    Ok::<_, crate::Error>(())
                 } // Forget only the exact saved row; leave the machine running.
             }
         });
         self.menu.removing_devices.insert(id.clone());
         self.dismiss_menu(window, cx);
-        Self::follow_removal(cx.entity().downgrade(), background, id, label, forget, cx);
+        Self::follow_removal(cx.entity().downgrade(), background, id, label, cx);
     }
 
     /// Applies a removal's result. Its mute goes first, from the app: the
     /// window that started the removal may have closed by the time it ends.
     fn follow_removal(
         this: WeakEntity<Self>,
-        background: Task<crate::Result<crate::Result<()>>>,
+        background: Task<crate::Result<()>>,
         id: String,
         label: String,
-        forget: bool,
         cx: &mut App,
     ) {
         cx.spawn(async move |cx| {
@@ -373,9 +349,7 @@ impl SheprdWindow {
             if result.is_ok() {
                 cx.update(|cx| crate::notification_mutes::Mutes::forget_host(cx, &id));
             }
-            let _ = this.update(cx, |this, cx| {
-                this.device_removed(&id, &label, forget, result, cx)
-            });
+            let _ = this.update(cx, |this, cx| this.device_removed(&id, &label, result, cx));
         })
         .detach();
     }
@@ -384,8 +358,7 @@ impl SheprdWindow {
         &mut self,
         id: &str,
         label: &str,
-        forget: bool,
-        result: crate::Result<crate::Result<()>>,
+        result: crate::Result<()>,
         cx: &mut Context<Self>,
     ) {
         match &result {
@@ -408,25 +381,7 @@ impl SheprdWindow {
             // The catalog watcher drops the device, and a filter or selection
             // on it falls back to Local, as for any removal. The header keeps
             // pulsing until then; `prune_device_removals` clears the mark.
-            Ok(forgotten) => {
-                if forget {
-                    self.menu.github_hosts.remove(id);
-                }
-                tracing::info!(
-                    category = "device_remove",
-                    id,
-                    forget,
-                    github_deleted = forgotten.is_ok(),
-                    "GitHub sign-in cleanup"
-                );
-                if let Err(error) = forgotten {
-                    self.local_error = Some(fl!(
-                        "host-menu-github-left",
-                        device = label,
-                        error = error.to_string(),
-                    ));
-                }
-            }
+            Ok(()) => {}
         }
         cx.notify();
     }
@@ -480,10 +435,6 @@ impl SheprdWindow {
             }
             "enter" if self.menu.page == Some(Page::RemoveDevice) => {
                 self.confirm_remove_device(window, cx)
-            }
-            "space" if self.menu.page == Some(Page::RemoveDevice) => {
-                host.forget_github = !host.forget_github;
-                cx.notify();
             }
             key @ ("up" | "down") if self.menu.page == Some(Page::Host) => {
                 let count = host.actions().len();
@@ -649,7 +600,6 @@ impl SheprdWindow {
         if self.menu.page == Some(Page::DeviceTags) {
             return self.render_device_tags(host, cx);
         }
-        let github = self.host_has_github(&host.id);
         body = body
             .debug_selector(|| "remove-device".into())
             .p(px(8.))
@@ -664,29 +614,6 @@ impl SheprdWindow {
                     .text_color(rgb(theme.subtext()))
                     .child(removal_note(host)),
             )
-            .when(github, |body| {
-                body.child(
-                    div()
-                        .id("remove-device-github")
-                        .debug_selector(|| "remove-device-github".into())
-                        .flex()
-                        .items_center()
-                        .gap(px(8.))
-                        .cursor_pointer()
-                        .child(crate::toggles::checkbox(
-                            theme,
-                            self.config.ui.size + 2.,
-                            host.forget_github,
-                        ))
-                        .child(fl!("host-menu-remove-github"))
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            if let Some(host) = &mut this.menu.host {
-                                host.forget_github = !host.forget_github;
-                                cx.notify();
-                            }
-                        })),
-                )
-            })
             .child(
                 div()
                     .flex()

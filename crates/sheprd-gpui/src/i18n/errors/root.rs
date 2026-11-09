@@ -50,7 +50,6 @@ impl Localize for Error {
             Self::EmptyWorkspaceLabel => fl!("error-empty-workspace-label"),
             Self::FileDrop(error) => error.localize(),
             Self::GitHub(error) => error.localize(),
-            Self::GitHubSecretInConfig(key) => fl!("error-github-secret-in-config", key = *key),
             Self::ImageAnimationResize => fl!("error-image-animation-resize"),
             Self::ImageDecode(_) => fl!("error-image-decode"),
             Self::ImageDecodeLimit => fl!("error-image-decode-limit"),

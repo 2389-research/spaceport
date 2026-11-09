@@ -63,6 +63,7 @@ impl Localize for Error {
             ),
             Self::PreferencesNotObject => fl!("error-config-preferences-not-object"),
             Self::RemovedChangeCounts => fl!("error-config-removed-change-counts"),
+            Self::RemovedGitHub => fl!("error-config-removed-github"),
             Self::ThemeLine { line, key, source } => fl!(
                 "error-config-theme-line",
                 line = *line,

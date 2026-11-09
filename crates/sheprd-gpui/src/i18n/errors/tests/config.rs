@@ -52,6 +52,7 @@ fn every_config_variant_has_a_message() {
         },
         Error::PreferencesNotObject,
         Error::RemovedChangeCounts,
+        Error::RemovedGitHub,
         Error::ThemeLine {
             line: 12,
             key: "background".into(),

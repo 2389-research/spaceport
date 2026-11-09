@@ -3,8 +3,6 @@ pub(crate) use sheprd_github::github_repo;
 mod cache;
 mod links;
 mod owner;
-mod profiles;
-pub(crate) use profiles::ProfileAvatars;
 use sheprd_client::{ConnectTarget, protocol::ClientShellWorkspace};
 use std::{
     collections::HashMap,
@@ -343,78 +341,12 @@ fn cached_image(url: &str) -> Option<(Arc<Image>, bool)> {
     cache::read(&cache::root()?, url, SystemTime::now())
 }
 
-pub(crate) type AvatarUpdates = mpsc::Receiver<Arc<Image>>;
-
-/// Called by the profile worker after authenticated identity resolution.
-pub(crate) fn profile_avatar(url: &str) -> (Option<Arc<Image>>, Option<AvatarUpdates>) {
-    profile_avatar_with(cache::root(), url, SystemTime::now(), |url| {
-        download(&avatar_agent(), &url)
-    })
-}
-
-fn profile_avatar_with(
-    root: Option<std::path::PathBuf>,
-    url: &str,
-    now: SystemTime,
-    fetch: impl FnOnce(String) -> Option<Arc<Image>> + Send + 'static,
-) -> (Option<Arc<Image>>, Option<AvatarUpdates>) {
-    if !valid_profile_avatar(url) {
-        return (None, None);
-    }
-    let cached = root.as_deref().and_then(|path| cache::read(path, url, now));
-    let fresh = cached.as_ref().is_some_and(|(_, fresh)| *fresh);
-    let image = cached.map(|(image, _)| image);
-    if fresh {
-        return (image, None);
-    }
-    let (tx, rx) = mpsc::sync_channel(1);
-    let url = url.to_owned();
-    let _ = thread::Builder::new()
-        .name("herdr-profile-avatar".into())
-        .spawn(move || {
-            if let Some(image) = fetch(url) {
-                let _ = tx.send(image);
-            }
-        });
-    (image, Some(rx))
-}
-
 fn avatar_agent() -> ureq::Agent {
     ureq::Agent::config_builder()
         .timeout_global(Some(Duration::from_secs(5)))
         .max_redirects(0)
         .build()
         .into()
-}
-
-/// Where an account's picture may be downloaded from.
-const PROFILE_AVATAR_ORIGINS: [&str; 2] = [
-    "https://avatars.githubusercontent.com/",
-    "https://secure.gravatar.com/avatar/",
-];
-
-fn valid_profile_avatar(url: &str) -> bool {
-    url.len() <= 2048
-        && PROFILE_AVATAR_ORIGINS
-            .iter()
-            .find_map(|origin| url.strip_prefix(origin))
-            .is_some_and(|path| {
-                !path.is_empty()
-                    && path
-                        .bytes()
-                        .all(|b| b.is_ascii_graphic() && !matches!(b, b'\\' | b'#'))
-            })
-}
-
-fn download(agent: &ureq::Agent, url: &str) -> Option<Arc<Image>> {
-    if !valid_profile_avatar(url) {
-        return None;
-    }
-    let (image, bytes) = fetch(agent, url)?;
-    if let Some(root) = cache::root() {
-        let _ = cache::write(&root, url, &bytes, SystemTime::now());
-    }
-    Some(image)
 }
 
 /// Downloads one picture, checked, with its bytes for the disk cache. The

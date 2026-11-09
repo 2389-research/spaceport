@@ -115,13 +115,10 @@ fn saves_only_theme_and_preserves_latest_settings_and_comments() -> anyhow::Resu
     )?;
     config.save_theme_path("Dracula", &path)?;
     let saved = fs::read_to_string(&path)?;
-    let parsed = Config::parse(&saved)?;
-    assert_eq!(parsed.theme, "Dracula");
-    assert_eq!(parsed.tabs.size, 19.0);
-    assert_eq!(
-        parsed.github.oauth_client_id.as_deref(),
-        Some("Iv1.fixture")
-    );
+    assert!(matches!(
+        Config::parse(&saved),
+        Err(crate::Error::Settings(Error::RemovedGitHub))
+    ));
     assert!(saved.contains("# no theme"));
     Ok(())
 }

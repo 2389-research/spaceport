@@ -1,4 +1,4 @@
-//! Native chrome and GitHub account access.
+//! Native chrome and local profile access.
 // i18n: migrated
 mod decorations;
 mod navigation;
@@ -16,11 +16,8 @@ use crate::i18n::fl;
 use crate::{SheprdWindow, menu::Page};
 use gpui::{prelude::*, *};
 
-/// Avatar or signed-out GitHub icon. Smaller than the hit target, which stays a
-/// comfortable size for the pointer.
+/// Profile icon. Smaller than the hit target, which stays a comfortable size.
 const AVATAR: f32 = 20.;
-/// The dot for an account needing attention or waiting on its API quota.
-const ATTENTION_DOT: f32 = 10.;
 
 const SIDEBAR_TOGGLE_SIZE: f32 = 28.;
 const SIDEBAR_GLYPH_WIDTH: f32 = 18.;
@@ -36,12 +33,12 @@ pub(super) const HEIGHT: f32 = 34.;
 const NAVIGATION_MIN_WIDTH: f32 = 320.;
 
 impl SheprdWindow {
-    fn open_profile(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let shown = self.menu.page == Some(Page::GitHub);
+    pub(crate) fn open_profile(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let shown = self.menu.page == Some(Page::Profile);
         if !shown && !self.open_menu(window, cx) {
             return;
         }
-        self.menu.page = Some(Page::GitHub);
+        self.menu.page = Some(Page::Profile);
         cx.notify();
     }
 
@@ -114,16 +111,8 @@ impl SheprdWindow {
             .into_any_element()
     }
 
-    /// What ends the bar: the account and client-drawn window controls.
+    /// What ends the bar: the profile and client-drawn window controls.
     fn titlebar_end(&self, window: &Window, cx: &mut Context<Self>) -> Div {
-        let image = self
-            .account_profile()
-            .and_then(|profile| self.menu.github_avatars.get(&profile.avatar_url));
-        let attention = self.github_needs_attention();
-        let rate_limit = self.github_rate_limit_message();
-        let limited = rate_limit.is_some();
-        let foreground = self.theme.foreground;
-        let surface = self.theme.surface;
         div()
             .row()
             .flex_none()
@@ -141,13 +130,7 @@ impl SheprdWindow {
                         div()
                             .id("titlebar-avatar")
                             .role(Role::Button)
-                            .aria_label(if let Some(message) = &rate_limit {
-                                message.clone()
-                            } else if attention {
-                                fl!("titlebar-accounts-attention")
-                            } else {
-                                fl!("titlebar-accounts")
-                            })
+                            .aria_label(fl!("titlebar-profile"))
                             .map(|control| {
                                 self.chrome_stop(
                                     crate::window::chrome_focus::Region::TitleBar,
@@ -163,16 +146,6 @@ impl SheprdWindow {
                             .size(px(28.))
                             .rounded_full()
                             .cursor_pointer()
-                            .when_some(rate_limit.clone(), |control, message| {
-                                control.tooltip(move |_, cx| {
-                                    cx.new(|_| crate::usage::Hint {
-                                        text: message.clone().into(),
-                                        foreground,
-                                        surface,
-                                    })
-                                    .into()
-                                })
-                            })
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
                             .on_click(cx.listener(|this, _, window, cx| {
                                 cx.stop_propagation();
@@ -202,37 +175,13 @@ impl SheprdWindow {
                                             inset: false,
                                         }])
                                     })
-                                    .map(|circle| match image {
-                                        Some(image) => {
-                                            circle.child(img(image).size(px(AVATAR)).rounded_full())
-                                        }
-                                        None => circle.child(
-                                            svg()
-                                                .path("icons/github.svg")
-                                                .size(px(AVATAR))
-                                                .text_color(rgb(self.theme.foreground)),
-                                        ),
-                                    }),
-                            )
-                            // On the avatar's upper right, inside the hit
-                            // target, ringed in the bar's color to stand off
-                            // any avatar.
-                            .when(attention || limited, |control| {
-                                control.child(
-                                    div()
-                                        .debug_selector(|| "titlebar-avatar-attention".into())
-                                        .absolute()
-                                        .top(px(3.))
-                                        .inset_e(px(3.))
-                                        .size(px(ATTENTION_DOT))
-                                        .rounded_full()
-                                        .border_2()
-                                        .border_color(bar(self.theme.surface))
-                                        .bg(rgb(self.theme.ink(
-                                            self.theme.palette[if limited { 208 } else { 1 }],
-                                        ))),
-                                )
-                            }),
+                                    .child(
+                                        svg()
+                                            .path("icons/user.svg")
+                                            .size(px(AVATAR))
+                                            .text_color(rgb(self.theme.foreground)),
+                                    ),
+                            ),
                     ),
             )
             // The in-window menu bar carries the window controls instead.

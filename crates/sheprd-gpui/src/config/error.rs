@@ -62,6 +62,8 @@ pub enum Error {
     PreferencesNotObject,
     #[error("sidebar.change_counts was removed; remove this setting")]
     RemovedChangeCounts,
+    #[error("[github] account settings were removed; remove this table from config-gpui.toml")]
+    RemovedGitHub,
     #[error("line {line}: {key}: {source}")]
     ThemeLine {
         line: usize,

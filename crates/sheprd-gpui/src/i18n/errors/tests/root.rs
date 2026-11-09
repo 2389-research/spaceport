@@ -40,7 +40,6 @@ fn every_own_variant_has_a_message() {
         Error::ConnectionNotReady,
         Error::EmptyTabName,
         Error::EmptyWorkspaceLabel,
-        Error::GitHubSecretInConfig("token"),
         Error::ImageAnimationResize,
         Error::ImageDecode(image()),
         Error::ImageDecodeLimit,

@@ -10,13 +10,11 @@ host-menu-theme = Terminal theme…
 host-menu-remove = Remove device…
 host-menu-local-keybindings = Using local keybindings: { $error }
 host-menu-remove-failed = Remove { $device }: { $error }
-host-menu-github-left = Removed { $device }, but could not delete its GitHub sign-in: { $error }
 
 # Removing a device. $device is its name, $target its SSH target,
 # $session its Herdr session.
 host-menu-remove-title = Remove device
 host-menu-remove-ssh-note = Remove { $device } ({ $target } · { $session }) from this computer? Herdr keeps running on that host.
-host-menu-remove-github = Also delete its GitHub sign-in from this computer
 host-menu-cancel = Cancel
 host-menu-remove-submit = Remove
 

@@ -11,11 +11,11 @@ use gpui::*;
 impl SheprdWindow {
     /// An Edit menu item while a menu page holds focus. Only the targets the
     /// overlay's key handler gives these shortcuts to are reached: a dialog's
-    /// text draft, and the GitHub page's device code for Copy. Search fields
+    /// text draft. Search fields
     /// take the action themselves before it bubbles here. Handlers that act
     /// without stopping propagation are never called, so a shortcut the
     /// overlay leaves unhandled cannot run twice through the menu bar.
-    pub(super) fn menu_edit(&mut self, key: &str, window: &mut Window, cx: &mut Context<Self>) {
+    pub(super) fn menu_edit(&mut self, key: &str, _window: &mut Window, cx: &mut Context<Self>) {
         let event = actions::edit_key(key);
         if self.menu.page == Some(Page::Dialog(WorkspaceAction::OpenWorktree)) {
             return;
@@ -25,9 +25,6 @@ impl SheprdWindow {
                 cx.notify();
             }
             return;
-        }
-        if self.menu.page == Some(Page::GitHub) {
-            self.github_key(&event, window, cx);
         }
     }
 
@@ -148,10 +145,6 @@ impl SheprdWindow {
             self.close_confirmation_key(event, window, cx);
             return;
         }
-        if self.menu.page == Some(Page::GitHub) {
-            self.github_key(event, window, cx);
-            return;
-        }
         if self.menu.page == Some(Page::Themes) {
             self.theme_picker_key(event, window, cx);
             return;
@@ -239,8 +232,12 @@ impl SheprdWindow {
                 }
                 cx.notify();
             }
-            "up" | "down" if self.menu.page == Some(Page::Menu) => {
-                let count = self.menu_items().len();
+            "up" | "down" if matches!(self.menu.page, Some(Page::Menu | Page::Profile)) => {
+                let count = if self.menu.page == Some(Page::Profile) {
+                    self.profile_items().len()
+                } else {
+                    self.menu_items().len()
+                };
                 if count > 0 {
                     self.menu.selected =
                         Some(match (self.menu.selected, event.keystroke.key.as_str()) {
@@ -285,11 +282,16 @@ impl SheprdWindow {
             "enter" if self.menu.page == Some(Page::About) => {
                 self.dismiss_menu(window, cx);
             }
-            "enter" if self.menu.page == Some(Page::Menu) => {
+            "enter" if matches!(self.menu.page, Some(Page::Menu | Page::Profile)) => {
+                let items = if self.menu.page == Some(Page::Profile) {
+                    self.profile_items().to_vec()
+                } else {
+                    self.menu_items()
+                };
                 if let Some(item) = self
                     .menu
                     .selected
-                    .and_then(|index| self.menu_items().get(index).copied())
+                    .and_then(|index| items.get(index).copied())
                 {
                     self.activate_menu(item, window, cx);
                 }

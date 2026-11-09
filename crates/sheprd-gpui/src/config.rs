@@ -24,7 +24,6 @@ mod features;
 mod files;
 mod font_weight;
 mod fonts;
-mod github;
 mod keybindings;
 mod layout;
 mod notifications;
@@ -67,8 +66,6 @@ use fonts::FontSettings;
 #[cfg(any(test, feature = "integration-test"))]
 pub use fonts::symbol_fallbacks;
 pub use fonts::{FONT_SIZE_RANGE, FONT_SIZE_STEP, FontConfig};
-pub(crate) use github::MAX_ACCOUNTS;
-pub use github::{GitHubAccount, GitHubConfig};
 pub use layout::{Density, Layout, LayoutMode, Style};
 pub(crate) use notifications::NotificationDelivery;
 pub use notifications::{
@@ -146,7 +143,6 @@ pub struct Config {
     pub features: Features,
     /// Focus the split terminal pane under the pointer without clicking.
     pub focus_follows_mouse: bool,
-    pub github: GitHubConfig,
     /// New tabs run in herdr-core (Herdr 2) rather than Herdr 1, for their
     /// native panes. Off by default while Herdr 1 holds the user's sessions;
     /// without Herdr 1 installed, terminals are Herdr 2's anyway.
@@ -277,7 +273,6 @@ impl Default for Config {
             favorite_themes: Vec::new(),
             features: Features::default(),
             focus_follows_mouse: true,
-            github: GitHubConfig::default(),
             herdr_2_terminals: false,
             icon_font_missing: false,
             keep_selection_after_copy: true,
@@ -349,7 +344,6 @@ struct Settings {
     favorite_themes: Vec<String>,
     features: Features,
     focus_follows_mouse: Option<bool>,
-    github: GitHubConfig,
     herdr_2_terminals: Option<bool>,
     keep_selection_after_copy: Option<bool>,
     keybindings: BTreeMap<String, Binding>,
@@ -608,31 +602,20 @@ impl Config {
             .into_iter()
             .flat_map(|(name, face)| face.reject_terminal_keys(name)),
         );
-        // Unknown keys are ignored, but a credential pasted into the file,
-        // `[github]` or one of its accounts, is refused so it is noticed and
-        // removed rather than left on disk.
-        if let Some(name) = ["client_secret", "private_key", "token"]
-            .into_iter()
-            .find(|name| {
-                unknown_keys.iter().any(|key| {
-                    key.strip_prefix("github.")
-                        .is_some_and(|rest| rest.rsplit('.').next() == Some(*name))
-                })
-            })
+        // An old account table must not silently become accepted inert data:
+        // the app no longer owns GitHub sign-ins, and settings must say so.
+        if unknown_keys
+            .iter()
+            .any(|key| key == "github" || key.starts_with("github."))
         {
-            return Err(crate::Error::GitHubSecretInConfig(name));
+            return Err(Error::RemovedGitHub.into());
         }
-        // A newer build may keep more accounts or owners than this one.
-        unknown_keys.extend(settings.github.limit_accounts());
         unknown_keys.sort();
         unknown_keys.dedup();
         let mut config = Self {
             unknown_keys,
             ..Self::default()
         };
-        settings.github.client_id_with_override(None)?;
-        settings.github.check_accounts()?;
-        config.github = settings.github;
         settings.chat.check()?;
         config.chat = settings.chat;
         config.favorite_themes = settings.favorite_themes;

@@ -27,7 +27,6 @@ pub(crate) enum Page {
     Dialog(WorkspaceAction),
     /// Names a saved SSH device's port to forward to this computer.
     ForwardPort,
-    GitHub,
     /// A group's "…" menu: opening tabs other than a terminal, closing
     /// tabs, and splitting.
     Group,
@@ -47,6 +46,7 @@ pub(crate) enum Page {
     Pane,
     /// The processes under the pane menu's pane.
     PaneProcesses,
+    Profile,
     RemoveDevice,
     /// Confirming a saved WSL distribution should be forgotten.
     RemoveWsl,

@@ -8,7 +8,6 @@ mod chrome;
 mod colors;
 pub(crate) mod devices;
 mod git;
-mod github;
 mod mute;
 mod open_link;
 mod page;

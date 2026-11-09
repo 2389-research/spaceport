@@ -82,7 +82,7 @@ fn right_clicking_a_saved_host_offers_removal_but_local_only_grouping_and_mute(
     assert!(view.read_with(cx, |view, _| view.menu.page == Some(Page::RemoveDevice)));
     cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
     assert!(cx.debug_bounds("remove-device").is_some());
-    // Without a GitHub sign-in of its own, there is nothing else to delete.
+    // Removing the saved profile offers no credential cleanup action.
     assert!(cx.debug_bounds("remove-device-github").is_none());
     cx.simulate_keystrokes("escape");
     assert!(view.read_with(cx, |view, _| view.menu.page.is_none()));
@@ -163,23 +163,18 @@ fn the_menu_names_the_saved_session_after_a_session_pick(cx: &mut TestAppContext
 }
 
 #[gpui::test]
-fn removal_offers_the_github_sign_in_and_reports_each_outcome(cx: &mut TestAppContext) {
+fn removal_confirmation_has_no_credential_cleanup_action(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(fixture_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             add_host(view);
-            view.menu
-                .github_hosts
-                .insert(HOST.into(), crate::github::Auth::connected_fixture());
             view.open_host_menu(HOST, point(px(10.), px(10.)), window, cx);
             view.activate_host_menu(Action::Remove, window, cx);
         });
         crate::sidebar::layout_tests::full_draw(window, cx).clear(cx);
     });
-    assert!(cx.debug_bounds("remove-device-github").is_some());
-    cx.simulate_keystrokes("space");
-    assert!(view.read_with(cx, |view, _| !host(view).forget_github));
-    cx.simulate_keystrokes("space");
+    assert!(cx.debug_bounds("remove-device-github").is_none());
+    assert!(cx.debug_bounds("remove-device-submit").is_some());
 }
 
 #[gpui::test]
@@ -189,9 +184,6 @@ fn a_removal_pulses_the_host_header_until_the_device_leaves(cx: &mut TestAppCont
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             add_host(view);
-            view.menu
-                .github_hosts
-                .insert(HOST.into(), crate::github::Auth::connected_fixture());
             // As confirming does: the dialog is gone, the device marked.
             view.menu.removing_devices.insert(HOST.into());
             cx.notify();
@@ -214,7 +206,6 @@ fn a_removal_pulses_the_host_header_until_the_device_leaves(cx: &mut TestAppCont
             view.device_removed(
                 HOST,
                 "m5max-ms",
-                true,
                 Err(crate::menu::devices::Error::Adding.into()),
                 cx,
             );
@@ -228,32 +219,13 @@ fn a_removal_pulses_the_host_header_until_the_device_leaves(cx: &mut TestAppCont
                     crate::menu::devices::Error::Adding
                 ))
             );
-            assert!(view.menu.github_hosts.contains_key(HOST));
-
             // Success keeps the mark until the catalog drops the device,
-            // even when its GitHub credential could not be deleted.
+            // so the header continues to show progress.
             view.menu.removing_devices.insert(HOST.into());
-            view.device_removed(
-                HOST,
-                "m5max-ms",
-                true,
-                Ok(Err(crate::Error::Credentials(
-                    sheprd_credentials::Error::Policy,
-                ))),
-                cx,
-            );
-            assert!(!view.menu.github_hosts.contains_key(HOST));
-            assert!(
-                view.local_error
-                    .as_deref()
-                    .unwrap()
-                    .replace(['\u{2068}', '\u{2069}'], "")
-                    .starts_with("Removed m5max-ms, but could not delete its GitHub sign-in")
-            );
+            view.device_removed(HOST, "m5max-ms", Ok(()), cx);
             view.prune_device_removals();
             assert!(view.menu.removing_devices.contains(HOST));
-            view.endpoints.truncate(1);
-            view.prune_device_removals();
+            view.reconcile_catalog(Vec::new(), Vec::new(), cx);
             assert!(view.menu.removing_devices.is_empty());
         });
     });

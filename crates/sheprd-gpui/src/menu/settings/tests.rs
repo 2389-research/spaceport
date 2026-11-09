@@ -243,7 +243,7 @@ fn config_reload_toggles_tab_flags_and_preserves_them_on_failure(cx: &mut gpui::
 }
 
 #[gpui::test]
-fn failed_config_load_still_restores_the_saved_github_sign_in(cx: &mut gpui::TestAppContext) {
+fn failed_config_load_keeps_the_current_window_settings(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     view.update(cx, |view, cx| {
         view.avatars = Some(crate::avatars::Avatars::new());
@@ -252,13 +252,7 @@ fn failed_config_load_still_restores_the_saved_github_sign_in(cx: &mut gpui::Tes
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         assert!(view.local_error.is_some());
-        // The restore is queued under the settings already in effect; the
-        // next poll reads the saved credential off the UI thread.
-        assert!(view.menu.github.loading_profile());
-        assert_eq!(
-            view.menu.github.store(),
-            crate::github::select_store(&view.config.github)
-        );
+        assert!(view.menu.page.is_none());
     });
 }
 

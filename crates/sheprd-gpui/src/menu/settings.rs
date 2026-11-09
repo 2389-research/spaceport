@@ -256,14 +256,6 @@ impl SheprdWindow {
                 // does not know, must not sign GitHub out: restore the saved
                 // credential under the settings already in effect.
                 if this.avatars.is_some() {
-                    this.menu.github.initialize(&this.config.github);
-                    for auth in this.menu.github_hosts.values_mut() {
-                        auth.initialize(&this.config.github);
-                    }
-                    for account in &mut this.menu.github_accounts {
-                        account.auth.initialize(&this.config.github);
-                    }
-                    this.sync_github_accounts();
                 }
                 cx.notify();
             });

@@ -46,7 +46,7 @@ pub(crate) use {
     rail::SidebarMode,
     render::NestedReveal,
     reorder::WorkspaceDrag,
-    row::{github_mark, label_text},
+    row::label_text,
     search::SidebarSearch,
     view::SidebarView,
     workspaces::{workspace_entries, workspace_label},

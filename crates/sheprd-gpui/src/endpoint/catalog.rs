@@ -306,6 +306,7 @@ impl SheprdWindow {
             next.push(endpoint);
         }
         self.endpoints = next;
+        self.prune_device_removals();
         self.selected_endpoint = self
             .endpoints
             .iter()

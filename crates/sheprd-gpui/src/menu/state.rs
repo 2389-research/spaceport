@@ -4,7 +4,7 @@
 //! from a replaced connection can never be applied to the current one.
 
 // i18n: migrated
-use super::{Page, WorkspaceMenuAction, WorkspaceTarget, github};
+use super::{Page, WorkspaceMenuAction, WorkspaceTarget};
 use crate::dialog_input::DialogInput;
 use gpui::{App, Bounds, Entity, FocusHandle, Pixels, Point, ScrollHandle, Subscription};
 
@@ -118,29 +118,10 @@ pub(crate) struct MenuState {
     pub(crate) group: Option<crate::group_menu::GroupMenu>,
     pub(crate) host: Option<super::devices::HostMenu>,
     pub(crate) pane: Option<crate::pane_menu::PaneMenu>,
-    pub(crate) github: crate::github::Auth,
-    /// Saved SSH devices' own accounts, keyed by endpoint ID. The profile
-    /// slot falls back to `github` when a device has no own sign-in.
-    pub(crate) github_hosts: std::collections::HashMap<String, crate::github::Auth>,
-    /// One sign-in per `[github] accounts` entry, in config order.
-    pub(crate) github_accounts: Vec<github::AdditionalAccount>,
-    /// Every signed-in account's picture, by GitHub's avatar address.
-    pub(crate) github_avatars: crate::avatars::ProfileAvatars,
-    /// The additional account the GitHub page shows, by ID; `None` shows
-    /// the device's own account.
-    pub(super) github_account: Option<String>,
-    /// An account whose config entry is being written, shown once it loads.
-    pub(super) github_adding: Option<String>,
-    /// The pasted-token field, while the GitHub page shows it.
-    pub(super) github_token: Option<Entity<crate::search_input::SearchInput>>,
-    /// Logins this window already toasted as waiting on GitHub App approval.
-    pub(super) github_toasted: std::collections::HashSet<String>,
     /// Saved devices whose removal is running, by endpoint ID. Kept after
     /// success until the catalog drops the device, so its header pulses
     /// until it disappears; the confirmation closes as soon as it starts.
     pub(crate) removing_devices: std::collections::HashSet<String>,
-    pub(super) github_selected: Option<github::Action>,
-    pub(super) github_scroll: ScrollHandle,
     pub(crate) version_notice: Option<super::VersionNotice>,
 }
 
@@ -203,17 +184,7 @@ impl MenuState {
             palette_resume: None,
             palette_preview: true,
             close: None,
-            github: Default::default(),
-            github_hosts: Default::default(),
-            github_accounts: Vec::new(),
-            github_avatars: Default::default(),
-            github_account: None,
-            github_adding: None,
-            github_token: None,
-            github_toasted: Default::default(),
             removing_devices: Default::default(),
-            github_selected: None,
-            github_scroll: ScrollHandle::new(),
             version_notice: None,
             tab: None,
             group: None,
@@ -241,19 +212,6 @@ impl MenuState {
         self.group = None;
         self.host = None;
         self.pane = None;
-        self.github_selected = None;
-        self.github_scroll.set_offset(Point::default());
-        if self.github.busy() {
-            self.github.cancel();
-        }
-        for account in &mut self.github_accounts {
-            if account.auth.busy() {
-                account.auth.cancel();
-            }
-        }
-        self.github_account = None;
-        self.github_adding = None;
-        self.github_token = None;
         self.page = None;
         if let Some(palette) = self.palette.take() {
             self.palette_resume = Some(palette.resume());

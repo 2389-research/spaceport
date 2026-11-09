@@ -1,4 +1,4 @@
-//! Shortcut search, GitHub, theme, palette, close, keybinds,
+//! Shortcut search, profile, theme, palette, close, keybinds,
 //! install, and app update panel checks.
 use super::*;
 
@@ -52,90 +52,31 @@ pub(super) fn check_shortcut_search(view: &Entity<SheprdWindow>, cx: &mut gpui::
     cx.simulate_keystrokes("escape");
 }
 
-pub(super) fn check_github_panel(view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
+pub(super) fn check_profile_panel(view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
     for width in [320., 640., 1200.] {
         cx.simulate_resize(size(px(width), px(400.)));
-        for state in 0..5 {
-            cx.update(|window, cx| {
-                cx.write_to_clipboard(gpui::ClipboardItem::new_string("unchanged".into()));
-                cx.default_global::<PaintedProbes>().0.clear();
-                view.update(cx, |view, cx| {
-                    view.github_fixture(state == 1, window, cx);
-                    if state == 2 {
-                        view.menu.github.failed = true;
-                        view.menu.github.message =
-                            Some("GitHub code expired. Sign in again. ".repeat(40));
-                    } else if state == 3 {
-                        view.menu.github = crate::github::Auth::connected_fixture();
-                    } else if state == 4 {
-                        view.menu.github = crate::github::Auth::requesting_fixture();
-                    }
-                });
-                full_draw(window, cx).clear(cx);
-                assert_eq!(
-                    cx.read_from_clipboard().unwrap().text().as_deref(),
-                    Some("unchanged")
-                );
-                assert_eq!(
-                    cx.global::<PaintedProbes>().0.contains_key("Sign out (D)"),
-                    state == 3
-                );
-            });
-            let panel = cx.debug_bounds("menu-panel").unwrap();
-            assert!(panel.left() >= px(0.) && panel.right() <= px(width));
-            assert!(panel.bottom() <= px(400.));
-            assert!(panel.size.width <= px(400.));
-            assert!(cx.debug_bounds("github-close").is_none());
-            let close = cx.debug_bounds("github-header-close").unwrap();
-            assert!(close.top() >= panel.top() && close.bottom() <= panel.bottom());
-            if state == 3 {
-                assert!(panel.size.height <= px(230.));
-            }
-            let footer = cx.debug_bounds("github-footer");
-            let body = cx.debug_bounds("github-body").unwrap();
-            assert!(body.size.height > px(0.));
-            // A pending request offers no footer actions, so none is drawn.
-            assert_eq!(footer.is_none(), state == 4);
-            if let Some(footer) = footer {
-                // Content-sized layouts can round adjacent edges to half pixels.
-                assert!(body.bottom() <= footer.top() + px(1.));
-                assert!(footer.bottom() <= panel.bottom() + px(1.));
-            } else {
-                assert!(body.bottom() <= panel.bottom() + px(1.));
-            }
-            if state == 1 {
-                let code = cx.debug_bounds("github-device-code").unwrap();
-                assert!(code.left() >= panel.left() && code.right() <= panel.right());
-                let copy = cx.debug_bounds("github-copy").unwrap();
-                cx.simulate_click(copy.center(), Default::default());
-                cx.update(|_, cx| {
-                    assert_eq!(
-                        cx.read_from_clipboard().unwrap().text().as_deref(),
-                        Some("ABCD-1234")
-                    );
-                    assert!(view.read(cx).menu.github.copied());
-                });
-                cx.simulate_keystrokes("tab enter");
-                cx.update(|_, cx| assert!(view.read(cx).menu.github.copied()));
-                cx.simulate_keystrokes("cmd-c");
-                let open = cx.debug_bounds("github-open").unwrap();
-                cx.simulate_click(open.center(), Default::default());
-                assert_eq!(cx.opened_url().as_deref(), Some(crate::github::VERIFY_URL));
-            } else if state == 2 {
-                let status = cx.debug_bounds("github-status").unwrap();
-                cx.simulate_keystrokes("pagedown");
-                cx.update(|window, cx| full_draw(window, cx).clear(cx));
-                assert!(cx.debug_bounds("github-status").unwrap().top() < status.top());
-                assert_eq!(cx.debug_bounds("github-footer"), footer);
-            }
-            cx.simulate_keystrokes("c escape");
-            cx.update(|window, cx| {
-                assert!(view.read(cx).menu.page.is_none());
-                assert!(view.read(cx).focus.is_focused(window));
-                assert!(view.read(cx).menu.github.code().is_none());
-                assert!(!view.read(cx).menu.github.copied());
-            });
+        cx.update(|window, cx| {
+            view.update(cx, |view, cx| view.open_profile(window, cx));
+            full_draw(window, cx).clear(cx);
+        });
+        let panel = cx.debug_bounds("menu-panel").unwrap();
+        assert!(panel.left() >= px(0.) && panel.right() <= px(width));
+        assert!(panel.bottom() <= px(400.));
+        assert!(panel.size.width <= px(400.));
+        for selector in [
+            "profile-settings",
+            "profile-shortcuts",
+            "profile-themes",
+            "profile-about",
+        ] {
+            assert!(cx.debug_bounds(selector).is_some());
         }
+        assert!(cx.debug_bounds("github-start").is_none());
+        cx.simulate_keystrokes("escape");
+        cx.update(|window, cx| {
+            assert!(view.read(cx).menu.page.is_none());
+            assert!(view.read(cx).focus.is_focused(window));
+        });
     }
 }
 

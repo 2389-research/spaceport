@@ -54,14 +54,13 @@ fn a_finished_removal_forgets_the_mute_after_its_window_closed(cx: &mut TestAppC
     // The window's own context is gone with it.
     let app: &mut TestAppContext = cx;
     app.run_until_parked();
-    let finish = |result: crate::Result<crate::Result<()>>, app: &mut TestAppContext| {
+    let finish = |result: crate::Result<()>, app: &mut TestAppContext| {
         app.update(|cx| {
             crate::SheprdWindow::follow_removal(
                 this.clone(),
                 gpui::Task::ready(result),
                 HOST.into(),
                 "m5max-ms".into(),
-                false,
                 cx,
             );
         });
@@ -70,7 +69,7 @@ fn a_finished_removal_forgets_the_mute_after_its_window_closed(cx: &mut TestAppC
     };
     let failed = Err(crate::menu::devices::Error::Adding.into());
     assert!(finish(failed, app), "a failed removal keeps it");
-    assert!(!finish(Ok(Ok(())), app));
+    assert!(!finish(Ok(()), app));
 }
 
 #[gpui::test]

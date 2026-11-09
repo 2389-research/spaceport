@@ -281,7 +281,6 @@ fn defaults_and_partial_settings() -> anyhow::Result<()> {
         Config::parse(DEFAULT_CONFIG)?,
     ] {
         assert_eq!(config.theme(false)?, Theme::default());
-        assert!(config.github.oauth_client_id.is_none());
         // The example config changes no feature's default.
         assert_eq!(config.features, Features::default());
         assert!(!config.features.sidebar_hover_menu);

@@ -1,9 +1,6 @@
 //! Daemon-free sidebar fixture driver.
 use super::*;
 
-#[path = "smoke_sidebar/quota.rs"]
-mod quota;
-
 /// Native check that the icon cascade reaches an installed Nerd Font. Prompts
 /// draw powerline separators and icons from the Private Use Area, which no text
 /// face and no platform default cascade covers, so without the cascade every
@@ -68,20 +65,6 @@ fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
 }
 
 pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
-    if std::env::var_os("HERDR_TEST_GITHUB_QUOTA_ONLY").is_some() {
-        cx.spawn(async move |cx| match quota::run(handle, cx).await {
-            Ok(()) => {
-                eprintln!("GITHUB QUOTA native PASS");
-                std::process::exit(0);
-            }
-            Err(error) => {
-                eprintln!("GITHUB QUOTA native FAIL: {error:#}");
-                std::process::exit(1);
-            }
-        })
-        .detach();
-        return;
-    }
     if std::env::var_os("HERDR_TEST_RICH_CHAT").is_some() {
         crate::chat::preview::start(handle, cx);
         return;
@@ -626,45 +609,29 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
         for (width, height) in [(640., 400.), (1200., 780.)] {
             let _ = handle.update(cx, |_, window, _| window.resize(size(px(width), px(height))));
             timer.timer(Duration::from_millis(100)).await;
-            for state in 0..5 {
-                let result = AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<()> {
-                    let view = root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?;
-                    view.update(cx, |view, cx| {
-                        view.github_fixture(state == 1, window, cx);
-                        if state == 2 {
-                            view.menu.github.failed = true;
-                            view.menu.github.message = Some("GitHub code expired. Sign in again. ".repeat(40));
-                        } else if state == 3 {
-                            view.menu.github = github::Auth::connected_fixture();
-                        } else if state == 4 {
-                            view.menu.github = github::Auth::requesting_fixture();
-                        }
-                    });
-                    cx.default_global::<sidebar::layout_tests::PaintedProbes>().0.clear();
-                    window.draw(cx).clear(cx);
-                    if state == 1 {
-                        let probe = cx.global::<sidebar::layout_tests::PaintedProbes>().0.get("ABCD-1234").context("GitHub device code not painted")?;
-                        if probe.clipped || probe.glyph_text != "ABCD-1234" { bail!("GitHub device code clipped"); }
+            let result = AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<()> {
+                let view = root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?;
+                view.update(cx, |view, cx| view.open_profile(window, cx));
+                cx.default_global::<sidebar::layout_tests::PaintedProbes>().0.clear();
+                window.draw(cx).clear(cx);
+                let probes = &cx.global::<sidebar::layout_tests::PaintedProbes>().0;
+                for label in ["Profile", "Settings", "Keyboard Shortcuts", "Themes", "About"] {
+                    let probe = probes.get(label).with_context(|| format!("missing profile item {label}"))?;
+                    if probe.clipped || probe.bounds.bottom() > window.viewport_size().height {
+                        bail!("profile item {label} clipped");
                     }
-                    let probes = &cx.global::<sidebar::layout_tests::PaintedProbes>().0;
-                    if probes.contains_key("Cancel (Esc)") || probes.contains_key("Close (Esc)") { bail!("redundant GitHub footer close"); }
-                    let close = probes.get("Close").context("missing GitHub header close")?;
-                    if close.clipped || close.glyph_text != "Close" || close.bounds.bottom() > window.viewport_size().height { bail!("GitHub header close clipped"); }
-                    if state == 3 {
-                        let signout = probes.get("Sign out (D)").context("missing signout action")?;
-                        if signout.bounds.bottom() - close.bounds.top() > px(230.) { bail!("connected GitHub panel is oversized"); }
-                    }
-                    let before = view.read(cx).input_probe;
-                    window.dispatch_keystroke(Keystroke::parse("c")?, cx);
-                    window.dispatch_keystroke(Keystroke::parse("escape")?, cx);
-                    let state = view.read(cx);
-                    if state.menu.page.is_some() || state.input_probe.text != before.text || state.input_probe.keys != before.keys || !state.focus.is_focused(window) { bail!("GitHub sign-in leaked input or lost focus"); }
-                    Ok(())
-                });
-                if !matches!(result, Ok(Ok(()))) {
-                    eprintln!("SIDEBAR native GitHub auth FAIL: {result:?}");
-                    std::process::exit(1);
                 }
+                let before = view.read(cx).input_probe;
+                window.dispatch_keystroke(Keystroke::parse("escape")?, cx);
+                let state = view.read(cx);
+                if state.menu.page.is_some() || state.input_probe.text != before.text || state.input_probe.keys != before.keys || !state.focus.is_focused(window) {
+                    bail!("profile popup leaked input or lost focus");
+                }
+                Ok(())
+            });
+            if !matches!(result, Ok(Ok(()))) {
+                eprintln!("SIDEBAR native profile FAIL: {result:?}");
+                std::process::exit(1);
             }
         }
         #[cfg(target_os = "macos")]
@@ -677,7 +644,7 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
             eprintln!("SIDEBAR native paint FAIL: {probes:?}");
             std::process::exit(1);
         }
-        eprintln!("SIDEBAR native PASS: {cascade}; {drawn}/72 Menlo draws (the rest larger than the display), flat and rounded normal/compact/comfortable layouts at 4 sizes, collapse/expand, menu isolation, PR title/stats glyphs, GitHub auth fixtures, right-click dialogs and Unicode fields at 2 sizes; host routing, disabled selection, scoped repositories, resized host/agent glyphs, independent scroll and decoy key window");
+        eprintln!("SIDEBAR native PASS: {cascade}; {drawn}/72 Menlo draws (the rest larger than the display), flat and rounded normal/compact/comfortable layouts at 4 sizes, collapse/expand, menu isolation, profile popup, right-click dialogs and Unicode fields at 2 sizes; host routing, disabled selection, scoped repositories, resized host/agent glyphs, independent scroll and decoy key window");
         std::process::exit(0);
     })
     .detach();

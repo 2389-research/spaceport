@@ -68,10 +68,6 @@ pub enum Error {
     FileDrop(#[from] crate::window::file_drop::Error),
     #[error(transparent)]
     GitHub(#[from] sheprd_github::Error),
-    #[error(
-        "[github] {0} must not be in the config. Sign in from the app, or use GH_TOKEN / GITHUB_TOKEN."
-    )]
-    GitHubSecretInConfig(&'static str),
     #[error("Oversized GIF, WebP, and animated PNG images cannot be resized safely.")]
     ImageAnimationResize,
     #[error("Could not decode the oversized image.")]

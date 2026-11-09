@@ -34,45 +34,11 @@ fn header_bounds_above_body_in_windowed_and_fullscreen(cx: &mut TestAppContext) 
                 cx.debug_bounds("titlebar-avatar-circle").unwrap(),
                 Bounds::new(point(px(width - 30.), px(7.)), size(px(20.), px(20.)))
             );
-            // Signing in swaps the placeholder for the avatar, which sits
-            // inside the same hit target rather than filling it.
-            let view =
-                cx.update(|window, _| window.root::<crate::SheprdWindow>().unwrap().unwrap());
-            cx.update(|_, cx| {
-                view.update(cx, |view, cx| {
-                    view.menu.github = crate::github::Auth::connected_fixture();
-                    if let Some(profile) = view.menu.github.profile.as_mut() {
-                        profile.avatar_url = super::tests::AVATAR_URL.into();
-                        view.menu.github_avatars.show(
-                            super::tests::AVATAR_URL,
-                            std::sync::Arc::new(gpui::Image::from_bytes(
-                                gpui::ImageFormat::Svg,
-                                include_bytes!("../../../../assets/icons/user.svg").to_vec(),
-                            )),
-                        );
-                    }
-                    cx.notify();
-                })
-            });
-            cx.update(|window, cx| {
-                window.refresh();
-                let _ = window.draw(cx);
-            });
             let hit = cx.debug_bounds("titlebar-avatar").unwrap();
             let circle = cx.debug_bounds("titlebar-avatar-circle").unwrap();
             assert_eq!(circle.size, size(px(super::AVATAR), px(super::AVATAR)));
             assert_eq!(circle.center(), hit.center());
             assert!(circle.size.width < hit.size.width);
-            cx.update(|_, cx| {
-                view.update(cx, |view, cx| {
-                    view.menu.github = Default::default();
-                    cx.notify();
-                })
-            });
-            cx.update(|window, cx| {
-                window.refresh();
-                let _ = window.draw(cx);
-            });
             // The draggable center starts after Back and Forward and
             // the room they keep.
             let leading = cx.debug_bounds("titlebar-navigation").unwrap().right()

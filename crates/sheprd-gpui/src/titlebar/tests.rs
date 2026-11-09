@@ -5,10 +5,7 @@ use gpui::{
     size,
 };
 
-/// A signed-in fixture account's picture address, shown without loading it.
-pub(super) const AVATAR_URL: &str = "https://avatars.githubusercontent.com/u/1";
-
-mod rate_limit;
+mod profile_shell;
 
 /// The fixture window with Herdr's tab bar at the bottom, so it keeps the
 /// full-width header these tests measure.
@@ -45,55 +42,32 @@ fn sidebar_button_collapses_and_reopens_without_moving(cx: &mut TestAppContext) 
 }
 
 #[gpui::test]
-fn account_icon_keeps_the_same_bounds_when_signed_out_failed_or_connected(cx: &mut TestAppContext) {
-    let (view, cx) = cx.add_window_view(header_window);
+fn profile_icon_keeps_the_same_bounds_on_hover(cx: &mut TestAppContext) {
+    let (_view, cx) = cx.add_window_view(header_window);
     for width in [1200., 360.] {
         cx.simulate_resize(size(px(width), px(400.)));
-        for state in 0..4 {
-            cx.update(|_, cx| {
-                view.update(cx, |view, cx| {
-                    view.menu.github = match state {
-                        2 => crate::github::Auth::fixture(true),
-                        3 => crate::github::Auth::connected_fixture(),
-                        _ => crate::github::Auth::default(),
-                    };
-                    view.menu.github.failed = state == 1;
-                    if let Some(profile) = view.menu.github.profile.as_mut() {
-                        profile.avatar_url = AVATAR_URL.into();
-                        view.menu.github_avatars.show(
-                            AVATAR_URL,
-                            std::sync::Arc::new(gpui::Image::from_bytes(
-                                gpui::ImageFormat::Svg,
-                                include_bytes!("../../../../assets/icons/user.svg").to_vec(),
-                            )),
-                        );
-                    }
-                    cx.notify();
-                });
+        for hovered in [false, true] {
+            cx.update(|window, cx| {
+                window.refresh();
+                let _ = window.draw(cx);
             });
-            for hovered in [false, true] {
-                cx.update(|window, cx| {
-                    window.refresh();
-                    let _ = window.draw(cx);
-                });
-                let hit = cx.debug_bounds("titlebar-avatar").unwrap();
-                cx.simulate_event(gpui::MouseMoveEvent {
-                    position: if hovered {
-                        hit.center()
-                    } else {
-                        point(px(100.), px(100.))
-                    },
-                    ..Default::default()
-                });
-                cx.update(|window, cx| {
-                    window.refresh();
-                    let _ = window.draw(cx);
-                });
-                let icon = cx.debug_bounds("titlebar-avatar-circle").unwrap();
-                assert_eq!(icon.size, size(px(super::AVATAR), px(super::AVATAR)));
-                assert_eq!(icon.center(), hit.center());
-                assert_eq!(hit.size, size(px(28.), px(28.)));
-            }
+            let hit = cx.debug_bounds("titlebar-avatar").unwrap();
+            cx.simulate_event(gpui::MouseMoveEvent {
+                position: if hovered {
+                    hit.center()
+                } else {
+                    point(px(100.), px(100.))
+                },
+                ..Default::default()
+            });
+            cx.update(|window, cx| {
+                window.refresh();
+                let _ = window.draw(cx);
+            });
+            let icon = cx.debug_bounds("titlebar-avatar-circle").unwrap();
+            assert_eq!(icon.size, size(px(super::AVATAR), px(super::AVATAR)));
+            assert_eq!(icon.center(), hit.center());
+            assert_eq!(hit.size, size(px(28.), px(28.)));
         }
     }
 }
@@ -138,17 +112,13 @@ fn profile_slot_bounds_and_context_menu_do_not_start_auth(cx: &mut TestAppContex
     });
     cx.update(|_, cx| {
         let view = view.read(cx);
-        assert!(view.menu.page == Some(Page::GitHub));
-        assert!(!view.menu.github.busy());
-        assert!(!view.menu.github.loading_profile());
+        assert!(view.menu.page == Some(Page::Profile));
     });
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.dismiss_menu(window, cx);
-            view.menu.github = crate::github::Auth::connected_fixture();
             view.open_profile(window, cx);
-            assert!(view.menu.github.connected());
-            assert!(!view.menu.github.busy());
+            assert_eq!(view.menu.page, Some(Page::Profile));
         })
     });
 }
@@ -159,11 +129,6 @@ fn left_click_opens_profile_without_starting_github_sign_in(cx: &mut TestAppCont
     // runner may have a real OAuth client ID in its environment.
     assert!(!include_str!("../titlebar.rs").contains("start_github("));
     let (view, cx) = cx.add_window_view(header_window);
-    cx.update(|_, cx| {
-        view.update(cx, |view, _| {
-            view.config.github.oauth_client_id = Some("invalid client".into());
-        })
-    });
     cx.update(|window, cx| {
         window.refresh();
         window.draw(cx).clear(cx);
@@ -171,8 +136,6 @@ fn left_click_opens_profile_without_starting_github_sign_in(cx: &mut TestAppCont
     let hit = cx.debug_bounds("titlebar-avatar").unwrap();
     cx.simulate_click(hit.center(), Modifiers::default());
     view.read_with(cx, |view, _| {
-        assert_eq!(view.menu.page, Some(Page::GitHub));
-        assert!(!view.menu.github.failed);
-        assert!(view.menu.github.message.is_none());
+        assert_eq!(view.menu.page, Some(Page::Profile));
     });
 }

@@ -1,7 +1,6 @@
 //! Native opt-in smoke driver. No test platform or blocking waits on the UI thread.
 use crate::{
-    Command, LiveState, NavigationTarget, RunCommand, SheprdWindow, github, open_window, sidebar,
-    updater,
+    Command, LiveState, NavigationTarget, RunCommand, SheprdWindow, open_window, sidebar, updater,
 };
 // The window, menu, and icon checks below need an active desktop, so they and
 // everything only they reach are built for macOS alone.
