@@ -28,6 +28,7 @@ fn malformed_work_requests_are_rejected() {
     for invalid in [
         r#"{"method":"work","caller":{},"op":{"op":"restore"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"script","kind":"deploy"}}"#,
+        r#"{"method":"work","caller":{},"op":{"op":"script","kind":"archive"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"set_note"}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"fan_out","prompt":"x","agents":[["claude",300]]}}"#,
         r#"{"method":"work","caller":{},"op":{"op":"launch"}}"#,

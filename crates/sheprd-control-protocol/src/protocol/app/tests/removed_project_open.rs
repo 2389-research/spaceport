@@ -2,6 +2,7 @@ use super::*;
 
 #[test]
 fn removed_folder_open_request_is_not_decoded() {
+    assert!(crate::protocol::PROTOCOL_VERSION > 29);
     for invalid in [
         r#"{"method":"app","caller":{},"op":{"op":"open","path":"/a"}}"#,
         r#"{"method":"app","caller":{},"op":{"op":"open","path":"/a","cwd":"/b"}}"#,

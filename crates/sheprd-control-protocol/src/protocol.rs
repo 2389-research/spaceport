@@ -30,7 +30,8 @@ use serde::{Deserialize, Serialize};
 /// 27: removed the work fan-out request.
 /// 28: window listings report selected Core presentation group identity.
 /// 29: removed native PR, issue, and task activity panel control targets.
-pub const PROTOCOL_VERSION: u32 = 29;
+/// 30: removed `app.open` and `work.script.archive` requests.
+pub const PROTOCOL_VERSION: u32 = 30;
 
 /// Bounds a request and a response alike. A response can carry a batch of
 /// notes, each with a bounded snippet of the page.

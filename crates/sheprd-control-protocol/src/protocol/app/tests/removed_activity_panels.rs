@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn retired_orchestrator_panels_are_not_control_targets() {
-    assert_eq!(crate::protocol::PROTOCOL_VERSION, 29);
+    assert!(crate::protocol::PROTOCOL_VERSION >= 29);
     for name in ["pull-requests", "issues", "tasks"] {
         assert_eq!(ActivityPanel::parse(name), None, "{name}");
         assert!(serde_json::from_str::<ActivityPanel>(&format!("\"{name}\"")).is_err());
