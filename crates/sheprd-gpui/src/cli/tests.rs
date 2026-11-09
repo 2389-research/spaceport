@@ -134,3 +134,5 @@ fn test_modes_are_exclusive() {
         );
     }
 }
+
+mod removed_updater;

@@ -25,7 +25,6 @@ fn targeted_preferences_round_trip_and_reset_without_erasing_unknown_toml() -> a
         Preference::ClipboardPosition(Some(ClipboardToastPosition::TopCenter)),
         Preference::TerminalPadding(Axis::X, Sides::new(7.5, 7.5).expect("in band")),
         Preference::TerminalPadding(Axis::Y, Sides::new(4., 6.).expect("in band")),
-        Preference::UpdateChannel(UpdateChannel::Beta),
         Preference::Feature(Feature::SidebarHoverMenu, true),
     ] {
         Config::save_preference_path(edit, &path)?;
@@ -46,7 +45,6 @@ fn targeted_preferences_round_trip_and_reset_without_erasing_unknown_toml() -> a
     assert_eq!(table["show_device_icons"].as_bool(), Some(false));
     assert_eq!(table["smooth_scroll"].as_bool(), Some(false));
     assert_eq!(table["layout"].as_str(), Some("orca"));
-    assert_eq!(table["updates"]["channel"].as_str(), Some("beta"));
     assert_eq!(
         table["features"]["sidebar_hover_menu"].as_bool(),
         Some(true)

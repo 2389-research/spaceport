@@ -5,7 +5,7 @@ Versions are `YYYYMMDD.COUNTER`: the UTC release date and a same-day counter
 starting at 1. Existing tag names arrive on stdin, one per line, as either
 `v20260920.1` or `refs/tags/v20260920.1`; anything else is ignored so unrelated
 tags cannot influence publication. The result is always strictly greater than
-every published version, so the updater's ordering stays monotonic.
+every published version, so release ordering stays monotonic.
 """
 
 import re

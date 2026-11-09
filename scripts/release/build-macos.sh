@@ -15,13 +15,10 @@ build_env=(env
     -u MACOS_CERTIFICATE_P12_BASE64 -u MACOS_CERTIFICATE_PASSWORD
     -u MACOS_SIGNING_IDENTITY -u APPLE_API_PRIVATE_KEY
     -u APPLE_API_KEY_ID -u APPLE_API_ISSUER_ID
-    -u HERDR_UPDATE_SIGNING_KEY
     HERDR_RELEASE_VERSION="$version"
     MACOSX_DEPLOYMENT_TARGET=14.2
     # Apple strip can misalign host proc-macro dylibs during cross-compilation.
     CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none)
-# Public configuration must be supplied before loading any local signing helper.
-"${build_env[@]}" python3 scripts/update-manifest.py validate-public-key
 for target in aarch64-apple-darwin x86_64-apple-darwin; do
     "${build_env[@]}" cargo build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp --target "$target"
 done

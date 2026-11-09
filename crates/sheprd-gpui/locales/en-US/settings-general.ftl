@@ -7,8 +7,6 @@ settings-general-section-features = Features
 settings-general-section-clipboard = Clipboard
 settings-general-section-browser-skill = Browser skill
 settings-general-section-startup = Startup
-settings-general-section-updates = Updates
-
 ## Rows.
 
 # The language picker's first choice. $language is the name, in itself, of

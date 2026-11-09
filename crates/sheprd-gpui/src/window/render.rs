@@ -5,7 +5,7 @@
 use super::{PressedLink, SheprdWindow, tab_strip::Reach};
 use crate::direction::Logical;
 use crate::{
-    CheckForUpdates, Minimize, PlaySound, RunCommand, ShowUpdatePreview, ZoomWindow,
+    Minimize, PlaySound, RunCommand, ZoomWindow,
     actions::{RingBellPreview, ShowToastPreview},
     browser::Shown,
     config::ClipboardToastPosition,
@@ -793,36 +793,6 @@ impl Render for SheprdWindow {
             .on_action(cx.listener(|_, _: &ZoomWindow, window, _| {
                 window.zoom_window();
             }))
-            .on_action(cx.listener(|this, _: &CheckForUpdates, window, cx| {
-                this.open_app_update(false, window, cx);
-                this.updater.check();
-            }))
-            .on_action(cx.listener(|this, _: &ShowUpdatePreview, window, cx| {
-                this.open_app_update(true, window, cx);
-            }))
-            .on_action(cx.listener(
-                |this, _: &crate::actions::ShowUpdateDownloadPreview, window, cx| {
-                    this.open_update_progress_preview(
-                        crate::updater::State::Downloading {
-                            received: 50_000_000,
-                            total: 100_000_000,
-                        },
-                        window,
-                        cx,
-                    );
-                },
-            ))
-            .on_action(cx.listener(
-                |this, _: &crate::actions::ShowUpdateHomebrewPreview, window, cx| {
-                    this.open_update_progress_preview(
-                        crate::updater::State::Upgrading {
-                            detail: crate::updater::Progress::Refreshing,
-                        },
-                        window,
-                        cx,
-                    );
-                },
-            ))
             .on_action(cx.listener(|this, action: &ShowToastPreview, _, cx| {
                 this.show_toast_preview(action.kind, cx);
             }))

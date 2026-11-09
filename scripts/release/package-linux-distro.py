@@ -95,7 +95,7 @@ def config(version, target, root, mtime):
                       "mtime": mtime, "owner": "root", "group": "root"},
     } for relative in sorted(TREE)]
     return {
-        # Deployed package ownership and the privileged updater pin this name.
+        # Preserve the existing distribution package ownership name.
         "name": "herdr-gpui",
         "arch": ARCHES[target],
         "platform": "linux",

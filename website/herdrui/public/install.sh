@@ -8,7 +8,8 @@
 # against the release's published SHA-256, and installs it with sudo. The package
 # includes upstream herdr-core but never replaces a personal Herdr daemon.
 # The package manager owns the result (package name herdr-gpui is retained for
-# compatibility), so later updates come from the app's App Updates panel.
+# compatibility). This inherited installer targets Sheprd, not Spaceport.
+# The fork's custom in-app updater has been removed.
 set -eu
 
 repo=sheprd-labs/sheprd

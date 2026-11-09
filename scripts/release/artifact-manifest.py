@@ -23,20 +23,11 @@ def base_names(version, legacy=False):
             f"Sheprd-{version}-aarch64-pc-windows-msvc.zip",
             f"Sheprd-{version}-x86_64-pc-windows-msvc-setup.exe",
             f"Sheprd-{version}-aarch64-pc-windows-msvc-setup.exe",
-            f"Sheprd-{version}.cdx.json",
-            f"sheprd-{version}-macos-universal.app.tar.gz",
-            f"sheprd-{version}-x86_64-unknown-linux-gnu-update.tar.gz",
-            f"sheprd-{version}-aarch64-unknown-linux-gnu-update.tar.gz",
-            "update-manifest.json", "update-manifest.sig",
-            "package-manifest.json", "package-manifest.sig",
-            "windows-manifest.json", "windows-manifest.sig"]
+            f"Sheprd-{version}.cdx.json"]
     if legacy:
         return [name.replace("Sheprd-", "Herdr-")
                 .replace("sheprd-", "herdr-gpui-") for name in names]
     return names
-
-
-UPDATER_SIGNATURES = ("update-manifest.sig", "package-manifest.sig", "windows-manifest.sig")
 
 
 def package_aliases(version, legacy=False):
@@ -59,8 +50,8 @@ def check_aliases(directory, version, legacy=False):
 
 
 def compact_checksums(version):
-    # Published releases are immutable. Keep their exact old asset contract
-    # verifiable while fitting new releases under installed updaters' 128 cap.
+    # Earlier versions use per-file SHA-512 sidecars; newer versions use one
+    # checksum manifest. Keep that layout choice explicit when verifying.
     return tuple(map(int, version.split("."))) >= (20261102, 2)
 
 
@@ -81,9 +72,6 @@ def check_files(directory, names):
         p.is_symlink() or not p.is_file() or not p.stat().st_size for p in files
     ):
         raise ValueError("Missing, empty, symlink, or unexpected release artifact")
-    for signature in UPDATER_SIGNATURES:
-        if signature in names and (directory / signature).stat().st_size != 64:
-            raise ValueError("Updater signature must be raw 64-byte Ed25519")
 
 
 def digest(path, algorithm):
@@ -154,8 +142,6 @@ def main():
         print(actual)
         return
     if args.mode == "create" and compact_checksums(version):
-        if len(names) + 1 >= 128:
-            raise ValueError("Release must have fewer than 128 assets for installed updaters")
         consolidate_checksums(directory, version, args.legacy_names)
     check_files(directory, names + ([] if args.mode == "create" else ["SHA256SUMS"]))
     check_aliases(directory, version, args.legacy_names)

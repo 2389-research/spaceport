@@ -243,8 +243,6 @@ pub enum Error {
     Tunnel(#[from] crate::listening_ports::tunnel::Error),
     #[error("This command action is not supported by this client.")]
     UnsupportedCommand,
-    #[error("{0}")]
-    Update(#[from] crate::updater::Error),
     /// A usage read failed, or the usage shell the port and load scans share.
     #[error(transparent)]
     Usage(#[from] sheprd_usage::Error),

@@ -140,7 +140,6 @@ not take it either.
 | `keybinds [list]`, `keybinds check` | Shortcuts and reachable non-plugin custom Herdr commands |
 | `caffeine [status]`, `caffeine on\|off\|toggle [--for 30m]` | Keep the machine awake |
 | `sound [list]`, `sound play [done\|request]`, `bell` | Sounds play at `sound.volume` percent (`config set sound.volume 30`) |
-| `update [status]`, `update check` | Never downloads or installs |
 | `integrations [list]` | What Herdr offers the selected host |
 | `integrations install-skill` | Install the agent skill (no app needed) |
 | `logs [--lines N] [--path]` | The app's log (no app needed) |
@@ -177,7 +176,7 @@ worktree scripts in the workspace menu or control CLI.
 The development build still has an inherited Herdr 1 startup path; removing it
 is an open Spaceport task. The Core path may start only a separately installed,
 trusted Core when needed. Spaceport packages do not bundle or upgrade Core.
-`update` never installs the app.
+The removed `update` command is rejected before app startup.
 
 Adding an SSH or local network device has no command: the Add Device dialog
 runs it. Its setup workspace runs `spaceport __device-setup-attach SOCKET`,
@@ -214,7 +213,7 @@ The request is `{"method": "link", "caller", "op": {"url"}}`.
 One JSON request line, one JSON response line, then the socket closes. A
 request is `{"method", "caller", "op"}`, where `caller` carries the pane,
 workspace, daemon socket, and window, and `op` is tagged with `"op"`.
-`status` reports the protocol version, currently 35. Requests and responses
+`status` reports the protocol version, currently 36. Requests and responses
 are bounded to 256 KiB. A request that waits says for how long (at most 600
 seconds), and the app answers at most a
 few requests at a time.

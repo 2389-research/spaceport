@@ -65,7 +65,7 @@ pub(super) fn data(view: &SheprdWindow, shown: &[String]) -> Vec<String> {
         .map(snapshot_names)
         .unwrap_or_default();
     names.extend(view.endpoints.iter().map(|endpoint| endpoint.label.clone()));
-    names.push(sheprd_updater::APP_VERSION.to_owned());
+    names.push(crate::APP_VERSION.to_owned());
     names.push(env!("HERDR_BUILD_BRANCH").to_owned());
     // The device footer's label, a message cut short or measured a character
     // at a time like the names.

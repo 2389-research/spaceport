@@ -190,7 +190,7 @@ pub(crate) enum Route {
 /// Folders a remote `sheprd-acp` is looked for in before the remote `PATH`,
 /// which a noninteractive SSH shell often leaves short. `~/.herdr/bin` is
 /// where `cargo install --root ~/.herdr` puts it. A Mac has it only inside the
-/// app bundle, which never joins `PATH`, under either name the updater accepts.
+/// app bundle, which never joins `PATH`, under either of its existing bundle names.
 const REMOTE_PROGRAM_DIRS: &[&str] = &[
     "$HOME/.herdr/bin",
     "$HOME/.cargo/bin",

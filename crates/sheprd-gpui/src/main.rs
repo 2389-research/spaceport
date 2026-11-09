@@ -79,6 +79,7 @@ mod port_forward;
 mod preferences;
 mod presentation;
 mod processes;
+#[cfg(any(windows, test))]
 mod progress;
 mod release_notes;
 mod reorder;
@@ -107,7 +108,6 @@ mod theme_picker;
 mod titlebar;
 mod toggles;
 mod truncate;
-mod update_panel;
 mod usage;
 mod window;
 mod window_state;
@@ -132,9 +132,6 @@ mod test_process;
 
 pub use error::{Error, Result};
 
-// Its own crate so it builds and is tested without GPUI; the alias keeps the
-// app's `crate::updater` paths.
-use sheprd_updater as updater;
 // The command catalog and its default shortcuts, without GPUI.
 use sheprd_commands as controls;
 // The log file and crash reports, without GPUI.
@@ -146,8 +143,8 @@ use sheprd_client::{local_path, login_env};
 
 pub(crate) use {
     actions::{
-        CheckForUpdates, Hide, HideOthers, Minimize, PlaySound, Quit, RunCommand, ShowAll,
-        ShowLogs, ShowUpdatePreview, ZoomWindow, bind_keys,
+        Hide, HideOthers, Minimize, PlaySound, Quit, RunCommand, ShowAll, ShowLogs, ZoomWindow,
+        bind_keys,
     },
     app::open_additional_window,
     constants::{APP_VERSION, RELEASE_BUILD, TAB_HEIGHT, TAB_WIDTH, WINDOW_TITLE},

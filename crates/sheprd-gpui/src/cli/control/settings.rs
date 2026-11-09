@@ -1,4 +1,4 @@
-//! `config`, `theme`, `font`, `keybinds`, `caffeine`, `sound`, `update`,
+//! `config`, `theme`, `font`, `keybinds`, `caffeine`, `sound`,
 //! `integrations`, and `language`.
 use super::{Args, CliError, Sound, Switch, duration, switch, unknown};
 
@@ -55,12 +55,6 @@ pub enum CaffeineCommand {
 pub enum SoundCommand {
     List,
     Play(Sound),
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum UpdateCommand {
-    Check,
-    Status,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -163,17 +157,6 @@ pub(super) fn sound(args: &mut Args) -> Result<SoundCommand, CliError> {
             })
         }
         _ => return Err(unknown("sound", verb)),
-    })
-}
-
-pub(super) fn update(args: &mut Args) -> Result<UpdateCommand, CliError> {
-    let Some(verb) = args.verb() else {
-        return Ok(UpdateCommand::Status);
-    };
-    Ok(match verb.to_str() {
-        Some("status") => UpdateCommand::Status,
-        Some("check") => UpdateCommand::Check,
-        _ => return Err(unknown("update", verb)),
     })
 }
 

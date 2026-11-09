@@ -157,35 +157,11 @@ impl SheprdWindow {
                 div()
                     .id("status-version")
                     .debug_selector(|| "status-version".into())
-                    .map(|control| {
-                        self.chrome_stop(crate::window::chrome_focus::Region::StatusBar, control)
-                    })
-                    .role(Role::Button)
-                    .aria_label(if self.updater.update_available() {
-                        fl!("status-bar-update-available")
-                    } else {
-                        fl!("status-bar-version", version = APP_VERSION)
-                    })
+                    .aria_label(fl!("status-bar-version", version = APP_VERSION))
                     .flex_none()
                     .whitespace_nowrap()
-                    .cursor_pointer()
-                    .hover(|s| s.bg(rgb(self.theme.active)))
-                    // A waiting update is the one status here worth
-                    // interrupting for, so it takes the accent color
-                    // the rest of the chrome reserves for chosen rows.
-                    .text_color(rgb(if self.updater.update_available() {
-                        self.theme.primary()
-                    } else {
-                        self.theme.muted
-                    }))
-                    .child(if self.updater.update_available() {
-                        fl!("status-bar-update-available")
-                    } else {
-                        APP_VERSION.to_owned()
-                    })
-                    .on_click(cx.listener(|this, _, window, cx| {
-                        this.open_app_update(false, window, cx);
-                    })),
+                    .text_color(rgb(self.theme.muted))
+                    .child(APP_VERSION),
             )
     }
 

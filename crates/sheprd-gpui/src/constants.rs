@@ -5,9 +5,19 @@
 pub(crate) const WINDOW_TITLE: &str = "Spaceport";
 
 // Development windows and notifications must not share Sheprd's OS identity.
-// The release build gate stays in sheprd-updater until production IDs exist.
+// Release builds require verified independent production identities.
 pub(crate) const APP_ID: &str = "spaceport.development";
-pub(crate) use sheprd_updater::APP_VERSION;
+// Keep the inherited release route closed until Spaceport's identity is configured.
+const _: () = assert!(
+    option_env!("HERDR_RELEASE_VERSION").is_none(),
+    "Spaceport release identity is not configured"
+);
+
+/// Local builds have no published release version.
+pub(crate) const APP_VERSION: &str = match option_env!("HERDR_RELEASE_VERSION") {
+    Some(version) => version,
+    None => "dev",
+};
 
 // Wayland app ID and X11 WM_CLASS. The inherited release desktop entry does
 // not match this development-only ID; production packaging remains blocked.

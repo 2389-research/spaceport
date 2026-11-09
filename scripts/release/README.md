@@ -6,7 +6,10 @@ not instructions to release this fork. The current release build rejects
 update source, icons, and native package checks are unresolved. See the
 [release identity audit](../../docs/spaceport/evidence/release-identity-audit.md)
 and [open gates](../../docs/spaceport/plan/gaps.json). Do not run a publish or
-install route from this branch.
+install route from this branch. The inherited custom updater, its feeds and
+update archives have been removed. A replacement automatic update route is
+unimplemented and remains a release gate; no replacement framework, keys,
+or release source have been selected.
 
 Run with Bash; packaging scripts never build or execute the GUI, bundle a daemon,
 or publish artifacts. Output directories must already exist. Existing
@@ -138,11 +141,7 @@ stapled and validated. The DMG contains `Sheprd.app` and an `/Applications` syml
 it is signed, separately notarized, stapled, and checked with codesign and
 Gatekeeper before publishing the local output filename:
 `Sheprd-VERSION-universal-apple-darwin.dmg`. Any failed operation aborts.
-The signer also emits `sheprd-VERSION-macos-universal.app.tar.gz` using the
-updater's bounded USTAR packager. It archives the complete **signed, stapled copy**
-used for the DMG, including signature, ticket, resources and notices, before the
-temporary directory is removed. The caller's unsigned app is never repackaged
-as an update. Existing DMG or updater outputs are refused before loading credentials.
+Existing DMG outputs are refused before loading credentials.
 
 Linux targets are `x86_64-unknown-linux-gnu` or `aarch64-unknown-linux-gnu`.
 The release workflow builds both natively on Ubuntu 24.04 architecture runners,
@@ -155,8 +154,7 @@ The caller must supply the matching release binary; packaging does not cross-bui
 or resolve shared libraries. Output is `Sheprd-VERSION-TARGET.tar.gz`, with a
 same-named root containing `bin/spaceport` and `bin/sheprd-acp`
 (the companion taken from beside the binary), a scalable SVG icon, desktop entry, license and
-notice under `share/`, plus `herdr-gpui -> sheprd` and real legacy helper copies.
-The relative main-command symlink follows standalone updates to `sheprd`.
+notice under `share/`.
 Install that tree into a chosen prefix with its `bin` on
 PATH. Archives are not promised to be bit-for-bit reproducible.
 
@@ -174,12 +172,10 @@ requirements are sonames so they resolve on any RPM distribution. Entries are
 stamped with the release date, and the release host name is kept out of the
 RPM header, so repackaging one release produces identical bytes.
 The same completed packages are also published as `Herdr-VERSION-TARGET.deb`,
-`.rpm` and `.pkg.tar.zst`: deployed bridge updaters still select these exact
-download names. The signed package manifest lists only those legacy names, one
-per target and format. The `Sheprd-*` packages retain their Sigstore sidecars and
-provenance; the bare legacy aliases must match them byte-for-byte at publication
-and verification and appear in both checksum manifests. Sharing the signatures
-of identical bytes keeps the release below deployed updaters' 128-asset limit.
+`.rpm` and `.pkg.tar.zst` to preserve the inherited download names. The
+`Sheprd-*` packages retain their Sigstore sidecars and provenance; the bare
+legacy aliases must match them byte-for-byte at publication and verification
+and appear in both checksum manifests.
 `scripts/release/smoke-linux-packages.sh VERSION TARGET DIST_DIR` then installs
 each package into digest-pinned Ubuntu 24.04, Debian 13 and Fedora 42 containers,
 plus Arch Linux on x86_64 (no official ARM64 image exists), runs `spaceport --help`
@@ -187,13 +183,6 @@ and the shipped programs' `--help` or `--version`,
 fails if `ldd` reports a missing library or a dlopened loader is absent, and removes
 the package again. When packaged dependencies change, update `DEPENDS` in
 `package-linux-distro.py` and rerun the smoke script.
-
-The workflow separately packages `sheprd-VERSION-TARGET-update.tar.gz` with
-`scripts/update-manifest.py package-linux`. This bounded USTAR contains exactly
-one regular executable named `sheprd-VERSION-TARGET`, mode 0755; it does not
-replace or alter the manual archive's desktop/icon/license tree. Both native
-Linux builds and both macOS builds embed `HERDR_UPDATE_PUBLIC_KEY` and the
-validated `HERDR_RELEASE_VERSION` before packaging.
 
 The Windows targets are `x86_64-pc-windows-msvc` and
 `aarch64-pc-windows-msvc`, built natively on `windows-2025` and
@@ -213,7 +202,8 @@ compiler (`install-iscc`, checked against its SHA-256), compiles
 `Sheprd-VERSION-TARGET-setup.exe` (`build`), and installs and uninstalls it on
 the runner (`smoke`), checking the files, their subsystems, `spaceport.exe`'s
 output, the Start menu shortcut's target (the launcher) and AppUserModelID,
-the user `PATH` and Settings entries, and the app relaunch after an update.
+the user `PATH` and Settings entries, and a silent reinstall that preserves
+startup settings without launching the app.
 CI's `windows-package` job runs the same
 optimized build, packaging, installer build, and install/uninstall check on
 `windows-2025` for any pull request that changes their inputs
@@ -228,11 +218,7 @@ it preserves a preexisting desktop shortcut even without a new desktop task.
 Both zips and both
 installers are mandatory in the asset manifest and receive checksums, Sigstore
 sidecars and provenance like every other asset, after the Authenticode signing
-below when it is set up. The installers are also listed in their own
-Ed25519-signed `windows-manifest.json`, so a signed copy in the standard install
-location updates itself in the app (see
-[App Updates](../../docs/updating.md#windows-installers)); other copies update
-by manual download, or through winget.
+below when it is set up.
 
 ## Windows Signing
 
@@ -246,9 +232,8 @@ Signing is optional until it is set up: `validate` turns it on once the
 `WINDOWS_SIGNING_SUBJECT` repository variable (below) is set, and warns while it
 is not. Until then `windows-sign`, `windows-smoke` and `winget` are skipped,
 `sign` and `attest` take the unsigned `windows-package-TARGET` artifacts, and
-the release ships unsigned Windows zips and installers. Those builds embed no
-publisher, so their in-app updater stays off rather than trusting an unsigned
-installer, and Windows SmartScreen warns on first run. Once the variable is
+the release ships unsigned Windows zips and installers, and Windows
+SmartScreen warns on first run. Once the variable is
 set, `windows-sign` requires the Azure setup below, and a release without it
 fails instead of falling back to unsigned. When signing is on:
 
@@ -302,10 +287,8 @@ Signing needs this one-time Azure setup, which only the maintainer can do:
 
 4. `WINDOWS_SIGNING_SUBJECT` as a **repository** variable: the certificate
    subject Windows reports, such as `CN=..., O=..., L=..., S=..., C=...`. The
-   unsigned `windows` build job, which runs outside the `release` environment,
-   embeds it as the publisher the in-app updater requires
-   (`HERDR_WINDOWS_SIGNER`), and `windows-sign` verifies against the same
-   value. The subject is the validated identity, so read it from a first signed
+   `windows-sign` job verifies against this value. The subject is the validated
+   identity, so read it from a first signed
    file (`(Get-AuthenticodeSignature file.exe).SignerCertificate.Subject`).
    Set it only once the Azure variables above are in place: it is the switch
    that turns signing on. Artifact Signing certificates last
@@ -350,12 +333,10 @@ Without `WINGET_TOKEN` the job also prints a warning and submits nothing, so a
 release does not fail while winget is not set up. Once winget is live, that
 warning is the only sign a lost token leaves.
 
-## Updater Signing
+## Artifact Signing
 
-These scripts publish the exact Sheprd names accepted by the deployed
-[compatibility bridge](../../docs/updating.md#sheprd-compatibility-rollout).
-Ship that bridge before transferring the repository or publishing these renamed
-assets. Ordinary CI accepts both `penso/herdr-gpui` and `sheprd-labs/sheprd` so
+These scripts retain inherited Sheprd package identities. Ordinary CI accepts
+both `penso/herdr-gpui` and `sheprd-labs/sheprd` so
 the rename can be validated before transfer; release/promotion dispatch and
 publication are restricted to `sheprd-labs/sheprd`, with the same `penso` owner
 checks and protected environments. Before publication, configure the successor's
@@ -369,16 +350,15 @@ The compatibility exceptions are intentional:
 - macOS bundles are `Sheprd.app`, with **only** `Contents/MacOS/spaceport` as the
   main executable. Keep signing ID `so.pen.herdr-gpui` (and `.dev` locally),
   Developer ID team and all signing keys. There is no `Herdr` executable alias.
-  The updater replaces the existing bundle directory in place.
 - Homebrew publishes `sheprd-labs/tap/sheprd` for new installs. For existing ones,
   `penso/tap/herdr-gpui` installs `Sheprd.app` to
-  **`Herdr.app`**, so an old running updater can reopen it. The cask exposes
+  **`Herdr.app`**, preserving its existing installation destination. The cask exposes
   `spaceport` on PATH. Moving that target or cask token needs a separate migration.
 - Linux packages retain package ownership **`herdr-gpui`**, version `VERSION-1`,
   but ship one app command at `/usr/bin/spaceport`. The desktop ID is
   `org.sheprd.Sheprd`, matching the app's Wayland app ID and X11 `WM_CLASS`.
-  The chat helper remains `sheprd-acp`. Distro packaging and signed update
-  archives reject symlinks. Nix wraps the same `spaceport` command.
+  The chat helper remains `sheprd-acp`. Distro packaging rejects symlinks.
+  Nix wraps the same `spaceport` command.
 - Windows retains AppId `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`,
   `%LOCALAPPDATA%\Programs\Herdr UI`, AppUserModelID `so.pen.herdr-gpui`,
   winget `Penso.HerdrUI`, publisher `Herdr UI`, and the configured Authenticode
@@ -391,38 +371,26 @@ The compatibility exceptions are intentional:
   `herdr` command remain compatible. The `HERDR_*` signing/build variables and
   local `herdr_sign` hook keep their deployed names.
 
-`scripts/verify-release.sh --legacy` explicitly selects the old immutable asset
-names and exact `penso/herdr-gpui` Sigstore/provenance identity for historical
-releases. Default verification requires the successor identity; neither mode
-falls back to another trust identity. The manifest generator's corresponding
-option is `--legacy-names`. Old offline clients that missed the bridge still
-need the recovery process in the compatibility rollout document.
+`scripts/verify-release.sh --legacy` selects legacy package names and the
+`penso/herdr-gpui` Sigstore/provenance identity. Default verification requires
+the successor identity; neither mode falls back to another trust identity. The
+manifest generator's corresponding option is `--legacy-names`. Both modes cover
+the retained package artifacts and checksum layouts. They no longer verify
+complete historical upstream releases containing retired updater feeds and
+archives.
 
-Configure `HERDR_UPDATE_PUBLIC_KEY` as a repository Actions variable (64 lowercase
-hex characters). Store the Ed25519 PEM `HERDR_UPDATE_SIGNING_KEY` only in the
-protected `release` environment, not in repository secrets. Only the manifest
-signing step of `sign` receives it; builds, tests, metadata, OIDC and publication
-never do. The public key is validated before builds and matched against the
-private key before signing exact JSON bytes. See [updater setup](../../docs/updating.md).
-
-The exact release base set is twenty-three files: the DMG, two manual Linux archives,
-their `.deb`, `.rpm` and Arch packages, two Windows zips and two Windows installers, SBOM, three updater archives, `update-manifest.json`, and its
-raw 64-byte Ed25519 `update-manifest.sig`, plus `package-manifest.json` and
-`package-manifest.sig` for the six Linux packages, `windows-manifest.json` and
-`windows-manifest.sig` for the two signed Windows installers. All base files
-receive SHA-256 and Sigstore sidecars and GitHub
-provenance in the separate protected OIDC job. The raw signature is not overwritten:
-its Sigstore sidecar is `update-manifest.sig.sig`; the JSON's is
-`update-manifest.json.sig` (and likewise for the package and Windows manifests).
+The release base set contains the DMG, two manual Linux archives and their
+`.deb`, `.rpm` and Arch packages, two Windows zips, two Windows installers,
+and the SBOM. All base files receive SHA-256 and Sigstore sidecars and GitHub
+provenance in the separate protected OIDC job.
 Starting with `20261102.2`, `artifact-manifest.py create` validates and combines
 the signer's SHA-512 sidecars into one `SHA512SUMS` file. `SHA256SUMS` covers
 every other published file, including `SHA512SUMS`. The six bare Linux package
 aliases also appear in both manifests and must equal their signed base files.
-This keeps the current set below the 128-asset limit in installed updaters, without dropping
-any platform, signature, or checksum algorithm. Creation refuses sets of 128 or
-more assets. Older immutable releases retain their per-file SHA-512 contract
-and remain verifiable. Missing or additional files fail closed.
-`artifact-manifest.py base-names VERSION DIRECTORY` lists the twenty-three base names.
+The compact layout retains every platform, signature, and checksum algorithm.
+Earlier versions use the per-file SHA-512 layout. Missing or additional files
+fail closed. `artifact-manifest.py base-names VERSION DIRECTORY` lists the
+retained package and SBOM base names.
 The publication job verifies downloaded draft bytes and the complete exact asset
 set before making it public; Homebrew still verifies and uses only the final DMG.
 
@@ -433,7 +401,7 @@ Homebrew; `just release-promote VERSION` runs `.github/workflows/promote.yml` to
 make that published beta the latest stable release and update the tap, without
 rebuilding or re-uploading anything. `generate-changelog.sh VERSION OUTPUT_DIR
 [BETA_TAG...]` folds the listed unpromoted beta tags into the release after them.
-See [beta releases and promotion](../../docs/updating.md#beta-releases-and-promotion).
+Beta publication does not provide an in-app update channel.
 
 ## Homebrew
 
@@ -545,17 +513,14 @@ signing prerequisites above. Install both targets explicitly first:
 
 ```sh
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
-# Public key only, obtained from the reviewed repository Actions variable:
-export HERDR_UPDATE_PUBLIC_KEY=YOUR_64_LOWERCASE_HEX_PUBLIC_KEY
 just dmg 20260920.1
 ```
 
 Any valid `YYYYMMDD.COUNTER` version works locally; only the release workflow
 derives and publishes versions. Builds use `--locked`, `--target-dir target`, and
 `MACOSX_DEPLOYMENT_TARGET=14.2` and `HERDR_RELEASE_VERSION=VERSION` on both targets.
-The caller must supply a valid `HERDR_UPDATE_PUBLIC_KEY` before building. All six
-Apple signing variables listed above and `HERDR_UPDATE_SIGNING_KEY` are removed
-from Cargo's environment, including metadata queries. No local `.envrc` is sourced
+All six Apple signing variables listed above are removed from Cargo's
+environment, including metadata queries. No local `.envrc` is sourced
 until both builds and unsigned assembly succeed.
 Build dependencies use `CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=none`:
 Apple stripping produced unloadable, misaligned proc-macro dylibs during local
@@ -579,10 +544,8 @@ helper.
 
 Output is an unsigned assembly at `target/distribution/VERSION/Sheprd.app` and the
 signed, notarized
-`Sheprd-VERSION-universal-apple-darwin.dmg` and
-`sheprd-VERSION-macos-universal.app.tar.gz` in the same directory when using
-`sign-macos.sh`. Local packaging does not sign an Ed25519 update manifest or
-publish anything. An existing version
+`Sheprd-VERSION-universal-apple-darwin.dmg` in the same directory when using
+`sign-macos.sh`. Local packaging does not publish anything. An existing version
 directory (including a symlink) is refused before building and checked again before
 promotion. Notices, assembly, and signing use a temporary directory under
 `target/distribution`, cleaned on failure so the command can be retried directly.
@@ -627,8 +590,6 @@ cover job eligibility and credential declarations, not GitHub's approval service
 for script in scripts/release/*.sh; do bash -n "$script" || exit; done
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/release/tests -v
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/release/test-release-security.py
-OPENSSL="$(brew --prefix openssl@3)/bin/openssl" \
-  python3 -m unittest discover -s scripts -p 'test_*manifest.py' -v
 actionlint .github/workflows/release.yml
 zizmor --offline .github/workflows/release.yml
 ```

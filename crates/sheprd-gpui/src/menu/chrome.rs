@@ -42,7 +42,6 @@ impl SheprdWindow {
         // Whatever the pointer was resting on, this dismissal ends that intent.
         self.hover = None;
         self.hover_menu = None;
-        self.update_preview = None;
         self.dismiss_release_notes();
         // Closing the offer without an answer is a "not now": it asks once.
         if self.menu.page == Some(Page::AgentSkill)
@@ -103,9 +102,7 @@ impl SheprdWindow {
             "reset font size",    // i18n: data
             "command palette",    // i18n: data
             "workspaces",
-            "reload GUI config",  // i18n: data
-            "app updates",        // i18n: data
-            "preview app update", // i18n: data
+            "reload GUI config", // i18n: data
             "about",
         ];
         if self.live.status.is_connected() {
@@ -156,8 +153,6 @@ impl SheprdWindow {
             "command palette" => self.open_palette(crate::palette::Filter::All, window, cx), // i18n: data
             "workspaces" => self.open_palette(crate::palette::Filter::Navigation, window, cx),
             "update ready" | "what's new" => self.menu.page = Some(Page::Update), // i18n: data
-            "app updates" => self.open_app_update(false, window, cx),             // i18n: data
-            "preview app update" => self.open_app_update(true, window, cx),       // i18n: data
             "reload GUI config" => self.reload_gui_config(window, cx),            // i18n: data
             // i18n: data
             "reload daemon config" => {
@@ -482,7 +477,6 @@ impl SheprdWindow {
                         | Page::Themes
                         | Page::DeviceTheme
                         | Page::Palette
-                        | Page::AppUpdate
                         | Page::Profile
                         | Page::AddDevice
                         | Page::AddWsl
@@ -545,11 +539,7 @@ impl SheprdWindow {
             .when(
                 matches!(
                     page,
-                    Page::AppUpdate
-                        | Page::AddDevice
-                        | Page::AddWsl
-                        | Page::RenameDevice
-                        | Page::ForwardPort
+                    Page::AddDevice | Page::AddWsl | Page::RenameDevice | Page::ForwardPort
                 ),
                 |panel| panel.flex().flex_col().overflow_hidden().shadow_lg(),
             )
@@ -699,8 +689,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_palette(viewport, cx));
         } else if page == Page::ConfirmClose {
             panel = panel.child(self.render_close_confirmation(cx));
-        } else if page == Page::AppUpdate {
-            panel = panel.child(self.render_app_update(window, cx));
         } else if page == Page::About {
             panel = panel.child(self.render_about(cx));
         } else if page == Page::AgentSkill {
@@ -860,8 +848,6 @@ fn menu_item_label(item: &str) -> String {
         "command palette" => fl!("menu-chrome-command-palette"),       // i18n: data
         "workspaces" => fl!("menu-chrome-workspaces"),
         "reload GUI config" => fl!("menu-chrome-reload-gui-config"), // i18n: data
-        "app updates" => fl!("menu-chrome-app-updates"),             // i18n: data
-        "preview app update" => fl!("menu-chrome-preview-app-update"), // i18n: data
         "about" => fl!("menu-chrome-about"),
         "reload daemon config" => fl!("menu-chrome-reload-daemon-config"), // i18n: data
         "update ready" => fl!("menu-chrome-update-ready"),                 // i18n: data

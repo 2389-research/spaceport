@@ -37,7 +37,8 @@ use serde::{Deserialize, Serialize};
 /// 34: removed page-only tab operations and replies.
 /// 35: removed the host-resource system request/reply, browser capability,
 /// and retired page kinds from app status/tab replies.
-pub const PROTOCOL_VERSION: u32 = 35;
+/// 36: removed custom app updater operations and replies.
+pub const PROTOCOL_VERSION: u32 = 36;
 
 /// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;

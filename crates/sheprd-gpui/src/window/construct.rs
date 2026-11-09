@@ -11,7 +11,6 @@ use crate::{
     endpoint, log_window, menu, preferences, sessions, sidebar,
     state::LiveState,
     terminal::{Selection, WheelAccumulator},
-    updater,
 };
 use gpui::{prelude::*, *};
 use sheprd_client::ConnectOptions;
@@ -158,8 +157,6 @@ impl SheprdWindow {
             activity: Default::default(),
             agent_sort: preferences::AgentSort::default(),
             agent_sort_modified: false,
-            app_update_notes: Default::default(),
-            app_update_notes_scroll: ScrollHandle::new(),
             arrival: None,
             backdrop: Default::default(),
             bell: crate::bell::Bell::default(),
@@ -276,8 +273,6 @@ impl SheprdWindow {
             toast_motion: Default::default(),
             toasts_hidden: false,
             tunnels: Default::default(),
-            update_preview: None,
-            updater: updater::Updater::default(),
             usage: Default::default(),
             version_notice_shown: false,
             viewport_width: 0.,

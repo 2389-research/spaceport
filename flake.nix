@@ -95,7 +95,6 @@
             pkgs.libxcb
           ]
           ++ runtimeLibraries;
-          # No updater key is embedded, so this build never replaces itself;
           # Nix owns the store path and upgrades come from the flake.
           postInstall = ''
             install -Dm644 scripts/release/org.sheprd.Sheprd.desktop \

@@ -63,3 +63,5 @@ error-config-ssh-too-many = ssh.skip_host_key_verification must list at most { $
 
 # $name is the layout's name as the config wrote it, quoted.
 error-config-tab-layout-unknown = Unknown tab layout { $name }
+
+error-config-removed-updates = Custom updater settings have been removed; remove [updates] from the configuration.

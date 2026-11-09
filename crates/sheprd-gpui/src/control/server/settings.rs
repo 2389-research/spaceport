@@ -1,5 +1,5 @@
 //! `config reload|check`, `theme set`, `font`, `keybinds`, `caffeine`,
-//! `sound play`, `bell`, `update`, `integrations`, and `language`. Files are written on
+//! `sound play`, `bell`, `integrations`, and `language`. Files are written on
 //! the background executor; the config watcher then applies them as it
 //! applies any edit, so a request only waits for the write to finish.
 mod caffeine;
@@ -59,8 +59,6 @@ pub(super) fn serve(
             window.play_system_bell();
             Response::done("Rang the bell")
         })),
-        SettingsOp::Update => incoming.respond(services::update(cx)),
-        SettingsOp::CheckUpdate => services::check_update(wait, incoming, watches, cx),
         SettingsOp::Integrations => services::integrations(&caller, wait, incoming, watches, cx),
         SettingsOp::Language => incoming.respond(language(cx)),
     }

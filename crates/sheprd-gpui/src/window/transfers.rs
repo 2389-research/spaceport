@@ -94,17 +94,9 @@ fn transfer_progress(sent: u64, total: u64) -> (f32, String) {
 
 #[cfg(any(windows, test))]
 impl SheprdWindow {
-    /// The long operation this window's taskbar button reports: a file copy
-    /// or an app update. Each dialog runs one at a time.
+    /// The file copy this window's taskbar button reports.
     pub(crate) fn taskbar_progress(&self) -> Option<crate::progress::Progress> {
-        self.file_transfer
-            .as_ref()
-            .and_then(FileTransfer::progress)
-            .or_else(|| {
-                crate::update_panel::taskbar_progress(
-                    self.update_preview.as_ref().unwrap_or(self.updater.state()),
-                )
-            })
+        self.file_transfer.as_ref().and_then(FileTransfer::progress)
     }
 }
 

@@ -38,7 +38,7 @@ class PhoneAbsenceTests(unittest.TestCase):
         release = (ROOT / ".github/workflows/release.yml").read_text()
         linux = (ROOT / "scripts/release/package-linux.sh").read_text()
         windows = (ROOT / "scripts/release/package-windows.py").read_text()
-        manifest = (ROOT / "scripts/update-manifest.py").read_text()
+        manifest = (ROOT / "scripts/release/artifact-manifest.py").read_text()
         for text in (workspace, justfile, release, linux, windows, manifest):
             self.assertNotIn("sheprd-remote-control", text)
             self.assertNotIn("sheprd-nearby", text)

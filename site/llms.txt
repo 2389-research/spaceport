@@ -16,7 +16,7 @@ Native ACP chat is on by default, and `[features] acp_chats = false` turns it of
 - Windows x86_64 or ARM64, PowerShell: `irm https://sheprd.org/install.ps1 | iex`. Installs `sheprd.exe`, `sheprd-launcher.exe` and companion helpers for the current user, adds the installation directory to PATH and creates a Sheprd Start menu shortcut. The directory remains `%LOCALAPPDATA%\Programs\Herdr UI` for existing installs; `herdr-gpui.exe` and `herdr-gpui-launcher.exe` remain compatibility aliases. The installer does not register inherited `sheprd://` or `herdr-gpui://` links. Quit the app before updating; the script gracefully stops installed automation processes and refuses to replace other running installed helpers. It does not stop terminal daemons or change settings/services. Read the script: https://sheprd.org/install.ps1.
 - Source: `git clone https://github.com/sheprd-labs/sheprd.git && cd sheprd && just install`. See the README for platform build dependencies. Do not use `cargo install sheprd`: it is not published on crates.io.
 
-Manual downloads: https://github.com/sheprd-labs/sheprd/releases/latest. Assets use `Sheprd-VERSION-TARGET` with macOS `.dmg`, Linux `.tar.gz`, `.deb`, `.rpm`, `.pkg.tar.zst`, and Windows `.zip` or `-setup.exe` suffixes. Releases include SHA-256 checksums. Signed Windows installations can update through Check for Updates using the signed installer; unsigned copies require running the installation command or a newer installer again.
+Manual downloads: https://github.com/sheprd-labs/sheprd/releases/latest. Assets use `Sheprd-VERSION-TARGET` with macOS `.dmg`, Linux `.tar.gz`, `.deb`, `.rpm`, `.pkg.tar.zst`, and Windows `.zip` or `-setup.exe` suffixes. Releases include SHA-256 checksums. These inherited installation references target Sheprd. Spaceport has no qualified installer or in-app updater.
 
 The chat companion binary uses `sheprd-acp`. The upstream terminal daemon keeps its `herdr-core` name. Stable configuration locations, environment keys and platform application identities are retained for compatibility.
 
@@ -24,7 +24,6 @@ The chat companion binary uses `sheprd-acp`. The upstream terminal daemon keeps 
 
 - [README](https://github.com/sheprd-labs/sheprd#readme): installation and platform notes
 - [App scope and configuration](https://github.com/sheprd-labs/sheprd/blob/main/crates/sheprd-gpui/README.md): features, shortcuts, devices and WSL
-- [App updates](https://github.com/sheprd-labs/sheprd/blob/main/docs/updating.md): update behavior by install method
 - [Command line](https://github.com/sheprd-labs/sheprd/blob/main/docs/cli.md): control the running app with `sheprd`
 - [Releases](https://github.com/sheprd-labs/sheprd/releases): stable and beta releases
 - [Issues](https://github.com/sheprd-labs/sheprd/issues): Sheprd bug reports

@@ -1,4 +1,4 @@
-//! Process bootstrap and window opening. CLI parsing and the updater helper
+//! Process bootstrap and window opening. CLI parsing and helper modes
 //! run before GPUI starts, so an invalid option or `--build-info` exits without
 //! ever creating a window.
 // i18n: migrated
@@ -11,7 +11,7 @@ use crate::{
     cli,
     config::{Config, Theme},
     core_terminals::Start,
-    diagnostics, icons, log_window, menus, titlebar, updater,
+    diagnostics, icons, log_window, menus, titlebar,
 };
 #[cfg(feature = "integration-test")]
 use crate::{performance, smoke};
@@ -101,13 +101,11 @@ impl StartupAppearance {
 /// of that daemon: its own connection, surface lease, and workspace focus.
 pub(crate) fn open_window(
     target: ConnectTarget,
-    updater: updater::Updater,
     cx: &mut App,
     #[cfg(feature = "integration-test")] fixture: bool,
 ) -> Result<WindowHandle<SheprdWindow>> {
     open_window_placed(
         WindowLaunch::Legacy(target),
-        updater,
         None,
         cx,
         #[cfg(feature = "integration-test")]
@@ -121,7 +119,6 @@ pub(crate) type Placement = (Bounds<Pixels>, Option<DisplayId>);
 /// Opens a main window at `placement`, or where the next one goes.
 fn open_window_placed(
     launch: WindowLaunch,
-    updater: updater::Updater,
     placement: Option<Placement>,
     cx: &mut App,
     #[cfg(feature = "integration-test")] fixture: bool,
@@ -160,14 +157,13 @@ fn open_window_placed(
         |window, cx| {
             crate::taskbar::mark(window, cx);
             cx.new(|cx| {
-                let mut view = SheprdWindow::new(
+                let view = SheprdWindow::new(
                     launch,
                     window,
                     cx,
                     #[cfg(feature = "integration-test")]
                     fixture,
                 );
-                view.updater = updater;
                 crate::window_state::WindowState::observe(window, cx);
                 view
             })
@@ -216,7 +212,6 @@ pub(crate) fn open_additional_window_then(
     cx.defer(move |cx| {
         let opened = open_window_placed(
             WindowLaunch::Legacy(target),
-            updater::Updater::secondary(),
             placement,
             cx,
             #[cfg(feature = "integration-test")]
@@ -264,7 +259,6 @@ pub(crate) fn open_additional_core_window_then(
     cx.defer(move |cx| {
         let opened = open_window_placed(
             WindowLaunch::Core(key),
-            updater::Updater::secondary(),
             placement,
             cx,
             #[cfg(feature = "integration-test")]
@@ -295,9 +289,6 @@ pub(crate) fn run() -> std::process::ExitCode {
     let mut args: Vec<_> = std::env::args_os().skip(1).collect();
     #[cfg(target_os = "macos")]
     if let Some(exit) = crate::window::run_clipboard_helper(&args) {
-        return exit;
-    }
-    if let Some(exit) = updater::run_helper(&args) {
         return exit;
     }
     // Restart Manager restarts this executable itself; see `restart_manager`.
@@ -546,15 +537,8 @@ pub(crate) fn run() -> std::process::ExitCode {
                 }
             })
             .detach();
-            // Native test modes and CLI invocations never start an updater worker.
-            let updater = if mode == LaunchMode::Normal {
-                updater::Updater::start(cx.global::<InitialAppearance>().config.updates.channel)
-            } else {
-                updater::Updater::default()
-            };
             let opened = open_window(
                 target.clone(),
-                updater,
                 cx,
                 #[cfg(feature = "integration-test")]
                 {

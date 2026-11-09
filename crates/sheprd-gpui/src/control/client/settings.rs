@@ -1,5 +1,5 @@
 //! `config`, `theme`, `font`, `keybinds`, `caffeine`, `sound`, `bell`,
-//! `update`, `integrations`, and `language`. What only reads or writes files is done
+//! `integrations`, and `language`. What only reads or writes files is done
 //! here, whether or not Sheprd runs; the rest asks the app.
 mod config;
 mod language;
@@ -11,7 +11,6 @@ use super::{Context, Output, unexpected};
 use crate::{
     cli::control::{
         CaffeineCommand, IntegrationsCommand, KeybindsCommand, SoundCommand, ThemeCommand,
-        UpdateCommand,
     },
     config::Config,
     control::{
@@ -157,24 +156,6 @@ pub(super) fn sound(command: SoundCommand, context: &Context) -> crate::Result<O
 
 pub(super) fn bell(context: &Context) -> crate::Result<Output> {
     context.act(Request::Settings, SettingsOp::Bell)
-}
-
-pub(super) fn update(command: UpdateCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        UpdateCommand::Status => SettingsOp::Update,
-        UpdateCommand::Check => SettingsOp::CheckUpdate,
-    };
-    match settings(context, op)? {
-        Reply::Update {
-            state,
-            latest,
-            detail,
-        } => Output::data(
-            text::update(&state, latest.as_deref(), detail.as_deref()),
-            &json!({ "state": state, "latest": latest, "detail": detail }),
-        ),
-        reply => Err(unexpected(Response::Settings { reply })),
-    }
 }
 
 pub(super) fn integrations(

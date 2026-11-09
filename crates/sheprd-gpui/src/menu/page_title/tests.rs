@@ -35,7 +35,6 @@ fn every_page_title_is_a_message_under_en_xa() {
             Page::AddWsl,
             Page::AgentSkill,
             Page::Application,
-            Page::AppUpdate,
             Page::ConfirmClose,
             Page::Devices,
             Page::DeviceTheme,

@@ -69,16 +69,6 @@ test-core binary:
 test-gui binary:
     HERDR_TEST_BINARY="{{binary}}" cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored --nocapture --test-threads=1
 
-# Explicit opt-in: reads the real code signature and Homebrew records of an
-# installed app. Never discovers an installation on its own.
-test-update bundle:
-    HERDR_TEST_BUNDLE="{{bundle}}" cargo test --locked -p sheprd-updater install::tests::signing::installed_bundle -- --ignored --nocapture
-    HERDR_TEST_BUNDLE="{{bundle}}" cargo test --locked -p sheprd-updater brew::tests::the_real_cask -- --ignored --nocapture
-
-# Really upgrades the installed app through Homebrew; restart it afterwards.
-test-brew-upgrade bundle expected:
-    HERDR_TEST_BUNDLE="{{bundle}}" HERDR_TEST_BREW_EXPECTED="{{expected}}" HERDR_TEST_BREW_UPGRADE=1 cargo test --locked -p sheprd-updater brew::tests::homebrew_really_installs -- --ignored --nocapture
-
 # Repeat the Linux suite under CPU pressure in a container, where scheduling
 # races reproduce that a fast machine hides. Needs Docker; nothing else.
 stress-linux iterations="30" cpus="0.5" filter="":
@@ -285,8 +275,7 @@ changelog-release version output:
 release:
     bash scripts/release/dispatch.sh
 
-# Owner-only beta: a GitHub prerelease that only `[updates] channel = "beta"`
-# installs see, kept out of Homebrew until promoted.
+# Owner-only beta: a GitHub prerelease kept out of Homebrew until promoted.
 release-beta:
     bash scripts/release/dispatch.sh --beta
 

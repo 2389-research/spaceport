@@ -87,9 +87,6 @@ fn family(name: &str) -> &'static str {
         "logs" => {
             "spaceport logs [--lines N] [--path]\n    The app's latest log records (default 100, at most 5000), or the log file's path.\n    Runs here; Spaceport need not run. Exits 4 when there is no log yet."
         }
-        "update" => {
-            "spaceport update [status]\nspaceport update check\n    Ask for the latest release. Never downloads or installs. Local\n    builds report updates as off."
-        }
         "diagnostics" => {
             "spaceport diagnostics bundle PATH\n    Write build information, settings diagnostics, your settings\n    overrides, and recent logs to a new file at PATH for a bug report,\n    with home paths shortened and secret-looking values redacted. Read\n    it before sharing. Never replaces an existing file. Runs here."
         }

@@ -34,8 +34,8 @@ pub(crate) const ATTACH: &str = "__device-setup-attach";
 /// The argument that makes this executable the first process of a setup.
 pub(crate) const SESSION: &str = "__device-setup-session";
 
-/// Runs this executable as one end of a setup when `args` asks for it, as
-/// the updater's helper does, before anything of the app starts.
+/// Runs this executable as one end of a setup when `args` asks for it,
+/// before the app starts.
 pub(crate) fn run_helper(args: &[OsString]) -> Option<ExitCode> {
     let (first, rest) = args.split_first()?;
     if first == ATTACH {

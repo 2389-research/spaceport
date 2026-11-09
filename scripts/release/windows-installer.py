@@ -15,14 +15,13 @@
       task, check the files, their subsystems, spaceport.exe's output, the
       app's name, the Start menu shortcut's AppUserModelID and target (the
       launcher), the user PATH, and the entry Settings lists under Installed
-      apps; run it again as the in-app update does and check it starts the
-      app; write the startup entry Launch at login would, marked off in
-      Startup apps; then uninstall and check all of it is gone again. With --signed,
+      apps; write the startup entry Launch at login would, marked off in
+      Startup apps; reinstall silently and check that state is preserved; then
+      uninstall and check all of it is gone again. With --signed,
       also require valid timestamped signatures from one signer on the
       installer and on everything it installed that runs, the uninstaller
-      included. Changes this user's PATH and Start menu shortcut, and opens
-      the app (which may start a Herdr daemon), while it runs: for CI runners
-      only. Under a
+      included. Changes this user's PATH and Start menu shortcut while it
+      runs: for CI runners only. Under a
       process a packaged (MSIX) app started, Windows redirects HKCU into that
       app's private hive, so the checks pass while Settings and new terminals
       see neither entry.
@@ -275,7 +274,7 @@ def smoke(installer, signed=False):
             check_installation(app, installer if signed else None)
             legacy_launcher = app / "herdr-gpui-launcher.exe"
             enable_startup(legacy_launcher)
-            check_update_relaunches(installer, app, env)
+            check_reinstall(installer, app, env)
             check_startup_preserved(legacy_launcher)
         finally:
             uninstall(app, env)
@@ -324,28 +323,16 @@ def processes_at(path):
     return [int(line) for line in output.split()]
 
 
-def stop_processes_at(path):
-    for pid in processes_at(path):
-        subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, timeout=60)
-
-
-def check_update_relaunches(installer, app, env):
-    """Run Setup over the installation as the app's in-app update does
-    (sheprd-updater/src/windows.rs), and require it to start the app again."""
+def check_reinstall(installer, app, env):
+    """Reinstall silently without launching the app or changing startup choices."""
     gui = app / "spaceport.exe"
     if processes_at(gui):
-        raise ValueError("A silent install started the app without /RELAUNCH=1")
+        raise ValueError("A silent install started the app")
     subprocess.run([str(installer), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART",
-                    "/CLOSEAPPLICATIONS", "/RELAUNCH=1", f"/DIR={app}",
-                    f"/LOG={app.parent / 'update.log'}"], check=True, timeout=600, env=env)
-    try:
-        deadline = time.monotonic() + 60
-        while not processes_at(gui):
-            if time.monotonic() > deadline:
-                raise ValueError("Setup with /RELAUNCH=1 did not start the updated app")
-            time.sleep(1)
-    finally:
-        stop_processes_at(gui)
+                    "/CLOSEAPPLICATIONS", f"/DIR={app}",
+                    f"/LOG={app.parent / 'reinstall.log'}"], check=True, timeout=600, env=env)
+    if processes_at(gui):
+        raise ValueError("A silent reinstall started the app")
 
 
 def uninstall(app, env):

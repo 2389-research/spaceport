@@ -2,7 +2,8 @@
 
 This is the upstream Sheprd rename record. The Spaceport fork's current
 product and release contracts are in [the Spaceport specification](spaceport/SPEC.md);
-its phone service and native mobile app have been removed.
+its phone service, native mobile app and custom updater have been removed.
+The historical contracts below are not Spaceport release configuration.
 
 The product is **Sheprd**, the main command is **`sheprd`**, the primary
 repository is [`sheprd-labs/sheprd`](https://github.com/sheprd-labs/sheprd), and
@@ -12,7 +13,7 @@ The macOS payload is `Sheprd.app` with `Contents/MacOS/sheprd`. Swift modules
 and directories use `SheprdRemote*`; the visible phone/watch app is simply Sheprd.
 
 This source rename follows the deployed reader bridge described in
-[App Updates](updating.md#sheprd-compatibility-rollout): release
+the upstream release history: release
 [`v20261103.1`](https://github.com/penso/herdr-gpui/releases/tag/v20261103.1),
 published on 2026-11-03 from `063e7e1533d0a8e52d1df0f6e2774ba5c1cc8c7a`.
 It does not itself
@@ -43,7 +44,7 @@ Existing screenshots remain historical captures, not evidence of refreshed UI.
 New publication emits `sheprd-VERSION-...` updater archives,
 `Sheprd-VERSION-...` manual DMGs/archives/packages/installers, and
 `sheprd-remote-control-VERSION-TARGET` host binaries. Preserve the precise
-[accepted asset and installation contracts](updating.md#accepted-names-and-installed-layouts):
+upstream accepted asset and installation contracts:
 case matters, aliases must not duplicate a target/format slot, and accepted asset
 names do not relax signature, extraction, ownership or installed-path checks.
 

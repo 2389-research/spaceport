@@ -35,8 +35,6 @@ fn requests_round_trip_with_a_stable_form() {
             sound: Sound::Request,
         },
         SettingsOp::Bell,
-        SettingsOp::CheckUpdate,
-        SettingsOp::Update,
         SettingsOp::Integrations,
     ] {
         let request = request(op);
@@ -100,11 +98,6 @@ fn replies_round_trip() {
             state: "on".into(),
             seconds: Some(60),
         },
-        Reply::Update {
-            state: "disabled".into(),
-            latest: None,
-            detail: Some("Local build".into()),
-        },
         Reply::Integrations {
             integrations: vec![IntegrationInfo {
                 id: "claude".into(),
@@ -132,7 +125,7 @@ fn replies_round_trip() {
 fn slow_operations_extend_the_answer_timeout() {
     assert_eq!(request(SettingsOp::Fonts).wait_seconds(), LIST_WAIT_SECONDS);
     assert_eq!(
-        request(SettingsOp::CheckUpdate).wait_seconds(),
+        request(SettingsOp::Integrations).wait_seconds(),
         LIST_WAIT_SECONDS
     );
     assert_eq!(
@@ -143,3 +136,5 @@ fn slow_operations_extend_the_answer_timeout() {
 }
 
 mod language;
+
+mod removed_updater;

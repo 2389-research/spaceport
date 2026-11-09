@@ -6,7 +6,6 @@ menus-about-herdr = About Spaceport
 menus-command-palette = Command Palette
 menus-settings = Settings
 menus-keyboard-shortcuts = Keyboard Shortcuts
-menus-check-for-updates = Check for Updates...
 menus-hide-herdr = Hide Spaceport
 menus-hide-others = Hide Others
 menus-show-all = Show All
@@ -66,9 +65,6 @@ menus-logs = Logs
 ## QA, shown when the qa_menu feature is on: previews for checking by hand.
 
 menus-qa = QA
-menus-qa-update-available = Show app update available
-menus-qa-update-download = Show update download progress (50%)
-menus-qa-update-homebrew = Show Homebrew update progress
 menus-qa-play-sound = Play Sound
 menus-qa-ring-bell = Ring Bell in 3 Seconds
 menus-qa-slow-animations = Slow Animations

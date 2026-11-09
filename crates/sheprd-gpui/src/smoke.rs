@@ -1,7 +1,5 @@
 //! Native opt-in smoke driver. No test platform or blocking waits on the UI thread.
-use crate::{
-    Command, LiveState, NavigationTarget, RunCommand, SheprdWindow, open_window, sidebar, updater,
-};
+use crate::{Command, LiveState, NavigationTarget, RunCommand, SheprdWindow, open_window, sidebar};
 // The window, menu, and icon checks below need an active desktop, so they and
 // everything only they reach are built for macOS alone.
 #[cfg(target_os = "macos")]
@@ -569,7 +567,7 @@ async fn second_window(first: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> 
         .find(|id| *id != first_workspace)
         .context("the daemon has only one workspace to show")?;
     let second = cx
-        .update(|cx| open_window(target, updater::Updater::secondary(), cx, false))
+        .update(|cx| open_window(target, cx, false))
         .context("opening a second window")?;
     if AnyWindowHandle::from(second) == AnyWindowHandle::from(first) {
         bail!("the second window replaced the first");

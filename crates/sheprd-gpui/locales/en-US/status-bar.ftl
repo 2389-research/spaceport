@@ -19,7 +19,6 @@ status-bar-resize-keys = h j k l or arrows resize, Esc ends
 status-bar-theme = Theme
 status-bar-shortcuts = Shortcuts
 status-bar-report-issue = Report issue
-status-bar-update-available = Update available
 # A screen reader's name for the version button; $version is the app's.
 status-bar-version = Version { $version }
 # The focused agent's model; $model is the agent's own name for it.

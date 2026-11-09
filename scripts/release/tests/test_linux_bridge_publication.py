@@ -1,7 +1,6 @@
-"""The deployed bridge must find one signed Linux package slot per format."""
+"""Legacy Linux package aliases retain the canonical packages' exact bytes."""
 import hashlib
 import importlib.util
-import json
 import subprocess
 import unittest
 
@@ -17,7 +16,6 @@ def load(name, path):
 
 
 MANIFEST = load("artifact_manifest", SCRIPTS / "artifact-manifest.py")
-UPDATER = load("update_manifest", ROOT / "scripts/update-manifest.py")
 
 
 class LinuxBridgePublication(unittest.TestCase):
@@ -26,7 +24,7 @@ class LinuxBridgePublication(unittest.TestCase):
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
 
-    def test_packages_have_identical_aliases_and_one_signed_slot_per_target_format(self):
+    def test_packages_have_identical_aliases_per_target_format(self):
         directory = self.fixture.work / "dist"
         for target in TARGETS:
             archive = self.fixture.archive(target, directory)
@@ -36,17 +34,6 @@ class LinuxBridgePublication(unittest.TestCase):
                 alias = directory / f"Herdr-{VERSION}-{target}.{extension}"
                 self.assertFalse(alias.is_symlink())
                 self.assertEqual(alias.read_bytes(), original.read_bytes())
-        manifest = json.loads(UPDATER.create(directory, VERSION, packages=True))
-        expected = {(target, f"Herdr-{VERSION}-{target}.{extension}")
-                    for target in TARGETS for extension in EXTENSIONS}
-        self.assertEqual([(asset["target"], asset["name"]) for asset in manifest["assets"]],
-                         [(target, f"Herdr-{VERSION}-{target}.{extension}")
-                          for target in TARGETS for extension in EXTENSIONS])
-        self.assertEqual(len(manifest["assets"]), len(expected))
-        for asset in manifest["assets"]:
-            data = (directory / asset["name"]).read_bytes()
-            self.assertEqual(asset["size"], len(data))
-            self.assertEqual(asset["sha256"], hashlib.sha256(data).hexdigest())
 
     def test_existing_legacy_output_is_refused_before_building(self):
         target = TARGETS[0]
@@ -62,7 +49,7 @@ class LinuxBridgePublication(unittest.TestCase):
         directory = self.fixture.work / "release"
         directory.mkdir()
         for name in MANIFEST.base_names(version):
-            data = b"s" * 64 if name in MANIFEST.UPDATER_SIGNATURES else name.encode()
+            data = name.encode()
             (directory / name).write_bytes(data)
         for alias, original in MANIFEST.package_aliases(version).items():
             (directory / alias).write_bytes((directory / original).read_bytes())
@@ -83,7 +70,6 @@ class LinuxBridgePublication(unittest.TestCase):
                 (directory / f"{name}.{suffix}").write_text("signature fixture\n")
         run("create")
         run("verify")
-        self.assertLess(len(list(directory.iterdir())), 128)
         for alias, original in MANIFEST.package_aliases(version).items():
             for algorithm in ("sha256", "sha512"):
                 digest = hashlib.new(algorithm, (directory / original).read_bytes()).hexdigest()
@@ -101,7 +87,7 @@ class LinuxBridgePublication(unittest.TestCase):
             path.unlink()
             path.write_bytes(original_bytes)
 
-    def test_aliases_are_uploaded_and_legacy_inventory_stays_exact(self):
+    def test_aliases_are_uploaded_and_legacy_package_names_are_retained(self):
         workflow = (ROOT / ".github/workflows/release.yml").read_text()
         upload = workflow.split("name: linux-package-${{ matrix.target }}", 1)[1].split(
             "if-no-files-found:", 1)[0]

@@ -1,6 +1,5 @@
-"""Renamed publication must remain installable by the deployed bridge."""
+"""Inherited package names, signing and installation identity stay consistent."""
 import importlib.util
-import json
 from pathlib import Path
 import re
 import subprocess
@@ -22,36 +21,17 @@ def load(name, path):
 
 
 MANIFEST = load("artifact_manifest", SCRIPTS / "artifact-manifest.py")
-UPDATER = load("update_manifest", ROOT / "scripts/update-manifest.py")
 INSTALLER = load("windows_installer", SCRIPTS / "windows-installer.py")
 PACKAGE = load("package_windows", SCRIPTS / "package-windows.py")
 
 
 class RebrandCompatibility(unittest.TestCase):
-    def test_signed_generators_and_publication_describe_the_same_assets(self):
-        version = "20261103.1"
-        with tempfile.TemporaryDirectory() as temp:
-            directory = Path(temp)
-            names = MANIFEST.base_names(version) + list(MANIFEST.package_aliases(version))
-            for name in names:
-                if not name.endswith(("-manifest.json", "-manifest.sig")):
-                    (directory / name).write_bytes(b"artifact")
-            for family in ({"require_all_targets": True}, {"packages": True},
-                           {"windows": True}):
-                payload = json.loads(UPDATER.create(directory, version, **family))
-                for asset in payload["assets"]:
-                    self.assertIn(asset["name"], names)
-                    self.assertEqual(asset["size"], len(b"artifact"))
-                    self.assertRegex(asset["name"], r"^Herdr-" if family.get("packages")
-                                     else r"^(?:sheprd-|Sheprd-)")
-
-    def test_historical_asset_set_requires_explicit_legacy_mode(self):
+    def test_legacy_package_names_require_explicit_legacy_mode(self):
         version = "20261102.1"
         with tempfile.TemporaryDirectory() as temp:
             directory = Path(temp)
             names = MANIFEST.asset_names(version, legacy=True)
             self.assertIn(f"Herdr-{version}-universal-apple-darwin.dmg", names)
-            self.assertIn(f"herdr-gpui-{version}-macos-universal.app.tar.gz", names)
             self.assertFalse(any("remote-control" in name for name in names))
             (directory / "SHA256SUMS").write_text("".join(f"{'a' * 64}  {name}\n" for name in names))
             self.assertEqual(set(MANIFEST.verify_manifest(directory, version, legacy=True)), set(names))
