@@ -199,7 +199,8 @@
         "evidence/t03-core-reconnect-overlay.md",
         "evidence/t03-exact-core-hub.md",
         "evidence/t03-core-join-without-legacy-endpoint.md",
-        "evidence/t03-zero-endpoint-tick.md"
+        "evidence/t03-zero-endpoint-tick.md",
+        "evidence/t03-sidebar-terminal-fallback.md"
       ],
       "must_close_gaps": []
     },
@@ -335,6 +336,7 @@
         "evidence/t04-script-cli-removal.md",
         "evidence/t04-repository-avatar-removal.md",
         "evidence/t04-gix-dependency-cleanup.md",
+        "evidence/t03-sidebar-terminal-fallback.md",
         "evidence/t05-core-default-observation.md"
       ],
       "must_close_gaps": [

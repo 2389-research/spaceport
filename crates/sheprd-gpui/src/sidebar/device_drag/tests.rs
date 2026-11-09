@@ -187,11 +187,24 @@ fn a_header_pressed_in_a_scrolled_list_stays_under_the_pointer(cx: &mut gpui::Te
     });
     draw(cx);
     draw(cx);
+    // The last header touches the viewport's sticky-host strip at maximum
+    // scroll. Leave it clear of that strip so the press reaches the row.
+    let header_height = cx.debug_bounds("host-ssh:c").unwrap().size.height;
+    view.update(cx, |view, _| {
+        let scroll = &view.sidebar_scroll[0];
+        scroll.set_offset(point(px(0.), scroll.offset().y + header_height * 2.));
+    });
+    draw(cx);
+    draw(cx);
     let offset = view.read_with(cx, |view, _| view.sidebar_scroll[0].offset().y);
     assert!(offset < px(0.), "the list must scroll for this test");
     let header = cx.debug_bounds("host-ssh:c").unwrap();
+    let viewport = view.read_with(cx, |view, _| view.sidebar_scroll[0].bounds());
+    assert!(header.top() >= viewport.top() + header_height);
+    assert!(header.bottom() <= viewport.bottom());
     let held = point(header.center().x, header.top() + px(5.));
     cx.simulate_mouse_down(held, MouseButton::Left, Modifiers::default());
+    view.read_with(cx, |view, _| assert!(view.device_drag.is_some()));
     cx.executor().advance_clock(LIFT_DELAY);
     cx.run_until_parked();
     draw(cx);

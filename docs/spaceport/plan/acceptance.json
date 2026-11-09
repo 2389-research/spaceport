@@ -384,7 +384,7 @@
       "scenario": "Compare retained desktop views, menus, settings, sidebar and rich chat against reference fixtures.",
       "expected": "Only approved deletions, rebrand and necessary capability adaptations differ; no unrequested redesign.",
       "status": "not_run",
-      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-github-account-entry-cut.md", "evidence/t04-profile-popup-account-dependency.md", "evidence/t04-github-account-state-removal.md", "evidence/t04-integrated-sidebar-regressions.md", "evidence/t04-repository-avatar-removal.md"]
+      "evidence": ["evidence/t04-legacy-plugin-link-dependency.md", "evidence/t04-native-teleport-removal.md", "evidence/t03-core-tear-off-dependency.md", "evidence/t04-git-titlebar-route-removal.md", "evidence/t04-native-pr-actions-removal.md", "evidence/t04-github-account-entry-cut.md", "evidence/t04-profile-popup-account-dependency.md", "evidence/t04-github-account-state-removal.md", "evidence/t04-integrated-sidebar-regressions.md", "evidence/t04-repository-avatar-removal.md", "evidence/t03-sidebar-terminal-fallback.md"]
     },
     {
       "id": "A34",

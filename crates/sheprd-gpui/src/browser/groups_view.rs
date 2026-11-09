@@ -527,7 +527,9 @@ impl SheprdWindow {
     /// What `group` draws. A page another window closed reads as nothing
     /// until the next tick forgets it.
     pub(crate) fn group_shown(&self, group: GroupId, cx: &App) -> Shown {
-        if self.active_browser_key(cx).is_none() {
+        // Core needs an exact available group. A legacy window can still draw
+        // its terminal while no workspace is focused during connection.
+        if self.selected_core_group().is_some() && self.active_browser_key(cx).is_none() {
             return Shown::Empty;
         }
         let Some(layout) = self.layout() else {
