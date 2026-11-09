@@ -180,9 +180,6 @@ pub struct Config {
     /// The `[pane_keys]` table `keybindings` was built from, for the same
     /// reason.
     pub(crate) pane_keys: PaneKeys,
-    /// Whether a linked worktree whose pull request is merged is removed, and
-    /// its workspace closed, without asking. The focused workspace still asks.
-    pub remove_merged_worktrees: bool,
     pub show_agents: bool,
     /// The "Agents" title row above the agents list, which also holds the sort
     /// toggle. The sort then follows Herdr's `ui.agent_panel_sort` unless it
@@ -299,7 +296,6 @@ impl Default for Config {
             option_as_alt: OptionAsAlt::default(),
             palette: crate::palette::PaletteConfig::default(),
             pane_keys: PaneKeys::new(),
-            remove_merged_worktrees: false,
             show_agents: true,
             show_agents_header: true,
             show_device_icons: true,
@@ -368,7 +364,6 @@ struct Settings {
     option_as_alt: OptionAsAlt,
     palette: crate::palette::PaletteConfig,
     pane_keys: PaneKeys,
-    remove_merged_worktrees: Option<bool>,
     show_agents: Option<bool>,
     show_agents_header: Option<bool>,
     show_device_icons: Option<bool>,
@@ -696,7 +691,6 @@ impl Config {
         config.confirm_close_tab = settings.confirm_close_tab.unwrap_or(true);
         config.confirm_close_workspace = settings.confirm_close_workspace.unwrap_or(true);
         config.focus_follows_mouse = settings.focus_follows_mouse.unwrap_or(true);
-        config.remove_merged_worktrees = settings.remove_merged_worktrees.unwrap_or(false);
         config.show_agents = settings.show_agents.unwrap_or(true);
         config.show_agents_header = settings.show_agents_header.unwrap_or(true);
         config.show_device_icons = settings.show_device_icons.unwrap_or(true);

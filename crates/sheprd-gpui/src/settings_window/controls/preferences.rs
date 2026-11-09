@@ -142,11 +142,6 @@ mod tests {
                 Preference::ConfirmCloseWorkspace(false),
             ),
             (
-                Section::General,
-                "general-merged-worktrees-toggle",
-                Preference::RemoveMergedWorktrees(true),
-            ),
-            (
                 Section::Notifications,
                 "notif-finished-toggle",
                 Preference::NotificationFinished(false),

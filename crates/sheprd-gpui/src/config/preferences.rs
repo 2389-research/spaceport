@@ -18,7 +18,6 @@ pub(crate) enum Preference {
     Language(sheprd_i18n::Language),
     ConfirmClosePane(bool),
     ConfirmCloseWorkspace(bool),
-    RemoveMergedWorktrees(bool),
     ShowSystemLoad(bool),
     ShowNetworkQuality(bool),
     ShowGpuLoad(bool),
@@ -137,9 +136,6 @@ impl Config {
                 }
                 Preference::ConfirmCloseWorkspace(value) => {
                     (None, "confirm_close_workspace", Some(value.into()))
-                }
-                Preference::RemoveMergedWorktrees(value) => {
-                    (None, "remove_merged_worktrees", Some(value.into()))
                 }
                 Preference::ShowSystemLoad(value) => (None, "show_system_load", Some(value.into())),
                 Preference::ShowNetworkQuality(value) => {

@@ -1,5 +1,5 @@
 //! General: interface toggles, the optional `[features]` flags, clipboard
-//! feedback, merged worktrees, the browser skill, launch at login (Windows)
+//! feedback, the browser skill, launch at login (Windows)
 //! and the update channel.
 // i18n: migrated
 use super::{
@@ -39,7 +39,6 @@ impl SettingsWindow {
             .and_then(|p| CLIPBOARD_POSITIONS.iter().position(|(c, _)| *c == p));
         let position_names = position_names(&CLIPBOARD_POSITIONS);
         let base_position = position_name(&CLIPBOARD_POSITIONS, &base.1);
-        let merged = self.config.remove_merged_worktrees;
         let beta = self.config.updates.channel == UpdateChannel::Beta;
         let installed = AgentSkill::choice(cx) == Some(Choice::Installed);
         let (skill_id, skill_label, choice) = if installed {
@@ -228,25 +227,6 @@ impl SettingsWindow {
                     &base_position,
                     &position_names,
                     position,
-                    cx,
-                )),
-            )
-            .child(ui::section(
-                theme,
-                &fl!("settings-general-section-worktrees"),
-                None,
-            ))
-            .child(
-                ui::row(
-                    theme,
-                    "general-merged-worktrees",
-                    fl!("settings-general-merged-worktrees"),
-                )
-                .description(fl!("settings-general-merged-worktrees-description"))
-                .switch(self.preference_toggle(
-                    "general-merged-worktrees-toggle",
-                    merged,
-                    Preference::RemoveMergedWorktrees(!merged),
                     cx,
                 )),
             )

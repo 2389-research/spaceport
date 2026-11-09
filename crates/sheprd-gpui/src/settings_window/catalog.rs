@@ -355,12 +355,6 @@ pub(super) const CATALOG: &[Entry] = &[
     ),
     entry(
         Section::General,
-        "general-merged-worktrees",
-        "settings-general-merged-worktrees",
-        "settings-general-merged-worktrees-description",
-    ),
-    entry(
-        Section::General,
         "general-browser-skill",
         "settings-general-browser-skill",
         "settings-general-browser-skill-description",

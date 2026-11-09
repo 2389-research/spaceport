@@ -66,7 +66,6 @@ mod log_window;
 mod mark_layer;
 mod menu;
 mod menus;
-mod merged_cleanup;
 #[cfg(feature = "mockup")]
 mod mockup;
 mod motion;

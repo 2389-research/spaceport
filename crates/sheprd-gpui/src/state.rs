@@ -132,9 +132,6 @@ pub struct LiveState {
     /// `tab.create`), kept apart from dialogs so opening one cannot lose it.
     /// Cleared from the mailbox once the script job has read it.
     pub(crate) script_response: Option<(String, Option<DialogResponse>)>,
-    /// The `worktree.remove` a merged worktree cleanup is waiting on, in its
-    /// own slot so it and an open dialog cannot take each other's answer.
-    pub(crate) cleanup_response: Option<(String, Option<DialogResponse>)>,
     pub(crate) notifications: std::collections::VecDeque<crate::notifications::Notice>,
     pub(crate) notifications_lost: bool,
     outer_focused: Option<bool>,
@@ -234,7 +231,6 @@ impl Default for LiveState {
             dirty: true,
             dialog_response: None,
             script_response: None,
-            cleanup_response: None,
             notifications: Default::default(),
             notifications_lost: false,
             keyboard_report_all: false,
@@ -256,7 +252,6 @@ impl Default for LiveState {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Answer {
     // keep-sorted start
-    Cleanup,
     Script,
     // keep-sorted end
 }
@@ -264,7 +259,6 @@ pub(crate) enum Answer {
 impl LiveState {
     fn answer_slot(&mut self, answer: Answer) -> &mut Option<(String, Option<DialogResponse>)> {
         match answer {
-            Answer::Cleanup => &mut self.cleanup_response,
             Answer::Script => &mut self.script_response,
         }
     }
@@ -332,7 +326,6 @@ impl LiveState {
             dirty: _,
             dialog_response,
             script_response,
-            cleanup_response,
             notifications,
             notifications_lost,
             outer_focused,
@@ -395,10 +388,6 @@ impl LiveState {
                 (Some((a, None)), Some((b, None))) => a == b,
                 (a, b) => a.is_none() && b.is_none(),
             }
-            && match (cleanup_response, &self.cleanup_response) {
-                (Some((a, None)), Some((b, None))) => a == b,
-                (a, b) => a.is_none() && b.is_none(),
-            }
             && notifications.is_empty()
             && !notifications_lost
             && *outer_focused == self.outer_focused
@@ -423,14 +412,10 @@ impl LiveState {
     }
 
     fn has_operation_result(&self, request_id: &str) -> bool {
-        [
-            &self.dialog_response,
-            &self.script_response,
-            &self.cleanup_response,
-        ]
-        .into_iter()
-        .flatten()
-        .any(|(id, _)| id == request_id)
+        [&self.dialog_response, &self.script_response]
+            .into_iter()
+            .flatten()
+            .any(|(id, _)| id == request_id)
             || [&self.tab_rename, &self.pane_rename]
                 .into_iter()
                 .flatten()
@@ -625,11 +610,7 @@ impl LiveState {
                     self.error = Some(reason.localize());
                 }
                 let reason = Arc::new(crate::Error::Client(reason));
-                for (id, result) in [
-                    &mut self.dialog_response,
-                    &mut self.script_response,
-                    &mut self.cleanup_response,
-                ]
+                for (id, result) in [&mut self.dialog_response, &mut self.script_response]
                 .into_iter()
                 .flatten()
                 {
@@ -704,13 +685,7 @@ impl LiveState {
                 {
                     self.announcement_dismissal = None;
                 }
-                for (id, result) in [
-                    &mut self.script_response,
-                    &mut self.cleanup_response,
-                ]
-                .into_iter()
-                    .flatten()
-                {
+                for (id, result) in self.script_response.iter_mut() {
                     if *id == request_id {
                         *result = Some(Ok(response.clone()));
                     }

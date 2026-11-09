@@ -5,7 +5,6 @@
 settings-general-section-interface = Interface
 settings-general-section-features = Features
 settings-general-section-clipboard = Clipboard
-settings-general-section-worktrees = Worktrees
 settings-general-section-browser-skill = Browser skill
 settings-general-section-startup = Startup
 settings-general-section-updates = Updates

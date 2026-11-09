@@ -600,7 +600,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         app_update_notes: Default::default(),
         app_update_notes_scroll: gpui::ScrollHandle::new(),
         removal: None,
-        merged_cleanup: Default::default(),
         #[cfg(feature = "integration-test")]
         navigations: Default::default(),
         worktree_script: None,

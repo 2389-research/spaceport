@@ -227,8 +227,6 @@ pub(crate) struct SheprdWindow {
     /// UTF-16; `None` puts the caret after it.
     pub(crate) marked_selection: Option<std::ops::Range<usize>>,
     pub(crate) menu: menu::MenuState,
-    /// Removing worktrees whose pull request is merged, when enabled.
-    pub(crate) merged_cleanup: crate::merged_cleanup::Cleanup,
     /// The focus changes asked of the daemon, for the native GUI harness.
     #[cfg(feature = "integration-test")]
     pub(crate) navigations: smoke::Navigations,
@@ -609,7 +607,6 @@ impl SheprdWindow {
         if self.update_workspace_pr() {
             cx.notify();
         }
-        self.update_merged_cleanup(window, cx);
         if self.update_git() {
             cx.notify();
         }

@@ -117,11 +117,6 @@ impl SheprdWindow {
                 )))
             }
             WorkspaceAction::DeleteWorktree => body
-                .children(deletion.and_then(|deletion| deletion.merged).map(|number| {
-                    div()
-                        .debug_selector(|| "dialog-merged-pr".into())
-                        .child(fl!("workspace-dialog-merged", number = number))
-                }))
                 .child(if force {
                     fl!("workspace-dialog-force-removes")
                 } else {

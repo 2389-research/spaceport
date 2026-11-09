@@ -12,7 +12,6 @@ mod excluded_creation;
 mod excluded_remote_workspace;
 mod left_checkout;
 mod left_checkout_lookup;
-mod merged_removal;
 mod mute;
 mod naming;
 mod pull_requests;

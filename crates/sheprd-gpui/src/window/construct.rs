@@ -209,7 +209,6 @@ impl SheprdWindow {
             marked: String::new(),
             marked_selection: None,
             menu,
-            merged_cleanup: Default::default(),
             #[cfg(feature = "integration-test")]
             navigations: Default::default(),
             network_quality_seen: 0,

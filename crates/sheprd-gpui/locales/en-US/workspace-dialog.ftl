@@ -30,7 +30,6 @@ workspace-dialog-close-note = { $count ->
     }
 
 workspace-dialog-name = Name
-workspace-dialog-merged = Pull request #{ $number } was merged.
 workspace-dialog-force-removes = This force removes the checkout folder:
 workspace-dialog-removes = This removes the checkout folder:
 workspace-dialog-path-pending = Waiting for the daemon to name the checkout...
