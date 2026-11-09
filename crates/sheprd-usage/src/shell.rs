@@ -10,6 +10,8 @@ use std::{
 };
 
 const LIMIT: usize = 1024 * 1024;
+/// Longest decimal i32 status, including its possible minus sign.
+const STATUS_LIMIT: usize = 11;
 
 /// A bounded shell step result.
 pub struct Output {
@@ -164,6 +166,10 @@ impl Shell {
                 }
                 let tail = start + end.len();
                 if let Some(newline) = self.buffer[tail..].iter().position(|b| *b == b'\n') {
+                    if newline > STATUS_LIMIT {
+                        self.broken = true;
+                        return Err(Error::Size);
+                    }
                     let status = String::from_utf8_lossy(&self.buffer[tail..tail + newline])
                         .trim()
                         .parse::<i32>()
@@ -175,10 +181,21 @@ impl Shell {
                         stdout,
                     });
                 }
-            }
-            if self.buffer.len() > LIMIT {
-                self.broken = true;
-                return Err(Error::Size);
+                if self.buffer.len() - tail > STATUS_LIMIT {
+                    self.broken = true;
+                    return Err(Error::Size);
+                }
+            } else if self.buffer.len() > LIMIT {
+                // A split completion marker is framing, not payload. Only a
+                // suffix matching its prefix may extend the payload budget.
+                let prefix = (1..end.len())
+                    .rev()
+                    .find(|&length| self.buffer.ends_with(&end.as_bytes()[..length]))
+                    .unwrap_or(0);
+                if self.buffer.len() - prefix > LIMIT {
+                    self.broken = true;
+                    return Err(Error::Size);
+                }
             }
             let left = deadline.saturating_duration_since(Instant::now());
             match self.output.recv_timeout(left) {

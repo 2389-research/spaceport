@@ -125,3 +125,30 @@ fn hidden_reports_stay_out_of_panel_tabs_even_when_explicitly_shown() {
         25
     );
 }
+
+#[test]
+fn ordered_metadata_matches_original_runtime_getters() {
+    let baseline: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/provider_metadata.json")).unwrap();
+    let expected = baseline["providers"].as_array().unwrap();
+    let actual: Vec<_> = registry::all()
+        .map(|provider| {
+            let meta = provider.meta();
+            serde_json::json!({
+                "id": meta.id, "name": meta.name, "icon": meta.icon,
+                "dashboard": meta.dashboard, "status_page": meta.status_page,
+            })
+        })
+        .collect();
+    assert_eq!(actual.len(), expected.len());
+    let mismatches: Vec<_> = actual
+        .iter()
+        .zip(expected)
+        .enumerate()
+        .filter(|(_, (actual, expected))| actual != expected)
+        .map(|(index, (actual, expected))| {
+            format!("position {index}: actual {actual}, expected {expected}")
+        })
+        .collect();
+    assert!(mismatches.is_empty(), "{}", mismatches.join("\n"));
+}

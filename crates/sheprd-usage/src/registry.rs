@@ -82,7 +82,7 @@ static PROVIDERS: &[Meta] = &[
         id: "qwencloud",
         name: "Qwen Cloud",
         icon: None,
-        dashboard: None,
+        dashboard: Some("https://home.qwencloud.com/billing/subscription/token-plan-individual"),
         status_page: Some("https://status.alibabacloud.com"),
     },
     Meta {
@@ -104,14 +104,18 @@ static PROVIDERS: &[Meta] = &[
         name: "Gemini",
         icon: None,
         dashboard: Some("https://gemini.google.com"),
-        status_page: None,
+        status_page: Some(
+            "https://www.google.com/appsstatus/dashboard/products/npdyhgECDJ6tB66MxXyo/history",
+        ),
     },
     Meta {
         id: "antigravity",
         name: "Antigravity",
         icon: None,
         dashboard: None,
-        status_page: None,
+        status_page: Some(
+            "https://www.google.com/appsstatus/dashboard/products/npdyhgECDJ6tB66MxXyo/history",
+        ),
     },
     Meta {
         id: "copilot",
@@ -567,7 +571,7 @@ static PROVIDERS: &[Meta] = &[
         id: "typesafe",
         name: "TypeSafe",
         icon: None,
-        dashboard: None,
+        dashboard: Some("https://console.typesafe.ai/settings/billing"),
         status_page: None,
     },
     Meta {

@@ -1,0 +1,618 @@
+{
+  "provenance": {
+    "source_revision": "d96d7d9a6",
+    "capture_revision": "d5c4bcb45",
+    "capture": "Original registry::all() in order, reading each provider.service().meta(); no fetch called. Metadata unchanged between source and capture revisions."
+  },
+  "providers": [
+    {
+      "dashboard": "https://chatgpt.com/codex/settings/usage",
+      "icon": "icons/agent-codex.svg",
+      "id": "codex",
+      "name": "Codex",
+      "status_page": "https://status.openai.com"
+    },
+    {
+      "dashboard": "https://platform.openai.com/usage",
+      "icon": "icons/agent-codex.svg",
+      "id": "openai",
+      "name": "OpenAI",
+      "status_page": "https://status.openai.com"
+    },
+    {
+      "dashboard": "https://ai.azure.com",
+      "icon": "icons/agent-codex.svg",
+      "id": "azureopenai",
+      "name": "Azure OpenAI",
+      "status_page": "https://azure.status.microsoft/en-us/status"
+    },
+    {
+      "dashboard": "https://claude.ai/settings/usage",
+      "icon": "icons/agent-claude.svg",
+      "id": "claude",
+      "name": "Claude",
+      "status_page": "https://status.anthropic.com"
+    },
+    {
+      "dashboard": "https://app.cline.bot/dashboard/subscription?personal=true",
+      "icon": null,
+      "id": "clinepass",
+      "name": "ClinePass",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://cursor.com/dashboard?tab=usage",
+      "icon": null,
+      "id": "cursor",
+      "name": "Cursor",
+      "status_page": "https://status.cursor.com"
+    },
+    {
+      "dashboard": "https://opencode.ai/auth",
+      "icon": null,
+      "id": "opencode",
+      "name": "OpenCode",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://opencode.ai/auth",
+      "icon": null,
+      "id": "opencodego",
+      "name": "OpenCode Go",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://modelstudio.console.alibabacloud.com/ap-southeast-1/?tab=coding-plan#/efm/coding_plan",
+      "icon": null,
+      "id": "alibaba",
+      "name": "Alibaba",
+      "status_page": "https://status.aliyun.com"
+    },
+    {
+      "dashboard": "https://modelstudio.console.alibabacloud.com/ap-southeast-1/?tab=plan#/efm/subscription/token-plan",
+      "icon": "icons/providers/alibaba.svg",
+      "id": "alibabatokenplan",
+      "name": "Alibaba Token Plan",
+      "status_page": "https://status.aliyun.com"
+    },
+    {
+      "dashboard": "https://home.qwencloud.com/billing/subscription/token-plan-individual",
+      "icon": null,
+      "id": "qwencloud",
+      "name": "Qwen Cloud",
+      "status_page": "https://status.alibabacloud.com"
+    },
+    {
+      "dashboard": "https://app.factory.ai/settings/billing",
+      "icon": null,
+      "id": "factory",
+      "name": "Droid",
+      "status_page": "https://status.factory.ai"
+    },
+    {
+      "dashboard": "https://app.fireworks.ai/billing",
+      "icon": null,
+      "id": "fireworks",
+      "name": "Fireworks",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://gemini.google.com",
+      "icon": null,
+      "id": "gemini",
+      "name": "Gemini",
+      "status_page": "https://www.google.com/appsstatus/dashboard/products/npdyhgECDJ6tB66MxXyo/history"
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "antigravity",
+      "name": "Antigravity",
+      "status_page": "https://www.google.com/appsstatus/dashboard/products/npdyhgECDJ6tB66MxXyo/history"
+    },
+    {
+      "dashboard": "https://github.com/settings/copilot",
+      "icon": null,
+      "id": "copilot",
+      "name": "Copilot",
+      "status_page": "https://www.githubstatus.com"
+    },
+    {
+      "dashboard": "https://app.devin.ai/settings/usage",
+      "icon": null,
+      "id": "devin",
+      "name": "Devin",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://z.ai/manage-apikey/coding-plan/personal/my-plan",
+      "icon": null,
+      "id": "zai",
+      "name": "z.ai / GLM",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://platform.minimax.io/user-center/payment/coding-plan?cycle_type=3",
+      "icon": null,
+      "id": "minimax",
+      "name": "MiniMax",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://manus.im",
+      "icon": null,
+      "id": "manus",
+      "name": "Manus",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://www.kimi.com/code/console",
+      "icon": null,
+      "id": "kimi",
+      "name": "Kimi Code",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://app.kilo.ai/usage",
+      "icon": null,
+      "id": "kilo",
+      "name": "Kilo",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://app.kiro.dev/account/usage",
+      "icon": null,
+      "id": "kiro",
+      "name": "Kiro",
+      "status_page": "https://health.aws.amazon.com/health/status"
+    },
+    {
+      "dashboard": "https://console.cloud.google.com/vertex-ai",
+      "icon": null,
+      "id": "vertexai",
+      "name": "Vertex AI",
+      "status_page": "https://status.cloud.google.com"
+    },
+    {
+      "dashboard": "https://app.augmentcode.com/account/subscription",
+      "icon": null,
+      "id": "augment",
+      "name": "Augment",
+      "status_page": "https://status.augmentcode.com"
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "jetbrains",
+      "name": "JetBrains AI",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://platform.moonshot.ai/console/account",
+      "icon": "icons/providers/kimi.svg",
+      "id": "moonshot",
+      "name": "Moonshot / Kimi Open Platform",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://ampcode.com/settings/usage",
+      "icon": null,
+      "id": "amp",
+      "name": "Amp",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://t3.chat/settings/customization",
+      "icon": null,
+      "id": "t3chat",
+      "name": "T3 Chat",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://ollama.com/settings",
+      "icon": null,
+      "id": "ollama",
+      "name": "Ollama",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://synthetic.new/billing",
+      "icon": null,
+      "id": "synthetic",
+      "name": "Synthetic",
+      "status_page": "https://status.synthetic.new"
+    },
+    {
+      "dashboard": "https://openrouter.ai/activity",
+      "icon": null,
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "status_page": "https://status.openrouter.ai"
+    },
+    {
+      "dashboard": "https://elevenlabs.io/app/subscription",
+      "icon": null,
+      "id": "elevenlabs",
+      "name": "ElevenLabs",
+      "status_page": "https://status.elevenlabs.io"
+    },
+    {
+      "dashboard": "https://app.warp.dev/settings/billing",
+      "icon": null,
+      "id": "warp",
+      "name": "Warp",
+      "status_page": "https://status.warp.dev"
+    },
+    {
+      "dashboard": "https://windsurf.com/subscription/usage",
+      "icon": null,
+      "id": "windsurf",
+      "name": "Windsurf",
+      "status_page": "https://status.windsurf.com"
+    },
+    {
+      "dashboard": "https://zed.dev/account",
+      "icon": null,
+      "id": "zed",
+      "name": "Zed",
+      "status_page": "https://status.zed.dev"
+    },
+    {
+      "dashboard": "https://www.perplexity.ai/account/usage",
+      "icon": null,
+      "id": "perplexity",
+      "name": "Perplexity",
+      "status_page": "https://status.perplexity.com"
+    },
+    {
+      "dashboard": "https://platform.xiaomimimo.com/#/console/balance",
+      "icon": null,
+      "id": "mimo",
+      "name": "Xiaomi MiMo",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&advancedActiveKey=subscribe",
+      "icon": null,
+      "id": "doubao",
+      "name": "Doubao",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://console.sakana.ai/billing",
+      "icon": null,
+      "id": "sakana",
+      "name": "Sakana AI",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://apps.abacus.ai/chatllm/admin/compute-points-usage",
+      "icon": null,
+      "id": "abacus",
+      "name": "Abacus AI",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://admin.mistral.ai/organization/usage",
+      "icon": null,
+      "id": "mistral",
+      "name": "Mistral",
+      "status_page": "https://status.mistral.ai"
+    },
+    {
+      "dashboard": "https://platform.deepseek.com/usage",
+      "icon": null,
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "status_page": "https://status.deepseek.com"
+    },
+    {
+      "dashboard": "https://deepinfra.com/dash",
+      "icon": null,
+      "id": "deepinfra",
+      "name": "DeepInfra",
+      "status_page": "https://status.deepinfra.com"
+    },
+    {
+      "dashboard": "https://www.codebuff.com/usage",
+      "icon": null,
+      "id": "codebuff",
+      "name": "Codebuff",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://venice.ai/settings/api",
+      "icon": null,
+      "id": "venice",
+      "name": "Venice",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://commandcode.ai/studio",
+      "icon": null,
+      "id": "commandcode",
+      "name": "Command Code",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://qoder.com/account/usage",
+      "icon": null,
+      "id": "qoder",
+      "name": "Qoder",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://platform.stepfun.com/plan-usage",
+      "icon": null,
+      "id": "stepfun",
+      "name": "StepFun",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://console.aws.amazon.com/bedrock",
+      "icon": null,
+      "id": "bedrock",
+      "name": "AWS Bedrock",
+      "status_page": "https://health.aws.amazon.com/health/status"
+    },
+    {
+      "dashboard": "https://grok.com/?_s=usage",
+      "icon": null,
+      "id": "grok",
+      "name": "Grok",
+      "status_page": "https://status.x.ai"
+    },
+    {
+      "dashboard": "https://console.groq.com/dashboard/usage",
+      "icon": null,
+      "id": "groq",
+      "name": "Groq",
+      "status_page": "https://status.groq.com"
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "llmproxy",
+      "name": "LLM Proxy",
+      "status_page": null
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "litellm",
+      "name": "LiteLLM",
+      "status_page": null
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "bifrost",
+      "name": "Bifrost",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://dash.aixy-gateway.com",
+      "icon": null,
+      "id": "aixy",
+      "name": "Aixy",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://console.deepgram.com/project/",
+      "icon": null,
+      "id": "deepgram",
+      "name": "Deepgram",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://poe.com/api/keys",
+      "icon": null,
+      "id": "poe",
+      "name": "Poe",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://chutes.ai",
+      "icon": null,
+      "id": "chutes",
+      "name": "Chutes",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://portal.neuralwatt.com/dashboard",
+      "icon": null,
+      "id": "neuralwatt",
+      "name": "Neuralwatt",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://cloud.helmcode.com/dashboard",
+      "icon": null,
+      "id": "helmcode",
+      "name": "Helmcode",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://clawrouter.openclaw.ai/dashboard/access",
+      "icon": null,
+      "id": "clawrouter",
+      "name": "ClawRouter",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://longcat.chat/platform/",
+      "icon": null,
+      "id": "longcat",
+      "name": "LongCat",
+      "status_page": null
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "sub2api",
+      "name": "sub2api",
+      "status_page": null
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "wayfinder",
+      "name": "Wayfinder",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://zenmux.ai/platform/management",
+      "icon": null,
+      "id": "zenmux",
+      "name": "ZenMux",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://console.aiand.com",
+      "icon": null,
+      "id": "aiand",
+      "name": "ai&",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://zoommate.zoom.us/#/?settings=credit-usage",
+      "icon": null,
+      "id": "zoommate",
+      "name": "ZoomMate",
+      "status_page": "https://www.zoomstatus.com"
+    },
+    {
+      "dashboard": "https://console.x.ai",
+      "icon": null,
+      "id": "xai",
+      "name": "xAI",
+      "status_page": "https://status.x.ai"
+    },
+    {
+      "dashboard": "https://app.notion.com",
+      "icon": null,
+      "id": "notion",
+      "name": "Notion AI",
+      "status_page": "https://status.notion.so"
+    },
+    {
+      "dashboard": "https://bob.ibm.com",
+      "icon": null,
+      "id": "ibmbob",
+      "name": "IBM Bob",
+      "status_page": "https://status.bob.ibm.com"
+    },
+    {
+      "dashboard": "https://portal.nousresearch.com/usage",
+      "icon": null,
+      "id": "nous",
+      "name": "Nous Portal",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://dev.meta.ai",
+      "icon": null,
+      "id": "muse",
+      "name": "Muse Code",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://app.coderabbit.ai",
+      "icon": null,
+      "id": "coderabbit",
+      "name": "CodeRabbit",
+      "status_page": "https://status.coderabbit.ai"
+    },
+    {
+      "dashboard": "https://replicate.com/account/billing",
+      "icon": null,
+      "id": "replicate",
+      "name": "Replicate",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://huggingface.co/settings/billing",
+      "icon": null,
+      "id": "huggingface",
+      "name": "Hugging Face",
+      "status_page": "https://status.huggingface.co"
+    },
+    {
+      "dashboard": "https://www.raycast.com/settings",
+      "icon": null,
+      "id": "raycast",
+      "name": "Raycast",
+      "status_page": null
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "pi",
+      "name": "Pi",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://v0.app/settings/billing",
+      "icon": null,
+      "id": "v0",
+      "name": "v0",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://console.typesafe.ai/settings/billing",
+      "icon": null,
+      "id": "typesafe",
+      "name": "TypeSafe",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://hyper.charm.land",
+      "icon": null,
+      "id": "hyper",
+      "name": "Charm Hyper",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://gitkraken.dev/account#ai-usage",
+      "icon": null,
+      "id": "gitkraken",
+      "name": "GitKraken AI",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://devpass.llmgateway.io/dashboard",
+      "icon": null,
+      "id": "devpass",
+      "name": "DevPass",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://www.atlascloud.ai/console",
+      "icon": null,
+      "id": "atlascloud",
+      "name": "Atlas Cloud",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway",
+      "icon": null,
+      "id": "vercel",
+      "name": "Vercel AI Gateway",
+      "status_page": null
+    },
+    {
+      "dashboard": null,
+      "icon": null,
+      "id": "llmman",
+      "name": "llmman",
+      "status_page": null
+    },
+    {
+      "dashboard": "https://xkiro.com",
+      "icon": null,
+      "id": "xkiro",
+      "name": "xKiro",
+      "status_page": null
+    }
+  ]
+}
