@@ -143,9 +143,6 @@ pub use error::{Error, Result};
 // Its own crate so it builds and is tested without GPUI; the alias keeps the
 // app's `crate::updater` paths.
 use sheprd_updater as updater;
-// GitHub's pull request actions; `github` and `pull_request` are the app's
-// own modules, which add the avatars, the shared store, and badge colors.
-use sheprd_github::pr_actions;
 // The command catalog and its default shortcuts, without GPUI.
 use sheprd_commands as controls;
 // The log file and crash reports, without GPUI.

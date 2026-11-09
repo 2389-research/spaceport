@@ -250,7 +250,6 @@ pub(crate) struct SheprdWindow {
     /// Remote ports forwarded to this machine; they end with the window.
     pub(crate) port_forwards: crate::port_forward::PortForwards,
     /// Comment, merge, and review reads for the focused branch's open PR.
-    pub(crate) pr_actions: crate::pr_actions::Actions,
     /// The daemon's prefix was typed, so the next keystroke completes a chord.
     pub(crate) prefix_armed: bool,
     /// The frame on screen, kept across the gap between two projections.

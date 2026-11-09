@@ -1,5 +1,5 @@
 //! GitHub transport, sign-in, and `[github]` config failures. Pull request
-//! lookups, pull request actions, and the GitHub CLI each keep their own
+//! lookups and the GitHub CLI each keep their own
 //! `Error`, wrapped here once.
 
 use std::io;
@@ -49,8 +49,6 @@ pub enum Error {
     Network(#[source] ureq::Error),
     #[error(transparent)]
     Path(#[from] sheprd_client::local_path::PathError),
-    #[error(transparent)]
-    PrActions(#[from] crate::pr_actions::Error),
     #[error(transparent)]
     PullRequest(#[from] crate::pull_request::Error),
     #[error("GitHub query failed. Check token repository permissions and rate limits.")]

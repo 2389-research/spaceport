@@ -1,5 +1,5 @@
 //! Native GitHub transport and device authorization, the read-only pull
-//! request prefetch, and explicit pull request actions. The one credential
+//! request prefetch. The one credential
 //! subprocess is `gh auth token`, run only to offer the GitHub CLI's sign-in
 //! and, once the user chooses it, to read that sign-in again. Every request
 //! blocks, so callers run it on a worker thread, never the UI thread; the app
@@ -19,7 +19,6 @@ mod installation;
 #[cfg(any(test, feature = "test-support"))]
 pub use http::fake_graphql;
 mod log;
-pub mod pr_actions;
 pub mod pull_request;
 pub mod quota;
 mod repository;
@@ -38,7 +37,7 @@ pub use repository::github_repo;
 pub use {
     auth::Auth,
     device::{Profile, Source, VERIFY_URL},
-    http::{graphql, graphql_aliases, hidden_hint, mutation, rest},
+    http::{graphql, graphql_aliases, hidden_hint, rest},
     installation::{Access, Installation},
     routing::Tokens,
     store::{Account, Note, Store, note as store_note, select as select_store},

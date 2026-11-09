@@ -7,12 +7,9 @@ use super::super::{MenuState, Page, git};
 use crate::dialog_input::DialogInput;
 
 /// Whether `page` animates out after it closes: All Devices into the
-/// footer and the titlebar's Git popover and pull request dialogs.
+/// footer and the Git popover.
 pub(in crate::menu) fn leaves(page: Page) -> bool {
-    matches!(
-        page,
-        Page::Devices | Page::Git | Page::PrReview | Page::PrComment | Page::PrMerge
-    )
+    matches!(page, Page::Devices | Page::Git)
 }
 
 /// The fields a leaving page reads that closing clears.
@@ -21,8 +18,6 @@ pub(in crate::menu) struct Kept {
     error: Option<String>,
     git_selected: Option<git::Row>,
     input: Option<DialogInput>,
-    merge_method: Option<crate::pull_request::MergeMethod>,
-    merge_target: Option<crate::pr_actions::Target>,
     /// The device All Devices showed unfolded, so it leaves as it was.
     unfolded_device: Option<String>,
 }
@@ -41,8 +36,6 @@ impl Kept {
         std::mem::swap(&mut self.error, &mut menu.error);
         std::mem::swap(&mut self.git_selected, &mut menu.git_selected);
         std::mem::swap(&mut self.input, &mut menu.input);
-        std::mem::swap(&mut self.merge_method, &mut menu.merge_method);
-        std::mem::swap(&mut self.merge_target, &mut menu.merge_target);
         std::mem::swap(&mut self.unfolded_device, &mut menu.unfolded_device);
     }
 }

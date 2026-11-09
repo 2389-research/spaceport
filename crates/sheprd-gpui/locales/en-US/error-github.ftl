@@ -95,13 +95,3 @@ error-github-pull-request-timeout = PR lookup timed out (15 seconds).
 error-github-pull-request-untrusted-endpoint = PR lookup requires your owned local session socket or a saved SSH device. Other socket locations are unsupported.
 error-github-pull-request-workspace-repository = Workspace directory is not in a Git repository.
 error-github-pull-request-worktree-lookup = Local repository unavailable for worktree lookup.
-
-## Commenting on, merging, or reading reviews of a pull request.
-
-error-github-pr-actions-busy = A pull request action is already running.
-error-github-pr-actions-comment-body = Enter a comment of at most 4096 characters.
-error-github-pr-actions-merge-changed = The branch changed since this dialog opened. Review the pull request again.
-error-github-pr-actions-merge-method = The repository does not allow this merge method.
-error-github-pr-actions-process = Could not start the pull request worker.
-error-github-pr-actions-target = This pull request cannot be acted on here: it is not open, or its details are incomplete. Refresh and try again.
-error-github-pr-actions-worker = Pull request worker stopped. Check the pull request on GitHub before retrying.

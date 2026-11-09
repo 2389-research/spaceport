@@ -7,7 +7,7 @@
 use super::Localize;
 use crate::i18n::fl;
 use chrono::{DateTime, DurationRound, Local, TimeDelta, Utc};
-use sheprd_github::{AccountsError, Error, cli, pr_actions, pull_request};
+use sheprd_github::{AccountsError, Error, cli, pull_request};
 
 impl Localize for Error {
     fn localize(&self) -> String {
@@ -31,7 +31,6 @@ impl Localize for Error {
             Self::Json(_) => fl!("error-github-json"),
             Self::Network(error) => fl!("error-github-network", error = error.to_string()),
             Self::Path(error) => error.localize(),
-            Self::PrActions(error) => error.localize(),
             Self::PullRequest(error) => error.localize(),
             Self::Query => fl!("error-github-query"),
             Self::RateLimit { reset } => rate_limit(*reset),
@@ -148,21 +147,5 @@ fn lookup_step(operation: &str) -> &'static str {
         "read process output" => "read-output",           // i18n: data
         "wait for process" => "wait",                     // i18n: data
         _ => "other",
-    }
-}
-
-impl Localize for pr_actions::Error {
-    fn localize(&self) -> String {
-        match self {
-            // keep-sorted start
-            Self::Busy => fl!("error-github-pr-actions-busy"),
-            Self::CommentBody => fl!("error-github-pr-actions-comment-body"),
-            Self::MergeChanged => fl!("error-github-pr-actions-merge-changed"),
-            Self::MergeMethod => fl!("error-github-pr-actions-merge-method"),
-            Self::Process { .. } => fl!("error-github-pr-actions-process"),
-            Self::Target => fl!("error-github-pr-actions-target"),
-            Self::Worker => fl!("error-github-pr-actions-worker"),
-            // keep-sorted end
-        }
     }
 }

@@ -15,7 +15,6 @@ mod open_link;
 mod page;
 mod page_title;
 mod pr;
-mod pr_actions;
 mod sessions;
 mod settings;
 mod shortcut_editor;

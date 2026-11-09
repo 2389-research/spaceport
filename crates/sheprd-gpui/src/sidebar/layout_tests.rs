@@ -645,7 +645,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         notice_overflow: Default::default(),
         overview: Default::default(),
         viewport_width: 0.,
-        pr_actions: Default::default(),
         usage: Default::default(),
         system_load: Default::default(),
         network_quality_seen: 0,

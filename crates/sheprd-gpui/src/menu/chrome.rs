@@ -406,27 +406,19 @@ impl SheprdWindow {
                     .overflow_hidden()
                     .shadow_lg()
             })
-            .when(
-                matches!(
-                    page,
-                    Page::Git | Page::GitCommit | Page::PrReview | Page::PrComment | Page::PrMerge
-                ),
-                |panel| {
-                    panel
-                        .w((viewport.width - px(24.))
-                            .max(px(0.))
-                            .min(px(if page == Page::Git { 340. } else { 420. })))
-                        .max_h((viewport.height - px(24.)).max(px(0.)))
-                        .when(page == Page::Git, |panel| {
-                            let top = crate::titlebar::HEIGHT + 6.;
-                            panel
-                                .max_h((viewport.height - px(top + 12.)).max(px(0.)))
-                                .shadow_lg()
-                        })
-                        // Its lists scroll inside; the panel never outgrows the window.
-                        .when(page == Page::PrReview, |panel| panel.overflow_hidden())
-                },
-            )
+            .when(matches!(page, Page::Git | Page::GitCommit), |panel| {
+                panel
+                    .w((viewport.width - px(24.))
+                        .max(px(0.))
+                        .min(px(if page == Page::Git { 340. } else { 420. })))
+                    .max_h((viewport.height - px(24.)).max(px(0.)))
+                    .when(page == Page::Git, |panel| {
+                        let top = crate::titlebar::HEIGHT + 6.;
+                        panel
+                            .max_h((viewport.height - px(top + 12.)).max(px(0.)))
+                            .shadow_lg()
+                    })
+            })
             .when(
                 matches!(
                     page,
@@ -678,12 +670,6 @@ impl SheprdWindow {
             panel = panel.child(self.render_git_menu(cx));
         } else if page == Page::GitCommit {
             panel = panel.child(self.render_git_commit(cx));
-        } else if page == Page::PrReview {
-            panel = panel.child(self.render_pr_review(cx));
-        } else if page == Page::PrComment {
-            panel = panel.child(self.render_pr_comment(cx));
-        } else if page == Page::PrMerge {
-            panel = panel.child(self.render_pr_merge(cx));
         } else if matches!(
             page,
             Page::Host

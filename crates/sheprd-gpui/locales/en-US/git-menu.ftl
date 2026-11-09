@@ -12,9 +12,6 @@ git-menu-commit = Commit...
 git-menu-push = Push
 git-menu-open-pull-request = Open pull request #{ $number }
 git-menu-create-pull-request = Create pull request
-git-menu-checks-and-comments = Checks and comments
-git-menu-comment = Comment...
-git-menu-merge = Merge...
 git-menu-not-committed = { $untracked ->
         [0] Not yet committed
        *[other] Not yet committed ({ $untracked } untracked)

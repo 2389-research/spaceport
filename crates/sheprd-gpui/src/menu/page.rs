@@ -52,11 +52,6 @@ pub(crate) enum Page {
     Pane,
     /// The processes under the pane menu's pane.
     PaneProcesses,
-    PrComment,
-    /// Choosing a merge method, and confirming it.
-    PrMerge,
-    /// The open pull request's checks and review conversation.
-    PrReview,
     RemoveDevice,
     /// Confirming a saved WSL distribution should be forgotten.
     RemoveWsl,
@@ -130,9 +125,6 @@ impl Page {
                 | Self::RemoveWsl
                 | Self::Git
                 | Self::GitCommit
-                | Self::PrReview
-                | Self::PrComment
-                | Self::PrMerge
         )
     }
 

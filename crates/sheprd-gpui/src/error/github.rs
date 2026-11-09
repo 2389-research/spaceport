@@ -2,16 +2,10 @@
 //! these let app code that raises one of them use `?` and `.into()`.
 
 use super::Error;
-use sheprd_github::{AccountsError, pr_actions, pull_request};
+use sheprd_github::{AccountsError, pull_request};
 
 impl From<AccountsError> for Error {
     fn from(error: AccountsError) -> Self {
-        Self::GitHub(error.into())
-    }
-}
-
-impl From<pr_actions::Error> for Error {
-    fn from(error: pr_actions::Error) -> Self {
         Self::GitHub(error.into())
     }
 }

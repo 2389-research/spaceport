@@ -52,10 +52,6 @@ fn the_git_popup_and_commit_dialog_show_only_messages_under_en_xa() {
                 view.git = crate::git::Git::fixture(input(), status(12, 3, 2));
                 view.menu.github = crate::github::Auth::connected_fixture();
                 view.seed_pr(input(), pr, std::time::Instant::now());
-                view.pr_actions.track(
-                    view.git_open_pull_request()
-                        .and_then(|pr| crate::pr_actions::Target::try_from(&*pr).ok()),
-                );
                 view.menu.anchor = point(px(860.), px(20.));
                 view.menu.page = Some(Page::Git);
             })

@@ -230,11 +230,6 @@ impl SheprdWindow {
                 self.submit_core_workspace_dialog(cx)
             }
             "enter" if self.menu.page == Some(Page::GitCommit) => self.submit_git_commit(cx),
-            "enter" if self.menu.page == Some(Page::PrComment) => self.submit_pr_comment(cx),
-            "enter" if self.menu.page == Some(Page::PrMerge) => self.submit_pr_merge(cx),
-            "up" | "down" if self.menu.page == Some(Page::PrMerge) => {
-                self.cycle_merge_method(event.keystroke.key == "down", cx)
-            }
             // The tiles read row by row, so left and right walk the same
             // order as up and down.
             "up" | "down" | "left" | "right" if self.menu.page == Some(Page::Workspace) => {

@@ -1,5 +1,5 @@
 //! Read-only PR prefetch. One worker, bounded memory, and no UI-thread I/O.
-//! Writes to a pull request live in `pr_actions`, behind explicit user actions.
+//! The model also carries merge methods and review state returned by GitHub.
 
 mod batch;
 mod cache;

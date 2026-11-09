@@ -1,5 +1,5 @@
 use super::*;
-use sheprd_github::{AccountsError, Error, cli, pr_actions, pull_request};
+use sheprd_github::{AccountsError, Error, cli, pull_request};
 use std::io;
 
 fn io() -> io::Error {
@@ -37,7 +37,6 @@ fn every_variant_has_a_message() {
         Error::Token,
         Error::TokenType,
         Error::Cli(cli::Error::Process(Box::new(Error::Query))),
-        Error::PrActions(pr_actions::Error::Busy),
         Error::PullRequest(pull_request::Error::Ambiguous),
         Error::Accounts(AccountsError::Id),
     ];
@@ -123,17 +122,4 @@ fn every_pull_request_variant_has_a_message() {
         }),
     );
     assert_localized(&errors);
-}
-
-#[test]
-fn every_pr_actions_variant_has_a_message() {
-    assert_localized(&[
-        pr_actions::Error::Busy,
-        pr_actions::Error::CommentBody,
-        pr_actions::Error::MergeChanged,
-        pr_actions::Error::MergeMethod,
-        pr_actions::Error::Process { source: io() },
-        pr_actions::Error::Target,
-        pr_actions::Error::Worker,
-    ]);
 }

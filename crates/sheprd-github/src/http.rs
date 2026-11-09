@@ -201,35 +201,6 @@ pub(super) fn split_aliases(
         .collect())
 }
 
-/// A GraphQL mutation the user asked for. It is sent once and never retried
-/// or cancelled midway; a refusal carries GitHub's own reason (cleaned and
-/// bounded) because "the branch moved" or "not mergeable" is the answer the
-/// user needs, and a generic failure would invite a blind retry.
-pub fn mutation(
-    context: &'static str,
-    token: &SecretString,
-    query: &str,
-    variables: Value,
-    timeout: Duration,
-) -> Result<Value> {
-    // No account-wide cooldown: nothing retries a mutation to honour one.
-    let repository = requested_repository(&variables);
-    let (result, exchange) = post(
-        context,
-        token,
-        query,
-        variables,
-        Instant::now() + timeout,
-        &mut None,
-    )?;
-    if let Some(errors) = result.get("errors") {
-        let kind = log::token_kind(token);
-        log::graphql(context, kind, &exchange, errors);
-        return Err(query_error(errors, repository, kind, exchange.reset));
-    }
-    Ok(result)
-}
-
 /// A REST read of `path` under `https://api.github.com`, such as
 /// `/repos/OWNER/REPO/security-advisories`, through the same bounded reader
 /// and typed refusals as GraphQL. Callers build `path` from names they have

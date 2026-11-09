@@ -225,7 +225,6 @@ impl SheprdWindow {
             pending_resize: None,
             pending_toast: None,
             port_forwards: Default::default(),
-            pr_actions: Default::default(),
             prefix_armed: false,
             presentation: Default::default(),
             pressed_terminal_link: None,
