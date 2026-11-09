@@ -765,7 +765,7 @@
         "docs/03-fork-and-deletion.md",
         "docs/05-verification.md"
       ],
-      "deliverable": "Owner-controlled signed packages and updates; no publishing without authorization; all product gates reconciled.",
+      "deliverable": "Owner-controlled signed packages and verified platform/package update routes after D60 removes the inherited custom updater; no publishing without authorization; all product gates reconciled.",
       "status": "blocked",
       "evidence": [
         "evidence/release-identity-audit.md",
@@ -777,7 +777,8 @@
         "evidence/t12-gpui-guide-status.md",
         "evidence/native-platform-results.md",
         "evidence/t12-upstream-site-mirrors.md",
-        "evidence/t12-site-publication-ownership.md"
+        "evidence/t12-site-publication-ownership.md",
+        "evidence/t12-custom-updater-removal.md"
       ],
       "must_close_gaps": [
         "G-RELEASE",

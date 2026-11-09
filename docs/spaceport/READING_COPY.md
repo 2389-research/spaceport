@@ -219,7 +219,7 @@ Rebrand visible application identity, executables, bundle/package IDs, local IPC
 
 ### SP-023 — Independent release engineering
 
-Keep automatic Spaceport updates, with explicit Spaceport-controlled signing and deployment configuration. No public release until identifiers, artifacts, update signatures and all supported platforms are tested. Never treat development placeholders as working release infrastructure. Independent maintenance does not prohibit reviewing security fixes. [D26, D51–D53]
+Keep automatic Spaceport updates, with explicit Spaceport-controlled signing and deployment configuration. D60 removes the inherited custom updater; replacement platform/package update routes remain a release requirement and must be verified before enabling them. No public release until identifiers, artifacts, update signatures and all supported platforms are tested. Never treat development placeholders as working release infrastructure. Independent maintenance does not prohibit reviewing security fixes. [D26, D51–D53, D60]
 
 ### SP-024 — Agent-ergonomic repository
 
@@ -982,6 +982,7 @@ It does not resurrect the phone server, add a custom tunnel manager, expose loop
 | D57 | **Remove mobile server** — Delete phone remote-control server and its desktop integration; defer all mobile design/implementation. | active |
 | D58 | **Allow Herdr 1** — Herdr 1 is an allowed runtime alongside Herdr Core. Preserve working native UX instead of requiring a Core-only startup or deleting the Herdr 1 backend. D55 is superseded. D24, D37, D48 and D56 apply to Core routes; existing Herdr 1 startup and connectors may serve Herdr 1 routes. Retain exact runtime targets and session ownership. This does not restore excluded features, authorize runtime installation/update or imply untested parity. | active |
 | D59 | **Credit both upstream teams** — The Spaceport About view must explicitly reference the Herdr team and the Sheprd team. Label upstream links as credits, retain required copyright/license notices and avoid implying endorsement. | active |
+| D60 | **Remove the inherited custom updater** — Delete the inherited custom Rust updater and its update/install/restart machinery. Spaceport updates remain a required release capability; this is a replacement transition, not removal of SP-023. Support macOS, Windows, Linux and package-manager installation routes. Sparkle and other platform mechanisms were discussed but no replacement library, Homebrew update-ownership policy, signing identity, release endpoint or publication was approved by this deletion instruction. Preserve release-build refusal while independent identity and update routes remain unverified. | active |
 
 
 ---
@@ -1164,7 +1165,7 @@ Gates this task must close: G-CHAT, G-PORT, G-FILE, G-OBS, G-PLATFORM
 
 Status: **blocked** · Prerequisites: T01, T10, T11
 
-Owner-controlled signed packages and updates; no publishing without authorization; all product gates reconciled.
+Owner-controlled signed packages and verified platform/package update routes after D60 removes the inherited custom updater; no publishing without authorization; all product gates reconciled.
 
 Requirements: SP-022, SP-023, SP-025, SP-026
 

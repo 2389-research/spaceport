@@ -12,6 +12,10 @@ Keep the upstream engineering rules below where they apply to retained code.
 Where they describe excluded Sheprd behavior, the Spaceport specification
 governs the fork.
 
+Decision D60 removes the inherited custom updater. App version reporting and
+the unconfigured-production-release refusal live in the app's constants;
+verified platform/package update replacements remain a T12 release gate.
+
 ## Priorities
 
 - Keep changes small, explicit, and focused on the root cause.
@@ -47,7 +51,6 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-remote` | Machines beyond this computer's daemon: the cloud providers (one feature each), their config tables and saved devices, running scripts on any host, and Teleport's core; no GPUI (the app runs its jobs and draws its views) |
 | `crates/sheprd-remote-control` | Remote control from a phone. With the `server` feature, the `sheprd-remote-control` daemon: HTTPS with its own CA, dual-approval pairing, Web Push, and chats and terminal tabs through Herdr's API socket. Without it, what Sheprd uses: the daemon's control protocol, the `[remote]` config table, the user service install, and the pairing state; no GPUI, and no Tokio without `server` |
 | `crates/sheprd-nearby` | `sheprd-nearby` on Linux and Windows: Sheprd's Bluetooth helper for nearby pairing and presence, BlueZ over `zbus` or WinRT's GATT server, speaking the macOS Swift helper's stdio protocol (`macos/sheprd-nearby`); no GPUI or Tokio |
-| `crates/sheprd-updater` | The in-app update service: release checks, signed manifests, staging, the install helpers, and the release identity (`APP_ID`, `APP_VERSION`); no GPUI |
 | `crates/sheprd-diagnostics` | The app's log file and crash reports: the bounded capture of the crates the app names, the writer thread and rotation, the reader the log window tails, the panic hook, and Windows minidumps; no GPUI |
 | `crates/sheprd-i18n` | The languages the app shows (`docs/i18n.md`): `Locale`, `Direction`, the `language` setting and its negotiation with an `en-US` fallback, the Fluent catalog, and the `en-XA`/`en-XB` pseudo-locales; no GPUI (the app embeds `crates/sheprd-gpui/locales`, keeps the current locale, and checks `fl!`) |
 | `crates/sheprd-launcher` | Windows-only windowed launcher that starts `sheprd.exe` without a console window; std plus `MessageBoxW` for start failures |

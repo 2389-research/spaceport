@@ -414,6 +414,13 @@
       "decision": "The Spaceport About view must explicitly reference the Herdr team and the Sheprd team. Label upstream links as credits, retain required copyright/license notices and avoid implying endorsement.",
       "status": "active",
       "source": "Doctor Biz, 2026-11-09: refactor About and reference the Herdr team and the Sheprd team."
+    },
+    {
+      "id": "D60",
+      "title": "Remove the inherited custom updater",
+      "decision": "Delete the inherited custom Rust updater and its update/install/restart machinery. Spaceport updates remain a required release capability; this is a replacement transition, not removal of SP-023. Support macOS, Windows, Linux and package-manager installation routes. Sparkle and other platform mechanisms were discussed but no replacement library, Homebrew update-ownership policy, signing identity, release endpoint or publication was approved by this deletion instruction. Preserve release-build refusal while independent identity and update routes remain unverified.",
+      "status": "active",
+      "source": "Doctor Biz, 2026-11-09: after discussing cross-platform updates and identifying the current custom Rust updater, \"let's nuke it\"."
     }
   ]
 }

@@ -83,7 +83,7 @@
       "sources": [
         "S09"
       ],
-      "issue": "Spaceport production app IDs, signing credentials, package/release endpoints and final icon assets were not supplied or validated.",
+      "issue": "Spaceport production app IDs, signing credentials, package/release endpoints and final icon assets were not supplied or validated. D60 removes the inherited custom updater; verified replacement platform/package update routes and their ownership policy remain unimplemented.",
       "required_evidence": "Owner-controlled values plus A42–A44; publishing separately authorized.",
       "forbidden_workaround": "Inherit upstream signing identities/endpoints, claim domain ownership or ship development placeholders."
     },

@@ -174,7 +174,7 @@ Gates this task must close: G-CHAT, G-PORT, G-FILE, G-OBS, G-PLATFORM
 
 Status: **blocked** · Prerequisites: T01, T10, T11
 
-Owner-controlled signed packages and updates; no publishing without authorization; all product gates reconciled.
+Owner-controlled signed packages and verified platform/package update routes after D60 removes the inherited custom updater; no publishing without authorization; all product gates reconciled.
 
 Requirements: SP-022, SP-023, SP-025, SP-026
 

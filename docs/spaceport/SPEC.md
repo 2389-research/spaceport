@@ -98,7 +98,7 @@ Rebrand visible application identity, executables, bundle/package IDs, local IPC
 
 ### SP-023 — Independent release engineering
 
-Keep automatic Spaceport updates, with explicit Spaceport-controlled signing and deployment configuration. No public release until identifiers, artifacts, update signatures and all supported platforms are tested. Never treat development placeholders as working release infrastructure. Independent maintenance does not prohibit reviewing security fixes. [D26, D51–D53]
+Keep automatic Spaceport updates, with explicit Spaceport-controlled signing and deployment configuration. D60 removes the inherited custom updater; replacement platform/package update routes remain a release requirement and must be verified before enabling them. No public release until identifiers, artifacts, update signatures and all supported platforms are tested. Never treat development placeholders as working release infrastructure. Independent maintenance does not prohibit reviewing security fixes. [D26, D51–D53, D60]
 
 ### SP-024 — Agent-ergonomic repository
 

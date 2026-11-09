@@ -1,5 +1,12 @@
 # T12 release identity audit: source state
 
+Current transition: D60 authorizes removal of the inherited custom updater;
+[the removal evidence](t12-custom-updater-removal.md) records its progress and
+qualification. Engine-specific paths and results below describe earlier
+snapshots, not a functioning current Spaceport update route. Production
+identity, platform/package update ownership, signatures and native update
+qualification remain open; deleting the engine does not close those gates.
+
 The canonical development bundle now uses `Spaceport.app` and Spaceport bundle display names; `t01-dev-bundle-name.md` records the recipe and native artifact checks. The production plist, packaging names and release identities described below remain separate open gates.
 
 Current test-suite correction: `evidence/t04-release-contract-regressions.md` records the later 241-test release Python suite pass (eight skips) and a real development-binary CLI smoke pass. This supersedes the inherited red suite result in the GitHub removal evidence, while leaving all identity, signing and native package gates open.

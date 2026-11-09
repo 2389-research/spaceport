@@ -1,5 +1,7 @@
 # Gotchas
 
+- 2026-11-09: D60 authorizes deleting the inherited custom updater, not dropping Spaceport updates or enabling a replacement. Platform and package-manager routes, signing/identity and update tests remain T12 gates. Preserve the release-build refusal when extracting version constants; do not accidentally enable upstream release publishing by deleting its guard.
+
 - 2026-11-09: Usage provider names/icons are passive presentation metadata, not evidence of a supported report feed. Keep provider visibility filtering in presentation after removing collectors. Do not restore polling or sign-in readers to populate a missing feed; G-OBS requires a separately verified authoritative source.
 
 - 2026-11-09: Unknown top-level CLI families reject through the launch parser before control-command JSON handling. Even with `--json`, a removed family such as `system` returns exit 2 and text usage on stderr. Valid control commands keep their JSON contract; do not parse an unknown-family rejection as their response schema.
