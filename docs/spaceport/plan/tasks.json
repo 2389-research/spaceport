@@ -791,7 +791,8 @@
         "evidence/t12-macos-signed-preview.md",
         "evidence/t12-macos-preview-20261110.1.md",
         "evidence/t12-rocket-artwork.md",
-        "evidence/t12-nebula-artwork.md"
+        "evidence/t12-nebula-artwork.md",
+        "evidence/t12-macos-preview-20261110.2.md"
       ],
       "must_close_gaps": [
         "G-RELEASE",

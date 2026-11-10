@@ -1,5 +1,9 @@
 # Gotchas
 
+- 2026-11-10: Doctor Biz's approval to “ship” branding includes rebuilding a usable preview and carrying verification/delivery through. A local source merge alone is not the requested result. If signing or desktop access blocks the final checks, retain the concrete build and exact failure, and continue independent work while asking for the missing access.
+
+- 2026-11-10: An inherited `RUSTUP_TOOLCHAIN` can override this repository's pinned `rust-toolchain.toml`. Select `RUSTUP_TOOLCHAIN=1.99.0` explicitly for the preview builder when the shell activates another version; do not change dependency requirements to fit the shell.
+
 - 2026-11-09: D62/D63 select the sculpted nebula rocket after Doctor Biz found the first flat emoji too plain. `design/spaceport-icon/rocket-nebula.png` is the approved source; SVG wrappers and raster/platform assets derive from its exact bytes. Preserve Twemoji reference provenance in NOTICE and LICENSE-twemoji. Keep existing internal asset filenames/catalog keys until their packaging and embedded references change together. Regenerate both `.icns` and `.car`: macOS 26 may select the catalog instead of the flattened icon. Development builds use a berry rim; the underlying approved artwork stays unchanged.
 
 - 2026-11-09: Core CLI inspection can have lifecycle side effects: `hc schema` uses the API and can autostart Core, whose launcher restores login HOME even when the query had a private environment. Use the direct-serve test Sandbox with explicit short private socket/XDG paths and exact-child cleanup for runtime probes. A successful schema query is not proof that no process started. For remote chat, missing a chat-named RPC is not the test: an authenticated lossless duplex byte route could suffice, while current `machine.exec` is batch-only.
