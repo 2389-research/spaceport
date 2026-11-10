@@ -1,5 +1,17 @@
 # Current phase handoff
 
+- About shipping: `68c5e6c6d8d409be03ab1491bd655cdf84b74012` is committed,
+  fast-forwarded to main and pushed with `feat/about-attribution`.
+  [Full CI 42906153627](https://github.com/harperreed/spaceport/actions/runs/42906153627)
+  exposed one missed test: the worktree PR banner uses the shared repository
+  constant, but its expected URL still named upstream. Linux ARM, macOS and
+  Windows logs confirm that sole app test failure. It reproduced locally.
+  The assertion now requires the correct Spaceport PR URL. Full local app
+  all-feature unit tests passed 3,840 cases with nine existing opt-in ignores.
+  Next: push the reviewed correction, require complete exact-source CI, then
+  create fresh `v20261110.5` if still unused and monitor the protected route.
+  Do not alter `.3` or `.4`, reuse their versions, or retry submissions.
+
 - About attribution follow-up: Doctor Biz approved Spaceport by 2389 Research,
   Inc., separate modifications/original Sheprd copyright rows, both upstream
   team credits, Apache-2.0 and third-party notices. Implemented

@@ -108,7 +108,7 @@ mod tests {
                             cx.simulate_click(pr.center(), Default::default());
                             assert_eq!(
                                 cx.opened_url().as_deref(),
-                                Some("https://github.com/sheprd-labs/sheprd/pull/12345")
+                                Some("https://github.com/harperreed/spaceport/pull/12345")
                             );
                         } else {
                             assert!(cx.debug_bounds("worktree-pr").is_none());
