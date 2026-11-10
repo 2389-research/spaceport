@@ -207,6 +207,9 @@ class PreviewRoute(unittest.TestCase):
         self.assertIn("needs.validate.outputs.tag != ''", jobs['publish'])
         self.assertIn('--verify-tag --prerelease', jobs['publish'])
         self.assertIn('SHA256SUMS', jobs['publish'])
+        self.assertIn('generate-changelog.sh --macos-preview', jobs['publish'])
+        self.assertIn('preview-notes-base.py', jobs['publish'])
+        self.assertNotIn("printf 'Signed and notarized", jobs['publish'])
         self.assertIn('verify-macos-preview.sh', jobs['sign'])
         for name in ('validate', 'sign', 'publish'):
             self.assertIn('preview-request.py', jobs[name])

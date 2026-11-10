@@ -1,5 +1,32 @@
 # Current phase handoff
 
+- Live tag activation: all five signing/notary secrets and the identity variable
+  are configured in `macos-preview`. Doctor Biz supplied the primary 2389
+  credential directory; its P12/password verified the exact approved Developer
+  ID certificate. The unused interactive keychain export was withdrawn and its
+  private helper/password removed; no local access policy changed. No credential
+  question remains. Only `harperreed` has repository write access.
+- Main is at `abefc1885`; task branch adds `ec5b5795a`, keeping Core backends
+  alive while test subscriptions read their events. The
+  [latest full CI](https://github.com/harperreed/spaceport/actions/runs/42883401473)
+  failed only two Windows observation tests with that lifetime race. All other
+  jobs passed, including the real Windows installer and both native GUI jobs.
+  Main CI preserves running checks when another push arrives. Local focused
+  tests, strict Core Clippy, formatting, size and sorting checks pass.
+  Preview notes now use the shared git-cliff generator, bounded by the last
+  published ancestor or recorded fork baseline; failed tags do not split them.
+  Push the reviewed fixes together, wait for full green CI on the exact SHA,
+  then create the fresh preview tag below.
+- First tag `v20261110.3` is immutable at `f81bbe64d`.
+  [Its workflow](https://github.com/harperreed/spaceport/actions/runs/42876401991)
+  validated the tag and built/smoke-tested the optimized arm64 unsigned app.
+  Signing has not started: its exact-commit CI has a Windows helper lint failure.
+  Do not move/delete/rerun that tag or submit its artifact. After the latest
+  main commit has full green CI, use a fresh version (`v20261110.4` if still
+  unused), monitor signing/publication, then download and verify the actual DMG.
+  No notarization submission or GitHub Release has occurred in this activation.
+  Earlier historical notes below retain their narrower phase scope.
+
 - Branding follow-up: D63 selects the nebula rocket. See
   [artwork evidence](../evidence/t12-nebula-artwork.md) and
   `wip/spaceport-rocket-branding` for source/export checks. The approved PNG is
@@ -25,8 +52,8 @@
   hosted rerun remains pending. The protected signing environment
   exists with main-branch and `v*` tag rules, the Apple API secrets and the
   approved identity variable. Only `harperreed` has repository write access.
-  Certificate export is waiting for macOS keychain authorization; an approved
-  matching P12/password is still needed before signing. Native verification
+  The earlier certificate export blocker is resolved by the supplied matching
+  P12/password as recorded above. Native verification
   of the final-image checker passed on the existing signed debug DMG; optimized
   hosted signing/publication and full native GUI QA remain unproved.
   The older phase handoff below retains its separate runtime/ownership scope.

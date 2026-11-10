@@ -1,13 +1,43 @@
 #!/usr/bin/env bash
+# ABOUTME: Generate release notes from the shared conventional-commit history rules.
+# ABOUTME: Bound macOS preview notes by the last published commit, ignoring failed tags.
 set -euo pipefail
 source "$(dirname -- "$0")/common.sh"
-[[ $# -ge 2 ]] || fail 'Usage: bash generate-changelog.sh VERSION OUTPUT_DIR [BETA_TAG...]'
+usage='Usage: bash generate-changelog.sh VERSION OUTPUT_DIR [BETA_TAG...] or --macos-preview VERSION OUTPUT_DIR BASE_SHA'
+preview=false
+if [[ ${1:-} == --macos-preview ]]; then
+    [[ $# == 4 ]] || fail "$usage"
+    preview=true
+    shift
+fi
+[[ $# -ge 2 ]] || fail "$usage"
 version_check "$1"
 [[ -d $2 ]] || fail 'Existing output directory required'
 command -v git-cliff >/dev/null || fail 'git-cliff is required: cargo install --locked git-cliff'
 out=$(cd -- "$2" && pwd)
 version=$1
 shift 2
+
+if [[ $preview == true ]]; then
+    base_sha=$1
+    [[ $base_sha =~ ^[0-9a-f]{40}$ ]] || fail 'Preview base must be a full lowercase commit SHA'
+    cd -- "$release_root"
+    [[ $(git cat-file -t "$base_sha" 2>/dev/null) == commit ]] || fail 'Preview base must name an existing commit'
+    git merge-base --is-ancestor "$base_sha" HEAD || fail 'Preview base must be an ancestor of HEAD'
+    source_sha=$(git rev-parse HEAD)
+    new_output "$out/CHANGELOG.md"
+    new_output "$out/RELEASE_NOTES.md"
+    # A pushed tag already exists, and failed preview tags must not divide this
+    # published range. Render once so both artifacts contain identical history.
+    git-cliff --config cliff.toml --tag "v$version" --ignore-tags '.*' \
+        --strip header "$base_sha..HEAD" --output "$out/CHANGELOG.md"
+    printf 'macOS arm64 preview: signed/notarized DMG, requires macOS 14.2+. Source: %s.\n\n' "$source_sha" > "$out/RELEASE_NOTES.md"
+    cat "$out/CHANGELOG.md" >> "$out/RELEASE_NOTES.md"
+    # A same-commit rebuild has no new history; retain only the factual preamble.
+    [[ -s $out/CHANGELOG.md || $base_sha == "$source_sha" ]] || fail 'Generated changelog is empty'
+    [[ -s $out/RELEASE_NOTES.md ]] || fail 'Generated release notes are empty'
+    exit 0
+fi
 
 # Windows is signed, and so updates in the app, only once release.yml's
 # validate job finds the signing publisher set. No default, so a preview can
