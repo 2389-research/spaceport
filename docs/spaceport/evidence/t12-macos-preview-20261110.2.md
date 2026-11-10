@@ -1,5 +1,9 @@
 # Nebula artwork preview 20261110.2
 
+This records the initial unsigned build and historical access failures.
+The same build is now signed and notarized; see
+[the signed qualification](t12-macos-preview-20261110.2-signed.md).
+
 Doctor Biz clarified that shipping the approved branding includes rebuilding
 the application. This candidate was built from
 `8f94bef21e6e47d682b4b8e317b1c852d013e9f5` with the selected nebula artwork.

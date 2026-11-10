@@ -4,21 +4,19 @@
   [artwork evidence](../evidence/t12-nebula-artwork.md) and
   `wip/spaceport-rocket-branding` for source/export checks. The approved PNG is
   `design/spaceport-icon/rocket-nebula.png`. All platform artwork and social
-  cards derive from it. [Preview 20261110.2](../evidence/t12-macos-preview-20261110.2.md)
-  is rebuilt and packaged as an unsigned arm64 ZIP under the integration
-  checkout's `target/test-builds/20261110.2-unsigned/`. CLI, compiled identity,
-  ZIP integrity and embedded/packaged icon matching passed. The initial
-  `errSecInternalComponent` signing failure has cleared: the default keychain
-  is unlocked and an actual helper-signing probe passed. The later wrapper
-  blocked reading notarization metadata in Downloads before starting the
-  signer; the cause is unestablished. Native visual QA remains
-  unproved because the computer-use service found no visible test window.
-- Current next step: restore access to the approved notarization metadata,
-  then sign the existing
-  `target/distribution/20261110.2-debug-arm64/Spaceport.app` with the existing
-  signer. No notarization receipt exists for this version. Do not rebuild or
-  resubmit an artifact merely because a later operation times out. The older
-  phase handoff below retains its separate runtime/ownership scope.
+  cards derive from it. [Signed preview 20261110.2](../evidence/t12-macos-preview-20261110.2-signed.md)
+  is ready under the integration checkout's `target/test-builds/signed/20261110.2/`.
+  It is a Developer ID signed, notarized and stapled arm64 debug DMG. Both
+  Apple submissions were Accepted; signatures, Gatekeeper, compiled identity,
+  shipped CLI and nebula resource checks passed. Earlier access failures
+  cleared without changing keychain policy or importing a P12. Do not repeat
+  its submissions. The earlier unsigned ZIP remains separately preserved.
+- Native Dock/About/full GUI verification remains unproved. The exact private
+  test processes are stopped; no personal runtime or installed app was changed.
+  Doctor Biz asked about tag-triggered GitHub builds: the existing manual
+  `.github/workflows/macos-preview.yml` is the starting point, but no workflow,
+  hosted credentials, tag or publication configuration has been changed.
+  The older phase handoff below retains its separate runtime/ownership scope.
 
 - Task/requirements: bounded T06 SP-009/SP-003 chat lifecycle policy removal;
   T10 exclusion evidence and T12 refreshed signed preview. Task/acceptance/gap
