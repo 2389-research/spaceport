@@ -3,12 +3,13 @@
 **Spaceport development status:** These are inherited Sheprd packaging notes,
 not instructions to release this fork. The current release build rejects
 `HERDR_RELEASE_VERSION` because general production identity, update delivery,
-icons, and native package checks remain unresolved. The separate macOS preview
+and native package checks remain unresolved. The separate macOS preview
 route below uses the approved 2389 Developer ID inputs and `ai.2389.spaceport`;
 that approval does not enable general production releases. See the
 [release identity audit](../../docs/spaceport/evidence/release-identity-audit.md)
-and [open gates](../../docs/spaceport/plan/gaps.json). Do not run a publish or
-install route from this branch. The inherited custom updater, its feeds and
+and [open gates](../../docs/spaceport/plan/gaps.json). Do not run an inherited
+publish or install route. D64 approves the separate tagged prerelease route below.
+The inherited custom updater, its feeds and
 update archives have been removed. A replacement automatic update route is
 unimplemented and remains a release gate; no replacement framework, keys,
 or release source have been selected.
@@ -22,19 +23,56 @@ prerelease/build suffixes, or leading zeros.
 ## Spaceport macOS previews
 
 The separate `macos-preview.yml` workflow builds and signs **macOS arm64 previews only**.
-It accepts manual runs by `harperreed` on `harperreed/spaceport` main with an exact
-commit SHA and explicit `YYYYMMDD.COUNTER` version. The unsigned build job has no
-signing secrets and runs `smoke-cli.py` on its actual executable. A second job uses
-the protected `macos-preview` environment and only that run's checksummed artifact.
-Configure required owner review and main-only deployment rules for that environment
-before running it. This change does not provision the environment or upload secrets.
-It uploads workflow artifacts; it creates no GitHub release or update feed.
+Pushing `vYYYYMMDD.COUNTER` as `harperreed` to `harperreed/spaceport` builds an
+optimized app, signs and notarizes it, and publishes a GitHub **prerelease** with
+the DMG and `SHA256SUMS`. Manual runs on main accept an exact commit SHA and an
+explicit version; they upload workflow artifacts without publishing a release.
+Both routes require the selected commit to belong to main and have a complete,
+successful main CI run. The signing and publishing jobs re-fetch the tag and
+refuse it if it moved. Only the publishing job receives `contents: write`.
+
+The unsigned build has no signing secrets and runs `smoke-cli.py` on its actual
+executable. The signing job uses the protected `macos-preview` environment and
+only that run's checksummed artifact. It verifies signatures, notarization tickets
+and Gatekeeper, mounts the final DMG read-only, checks the app identity, and runs
+the mounted CLI before writing the checksum. This does not prove native GUI behavior.
+
+Before the first hosted run, merge these workflows to main and configure the
+`macos-preview` environment in repository Settings > Environments. Allow main
+branches and `v*` tags through its selected deployment rules. Restrict who can
+create or update those tags with repository rules, and require owner review for
+signing access. Add these **environment** values, never repository source files:
+
+| Kind | Name | Value |
+| --- | --- | --- |
+| Variable | `MACOS_SIGNING_IDENTITY` | `Developer ID Application: 2389 Research, Inc (HD9NM9NSMK)` |
+| Secret | `MACOS_CERTIFICATE_P12_BASE64` | Base64 of the matching Developer ID certificate and private key P12 |
+| Secret | `MACOS_CERTIFICATE_PASSWORD` | That P12's export password |
+| Secret | `APPLE_API_PRIVATE_KEY` | App Store Connect private `.p8` key contents |
+| Secret | `APPLE_API_KEY_ID` | That API key's ID |
+| Secret | `APPLE_API_ISSUER_ID` | That API key's issuer ID |
+
+This change does not provision the environment or upload credentials. An installed
+local keychain identity is insufficient for hosted signing: CI needs the matching
+P12 and its password. Do not use a different company's certificate. The importer
+requires exactly one signing identity and checks Team `HD9NM9NSMK`.
+
+After main CI passes on the commit to release, select an unused version and push
+one tag (replace the example version and SHA):
+
+```sh
+git tag -a v20261110.3 FULL_MAIN_COMMIT_SHA -m 'Spaceport macOS preview 20261110.3'
+git push origin refs/tags/v20261110.3
+```
+
 A read-only history check rejects reruns and any earlier run using the exact
 version, even if that run failed before signing. It requires complete, unchanged
 history within 1,000 runs and refuses API failure, truncation or unknown titles.
-The serialized workflow checks again before signing. This conservative reservation
-is not a backend exactly-once guarantee: keep history and receipts, and never delete
-a reservation to force another submission.
+Malformed version tags cannot sign and do not reserve a valid version. The
+serialized workflow checks again before signing. Inspect retained notarization
+receipts after a failure; never rerun, move or delete a used tag to force another
+submission. Use a new version after resolving the failure. No updater feed,
+Homebrew publication or general production release route is enabled.
 
 Preview builds use `SPACEPORT_MACOS_PREVIEW_VERSION`, `ai.2389.spaceport`, and
 `Spaceport.app`. The compile-time selector rejects other target operating systems

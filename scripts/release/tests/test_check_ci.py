@@ -1,4 +1,6 @@
-"""The release gate requires actual job success, not a green skipped workflow."""
+"""ABOUTME: Check release CI eligibility, repository selection, and complete job success.
+ABOUTME: Keep skipped workflows and untrusted runs from qualifying a release.
+"""
 import contextlib
 import importlib.util
 import io
@@ -34,7 +36,56 @@ class CheckCi(unittest.TestCase):
         with mock.patch.object(CI, "api", side_effect=[{"workflow_runs": runs}, job_pages]) as api:
             CI.require_ci(SHA)
             self.assertEqual(api.call_args, mock.call(
-                "actions/runs/123/jobs?filter=latest&per_page=100", paginate=True))
+                "actions/runs/123/jobs?filter=latest&per_page=100", repo=CI.REPO, paginate=True))
+
+    def test_spaceport_requires_selected_actor_and_exact_main_commit(self):
+        candidate = {**run(), "actor": {"login": "harperreed"},
+                     "triggering_actor": {"login": "harperreed"}}
+        for changes, accepted in (({}, True), ({"actor": {"login": "penso"}}, False),
+                                  ({"triggering_actor": {"login": "other"}}, False),
+                                  ({"head_sha": "b" * 40}, False),
+                                  ({"head_branch": "topic"}, False),
+                                  ({"event": "pull_request"}, False)):
+            with self.subTest(changes=changes):
+                self.assertEqual(CI.eligible({**candidate, **changes}, SHA, "harperreed"), accepted)
+
+    def test_spaceport_selection_survives_wait_and_job_recheck(self):
+        candidate = {**run(), "actor": {"login": "harperreed"},
+                     "triggering_actor": {"login": "harperreed"}}
+        responses = [{"workflow_runs": [{**candidate, "status": "in_progress", "conclusion": None}]},
+                     {"workflow_runs": [candidate]}, [{"jobs": jobs()}]]
+        with mock.patch.object(CI, "api", side_effect=responses) as api, \
+                mock.patch.object(CI, "gh") as gh:
+            CI.require_ci(SHA, wait=True, repo="harperreed/spaceport", actor="harperreed")
+            self.assertTrue(all(call.kwargs["repo"] == "harperreed/spaceport"
+                                for call in api.call_args_list))
+            self.assertEqual(gh.call_args.args[3:5], ("--repo", "harperreed/spaceport"))
+
+    def test_api_uses_explicit_repository(self):
+        with mock.patch.object(CI, "gh", return_value=mock.Mock(stdout='{}')) as gh:
+            self.assertEqual(CI.api("actions/workflows/ci.yml/runs", repo="harperreed/spaceport"), {})
+            self.assertEqual(gh.call_args.args[:2],
+                             ("api", "repos/harperreed/spaceport/actions/workflows/ci.yml/runs"))
+
+    def test_cli_selects_repository_and_actor(self):
+        with mock.patch("sys.argv", ["check-ci.py", SHA, "--wait", "--repo",
+                                     "harperreed/spaceport", "--actor", "harperreed"]), \
+                mock.patch.object(CI, "require_ci") as check:
+            self.assertEqual(CI.main(), 0)
+            check.assert_called_once_with(SHA, True, repo="harperreed/spaceport", actor="harperreed")
+
+    def test_cli_rejects_malformed_repository_and_actor_before_api(self):
+        for option, value in (("--repo", "a/b/../c"), ("--repo", "a/b?x=y"),
+                              ("--repo", "a/.."), ("--repo", "-a/repo"),
+                              ("--actor", "user/other"), ("--actor", "user?x=y"),
+                              ("--actor", "")):
+            with self.subTest(option=option, value=value), \
+                    mock.patch("sys.argv", ["check-ci.py", SHA, option, value]), \
+                    mock.patch.object(CI, "require_ci") as check:
+                with self.assertRaises(SystemExit) as error:
+                    CI.main()
+                self.assertEqual(error.exception.code, 2)
+                check.assert_not_called()
 
     def test_full_push_and_manual_runs_pass_with_paginated_jobs(self):
         for event in ("push", "workflow_dispatch"):

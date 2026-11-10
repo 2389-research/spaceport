@@ -13,9 +13,15 @@
   its submissions. The earlier unsigned ZIP remains separately preserved.
 - Native Dock/About/full GUI verification remains unproved. The exact private
   test processes are stopped; no personal runtime or installed app was changed.
-  Doctor Biz asked about tag-triggered GitHub builds: the existing manual
-  `.github/workflows/macos-preview.yml` is the starting point, but no workflow,
-  hosted credentials, tag or publication configuration has been changed.
+  D64's [tag-triggered workflow](../evidence/t12-tagged-macos-workflow.md) is
+  implemented and locally verified on `feat/tagged-macos-release` in
+  `.worktrees/tagged-macos-release`, based on `a1e594d31`. It remains uncommitted;
+  no merge, push, tag, hosted credentials or repository settings were changed.
+  It requires green main CI and a protected signing environment with the
+  matching 2389 P12/password before its first real hosted run. The installed
+  local keychain identity does not supply that password. Native verification
+  of the final-image checker passed on the existing signed debug DMG; optimized
+  hosted signing/publication and full native GUI QA remain unproved.
   The older phase handoff below retains its separate runtime/ownership scope.
 
 - Task/requirements: bounded T06 SP-009/SP-003 chat lifecycle policy removal;

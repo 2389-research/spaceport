@@ -21,6 +21,24 @@ class PreviewHistoryTests(unittest.TestCase):
     def test_current_run_and_distinct_counter_are_allowed(self):
         self.check([dict(total_count=2, workflow_runs=[run(), run(19, '20261109.10')])])
 
+    def test_tag_and_manual_share_version_reservations(self):
+        tagged = dict(run(), display_title=f'macOS preview v20261109.1 at {SHA}')
+        self.check([dict(total_count=1, workflow_runs=[tagged])])
+        with self.assertRaisesRegex(ValueError, 'already reserved'):
+            self.check([dict(total_count=2, workflow_runs=[tagged, run(19)])])
+
+    def test_invalid_version_tags_cannot_poison_later_valid_requests(self):
+        for tag in ('v1.2.3', 'vbad', 'v20261109.0', 'v20261109.1;echo'):
+            with self.subTest(tag=tag):
+                invalid = dict(run(19), display_title=f'macOS preview {tag} at {SHA}')
+                self.check([dict(total_count=2, workflow_runs=[run(), invalid])])
+
+    def test_current_invalid_title_and_malformed_history_still_refuse(self):
+        for title in (f'macOS preview vbad at {SHA}', 'macOS preview vbad at unknown',
+                      f'other preview vbad at {SHA}', f'macOS preview bad token at {SHA}'):
+            with self.subTest(title=title), self.assertRaises(ValueError):
+                self.check([dict(total_count=1, workflow_runs=[dict(run(), display_title=title)])])
+
     def test_previous_same_version_refuses_regardless_of_conclusion(self):
         for conclusion in ('success', 'cancelled', 'failure', None):
             with self.subTest(conclusion=conclusion), self.assertRaisesRegex(ValueError, 'already reserved'):

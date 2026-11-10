@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 VERSION = r'[1-9][0-9]{7}\.[1-9][0-9]*'
-TITLE = re.compile(rf'macOS preview ({VERSION}) at ([0-9a-f]{{40}})')
+TITLE = re.compile(r'macOS preview v?(\S+) at ([0-9a-f]{40})')
 MAX_RUNS = 1000
 PER_PAGE = 100
 
@@ -40,6 +40,12 @@ def check(version, sha, run_id, attempt, read_page):
             if type(identity) is not int or identity in seen or match is None:
                 raise ValueError('Workflow history has a duplicate or unrecognized record')
             seen.add(identity)
+            # Invalid version tags can trigger a run, but neither request validation
+            # nor the signer accepts them. They cannot reserve a valid version.
+            if not re.fullmatch(VERSION, match[1]):
+                if identity == current:
+                    raise ValueError('Current workflow title does not match the selected preview')
+                continue
             if identity == current:
                 if match.groups() != (version, sha):
                     raise ValueError('Current workflow title does not match the selected preview')

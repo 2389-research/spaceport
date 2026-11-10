@@ -1,7 +1,9 @@
 name: macOS signed preview
-run-name: macOS preview ${{ inputs.version }} at ${{ inputs.expected_sha }}
+run-name: macOS preview ${{ inputs.version || github.ref_name }} at ${{ inputs.expected_sha || github.sha }}
 
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -26,33 +28,63 @@ defaults:
     shell: bash
 
 jobs:
-  build:
+  validate:
     if: >-
-      github.event_name == 'workflow_dispatch' &&
       github.repository == 'harperreed/spaceport' &&
-      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) &&
       github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
-    runs-on: macos-15
-    timeout-minutes: 90
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.request.outputs.version }}
+      sha: ${{ steps.request.outputs.sha }}
+      tag: ${{ steps.request.outputs.tag }}
     env:
-      VERSION: ${{ inputs.version }}
-      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      INPUT_VERSION: ${{ inputs.version }}
+      INPUT_SHA: ${{ inputs.expected_sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
-      - name: Validate selected commit and version
-        run: |
-          set -euo pipefail
-          source scripts/release/common.sh
-          version_check "$VERSION"
-          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ && "$EXPECTED_SHA" == "$GITHUB_SHA" ]]
-          [[ "$(git rev-parse HEAD)" == "$EXPECTED_SHA" ]]
+      - name: Validate tag, commit and main ancestry
+        id: request
+        run: python3 scripts/release/preview-request.py
       - name: Reserve this version against complete workflow history
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.request.outputs.version }}
+          EXPECTED_SHA: ${{ steps.request.outputs.sha }}
         run: python3 scripts/release/preview-history.py
+
+  ci-gate:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      EXPECTED_SHA: ${{ needs.validate.outputs.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          persist-credentials: false
+      - name: Require full CI on the exact main commit before signing
+        run: python3 scripts/release/check-ci.py "$EXPECTED_SHA" --wait --repo harperreed/spaceport --actor harperreed
+
+  build:
+    needs: validate
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          persist-credentials: false
       - run: rustup show
       - run: cargo install cargo-about --version 0.9.2 --locked --features cli
       - name: Build unsigned release-profile arm64 preview and smoke actual CLI
@@ -73,23 +105,28 @@ jobs:
           retention-days: 7
 
   sign:
-    needs: build
+    needs: [validate, build, ci-gate]
     if: >-
-      github.event_name == 'workflow_dispatch' &&
       github.repository == 'harperreed/spaceport' &&
-      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) &&
       github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
     environment: macos-preview
     runs-on: macos-15
     timeout-minutes: 60
     env:
-      VERSION: ${{ inputs.version }}
-      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      VERSION: ${{ needs.validate.outputs.version }}
+      EXPECTED_SHA: ${{ needs.validate.outputs.sha }}
+      INPUT_VERSION: ${{ inputs.version }}
+      INPUT_SHA: ${{ inputs.expected_sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.validate.outputs.sha }}
+          fetch-depth: 0
           persist-credentials: false
+      - name: Revalidate current tag and main ancestry
+        run: python3 scripts/release/preview-request.py
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: macos-preview-unsigned-${{ github.run_id }}
@@ -114,6 +151,8 @@ jobs:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: bash scripts/release/sign-macos.sh "$VERSION" target/preview-input/Spaceport.app target/preview-signed arm64 import
+      - name: Verify the final mounted image and write its checksum
+        run: bash scripts/release/verify-macos-preview.sh "$VERSION" release target/preview-signed
       - name: Retain completed preview and submission diagnostics
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -124,3 +163,41 @@ jobs:
             target/notarization/
           if-no-files-found: warn
           retention-days: 30
+
+  publish:
+    needs: [validate, sign]
+    if: >-
+      github.event_name == 'push' && needs.validate.outputs.tag != '' &&
+      github.repository == 'harperreed/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      TAG: ${{ needs.validate.outputs.tag }}
+      EXPECTED_SHA: ${{ needs.validate.outputs.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Refuse moved or unmerged tags before publishing
+        run: python3 scripts/release/preview-request.py
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: macos-preview-signed-${{ github.run_id }}
+          path: target/preview-result
+      - name: Publish the verified DMG and checksum as a macOS prerelease
+        run: |
+          set -euo pipefail
+          cd target/preview-result/preview-signed
+          file="Spaceport-$VERSION-arm64-apple-darwin.dmg"
+          test -f "$file"
+          test "$(cat SHA256SUMS)" = "$(shasum -a 256 "$file")"
+          shasum -a 256 -c SHA256SUMS
+          printf 'Signed and notarized macOS arm64 preview. Requires macOS 14.2 or later.\n\nSource: %s\nWorkflow: https://github.com/harperreed/spaceport/actions/runs/%s\n' "$EXPECTED_SHA" "$GITHUB_RUN_ID" > RELEASE_NOTES.md
+          gh release create "$TAG" "$file" SHA256SUMS --repo harperreed/spaceport --verify-tag --prerelease --title "Spaceport $VERSION (macOS preview)" --notes-file RELEASE_NOTES.md

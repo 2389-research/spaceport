@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import re
 import shutil
 import subprocess
 import tempfile
@@ -182,16 +183,34 @@ class PreviewSigning(unittest.TestCase):
 
 
 class PreviewRoute(unittest.TestCase):
-    def test_manual_mac_only_artifact_workflow(self):
+    def test_manual_artifacts_and_tagged_prereleases_keep_signing_isolated(self):
         workflow = (ROOT / '.github/workflows/macos-preview.yml').read_text()
-        for text in ('workflow_dispatch:', "github.repository == 'harperreed/spaceport'",
+        for text in ('workflow_dispatch:', 'push:', "tags: ['v*']", "github.repository == 'harperreed/spaceport'",
                      "github.actor == 'harperreed'", "github.triggering_actor == 'harperreed'",
                      'environment: macos-preview', 'contents: read', 'smoke-cli.py',
                      'actions/upload-artifact@', 'actions/download-artifact@'):
             self.assertIn(text, workflow)
-        for text in ('pull_request:', 'contents: write', 'gh release', 'update-homebrew', 'windows-',
+        for text in ('pull_request:', 'update-homebrew', 'windows-',
                      'HERDR_RELEASE_VERSION:'):
             self.assertNotIn(text, workflow)
+        sections = re.split(r'^  ([a-z-]+):\n', workflow.split('\njobs:\n', 1)[1], flags=re.M)
+        jobs = dict(zip(sections[1::2], sections[2::2]))
+        for name, job in jobs.items():
+            if name != 'publish':
+                self.assertNotIn('contents: write', job)
+                self.assertNotIn('gh release', job)
+            if name != 'sign':
+                self.assertNotIn('secrets.', job)
+        self.assertIn('needs: [validate, build, ci-gate]', jobs['sign'])
+        self.assertIn('--repo harperreed/spaceport --actor harperreed', jobs['ci-gate'])
+        self.assertIn("github.event_name == 'push'", jobs['publish'])
+        self.assertIn("needs.validate.outputs.tag != ''", jobs['publish'])
+        self.assertIn('--verify-tag --prerelease', jobs['publish'])
+        self.assertIn('SHA256SUMS', jobs['publish'])
+        self.assertIn('verify-macos-preview.sh', jobs['sign'])
+        for name in ('validate', 'sign', 'publish'):
+            self.assertIn('preview-request.py', jobs[name])
+            self.assertIn('fetch-depth: 0', jobs[name])
         self.assertIn("github.repository == 'sheprd-labs/sheprd'", (ROOT / '.github/workflows/release.yml').read_text())
 
     def test_metadata_has_no_inherited_owner_or_removed_feature_claim(self):

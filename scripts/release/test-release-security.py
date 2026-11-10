@@ -43,8 +43,19 @@ class ReleaseTargets(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         sections = re.split(r"^  ([a-z-]+):\n", workflow.split("\njobs:\n", 1)[1], flags=re.M)
         jobs = dict(zip(sections[1::2], sections[2::2]))
-        for job in jobs.values():
+        for name, job in jobs.items():
             self.assertIn("github.repository == 'sheprd-labs/sheprd'", job)
+            self.assertIn("github.repository == 'harperreed/spaceport'", job)
+            if name != "build-macos":
+                condition = " ".join(re.search(r"^    if: >-\n((?:      .*\n)+)", job, re.M)[1].split())
+                mapping = " ".join("""
+                  ((github.repository == 'harperreed/spaceport' &&
+                    github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
+                   (github.repository != 'harperreed/spaceport' &&
+                    github.actor == 'penso' && github.triggering_actor == 'penso'))
+                """.split())
+                self.assertIn(mapping, condition, name)
+            self.assertNotIn("secrets.", job, name)
         # Keeps every main cache inside the repository's 10 GB cache budget.
         self.assertIn("\nenv:\n  CARGO_PROFILE_DEV_DEBUG: '0'\n\njobs:\n", workflow)
         self.assertIn("    needs: [checks, windows, windows-native, windows-package, build-macos, commits]\n",

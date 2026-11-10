@@ -13,7 +13,12 @@ ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = (ROOT / ".github/workflows/ci.yml").read_text()
 SECTIONS = re.split(r"^  ([a-z-]+):\n", WORKFLOW.split("\njobs:\n", 1)[1], flags=re.M)
 JOBS = dict(zip(SECTIONS[1::2], SECTIONS[2::2]))
-PR_JOBS = ("zizmor", "commits", "checks", "windows", "windows-native", "build-macos", "checks-passed")
+PR_JOBS = tuple(job for job in JOBS if job != "build")
+REPOSITORY_OWNERS = {
+    "sheprd-labs/sheprd": "penso",
+    "penso/herdr-gpui": "penso",
+    "harperreed/spaceport": "harperreed",
+}
 # Jobs that never run on main: the release workflow builds those targets.
 PR_ONLY_JOBS = ("build-macos",)
 
@@ -35,8 +40,11 @@ def condition_matches(job, context, jobs=JOBS):
                 return all(values)
             if isinstance(node.op, ast.Or):
                 return any(values)
-        if isinstance(node, ast.Compare) and len(node.ops) == 1 and isinstance(node.ops[0], ast.Eq):
-            return evaluate(node.left) == evaluate(node.comparators[0])
+        if isinstance(node, ast.Compare) and len(node.ops) == 1:
+            if isinstance(node.ops[0], ast.Eq):
+                return evaluate(node.left) == evaluate(node.comparators[0])
+            if isinstance(node.ops[0], ast.NotEq):
+                return evaluate(node.left) != evaluate(node.comparators[0])
         if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
                 and node.func.id == "always" and not node.args and not node.keywords):
             return True
@@ -63,34 +71,41 @@ class CiPolicy(unittest.TestCase):
     def test_fork_pr_can_run_after_github_approval_or_owner_rerun(self):
         # Approval does not rewrite actor/author/source repo. An owner rerun
         # changes triggering_actor only; neither case may skip the PR checks.
-        for actor in ("larry0x", "penso"):
-            context = self.context(**{"github.triggering_actor": actor})
-            for job in PR_JOBS:
-                with self.subTest(actor=actor, job=job):
-                    self.assertTrue(condition_matches(job, context))
-            self.assertFalse(condition_matches("build", context))
+        for repository, owner in REPOSITORY_OWNERS.items():
+            for actor in ("larry0x", owner):
+                context = self.context(**{"github.repository": repository,
+                                          "github.triggering_actor": actor})
+                for job in PR_JOBS:
+                    with self.subTest(repository=repository, actor=actor, job=job):
+                        self.assertTrue(condition_matches(job, context))
+                self.assertFalse(condition_matches("build", context))
 
     def test_owner_pr_still_runs_checks_but_not_release_build(self):
-        context = self.context(**{
-            "github.actor": "penso", "github.triggering_actor": "penso",
-            "github.event.pull_request.user.login": "penso",
-            "github.event.pull_request.head.repo.full_name": "sheprd-labs/sheprd",
-        })
-        for job in PR_JOBS:
-            self.assertTrue(condition_matches(job, context), job)
-        self.assertFalse(condition_matches("build", context))
+        for repository, owner in REPOSITORY_OWNERS.items():
+            context = self.context(**{
+                "github.repository": repository,
+                "github.actor": owner, "github.triggering_actor": owner,
+                "github.event.pull_request.user.login": owner,
+                "github.event.pull_request.head.repo.full_name": repository,
+            })
+            for job in PR_JOBS:
+                self.assertTrue(condition_matches(job, context), (repository, job))
+            self.assertFalse(condition_matches("build", context))
 
     def test_non_pr_events_require_owner_main_and_expected_event(self):
-        for event, ref, actor, triggering_actor in itertools.product(
+        for repository, event, ref, actor, triggering_actor in itertools.product(
+                (*REPOSITORY_OWNERS, "larry0x/spaceport"),
                 ("push", "workflow_dispatch", "pull_request_target", "workflow_run"),
                 ("refs/heads/main", "refs/heads/topic", "refs/tags/v1"),
-                ("penso", "larry0x"), ("penso", "larry0x")):
+                ("penso", "harperreed", "larry0x"), ("penso", "harperreed", "larry0x")):
             context = self.context(**{
+                "github.repository": repository,
                 "github.event_name": event, "github.ref": ref,
                 "github.actor": actor, "github.triggering_actor": triggering_actor,
             })
+            owner = REPOSITORY_OWNERS.get(repository)
             allowed = (event in ("push", "workflow_dispatch") and ref == "refs/heads/main"
-                       and actor == "penso" and triggering_actor == "penso")
+                       and actor == owner and triggering_actor == owner)
             for job in JOBS:
                 with self.subTest(job=job, context=context):
                     self.assertEqual(condition_matches(job, context),
