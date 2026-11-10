@@ -41,7 +41,9 @@ class TeleportEngineAbsence(unittest.TestCase):
             text = (APP / relative).read_text()
             self.assertIn("host_script::", text, relative)
         self.assertIn("agent::AgentKind", (APP / "overview/reopen.rs").read_text())
-        self.assertIn("snapshot::ProcessInfo", (APP / "chat/restore/plan.rs").read_text())
+        processes = (APP / "processes.rs").read_text()
+        self.assertIn("sheprd_remote::snapshot::ProcessInfo", processes)
+        self.assertIn("info.foreground_pids()", processes)
 
 
 if __name__ == "__main__":

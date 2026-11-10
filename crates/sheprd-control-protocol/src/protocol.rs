@@ -38,7 +38,8 @@ use serde::{Deserialize, Serialize};
 /// 35: removed the host-resource system request/reply, browser capability,
 /// and retired page kinds from app status/tab replies.
 /// 36: removed custom app updater operations and replies.
-pub const PROTOCOL_VERSION: u32 = 36;
+/// 37: removed chat conversion requests and replies.
+pub const PROTOCOL_VERSION: u32 = 37;
 
 /// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;

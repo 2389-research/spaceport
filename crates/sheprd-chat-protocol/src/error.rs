@@ -30,8 +30,6 @@ pub enum Error {
     NotText(EntryId),
     #[error("question answers in entry {0:?} exceed their count or text limit")]
     QuestionAnswersLimit(EntryId),
-    #[error(transparent)]
-    Restore(#[from] crate::restore::Error),
     #[error("no entry {0:?}")]
     UnknownEntry(EntryId),
     #[error("no pending permission request {0:?}")]

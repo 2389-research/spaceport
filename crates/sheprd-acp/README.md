@@ -137,19 +137,12 @@ through Herdr's JSON API:
 - on exit, the token and title are cleared, the tab gets the agent's name
   back unless the user renamed it, and the agent is released.
 
-Herdr does not keep the token, or the program, when it restores a pane after
-a reboot or a server restart. So once the agent's session opens, a chat of a
-built-in agent in a Herdr pane also writes a restore record to
-`restore/<endpoint>.json` beside the attach sockets (`~/.local/state/herdr/acp`,
-or `$XDG_STATE_HOME/herdr/acp`; private to this user): the pane, the Herdr API
-socket, the agent, whether `--acp` was used, the folder, and the session id.
-It removes the record when it ends on its own, because the user quit or the
-agent ended; a killed chat, as a reboot kills it, leaves it behind for Sheprd
-to continue the session with `--resume` (see
-[Chats after a reboot](../../docs/rich-chat.md#chats-after-a-reboot), which
-also covers how Sheprd drops the record of a chat it saw end). A custom command (`-- COMMAND`), a
-chat started with extra agent arguments, one with `--no-attach`, and a chat
-outside a Herdr pane (including a Herdr 2 terminal) keep no record.
+The adapter keeps no agent restart records. Spaceport can attach while the
+adapter runs, but does not restart an absent adapter after a reboot or daemon
+restart. To continue a session explicitly in a runtime-owned terminal, use
+`sheprd-acp --resume ID AGENT`. It fails if Claude, Codex, or an ACP agent cannot
+load that session. Native Pi receives the ID as `pi --session`; Pi decides what
+happens when it cannot find that session.
 
 It also writes OSC 7501 program status to the terminal, for terminals that read
 it; terminals that do not ignore it.

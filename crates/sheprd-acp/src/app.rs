@@ -174,14 +174,6 @@ pub(crate) fn run(options: Options) -> anyhow::Result<()> {
         (None, None)
     };
     let target = Target::from_env();
-    let keeper = crate::restore::Keeper::new(
-        sheprd_chat_protocol::restore::restore_dir(),
-        target.as_ref(),
-        endpoint.as_ref(),
-        &options.agent,
-        adapter(&options),
-        &cwd,
-    );
     let reporter = match &target {
         Some(target) => Some(Reporter::start(
             target.clone(),
@@ -191,7 +183,6 @@ pub(crate) fn run(options: Options) -> anyhow::Result<()> {
         None => None,
     };
     let report = reporter.as_ref().map(Reporter::handle);
-    let session_keeper = keeper.clone();
 
     let config = Config {
         agent: agent.display,
@@ -207,11 +198,6 @@ pub(crate) fn run(options: Options) -> anyhow::Result<()> {
         .name("acp-session".to_owned())
         .spawn(move || {
             let mut session = Session::new(config, outbox, move |update| match update {
-                Update::Opened(id) => {
-                    if let Some(keeper) = &session_keeper {
-                        keeper.opened(&id);
-                    }
-                }
                 Update::Activity(activity) => {
                     if let Some(report) = &report {
                         report.report(activity);
@@ -243,10 +229,6 @@ pub(crate) fn run(options: Options) -> anyhow::Result<()> {
         result
     };
     let _ = session_thread.join();
-    // Ending here, not killed, the chat is over: nothing restores it.
-    if let Some(keeper) = &keeper {
-        keeper.ended();
-    }
     agent_process.stop();
     if let Some(reporter) = reporter {
         reporter.close();

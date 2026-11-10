@@ -26,7 +26,6 @@ for what only Spaceport shows or keeps.
 | Open a dev server in a tab, forwarded when you run on an SSH host | `spaceport ports open 3000` |
 | See the processes under a pane, with CPU and memory | `spaceport processes` |
 | Start a chat with another agent in a new tab, shown as a native chat view | `spaceport chat new claude`, then `spaceport chat` for its status |
-| Move a terminal agent into a native chat, keeping its conversation (an agent that is idle, in another pane) | `spaceport chat convert --pane ID`, then `spaceport chat` for its status |
 | Render existing Linux Codex/Claude conversations in their current panes | `spaceport config set chat.render_existing true` (needs `features.acp_chats`, on by default); `chat status --json` reports the session and input mode |
 | List or focus the app's windows and its own tabs | `spaceport window`, `spaceport tab`, `spaceport tab focus ID` |
 | Block until something happens in the app | `spaceport wait tab-closed ID --timeout 600`, `spaceport events --follow` |

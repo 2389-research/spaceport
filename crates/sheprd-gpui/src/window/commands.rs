@@ -548,10 +548,6 @@ impl SheprdWindow {
                 self.show_flash(Flash::warning(fl!("core-terminals-mirror-needs-pane")), cx);
                 return;
             }
-            Command::ConvertToChat => {
-                self.convert_to_chat_or_flash(cx);
-                return;
-            }
             Command::IncreaseFontSize | Command::DecreaseFontSize => {
                 let step = if command == Command::IncreaseFontSize {
                     FONT_SIZE_STEP

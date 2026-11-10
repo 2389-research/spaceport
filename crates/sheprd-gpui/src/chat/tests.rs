@@ -21,7 +21,6 @@ mod chats;
 mod code;
 mod composer;
 mod controls;
-mod convert;
 mod core_panes;
 mod discovery;
 mod embeds;
@@ -47,7 +46,6 @@ mod prepared;
 mod questions;
 mod recall;
 mod relocale;
-mod restore;
 mod running;
 mod selection;
 mod session;
@@ -249,3 +247,5 @@ fn hello(since: Option<Cursor>) -> ClientMessage {
         version: VERSION,
     }
 }
+
+mod presentation_lifecycle;

@@ -68,8 +68,8 @@ or the group menu splits the pane in use and runs the chat beside it. A tab
 can hold several chats side by side, each in its own pane, along with plain
 terminals. The window picks the chat's endpoint before `sheprd-acp` starts:
 it passes the id in `HERDR_ACP_ENDPOINT` and labels the terminal `acp=<id>`
-in herdr-core. Because herdr-core keeps the label, the chat view comes back
-after a restart and appears in every window that shows the pane.
+in herdr-core. After a client reconnect, the label lets the view find an
+adapter that still runs. It appears in every window that shows the pane.
 `sheprd-acp` reports its status to herdr-core with OSC 7501, so the pane's
 activity dot behaves as it does in Herdr.
 
@@ -79,146 +79,19 @@ view. Mirror tabs only watch, so they show the terminal rather than a chat.
 A `sheprd-acp` started by hand in a Herdr 2 pane has no label, so it also
 keeps its terminal view.
 
-## Moving a terminal agent into a chat
+## Chat views after reconnecting
 
-An agent running in its own CLI can move into a chat without leaving its pane
-or its conversation. Right-click its tab and choose **Move Agent into Chat**,
-run the same command from the palette with the agent's pane focused, or:
+Spaceport attaches to a chat whose adapter still runs in the selected runtime.
+Showing, hiding, closing, or restoring a view does not stop or restart the agent.
+If the adapter is gone, the pane keeps its terminal view. Spaceport does not
+write or read agent restart records.
 
-```sh
-sheprd chat convert [--pane ID]
-```
-
-The agent's CLI stops, `sheprd-acp --resume` continues the same session in the
-shell it leaves, and the chat view attaches. The agent keeps its whole context,
-and the chat opens with the conversation so far and its context window use.
-
-| Agent | Moves | Earlier messages come from |
-| --- | --- | --- |
-| Claude | Yes, with its command line's flags, such as `--model` | Its session log, read by `sheprd-acp` |
-| Codex | Yes | Its rollout log, read by `sheprd-acp` |
-| Copilot | Yes | The agent, through ACP's `session/load` |
-| OpenCode | Yes | The agent, through ACP's `session/load` |
-| Gemini | No: Herdr reports no session for it | |
-| Pi | No: nothing shows its earlier messages yet | |
-
-Herdr must know the agent's session, which takes its integration: run
-`herdr integration install claude` (or `codex`, `copilot`, `opencode`), then
-restart the agent. Without it the move is refused and the agent keeps running.
-
-The tab's menu offers the row for an agent that can move, on a host chats reach,
-and shows a refusal in the menu. In a tab with several such agents it moves the
-one in the focused pane, else the first; use `--pane` to choose another.
-
-Only an idle agent moves, since stopping one mid-turn would lose the turn, and
-a refusal leaves it running in its terminal. Everything that can refuse is
-checked before the agent is touched. It stops on Ctrl+C alone, sent until its
-shell is back, so nothing in its input is ever submitted or answered. Text in
-its input is lost, and whatever it ran in the background stops with it. If it
-has not stopped after 30 seconds, the move gives up. Leaving its host,
-losing the connection, or turning chats off during a move ends it at once, and
-no more keys are sent.
-
-Limitations:
-
-- Herdr 1 panes only, on this machine or an SSH host, and not on Windows. A
-  Herdr 2 pane reports no agent session.
-- Permissions follow the chat's own settings. Claude's flags, including
-  `--dangerously-skip-permissions`, carry over; other agents start with their
-  default model and permissions, which the composer can change.
-- A chat that keeps Claude's flags is not continued after a reboot (see
-  [Chats after a reboot](#chats-after-a-reboot)), like any chat started with
-  extra agent arguments.
-- Claude and Codex show the last 8 MiB of their logs, like an existing
-  conversation does. Older messages stay in the agent's context.
-- If `sheprd-acp` cannot continue the session, the pane keeps its error, and
-  the agent's own command (such as `claude --resume ID`) still can.
-
-## Chats after a reboot
-
-When Herdr restores its panes after a reboot or a server restart, a pane that
-ran a chat comes back as a shell in the chat's folder: Herdr keeps neither the
-`sheprd-acp` that ran there nor the token Sheprd found it by. Sheprd
-continues those chats itself. Each chat writes a restore record (see the
-[`sheprd-acp` README](../crates/sheprd-acp/README.md#what-it-tells-herdr)) and
-removes it when the user quits it, and Sheprd types
-`sheprd-acp --resume <session> <agent>` into the restored shell. The program
-continues the agent's session, announces itself, and the chat view attaches
-as for any chat, with its earlier messages. Herdr itself is unchanged.
-
-To type into the right shell, and only once, Sheprd continues a record
-only when all of these hold:
-
-- a Sheprd instance saw the chat live under an earlier boot of the daemon, and never
-  under the current one, so a chat that died while Herdr kept running is not
-  started again;
-- the record names this Herdr session (by its socket) and a pane it has, with
-  no agent or chat reported in that pane, and no other record names the pane;
-- nothing listens on the chat's old endpoint;
-- `herdr pane process-info` reports the pane's shell itself in the
-  foreground, in the record's folder; an answer that does not name both the
-  shell and the foreground job counts as busy;
-- this window claimed the record first (an atomic rename), so several windows
-  or Sheprd processes never start the chat twice;
-- when the line is typed, at most ten seconds after the check, the window
-  still shows the same daemon boot and connection, chats are still on, and
-  the pane is still free. Otherwise the claim is given back.
-
-The check runs for each daemon boot and connection a window sees: at once,
-then up to five more times, five seconds apart, for shells still starting.
-Each run asks Herdr about at most 16 panes and reads on from where the last
-run stopped, so no record is passed over for good. Its last run removes
-records seen under an earlier boot whose pane no longer exists, and records
-no window ever saw live once they are a week old.
-
-Typing a line only queues it, so the record stays claimed until a chat shows
-in its pane, and is removed only then. If the daemon restarts, the
-connection drops or is replaced, chats are turned off, or no chat shows
-within a minute, the claim is given back. Since the pane's shell is busy
-while a chat starts, a given-back record is never typed twice into one
-running chat. A window that closes gives back what it holds, and a claim an
-exited or crashed app left behind is given back after five minutes.
-
-While connected, Sheprd also watches the chats it saw live. One that stays
-missing for 30 seconds while the daemon keeps running (its pane was closed,
-or the program was killed) has ended, and its record is removed, so a pane
-that later reuses its id is never handed the old chat. Missing chats are not
-counted across a restart or a reconnect, which is what continuing them is
-for. A chat newly live in a pane replaces any older record of this Herdr
-session that names the same pane. Records of other Herdr sessions on the
-machine never block or replace this one's.
-
-With `--resume`, an agent that cannot continue a session stops with an
-error instead of starting a new one, and a session Claude, Codex, or an ACP
-agent no longer has fails the same way. Pi without its adapter is given the
-id as `pi --session`; what it does with an id it does not have is up to Pi.
-
-Limitations:
-
-- Only Herdr 1 on this machine, on macOS and Linux, where the `herdr` CLI
-  answers `pane process-info`. Windows, SSH hosts, WSL, and a
-  daemon behind a custom socket are not continued.
-- Herdr 2 (herdr-core) is not continued yet. Its chats run `sheprd-acp` as the
-  terminal's own program, which records nothing there, and herdr-core shows no
-  boot identity to tell a restart from a chat that ended.
-- A chat Sheprd never saw live (started and ended while no window was
-  connected) is not continued, because nothing says which boot it ran under.
-- A pane identity can still be reused: a chat whose pane was closed while no
-  Sheprd was connected keeps its record. If Herdr, after a restart, gives a
-  new workspace the closed one's id, a new idle pane with that id in the same
-  folder could be handed the old chat.
-- A chat whose shell folder differs from the chat's own (started with
-  `--cwd`) is not continued.
-- Only the built-in agents (`claude`, `codex`, `copilot`, `gemini`,
-  `opencode`, `pi`) started without extra agent arguments. Custom commands
-  are not continued.
-- `[chat.env]` variables are not set again: typing their values into a shell
-  would show them on screen. The restored shell has Herdr's own environment.
-- The line is typed with the shell at its prompt; text the user starts
-  typing in that instant is mixed with it, as with Herdr's own agent resume.
-- On a Linux shutdown, where chats may die before their daemon, a window
-  still connected 30 seconds later counts them as ended, and they are not
-  continued.
+To continue a session yourself, run `sheprd-acp --resume ID AGENT` in a
+runtime-owned terminal. If Claude, Codex, or an ACP agent cannot load that
+session, the adapter reports an error instead of starting a new one. Native Pi
+receives the ID as `pi --session`; Pi decides what happens when it cannot find
+that session. This explicit adapter command is separate from restoring a
+desktop view.
 
 ## What the agent is doing
 

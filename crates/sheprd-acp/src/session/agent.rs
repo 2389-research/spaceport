@@ -160,7 +160,6 @@ impl<R: FnMut(Update)> Session<R> {
             return;
         };
         self.ready = true;
-        (self.report)(Update::Opened(id.0.to_string()));
         self.emit(Change::Session {
             session: Some(project::session(&id, &self.config.cwd)),
         });

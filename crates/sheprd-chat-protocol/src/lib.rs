@@ -10,7 +10,6 @@ mod error;
 mod frame;
 mod media;
 mod model;
-pub mod restore;
 mod wire;
 
 pub use agents::{Agent, UnknownAgent};

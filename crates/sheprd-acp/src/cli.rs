@@ -130,7 +130,7 @@ Options:
   --cwd DIR      Run the session in DIR instead of the current directory
   --load ID      Continue the agent's session ID instead of starting a new one
   --resume ID    Continue session ID, and stop rather than start a new one
-                 when the agent cannot (Sheprd restores chats with it)
+                 when the agent cannot
   --name NAME    The name to show for a custom command
   --headless     Draw nothing; clients such as Sheprd drive the session
   --no-attach    Do not listen for Sheprd

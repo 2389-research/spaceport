@@ -501,8 +501,6 @@ pub(crate) enum Toward {
 pub(crate) struct Chats {
     /// The agents installed on each host new chats may start on.
     pub(crate) agents: super::harnesses::Harnesses,
-    /// The terminal agent moving into a chat, one at a time.
-    pub(crate) converting: Option<super::convert::Job>,
     /// Exact CLI sessions already running in this connected daemon's panes.
     pub(crate) existing: super::existing::Existing,
     /// The agent a chat was last started with, which the strips' one-button
@@ -525,8 +523,6 @@ pub(crate) struct Chats {
     raw: HashSet<Target>,
     /// Textures of panes no longer attached, for the window to drop.
     released: Vec<std::sync::Arc<gpui::RenderImage>>,
-    /// Chats being continued in the panes Herdr restored.
-    pub(super) restore: super::restore::Restore,
     /// The second a running turn's timer last redrew at.
     pub(crate) ticked: u64,
     /// A new chat whose tab is being made.

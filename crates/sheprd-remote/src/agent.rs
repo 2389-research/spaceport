@@ -1,7 +1,5 @@
-//! ABOUTME: Recognizes agent executables and validates reported session references.
-//! ABOUTME: Keeps existing agent flags for explicit chat and reopen operations.
-
-use crate::snapshot::{AgentSession, SessionKind};
+//! ABOUTME: Maps reported agent names to their executables.
+//! ABOUTME: Supplies agent identities for explicit closed-agent reopen operations.
 
 /// Agents Herdr's integrations report resumable sessions for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,24 +22,6 @@ pub enum AgentKind {
     Antigravity,
     Grok,
     Letta,
-}
-
-/// The longest session id Herdr records.
-const MAX_SESSION_ID: usize = 512;
-/// The longest session file path Herdr records.
-const MAX_SESSION_PATH: usize = 4096;
-
-/// How many arguments follow a flag on an agent's command line.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Arity {
-    /// A switch.
-    Zero,
-    /// Exactly one value, unless given inline with `=`.
-    One,
-    /// One value when the next argument is not a flag.
-    Optional,
-    /// Every following argument up to the next flag.
-    Many,
 }
 
 impl AgentKind {
@@ -116,14 +96,6 @@ impl AgentKind {
         }
     }
 
-    /// The name of the Herdr integration that reports this agent's sessions.
-    fn integration(self) -> &'static str {
-        match self {
-            Self::Antigravity => "antigravity_cli",
-            _ => self.name(),
-        }
-    }
-
     /// The program that runs this agent. Host script routes are POSIX, so
     /// Cursor's is never Windows' `cursor-agent.cmd`.
     pub fn binary(self) -> &'static str {
@@ -132,213 +104,6 @@ impl AgentKind {
             _ => self.name(),
         }
     }
-
-    /// Whether a reported session reference identifies a session this kind
-    /// can resume. Only Herdr's own integrations are trusted to report one,
-    /// and only with the reference kinds Herdr's restore accepts.
-    pub fn accepts(self, session: &AgentSession) -> bool {
-        session.source.strip_prefix("herdr:") == Some(self.integration())
-            && session.agent == self.name()
-            && match (self, session.kind) {
-                (Self::Pi | Self::Omp, SessionKind::Path) => valid_path(&session.value),
-                (_, SessionKind::Id) => self.valid_id(&session.value),
-                (_, SessionKind::Path) => false,
-            }
-    }
-
-    /// Ids are passed as one argument, never through a shell unquoted; they
-    /// must still not read as a flag or carry control characters.
-    fn valid_id(self, id: &str) -> bool {
-        let plain = !id.is_empty()
-            && id.len() <= MAX_SESSION_ID
-            && !id.starts_with('-')
-            && !id.chars().any(char::is_control);
-        // Letta's default conversation is named by its agent.
-        plain && (self != Self::Letta || id.strip_prefix("default:") != Some(""))
-    }
-
-    /// How many values follow `flag` on the original command line. Only
-    /// agents whose flags are known keep any; the rest resume with none,
-    /// as Herdr's restore does.
-    fn arity(self, flag: &str) -> Option<Arity> {
-        let one: &[&str] = match self {
-            Self::Claude => &[
-                "--model",
-                "--permission-mode",
-                "--add-dir",
-                "--allowedTools",
-                "--allowed-tools",
-                "--disallowedTools",
-                "--disallowed-tools",
-                "--mcp-config",
-                "--settings",
-                "--append-system-prompt",
-                "--system-prompt",
-                "--agent",
-                "--effort",
-                "--fallback-model",
-            ],
-            Self::Codex => &[
-                "-m",
-                "--model",
-                "-c",
-                "--config",
-                "-s",
-                "--sandbox",
-                "-a",
-                "--ask-for-approval",
-                "-p",
-                "--profile",
-                "--add-dir",
-            ],
-            Self::Opencode => &["-m", "--model", "--agent"],
-            Self::Pi | Self::Omp => &["--model", "--provider", "--thinking"],
-            // From `copilot --help` (1.0.8).
-            Self::Copilot => &[
-                "--add-dir",
-                "--add-github-mcp-tool",
-                "--add-github-mcp-toolset",
-                "--additional-mcp-config",
-                "--agent",
-                "--disable-mcp-server",
-                "--log-level",
-                "--max-autopilot-continues",
-                "--model",
-                "--plugin-dir",
-                "--reasoning-effort",
-                "--stream",
-            ],
-            _ => &[],
-        };
-        let (optional, many): (&[&str], &[&str]) = match self {
-            Self::Copilot => (
-                &["--alt-screen", "--bash-env", "--mouse"],
-                &[
-                    "--allow-tool",
-                    "--allow-url",
-                    "--available-tools",
-                    "--deny-tool",
-                    "--deny-url",
-                    "--excluded-tools",
-                    "--secret-env-vars",
-                ],
-            ),
-            _ => (&[], &[]),
-        };
-        if one.contains(&flag) {
-            Some(Arity::One)
-        } else if optional.contains(&flag) {
-            Some(Arity::Optional)
-        } else if many.contains(&flag) {
-            Some(Arity::Many)
-        } else if self.keeps_flags() {
-            Some(Arity::Zero)
-        } else {
-            None
-        }
-    }
-
-    fn keeps_flags(self) -> bool {
-        matches!(
-            self,
-            Self::Claude | Self::Codex | Self::Opencode | Self::Pi | Self::Omp | Self::Copilot
-        )
-    }
-
-    /// Flags naming a session, a working directory, or a one-shot mode, with
-    /// the values they take; the resume command supplies its own.
-    fn replaced(self, flag: &str) -> Option<Arity> {
-        let (one, zero, optional): (&[&str], &[&str], &[&str]) = match self {
-            Self::Claude => (
-                &["--resume", "-r", "--session-id", "--fork-session"],
-                &["--continue", "-c", "--print", "-p"],
-                &[],
-            ),
-            Self::Codex => (&["-C", "--cd"], &[], &[]),
-            Self::Opencode => (
-                &["-s", "--session", "--port", "--hostname"],
-                &["-c", "--continue", "--fork"],
-                &[],
-            ),
-            Self::Pi | Self::Omp => (
-                &["--session", "--resume", "-r", "--fork", "--session-dir"],
-                &["-c", "--continue", "--no-session"],
-                &[],
-            ),
-            Self::Copilot => (
-                &[
-                    "-i",
-                    "--interactive",
-                    "-p",
-                    "--prompt",
-                    "--config-dir",
-                    "--log-dir",
-                    "--output-format",
-                ],
-                &["--continue", "--acp", "-s", "--silent", "--share-gist"],
-                &["--resume", "--share"],
-            ),
-            _ => (&[], &[], &[]),
-        };
-        if one.contains(&flag) {
-            Some(Arity::One)
-        } else if zero.contains(&flag) {
-            Some(Arity::Zero)
-        } else if optional.contains(&flag) {
-            Some(Arity::Optional)
-        } else {
-            None
-        }
-    }
-
-    /// The flags of an agent's original command line worth keeping: model
-    /// and permission choices. Positionals are dropped, because they are an
-    /// initial prompt or project directory that must not be replayed.
-    pub fn kept_flags(self, argv: &[String]) -> Vec<String> {
-        let mut kept = Vec::new();
-        let mut args = argv.iter().skip(1).peekable();
-        while let Some(arg) = args.next() {
-            if !arg.starts_with('-') {
-                continue;
-            }
-            let (name, inline) = arg
-                .split_once('=')
-                .map_or((arg.as_str(), false), |(name, _)| (name, true));
-            let (keep, arity) = match self.replaced(name) {
-                Some(arity) => (false, arity),
-                None => match self.arity(name) {
-                    Some(arity) => (true, arity),
-                    None => continue,
-                },
-            };
-            let mut values = Vec::new();
-            if !inline {
-                match arity {
-                    Arity::Zero => {}
-                    Arity::One => match args.next() {
-                        Some(value) => values.push(value),
-                        // A flag missing its value is not worth replaying.
-                        None => continue,
-                    },
-                    Arity::Optional => values.extend(args.next_if(|next| !next.starts_with('-'))),
-                    Arity::Many => {
-                        while let Some(value) = args.next_if(|next| !next.starts_with('-')) {
-                            values.push(value);
-                        }
-                    }
-                }
-            }
-            if keep {
-                kept.push(arg.clone());
-                kept.extend(values.into_iter().cloned());
-            }
-        }
-        kept
-    }
-}
-
-fn valid_path(path: &str) -> bool {
-    path.starts_with('/') && path.len() <= MAX_SESSION_PATH && !path.chars().any(char::is_control)
 }
 
 #[cfg(test)]
