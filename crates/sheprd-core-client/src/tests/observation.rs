@@ -6,6 +6,9 @@ use serde_json::json;
 use sheprd_backend::{Backend as _, Change};
 use std::{thread, time::Duration};
 
+mod owner;
+
+/// The caller keeps the backend alive while consuming its watch subscription.
 fn watching(backend: &CoreBackend, core: &mut MockCore) -> crate::CoreChanges {
     let watch = thread::scope(|scope| {
         let watch = scope.spawn(|| backend.watch());
@@ -23,7 +26,8 @@ fn watching(backend: &CoreBackend, core: &mut MockCore) -> crate::CoreChanges {
 #[test]
 fn one_batch_carries_document_and_terminal_changes() {
     let (client, mut core) = connected();
-    let mut changes = watching(&CoreBackend::new(client, 1000), &mut core);
+    let backend = CoreBackend::new(client, 1000);
+    let mut changes = watching(&backend, &mut core);
     let lines = [
         json!({"method": "event", "params": {"seq": 11, "type": "doc", "machine": "lab", "data": {"name": "spaceport", "version": 2}}}),
         json!({"method": "event", "params": {"seq": 12, "type": "title", "terminal": "t1", "data": {"title": "ready"}}}),
@@ -51,7 +55,8 @@ fn one_batch_carries_document_and_terminal_changes() {
 #[test]
 fn missed_snapshot_marks_documents_stale_and_fences_old_events() {
     let (client, mut core) = connected();
-    let mut changes = watching(&CoreBackend::new(client, 1000), &mut core);
+    let backend = CoreBackend::new(client, 1000);
+    let mut changes = watching(&backend, &mut core);
     let lines = [
         json!({"method": "event", "params": {"seq": 11, "type": "doc", "data": {"name": "spaceport", "version": 2}}}),
         json!({"method": "missed", "params": {"seq": 20, "terminals": [terminal("t5")]}}),
