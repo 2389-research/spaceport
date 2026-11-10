@@ -3,7 +3,7 @@ use super::{MockCore, connected, every_method, hello_reply, pair, terminal};
 use crate::{Core, CoreBackend, End, Violation, frame::Kind, stream::Route, wire::Attach};
 use serde_json::json;
 use sheprd_backend::{Backend, Role, Size, SurfaceUpdate, Terminal as _, TerminalId};
-use std::{thread, time::Duration};
+use std::{io::Write as _, thread, time::Duration};
 
 const WAIT: Duration = Duration::from_secs(5);
 
@@ -127,8 +127,11 @@ fn malformed_resize_ends_the_connection_without_delivering_later_data() {
     );
     let (_client, attachment) = attach.join().unwrap();
     let attachment = attachment.unwrap();
-    core.send(5, Kind::Resize, &[90, 0, 25]);
-    core.send(5, Kind::Data, b"unsafe");
+    // Queue both frames together: a malformed resize may close the socket
+    // before the peer can make a second write.
+    let mut frames = crate::frame::encode(5, Kind::Resize, &[90, 0, 25]).unwrap();
+    frames.extend(crate::frame::encode(5, Kind::Data, b"unsafe").unwrap());
+    core.socket.write_all(&frames).unwrap();
     let chunk = attachment.read(WAIT).unwrap();
     assert!(matches!(chunk.end, Some(End::Lost)));
     assert!(chunk.bytes.is_empty());
