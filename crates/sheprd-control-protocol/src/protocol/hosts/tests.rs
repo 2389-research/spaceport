@@ -62,7 +62,7 @@ fn only_waiting_operations_extend_the_answer_timeout() {
         .wait_seconds()
     };
     assert_eq!(wait(HostOp::OpenPort { port: 80 }), FORWARD_WAIT_SECONDS);
-    assert!(FORWARD_WAIT_SECONDS <= MAX_WAIT_SECONDS);
+    const { assert!(FORWARD_WAIT_SECONDS <= MAX_WAIT_SECONDS) };
 }
 
 #[test]

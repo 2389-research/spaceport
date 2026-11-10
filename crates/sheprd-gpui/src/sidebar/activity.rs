@@ -240,16 +240,13 @@ impl SheprdWindow {
         if self.activity.pick(panel) {
             self.save_chrome();
         }
-        match self.activity_section() {
-            Some(_) => {
-                let focus = self
-                    .activity
-                    .section_focus
-                    .get_or_insert_with(|| cx.focus_handle())
-                    .clone();
-                window.focus(&focus, cx);
-            }
-            None => {}
+        if self.activity_section().is_some() {
+            let focus = self
+                .activity
+                .section_focus
+                .get_or_insert_with(|| cx.focus_handle())
+                .clone();
+            window.focus(&focus, cx);
         }
         cx.notify();
     }

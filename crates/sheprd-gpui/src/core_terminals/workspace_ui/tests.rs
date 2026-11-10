@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use super::{Access, EditGuard, GuardState, VersionedDocument, observation};
 use crate::{menu::Page, sidebar};
 use sheprd_core_client::{Error, Method, wire::Doc};

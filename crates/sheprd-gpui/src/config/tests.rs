@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use super::*;
 use anyhow::Context as _;
 use std::env;

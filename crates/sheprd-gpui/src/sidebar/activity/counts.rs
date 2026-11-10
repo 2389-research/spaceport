@@ -43,7 +43,6 @@ impl SheprdWindow {
                 items: self.overview_needing(),
                 latest: self.overview_needing_since().map(DateTime::from),
             },
-            ..Counts::default()
         }
     }
 }

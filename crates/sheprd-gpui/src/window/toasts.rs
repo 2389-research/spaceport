@@ -372,33 +372,6 @@ fn corner(position: ToastHerdrPosition, width: Pixels) -> Div {
         })
 }
 
-impl SheprdWindow {
-    /// Whether toasts, ones still sliding out among them, or the
-    /// file-transfer card show now, as their renders decide: nothing shows
-    /// over an open menu or in a window too small.
-    /// Only Windows hides pages under these.
-    #[cfg(windows)]
-    pub(crate) fn overlays_shown(&self) -> bool {
-        if self.menu.page.is_some() {
-            return false;
-        }
-        self.file_transfer.is_some()
-            || (!self.toasts_hidden
-                && (self
-                    .toast_motion
-                    .leaving(crate::motion::now())
-                    .next()
-                    .is_some()
-                    || self.endpoints.iter().any(|endpoint| {
-                        endpoint
-                            .toasts
-                            .entries
-                            .iter()
-                            .any(|(_, notice)| notice.visible)
-                    })))
-    }
-}
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests;

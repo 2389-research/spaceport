@@ -21,7 +21,6 @@ mod targets;
 mod tiles;
 // Host scripts, which find and start agents, need a POSIX client.
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-
 /// Presses the open workspace dialog's submit, for `endpoint::lifecycle_tests`.
 #[cfg(unix)]
 pub(crate) fn submit_dialog(

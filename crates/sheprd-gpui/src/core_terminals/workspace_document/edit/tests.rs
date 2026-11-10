@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use super::*;
 use crate::core_terminals::workspace_document::Document;
 use sheprd_core_client::{Error as CoreError, Method};

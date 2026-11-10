@@ -124,7 +124,7 @@ impl Link {
             Self::Notification { tag } => ("notification", "tag", tag.as_str()),
         };
         let query: String = url::form_urlencoded::Serializer::new(String::new())
-            .append_pair(key, &value)
+            .append_pair(key, value)
             .finish();
         format!("{SCHEME}://{action}?{query}")
     }

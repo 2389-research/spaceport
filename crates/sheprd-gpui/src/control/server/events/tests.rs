@@ -49,7 +49,6 @@ fn changes_between_ticks_become_events() {
         tabs: [(6, "w_2".to_owned())].into(),
         notes: 3,
         hosts: [((1, "local".to_owned()), "reconnecting".to_owned())].into(),
-        ..Seen::default()
     };
     compare(&mut log, &before, &now);
     let kinds: Vec<_> = log

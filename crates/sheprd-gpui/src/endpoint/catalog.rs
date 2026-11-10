@@ -50,7 +50,6 @@ impl CatalogUpdate {
 
 /// Load both catalogs. A WSL distribution chosen last wins over upstream's
 /// selection, which cannot name one and so says Local whenever it was chosen.
-
 fn load(development: bool, startup: bool) -> Result<CatalogUpdate> {
     // Only Windows has distributions; elsewhere the file is never read.
     let wsl = if cfg!(windows) {

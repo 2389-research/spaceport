@@ -238,9 +238,7 @@ fn the_menu_opens_from_the_strip_and_steps_with_the_keyboard(cx: &mut TestAppCon
     cx.simulate_click(button.center(), Modifiers::none());
     draw(cx);
     assert!(view.read_with(cx, |view, _| view.menu.page == Some(Page::Group)));
-    for row in ["group-menu-Split"] {
-        assert!(cx.debug_bounds(row).is_some(), "{row}");
-    }
+    assert!(cx.debug_bounds("group-menu-Split").is_some());
     assert!(cx.debug_bounds("group-menu-CloseGroup").is_none());
     cx.simulate_keystrokes("down");
     assert_eq!(

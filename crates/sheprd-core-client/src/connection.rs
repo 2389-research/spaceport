@@ -86,10 +86,12 @@ struct RefusalData {
     hint: Option<String>,
 }
 
+type PendingCall = (Method, bool, Sender<Reply>);
+
 #[derive(Default)]
 struct Shared {
     lost: AtomicBool,
-    pending: Mutex<HashMap<u64, (Method, bool, Sender<Reply>)>>,
+    pending: Mutex<HashMap<u64, PendingCall>>,
     routes: Mutex<HashMap<u32, Arc<Route>>>,
 }
 

@@ -538,20 +538,19 @@ impl SheprdWindow {
             .child(div().font_weight(FontWeight::SEMIBOLD).child(title));
         if named {
             body = body.child(self.render_dialog_input(cx));
-        } else if let Some(target) = self.core_terminals.workspace_ui.target {
-            if let Access::Ready(document) = self.core_workspace_access(cx)
-                && let Some(row) = document
-                    .value
-                    .workspaces()
-                    .iter()
-                    .find(|row| row.id == target.id)
-            {
-                body = body.child(fl!(
-                    "core-workspace-delete-note",
-                    name = row.label.as_str(),
-                    id = target.id.to_string()
-                ));
-            }
+        } else if let Some(target) = self.core_terminals.workspace_ui.target
+            && let Access::Ready(document) = self.core_workspace_access(cx)
+            && let Some(row) = document
+                .value
+                .workspaces()
+                .iter()
+                .find(|row| row.id == target.id)
+        {
+            body = body.child(fl!(
+                "core-workspace-delete-note",
+                name = row.label.as_str(),
+                id = target.id.to_string()
+            ));
         }
         if let Some(error) = &self.menu.error {
             body = body.child(

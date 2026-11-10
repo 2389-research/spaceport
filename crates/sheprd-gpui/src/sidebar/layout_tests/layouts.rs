@@ -150,12 +150,12 @@ fn sidebar_densities_keep_details_and_marks_within_their_rows(cx: &mut gpui::Tes
                     full_draw(window, cx).clear(cx);
                     let probes = &cx.global::<TextProbes>().0;
                     assert_eq!(probes.contains_key("main"), !compact);
-                    for text in ["worktree/sidebar-child"] {
-                        assert_eq!(probes.contains_key(text), comfortable, "{text}");
-                    }
-                    for text in ["Claude Code"] {
-                        assert!(probes.contains_key(text), "{text}");
-                    }
+                    assert_eq!(
+                        probes.contains_key("worktree/sidebar-child"),
+                        comfortable,
+                        "worktree/sidebar-child"
+                    );
+                    assert!(probes.contains_key("Claude Code"), "Claude Code");
                 });
                 let line = font_size * 4. / 3.;
                 let density_padding = match mode.density() {

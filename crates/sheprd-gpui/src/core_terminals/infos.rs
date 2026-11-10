@@ -35,12 +35,11 @@ impl Infos {
             .map(|info| (info.id.clone(), info))
             .collect();
         for id in self.fresh.drain() {
-            if fresh {
-                if let Some(info) = self.known.get(&id)
-                    && !known.contains_key(&id)
-                {
-                    known.insert(id, info.clone());
-                }
+            if fresh
+                && let Some(info) = self.known.get(&id)
+                && !known.contains_key(&id)
+            {
+                known.insert(id, info.clone());
             }
         }
         let changed = known != self.known;

@@ -20,11 +20,10 @@ impl SheprdWindow {
         if self.menu.page == Some(Page::Dialog(WorkspaceAction::OpenWorktree)) {
             return;
         }
-        if let Some(input) = self.menu.input.as_mut() {
-            if input.key(&event.keystroke, cx) {
-                cx.notify();
-            }
-            return;
+        if let Some(input) = self.menu.input.as_mut()
+            && input.key(&event.keystroke, cx)
+        {
+            cx.notify();
         }
     }
 

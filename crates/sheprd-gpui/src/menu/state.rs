@@ -8,9 +8,8 @@ use super::{Page, WorkspaceMenuAction, WorkspaceTarget};
 use crate::dialog_input::DialogInput;
 use gpui::{App, Bounds, Entity, FocusHandle, Pixels, Point, ScrollHandle, Subscription};
 
-/// What an open menu covers, as its last frame laid it out. Windows pages
-/// draw above GPUI and would hide it, so the ones it covers hide instead.
-/// Tests and native checks read it too, to find the menu in the window.
+/// What an open menu covers, as its last frame laid it out. Tests and native
+/// checks read it to find the menu in the window.
 #[cfg(any(windows, test, feature = "integration-test"))]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub(crate) enum Cover {
@@ -23,7 +22,7 @@ pub(crate) enum Cover {
     Panel(Bounds<Pixels>),
 }
 
-#[cfg(any(windows, test))]
+#[cfg(test)]
 impl Cover {
     /// Whether a page drawn at `page` would hide this menu. Before the menu
     /// is laid out nothing is, so pages keep showing for that one frame.
@@ -34,17 +33,6 @@ impl Cover {
             Self::Panel(panel) => page.is_some_and(|page| page.intersects(&panel)),
         }
     }
-
-    /// This cover if it was measured for `open`, the page open now; one
-    /// measured for another page is stale until this one is laid out.
-    #[cfg(windows)]
-    pub(crate) fn settled(self, measured_for: Option<Page>, open: Option<Page>) -> Self {
-        if measured_for == open {
-            self
-        } else {
-            Self::Unknown
-        }
-    }
 }
 
 pub(crate) struct MenuState {
@@ -53,7 +41,7 @@ pub(crate) struct MenuState {
     pub(crate) application_bar: crate::menus::in_window::Geometry,
     /// How the open popup, or the dimming a closed dialog left, moves.
     pub(crate) appear: super::appear::Appear,
-    /// Written by the menu's layout, read when presenting Windows pages.
+    /// Written by the menu's layout, read by native interaction checks.
     #[cfg(any(windows, test, feature = "integration-test"))]
     pub(crate) cover: std::rc::Rc<std::cell::Cell<Cover>>,
     pub(super) device_setup: Option<super::devices::Setup>,

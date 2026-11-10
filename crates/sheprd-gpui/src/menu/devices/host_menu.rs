@@ -369,19 +369,16 @@ impl SheprdWindow {
             ),
             Err(_) => tracing::warn!(category = "device_remove", id, "Device removal failed"),
         }
-        match result {
-            Err(error) => {
-                self.menu.removing_devices.remove(id);
-                self.local_error = Some(fl!(
-                    "host-menu-remove-failed",
-                    device = label,
-                    error = error.to_string(),
-                ));
-            }
-            // The catalog watcher drops the device, and a filter or selection
-            // on it falls back to Local, as for any removal. The header keeps
-            // pulsing until then; `prune_device_removals` clears the mark.
-            Ok(()) => {}
+        // On success the catalog watcher drops the device, and a filter or
+        // selection on it falls back to Local, as for any removal. The header
+        // keeps pulsing until then; `prune_device_removals` clears the mark.
+        if let Err(error) = result {
+            self.menu.removing_devices.remove(id);
+            self.local_error = Some(fl!(
+                "host-menu-remove-failed",
+                device = label,
+                error = error.to_string(),
+            ));
         }
         cx.notify();
     }

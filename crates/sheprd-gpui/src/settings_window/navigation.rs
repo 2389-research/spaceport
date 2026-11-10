@@ -169,10 +169,7 @@ impl SettingsWindow {
         } else if let Some(status) = &self.status {
             status.clone()
         } else if pending.is_empty() {
-            match self.section {
-                // Its account fields are a form with their own Save button.
-                _ => fl!("settings-saved"),
-            }
+            fl!("settings-saved")
         } else {
             fl!("settings-unsaved", drafts = pending.join(", "))
         }

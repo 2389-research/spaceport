@@ -445,7 +445,7 @@ impl SheprdWindow {
             _ => (
                 fl!("devices-add"),
                 self.device_setup_unavailable()
-                    .map_or_else(|| add_device_offer(), SetupUnavailable::text),
+                    .map_or_else(add_device_offer, SetupUnavailable::text),
                 false,
                 self.device_setup_unavailable().is_none(),
             ),

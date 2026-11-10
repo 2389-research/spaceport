@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used)]
+
 use super::{Config, InitialAppearance, StartupAppearance, Theme};
 #[cfg(feature = "integration-test")]
 use super::{ConnectTarget, SheprdWindow};

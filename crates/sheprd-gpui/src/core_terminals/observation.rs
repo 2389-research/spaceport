@@ -437,6 +437,7 @@ pub(super) fn set_document_for_test(cx: &mut App, doc: Doc) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 pub(super) fn set_document_for_test_as(cx: &mut App, core_id: &str, doc: Doc) {
     if !cx.has_global::<Observation>() {
         Observation::install(cx);
@@ -500,6 +501,7 @@ pub(super) fn set_machine_error_for_test(cx: &mut App, error: sheprd_core_client
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 pub(super) fn set_remote_document_for_test(cx: &mut App, machine_id: &str, doc: Doc) {
     let observation = cx.global_mut::<Observation>();
     let selected = selected_remote(&observation.remote_selection);
@@ -522,6 +524,7 @@ pub(super) fn set_remote_document_for_test(cx: &mut App, machine_id: &str, doc: 
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 pub(super) fn set_selected_remote_machine_state_for_test(
     cx: &mut App,
     machine_id: &str,

@@ -350,7 +350,7 @@ impl SheprdWindow {
         let herdr = self
             .selected_core_group()
             .is_none()
-            .then(|| self.live.snapshot.as_ref())
+            .then_some(self.live.snapshot.as_ref())
             .flatten()
             .map(|snapshot| {
                 snapshot

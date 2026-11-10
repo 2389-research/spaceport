@@ -60,10 +60,8 @@ fn browser_skill_installs_and_removes() {
 /// agents such as Pi refuse a skill over it.
 #[test]
 fn the_skill_description_fits_the_agent_skills_limit() {
-    for skill in [SKILL] {
-        let length = description(skill).chars().count();
-        assert!((1..=1024).contains(&length), "{length} characters");
-    }
+    let length = description(SKILL).chars().count();
+    assert!((1..=1024).contains(&length), "{length} characters");
 }
 
 /// The frontmatter's description, without its quotes.
