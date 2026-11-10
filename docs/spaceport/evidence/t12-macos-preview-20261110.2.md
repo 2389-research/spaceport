@@ -36,9 +36,20 @@ The installed, previously approved 2389 Developer ID identity was selected.
 `errSecInternalComponent`, before notarization. No app/DMG submission or receipt
 was created, so no uncertain Apple-side operation needs retrying. No keychain
 was unlocked or reconfigured, and no private key was uploaded or committed.
-Restoring signing access or supplying the matching P12 password file is pending.
-The existing unsigned app can be signed without rebuilding it once access is
-available. Preserve receipt checks before any future submission.
+That failure initially required restored keychain access or a matching P12
+password file. A later check on 2026-11-10 found the default keychain unlocked,
+readable and writable; a scratch copy of the candidate helper then signed with
+the approved 2389 identity and passed strict verification. Private-key access
+is no longer the blocker, and the earlier unlock/password request is obsolete.
+
+The resumed signing wrapper subsequently blocked opening the notarization
+credential metadata in Downloads, before starting the signer or creating its
+log. Stack sampling showed the blocked file open; a separate bounded file read
+also timed out. The cause of that file-access failure is not established. The
+exact wrapper was stopped and reaped, with no Apple submission or receipt.
+The current remaining step is restoring access to the approved notarization
+metadata, then signing the existing unsigned app without rebuilding it.
+Preserve receipt checks before any future submission.
 
 A throwaway copy used a distinct `ai.2389.spaceport.iconqa` identity, ad-hoc
 signature, private HOME/XDG state and an explicitly absent test socket. It ran

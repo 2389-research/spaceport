@@ -7,11 +7,14 @@
   cards derive from it. [Preview 20261110.2](../evidence/t12-macos-preview-20261110.2.md)
   is rebuilt and packaged as an unsigned arm64 ZIP under the integration
   checkout's `target/test-builds/20261110.2-unsigned/`. CLI, compiled identity,
-  ZIP integrity and embedded/packaged icon matching passed. Signing failed
-  before notarization with `errSecInternalComponent`; access to the installed
-  identity or the matching P12 password is pending. Native visual QA remains
+  ZIP integrity and embedded/packaged icon matching passed. The initial
+  `errSecInternalComponent` signing failure has cleared: the default keychain
+  is unlocked and an actual helper-signing probe passed. The later wrapper
+  blocked reading notarization metadata in Downloads before starting the
+  signer; the cause is unestablished. Native visual QA remains
   unproved because the computer-use service found no visible test window.
-- Current next step: restore signing access, then sign the existing
+- Current next step: restore access to the approved notarization metadata,
+  then sign the existing
   `target/distribution/20261110.2-debug-arm64/Spaceport.app` with the existing
   signer. No notarization receipt exists for this version. Do not rebuild or
   resubmit an artifact merely because a later operation times out. The older
