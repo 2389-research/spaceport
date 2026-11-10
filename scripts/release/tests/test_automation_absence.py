@@ -11,7 +11,7 @@ MANIFESTS = (
     "site/install.ps1",
     "website/site/install.ps1",
     "website/herdrui/public/install.ps1",
-    "Justfile",
+    "justfile",
     ".github/workflows/ci.yml",
     ".github/workflows/release.yml",
     "scripts/release/build-macos.sh",
@@ -32,8 +32,11 @@ class AutomationAbsence(unittest.TestCase):
     def test_scheduler_is_not_built_or_packaged(self):
         for relative in MANIFESTS:
             with self.subTest(path=relative):
+                path = ROOT / relative
+                self.assertIn(path.name, {entry.name for entry in path.parent.iterdir()},
+                              f"{relative} does not match the tracked filename's case")
                 self.assertFalse(
-                    "sheprd-automate" in (ROOT / relative).read_text(),
+                    "sheprd-automate" in path.read_text(),
                     f"{relative} still builds or packages the scheduler",
                 )
 

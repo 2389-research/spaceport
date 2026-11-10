@@ -33,6 +33,12 @@ def install_steps():
     return source[start:end + len("\n  }")]
 
 
+def installed_filename(variable):
+    """Use the inherited installer's actual filenames, not the fork's packages."""
+    source = INSTALL.read_text(encoding="utf-8")
+    return re.search(rf"^  \${variable} = Join-Path \$dest '([^']+)'$", source, re.M)[1]
+
+
 class InstallScriptTests(unittest.TestCase):
     def test_shortcut_and_installer_keep_packaging_user_model_id(self):
         install = INSTALL.read_text(encoding="utf-8")
@@ -69,15 +75,17 @@ class InstallScriptTests(unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell.exe"), "needs Windows PowerShell")
     def test_shortcut_leaves_existing_explorer_verbs_and_link_schemes_alone(self):
-        # Releases up to 20261016.1 ship spaceport.exe alone (#632).
+        # Releases up to 20261016.1 ship sheprd.exe alone (#632).
+        executable_name = installed_filename("exe")
+        launcher_name = installed_filename("launcher")
         for has_launcher in (False, True):
             key = rf"Software\HerdrInstallPs1Test-{os.getpid()}-{has_launcher}"
             with self.subTest(has_launcher=has_launcher), \
                     tempfile.TemporaryDirectory(prefix="herdr-install-ps1-") as temp:
                 dest = Path(temp) / "Sheprd"
                 dest.mkdir()
-                launcher = dest / "spaceport-launcher.exe"
-                (dest / "spaceport.exe").write_bytes(b"")
+                launcher = dest / launcher_name
+                (dest / executable_name).write_bytes(b"")
                 if has_launcher:
                     launcher.write_bytes(b"")
                 script = Path(temp) / "check.ps1"
@@ -85,8 +93,8 @@ class InstallScriptTests(unittest.TestCase):
                     "$ErrorActionPreference = 'Stop'",
                     "$version = '20000101.1'",
                     "$dest = $env:HERDR_TEST_DEST",
-                    "$exe = Join-Path $dest 'spaceport.exe'",
-                    "$launcher = Join-Path $dest 'spaceport-launcher.exe'",
+                    f"$exe = Join-Path $dest '{executable_name}'",
+                    f"$launcher = Join-Path $dest '{launcher_name}'",
                     rf"$verbs = 'HKCU:\{key}\Directory', 'HKCU:\{key}\Background'",
                     rf"$scheme = 'HKCU:\{key}\Scheme'",
                     rf"$schemes = @('HKCU:\{key}\Scheme', 'HKCU:\{key}\LegacyScheme')",
@@ -118,10 +126,10 @@ class InstallScriptTests(unittest.TestCase):
                 schemes = [line[len("scheme="):] for line in lines if line.startswith("scheme=")]
                 # samefile, since Windows can hand back the temp directory
                 # as an 8.3 short path.
-                self.assertTrue(os.path.samefile(target, launcher if has_launcher else dest / "spaceport.exe"),
+                self.assertTrue(os.path.samefile(target, launcher if has_launcher else dest / executable_name),
                                 target)
                 if has_launcher:
-                    self.assertIn("spaceport-launcher.exe", message)
+                    self.assertIn(launcher_name, message)
                 else:
                     self.assertNotIn("launcher", message)
                 self.assertEqual(verbs, ["other-app", "other-app"], result.stdout)

@@ -36,7 +36,7 @@ class PreviewSigning(unittest.TestCase):
         mock = tools / 'mock.py'
         shutil.copyfile(SCRIPTS / 'tests/mock-tool.py', mock)
         mock.chmod(0o755)
-        for tool in ('uname', 'security', 'openssl', 'base64', 'lipo', 'ditto', 'xcrun',
+        for tool in ('uname', 'security', 'openssl', 'base64', 'plutil', 'lipo', 'ditto', 'xcrun',
                      'hdiutil', 'codesign', 'spctl'):
             (tools / tool).symlink_to(mock)
         self.env = dict(PATH=str(tools) + os.pathsep + os.environ['PATH'], HOME=str(self.root),
