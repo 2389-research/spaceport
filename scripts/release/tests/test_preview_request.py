@@ -65,4 +65,3 @@ class PreviewRequestTests(unittest.TestCase):
         self.env['INPUT_SHA'] = 'a' * 40
         with self.assertRaises(ValueError):
             self.validate()
-
