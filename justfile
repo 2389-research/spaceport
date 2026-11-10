@@ -117,7 +117,7 @@ icons: icons-linux icons-windows
 
 # Validate committed platform artwork without invoking native image generators.
 check-artwork:
-    PYTHONDONTWRITEBYTECODE=1 python3 assets/icons/test_artwork.py
+    PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s assets/icons -p 'test_*.py'
 
 # Local, unsigned bundle with the app's companions beside it.
 # Never installs or starts a daemon.

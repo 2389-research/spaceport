@@ -1,6 +1,6 @@
-# Sheprd artwork
+# Spaceport artwork
 
-The canonical paw is [`icons/sheprd-avatar.svg`](icons/sheprd-avatar.svg).
+The canonical 🚀 rocket is [the approved nebula PNG](../design/spaceport-icon/rocket-nebula.png).
 Platform icons, installer artwork, and Apple app catalogs derive from it;
 see [`icons/README.md`](icons/README.md) for regeneration and sizing.
 
@@ -14,9 +14,10 @@ see [`icons/README.md`](icons/README.md) for regeneration and sizing.
 | `social-preview-dark.{svg,png}` | Dark repository card |
 | `social-preview-light-ui.{svg,png}` | Compatibility filename for the light card |
 
-All cards use the finalized paw and the line **Your agents. One place.**
+All cards use the rocket and the line **Your agents. One place.**
 They are artwork, not screenshots. The self-contained SVGs are generated from
-the canonical avatar; the PNGs are exported by librsvg, without image generation.
+the approved artwork; librsvg exports each card's PNG. The embedded rocket
+artwork was created with image generation, as recorded in the design notes.
 
 ```sh
 python3 assets/branding/generate.py

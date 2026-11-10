@@ -13,23 +13,11 @@ import tempfile
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets/icons"
 SIZES = (16, 20, 24, 32, 40, 48, 64, 256)
-# Keep the cream paw, recoloring only the gradient for development builds.
+# Each variant preserves the approved image; development adds a berry rim.
 VARIANTS = {
-    "Sheprd.ico": {},
-    "Sheprd-worktree.ico": {
-        "#f39a5a": "#df4b62",
-        "#d65f2a": "#991f43",
-    },
+    "Sheprd.ico": "sheprd-icon.svg",
+    "Sheprd-worktree.ico": "sheprd-icon-worktree.svg",
 }
-
-
-def recolor(source, replacements):
-    for old, new in replacements.items():
-        count = source.count(old)
-        if count != 1:
-            raise SystemExit(f"Expected {old!r} once in sheprd-icon.svg, found it {count} times")
-        source = source.replace(old, new)
-    return source
 
 
 def render(svg, size, scratch):
@@ -57,12 +45,11 @@ def pack(images):
 def main():
     if shutil.which("rsvg-convert") is None:
         raise SystemExit("rsvg-convert not found: install librsvg (apt-get install librsvg2-bin, brew install librsvg)")
-    source = (ASSETS / "sheprd-icon.svg").read_text(encoding="utf-8")
     with tempfile.TemporaryDirectory() as scratch:
         scratch = Path(scratch)
-        for name, replacements in VARIANTS.items():
+        for name, source in VARIANTS.items():
             svg = scratch / "icon.svg"
-            svg.write_text(recolor(source, replacements), encoding="utf-8", newline="\n")
+            svg.write_bytes((ASSETS / source).read_bytes())
             images = [(size, render(svg, size, scratch)) for size in SIZES]
             (ASSETS / name).write_bytes(pack(images))
             print(f"Generated assets/icons/{name}")

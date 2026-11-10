@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Verify the shipped cross-platform assets derive from the approved paw."""
+# ABOUTME: Verify shipped cross-platform artwork derives from the approved mark.
+# ABOUTME: Keep native container sizes and generated platform sources covered.
 from pathlib import Path
 import runpy
 import struct
@@ -13,22 +14,26 @@ GENERATOR = runpy.run_path(str(ROOT / "scripts/generate-linux-icons.py"))
 
 
 class ArtworkTests(unittest.TestCase):
-    def test_platform_sources_derive_from_the_canonical_paw(self):
+    def test_platform_sources_derive_from_the_canonical_mark(self):
         source = (ASSETS / "sheprd-avatar.svg").read_text()
         variants = {
             "sheprd-linux.svg": ("circle", False, False),
             "sheprd-linux-worktree.svg": ("circle", True, False),
             "sheprd-icon.svg": ("tile", False, False),
+            "sheprd-icon-worktree.svg": ("tile", True, False),
             "sheprd-icon-square.svg": ("square", False, False),
+            "sheprd-icon-square-worktree.svg": ("square", True, False),
+            "sheprd-avatar-worktree.svg": ("square", True, False),
             "sheprd-icon-badge.svg": ("tile", False, True),
         }
         for name, options in variants.items():
             with self.subTest(name=name):
-                self.assertEqual((ASSETS / name).read_text(), GENERATOR["artwork"](source, *options))
+                self.assertTrue((ASSETS / name).is_file(), f"Missing generated source {name}")
+                self.assertTrue((ASSETS / name).read_text() == GENERATOR["artwork"](source, *options),
+                                f"Regenerate {name} from the canonical source")
 
-    def test_development_colors_preserve_the_cream_foreground(self):
+    def test_development_background_is_distinct(self):
         source = ET.parse(ASSETS / "sheprd-linux-worktree.svg").getroot()
-        self.assertEqual(source.find(f"{SVG}g").get("fill"), "#fff8f0")
         self.assertEqual([stop.get("stop-color") for stop in source.iter(f"{SVG}stop")], ["#df4b62", "#991f43"])
 
     def test_windows_containers_have_all_native_png_sizes(self):

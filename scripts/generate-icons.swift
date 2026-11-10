@@ -1,4 +1,4 @@
-// Render each native icon resolution directly from the canonical vector artwork.
+// Render each native icon resolution from the shared nebula rocket artwork.
 import AppKit
 import Foundation
 
@@ -23,13 +23,8 @@ func run(_ executable: String, _ arguments: [String], quiet: Bool = false) throw
 }
 
 func artwork(_ name: String, worktree: Bool) throws -> String {
-  let source = try String(contentsOf: assets.appendingPathComponent(name), encoding: .utf8)
-  // Preserve the cream paw and its antialiasing. A luminance mapping also
-  // recolors the foreground and loses the mark's contrast.
-  return worktree
-    ? source.replacingOccurrences(of: "#f39a5a", with: "#df4b62")
-      .replacingOccurrences(of: "#d65f2a", with: "#991f43")
-    : source
+  let variant = worktree ? name.replacingOccurrences(of: ".svg", with: "-worktree.svg") : name
+  return try String(contentsOf: assets.appendingPathComponent(variant), encoding: .utf8)
 }
 
 func render(_ source: String, pixels: Int, macOS: Bool) throws -> Data {
@@ -50,17 +45,17 @@ func render(_ source: String, pixels: Int, macOS: Bool) throws -> Data {
   return png
 }
 
-// Icon Composer keeps the original gradient and cream mark as a full-bleed
-// vector layer. The system supplies its mask; no extra glass/shadow treatment.
+// Icon Composer uses the approved raster artwork as a full-bleed layer.
+// The system supplies its mask; no extra glass/shadow treatment.
 func compileAssetCatalog(name: String, worktree: Bool) throws {
   let document = temporary.appendingPathComponent("\(name)/Sheprd.icon")
   try FileManager.default.createDirectory(at: document.appendingPathComponent("Assets"), withIntermediateDirectories: true)
-  try artwork("sheprd-avatar.svg", worktree: worktree)
-    .write(to: document.appendingPathComponent("Assets/paw.svg"), atomically: true, encoding: .utf8)
+  try render(artwork("sheprd-icon-square.svg", worktree: worktree), pixels: 1024, macOS: false)
+    .write(to: document.appendingPathComponent("Assets/rocket.png"))
   let manifest: [String: Any] = [
-    "fill": ["solid": worktree ? "srgb:0.60000,0.12157,0.26275,1.00000" : "srgb:0.83922,0.37255,0.16471,1.00000"],
+    "fill": ["solid": worktree ? "srgb:0.60000,0.12157,0.26275,1.00000" : "srgb:0.04314,0.07059,0.12549,1.00000"],
     "groups": [[
-      "layers": [["glass": false, "image-name": "paw.svg", "name": "Sheprd paw"]],
+      "layers": [["glass": false, "image-name": "rocket.png", "name": "Spaceport rocket"]],
       "shadow": ["kind": "none", "opacity": 0.0],
       "specular": false,
       "translucency": ["enabled": false, "value": 0.0],

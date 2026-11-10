@@ -428,6 +428,20 @@
       "decision": "Implement a macOS-only build-and-sign/notarize artifact workflow using 2389 Research signing credentials and bundle ID ai.2389.spaceport. Windows signing is deferred for this work, not removed from the eventual desktop scope. No GitHub release publication, app installation, credential upload, automatic updater or general production release enablement is authorized. Retain the release refusal and distinguish ordinary development builds from signed previews.",
       "status": "active",
       "source": "Doctor Biz, 2026-11-09: provided the local 2389 Apple certificate directory, requested updating the workflow without Windows for now, and selected ai.2389.spaceport."
+    },
+    {
+      "id": "D62",
+      "title": "Rocket emoji icon",
+      "decision": "Use a rocket as Spaceport's app icon. D63 selects the later sculpted nebula artwork after the initial emoji exploration. Keep Spaceport as the product name; derive platform artwork from one shared source.",
+      "status": "qualified",
+      "source": "Doctor Biz, 2026-11-09: perfect. let's use a rocket emoji icon."
+    },
+    {
+      "id": "D63",
+      "title": "Ship the nebula rocket artwork",
+      "decision": "Use the approved sculpted ivory/red rocket with a violet/cyan nebula background as Spaceport's app artwork. The selected master is design/spaceport-icon/rocket-nebula.png. Generate platform and branding exports from this image.",
+      "status": "active",
+      "source": "Doctor Biz, 2026-11-09: requested a much cooler icon, then a more nebula-like background, and approved the resulting image with ok. ship it."
     }
   ]
 }

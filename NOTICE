@@ -31,11 +31,17 @@ validation/timing policy, and system-player selection are adapted from that
 revision, with bounded workers, native focus, and cancellation added. No upstream
 NOTICE or separate audio license was present; the root Apache-2.0 license applies.
 
-The canonical paw in assets/icons/sheprd-avatar.svg and its derived application
-icons, platform catalogs, installer artwork, and social cards are original Sheprd
-artwork, licensed under Apache-2.0. assets/icons/README.md records their sources
-and generation. Worktree variants use a berry-red background to identify
-development builds made from linked Git worktrees.
+Spaceport's nebula rocket artwork in design/spaceport-icon/rocket-nebula.png
+was generated and edited with OpenAI imagegen from an earlier Twemoji rocket
+(U+1F680) concept. Its derived application icons, platform catalogs, installer
+artwork and social cards preserve that provenance. Twemoji is Copyright
+Twitter, Inc. and contributors, CC BY 4.0:
+https://github.com/jdecked/twemoji/blob/b6b55fef1e8636b540a6d016a4729ca8cdf2e60b/assets/svg/1f680.svg
+https://creativecommons.org/licenses/by/4.0/
+The adaptations include sculpted rocket styling, a nebula background, platform
+cropping and a berry rim for development builds. assets/icons/LICENSE-twemoji contains the license;
+assets/icons/README.md records generation. Historical cream paw artwork remains
+original Sheprd artwork, licensed under Apache-2.0.
 
 Historical screenshots and earlier artwork may show the former ram icon,
 adapted from Herdr's Apache-2.0 logo:

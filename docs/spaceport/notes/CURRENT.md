@@ -1,5 +1,12 @@
 # Current phase handoff
 
+- Branding follow-up: D63 selects the nebula rocket. See
+  [artwork evidence](../evidence/t12-nebula-artwork.md) and
+  `wip/spaceport-rocket-branding` for source/export checks. The approved PNG is
+  `design/spaceport-icon/rocket-nebula.png`. All platform artwork and social
+  cards derive from it; an application preview rebuild/native Dock/About
+  check remains before claiming the installed app uses it.
+
 - Task/requirements: bounded T06 SP-009/SP-003 chat lifecycle policy removal;
   T10 exclusion evidence and T12 refreshed signed preview. Task/acceptance/gap
   statuses remain in plan JSON, not duplicated here.

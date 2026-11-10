@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render Sheprd's social cards from the canonical paw, using librsvg."""
+"""Render Spaceport's social cards from the canonical rocket, using librsvg."""
 from pathlib import Path
 import subprocess
 import xml.etree.ElementTree as ET
@@ -14,29 +14,25 @@ def card(width, height, dark=False):
         ("#211b18", "#fff8f0", "#c9b9aa") if dark else ("#fff8f0", "#34241c", "#795b49")
     )
     root = ET.Element(f"{SVG}svg", width=str(width), height=str(height), viewBox=f"0 0 {width} {height}")
-    ET.SubElement(root, f"{SVG}title").text = "Sheprd — Your agents. One place."
+    ET.SubElement(root, f"{SVG}title").text = "Spaceport — Your agents. One place."
     ET.SubElement(root, f"{SVG}rect", width=str(width), height=str(height), fill=background)
     ET.SubElement(root, f"{SVG}rect", x="64", y="68", width="56", height="6", rx="3", fill="#d65f2a")
     for text, y, size, weight, color in (
-        ("Sheprd", 255, 112, "700", foreground),
+        ("Spaceport", 255, 100, "700", foreground),
         ("Your agents. One place.", 338, 40, "500", foreground),
         ("Native workspaces for AI-assisted development.", 395, 23, "400", secondary),
-        ("macOS  /  Linux  /  Windows  /  iOS beta", height - 68, 21, "400", secondary),
+        ("macOS  /  Linux  /  Windows", height - 68, 21, "400", secondary),
     ):
         ET.SubElement(root, f"{SVG}text", x="64", y=str(y), fill=color, **{
             "font-family": "Arial, sans-serif", "font-size": str(size), "font-weight": weight,
         }).text = text
-    paw = ET.parse(ASSETS / "icons/sheprd-avatar.svg").getroot()
-    paw.set("x", str(width - 430))
-    paw.set("y", str((height - 340) // 2))
-    paw.set("width", "340")
-    paw.set("height", "340")
-    # A circular crop is safe for the entire canonical paw silhouette.
-    clip = ET.SubElement(root, f"{SVG}defs")
-    circle = ET.SubElement(clip, f"{SVG}clipPath", id="avatar-crop")
-    ET.SubElement(circle, f"{SVG}circle", cx=str(width - 260), cy=str(height // 2), r="170")
-    group = ET.SubElement(root, f"{SVG}g", **{"clip-path": "url(#avatar-crop)"})
-    group.append(paw)
+    mark = ET.parse(ASSETS / "icons/sheprd-icon.svg").getroot()
+    mark.set("x", str(width - 430))
+    mark.set("y", str((height - 340) // 2))
+    mark.set("width", "340")
+    mark.set("height", "340")
+    # Keep the approved rounded tile; circular crops cut the nose and plume.
+    root.append(mark)
     ET.indent(root, space="  ")
     return ET.tostring(root, encoding="unicode") + "\n"
 
