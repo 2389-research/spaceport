@@ -116,6 +116,7 @@ impl Sandbox {
         }
     }
 
+    #[cfg(unix)]
     fn restart(&mut self) {
         assert!(
             self.child.try_wait().unwrap().is_some(),
