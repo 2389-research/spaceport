@@ -9,6 +9,8 @@ use sheprd_chat_protocol::{
 use sheprd_client::private_endpoint::{Connection, Reader, Writer};
 use std::path::PathBuf;
 
+mod detach;
+
 const WAIT: Duration = Duration::from_secs(10);
 
 struct ChatClient {
