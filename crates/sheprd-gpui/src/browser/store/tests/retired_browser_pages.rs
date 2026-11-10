@@ -16,17 +16,17 @@ fn saved_browser_pages_do_not_restore_but_retained_views_keep_their_ids() {
     let blank = store
         .open(scope.clone(), "fixture-workspace", None, None)
         .unwrap();
-    let path = if cfg!(windows) {
-        r"C:\preview.html"
-    } else {
-        "/tmp/preview.html"
-    };
+    let path = std::env::temp_dir()
+        .join("spaceport-page")
+        .join("preview.html");
+    assert!(path.is_absolute());
+    assert!(path.parent().unwrap().file_name().is_some());
     let local = store
         .open(
             scope.clone(),
             "fixture-workspace",
             Some(Location::Local {
-                file: LocalFile::new(std::path::Path::new(path), None).unwrap(),
+                file: LocalFile::new(&path, None).unwrap(),
             }),
             None,
         )

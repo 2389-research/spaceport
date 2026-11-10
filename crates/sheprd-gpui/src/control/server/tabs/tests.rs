@@ -52,11 +52,13 @@ fn retired_pages_are_not_listed_but_native_tabs_keep_their_targets() {
 
 #[test]
 fn retired_source_is_never_listed_even_with_an_editor_place() {
+    let path = std::env::temp_dir().join("main.rs");
+    assert!(path.is_absolute());
     let tab: Tab = serde_json::from_value(serde_json::json!({
         "id": 7,
         "scope": "local",
         "workspace_id": "w",
-        "location": {"kind": "code", "file": {"path": "/src/main.rs", "line": 4}},
+        "location": {"kind": "code", "file": {"path": path, "line": 4}},
         "title": "Source",
         "place": "px0"
     }))

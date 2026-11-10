@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Build the per-user Windows installer, Sheprd-VERSION-TARGET-setup.exe.
+"""ABOUTME: Build and smoke the per-user Windows installer from packaged files.
+ABOUTME: Check installed artifacts while preserving external link-handler ownership.
+
+Build the per-user Windows installer, Sheprd-VERSION-TARGET-setup.exe.
 
   install-iscc DESTINATION_DIR
       Install the pinned Inno Setup compiler into DESTINATION_DIR after checking its SHA-256, and print the path of ISCC.exe.
@@ -15,9 +18,9 @@
       task, check the files, their subsystems, spaceport.exe's output, the
       app's name, the Start menu shortcut's AppUserModelID and target (the
       launcher), the user PATH, and the entry Settings lists under Installed
-      apps; write the startup entry Launch at login would, marked off in
+      apps; preserve URL handlers; write the startup entry Launch at login would, marked off in
       Startup apps; reinstall silently and check that state is preserved; then
-      uninstall and check all of it is gone again. With --signed,
+      uninstall and check its owned state is gone and URL handlers remain. With --signed,
       also require valid timestamped signatures from one signer on the
       installer and on everything it installed that runs, the uninstaller
       included. Changes this user's PATH and Start menu shortcut while it
@@ -56,6 +59,9 @@ INNO_VERSION = "6.7.3"
 INNO_URL = ("https://github.com/jrsoftware/issrc/releases/download/"
             f"is-{INNO_VERSION.replace('.', '_')}/innosetup-{INNO_VERSION}.exe")
 INNO_SHA256 = "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
+# This unqualified installer registers none of these: Spaceport's installer
+# identity is still pending, and the inherited schemes belong to other apps.
+LINK_SCHEMES = ("spaceport", "sheprd", "herdr-gpui")
 
 
 def packaged_executables():
@@ -166,7 +172,7 @@ def check_uninstall_entry(app):
         raise ValueError(f"Uninstall entry does not run the uninstaller: {entry}")
 
 
-def link_handler(scheme="sheprd"):
+def link_handler(scheme):
     """The command Windows runs for a supported link, or None when the
     scheme is not registered for this user."""
     import winreg
@@ -178,6 +184,18 @@ def link_handler(scheme="sheprd"):
             return winreg.QueryValueEx(key, "")[0]
     except FileNotFoundError:
         return None
+
+
+def link_handlers():
+    return {scheme: link_handler(scheme) for scheme in LINK_SCHEMES}
+
+
+def verify_link_handlers(before, after):
+    """Installation and removal must leave externally owned URL handlers alone."""
+    if before != after:
+        changed = sorted(scheme for scheme in before.keys() | after.keys()
+                         if before.get(scheme) != after.get(scheme))
+        raise ValueError(f"Installer changed URL handlers it does not own: {', '.join(changed)}")
 
 
 # Where Settings > General > Launch at login, and Task Manager's Startup apps
@@ -259,6 +277,7 @@ def shell_identity(app):
 
 
 def smoke(installer, signed=False):
+    handlers = link_handlers()
     with tempfile.TemporaryDirectory(prefix="herdr-installer-smoke-") as temp:
         # Runners report %TEMP% as an 8.3 short path (C:\Users\RUNNER~1\...),
         # while the shell answers with long ones; resolving first keeps every
@@ -271,16 +290,17 @@ def smoke(installer, signed=False):
         # Uninstall even when a check fails, so the user PATH and the
         # uninstall entry never point into the deleted scratch directory.
         try:
-            check_installation(app, installer if signed else None)
+            check_installation(app, installer if signed else None, handlers)
             legacy_launcher = app / "herdr-gpui-launcher.exe"
             enable_startup(legacy_launcher)
             check_reinstall(installer, app, env)
+            verify_link_handlers(handlers, link_handlers())
             check_startup_preserved(legacy_launcher)
         finally:
-            uninstall(app, env)
+            uninstall(app, env, handlers)
 
 
-def check_installation(app, signed_installer):
+def check_installation(app, signed_installer, handlers):
     """`signed_installer` is the installer whose signatures to require along
     with the installed files', or None to skip signature checks."""
     exe, launcher = app / "spaceport.exe", app / "spaceport-launcher.exe"
@@ -305,10 +325,7 @@ def check_installation(app, signed_installer):
     if str(app).lower() not in user_path_entries():
         raise ValueError("Installer did not add the app directory to the user PATH")
     check_uninstall_entry(app)
-    for scheme in ("sheprd", "herdr-gpui"):
-        handler = link_handler(scheme)
-        if handler != f'"{launcher}" "%1"':
-            raise ValueError(f"Installer registered {scheme}:// links wrongly: {handler}")
+    verify_link_handlers(handlers, link_handlers())
     # Launch at login is off until the user turns it on.
     if startup_entries():
         raise ValueError(f"Installer wrote a startup entry: {startup_entries()}")
@@ -335,7 +352,7 @@ def check_reinstall(installer, app, env):
         raise ValueError("A silent reinstall started the app")
 
 
-def uninstall(app, env):
+def uninstall(app, env, handlers):
     subprocess.run([str(app / "unins000.exe"), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"],
                    check=True, timeout=600, env=env)
     # The uninstaller hands off to a copy of itself and returns early.
@@ -343,13 +360,14 @@ def uninstall(app, env):
     shortcut = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/Sheprd.lnk"
     deadline = time.monotonic() + 120
     while (app.exists() or shortcut.exists() or entry in user_path_entries()
-           or uninstall_entry() is not None or any(link_handler(scheme) is not None for scheme in ("sheprd", "herdr-gpui"))
+           or uninstall_entry() is not None
            or startup_entries()):
         if time.monotonic() > deadline:
             raise ValueError("Uninstaller left the app directory, its shortcut, its PATH entry, "
-                             "its Uninstall entry, its link handler, "
+                             "its Uninstall entry, "
                              "or its startup entry behind")
         time.sleep(1)
+    verify_link_handlers(handlers, link_handlers())
 
 
 def main():
