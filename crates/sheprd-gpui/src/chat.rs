@@ -16,7 +16,6 @@
 // i18n: migrated
 
 mod chats;
-mod convert;
 mod core_pane;
 mod discovery;
 mod existing;
@@ -31,7 +30,6 @@ mod prepared;
 #[cfg(feature = "integration-test")]
 pub(crate) mod preview;
 mod reader;
-mod restore;
 mod rich;
 mod selection;
 mod session;
@@ -55,7 +53,6 @@ pub(super) fn now_ms() -> u64 {
             u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
         })
 }
-pub(crate) use convert::Error as ConvertError;
 pub(crate) use start::{Error as StartError, PROGRAM_ENV, Program};
 
 use sheprd_chat_protocol::{ByeReason, EndpointId};
@@ -87,8 +84,6 @@ pub enum Error {
     Closed,
     #[error("could not reach the chat program")]
     Connect(#[source] io::Error),
-    #[error(transparent)]
-    Convert(#[from] convert::Error),
     #[error("`{name}` cannot be a chat environment variable")]
     EnvironmentName { name: String },
     #[error(

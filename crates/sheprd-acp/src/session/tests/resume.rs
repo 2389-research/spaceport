@@ -21,7 +21,7 @@ fn resume_refuses_a_new_session_when_the_agent_cannot_continue() {
     );
     assert!(matches!(harness.transcript().status, Status::Failed { .. }));
     assert_eq!(harness.notices()[0].0, NoticeLevel::Error);
-    assert!(harness.opened.borrow().is_empty());
+    assert!(harness.transcript().session.is_none());
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn resume_continues_a_session_the_agent_can_load() {
     );
     let load = harness.last_request("session/load");
     harness.respond(load["id"].as_i64().unwrap(), json!({}));
-    assert_eq!(*harness.opened.borrow(), ["old"]);
+    assert_eq!(harness.transcript().session.as_ref().unwrap().id, "old");
 }
 
 #[test]
@@ -49,7 +49,7 @@ fn a_new_session_reports_its_id_once_open() {
     let id = harness.last_request("initialize")["id"].as_i64().unwrap();
     harness.respond(id, json!({"protocolVersion": 1, "agentCapabilities": {}}));
     let new = harness.last_request("session/new");
-    assert!(harness.opened.borrow().is_empty());
+    assert!(harness.transcript().session.is_none());
     harness.respond(new["id"].as_i64().unwrap(), json!({"sessionId": "fresh"}));
-    assert_eq!(*harness.opened.borrow(), ["fresh"]);
+    assert_eq!(harness.transcript().session.as_ref().unwrap().id, "fresh");
 }

@@ -107,7 +107,6 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (DevicesOverview, &[]),
         (NewCoreTerminal, &[]),
         (MirrorCorePane, &[]),
-        (ConvertToChat, &[]),
         (IncreaseFontSize, &["cmd-=", "cmd-+"]),
         (DecreaseFontSize, &["cmd--"]),
         (ResetFontSize, &["cmd-0"]),
@@ -570,3 +569,5 @@ mod messages;
 mod removed_mods;
 mod terminal_annotations;
 mod visual_annotations;
+
+mod removed_chat_lifecycle;

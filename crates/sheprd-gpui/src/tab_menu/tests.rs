@@ -9,10 +9,6 @@ mod en_xa;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 mod moves;
 mod mute;
-// Windows has no move for this machine's own agents, so never the row.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
-mod to_chat;
-
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
 #[gpui::test]
 fn tab_moves_are_not_offered_on_unsupported_platforms(cx: &mut TestAppContext) {

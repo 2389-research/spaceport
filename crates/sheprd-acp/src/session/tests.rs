@@ -15,6 +15,7 @@ mod attachments;
 mod auto_accept;
 mod bounds;
 mod commands;
+mod detach;
 mod flow;
 mod history;
 mod linked_pictures;
@@ -30,8 +31,6 @@ type TestSession = Session<Box<dyn FnMut(Update)>>;
 
 struct Harness {
     agent: Receiver<Vec<u8>>,
-    /// The session ids the session reported opening.
-    opened: Prompts,
     /// The prompts passed on for Herdr.
     prompts: Prompts,
     reports: Reports,
@@ -55,21 +54,17 @@ fn harness_with(config: Config) -> Harness {
     let (sender, agent) = bounded(64);
     let reports: Reports = Rc::default();
     let prompts: Prompts = Rc::default();
-    let opened: Prompts = Rc::default();
     let (sink, prompt_sink) = (Rc::clone(&reports), Rc::clone(&prompts));
-    let opened_sink = Rc::clone(&opened);
     let session = Session::new(
         config,
         Outbox(sender),
         Box::new(move |update| match update {
             Update::Activity(activity) => sink.borrow_mut().push(activity),
-            Update::Opened(id) => opened_sink.borrow_mut().push(id),
             Update::Prompt(prompt) => prompt_sink.borrow_mut().push(prompt),
         }) as Box<dyn FnMut(Update)>,
     );
     Harness {
         agent,
-        opened,
         prompts,
         reports,
         session,

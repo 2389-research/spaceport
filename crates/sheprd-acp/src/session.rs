@@ -93,8 +93,6 @@ pub(crate) enum Activity {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum Update {
     Activity(Activity),
-    /// The agent's session opened with this id, new or continued.
-    Opened(String),
     /// A prompt just sent to the agent, as the transcript shows it, which
     /// names the pane and its tab.
     Prompt(String),

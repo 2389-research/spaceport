@@ -364,7 +364,6 @@ impl SheprdWindow {
                 | Command::DevicesOverview
                 | Command::NewCoreTerminal
                 | Command::MirrorCorePane
-                | Command::ConvertToChat
                 | Command::IncreaseFontSize
                 | Command::DecreaseFontSize
                 | Command::ResetFontSize
