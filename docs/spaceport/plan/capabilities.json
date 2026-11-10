@@ -92,8 +92,8 @@
         "G-CHAT"
       ],
       "evidence_level": "scenario_verified_local_subset",
-      "runtime_test_status": "pure_local_route_7_gui_unit_and_66_protocol_tests_passed_macos; host_adapter_attach_11_permission_5_private_endpoint_8_fixture_tests_passed_macos; real_core_launched_local_adapter_with_fixed_acp_peer_attach_transcript_and_permission_passed_private_macos; native_gui_real_agent_remote_not_run",
-      "runtime_evidence": ["evidence/t06-local-adapter-route.md"]
+      "runtime_test_status": "historical_local_route_checks_recorded_in_evidence; desktop_conversion_and_reboot_recovery_removed; headless_view_detach_and_deterministic_zero_client_session_contracts_passed; real_core_0.1.19_owned_signed_adapter_permission_and_same_process_conversation_after_client_drops_passed_private_macos; batch_exec_not_duplex; native_gui_real_agent_remote_not_run",
+      "runtime_evidence": ["evidence/t06-local-adapter-route.md", "evidence/t06-chat-lifecycle-policy-removal.md", "evidence/t06-adapter-detach-process.md", "evidence/t06-core-duplex-route-audit.md", "evidence/t12-macos-preview-20261110.1.md"]
     },
     {
       "id": "CAP-FILES",

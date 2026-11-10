@@ -3,7 +3,9 @@
 Current scope: D60 removed the inherited custom updater; D61 adds a bounded
 macOS signed preview route with approved ID `ai.2389.spaceport` and 2389 Team
 `HD9NM9NSMK`. [Preview evidence](t12-macos-signed-preview.md) records actual
-qualification; [removal evidence](t12-custom-updater-removal.md) records the
+qualification of the first preview. [Preview 20261110.1](t12-macos-preview-20261110.1.md)
+records the later chat-lifecycle candidate and signed adapter fixture results;
+[removal evidence](t12-custom-updater-removal.md) records the
 updater cut. Ordinary development uses `spaceport.development`. The inherited
 production release route remains blocked. Earlier tables below are historical
 snapshots: their deleted updater paths and unresolved macOS signing inputs do

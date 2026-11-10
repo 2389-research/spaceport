@@ -162,7 +162,7 @@
       "scenario": "Attach to an existing Core-owned local host adapter, switch chat/terminal views and quit/reopen.",
       "expected": "Same agent/conversation persists; no desktop-owned agent process or automatic resume/conversion.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t06-chat-lifecycle-policy-removal.md", "evidence/t06-adapter-detach-process.md"]
     },
     {
       "id": "A15",
@@ -174,7 +174,7 @@
       "scenario": "Prove endpoint discovery, identity, authenticated transport and live native chat to a remote Core terminal.",
       "expected": "Verified supported route exists; otherwise the requirement remains blocked, not satisfied by terminal fallback.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t06-core-duplex-route-audit.md"]
     },
     {
       "id": "A16",
@@ -186,7 +186,7 @@
       "scenario": "Two views answer one pending request; also try an expired request and descriptive tool text.",
       "expected": "Source-defined single outcome; stale answers rejected; tool text cannot grant consent.",
       "status": "not_run",
-      "evidence": []
+      "evidence": ["evidence/t06-adapter-detach-process.md"]
     },
     {
       "id": "A17",
@@ -484,7 +484,7 @@
       "scenario": "Install a development build beside upstream; inspect paths/handlers/accounts and attempt old settings load.",
       "expected": "Independent app state/identity; upstream settings/credentials untouched; compatibility constants and notices retained.",
       "status": "not_run",
-      "evidence": ["evidence/release-identity-audit.md", "evidence/t01-diagnostics-identity.md", "evidence/t01-control-protocol-copy.md", "evidence/t01-theme-source-isolation.md"]
+      "evidence": ["evidence/release-identity-audit.md", "evidence/t01-diagnostics-identity.md", "evidence/t01-control-protocol-copy.md", "evidence/t01-theme-source-isolation.md", "evidence/t12-macos-preview-20261110.1.md"]
     },
     {
       "id": "A43",
@@ -507,7 +507,7 @@
       "scenario": "Inspect final owner-controlled IDs, keys, package/signing results and unresolved product gates.",
       "expected": "Unknown credentials/ownership or unproved required parity blocks public release; no placeholder success.",
       "status": "not_run",
-      "evidence": ["evidence/t12-custom-updater-removal.md"]
+      "evidence": ["evidence/t12-custom-updater-removal.md", "evidence/t12-macos-preview-20261110.1.md"]
     },
     {
       "id": "A45",
@@ -565,7 +565,7 @@
       "scenario": "Run retained UX/Core/lifecycle/clipboard/notifications/packaging/updater on a native supported macOS fixture.",
       "expected": "Measured behavior matches contract; actual OS/architecture coverage is recorded.",
       "status": "not_run",
-      "evidence": ["evidence/native-platform-results.md", "evidence/t11-native-pages-activation.md", "evidence/t11-native-locked-desktop-attempt.md"]
+      "evidence": ["evidence/native-platform-results.md", "evidence/t11-native-pages-activation.md", "evidence/t11-native-locked-desktop-attempt.md", "evidence/t12-macos-preview-20261110.1.md"]
     },
     {
       "id": "A50",
@@ -632,7 +632,7 @@
       "scenario": "Show/hide native chat, restore an absent adapter and inspect removed conversion/recovery paths.",
       "expected": "No desktop-driven agent kill/restart/resume/deployment; missing capability remains explicit.",
       "status": "not_run",
-      "evidence": ["evidence/t04-teleport-engine-removal.md"]
+      "evidence": ["evidence/t04-teleport-engine-removal.md", "evidence/t06-chat-lifecycle-policy-removal.md", "evidence/t06-adapter-detach-process.md"]
     },
     {
       "id": "A55",

@@ -10,8 +10,8 @@
         "S06",
         "S03"
       ],
-      "issue": "The private fixture proves a local Core-launched adapter and concurrent permission response, but the GUI lifecycle remains untested. Core relays raw remote terminal.attach streams, not the adapter's structured attach socket. Spaceport filters remote terminal labels and has no Core-owned remote structured-chat route.",
-      "required_evidence": "Herdr-owned remote adapter endpoint discovery and stable machine/terminal identity, authenticated structured attach transport, permission semantics, and local/remote reconnect and concurrent-view scenarios A14–A16/A54.",
+      "issue": "Private fixtures prove local Core-owned adapter permission and detach/reconnect contracts, including shipped signed helper bytes. Desktop conversion/reboot recovery is removed; native GUI/real-agent lifecycle is untested. Installed Core 0.1.19 schema machine.exec is batch-only; pinned 0.1.18 source has no supported arbitrary duplex route to the existing adapter connector. A chat-named RPC is not inherently required. See evidence/t06-core-duplex-route-audit.md.",
+      "required_evidence": "Herdr-owned endpoint discovery and stable machine/terminal identity with an authenticated non-PTY lossless duplex route to the installed adapter connector; bounded backpressure, EOF/cancel/disconnect/exit/lifetime guarantees, permission semantics and local/remote native scenarios A14–A16/A54. A generic supported streaming facility could suffice.",
       "forbidden_workaround": "A new Spaceport SSH relay, mobile server, automatic agent conversion/resume or claiming terminal fallback equals native chat."
     },
     {
@@ -83,7 +83,7 @@
       "sources": [
         "S09"
       ],
-      "issue": "Spaceport production app IDs, signing credentials, package/release endpoints and final icon assets were not supplied or validated. D60 removes the inherited custom updater; verified replacement platform/package update routes and their ownership policy remain unimplemented.",
+      "issue": "D61 macOS preview identity ai.2389.spaceport, 2389 signing inputs and actual signed/notarized arm64 debug previews are validated. This does not establish general-production and other-platform package identities, release endpoints, final icon assets or installation isolation. D60 removes the inherited custom updater; replacement platform/package update routes and ownership policy remain unimplemented.",
       "required_evidence": "Owner-controlled values plus A42–A44; publishing separately authorized.",
       "forbidden_workaround": "Inherit upstream signing identities/endpoints, claim domain ownership or ship development placeholders."
     },
@@ -95,7 +95,7 @@
         "S08",
         "S09"
       ],
-      "issue": "This specification was prepared from source, not from built and exercised Spaceport binaries.",
+      "issue": "Spaceport binaries have compiled and passed unit, protocol/component, executable CLI and macOS signed-package checks; earlier isolated native UI fixtures exposed activation failures. Complete native A49–A51 acceptance, final-preview GUI and real-agent/remote chat parity remain unproved. Package/component success is not full desktop acceptance.",
       "required_evidence": "Pinned source/schema plus native A49–A51 and all mandatory applicable scenarios.",
       "forbidden_workaround": "Claiming compilation/spec validation equals desktop or tailnet runtime support."
     }

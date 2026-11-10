@@ -1,5 +1,9 @@
 # macOS signed preview workflow
 
+The first artifact below is historical. The later
+[20261110.1 preview](t12-macos-preview-20261110.1.md) contains subsequent removals
+and records its own exact bytes, signing and component results.
+
 Decision D61 authorizes a macOS-only build/sign/notarize artifact route.
 Doctor Biz selected `ai.2389.spaceport`; ordinary development builds retain
 `spaceport.development`. Windows signing is deferred for this task. The

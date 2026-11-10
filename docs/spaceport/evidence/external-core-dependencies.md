@@ -1,6 +1,17 @@
 # External Core dependencies for retained behavior
 
-T06 is blocked on G-CHAT. The pinned Core `cd12ddd88bc11490228343291dc1096c9ed3bf77` has 32 OpenRPC methods and no structured chat or ACP method. Its `terminal.attach` relays raw remote terminal streams (`remote.rs::route`, `remote/viewers.rs::attach`), but the adapter's structured attach uses a separate local socket or pipe. Spaceport's Core chat target filter excludes machine-qualified terminal IDs. The smallest external dependency is a Herdr-owned remote adapter route that specifies endpoint discovery, stable terminal and machine identity, authenticated structured transport, permission responses, and attach lifetime. A local and remote two-view reconnect test must prove that route before native remote chat can pass A14–A16/A54. Spaceport can preserve and test the local renderer and adapter independently; a terminal fallback does not close the gate.
+T06 is blocked on G-CHAT. A chat-specific RPC is not required: the existing adapter
+already has a transparent stdio connector. The missing verified contract is a
+Herdr-owned authenticated, non-PTY duplex byte route to that installed connector
+on an exactly identified remote machine/terminal. Installed Core 0.1.19's schema
+and pinned 0.1.18 source provide batch `machine.exec`, which takes all input and
+returns bounded output after exit, rather than an interactive channel. Terminal
+streams have repaint/backlog-loss semantics unsuitable for assuming lossless
+adapter framing. The [duplex route audit](t06-core-duplex-route-audit.md) records
+source/schema evidence and the narrower external dependency. Local process,
+permission and detach fixtures do not close native or remote parity. Spaceport
+must not add another SSH/transport manager, remote server or automatic helper
+deployment to hide the gap.
 
 T07 is blocked on G-PORT. The same Core's 32-method live `rpc.discover` table has no service-forwarding method. The smallest external dependency is a Core-owned way to forward a named remote machine's loopback-only TCP service to a client-local loopback endpoint, with explicit target identity, authorization/refusal, endpoint and listener lifetime, cancellation, and failure behavior. A private loopback-service test must prove A27; opening an already reachable URL does not. G-FILE is still open separately: `terminal.put` and text file RPCs have not proved all binary upload, download, overwrite and cancel semantics. No new Spaceport transport manager or remote service is authorized.
 

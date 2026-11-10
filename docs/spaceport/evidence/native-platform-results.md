@@ -27,10 +27,16 @@ close A49.
 
 ## D61 macOS signed preview
 
-[Preview `20261109.1`](t12-macos-signed-preview.md) records an actual arm64 debug
-Developer ID app and DMG, both accepted by Apple notarization with stapled tickets
-and Gatekeeper acceptance. The exact shipped executable passed its CLI smoke
+[Preview `20261109.1`](t12-macos-signed-preview.md) and the later
+[chat-lifecycle preview `20261110.1`](t12-macos-preview-20261110.1.md) record actual arm64 debug
+Developer ID apps and DMGs, accepted by Apple notarization with stapled tickets
+and Gatekeeper acceptance. The exact shipped executables passed CLI smoke
 from a read-only DMG mount. This is packaging/signing evidence, not a native GUI
 journey or installation: no final preview window was launched. The earlier UI
 activation results above still apply only to their named revisions. Windows
 signing was deferred for this task; the full platform gates remain open.
+
+The later preview's actual signed adapter also passed the two isolated Core
+process/protocol fixtures (permissions and detach/reconnect). Those use a fixed
+ACP peer, not a native app journey or real provider agent. Neither signed
+preview was installed or launched as a GUI in this phase.

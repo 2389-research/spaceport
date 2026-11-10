@@ -457,7 +457,10 @@
       "evidence": [
         "evidence/external-core-dependencies.md",
         "evidence/t06-local-adapter-route.md",
-        "evidence/t04-teleport-engine-removal.md"
+        "evidence/t04-teleport-engine-removal.md",
+        "evidence/t06-chat-lifecycle-policy-removal.md",
+        "evidence/t06-adapter-detach-process.md",
+        "evidence/t06-core-duplex-route-audit.md"
       ],
       "must_close_gaps": [
         "G-CHAT"
@@ -667,7 +670,8 @@
         "evidence/t10-a31-native-inventory.md",
         "evidence/t10-managed-skill-phone-claim.md",
         "evidence/t04-teleport-engine-removal.md",
-        "evidence/t04-credential-store-tail-removal.md"
+        "evidence/t04-credential-store-tail-removal.md",
+        "evidence/t06-chat-lifecycle-policy-removal.md"
       ],
       "must_close_gaps": []
     },
@@ -784,7 +788,8 @@
         "evidence/t12-upstream-site-mirrors.md",
         "evidence/t12-site-publication-ownership.md",
         "evidence/t12-custom-updater-removal.md",
-        "evidence/t12-macos-signed-preview.md"
+        "evidence/t12-macos-signed-preview.md",
+        "evidence/t12-macos-preview-20261110.1.md"
       ],
       "must_close_gaps": [
         "G-RELEASE",

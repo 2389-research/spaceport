@@ -121,7 +121,7 @@
       "sources": [
         "S09"
       ],
-      "constraint": "Migration/Git preparation/dispatch/provisioning/session-copy engine removed after extracting existing host scripts, agent metadata and pane/process readers. No replacement manager or shim. Legacy chat conversion/restore ownership and native parity remain T06 gates. See evidence/t04-teleport-engine-removal.md.",
+      "constraint": "Migration/Git preparation/dispatch/provisioning/session-copy engine removed after extracting existing host scripts, agent metadata and pane/process readers. No replacement manager or shim. Desktop chat conversion/reboot recovery and adapter restore-record production are also removed; observation, attachment and explicit runtime launches remain. Native/remote parity remains a T06 gate. See evidence/t04-teleport-engine-removal.md and evidence/t06-chat-lifecycle-policy-removal.md.",
       "audit_status": "in_progress"
     },
     {
@@ -313,8 +313,8 @@
         "S06",
         "S09"
       ],
-      "constraint": "Audit lifecycle/config/deployment paths; remote route is gated.",
-      "audit_status": "not_started"
+      "constraint": "Desktop conversion/reboot recovery and adapter Keeper/restore records removed; observed rich chat, attachment, permissions, explicit runtime chat creation and manual adapter resume remain. Component detach/permission fixtures pass; remote Core duplex route and native/real-agent parity remain gated. See evidence/t06-chat-lifecycle-policy-removal.md and evidence/t06-core-duplex-route-audit.md.",
+      "audit_status": "in_progress"
     },
     {
       "id": "KEEP-CONTROL",

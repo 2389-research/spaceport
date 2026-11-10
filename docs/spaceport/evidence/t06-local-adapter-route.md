@@ -1,5 +1,13 @@
 # T06 local chat route inventory
 
+Current qualification: [the desktop lifecycle cut](t06-chat-lifecycle-policy-removal.md)
+removes the conversion/recovery paths described below as remaining in older
+snapshots. [The newer detach/permission process fixtures](t06-adapter-detach-process.md)
+use explicit Core 0.1.19 and the updated adapter. Native, remote and real-agent
+parity remain open. Earlier source/version results below retain their historical
+scope; [the duplex audit](t06-core-duplex-route-audit.md) narrows the external
+contract without requiring a chat-specific RPC.
+
 Pinned Sheprd `806b49870ac7761b98cbcea4bd115aa2f2b00d75` supplies the current local Core route. `chat/core_pane.rs` starts the host-side `sheprd-acp` program as a Core terminal with a random endpoint in `HERDR_ACP_ENDPOINT` and an `acp` terminal label. Discovery reads that label from Core terminal facts, rejects invalid endpoint IDs and machine-qualified terminal addresses, and offers a native overlay only for local driven panes. `chat/chats.rs` then dials the adapter's local socket or Windows pipe. The attach protocol and renderer are separate from Core terminal bytes. Core owns the adapter process as a terminal program; the app still has legacy conversion and restore paths to remove.
 
 The current adapter address is under the inherited `herdr/acp` state directory on Unix, or `herdr-acp-<id>` pipe on Windows (`sheprd-chat-protocol/src/endpoint.rs`). This is an identity-isolation issue for the Spaceport adapter cut; changing it while legacy Herdr 1 routes still consume the same protocol would need a scoped migration. The local route does not supply a remote Core attach channel: the Core target filter excludes `machine/terminal`, and the only remote chat dial in `chat/chats.rs` runs a separate SSH command for the legacy backend. The inspected Core method table has no structured chat method. G-CHAT therefore still needs a Core-owned remote adapter route with discovery, target identity, authentication and permission semantics.
