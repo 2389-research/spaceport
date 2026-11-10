@@ -4,7 +4,7 @@
 
 Spaceport is an independent desktop fork of
 [Sheprd](https://github.com/sheprd-labs/sheprd). It is under development. A signed,
-notarized [macOS arm64 preview](https://github.com/harperreed/spaceport/releases/tag/v20261110.4)
+notarized [macOS arm64 preview](https://github.com/harperreed/spaceport/releases/tag/v20261110.5)
 is available for macOS 14.2 or later. The [Spaceport specification](docs/spaceport/START_HERE.md)
 defines the product and ownership rules. The [task plan](docs/spaceport/plan/tasks.json),
 [capability matrix](docs/spaceport/plan/capabilities.json), and
@@ -57,7 +57,7 @@ claiming a feature or build is ready.
 
 The [preview tag workflow](scripts/release/README.md#spaceport-macos-previews)
 builds, signs, notarizes and publishes macOS previews from a qualified main
-commit. See its [artifact verification](docs/spaceport/evidence/t12-macos-preview-20261110.4-signed.md).
+commit. See its [artifact verification](docs/spaceport/evidence/t12-macos-preview-20261110.5-signed.md).
 General production releases, automatic updates and other-platform distribution
 still have open gates; the inherited Sheprd publishing route remains disabled
 for Spaceport.

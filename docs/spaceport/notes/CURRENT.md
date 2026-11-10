@@ -8,9 +8,21 @@
   Windows logs confirm that sole app test failure. It reproduced locally.
   The assertion now requires the correct Spaceport PR URL. Full local app
   all-feature unit tests passed 3,840 cases with nine existing opt-in ignores.
-  Next: push the reviewed correction, require complete exact-source CI, then
-  create fresh `v20261110.5` if still unused and monitor the protected route.
-  Do not alter `.3` or `.4`, reuse their versions, or retry submissions.
+  Correction `489f8c205dea3807d0d044fa4078b1586cd3bfcd` is committed, merged
+  and pushed. [Exact-source CI 42907726241](https://github.com/harperreed/spaceport/actions/runs/42907726241)
+  passed every required job; the source gate independently confirmed it.
+  The superseded red run was explicitly cancelled to free its queue.
+  Immutable tag `v20261110.5` now selects that qualified source.
+  [Preview workflow 42909921543](https://github.com/harperreed/spaceport/actions/runs/42909921543)
+  passed all five jobs and [published the prerelease](https://github.com/harperreed/spaceport/releases/tag/v20261110.5).
+  Both Apple submissions were Accepted. The downloaded public DMG matches its
+  checksum and the retained signed artifact byte-for-byte. Local signatures,
+  stapled tickets, Gatekeeper, identity and CLI checks passed. Bundled NOTICE,
+  attribution messages and standard nebula resources were checked too.
+  [Exact qualification](../evidence/t12-macos-preview-20261110.5-signed.md)
+  records source, digests, UUIDs and limits. No personal app/runtime changed.
+  Next preview: use a fresh unused version on fully qualified main source.
+  Do not alter `.3`, `.4` or `.5`, reuse their versions, or retry submissions.
 
 - About attribution follow-up: Doctor Biz approved Spaceport by 2389 Research,
   Inc., separate modifications/original Sheprd copyright rows, both upstream
@@ -29,10 +41,9 @@
   `7143eb821` baseline failed identically; do not claim the broader suite passed.
   Logs are retained under this worktree's ignored `target/about-attribution/`.
   Doctor Biz explicitly authorized merge to main, push and a fresh tag.
-  Next: integrate this reviewed source, require full exact-commit CI, then
-  publish an unused preview version (`v20261110.5` if still free), download
-  and verify its actual DMG. Published `.4` remains the prior source; never
-  move/reuse it. Retain the independent native host activation limitation.
+  This follow-up shipped as `.5` above. Retain the independent native host
+  activation limitation and distinguish source-native checks from full UI
+  qualification of the final signed image.
 
 - Live tag activation: all five signing/notary secrets and the identity variable
   are configured in `macos-preview`. Doctor Biz supplied the primary 2389
@@ -40,7 +51,7 @@
   ID certificate. The unused interactive keychain export was withdrawn and its
   private helper/password removed; no local access policy changed. No credential
   question remains. Only `harperreed` has repository write access.
-- The qualified release source is `f490516d7`.
+- Earlier `.4` qualified release source was `f490516d7`.
   [Full exact-source CI passed](https://github.com/harperreed/spaceport/actions/runs/42890348802),
   including every required platform/feature matrix, both Windows native and
   performance jobs and both optimized Linux executable checks. `ec5b5795a`

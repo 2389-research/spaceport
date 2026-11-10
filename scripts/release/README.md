@@ -27,8 +27,8 @@ Pushing `vYYYYMMDD.COUNTER` as `harperreed` to `harperreed/spaceport` builds an
 optimized app, signs and notarizes it, and publishes a GitHub **prerelease** with
 the DMG and `SHA256SUMS`. Manual runs on main accept an exact commit SHA and an
 explicit version; they upload workflow artifacts without publishing a release.
-The [20261110.4 prerelease](https://github.com/harperreed/spaceport/releases/tag/v20261110.4)
-completed this route; its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261110.4-signed.md)
+The [20261110.5 prerelease](https://github.com/harperreed/spaceport/releases/tag/v20261110.5)
+completed this route; its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261110.5-signed.md)
 includes verification of the actual published download.
 Both routes require the selected commit to belong to main and have a complete,
 successful main CI run. The signing and publishing jobs re-fetch the tag and
@@ -67,8 +67,8 @@ After main CI passes on the commit to release, select an unused version and push
 one tag (replace the example version and SHA):
 
 ```sh
-git tag -a v20261110.5 FULL_MAIN_COMMIT_SHA -m 'Spaceport macOS preview 20261110.5'
-git push origin refs/tags/v20261110.5
+git tag -a v20261110.6 FULL_MAIN_COMMIT_SHA -m 'Spaceport macOS preview 20261110.6'
+git push origin refs/tags/v20261110.6
 ```
 
 A read-only history check rejects reruns and any earlier run using the exact
