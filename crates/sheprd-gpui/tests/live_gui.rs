@@ -24,6 +24,15 @@ struct Isolated {
 }
 
 fn gui_command(sandbox: &Sandbox, mut env: impl FnMut(&str) -> Option<OsString>) -> Command {
+    // App view settings no longer share Herdr's config. Both fixtures must
+    // choose immediate creation explicitly instead of inheriting name prompts.
+    let app_config = sandbox.dir.join("config/spaceport");
+    fs::create_dir_all(&app_config).unwrap();
+    fs::write(
+        app_config.join("view.toml"),
+        "[ui]\nprompt_new_tab_name = false\nprompt_new_workspace_name = false\n",
+    )
+    .unwrap();
     let mut command = sandbox.command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
     // Only the GUI needs desktop transport; keep HOME, XDG and daemon paths private.
     for name in ["DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY"] {
@@ -44,15 +53,31 @@ fn gui_command(sandbox: &Sandbox, mut env: impl FnMut(&str) -> Option<OsString>)
 }
 
 #[test]
+fn gui_view_settings_use_private_app_path_and_leave_daemon_config_alone() {
+    let sandbox = Sandbox::new();
+    let daemon_path = sandbox.dir.join("config.toml");
+    let daemon = fs::read(&daemon_path).unwrap();
+    let _command = gui_command(&sandbox, |_| None);
+    let view = fs::read_to_string(sandbox.dir.join("config/spaceport/view.toml")).unwrap();
+    let settings: toml::Table = toml::from_str(&view).unwrap();
+    assert_eq!(settings["ui"]["prompt_new_tab_name"].as_bool(), Some(false));
+    assert_eq!(
+        settings["ui"]["prompt_new_workspace_name"].as_bool(),
+        Some(false)
+    );
+    assert_eq!(fs::read(daemon_path).unwrap(), daemon);
+}
+
+#[test]
 #[ignore = "requires active native desktop; GUI-only fixtures, no daemon"]
 fn native_sidebar() {
     native_fixture(Fixture::Sidebar);
 }
 
 #[test]
-#[ignore = "requires active native desktop; isolated GitHub quota fixtures, no daemon"]
-fn native_github_quota() {
-    native_fixture(Fixture::GitHubQuota);
+#[ignore = "requires active native desktop; profile popup and sign-in absence, no daemon"]
+fn native_profile_popup() {
+    native_fixture(Fixture::Profile);
 }
 
 #[cfg(target_os = "linux")]
@@ -112,7 +137,7 @@ fn native_input_shutdown(field: &'static str) {
 }
 
 enum Fixture {
-    GitHubQuota,
+    Profile,
     Sidebar,
     #[cfg(target_os = "linux")]
     ApplicationMenus,
@@ -174,7 +199,7 @@ fn native_fixture(fixture: Fixture) {
     }
     assert!(status.success(), "native sidebar failed: {status}");
     assert!(log.contains(match fixture {
-        Fixture::GitHubQuota => "GITHUB QUOTA native PASS",
+        Fixture::Profile => "PROFILE native PASS:",
         #[cfg(target_os = "linux")]
         Fixture::ApplicationMenus => "APPLICATION MENUS native PASS",
         Fixture::Notifications => "NOTIFICATIONS native PASS:",
@@ -194,12 +219,9 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
     if let Some(path) = std::env::var_os("HERDR_TEST_SETTINGS_CAPTURE") {
         command.env("HERDR_TEST_SETTINGS_CAPTURE", path);
     }
-    if let Some(path) = std::env::var_os("HERDR_TEST_GITHUB_CAPTURE") {
-        command.env("HERDR_TEST_GITHUB_CAPTURE", path);
-    }
     match fixture {
-        Fixture::GitHubQuota => {
-            command.env("HERDR_TEST_GITHUB_QUOTA_ONLY", "1");
+        Fixture::Profile => {
+            command.env("HERDR_TEST_PROFILE_ONLY", "1");
         }
         Fixture::Sidebar => {}
         #[cfg(target_os = "linux")]
@@ -214,7 +236,11 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         }
         #[cfg(target_os = "macos")]
         Fixture::InvalidSettings => {
-            fs::write(isolated.sandbox.dir.join("config.toml"), "[invalid").unwrap();
+            fs::write(
+                isolated.sandbox.dir.join("config/spaceport/view.toml"),
+                "[invalid",
+            )
+            .unwrap();
         }
         #[cfg(target_os = "linux")]
         Fixture::InputShutdown(field) => {

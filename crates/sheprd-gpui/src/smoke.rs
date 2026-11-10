@@ -36,6 +36,9 @@ mod bidi;
 mod sidebar_fixture;
 pub use sidebar_fixture::start_sidebar;
 
+#[path = "smoke_profile.rs"]
+mod profile;
+
 #[path = "smoke_notifications.rs"]
 mod notifications;
 use notifications::start_notifications;

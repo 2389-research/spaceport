@@ -589,7 +589,7 @@ impl SheprdWindow {
                         .pt(px(8.))
                         .pb(px(6.))
                         .font_weight(FontWeight::SEMIBOLD)
-                        .child(fl!("menu-page-profile")),
+                        .child(crate::sidebar::label_text(&fl!("menu-page-profile"))),
                 );
             }
             for (index, item) in items.into_iter().enumerate() {
@@ -627,7 +627,11 @@ impl SheprdWindow {
                             }
                             cx.notify();
                         }))
-                        .child(menu_item_label(item))
+                        .child(if page == Page::Profile {
+                            crate::sidebar::label_text(&menu_item_label(item)).into_any_element()
+                        } else {
+                            menu_item_label(item).into_any_element()
+                        })
                         .on_click(cx.listener(move |this, _, window, cx| {
                             cx.stop_propagation();
                             this.activate_menu(item, window, cx);

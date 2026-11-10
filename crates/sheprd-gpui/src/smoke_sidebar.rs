@@ -95,6 +95,17 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
         start_notifications(handle, cx);
         return;
     }
+    if std::env::var_os("HERDR_TEST_PROFILE_ONLY").is_some() {
+        cx.spawn(async move |cx| {
+            if let Err(error) = profile::verify(handle, cx).await {
+                eprintln!("PROFILE native FAIL: {error:#}");
+                std::process::exit(1);
+            }
+            std::process::exit(0);
+        })
+        .detach();
+        return;
+    }
     EXIT_CODE.store(1, Ordering::SeqCst);
     // AppKit may exit(0) inside cx.quit(), bypassing main's ExitCode. These
     // daemon-free fixtures exit explicitly, like the performance driver.
@@ -601,33 +612,9 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                 }
             }
         }
-        for (width, height) in [(640., 400.), (1200., 780.)] {
-            let _ = handle.update(cx, |_, window, _| window.resize(size(px(width), px(height))));
-            timer.timer(Duration::from_millis(100)).await;
-            let result = AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<()> {
-                let view = root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?;
-                view.update(cx, |view, cx| view.open_profile(window, cx));
-                cx.default_global::<sidebar::layout_tests::PaintedProbes>().0.clear();
-                window.draw(cx).clear(cx);
-                let probes = &cx.global::<sidebar::layout_tests::PaintedProbes>().0;
-                for label in ["Profile", "Settings", "Keyboard Shortcuts", "Themes", "About"] {
-                    let probe = probes.get(label).with_context(|| format!("missing profile item {label}"))?;
-                    if probe.clipped || probe.bounds.bottom() > window.viewport_size().height {
-                        bail!("profile item {label} clipped");
-                    }
-                }
-                let before = view.read(cx).input_probe;
-                window.dispatch_keystroke(Keystroke::parse("escape")?, cx);
-                let state = view.read(cx);
-                if state.menu.page.is_some() || state.input_probe.text != before.text || state.input_probe.keys != before.keys || !state.focus.is_focused(window) {
-                    bail!("profile popup leaked input or lost focus");
-                }
-                Ok(())
-            });
-            if !matches!(result, Ok(Ok(()))) {
-                eprintln!("SIDEBAR native profile FAIL: {result:?}");
-                std::process::exit(1);
-            }
+        if let Err(error) = profile::verify(handle, cx).await {
+            eprintln!("SIDEBAR native profile FAIL: {error:#}");
+            std::process::exit(1);
         }
         #[cfg(target_os = "macos")]
         if let Err(error) = sidebar_hosts(handle, cx).await {
