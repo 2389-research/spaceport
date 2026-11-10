@@ -27,6 +27,9 @@ Pushing `vYYYYMMDD.COUNTER` as `harperreed` to `harperreed/spaceport` builds an
 optimized app, signs and notarizes it, and publishes a GitHub **prerelease** with
 the DMG and `SHA256SUMS`. Manual runs on main accept an exact commit SHA and an
 explicit version; they upload workflow artifacts without publishing a release.
+The [20261110.4 prerelease](https://github.com/harperreed/spaceport/releases/tag/v20261110.4)
+completed this route; its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261110.4-signed.md)
+includes verification of the actual published download.
 Both routes require the selected commit to belong to main and have a complete,
 successful main CI run. The signing and publishing jobs re-fetch the tag and
 refuse it if it moved. Only the publishing job receives `contents: write`.
@@ -37,7 +40,7 @@ only that run's checksummed artifact. It verifies signatures, notarization ticke
 and Gatekeeper, mounts the final DMG read-only, checks the app identity, and runs
 the mounted CLI before writing the checksum. This does not prove native GUI behavior.
 
-Before the first hosted run, merge these workflows to main and configure the
+For a fresh repository, merge these workflows to main and configure the
 `macos-preview` environment in repository Settings > Environments. Allow main
 branches and `v*` tags through its selected deployment rules. Restrict who can
 create or update those tags with repository access rules. The activated repository
@@ -54,18 +57,18 @@ requires reviewing signing protection, including required owner review. Add thes
 | Secret | `APPLE_API_KEY_ID` | That API key's ID |
 | Secret | `APPLE_API_ISSUER_ID` | That API key's issuer ID |
 
-The initial implementation did not provision credentials. Doctor Biz subsequently
-authorized hosted setup. An installed local identity is insufficient for hosted
-signing: CI needs the matching
-P12 and its password. Do not use a different company's certificate. The importer
+Doctor Biz authorized hosted setup, and all five environment secrets and the
+identity variable are configured for `harperreed/spaceport`. An installed local
+identity is insufficient for hosted signing: CI needs the matching P12 and its
+password. Do not use a different company's certificate. The importer
 requires exactly one signing identity and checks Team `HD9NM9NSMK`.
 
 After main CI passes on the commit to release, select an unused version and push
 one tag (replace the example version and SHA):
 
 ```sh
-git tag -a v20261110.3 FULL_MAIN_COMMIT_SHA -m 'Spaceport macOS preview 20261110.3'
-git push origin refs/tags/v20261110.3
+git tag -a v20261110.5 FULL_MAIN_COMMIT_SHA -m 'Spaceport macOS preview 20261110.5'
+git push origin refs/tags/v20261110.5
 ```
 
 A read-only history check rejects reruns and any earlier run using the exact

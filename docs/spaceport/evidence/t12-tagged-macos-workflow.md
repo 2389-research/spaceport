@@ -64,12 +64,12 @@ follow-up created `macos-preview` with selected deployment rules for the main
 branch and `v*` tags, the approved signing identity variable and all three Apple
 API secrets. Repository access inspection found only `harperreed` as a writer.
 Private values were passed through stdin to GitHub's encrypted secret setter;
-none entered Git, shell arguments, Cargo or logs. The P12 and export password
-are still missing: exact-identity export requires macOS keychain authorization,
-and the supplied distribution password field does not unlock the matching P12.
-The interactive export remains pending owner approval; no access policy was
-changed. Finish credential provisioning and require full CI before creating a
-release tag. Broader T12/G-RELEASE and native
+none entered Git, shell arguments, Cargo or logs. Doctor Biz then supplied the
+primary 2389 Apple directory. Its P12 and private password file verified the
+exact approved Developer ID certificate; both certificate secrets are now
+configured. The unused interactive export was withdrawn and its private helper
+removed. No local keychain access policy changed. Require full exact-source CI
+before creating another release tag. Broader T12/G-RELEASE and native
 GUI gates remain open; this does not enable the inherited production pipeline,
 an updater or other-platform publishing.
 
@@ -110,7 +110,51 @@ After these fixes, `just release-check` passed again (294 release tests/eight
 skips; 24 security tests/one skip). Strict all-feature workspace Clippy passed
 again after the native instrumentation change. File-size, sorted-region and
 diff checks passed. Independent reviewers checked both Rust and native fixture
-patches; final review found no remaining local blocker. All source changes are
-in the task worktree; hosted Windows/Linux confirmation and the next main CI run
-remain pending. Do not describe the failed first CI run as green or publish
-before the exact source commit has a full successful CI run.
+patches; final review found no remaining local blocker. These fixes were pushed
+for the subsequent platform qualification below. The failed first CI run did
+not authorize publication; the final exact-source gate passed separately.
+
+Further platform qualification fixed test-only failures without weakening gates:
+
+- Windows-only builds exposed Unix helper declarations without matching gates;
+  the declarations now match their callers. `just lint-windows` passed both
+  feature modes with the documented MinGW toolchain.
+- A malformed-resize test wrote its rejected frame and trailing data separately,
+  allowing the reader to observe the first write before the second. It now
+  supplies the whole rejected batch in one peer write and keeps the empty-output
+  and lost-connection assertions. The forced early-EOF case failed before the
+  fix; 100 fresh process executions passed afterward.
+- Windows path fixtures now use a real temporary subdirectory. The installer
+  smoke check follows the Spaceport installer contract: it preserves external
+  URL handler ownership instead of requiring the excluded inherited scheme.
+  [Run 42883401473](https://github.com/harperreed/spaceport/actions/runs/42883401473)
+  passed actual installer build/install/reinstall/uninstall checks and both
+  Windows native GUI jobs. Its only failures were two Core observation tests.
+- `ec5b5795a` keeps the Core backend alive while those tests consume its watch.
+  The old temporary dropped the connection owner at the statement boundary.
+  A separate deterministic test proves dropping the owner ends its subscription
+  while the peer stays open. All three focused tests and strict Core Clippy pass.
+
+`f490516d7` uses the shared pinned git-cliff 2.12.0 generator for preview notes.
+The range starts at the latest published ancestor, or the actual recorded fork
+baseline for the first release. Failed tags do not hide changes. Real Git and
+renderer tests cover failed/current tags, filtered build history and same-source
+rebuilds, including a root commit. The legacy release interface remains unchanged.
+Final local verification passed 25 focused/legacy/ancestry cases with no skips,
+plus Bash syntax and ShellCheck with sourced-file resolution. The preceding
+`just release-check` passed 306 cases with three opt-in skips, 24 security cases
+with one opt-in skip, actionlint and zizmor; the final two added real-renderer
+cases also passed in the focused run. Independent and fresh-eyes reviews found
+no remaining blocker.
+
+[Full exact-source CI](https://github.com/harperreed/spaceport/actions/runs/42890348802)
+passed for `f490516d7bbe3c213b12e83a2efb4aad836bb0f4`, including every required
+platform/feature matrix, both Windows native/performance jobs and both optimized
+Linux executable smoke checks. The published-source gate script independently
+confirmed that complete job set. Immutable tag `v20261110.4` selects that exact
+source; [its preview workflow](https://github.com/harperreed/spaceport/actions/runs/42893227129)
+passed validation, build, CI gate, signing and publication. Both Apple submissions
+were Accepted, and the public DMG passed local verification after download.
+See [exact artifact qualification](t12-macos-preview-20261110.4-signed.md) for
+the release link, source, hashes, UUIDs and actual native checks. The tag-triggered
+macOS preview route is operational; broader product acceptance remains open.

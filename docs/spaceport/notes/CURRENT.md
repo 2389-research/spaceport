@@ -6,25 +6,33 @@
   ID certificate. The unused interactive keychain export was withdrawn and its
   private helper/password removed; no local access policy changed. No credential
   question remains. Only `harperreed` has repository write access.
-- Main is at `abefc1885`; task branch adds `ec5b5795a`, keeping Core backends
-  alive while test subscriptions read their events. The
-  [latest full CI](https://github.com/harperreed/spaceport/actions/runs/42883401473)
-  failed only two Windows observation tests with that lifetime race. All other
-  jobs passed, including the real Windows installer and both native GUI jobs.
-  Main CI preserves running checks when another push arrives. Local focused
-  tests, strict Core Clippy, formatting, size and sorting checks pass.
+- The qualified release source is `f490516d7`.
+  [Full exact-source CI passed](https://github.com/harperreed/spaceport/actions/runs/42890348802),
+  including every required platform/feature matrix, both Windows native and
+  performance jobs and both optimized Linux executable checks. `ec5b5795a`
+  keeps Core backends alive while test subscriptions read their events; the
+  formerly failing Windows combinations now pass. The preceding `abefc1885`
+  run also passed the real Windows installer cycle. Local focused tests,
+  strict Core Clippy, formatting, size and sorting checks pass.
   Preview notes now use the shared git-cliff generator, bounded by the last
   published ancestor or recorded fork baseline; failed tags do not split them.
-  Push the reviewed fixes together, wait for full green CI on the exact SHA,
-  then create the fresh preview tag below.
+  Fresh immutable tag `v20261110.4` now points to that green source.
+  [Preview workflow 42893227129](https://github.com/harperreed/spaceport/actions/runs/42893227129)
+  passed all five jobs and [published the prerelease](https://github.com/harperreed/spaceport/releases/tag/v20261110.4).
+  Both Apple submissions were Accepted. The public DMG matches the retained CI
+  artifact byte-for-byte and passed local signatures, tickets, Gatekeeper,
+  compiled identity and CLI checks. Actual icon resources match the approved
+  standard nebula assets. [Exact qualification](../evidence/t12-macos-preview-20261110.4-signed.md)
+  records source, hashes and UUIDs. Do not repeat either successful submission.
+  Next: use a fresh unused tag on another fully qualified main commit for a
+  later preview. Broader runtime/update/native app acceptance remains open.
 - First tag `v20261110.3` is immutable at `f81bbe64d`.
   [Its workflow](https://github.com/harperreed/spaceport/actions/runs/42876401991)
   validated the tag and built/smoke-tested the optimized arm64 unsigned app.
   Signing has not started: its exact-commit CI has a Windows helper lint failure.
-  Do not move/delete/rerun that tag or submit its artifact. After the latest
-  main commit has full green CI, use a fresh version (`v20261110.4` if still
-  unused), monitor signing/publication, then download and verify the actual DMG.
-  No notarization submission or GitHub Release has occurred in this activation.
+  Do not move/delete/rerun that tag or submit its artifact. The new `.4` run
+  above is a separate build on qualified source; monitor its own receipts.
+  No notarization submission or GitHub Release occurred for the failed `.3` run.
   Earlier historical notes below retain their narrower phase scope.
 
 - Branding follow-up: D63 selects the nebula rocket. See
@@ -49,13 +57,14 @@
   exposed release-test portability, inherited Rust lint errors and obsolete
   native fixtures. Fixes `cb359eeb0`, `dbe42773b` and `c6a84479b` passed local
   release checks, strict Clippy and the isolated native profile test. Their
-  hosted rerun remains pending. The protected signing environment
-  exists with main-branch and `v*` tag rules, the Apple API secrets and the
+  hosted reruns progressed to the qualified source recorded above. The protected
+  signing environment exists with main-branch and `v*` tag rules, the Apple API secrets and the
   approved identity variable. Only `harperreed` has repository write access.
   The earlier certificate export blocker is resolved by the supplied matching
   P12/password as recorded above. Native verification
   of the final-image checker passed on the existing signed debug DMG; optimized
-  hosted signing/publication and full native GUI QA remain unproved.
+  hosted signing/publication has now passed as recorded above; full native GUI
+  QA remains unproved.
   The older phase handoff below retains its separate runtime/ownership scope.
 
 - Task/requirements: bounded T06 SP-009/SP-003 chat lifecycle policy removal;
