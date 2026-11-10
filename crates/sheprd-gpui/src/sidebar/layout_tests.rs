@@ -281,6 +281,11 @@ impl ProbeText {
                     .get(glyph.index..)
                     .and_then(|text| text.chars().next())
                     .with_context(|| format!("invalid glyph source index {}", glyph.index))?;
+                // Fluent isolation marks have no ink or independently shaped glyph.
+                // Keep them in the source text; inspect only visible glyphs here.
+                if matches!(ch, '\u{2068}' | '\u{2069}') {
+                    continue;
+                }
                 let ink = cx
                     .text_system()
                     .typographic_bounds(run.font_id, layout.font_size, ch)?;

@@ -1,22 +1,25 @@
-//! Classic macOS-style About box: build identity only. It reads embedded build
+//! Classic macOS-style About box: build identity and attribution. It reads embedded
 //! constants, never the daemon or the network; links open in the browser.
 // i18n: migrated
 use crate::i18n::fl;
+use crate::sidebar::label_text;
 use crate::{SheprdWindow, menu::Page};
 use gpui::{prelude::*, *};
 use std::sync::{Arc, LazyLock};
 
 pub(super) const WEBSITE: &str = "https://herdr.dev/";
-pub(super) const REPOSITORY: &str = "https://github.com/sheprd-labs/sheprd";
+pub(super) const REPOSITORY: &str = "https://github.com/harperreed/spaceport";
+const UPSTREAM_REPOSITORY: &str = "https://github.com/sheprd-labs/sheprd";
 const HERDR_NAME: &str = "Herdr"; // i18n: data
 const SHEPRD_NAME: &str = "Sheprd"; // i18n: data
-const COPYRIGHT_YEAR: &str = "© 2026";
+pub(super) const COPYRIGHT_YEAR: &str = "© 2026";
 // i18n: data
-const AUTHOR: &str = "Fabien Penso";
-const AUTHOR_URL: &str = "https://pen.so";
-const TWITTER_URL: &str = "https://x.com/fabienpenso";
+pub(super) const AUTHOR: &str = "Fabien Penso";
 // i18n: data
-const LICENSE: &str = "· Apache-2.0";
+pub(super) const PUBLISHER: &str = "2389 Research, Inc.";
+// i18n: data
+const LICENSE: &str = "Apache-2.0";
+const LICENSE_URL: &str = "https://www.apache.org/licenses/LICENSE-2.0";
 
 static ICON: LazyLock<Arc<Image>> = LazyLock::new(|| {
     Arc::new(Image::from_bytes(
@@ -42,15 +45,14 @@ impl SheprdWindow {
             .flex()
             .flex_col()
             .items_center()
-            .gap(px(6.))
+            .gap(px(4.))
             .px(px(24.))
-            .py(px(28.))
+            .py(px(16.))
             .text_center()
             .child(
                 div()
                     .debug_selector(|| "about-icon".into())
                     .size(px(96.))
-                    .mb(px(6.))
                     .child(img(ICON.clone()).size_full()),
             )
             .child(
@@ -67,6 +69,24 @@ impl SheprdWindow {
                     .text_color(muted)
                     .child(fl!("about-version", version = crate::APP_VERSION)),
             )
+            .child(
+                div()
+                    .debug_selector(|| "about-publisher".into())
+                    .text_color(muted)
+                    .child(label_text(&fl!(
+                        "about-publisher",
+                        name = crate::constants::WINDOW_TITLE,
+                        publisher = PUBLISHER
+                    ))),
+            )
+            .child(self.about_link(
+                "about-repository",
+                label_text(&fl!(
+                    "about-repository",
+                    name = crate::constants::WINDOW_TITLE
+                )),
+                REPOSITORY,
+            ))
             .child(
                 div()
                     .debug_selector(|| "about-summary".into())
@@ -103,46 +123,67 @@ impl SheprdWindow {
                     .flex()
                     .items_center()
                     .gap(px(16.))
-                    .pt(px(10.))
+                    .pt(px(6.))
                     .child(self.about_link(
                         "about-website",
                         fl!("about-upstream-team", name = HERDR_NAME),
                         WEBSITE,
                     ))
                     .child(self.about_link(
-                        "about-repository",
+                        "about-upstream-repository",
                         fl!("about-upstream-team", name = SHEPRD_NAME),
-                        REPOSITORY,
+                        UPSTREAM_REPOSITORY,
                     )),
             )
             .child(
                 div()
                     .debug_selector(|| "about-copyright".into())
                     .flex()
+                    .flex_col()
                     .items_center()
                     .gap(px(3.))
-                    .pt(px(10.))
+                    .pt(px(6.))
                     .text_size(px(font.size * 0.85))
                     .text_color(muted)
-                    .child(COPYRIGHT_YEAR)
-                    .child(self.about_link("about-author", AUTHOR, AUTHOR_URL))
                     .child(
-                        self.about_link(
-                            "about-twitter",
-                            svg()
-                                .path("icons/x.svg")
-                                .size(px(font.size * 0.85))
-                                .text_color(crate::menu::accent(theme)),
-                            TWITTER_URL,
-                        ),
+                        div()
+                            .debug_selector(|| "about-modifications".into())
+                            .child(label_text(&fl!(
+                                "about-modifications",
+                                name = crate::constants::WINDOW_TITLE,
+                                copyright = COPYRIGHT_YEAR,
+                                publisher = PUBLISHER
+                            ))),
                     )
-                    .child(LICENSE),
+                    .child(
+                        div()
+                            .debug_selector(|| "about-original-copyright".into())
+                            .child(label_text(&fl!(
+                                "about-original-copyright",
+                                name = SHEPRD_NAME,
+                                copyright = COPYRIGHT_YEAR,
+                                author = AUTHOR
+                            ))),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_wrap()
+                            .justify_center()
+                            .gap(px(8.))
+                            .child(self.about_link("about-license", LICENSE, LICENSE_URL))
+                            .child(self.about_link(
+                                "about-notices",
+                                label_text(&fl!("about-notices")),
+                                format!("{REPOSITORY}/blob/main/NOTICE"),
+                            )),
+                    ),
             )
             .child(
                 div()
                     .id("about-close")
                     .debug_selector(|| "about-close".into())
-                    .mt(px(14.))
+                    .mt(px(8.))
                     .px(px(16.))
                     .py(px(6.))
                     .rounded(px(crate::config::corners::CONTROL))

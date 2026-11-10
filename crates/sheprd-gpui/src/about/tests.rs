@@ -2,18 +2,23 @@
 use super::*;
 use core::prelude::v1::test;
 
+mod attribution;
 mod en_xa;
 
 /// The visible copyright must not drift from the repository's NOTICE.
 #[test]
 fn copyright_tracks_the_repository_notice() {
     let notice = include_str!("../../../../NOTICE");
-    let holder = notice
-        .lines()
-        .find_map(|line| line.strip_prefix("Copyright "))
-        .unwrap();
-    let copyright = format!("{COPYRIGHT_YEAR} {AUTHOR} {LICENSE}");
-    assert!(copyright.contains(holder), "{copyright} lacks {holder}");
+    for holder in [PUBLISHER, AUTHOR] {
+        let copyright = format!(
+            "Copyright {} {holder}",
+            COPYRIGHT_YEAR.trim_start_matches("© ")
+        );
+        assert!(
+            notice.lines().any(|line| line == copyright),
+            "missing {copyright}"
+        );
+    }
     assert!(notice.contains("Apache License, Version 2.0"));
     assert!(LICENSE.contains("Apache-2.0"));
 }
@@ -72,8 +77,8 @@ fn about_box_shows_build_identity_and_opens_links(cx: &mut TestAppContext) {
         for (selector, url) in [
             ("about-website", WEBSITE.to_owned()),
             ("about-repository", REPOSITORY.to_owned()),
-            ("about-author", "https://pen.so".to_owned()),
-            ("about-twitter", "https://x.com/fabienpenso".to_owned()),
+            ("about-upstream-repository", UPSTREAM_REPOSITORY.to_owned()),
+            ("about-license", LICENSE_URL.to_owned()),
         ] {
             let link = cx.debug_bounds(selector).unwrap();
             cx.simulate_click(link.center(), Modifiers::default());

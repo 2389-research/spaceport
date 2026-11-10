@@ -1,5 +1,27 @@
 # Current phase handoff
 
+- About attribution follow-up: Doctor Biz approved Spaceport by 2389 Research,
+  Inc., separate modifications/original Sheprd copyright rows, both upstream
+  team credits, Apache-2.0 and third-party notices. Implemented
+  on `feat/about-attribution` in `.worktrees/about-attribution`, based on
+  `7143eb821`. Spaceport's repository is primary; upstream links stay under
+  credits. NOTICE prepends the new attribution and retains the prior text.
+  Eight About tests passed in default/all-feature builds, including a 360px
+  layout and link/close behavior; the real native profile/About check passed.
+  Ten packaging/notice tests, strict all-target/all-feature app Clippy,
+  formatting, i18n, source bounds, sorting and diff checks passed. Native paint
+  inspection now skips FSI/PDI ink bounds without removing the source markers
+  or weakening visible text comparisons. Review found no blockers.
+  Broader `just test-sidebar` passed glyph/bidi/About checks but failed its
+  later macOS decoy activation (`key=false`, `app_active=false`). The unchanged
+  `7143eb821` baseline failed identically; do not claim the broader suite passed.
+  Logs are retained under this worktree's ignored `target/about-attribution/`.
+  Doctor Biz explicitly authorized merge to main, push and a fresh tag.
+  Next: integrate this reviewed source, require full exact-commit CI, then
+  publish an unused preview version (`v20261110.5` if still free), download
+  and verify its actual DMG. Published `.4` remains the prior source; never
+  move/reuse it. Retain the independent native host activation limitation.
+
 - Live tag activation: all five signing/notary secrets and the identity variable
   are configured in `macos-preview`. Doctor Biz supplied the primary 2389
   credential directory; its P12/password verified the exact approved Developer

@@ -67,6 +67,7 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
             Ok(())
         })??;
     }
+    about::verify(handle, cx).await?;
     eprintln!(
         "PROFILE native PASS: retained actions painted without clipping; no account sign-in; menu input isolated and focus restored at two sizes"
     );
