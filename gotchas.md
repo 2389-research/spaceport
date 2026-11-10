@@ -1,6 +1,6 @@
 # Gotchas
 
-- 2026-11-10: Doctor Biz's approval to “ship” branding includes rebuilding a usable preview and carrying verification/delivery through. A local source merge alone is not the requested result. If signing or desktop access blocks the final checks, retain the concrete build and exact failure, and continue independent work while asking for the missing access.
+- 2026-11-10: Doctor Biz's approval to “ship” branding includes rebuilding a usable preview and carrying verification/delivery through. His explicit “push and make it work” also authorizes the necessary GitHub push and signing setup; an uncommitted workflow is not that result. If signing or desktop access blocks the final checks, retain the concrete build and exact failure, and continue independent work while asking for the missing access.
 
 - 2026-11-10: An inherited `RUSTUP_TOOLCHAIN` can override this repository's pinned `rust-toolchain.toml`. Select `RUSTUP_TOOLCHAIN=1.99.0` explicitly for the preview builder when the shell activates another version; do not change dependency requirements to fit the shell.
 

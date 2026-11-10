@@ -40,8 +40,10 @@ the mounted CLI before writing the checksum. This does not prove native GUI beha
 Before the first hosted run, merge these workflows to main and configure the
 `macos-preview` environment in repository Settings > Environments. Allow main
 branches and `v*` tags through its selected deployment rules. Restrict who can
-create or update those tags with repository rules, and require owner review for
-signing access. Add these **environment** values, never repository source files:
+create or update those tags with repository access rules. The activated repository
+has only `harperreed` as a collaborator with write access; adding other writers
+requires reviewing signing protection, including required owner review. Add these
+**environment** values, never repository source files:
 
 | Kind | Name | Value |
 | --- | --- | --- |
@@ -52,8 +54,9 @@ signing access. Add these **environment** values, never repository source files:
 | Secret | `APPLE_API_KEY_ID` | That API key's ID |
 | Secret | `APPLE_API_ISSUER_ID` | That API key's issuer ID |
 
-This change does not provision the environment or upload credentials. An installed
-local keychain identity is insufficient for hosted signing: CI needs the matching
+The initial implementation did not provision credentials. Doctor Biz subsequently
+authorized hosted setup. An installed local identity is insufficient for hosted
+signing: CI needs the matching
 P12 and its password. Do not use a different company's certificate. The importer
 requires exactly one signing identity and checks Team `HD9NM9NSMK`.
 

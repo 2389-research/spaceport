@@ -446,9 +446,9 @@
     {
       "id": "D64",
       "title": "Tag-triggered macOS preview releases",
-      "decision": "Extend the macOS preview workflow to build, sign, notarize and publish a DMG plus checksum to a GitHub prerelease when harperreed pushes vYYYYMMDD.COUNTER to harperreed/spaceport. Require the exact tagged commit to belong to main and pass full main CI. Keep signing credentials in a protected signing job; grant release write access only to publication. Preserve manual artifact-only runs, immutable version reservations and the broader production release refusal. Hosted environment creation and credential upload require separate setup.",
+      "decision": "Extend the macOS preview workflow to build, sign, notarize and publish a DMG plus checksum to a GitHub prerelease when harperreed pushes vYYYYMMDD.COUNTER to harperreed/spaceport. Require the exact tagged commit to belong to main and pass full main CI. Keep signing credentials in a protected signing job; grant release write access only to publication. Preserve manual artifact-only runs, immutable version reservations and the broader production release refusal. Doctor Biz's follow-up instruction to push and make it work authorizes main integration, hosted environment setup, credential upload and the first verified tagged preview; keep private signing inputs outside Git.",
       "status": "active",
-      "source": "Doctor Biz, 2026-11-10: yes. let's make the tag triggered workflow, following the proposed GitHub tag build/sign/notarize/publish route."
+      "source": "Doctor Biz, 2026-11-10: yes. let's make the tag triggered workflow; then ok. let's gooo and push and make it work dude."
     }
   ]
 }

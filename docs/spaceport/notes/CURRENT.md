@@ -15,11 +15,18 @@
   test processes are stopped; no personal runtime or installed app was changed.
   D64's [tag-triggered workflow](../evidence/t12-tagged-macos-workflow.md) is
   implemented and locally verified on `feat/tagged-macos-release` in
-  `.worktrees/tagged-macos-release`, based on `a1e594d31`. It remains uncommitted;
-  no merge, push, tag, hosted credentials or repository settings were changed.
-  It requires green main CI and a protected signing environment with the
-  matching 2389 P12/password before its first real hosted run. The installed
-  local keychain identity does not supply that password. Native verification
+  `.worktrees/tagged-macos-release`, based on `a1e594d31`. Doctor Biz then
+  explicitly authorized push and activation. Commits `b35fb5040` and `0947e768d`
+  are on GitHub main, which now contains the current Spaceport development
+  history. [First hosted CI](https://github.com/harperreed/spaceport/actions/runs/42871509640)
+  exposed release-test portability, inherited Rust lint errors and obsolete
+  native fixtures. Fixes `cb359eeb0`, `dbe42773b` and `c6a84479b` passed local
+  release checks, strict Clippy and the isolated native profile test. Their
+  hosted rerun remains pending. The protected signing environment
+  exists with main-branch and `v*` tag rules, the Apple API secrets and the
+  approved identity variable. Only `harperreed` has repository write access.
+  Certificate export is waiting for macOS keychain authorization; an approved
+  matching P12/password is still needed before signing. Native verification
   of the final-image checker passed on the existing signed debug DMG; optimized
   hosted signing/publication and full native GUI QA remain unproved.
   The older phase handoff below retains its separate runtime/ownership scope.
@@ -45,8 +52,10 @@
 - Core schema CLI unexpectedly autostarted a private daemon. Its exact owned
   process was identified and cleaned; no unknown side effect remains from that
   probe. Use direct-serve Sandbox for further runtime inspection.
-- No installation, main merge, push, publication, hosted workflow/secret upload,
-  personal runtime test or upstream source edit is authorized by this phase.
+- The older lifecycle phase did not authorize installation, main merge, push,
+  publication or hosted credential setup. D64's later activation instruction
+  now authorizes the GitHub work above, while personal runtime tests and
+  upstream source edits remain outside scope.
   No product question is waiting. PACT writes remain paused on the separate
   recorded reference incident; its untracked object is preserved.
 - Next single executable step: from the package root run
