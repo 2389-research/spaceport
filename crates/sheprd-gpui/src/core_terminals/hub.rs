@@ -121,7 +121,7 @@ impl Hub {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     pub(super) fn set_backend_for_test(&mut self, backend: CoreBackend) {
         self.state = State::Ready(backend);
     }
