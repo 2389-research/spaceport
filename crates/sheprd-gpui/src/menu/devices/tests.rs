@@ -15,6 +15,7 @@ mod host_key;
 mod host_key_choice;
 mod key_login;
 mod local_network;
+mod local_network_branding;
 mod manual_entry;
 mod rail;
 mod scope;

@@ -14,7 +14,7 @@ use std::{sync::Arc, time::Duration};
 /// System Settings › Privacy & Security › Local Network.
 const SETTINGS_URL: &str =
     "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork"; // i18n: data
-/// How long a refused host check waits for the user to allow Herdr.
+/// How long a refused host check waits for the user to allow this app.
 const PERMISSION_WAIT: Duration = Duration::from_secs(60);
 
 impl SheprdWindow {
@@ -44,7 +44,7 @@ impl SheprdWindow {
     }
 
     /// The host check was refused the local network. Wait for the user to
-    /// allow Herdr, then check the host again with the same claim. Asking
+    /// allow this app, then check the host again with the same claim. Asking
     /// from this long-lived app is also what keeps the system alert up: the
     /// `ssh` that was refused exits too soon to show it. Cancelling drops the
     /// task, which ends the wait and releases the claim.
@@ -88,5 +88,9 @@ impl SheprdWindow {
 
 /// What the dialog says while it waits.
 pub(super) fn waiting_status(target: &str) -> String {
-    fl!("add-device-local-network-waiting", target = target)
+    fl!(
+        "add-device-local-network-waiting",
+        app = crate::constants::WINDOW_TITLE,
+        target = target
+    )
 }

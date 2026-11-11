@@ -1,5 +1,7 @@
 # Gotchas
 
+- 2026-11-11: `sheprd_client::APP_NAME` owns Spaceport's product name so typed client diagnostics and the desktop do not diverge; GPUI's window-title constant reads it. Pass the name to Fluent as data to preserve it in pseudo-locales. Add Device's local-network refusal must use `Localize` at the display boundary; plain `Display` is English even when the dialog's locale changes.
+
 - 2026-11-11: Keep-awake identity is OS metadata as well as UI copy. Pinned keepawake uses the reason on macOS/Linux and the app name on Linux; derive both from Spaceport's product-name constant. State tests with stand-in guards do not prove that metadata. The opt-in macOS power-assertion test checks only its own PID; RAII releases its real guards even when a check fails.
 
 - 2026-11-11: GitHub's Ubuntu mirror list falls back between Canonical domains, so a Canonical DNS outage can block every Linux job; one independent mirror can also become unreachable. CI uses temporary Ubuntu Deb822 sources with Canonical primary and independent MIT fallback while preserving suites, components and the Ubuntu archive keyring. Plain apt-get update can succeed after failed index downloads: require --error-on=any before installation. Bound metadata attempts to two and install once only after success. Keep developer sources untouched and reject unknown formats; never disable APT signature verification to restore a build.

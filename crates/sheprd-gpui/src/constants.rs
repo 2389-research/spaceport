@@ -2,7 +2,7 @@
 //! identity the OS sees, the tab strip's geometry, and the release version.
 
 // Every window carries the product name; the focused space follows it.
-pub(crate) const WINDOW_TITLE: &str = "Spaceport";
+pub(crate) const WINDOW_TITLE: &str = sheprd_client::APP_NAME;
 
 // Development windows and notifications must not share Sheprd's OS identity.
 // Release builds require verified independent production identities.

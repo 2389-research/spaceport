@@ -55,7 +55,9 @@ fn a_refusal_after_the_wait_returns_to_the_form(cx: &mut gpui::TestAppContext) {
                     .error
                     .as_deref()
                     .unwrap()
-                    .starts_with("macOS denied Sheprd access to your local network")
+                    .starts_with(
+                        "macOS denied \u{2068}Spaceport\u{2069} access to your local network"
+                    )
             );
         });
     });

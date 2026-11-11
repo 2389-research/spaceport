@@ -41,7 +41,8 @@ add-device-unexpected-response = Unexpected daemon response
 
 # macOS's Local Network permission, which an SSH check can be refused.
 add-device-local-network-settings = Open Local Network Settings
-add-device-local-network-waiting = macOS refused Sheprd's connection to { $target } on your local network. Allow Sheprd when macOS asks, or turn it on in System Settings › Privacy & Security › Local Network. Sheprd checks again by itself.
+# $app is the client product name; $target is the host entered by the user.
+add-device-local-network-waiting = macOS refused { $app }'s connection to { $target } on your local network. Allow { $app } when macOS asks, or turn it on in System Settings › Privacy & Security › Local Network. { $app } checks again by itself.
 
 # Approving an SSH host's key. $known_hosts is the file the key is saved to,
 # and $host_file the key's own file on the host.

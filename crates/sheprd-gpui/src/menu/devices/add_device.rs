@@ -6,7 +6,7 @@ use super::{Page, setup};
 pub(super) mod core;
 mod offer;
 
-use crate::i18n::fl;
+use crate::i18n::{Localize, fl};
 use crate::{
     NavigationTarget, SheprdWindow,
     search_input::{Changed, SearchInput},
@@ -482,7 +482,7 @@ impl SheprdWindow {
             if !waited {
                 return self.await_local_network(request, claim, cx);
             }
-            self.set_device_error(Some(failure.to_string()));
+            self.set_device_error(Some(failure.localize()));
             if let Some(form) = &mut self.menu.device_setup {
                 form.step = Step::Form;
             }

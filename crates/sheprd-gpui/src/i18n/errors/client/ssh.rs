@@ -32,7 +32,10 @@ impl Localize for SshFailure {
             Self::Auth => fl!("error-client-ssh-failure-auth"),
             Self::HerdrMissing => fl!("error-client-ssh-failure-herdr-missing"),
             Self::HostKey => fl!("error-client-ssh-failure-host-key"),
-            Self::LocalNetworkDenied => fl!("error-client-ssh-failure-local-network-denied"),
+            Self::LocalNetworkDenied => fl!(
+                "error-client-ssh-failure-local-network-denied",
+                app = crate::constants::WINDOW_TITLE
+            ),
             Self::NoRoute => fl!("error-client-ssh-failure-no-route"),
             Self::Other => fl!("error-client-ssh-failure-other"),
             Self::Unreachable => fl!("error-client-ssh-failure-unreachable"),

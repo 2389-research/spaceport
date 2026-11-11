@@ -30,13 +30,14 @@ pub enum SshFailure {
     /// The system had no route to the address.
     #[error("there is no route to the host")]
     NoRoute,
-    /// macOS refused a local network address because Herdr lacks Local
+    /// macOS refused a local network address because this app lacks Local
     /// Network permission, or is still waiting for the user to answer its
     /// alert. `ssh` only sees no route to the host; this class is kept for
     /// when the app's own check confirms the refusal, so an offline device
     /// or a bad route stays `NoRoute`.
     #[error(
-        "macOS denied Sheprd access to your local network. If it just asked, allow it and try again; otherwise turn on Sheprd in System Settings › Privacy & Security › Local Network"
+        "macOS denied {app} access to your local network. If it just asked, allow it and try again; otherwise turn on {app} in System Settings › Privacy & Security › Local Network",
+        app = crate::APP_NAME
     )]
     LocalNetworkDenied,
     /// No Herdr was found in the known install locations. One that is
