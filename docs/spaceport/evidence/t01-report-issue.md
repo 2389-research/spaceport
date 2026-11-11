@@ -48,7 +48,30 @@ future-compatibility warning for `block 0.1.6`. Neither was suppressed.
 Native browser/form delivery, full workspace/platform CI, installation and
 broader identity acceptance remain unproved. No issue was submitted, personal
 app/runtime changed, or release published. T01/A42 and parent `rxkr` remain open.
-Other inherited issue forms/contact links need their own review.
 The six test/build logs are retained under this worktree's ignored
 `target/report-issue/` directory. Integration and delivered-form verification
 are tracked separately in Kata `kkfs`.
+
+## Community issue-form follow-up
+
+Kata `zcw6`, branch `docs/spaceport-issue-forms`, starts from merged main
+`89466f193c61991bc1d7a27d6299ddb22ca879c7`. The feature-request and
+documentation forms now name Spaceport. Feature duplicate searches and the
+Documentation contact point to Spaceport. The documentation path example uses
+the existing `docs/cli.md`. Field IDs, requirements, the Herdr daemon route and
+the private security-report contact are preserved.
+
+This is a documentation-only change. Ruby's standard YAML parser accepted all
+four issue-template files, with unique field IDs; both example paths exist.
+Diff and link review found no unrelated changes. The earlier bug form was
+verified on GitHub main by matching its blob SHA to the merged local source.
+Browser automation reported its access host unavailable, so no native browser
+or report submission is claimed. Full application/platform CI is separate.
+The GitHub repository check found `has_issues=false`: the report destination
+could not work despite correct source URLs. Issues were enabled through the
+documented repository setting; an independent GET confirmed `has_issues=true`
+with the repository still public. No test issue was posted. The web reader
+could not fetch the new-issue form, so rendered form/prefill delivery remains
+unproved. Fresh-eyes review found no blocker in the five documentation files.
+The inherited private security-report destination still needs an owner-approved
+Spaceport route before general production shipping.
