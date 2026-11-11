@@ -298,7 +298,8 @@ pub(super) fn report_issue_url(
         serializer.append_pair("logs", &crate::truncate::ellipsize(log.trim(), LOGS_LIMIT));
     }
     format!(
-        "https://github.com/sheprd-labs/sheprd/issues/new?{}",
+        "{}/issues/new?{}",
+        crate::about::REPOSITORY,
         serializer.finish()
     )
 }

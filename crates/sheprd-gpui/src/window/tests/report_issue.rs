@@ -19,7 +19,7 @@ fn report_issue_url_prefills_all_fields() {
     );
     assert_eq!(
         url,
-        "https://github.com/sheprd-labs/sheprd/issues/new?template=bug_report.yml\
+        "https://github.com/harperreed/spaceport/issues/new?template=bug_report.yml\
          &version=20261015.1\
          &daemon_version=0.9.1\
          &os=macOS+15.3.1+Sequoia%2C+Apple+Silicon\
@@ -33,7 +33,7 @@ fn report_issue_url_omits_optional_fields_when_absent() {
     let url = report_issue_url("dev", None, "Linux (Ubuntu 24.04), x86_64", None, None);
     assert_eq!(
         url,
-        "https://github.com/sheprd-labs/sheprd/issues/new?template=bug_report.yml\
+        "https://github.com/harperreed/spaceport/issues/new?template=bug_report.yml\
          &version=dev\
          &os=Linux+%28Ubuntu+24.04%29%2C+x86_64"
     );
@@ -57,6 +57,18 @@ fn report_issue_url_bounds_large_logs() {
     assert!(url.contains("%E2%80%A6"));
     // Entire URL stays well bounded
     assert!(url.len() < 3000);
+}
+
+#[test]
+fn report_issue_template_names_spaceport_and_its_tracker() {
+    let template = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../.github/ISSUE_TEMPLATE/bug_report.yml"
+    ));
+    assert!(template.contains("label: Running Spaceport version"));
+    assert!(template.contains("https://github.com/harperreed/spaceport/issues"));
+    assert!(!template.contains("Sheprd"));
+    assert!(!template.contains("sheprd-labs/sheprd"));
 }
 
 #[test]
@@ -179,6 +191,7 @@ fn herdr_window_report_issue_url_integrates_state(cx: &mut TestAppContext) {
     let default_url = view.read_with(cx, |this, _| {
         this.report_issue().url("macOS, Apple Silicon", None)
     });
+    assert!(default_url.starts_with("https://github.com/harperreed/spaceport/issues/new?"));
     assert!(default_url.contains("template=bug_report.yml"));
     assert!(default_url.contains("version="));
     assert!(default_url.contains("os=macOS%2C+Apple+Silicon"));
