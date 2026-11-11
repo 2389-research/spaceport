@@ -26,7 +26,7 @@ class PreviewSigning(unittest.TestCase):
         checkout = self.root / 'checkout'
         scripts = checkout / 'scripts/release'
         scripts.mkdir(parents=True)
-        for name in ('sign-macos.sh', 'common.sh', 'preview-identity.py'):
+        for name in ('sign-macos.sh', 'common.sh', 'preview-identity.py', 'notary-upload.py'):
             shutil.copyfile(SCRIPTS / name, scripts / name)
         for name in ('assets', 'crates'):
             (checkout / name).symlink_to(ROOT / name)
