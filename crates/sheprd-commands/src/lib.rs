@@ -73,6 +73,7 @@ pub enum Command {
     Quit,
     Logs,
     About,
+    CheckForUpdates,
     OpenNotificationTarget,
     InstallBrowserSkill,
     SplitEditor,
@@ -634,6 +635,11 @@ pub const COMMANDS: &[CommandInfo] = &[
         message: "commands-quit",
     },
     CommandInfo {
+        command: Command::CheckForUpdates,
+        name: "check-for-updates",
+        message: "commands-check-for-updates",
+    },
+    CommandInfo {
         command: Command::About,
         name: "about",
         message: "commands-about",
@@ -829,6 +835,7 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::Reconnect
         | Command::Quit
         | Command::Logs
+        | Command::CheckForUpdates
         | Command::About
         | Command::OpenNotificationTarget
         | Command::InstallBrowserSkill

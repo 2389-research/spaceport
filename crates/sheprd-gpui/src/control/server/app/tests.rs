@@ -127,3 +127,5 @@ fn a_new_window_joins_the_callers_own_session(cx: &mut gpui::TestAppContext) {
 }
 
 mod ui_panel;
+
+mod updates;

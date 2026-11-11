@@ -377,6 +377,7 @@ impl SheprdWindow {
                 | Command::Reconnect
                 | Command::Quit
                 | Command::Logs
+                | Command::CheckForUpdates
                 | Command::About
                 | Command::InstallBrowserSkill
                 | Command::ToggleFullScreen

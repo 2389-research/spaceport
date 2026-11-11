@@ -243,6 +243,8 @@ pub enum Error {
     UnsupportedCommand,
     /// A usage read failed, or the usage shell the port and load scans share.
     #[error(transparent)]
+    Updates(#[from] crate::updates::Error),
+    #[error(transparent)]
     Usage(#[from] sheprd_usage::Error),
     #[error(transparent)]
     WorkspaceDocument(#[from] crate::core_terminals::workspace_document::Error),

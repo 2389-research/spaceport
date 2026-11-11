@@ -506,6 +506,9 @@ pub(crate) fn run() -> std::process::ExitCode {
             }
             let language = cx.global::<InitialAppearance>().config.language.clone();
             crate::i18n::install(&language, cx);
+            if mode == LaunchMode::Normal {
+                crate::updates::install(cx);
+            }
             app_icon::install();
             crate::caffeine::install(cx);
             crate::endpoint::watch_network();

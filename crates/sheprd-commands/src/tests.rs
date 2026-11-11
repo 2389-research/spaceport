@@ -121,6 +121,7 @@ fn catalog_has_all_native_commands_and_gpui_shortcuts() {
         (Detach, &[]),
         (Reconnect, &[]),
         (Quit, &["cmd-q"]),
+        (CheckForUpdates, &[]),
         (About, &[]),
         (InstallBrowserSkill, &[]),
         (SplitEditor, &["cmd-\\"]),
@@ -571,3 +572,14 @@ mod terminal_annotations;
 mod visual_annotations;
 
 mod removed_chat_lifecycle;
+
+#[test]
+fn check_for_updates_is_a_window_command_without_a_shortcut() {
+    let info = COMMANDS
+        .iter()
+        .find(|info| info.name == "check-for-updates")
+        .unwrap();
+    assert_eq!(info.message, "commands-check-for-updates");
+    assert!(request(info.command, &snapshot()).is_none());
+    assert!(info.base_shortcuts().is_empty());
+}

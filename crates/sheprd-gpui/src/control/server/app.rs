@@ -350,7 +350,18 @@ pub(super) fn command(call: Call<CommandOp>, cx: &mut App) -> Response {
     let Some(info) = COMMANDS.iter().find(|info| info.name == name) else {
         return super::not_found(format!("No command is named {name}"));
     };
+    if info.command == Command::CheckForUpdates
+        && let Err(error) = crate::updates::available(cx)
+    {
+        return update_error(error);
+    }
     match info.command {
+        Command::CheckForUpdates => in_free_window(&call.caller, cx, |_, _, cx| {
+            match crate::updates::check(cx) {
+                Ok(()) => Response::done("Opened Check for Updates"),
+                Err(error) => update_error(error),
+            }
+        }),
         // Quitting answers first, as `app quit` does.
         Command::Quit => app(
             Call {
@@ -364,6 +375,17 @@ pub(super) fn command(call: Call<CommandOp>, cx: &mut App) -> Response {
             Response::done(format!("Ran {}", crate::i18n::command_english(info)))
         }),
     }
+}
+
+fn update_error(error: crate::updates::Error) -> Response {
+    let code = match &error {
+        #[cfg(all(target_os = "macos", feature = "macos-updater"))]
+        crate::updates::Error::Busy => ErrorCode::Busy,
+        crate::updates::Error::Unsupported => ErrorCode::Unsupported,
+        #[cfg(all(target_os = "macos", feature = "macos-updater"))]
+        _ => ErrorCode::Failed,
+    };
+    Response::error(code, error.localize())
 }
 
 #[cfg(test)]
