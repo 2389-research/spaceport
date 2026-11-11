@@ -14,6 +14,9 @@ mod removed_project_open;
 mod removed_scripts;
 #[path = "cli/removed_updater.rs"]
 mod removed_updater;
+#[cfg(unix)]
+#[path = "cli/setup_relay.rs"]
+mod setup_relay;
 
 use std::{
     process::{Child, Command, Output, Stdio},

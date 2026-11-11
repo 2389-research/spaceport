@@ -1,4 +1,5 @@
 #![allow(clippy::unwrap_used)]
+mod branding;
 mod cleanup;
 
 use super::{
@@ -266,7 +267,7 @@ fn a_setup_that_cannot_start_says_so() {
     assert!(matches!(result, Err(Error::Io(_))));
     let (output, code) = finish(&mut pane);
     assert_eq!(code, 127);
-    assert!(output.starts_with("Sheprd could not start the setup"));
+    assert!(output.starts_with("Spaceport could not start the setup"));
 }
 
 #[test]

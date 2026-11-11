@@ -10,13 +10,17 @@ const NOT_STARTED: u8 = 127;
 
 pub(crate) fn run(program: &OsString, args: &[OsString]) -> ExitCode {
     if let Err(error) = lead() {
-        eprintln!("Sheprd could not prepare the setup terminal: {error}"); // i18n: data
+        eprintln!(
+            "{} could not prepare the setup terminal: {error}", // i18n: data
+            crate::constants::WINDOW_TITLE
+        );
         return ExitCode::from(NOT_STARTED);
     }
     // Only returns when the command could not be started.
     let error = sheprd_client::new_command(program).args(args).exec();
     eprintln!(
-        "Sheprd could not start {}: {error}", // i18n: data
+        "{} could not start {}: {error}", // i18n: data
+        crate::constants::WINDOW_TITLE,
         program.to_string_lossy()
     );
     ExitCode::from(NOT_STARTED)

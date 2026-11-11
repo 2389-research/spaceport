@@ -5,7 +5,7 @@ use std::{io, path::PathBuf};
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     // keep-sorted start
-    #[error("Sheprd closed the setup before it finished. Start it again from Add Device.")]
+    #[error("{app} closed the setup before it finished. Start it again from Add Device.", app = crate::constants::WINDOW_TITLE)]
     Closed,
     #[error("This setup is no longer waiting. Start it again from Add Device.")]
     Connect(#[source] io::Error),
