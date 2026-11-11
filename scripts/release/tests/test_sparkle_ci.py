@@ -39,3 +39,11 @@ class SparkleCiTests(unittest.TestCase):
         self.assertIn("SPARKLE_FRAMEWORK_PATH", checks)
         self.assertLess(checks.index("sparkle_framework.py acquire"),
                         checks.index("cargo clippy"))
+
+    def test_macos_sdk_stays_outside_the_rust_cache_cleanup_tree(self):
+        source = (ROOT / ".github/workflows/ci.yml").read_text()
+        checks = source.split("\n  checks:", 1)[1].split("\n  windows:", 1)[0]
+        sdk = "$RUNNER_TEMP/spaceport-sparkle-sdk"
+        self.assertIn(f'sparkle_framework.py acquire "{sdk}"', checks)
+        for variable in ("SPARKLE_FRAMEWORK_PATH", "DYLD_FRAMEWORK_PATH", "SPARKLE_TEST_SDK"):
+            self.assertIn(f'{variable}={sdk}', checks)

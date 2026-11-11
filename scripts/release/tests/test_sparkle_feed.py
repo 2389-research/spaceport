@@ -149,8 +149,11 @@ class SparkleFeedTests(unittest.TestCase):
                 feed.publication_version(new, previous, self.config, tags)
 
     def test_official_sdk_signatures_verify_with_public_key(self):
-        tool = Path(__file__).resolve().parents[3] / "target/sparkle-sdk/bin/sign_update"
+        sdk = os.environ.get("SPARKLE_TEST_SDK")
+        tool = ((Path(sdk) if sdk else Path(__file__).resolve().parents[3] / "target/sparkle-sdk")
+                / "bin/sign_update")
         if not tool.is_file():
+            self.assertIsNone(sdk, f"Explicit SDK has no sign_update tool: {tool}")
             self.skipTest("Official macOS SDK tool unavailable; pure crypto tests still run")
         seed = self.run_crypto("pkey", "-in", self.private, "-outform", "DER")[-32:]
         key = base64.b64encode(seed)

@@ -20,6 +20,8 @@
 
 - 2026-11-10: A private HOME does not isolate every macOS store. Foundation NSTemporaryDirectory uses the OS protected per-user temp root despite TMPDIR, while cfprefsd may write the unique fixture bundle-ID domain under the account's Preferences directory despite CFFIXED_USER_HOME. Pin the exact OS temp root/owner and check exact random fixture preference domains for absence before launch; remove only owned test domains after exact processes exit. Never scan or reset personal domains or cfprefsd.
 
+- 2026-11-10: Rust-cache recursively removes non-Cargo files beneath `target/` on a partial cache hit, including an SDK acquired earlier in the job. Keep the CI Sparkle SDK under `RUNNER_TEMP`, with linker, loader and official-tool tests using that same explicit path. An explicitly configured missing SDK must fail its signing test instead of silently skipping it.
+
 - 2026-11-09: Usage provider names/icons are passive presentation metadata, not evidence of a supported report feed. Keep provider visibility filtering in presentation after removing collectors. Do not restore polling or sign-in readers to populate a missing feed; G-OBS requires a separately verified authoritative source.
 
 - 2026-11-09: Unknown top-level CLI families reject through the launch parser before control-command JSON handling. Even with `--json`, a removed family such as `system` returns exit 2 and text usage on stderr. Valid control commands keep their JSON contract; do not parse an unknown-family rejection as their response schema.

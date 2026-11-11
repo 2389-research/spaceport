@@ -23,7 +23,7 @@ fn copyright_tracks_the_repository_notice() {
     assert!(LICENSE.contains("Apache-2.0"));
 }
 
-/// Classic macOS puts About first in the application menu, above a separator.
+/// About and update checks lead the application menu as one group.
 #[test]
 fn about_leads_the_application_menu() {
     let menus = crate::menus(&crate::config::Config::default());
@@ -36,7 +36,13 @@ fn about_leads_the_application_menu() {
     assert!(action.partial_eq(&crate::RunCommand {
         command: crate::controls::Command::About,
     }));
-    assert!(matches!(application.items[1], MenuItem::Separator));
+    assert!(matches!(
+        &application.items[1],
+        MenuItem::Action { action, .. } if action.partial_eq(&crate::RunCommand {
+            command: crate::controls::Command::CheckForUpdates,
+        })
+    ));
+    assert!(matches!(application.items[2], MenuItem::Separator));
     assert!(matches!(
         application.items.last().unwrap(),
         MenuItem::Action { name, .. } if name.as_ref() == "Quit Spaceport"

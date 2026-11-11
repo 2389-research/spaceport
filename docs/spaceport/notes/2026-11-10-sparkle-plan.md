@@ -108,3 +108,8 @@ platform/native gates; do not describe unrun checks as passed.
   A real aged-state red/green case confirms refusal after a 21-day failure record.
 - Final review is clear for source commit/push and draft PR. Full platform CI
   remains the next step; no public tag until the remaining native checks pass.
+- Draft PR #1 is open. CI run `42959221177` caught SDK deletion by Rust-cache
+  and stale application-menu assertions. The SDK now lives under `RUNNER_TEMP`;
+  its path regression and 13 real feed/signature tests pass locally. Updated
+  menu tests cover About, Check for Updates, and the following separator.
+  A fresh full CI run must verify these fixes across platforms.
