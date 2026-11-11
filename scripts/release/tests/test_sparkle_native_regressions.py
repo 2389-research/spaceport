@@ -41,7 +41,7 @@ def evidence(case):
               event('will-download-update'), event('did-download-update')]
     if case in ('altered-zip', 'wrong-archive-key'):
         cause = error(3002, 'EdDSA signature does not match.')
-        return prefix + [event('will-extract-update'), event('did-abort-with-error', error(4005, underlying=[error(4005), cause]))], 1
+        return prefix + [event('will-extract-update'), event('did-abort-with-error', error(4005, underlying=[error(4005, '(Ed)DSA signature validation before unarchiving failed for update /fixture/update.zip'), cause]))], 1
     if case in ('wrong-name-id', 'same-name-wrong-id'):
         cause = error(3002, 'No suitable install is found in the update. The update will be rejected.')
         return prefix + [event('will-extract-update'), event('did-abort-with-error', error(4005, underlying=[error(10), cause]))], 1
@@ -83,10 +83,10 @@ class StrictEvidenceTests(unittest.TestCase):
             with self.subTest(case=case), self.assertRaises(ValueError):
                 native.assess(case, records[-1:], True, 1, False, 1)
 
-    def test_completed_extraction_invalidates_signature_refusal(self):
+    def test_installation_start_invalidates_signature_refusal(self):
         for case in ('altered-zip', 'wrong-archive-key'):
             records, downloads = evidence(case)
-            records.insert(-1, event('did-extract-update'))
+            records.insert(-1, event('will-install-update'))
             with self.subTest(case=case), self.assertRaises(ValueError):
                 load().assess(case, records, True, 1, False, downloads)
 
