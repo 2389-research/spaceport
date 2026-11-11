@@ -68,6 +68,13 @@ the desktop relocked, so it timed out and cleaned up. ZIP/DMG install/relaunch,
 archive/payload refusal cases, installed-app UI, and the actual feed round trip
 remain unqualified. T12/A43 stay open.
 
+Subsequent qualification completed the eight negative cases, fresh signed ZIP
+and DMG install/relaunch, and trusted-publisher identity rotation. See the
+[November 11 native record](t12-sparkle-native-20261111.md) for exact results.
+The original failed runs above remain unchanged. Doctor Biz confirmed About
+shows `20261111.1` on the testing Mac; its actual published-feed update remains
+the next manual check.
+
 The startup suite runs explicitly against the compiled fixture and pinned SDK:
 
 ```sh

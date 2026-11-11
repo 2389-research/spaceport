@@ -182,3 +182,8 @@ platform/native gates; do not describe unrun checks as passed.
   `v20261111.*` tag exists. Candidate `20261111.2` must be rechecked immediately
   before tagging, after exact-main CI passes. Never retry an uncertain notary
   submission or reuse a reserved preview version.
+- Exact-main CI `43080384560` passed every required job. Reservations were
+  rechecked and annotated `v20261111.2` was pushed at `df539fd92`; tag object
+  `abcea3df980c7756bef33d882ac9ae1123975838`. Preview workflow `43082879618`
+  passed validation/CI and is building. Version `20261111.2` is now reserved;
+  never rerun it. Public artifact/feed and actual baseline update remain pending.
