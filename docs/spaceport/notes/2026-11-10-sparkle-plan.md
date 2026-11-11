@@ -128,3 +128,28 @@ platform/native gates; do not describe unrun checks as passed.
   install/relaunch still needs completion after the desktop relocked. Keep
   public delivery and T12/A43 gates open; next signed workflow needs a fresh
   version after exact-main CI recovers.
+
+## Current handoff — November 11
+
+- Doctor Biz installed the local signed baseline and confirmed About shows
+  `20261111.1` on the testing Mac. That hosted version is reserved; never retry
+  or tag it. The local copy is unnotarized.
+- PR #3 combines the fixture HOME fix, temporary Ubuntu CI mirror selection,
+  native failure diagnostics and corrected Sparkle callback/cache checks.
+  Run `43066971913` passed all substantive jobs except the x64 Windows native
+  return-to-tab timeout. New diagnostics preserve focus and shell state;
+  the cause remains unresolved and full CI stays required.
+- Native ZIP and DMG install/relaunch passed with the corrected frozen host.
+  Their earlier driver did not preclaim cache namespaces. Repeat them with the
+  cache-safe driver, then finish archive-key/tamper, identity and inner-version
+  cases. Native signature rejection was observed; a false did-extract stage
+  assertion is corrected from pinned source. Keep the historical failed result.
+- Final driver suite: 54 tests ran, 53 passed, one ownership-change case skipped
+  for lack of privileges. Cleanup uses exact preclaimed namespaces, executable
+  paths and scoped open-file checks. Old unclaimed caches stay untouched.
+- A fresh ZIP offer found v2, but macOS again reported a locked screen. Native
+  button checks await an unlocked desktop.
+- Next: finish fresh native cases; obtain green combined and exact-main CI;
+  reserve a fresh immutable version; publish/verify the protected signed and
+  notarized preview and feed; test the update from Doctor Biz's baseline.
+  No public Sparkle-enabled release or feed exists yet. T12 stays open.

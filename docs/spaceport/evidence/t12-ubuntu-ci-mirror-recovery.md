@@ -26,6 +26,15 @@ Local verification passed:
 - ShellCheck, Bash syntax, actionlint and `git diff --check`.
 - File-size, workflow-security and release-gate contract checks.
 
-Hosted AMD64/ARM64 APT signature checks, real dependency installation and full
-platform/build CI remain pending. Unknown future Ubuntu source formats fail
-with diagnostics and need an explicit review before support is expanded.
+Hosted run [43066971913](https://github.com/harperreed/spaceport/actions/runs/43066971913)
+completed AMD64/ARM64 dependency installation and default/all-feature Linux
+checks. Logs show noble, updates, backports and security InRelease downloads
+from the selected mirrors, with normal APT authentication and no GPG,
+unsigned-repository, unauthenticated-package or unsandboxed-download warning.
+macOS checks/builds, Windows checks/package and Windows ARM native checks also
+passed. Windows x64 native GUI timed out returning to its original tab; the
+overall gate failed and remains required. The follow-up adds bounded focus/
+shell diagnostics without changing behavior, deadlines or retries.
+
+Unknown future Ubuntu source formats fail with diagnostics and need an explicit
+review before support is expanded.
