@@ -25,7 +25,10 @@ pub fn dispatch(y: f64, scroll: Option<i32>) -> Result<()> {
             let candidate: id = msg_send![windows, objectAtIndex: i];
             let title: id = msg_send![candidate, title];
             let text: *const std::ffi::c_char = msg_send![title, UTF8String];
-            if !text.is_null() && std::ffi::CStr::from_ptr(text).to_bytes() == b"Sheprd" {
+            if !text.is_null()
+                && std::ffi::CStr::from_ptr(text).to_bytes()
+                    == crate::constants::WINDOW_TITLE.as_bytes()
+            {
                 window = candidate;
                 break;
             }
