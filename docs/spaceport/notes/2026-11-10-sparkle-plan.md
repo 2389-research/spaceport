@@ -191,6 +191,13 @@ platform/native gates; do not describe unrun checks as passed.
   DMG upload command hung from 19:15 until the 20:14 job cancellation. The upload
   has no separate deadline; its retained stdout/stderr are empty and no DMG UUID
   exists. Preserve the reserved version and inspect the
-  [failure record](../evidence/t12-sparkle-preview-20261111.2.md). A bounded upload
-  and explicit progress correction is under TDD in `.worktrees/notary-upload`;
-  a fresh version must qualify that change. No public release/feed exists yet.
+  [failure record](../evidence/t12-sparkle-preview-20261111.2.md).
+- Bounded uploads and safe stage progress are committed at `a842612e8` in
+  `.worktrees/notary-upload`, PR #5. Seven final regression tests pass, including
+  real subprocess timeout/cancellation/reaping and exclusive receipt refusal.
+  Uploads use a 300-second deadline and Apple's standard S3 endpoint; no upload
+  retry or relaxed trust gate. Branch CI `43096135204` is queued with no jobs
+  created yet; PR #4's documentation CI is also queued. Follow-up must obtain
+  green branch checks, merge, pass exact-main full CI, recheck a fresh version
+  (candidate `20261111.3`), build/publish and verify public bytes/feed before the
+  actual baseline update. Never reuse `.2`. No public release/feed exists yet.
