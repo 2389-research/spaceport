@@ -21,11 +21,12 @@ fn custom_updater_has_no_source_or_dependency() {
 fn app_constants_retain_development_identity_and_release_refusal() {
     let constants =
         fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src/constants.rs")).unwrap();
+    let app_name = Path::new(env!("CARGO_MANIFEST_DIR")).join("../sheprd-client/src/app_name.rs");
     let temp = tempfile::tempdir().unwrap();
     let source = temp.path().join("identity.rs");
     fs::write(
         &source,
-        format!("{constants}\nfn main() {{ assert_eq!(APP_VERSION, env!(\"SPACEPORT_APP_VERSION\")); assert_eq!(APP_ID, env!(\"SPACEPORT_APP_ID\")); assert!(!RELEASE_BUILD); let _ = (WINDOW_TITLE, LINUX_APP_ID, TAB_WIDTH, TAB_HEIGHT, BUILD_COMMIT); }}").replace("//!", "//"),
+        format!("#[path = {app_name:?}]\nmod sheprd_client;\n{constants}\nfn main() {{ assert_eq!(APP_VERSION, env!(\"SPACEPORT_APP_VERSION\")); assert_eq!(APP_ID, env!(\"SPACEPORT_APP_ID\")); assert_eq!(WINDOW_TITLE, \"Spaceport\"); assert!(!RELEASE_BUILD); let _ = (LINUX_APP_ID, TAB_WIDTH, TAB_HEIGHT, BUILD_COMMIT); }}").replace("//!", "//"),
     ).unwrap();
     let compile = |release: bool, preview: bool| {
         let mut command = Command::new("rustc");

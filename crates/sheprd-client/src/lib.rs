@@ -5,6 +5,7 @@
 // Tests start real processes; production code builds them with `new_command`.
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 
+mod app_name;
 mod catalog;
 pub mod clipboard;
 mod compat;
@@ -57,9 +58,7 @@ mod tests;
 pub use crossbeam_channel::Receiver;
 pub use sheprd_protocol as protocol;
 
-/// The client product name used by diagnostics and desktop presentation.
-pub const APP_NAME: &str = "Spaceport";
-
+pub use app_name::APP_NAME;
 pub use catalog::{
     SavedHost, load_saved_host_selection, load_saved_hosts, store_saved_host,
     store_saved_host_selection, valid_profile_id,

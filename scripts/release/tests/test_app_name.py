@@ -5,6 +5,7 @@ import plistlib
 import re
 import subprocess
 import sys
+import tempfile
 import unittest
 
 
@@ -12,9 +13,25 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class AppNameTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "name.rs"
+            source.write_text(
+                (ROOT / "crates/sheprd-client/src/app_name.rs").read_text()
+                + '\nfn main() { print!("{}", APP_NAME); }\n'
+            )
+            binary = Path(directory) / ("name.exe" if sys.platform == "win32" else "name")
+            subprocess.run(
+                ["rustc", "--edition=2024", source, "-o", binary],
+                check=True, stdout=subprocess.PIPE, text=True,
+            )
+            cls.app_name = subprocess.run(
+                [binary], check=True, stdout=subprocess.PIPE, text=True,
+            ).stdout
+
     def test_development_process_name_uses_window_identity(self):
-        constants = (ROOT / "crates/sheprd-gpui/src/constants.rs").read_text()
-        self.assertIn('pub(crate) const WINDOW_TITLE: &str = "Spaceport"', constants)
+        self.assertEqual(self.app_name, "Spaceport")
         icon = (ROOT / "crates/sheprd-gpui/src/app_icon.rs").read_text()
         self.assertRegex(
             icon,
@@ -31,15 +48,13 @@ class AppNameTests(unittest.TestCase):
         selector = (ROOT / "crates/sheprd-gpui/preview_identity.rs").read_text()
         self.assertIn('include_str!("development-app-id")', selector)
         self.assertIn('include_str!("macos-preview-app-id")', selector)
-        title = re.search(r'pub\(crate\) const WINDOW_TITLE: &str = "([^"]+)"', constants)
-        self.assertIsNotNone(title)
         for key in ("CFBundleName", "CFBundleDisplayName"):
-            self.assertIn(f'plutil -replace {key} -string {title[1]}', justfile)
+            self.assertIn(f'plutil -replace {key} -string {self.app_name}', justfile)
 
     def test_bundle_plist_names_the_app_spaceport(self):
         info = plistlib.loads((ROOT / "assets/macos/Info.plist").read_bytes())
         for key in ("CFBundleName", "CFBundleDisplayName", "CFBundleExecutable"):
-            self.assertEqual(info[key], "spaceport" if key == "CFBundleExecutable" else "Spaceport", key)
+            self.assertEqual(info[key], "spaceport" if key == "CFBundleExecutable" else self.app_name, key)
 
     @unittest.skipUnless(sys.platform == "darwin", "assetutil requires macOS")
     def test_asset_catalogs_contain_the_plist_icon_name(self):

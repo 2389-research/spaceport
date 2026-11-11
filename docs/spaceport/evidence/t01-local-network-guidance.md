@@ -43,3 +43,35 @@ claims. They do not connect to a host, grant permissions or open Settings.
 Native permission-dialog/glyph checks and full platform CI remain separate;
 parent `rxkr`, T01 and A42 stay open. Existing linker compact-unwind and
 `block 0.1.6` future-compatibility warnings remain unsuppressed.
+
+## Shared-name contract repair
+
+Full CI on `d0e076e04` and `e30e41cfd` exposed missed fixtures. The
+`removed_updater` integration test compiled app constants without the client
+dependency; two Python packaging checks still expected a literal window title.
+Both failures were reproduced locally before the repair. Kata `z4a0` reopened.
+
+The public `sheprd_client::APP_NAME` now re-exports its value from the small,
+dependency-free `app_name.rs` module. The Rust identity probe includes that
+actual module alongside the actual constants. The Python probe compiles and
+runs the same module to compare the product name with packaging metadata and
+recipes. Neither probe supplies a substitute name. Runtime callers and the
+public API keep their existing behavior.
+
+In `.worktrees/identity-test-contracts`, with the toolchain/cache above:
+
+- `cargo test --locked -p sheprd-gpui --test removed_updater` passed both tests.
+  Development and preview identities compile and run; both production-release
+  combinations still refuse compilation. The probe also checks the real title.
+- `uv run python -m unittest discover -s scripts/release/tests -p test_app_name.py -v`
+  passed all six checks, including actual macOS asset-catalog inspection.
+- `cargo test --locked -p sheprd-client ssh::failure::tests` passed nine tests.
+- `cargo clippy --locked -p sheprd-client -p sheprd-gpui --all-targets -- -D warnings`
+  passed. The existing `block 0.1.6` future-compatibility warning remains.
+- `just format-check check-file-size check-sorted check-i18n`, specification
+  integrity checks and `git diff --check` passed.
+
+Logs are under `target/identity-test-contracts/` in that worktree. These checks
+prove compiled identity and packaging-source contracts, not native permission
+dialogs or a signed package. Full workspace and other-platform checks remain
+for CI. No release gate, permission or signing policy changed.
