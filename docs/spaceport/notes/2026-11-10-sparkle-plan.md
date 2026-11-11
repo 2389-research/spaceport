@@ -164,3 +164,53 @@ platform/native gates; do not describe unrun checks as passed.
   reserve a fresh immutable version; publish/verify the protected signed and
   notarized preview and feed; test the update from Doctor Biz's baseline.
   No public Sparkle-enabled release or feed exists yet. T12 stays open.
+
+## Main integration and native result
+
+- Full PR CI `43075058648` passed all required jobs on `44a97e042`, including
+  Windows native/performance. The earlier intermittent failures retain their
+  recorded unresolved causes; no budget, timeout or gate changed.
+- PR #3 merged to main at `df539fd92eb652b2739747284e3c5c3f2be71478`.
+  Exact-main CI `43080384560` is running before the next public preview tag.
+- Fresh signed ZIP `valid-zip-_nridkfx` and DMG `valid-dmg-_3i97dhx` passed
+  installation, one relaunch, new version/path/ID, strict signature and owned
+  cache/preference cleanup. `same-name-wrong-id-lkruuzbr` observed the documented
+  trusted-publisher identity rotation and passed the same cleanup checks.
+  Native fixture qualification is complete; actual published-preview update
+  and feed/bootstrap remain pending. Evidence lives in the November 11 record.
+- Complete workflow history has four runs; `20261111.1` is reserved and no
+  `v20261111.*` tag exists. Candidate `20261111.2` must be rechecked immediately
+  before tagging, after exact-main CI passes. Never retry an uncertain notary
+  submission or reuse a reserved preview version.
+- Exact-main CI `43080384560` passed every required job. Reservations were
+  rechecked and annotated `v20261111.2` was pushed at `df539fd92`; tag object
+  `abcea3df980c7756bef33d882ac9ae1123975838`. Preview workflow `43082879618`
+  passed validation/CI and is building. Version `20261111.2` is now reserved;
+  never rerun it. Public artifact/feed and actual baseline update remain pending.
+- Preview `43082879618` timed out: the app was Accepted and stapled, then the
+  DMG upload command hung from 19:15 until the 20:14 job cancellation. The upload
+  has no separate deadline; its retained stdout/stderr are empty and no DMG UUID
+  exists. Preserve the reserved version and inspect the
+  [failure record](../evidence/t12-sparkle-preview-20261111.2.md).
+- Bounded uploads and safe stage progress are committed at `a842612e8` in
+  `.worktrees/notary-upload`, PR #5. Seven final regression tests pass, including
+  real subprocess timeout/cancellation/reaping and exclusive receipt refusal.
+  Uploads use a 300-second deadline and Apple's standard S3 endpoint; no upload
+  retry or relaxed trust gate. Branch CI `43096135204` is queued with no jobs
+  created yet; PR #4's documentation CI is also queued. Follow-up must obtain
+  green branch checks, merge, pass exact-main full CI, recheck a fresh version
+  (candidate `20261111.3`), build/publish and verify public bytes/feed before the
+  actual baseline update. Never reuse `.2`. No public release/feed exists yet.
+- Doctor Biz requested tagging while GitHub checks remained queued with zero
+  jobs. Ordinary cancel, force-cancel and rerun returned inconsistent completed/
+  running responses; reopening PR #5 produced fresh queued CI `43097510357`.
+  The reviewed/local-tested fix merged as `fa5cfcab57049a5b5e3bf577bf8b44755e1a1335`.
+  To start the unsigned build alongside main CI, the tag-before-CI ordering was
+  explicitly changed; the workflow's mandatory exact-main CI gate still blocks
+  signing/publication. Main CI is `43097955032`.
+- Complete preview history and tag absence were checked. Annotated
+  `v20261111.3` was pushed at `fa5cfcab5`; tag object
+  `00a0f4fda209334486ebe9d7be4419ea595057a5`. Preview `43098075293` is queued.
+  `20261111.3` is now reserved: never rerun it. Generated changelog was reviewed
+  with pinned git-cliff 2.12.0. Public artifact/feed and actual baseline update
+  remain pending; no successful CI or distribution is claimed for this source.
