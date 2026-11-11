@@ -2,34 +2,35 @@
 
 ## Recipes
 
-Run from the repository root on a logged-in macOS desktop. These fixtures do not
-connect to, start, stop, or send input to a Herdr daemon.
+Run from the repository root on a logged-in macOS or Windows desktop. The native
+runner uses private app state and an isolated child process; it needs no daemon.
 
 ```sh
-cargo build --release -p sheprd-gpui --features integration-test
-target/release/spaceport --performance-test
+just test-perf 30
 
-# Reference algorithm: per-cell shaping and per-cell backgrounds, same harness.
-HERDR_PERF_UNCACHED=1 target/release/spaceport --performance-test
+# Explicit cached native regression test, with timeout and cleanup checks.
+HERDR_PERF_P95_MS=30 cargo test --locked --release -p sheprd-gpui --features integration-test --test performance_gui dense_terminal_sidebar_performance -- --ignored --nocapture --exact
 
-# Debug timings, representative of an unoptimized development build.
-cargo build -p sheprd-gpui --features integration-test
-target/debug/spaceport --performance-test
-HERDR_PERF_UNCACHED=1 HERDR_PERF_P95_MS=5000 target/debug/spaceport --performance-test
-
-# Explicit native regression test with subprocess timeout and exit-status checks.
-cargo test -p sheprd-gpui --features integration-test --test performance_gui -- --ignored --nocapture
+# Reference algorithm: its existing 250ms release default, in the same sandbox.
+HERDR_PERF_UNCACHED=1 just test-perf 250
 
 # Pure/cache correctness tests and the existing native label-width check.
-cargo test -p sheprd-gpui --bin sheprd --features integration-test
-target/release/spaceport --sidebar-test
-cargo clippy -p sheprd-gpui --all-targets --features integration-test -- -D warnings
+cargo test --locked -p sheprd-gpui --bin spaceport --features integration-test
+just test-sidebar
+cargo clippy --locked -p sheprd-gpui --all-targets --features integration-test -- -D warnings
 ```
 
-`--performance-test` requires `integration-test` and macOS. It is mutually
+`--performance-test` requires `integration-test` and macOS or Windows. It is mutually
 exclusive with the other fixture modes and all connection options. No benchmark
 library or external desktop automation service is needed. The native test is
 ignored by default; do not enable it on headless CI.
+
+The launcher honors `CARGO_TARGET_DIR` through Cargo's executable path. The
+Windows native CI job selects the cached test explicitly at its existing 100ms
+budget. `just test-perf` selects reference mode when `HERDR_PERF_UNCACHED` is
+present, including `0`. Each mode uses the same sandbox policy. Linux currently
+lacks native benchmark event delivery, which both the CLI and launcher refuse.
+Use release builds for performance evidence; debug runs are functional checks.
 
 `HERDR_PERF_P95_MS` sets the maximum warm hover/scroll p95 in milliseconds. Defaults
 are intentionally loose: 250 ms in release and 1000 ms in debug. Set a calibrated
@@ -51,7 +52,7 @@ the grid to keep it dense. Styles cover RGB/indexed/default colors, bold, italic
 dim, reverse, hidden, underline and strikethrough. Wide CJK cells have skip cells;
 combining graphemes and a visible beam cursor are included.
 
-The adapter creates AppKit mouse-move and pixel-scroll events and invokes the
+On macOS, the adapter creates AppKit mouse-move and pixel-scroll events and invokes the
 fixture's `GPUIView` native handlers on the main thread. This traverses GPUI's real
 event dispatch and hit testing, not direct sidebar callbacks. It neither posts
 global input nor requires Accessibility permission. Mouse coordinates and actual
@@ -83,13 +84,10 @@ event-to-scene-construction cost, not OS pointer-to-photon latency.
 Full refresh is deliberate: it measures the reported expensive whole-scene redraw
 even if a future idle-frame scheduler would skip some draws.
 
-Use the standalone `cargo build` recipes for comparable performance numbers.
-`cargo test` unifies GPUI's dev-dependency `test-support` feature into the native
-executable. Its text backend is still native, but GPUI adds synchronous redraws
-after event dispatch. The harness reports `paints` and validates per-paint budgets
-so these additional draws cannot hide work. Their time is included, making the
-Cargo test slower than the standalone binary. Rebuild after `cargo test` before
-benchmarking `target/debug/spaceport` again.
+Use the release sandbox recipes above for current comparisons. The current
+`integration-test` feature already enables GPUI's `test-support` through
+`gpui_platform`. The harness reports `paints` and checks per-paint budgets.
+The standalone measurements below describe their recorded historical baseline.
 
 ## Results
 

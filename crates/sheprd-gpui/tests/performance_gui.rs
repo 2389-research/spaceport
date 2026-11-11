@@ -1,5 +1,5 @@
-//! Explicit native opt-in: unlike GPUI unit tests, this launches a real AppKit app.
-#![cfg(target_os = "macos")]
+//! Explicit native opt-in: this launches a real platform window in private state.
+#![cfg(any(target_os = "macos", windows))]
 #![allow(clippy::disallowed_methods)]
 use anyhow::{Context as _, Result, bail};
 #[path = "../../test-support/sandbox.rs"]
@@ -23,6 +23,12 @@ struct Fixture {
     child: Option<Child>,
 }
 
+#[derive(Clone, Copy)]
+enum Algorithm {
+    Cached,
+    Reference,
+}
+
 impl Drop for Fixture {
     fn drop(&mut self) {
         stop_children([&mut self.child]);
@@ -30,8 +36,18 @@ impl Drop for Fixture {
 }
 
 #[test]
-#[ignore = "opens native fixture window; run explicitly on a macOS desktop"]
+#[ignore = "requires release mode and a native macOS/Windows desktop"]
 fn dense_terminal_sidebar_performance() -> Result<()> {
+    run(Algorithm::Cached)
+}
+
+#[test]
+#[ignore = "opens native reference fixture; run explicitly in release mode"]
+fn reference_terminal_sidebar_performance() -> Result<()> {
+    run(Algorithm::Reference)
+}
+
+fn run(algorithm: Algorithm) -> Result<()> {
     if cfg!(debug_assertions) {
         bail!("run the native benchmark with --release");
     }
@@ -44,6 +60,9 @@ fn dense_terminal_sidebar_performance() -> Result<()> {
         .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
     if let Some(budget) = std::env::var_os("HERDR_PERF_P95_MS") {
         command.env("HERDR_PERF_P95_MS", budget);
+    }
+    if matches!(algorithm, Algorithm::Reference) {
+        command.env("HERDR_PERF_UNCACHED", "1");
     }
     fixture.child = Some(
         command
@@ -72,12 +91,18 @@ fn dense_terminal_sidebar_performance() -> Result<()> {
             );
             assert!(log.contains("PERF native scroll list=0"));
             assert!(log.contains("PERF native scroll list=1"));
-            assert!(log.contains("PERF native cached/fresh glyph layouts identical:"));
-            assert!(
-                log.contains(
-                    "PERF native changed-cell + centered popup + underline cursor verified"
-                )
-            );
+            match algorithm {
+                Algorithm::Cached => {
+                    assert!(log.contains("PERF mode=cached profile=release"));
+                    assert!(log.contains("PERF native cached/fresh glyph layouts identical:"));
+                    assert!(log.contains(
+                        "PERF native changed-cell + centered popup + underline cursor verified"
+                    ));
+                }
+                Algorithm::Reference => {
+                    assert!(log.contains("PERF mode=reference profile=release"))
+                }
+            }
             assert!(log.contains("PERF PASS p95_budget_ms="));
             let dir = fixture.sandbox.dir.clone();
             drop(fixture);
