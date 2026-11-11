@@ -108,8 +108,23 @@ platform/native gates; do not describe unrun checks as passed.
   A real aged-state red/green case confirms refusal after a 21-day failure record.
 - Final review is clear for source commit/push and draft PR. Full platform CI
   remains the next step; no public tag until the remaining native checks pass.
-- Draft PR #1 is open. CI run `42959221177` caught SDK deletion by Rust-cache
+- PR #1's first CI run `42959221177` caught SDK deletion by Rust-cache
   and stale application-menu assertions. The SDK now lives under `RUNNER_TEMP`;
   its path regression and 13 real feed/signature tests pass locally. Updated
   menu tests cover About, Check for Updates, and the following separator.
-  A fresh full CI run must verify these fixes across platforms.
+  Full PR CI `42960999794` subsequently passed at `93416b82d`.
+- Doctor Biz requested main integration and a baseline on November 11. PR #1
+  merged as `4a2604b4efc9cb5c1abca91b6d7a1392e55ab28b`. Manual preview
+  `20261111.1` compiled and passed CLI smoke; main CI's Ubuntu mirror DNS
+  failures stopped the workflow before signing or notarization. Its version
+  remains reserved. A full same-source CI retry is running as `43053306222`.
+- A Developer ID signed local test copy from those verified CI bytes passes
+  strict nested signature, preview identity and bundled CLI checks. It has no
+  notarization or public feed/release. Details and artifact checksums live in
+  [its qualification record](../evidence/t12-sparkle-preview-20261111.1-local-test.md).
+- Native ZIP UI reached actual version-2 installation and LaunchServices
+  relaunch, exposing the fixture HOME override. The reviewed fixture-only fix
+  passes five real startup regressions and 35 driver tests. Whole ZIP/DMG
+  install/relaunch still needs completion after the desktop relocked. Keep
+  public delivery and T12/A43 gates open; next signed workflow needs a fresh
+  version after exact-main CI recovers.
