@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ABOUTME: Assemble Spaceport previews with only the app and chat adapter.
+# ABOUTME: Assemble Spaceport previews with the app, chat adapter and pinned updater.
 # ABOUTME: Validate architecture and compiled identity before writing a bundle.
 set -euo pipefail
 source "$(dirname -- "$0")/common.sh"
@@ -12,7 +12,8 @@ profile=${6:-release}
 [[ $profile == debug || $profile == release ]] || fail 'Profile must be debug or release'
 binaries=("$2")
 archs=(arm64)
-if [[ $3 != - ]]; then binaries+=("$3"); archs+=(x86_64); fi
+bundle_architecture=arm64
+if [[ $3 != - ]]; then binaries+=("$3"); archs+=(x86_64); bundle_architecture=universal; fi
 for binary in "${binaries[@]}"; do
     python3 "$release_root/scripts/release/preview-identity.py" "$1" "$profile" "$binary"
 done
@@ -21,6 +22,8 @@ companions=(sheprd-acp)
 for companion in "${companions[@]}"; do
     [[ -f $(dirname -- "$2")/$companion && ( $3 == - || -f $(dirname -- "$3")/$companion ) ]] || fail "A $companion beside each binary required"
 done
+[[ -n ${SPARKLE_FRAMEWORK_PATH:-} ]] || fail 'SPARKLE_FRAMEWORK_PATH must name the pinned Sparkle SDK directory'
+python3 "$release_root/scripts/release/sparkle_framework.py" validate-sdk "$SPARKLE_FRAMEWORK_PATH"
 out=$(cd -- "$4" && pwd)/Spaceport.app
 new_output "$out"
 icons=$(python3 "$release_root/scripts/release/build-icon.py" macos "${binaries[@]}")
@@ -72,6 +75,11 @@ plutil -replace CFBundleShortVersionString -string "$1" "$app/Contents/Info.plis
 plutil -replace CFBundleVersion -string "$1" "$app/Contents/Info.plist"
 plutil -insert LSMinimumSystemVersion -string 14.2 "$app/Contents/Info.plist"
 plutil -lint "$app/Contents/Info.plist"
+mkdir "$app/Contents/Frameworks"
+# Copy the complete SDK framework, including version links and nested services.
+ditto "$SPARKLE_FRAMEWORK_PATH/Sparkle.framework" "$app/Contents/Frameworks/Sparkle.framework"
+python3 "$release_root/scripts/release/sparkle_framework.py" configure "$app"
+python3 "$release_root/scripts/release/sparkle_framework.py" validate-bundle "$app" --architecture "$bundle_architecture"
 cp "$icns" "$app/Contents/Resources/Sheprd.icns"
 cp "$catalog" "$app/Contents/Resources/Assets.car"
 cp "$release_root/crates/sheprd-protocol/LICENSE-APACHE" "$app/Contents/Resources/"

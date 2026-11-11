@@ -47,6 +47,7 @@ for executable in spaceport "${helpers[@]}"; do
     archs=$(lipo -archs "$app/Contents/MacOS/$executable")
     [[ $archs == "$expected_archs" || ( $architecture == universal && $archs == 'arm64 x86_64' ) ]] || fail 'App architecture mismatch'
 done
+python3 "$release_root/scripts/release/sparkle_framework.py" validate-unsigned-bundle "$app" --architecture "$architecture"
 team=HD9NM9NSMK
 # The local installed certificate may be selected by its unambiguous public SHA1.
 [[ ${MACOS_SIGNING_IDENTITY:-} == 'Developer ID Application: 2389 Research, Inc (HD9NM9NSMK)' || ${MACOS_SIGNING_IDENTITY:-} == FF599C9C778C879ECB7DC8AEF258890A1268F7E6 ]] || fail 'Wrong Developer ID identity or Team'
@@ -135,6 +136,8 @@ fi
 mkdir "$tmp/image"
 app=$tmp/image/Spaceport.app
 ditto "$2" "$app"
+# Sign known Sparkle code inside out, before the app; never discover signing targets.
+python3 "$release_root/scripts/release/sparkle_framework.py" sign "$app" --architecture "$architecture" -- "${sign_options[@]}"
 # Nested chat helpers need no app entitlements and are signed before the app.
 for executable in "${helpers[@]}"; do
     codesign "${sign_options[@]}" --options runtime --timestamp "$app/Contents/MacOS/$executable"
