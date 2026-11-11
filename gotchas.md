@@ -1,5 +1,7 @@
 # Gotchas
 
+- 2026-11-11: GitHub's Ubuntu mirror list falls back between Canonical domains, so a Canonical DNS outage can block every Linux job. CI can opt into temporary Ubuntu Deb822 sources using independent HTTPS mirrors while preserving the runner's suites, components and Ubuntu archive keyring. Keep developer sources untouched and reject unknown source formats; never disable APT signature verification to restore a build.
+
 - 2026-11-10: Preview changelogs start at a published ancestor, not the last Git tag: a failed tag reserves its version without publishing its changes. Before the first release, use the actual fork source in `t00-dependencies.json`, not an earlier candidate source from the plan. Render the explicit range with the shared pinned git-cliff. A same-commit rebuild has empty history; filtered build-only history still renders a version heading under `render_always`.
 
 - 2026-11-10: Doctor Biz's approval to “ship” branding includes rebuilding a usable preview and carrying verification/delivery through. His explicit “push and make it work” also authorizes the necessary GitHub push and signing setup; an uncommitted workflow is not that result. If signing or desktop access blocks the final checks, retain the concrete build and exact failure, and continue independent work while asking for the missing access.
