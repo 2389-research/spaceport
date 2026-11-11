@@ -145,8 +145,8 @@ owner/device/inode. Cleanup requires unchanged ownership, no matching helper
 executable, no scoped open files and fd-safe deletion. Uncertainty retains the
 cache and fails the case. Older unclaimed caches remain untouched. Fifty-three
 driver tests pass; one actual ownership-change test needs privileges and skips.
-Eight fresh native negative cases now qualify this path; fresh positive ZIP/DMG
-and same-name identity-rotation observations remain pending in that record.
+Eight fresh native negative cases, fresh positive ZIP/DMG install/relaunch and
+same-name identity-rotation observations now qualify this path in that record.
 
 macOS Foundation ignores the fixture's `TMPDIR` for its protected per-user temp
 root. The fixture pins that exact root, owner and permissions; its own files
@@ -161,9 +161,8 @@ No personal Spaceport preference domain or daemon is a fixture.
 
 ## Remaining delivery gates
 
-- Complete native signed install/relaunch and negative updater cases, including
-  wrong payload identity and downgrade behavior, with an unlocked desktop.
-- Retain the reviewed fixture's exact results and complete its manual cases.
+- Retain the completed signed native fixture evidence; verify the actual
+  published-preview update from Doctor Biz's installed baseline.
 - Run full default/all-feature/platform CI on the exact integrated source.
 - Tag a fresh version only after CI and native update checks pass. Verify the
   protected workflow, public DMG, public signed feed and download bytes.

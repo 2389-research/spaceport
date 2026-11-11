@@ -164,3 +164,21 @@ platform/native gates; do not describe unrun checks as passed.
   reserve a fresh immutable version; publish/verify the protected signed and
   notarized preview and feed; test the update from Doctor Biz's baseline.
   No public Sparkle-enabled release or feed exists yet. T12 stays open.
+
+## Main integration and native result
+
+- Full PR CI `43075058648` passed all required jobs on `44a97e042`, including
+  Windows native/performance. The earlier intermittent failures retain their
+  recorded unresolved causes; no budget, timeout or gate changed.
+- PR #3 merged to main at `df539fd92eb652b2739747284e3c5c3f2be71478`.
+  Exact-main CI `43080384560` is running before the next public preview tag.
+- Fresh signed ZIP `valid-zip-_nridkfx` and DMG `valid-dmg-_3i97dhx` passed
+  installation, one relaunch, new version/path/ID, strict signature and owned
+  cache/preference cleanup. `same-name-wrong-id-lkruuzbr` observed the documented
+  trusted-publisher identity rotation and passed the same cleanup checks.
+  Native fixture qualification is complete; actual published-preview update
+  and feed/bootstrap remain pending. Evidence lives in the November 11 record.
+- Complete workflow history has four runs; `20261111.1` is reserved and no
+  `v20261111.*` tag exists. Candidate `20261111.2` must be rechecked immediately
+  before tagging, after exact-main CI passes. Never retry an uncertain notary
+  submission or reuse a reserved preview version.

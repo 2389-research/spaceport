@@ -53,10 +53,30 @@ desktop locked before native installation. Both retained failed results and
 cleaned up normally. A separate DMG preparation timed out creating its disk
 image; a fresh preparation subsequently succeeded. Failed roots remain intact.
 
-Fresh cache-safe ZIP/DMG positives and the same-name/different-ID publisher
-rotation case remain pending. Public preview publication, signed-feed bootstrap
-and the real update from Doctor Biz's installed `20261111.1` baseline also remain
-pending. T12 and A43 stay open.
+After PR #3 merged to main at `df539fd92`, the remaining native cases completed:
+
+| Case | Evidence root | Outcome |
+| --- | --- | --- |
+| Signed ZIP | `valid-zip-_nridkfx` | Passed |
+| Signed DMG | `valid-dmg-_3i97dhx` | Passed |
+| Same-name publisher app-ID rotation | `same-name-wrong-id-lkruuzbr` | Observed identity rotation |
+
+Each downloaded one archive, replaced v1 with v2, exited the original host,
+launched exactly one new process at the expected path/version/payload ID,
+passed strict code-signature verification and quit through its private sentinel.
+All preclaimed account/private cache namespaces were absent after cleanup;
+preferences cleanup passed. The fixture and driver source match the merged
+main source. The final click was followed by global inventory observation,
+without retargeting the app bundle during replacement. These runs had no
+duplicate launch; the earlier duplicate run remains failed, with its initiating
+callers unproven.
+
+The same-name signed payload changed its random fixture bundle ID and Sparkle
+accepted it. This confirms trusted publisher identity rotation; Spaceport's
+exact app ID and Team remain enforced before release publication.
+
+Public preview publication, signed-feed bootstrap and the real update from
+Doctor Biz's installed `20261111.1` baseline remain pending. T12 and A43 stay open.
 
 ## Test portability
 
