@@ -149,6 +149,17 @@ platform/native gates; do not describe unrun checks as passed.
   paths and scoped open-file checks. Old unclaimed caches stay untouched.
 - A fresh ZIP offer found v2, but macOS again reported a locked screen. Native
   button checks await an unlocked desktop.
+- Eight fresh cache-safe negative cases passed; see the
+  [native evidence](../evidence/t12-sparkle-native-20261111.md). Fresh ZIP/DMG
+  positives and same-name identity rotation still need native buttons. A newer
+  ZIP saw two launch requests during replacement; retain its failed result and
+  remove app-targeted observation from the next final-click handoff.
+- Follow-up CI `43072871856` passed the Windows x64 native GUI step but failed
+  warm-scroll performance (175.067ms against 100ms). The measured rendering path
+  and budget did not change; the failure remains unresolved. It also caught
+  the unreachable single Ubuntu mirror and copied framework-Python helper test
+  assumption. Both corrections are reviewed with actual APT and native helper
+  evidence; a new combined CI run is required, with no waived gates.
 - Next: finish fresh native cases; obtain green combined and exact-main CI;
   reserve a fresh immutable version; publish/verify the protected signed and
   notarized preview and feed; test the update from Doctor Biz's baseline.

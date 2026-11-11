@@ -135,7 +135,8 @@ completes launcher setup before installer messages; the
 reports that as did-extract. The corrected assessor requires the exact native
 pre-unarchive 4005 → [4005,3002] signature cause, ordered download evidence,
 unchanged app, live original host and no genuine install/relaunch progress.
-Generic network/setup failures cannot pass. A fresh native run remains required.
+Generic network/setup failures cannot pass. The subsequent fresh wrong-key run
+passed; see the [November 11 native record](t12-sparkle-native-20261111.md).
 
 Sparkle helpers independently resolve `NSCachesDirectory`, which can select the
 account cache despite the host's private HOME. The driver now claims absent
@@ -144,7 +145,8 @@ owner/device/inode. Cleanup requires unchanged ownership, no matching helper
 executable, no scoped open files and fd-safe deletion. Uncertainty retains the
 cache and fails the case. Older unclaimed caches remain untouched. Fifty-three
 driver tests pass; one actual ownership-change test needs privileges and skips.
-Fresh native positive and archive/payload negative cases must qualify this path.
+Eight fresh native negative cases now qualify this path; fresh positive ZIP/DMG
+and same-name identity-rotation observations remain pending in that record.
 
 macOS Foundation ignores the fixture's `TMPDIR` for its protected per-user temp
 root. The fixture pins that exact root, owner and permissions; its own files
