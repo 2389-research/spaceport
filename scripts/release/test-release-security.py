@@ -141,8 +141,9 @@ class ReleaseTargets(unittest.TestCase):
         self.assertNotIn("secrets.", native)
         for command in ('python scripts/install-herdr-windows.py "$RUNNER_TEMP/herdr"',
                         "cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored",
-                        "--performance-test"):
+                        "cargo test --locked --release -p sheprd-gpui --features integration-test --test performance_gui dense_terminal_sidebar_performance -- --ignored --nocapture --exact"):
             self.assertIn(command, native)
+        self.assertIn("          HERDR_PERF_P95_MS: '100'\n", native)
         self.assertIn("NATIVE: ${{ needs.windows-native.result }}", jobs["checks-passed"])
         self.assertIn('test "$WINDOWS" = success && test "$NATIVE" = success', jobs["checks-passed"])
         self.assertIn('test "$WINDOWS" = skipped && test "$NATIVE" = skipped', jobs["checks-passed"])

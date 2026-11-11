@@ -54,6 +54,15 @@ macOS 27.2.1 arm64. Logs remain in `target/benchmark-launchers/` in this worktre
 - Independent review found no blocker after correcting the platform ignore
   message and stale documentation about GPUI feature selection.
 
+PR CI `43122869664` then found a release-security source contract still requiring
+the old direct `--performance-test` invocation. The failure reproduced locally.
+The contract now requires the exact release sandbox target, cached test name,
+ignored-test opt-in and exact filter, plus the unchanged 100ms Windows budget.
+It retains all native-job dependencies, platform and required-gate checks.
+`uv run python scripts/release/test-release-security.py` then passed 23 checks;
+the existing real-SBOM opt-in remained skipped (24 tests, one skip). Logs:
+`security-red.log` and `security-green.log`. Final review found no blocker.
+
 This changes fixture launch paths and integration-only CLI help, with no visible
 product UI change. Native Windows execution and full platform CI remain pending;
 the PR must pass them before merge. This does not resolve Windows timing
