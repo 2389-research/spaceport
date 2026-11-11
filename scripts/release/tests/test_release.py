@@ -226,8 +226,11 @@ class ReleaseTests(unittest.TestCase):
             "Contents/Resources/LICENSE", "Contents/Resources/NOTICE", "Contents/Resources/LICENSE-octicons",
             "Contents/Resources/THIRD-PARTY-NOTICES.txt",
             "Contents/Resources/SOUND-NOTICE.md",
+            "Contents/Resources/Sparkle-LICENSE.txt",
         })
         self.assertEqual((app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").read_bytes(), self.notices.read_bytes())
+        self.assertEqual((app / 'Contents/Resources/Sparkle-LICENSE.txt').read_bytes(),
+                         (self.work / 'sdk/LICENSE').read_bytes())
         self.assertFalse((app / "Contents/MacOS/Herdr").exists())
         framework = app / 'Contents/Frameworks/Sparkle.framework'
         self.assertTrue((framework / 'Versions/Current').is_symlink())

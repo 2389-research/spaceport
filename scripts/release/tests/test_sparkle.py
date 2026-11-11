@@ -11,7 +11,7 @@ import subprocess
 import unittest
 from unittest.mock import patch
 
-from sparkle_fixture import framework_fixture
+from sparkle_fixture import framework_fixture, sdk_fixture
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 
@@ -42,6 +42,28 @@ class SparkleTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('checksum', result.stderr)
         self.assertFalse(output.exists())
+
+    def test_sdk_license_must_be_regular_and_match_archive(self):
+        scripts = self.root / 'helper'
+        scripts.mkdir()
+        sdk = self.root / 'sdk'
+        sdk_fixture(scripts, sdk)
+        spec = importlib.util.spec_from_file_location('license_fixture', scripts / 'sparkle_framework.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        license_path = sdk / 'LICENSE'
+        original = license_path.read_bytes()
+        for kind in ('tampered', 'missing', 'symlink'):
+            with self.subTest(kind=kind):
+                license_path.unlink(missing_ok=True)
+                if kind == 'tampered':
+                    license_path.write_bytes(original + b'tampered')
+                elif kind == 'symlink':
+                    license_path.symlink_to(sdk / 'Sparkle.framework/Versions/B/Resources/Info.plist')
+                with self.assertRaisesRegex(ValueError, 'LICENSE'):
+                    module.validate_sdk(sdk, scripts / 'sparkle.json')
+                license_path.unlink(missing_ok=True)
+                license_path.write_bytes(original)
 
     def test_missing_sdk_fails_closed(self):
         with self.assertRaisesRegex(ValueError, 'archive'):
@@ -112,6 +134,13 @@ class SparkleNativeSdkTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue((output / 'Sparkle.framework/Versions/Current').is_symlink())
             self.assertEqual(os.readlink(output / 'Sparkle.framework/Sparkle'), 'Versions/Current/Sparkle')
+            license_path = output / 'LICENSE'
+            original_license = license_path.read_bytes()
+            license_path.write_bytes(original_license + b'tampered')
+            result = subprocess.run([*command, 'validate-sdk', str(output)], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('LICENSE', result.stderr)
+            license_path.write_bytes(original_license)
             executable = output / 'Sparkle.framework/Versions/B/Autoupdate'
             executable.write_bytes(executable.read_bytes() + b'tampered')
             result = subprocess.run([*command, 'validate-sdk', str(output)], capture_output=True, text=True)

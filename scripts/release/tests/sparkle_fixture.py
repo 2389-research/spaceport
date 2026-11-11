@@ -47,9 +47,11 @@ def sdk_fixture(scripts, sdk):
     import tarfile
     sdk.mkdir()
     framework_fixture(sdk / 'Sparkle.framework')
+    (sdk / 'LICENSE').write_bytes(b'Sparkle fixture copyright and license text\n')
     archive = sdk / 'Sparkle-2.10.1.tar.xz'
     with tarfile.open(archive, 'w:xz') as target:
         target.add(sdk / 'Sparkle.framework', arcname='Sparkle.framework')
+        target.add(sdk / 'LICENSE', arcname='LICENSE')
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     production = Path(__file__).resolve().parents[1]
     code = (production / 'sparkle_framework.py').read_text()

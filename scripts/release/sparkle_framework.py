@@ -94,9 +94,22 @@ def validate_sdk(directory, config=CONFIG):
     directory = Path(directory)
     archive = directory / f'Sparkle-{VERSION}.tar.xz'
     verify_archive(archive, config)
+    validate_license(directory / 'LICENSE', archive)
     framework = directory / 'Sparkle.framework'
     validate_framework_bytes(framework, archive)
     return framework
+
+
+def validate_license(path, archive):
+    # Sparkle's root SDK license also carries licenses for its bundled code.
+    # It is outside Sparkle.framework, so preserve and verify it separately.
+    with tarfile.open(archive) as source:
+        member = next((entry for entry in source
+                       if entry.name.removeprefix('./') == 'LICENSE'), None)
+        if (member is None or not member.isfile() or not path.is_file()
+                or path.is_symlink() or path.stat().st_size != member.size
+                or path.read_bytes() != source.extractfile(member).read()):
+            raise ValueError(f'Tampered or missing Sparkle LICENSE: {path}')
 
 
 def validate_framework_bytes(framework, archive):
@@ -242,6 +255,7 @@ def main():
                 raise ValueError('SPARKLE_FRAMEWORK_PATH must name the pinned Sparkle SDK directory')
             archive = Path(sdk) / f'Sparkle-{VERSION}.tar.xz'
             verify_archive(archive, args.config)
+            validate_license(args.path / 'Contents/Resources/Sparkle-LICENSE.txt', archive)
             validate_framework_bytes(framework, archive)
         if args.action == 'sign':
             sign_framework(framework, options[1:] if options[:1] == ['--'] else options)

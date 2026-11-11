@@ -44,6 +44,8 @@ class PreviewSigning(unittest.TestCase):
         self.metadata.update(helper().bundle_policy(helper().read_config()))
         self.write_plist()
         framework_fixture(self.app / 'Contents/Frameworks/Sparkle.framework')
+        (self.app / 'Contents/Resources').mkdir()
+        shutil.copyfile(self.root / 'sdk/LICENSE', self.app / 'Contents/Resources/Sparkle-LICENSE.txt')
         tools = self.root / 'tools'
         tools.mkdir()
         mock = tools / 'mock.py'
@@ -87,6 +89,12 @@ class PreviewSigning(unittest.TestCase):
     def test_extra_framework_fails_before_credentials(self):
         (self.app / 'Contents/Frameworks/Extra.framework').mkdir()
         self.assertIn('Unexpected bundled frameworks', self.sign().stderr)
+        self.assertFalse(any(c[0] == 'security' for c in self.calls()))
+
+    def test_bundled_sparkle_license_tampering_fails_before_credentials(self):
+        license_path = self.app / 'Contents/Resources/Sparkle-LICENSE.txt'
+        license_path.write_bytes(license_path.read_bytes() + b'tampered')
+        self.assertIn('LICENSE', self.sign().stderr)
         self.assertFalse(any(c[0] == 'security' for c in self.calls()))
 
     def test_known_sparkle_binary_tampering_fails_before_credentials(self):
