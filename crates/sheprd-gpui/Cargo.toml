@@ -165,3 +165,7 @@ required-features = ["integration-test"]
 [[test]]
 name              = "performance_gui"
 required-features = ["integration-test"]
+
+[[example]]
+name              = "sparkle_fixture"
+required-features = ["integration-test", "macos-updater"]

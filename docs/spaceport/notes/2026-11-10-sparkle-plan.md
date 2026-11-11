@@ -81,10 +81,30 @@ platform/native gates; do not describe unrun checks as passed.
 
 - Worktree created; official SDK archive downloaded and SHA256 verified.
 - Task 1 complete at `6f0b7c5e3`; independent spec and quality review clean.
-- Task 2 native app integration in progress; root Cargo lock owned by that worker.
+- Task 2 complete at `c5c299d1c` plus `d1255a42c`: rpath and compiled-worktree
+  review findings fixed with regressions; independent re-review clean.
 - Task 3 code and workflow integration pass targeted tests and independent review.
   Publication orchestration lacks focused branch tests; qualify bootstrap against
   real GitHub during delivery and retain the replacement-path test gap explicitly.
 - Native fixture research records Sparkle key/identity rotation behavior. The
   exact app ID is a release publication gate, not an unconditional installer rule.
 - No new preview tag, release, feed or native install/relaunch has run yet.
+- Task 1 license follow-up `27f7157e1` reviewed clean: SDK root LICENSE is pinned,
+  bundled and validated again before signing credentials.
+- Task 4 native Spaceport daemon/terminal quit/restart test committed at
+  `6c30c7dc3`; five tests pass, including real owned-child-only failure cleanup.
+  Independent review clean. Native updater host compiles and offered signed v2.
+- Thirty-five fixture driver tests and the native read-only feed/selection
+  cases pass. Normal quit sentinel is verified. Manual install/relaunch and
+  archive/identity/actual-payload rollback still need the unlocked desktop.
+- Native updater install/relaunch is blocked by locked desktop. Doctor Biz said
+  he cannot unlock it now. Continue review/CI; hold the public tag for native QA.
+- macOS uses its own protected per-user Foundation temp root and unique-domain
+  CFPreferences store. Fixtures pin temp ownership and isolate/clean only their
+  own random preference domains; do not claim HOME redirects every Apple store.
+- Whole-branch review closed four findings: stale Busy menu state, cleanup
+  skipped by diagnostics, unrelated errors passing negative cases, and timed
+  feed-signature recovery. Exact-zero expiry is required in packaging/runtime.
+  A real aged-state red/green case confirms refusal after a 21-day failure record.
+- Final review is clear for source commit/push and draft PR. Full platform CI
+  remains the next step; no public tag until the remaining native checks pass.

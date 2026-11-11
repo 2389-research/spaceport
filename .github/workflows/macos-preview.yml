@@ -84,9 +84,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate.outputs.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - run: rustup show
       - run: cargo install cargo-about --version 0.9.2 --locked --features cli
+      - run: cargo install git-cliff --locked --version 2.12.0
+      - name: Generate preview notes without signing credentials
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p target/preview-notes
+          base=$(python3 scripts/release/preview-notes-base.py)
+          bash scripts/release/generate-changelog.sh --macos-preview "$VERSION" target/preview-notes "$base"
+          printf '\nWorkflow: https://github.com/harperreed/spaceport/actions/runs/%s\n' "$GITHUB_RUN_ID" >> target/preview-notes/RELEASE_NOTES.md
       - name: Acquire the pinned update framework without signing credentials
         run: |
           python3 scripts/release/sparkle_framework.py acquire target/sparkle-sdk
@@ -102,8 +112,9 @@ jobs:
           set -euo pipefail
           mkdir -p target/preview-input
           ditto -c -k --keepParent "target/distribution/$VERSION-release-arm64/Spaceport.app" target/preview-input/Spaceport.zip
+          cp target/preview-notes/RELEASE_NOTES.md target/preview-input/
           cd target/preview-input
-          shasum -a 256 Spaceport.zip > SHA256SUMS
+          shasum -a 256 Spaceport.zip RELEASE_NOTES.md > SHA256SUMS
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: macos-preview-unsigned-${{ github.run_id }}
@@ -145,27 +156,21 @@ jobs:
           shasum -a 256 -c SHA256SUMS
           ditto -x -k Spaceport.zip .
           mkdir -p ../preview-signed
+          cp RELEASE_NOTES.md ../preview-signed/
       - name: Recheck immutable version before signing
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/release/preview-history.py
-      - name: Acquire the pinned SDK and changelog tool before using credentials
+      - name: Acquire the pinned SDK before using credentials
         run: |
+          if [[ ! -x "$(brew --prefix openssl@3)/bin/openssl" ]]; then
+            brew install --force-bottle openssl@3
+          fi
           python3 scripts/release/sparkle_framework.py acquire target/sparkle-sdk
           {
             echo "SPARKLE_FRAMEWORK_PATH=$PWD/target/sparkle-sdk"
             echo "SPACEPORT_OPENSSL=$(brew --prefix openssl@3)/bin/openssl"
           } >> "$GITHUB_ENV"
-          cargo install git-cliff --locked --version 2.12.0
-      - name: Generate preview notes from published release history
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p target/preview-notes
-          base=$(python3 scripts/release/preview-notes-base.py)
-          bash scripts/release/generate-changelog.sh --macos-preview "$VERSION" target/preview-notes "$base"
-          printf '\nWorkflow: https://github.com/harperreed/spaceport/actions/runs/%s\n' "$GITHUB_RUN_ID" >> target/preview-notes/RELEASE_NOTES.md
-          cp target/preview-notes/RELEASE_NOTES.md target/preview-signed/
       - name: Sign and notarize with the protected Developer ID identity
         env:
           MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}

@@ -9,10 +9,10 @@ that approval does not enable general production releases. See the
 [release identity audit](../../docs/spaceport/evidence/release-identity-audit.md)
 and [open gates](../../docs/spaceport/plan/gaps.json). Do not run an inherited
 publish or install route. D64 approves the separate tagged prerelease route below.
-The inherited custom updater, its feeds and
-update archives have been removed. A replacement automatic update route is
-unimplemented and remains a release gate; no replacement framework, keys,
-or release source have been selected.
+The inherited custom updater, its feeds and update archives have been removed.
+D65 selects Sparkle for installed macOS previews, with a separate Spaceport
+signing key and preview feed. Other platform/package update routes and the
+complete native qualification remain release gates.
 
 Run with Bash; packaging scripts never build or execute the GUI, bundle a daemon,
 or publish artifacts. Output directories must already exist. Existing
@@ -56,8 +56,9 @@ requires reviewing signing protection, including required owner review. Add thes
 | Secret | `APPLE_API_PRIVATE_KEY` | App Store Connect private `.p8` key contents |
 | Secret | `APPLE_API_KEY_ID` | That API key's ID |
 | Secret | `APPLE_API_ISSUER_ID` | That API key's issuer ID |
+| Secret | `SPARKLE_PRIVATE_KEY` | Separate Spaceport preview Ed25519 seed exported by Sparkle's key tool; used only to sign updates/feed |
 
-Doctor Biz authorized hosted setup, and all five environment secrets and the
+Doctor Biz authorized hosted setup, and all six environment secrets and the
 identity variable are configured for `harperreed/spaceport`. An installed local
 identity is insufficient for hosted signing: CI needs the matching P12 and its
 password. Do not use a different company's certificate. The importer
@@ -77,8 +78,43 @@ history within 1,000 runs and refuses API failure, truncation or unknown titles.
 Malformed version tags cannot sign and do not reserve a valid version. The
 serialized workflow checks again before signing. Inspect retained notarization
 receipts after a failure; never rerun, move or delete a used tag to force another
-submission. Use a new version after resolving the failure. No updater feed,
-Homebrew publication or general production release route is enabled.
+submission. Use a new version after resolving the failure. D65 adds the preview
+updater feed; Homebrew and general production publication remain excluded.
+
+### Preview updates
+
+Updater-enabled installed previews expose **Check for Updates…** in the app
+menu and `spaceport run check-for-updates`. Sparkle asks permission for automatic
+checks; installation requires confirmation by default. Ordinary development and
+compiled worktree builds cannot start the updater. The first enabled preview
+requires one manual installation; older previews cannot bootstrap themselves.
+Updates replace Spaceport and its bundled chat adapter, never either Herdr runtime.
+
+The build embeds pinned Sparkle 2.10.1 and its license, preserving framework
+symlinks. Signing rechecks all original framework bytes before credentials,
+then signs nested code inside out. The final app and DMG retain the existing
+Developer ID/notarization/Gatekeeper checks. `sparkle.json` is the shared public
+SDK version/checksum, feed URL and Ed25519 trust configuration.
+
+Only the protected signing job receives `SPARKLE_PRIVATE_KEY`, over the SDK
+signer's stdin. It signs the final stapled DMG and appcast. Publication verifies
+those signatures with the public key, publishes the immutable dated prerelease,
+downloads and verifies that public artifact, then replaces `appcast.xml` on the
+fixed `macos-preview-feed` release. The marker tag stays fixed. Signed previous
+feed versions must increase; an existing marker missing its asset fails closed.
+GitHub replaces assets through delete/upload, so checks can briefly fail while
+the feed changes. Keep the prior signed feed in retained workflow evidence.
+
+The feed uses the explicit release download URL, since GitHub's `latest` route
+excludes prereleases. The client requires signed feeds with exact numeric
+`SUSignedFeedFailureExpirationInterval=0` and verifies archives before extraction.
+Zero disables Sparkle's default recovery after 20 days of feed-signature failures.
+Retain the signing key backup; rotation needs a planned signed migration.
+Sparkle deliberately allows trusted publisher key and app
+identity rotation; exact Spaceport app ID/Team checks belong to this release
+pipeline. Wrong-key ZIP and feed tests exercise signature refusal without the
+same-Team signed-DMG key-rotation fallback. These policies do not authorize an
+inherited upstream feed, production release or daemon installation.
 
 Preview builds use `SPACEPORT_MACOS_PREVIEW_VERSION`, `ai.2389.spaceport`, and
 `Spaceport.app`. The compile-time selector rejects other target operating systems
@@ -583,9 +619,12 @@ than fabricated fallback text or a broad license exception.
 
 Use Apple Silicon macOS with Xcode command-line tools, the pinned Rust toolchain,
 `jq`, and `cargo-about 0.9.2`. The build command takes explicit profile, architecture,
-and signing mode; its defaults are **debug arm64 unsigned**:
+and signing mode; its defaults are **debug arm64 unsigned**. Acquire the pinned
+SDK once in an unused output directory, then export its path before building:
 
 ```sh
+python3 scripts/release/sparkle_framework.py acquire target/sparkle-sdk
+export SPARKLE_FRAMEWORK_PATH="$PWD/target/sparkle-sdk"
 bash scripts/release/build-macos.sh VERSION debug arm64 unsigned
 bash scripts/release/build-macos.sh VERSION debug arm64 installed
 # The just recipe always requests installed-identity signing:
@@ -632,8 +671,10 @@ artifacts provide evidence, not an automatic recovery mechanism.
 
 Temporary signing credentials are removed on exit/INT/TERM, and imported keychains'
 original search list is restored. SIGKILL and power loss cannot run cleanup.
-The route builds, signs, notarizes and retains artifacts only: no app launch,
-installation, updater setup or public publishing occurs.
+The local route builds, signs, notarizes and retains artifacts only: it does not
+launch/install an app, publish a feed or create a public release. Its assembled
+preview contains updater configuration, but compiled worktree builds remain
+ineligible. The tagged workflow performs the separately authorized publication.
 
 ## Contributor CI Approval
 

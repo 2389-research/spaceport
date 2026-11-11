@@ -14,6 +14,10 @@ class SparkleCiTests(unittest.TestCase):
         signing, publishing = rest.split("\n  publish:", 1)
         self.assertIn("sparkle_framework.py acquire", build)
         self.assertNotIn("SPARKLE_PRIVATE_KEY", build)
+        self.assertTrue("generate-changelog.sh --macos-preview" in build,
+                        "Unsigned build must generate release notes")
+        self.assertFalse("cargo install" in signing,
+                         "Protected signing job must not compile third-party tools")
         self.assertIn("environment: macos-preview", signing)
         self.assertLess(signing.index("verify-macos-preview.sh"), signing.index("sparkle-feed.py create"))
         self.assertIn("SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}", signing)

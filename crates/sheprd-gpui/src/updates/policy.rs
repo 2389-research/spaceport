@@ -7,6 +7,7 @@ pub(super) struct Bundle<'a> {
     pub feed: &'a str,
     pub key: &'a str,
     pub signed_feed: bool,
+    pub signed_feed_failure_expiration: Option<f64>,
     pub verify_before_extraction: bool,
     pub automatic_install: bool,
     pub automatic_checks_configured: bool,
@@ -32,6 +33,7 @@ pub(super) fn eligible(
         && bundle.feed == feed
         && bundle.key == key
         && bundle.signed_feed
+        && bundle.signed_feed_failure_expiration == Some(0.0)
         && bundle.verify_before_extraction
         && !bundle.automatic_install
         && !bundle.automatic_checks_configured

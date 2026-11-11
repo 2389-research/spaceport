@@ -112,10 +112,15 @@ class PreviewSigning(unittest.TestCase):
 
     def test_sparkle_policy_tampering_fails_before_credentials(self):
         for field, value in (('SUPublicEDKey', 'wrong'), ('SURequireSignedFeed', False),
+                             ('SUSignedFeedFailureExpirationInterval', 1728000),
+                             ('SUSignedFeedFailureExpirationInterval', None),
                              ('SUVerifyUpdateBeforeExtraction', False), ('SUEnableAutomaticChecks', True)):
-            with self.subTest(field=field):
+            with self.subTest(field=field, value=value):
                 original = dict(self.metadata)
-                self.metadata[field] = value
+                if value is None:
+                    self.metadata.pop(field)
+                else:
+                    self.metadata[field] = value
                 self.write_plist()
                 self.assertIn('Sparkle', self.sign().stderr)
                 self.metadata = original
@@ -266,9 +271,10 @@ class PreviewRoute(unittest.TestCase):
         self.assertIn("needs.validate.outputs.tag != ''", jobs['publish'])
         self.assertIn('--verify-tag --prerelease', jobs['publish'])
         self.assertIn('SHA256SUMS', jobs['publish'])
-        self.assertIn('generate-changelog.sh --macos-preview', jobs['sign'])
-        self.assertIn('preview-notes-base.py', jobs['sign'])
-        self.assertIn('cp target/preview-notes/RELEASE_NOTES.md target/preview-signed/', jobs['sign'])
+        self.assertIn('generate-changelog.sh --macos-preview', jobs['build'])
+        self.assertIn('preview-notes-base.py', jobs['build'])
+        self.assertIn('cp RELEASE_NOTES.md ../preview-signed/', jobs['sign'])
+        self.assertIn('shasum -a 256 Spaceport.zip RELEASE_NOTES.md > SHA256SUMS', jobs['build'])
         self.assertIn('target/preview-result/preview-signed/RELEASE_NOTES.md', jobs['publish'])
         self.assertNotIn("printf 'Signed and notarized", jobs['publish'])
         self.assertIn('verify-macos-preview.sh', jobs['sign'])

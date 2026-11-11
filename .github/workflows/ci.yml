@@ -148,6 +148,9 @@ jobs:
       - name: Acquire the pinned macOS update framework
         if: runner.os == 'macOS'
         run: |
+          if [[ ! -x "$(brew --prefix openssl@3)/bin/openssl" ]]; then
+            brew install --force-bottle openssl@3
+          fi
           python3 scripts/release/sparkle_framework.py acquire target/sparkle-sdk
           {
             echo "SPARKLE_FRAMEWORK_PATH=$PWD/target/sparkle-sdk"

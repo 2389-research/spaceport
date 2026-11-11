@@ -324,6 +324,7 @@ fn macos_menus_carry_hide_and_minimize(cx: &mut gpui::TestAppContext) {
         action_names(herdr),
         [
             "About Spaceport",
+            "Check for Updates…",
             "Command Palette",
             "Settings",
             "Keyboard Shortcuts",

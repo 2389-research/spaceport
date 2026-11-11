@@ -53,6 +53,12 @@ pub(super) fn install(cx: &mut App) -> Result<(), Error> {
         feed: &feed,
         key: &key,
         signed_feed: boolean(&bundle, "SURequireSignedFeed") == Some(true),
+        signed_feed_failure_expiration: bundle
+            .objectForInfoDictionaryKey(&NSString::from_str(
+                "SUSignedFeedFailureExpirationInterval",
+            ))
+            .and_then(|value| value.downcast::<NSNumber>().ok())
+            .map(|value| value.doubleValue()),
         verify_before_extraction: boolean(&bundle, "SUVerifyUpdateBeforeExtraction") == Some(true),
         automatic_install: boolean(&bundle, "SUAutomaticallyUpdate") != Some(false),
         automatic_checks_configured: bundle

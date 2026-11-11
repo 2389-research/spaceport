@@ -46,7 +46,7 @@ pub(crate) fn install(cx: &mut App) {
                     .downcast_ref::<RunCommand>()
                     .is_some_and(|action| action.command == Command::CheckForUpdates)
             {
-                *disabled = crate::updates::available(cx).is_err();
+                *disabled = !crate::updates::menu_available(cx);
             }
         }
     }

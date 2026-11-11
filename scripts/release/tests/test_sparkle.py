@@ -114,6 +114,25 @@ class SparkleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'SURequireSignedFeed'):
             self.module.validate_policy(app, self.config)
 
+    def test_signed_feed_failure_never_expires(self):
+        app = self.root / 'Spaceport.app'
+        (app / 'Contents').mkdir(parents=True)
+        info = app / 'Contents/Info.plist'
+        info.write_bytes(plistlib.dumps({'CFBundleIdentifier': 'ai.2389.spaceport'}))
+        self.module.configure_bundle(app, self.config)
+        metadata = plistlib.loads(info.read_bytes())
+        self.assertEqual(metadata.get('SUSignedFeedFailureExpirationInterval'), 0)
+        self.module.validate_policy(app, self.config)
+        for invalid in (None, 1728000, -1, '0', False):
+            with self.subTest(interval=invalid):
+                if invalid is None:
+                    metadata.pop('SUSignedFeedFailureExpirationInterval', None)
+                else:
+                    metadata['SUSignedFeedFailureExpirationInterval'] = invalid
+                info.write_bytes(plistlib.dumps(metadata))
+                with self.assertRaisesRegex(ValueError, 'SUSignedFeedFailureExpirationInterval'):
+                    self.module.validate_policy(app, self.config)
+
     def test_development_bundle_cannot_be_configured(self):
         app = self.root / 'Spaceport.app'
         (app / 'Contents').mkdir(parents=True)

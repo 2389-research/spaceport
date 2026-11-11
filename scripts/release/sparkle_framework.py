@@ -32,7 +32,8 @@ SIGN_ORDER = (
     'XPCServices/Installer.xpc/Contents/MacOS/Installer', 'XPCServices/Installer.xpc',
     'Sparkle',
 )
-POLICY = dict(SURequireSignedFeed=True, SUVerifyUpdateBeforeExtraction=True,
+POLICY = dict(SURequireSignedFeed=True, SUSignedFeedFailureExpirationInterval=0,
+              SUVerifyUpdateBeforeExtraction=True,
               SUAutomaticallyUpdate=False)
 
 
@@ -200,7 +201,7 @@ def configure_bundle(app, config=CONFIG):
     if metadata.get('CFBundleIdentifier') != 'ai.2389.spaceport':
         raise ValueError('Sparkle preview bundle identity mismatch')
     metadata.update(policy)
-    # Absence lets Sparkle ask for native consent on first launch.
+    # Absence permits Sparkle's native consent prompt.
     metadata.pop('SUEnableAutomaticChecks', None)
     info.write_bytes(plistlib.dumps(metadata))
 

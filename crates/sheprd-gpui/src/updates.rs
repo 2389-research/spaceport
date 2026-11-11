@@ -40,3 +40,21 @@ pub(crate) fn check(cx: &gpui::App) -> Result<(), Error> {
     native::check(cx)?;
     Ok(())
 }
+
+// Menu construction must not persist a temporary in-flight check as a disabled item.
+pub(crate) fn menu_available(cx: &gpui::App) -> bool {
+    menu_enabled(available(cx))
+}
+
+fn menu_enabled(availability: Result<(), Error>) -> bool {
+    match availability {
+        Ok(()) => true,
+        #[cfg(all(target_os = "macos", feature = "macos-updater"))]
+        Err(Error::Busy) => true,
+        Err(_) => false,
+    }
+}
+
+#[cfg(test)]
+#[path = "updates/tests/menu.rs"]
+mod menu_tests;

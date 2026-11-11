@@ -83,7 +83,7 @@
       "sources": [
         "S09"
       ],
-      "issue": "D61 macOS preview identity ai.2389.spaceport, 2389 signing inputs and actual signed/notarized arm64 debug previews are validated. This does not establish general-production and other-platform package identities, release endpoints, final icon assets or installation isolation. D60 removes the inherited custom updater; replacement platform/package update routes and ownership policy remain unimplemented.",
+      "issue": "D61/D64 macOS preview identity ai.2389.spaceport, 2389 signing and tagged signed/notarized arm64 previews are validated. D65 selects Sparkle with Spaceport-owned keys and a signed preview feed; source checks, signed-feed rejection/selection and GUI/daemon lifecycle components pass. Native install/relaunch is blocked by a locked desktop, and the updated protected release/feed workflow still needs qualification. General-production and other-platform identities, package update routes and complete installation/native isolation remain open. D60 keeps the inherited custom updater removed.",
       "required_evidence": "Owner-controlled values plus A42–A44; publishing separately authorized.",
       "forbidden_workaround": "Inherit upstream signing identities/endpoints, claim domain ownership or ship development placeholders."
     },

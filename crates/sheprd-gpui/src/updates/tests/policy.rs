@@ -2,6 +2,9 @@
 // ABOUTME: Rejects source builds and each mismatched bundle setting.
 use super::*;
 
+#[path = "feed_expiry.rs"]
+mod feed_expiry;
+
 fn preview() -> Bundle<'static> {
     Bundle {
         id: "ai.2389.spaceport",
@@ -10,6 +13,7 @@ fn preview() -> Bundle<'static> {
         feed: "https://example.test/appcast.xml",
         key: "public-key",
         signed_feed: true,
+        signed_feed_failure_expiration: Some(0.0),
         verify_before_extraction: true,
         automatic_install: false,
         automatic_checks_configured: false,

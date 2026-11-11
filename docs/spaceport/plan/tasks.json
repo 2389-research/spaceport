@@ -796,7 +796,8 @@
         "evidence/t12-macos-preview-20261110.2-signed.md",
         "evidence/t12-tagged-macos-workflow.md",
         "evidence/t12-macos-preview-20261110.4-signed.md",
-        "evidence/t12-macos-preview-20261110.5-signed.md"
+        "evidence/t12-macos-preview-20261110.5-signed.md",
+        "evidence/t12-sparkle-preview.md"
       ],
       "must_close_gaps": [
         "G-RELEASE",
