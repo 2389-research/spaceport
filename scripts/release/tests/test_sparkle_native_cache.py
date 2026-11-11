@@ -161,13 +161,18 @@ class CacheProcessTests(CacheCase):
         record = self.claim()
         helper = self.root / 'bin/helper'
         helper.parent.mkdir()
-        # Preserve the interpreter's actual @executable_path/../lib dependency.
-        (self.root / 'lib').symlink_to(Path(sys.base_prefix) / 'lib', target_is_directory=True)
-        shutil.copyfile(sys.executable, helper)
-        helper.chmod(0o700)
-        child = subprocess.Popen([str(helper), '-c',
-                                  'import time; print("ready", flush=True); time.sleep(60)'], cwd='/',
-                                 env={'PYTHONHOME': sys.base_prefix, 'PATH': '/usr/bin:/bin'},
+        # Framework Python launchers can exec outside the copied path. Compile a
+        # self-contained helper so the actual executable stays in the fixture.
+        source = (
+            '#include <unistd.h>\nint main(void) {\n'
+            '  if (write(STDOUT_FILENO, "ready\\n", 6) != 6) return 1;\n'
+            '  for (;;) pause();\n}\n'
+        )
+        compiled = subprocess.run(['/usr/bin/clang', '-x', 'c', '-', '-o', str(helper)],
+                                  input=source, capture_output=True, text=True, timeout=30)
+        self.assertEqual(compiled.returncode, 0, compiled.stderr)
+        self.assertEqual(compiled.stderr, '', 'helper compilation must add no warnings')
+        child = subprocess.Popen([str(helper)], cwd='/', env={'PATH': '/usr/bin:/bin'},
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.addCleanup(child.stdout.close)
         self.addCleanup(child.stderr.close)
@@ -175,6 +180,9 @@ class CacheProcessTests(CacheCase):
             self.assertTrue(select.select([child.stdout], [], [], 5)[0], 'helper startup must be bounded')
             self.assertEqual(child.stdout.readline(), b'ready\n', 'helper must complete real startup')
             self.assertIsNone(child.poll(), 'helper must actually be running')
+            executable = subprocess.check_output(['/bin/ps', '-p', str(child.pid), '-o', 'comm='],
+                                                 text=True, timeout=5).strip()
+            self.assertEqual(Path(executable).resolve(), helper.resolve())
             with self.assertRaisesRegex(ValueError, 'active|process|helper'):
                 self.native.cleanup_cache_records([record], {self.home}, {self.domain}, self.root)
             self.assertIsNone(child.poll())
