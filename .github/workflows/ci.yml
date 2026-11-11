@@ -145,6 +145,16 @@ jobs:
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: bash scripts/install-linux-deps.sh
+      - name: Acquire the pinned macOS update framework
+        if: runner.os == 'macOS'
+        run: |
+          python3 scripts/release/sparkle_framework.py acquire target/sparkle-sdk
+          {
+            echo "SPARKLE_FRAMEWORK_PATH=$PWD/target/sparkle-sdk"
+            echo "DYLD_FRAMEWORK_PATH=$PWD/target/sparkle-sdk"
+            echo "SPARKLE_TEST_SDK=$PWD/target/sparkle-sdk"
+            echo "SPACEPORT_OPENSSL=$(brew --prefix openssl@3)/bin/openssl"
+          } >> "$GITHUB_ENV"
       # Lets the release script tests build real .deb, .rpm and Arch packages.
       - name: Install the pinned Linux package builder
         if: runner.os == 'Linux' && matrix.features == 'default'

@@ -87,6 +87,13 @@ jobs:
           persist-credentials: false
       - run: rustup show
       - run: cargo install cargo-about --version 0.9.2 --locked --features cli
+      - name: Acquire the pinned update framework without signing credentials
+        run: |
+          python3 scripts/release/sparkle_framework.py acquire target/sparkle-sdk
+          {
+            echo "SPARKLE_FRAMEWORK_PATH=$PWD/target/sparkle-sdk"
+            echo "DYLD_FRAMEWORK_PATH=$PWD/target/sparkle-sdk"
+          } >> "$GITHUB_ENV"
       - name: Build unsigned release-profile arm64 preview and smoke actual CLI
         # build-macos.sh runs smoke-cli.py on the exact binary before packaging.
         run: bash scripts/release/build-macos.sh "$VERSION" release arm64 unsigned
@@ -142,6 +149,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/release/preview-history.py
+      - name: Acquire the pinned SDK and changelog tool before using credentials
+        run: |
+          python3 scripts/release/sparkle_framework.py acquire target/sparkle-sdk
+          {
+            echo "SPARKLE_FRAMEWORK_PATH=$PWD/target/sparkle-sdk"
+            echo "SPACEPORT_OPENSSL=$(brew --prefix openssl@3)/bin/openssl"
+          } >> "$GITHUB_ENV"
+          cargo install git-cliff --locked --version 2.12.0
+      - name: Generate preview notes from published release history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p target/preview-notes
+          base=$(python3 scripts/release/preview-notes-base.py)
+          bash scripts/release/generate-changelog.sh --macos-preview "$VERSION" target/preview-notes "$base"
+          printf '\nWorkflow: https://github.com/harperreed/spaceport/actions/runs/%s\n' "$GITHUB_RUN_ID" >> target/preview-notes/RELEASE_NOTES.md
+          cp target/preview-notes/RELEASE_NOTES.md target/preview-signed/
       - name: Sign and notarize with the protected Developer ID identity
         env:
           MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
@@ -153,6 +177,14 @@ jobs:
         run: bash scripts/release/sign-macos.sh "$VERSION" target/preview-input/Spaceport.app target/preview-signed arm64 import
       - name: Verify the final mounted image and write its checksum
         run: bash scripts/release/verify-macos-preview.sh "$VERSION" release target/preview-signed
+      - name: Sign the final update archive and appcast with the protected preview key
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          python3 scripts/release/sparkle-feed.py create "$VERSION" \
+            "target/preview-signed/Spaceport-$VERSION-arm64-apple-darwin.dmg" \
+            target/preview-signed/RELEASE_NOTES.md target/preview-signed/appcast.xml \
+            --tool target/sparkle-sdk/bin/sign_update
       - name: Retain completed preview and submission diagnostics
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -188,17 +220,6 @@ jobs:
         with:
           name: macos-preview-signed-${{ github.run_id }}
           path: target/preview-result
-      - name: Install the pinned changelog generator
-        run: cargo install git-cliff --locked --version 2.12.0
-      - name: Generate preview notes from published release history
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          mkdir -p target/preview-notes
-          base=$(python3 scripts/release/preview-notes-base.py)
-          bash scripts/release/generate-changelog.sh --macos-preview "$VERSION" target/preview-notes "$base"
-          printf '\nWorkflow: https://github.com/harperreed/spaceport/actions/runs/%s\n' "$GITHUB_RUN_ID" >> target/preview-notes/RELEASE_NOTES.md
       - name: Refuse moved or unmerged tags before publishing
         run: python3 scripts/release/preview-request.py
       - name: Publish the verified DMG and checksum as a macOS prerelease
@@ -206,10 +227,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          notes="$PWD/target/preview-notes/RELEASE_NOTES.md"
+          notes="$PWD/target/preview-result/preview-signed/RELEASE_NOTES.md"
           cd target/preview-result/preview-signed
           file="Spaceport-$VERSION-arm64-apple-darwin.dmg"
           test -f "$file"
           test "$(cat SHA256SUMS)" = "$(shasum -a 256 "$file")"
           shasum -a 256 -c SHA256SUMS
+          python3 "$GITHUB_WORKSPACE/scripts/release/sparkle-feed.py" verify appcast.xml --archive "$file"
           gh release create "$TAG" "$file" SHA256SUMS --repo harperreed/spaceport --verify-tag --prerelease --title "Spaceport $VERSION (macOS preview)" --notes-file "$notes"
+      - name: Publish signed feed after verifying the immutable public archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release/publish-sparkle-feed.py target/preview-result/preview-signed/appcast.xml "$EXPECTED_SHA"

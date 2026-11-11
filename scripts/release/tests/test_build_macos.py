@@ -6,9 +6,12 @@ import subprocess
 import tempfile
 import unittest
 
+from sparkle_fixture import sdk_fixture
+
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 SECRETS = (
+    "SPARKLE_PRIVATE_KEY",
     "MACOS_CERTIFICATE_P12_BASE64", "MACOS_CERTIFICATE_PASSWORD",
     "MACOS_SIGNING_IDENTITY", "APPLE_API_PRIVATE_KEY",
     "APPLE_API_KEY_ID", "APPLE_API_ISSUER_ID", "APPLE_API_KEY_PATH",
@@ -24,6 +27,7 @@ class BuildMacosTests(unittest.TestCase):
         scripts.mkdir(parents=True)
         for name in ("build-macos.sh", "common.sh"):
             shutil.copyfile(SCRIPTS / name, scripts / name)
+        sdk_fixture(scripts, self.root / "sdk")
         (scripts / "package-macos.sh").write_text(
             'set -eu\n[[ ! -e sourced && $# == 6 && -s $5 ]]\n'
             'printf "package\\n" >> calls\nmkdir "$4/Spaceport.app"\n'
@@ -40,6 +44,7 @@ class BuildMacosTests(unittest.TestCase):
         tools.mkdir()
         for name, body in {
             "uname": 'if [[ $1 == -m ]]; then printf "arm64\\n"; else printf "Darwin\\n"; fi',
+            "lipo": 'printf "arm64 x86_64\\n"',
             "cargo": '\n'.join([
                 'set -eu',
                 *(f'[[ ${{{name}+present}} != present ]]' for name in SECRETS),
@@ -56,6 +61,7 @@ class BuildMacosTests(unittest.TestCase):
             tool.chmod(0o755)
         self.env = {"PATH": str(tools) + os.pathsep + os.environ["PATH"],
                     "HOME": str(self.root),
+                    "SPARKLE_FRAMEWORK_PATH": str(self.root / "sdk"),
                     **dict.fromkeys(SECRETS, "dummy")}
 
     def config(self):
@@ -114,8 +120,8 @@ class BuildMacosTests(unittest.TestCase):
         calls = (self.root / "calls").read_text().splitlines()
         # Each target's Rust build precedes packaging.
         self.assertEqual(calls[-4:], [
-            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp",
-            "build --locked --release --target-dir target -p sheprd-gpui -p sheprd-acp --target x86_64-apple-darwin",
+            "build --locked --features sheprd-gpui/macos-updater --release --target-dir target -p sheprd-gpui -p sheprd-acp",
+            "build --locked --features sheprd-gpui/macos-updater --release --target-dir target -p sheprd-gpui -p sheprd-acp --target x86_64-apple-darwin",
             "package", "sign",
         ])
         self.assertIn("Output already exists", self.run_build())
