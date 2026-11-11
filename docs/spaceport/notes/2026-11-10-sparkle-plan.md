@@ -187,3 +187,10 @@ platform/native gates; do not describe unrun checks as passed.
   `abcea3df980c7756bef33d882ac9ae1123975838`. Preview workflow `43082879618`
   passed validation/CI and is building. Version `20261111.2` is now reserved;
   never rerun it. Public artifact/feed and actual baseline update remain pending.
+- Preview `43082879618` timed out: the app was Accepted and stapled, then the
+  DMG upload command hung from 19:15 until the 20:14 job cancellation. The upload
+  has no separate deadline; its retained stdout/stderr are empty and no DMG UUID
+  exists. Preserve the reserved version and inspect the
+  [failure record](../evidence/t12-sparkle-preview-20261111.2.md). A bounded upload
+  and explicit progress correction is under TDD in `.worktrees/notary-upload`;
+  a fresh version must qualify that change. No public release/feed exists yet.
