@@ -9,13 +9,19 @@ from pathlib import Path
 
 
 MIRRORS = {
-    "amd64": "https://mirrors.edge.kernel.org/ubuntu/",
-    "arm64": "https://mirrors.mit.edu/ubuntu-ports/",
+    "amd64": {
+        "primary": "https://archive.ubuntu.com/ubuntu/",
+        "fallback": "https://mirrors.mit.edu/ubuntu/",
+    },
+    "arm64": {
+        "primary": "https://ports.ubuntu.com/ubuntu-ports/",
+        "fallback": "https://mirrors.mit.edu/ubuntu-ports/",
+    },
 }
 KEYRING = "/usr/share/keyrings/ubuntu-archive-keyring.gpg"
 
 
-def rewrite(source: str, architecture: str) -> str:
+def rewrite(source: str, architecture: str, mirror: str) -> str:
     if architecture not in MIRRORS:
         raise ValueError(f"unsupported runner architecture: {architecture}")
     origins = {"mirror+file:/etc/apt/apt-mirrors.txt"}
@@ -73,7 +79,7 @@ def rewrite(source: str, architecture: str) -> str:
         fields[field] = value.strip()
         previous = field
         if field == "URIs":
-            lines[index] = f"URIs: {MIRRORS[architecture]}{ending or ''}"
+            lines[index] = f"URIs: {MIRRORS[architecture][mirror]}{ending or ''}"
     validate()
     count += bool(fields)
     if count == 0:
@@ -84,11 +90,13 @@ def rewrite(source: str, architecture: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__ or "Rewrite Ubuntu CI mirror URIs; never edit the source file.")
     parser.add_argument("--architecture", required=True, help="runner's dpkg architecture (amd64 or arm64)")
+    parser.add_argument("--mirror", choices=("primary", "fallback"), required=True,
+                        help="Canonical primary or independent MIT fallback")
     parser.add_argument("source", type=Path, help="runner's Ubuntu Deb822 .sources file")
     args = parser.parse_args()
     try:
         with args.source.open(newline="") as source:
-            result = rewrite(source.read(), args.architecture)
+            result = rewrite(source.read(), args.architecture, args.mirror)
     except (OSError, UnicodeError, ValueError) as error:
         print(f"Ubuntu CI sources: {error}", file=sys.stderr)
         return 1
