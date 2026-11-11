@@ -74,7 +74,7 @@ class NativeFixtureTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 native.assess('altered-zip', [{'event': 'sparkle://did-abort-with-error', 'payload': {}}], unchanged, launches, False, 1)
 
-    def test_invalid_archive_cannot_complete_extraction(self):
+    def test_extract_callback_requires_specific_abort_evidence(self):
         native = load()
         with self.assertRaises(ValueError):
             native.assess('wrong-archive-key', [{'event': 'sparkle://did-extract-update', 'payload': {}}, {'event': 'sparkle://did-abort-with-error', 'payload': {}}], True, 1, False, 1)
