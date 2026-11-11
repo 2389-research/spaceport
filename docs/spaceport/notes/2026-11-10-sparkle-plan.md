@@ -201,3 +201,16 @@ platform/native gates; do not describe unrun checks as passed.
   green branch checks, merge, pass exact-main full CI, recheck a fresh version
   (candidate `20261111.3`), build/publish and verify public bytes/feed before the
   actual baseline update. Never reuse `.2`. No public release/feed exists yet.
+- Doctor Biz requested tagging while GitHub checks remained queued with zero
+  jobs. Ordinary cancel, force-cancel and rerun returned inconsistent completed/
+  running responses; reopening PR #5 produced fresh queued CI `43097510357`.
+  The reviewed/local-tested fix merged as `fa5cfcab57049a5b5e3bf577bf8b44755e1a1335`.
+  To start the unsigned build alongside main CI, the tag-before-CI ordering was
+  explicitly changed; the workflow's mandatory exact-main CI gate still blocks
+  signing/publication. Main CI is `43097955032`.
+- Complete preview history and tag absence were checked. Annotated
+  `v20261111.3` was pushed at `fa5cfcab5`; tag object
+  `00a0f4fda209334486ebe9d7be4419ea595057a5`. Preview `43098075293` is queued.
+  `20261111.3` is now reserved: never rerun it. Generated changelog was reviewed
+  with pinned git-cliff 2.12.0. Public artifact/feed and actual baseline update
+  remain pending; no successful CI or distribution is claimed for this source.
