@@ -103,9 +103,22 @@ ignored `target/sparkle-native/aged-wrong-feed-key-wor2xu1g` (red) and
 [upstream recovery behavior](https://github.com/sparkle-project/Sparkle/blob/2.10.1/Sparkle/SUAppcastDriver.m)
 and its explicit zero-interval refusal path without changing the system clock.
 
-No install/relaunch result has passed: the Mac reports its screen locked, and
-computer-use returned `cgWindowNotFound`. Doctor Biz cannot unlock it now.
-No update buttons were pressed and no personal app was installed or replaced.
+On November 11, Doctor Biz unlocked the desktop. Genuine native Install Update
+and Install and Relaunch buttons downloaded and replaced a signed ZIP fixture
+with version 2. LaunchServices started the new executable, but overwrote HOME;
+the fixture's isolation guard refused startup before its launch marker. The
+case correctly failed and retained its evidence. A fixture-only bounded
+same-PID exec now restores the validated private environment. Five real signed
+startup tests pass, including LaunchServices, same-PID execution, the one-exec
+bound, directory permissions and symlink escape refusal. Thirty-five existing
+driver tests and strict example Clippy also pass. Independent source review
+found no Important issue.
+
+The desktop relocked before a corrected ZIP install could run. That case also
+failed its deadline and cleaned up normally. No complete update/relaunch case
+has passed yet, and no personal app was installed or replaced. See the
+[local baseline record](t12-sparkle-preview-20261111.1-local-test.md) for the
+actual native screenshots, exact build source and remaining gates.
 
 macOS Foundation ignores the fixture's `TMPDIR` for its protected per-user temp
 root. The fixture pins that exact root, owner and permissions; its own files
