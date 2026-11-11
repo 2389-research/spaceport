@@ -166,11 +166,17 @@ notarize() {
     printf '%s\n' "$(basename -- "$1")" > "$receipt/artifact-name.txt"
     # A lost response cannot establish that Apple did not accept the upload.
     # Keep the intent and output even on cancellation; never submit it again.
-    xcrun notarytool submit "$1" --key "$notary_key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" --output-format json > "$receipt/submission.json" 2> "$receipt/submit.stderr" || true
+    printf '%s upload starting (deadline 300s)\n' "$2" >&2
+    # Use Apple's standard S3 endpoint rather than transfer acceleration.
+    python3 "$release_root/scripts/release/notary-upload.py" "$receipt" -- \
+        xcrun notarytool submit "$1" --key "$notary_key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" --output-format json --no-s3-acceleration \
+        || fail "Notarization submit outcome unknown; do not resubmit. Receipt: $receipt"
     uuid=$(jq -er -s 'if length == 1 then .[0].id else empty end | select(type == "string" and test("^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$"))' "$receipt/submission.json") || fail "Notarization submit outcome unknown; do not resubmit. Receipt: $receipt"
     printf '%s\n' "$uuid" > "$receipt/submission-id.txt"
+    printf '%s submission %s; waiting for processing\n' "$2" "$uuid" >&2
     xcrun notarytool wait "$uuid" --key "$notary_key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" --timeout 20m --output-format json > "$receipt/status.json" 2> "$receipt/wait.stderr" || true
     status=$(jq -er -s 'if length == 1 then .[0].status else empty end | select(type == "string")' "$receipt/status.json") || fail "Notarization status unknown; retained UUID and receipt: $receipt"
+    printf '%s processing %s\n' "$2" "$status" >&2
     if [[ $status != Accepted ]]; then
         if [[ $status == Invalid || $status == Rejected ]]; then
             xcrun notarytool log "$uuid" --key "$notary_key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" "$receipt/notary-log.json" > "$receipt/log.stdout" 2> "$receipt/log.stderr" || true
@@ -185,12 +191,15 @@ signed_id=$(printf '%s\n' "$signature" | sed -n 's/^Identifier=//p')
 [[ $signed_team == "$team" && $signed_id == "$app_id" ]] || fail 'Signed app Team or identifier mismatch'
 ditto -c -k --keepParent "$app" "$tmp/Spaceport.zip"
 notarize "$tmp/Spaceport.zip" app
+printf 'app stapling\n' >&2
 apple stapler staple "$app"
 apple stapler validate "$app"
 codesign --verify --deep --strict --verbose=2 "$app"
 spctl --assess --type execute --verbose=2 "$app"
 ln -s /Applications "$tmp/image/Applications"
+printf 'DMG creation\n' >&2
 hdiutil create -volname Spaceport -srcfolder "$tmp/image" -format UDZO -ov "$tmp/Spaceport.dmg"
+printf 'DMG signing\n' >&2
 codesign "${sign_options[@]}" --timestamp "$tmp/Spaceport.dmg"
 notarize "$tmp/Spaceport.dmg" dmg
 apple stapler staple "$tmp/Spaceport.dmg"
