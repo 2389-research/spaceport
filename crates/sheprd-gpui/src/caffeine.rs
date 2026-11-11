@@ -362,17 +362,21 @@ fn run<G>(requests: &Receiver<Request>, mut start: impl FnMut(AwakeScope) -> kee
 }
 
 fn hold(scope: AwakeScope) -> keepawake::Result<keepawake::KeepAwake> {
+    let target = match scope {
+        AwakeScope::Display => "display",
+        AwakeScope::System => "system",
+    };
     // Idle, not `sleep`: that one needs AC power and does nothing under
     // Windows Modern Standby, and the lid closing should still sleep. The
     // display is held too unless the scope lets it sleep and lock.
     keepawake::Builder::default()
         .display(scope == AwakeScope::Display)
         .idle(true)
-        .reason(match scope {
-            AwakeScope::Display => "Sheprd keeps the display awake",
-            AwakeScope::System => "Sheprd keeps the system awake",
-        })
-        .app_name("Sheprd")
+        .reason(format!(
+            "{} keeps the {target} awake",
+            crate::constants::WINDOW_TITLE
+        ))
+        .app_name(crate::constants::WINDOW_TITLE)
         .app_reverse_domain(crate::constants::LINUX_APP_ID)
         .create()
 }

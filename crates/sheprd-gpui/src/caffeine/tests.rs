@@ -9,6 +9,8 @@ use std::{
 
 mod changes;
 mod hidden_cup;
+#[cfg(target_os = "macos")]
+mod power_assertions;
 mod right_click;
 mod scope;
 mod toggle;

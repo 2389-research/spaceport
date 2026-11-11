@@ -1,5 +1,7 @@
 # Gotchas
 
+- 2026-11-11: Keep-awake identity is OS metadata as well as UI copy. Pinned keepawake uses the reason on macOS/Linux and the app name on Linux; derive both from Spaceport's product-name constant. State tests with stand-in guards do not prove that metadata. The opt-in macOS power-assertion test checks only its own PID; RAII releases its real guards even when a check fails.
+
 - 2026-11-11: GitHub's Ubuntu mirror list falls back between Canonical domains, so a Canonical DNS outage can block every Linux job; one independent mirror can also become unreachable. CI uses temporary Ubuntu Deb822 sources with Canonical primary and independent MIT fallback while preserving suites, components and the Ubuntu archive keyring. Plain apt-get update can succeed after failed index downloads: require --error-on=any before installation. Bound metadata attempts to two and install once only after success. Keep developer sources untouched and reject unknown formats; never disable APT signature verification to restore a build.
 
 - 2026-11-10: Preview changelogs start at a published ancestor, not the last Git tag: a failed tag reserves its version without publishing its changes. Before the first release, use the actual fork source in `t00-dependencies.json`, not an earlier candidate source from the plan. Render the explicit range with the shared pinned git-cliff. A same-commit rebuild has empty history; filtered build-only history still renders a version heading under `render_always`.
