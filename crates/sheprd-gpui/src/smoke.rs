@@ -17,6 +17,35 @@ use std::{
 
 pub static EXIT_CODE: AtomicU8 = AtomicU8::new(0);
 
+#[cfg(test)]
+#[path = "smoke/tests/handoff.rs"]
+mod handoff_tests;
+
+fn handoff_diagnostic(live: &LiveState, workspace: &str, tab: &str) -> String {
+    let snapshot = live.snapshot.as_deref();
+    let surface = live.surface.as_deref();
+    let focused_workspace = snapshot.and_then(|s| s.focused_workspace_id.as_deref());
+    let focused_tab = snapshot.and_then(|s| s.focused_tab_id.as_deref());
+    let label = |id: &str| sheprd_client::text::safe_text(id, 40);
+    format!(
+        "workspace_match={} tab_match={} shell_ready={} panes={:?} cursor={:?} focused_workspace={} focused_tab={} expected_workspace={} expected_tab={}",
+        focused_workspace == Some(workspace),
+        focused_tab == Some(tab),
+        surface.is_some_and(|s| shell_ready(&s.frame)),
+        surface.map(|s| s.panes.len()),
+        surface.and_then(|s| s.frame.cursor.as_ref()),
+        label(focused_workspace.unwrap_or("none")),
+        label(focused_tab.unwrap_or("none")),
+        label(workspace),
+        label(tab),
+    )
+}
+
+fn timeout_diagnostic(diagnostic: &str, screen: &str) -> String {
+    // Keep the decisive state in the harness's bounded tail even for a full screen.
+    format!("screen:\n{screen}\ntimeout: {diagnostic}")
+}
+
 #[cfg(target_os = "macos")]
 #[path = "smoke_selection.rs"]
 mod selection;
@@ -308,9 +337,10 @@ pub fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                     let view = view.read(cx);
                     (view.live.clone(), view.local_error.clone(), view.options, view.last_queued_options, view.bounds)
                 };
+                let handoff = handoff_diagnostic(&live, &workspace, &first_tab);
                 let diagnostic = || format!(
-                    "step={step} ({}) elapsed={:?} frames={frames} focus={focused} actions_ready={actions_ready} fenced={fenced} ready={ready} active={} probe={probe:?} status={:.160} local_error={:.240} live.error={:.240} connected={} snapshot={:?} surface={:?} size={:?} last_queued_options={last_queued_options:?} navigations={navigations:?}",
-                    STEPS[step], since.elapsed(), active, live.status,
+                    "step={step} ({}) elapsed={:?} {} frames={frames} focus={focused} actions_ready={actions_ready} fenced={fenced} ready={ready} active={} probe={probe:?} status={:.160} local_error={:.240} live.error={:.240} connected={} snapshot={:?} surface={:?} size={:?} last_queued_options={last_queued_options:?} navigations={navigations:?}",
+                    STEPS[step], since.elapsed(), handoff, active, live.status,
                     local_error.as_deref().unwrap_or("none"), live.error.as_deref().unwrap_or("none"), live.status.is_connected(),
                     live.snapshot.as_ref().map(|s| (s.revision, s.workspaces.len(), s.tabs.len())),
                     live.surface.as_ref().map(|s| (s.projection_revision, s.panes.len(), s.frame.width, s.frame.height)), options.surface_size
@@ -322,7 +352,7 @@ pub fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                     // What the pane showed, so a CI timeout says what the
                     // terminal did with the input.
                     let screen = live.surface.as_ref().map(|s| screen_text(&s.frame)).unwrap_or_default();
-                    bail!("timeout: {}; screen:\n{screen}", diagnostic());
+                    bail!(timeout_diagnostic(&diagnostic(), &screen));
                 }
                 if !focused || !actions_ready || fenced || !ready { return Ok(false); }
                 let (Some(snapshot), Some(surface)) = (&live.snapshot, &live.surface) else { return Ok(false) };

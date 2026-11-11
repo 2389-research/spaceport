@@ -108,8 +108,59 @@ platform/native gates; do not describe unrun checks as passed.
   A real aged-state red/green case confirms refusal after a 21-day failure record.
 - Final review is clear for source commit/push and draft PR. Full platform CI
   remains the next step; no public tag until the remaining native checks pass.
-- Draft PR #1 is open. CI run `42959221177` caught SDK deletion by Rust-cache
+- PR #1's first CI run `42959221177` caught SDK deletion by Rust-cache
   and stale application-menu assertions. The SDK now lives under `RUNNER_TEMP`;
   its path regression and 13 real feed/signature tests pass locally. Updated
   menu tests cover About, Check for Updates, and the following separator.
-  A fresh full CI run must verify these fixes across platforms.
+  Full PR CI `42960999794` subsequently passed at `93416b82d`.
+- Doctor Biz requested main integration and a baseline on November 11. PR #1
+  merged as `4a2604b4efc9cb5c1abca91b6d7a1392e55ab28b`. Manual preview
+  `20261111.1` compiled and passed CLI smoke; main CI's Ubuntu mirror DNS
+  failures stopped the workflow before signing or notarization. Its version
+  remains reserved. A full same-source CI retry is running as `43053306222`.
+- A Developer ID signed local test copy from those verified CI bytes passes
+  strict nested signature, preview identity and bundled CLI checks. It has no
+  notarization or public feed/release. Details and artifact checksums live in
+  [its qualification record](../evidence/t12-sparkle-preview-20261111.1-local-test.md).
+- Native ZIP UI reached actual version-2 installation and LaunchServices
+  relaunch, exposing the fixture HOME override. The reviewed fixture-only fix
+  passes five real startup regressions and 35 driver tests. Whole ZIP/DMG
+  install/relaunch still needs completion after the desktop relocked. Keep
+  public delivery and T12/A43 gates open; next signed workflow needs a fresh
+  version after exact-main CI recovers.
+
+## Current handoff — November 11
+
+- Doctor Biz installed the local signed baseline and confirmed About shows
+  `20261111.1` on the testing Mac. That hosted version is reserved; never retry
+  or tag it. The local copy is unnotarized.
+- PR #3 combines the fixture HOME fix, temporary Ubuntu CI mirror selection,
+  native failure diagnostics and corrected Sparkle callback/cache checks.
+  Run `43066971913` passed all substantive jobs except the x64 Windows native
+  return-to-tab timeout. New diagnostics preserve focus and shell state;
+  the cause remains unresolved and full CI stays required.
+- Native ZIP and DMG install/relaunch passed with the corrected frozen host.
+  Their earlier driver did not preclaim cache namespaces. Repeat them with the
+  cache-safe driver, then finish archive-key/tamper, identity and inner-version
+  cases. Native signature rejection was observed; a false did-extract stage
+  assertion is corrected from pinned source. Keep the historical failed result.
+- Final driver suite: 54 tests ran, 53 passed, one ownership-change case skipped
+  for lack of privileges. Cleanup uses exact preclaimed namespaces, executable
+  paths and scoped open-file checks. Old unclaimed caches stay untouched.
+- A fresh ZIP offer found v2, but macOS again reported a locked screen. Native
+  button checks await an unlocked desktop.
+- Eight fresh cache-safe negative cases passed; see the
+  [native evidence](../evidence/t12-sparkle-native-20261111.md). Fresh ZIP/DMG
+  positives and same-name identity rotation still need native buttons. A newer
+  ZIP saw two launch requests during replacement; retain its failed result and
+  remove app-targeted observation from the next final-click handoff.
+- Follow-up CI `43072871856` passed the Windows x64 native GUI step but failed
+  warm-scroll performance (175.067ms against 100ms). The measured rendering path
+  and budget did not change; the failure remains unresolved. It also caught
+  the unreachable single Ubuntu mirror and copied framework-Python helper test
+  assumption. Both corrections are reviewed with actual APT and native helper
+  evidence; a new combined CI run is required, with no waived gates.
+- Next: finish fresh native cases; obtain green combined and exact-main CI;
+  reserve a fresh immutable version; publish/verify the protected signed and
+  notarized preview and feed; test the update from Doctor Biz's baseline.
+  No public Sparkle-enabled release or feed exists yet. T12 stays open.

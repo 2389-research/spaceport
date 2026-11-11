@@ -13,7 +13,7 @@ mod native {
     use std::{
         fs::{self, OpenOptions},
         io::Write,
-        os::unix::fs::MetadataExt as _,
+        os::unix::{fs::MetadataExt as _, process::CommandExt as _},
         path::{Path, PathBuf},
         rc::Rc,
         sync::mpsc::{SyncSender, sync_channel},
@@ -52,7 +52,7 @@ mod native {
         Ok(candidate)
     }
 
-    fn isolation(bundle: &NSBundle) -> Result<PathBuf> {
+    fn fixture_root(bundle: &NSBundle) -> Result<PathBuf> {
         let id = string(bundle, "CFBundleIdentifier");
         if !id.starts_with("ai.2389.spaceport.fixture.")
             || id != string(bundle, "SpaceportFixtureID")
@@ -60,7 +60,59 @@ mod native {
             bail!("only explicit fixture bundles may run this example");
         }
         let root = PathBuf::from(string(bundle, "SpaceportFixtureRoot")).canonicalize()?;
-        let home = within(&root, root.join("home"))?;
+        let metadata = fs::metadata(&root)?;
+        if metadata.mode() & 0o777 != 0o700
+            || string(bundle, "SpaceportFixtureOwner") != metadata.uid().to_string()
+        {
+            bail!("signed fixture root must have its private owner/mode");
+        }
+        within(&root, bundle.bundlePath().to_string())?;
+        within(&root, std::env::current_exe()?)?;
+        Ok(root)
+    }
+
+    fn restore_environment(root: &Path) -> Result<()> {
+        let mut command = sheprd_client::new_command(std::env::current_exe()?);
+        command.env_clear();
+        command.env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin");
+        command.env("LANG", "en_US.UTF-8");
+        let owner = fs::metadata(root)?.uid();
+        for (key, name) in [
+            ("HOME", "home"),
+            ("CFFIXED_USER_HOME", "home"),
+            ("TMPDIR", "tmp"),
+            ("XDG_CONFIG_HOME", "config"),
+            ("XDG_DATA_HOME", "data"),
+            ("XDG_STATE_HOME", "state"),
+            ("XDG_CACHE_HOME", "cache"),
+            ("XDG_RUNTIME_DIR", "runtime"),
+        ] {
+            let directory = within(root, root.join(name))?;
+            let metadata = fs::metadata(&directory)?;
+            if !metadata.is_dir() || metadata.uid() != owner || metadata.mode() & 0o777 != 0o700 {
+                bail!("{key} must have the signed fixture's private owner/mode");
+            }
+            command.env(key, directory);
+        }
+        if command
+            .get_envs()
+            .all(|(key, value)| std::env::var_os(key).as_deref() == value)
+        {
+            return Ok(());
+        }
+        const REEXEC: &str = "SPACEPORT_FIXTURE_REEXEC";
+        if std::env::var_os(REEXEC).is_some() {
+            bail!("fixture environment did not survive its single re-exec");
+        }
+        // LaunchServices replaces HOME even when the signed LSEnvironment sets it.
+        // exec preserves Sparkle's relaunched PID and resets Foundation's cached paths.
+        command.env(REEXEC, "1");
+        command.args(std::env::args_os().skip(1));
+        Err(command.exec()).context("restoring the signed fixture environment")
+    }
+
+    fn isolation(bundle: &NSBundle, root: &Path) -> Result<()> {
+        let home = within(root, root.join("home"))?;
         if PathBuf::from(NSHomeDirectory().to_string()).canonicalize()? != home {
             bail!("Foundation HOME does not match signed fixture HOME");
         }
@@ -73,7 +125,7 @@ mod native {
         let pinned_temp =
             PathBuf::from(string(bundle, "SpaceportFixtureNativeTemp")).canonicalize()?;
         let metadata = fs::metadata(&native_temp)?;
-        let owner = fs::metadata(&root)?.uid();
+        let owner = fs::metadata(root)?.uid();
         // Foundation uses Darwin's protected per-user scratch even with a private TMPDIR.
         // Pin that exact native root; never scan or clean its other contents.
         if (native_temp != pinned_temp && native_temp != root.join("tmp").canonicalize()?)
@@ -83,7 +135,7 @@ mod native {
         {
             bail!("Foundation temp does not match the pinned private owner/path");
         }
-        within(&root, std::env::var("TMPDIR")?)?;
+        within(root, std::env::var("TMPDIR")?)?;
         for directory in [
             NSSearchPathDirectory::CachesDirectory,
             NSSearchPathDirectory::LibraryDirectory,
@@ -97,7 +149,7 @@ mod native {
                 bail!("Foundation returned no fixture directory");
             }
             for path in paths.iter() {
-                within(&root, path.to_string())?;
+                within(root, path.to_string())?;
             }
         }
         for key in [
@@ -107,11 +159,11 @@ mod native {
             "XDG_CACHE_HOME",
             "XDG_RUNTIME_DIR",
         ] {
-            within(&root, std::env::var(key)?)?;
+            within(root, std::env::var(key)?)?;
         }
-        within(&root, bundle.bundlePath().to_string())?;
-        within(&root, std::env::current_exe()?)?;
-        Ok(root)
+        within(root, bundle.bundlePath().to_string())?;
+        within(root, std::env::current_exe()?)?;
+        Ok(())
     }
 
     fn seed_feed_failure(bundle: &NSBundle, first_launch: bool) -> Result<bool> {
@@ -250,7 +302,19 @@ mod native {
     pub(super) fn run() -> Result<()> {
         let bundle = NSBundle::mainBundle();
         // Before the UI loop, synchronous filesystem checks cannot stall UI callbacks.
-        let root = isolation(&bundle)?;
+        let root = fixture_root(&bundle)?;
+        restore_environment(&root)?;
+        isolation(&bundle, &root)?;
+        if std::env::args_os()
+            .skip(1)
+            .any(|argument| argument == "--check-isolation")
+        {
+            println!(
+                "{}",
+                json!({"status": "isolated", "home": NSHomeDirectory().to_string(), "pid": std::process::id()})
+            );
+            return Ok(());
+        }
         let first_launch = fs::read_dir(root.join("launches"))?.next().is_none();
         let aged_feed_failure_seeded = seed_feed_failure(&bundle, first_launch)?;
         let marker = json!({

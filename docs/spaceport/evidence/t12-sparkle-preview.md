@@ -103,9 +103,50 @@ ignored `target/sparkle-native/aged-wrong-feed-key-wor2xu1g` (red) and
 [upstream recovery behavior](https://github.com/sparkle-project/Sparkle/blob/2.10.1/Sparkle/SUAppcastDriver.m)
 and its explicit zero-interval refusal path without changing the system clock.
 
-No install/relaunch result has passed: the Mac reports its screen locked, and
-computer-use returned `cgWindowNotFound`. Doctor Biz cannot unlock it now.
-No update buttons were pressed and no personal app was installed or replaced.
+On November 11, Doctor Biz unlocked the desktop. Genuine native Install Update
+and Install and Relaunch buttons downloaded and replaced a signed ZIP fixture
+with version 2. LaunchServices started the new executable, but overwrote HOME;
+the fixture's isolation guard refused startup before its launch marker. The
+case correctly failed and retained its evidence. A fixture-only bounded
+same-PID exec now restores the validated private environment. Five real signed
+startup tests pass, including LaunchServices, same-PID execution, the one-exec
+bound, directory permissions and symlink escape refusal. Thirty-five existing
+driver tests and strict example Clippy also pass. Independent source review
+found no Important issue.
+
+The desktop relocked before a corrected ZIP install could run. That case failed
+its deadline and cleaned up normally. Later genuine native ZIP and DMG installs
+both replaced v1 with v2 and relaunched the new executable at the expected path
+and bundle ID. Evidence roots are `valid-zip-hc7bv5ja` and `valid-dmg-aqdmz042`
+under ignored `target/sparkle-native/`. Each downloaded one archive, passed strict
+code-signature verification and exited through its private quit sentinel.
+Those runs did not preclaim account cache directories, so their successful
+install/relaunch results do not qualify the subsequent cache-cleanup guard.
+No personal app was installed or replaced by these fixtures. See the
+[local baseline record](t12-sparkle-preview-20261111.1-local-test.md) for the
+actual native screenshots, exact build source and remaining gates.
+
+A wrong-archive-key ZIP displayed the native signature error and preserved the
+original app/process. Its historical result remains failed because the assessor
+mistook `did-extract-update` for completed extraction. Pinned
+[SPUInstallerDriver](https://github.com/sparkle-project/Sparkle/blob/2.10.1/Sparkle/SPUInstallerDriver.m#L475-L486)
+completes launcher setup before installer messages; the
+[core driver](https://github.com/sparkle-project/Sparkle/blob/2.10.1/Sparkle/SPUCoreBasedUpdateDriver.m#L235-L250)
+reports that as did-extract. The corrected assessor requires the exact native
+pre-unarchive 4005 → [4005,3002] signature cause, ordered download evidence,
+unchanged app, live original host and no genuine install/relaunch progress.
+Generic network/setup failures cannot pass. The subsequent fresh wrong-key run
+passed; see the [November 11 native record](t12-sparkle-native-20261111.md).
+
+Sparkle helpers independently resolve `NSCachesDirectory`, which can select the
+account cache despite the host's private HOME. The driver now claims absent
+exact random bundle-ID cache directories in both homes before launch, recording
+owner/device/inode. Cleanup requires unchanged ownership, no matching helper
+executable, no scoped open files and fd-safe deletion. Uncertainty retains the
+cache and fails the case. Older unclaimed caches remain untouched. Fifty-three
+driver tests pass; one actual ownership-change test needs privileges and skips.
+Eight fresh native negative cases now qualify this path; fresh positive ZIP/DMG
+and same-name identity-rotation observations remain pending in that record.
 
 macOS Foundation ignores the fixture's `TMPDIR` for its protected per-user temp
 root. The fixture pins that exact root, owner and permissions; its own files

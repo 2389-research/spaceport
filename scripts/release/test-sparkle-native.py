@@ -14,6 +14,7 @@ import re
 import pwd
 import shutil
 import socket
+import stat
 import subprocess
 import sys
 import tempfile
@@ -159,6 +160,171 @@ def cleanup_preferences(root, manifest):
     (root / 'preferences-cleanup.json').write_text(json.dumps(evidence, indent=2) + '\n')
 
 
+def cache_path(domain, home):
+    # Reuse the exact random fixture-ID boundary used for preferences.
+    preferences_path(domain, home)
+    return Path(home) / 'Library/Caches' / domain
+
+
+def cache_parent(home):
+    home = Path(home)
+    for path in (home, home / 'Library', home / 'Library/Caches'):
+        metadata = path.lstat()
+        if (not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.getuid()
+                or metadata.st_mode & 0o022):
+            raise ValueError('Cache ancestors must be nonsymlink owned directories without shared write access')
+    return home / 'Library/Caches'
+
+
+def cache_record(domain, home):
+    parent = cache_parent(home)
+    path = cache_path(domain, home)
+    path.mkdir(mode=0o700)  # Atomic refusal of existing directories and symlinks.
+    metadata, ancestor = path.lstat(), parent.stat()
+    if (not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.getuid()
+            or metadata.st_mode & 0o777 != 0o700):
+        raise ValueError('New fixture cache claim has unexpected owner or mode')
+    return dict(domain=domain, home=str(home), path=str(path), absent_before=True,
+                owner=metadata.st_uid, device=metadata.st_dev, inode=metadata.st_ino,
+                parent_device=ancestor.st_dev, parent_inode=ancestor.st_ino)
+
+
+def cache_cleanup_path(record, homes, allowed):
+    home = Path(record['home'])
+    path = cache_path(record['domain'], home)
+    if (home not in homes or record['domain'] not in allowed
+            or record.get('absent_before') is not True or record['path'] != str(path)
+            or record['owner'] != os.getuid()):
+        raise ValueError('Refusing cache cleanup outside recorded fixture ownership')
+    parent = cache_parent(home).stat()
+    if (parent.st_dev, parent.st_ino) != (record['parent_device'], record['parent_inode']):
+        raise ValueError('Fixture cache parent was replaced')
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return path
+    if (not stat.S_ISDIR(metadata.st_mode) or metadata.st_mode & 0o777 != 0o700
+            or (metadata.st_uid, metadata.st_dev, metadata.st_ino)
+            != (record['owner'], record['device'], record['inode'])):
+        raise ValueError('Fixture cache claim was replaced or changed ownership/mode')
+    return path
+
+
+def rollback_cache_records(records, homes, allowed):
+    # No host/helper has launched. Only remove exact same-inode EMPTY claims.
+    for record in reversed(records):
+        path = cache_cleanup_path(record, homes, allowed)
+        if path.exists():
+            path.rmdir()
+
+
+def cache_homes(root):
+    return {Path(pwd.getpwuid(os.getuid()).pw_dir), Path(root) / 'home'}
+
+
+def claim_caches(root, manifest):
+    homes, allowed = cache_homes(root), {manifest['bundle_id'], manifest['payload_id']}
+    records = []
+    try:
+        # Check the whole set before creating anything; mkdir still enforces absence atomically.
+        for home in homes:
+            cache_parent(home)
+            for domain in allowed:
+                path = cache_path(domain, home)
+                if path.exists() or path.is_symlink():
+                    raise ValueError('Fixture cache domain already exists; it must remain untouched')
+        for home in sorted(homes):
+            for domain in sorted(allowed):
+                records.append(cache_record(domain, home))
+        manifest['caches'] = records
+        (root / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+    except (ValueError, OSError):
+        rollback_cache_records(records, homes, allowed)
+        raise
+
+
+def fixture_processes(root, paths):
+    # Read executable paths only, never unrelated process arguments. These
+    # observations authorize refusal/retention; they never authorize signals.
+    result = subprocess.run(['/bin/ps', '-axo', 'pid=,uid=,comm='],
+                            capture_output=True, text=True, timeout=5, check=True)
+    if len(result.stdout) > LIMIT or result.stderr:
+        raise ValueError('Executable-path census failed or exceeded its bound')
+    prefixes = [str(Path(root).resolve()) + '/'] + [str(path) + '/' for path in paths]
+    matches = []
+    for line in result.stdout.splitlines():
+        fields = line.strip().split(None, 2)
+        if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
+            raise ValueError('Executable-path census returned an unexpected row')
+        executable = str(Path(fields[2]).resolve()) if fields[2].startswith('/') else ''
+        if int(fields[0]) != os.getpid() and any(executable.startswith(prefix) for prefix in prefixes):
+            matches.append(int(fields[0]))
+    return matches
+
+
+def cache_open_processes(path):
+    result = subprocess.run(['/usr/sbin/lsof', '-nP', '-F', 'p', '+D', str(path)],
+                            capture_output=True, text=True, timeout=10, check=False)
+    # lsof returns 1 with empty stdout/stderr for a successfully searched empty tree.
+    if result.returncode == 1 and not result.stdout and not result.stderr:
+        return []
+    lines = result.stdout.splitlines()
+    if (result.returncode != 0 or result.stderr or len(result.stdout) > LIMIT
+            or not lines or any(not (re.fullmatch(r'p[0-9]+', line) or line.startswith('f')) for line in lines)):
+        raise ValueError('Scoped cache lsof check failed; cache retained')
+    pids = [int(line[1:]) for line in lines if line.startswith('p')]
+    if not pids:
+        raise ValueError('Scoped cache lsof check returned no process identity; retained')
+    return pids
+
+
+def cache_tree_owned(path):
+    for base, directories, files in os.walk(path, followlinks=False):
+        for name in directories + files:
+            metadata = (Path(base) / name).lstat()
+            if metadata.st_uid != os.getuid() or not (stat.S_ISDIR(metadata.st_mode)
+                    or stat.S_ISREG(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode)):
+                raise ValueError('Fixture cache contains unowned or special files; retained')
+
+
+def cleanup_cache_records(records, homes, allowed, root):
+    if not records or not shutil.rmtree.avoids_symlink_attacks:
+        raise ValueError('Cache cleanup requires prior claims and fd-safe tree deletion')
+    paths = [cache_cleanup_path(record, homes, allowed) for record in records]
+    if fixture_processes(root, paths):
+        raise ValueError('Active fixture/helper process; cache retained')
+    for path in paths:
+        if path.exists():
+            cache_tree_owned(path)
+            if cache_open_processes(path):
+                raise ValueError('Cache has open files or active processes; retained')
+    if fixture_processes(root, paths):
+        raise ValueError('Active fixture/helper process after cache inspection; retained')
+    for record, path in zip(records, paths):
+        cache_cleanup_path(record, homes, allowed)
+        if not path.exists():
+            continue
+        parent_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            parent = os.fstat(parent_fd)
+            current = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
+            if ((parent.st_dev, parent.st_ino) != (record['parent_device'], record['parent_inode'])
+                    or (current.st_dev, current.st_ino, current.st_uid)
+                    != (record['device'], record['inode'], record['owner'])
+                    or not stat.S_ISDIR(current.st_mode)):
+                raise ValueError('Cache identity changed before fd-safe removal; retained')
+            shutil.rmtree(path.name, dir_fd=parent_fd)
+        finally:
+            os.close(parent_fd)
+    return [dict(domain=record['domain'], path=record['path'], absent_after=True) for record in records]
+
+
+def cleanup_caches(root, manifest):
+    evidence = cleanup_cache_records(manifest.get('caches', []), cache_homes(root),
+                                    {manifest['bundle_id'], manifest['payload_id']}, root)
+    (root / 'cache-cleanup.json').write_text(json.dumps(evidence, indent=2) + '\n')
+
+
 def fixture_environment(root):
     root = Path(root).resolve()
     env = {'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'LANG': 'en_US.UTF-8'}
@@ -198,6 +364,9 @@ def expected_abort(case, payload):
     if not sparkle_error(payload, outer) or codes != chain:
         return False
     if case in ('altered-feed', 'wrong-feed-key', 'aged-wrong-feed-key', 'altered-zip', 'wrong-archive-key'):
+        if case in ('altered-zip', 'wrong-archive-key') and not underlying[0].get('message', '').startswith(
+                '(Ed)DSA signature validation before unarchiving failed for update '):
+            return False
         return underlying[-1].get('message', '').startswith('EdDSA signature does not match.')
     if case in ('wrong-name-id', 'same-name-wrong-id'):
         return underlying[-1].get('message') == 'No suitable install is found in the update. The update will be rejected.'
@@ -217,6 +386,13 @@ def assess(case, recorded, unchanged, launches, old_exited, archive_requests):
             return None
     if not unchanged or launches > 1 or old_exited:
         raise ValueError('Negative case changed or relaunched the installed app')
+    forbidden = ('will-install-update', 'will-relaunch-application', 'will-install-update-on-quit')
+    install_choice = any(item['event'] == 'sparkle://user-did-make-choice'
+                         and item.get('payload', {}).get('choice') == 'install'
+                         and item.get('payload', {}).get('stage') in ('downloaded', 'installing')
+                         for item in recorded)
+    if any(name in names for name in forbidden) or install_choice:
+        raise ValueError('Rejected payload advanced to installation or relaunch')
     if case in ('altered-feed', 'wrong-feed-key', 'aged-wrong-feed-key', 'downgrade'):
         if archive_requests or 'will-download-update' in names:
             raise ValueError('Rejected feed/selection reached archive download')
@@ -244,10 +420,10 @@ def assess(case, recorded, unchanged, launches, old_exited, archive_requests):
         positions = [names.index(name) if name in names else -1 for name in required]
         if not archive_requests or -1 in positions or positions != sorted(positions):
             raise ValueError('Archive refusal lacks ordered download/validation evidence')
-        # Sparkle sends will-extract BEFORE pre-extraction signature validation.
-        # did-extract is emitted only after validation/initial installation succeed.
-        if 'did-extract-update' in names or 'will-install-update' in names:
-            raise ValueError('Rejected payload advanced past initial validation')
+        # 2.10.1 SPUInstallerDriver completes launcher setup before installer messages;
+        # did-extract-update is that early callback, not proof of actual unarchiving.
+        # Signature cases prove pre-unarchive refusal through their exact cause above;
+        # validly signed identity/version cases may unarchive to inspect metadata.
     return 'observed-rejection' if case == 'same-name-wrong-id' else 'passed'
 
 
@@ -533,8 +709,14 @@ def run(root, deadline):
     executable = owned_path(root, manifest['executable'])
     if read_launches(root):
         raise ValueError('Prepared case has already launched; create a fresh case')
-    claim_preferences(root, manifest)
-    server, requests = serve(root, manifest)
+    claim_caches(root, manifest)
+    try:
+        claim_preferences(root, manifest)
+        server, requests = serve(root, manifest)
+    except (ValueError, OSError, subprocess.SubprocessError):
+        rollback_cache_records(manifest['caches'], cache_homes(root),
+                               {manifest['bundle_id'], manifest['payload_id']})
+        raise
     child = None
     result = {'status': 'failed', 'root': str(root), 'case': manifest['case'],
               'check_mode': manifest.get('check_mode', 'manual')}
@@ -605,6 +787,7 @@ def run(root, deadline):
             cleanup_error = None
             try:
                 result.update(cleanup(root, manifest, child))
+                cleanup_caches(root, manifest)
                 cleanup_preferences(root, manifest)
             except (ValueError, OSError, subprocess.SubprocessError) as error:
                 cleanup_error = str(error)

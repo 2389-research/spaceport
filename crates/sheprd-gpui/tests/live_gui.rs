@@ -23,6 +23,30 @@ struct Isolated {
     gui: Option<Child>,
 }
 
+#[path = "live_gui/diagnostics.rs"]
+mod diagnostics;
+
+const LOG_LINES: usize = 40;
+const LOG_LINE_CHARS: usize = 600;
+
+fn assert_gui_success(status: ExitStatus, log: &str) {
+    assert!(
+        status.success(),
+        "GUI failed: {status}\n{}",
+        fixture_log_tail(log)
+    );
+}
+
+fn fixture_log_tail(log: &str) -> String {
+    let lines = log.lines().rev().take(LOG_LINES).collect::<Vec<_>>();
+    lines
+        .into_iter()
+        .rev()
+        .map(|line| line.chars().take(LOG_LINE_CHARS).collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 fn gui_command(sandbox: &Sandbox, mut env: impl FnMut(&str) -> Option<OsString>) -> Command {
     // App view settings no longer share Herdr's config. Both fixtures must
     // choose immediate creation explicitly instead of inheriting name prompts.
@@ -275,11 +299,10 @@ impl Drop for Isolated {
         // The daemon's own log says why it refused or failed a request.
         for name in ["gui.log", "daemon.log", "config/herdr/herdr-server.log"] {
             if let Ok(log) = fs::read_to_string(self.sandbox.dir.join(name)) {
-                eprintln!("{name} (last 40 lines, at most 600 chars each):");
-                let lines = log.lines().rev().take(40).collect::<Vec<_>>();
-                for line in lines.into_iter().rev() {
-                    eprintln!("{}", line.chars().take(600).collect::<String>());
-                }
+                eprintln!(
+                    "{name} (last {LOG_LINES} lines, at most {LOG_LINE_CHARS} chars each):\n{}",
+                    fixture_log_tail(&log)
+                );
             }
         }
     }
@@ -292,8 +315,8 @@ fn native_gui_live() {
     #[cfg(target_os = "macos")]
     let _clipboard = clipboard_guard::ClipboardGuard::acquire();
     let (mut isolated, status) = retry_timeouts("native GUI", || launch_gui_live(&binary));
-    assert!(status.success(), "GUI failed: {status}");
     let log = fs::read_to_string(isolated.sandbox.dir.join("gui.log")).unwrap();
+    assert_gui_success(status, &log);
     assert!(
         log.contains("GUI integration PASS:"),
         "GUI exited without completing harness"

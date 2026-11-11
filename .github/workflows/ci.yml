@@ -144,6 +144,8 @@ jobs:
           persist-credentials: false
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
+        env:
+          SPACEPORT_CI_APT_MIRROR: '1'
         run: bash scripts/install-linux-deps.sh
       - name: Acquire the pinned macOS update framework
         if: runner.os == 'macOS'
@@ -172,6 +174,7 @@ jobs:
           jq --version
           python3 -m unittest discover -s scripts/release/tests -v
           python3 scripts/release/test-release-security.py
+          python3 scripts/test_ubuntu_ci_sources.py
           python3 -m unittest discover -s assets/icons -p 'test_*.py'
       - name: Install pinned Rust toolchain
         run: rustup show
@@ -468,6 +471,8 @@ jobs:
         with:
           persist-credentials: false
       - name: Install Linux build dependencies
+        env:
+          SPACEPORT_CI_APT_MIRROR: '1'
         run: bash scripts/install-linux-deps.sh
       - name: Install pinned Rust toolchain
         env:
