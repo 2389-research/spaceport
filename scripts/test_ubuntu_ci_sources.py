@@ -25,12 +25,13 @@ Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
 
 class UbuntuSourcesTests(unittest.TestCase):
-    def rewrite(self, source=SOURCE, architecture="amd64"):
+    def rewrite(self, source=SOURCE, architecture="amd64", mirror="primary"):
         with tempfile.TemporaryDirectory() as directory:
             original = Path(directory) / "ubuntu.sources"
             original.write_text(source)
             result = subprocess.run(
-                [sys.executable, str(SCRIPT), "--architecture", architecture, str(original)],
+                [sys.executable, str(SCRIPT), "--architecture", architecture,
+                 "--mirror", mirror, str(original)],
                 capture_output=True, text=True, check=False,
             )
             self.assertEqual(original.read_text(), source)
@@ -40,8 +41,8 @@ class UbuntuSourcesTests(unittest.TestCase):
         result = self.rewrite()
         self.assertEqual(result.returncode, 0, result.stderr)
         expected = SOURCE.replace(
-            "mirror+file:/etc/apt/apt-mirrors.txt", "https://mirrors.edge.kernel.org/ubuntu/"
-        ).replace("http://security.ubuntu.com/ubuntu/", "https://mirrors.edge.kernel.org/ubuntu/")
+            "mirror+file:/etc/apt/apt-mirrors.txt", "https://archive.ubuntu.com/ubuntu/"
+        ).replace("http://security.ubuntu.com/ubuntu/", "https://archive.ubuntu.com/ubuntu/")
         self.assertEqual(result.stdout, expected)
 
     def test_arm64_preserves_suites_components_keyring_and_comments(self):
@@ -50,8 +51,20 @@ class UbuntuSourcesTests(unittest.TestCase):
         result = self.rewrite(source, "arm64")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, source.replace(
-            "http://ports.ubuntu.com/ubuntu-ports", "https://mirrors.mit.edu/ubuntu-ports/"
+            "http://ports.ubuntu.com/ubuntu-ports", "https://ports.ubuntu.com/ubuntu-ports/"
         ))
+
+    def test_fallback_uses_mit_for_each_architecture_without_changing_metadata(self):
+        for architecture, origin, mirror in (
+            ("amd64", "http://archive.ubuntu.com/ubuntu/", "https://mirrors.mit.edu/ubuntu/"),
+            ("arm64", "http://ports.ubuntu.com/ubuntu-ports/", "https://mirrors.mit.edu/ubuntu-ports/"),
+        ):
+            with self.subTest(architecture=architecture):
+                source = SOURCE.replace("mirror+file:/etc/apt/apt-mirrors.txt", origin)
+                source = source.replace("http://security.ubuntu.com/ubuntu/", origin)
+                result = self.rewrite(source, architecture, "fallback")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, source.replace(origin, mirror))
 
     def test_continuations_and_architecture_fields_stay_unchanged(self):
         source = SOURCE.replace("Components: main restricted universe multiverse", "Components: main restricted\n universe multiverse")
