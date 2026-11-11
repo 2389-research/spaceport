@@ -18,8 +18,10 @@ pub(super) fn eligible(
     version: &str,
     feed: &str,
     key: &str,
+    worktree: &str,
 ) -> bool {
-    id == "ai.2389.spaceport"
+    worktree == "0"
+        && id == "ai.2389.spaceport"
         && version != "dev"
         && !version.is_empty()
         && bundle.id == id

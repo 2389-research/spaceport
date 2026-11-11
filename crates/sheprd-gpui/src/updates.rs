@@ -10,6 +10,7 @@ mod policy;
 
 pub(crate) fn supported_build() -> bool {
     cfg!(all(target_os = "macos", feature = "macos-updater"))
+        && env!("HERDR_BUILD_WORKTREE") == "0"
         && crate::constants::APP_ID == "ai.2389.spaceport"
         && crate::constants::APP_VERSION != "dev"
 }

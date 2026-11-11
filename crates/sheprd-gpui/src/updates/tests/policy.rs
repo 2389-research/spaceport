@@ -23,6 +23,7 @@ fn accepts(bundle: &Bundle<'_>) -> bool {
         "0.1.1",
         "https://example.test/appcast.xml",
         "public-key",
+        "0",
     )
 }
 
@@ -38,14 +39,16 @@ fn development_build_is_ineligible() {
         "spaceport.development",
         "0.1.1",
         "https://example.test/appcast.xml",
-        "public-key"
+        "public-key",
+        "0",
     ));
     assert!(!eligible(
         &preview(),
         "ai.2389.spaceport",
         "dev",
         "https://example.test/appcast.xml",
-        "public-key"
+        "public-key",
+        "0",
     ));
 }
 
@@ -66,5 +69,22 @@ fn mismatched_bundle_or_trust_settings_are_ineligible() {
             _ => bundle.version = "dev",
         }
         assert!(!accepts(&bundle), "accepted mismatch {change}");
+    }
+}
+
+#[test]
+fn preview_identity_cannot_override_worktree_or_unknown_build_marker() {
+    for marker in ["1", "", "false", "invalid"] {
+        assert!(
+            !eligible(
+                &preview(),
+                "ai.2389.spaceport",
+                "0.1.1",
+                "https://example.test/appcast.xml",
+                "public-key",
+                marker
+            ),
+            "accepted build marker {marker:?}"
+        );
     }
 }

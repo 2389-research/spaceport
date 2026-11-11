@@ -382,3 +382,6 @@ fn mock_gh_is_anchored_explicit_validated_and_bounded() {
         None
     );
 }
+
+#[path = "build_identity/updates.rs"]
+mod updates;

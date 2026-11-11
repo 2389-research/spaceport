@@ -65,6 +65,7 @@ pub(super) fn install(cx: &mut App) -> Result<(), Error> {
         crate::constants::APP_VERSION,
         &trust.feed_url,
         &trust.public_key,
+        env!("HERDR_BUILD_WORKTREE"),
     ) {
         return Err(Error::Unsupported);
     }
