@@ -30,12 +30,26 @@ impl gpui::Global for Headings {}
 
 /// Installs the menu bar, checking the layout the latest config picked.
 pub(crate) fn install(cx: &mut App) {
-    let menus = cx
+    let mut menus = cx
         .try_global::<crate::app::InitialAppearance>()
         .map_or_else(
             || menus(&Config::default()),
             |appearance| menus(&appearance.config),
         );
+    for menu in &mut menus {
+        for item in &mut menu.items {
+            if let MenuItem::Action {
+                action, disabled, ..
+            } = item
+                && action
+                    .as_any()
+                    .downcast_ref::<RunCommand>()
+                    .is_some_and(|action| action.command == Command::CheckForUpdates)
+            {
+                *disabled = !crate::updates::menu_available(cx);
+            }
+        }
+    }
     cx.set_global(Headings(
         menus
             .iter()
@@ -101,6 +115,13 @@ pub(crate) fn menus(config: &Config) -> Vec<Menu> {
                         command: Command::About,
                     },
                 ),
+                MenuItem::action(
+                    fl!("commands-check-for-updates"),
+                    RunCommand {
+                        command: Command::CheckForUpdates,
+                    },
+                )
+                .disabled(!crate::updates::supported_build()),
                 MenuItem::separator(),
                 MenuItem::action(
                     fl!("menus-command-palette"),

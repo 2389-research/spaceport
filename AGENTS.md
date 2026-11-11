@@ -16,8 +16,10 @@ Decision D60 removes the inherited custom updater. App version reporting and
 the unconfigured-production-release refusal live in the app's constants;
 verified platform/package update replacements remain a T12 release gate.
 Decision D61 adds an explicit macOS signed preview route as `ai.2389.spaceport`;
-ordinary development remains `spaceport.development`. It does not enable the
-inherited production release pipeline, publishing or an updater. See
+ordinary development remains `spaceport.development`. D64 separately authorizes
+tagged preview publishing and D65 selects Sparkle for installed macOS previews;
+development/worktree builds remain excluded. Neither enables the inherited
+production release pipeline. See
 [`t12-macos-signed-preview.md`](docs/spaceport/evidence/t12-macos-signed-preview.md)
 for actual artifact qualification and remaining gates.
 

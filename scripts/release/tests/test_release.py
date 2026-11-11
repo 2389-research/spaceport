@@ -9,6 +9,8 @@ import tempfile
 import unittest
 import zipfile
 
+from sparkle_fixture import sdk_fixture
+
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / "scripts/release"
 
@@ -191,6 +193,17 @@ class ReleaseTests(unittest.TestCase):
         """Each architecture's build folder, as the build leaves it:
         herdr-gpui and sheprd-acp beside it, in a folder
         the mock lipo reads the architecture from."""
+        if not hasattr(self, 'scripts'):
+            fixture = self.work / 'packaging checkout'
+            self.scripts = fixture / 'scripts/release'
+            self.scripts.mkdir(parents=True)
+            for name in ('package-macos.sh', 'package-linux.sh', 'common.sh', 'build-icon.py',
+                         'preview-identity.py', 'org.sheprd.Sheprd.desktop'):
+                shutil.copyfile(SCRIPTS / name, self.scripts / name)
+            for name in ('assets', 'crates', 'LICENSE', 'NOTICE'):
+                (fixture / name).symlink_to(ROOT / name)
+            sdk_fixture(self.scripts, self.work / 'sdk')
+        self.env['SPARKLE_FRAMEWORK_PATH'] = str(self.work / 'sdk')
         binaries = []
         for arch, worktree in (("arm64", arm_worktree), ("x86_64", intel_worktree)):
             folder = self.work / arch
@@ -205,7 +218,7 @@ class ReleaseTests(unittest.TestCase):
         arm, intel = self.macos_builds()
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices)
         app = self.work / "Spaceport.app"
-        self.assertEqual({str(p.relative_to(app)) for p in app.rglob("*") if p.is_file()}, {
+        self.assertEqual({str(p.relative_to(app)) for p in app.rglob("*") if p.is_file() and "Frameworks" not in p.parts}, {
             "Contents/MacOS/spaceport", "Contents/MacOS/sheprd-acp",
             "Contents/Info.plist", "Contents/Resources/Sheprd.icns",
             "Contents/Resources/Assets.car",
@@ -213,9 +226,16 @@ class ReleaseTests(unittest.TestCase):
             "Contents/Resources/LICENSE", "Contents/Resources/NOTICE", "Contents/Resources/LICENSE-octicons",
             "Contents/Resources/THIRD-PARTY-NOTICES.txt",
             "Contents/Resources/SOUND-NOTICE.md",
+            "Contents/Resources/Sparkle-LICENSE.txt",
         })
         self.assertEqual((app / "Contents/Resources/THIRD-PARTY-NOTICES.txt").read_bytes(), self.notices.read_bytes())
+        self.assertEqual((app / 'Contents/Resources/Sparkle-LICENSE.txt').read_bytes(),
+                         (self.work / 'sdk/LICENSE').read_bytes())
         self.assertFalse((app / "Contents/MacOS/Herdr").exists())
+        framework = app / 'Contents/Frameworks/Sparkle.framework'
+        self.assertTrue((framework / 'Versions/Current').is_symlink())
+        self.assertEqual(os.readlink(framework / 'Sparkle'), 'Versions/Current/Sparkle')
+        self.assertTrue((framework / 'Versions/B/XPCServices/Installer.xpc').is_dir())
         self.assertFalse((app / "Contents/MacOS/spaceport").is_symlink())
         self.assertEqual((app / "Contents/Resources/Sheprd.icns").read_bytes(), (ROOT / "assets/icons/Sheprd.icns").read_bytes())
         self.assertEqual((app / "Contents/Resources/Assets.car").read_bytes(), (ROOT / "assets/icons/Sheprd.car").read_bytes())
@@ -248,6 +268,8 @@ class ReleaseTests(unittest.TestCase):
             destination = fixture / path
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / path, destination)
+        sdk_fixture(fixture / 'scripts/release', self.work / 'sdk')
+        self.env['SPARKLE_FRAMEWORK_PATH'] = str(self.work / 'sdk')
         for name in ["Sheprd-worktree.icns", "Sheprd-worktree.car", "sheprd-linux-worktree.svg"]:
             (fixture / "assets/icons" / name).write_bytes(b"red fixture " + name.encode())
         self.scripts = fixture / "scripts/release"

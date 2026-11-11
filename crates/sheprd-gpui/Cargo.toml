@@ -86,6 +86,7 @@ libc.workspace = true
 
 [features]
 default = []
+macos-updater = ["dep:sparkle-updater"]
 integration-test = [
   "gpui_platform/test-support",
   "objc2-app-kit/NSPasteboardItem",
@@ -141,6 +142,7 @@ nix.workspace          = true
 oo7.workspace          = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
+sparkle-updater = { optional = true, workspace = true }
 font-kit.workspace              = true
 block2.workspace                = true
 dispatch2.workspace             = true
@@ -163,3 +165,7 @@ required-features = ["integration-test"]
 [[test]]
 name              = "performance_gui"
 required-features = ["integration-test"]
+
+[[example]]
+name              = "sparkle_fixture"
+required-features = ["integration-test", "macos-updater"]

@@ -70,6 +70,7 @@ Every command accepts:
 | `ui sidebar\|statusbar [on\|off\|toggle]` | For this window and session |
 | `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session |
 | `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage |
+| `run check-for-updates` | Open Sparkle’s native update check in an installed macOS preview; unsupported builds refuse it |
 | `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it |
 | `commands` | The names `run` accepts (no app needed) |
 

@@ -58,9 +58,11 @@ claiming a feature or build is ready.
 The [preview tag workflow](scripts/release/README.md#spaceport-macos-previews)
 builds, signs, notarizes and publishes macOS previews from a qualified main
 commit. See its [artifact verification](docs/spaceport/evidence/t12-macos-preview-20261110.5-signed.md).
-General production releases, automatic updates and other-platform distribution
-still have open gates; the inherited Sheprd publishing route remains disabled
-for Spaceport.
+Installed updater-enabled macOS previews use Sparkle's native **Check for Updates…**
+with optional automatic checks and confirmed installation. Older previews need
+one manual installation to gain this feature. Updates leave Herdr runtimes alone.
+General production releases and other-platform distribution still have open
+gates; the inherited Sheprd publishing route remains disabled for Spaceport.
 
 ## Origin and license
 

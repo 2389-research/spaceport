@@ -482,6 +482,13 @@ impl SheprdWindow {
                 self.open_preferences(window, cx);
                 return;
             }
+            Command::CheckForUpdates => {
+                if let Err(error) = crate::updates::check(cx) {
+                    self.local_error = Some(error.localize());
+                    cx.notify();
+                }
+                return;
+            }
             Command::About => {
                 self.open_about(window, cx);
                 return;

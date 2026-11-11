@@ -12,15 +12,20 @@ profile=${2:-debug}
 architecture=${3:-arm64}
 mode=${4:-unsigned}
 [[ $(uname -s) == Darwin ]] || fail 'macOS required'
-flags=(build --locked)
+flags=(build --locked --features sheprd-gpui/macos-updater)
 case $profile in debug) ;; release) flags+=(--release) ;; *) fail 'Profile must be debug or release' ;; esac
 [[ $architecture == arm64 || $architecture == universal ]] || fail 'Architecture must be arm64 or universal'
 [[ $mode == unsigned || $mode == installed || $mode == import ]] || fail 'Mode must be unsigned, installed or import'
 cd -- "$release_root"
+[[ -n ${SPARKLE_FRAMEWORK_PATH:-} ]] || fail 'SPARKLE_FRAMEWORK_PATH must contain the pinned SDK; use sparkle_framework.py acquire'
+python3 scripts/release/sparkle_framework.py validate-sdk "$SPARKLE_FRAMEWORK_PATH"
+# Raw CLI checks run before the framework is embedded into the app bundle.
+export DYLD_FRAMEWORK_PATH="$SPARKLE_FRAMEWORK_PATH"
 out="$release_root/target/distribution/$version-$profile-$architecture"
 [[ ! -e $out && ! -L $out ]] || fail "Output already exists: $out"
 # Cargo and dependency build scripts must not inherit signing credentials.
 build_env=(env
+    -u SPARKLE_PRIVATE_KEY
     -u MACOS_CERTIFICATE_P12_BASE64 -u MACOS_CERTIFICATE_PASSWORD
     -u MACOS_SIGNING_IDENTITY -u APPLE_API_PRIVATE_KEY -u APPLE_API_KEY_PATH
     -u APPLE_API_KEY_ID -u APPLE_API_ISSUER_ID

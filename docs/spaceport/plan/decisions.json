@@ -449,6 +449,13 @@
       "decision": "Extend the macOS preview workflow to build, sign, notarize and publish a DMG plus checksum to a GitHub prerelease when harperreed pushes vYYYYMMDD.COUNTER to harperreed/spaceport. Require the exact tagged commit to belong to main and pass full main CI. Keep signing credentials in a protected signing job; grant release write access only to publication. Preserve manual artifact-only runs, immutable version reservations and the broader production release refusal. Doctor Biz's follow-up instruction to push and make it work authorizes main integration, hosted environment setup, credential upload and the first verified tagged preview; keep private signing inputs outside Git.",
       "status": "active",
       "source": "Doctor Biz, 2026-11-10: yes. let's make the tag triggered workflow; then ok. let's gooo and push and make it work dude."
+    },
+    {
+      "id": "D65",
+      "title": "Sparkle updates for macOS previews",
+      "decision": "Use pinned Sparkle 2.10.1 for installed macOS previews, with native Check for Updates UI, consent for automatic checks and automatic installation off by default. Keep development/worktree builds excluded. Embed and sign the framework inside the existing ai.2389.spaceport bundle for Team HD9NM9NSMK. Use a separate Spaceport Ed25519 key outside Git/Cargo and in the protected macos-preview environment; require signed feeds without timed recovery (SUSignedFeedFailureExpirationInterval=0) and pre-extraction archive verification. Publish the signed preview feed as the fixed macos-preview-feed GitHub release asset only after the immutable dated release passes verification. Enforce exact Spaceport app/Team identity in packaging, signing and publication. Sparkle permits trusted publisher key and app identity rotation; do not claim its runtime enforces an unconditional old app ID match. Preserve normal GUI quit/detach and never change Herdr/Core lifecycle. Qualify with isolated real signed update/relaunch fixtures and negative trust/rollback cases. Carry implementation through full source CI and a fresh signed release. Other platform/package routes and overall T12 gates remain open.",
+      "status": "active",
+      "source": "Doctor Biz, 2026-11-10: lets add sparkle; approved the proposed macOS preview design, separate protected signing key/feed, native fixtures and signed-release delivery."
     }
   ]
 }

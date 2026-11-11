@@ -495,7 +495,7 @@
       "scenario": "Use isolated signed release fixtures, tampered manifests, wrong app IDs and rollback/restart paths.",
       "expected": "Only authorized Spaceport artifacts install; no upstream/Core overwrite or unsigned fallback.",
       "status": "not_run",
-      "evidence": ["evidence/t12-custom-updater-removal.md"]
+      "evidence": ["evidence/t12-custom-updater-removal.md", "evidence/t12-sparkle-preview.md"]
     },
     {
       "id": "A44",

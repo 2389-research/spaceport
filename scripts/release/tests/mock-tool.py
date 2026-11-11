@@ -45,11 +45,16 @@ elif tool == "plutil" and args[0] == "-extract":
     assert len(args) == 4 and args[2] == "raw", args
     metadata = plistlib.loads(Path(args[3]).read_bytes())
     print(metadata[args[1]])
+elif tool == "plutil" and args[0] in ("-insert", "-replace"):
+    metadata = plistlib.loads(Path(args[-1]).read_bytes())
+    assert args[2] == '-string', args
+    metadata[args[1]] = args[3]
+    Path(args[-1]).write_bytes(plistlib.dumps(metadata))
 elif tool == "lipo":
     if args[0] == "-archs":
         # A fixture is named for its architecture, or sits in a folder that is.
         path = Path(args[1])
-        print(os.environ.get("MOCK_ARCHS", path.name if path.name in ("arm64", "x86_64") else path.parent.name))
+        print(os.environ.get("MOCK_ARCHS", "arm64 x86_64" if "Sparkle.framework" in path.parts else path.name if path.name in ("arm64", "x86_64") else path.parent.name))
     elif args[0] == "-create":
         Path(args[-1]).write_text("never execute this fixture")
     else:
@@ -59,7 +64,7 @@ elif tool == "ditto":
     if args[0] == "-c":
         Path(args[-1]).write_bytes(b"fixture zip")
     else:
-        shutil.copytree(args[0], args[1])
+        shutil.copytree(args[0], args[1], symlinks=True)
 elif tool == "xcrun" and args[:2] == ["notarytool", "submit"]:
     if os.environ.get("MOCK_SUBMIT_CANCEL"):
         os.kill(os.getppid(), signal.SIGTERM)
@@ -79,7 +84,7 @@ elif tool == "xcrun" and args[:2] == ["stapler", "staple"] and Path(args[-1]).is
     (Path(args[-1]) / "Contents/CodeResources").write_bytes(b"mock stapled ticket")
 elif tool == "codesign" and args[0] == "--force" and Path(args[-1]).is_dir():
     signature = Path(args[-1]) / "Contents/_CodeSignature"
-    signature.mkdir()
+    signature.mkdir(parents=True, exist_ok=True)
     (signature / "CodeResources").write_bytes(b"mock code signature")
 elif tool == "hdiutil":
     image = Path(args[args.index("-srcfolder") + 1])

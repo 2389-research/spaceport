@@ -56,6 +56,12 @@ impl std::error::Error for BuildError {
 
 fn main() -> Result<(), BuildError> {
     println!("cargo:rerun-if-changed=build.rs");
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos")
+        && std::env::var_os("CARGO_FEATURE_MACOS_UPDATER").is_some()
+    {
+        // Sparkle's install name uses @rpath inside the shipped app bundle.
+        println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
+    }
     for file in [
         "preview_identity.rs",
         "development-app-id",

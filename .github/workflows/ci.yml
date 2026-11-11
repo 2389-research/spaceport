@@ -145,6 +145,20 @@ jobs:
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: bash scripts/install-linux-deps.sh
+      - name: Acquire the pinned macOS update framework
+        if: runner.os == 'macOS'
+        run: |
+          if [[ ! -x "$(brew --prefix openssl@3)/bin/openssl" ]]; then
+            brew install --force-bottle openssl@3
+          fi
+          # rust-cache cleans arbitrary files beneath Cargo's target directory.
+          python3 scripts/release/sparkle_framework.py acquire "$RUNNER_TEMP/spaceport-sparkle-sdk"
+          {
+            echo "SPARKLE_FRAMEWORK_PATH=$RUNNER_TEMP/spaceport-sparkle-sdk"
+            echo "DYLD_FRAMEWORK_PATH=$RUNNER_TEMP/spaceport-sparkle-sdk"
+            echo "SPARKLE_TEST_SDK=$RUNNER_TEMP/spaceport-sparkle-sdk"
+            echo "SPACEPORT_OPENSSL=$(brew --prefix openssl@3)/bin/openssl"
+          } >> "$GITHUB_ENV"
       # Lets the release script tests build real .deb, .rpm and Arch packages.
       - name: Install the pinned Linux package builder
         if: runner.os == 'Linux' && matrix.features == 'default'

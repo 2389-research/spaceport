@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 import unittest
 
+from sparkle_fixture import framework_fixture, helper, sdk_fixture
+
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / 'scripts/release'
 UUID = '12345678-1234-1234-1234-123456789abc'
@@ -21,6 +23,15 @@ class PreviewSigning(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='spaceport-sign-test-')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        checkout = self.root / 'checkout'
+        scripts = checkout / 'scripts/release'
+        scripts.mkdir(parents=True)
+        for name in ('sign-macos.sh', 'common.sh', 'preview-identity.py'):
+            shutil.copyfile(SCRIPTS / name, scripts / name)
+        for name in ('assets', 'crates'):
+            (checkout / name).symlink_to(ROOT / name)
+        sdk_fixture(scripts, self.root / 'sdk')
+        self.sign_script = scripts / 'sign-macos.sh'
         self.app = self.root / 'Spaceport.app'
         (self.app / 'Contents/MacOS').mkdir(parents=True)
         for binary in ('spaceport', 'sheprd-acp'):
@@ -30,7 +41,11 @@ class PreviewSigning(unittest.TestCase):
                              CFBundleIdentifier='ai.2389.spaceport', CFBundleExecutable='spaceport',
                              CFBundleVersion='20261109.1', CFBundleShortVersionString='20261109.1',
                              LSMinimumSystemVersion='14.2', SpaceportBuildProfile='debug')
+        self.metadata.update(helper().bundle_policy(helper().read_config()))
         self.write_plist()
+        framework_fixture(self.app / 'Contents/Frameworks/Sparkle.framework')
+        (self.app / 'Contents/Resources').mkdir()
+        shutil.copyfile(self.root / 'sdk/LICENSE', self.app / 'Contents/Resources/Sparkle-LICENSE.txt')
         tools = self.root / 'tools'
         tools.mkdir()
         mock = tools / 'mock.py'
@@ -44,7 +59,8 @@ class PreviewSigning(unittest.TestCase):
                         MACOS_CERTIFICATE_P12_BASE64='ZHVtbXk=', MACOS_CERTIFICATE_PASSWORD='dummy',
                         MACOS_SIGNING_IDENTITY='Developer ID Application: 2389 Research, Inc (HD9NM9NSMK)',
                         APPLE_API_PRIVATE_KEY='dummy key', APPLE_API_KEY_ID='dummy', APPLE_API_ISSUER_ID='dummy',
-                        SPACEPORT_NOTARY_RECEIPTS=str(self.root / 'receipts'), MOCK_ARCHS='arm64')
+                        SPACEPORT_NOTARY_RECEIPTS=str(self.root / 'receipts'), MOCK_ARCHS='arm64',
+                        SPARKLE_FRAMEWORK_PATH=str(self.root / 'sdk'))
 
     def write_plist(self):
         self.plist.write_bytes(plistlib.dumps(self.metadata))
@@ -54,7 +70,7 @@ class PreviewSigning(unittest.TestCase):
         return [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
 
     def sign(self, success=False, mode='import'):
-        result = subprocess.run(['/bin/bash', str(SCRIPTS / 'sign-macos.sh'), '20261109.1',
+        result = subprocess.run(['/bin/bash', str(self.sign_script), '20261109.1',
                                  str(self.app), str(self.root), 'arm64', mode],
                                 env=self.env, capture_output=True, text=True, timeout=15)
         self.assertEqual(result.returncode == 0, success, result.stderr)
@@ -64,6 +80,51 @@ class PreviewSigning(unittest.TestCase):
             self.assertEqual(result.stdout, str(output) + '\n')
         self.assertFalse(list(self.root.glob('.herdr-sign.*')))
         return result
+
+    def test_missing_sparkle_framework_fails_before_credentials(self):
+        shutil.rmtree(self.app / 'Contents/Frameworks')
+        self.assertIn('Sparkle', self.sign().stderr)
+        self.assertFalse(any(c[0] == 'security' for c in self.calls()))
+
+    def test_extra_framework_fails_before_credentials(self):
+        (self.app / 'Contents/Frameworks/Extra.framework').mkdir()
+        self.assertIn('Unexpected bundled frameworks', self.sign().stderr)
+        self.assertFalse(any(c[0] == 'security' for c in self.calls()))
+
+    def test_bundled_sparkle_license_tampering_fails_before_credentials(self):
+        license_path = self.app / 'Contents/Resources/Sparkle-LICENSE.txt'
+        license_path.write_bytes(license_path.read_bytes() + b'tampered')
+        self.assertIn('LICENSE', self.sign().stderr)
+        self.assertFalse(any(c[0] == 'security' for c in self.calls()))
+
+    def test_known_sparkle_binary_tampering_fails_before_credentials(self):
+        binary = self.app / 'Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate'
+        binary.write_bytes(binary.read_bytes() + b'tampered known binary')
+        self.assertIn('Tampered Sparkle SDK framework member', self.sign().stderr)
+        self.assertFalse(any(c[0] == 'security' for c in self.calls()))
+
+    def test_unknown_sparkle_code_fails_before_credentials(self):
+        extra = self.app / 'Contents/Frameworks/Sparkle.framework/Versions/B/extra'
+        extra.write_text('unapproved executable')
+        extra.chmod(0o755)
+        self.assertIn('Unexpected Sparkle framework executable', self.sign().stderr)
+        self.assertFalse(any(c[0] == 'security' for c in self.calls()))
+
+    def test_sparkle_policy_tampering_fails_before_credentials(self):
+        for field, value in (('SUPublicEDKey', 'wrong'), ('SURequireSignedFeed', False),
+                             ('SUSignedFeedFailureExpirationInterval', 1728000),
+                             ('SUSignedFeedFailureExpirationInterval', None),
+                             ('SUVerifyUpdateBeforeExtraction', False), ('SUEnableAutomaticChecks', True)):
+            with self.subTest(field=field, value=value):
+                original = dict(self.metadata)
+                if value is None:
+                    self.metadata.pop(field)
+                else:
+                    self.metadata[field] = value
+                self.write_plist()
+                self.assertIn('Sparkle', self.sign().stderr)
+                self.metadata = original
+        self.assertFalse(any(c[0] == 'security' for c in self.calls()))
 
     def test_success_keeps_receipts_and_restores_keychains(self):
         self.sign(success=True)
@@ -79,6 +140,9 @@ class PreviewSigning(unittest.TestCase):
         self.assertEqual(restores[-1][5:], ['/mock/login keychain-db', '/mock/system.keychain'])
         signs = [c for c in calls if c[:2] == ['codesign', '--force']]
         self.assertTrue(all('--timestamp' in c for c in signs))
+        targets = [c[-1].split('/Sparkle.framework', 1)[1] for c in signs if '/Sparkle.framework' in c[-1]]
+        self.assertEqual(targets, ['/Versions/B/' + name for name in helper().SIGN_ORDER] + [''])
+        self.assertTrue(all('--deep' not in c for c in signs))
         self.assertLess(next(i for i, c in enumerate(signs) if c[-1].endswith('/sheprd-acp')),
                         next(i for i, c in enumerate(signs) if c[-1].endswith('/Spaceport.app')))
 
@@ -207,8 +271,11 @@ class PreviewRoute(unittest.TestCase):
         self.assertIn("needs.validate.outputs.tag != ''", jobs['publish'])
         self.assertIn('--verify-tag --prerelease', jobs['publish'])
         self.assertIn('SHA256SUMS', jobs['publish'])
-        self.assertIn('generate-changelog.sh --macos-preview', jobs['publish'])
-        self.assertIn('preview-notes-base.py', jobs['publish'])
+        self.assertIn('generate-changelog.sh --macos-preview', jobs['build'])
+        self.assertIn('preview-notes-base.py', jobs['build'])
+        self.assertIn('cp RELEASE_NOTES.md ../preview-signed/', jobs['sign'])
+        self.assertIn('shasum -a 256 Spaceport.zip RELEASE_NOTES.md > SHA256SUMS', jobs['build'])
+        self.assertIn('target/preview-result/preview-signed/RELEASE_NOTES.md', jobs['publish'])
         self.assertNotIn("printf 'Signed and notarized", jobs['publish'])
         self.assertIn('verify-macos-preview.sh', jobs['sign'])
         for name in ('validate', 'sign', 'publish'):
