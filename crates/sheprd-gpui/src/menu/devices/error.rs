@@ -21,7 +21,7 @@ pub enum Error {
     NonUtf8SetupPath,
     #[error("This device has no saved profile.")]
     NoProfile,
-    #[error("Sheprd has no state directory.")]
+    #[error("{app} has no state directory.", app = crate::constants::WINDOW_TITLE)]
     NoStateDirectory,
     #[error("Removing the device failed ({status}){}", if detail.is_empty() { String::new() } else { format!(": {detail}") })]
     Remove {

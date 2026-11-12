@@ -175,7 +175,7 @@ pub enum Rejection {
     #[error("an attached file does not exist or cannot be read")]
     UnknownFile,
     /// A command this program's version does not know, from a newer client.
-    #[error("this chat program is older than Sheprd; start a new chat to use that")]
+    #[error("this chat program is older than this client; start a new chat to use that")]
     Unsupported,
     #[serde(other)]
     #[error("the program refused the command")]

@@ -26,7 +26,7 @@ fn app_constants_retain_development_identity_and_release_refusal() {
     let source = temp.path().join("identity.rs");
     fs::write(
         &source,
-        format!("#[path = {app_name:?}]\nmod sheprd_client;\n{constants}\nfn main() {{ assert_eq!(APP_VERSION, env!(\"SPACEPORT_APP_VERSION\")); assert_eq!(APP_ID, env!(\"SPACEPORT_APP_ID\")); assert_eq!(WINDOW_TITLE, \"Spaceport\"); assert!(!RELEASE_BUILD); let _ = (LINUX_APP_ID, TAB_WIDTH, TAB_HEIGHT, BUILD_COMMIT); }}").replace("//!", "//"),
+        format!("#[path = {app_name:?}]\nmod sheprd_client;\n{constants}\nfn main() {{ assert_eq!(APP_VERSION, env!(\"SPACEPORT_APP_VERSION\")); assert_eq!(APP_ID, env!(\"SPACEPORT_APP_ID\")); assert_eq!(WINDOW_TITLE, \"Spaceport\"); assert_eq!(HERDR_NAME, \"Herdr\"); assert!(!RELEASE_BUILD); let _ = (LINUX_APP_ID, TAB_WIDTH, TAB_HEIGHT, BUILD_COMMIT); }}").replace("//!", "//"),
     ).unwrap();
     let compile = |release: bool, preview: bool| {
         let mut command = Command::new("rustc");

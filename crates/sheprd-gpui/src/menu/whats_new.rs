@@ -30,8 +30,16 @@ impl SheprdWindow {
         let update = snapshot.and_then(|s| s.update_available.as_deref());
         let notes = snapshot.and_then(|s| s.release_notes.as_ref());
         let title = match (update, notes) {
-            (Some(version), _) => fl!("whats-new-update-ready", version = safe_text(version, 64)),
-            (None, Some(notes)) => fl!("whats-new-title", version = safe_text(&notes.version, 64)),
+            (Some(version), _) => fl!(
+                "whats-new-update-ready",
+                runtime = crate::constants::HERDR_NAME,
+                version = safe_text(version, 64)
+            ),
+            (None, Some(notes)) => fl!(
+                "whats-new-title",
+                runtime = crate::constants::HERDR_NAME,
+                version = safe_text(&notes.version, 64)
+            ),
             (None, None) => fl!("whats-new-unavailable"),
         };
         let mut sheet = div()
