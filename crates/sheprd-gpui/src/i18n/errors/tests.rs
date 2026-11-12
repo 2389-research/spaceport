@@ -34,6 +34,7 @@ mod setup_relay;
 mod sound;
 mod terminal_attach;
 mod usage;
+mod version_guidance;
 mod worktree_identity;
 mod wsl_drop;
 

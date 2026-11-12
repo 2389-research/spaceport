@@ -50,11 +50,11 @@ pub(crate) fn version_note(version: Option<&str>) -> String {
 
 /// What a refused generation asks the user to update. Only a newer one is
 /// this app's to fix; an older or equal one lacks what this app requires.
-pub(crate) fn generation_advice(generation: u32) -> &'static str {
+pub(crate) fn generation_advice(generation: u32) -> String {
     if generation > ENDPOINT_PROTOCOL_GENERATION {
-        "update Sheprd"
+        format!("update {}", crate::APP_NAME)
     } else {
-        "run `herdr update` and reconnect"
+        "run `herdr update` and reconnect".into()
     }
 }
 

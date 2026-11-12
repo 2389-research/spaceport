@@ -1,4 +1,5 @@
 #![allow(clippy::unwrap_used)]
+mod version_guidance;
 
 use super::{Page, VersionNotice, version_mismatch::UPDATE_COMMAND};
 use crate::sidebar::layout_tests::{fixture_window, full_draw};
@@ -42,7 +43,7 @@ fn notice_names_the_side_to_update_and_where() {
             server_version: Some("2.0.0".into()),
         },
     };
-    assert_eq!(newer.title(), "Sheprd needs an update");
+    assert_eq!(plain(newer.title()), "Spaceport needs an update");
     assert_eq!(
         plain(newer.body()),
         "The Herdr server on build box (version 2.0.0) is newer than this app supports. Update this app to connect."

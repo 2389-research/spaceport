@@ -7,13 +7,14 @@
 # system's words. `herdr update` is a command and stays as it is.
 
 # $version is the Herdr version on the host, as the host reports it. $fix is
-# who must update: app (this app) or daemon (Herdr on the host).
+# who must update: app (this app) or daemon (Herdr on the host). $app is the
+# client product name.
 error-client-bridge-incompatible = { $fix ->
-    [app] Herdr on this host cannot serve this app; update Sheprd
+    [app] Herdr on this host cannot serve this app; update { $app }
    *[daemon] Herdr on this host cannot serve this app; run `herdr update` and reconnect
 }
 error-client-bridge-incompatible-version = { $fix ->
-    [app] Herdr (version { $version }) on this host cannot serve this app; update Sheprd
+    [app] Herdr (version { $version }) on this host cannot serve this app; update { $app }
    *[daemon] Herdr (version { $version }) on this host cannot serve this app; run `herdr update` and reconnect
 }
 error-client-cancelled = client stopped
@@ -31,7 +32,7 @@ error-client-encoded-surface-before-baseline = encoded surface before baseline
 # protocol generations the daemon and this app speak. $fix is who must
 # update: app (this app) or daemon (Herdr).
 error-client-endpoint-generation = { $fix ->
-    [app] Herdr server { $server_version } speaks endpoint generation { $generation }, this app speaks { $ours }; update Sheprd
+    [app] Herdr server { $server_version } speaks endpoint generation { $generation }, this app speaks { $ours }; update { $app }
    *[daemon] Herdr server { $server_version } speaks endpoint generation { $generation }, this app speaks { $ours }; run `herdr update` and reconnect
 }
 error-client-event-receiver-dropped = event receiver dropped

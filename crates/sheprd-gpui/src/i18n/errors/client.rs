@@ -41,6 +41,7 @@ impl Localize for Error {
                 version: Some(version),
             } => fl!(
                 "error-client-bridge-incompatible-version",
+                app = sheprd_client::APP_NAME,
                 version = version.as_str(),
                 fix = fix(generation.unwrap_or(0))
             ),
@@ -49,6 +50,7 @@ impl Localize for Error {
                 version: None,
             } => fl!(
                 "error-client-bridge-incompatible",
+                app = sheprd_client::APP_NAME,
                 fix = fix(generation.unwrap_or(0))
             ),
             Self::Cancelled => fl!("error-client-cancelled"),
@@ -76,6 +78,7 @@ impl Localize for Error {
                 server_version,
             } => fl!(
                 "error-client-endpoint-generation",
+                app = sheprd_client::APP_NAME,
                 server_version = server_version.as_str(),
                 generation = *generation,
                 ours = ENDPOINT_PROTOCOL_GENERATION,
