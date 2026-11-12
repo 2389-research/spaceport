@@ -17,7 +17,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "scripts/release/sparkle.json"
 NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"
-PREFIX = "https://github.com/harperreed/spaceport/releases/download/"
+PREFIX = "https://github.com/2389-research/spaceport/releases/download/"
 OPENSSL = os.environ.get("SPACEPORT_OPENSSL", "openssl")
 MAX_FEED = 1024 * 1024
 ET.register_namespace("sparkle", NS)
@@ -86,7 +86,7 @@ def render(version, length, signature, notes):
     rss = ET.Element("rss", {"version": "2.0"})
     channel = ET.SubElement(rss, "channel")
     ET.SubElement(channel, "title").text = "Spaceport macOS previews"
-    ET.SubElement(channel, "link").text = "https://github.com/harperreed/spaceport/releases"
+    ET.SubElement(channel, "link").text = "https://github.com/2389-research/spaceport/releases"
     item = ET.SubElement(channel, "item")
     ET.SubElement(item, "title").text = f"Spaceport {version} (macOS arm64 preview)"
     ET.SubElement(item, "description", {f"{{{NS}}}format": "markdown"}).text = notes

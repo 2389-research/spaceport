@@ -44,7 +44,7 @@ pub(super) fn check_status_bar(
         cx.run_until_parked();
         let opened = cx.opened_url().unwrap_or_default();
         assert!(opened.starts_with(
-            "https://github.com/harperreed/spaceport/issues/new?template=bug_report.yml&version="
+            "https://github.com/2389-research/spaceport/issues/new?template=bug_report.yml&version="
         ));
         assert!(opened.contains("&os="));
     }

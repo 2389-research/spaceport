@@ -25,7 +25,7 @@ class SparkleTests(unittest.TestCase):
         self.config.write_text(json.dumps(dict(
             sdk_version='2.10.1',
             sdk_sha256='1a856d2a9edb8e628de88121d7be04cf0e2167f8641650b78fca00b14244cf27',
-            feed_url='https://github.com/harperreed/spaceport/releases/download/macos-preview-feed/appcast.xml',
+            feed_url='https://github.com/2389-research/spaceport/releases/download/macos-preview-feed/appcast.xml',
             public_key='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')))
         spec = importlib.util.spec_from_file_location('sparkle_framework', SCRIPTS / 'sparkle_framework.py')
         self.assertTrue(Path(spec.origin).is_file(), 'Sparkle validation helper is missing')

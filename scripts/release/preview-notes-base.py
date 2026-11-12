@@ -42,7 +42,7 @@ def main():
     repo = Path(__file__).resolve().parents[2]
     baseline = json.loads((repo / 'docs/spaceport/evidence/t00-dependencies.json').read_text())['source_revision']
     raw = subprocess.check_output(['gh', 'api', '--paginate', '--slurp',
-                                   'repos/harperreed/spaceport/releases?per_page=100'], timeout=60)
+                                   'repos/2389-research/spaceport/releases?per_page=100'], timeout=60)
     if len(raw) > 8 * 1024 * 1024:
         raise ValueError('Published release history is oversized')
     pages = json.loads(raw)

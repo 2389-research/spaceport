@@ -37,19 +37,31 @@ def check(version, sha, run_id, attempt, read_page):
                 raise ValueError('Workflow history has a malformed record')
             identity = run.get('id')
             match = TITLE.fullmatch(run.get('display_title', ''))
-            if type(identity) is not int or identity in seen or match is None:
+            if type(identity) is not int or identity in seen:
                 raise ValueError('Workflow history has a duplicate or unrecognized record')
+            if match is None:
+                # Queued runs can retain the commit subject before run-name is
+                # evaluated. Their push tag still reserves the version.
+                tag, source = run.get('head_branch', ''), run.get('head_sha', '')
+                if (run.get('event') != 'push' or not isinstance(tag, str)
+                        or not re.fullmatch(rf'v{VERSION}', tag)
+                        or not isinstance(source, str)
+                        or not re.fullmatch(r'[0-9a-f]{40}', source)):
+                    raise ValueError('Workflow history has an unrecognized record')
+                requested = (tag[1:], source)
+            else:
+                requested = match.groups()
             seen.add(identity)
             # Invalid version tags can trigger a run, but neither request validation
             # nor the signer accepts them. They cannot reserve a valid version.
-            if not re.fullmatch(VERSION, match[1]):
+            if not re.fullmatch(VERSION, requested[0]):
                 if identity == current:
                     raise ValueError('Current workflow title does not match the selected preview')
                 continue
             if identity == current:
-                if match.groups() != (version, sha):
+                if requested != (version, sha):
                     raise ValueError('Current workflow title does not match the selected preview')
-            elif match[1] == version:
+            elif requested[0] == version:
                 raise ValueError(f'Preview version already reserved by workflow run {identity}')
         if len(seen) == total:
             if current not in seen:
@@ -61,7 +73,7 @@ def check(version, sha, run_id, attempt, read_page):
 def read_page(page):
     # GitHub documents id, display_title, total_count and this paged endpoint:
     # https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow
-    endpoint = f'repos/harperreed/spaceport/actions/workflows/macos-preview.yml/runs?per_page={PER_PAGE}&page={page}'
+    endpoint = f'repos/2389-research/spaceport/actions/workflows/macos-preview.yml/runs?per_page={PER_PAGE}&page={page}'
     try:
         result = subprocess.run(['gh', 'api', endpoint], capture_output=True, timeout=30, check=False)
     except (OSError, subprocess.TimeoutExpired) as error:

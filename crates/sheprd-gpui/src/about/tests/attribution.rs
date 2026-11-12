@@ -13,7 +13,7 @@ fn notices_credit_spaceport_modifications_and_original_work() {
 
 #[test]
 fn spaceport_is_the_primary_repository() {
-    assert_eq!(REPOSITORY, "https://github.com/harperreed/spaceport");
+    assert_eq!(REPOSITORY, "https://github.com/2389-research/spaceport");
 }
 
 #[gpui::test]
@@ -45,7 +45,7 @@ fn ownership_rows_and_project_links_fit_the_about_box(cx: &mut TestAppContext) {
         for (selector, url) in [
             (
                 "about-repository",
-                "https://github.com/harperreed/spaceport",
+                "https://github.com/2389-research/spaceport",
             ),
             (
                 "about-upstream-repository",
@@ -58,7 +58,7 @@ fn ownership_rows_and_project_links_fit_the_about_box(cx: &mut TestAppContext) {
             ),
             (
                 "about-notices",
-                "https://github.com/harperreed/spaceport/blob/main/NOTICE",
+                "https://github.com/2389-research/spaceport/blob/main/NOTICE",
             ),
         ] {
             let link = cx.debug_bounds(selector).unwrap();

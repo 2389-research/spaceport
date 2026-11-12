@@ -249,7 +249,7 @@ class PreviewSigning(unittest.TestCase):
 class PreviewRoute(unittest.TestCase):
     def test_manual_artifacts_and_tagged_prereleases_keep_signing_isolated(self):
         workflow = (ROOT / '.github/workflows/macos-preview.yml').read_text()
-        for text in ('workflow_dispatch:', 'push:', "tags: ['v*']", "github.repository == 'harperreed/spaceport'",
+        for text in ('workflow_dispatch:', 'push:', "tags: ['v*']", "github.repository == '2389-research/spaceport'",
                      "github.actor == 'harperreed'", "github.triggering_actor == 'harperreed'",
                      'environment: macos-preview', 'contents: read', 'smoke-cli.py',
                      'actions/upload-artifact@', 'actions/download-artifact@'):
@@ -266,7 +266,7 @@ class PreviewRoute(unittest.TestCase):
             if name != 'sign':
                 self.assertNotIn('secrets.', job)
         self.assertIn('needs: [validate, build, ci-gate]', jobs['sign'])
-        self.assertIn('--repo harperreed/spaceport --actor harperreed', jobs['ci-gate'])
+        self.assertIn('--repo 2389-research/spaceport --actor harperreed', jobs['ci-gate'])
         self.assertIn("github.event_name == 'push'", jobs['publish'])
         self.assertIn("needs.validate.outputs.tag != ''", jobs['publish'])
         self.assertIn('--verify-tag --prerelease', jobs['publish'])
