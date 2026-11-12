@@ -212,7 +212,7 @@ jobs:
         run: cargo test --locked --workspace --all-features
       - name: Test native macOS routing without an unlocked desktop
         if: runner.os == 'macOS' && matrix.features == 'all'
-        run: cargo test --locked -p sheprd-gpui --all-features --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1
+        run: cargo test --locked -p sheprd-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1
 
   # Spaceport Windows jobs are paused until Kata h8g5 fixes native performance.
   # Keep the jobs and their budgets intact for re-enabling qualification.

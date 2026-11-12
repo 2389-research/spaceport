@@ -13,6 +13,8 @@ RUSTUP_TOOLCHAIN=1.99.0 just test-sidebar-routing
 ```
 
 The macOS all-features CI leg also runs this test.
+That step uses `integration-test`, matching the local recipe.
+The preceding full workspace step still tests all features.
 The original `just test-sidebar` keeps its key-window requirement and negative tests.
 Neither command silently downgrades the other's success criteria.
 Application startup may request activation; the routing test does not require its success.
@@ -60,3 +62,16 @@ Independent review found and corrected a test-filter coverage loss before commit
 The original recipe still runs its two negative cases.
 Existing Darwin compact-unwind and `block 0.1.6` warnings remain.
 Full workspace and cross-platform checks are deferred to PR CI.
+
+## CI feature selection
+
+The initial CI step used `--all-features` for the native child.
+Job `131439018421` failed before application startup.
+The dynamic loader could not find `Sparkle.framework` and aborted the child.
+The sandbox correctly clears inherited loader overrides.
+An updater-enabled loose executable needs separate bundle qualification.
+
+The native routing step now uses the existing `integration-test` feature selection.
+It does not need the optional updater.
+Sandbox isolation and all-features workspace coverage remain unchanged.
+The failed CI result remains recorded; the corrected step requires a new passing run.
