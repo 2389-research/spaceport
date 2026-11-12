@@ -49,6 +49,9 @@ Unsigned macOS builds restore dependency caches, pinned helper binaries and the 
 The main-only `cache-macos.yml` workflow warms matching profiles when build inputs change.
 Release tags read main caches because GitHub isolates caches between different tags.
 Signing and publication jobs remain cache-free.
+Tool installers can choose different binary directories on hosted runners.
+`cache-release-tools.sh CACHE_DIRECTORY TOOL...` stages those binaries into one fixed cache directory.
+The cache action checks their pinned versions and adds that directory to PATH.
 
 `bash scripts/release/prepare-sparkle-sdk.sh SDK_DIRECTORY [PINNED_ARCHIVE]` acquires missing SDKs and validates existing bytes.
 It refuses changed archives or framework files and preserves them for diagnosis.
