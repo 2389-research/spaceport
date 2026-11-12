@@ -2,54 +2,49 @@
 
 Doctor Biz requested moving Spaceport to `2389-research`, pausing Windows
 builds until its performance failure is fixed, and delivering a new release.
+D66 records the approved scope; Windows performance remains Kata `h8g5`.
 
-- [x] Inspect failed main CI and queued preview; Windows performance is the
-  latest main failure. Preview 43098075293 has no jobs or signing side effects.
 - [x] Transfer the existing repository, preserving history, PRs and secrets.
 - [x] Update active repository links, workflow eligibility and signed-feed URLs.
-- [x] Pause Spaceport Windows check/native/package jobs; require their skipped
-  state without weakening macOS/Linux checks or changing performance budgets.
-- [x] Test policy and release contracts, review, commit and push a focused PR.
-- [x] Merge after CI, qualify the exact main commit and reserve a fresh tag.
-- [ ] Verify signing, notarization, published DMG and signed feed, or record
-  the exact external blocker and retained diagnostic evidence.
+- [x] Pause Spaceport Windows check/native/package jobs and require their
+  skipped state without weakening macOS/Linux checks or changing budgets.
+- [x] Fix queued-run version reservations using valid push-tag/source metadata.
+- [x] Run focused tests, review, merge PR #10 and qualify exact main CI.
+- [x] Review generated notes and push fresh annotated tag `v20261112.1`.
+- [x] Verify signing, notarization, public DMG and signed feed.
 
-Use `.worktrees/release-org-move` on `fix/release-org-move`. Keep previous tags
-immutable. Keep signing keys, Team ID, bundle identity and the Sparkle public
-key unchanged. Historical evidence keeps the repository URLs used at the time.
-Windows performance remains tracked by Kata `h8g5`; pausing builds is not a fix.
+Repository: https://github.com/2389-research/spaceport (ID 1449575010).
+The transfer preserved all six signing secret names, the identity variable,
+and main/v* environment policies. Organization members now inherit repository
+permissions. Trusted release actor, Team, bundle identity and Sparkle key stay
+unchanged. Historical evidence retains the URLs used at the time.
 
-The old queued preview also exposed a release-history failure: its uninitialized
-run title was a commit subject. History now reserves its version from a valid
-push tag and full source SHA; malformed/manual metadata still refuses. Twelve
-history tests pass after reproducing the failure. Initial live API validation
-hit a TLS handshake timeout; no remote state changed.
+PR #10 source is `91b587818f229a278c2c678c23425db4ea77e0e8`.
+Qualified main/tag source is `e874b260c9d71f75cb5f3f30418546f810b10417`.
+PR CI [43150221075](https://github.com/2389-research/spaceport/actions/runs/43150221075)
+and exact-main CI [43151863635](https://github.com/2389-research/spaceport/actions/runs/43151863635)
+passed. The real `check-ci.py` gate accepted the exact main SHA. All three
+Windows jobs skipped; Windows acceptance is not claimed.
 
-Local validation: four transition tests, nine CI policy tests, fifteen release
-gate tests, 24 release security tests (one opt-in SBOM skip), 62 preview contracts
-(five optional native/SDK skips), and eighteen Rust report/About/banner tests
-passed. Format, file-size, sorted and i18n checks pass. Spec render/check pass.
-Review found no remaining issues. Full platform lint/test/build verification
-and signed artifact delivery remain pending CI. Native click/glyph QA was not
-run because the desktop is locked.
+Preview [43153449527](https://github.com/2389-research/spaceport/actions/runs/43153449527)
+passed all five jobs and published the signed arm64 preview.
+The public DMG passed checksum, signature, ticket, Gatekeeper and CLI checks.
+The signed feed and archive verified. The old feed URL returned identical bytes
+after redirecting. The mounted bundle passed Sparkle policy validation.
+See the [qualification record](../evidence/t12-macos-preview-20261112.1-signed.md).
+Old run 43098075293 remains queued with no jobs; GitHub refused cancellation.
+Its version stays reserved. No old tag was moved and no submission was retried.
 
-PR #10 merged after full successful CI 43150221075. Source commit
-`91b587818f229a278c2c678c23425db4ea77e0e8`; main merge
-`e874b260c9d71f75cb5f3f30418546f810b10417`. Exact-main qualification
-is running as CI 43151863635. All three Windows jobs skipped as requested;
-macOS/Linux checks and both optimized macOS CLI suites passed in PR CI.
-Candidate version `20261112.1` uses the UTC date and was unused when inspected.
-CLI REST quota exhaustion lasts until 04:06:15 UTC; connector reads remain
-available. Local git-cliff is absent; the release workflow installs the pinned
-version and generates the authoritative notes. No preview tag has been pushed.
+Local transition, release-policy and preview/history contracts passed after
+observed red/green regressions. Eighteen Rust report/About/banner tests passed.
+Format, file-size, sorted, i18n, specification render/check and diff checks pass.
+Pinned git-cliff 2.12.0 generated the reviewed notes for the exact merge source
+from published ancestor v20261110.5. Live GitHub history validation passed after
+the CLI REST quota reset. Optional SDK/native/SBOM skips are listed in PR QA.
+The build Mac remains locked; native click/glyph and installed-update QA were
+not run during this recovery.
 
-Exact main CI 43151863635 passed. The actual check-ci.py gate accepted
-`e874b260c9d71f75cb5f3f30418546f810b10417`; live preview history validation
-also passed after the CLI quota reset. Pinned git-cliff 2.12.0 was installed
-under the ignored task tools directory; generated notes for this exact merge
-commit were reviewed against published ancestor v20261110.5.
-
-Annotated tag `v20261112.1` now points to the qualified merge commit. The
-new macOS preview workflow 43153449527 is running with the correct rendered
-title, rather than stuck before job creation. Signing, notarization and
-public artifact/feed verification remain pending.
+Task worktree: `.worktrees/release-org-move`; documentation branch
+`docs/release-org-move-qualification`. The requested recovery is complete.
+Next: test Check for Updates from the installed baseline on an unlocked Mac.
+Keep Windows builds paused until native performance qualification passes.
