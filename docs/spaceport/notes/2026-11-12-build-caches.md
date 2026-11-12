@@ -6,7 +6,7 @@ Do not cache credentials, keychains, submission receipts or release artifacts.
 
 Baseline: release 43153449527 rebuilt both tools and the app without a release cache.
 GitHub isolates tag caches. Seed reusable caches on trusted `main` instead.
-The repository currently holds 17 caches, about 13 GB.
+The pre-change snapshot held 17 caches, about 13 GB.
 Cache dependency outputs rather than whole workspace builds.
 
 - [x] Add runnable SDK preparation tests; observe failure before implementation.
@@ -16,7 +16,8 @@ Cache dependency outputs rather than whole workspace builds.
 - [x] Warm preview/arm64/x86_64 caches on trusted main when build inputs change.
 - [x] Run native validators, SDK tests, existing release tests and quick checks.
 - [x] Complete an independent trust-boundary review and fresh-eyes review.
-- [ ] Push a PR, pass CI, then merge and verify real cold/warm runner behavior.
+- [x] Push PR #12, pass CI, then merge to main.
+- [ ] Verify real cold/warm runner behavior.
 
 Use `.worktrees/release-caching` on `ci/release-caching`.
 Only the main warmer writes shared caches. PRs and tagged previews restore them.
@@ -37,3 +38,15 @@ The latest actionlint (1.7.12) rejects GitHub’s newer self-repository syntax.
 Use the repository’s existing checked-out action style with targeted zizmor annotations.
 Checkouts use workflow or validated source SHAs. Signer and publisher controls remain unchanged.
 An earlier shell command masked the actionlint error; final checks now stop on failure.
+
+PR #12 merged as `98c0b6be4019a7fa221c6de6179761172149ae30`.
+Full PR CI passed in run [43234058427](https://github.com/2389-research/spaceport/actions/runs/43234058427).
+The first main cache warmer is run [43237204011](https://github.com/2389-research/spaceport/actions/runs/43237204011).
+Main CI passed in run [43237203931](https://github.com/2389-research/spaceport/actions/runs/43237203931).
+The preview build and CLI smoke passed; its compiled dependencies were saved.
+Its logs exposed a helper-tool cache warning despite the successful job.
+The installer chose `.install-action/bin`, while the cache expected `.cargo/bin`.
+Stage exact tool binaries in a fixed runner directory and check their versions there.
+The PATH entry contains only the runner's fixed directory, never workflow input or tool output.
+Four real executable-staging tests cover cold use, warm reuse, missing tools and usage.
+Cold/warm GitHub verification remains pending until the path fix lands.

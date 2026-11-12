@@ -37,8 +37,8 @@ runs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
-          ~/.cargo/bin/cargo-about
-          ~/.cargo/bin/git-cliff
+          ${{ runner.temp }}/spaceport-release-tools/cargo-about
+          ${{ runner.temp }}/spaceport-release-tools/git-cliff
         key: macos-tools-${{ runner.arch }}-${{ steps.host.outputs.key }}-${{ hashFiles('.github/actions/macos-build-cache/action.yml') }}
     - name: Install checksummed pinned tool binaries on misses
       if: inputs.flavor == 'preview' && steps.tools.outputs.cache-hit != 'true'
@@ -47,21 +47,24 @@ runs:
         tool: ${{ steps.host.outputs.tools }}
         checksum: true
         fallback: none
-    - name: Verify restored tool versions
+    - name: Stage tool binaries and verify their versions
       if: inputs.flavor == 'preview'
       shell: bash
       env:
         TOOL_SPECS: ${{ steps.host.outputs.tools }}
-      run: |
+      run: | # zizmor: ignore[github-env] fixed runner-owned directory; exact trusted tool files only
+        tools_directory="$RUNNER_TEMP/spaceport-release-tools"
+        bash scripts/release/cache-release-tools.sh "$tools_directory" cargo-about git-cliff
+        echo "$RUNNER_TEMP/spaceport-release-tools" >> "$GITHUB_PATH"
         for spec in ${TOOL_SPECS//,/ }; do
           tool=${spec%@*}
           version=${spec#*@}
-          test "$("$tool" --version)" = "$tool $version"
+          test "$("$tools_directory/$tool" --version)" = "$tool $version"
         done
     - if: inputs.flavor == 'preview' && inputs.write == 'true' && steps.tools.outputs.cache-hit != 'true'
       uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
-          ~/.cargo/bin/cargo-about
-          ~/.cargo/bin/git-cliff
+          ${{ runner.temp }}/spaceport-release-tools/cargo-about
+          ${{ runner.temp }}/spaceport-release-tools/git-cliff
         key: ${{ steps.tools.outputs.cache-primary-key }}
