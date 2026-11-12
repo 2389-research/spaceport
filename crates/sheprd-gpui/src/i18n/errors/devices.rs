@@ -13,7 +13,10 @@ impl Localize for Error {
             Self::InvalidTarget => fl!("error-devices-setup-target"),
             Self::NonUtf8SetupPath => fl!("error-devices-setup-paths"),
             Self::NoProfile => fl!("error-devices-setup-no-profile"),
-            Self::NoStateDirectory => fl!("error-devices-setup-state-directory"),
+            Self::NoStateDirectory => fl!(
+                "error-devices-setup-state-directory",
+                app = crate::constants::WINDOW_TITLE
+            ),
             Self::Remove { status, detail } if detail.is_empty() => {
                 fl!("error-devices-remove", status = status.to_string())
             }

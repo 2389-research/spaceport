@@ -81,7 +81,10 @@ impl SettingsWindow {
                         source.render_filtered_integrations(&query, cx)
                     })
                     .unwrap_or_else(|_| {
-                        div().child(crate::i18n::fl!("settings-integrations-no-window"))
+                        div().child(crate::i18n::fl!(
+                            "settings-integrations-no-window",
+                            app = crate::constants::WINDOW_TITLE
+                        ))
                     }),
             )
     }
