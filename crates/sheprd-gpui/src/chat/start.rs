@@ -25,6 +25,10 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(feature = "integration-test")]
+#[path = "start/native.rs"]
+pub(crate) mod native;
+
 /// The environment variable the typed line runs the program from.
 pub(crate) const PROGRAM_ENV: &str = "HERDR_ACP";
 /// The legacy lookup name; the shared locator prefers the app-owned helper.

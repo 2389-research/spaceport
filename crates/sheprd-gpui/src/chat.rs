@@ -53,6 +53,8 @@ pub(super) fn now_ms() -> u64 {
             u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
         })
 }
+#[cfg(feature = "integration-test")]
+pub(crate) use start::native as native_start;
 pub(crate) use start::{Error as StartError, PROGRAM_ENV, Program};
 
 use sheprd_chat_protocol::{ByeReason, EndpointId};
