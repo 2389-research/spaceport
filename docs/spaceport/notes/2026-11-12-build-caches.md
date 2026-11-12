@@ -50,3 +50,16 @@ Stage exact tool binaries in a fixed runner directory and check their versions t
 The PATH entry contains only the runner's fixed directory, never workflow input or tool output.
 Four real executable-staging tests cover cold use, warm reuse, missing tools and usage.
 Cold/warm GitHub verification remains pending until the path fix lands.
+
+PR #13 merged the tool-path fix as `61bb5d02c2329b6910dcb4d3722b94bfef86e837`.
+Its full CI passed in run [43239926438](https://github.com/2389-research/spaceport/actions/runs/43239926438).
+Both optimized PR jobs restored exact main cache matches and passed 22 CLI tests each.
+Intel app compilation fell from 7m19s cold to 2m32s warm.
+Apple Silicon app compilation fell from 8m55s cold to 4m19s warm.
+
+The next main warmer, [43242788144](https://github.com/2389-research/spaceport/actions/runs/43242788144), saved the tool cache.
+Its preview failed before compilation because the cache restored an empty packaging output directory.
+Rust-cache cleans non-Cargo files recursively but leaves directories behind.
+Cache `target/release` and explicit macOS target release profiles, rather than all of `target`.
+The pinned action still cleans workspace artifacts before saving those selected paths.
+Its cache path change requires a fresh seed. Verify the following warm run before completion.

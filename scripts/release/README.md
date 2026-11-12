@@ -52,6 +52,7 @@ Signing and publication jobs remain cache-free.
 Tool installers can choose different binary directories on hosted runners.
 `cache-release-tools.sh CACHE_DIRECTORY TOOL...` stages those binaries into one fixed cache directory.
 The cache action checks their pinned versions and adds that directory to PATH.
+Cache only Cargo release profiles. Empty packaging directories must not restore beside build outputs.
 
 `bash scripts/release/prepare-sparkle-sdk.sh SDK_DIRECTORY [PINNED_ARCHIVE]` acquires missing SDKs and validates existing bytes.
 It refuses changed archives or framework files and preserves them for diagnosis.

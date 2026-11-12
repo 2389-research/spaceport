@@ -26,6 +26,11 @@ runs:
         shared-key: macos-release-${{ inputs.flavor }}-${{ steps.host.outputs.key }}-${{ inputs.flavor == 'preview' && hashFiles('scripts/release/sparkle.json') || 'native' }}
         env-vars: MACOSX_DEPLOYMENT_TARGET CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP
         cache-bin: false
+        # Preserve Cargo's dependency cleanup, but exclude packaging output directories.
+        cache-targets: false
+        cache-directories: |
+          target/release
+          target/*-apple-darwin/release
         cache-workspace-crates: false
         save-if: ${{ inputs.write == 'true' }}
     - if: inputs.flavor == 'preview'
