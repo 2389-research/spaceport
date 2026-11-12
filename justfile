@@ -78,6 +78,10 @@ stress-linux iterations="30" cpus="0.5" filter="":
 test-sidebar:
     cargo test --locked -p sheprd-gpui --features integration-test --test live_gui native_sidebar -- --ignored --nocapture --test-threads=1
 
+# Real AppKit events and glyphs; requires macOS WindowServer, but no unlocked desktop.
+test-sidebar-routing:
+    cargo test --locked -p sheprd-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1
+
 # Isolated macOS/Windows native benchmark; budget in calibrated milliseconds.
 test-perf budget="30":
     #!/usr/bin/env bash

@@ -1,4 +1,5 @@
-//! Requires an active native desktop and an explicitly selected daemon executable.
+// ABOUTME: Runs isolated native GUI fixtures and explicitly selected daemon checks.
+// ABOUTME: Separates lock-safe routing checks from desktop focus and live-daemon qualification.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::disallowed_methods)]
 #[path = "../../test-support/sandbox.rs"]
 mod sandbox;
@@ -25,6 +26,10 @@ struct Isolated {
 
 #[path = "live_gui/diagnostics.rs"]
 mod diagnostics;
+
+#[cfg(target_os = "macos")]
+#[path = "live_gui/sidebar_routing.rs"]
+mod sidebar_routing;
 
 const LOG_LINES: usize = 40;
 const LOG_LINE_CHARS: usize = 600;
@@ -161,6 +166,8 @@ fn native_input_shutdown(field: &'static str) {
 }
 
 enum Fixture {
+    #[cfg(target_os = "macos")]
+    SidebarRouting,
     Profile,
     Sidebar,
     #[cfg(target_os = "linux")]
@@ -223,6 +230,8 @@ fn native_fixture(fixture: Fixture) {
     }
     assert!(status.success(), "native sidebar failed: {status}");
     assert!(log.contains(match fixture {
+        #[cfg(target_os = "macos")]
+        Fixture::SidebarRouting => "SIDEBAR routing PASS:",
         Fixture::Profile => "PROFILE native PASS:",
         #[cfg(target_os = "linux")]
         Fixture::ApplicationMenus => "APPLICATION MENUS native PASS",
@@ -244,6 +253,10 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         command.env("HERDR_TEST_SETTINGS_CAPTURE", path);
     }
     match fixture {
+        #[cfg(target_os = "macos")]
+        Fixture::SidebarRouting => {
+            command.env("HERDR_TEST_SIDEBAR_ROUTING", "1");
+        }
         Fixture::Profile => {
             command.env("HERDR_TEST_PROFILE_ONLY", "1");
         }

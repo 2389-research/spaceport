@@ -1,10 +1,28 @@
-//! Native host routing, scoped repository, and decoy-window sidebar checks.
+// ABOUTME: Checks native host routing, scoped repositories, and exact-window event delivery.
+// ABOUTME: Shares routing checks between inactive and key-window qualification fixtures.
 use super::*;
 
 pub(super) async fn sidebar_hosts(
     handle: WindowHandle<SheprdWindow>,
     cx: &mut AsyncApp,
 ) -> Result<()> {
+    run(handle, Focus::DecoyKey, cx).await
+}
+
+pub(super) async fn sidebar_routing(
+    handle: WindowHandle<SheprdWindow>,
+    cx: &mut AsyncApp,
+) -> Result<()> {
+    run(handle, Focus::Unchanged, cx).await
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Focus {
+    DecoyKey,
+    Unchanged,
+}
+
+async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp) -> Result<()> {
     use sidebar::{
         layout_tests::PaintedProbes,
         native_tests::{HostArrows, Target},
@@ -12,16 +30,22 @@ pub(super) async fn sidebar_hosts(
     const REMOTE: &str = "Synthetic host with a deliberately long label";
     let decoy = cx
         .update(|cx| {
-            cx.open_window(WindowOptions::default(), |window, cx| {
-                cx.new(|cx| {
-                    SheprdWindow::new(
-                        ConnectTarget::Socket("/unused-decoy.sock".into()),
-                        window,
-                        cx,
-                        true,
-                    )
-                })
-            })
+            cx.open_window(
+                WindowOptions {
+                    focus: focus == Focus::DecoyKey,
+                    ..WindowOptions::default()
+                },
+                |window, cx| {
+                    cx.new(|cx| {
+                        SheprdWindow::new(
+                            ConnectTarget::Socket("/unused-decoy.sock".into()),
+                            window,
+                            cx,
+                            true,
+                        )
+                    })
+                },
+            )
         })
         .context("opening decoy window")?;
     handle
@@ -64,10 +88,12 @@ pub(super) async fn sidebar_hosts(
             cx.notify();
         })
         .context("preparing sidebar host fixtures")?;
-    cx.update(|cx| cx.activate(true));
-    decoy
-        .update(cx, |_, window, _| window.activate_window())
-        .context("activating decoy window")?;
+    if focus == Focus::DecoyKey {
+        cx.update(|cx| cx.activate(true));
+        decoy
+            .update(cx, |_, window, _| window.activate_window())
+            .context("activating decoy window")?;
+    }
     // GPUI schedules AppKit activation. Wait for its result, not a guessed delay
     // followed by a synchronous makeKeyWindow call on a possibly unordered window.
     let deadline = Instant::now() + Duration::from_secs(3);
@@ -82,7 +108,7 @@ pub(super) async fn sidebar_hosts(
                 window.viewport_size() == fixture_size(480., 780.)
             })
             .context("checking sidebar resize")?;
-        if key && resized {
+        if (focus == Focus::Unchanged || key) && resized {
             break;
         }
         if Instant::now() >= deadline {
@@ -103,7 +129,7 @@ pub(super) async fn sidebar_hosts(
     let target = decoy
         .update(cx, |_, window, _| Target::acquire(window))
         .context("acquiring decoy target")??;
-    if !target.is_key() {
+    if focus == Focus::DecoyKey && !target.is_key() {
         bail!("decoy did not become key");
     }
     drop(target);
@@ -128,7 +154,7 @@ pub(super) async fn sidebar_hosts(
         let decoy_target = decoy
             .update(cx, |_, window, _| Target::acquire(window))
             .context("checking decoy target")??;
-        if !decoy_target.is_key() {
+        if focus == Focus::DecoyKey && !decoy_target.is_key() {
             bail!("decoy lost key status at step {step}");
         }
         drop(decoy_target);
@@ -160,6 +186,22 @@ pub(super) async fn sidebar_hosts(
                     .get(label)
                     .with_context(|| format!("missing target {label}"))?;
                 let mut point = p.bounds.center();
+                if let Some(endpoint) = match step {
+                    2 => Some("fixture-1"),
+                    3 => Some(endpoint::LOCAL),
+                    4 => Some("fixture-2"),
+                    _ => None,
+                } {
+                    // Text keys retain the clipped scrolling copy of a pinned
+                    // header. Its endpoint control records the visible copy last.
+                    point.y = cx
+                        .global::<HostArrows>()
+                        .0
+                        .get(endpoint)
+                        .context("missing painted host control")?
+                        .center()
+                        .y;
+                }
                 if step < 2 {
                     point = cx
                         .global::<HostArrows>()
@@ -180,6 +222,7 @@ pub(super) async fn sidebar_hosts(
         drop(target);
         AnyWindowHandle::from(handle)
             .update(cx, |root, window, cx| -> Result<()> {
+                let delivered = window.mouse_position();
                 cx.default_global::<PaintedProbes>().0.clear();
                 window.refresh();
                 window.draw(cx).clear(cx);
@@ -189,7 +232,7 @@ pub(super) async fn sidebar_hosts(
                 let view = entity.read(cx);
                 if view.selected_endpoint != expected {
                     bail!(
-                        "step {step}: selected {} expected {expected}",
+                        "step {step}: selected {} expected {expected}; click={point:?} delivered={delivered:?}",
                         view.selected_endpoint
                     );
                 }
