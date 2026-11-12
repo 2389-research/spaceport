@@ -2,9 +2,10 @@
 # "local" for this device, or "host" for an SSH or WSL device named $host.
 # $version is the daemon's version. The command to run, `herdr update`, is
 # shown beside the text.
+# $app is the client product name.
 
 version-mismatch-daemon-title = Herdr needs an update
-version-mismatch-client-title = Sheprd needs an update
+version-mismatch-client-title = { $app } needs an update
 version-mismatch-daemon-old = { $place ->
         [local] The Herdr server on this device (version { $version }) is too old for this app. Run this command in a terminal; the app reconnects once the updated server is running.
        *[host] The Herdr server on { $host } (version { $version }) is too old for this app. Run this command on { $host }; the app reconnects once the updated server is running.

@@ -24,7 +24,10 @@ impl Notice {
     pub(crate) fn title(&self) -> String {
         match self.mismatch {
             VersionMismatch::DaemonOutdated { .. } => fl!("version-mismatch-daemon-title"),
-            VersionMismatch::ClientOutdated { .. } => fl!("version-mismatch-client-title"),
+            VersionMismatch::ClientOutdated { .. } => fl!(
+                "version-mismatch-client-title",
+                app = crate::constants::WINDOW_TITLE
+            ),
         }
     }
 
