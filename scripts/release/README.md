@@ -45,6 +45,16 @@ only that run's checksummed artifact. It verifies signatures, notarization ticke
 and Gatekeeper, mounts the final DMG read-only, checks the app identity, and runs
 the mounted CLI before writing the checksum. This does not prove native GUI behavior.
 
+Unsigned macOS builds restore dependency caches, pinned helper binaries and the public Sparkle SDK.
+The main-only `cache-macos.yml` workflow warms matching profiles when build inputs change.
+Release tags read main caches because GitHub isolates caches between different tags.
+Signing and publication jobs remain cache-free.
+
+`bash scripts/release/prepare-sparkle-sdk.sh SDK_DIRECTORY [PINNED_ARCHIVE]` acquires missing SDKs and validates existing bytes.
+It refuses changed archives or framework files and preserves them for diagnosis.
+Keep SDK directories outside Cargo's target tree, which rust-cache cleans.
+To warm caches manually, run `gh workflow run cache-macos.yml --repo 2389-research/spaceport --ref main`.
+
 For a fresh repository, merge these workflows to main and configure the
 `macos-preview` environment in repository Settings > Environments. Allow main
 branches and `v*` tags through its selected deployment rules. Restrict who can

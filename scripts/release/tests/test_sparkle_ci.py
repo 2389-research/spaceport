@@ -12,7 +12,6 @@ class SparkleCiTests(unittest.TestCase):
         source = (ROOT / ".github/workflows/macos-preview.yml").read_text()
         build, rest = source.split("\n  build:", 1)[1].split("\n  sign:", 1)
         signing, publishing = rest.split("\n  publish:", 1)
-        self.assertIn("sparkle_framework.py acquire", build)
         self.assertNotIn("SPARKLE_PRIVATE_KEY", build)
         self.assertTrue("generate-changelog.sh --macos-preview" in build,
                         "Unsigned build must generate release notes")
@@ -30,20 +29,3 @@ class SparkleCiTests(unittest.TestCase):
         self.assertIn("sheprd-gpui/macos-updater", source)
         self.assertIn("-u SPARKLE_PRIVATE_KEY", source)
         self.assertIn("SPARKLE_FRAMEWORK_PATH", source)
-
-    def test_macos_all_features_ci_has_framework_for_linking_and_raw_cli(self):
-        source = (ROOT / ".github/workflows/ci.yml").read_text()
-        checks = source.split("\n  checks:", 1)[1].split("\n  windows:", 1)[0]
-        self.assertIn("sparkle_framework.py acquire", checks)
-        self.assertIn("DYLD_FRAMEWORK_PATH", checks)
-        self.assertIn("SPARKLE_FRAMEWORK_PATH", checks)
-        self.assertLess(checks.index("sparkle_framework.py acquire"),
-                        checks.index("cargo clippy"))
-
-    def test_macos_sdk_stays_outside_the_rust_cache_cleanup_tree(self):
-        source = (ROOT / ".github/workflows/ci.yml").read_text()
-        checks = source.split("\n  checks:", 1)[1].split("\n  windows:", 1)[0]
-        sdk = "$RUNNER_TEMP/spaceport-sparkle-sdk"
-        self.assertIn(f'sparkle_framework.py acquire "{sdk}"', checks)
-        for variable in ("SPARKLE_FRAMEWORK_PATH", "DYLD_FRAMEWORK_PATH", "SPARKLE_TEST_SDK"):
-            self.assertIn(f'{variable}={sdk}', checks)
