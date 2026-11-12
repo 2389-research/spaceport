@@ -1,4 +1,5 @@
-//! Daemon-free sidebar fixture driver.
+// ABOUTME: Runs daemon-free native sidebar, menu, and glyph qualification.
+// ABOUTME: Keeps activation-dependent checks distinct from directly delivered native events.
 use super::*;
 
 /// Native check that the icon cascade reaches an installed Nerd Font. Prompts
@@ -65,6 +66,11 @@ fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
 }
 
 pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    #[cfg(target_os = "macos")]
+    if std::env::var_os("HERDR_TEST_SIDEBAR_ROUTING").is_some() {
+        hosts::start_routing(handle, cx);
+        return;
+    }
     if std::env::var_os("HERDR_TEST_CHAT_START_ERRORS").is_some() {
         crate::chat::native_start::start(handle, cx);
         return;

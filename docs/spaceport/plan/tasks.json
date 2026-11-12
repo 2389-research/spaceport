@@ -738,7 +738,8 @@
         "evidence/t11-macos-performance-selector.md",
         "evidence/t11-benchmark-launchers.md",
         "evidence/t11-native-pages-activation.md",
-        "evidence/t11-native-locked-desktop-attempt.md"
+        "evidence/t11-native-locked-desktop-attempt.md",
+        "evidence/t11-native-routing-without-unlock.md"
       ],
       "must_close_gaps": [
         "G-CHAT",
