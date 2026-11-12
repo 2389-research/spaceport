@@ -1,3 +1,5 @@
+// ABOUTME: Installs the embedded development icon and verifies bundled image bytes.
+// ABOUTME: Keeps asset filenames stable while identifying the Spaceport app in diagnostics.
 //! Embedded development icon; app bundles use their native Info.plist icon.
 //! The same artwork identifies the build in the About box on every platform.
 // i18n: migrated
@@ -34,7 +36,10 @@ pub fn install() {
         return;
     }
     let Some(image) = NSImage::initWithData(NSImage::alloc(), &NSData::with_bytes(ICNS)) else {
-        tracing::error!("Unable to decode the embedded Sheprd icon");
+        tracing::error!(
+            "Unable to decode the embedded {} icon",
+            crate::constants::WINDOW_TITLE
+        );
         return;
     };
     // SAFETY: GPUI has initialized AppKit, the main-thread marker gates access,

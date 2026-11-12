@@ -1,3 +1,5 @@
+// ABOUTME: Reads and writes settings while preserving existing files and source ownership.
+// ABOUTME: Supplies the Spaceport heading used only when seeding new overrides.
 //! The files behind Sheprd's settings: `config-gpui.toml`, which
 //! is managed unless it predates overrides, `config-gpui.local.toml`, the
 //! user's overrides, and the lock that keeps their writers apart.
@@ -18,7 +20,7 @@ pub const MANAGED_HEADER: &str = "# DO NOT EDIT -- WILL BE OVERWRITTEN";
 /// settings placed here reach new installs without changing what current
 /// users see.
 // i18n: data
-pub const OVERRIDES_SEED: &str = "# Sheprd overrides. Saved changes reload automatically.\n# Unset keys inherit config-gpui.toml; tables merge key by key.\n\n# New installs start with the roomy rounded sidebar. Remove this line for\n# the managed default, or pick another layout listed in config-gpui.toml.\nlayout = \"comfortable-rounded\"\n";
+pub const OVERRIDES_SEED: &str = "# Spaceport overrides. Saved changes reload automatically.\n# Unset keys inherit config-gpui.toml; tables merge key by key.\n\n# New installs start with the roomy rounded sidebar. Remove this line for\n# the managed default, or pick another layout listed in config-gpui.toml.\nlayout = \"comfortable-rounded\"\n";
 
 /// Where a host's settings stand, from a personal `config-gpui.toml` and
 /// the overrides beside it.

@@ -1,6 +1,7 @@
 //! Shared fixtures: a scripted core on the other end of a socket pair.
 
 mod backend;
+mod branding;
 mod connection;
 mod document;
 mod endpoint;

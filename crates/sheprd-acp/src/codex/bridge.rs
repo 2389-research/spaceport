@@ -1,3 +1,5 @@
+// ABOUTME: Translates Codex app-server messages and session requests without owning I/O.
+// ABOUTME: Keeps wire identity separate from Spaceport's displayed client title.
 //! The translation between the session's ACP and Codex's app server, free
 //! of threads and pipes.
 
@@ -65,7 +67,7 @@ impl Translator for Bridge {
         vec![self.call(
             "initialize",
             json!({
-                "clientInfo": {"name": "herdr-acp", "title": "Sheprd", "version": env!("CARGO_PKG_VERSION")},
+                "clientInfo": {"name": "herdr-acp", "title": sheprd_client::APP_NAME, "version": env!("CARGO_PKG_VERSION")},
                 "capabilities": {"experimentalApi": false, "requestAttestation": false},
             }),
             Pending::Initialize,
@@ -305,7 +307,7 @@ impl Bridge {
         let Some((call, options, ask)) = approval::ask(method, id.clone(), params) else {
             return vec![Out::Harness(json!({
                 "id": id,
-                "error": {"code": -32601, "message": "Sheprd does not support this request."},
+                "error": {"code": -32601, "message": format!("{} does not support this request.", sheprd_client::APP_NAME)},
             }))];
         };
         self.next_request += 1;

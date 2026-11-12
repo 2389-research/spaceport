@@ -29,6 +29,9 @@ mod chat_start;
 #[path = "live_gui/diagnostics.rs"]
 mod diagnostics;
 
+#[path = "live_gui/preview_branding.rs"]
+mod preview_branding;
+
 #[cfg(target_os = "macos")]
 #[path = "live_gui/sidebar_routing.rs"]
 mod sidebar_routing;
@@ -168,6 +171,10 @@ fn native_input_shutdown(field: &'static str) {
 }
 
 enum Fixture {
+    Preview {
+        light: bool,
+        narrow: bool,
+    },
     ChatStart,
     #[cfg(target_os = "macos")]
     SidebarRouting,
@@ -233,6 +240,7 @@ fn native_fixture(fixture: Fixture) {
     }
     assert!(status.success(), "native sidebar failed: {status}");
     assert!(log.contains(match fixture {
+        Fixture::Preview { .. } => "RICH CHAT native fixture PASS",
         #[cfg(target_os = "macos")]
         Fixture::SidebarRouting => "SIDEBAR routing PASS:",
         Fixture::Profile => "PROFILE native PASS:",
@@ -259,6 +267,24 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         command.env("HERDR_TEST_CHAT_START_CAPTURE", path);
     }
     match fixture {
+        Fixture::Preview { light, narrow } => {
+            let theme = if *light { "light" } else { "dark" };
+            let size = if *narrow { "narrow" } else { "wide" };
+            command
+                .env("HERDR_TEST_RICH_CHAT", "conversation")
+                .env("HERDR_TEST_RICH_CHAT_THEME", theme)
+                .env("HERDR_TEST_RICH_CHAT_SIZE", size)
+                .env("HERDR_TEST_RICH_CHAT_HOLD_MS", "0");
+            if let Some(root) = std::env::var_os("HERDR_TEST_PREVIEW_CAPTURE") {
+                let root = std::path::PathBuf::from(root);
+                assert!(root.is_absolute(), "preview capture path must be absolute");
+                fs::create_dir_all(&root).unwrap();
+                command.env(
+                    "HERDR_TEST_RICH_CHAT_CAPTURE",
+                    root.join(format!("{theme}-{size}.png")),
+                );
+            }
+        }
         #[cfg(target_os = "macos")]
         Fixture::SidebarRouting => {
             command.env("HERDR_TEST_SIDEBAR_ROUTING", "1");
