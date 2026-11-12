@@ -1,0 +1,30 @@
+# ABOUTME: Restore public SDK bytes and validate them against the pinned archive.
+# ABOUTME: Keep SDK files outside Cargo cleanup and share only trusted main caches.
+name: Prepare pinned Sparkle SDK
+description: Restore or acquire the public SDK and validate every restored framework byte.
+inputs:
+  write:
+    description: Save a cache from the trusted main warmer only.
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - id: sdk
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/spaceport-sparkle-sdk
+        key: sparkle-sdk-${{ hashFiles('scripts/release/sparkle.json') }}
+    - name: Validate restored SDK or acquire pinned bytes
+      shell: bash
+      run: |
+        sdk=$(bash scripts/release/prepare-sparkle-sdk.sh "$RUNNER_TEMP/spaceport-sparkle-sdk")
+        {
+          echo "SPARKLE_FRAMEWORK_PATH=$sdk"
+          echo "DYLD_FRAMEWORK_PATH=$sdk"
+          echo "SPARKLE_TEST_SDK=$sdk"
+        } >> "$GITHUB_ENV"
+    - if: inputs.write == 'true' && steps.sdk.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/spaceport-sparkle-sdk
+        key: ${{ steps.sdk.outputs.cache-primary-key }}

@@ -147,18 +147,16 @@ jobs:
         env:
           SPACEPORT_CI_APT_MIRROR: '1'
         run: bash scripts/install-linux-deps.sh
-      - name: Acquire the pinned macOS update framework
+      - name: Restore and validate the pinned macOS update framework
+        if: runner.os == 'macOS'
+        uses: ./.github/actions/sparkle-sdk # zizmor: ignore[self-repository] use the fixed checkout SHA
+      - name: Configure native update framework tests
         if: runner.os == 'macOS'
         run: |
           if [[ ! -x "$(brew --prefix openssl@3)/bin/openssl" ]]; then
             brew install --force-bottle openssl@3
           fi
-          # rust-cache cleans arbitrary files beneath Cargo's target directory.
-          python3 scripts/release/sparkle_framework.py acquire "$RUNNER_TEMP/spaceport-sparkle-sdk"
           {
-            echo "SPARKLE_FRAMEWORK_PATH=$RUNNER_TEMP/spaceport-sparkle-sdk"
-            echo "DYLD_FRAMEWORK_PATH=$RUNNER_TEMP/spaceport-sparkle-sdk"
-            echo "SPARKLE_TEST_SDK=$RUNNER_TEMP/spaceport-sparkle-sdk"
             echo "SPACEPORT_OPENSSL=$(brew --prefix openssl@3)/bin/openssl"
           } >> "$GITHUB_ENV"
       # Lets the release script tests build real .deb, .rpm and Arch packages.
@@ -514,8 +512,8 @@ jobs:
 
   # The macOS release builds and their release-mode CLI suite, on pull
   # requests only. On main they would hold two of the account-wide macOS
-  # runners the release workflow's own macOS builds wait for. With no main
-  # run to save a cache, there is nothing to restore, so they build cold.
+  # runners the release workflow's own macOS builds wait for. The separate
+  # dependency warmer supplies main caches without adding PR cache copies.
   build-macos:
     if: >-
       needs.commits.outputs.code == 'true' &&
@@ -547,6 +545,9 @@ jobs:
       - name: Require Rosetta for the x86_64 macOS executable
         if: matrix.target == 'x86_64-apple-darwin'
         run: arch -x86_64 /usr/bin/true || sudo softwareupdate --install-rosetta --agree-to-license
+      - uses: ./.github/actions/macos-build-cache # zizmor: ignore[self-repository] use the fixed checkout SHA
+        with:
+          flavor: ${{ matrix.target }}
       - name: Build optimized executable
         env:
           TARGET: ${{ matrix.target }}
