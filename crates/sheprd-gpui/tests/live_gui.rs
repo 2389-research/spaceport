@@ -24,6 +24,8 @@ struct Isolated {
     gui: Option<Child>,
 }
 
+#[path = "live_gui/chat_start.rs"]
+mod chat_start;
 #[path = "live_gui/diagnostics.rs"]
 mod diagnostics;
 
@@ -166,6 +168,7 @@ fn native_input_shutdown(field: &'static str) {
 }
 
 enum Fixture {
+    ChatStart,
     #[cfg(target_os = "macos")]
     SidebarRouting,
     Profile,
@@ -252,10 +255,16 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
     if let Some(path) = std::env::var_os("HERDR_TEST_SETTINGS_CAPTURE") {
         command.env("HERDR_TEST_SETTINGS_CAPTURE", path);
     }
+    if let Some(path) = std::env::var_os("HERDR_TEST_CHAT_START_CAPTURE") {
+        command.env("HERDR_TEST_CHAT_START_CAPTURE", path);
+    }
     match fixture {
         #[cfg(target_os = "macos")]
         Fixture::SidebarRouting => {
             command.env("HERDR_TEST_SIDEBAR_ROUTING", "1");
+        }
+        Fixture::ChatStart => {
+            command.env("HERDR_TEST_CHAT_START_ERRORS", "1");
         }
         Fixture::Profile => {
             command.env("HERDR_TEST_PROFILE_ONLY", "1");

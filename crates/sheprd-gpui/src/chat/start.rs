@@ -1,5 +1,5 @@
 //! Starting a new chat from this window: a tab in the focused workspace, in
-//! the focused pane's folder, running the `herdr-acp` that came with this
+//! the focused pane's folder, running the ACP helper that came with this
 //! app for the agent the user picked. Once the program reports its pane,
 //! discovery attaches the chat view as for any other chat.
 //!
@@ -25,9 +25,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(feature = "integration-test")]
+#[path = "start/native.rs"]
+pub(crate) mod native;
+
 /// The environment variable the typed line runs the program from.
 pub(crate) const PROGRAM_ENV: &str = "HERDR_ACP";
-/// The program's file name on this platform.
+/// The legacy lookup name; the shared locator prefers the app-owned helper.
 const PROGRAM: &str = if cfg!(windows) {
     "herdr-acp.exe"
 } else {
@@ -45,15 +49,15 @@ pub enum Error {
     CoreTerminalRequired,
     #[error("ACP chats are off in Settings")]
     Disabled,
-    #[error("Sheprd is not connected")]
+    #[error("{app} is not connected", app = crate::constants::WINDOW_TITLE)]
     NotConnected,
     #[error("chats start on this machine's Herdr or an SSH host's")]
     NotLocal,
     #[error("no workspace is focused")]
     NoWorkspace,
-    #[error("sheprd-acp was not found beside Sheprd or on PATH")]
+    #[error("{program} was not found beside {app} or on PATH", program = Program::file_name(), app = crate::constants::WINDOW_TITLE)]
     ProgramMissing,
-    #[error("Sheprd is still looking for sheprd-acp")]
+    #[error("{app} is still looking for {program}", app = crate::constants::WINDOW_TITLE, program = Program::file_name())]
     ProgramUnknown,
     #[error("{0}")]
     Request(#[source] std::sync::Arc<crate::Error>),
@@ -66,7 +70,7 @@ pub enum Error {
     // keep-sorted end
 }
 
-/// Where the `herdr-acp` this window starts chats with is, once looked for.
+/// Where the ACP helper this window starts chats with is, once looked for.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) enum Program {
     #[default]
@@ -77,6 +81,11 @@ pub(crate) enum Program {
 }
 
 impl Program {
+    /// The preferred helper filename shown while its actual path is unresolved.
+    pub(crate) fn file_name() -> String {
+        crate::bundled::preferred_name(PROGRAM).unwrap_or_else(|| PROGRAM.to_owned())
+    }
+
     /// The program found on this machine. A lookup not yet finished is not
     /// a missing program: it may still find one.
     pub(crate) fn found(&self) -> Result<&Path, Error> {
