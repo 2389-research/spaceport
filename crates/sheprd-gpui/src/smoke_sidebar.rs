@@ -66,6 +66,11 @@ fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
 }
 
 pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    #[cfg(target_os = "macos")]
+    if std::env::var_os("HERDR_TEST_SIDEBAR_ROUTING").is_some() {
+        hosts::start_routing(handle, cx);
+        return;
+    }
     if std::env::var_os("HERDR_TEST_CHAT_START_ERRORS").is_some() {
         crate::chat::native_start::start(handle, cx);
         return;
@@ -622,28 +627,14 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
             std::process::exit(1);
         }
         #[cfg(target_os = "macos")]
-        let routing_only = std::env::var_os("HERDR_TEST_SIDEBAR_ROUTING").is_some();
-        #[cfg(target_os = "macos")]
-        {
-            let result = if routing_only {
-                hosts::sidebar_routing(handle, cx).await
-            } else {
-                sidebar_hosts(handle, cx).await
-            };
-            if let Err(error) = result {
-                eprintln!("SIDEBAR native hosts FAIL: {error:#}");
-                std::process::exit(1);
-            }
+        if let Err(error) = sidebar_hosts(handle, cx).await {
+            eprintln!("SIDEBAR native hosts FAIL: {error:#}");
+            std::process::exit(1);
         }
         let probes = cx.update(|cx| cx.default_global::<sidebar::layout_tests::PaintedProbes>().check());
         if !matches!(probes, Ok(())) {
             eprintln!("SIDEBAR native paint FAIL: {probes:?}");
             std::process::exit(1);
-        }
-        #[cfg(target_os = "macos")]
-        if routing_only {
-            eprintln!("SIDEBAR routing PASS: no unlocked-desktop requirement; {drawn}/72 native glyph frames; exact-window routing and independent scroll; key-window qualification excluded");
-            std::process::exit(0);
         }
         eprintln!("SIDEBAR native PASS: {cascade}; {drawn}/72 Menlo draws (the rest larger than the display), flat and rounded normal/compact/comfortable layouts at 4 sizes, collapse/expand, menu isolation, profile popup, right-click dialogs and Unicode fields at 2 sizes; host routing, disabled selection, scoped repositories, resized host/agent glyphs, independent scroll and decoy key window");
         std::process::exit(0);

@@ -9,11 +9,36 @@ pub(super) async fn sidebar_hosts(
     run(handle, Focus::DecoyKey, cx).await
 }
 
-pub(super) async fn sidebar_routing(
-    handle: WindowHandle<SheprdWindow>,
-    cx: &mut AsyncApp,
-) -> Result<()> {
-    run(handle, Focus::Unchanged, cx).await
+pub(super) fn start_routing(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    cx.set_global(sidebar::layout_tests::PaintedProbes::default());
+    cx.spawn(async move |cx| {
+        let result = async {
+            AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<()> {
+                root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?.update(cx, |view, cx| {
+                    view.config.layout.mode = crate::config::LayoutMode::from(crate::config::Density::Comfortable);
+                    view.sidebar_scroll[0].set_offset(point(px(0.), px(-20.)));
+                    cx.notify();
+                });
+                window.resize(fixture_size(480., 600.));
+                window.refresh();
+                window.draw(cx).clear(cx);
+                Ok(())
+            })??;
+            run(handle, Focus::Unchanged, cx).await?;
+            cx.update(|cx| cx.default_global::<sidebar::layout_tests::PaintedProbes>().check())?;
+            Ok::<_, anyhow::Error>(())
+        }.await;
+        match result {
+            Ok(()) => {
+                eprintln!("SIDEBAR routing PASS: native host events, resized glyphs and independent scroll; key-window qualification excluded");
+                std::process::exit(0);
+            }
+            Err(error) => {
+                eprintln!("SIDEBAR routing FAIL: {error:#}");
+                std::process::exit(1);
+            }
+        }
+    }).detach();
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -28,6 +53,11 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
         native_tests::{HostArrows, Target},
     };
     const REMOTE: &str = "Synthetic host with a deliberately long label";
+    let height = if focus == Focus::Unchanged {
+        600.
+    } else {
+        780.
+    };
     let decoy = cx
         .update(|cx| {
             cx.open_window(
@@ -84,7 +114,7 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
             view.live = view.endpoints[0].live.clone();
             view.collapsed_repos.clear();
             view.marked = "preserve collapse composition".into();
-            window.resize(fixture_size(480., 780.));
+            window.resize(fixture_size(480., height));
             cx.notify();
         })
         .context("preparing sidebar host fixtures")?;
@@ -105,7 +135,7 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
         drop(target);
         let resized = handle
             .update(cx, |_, window, _| {
-                window.viewport_size() == fixture_size(480., 780.)
+                window.viewport_size() == fixture_size(480., height)
             })
             .context("checking sidebar resize")?;
         if (focus == Focus::Unchanged || key) && resized {
@@ -136,7 +166,7 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
     let viewport = handle
         .update(cx, |_, window, _| window.viewport_size())
         .context("reading sidebar viewport")?;
-    if viewport != fixture_size(480., 780.) {
+    if viewport != fixture_size(480., height) {
         bail!("narrow resize not settled: {viewport:?}");
     }
     for (step, label, expected) in [
@@ -311,7 +341,7 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
         handle
             .update(cx, |view, window, cx| {
                 view.sidebar_width = preferred;
-                window.resize(fixture_size(window_width, 780.));
+                window.resize(fixture_size(window_width, height));
                 cx.notify();
             })
             .context("resizing sidebar fixture")?;
@@ -319,7 +349,7 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
         loop {
             let settled = AnyWindowHandle::from(handle)
             .update(cx, |_, window, cx| -> Result<bool> {
-                if window.viewport_size() != fixture_size(window_width, 780.) {
+                if window.viewport_size() != fixture_size(window_width, height) {
                     return Ok(false);
                 }
                 cx.default_global::<PaintedProbes>().0.clear();
@@ -377,6 +407,10 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
                     .map_err(|_| anyhow!("unexpected root"))?;
                 entity.update(cx, |view, _| -> Result<()> {
                     view.config.sidebar.size = font_size;
+                    if focus == Focus::Unchanged {
+                        // Larger text needs its host scrolled into the compact viewport.
+                        view.sidebar_scroll[0].set_offset(point(px(0.), px(-80.)));
+                    }
                     view.config.theme = if font_size == 12. { "Default" } else { "Nord" }.into();
                     view.theme = view.config.theme(false)?;
                     Ok(())
