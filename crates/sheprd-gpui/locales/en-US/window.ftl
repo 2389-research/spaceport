@@ -8,9 +8,9 @@ window-reconnect-now = Reconnect now
 # The same card while the device is being removed on purpose.
 window-removing = Removing { $host }
 window-device-being-removed = It is being removed.
-# The announcement's caption; $version is the Sheprd release it is about.
-window-announcement = Sheprd { $version }
-window-announcement-preview = Sheprd { $version } · preview
+# The announcement's caption; $runtime owns the reported release version.
+window-announcement = { $runtime } { $version }
+window-announcement-preview = { $runtime } { $version } · preview
 window-dismiss = Dismiss
 # $error is why the daemon could not mark the announcement seen.
 window-dismiss-announcement-failed = Dismiss announcement: { $error }

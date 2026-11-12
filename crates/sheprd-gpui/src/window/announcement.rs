@@ -24,9 +24,17 @@ impl SheprdWindow {
         let (version, id) = (announcement.version.clone(), announcement.id.clone());
         let version_text = safe_text(&announcement.version, 64);
         let caption = if announcement.preview {
-            fl!("window-announcement-preview", version = version_text)
+            fl!(
+                "window-announcement-preview",
+                runtime = crate::constants::HERDR_NAME,
+                version = version_text
+            )
         } else {
-            fl!("window-announcement", version = version_text)
+            fl!(
+                "window-announcement",
+                runtime = crate::constants::HERDR_NAME,
+                version = version_text
+            )
         };
         let card = div()
             .id("announcement")

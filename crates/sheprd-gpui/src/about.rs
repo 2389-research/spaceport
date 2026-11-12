@@ -3,14 +3,13 @@
 // i18n: migrated
 use crate::i18n::fl;
 use crate::sidebar::label_text;
-use crate::{SheprdWindow, menu::Page};
+use crate::{SheprdWindow, constants::HERDR_NAME, menu::Page};
 use gpui::{prelude::*, *};
 use std::sync::{Arc, LazyLock};
 
 pub(super) const WEBSITE: &str = "https://herdr.dev/";
-pub(super) const REPOSITORY: &str = "https://github.com/harperreed/spaceport";
+pub(super) const REPOSITORY: &str = "https://github.com/2389-research/spaceport";
 const UPSTREAM_REPOSITORY: &str = "https://github.com/sheprd-labs/sheprd";
-const HERDR_NAME: &str = "Herdr"; // i18n: data
 const SHEPRD_NAME: &str = "Sheprd"; // i18n: data
 pub(super) const COPYRIGHT_YEAR: &str = "© 2026";
 // i18n: data

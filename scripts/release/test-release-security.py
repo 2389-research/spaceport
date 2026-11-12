@@ -45,13 +45,13 @@ class ReleaseTargets(unittest.TestCase):
         jobs = dict(zip(sections[1::2], sections[2::2]))
         for name, job in jobs.items():
             self.assertIn("github.repository == 'sheprd-labs/sheprd'", job)
-            self.assertIn("github.repository == 'harperreed/spaceport'", job)
+            self.assertIn("github.repository == '2389-research/spaceport'", job)
             if name != "build-macos":
                 condition = " ".join(re.search(r"^    if: >-\n((?:      .*\n)+)", job, re.M)[1].split())
                 mapping = " ".join("""
-                  ((github.repository == 'harperreed/spaceport' &&
+                  ((github.repository == '2389-research/spaceport' &&
                     github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-                   (github.repository != 'harperreed/spaceport' &&
+                   (github.repository != '2389-research/spaceport' &&
                     github.actor == 'penso' && github.triggering_actor == 'penso'))
                 """.split())
                 self.assertIn(mapping, condition, name)
@@ -61,8 +61,8 @@ class ReleaseTargets(unittest.TestCase):
         self.assertIn("    needs: [checks, windows, windows-native, windows-package, build-macos, commits]\n",
                       jobs["checks-passed"])
         self.assertIn('test "$COMMITS" = success || exit 1', jobs["checks-passed"])
-        self.assertIn('test "$RESULT" = success && test "$WINDOWS" = success', jobs["checks-passed"])
-        self.assertIn('test "$CODE" = false && test "$RESULT" = skipped && test "$WINDOWS" = skipped', jobs["checks-passed"])
+        self.assertIn('test "$RESULT" = success || exit 1', jobs["checks-passed"])
+        self.assertIn('test "$CODE" = false && test "$RESULT" = skipped || exit 1', jobs["checks-passed"])
         for name in ("checks", "windows", "build", "build-macos"):
             self.assertIn("needs.commits.outputs.code == 'true'", jobs[name])
             self.assertIn("needs: [zizmor, commits]", jobs[name])

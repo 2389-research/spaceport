@@ -4,6 +4,9 @@
 // Every window carries the product name; the focused space follows it.
 pub(crate) const WINDOW_TITLE: &str = sheprd_client::APP_NAME;
 
+/// The external runtime that owns daemon announcements and release notes.
+pub(crate) const HERDR_NAME: &str = "Herdr"; // i18n: data
+
 // Development windows and notifications must not share Sheprd's OS identity.
 // Release builds require verified independent production identities.
 pub(crate) const APP_ID: &str = env!("SPACEPORT_APP_ID");

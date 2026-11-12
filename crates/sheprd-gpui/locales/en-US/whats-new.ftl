@@ -1,8 +1,8 @@
-# The sheet with the daemon's update notice and release notes. $version is a
-# Sheprd version, such as 0.9.2.
+# The sheet with the daemon's update notice and release notes.
+# $version is the reported version of $runtime, such as 0.9.2.
 
-whats-new-update-ready = Update ready: Sheprd { $version }
-whats-new-title = What's new in Sheprd { $version }
+whats-new-update-ready = Update ready: { $runtime } { $version }
+whats-new-title = What's new in { $runtime } { $version }
 whats-new-unavailable = Release notes are unavailable
 whats-new-suggested-command = Suggested command (review and run yourself):
 whats-new-no-command = No install command provided by daemon.

@@ -17,7 +17,7 @@ PR_JOBS = tuple(job for job in JOBS if job != "build")
 REPOSITORY_OWNERS = {
     "sheprd-labs/sheprd": "penso",
     "penso/herdr-gpui": "penso",
-    "harperreed/spaceport": "harperreed",
+    "2389-research/spaceport": "harperreed",
 }
 # Jobs that never run on main: the release workflow builds those targets.
 PR_ONLY_JOBS = ("build-macos",)
@@ -77,7 +77,8 @@ class CiPolicy(unittest.TestCase):
                                           "github.triggering_actor": actor})
                 for job in PR_JOBS:
                     with self.subTest(repository=repository, actor=actor, job=job):
-                        self.assertTrue(condition_matches(job, context))
+                        self.assertEqual(condition_matches(job, context),
+                                         repository != "2389-research/spaceport" or not job.startswith("windows"))
                 self.assertFalse(condition_matches("build", context))
 
     def test_owner_pr_still_runs_checks_but_not_release_build(self):
@@ -89,7 +90,9 @@ class CiPolicy(unittest.TestCase):
                 "github.event.pull_request.head.repo.full_name": repository,
             })
             for job in PR_JOBS:
-                self.assertTrue(condition_matches(job, context), (repository, job))
+                self.assertEqual(condition_matches(job, context),
+                                 repository != "2389-research/spaceport" or not job.startswith("windows"),
+                                 (repository, job))
             self.assertFalse(condition_matches("build", context))
 
     def test_non_pr_events_require_owner_main_and_expected_event(self):
@@ -109,7 +112,8 @@ class CiPolicy(unittest.TestCase):
             for job in JOBS:
                 with self.subTest(job=job, context=context):
                     self.assertEqual(condition_matches(job, context),
-                                     allowed and job not in PR_ONLY_JOBS)
+                                     allowed and job not in PR_ONLY_JOBS
+                                     and (repository != "2389-research/spaceport" or not job.startswith("windows")))
 
     def test_other_repositories_cannot_run_jobs(self):
         for event in ("pull_request", "push", "workflow_dispatch"):
@@ -165,7 +169,7 @@ class CiPolicy(unittest.TestCase):
             return subprocess.run(
                 ["bash", "-e", "-c", script], capture_output=True,
                 env={**os.environ, "CODE": code, "RESULT": checks, "WINDOWS": windows,
-                     "NATIVE": native, "COMMITS": commits,
+                     "NATIVE": native, "COMMITS": commits, "WINDOWS_ENABLED": "true",
                      "PACKAGE_INPUTS": package_inputs, "PACKAGE": package,
                      "EVENT": event, "MACOS_RELEASE": macos},
             ).returncode == 0

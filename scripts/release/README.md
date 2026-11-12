@@ -23,16 +23,21 @@ prerelease/build suffixes, or leading zeros.
 ## Spaceport macOS previews
 
 The separate `macos-preview.yml` workflow builds and signs **macOS arm64 previews only**.
-Pushing `vYYYYMMDD.COUNTER` as `harperreed` to `harperreed/spaceport` builds an
+Pushing `vYYYYMMDD.COUNTER` as `harperreed` to `2389-research/spaceport` builds an
 optimized app, signs and notarizes it, and publishes a GitHub **prerelease** with
 the DMG and `SHA256SUMS`. Manual runs on main accept an exact commit SHA and an
 explicit version; they upload workflow artifacts without publishing a release.
-The [20261110.5 prerelease](https://github.com/harperreed/spaceport/releases/tag/v20261110.5)
-completed this route; its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261110.5-signed.md)
-includes verification of the actual published download.
+The [20261112.1 prerelease](https://github.com/2389-research/spaceport/releases/tag/v20261112.1)
+completed this route with Sparkle enabled.
+Its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261112.1-signed.md)
+covers the public DMG, signed feed and old feed URL redirect.
 Both routes require the selected commit to belong to main and have a complete,
-successful main CI run. The signing and publishing jobs re-fetch the tag and
-refuse it if it moved. Only the publishing job receives `contents: write`.
+successful main CI run. D66 temporarily pauses Spaceport Windows CI until
+Kata `h8g5` fixes native performance; macOS/Linux checks remain mandatory,
+and the aggregate gate requires Windows jobs to be skipped. No Windows
+performance budget or acceptance result changes.
+The signing and publishing jobs re-fetch the tag and refuse it if it moved.
+Only the publishing job receives `contents: write`.
 
 The unsigned build has no signing secrets and runs `smoke-cli.py` on its actual
 executable. The signing job uses the protected `macos-preview` environment and
@@ -40,12 +45,28 @@ only that run's checksummed artifact. It verifies signatures, notarization ticke
 and Gatekeeper, mounts the final DMG read-only, checks the app identity, and runs
 the mounted CLI before writing the checksum. This does not prove native GUI behavior.
 
+Unsigned macOS builds restore dependency caches, pinned helper binaries and the public Sparkle SDK.
+The main-only `cache-macos.yml` workflow warms matching profiles when build inputs change.
+Release tags read main caches because GitHub isolates caches between different tags.
+Signing and publication jobs remain cache-free.
+Tool installers can choose different binary directories on hosted runners.
+`cache-release-tools.sh CACHE_DIRECTORY TOOL...` stages those binaries into one fixed cache directory.
+The cache action checks their pinned versions and adds that directory to PATH.
+Cache only Cargo release profiles. Empty packaging directories must not restore beside build outputs.
+
+`bash scripts/release/prepare-sparkle-sdk.sh SDK_DIRECTORY [PINNED_ARCHIVE]` acquires missing SDKs and validates existing bytes.
+It refuses changed archives or framework files and preserves them for diagnosis.
+Keep SDK directories outside Cargo's target tree, which rust-cache cleans.
+To warm caches manually, run `gh workflow run cache-macos.yml --repo 2389-research/spaceport --ref main`.
+
 For a fresh repository, merge these workflows to main and configure the
 `macos-preview` environment in repository Settings > Environments. Allow main
 branches and `v*` tags through its selected deployment rules. Restrict who can
 create or update those tags with repository access rules. The activated repository
-has only `harperreed` as a collaborator with write access; adding other writers
-requires reviewing signing protection, including required owner review. Add these
+now belongs to `2389-research`; organization members inherit its repository
+permissions. The move retains the existing signing environment and its main/tag
+rules. Workflow eligibility still requires `harperreed` as both initiating and
+triggering actor. Review environment protection before expanding signing authority. Add these
 **environment** values, never repository source files:
 
 | Kind | Name | Value |
@@ -59,7 +80,7 @@ requires reviewing signing protection, including required owner review. Add thes
 | Secret | `SPARKLE_PRIVATE_KEY` | Separate Spaceport preview Ed25519 seed exported by Sparkle's key tool; used only to sign updates/feed |
 
 Doctor Biz authorized hosted setup, and all six environment secrets and the
-identity variable are configured for `harperreed/spaceport`. An installed local
+identity variable are configured for `2389-research/spaceport`. An installed local
 identity is insufficient for hosted signing: CI needs the matching P12 and its
 password. Do not use a different company's certificate. The importer
 requires exactly one signing identity and checks Team `HD9NM9NSMK`.

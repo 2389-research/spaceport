@@ -56,23 +56,23 @@ class CheckCi(unittest.TestCase):
                      {"workflow_runs": [candidate]}, [{"jobs": jobs()}]]
         with mock.patch.object(CI, "api", side_effect=responses) as api, \
                 mock.patch.object(CI, "gh") as gh:
-            CI.require_ci(SHA, wait=True, repo="harperreed/spaceport", actor="harperreed")
-            self.assertTrue(all(call.kwargs["repo"] == "harperreed/spaceport"
+            CI.require_ci(SHA, wait=True, repo="2389-research/spaceport", actor="harperreed")
+            self.assertTrue(all(call.kwargs["repo"] == "2389-research/spaceport"
                                 for call in api.call_args_list))
-            self.assertEqual(gh.call_args.args[3:5], ("--repo", "harperreed/spaceport"))
+            self.assertEqual(gh.call_args.args[3:5], ("--repo", "2389-research/spaceport"))
 
     def test_api_uses_explicit_repository(self):
         with mock.patch.object(CI, "gh", return_value=mock.Mock(stdout='{}')) as gh:
-            self.assertEqual(CI.api("actions/workflows/ci.yml/runs", repo="harperreed/spaceport"), {})
+            self.assertEqual(CI.api("actions/workflows/ci.yml/runs", repo="2389-research/spaceport"), {})
             self.assertEqual(gh.call_args.args[:2],
-                             ("api", "repos/harperreed/spaceport/actions/workflows/ci.yml/runs"))
+                             ("api", "repos/2389-research/spaceport/actions/workflows/ci.yml/runs"))
 
     def test_cli_selects_repository_and_actor(self):
         with mock.patch("sys.argv", ["check-ci.py", SHA, "--wait", "--repo",
-                                     "harperreed/spaceport", "--actor", "harperreed"]), \
+                                     "2389-research/spaceport", "--actor", "harperreed"]), \
                 mock.patch.object(CI, "require_ci") as check:
             self.assertEqual(CI.main(), 0)
-            check.assert_called_once_with(SHA, True, repo="harperreed/spaceport", actor="harperreed")
+            check.assert_called_once_with(SHA, True, repo="2389-research/spaceport", actor="harperreed")
 
     def test_cli_rejects_malformed_repository_and_actor_before_api(self):
         for option, value in (("--repo", "a/b/../c"), ("--repo", "a/b?x=y"),

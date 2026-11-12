@@ -14,7 +14,7 @@ body:
     attributes:
       label: Preflight checklist
       options:
-        - label: I have searched [existing issues](https://github.com/harperreed/spaceport/issues) for duplicates.
+        - label: I have searched [existing issues](https://github.com/2389-research/spaceport/issues) for duplicates.
           required: true
   - type: textarea
     id: actual

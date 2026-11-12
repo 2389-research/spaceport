@@ -1,0 +1,91 @@
+# ABOUTME: Warm reusable macOS caches on trusted main when build inputs change.
+# ABOUTME: Build and smoke unsigned fixtures without signing or publishing anything.
+name: Warm macOS build caches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # keep-sorted start
+      - .cargo/**
+      - .github/actions/macos-build-cache/**
+      - .github/actions/sparkle-sdk/**
+      - .github/workflows/cache-macos.yml
+      - .github/workflows/ci.yml
+      - .github/workflows/macos-preview.yml
+      - Cargo.lock
+      - Cargo.toml
+      - crates/**/Cargo.toml
+      - rust-toolchain.toml
+      - scripts/release/*macos*
+      - scripts/release/*sparkle*
+      # keep-sorted end
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-cache-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_PROFILE_DEV_DEBUG: '0'
+
+jobs:
+  preview:
+    if: >-
+      github.repository == '2389-research/spaceport' && github.ref == 'refs/heads/main' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '14.2'
+      CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: rustup show
+      - uses: ./.github/actions/macos-build-cache # zizmor: ignore[self-repository] use the fixed checkout SHA
+        with:
+          flavor: preview
+          write: 'true'
+      - name: Build and smoke an unsigned preview fixture
+        run: bash scripts/release/build-macos.sh 20000101.1 release arm64 unsigned
+
+  ci:
+    if: >-
+      github.repository == '2389-research/spaceport' && github.ref == 'refs/heads/main' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned toolchain and target
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          rustup show
+          rustup target add "$TARGET"
+      - name: Require Rosetta for x86_64
+        if: matrix.target == 'x86_64-apple-darwin'
+        run: arch -x86_64 /usr/bin/true || sudo softwareupdate --install-rosetta --agree-to-license
+      - uses: ./.github/actions/macos-build-cache # zizmor: ignore[self-repository] use the fixed checkout SHA
+        with:
+          flavor: ${{ matrix.target }}
+          write: 'true'
+      - name: Build optimized executable and smoke actual CLI
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          cargo build --locked --release -p sheprd-gpui --target "$TARGET"
+          cargo test --locked --release -p sheprd-gpui --test cli --target "$TARGET" --no-run
+          "target/$TARGET/release/spaceport" --build-info
+          cargo test --locked --release -p sheprd-gpui --test cli --target "$TARGET"

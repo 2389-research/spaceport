@@ -15,7 +15,7 @@ import tempfile
 SPEC = importlib.util.spec_from_file_location("sparkle_feed", Path(__file__).with_name("sparkle-feed.py"))
 feed = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(feed)
-REPO = "harperreed/spaceport"
+REPO = "2389-research/spaceport"
 MARKER = "macos-preview-feed"
 
 
