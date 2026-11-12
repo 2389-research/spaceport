@@ -2,7 +2,7 @@
 
 use super::Localize;
 use crate::{
-    chat::{Error, StartError, page, pasted, visual, widgets},
+    chat::{Error, Program, StartError, page, pasted, visual, widgets},
     config::chat::{MAX_ENV, MAX_ENV_BYTES},
     i18n::fl,
 };
@@ -60,11 +60,22 @@ impl Localize for StartError {
             }
             Self::CoreTerminalRequired => fl!("error-chat-start-core-terminal-required"),
             Self::Disabled => fl!("error-chat-start-disabled"),
-            Self::NotConnected => fl!("error-chat-start-not-connected"),
+            Self::NotConnected => fl!(
+                "error-chat-start-not-connected",
+                app = crate::constants::WINDOW_TITLE
+            ),
             Self::NotLocal => fl!("error-chat-start-not-local"),
             Self::NoWorkspace => fl!("error-chat-start-no-workspace"),
-            Self::ProgramMissing => fl!("error-chat-start-program-missing"),
-            Self::ProgramUnknown => fl!("error-chat-start-program-unknown"),
+            Self::ProgramMissing => fl!(
+                "error-chat-start-program-missing",
+                app = crate::constants::WINDOW_TITLE,
+                program = Program::file_name()
+            ),
+            Self::ProgramUnknown => fl!(
+                "error-chat-start-program-unknown",
+                app = crate::constants::WINDOW_TITLE,
+                program = Program::file_name()
+            ),
             Self::Request(error) => error.localize(),
             Self::Response => fl!("error-chat-start-response"),
             Self::SlotBusy => fl!("error-chat-start-slot-busy"),

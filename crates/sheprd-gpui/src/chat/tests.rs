@@ -50,6 +50,7 @@ mod running;
 mod selection;
 mod session;
 mod start;
+mod start_branding;
 mod stop;
 mod subagents;
 mod terminal_input;

@@ -30,10 +30,11 @@ error-chat-start-agent-missing = { $agent } is not installed on this host
 error-chat-start-core-terminal-required = Select a Core terminal tab before starting a chat in this group
 error-chat-start-disabled = ACP chats are off in Settings
 error-chat-start-no-workspace = no workspace is focused
-error-chat-start-not-connected = Sheprd is not connected
+# $app is the client product name; $program is the bundled helper filename.
+error-chat-start-not-connected = { $app } is not connected
 error-chat-start-not-local = chats start on this machine's Herdr or an SSH host's
-error-chat-start-program-missing = sheprd-acp was not found beside Sheprd or on PATH
-error-chat-start-program-unknown = Sheprd is still looking for sheprd-acp
+error-chat-start-program-missing = { $program } was not found beside { $app } or on PATH
+error-chat-start-program-unknown = { $app } is still looking for { $program }
 error-chat-start-response = Herdr's answer did not name the chat's tab
 error-chat-start-slot-busy = another tab is still opening
 error-chat-start-timeout = Herdr did not open the chat's tab in time

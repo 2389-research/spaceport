@@ -41,19 +41,24 @@ fn locate_installed_in(program: &str, exe: Option<&Path>, path: Option<&OsStr>) 
         })
 }
 
+/// The preferred app-owned helper name for a supported legacy lookup name.
+pub(crate) fn preferred_name(program: &str) -> Option<String> {
+    program.strip_prefix("herdr-").and_then(|name| {
+        matches!(
+            name.strip_suffix(".exe").unwrap_or(name),
+            "acp" | "automate"
+        )
+        .then(|| format!("sheprd-{name}"))
+    })
+}
+
 pub(crate) fn locate_in(
     program: &str,
     exe: Option<&Path>,
     path: Option<&OsStr>,
 ) -> Option<PathBuf> {
     // Keep both generations of bundled helpers ahead of unrelated PATH copies.
-    let renamed = program.strip_prefix("herdr-").and_then(|name| {
-        matches!(
-            name.strip_suffix(".exe").unwrap_or(name),
-            "acp" | "automate"
-        )
-        .then(|| format!("sheprd-{name}"))
-    });
+    let renamed = preferred_name(program);
     for (exe, path) in [(exe, None), (None, path)] {
         for name in renamed
             .as_deref()
