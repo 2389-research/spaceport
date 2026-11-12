@@ -34,12 +34,12 @@ jobs:
   zizmor:
     if: >-
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        ((github.repository == 'harperreed/spaceport' &&
+        ((github.repository == '2389-research/spaceport' &&
           github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-         (github.repository != 'harperreed/spaceport' &&
+         (github.repository != '2389-research/spaceport' &&
           github.actor == 'penso' && github.triggering_actor == 'penso')) &&
         github.ref == 'refs/heads/main'))
     name: Workflow Security
@@ -61,12 +61,12 @@ jobs:
   commits:
     if: >-
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        ((github.repository == 'harperreed/spaceport' &&
+        ((github.repository == '2389-research/spaceport' &&
           github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-         (github.repository != 'harperreed/spaceport' &&
+         (github.repository != '2389-research/spaceport' &&
           github.actor == 'penso' && github.triggering_actor == 'penso')) &&
         github.ref == 'refs/heads/main'))
     name: Commit messages
@@ -112,12 +112,12 @@ jobs:
     if: >-
       needs.commits.outputs.code == 'true' &&
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        ((github.repository == 'harperreed/spaceport' &&
+        ((github.repository == '2389-research/spaceport' &&
           github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-         (github.repository != 'harperreed/spaceport' &&
+         (github.repository != '2389-research/spaceport' &&
           github.actor == 'penso' && github.triggering_actor == 'penso')) &&
         github.ref == 'refs/heads/main'))
     name: Format, lint, and test (${{ matrix.runner }}, ${{ matrix.features }})
@@ -213,19 +213,22 @@ jobs:
         if: matrix.features == 'all'
         run: cargo test --locked --workspace --all-features
 
+  # Spaceport Windows jobs are paused until Kata h8g5 fixes native performance.
+  # Keep the jobs and their budgets intact for re-enabling qualification.
   # Match the other platforms' Rust checks without an extra optimized build.
   # Native GUI tests run in windows-native; the Windows release builds run in
   # the release workflow.
   windows:
     if: >-
+      github.repository != '2389-research/spaceport' &&
       needs.commits.outputs.code == 'true' &&
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        ((github.repository == 'harperreed/spaceport' &&
+        ((github.repository == '2389-research/spaceport' &&
           github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-         (github.repository != 'harperreed/spaceport' &&
+         (github.repository != '2389-research/spaceport' &&
           github.actor == 'penso' && github.triggering_actor == 'penso')) &&
         github.ref == 'refs/heads/main'))
     name: Windows check (${{ matrix.runner }}, ${{ matrix.features }})
@@ -273,14 +276,15 @@ jobs:
   # the budget is a regression tripwire, not a target for real hardware.
   windows-native:
     if: >-
+      github.repository != '2389-research/spaceport' &&
       needs.commits.outputs.code == 'true' &&
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        ((github.repository == 'harperreed/spaceport' &&
+        ((github.repository == '2389-research/spaceport' &&
           github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-         (github.repository != 'harperreed/spaceport' &&
+         (github.repository != '2389-research/spaceport' &&
           github.actor == 'penso' && github.triggering_actor == 'penso')) &&
         github.ref == 'refs/heads/main'))
     name: Windows native GUI (${{ matrix.runner }})
@@ -334,14 +338,15 @@ jobs:
   # change, so this runs only when what those artifacts are made from changes.
   windows-package:
     if: >-
+      github.repository != '2389-research/spaceport' &&
       needs.commits.outputs.windows_package == 'true' &&
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        ((github.repository == 'harperreed/spaceport' &&
+        ((github.repository == '2389-research/spaceport' &&
           github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-         (github.repository != 'harperreed/spaceport' &&
+         (github.repository != '2389-research/spaceport' &&
           github.actor == 'penso' && github.triggering_actor == 'penso')) &&
         github.ref == 'refs/heads/main'))
     name: Windows package and installer
@@ -389,19 +394,19 @@ jobs:
       - name: Install and uninstall the Windows installer
         run: python scripts/release/windows-installer.py smoke "dist/Sheprd-$VERSION-$TARGET-setup.exe"
 
-  # Keep the branch-protection context stable while requiring every platform.
+  # Keep the branch-protection context stable while requiring active platforms.
   checks-passed:
     name: Format, lint, and test
     needs: [checks, windows, windows-native, windows-package, build-macos, commits]
     if: >-
       always() &&
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       (github.event_name == 'pull_request' ||
        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-        ((github.repository == 'harperreed/spaceport' &&
+        ((github.repository == '2389-research/spaceport' &&
           github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-         (github.repository != 'harperreed/spaceport' &&
+         (github.repository != '2389-research/spaceport' &&
           github.actor == 'penso' && github.triggering_actor == 'penso')) &&
         github.ref == 'refs/heads/main'))
     runs-on: ubuntu-24.04
@@ -411,6 +416,7 @@ jobs:
       - name: Require all platform checks
         env:
           RESULT: ${{ needs.checks.result }}
+          WINDOWS_ENABLED: ${{ github.repository != '2389-research/spaceport' }}
           WINDOWS: ${{ needs.windows.result }}
           NATIVE: ${{ needs.windows-native.result }}
           PACKAGE: ${{ needs.windows-package.result }}
@@ -422,9 +428,9 @@ jobs:
         run: |
           test "$COMMITS" = success || exit 1
           if [ "$CODE" = true ]; then
-            test "$RESULT" = success && test "$WINDOWS" = success && test "$NATIVE" = success || exit 1
+            test "$RESULT" = success || exit 1
           else
-            test "$CODE" = false && test "$RESULT" = skipped && test "$WINDOWS" = skipped && test "$NATIVE" = skipped || exit 1
+            test "$CODE" = false && test "$RESULT" = skipped || exit 1
           fi
           # The macOS release builds run on pull requests only.
           if [ "$CODE" = true ] && [ "$EVENT" = pull_request ]; then
@@ -432,10 +438,21 @@ jobs:
           else
             test "$MACOS_RELEASE" = skipped || exit 1
           fi
-          if [ "$PACKAGE_INPUTS" = true ]; then
-            test "$PACKAGE" = success
+          if [ "$WINDOWS_ENABLED" = false ]; then
+            test "$WINDOWS" = skipped && test "$NATIVE" = skipped && test "$PACKAGE" = skipped
+          elif [ "$WINDOWS_ENABLED" = true ]; then
+            if [ "$CODE" = true ]; then
+              test "$WINDOWS" = success && test "$NATIVE" = success || exit 1
+            else
+              test "$WINDOWS" = skipped && test "$NATIVE" = skipped || exit 1
+            fi
+            if [ "$PACKAGE_INPUTS" = true ]; then
+              test "$PACKAGE" = success
+            else
+              test "$PACKAGE_INPUTS" = false && test "$PACKAGE" = skipped
+            fi
           else
-            test "$PACKAGE_INPUTS" = false && test "$PACKAGE" = skipped
+            exit 1
           fi
 
   # Linux release builds on main, which the release gate requires. The release
@@ -444,12 +461,12 @@ jobs:
     if: >-
       needs.commits.outputs.code == 'true' &&
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      ((github.repository == 'harperreed/spaceport' &&
+      ((github.repository == '2389-research/spaceport' &&
           github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-         (github.repository != 'harperreed/spaceport' &&
+         (github.repository != '2389-research/spaceport' &&
           github.actor == 'penso' && github.triggering_actor == 'penso'))
     name: Release (${{ matrix.target }})
     needs: [zizmor, commits]
@@ -503,7 +520,7 @@ jobs:
     if: >-
       needs.commits.outputs.code == 'true' &&
       (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui' ||
-       github.repository == 'harperreed/spaceport') &&
+       github.repository == '2389-research/spaceport') &&
       github.event_name == 'pull_request'
     name: Release (${{ matrix.target }})
     needs: [zizmor, commits]

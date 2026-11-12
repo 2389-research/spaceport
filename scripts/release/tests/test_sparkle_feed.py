@@ -54,7 +54,7 @@ class SparkleFeedTests(unittest.TestCase):
         self.assertEqual(item["version"], "20261111.1")
         self.assertEqual(item["notes"], "Fix <terminal> & save state")
         self.assertEqual(item["url"],
-                         "https://github.com/harperreed/spaceport/releases/download/"
+                         "https://github.com/2389-research/spaceport/releases/download/"
                          "v20261111.1/Spaceport-20261111.1-arm64-apple-darwin.dmg")
         feed.verify_archive(item, self.archive, self.public)
 
@@ -108,7 +108,7 @@ class SparkleFeedTests(unittest.TestCase):
 
     def test_signed_foreign_download_url_rejected(self):
         xml = feed.render("20261111.1", 5, self.sign(b"hello"), "note")
-        xml = xml.replace(b"github.com/harperreed/spaceport", b"github.com/attacker/spaceport")
+        xml = xml.replace(b"github.com/2389-research/spaceport", b"github.com/attacker/spaceport")
         signed = xml + (f"<!-- sparkle-signatures:\nedSignature: {self.sign(xml)}\n"
                         f"length: {len(xml)}\n-->\n").encode()
         with self.assertRaisesRegex(ValueError, "URL"):

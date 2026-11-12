@@ -16,7 +16,7 @@ import tempfile
 
 VERSION = '2.10.1'
 SHA256 = '1a856d2a9edb8e628de88121d7be04cf0e2167f8641650b78fca00b14244cf27'
-FEED = 'https://github.com/harperreed/spaceport/releases/download/macos-preview-feed/appcast.xml'
+FEED = 'https://github.com/2389-research/spaceport/releases/download/macos-preview-feed/appcast.xml'
 CONFIG = Path(__file__).with_name('sparkle.json')
 CODE = (
     'Autoupdate',

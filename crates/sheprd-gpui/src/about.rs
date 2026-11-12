@@ -8,7 +8,7 @@ use gpui::{prelude::*, *};
 use std::sync::{Arc, LazyLock};
 
 pub(super) const WEBSITE: &str = "https://herdr.dev/";
-pub(super) const REPOSITORY: &str = "https://github.com/harperreed/spaceport";
+pub(super) const REPOSITORY: &str = "https://github.com/2389-research/spaceport";
 const UPSTREAM_REPOSITORY: &str = "https://github.com/sheprd-labs/sheprd";
 const SHEPRD_NAME: &str = "Sheprd"; // i18n: data
 pub(super) const COPYRIGHT_YEAR: &str = "© 2026";

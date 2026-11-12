@@ -30,7 +30,7 @@ defaults:
 jobs:
   validate:
     if: >-
-      github.repository == 'harperreed/spaceport' &&
+      github.repository == '2389-research/spaceport' &&
       ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) &&
       github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
@@ -72,7 +72,7 @@ jobs:
           ref: ${{ needs.validate.outputs.sha }}
           persist-credentials: false
       - name: Require full CI on the exact main commit before signing
-        run: python3 scripts/release/check-ci.py "$EXPECTED_SHA" --wait --repo harperreed/spaceport --actor harperreed
+        run: python3 scripts/release/check-ci.py "$EXPECTED_SHA" --wait --repo 2389-research/spaceport --actor harperreed
 
   build:
     needs: validate
@@ -96,7 +96,7 @@ jobs:
           mkdir -p target/preview-notes
           base=$(python3 scripts/release/preview-notes-base.py)
           bash scripts/release/generate-changelog.sh --macos-preview "$VERSION" target/preview-notes "$base"
-          printf '\nWorkflow: https://github.com/harperreed/spaceport/actions/runs/%s\n' "$GITHUB_RUN_ID" >> target/preview-notes/RELEASE_NOTES.md
+          printf '\nWorkflow: https://github.com/2389-research/spaceport/actions/runs/%s\n' "$GITHUB_RUN_ID" >> target/preview-notes/RELEASE_NOTES.md
       - name: Acquire the pinned update framework without signing credentials
         run: |
           python3 scripts/release/sparkle_framework.py acquire target/sparkle-sdk
@@ -125,7 +125,7 @@ jobs:
   sign:
     needs: [validate, build, ci-gate]
     if: >-
-      github.repository == 'harperreed/spaceport' &&
+      github.repository == '2389-research/spaceport' &&
       ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) &&
       github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
@@ -205,7 +205,7 @@ jobs:
     needs: [validate, sign]
     if: >-
       github.event_name == 'push' && needs.validate.outputs.tag != '' &&
-      github.repository == 'harperreed/spaceport' &&
+      github.repository == '2389-research/spaceport' &&
       github.actor == 'harperreed' && github.triggering_actor == 'harperreed'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -239,7 +239,7 @@ jobs:
           test "$(cat SHA256SUMS)" = "$(shasum -a 256 "$file")"
           shasum -a 256 -c SHA256SUMS
           python3 "$GITHUB_WORKSPACE/scripts/release/sparkle-feed.py" verify appcast.xml --archive "$file"
-          gh release create "$TAG" "$file" SHA256SUMS --repo harperreed/spaceport --verify-tag --prerelease --title "Spaceport $VERSION (macOS preview)" --notes-file "$notes"
+          gh release create "$TAG" "$file" SHA256SUMS --repo 2389-research/spaceport --verify-tag --prerelease --title "Spaceport $VERSION (macOS preview)" --notes-file "$notes"
       - name: Publish signed feed after verifying the immutable public archive
         env:
           GH_TOKEN: ${{ github.token }}

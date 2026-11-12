@@ -50,10 +50,15 @@ def eligible(run, sha, actor=ACTOR):
             and run["triggering_actor"]["login"] == actor)
 
 
-def missing_jobs(jobs):
+def missing_jobs(jobs, *, repo=REPO):
     successful = {job["name"] for job in jobs
                   if job["status"] == "completed" and job["conclusion"] == "success"}
-    return REQUIRED_JOBS - successful
+    required = REQUIRED_JOBS
+    # Doctor Biz paused Spaceport Windows builds until native performance is fixed.
+    # Upstream release policy and every active platform remain mandatory.
+    if repo == "2389-research/spaceport":
+        required = {name for name in required if not name.startswith("Windows ")}
+    return required - successful
 
 
 def require_ci(sha, wait=False, *, repo=REPO, actor=ACTOR):
@@ -63,7 +68,7 @@ def require_ci(sha, wait=False, *, repo=REPO, actor=ACTOR):
         if run["status"] != "completed" or run["conclusion"] != "success":
             continue
         pages = api(f"actions/runs/{run['id']}/jobs?filter=latest&per_page=100", repo=repo, paginate=True)
-        missing = missing_jobs(job for page in pages for job in page["jobs"])
+        missing = missing_jobs((job for page in pages for job in page["jobs"]), repo=repo)
         if not missing:
             print(f"Full CI passed: https://github.com/{repo}/actions/runs/{run['id']}")
             return
