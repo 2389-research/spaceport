@@ -368,7 +368,7 @@ pub(crate) fn run() -> std::process::ExitCode {
         #[cfg(feature = "integration-test")]
         println!(
             // i18n: data
-            "  --integration-test  Run native GUI checks (requires explicit --socket)\n  --sidebar-test      Run native sidebar fixtures without connecting to a daemon\n  --performance-test  Measure native dense-terminal hover/scroll without a daemon (macOS)"
+            "  --integration-test  Run native GUI checks (requires explicit --socket)\n  --sidebar-test      Run native sidebar fixtures without connecting to a daemon\n  --performance-test  Measure native dense-terminal hover/scroll without a daemon (macOS/Windows)"
         );
         return std::process::ExitCode::SUCCESS;
     }

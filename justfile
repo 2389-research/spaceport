@@ -78,10 +78,17 @@ stress-linux iterations="30" cpus="0.5" filter="":
 test-sidebar:
     cargo test --locked -p sheprd-gpui --features integration-test --test live_gui native_sidebar -- --ignored --nocapture --test-threads=1
 
-# Native hover/scroll CPU scene budget in milliseconds, calibrated for this machine.
+# Isolated macOS/Windows native benchmark; budget in calibrated milliseconds.
 test-perf budget="30":
-    cargo build --locked --release -p sheprd-gpui --features integration-test
-    HERDR_PERF_P95_MS="{{budget}}" target/release/spaceport --performance-test
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "$(uname -s)" in
+        Darwin|MINGW*|MSYS*|CYGWIN*) ;;
+        *) echo "Native performance requires macOS or Windows event delivery." >&2; exit 2 ;;
+    esac
+    test_filter=dense_terminal_sidebar_performance
+    if [[ ${HERDR_PERF_UNCACHED+x} ]]; then test_filter=reference_terminal_sidebar_performance; fi
+    HERDR_PERF_P95_MS="{{budget}}" cargo test --locked --release -p sheprd-gpui --features integration-test --test performance_gui "$test_filter" -- --ignored --nocapture --exact
 
 build-release:
     cargo build --locked --release -p sheprd-gpui -p sheprd-acp

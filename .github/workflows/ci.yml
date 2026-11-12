@@ -326,8 +326,7 @@ jobs:
         env:
           HERDR_PERF_P95_MS: '100'
         run: |
-          cargo build --locked --release -p sheprd-gpui --features integration-test
-          target/release/spaceport.exe --performance-test
+          cargo test --locked --release -p sheprd-gpui --features integration-test --test performance_gui dense_terminal_sidebar_performance -- --ignored --nocapture --exact
 
   # The optimized Windows build, its zip, and its installer, made and installed
   # as the release workflow does, so a packaging or installer mistake fails the
