@@ -17,7 +17,7 @@ Cache dependency outputs rather than whole workspace builds.
 - [x] Run native validators, SDK tests, existing release tests and quick checks.
 - [x] Complete an independent trust-boundary review and fresh-eyes review.
 - [x] Push PR #12, pass CI, then merge to main.
-- [ ] Verify real cold/warm runner behavior.
+- [x] Verify real cold/warm runner behavior.
 
 Use `.worktrees/release-caching` on `ci/release-caching`.
 Only the main warmer writes shared caches. PRs and tagged previews restore them.
@@ -49,7 +49,7 @@ The installer chose `.install-action/bin`, while the cache expected `.cargo/bin`
 Stage exact tool binaries in a fixed runner directory and check their versions there.
 The PATH entry contains only the runner's fixed directory, never workflow input or tool output.
 Four real executable-staging tests cover cold use, warm reuse, missing tools and usage.
-Cold/warm GitHub verification remains pending until the path fix lands.
+The tool-path fix and final cache-scope verification follow below.
 
 PR #13 merged the tool-path fix as `61bb5d02c2329b6910dcb4d3722b94bfef86e837`.
 Its full CI passed in run [43239926438](https://github.com/2389-research/spaceport/actions/runs/43239926438).
@@ -62,4 +62,24 @@ Its preview failed before compilation because the cache restored an empty packag
 Rust-cache cleans non-Cargo files recursively but leaves directories behind.
 Cache `target/release` and explicit macOS target release profiles, rather than all of `target`.
 The pinned action still cleans workspace artifacts before saving those selected paths.
-Its cache path change requires a fresh seed. Verify the following warm run before completion.
+The cache path change required the fresh seed verified below.
+
+PR #14 merged the cache-scope fix as `cdbb5512857d830c0022295a61dddb7ba277d5a0`.
+Its config-only CI passed in run [43243996895](https://github.com/2389-research/spaceport/actions/runs/43243996895).
+Repository input detection skipped workspace builds for that config-only diff.
+Full main CI for the tool-path fix passed in run [43242787879](https://github.com/2389-research/spaceport/actions/runs/43242787879).
+The final cache seed passed in [43244372052, attempt 1](https://github.com/2389-research/spaceport/actions/runs/43244372052/attempts/1).
+All three jobs built real executables and saved their selected dependency paths.
+Both architecture jobs passed 22 CLI tests each. The preview passed CLI smoke and packaging checks.
+Current-main config CI passed in run [43244371443](https://github.com/2389-research/spaceport/actions/runs/43244371443).
+Only the preview was rerun as attempt 2, job `131285196116`.
+The [warm preview](https://github.com/2389-research/spaceport/actions/runs/43244372052/attempts/2) passed.
+Its logs confirm exact dependency, SDK and helper-binary cache hits.
+The checksummed installer skipped downloads, and restored tool versions passed validation.
+Compilation fell from 10m46s cold to 3m36s warm on the same source revision.
+CLI smoke and unsigned bundle checks passed, without cache-path warnings or output collisions.
+The selected dependency profiles, SDK and helpers total about 1.84 GB.
+Older cache entries remain subject to normal GitHub eviction; storage settings stayed unchanged.
+
+Retained logs live under `target/release-caching/` in the task worktree: `final-seed.log` and `final-warm.log`.
+No release tag was created. Tag-specific timing remains unmeasured until the next requested release.
