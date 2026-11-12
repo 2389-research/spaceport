@@ -27,15 +27,17 @@ Pushing `vYYYYMMDD.COUNTER` as `harperreed` to `2389-research/spaceport` builds 
 optimized app, signs and notarizes it, and publishes a GitHub **prerelease** with
 the DMG and `SHA256SUMS`. Manual runs on main accept an exact commit SHA and an
 explicit version; they upload workflow artifacts without publishing a release.
-The [20261110.5 prerelease](https://github.com/2389-research/spaceport/releases/tag/v20261110.5)
-completed this route; its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261110.5-signed.md)
-includes verification of the actual published download.
+The [20261112.1 prerelease](https://github.com/2389-research/spaceport/releases/tag/v20261112.1)
+completed this route with Sparkle enabled.
+Its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261112.1-signed.md)
+covers the public DMG, signed feed and old feed URL redirect.
 Both routes require the selected commit to belong to main and have a complete,
 successful main CI run. D66 temporarily pauses Spaceport Windows CI until
 Kata `h8g5` fixes native performance; macOS/Linux checks remain mandatory,
 and the aggregate gate requires Windows jobs to be skipped. No Windows
-performance budget or acceptance result changes. The signing and publishing jobs re-fetch the tag and
-refuse it if it moved. Only the publishing job receives `contents: write`.
+performance budget or acceptance result changes.
+The signing and publishing jobs re-fetch the tag and refuse it if it moved.
+Only the publishing job receives `contents: write`.
 
 The unsigned build has no signing secrets and runs `smoke-cli.py` on its actual
 executable. The signing job uses the protected `macos-preview` environment and
