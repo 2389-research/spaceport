@@ -20,8 +20,8 @@ The PNGs contain the full native window at the display's pixel scale.
 Run the native fixture from the repository root:
 
 ```sh
-mkdir -p /absolute/capture-directory
-HERDR_TEST_LOCAL_CONTROLS_CAPTURE=/absolute/capture-directory \
+mkdir -p "$HOME/spaceport-captures"
+HERDR_TEST_LOCAL_CONTROLS_CAPTURE="$HOME/spaceport-captures" \
   cargo test --locked -p sheprd-gpui --features integration-test \
   --test live_gui native_local_controls -- --ignored --exact
 ```
