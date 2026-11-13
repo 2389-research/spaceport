@@ -6,8 +6,12 @@ original terminal input, without restarting, resuming or replacing the agent.
 
 ## Enable and configure
 
-**ACP chats** are on by default; Settings > General turns them off. Configure
-them in the [GUI configuration](../crates/sheprd-gpui/README.md#configuration):
+**ACP chats** are on by default; Settings > General turns them off.
+Run `spaceport config path` to locate the settings files.
+`$XDG_CONFIG_HOME/spaceport/config.toml` contains managed defaults.
+On macOS and Linux, the default directory is `~/.config/spaceport`.
+Put overrides in `config.local.toml` beside it, or use the
+[config commands](cli.md#settings-and-services). For example:
 
 ```toml
 [chat]
@@ -33,7 +37,7 @@ the prompt.
 Pick one from **View > Agent Layout**, or select a layout directly with:
 
 ```sh
-sheprd config set chat.layout bubbles
+spaceport config set chat.layout bubbles
 ```
 
 In **Settings > General**, turn on **Full-width chat** to use the available
@@ -46,9 +50,9 @@ the whole column; a width you choose is followed as set. This applies to every
 layout, including **Terminal**. The equivalent commands are:
 
 ```sh
-sheprd config set chat.max_width 0     # full width
-sheprd config set chat.max_width 1200  # custom width
-sheprd config unset chat.max_width    # restore the default
+spaceport config set chat.max_width 0     # full width
+spaceport config set chat.max_width 1200  # custom width
+spaceport config unset chat.max_width    # restore the default
 ```
 
 The Terminal layout keeps its composer controls on one row below the input.
@@ -57,8 +61,8 @@ leave room for context usage and Send/Stop. In exceptionally narrow panes,
 the settings scroll horizontally while context usage and Send/Stop stay visible.
 
 The Terminal layout still renders chat. The terminal button and
-`sheprd chat hide` show the agent's actual terminal;
-`sheprd chat show` restores the chat view. These commands change presentation
+`spaceport chat hide` show the agent's actual terminal;
+`spaceport chat show` restores the chat view. These commands change presentation
 without starting or stopping the agent. See the [CLI guide](cli.md#existing-agent-rendering).
 
 ## Chats in Herdr 2 panes
@@ -158,7 +162,7 @@ Selected code preserves original tabs; tables copy as tab-separated cells and
 newline-separated rows. Formulas are atomic selections and copy their original
 TeX. Collapsed card details and retained hidden source are omitted until opened;
 copy buttons remain available for complete retained code or original records.
-Image pixels, embedded webviews and widget controls are separate surfaces, not
+Image pixels and widget controls are separate surfaces, not
 selectable conversation text.
 
 ACP chats retain their native composer, permissions, tools, plans, context
@@ -180,8 +184,8 @@ prompt flow. Rendering or editing a native card cannot run code, submit a
 prompt or answer a permission request. Existing CLI sessions and read-only mirrors cannot submit widget actions.
 
 The catalog is application-specific, not an A2UI implementation or MCP Apps
-host. Embedded HTML pages use the platform webview; see the
-[Linux browser plan](linux-browser-plan.md). Rich chat does not provide hosted
+host. Explicit URL clicks open the system handler. Spaceport has no embedded
+browser. Rich chat does not provide hosted
 ChatGPT services such as account history, voice/video chat or hosted tools.
 
 ## Existing CLI sessions
@@ -222,7 +226,7 @@ entries, 2 MiB of text and 8 MiB of image data retained. Older history remains
 with the original agent. Model, thinking level and context usage appear only
 when reported in the retained tail; missing values stay unknown. Activity comes
 from Herdr's live snapshot. Historical permissions never become actionable
-buttons. `sheprd chat status --json` reports the input mode and session ID.
+buttons. `spaceport chat status --json` reports the input mode and session ID.
 
 System activity becomes a compact notice only when transcript metadata verifies
 its origin. Notice details remain inert, expandable and copyable; oversized

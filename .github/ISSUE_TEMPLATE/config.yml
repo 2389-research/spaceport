@@ -7,5 +7,5 @@ contact_links:
     url: https://github.com/herdrdev/herdr/issues
     about: Bugs in the daemon, sessions, or terminal processes belong upstream
   - name: Security vulnerability
-    url: https://github.com/sheprd-labs/sheprd/security/advisories/new
-    about: Report privately instead of opening a public issue
+    url: https://github.com/2389-research/spaceport/security/advisories/new
+    about: Report privately to the Spaceport maintainers

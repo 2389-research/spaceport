@@ -1,3 +1,5 @@
+// ABOUTME: Checks diagnostic coverage for the app and its linked workspace crates.
+// ABOUTME: Keeps the compiled GUI tracing namespace in the collector filter.
 use super::*;
 
 #[test]
@@ -13,5 +15,5 @@ fn every_sheprd_crate_the_app_links_is_logged() {
     for name in linked {
         assert!(LOG_TARGETS.contains(&name.as_str()), "{name} is not logged");
     }
-    assert!(LOG_TARGETS.contains(&"sheprd_gpui"));
+    assert!(LOG_TARGETS.contains(&env!("CARGO_CRATE_NAME")));
 }

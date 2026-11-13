@@ -1,3 +1,5 @@
+// ABOUTME: Owns the independent native preferences window and its draft settings.
+// ABOUTME: Keeps persistence and configuration watches separate from window rendering.
 //! Independent native preferences window. Disk work never owns a window or a socket.
 // i18n: migrated
 mod catalog;
@@ -11,6 +13,8 @@ mod pages;
 pub(crate) use layouts::{apply_loaded_layout, layout_load_revision};
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 mod native;
+#[cfg(all(feature = "integration-test", target_os = "macos"))]
+pub(crate) use native::branding::capture as capture_branding;
 mod persistence;
 mod remote_history;
 mod scrollbar;

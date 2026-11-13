@@ -1,3 +1,5 @@
+// ABOUTME: Defines build identity and fixed window presentation values.
+// ABOUTME: Keeps development and signed preview metadata tied to their build inputs.
 //! Values fixed at build time or by the reference design: the development app
 //! identity the OS sees, the tab strip's geometry, and the release version.
 
@@ -19,8 +21,8 @@ const _: () = assert!(
 /// Preview builds carry an explicit version; ordinary local builds say dev.
 pub(crate) const APP_VERSION: &str = env!("SPACEPORT_APP_VERSION");
 
-// Wayland app ID and X11 WM_CLASS. The inherited release desktop entry does
-// not match this development-only ID; production packaging remains blocked.
+// Wayland app ID and X11 WM_CLASS. Linux desktop metadata uses the development
+// identity; production packaging remains blocked.
 pub(crate) const LINUX_APP_ID: &str = APP_ID;
 
 // Even tab cells, as on herdr.dev, so short labels do not collapse to a sliver.

@@ -72,6 +72,14 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
         }
     }
     about::verify(handle, cx).await?;
+    #[cfg(target_os = "macos")]
+    crate::settings_window::capture_branding(handle, cx).await?;
+    if !cx
+        .background_spawn(async { crate::diagnostics::flush(Duration::from_secs(2)) })
+        .await
+    {
+        bail!("native local-controls diagnostics did not flush");
+    }
     eprintln!("LOCAL CONTROLS native PASS: local actions, popup isolation and focus at two sizes");
     Ok(())
 }

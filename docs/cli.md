@@ -221,7 +221,7 @@ few requests at a time.
 ### Windows
 
 On Windows the same lines travel over a named pipe,
-`\\.\pipe\herdr-gpui-control-SID`, where `SID` is your Windows user's
+`\\.\pipe\spaceport-control-SID`, where `SID` is your Windows user's
 security identifier. When `XDG_STATE_HOME` is set, a hash of the state
 directory is appended, so a test or side-by-side install gets a pipe of its
 own; without it, every shell of yours reaches the same app whatever `HOME` it

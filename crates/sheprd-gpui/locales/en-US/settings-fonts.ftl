@@ -15,7 +15,7 @@ settings-fonts-specimen-tabs = Specimen · Tabs
 settings-fonts-specimen-ui = Specimen · Interface
 # Sample text shaped like the sidebar, a line each: a workspace, then two
 # agents and their status.
-settings-fonts-sample-sidebar-1 = sheprd / workspace
+settings-fonts-sample-sidebar-1 = Spaceport / workspace
 settings-fonts-sample-sidebar-2 = {"  "}claude  Working
 settings-fonts-sample-sidebar-3 = {"  "}codex   Ready for review
 # Sample text shaped like two tab strips, a line each.

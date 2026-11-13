@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# ABOUTME: Assembles the manual Linux archive from a built app and helper.
+# ABOUTME: Preserves build-specific artwork and installs shared desktop metadata.
 set -euo pipefail
 source "$(dirname -- "$0")/common.sh"
 [[ $# == 5 ]] || fail 'Usage: bash package-linux.sh VERSION TARGET BINARY OUTPUT_DIR THIRD_PARTY_NOTICES'
@@ -31,7 +33,7 @@ for companion in "${companions[@]}"; do
     chmod 755 "$root/bin/$companion"
 done
 cp "$icon" "$root/$icon_path"
-cp "$release_root/scripts/release/org.sheprd.Sheprd.desktop" "$root/share/applications/"
+cp "$release_root/scripts/release/org.sheprd.Sheprd.desktop" "$root/share/applications/spaceport.development.desktop"
 cp "$release_root/crates/sheprd-protocol/LICENSE-APACHE" "$release_root/crates/sheprd-protocol/NOTICE.md" "$root/share/licenses/herdr-gpui/"
 cp "$release_root/LICENSE" "$release_root/NOTICE" "$release_root/assets/icons/LICENSE-octicons" "$root/share/licenses/herdr-gpui/"
 cp "$5" "$root/share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt"

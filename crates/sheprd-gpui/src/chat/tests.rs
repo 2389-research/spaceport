@@ -1,3 +1,5 @@
+// ABOUTME: Exercises chat attachment, agent discovery and session transitions.
+// ABOUTME: Shares isolated protocol fixtures across focused chat regression modules.
 use super::*;
 use sheprd_chat_protocol::{
     Change, ClientMessage, Cursor, Entry, EntryId, EntryKind, ServerMessage, Status, Transcript,
@@ -49,6 +51,8 @@ mod relocale;
 mod running;
 mod selection;
 mod session;
+#[cfg(unix)]
+mod spaceport_discovery;
 mod start;
 mod start_branding;
 mod stop;

@@ -1,4 +1,7 @@
-"""Run: python3 -m unittest discover -s scripts/release/tests -v"""
+# ABOUTME: Verifies release assembly and rejection paths with private filesystem fixtures.
+# ABOUTME: Checks actual package contents and metadata from the release producers.
+"""Run: uv run --no-project python -m unittest discover -s scripts/release/tests -v"""
+import configparser
 import json
 import os
 from pathlib import Path
@@ -68,17 +71,24 @@ class ReleaseTests(unittest.TestCase):
                     files = {m.name: m for m in archive.getmembers() if m.isfile()}
                     self.assertEqual(set(files), {base + p for p in [
                         "bin/spaceport", "bin/sheprd-acp",
-                        "share/applications/org.sheprd.Sheprd.desktop",
-                        "share/icons/hicolor/scalable/apps/sheprd.svg",
+                        "share/applications/spaceport.development.desktop",
+                        "share/icons/hicolor/scalable/apps/spaceport.svg",
                         "share/licenses/herdr-gpui/LICENSE-APACHE", "share/licenses/herdr-gpui/NOTICE.md",
                         "share/licenses/herdr-gpui/LICENSE", "share/licenses/herdr-gpui/NOTICE",
                         "share/licenses/herdr-gpui/LICENSE-octicons",
                         "share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt",
                         "share/licenses/herdr-gpui/SOUND-NOTICE.md",
                     ]})
+                    desktop = configparser.ConfigParser(interpolation=None)
+                    desktop.read_string(archive.extractfile(base + "share/applications/spaceport.development.desktop").read().decode())
+                    entry = desktop["Desktop Entry"]
+                    self.assertEqual(entry["Name"], "Spaceport")
+                    self.assertEqual(entry["Exec"], "spaceport")
+                    self.assertEqual(entry["Icon"], "spaceport")
+                    self.assertEqual(entry["StartupWMClass"], (ROOT / "crates/sheprd-gpui/development-app-id").read_text().strip())
                     self.assertEqual(files[base + "bin/sheprd-acp"].mode & 0o777, 0o755)
                     self.assertEqual(archive.extractfile(base + "bin/sheprd-acp").read(), acp.read_bytes())
-                    self.assertEqual(archive.extractfile(base + "share/icons/hicolor/scalable/apps/sheprd.svg").read(), (ROOT / "assets/icons/sheprd-linux.svg").read_bytes())
+                    self.assertEqual(archive.extractfile(base + "share/icons/hicolor/scalable/apps/spaceport.svg").read(), (ROOT / "assets/icons/sheprd-linux.svg").read_bytes())
                     self.assertEqual(archive.extractfile(base + "share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt").read(), self.notices.read_bytes())
                     for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/NOTICE.md", "crates/sheprd-gpui/SOUND-NOTICE.md"):
                         self.assertEqual(archive.extractfile(base + "share/licenses/herdr-gpui/" + Path(source).name).read(), (ROOT / source).read_bytes())
@@ -282,7 +292,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Assets.car").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.car").read_bytes())
         result = self.run_script("package-linux.sh", "20260920.3", "aarch64-unknown-linux-gnu", arm, self.work, self.notices)
         with tarfile.open(result.stdout.strip()) as archive:
-            self.assertEqual(archive.extractfile("Sheprd-20260920.3-aarch64-unknown-linux-gnu/share/icons/hicolor/scalable/apps/sheprd.svg").read(), (fixture / "assets/icons/sheprd-linux-worktree.svg").read_bytes())
+            self.assertEqual(archive.extractfile("Sheprd-20260920.3-aarch64-unknown-linux-gnu/share/icons/hicolor/scalable/apps/spaceport.svg").read(), (fixture / "assets/icons/sheprd-linux-worktree.svg").read_bytes())
 
     def test_missing_malformed_conflicting_identity_fails_closed(self):
         binary = self.work / "binary"

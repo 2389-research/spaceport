@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# ABOUTME: Qualifies installed Linux packages inside the selected distro test environment.
+# ABOUTME: Checks executable startup and installed launcher resources.
 # Install each distribution package into a clean container of its distribution,
 # resolve its declared dependencies from that distribution's repositories, and
 # check that the installed executable finds every library it links or dlopens.
@@ -41,8 +43,8 @@ cache=$(ldconfig -p)
 for library in libvulkan.so.1 libwayland-client.so.0; do
     grep -q "^[[:space:]]*$library " <<<"$cache" || { echo "missing dlopen target $library" >&2; exit 1; }
 done
-test -f /usr/share/applications/org.sheprd.Sheprd.desktop
-test -f /usr/share/icons/hicolor/scalable/apps/sheprd.svg
+test -f /usr/share/applications/spaceport.development.desktop
+test -f /usr/share/icons/hicolor/scalable/apps/spaceport.svg
 test -f /usr/share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt
 '
 removed='

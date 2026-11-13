@@ -1,7 +1,7 @@
 // ABOUTME: Reads and writes settings while preserving existing files and source ownership.
 // ABOUTME: Supplies the Spaceport heading used only when seeding new overrides.
-//! The files behind Sheprd's settings: `config-gpui.toml`, which
-//! is managed unless it predates overrides, `config-gpui.local.toml`, the
+//! The files behind Spaceport's settings: `config.toml`, which
+//! is managed unless it predates overrides, `config.local.toml`, the
 //! user's overrides, and the lock that keeps their writers apart.
 use std::{
     fs,
@@ -9,20 +9,20 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// The first line of Sheprd's managed `herdr/config-gpui.toml`, which it
+/// The first line of Spaceport's managed `spaceport/config.toml`, which it
 /// rewrites at every launch and never reads. A file without it is a
-/// personal config from before `config-gpui.local.toml`, which Sheprd moves
+/// personal config from before `config.local.toml`, which Spaceport moves
 /// into that file.
 pub const MANAGED_HEADER: &str = "# DO NOT EDIT -- WILL BE OVERWRITTEN";
 
-/// What Sheprd's first launch writes to `herdr/config-gpui.local.toml`.
+/// What Spaceport's first launch writes to `spaceport/config.local.toml`.
 /// Existing overrides and moved personal configs are never rewritten, so
 /// settings placed here reach new installs without changing what current
 /// users see.
 // i18n: data
-pub const OVERRIDES_SEED: &str = "# Spaceport overrides. Saved changes reload automatically.\n# Unset keys inherit config-gpui.toml; tables merge key by key.\n\n# New installs start with the roomy rounded sidebar. Remove this line for\n# the managed default, or pick another layout listed in config-gpui.toml.\nlayout = \"comfortable-rounded\"\n";
+pub const OVERRIDES_SEED: &str = "# Spaceport overrides. Saved changes reload automatically.\n# Unset keys inherit config.toml; tables merge key by key.\n\n# New installs start with the roomy rounded sidebar. Remove this line for\n# the managed default, or pick another layout listed in config.toml.\nlayout = \"comfortable-rounded\"\n";
 
-/// Where a host's settings stand, from a personal `config-gpui.toml` and
+/// Where a host's settings stand, from a personal `config.toml` and
 /// the overrides beside it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum State {

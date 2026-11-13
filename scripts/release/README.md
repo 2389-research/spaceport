@@ -152,10 +152,10 @@ Packaging and `just bundle` require Python 3 and read a versioned identity recor
 embedded in the supplied executable, never the packaging checkout's Git state.
 On Linux, linked-worktree binaries select `assets/icons/sheprd-linux-worktree.svg`;
 other builds select `assets/icons/sheprd-linux.svg`. Both circular variants are
-installed as `share/icons/hicolor/scalable/apps/sheprd.svg`, so manual archives
+installed as `share/icons/hicolor/scalable/apps/spaceport.svg`, so manual archives
 and distribution packages use the same layout without a pixmaps fallback.
 Regenerate both SVGs with `just icons-linux`; see the
-[icon guide](../../assets/icons/README.md#linux-desktops) for the composition and
+[icon guide](../../assets/icons/README.md#linux-and-windows) for the composition and
 desktop lookup behavior. On macOS, linked-worktree binaries select
 `assets/icons/Sheprd-worktree.icns` and `Sheprd-worktree.car`; other builds use
 `Sheprd.icns` and `Sheprd.car`. The installed icons keep their standard filenames.

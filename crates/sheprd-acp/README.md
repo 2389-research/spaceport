@@ -63,7 +63,8 @@ sheprd-acp mirror codex /absolute/path/to/rollout.jsonl \
 The endpoint is 32 lowercase hexadecimal digits. Omit `--endpoint` to generate
 one; the watcher prints its ID once ready. Stop that watcher with Ctrl+C when
 finished. This only stops the viewer. The GUI can show it over the selected
-existing pane using its own config (normally `config-gpui.toml`):
+existing pane using `spaceport/config.local.toml` in the config directory.
+Run `spaceport config path` to find it. Add:
 
 ```toml
 [[chat.mirrors]]

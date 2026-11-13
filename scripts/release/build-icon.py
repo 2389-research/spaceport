@@ -1,3 +1,5 @@
+# ABOUTME: Selects platform artwork from an embedded build identity without executing it.
+# ABOUTME: Keeps worktree and ordinary build artwork separate during packaging.
 """Read embedded identity without executing a possibly foreign-architecture binary."""
 import mmap
 from pathlib import Path
@@ -46,7 +48,7 @@ def main():
     # Desktop shells need not supply their own shape mask or PNG fallback.
     else:
         name = "sheprd-linux-worktree.svg" if worktree == b"1" else "sheprd-linux.svg"
-        print(icons / name, "share/icons/hicolor/scalable/apps/sheprd.svg", sep="\n")
+        print(icons / name, "share/icons/hicolor/scalable/apps/spaceport.svg", sep="\n")
 
 
 if __name__ == "__main__":

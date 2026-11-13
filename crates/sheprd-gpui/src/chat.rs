@@ -1,3 +1,5 @@
+// ABOUTME: Attaches the native chat view to agent conversations owned by Herdr panes.
+// ABOUTME: Discovers helper executables and keeps chat input and permissions synchronized.
 //! A native view of a `herdr-acp` chat, drawn over the pane the program runs
 //! in. The program is the agent's only ACP client and draws its own terminal
 //! view; it also listens on a private endpoint (a socket on Unix, a named
@@ -187,15 +189,17 @@ pub(crate) enum Route {
 /// Folders a remote `sheprd-acp` is looked for in before the remote `PATH`,
 /// which a noninteractive SSH shell often leaves short. `~/.herdr/bin` is
 /// where `cargo install --root ~/.herdr` puts it. A Mac has it only inside the
-/// app bundle, which never joins `PATH`, under either of its existing bundle names.
+/// app bundle, which never joins `PATH`. Older supported bundle names remain discoverable.
 const REMOTE_PROGRAM_DIRS: &[&str] = &[
     "$HOME/.herdr/bin",
     "$HOME/.cargo/bin",
     "$HOME/.local/bin",
-    "$HOME/Applications/Herdr.app/Contents/MacOS", // i18n: data
-    "$HOME/Applications/Sheprd.app/Contents/MacOS", // i18n: data
-    "/Applications/Herdr.app/Contents/MacOS",      // i18n: data
-    "/Applications/Sheprd.app/Contents/MacOS",     // i18n: data
+    "$HOME/Applications/Spaceport.app/Contents/MacOS", // i18n: data
+    "$HOME/Applications/Herdr.app/Contents/MacOS",     // i18n: data
+    "$HOME/Applications/Sheprd.app/Contents/MacOS",    // i18n: data
+    "/Applications/Spaceport.app/Contents/MacOS",      // i18n: data
+    "/Applications/Herdr.app/Contents/MacOS",          // i18n: data
+    "/Applications/Sheprd.app/Contents/MacOS",         // i18n: data
 ];
 
 /// The remote `/bin/sh` script that runs the first `sheprd-acp` found with

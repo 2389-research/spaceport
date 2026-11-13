@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for looking at Sheprd. This file covers the mechanics; the
+Thanks for looking at Spaceport. This file covers the mechanics; the
 engineering rules that actually govern changes live in
 [AGENTS.md](AGENTS.md) — architecture boundaries, Rust conventions, and
 verification expectations. Read it before a non-trivial change. It applies to
@@ -9,13 +9,14 @@ human and agent contributors alike.
 ## Before You Start
 
 - **macOS, Linux, and Windows builds.** GPUI uses Metal on macOS, Vulkan
-  with X11/Wayland on Linux, and DirectX on Windows. CI and release builds
-  cover x86_64 and ARM64 on Linux and Windows.
-- **Choose a terminal backend.** Sheprd connects to existing
-  [Herdr 1](https://github.com/herdrdev/herdr) sessions and to herdr-core.
-  Releases bundle a pinned herdr-core; source builds need a usable core binary
-  to exercise that backend. Without Herdr 1, local launches use herdr-core.
-  Existing Herdr 1 sessions are never automatically migrated. Daemon process,
+  with X11/Wayland on Linux, and DirectX on Windows. Active CI covers macOS
+  and Linux. Windows CI is paused until the native performance issue is fixed
+  under [decision D66](docs/spaceport/plan/decisions.json).
+- **Choose a terminal backend.** Spaceport connects to separately installed
+  [Herdr 1](https://github.com/herdrdev/herdr) and Herdr Core runtimes.
+  Spaceport may start an installed local runtime when needed. Explicit socket
+  connections remain attach-only. It never bundles, installs, updates, stops,
+  or migrates either runtime. Daemon process,
   session or socket bugs belong upstream; `sheprd-terminal` emulation and
   native presentation bugs belong here.
 - **Open an issue first for anything large.** Agree on the scope and approach
@@ -25,7 +26,8 @@ human and agent contributors alike.
 
 Install rustup and, on macOS, the Xcode command-line tools. On Ubuntu 24.04,
 run `bash scripts/install-linux-deps.sh` for build libraries and fonts;
-see [Linux builds](README.md#linux-builds) for runtime requirements and limitations.
+see [the fork guide](README.md#work-on-the-fork) for current requirements
+and limitations.
 The toolchain is pinned in
 `rust-toolchain.toml` and GPUI is pinned to an exact version, so `rustup show`
 is enough — do not upgrade either as a side effect of another change. `mise.toml`
@@ -37,34 +39,33 @@ just run          # optimized build; use this for anything interactive
 just run-debug    # unoptimized, notably slower with a dense terminal
 ```
 
-On macOS these launch `target/<profile>/Sheprd.app`; the visible app is
-**Sheprd** and its executable is lowercase `sheprd`.
+On macOS these launch `target/<profile>/Spaceport.app`; the visible app is
+**Spaceport** and its executable is lowercase `spaceport`.
 
-Naming changes must preserve the [compatibility inventory](docs/rebranding.md),
-including installed identities, saved data and managed skill identifiers.
+Naming changes follow [the Spaceport specification](docs/spaceport/SPEC.md).
+Preserve retained protocol contracts, legal notices and personal settings.
+The [upstream compatibility inventory](docs/rebranding.md) is historical reference.
 
 ## Verifying a Change
 
-Run the workspace gates before opening a PR:
+Run relevant quick checks before opening a PR:
 
 ```sh
-just format
-just ci
+just format-check check-file-size check-sorted check-i18n
 ```
 
-`just ci` is exactly what CI runs: `cargo fmt --all -- --check`, a
-`-D warnings` clippy pass over all targets and features, and the test suite
-under both default and all features. CI additionally builds release binaries
-for Apple Silicon, Intel macOS, and native Ubuntu 24.04 x86_64/ARM64, exercising
-their release CLI without a desktop. Run `just test-build` for linking or
-packaging changes and `just release-check` for archive/release changes. The latter
-runs the release packaging/security tests and workflow audits; see
-[release tooling](scripts/release/README.md) for prerequisites. Owner-authored
-and contributor PRs run the applicable checks; external contributors require
-GitHub workflow approval. See the
+Run targeted tests that fit the short local validation pass. Leave longer tests,
+full workspace gates (`just ci`), cross-platform lints and release builds to CI.
+Run longer checks locally when requested or needed to investigate a failure.
+Active CI checks formatting, lints and tests default and all features on macOS
+and Linux. It also builds Apple Silicon, Intel macOS and Linux x86_64/ARM64
+binaries, then exercises their release CLI without a desktop. Use `just test-build`
+to investigate linking or packaging failures. See [release tooling](scripts/release/README.md)
+for packaging checks and prerequisites. External contributors require GitHub
+workflow approval. See the
 [contributor CI policy](scripts/release/README.md#contributor-ci-approval).
 
-Some tests are opt-in because they need resources CI does not have:
+Some tests are opt-in because they need explicit external resources:
 
 ```sh
 just test-live /absolute/path/to/herdr   # needs an explicit daemon binary
