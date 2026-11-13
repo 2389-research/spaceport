@@ -14,7 +14,7 @@ Deliver macOS, Windows and Linux desktop clients under the **Spaceport** identit
 
 ### SP-002 — Preserve the approved desktop experience
 
-Retain workspaces-first navigation, chat and terminal as equal first-class views, existing conversation organization, sidebar/status display, windows/tabs/splits, pane interactions, layouts, themes, fonts, keyboard shortcuts, menus, settings, profile shell and command palette. Remove only excluded feature surfaces and make necessary backend substitutions. Preserve accessibility and internationalization in retained UI. Use baseline fixtures/screenshots for comparison, excluding the explicit rebrand and removed controls. [D01, D03, D08–D09, D16, D20–D21, D28–D29, D38–D46, D50]
+Retain workspaces-first navigation, chat and terminal as equal first-class views, existing conversation organization, sidebar/status display, windows/tabs/splits, pane interactions, layouts, themes, fonts, keyboard shortcuts, menus, settings and command palette. Remove the profile/avatar shell under D67. Keep its local controls accessible through shared application actions and menus. Remove only excluded feature surfaces and make necessary backend substitutions. Preserve accessibility and internationalization in retained UI. Use baseline fixtures/screenshots for comparison, excluding the explicit rebrand and removed controls. [D01, D03, D08–D09, D16, D20–D21, D28–D29, D38–D46, D67]
 
 ### SP-003 — Runtime ownership
 
@@ -94,7 +94,7 @@ Retain bounded diagnostics and troubleshooting. Correlate client actions with ex
 
 ### SP-022 — Complete but safe branding
 
-Rebrand visible application identity, executables, bundle/package IDs, local IPC/state paths, icons, URLs, update manifests and release channels. The About view explicitly credits both the Herdr and Sheprd teams. Preserve licenses/attribution and external protocol identifiers required for compatibility. Do not reuse upstream update keys/endpoints, access another app's credentials, claim a domain/account or mutate upstream user state. Preserve the profile shell without fake authentication. [D25–D26, D50–D53, D59]
+Rebrand visible application identity, executables, bundle/package IDs, local IPC/state paths, icons, URLs, update manifests and release channels. The About view explicitly credits both the Herdr and Sheprd teams. Preserve licenses/attribution and external protocol identifiers required for compatibility. Do not reuse upstream update keys/endpoints, access another app's credentials, claim a domain/account or mutate upstream user state. Remove the profile shell without adding authentication. [D25–D26, D51–D53, D59, D67]
 
 ### SP-023 — Independent release engineering
 

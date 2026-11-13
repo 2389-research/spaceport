@@ -1,5 +1,9 @@
+// ABOUTME: Checks application menu actions, layouts and platform entries.
+// ABOUTME: Keeps menu definitions consistent with the command catalog.
 use super::*;
 use crate::config::Layout;
+
+mod local_controls;
 
 #[test]
 fn badge_preview_is_available_only_in_the_macos_qa_menu() {
@@ -328,6 +332,7 @@ fn macos_menus_carry_hide_and_minimize(cx: &mut gpui::TestAppContext) {
             "Command Palette",
             "Settings",
             "Keyboard Shortcuts",
+            "Themes",
             "Hide Spaceport",
             "Hide Others",
             "Show All",
@@ -384,6 +389,7 @@ fn hide_and_minimize_are_macos_only() {
             "Command Palette",
             "Settings",
             "Keyboard Shortcuts",
+            "Themes",
             "Quit Spaceport",
         ]
     );

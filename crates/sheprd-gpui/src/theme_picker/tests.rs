@@ -1,3 +1,5 @@
+// ABOUTME: Checks theme preview saving, cancellation and replacement.
+// ABOUTME: Preserves input isolation until pending saves are reconciled.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use core::prelude::v1::test;
@@ -31,8 +33,8 @@ fn saving_blocks_cancel_replacement_and_reload_until_reconciled(cx: &mut TestApp
         cx.simulate_keystrokes("escape");
         let close = cx.debug_bounds("theme-close").unwrap();
         cx.simulate_click(close.center(), Modifiers::default());
-        let avatar = cx.debug_bounds("titlebar-avatar").unwrap();
-        cx.simulate_click(avatar.center(), Modifiers::default());
+        let toggle = cx.debug_bounds("toggle-sidebar").unwrap();
+        cx.simulate_click(toggle.center(), Modifiers::default());
         cx.simulate_mouse_down(
             point(px(5.), px(5.)),
             MouseButton::Left,

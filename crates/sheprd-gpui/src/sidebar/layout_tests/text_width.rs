@@ -1,3 +1,5 @@
+// ABOUTME: Exercises sidebar and popup layout through real headless views.
+// ABOUTME: Checks retained controls, focus and available text width.
 use super::*;
 
 mod menus;
@@ -33,7 +35,6 @@ fn check_sidebar(fixture: Entity<SidebarFixture>, cx: &mut gpui::VisualTestConte
 
     sidebar_rows::check_scaled_sidebar(&view, cx);
     panels::check_shortcut_search(&view, cx);
-    panels::check_profile_panel(&view, cx);
     panels::check_theme_picker(&view, cx);
     panels::check_command_palette(&view, cx);
     panels::check_close_confirmation(&view, cx);

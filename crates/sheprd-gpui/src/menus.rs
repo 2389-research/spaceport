@@ -1,3 +1,5 @@
+// ABOUTME: Defines shared native and in-window application menus.
+// ABOUTME: Dispatches menu items through the shared action catalog.
 //! Shared definitions for the macOS native and the Linux and Windows
 //! in-window menu bars.
 //! Every item dispatches the same action the palette and the keymap use.
@@ -139,6 +141,12 @@ pub(crate) fn menus(config: &Config) -> Vec<Menu> {
                     fl!("menus-keyboard-shortcuts"),
                     RunCommand {
                         command: Command::Keybinds,
+                    },
+                ),
+                MenuItem::action(
+                    fl!("commands-themes"),
+                    RunCommand {
+                        command: Command::Themes,
                     },
                 ),
                 // macOS reserves Hide for every app; without these items

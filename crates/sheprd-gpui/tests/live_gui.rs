@@ -109,9 +109,11 @@ fn native_sidebar() {
 }
 
 #[test]
-#[ignore = "requires active native desktop; profile popup and sign-in absence, no daemon"]
-fn native_profile_popup() {
-    native_fixture(Fixture::Profile);
+#[ignore = "requires native rendering; isolated local controls, no daemon"]
+fn native_local_controls() {
+    for light in [false, true] {
+        native_fixture(Fixture::LocalControls { light });
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -171,6 +173,9 @@ fn native_input_shutdown(field: &'static str) {
 }
 
 enum Fixture {
+    LocalControls {
+        light: bool,
+    },
     Preview {
         light: bool,
         narrow: bool,
@@ -178,7 +183,6 @@ enum Fixture {
     ChatStart,
     #[cfg(target_os = "macos")]
     SidebarRouting,
-    Profile,
     Sidebar,
     #[cfg(target_os = "linux")]
     ApplicationMenus,
@@ -243,7 +247,7 @@ fn native_fixture(fixture: Fixture) {
         Fixture::Preview { .. } => "RICH CHAT native fixture PASS",
         #[cfg(target_os = "macos")]
         Fixture::SidebarRouting => "SIDEBAR routing PASS:",
-        Fixture::Profile => "PROFILE native PASS:",
+        Fixture::LocalControls { .. } => "LOCAL CONTROLS native PASS:",
         #[cfg(target_os = "linux")]
         Fixture::ApplicationMenus => "APPLICATION MENUS native PASS",
         Fixture::Notifications => "NOTIFICATIONS native PASS:",
@@ -292,8 +296,18 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         Fixture::ChatStart => {
             command.env("HERDR_TEST_CHAT_START_ERRORS", "1");
         }
-        Fixture::Profile => {
-            command.env("HERDR_TEST_PROFILE_ONLY", "1");
+        Fixture::LocalControls { light } => {
+            command.env("HERDR_TEST_LOCAL_CONTROLS_ONLY", "1");
+            if *light {
+                command.env("HERDR_TEST_LOCAL_CONTROLS_LIGHT", "1");
+            }
+            if let Some(root) = std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_CAPTURE") {
+                assert!(
+                    Path::new(&root).is_absolute(),
+                    "local-controls capture root must be absolute"
+                );
+                command.env("HERDR_TEST_LOCAL_CONTROLS_CAPTURE", root);
+            }
         }
         Fixture::Sidebar => {}
         #[cfg(target_os = "linux")]

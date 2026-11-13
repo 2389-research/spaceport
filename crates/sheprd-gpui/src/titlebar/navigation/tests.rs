@@ -1,3 +1,5 @@
+// ABOUTME: Checks titlebar navigation layout and history interactions.
+// ABOUTME: Preserves sidebar access when narrow windows hide navigation buttons.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{sidebar::layout_tests::full_draw, titlebar::tests::header_window};
@@ -75,7 +77,7 @@ fn back_and_forward_follow_the_sidebar_toggle(cx: &mut TestAppContext) {
     assert!(forward.left() >= back.right());
     // Close enough to read as one group with the toggle.
     assert!(back.left() - toggle.right() <= px(12.));
-    // A window too narrow for them keeps the account reachable instead.
+    // A window too narrow for them keeps the sidebar toggle reachable instead.
     cx.simulate_resize(size(px(240.), px(600.)));
     draw(cx);
     assert!(cx.debug_bounds("titlebar-navigation").is_none());

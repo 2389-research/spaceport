@@ -1,6 +1,6 @@
 # Rich chat
 
-Sheprd renders Markdown, equations, code and native interactive cards in ACP
+Spaceport renders Markdown, equations, code and native interactive cards in ACP
 chats. It can also show existing Codex and Claude CLI conversations above their
 original terminal input, without restarting, resuming or replacing the agent.
 

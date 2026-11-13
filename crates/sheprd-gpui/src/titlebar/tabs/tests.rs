@@ -1,8 +1,10 @@
+// ABOUTME: Checks top tab strips, split headers and narrow layouts.
+// ABOUTME: Keeps navigation and trailing controls within their owning groups.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{sidebar::SidebarMode, titlebar::tests::header_window};
 use core::prelude::v1::test;
-use gpui::{Bounds, TestAppContext, VisualTestContext, point, px, size};
+use gpui::{TestAppContext, VisualTestContext, point, px, size};
 use sheprd_client::protocol::ClientShellTabStatusSegment;
 
 mod navigation_gap;
@@ -73,16 +75,13 @@ fn the_tab_row_stands_in_for_the_header(cx: &mut TestAppContext) {
     assert!(navigation.left() >= toggle.right());
     assert!(navigation.right() <= header.right());
     assert!(cx.debug_bounds("strip-titlebar-leading").is_none());
-    // The strip ends with the account at the window's right edge.
+    // The trailing window controls stay at the window's right edge.
     let new_tab = cx.debug_bounds("new-tab").unwrap();
     assert_eq!(new_tab.top(), top);
     assert_eq!(new_tab.size.height, px(HEIGHT));
     let trailing = cx.debug_bounds("strip-titlebar-trailing").unwrap();
     assert_eq!(trailing.right(), px(1200.));
-    assert_eq!(
-        cx.debug_bounds("titlebar-avatar").unwrap(),
-        Bounds::new(point(px(1200. - 34.), top + px(3.)), size(px(28.), px(28.)))
-    );
+    assert!(cx.debug_bounds("titlebar-avatar").is_none());
     let room = cx.debug_bounds("strip-titlebar-room").unwrap();
     assert!(room.size.width >= px(DRAG_ROOM));
     assert!(new_tab.right() <= room.left());
@@ -134,7 +133,7 @@ fn a_collapsed_sidebar_keeps_the_toggle_in_the_header_when_it_fits(cx: &mut Test
 }
 
 #[gpui::test]
-fn a_split_puts_the_toggle_left_and_the_account_right(cx: &mut TestAppContext) {
+fn a_split_puts_the_toggle_left_and_window_controls_right(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
@@ -167,7 +166,9 @@ fn a_split_puts_the_toggle_left_and_the_account_right(cx: &mut TestAppContext) {
         cx.debug_bounds("sidebar-titlebar").unwrap()
     };
     assert!(toggle_host.contains(&cx.debug_bounds("toggle-sidebar").unwrap().center()));
-    assert!(right.contains(&cx.debug_bounds("titlebar-avatar").unwrap().center()));
+    let trailing = cx.debug_bounds("strip-titlebar-trailing").unwrap();
+    assert!(trailing.left() >= right.left());
+    assert_eq!(trailing.right(), right.right());
     assert!(cx.debug_bounds("titlebar").is_none());
 }
 
@@ -228,7 +229,7 @@ fn hide_sidebar(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) {
 }
 
 #[gpui::test]
-fn a_squeezed_strip_drops_back_and_forward_before_the_account(cx: &mut TestAppContext) {
+fn a_squeezed_strip_drops_back_and_forward_before_window_controls(cx: &mut TestAppContext) {
     let (view, cx) = window(cx);
     hide_sidebar(&view, cx);
     // The least row that holds everything but the tabs, which shrink away
@@ -244,8 +245,8 @@ fn a_squeezed_strip_drops_back_and_forward_before_the_account(cx: &mut TestAppCo
         cx.simulate_resize(size(px(width), px(600.)));
         draw(cx);
     }
-    let avatar = cx.debug_bounds("titlebar-avatar").unwrap();
-    assert!(avatar.right() <= px(width), "{avatar:?} in {width}");
+    let trailing = cx.debug_bounds("strip-titlebar-trailing").unwrap();
+    assert!(trailing.right() <= px(width), "{trailing:?} in {width}");
     assert!(cx.debug_bounds("titlebar-back").is_none());
     assert!(!view.read_with(cx, |view, _| view.strip_navigation_fits));
     // Given the room back, they return, and stay put across frames.

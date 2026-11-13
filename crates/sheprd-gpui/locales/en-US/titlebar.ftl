@@ -7,7 +7,6 @@ titlebar-forward = Forward
 titlebar-sidebar = Sidebar
 # The account picture's button; the second while an account needs signing
 # in again.
-titlebar-profile = Profile
 titlebar-minimize = Minimize
 titlebar-maximize = Maximize
 # Maximize's name while the window is maximized.

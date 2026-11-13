@@ -1,5 +1,5 @@
 // ABOUTME: Checks the titlebar omits Git workflow controls for tracked checkouts.
-// ABOUTME: Protects the neighboring account and sidebar controls at narrow widths.
+// ABOUTME: Protects the sidebar controls at narrow widths.
 
 use gpui::{TestAppContext, px, size};
 
@@ -16,6 +16,6 @@ fn titlebar_has_no_git_controls(cx: &mut TestAppContext) {
         assert!(cx.debug_bounds("titlebar-git").is_none());
         assert!(cx.debug_bounds("titlebar-git-pr-link").is_none());
         assert!(cx.debug_bounds("toggle-sidebar").is_some());
-        assert!(cx.debug_bounds("titlebar-avatar").is_some());
+        assert!(cx.debug_bounds("titlebar-avatar").is_none());
     }
 }

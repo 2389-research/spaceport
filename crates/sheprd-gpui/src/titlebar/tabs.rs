@@ -1,9 +1,11 @@
+// ABOUTME: Shares window chrome between top tab strips and the sidebar.
+// ABOUTME: Keeps navigation and trailing window controls within available space.
 //! The title bar folded into the tab row, as Chrome and Conductor draw it.
 //! With Herdr's tab bar at the top the window keeps no header of its own: the
 //! sidebar's column starts with the traffic-light clearance, the sidebar
 //! toggle, and Back and Forward. The leftmost group's strip takes the controls
-//! that no longer fit in the sidebar, and the rightmost one ends with git, account,
-//! and window controls, with the header's usage text before them. Every
+//! that no longer fit in the sidebar, and the rightmost one ends with
+//! window controls, with the header's usage text before them. Every
 //! strip keeps empty room that moves the window, however many tabs it holds;
 //! more tabs than fit still scroll.
 
@@ -243,8 +245,8 @@ impl SheprdWindow {
     }
 
     /// What ends the rightmost strip: the same controls the header ends with.
-    pub(crate) fn strip_trailing(&self, window: &Window, cx: &mut Context<Self>) -> Div {
-        self.titlebar_end(window, cx)
+    pub(crate) fn strip_trailing(&self, window: &Window) -> Div {
+        self.titlebar_end(window)
             .debug_selector(|| "strip-titlebar-trailing".into())
             .pl(px(4.))
     }

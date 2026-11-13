@@ -1,3 +1,5 @@
+// ABOUTME: Names popup pages and roles for accessibility.
+// ABOUTME: Uses localized labels for the active page.
 //! What a screen reader calls each popup page. Keyboard focus stays on the
 //! popup's overlay while it is open, so the overlay carries the page's role
 //! and title, and the page's own rows and fields sit under it.
@@ -15,7 +17,6 @@ impl Page {
             | Self::Group
             | Self::Host
             | Self::Menu
-            | Self::Profile
             | Self::Pane
             | Self::Tab
             | Self::CoreWorkspaceActions
@@ -59,7 +60,6 @@ impl Page {
             Self::Palette => fl!("menu-page-command-palette"),
             Self::Pane => fl!("menu-page-pane"),
             Self::PaneProcesses => fl!("menu-page-processes"),
-            Self::Profile => fl!("menu-page-profile"),
             Self::RemoveDevice => fl!("menu-page-remove-device"),
             Self::RemoveWsl => fl!("menu-page-remove-wsl-distribution"),
             Self::RenameDevice => fl!("menu-page-rename-device"),

@@ -51,7 +51,7 @@
       "sources": [
         "S09"
       ],
-      "constraint": "Keep profile shell only; no token/account migration.",
+      "constraint": "D67 removes the profile shell. Preserve local controls through application actions and menus; no token/account migration.",
       "audit_status": "in_progress"
     },
     {

@@ -1,3 +1,5 @@
+// ABOUTME: Draws tab strips and routes tab interactions to their owners.
+// ABOUTME: Shares window chrome without changing runtime-owned terminal state.
 //! Each editor group's tab strip and frame, and the row of groups. Every
 //! group lists the same tabs, as an editor's groups do; which one a group
 //! shows is its own choice.
@@ -462,7 +464,7 @@ impl SheprdWindow {
                 },
             ))
             .when(ends.is_some_and(|ends| ends.trailing), |strip| {
-                strip.child(self.strip_trailing(window, cx))
+                strip.child(self.strip_trailing(window))
             })
     }
 

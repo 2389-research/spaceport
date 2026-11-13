@@ -1,4 +1,6 @@
-//! Shortcut search, profile, theme, palette, close, keybinds,
+// ABOUTME: Checks retained local control panels in headless windows.
+// ABOUTME: Exercises search, focus, keyboard input and text bounds.
+//! Shortcut search, theme, palette, close, keybinds,
 //! install panel checks.
 use super::*;
 
@@ -50,34 +52,6 @@ pub(super) fn check_shortcut_search(view: &Entity<SheprdWindow>, cx: &mut gpui::
         });
     });
     cx.simulate_keystrokes("escape");
-}
-
-pub(super) fn check_profile_panel(view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
-    for width in [320., 640., 1200.] {
-        cx.simulate_resize(size(px(width), px(400.)));
-        cx.update(|window, cx| {
-            view.update(cx, |view, cx| view.open_profile(window, cx));
-            full_draw(window, cx).clear(cx);
-        });
-        let panel = cx.debug_bounds("menu-panel").unwrap();
-        assert!(panel.left() >= px(0.) && panel.right() <= px(width));
-        assert!(panel.bottom() <= px(400.));
-        assert!(panel.size.width <= px(400.));
-        for selector in [
-            "profile-settings",
-            "profile-shortcuts",
-            "profile-themes",
-            "profile-about",
-        ] {
-            assert!(cx.debug_bounds(selector).is_some());
-        }
-        assert!(cx.debug_bounds("github-start").is_none());
-        cx.simulate_keystrokes("escape");
-        cx.update(|window, cx| {
-            assert!(view.read(cx).menu.page.is_none());
-            assert!(view.read(cx).focus.is_focused(window));
-        });
-    }
 }
 
 pub(super) fn check_theme_picker(view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {

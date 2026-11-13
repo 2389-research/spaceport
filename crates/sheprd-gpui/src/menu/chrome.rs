@@ -1,3 +1,5 @@
+// ABOUTME: Opens and paints popup pages with shared window geometry.
+// ABOUTME: Keeps popup input and focus isolated from terminal panes.
 //! The popup shell: opening and dismissing it, keeping its input isolated from
 //! the panes beneath, and painting the page the menu is currently on. Geometry
 //! here is the same geometry used for hit testing and IME placement.
@@ -121,10 +123,6 @@ impl SheprdWindow {
             },
         );
         items
-    }
-
-    pub(super) fn profile_items(&self) -> &'static [&'static str] {
-        &["settings", "shortcuts", "themes", "about"]
     }
 
     pub(super) fn activate_menu(
@@ -477,7 +475,6 @@ impl SheprdWindow {
                         | Page::Themes
                         | Page::DeviceTheme
                         | Page::Palette
-                        | Page::Profile
                         | Page::AddDevice
                         | Page::AddWsl
                         | Page::Usage(_)
@@ -516,14 +513,6 @@ impl SheprdWindow {
             .when(add_device, |panel| {
                 panel.h(px(rail::HEIGHT * (font.size / 12.))
                     .min((viewport.height - px(32.)).max(px(0.))))
-            })
-            .when(page == Page::Profile, |panel| {
-                panel
-                    .w((viewport.width - px(32.)).max(px(0.)).min(px(400.)))
-                    .flex()
-                    .flex_col()
-                    .overflow_hidden()
-                    .shadow_lg()
             })
             .when(
                 matches!(
@@ -575,37 +564,13 @@ impl SheprdWindow {
                     }
                 }))
             });
-        if matches!(page, Page::Menu | Page::Profile) {
-            let items = if page == Page::Profile {
-                self.profile_items().to_vec()
-            } else {
-                self.menu_items()
-            };
-            if page == Page::Profile {
-                panel = panel.child(
-                    div()
-                        .debug_selector(|| "profile-heading".into())
-                        .px(px(8.))
-                        .pt(px(8.))
-                        .pb(px(6.))
-                        .font_weight(FontWeight::SEMIBOLD)
-                        .child(crate::sidebar::label_text(&fl!("menu-page-profile"))),
-                );
-            }
+        if page == Page::Menu {
+            let items = self.menu_items();
             for (index, item) in items.into_iter().enumerate() {
                 panel = panel.child(
                     div()
                         .id(item)
-                        .debug_selector(move || {
-                            format!(
-                                "{}-{item}",
-                                if page == Page::Profile {
-                                    "profile"
-                                } else {
-                                    "menu"
-                                }
-                            )
-                        })
+                        .debug_selector(move || format!("menu-{item}"))
                         .role(Role::MenuItem)
                         .aria_label(menu_item_label(item))
                         .when(Some(index) == self.menu.selected, |row| {
@@ -627,11 +592,7 @@ impl SheprdWindow {
                             }
                             cx.notify();
                         }))
-                        .child(if page == Page::Profile {
-                            crate::sidebar::label_text(&menu_item_label(item)).into_any_element()
-                        } else {
-                            menu_item_label(item).into_any_element()
-                        })
+                        .child(menu_item_label(item))
                         .on_click(cx.listener(move |this, _, window, cx| {
                             cx.stop_propagation();
                             this.activate_menu(item, window, cx);
