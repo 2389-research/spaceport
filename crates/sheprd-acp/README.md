@@ -1,7 +1,7 @@
 # sheprd-acp
 
 Runs a coding agent through the [Agent Client Protocol](https://agentclientprotocol.com)
-in a terminal pane, draws the conversation there, and lets Sheprd attach to it
+in a terminal pane, draws the conversation there, and lets Spaceport attach to it
 and show it as a native chat.
 
 ```sh
@@ -18,7 +18,7 @@ sheprd-acp --resume ID codex  # the same, but never start a new session instead
 Herdr owns terminals, not conversations. The agent's structured conversation
 has to live in something Herdr already keeps running, so it lives in this
 program: Herdr starts it in a pane like any other command, keeps it alive when
-Sheprd closes, and the Herdr TUI shows its chat because it is an ordinary
+Spaceport closes, and the Herdr TUI shows its chat because it is an ordinary
 terminal program. Normal ACP sessions read no agent logs or terminal screen;
 the optional read-only mirror below reads an explicitly selected native log.
 
@@ -27,7 +27,7 @@ the optional read-only mirror below reads an explicitly selected native log.
 
 - **The pane itself.** The chat drawn in the terminal, so the session works in
   the Herdr TUI, a plain terminal, or over SSH.
-- **Sheprd.** On a local daemon, it finds the pane's `acp` metadata token,
+- **Spaceport.** On a local daemon, it finds the pane's `acp` metadata token,
   connects to the endpoint it names, and draws the same conversation natively
   over the pane. Both views stay live: a prompt or a permission answer from
   either one shows in both, and the first answer to a permission request wins.
@@ -36,7 +36,7 @@ the optional read-only mirror below reads an explicitly selected native log.
 
 ## Viewing an existing CLI session
 
-Sheprd can automatically render existing Linux Codex/Claude sessions with
+Spaceport can automatically render existing Linux Codex/Claude sessions with
 `[chat] render_existing = true`. It resolves exact session and process identity,
 then runs a bounded `sheprd-acp observe AGENT SESSION_ID PID START_TICKS --pane ID`
 child over standard streams. The observer pins and validates the session file;
@@ -127,8 +127,8 @@ through Herdr's JSON API:
 - `pane.report_metadata` with the agent's display name and the `acp` token, the
   attach socket's id;
 - each prompt the agent received, on one line and cut to 80 characters, as
-  the pane's `title`, which Sheprd's sidebar and the phone's chat list
-  show; a report or rename Herdr fails is tried again a few times;
+  the pane's `title`, which Spaceport's sidebar shows;
+  a report or rename Herdr fails is tried again a few times;
 - `tab.rename` of its tab to the agent and that prompt (`Claude: fix the…`,
   at most 40 characters), only while the chat is the tab's one pane and the
   tab still has the agent's name, a number, or the label the chat gave it, so
@@ -250,7 +250,7 @@ thinking level, and mode, how full its context window is, and what the
 session has cost when the agent says. Each finished turn leaves a line saying
 how long it took and the tokens it used. Settings the agent offers through
 ACP's session config options (model, thinking level, mode, and any others)
-change from **Ctrl+O** here and from the header's buttons in Sheprd; the
+change from **Ctrl+O** here and from the header's buttons in Spaceport; the
 agent's slash commands complete after `/`, and Up and Down step through the
 session's earlier prompts, whichever client sent them.
 
@@ -285,10 +285,10 @@ session's earlier prompts, whichever client sent them.
 
 ## Limits
 
-- Sheprd attaches through `sheprd_client::private_endpoint`: on Unix a
+- Spaceport attaches through `sheprd_client::private_endpoint`: on Unix a
   socket in `$XDG_STATE_HOME/herdr/acp` (or `~/.local/state/herdr/acp`), on
   Windows the named pipe `\\.\pipe\herdr-acp-<id>`, either one reachable by
-  this user alone, so only from a Sheprd on the same machine.
+  this user alone, so only from Spaceport on the same machine.
 - A chat that is killed rather than quit leaves its Unix socket file behind;
   the next chat to start removes sockets nothing answers on. A pipe goes away
   with its process.

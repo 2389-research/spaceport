@@ -263,7 +263,7 @@ Starting a chat there (`chat new`, or the workspace menu) runs the host's own
 then the remote `PATH`. Install it on the host with:
 
 ```sh
-cargo install --locked --git https://github.com/sheprd-labs/sheprd sheprd-acp --root ~/.herdr
+cargo install --locked --git https://github.com/2389-research/spaceport sheprd-acp --root ~/.herdr
 ```
 
 The workspace menu offers only the agents whose own ACP command is installed
