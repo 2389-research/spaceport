@@ -1,3 +1,5 @@
+// ABOUTME: Lists searchable Settings rows and the state that makes them available.
+// ABOUTME: Shares each row's selectors and localized text with the page renderers.
 //! Every Settings row, in page order, so search can find it from any page.
 //! Ids are the rows' own selectors; a test renders each page and checks they
 //! still exist. Titles and descriptions are message IDs in `settings.ftl`,
@@ -21,6 +23,8 @@ pub(super) struct Entry {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Availability {
     Always,
+    /// Only when the running app opted into Herdr Core at startup.
+    Core,
     /// Only while the drafted theme follows the system as a light/dark pair.
     FollowingSystemTheme,
     /// Only on Windows, which has the only platform code for it.
@@ -153,6 +157,13 @@ pub(super) const CATALOG: &[Entry] = &[
         "settings-sidebar-device-footer",
         "settings-sidebar-device-footer-description",
     ),
+    entry(
+        Section::Sidebar,
+        "sidebar-automations",
+        "settings-sidebar-automations-title",
+        "settings-sidebar-automations-hint",
+    )
+    .only(Availability::Core),
     entry(
         Section::Sidebar,
         "sidebar-show-agents",
@@ -305,6 +316,12 @@ pub(super) const CATALOG: &[Entry] = &[
         "settings-general-smooth-scroll",
         "settings-general-smooth-scroll-description",
     ),
+    entry(
+        Section::General,
+        "general-herdr-core",
+        "settings-general-herdr-core",
+        "settings-general-herdr-core-description",
+    ),
     // One per `[features]` flag; a test checks none is missing.
     // keep-sorted start
     feature(Feature::AcpChats),
@@ -349,6 +366,13 @@ pub(super) const CATALOG: &[Entry] = &[
         "settings-tabs-layout-description",
     ),
     entry(Section::Tabs, "tabs-position", "settings-tabs-position", ""),
+    entry(
+        Section::Tabs,
+        "tabs-herdr-2",
+        "settings-tabs-herdr-2",
+        "settings-tabs-herdr-2-description",
+    )
+    .only(Availability::Core),
     entry(
         Section::Tabs,
         "tabs-agent-title",

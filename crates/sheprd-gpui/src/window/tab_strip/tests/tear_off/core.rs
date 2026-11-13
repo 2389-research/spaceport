@@ -6,7 +6,7 @@ use super::*;
 #[gpui::test]
 fn a_core_tab_tears_off_without_a_legacy_endpoint(cx: &mut TestAppContext) {
     let group = uuid::Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
     let (key, tab, other) = cx.update(|window, cx| {
         crate::core_terminals::set_document_for_test_as(
             cx,
@@ -47,7 +47,7 @@ fn a_core_tab_tears_off_without_a_legacy_endpoint(cx: &mut TestAppContext) {
         assert!(view.browser.hidden.hides(&key.parts(), &Pick::Page(tab)));
     });
 
-    let target_window = cx.add_window(crate::sidebar::layout_tests::fixture_window);
+    let target_window = cx.add_window(crate::sidebar::layout_tests::fixture_core_window);
     target_window
         .update(cx, |view, window, cx| {
             assert!(view.show_core_group(&key, cx));
@@ -73,7 +73,7 @@ fn a_core_tab_tears_off_without_a_legacy_endpoint(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_core_tab_returns_to_its_source_after_a_stale_arrival(cx: &mut TestAppContext) {
     let group = uuid::Uuid::from_u128(72);
-    let (source, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
+    let (source, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
     let document = || sheprd_core_client::wire::Doc {
         value: serde_json::json!({"schema_version": 1, "workspaces": [
             {"id": group, "label": "Core group"}
@@ -101,7 +101,7 @@ fn a_core_tab_returns_to_its_source_after_a_stale_arrival(cx: &mut TestAppContex
     let torn = torn(cx).remove(0);
     assert_eq!(torn.workspace, key.parts());
 
-    let target_window = cx.add_window(crate::sidebar::layout_tests::fixture_window);
+    let target_window = cx.add_window(crate::sidebar::layout_tests::fixture_core_window);
     target_window
         .update(cx, |view, _, cx| {
             assert!(view.show_core_group(&key, cx));

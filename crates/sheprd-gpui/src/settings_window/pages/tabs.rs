@@ -1,3 +1,5 @@
+// ABOUTME: Renders tab and pane preferences while hiding disabled Core controls.
+// ABOUTME: Keeps saved terminal choices separate from the running Core opt-in.
 //! Tabs & panes: tab layout and bar, closing confirmations, pane focus and
 //! session restore.
 // i18n: migrated
@@ -55,7 +57,7 @@ impl SettingsWindow {
                         cx,
                     )),
             )
-            .child(
+            .children(crate::core_feature::enabled(cx).then(|| {
                 ui::row(theme, "tabs-herdr-2", fl!("settings-tabs-herdr-2"))
                     .description(fl!("settings-tabs-herdr-2-description"))
                     .switch(self.preference_toggle(
@@ -63,8 +65,8 @@ impl SettingsWindow {
                         self.config.herdr_2_terminals,
                         Preference::Herdr2Terminals(!self.config.herdr_2_terminals),
                         cx,
-                    )),
-            )
+                    ))
+            }))
             .child(ui::section(
                 theme,
                 &fl!("settings-tabs-section-tab-bar"),

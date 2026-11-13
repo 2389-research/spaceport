@@ -1,3 +1,5 @@
+// ABOUTME: Checks Devices overview tab reuse and prepared device activity.
+// ABOUTME: Opts into Core only for the scenario that includes its setup control.
 use super::*;
 use crate::browser::{Location, Store};
 
@@ -15,6 +17,7 @@ fn overview_tabs(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> usi
 
 #[gpui::test]
 fn the_overview_opens_once_as_a_tab_and_lists_each_device(cx: &mut gpui::TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = window(cx);
     draw(cx);
     assert!(cx.debug_bounds("devices-tab").is_none());

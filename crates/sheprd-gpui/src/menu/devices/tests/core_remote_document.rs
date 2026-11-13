@@ -1,4 +1,7 @@
+// ABOUTME: Checks remote Core group targeting and stale document isolation.
+// ABOUTME: Uses explicit Core opt-in before creating the isolated window.
 use super::*;
+use crate::sidebar::layout_tests::fixture_core_window;
 use gpui::{ScrollDelta, ScrollEvent, VisualTestContext, point, px, size};
 use sheprd_core_client::wire::{Doc, Machine, MachineView};
 
@@ -28,7 +31,7 @@ fn draw(cx: &mut VisualTestContext) {
 fn selected_machine_shows_its_remote_groups_without_mixing_hub_groups(
     cx: &mut gpui::TestAppContext,
 ) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.simulate_resize(size(px(900.), px(700.)));
     cx.update(|_, cx| {
         crate::core_terminals::set_machine_catalog_for_test(
@@ -109,7 +112,7 @@ fn selected_machine_shows_its_remote_groups_without_mixing_hub_groups(
 
 #[gpui::test]
 fn remote_group_error_and_disconnect_do_not_show_old_groups(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.update(|_, cx| {
         crate::core_terminals::set_machine_catalog_for_test(
             cx,

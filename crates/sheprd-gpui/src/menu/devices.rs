@@ -1,3 +1,5 @@
+// ABOUTME: Presents device scope and shared entry points to device setup.
+// ABOUTME: Keeps Core-only setup unavailable until the running app has opted in.
 // i18n: migrated
 //! The sidebar's device footer and the device picker that scopes the sidebar
 //! to one device, several, or all of them, or opens the Add Device dialog. Device scope is presentation
@@ -352,6 +354,9 @@ impl SheprdWindow {
 
     /// Shared by the picker and overview, including isolated-window guards.
     pub(crate) fn open_device_setup(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.core_enabled() {
+            return;
+        }
         if let Some(reason) = self.device_setup_unavailable() {
             tracing::info!(category = "device_setup", ?reason, "Add Device unavailable");
             return;

@@ -5,7 +5,7 @@ use crate::{
     SheprdWindow,
     browser::CoreGroupKey,
     core_terminals::{self, Error, Start, State},
-    sidebar::layout_tests::fixture_window,
+    sidebar::layout_tests::fixture_core_window,
 };
 use sheprd_core_client::wire::Doc;
 use uuid::Uuid;
@@ -19,7 +19,7 @@ fn private_join(start: Start) -> Result<sheprd_core_client::CoreBackend, Error> 
 fn additional_core_window_keeps_exact_group_without_legacy_endpoint(cx: &mut gpui::TestAppContext) {
     let group = Uuid::from_u128(71);
     let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
-    let (first, cx) = cx.add_window_view(fixture_window);
+    let (first, cx) = cx.add_window_view(fixture_core_window);
     let before = cx.update(|_, cx| main_windows(cx));
     cx.update(|_, cx| {
         core_terminals::set_document_for_test_as(
@@ -84,7 +84,7 @@ fn additional_core_window_keeps_exact_group_without_legacy_endpoint(cx: &mut gpu
 #[gpui::test]
 fn additional_core_window_refuses_a_different_hub(cx: &mut gpui::TestAppContext) {
     let group = Uuid::from_u128(71);
-    let (_, cx) = cx.add_window_view(fixture_window);
+    let (_, cx) = cx.add_window_view(fixture_core_window);
     cx.update(|_, cx| {
         core_terminals::set_document_for_test_as(
             cx,
@@ -108,7 +108,7 @@ fn additional_core_window_refuses_a_different_hub(cx: &mut gpui::TestAppContext)
 fn rejected_core_window_handoff_skips_join(cx: &mut gpui::TestAppContext) {
     let group = Uuid::from_u128(73);
     let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
-    let (_, cx) = cx.add_window_view(fixture_window);
+    let (_, cx) = cx.add_window_view(fixture_core_window);
     let before = cx.update(|_, cx| main_windows(cx));
     cx.update(|_, cx| {
         core_terminals::set_document_for_test_as(

@@ -477,6 +477,13 @@
       "decision": "Replace the rocket with a flying saucer inspired by the 🛸 emoji. Keep the nebula background, sculpted style and distinct berry development rim. Use design/spaceport-icon/ufo-nebula.png as the shared master for app, platform, installer and social artwork. Preserve the earlier rocket exploration and legal provenance. This supersedes D62 and D63's rocket subject; it does not change bundle identities, signing, update trust or release authorization.",
       "status": "active",
       "source": "Doctor Biz, 2026-11-13: merge. also we need to tweak the icon becuse it uses the same as apple games. let's use 🛸 instead."
+    },
+    {
+      "id": "D69",
+      "title": "Keep Herdr Core behind a disabled-by-default app setting",
+      "decision": "Keep Herdr Core available only through explicit opt-in. Add the saved herdr_core_enabled setting, default false for new and existing installs. Show Enable Herdr Core under Settings > General > Experimental with Adds Core terminals and groups. Requires restart. Freeze the effective value for each app session across all windows; saving either value requires restarting Spaceport before runtime behavior changes. While disabled, hide Core UI, prevent Core connections and startup, and refuse Core-only CLI actions explicitly. Preserve saved Core preferences, groups and terminal references, and never stop Core or its terminals. Keep regular Herdr available. This qualifies Core reachability under D58 without removing retained Core support or changing runtime ownership.",
+      "status": "active",
+      "source": "Doctor Biz, 2026-11-13: requested a Core feature flag, off by default, because its UI was confusing. Approved the full off behavior, restart requirement, Experimental placement and final design through Q&A, then approved implementation."
     }
   ]
 }

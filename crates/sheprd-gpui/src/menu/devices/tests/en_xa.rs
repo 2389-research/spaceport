@@ -1,8 +1,11 @@
+// ABOUTME: Checks translated device picker and setup text under the pseudo-locale.
+// ABOUTME: Opts into Core for the retained host setup scenarios.
 //! The `en-XA` leak test (`crate::i18n::leak_tests`) for the device picker
 //! and Add Device's SSH form at each step: each draws only translated
 //! messages, except for device and provider names and the target typed.
 use super::*;
 use crate::i18n::leak_tests::{assert_translated, draw, under_en_xa};
+use crate::sidebar::layout_tests::fixture_core_window;
 use gpui::{VisualTestContext, point, px, size};
 
 /// Names the rail shows as they are: WSL distributions.
@@ -14,7 +17,7 @@ fn sources() -> Vec<String> {
 #[test]
 fn the_device_picker_shows_only_messages_under_en_xa() {
     under_en_xa("device picker en-XA leak", |cx, recorder| {
-        let (view, cx) = cx.add_window_view(fixture_window);
+        let (view, cx) = cx.add_window_view(fixture_core_window);
         cx.simulate_resize(size(px(1000.), px(800.)));
         draw(cx);
         recorder.take();
@@ -47,7 +50,7 @@ fn show(view: &gpui::Entity<SheprdWindow>, cx: &mut VisualTestContext, step: Ste
 #[test]
 fn the_ssh_form_shows_only_messages_at_each_step_under_en_xa() {
     under_en_xa("add device en-XA leak", |cx, recorder| {
-        let (view, cx) = cx.add_window_view(fixture_window);
+        let (view, cx) = cx.add_window_view(fixture_core_window);
         cx.simulate_resize(size(px(1000.), px(900.)));
         draw(cx);
         recorder.take();

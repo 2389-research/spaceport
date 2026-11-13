@@ -1,3 +1,5 @@
+// ABOUTME: Checks remote selection behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 use super::*;
 use crate::browser::{CoreGroupKey, Location, Store};
 use sheprd_client::ConnectTarget;
@@ -36,7 +38,7 @@ fn local_member_opens_with_a_remote_legacy_endpoint_selected(cx: &mut gpui::Test
     )
     .unwrap();
     let backend = CoreBackend::new(sandbox.connect(), 1000);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|_, app| {
         view.update(app, |view, _| {
             view.core_terminals

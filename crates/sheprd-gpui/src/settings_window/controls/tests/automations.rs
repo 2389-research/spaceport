@@ -1,3 +1,5 @@
+// ABOUTME: Exercises the sidebar automation setting while Core is enabled.
+// ABOUTME: Checks the existing toggle saves its opposite through native settings controls.
 use super::*;
 use crate::config::preferences::Preference;
 use crate::settings_window::controls::preferences::PreferenceIo;
@@ -5,6 +7,7 @@ use std::sync::{Arc, Mutex};
 
 #[gpui::test]
 fn show_automations_is_on_the_sidebar_page_and_saves_the_opposite(cx: &mut TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = cx.add_window_view(skill_fixture);
     let edits = Arc::new(Mutex::new(Vec::new()));
     // What the file holds, so the reload after a save reads the write back.

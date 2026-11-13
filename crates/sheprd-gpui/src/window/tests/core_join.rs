@@ -1,3 +1,5 @@
+// ABOUTME: Checks core join behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 use super::*;
 use crate::core_terminals::{Error, Start, State};
 use sheprd_client::ConnectTarget;
@@ -11,7 +13,7 @@ fn private_join(start: Start) -> Result<sheprd_core_client::CoreBackend, Error> 
 
 #[gpui::test]
 fn plain_local_window_joins_existing_core_without_starting_it(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
     view.update_in(cx, |view, window, cx| {
         view.endpoints[0].connection.target = ConnectTarget::Local;
         view.core_terminals.hub.set_join_for_test(private_join);

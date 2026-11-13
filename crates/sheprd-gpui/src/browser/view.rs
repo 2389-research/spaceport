@@ -1,3 +1,5 @@
+// ABOUTME: Projects saved native tabs into each window workspace.
+// ABOUTME: Hides disabled Core views without deleting their stored references.
 //! Native tab entries and shared split layouts in a window.
 //! Retained URL requests use the system handler rather than a page engine.
 #[cfg(test)]
@@ -149,6 +151,7 @@ impl SheprdWindow {
         };
         store
             .in_workspace(&scope, &workspace)
+            .filter(|tab| self.core_enabled() || !tab.requires_core())
             .map(|tab| tab.id)
             .collect()
     }

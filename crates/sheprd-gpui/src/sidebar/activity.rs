@@ -1,3 +1,5 @@
+// ABOUTME: Selects activity sections and draws their shared navigation bar.
+// ABOUTME: Hides unavailable sections without discarding the user's saved choices.
 //! The activity bar: an icon column at the window's left edge that picks
 //! what the window shows. Workspaces is the sidebar beside the terminals, as
 //! it was; every other section takes the window's body, keeping the bar,
@@ -150,7 +152,9 @@ impl SheprdWindow {
     /// is not listed, and a window left on it shows Workspaces.
     pub(crate) fn activity_panel_listed(&self, panel: ActivityPanel) -> bool {
         match panel {
-            ActivityPanel::Automations => self.config.sidebar_style.automations,
+            ActivityPanel::Automations => {
+                self.core_enabled() && self.config.sidebar_style.automations
+            }
             _ => true,
         }
     }

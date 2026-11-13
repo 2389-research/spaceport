@@ -1,3 +1,5 @@
+// ABOUTME: Checks live behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 //! Tests sidebar membership against an isolated, real Core and its document CAS.
 //! The fixture owns one terminal; UI clicks must leave its Core process intact.
 
@@ -211,7 +213,7 @@ fn ui_membership_rebases_disjoint_client_edit_without_touching_terminal(
         .expect("private Core reports the terminal process");
     assert!(!terminal.address.contains('/'));
     let backend = CoreBackend::new(sandbox.connect(), 1000);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|_, app| {
         view.update(app, |view, _| {
             view.core_terminals
@@ -363,7 +365,7 @@ fn ui_refuses_same_group_conflict_and_fences_an_uncertain_version(cx: &mut gpui:
         .unwrap();
     let pid = terminal.pid.unwrap();
     let backend = CoreBackend::new(sandbox.connect(), 1000);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|_, app| {
         view.update(app, |view, _| {
             view.core_terminals

@@ -1,5 +1,7 @@
+// ABOUTME: Checks that new windows retain the exact selected Core group target.
+// ABOUTME: Creates an explicitly enabled Core fixture without personal endpoints.
 use super::*;
-use crate::{browser::CoreGroupKey, core_terminals, sidebar::layout_tests::fixture_window};
+use crate::{browser::CoreGroupKey, core_terminals, sidebar::layout_tests::fixture_core_window};
 use sheprd_core_client::wire::Doc;
 use uuid::Uuid;
 
@@ -9,7 +11,7 @@ fn window_new_targets_the_exact_selected_core_group_without_an_endpoint(
 ) {
     let group = Uuid::from_u128(71);
     let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.cx.update(|cx| {
         core_terminals::set_document_for_test_as(
             cx,

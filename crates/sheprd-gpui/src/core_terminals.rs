@@ -1,3 +1,5 @@
+// ABOUTME: Owns Core terminal presentation and worker coordination.
+// ABOUTME: Refuses Core work when the application session has not opted in.
 //! Terminals that herdr-core (Herdr 2) runs, shown as tabs in the window's
 //! groups beside its Herdr tabs and pages. herdr-core streams raw output, so
 //! the app emulates each one and paints it with the same painter as a Herdr
@@ -302,6 +304,13 @@ pub(crate) struct CoreTerminals {
 }
 
 impl CoreTerminals {
+    pub(crate) fn new(enabled: bool) -> Self {
+        Self {
+            hub: Hub::new(enabled),
+            ..Self::default()
+        }
+    }
+
     /// Every view on screen: the tabs' panes and the stand-in shell.
     fn shown(&self) -> impl Iterator<Item = &Entity<CoreTerminalView>> {
         let fallback = match &self.fallback {
@@ -393,12 +402,17 @@ impl CoreTerminals {
 }
 
 impl SheprdWindow {
+    pub(crate) fn core_enabled(&self) -> bool {
+        self.core_terminals.hub.enabled()
+    }
+
     /// Whether a new tab runs in herdr-core. The window's core is on this
     /// computer, so a tab on another host stays with that host's Herdr, where
     /// its shell starts on the host and in the workspace's folder.
     pub(crate) fn new_tabs_use_core(&self) -> bool {
-        self.selected_core_group().is_some()
-            || (self.config.herdr_2_terminals && !self.selected_is_remote())
+        self.core_enabled()
+            && (self.selected_core_group().is_some()
+                || (self.config.herdr_2_terminals && !self.selected_is_remote()))
     }
 
     /// The `new_core_terminal` command: starts a shell in herdr-core and
@@ -406,6 +420,10 @@ impl SheprdWindow {
     /// separately installed `herdr-core` starts. Refused on another
     /// host, where the shell would run on this computer instead.
     pub(crate) fn new_core_terminal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.core_enabled() {
+            self.show_flash(Flash::warning(crate::core_feature::disabled_message()), cx);
+            return;
+        }
         if self.selected_core_group().is_none() && self.selected_is_remote() {
             self.show_flash(Flash::warning(fl!("core-terminals-local-only")), cx);
             return;
@@ -428,6 +446,9 @@ impl SheprdWindow {
 
     /// Starts `spawn` in herdr-core for `purpose`, once the hub connects.
     pub(crate) fn start_core_program(&mut self, purpose: Purpose, spawn: Spawn) {
+        if !self.core_enabled() {
+            return;
+        }
         self.core_terminals.wanted = Some((purpose, spawn));
         self.core_terminals.hub.connect(Start::IfMissing);
         self.start_core_shell();
@@ -475,6 +496,9 @@ impl SheprdWindow {
     /// Runs every window tick: joins Core for local metadata and restored tabs,
     /// places a started terminal, gives each shown pane its view, and takes new screens.
     pub(crate) fn poll_core_terminals(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.core_enabled() {
+            return;
+        }
         if self.selected_core_group().is_some()
             || self.endpoints.iter().any(|endpoint| {
                 endpoint.id == crate::endpoint::LOCAL

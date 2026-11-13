@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings controls with isolated native view fixtures.
+// ABOUTME: Shares test helpers for persistence, keyboard input and layout regressions.
 use super::*;
 use crate::config::{FontFace, LayoutMode};
 use crate::settings_window::inputs::NumberField;
@@ -8,6 +10,7 @@ mod agents_placement;
 mod automations;
 mod backdrop;
 mod chat_width;
+mod core_flag;
 mod device_icons;
 mod features;
 mod focus_follows_mouse;

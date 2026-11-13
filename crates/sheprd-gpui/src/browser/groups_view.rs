@@ -1,3 +1,5 @@
+// ABOUTME: Routes native tab selection and split layouts within a window.
+// ABOUTME: Keeps disabled Core references out of visible strips and selection.
 //! The window's editor groups: which group shows which tab, using and
 //! splitting groups, and following the daemon's focus. The rules for what a
 //! group draws live in [`super::groups`]; this applies them to the focused
@@ -248,6 +250,7 @@ impl SheprdWindow {
         };
         store
             .in_workspace(&scope, &workspace)
+            .filter(|tab| self.core_enabled() || !tab.requires_core())
             .map(|tab| (Pick::Page(tab.id), super::view::tab_label(&tab.label())))
             .collect()
     }
@@ -548,8 +551,9 @@ impl SheprdWindow {
                 if store(cx)
                     .and_then(|store| store.get(*id))
                     .is_none_or(|tab| {
-                        self.active_browser_key(cx).as_ref()
-                            != Some(&(tab.scope.clone(), tab.workspace_id.clone()))
+                        (!self.core_enabled() && tab.requires_core())
+                            || self.active_browser_key(cx).as_ref()
+                                != Some(&(tab.scope.clone(), tab.workspace_id.clone()))
                     }) =>
             {
                 Shown::Empty
@@ -721,6 +725,13 @@ impl SheprdWindow {
         let Some(tab) = store(cx).and_then(|store| store.get(id)).cloned() else {
             return;
         };
+        if !self.core_enabled() && tab.requires_core() {
+            self.show_flash(
+                crate::window::Flash::warning(crate::core_feature::disabled_message()),
+                cx,
+            );
+            return;
+        }
         if tab.core_group().is_some()
             && self.active_browser_key(cx).as_ref()
                 != Some(&(tab.scope.clone(), tab.workspace_id.clone()))

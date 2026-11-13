@@ -1,3 +1,5 @@
+// ABOUTME: Answers application, window and command requests from the local control socket.
+// ABOUTME: Reports disabled Core actions before they can dispatch to a window.
 //! `status`, `app`, `window`, `ui`, and `run`.
 use super::{in_free_window, in_window, main_windows, window_for};
 use crate::{
@@ -298,6 +300,12 @@ pub(super) fn ui(call: Call<UiOp>, cx: &mut App) -> Response {
             })
         }
         UiOp::Panel { panel } => {
+            if panel == crate::sidebar::ActivityPanel::Automations && !view.core_enabled() {
+                return Response::error(
+                    ErrorCode::Unsupported,
+                    crate::core_feature::disabled_message(),
+                );
+            }
             if !view.activity_bar_shown() {
                 return Response::error(
                     ErrorCode::Unsupported,
@@ -350,6 +358,13 @@ pub(super) fn command(call: Call<CommandOp>, cx: &mut App) -> Response {
     let Some(info) = COMMANDS.iter().find(|info| info.name == name) else {
         return super::not_found(format!("No command is named {name}"));
     };
+    if !crate::core_feature::enabled(cx) && crate::core_feature::command_requires_core(info.command)
+    {
+        return Response::error(
+            ErrorCode::Unsupported,
+            crate::core_feature::disabled_message(),
+        );
+    }
     if info.command == Command::CheckForUpdates
         && let Err(error) = crate::updates::available(cx)
     {

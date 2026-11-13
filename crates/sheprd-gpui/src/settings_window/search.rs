@@ -1,3 +1,5 @@
+// ABOUTME: Finds Settings rows in the current locale and opens their pages.
+// ABOUTME: Filters results by effective app capabilities instead of pending preferences.
 //! Searching the Settings: the query in the section list's box swaps the body
 //! for a list of matching rows, and picking one opens its page at that row.
 // i18n: migrated
@@ -43,9 +45,10 @@ impl SettingsWindow {
     }
 
     /// Whether the page renders a row needing `availability` right now.
-    pub(super) fn available(&self, availability: catalog::Availability) -> bool {
+    pub(super) fn available(&self, availability: catalog::Availability, cx: &App) -> bool {
         match availability {
             catalog::Availability::Always => true,
+            catalog::Availability::Core => crate::core_feature::enabled(cx),
             catalog::Availability::FollowingSystemTheme => {
                 ThemeName::follows_system(self.drafted_theme())
             }
@@ -54,7 +57,7 @@ impl SettingsWindow {
     }
 
     /// The current results without rows the pages do not render now.
-    pub(super) fn visible_results(&self) -> Vec<usize> {
+    pub(super) fn visible_results(&self, cx: &App) -> Vec<usize> {
         self.search_results
             .iter()
             .flatten()
@@ -62,7 +65,7 @@ impl SettingsWindow {
             .filter(|index| {
                 catalog::CATALOG
                     .get(*index)
-                    .is_some_and(|entry| self.available(entry.availability))
+                    .is_some_and(|entry| self.available(entry.availability, cx))
             })
             .collect()
     }
@@ -88,7 +91,7 @@ impl SettingsWindow {
         }
         match key {
             "enter" => {
-                if let Some(index) = self.visible_results().first().copied() {
+                if let Some(index) = self.visible_results(cx).first().copied() {
                     self.open_result(index, window, cx);
                 }
             }
@@ -135,7 +138,7 @@ impl SettingsWindow {
     /// The body while a query is typed: one row per match, in catalog order.
     pub(super) fn render_search_results(&self, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
-        let results = self.visible_results();
+        let results = self.visible_results(cx);
         if results.is_empty() {
             return div()
                 .debug_selector(|| "settings-search-empty".into())

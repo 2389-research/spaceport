@@ -1,3 +1,5 @@
+// ABOUTME: Owns one window's opt-in Core connection and exact runtime identity.
+// ABOUTME: Joins or starts on a worker without stopping runtime-owned processes.
 //! The window's link to herdr-core: found running, or started from a separate
 //! installation when the window is allowed to, on a thread of its
 //! own. The window reads the outcome on its tick.
@@ -42,6 +44,7 @@ pub(crate) enum Start {
 type Join = fn(Start) -> Result<CoreBackend, Error>;
 
 pub(crate) struct Hub {
+    enabled: bool,
     /// What the attempt in flight may do.
     attempt: Option<Start>,
     /// Persistent Core identity for an exact existing-runtime view.
@@ -62,6 +65,17 @@ impl Default for Hub {
 }
 
 impl Hub {
+    pub(crate) fn new(enabled: bool) -> Self {
+        Self {
+            enabled,
+            ..Self::default()
+        }
+    }
+
+    pub(crate) fn enabled(&self) -> bool {
+        self.enabled
+    }
+
     /// Fixes the expected persistent Core ID before a join without dialing.
     /// A start already in flight cannot be made join-only after submission.
     pub(crate) fn bind_exact(&mut self, core_id: &str) -> Result<(), Error> {
@@ -101,6 +115,7 @@ impl Hub {
 
     fn with_join(join: Join) -> Self {
         Self {
+            enabled: false,
             attempt: None,
             expected_core: None,
             failed: None,
@@ -145,6 +160,9 @@ impl Hub {
     /// A join-only ask waits a moment after a failure; asking to start
     /// always tries, and upgrades a join-only attempt in flight.
     pub(crate) fn connect(&mut self, start: Start) {
+        if !self.enabled {
+            return;
+        }
         // A view bound to one Core can rejoin, but must not start a replacement.
         let start = if self.expected_core.is_some() {
             Start::Join

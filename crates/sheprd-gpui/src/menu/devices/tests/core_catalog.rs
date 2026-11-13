@@ -1,4 +1,7 @@
+// ABOUTME: Checks Core machine catalog freshness and bounded device rows.
+// ABOUTME: Uses explicit Core opt-in before creating the isolated window.
 use super::*;
+use crate::sidebar::layout_tests::fixture_core_window;
 use gpui::{VisualTestContext, px, size};
 use sheprd_core_client::wire::{Machine, MachineView};
 use sheprd_core_client::{Error as CoreError, Method};
@@ -27,7 +30,7 @@ fn draw(cx: &mut VisualTestContext) {
 
 #[gpui::test]
 fn device_picker_shows_only_fresh_core_machine_facts(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.simulate_resize(size(px(900.), px(700.)));
     cx.update(|_, cx| {
         crate::core_terminals::set_machine_catalog_for_test(cx, Some(vec![machine()]));
@@ -72,7 +75,7 @@ fn core_machine_labels_have_a_unicode_safe_limit() {
 #[gpui::test]
 fn device_picker_bounds_core_refusal_but_keeps_the_typed_cause(cx: &mut gpui::TestAppContext) {
     let long = "🙂".repeat(1_000);
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.simulate_resize(size(px(900.), px(700.)));
     cx.update(|_, cx| {
         crate::core_terminals::set_machine_catalog_error_for_test(

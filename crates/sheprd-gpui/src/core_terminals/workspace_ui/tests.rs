@@ -1,3 +1,5 @@
+// ABOUTME: Checks workspace ui behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::{Access, EditGuard, GuardState, VersionedDocument, observation};
@@ -11,7 +13,7 @@ fn core_only_group_switching_keeps_exact_tabs_and_picks(cx: &mut gpui::TestAppCo
     use sheprd_chat_protocol::Agent;
     let first = Uuid::from_u128(71);
     let second = Uuid::from_u128(72);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         observation::set_document_for_test_as(cx, "hub-a", Doc {
             value: serde_json::json!({"schema_version":1,"workspaces":[
@@ -63,7 +65,7 @@ fn core_only_group_switching_keeps_exact_tabs_and_picks(cx: &mut gpui::TestAppCo
 fn a_closed_core_page_reopens_in_its_exact_group(cx: &mut gpui::TestAppContext) {
     use crate::browser::{CoreGroupKey, Store};
     let group = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         observation::set_document_for_test_as(cx, "hub-a", Doc {
             value: serde_json::json!({"schema_version":1,"workspaces":[{"id":group,"label":"One"}]}),
@@ -96,7 +98,7 @@ fn selecting_a_group_shows_exact_member_identity_without_changing_the_document(
     cx: &mut gpui::TestAppContext,
 ) {
     let id = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|_, cx| {
         observation::set_document_for_test(
             cx,
@@ -133,7 +135,7 @@ fn selecting_a_group_shows_exact_member_identity_without_changing_the_document(
 #[gpui::test]
 fn selected_group_members_disappear_when_core_observation_is_stale(cx: &mut gpui::TestAppContext) {
     let id = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|_, cx| {
         observation::set_document_for_test(cx, Doc {
             value: serde_json::json!({"schema_version": 1, "workspaces": [{
@@ -155,7 +157,7 @@ fn a_narrow_selected_group_keeps_member_action_in_bounds(cx: &mut gpui::TestAppC
     use gpui::{px, size};
 
     let id = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|_, cx| {
         observation::set_document_for_test(
             cx,
@@ -186,7 +188,7 @@ fn group_actions_keep_their_full_uuid_and_delete_waits_for_confirmation(
 ) {
     let first = Uuid::parse_str("9ba7ac86-25e5-472a-b8b0-2c550760c99a").unwrap();
     let second = Uuid::parse_str("9ba7ac86-25e5-472a-b8b0-2c550760c99b").unwrap();
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         observation::set_document_for_test(
             cx,
@@ -229,7 +231,7 @@ fn group_actions_keep_their_full_uuid_and_delete_waits_for_confirmation(
 #[gpui::test]
 fn a_changed_document_refuses_an_old_delete_dialog(cx: &mut gpui::TestAppContext) {
     let id = Uuid::parse_str("9ba7ac86-25e5-472a-b8b0-2c550760c99a").unwrap();
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         for version in [3, 4] {
             observation::set_document_for_test(
@@ -258,7 +260,7 @@ fn a_changed_document_refuses_an_old_delete_dialog(cx: &mut gpui::TestAppContext
 #[gpui::test]
 fn a_new_observer_epoch_refuses_the_old_target_at_the_same_version(cx: &mut gpui::TestAppContext) {
     let id = Uuid::parse_str("9ba7ac86-25e5-472a-b8b0-2c550760c99a").unwrap();
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         let doc = || Doc {
             value: serde_json::json!({"schema_version": 1, "workspaces": [
@@ -281,7 +283,7 @@ fn a_new_observer_epoch_refuses_the_old_target_at_the_same_version(cx: &mut gpui
 
 #[gpui::test]
 fn completed_create_does_not_close_another_core_dialog(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.open_core_workspace_dialog(window, cx);
@@ -301,7 +303,7 @@ fn completed_create_does_not_close_another_core_dialog(cx: &mut gpui::TestAppCon
 
 #[gpui::test]
 fn completed_create_does_not_close_a_reopened_create_dialog(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.open_core_workspace_dialog(window, cx);
@@ -329,7 +331,7 @@ fn a_narrow_core_group_row_keeps_its_action_menu_in_bounds(cx: &mut gpui::TestAp
     use gpui::{px, size};
 
     let id = Uuid::parse_str("9ba7ac86-25e5-472a-b8b0-2c550760c99a").unwrap();
-    let (_view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (_view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|_, cx| {
         observation::set_document_for_test(
             cx,
@@ -360,7 +362,7 @@ fn core_group_menu_keyboard_reaches_delete_confirmation(cx: &mut gpui::TestAppCo
     let id = Uuid::parse_str("9ba7ac86-25e5-472a-b8b0-2c550760c99a").unwrap();
     let (view, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
-        sidebar::layout_tests::fixture_window(window, cx)
+        sidebar::layout_tests::fixture_core_window(window, cx)
     });
     cx.update(|window, cx| {
         observation::set_document_for_test(
@@ -387,7 +389,7 @@ fn archive_without_a_live_core_keeps_its_menu_open(cx: &mut gpui::TestAppContext
     use gpui::{point, px};
 
     let id = Uuid::parse_str("9ba7ac86-25e5-472a-b8b0-2c550760c99a").unwrap();
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         observation::set_document_for_test(
             cx,
@@ -430,7 +432,7 @@ fn the_reader_never_treats_a_stale_document_as_empty() {
 #[gpui::test]
 fn core_create_dialog_keeps_a_name_and_refuses_stale_submission(cx: &mut gpui::TestAppContext) {
     assert!(matches!(Access::of(None), Access::Missing));
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.open_core_workspace_dialog(window, cx);
@@ -448,7 +450,7 @@ fn core_create_dialog_keeps_a_name_and_refuses_stale_submission(cx: &mut gpui::T
 fn uncertain_write_blocks_the_shared_version_until_core_observes_a_new_one(
     cx: &mut gpui::TestAppContext,
 ) {
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.open_core_workspace_dialog(window, cx);
@@ -543,7 +545,7 @@ fn a_pending_core_pane_cannot_take_focus_after_its_group_is_hidden(cx: &mut gpui
 
     let first = Uuid::from_u128(71);
     let second = Uuid::from_u128(72);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         observation::set_document_for_test_as(
             cx,

@@ -1,3 +1,5 @@
+// ABOUTME: Provides the opted-in Core fallback when Herdr is unavailable.
+// ABOUTME: Preserves runtime-owned shells when the client closes or detaches.
 //! With no Herdr 1 installed, the window's terminal is a herdr-core shell:
 //! the user's running core, else the separately installed `herdr-core`.
 //! The shell is named, so every launch comes back
@@ -26,6 +28,9 @@ impl SheprdWindow {
     /// Runs every tick: while Herdr 1 is missing, connects and shows the
     /// shell; once Herdr 1 answers again, gives the window back to it.
     pub(super) fn poll_core_fallback(&mut self, cx: &mut Context<Self>) {
+        if !self.core_enabled() {
+            return;
+        }
         if !self.live.missing_installation {
             if !matches!(self.core_terminals.fallback, Fallback::Off) {
                 self.core_terminals.fallback = Fallback::Off;

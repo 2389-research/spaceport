@@ -1,4 +1,5 @@
-use super::*;
+// ABOUTME: Checks core unavailable behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 use crate::{
     i18n::leak_tests::{draw, under_en_xa},
     state::ConnectionStatus,
@@ -7,7 +8,7 @@ use crate::{
 #[test]
 fn missing_legacy_daemon_does_not_show_herdr_install_in_status() {
     under_en_xa("Core fallback status", |cx, recorder| {
-        let (view, cx) = cx.add_window_view(fixture_window);
+        let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
         view.update(cx, |view, cx| {
             view.live.status = ConnectionStatus::Disconnected;
             view.live.missing_installation = true;
@@ -30,7 +31,7 @@ fn missing_legacy_daemon_does_not_show_herdr_install_in_status() {
 fn connecting_and_unavailable_core_show_the_same_guidance() {
     for unavailable in [false, true] {
         under_en_xa("Core not connected status", |cx, recorder| {
-            let (view, cx) = cx.add_window_view(fixture_window);
+            let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
             view.update(cx, |view, cx| {
                 view.live.status = ConnectionStatus::Disconnected;
                 view.live.missing_installation = true;

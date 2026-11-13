@@ -1,3 +1,5 @@
+// ABOUTME: Loads settings and presents the running app's keyboard shortcut reference.
+// ABOUTME: Keeps unavailable Core commands out of the visible shortcut catalog.
 //! The Settings and Keybinds pages, and the GUI config load behind them. The
 //! load is a cancellable background task: config parsing never runs on the UI
 //! thread, and a superseded load cannot overwrite a newer one.
@@ -297,6 +299,9 @@ impl SheprdWindow {
             (fl!("menu-settings-commands"), Vec::new()),
         ];
         for info in COMMANDS {
+            if !self.core_enabled() && crate::core_feature::command_requires_core(info.command) {
+                continue;
+            }
             let mut keys: Vec<&str> = self.keymap().shortcuts(info.command).collect();
             if info.command == Command::Palette && self.config.palette.double_shift {
                 keys.push("shift shift"); // i18n: data

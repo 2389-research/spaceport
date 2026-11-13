@@ -1,4 +1,6 @@
-use crate::{browser::CoreGroupKey, core_terminals, sidebar::layout_tests::fixture_window};
+// ABOUTME: Checks exact Core group identity in window status replies.
+// ABOUTME: Creates an explicitly enabled Core fixture before selecting a group.
+use crate::{browser::CoreGroupKey, core_terminals, sidebar::layout_tests::fixture_core_window};
 use sheprd_core_client::wire::Doc;
 use uuid::Uuid;
 
@@ -7,7 +9,7 @@ fn window_list_names_the_selected_core_group_without_a_legacy_workspace(
     cx: &mut gpui::TestAppContext,
 ) {
     let group = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.update(|window, cx| {
         view.update(cx, |view, _| {
             let snapshot = std::sync::Arc::make_mut(view.live.snapshot.as_mut().unwrap());

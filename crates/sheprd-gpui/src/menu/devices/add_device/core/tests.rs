@@ -1,7 +1,9 @@
+// ABOUTME: Checks Core machine addition and uncertainty fencing across windows.
+// ABOUTME: Uses private outcomes and explicitly enabled setup windows.
 #![allow(clippy::unwrap_used)]
 
 use super::*;
-use crate::sidebar::layout_tests::fixture_window;
+use crate::sidebar::layout_tests::fixture_core_window;
 use gpui::{VisualTestContext, px, size};
 use sheprd_core_client::{Error as CoreError, Method};
 
@@ -73,7 +75,7 @@ fn draw(cx: &mut VisualTestContext) {
 
 #[gpui::test]
 fn core_add_form_keeps_the_fields_without_host_key_bypass(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.simulate_resize(size(px(800.), px(700.)));
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_add_device(window, cx)));
     draw(cx);
@@ -89,7 +91,7 @@ fn unknown_add_remains_blocked_after_the_dialog_closes(cx: &mut gpui::TestAppCon
     gate.begin(request.clone()).unwrap();
     gate.finish(&Err(CoreError::Timeout(Method::MachineAdd)));
     cx.update(|cx| cx.set_global(gate));
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.open_add_device(window, cx);

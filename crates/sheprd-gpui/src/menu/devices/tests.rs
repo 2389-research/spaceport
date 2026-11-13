@@ -1,3 +1,5 @@
+// ABOUTME: Shares private device setup and picker fixtures.
+// ABOUTME: Covers host targeting and retained device behavior across Core opt-in modes.
 use super::{
     Page,
     add_device::{Offer, Setup, Step},
@@ -8,6 +10,7 @@ use gpui::{AppContext, Context};
 use sheprd_client::HostProbe;
 
 mod core_catalog;
+mod core_flag;
 mod core_remote_document;
 mod en_xa;
 mod fold;

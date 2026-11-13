@@ -1,3 +1,5 @@
+// ABOUTME: Saves targeted native preferences through the managed-config lock.
+// ABOUTME: Preserves unrelated settings and comments in personal overrides.
 //! Targeted native preference edits, serialized by the managed-config lock.
 use super::*;
 use sheprd_client::protocol::ToastHerdrPosition;
@@ -22,6 +24,8 @@ pub(crate) enum Preference {
     ShowAgentsHeader(bool),
     /// `herdr_2_terminals`: new tabs on this computer run in herdr-core.
     Herdr2Terminals(bool),
+    /// `herdr_core_enabled`: explicit opt-in for the next app session.
+    HerdrCoreEnabled(bool),
     ShowSidebarSearch(bool),
     ShowRepositoryIcons(bool),
     ShowWindowControls(bool),
@@ -137,6 +141,9 @@ impl Config {
                 }
                 Preference::Herdr2Terminals(value) => {
                     (None, "herdr_2_terminals", Some(value.into()))
+                }
+                Preference::HerdrCoreEnabled(value) => {
+                    (None, "herdr_core_enabled", Some(value.into()))
                 }
                 Preference::ShowSidebarSearch(value) => {
                     (None, "show_sidebar_search", Some(value.into()))

@@ -1,3 +1,5 @@
+// ABOUTME: Checks page title behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 //! A Core terminal title comes in after its tab opened, often once the tab is in
 //! view and done growing. The tab then widens, so a crowded strip brings it
 //! into view again: otherwise its end, with its close button, is left past
@@ -30,6 +32,7 @@ fn close_button(id: TabId) -> &'static str {
 
 #[gpui::test]
 fn a_chosen_core_tab_stays_in_view_when_its_title_comes_in(cx: &mut TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = crowded(cx, false);
     // A native terminal opens at the strip's end before its program reports
     // a title. The fixture never attaches to a real runtime.

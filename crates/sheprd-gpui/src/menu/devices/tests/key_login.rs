@@ -1,3 +1,5 @@
+// ABOUTME: Checks host key setup offers and target-specific login guidance.
+// ABOUTME: Keeps setup input changes tied to the target that was inspected.
 #[cfg(unix)]
 use super::super::add_device::LocalSpace;
 use super::*;
@@ -86,7 +88,7 @@ fn a_target_that_names_its_user_keeps_the_plain_key_offer() {
 
 #[gpui::test]
 fn changing_the_target_withdraws_the_key_offer(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
     let target = cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.open_add_device(window, cx);

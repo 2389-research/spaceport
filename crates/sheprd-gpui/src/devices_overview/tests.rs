@@ -1,7 +1,10 @@
+// ABOUTME: Shares headless Devices overview fixtures and drawing helpers.
+// ABOUTME: Registers focused checks for device actions and responsive overview layout.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
 mod add_device;
 mod clock;
+mod core_flag;
 mod en_xa;
 mod history;
 mod model;

@@ -20,6 +20,10 @@ features. This branch still contains some of those paths; a build is not proof
 that the fork meets the specification.
 
 Spaceport permits **separately installed Herdr 1 and Herdr Core** runtimes.
+Herdr Core is experimental and disabled by default, including existing installs.
+Enable it in **Settings → General → Experimental → Enable Herdr Core**, then restart Spaceport.
+Turning it off also takes effect after restart. Existing Core terminals keep running.
+While disabled, Spaceport hides Core controls and does not connect to or start Core.
 Existing Herdr 1 startup may remain to preserve the desktop UX. Each session
 keeps its owning runtime; Spaceport does not install, update or migrate either
 runtime. Tailscale is external. Core routes use Core's machine connections and

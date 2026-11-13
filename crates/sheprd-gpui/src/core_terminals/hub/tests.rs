@@ -1,9 +1,18 @@
+// ABOUTME: Verifies opt-in Core connection scheduling and start escalation.
+// ABOUTME: Uses coordinated private connectors instead of personal runtimes.
 #![allow(clippy::unwrap_used)]
 
 use super::*;
 use std::sync::{Condvar, Mutex};
 
 mod target;
+
+fn opted_in_hub(join: Join) -> Hub {
+    Hub {
+        enabled: true,
+        ..Hub::with_join(join)
+    }
+}
 
 /// Waits up to a few seconds for the hub's attempt to settle.
 fn settle(hub: &mut Hub) {
@@ -34,7 +43,7 @@ fn upgrade_join(start: Start) -> Result<CoreBackend, Error> {
 
 #[test]
 fn a_start_asked_for_during_a_join_runs_when_the_join_fails() {
-    let mut hub = Hub::with_join(upgrade_join);
+    let mut hub = opted_in_hub(upgrade_join);
     hub.connect(Start::Join);
     // A restored tab's join is in flight when the user asks for a terminal.
     hub.connect(Start::IfMissing);
@@ -63,7 +72,7 @@ fn retry_join(start: Start) -> Result<CoreBackend, Error> {
 
 #[test]
 fn a_failed_join_waits_before_joining_again_but_a_start_does_not() {
-    let mut hub = Hub::with_join(retry_join);
+    let mut hub = opted_in_hub(retry_join);
     hub.connect(Start::Join);
     settle(&mut hub);
     // Restored tabs ask again on every tick; none of these may dial.

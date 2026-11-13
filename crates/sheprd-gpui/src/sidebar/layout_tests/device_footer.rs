@@ -1,10 +1,12 @@
+// ABOUTME: Checks device footer layout, scope changes and setup input isolation.
+// ABOUTME: Opts into Core where the fixture includes Core group and setup controls.
 use super::*;
 
 #[gpui::test]
 fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
-        let view = cx.new(|cx| fixture_window(window, cx));
+        let view = cx.new(|cx| fixture_core_window(window, cx));
         cx.observe(&view, |_, _, cx| cx.notify()).detach();
         SidebarFixture(view)
     });
@@ -127,7 +129,7 @@ fn device_footer_filters_both_lists_and_keeps_settings_visible(cx: &mut gpui::Te
 fn add_device_form_keeps_input_local_and_validates_before_launch(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
-        let view = cx.new(|cx| fixture_window(window, cx));
+        let view = cx.new(|cx| fixture_core_window(window, cx));
         cx.observe(&view, |_, _, cx| cx.notify()).detach();
         SidebarFixture(view)
     });

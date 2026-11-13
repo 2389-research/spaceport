@@ -1,3 +1,5 @@
+// ABOUTME: Builds device picker rows and maintains their keyboard selection.
+// ABOUTME: Shows Core setup only when the running session enables Core.
 // i18n: migrated
 //! The device picker's list: All Devices, each device with the session it is
 //! on, the sessions of the one device unfolded beneath it, and Add Device.
@@ -80,7 +82,9 @@ impl SheprdWindow {
                 );
             }
         }
-        lines.push(Line::AddDevice);
+        if self.core_enabled() {
+            lines.push(Line::AddDevice);
+        }
         lines
     }
 

@@ -1,3 +1,5 @@
+// ABOUTME: Renders sidebar presentation preferences and their saved edits.
+// ABOUTME: Shows Core-backed controls only when the running app opted into Core.
 //! Sidebar: layout preset, selection marks, spacing and host colours. Every
 //! change reaches the open windows at once; see `settings_window::sidebar`.
 // i18n: migrated
@@ -189,7 +191,7 @@ impl SettingsWindow {
                     })),
                 ),
             )
-            .child(
+            .children(crate::core_feature::enabled(cx).then(|| {
                 ui::row(
                     theme,
                     "sidebar-automations",
@@ -208,8 +210,8 @@ impl SettingsWindow {
                         intent.style.automations = !intent.style.automations;
                         this.commit_sidebar(intent, cx);
                     })),
-                ),
-            )
+                )
+            }))
             .child(
                 ui::row(theme, "sidebar-select", fl!("settings-sidebar-select"))
                     .description(fl!("settings-sidebar-select-description"))

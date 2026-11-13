@@ -264,6 +264,14 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         gui: None,
     };
     let mut command = gui_command(&isolated.sandbox, |name| std::env::var_os(name));
+    #[cfg(unix)]
+    let core_probe = matches!(fixture, Fixture::LocalControls { .. }).then(|| {
+        let socket = isolated.sandbox.dir.join("core.sock");
+        let listener = std::os::unix::net::UnixListener::bind(&socket).unwrap();
+        listener.set_nonblocking(true).unwrap();
+        command.env("HC_SOCKET", socket);
+        listener
+    });
     if let Some(path) = std::env::var_os("HERDR_TEST_SETTINGS_CAPTURE") {
         command.env("HERDR_TEST_SETTINGS_CAPTURE", path);
     }
@@ -353,6 +361,14 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
     let log = fs::read_to_string(isolated.sandbox.dir.join("gui.log")).unwrap();
     if status.success() && matches!(fixture, Fixture::LocalControls { .. }) {
         diagnostics::assert_startup_capture(&isolated.sandbox.dir);
+        #[cfg(unix)]
+        assert!(
+            matches!(
+                core_probe.as_ref().unwrap().accept(),
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock
+            ),
+            "disabled native fixture connected to the private Core socket"
+        );
     }
     eprintln!("{log}");
     Some((status, log))

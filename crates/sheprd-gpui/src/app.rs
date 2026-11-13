@@ -1,3 +1,5 @@
+// ABOUTME: Starts Spaceport and opens windows for exact runtime targets.
+// ABOUTME: Freezes Core opt-in before installing shared app state.
 //! Process bootstrap and window opening. CLI parsing and helper modes
 //! run before GPUI starts, so an invalid option or `--build-info` exits without
 //! ever creating a window.
@@ -127,6 +129,9 @@ fn open_window_placed(
         WindowLaunch::Core(key) => Some(key.clone()),
         WindowLaunch::Legacy(_) => None,
     };
+    if expected_group.is_some() && !crate::core_feature::enabled(cx) {
+        anyhow::bail!("{}", crate::core_feature::disabled_message());
+    }
     if let Some(key) = expected_group.as_ref()
         && crate::core_terminals::core_group_workspace(key, cx).is_none()
     {
@@ -472,6 +477,7 @@ pub(crate) fn run() -> std::process::ExitCode {
     gpui_platform::application()
         .with_assets(icons::Icons)
         .run(move |cx| {
+            crate::core_feature::install(appearance.dark.config.herdr_core_enabled, cx);
             let window_count = window_state.as_ref().map_or(1, |state| state.count());
             if let Some(state) = window_state {
                 state.install(cx);

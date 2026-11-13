@@ -1,3 +1,5 @@
+// ABOUTME: Declares the native Spaceport application and its runtime modules.
+// ABOUTME: Keeps test-only entry points separate from ordinary application startup.
 // objc 0.2's selectors expand a legacy cargo-clippy cfg in the native test adapter.
 #![cfg_attr(feature = "integration-test", allow(unexpected_cfgs))]
 // Tests start real processes; production code builds them with `new_command`.
@@ -30,6 +32,7 @@ mod constants;
 mod contrast;
 mod control;
 mod copy_mode;
+mod core_feature;
 mod core_terminals;
 mod daemon;
 mod device_tags;

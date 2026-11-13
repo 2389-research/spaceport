@@ -74,6 +74,8 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
     about::verify(handle, cx).await?;
     #[cfg(target_os = "macos")]
     crate::settings_window::capture_branding(handle, cx).await?;
+    #[cfg(target_os = "macos")]
+    crate::settings_window::verify_core_opt_in(handle, cx).await?;
     if !cx
         .background_spawn(async { crate::diagnostics::flush(Duration::from_secs(2)) })
         .await

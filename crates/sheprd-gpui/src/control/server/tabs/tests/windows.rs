@@ -1,3 +1,5 @@
+// ABOUTME: Checks native tab targeting against exact named windows and workspaces.
+// ABOUTME: Opts into Core only when the scenario targets a Core group.
 //! Tab requests against a headless window showing workspace `w0`.
 use super::*;
 
@@ -5,6 +7,7 @@ use super::*;
 fn core_tab_focus_requires_the_exact_observed_group_and_named_window(
     cx: &mut gpui::TestAppContext,
 ) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     use crate::{browser::CoreGroupKey, core_terminals::set_document_for_test_as};
     use sheprd_core_client::wire::Doc;
     let group = uuid::Uuid::from_u128(71);

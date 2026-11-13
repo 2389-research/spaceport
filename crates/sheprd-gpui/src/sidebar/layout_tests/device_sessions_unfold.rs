@@ -1,3 +1,5 @@
+// ABOUTME: Checks device session expansion and picker keyboard navigation.
+// ABOUTME: Opts into Core so the retained Add Device row participates in selection.
 use super::*;
 
 fn open_picker(
@@ -5,7 +7,7 @@ fn open_picker(
 ) -> (Entity<SheprdWindow>, &mut gpui::VisualTestContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
-        let view = cx.new(|cx| fixture_window(window, cx));
+        let view = cx.new(|cx| fixture_core_window(window, cx));
         cx.observe(&view, |_, _, cx| cx.notify()).detach();
         SidebarFixture(view)
     });

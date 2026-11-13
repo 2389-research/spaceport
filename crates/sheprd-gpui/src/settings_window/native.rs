@@ -8,6 +8,7 @@ use anyhow::{Context as _, Result, bail, ensure};
 use std::time::{Duration, Instant};
 
 pub(crate) mod branding;
+pub(crate) mod core_opt_in;
 mod fonts;
 mod themes;
 use fonts::verify_fonts;
