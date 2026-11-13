@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[3]
 ASSETS = ROOT / "assets/icons"
-APPROVED = ROOT / "design/spaceport-icon/rocket-nebula.png"
+APPROVED = ROOT / "design/spaceport-icon/ufo-nebula.png"
 SVG = "{http://www.w3.org/2000/svg}"
 NUMBER = r"[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?"
 
@@ -39,7 +39,7 @@ class LinuxIconGeometryTests(unittest.TestCase):
         clipped = root.find(f"{SVG}g")
         self.assertIsNotNone(clipped)
         self.assertEqual(clipped.attrib, {"clip-path": "url(#silhouette)"})
-        mark = clipped.find(f"{SVG}g[@id='rocket']")
+        mark = clipped.find(f"{SVG}g[@id='spacecraft']")
         self.assertIsNotNone(mark)
         if shape == "square":
             self.assertEqual(mark.get("transform"), "scale(10.24)")
@@ -73,7 +73,7 @@ class LinuxIconGeometryTests(unittest.TestCase):
         self.assertTrue(png == APPROVED.read_bytes(), "Embedded artwork differs from the selected PNG")
         self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
         self.assertEqual(struct.unpack_from(">II", png, 16), (1254, 1254))
-        # The circular crop is inset to keep the nose and flame inside its mask.
+        # The circular crop is inset to keep the spacecraft inside its mask.
         # Evaluate source-to-output mapping rather than trusting generator text.
         x, y, width, height = map(float, viewport.get("viewBox").split())
         mapped = [(tx + scale * 100 * (sx - x) / width,
@@ -109,7 +109,7 @@ class LinuxIconGeometryTests(unittest.TestCase):
                 self.check_geometry(ET.parse(ASSETS / name).getroot(), shape, development)
 
     def check_circle_foreground_clearance(self, root):
-        mark = root.find(f"{SVG}g/{SVG}g[@id='rocket']")
+        mark = root.find(f"{SVG}g/{SVG}g[@id='spacecraft']")
         self.assertIsNotNone(mark)
         transform = re.fullmatch(
             rf"translate\(({NUMBER}) ({NUMBER})\) scale\(({NUMBER})\)", mark.get("transform", ""))
@@ -118,23 +118,24 @@ class LinuxIconGeometryTests(unittest.TestCase):
         viewport = mark.find(f"{SVG}svg")
         self.assertIsNotNone(viewport)
         x, y, width, height = map(float, viewport.get("viewBox").split())
-        # These observed master-image landmarks touch the rocket's extremities.
-        # The nebula tile's corners may be clipped; the rocket must clear the rim.
-        for landmark, sx, sy in (("nose", 1002, 255), ("flame tip", 213, 1025)):
+        # These observed master-image landmarks touch the saucer's extremities.
+        # The nebula tile's corners may be clipped; the saucer must clear the rim.
+        for landmark, sx, sy in (("left disc", 213, 726), ("right disc", 1040, 569),
+                                 ("canopy", 630, 366), ("lower lip", 513, 878)):
             px = tx + scale * 100 * (sx - x) / width
             py = ty + scale * 100 * (sy - y) / height
             clearance = 448 - math.hypot(px - 512, py - 512)
-            self.assertGreaterEqual(clearance, 24, f"Rocket {landmark} reaches the circular mask: {clearance:.2f}px clearance")
+            self.assertGreaterEqual(clearance, 24, f"Saucer {landmark} reaches the circular mask: {clearance:.2f}px clearance")
 
-    def test_circular_icons_preserve_nose_and_flame_tip(self):
+    def test_circular_icons_preserve_the_saucer_silhouette(self):
         for name in ("sheprd-linux.svg", "sheprd-linux-worktree.svg"):
             with self.subTest(icon=name):
                 self.check_circle_foreground_clearance(ET.parse(ASSETS / name).getroot())
 
     def test_foreground_check_rejects_the_clipping_circle_layout(self):
         root = ET.parse(ASSETS / "sheprd-linux.svg").getroot()
-        root.find(f"{SVG}g/{SVG}g[@id='rocket']").set("transform", "translate(64 64) scale(8.96)")
-        with self.assertRaisesRegex(AssertionError, "Rocket nose reaches"):
+        root.find(f"{SVG}g/{SVG}g[@id='spacecraft']").set("transform", "translate(-128 -128) scale(12.8)")
+        with self.assertRaisesRegex(AssertionError, "Saucer left disc reaches"):
             self.check_circle_foreground_clearance(root)
 
     def test_geometry_rejects_broken_mask_crop_and_embedded_source(self):
@@ -154,7 +155,7 @@ class LinuxIconGeometryTests(unittest.TestCase):
             (f".//{SVG}image", "width", "1024"),
             (f".//{SVG}image", "x", "10"),
             (f".//{SVG}image", "transform", "translate(1 1)"),
-            (f".//{SVG}image", "href", "../../../design/spaceport-icon/rocket-nebula.png"),
+            (f".//{SVG}image", "href", "../../../design/spaceport-icon/ufo-nebula.png"),
             (f".//{SVG}image", "href", "data:image/png;base64,Y29ycnVwdA=="),
         ):
             root = ET.parse(ASSETS / "sheprd-linux.svg").getroot()

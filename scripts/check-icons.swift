@@ -1,4 +1,5 @@
-// Verify the shipped artwork, including the iconutil packaging round-trip.
+// ABOUTME: Verifies shipped macOS artwork through native decoding and container extraction.
+// ABOUTME: Checks margins, small-size visibility and matching catalog appearances.
 import AppKit
 import Foundation
 
@@ -28,17 +29,17 @@ func check(_ url: URL, pixels: Int, inset: Int) throws {
   precondition(
     minX == inset && minY == inset && maxX == pixels - inset - 1 && maxY == pixels - inset - 1,
     "Wrong tile bounds in \(url.lastPathComponent): \(minX),\(minY)–\(maxX),\(maxY)")
-  // The ivory hull and orange flame must survive downsampling, including 16px.
-  var hull = false, flame = false
+  // The ivory disc and teal canopy must survive downsampling, including 16px.
+  var hull = false, canopy = false
   for y in 0..<pixels {
     for x in 0..<pixels {
       let color = image.colorAt(x: x, y: y)!.usingColorSpace(.sRGB)!
       guard color.alphaComponent > 0.5 else { continue }
       hull = hull || (color.redComponent > 0.8 && color.greenComponent > 0.75 && color.blueComponent > 0.6)
-      flame = flame || (color.redComponent > 0.9 && color.greenComponent > 0.5 && color.blueComponent < 0.4)
+      canopy = canopy || (color.redComponent < 0.5 && color.greenComponent > 0.4 && color.blueComponent > 0.4)
     }
   }
-  precondition(hull && flame, "Missing rocket hull or flame: \(url.path)")
+  precondition(hull && canopy, "Missing saucer disc or canopy: \(url.path)")
 }
 
 for name in ["sheprd-icon.png", "sheprd-worktree-1024.png"] {
@@ -79,12 +80,12 @@ for name in ["Sheprd", "Sheprd-worktree"] {
   process.waitUntilExit()
   precondition(process.terminationStatus == 0, "assetutil failed")
   let entries = try JSONSerialization.jsonObject(with: data) as! [[String: Any]]
-  precondition(entries.contains { $0["Name"] as? String == "Sheprd_Assets/rocket" && $0["AssetType"] as? String == "Image" },
-               "Catalog must contain the approved rocket image")
+  precondition(entries.contains { $0["Name"] as? String == "Sheprd_Assets/spacecraft" && $0["AssetType"] as? String == "Image" },
+               "Catalog must contain the selected saucer image")
   precondition(!entries.contains { ($0["Name"] as? String ?? "").contains("Herdr") }, "Stale catalog branding")
   for appearance in ["NSAppearanceNameAqua", "NSAppearanceNameDarkAqua"] {
     precondition(entries.contains { $0["Name"] as? String == "Sheprd" && $0["Appearance"] as? String == appearance },
                  "Missing \(appearance) catalog variant")
   }
 }
-print("PASS: both compiled catalogs contain Spaceport rocket images and light/dark variants")
+print("PASS: both compiled catalogs contain Spaceport saucer images and light/dark variants")

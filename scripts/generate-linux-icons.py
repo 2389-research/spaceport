@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# ABOUTME: Wraps the selected Spaceport master in self-contained platform SVGs.
+# ABOUTME: Applies platform masks and the development rim without changing the master.
 """Package the approved Spaceport PNG in self-contained platform SVGs.
 
 Linux uses a circular mask; desktop tiles keep platform-specific margins.
@@ -11,7 +13,7 @@ import struct
 import xml.etree.ElementTree as ET
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets/icons"
-SOURCE = ASSETS.parents[1] / "design/spaceport-icon/rocket-nebula.png"
+SOURCE = ASSETS.parents[1] / "design/spaceport-icon/ufo-nebula.png"
 SVG = "{http://www.w3.org/2000/svg}"
 ET.register_namespace("", SVG[1:-1])
 
@@ -24,9 +26,9 @@ def canonical(png):
         raise ValueError("Approved nebula PNG must be 1254 by 1254 pixels")
     root = ET.Element(f"{SVG}svg", width="1024", height="1024", viewBox="0 0 100 100")
     ET.SubElement(root, f"{SVG}title", id="title").text = "Spaceport"
-    ET.SubElement(root, f"{SVG}desc", id="desc").text = "🚀 sculpted rocket on a violet and cyan nebula."
+    ET.SubElement(root, f"{SVG}desc", id="desc").text = "🛸 sculpted flying saucer on a violet and cyan nebula."
     ET.SubElement(root, f"{SVG}metadata").text = (
-        "Approved rocket-nebula.png; generated with OpenAI imagegen from the Twemoji rocket concept. "
+        "Selected ufo-nebula.png; generated with OpenAI imagegen from the earlier nebula rocket artwork. "
         "Twemoji: Twitter, Inc. and contributors, CC BY 4.0; see NOTICE and LICENSE-twemoji."
     )
     defs = ET.SubElement(root, f"{SVG}defs")
@@ -34,9 +36,9 @@ def canonical(png):
     for offset, color in (("0", "#15233b"), ("1", "#0b1220")):
         ET.SubElement(gradient, f"{SVG}stop", offset=offset, **{"stop-color": color})
     ET.SubElement(root, f"{SVG}rect", width="100", height="100", fill="url(#background)")
-    mark = ET.SubElement(root, f"{SVG}g", id="rocket")
-    # These are the approved image's measured alpha bounds. Remove its outer
-    # padding before applying each platform's own margins; retain all artwork.
+    mark = ET.SubElement(root, f"{SVG}g", id="spacecraft")
+    # This viewport encloses the opaque tile in both nebula masters. Remove
+    # near-transparent outer padding before applying each platform's margins.
     viewport = ET.SubElement(mark, f"{SVG}svg", width="100", height="100",
                              viewBox="114 114 1025 1031", preserveAspectRatio="none")
     ET.SubElement(viewport, f"{SVG}image", width=str(width), height=str(height),
@@ -68,7 +70,7 @@ def artwork(source, shape="circle", worktree=False, badge=False):
     })
     ET.SubElement(icon, f"{SVG}title", id="title").text = avatar.find(f"{SVG}title").text
     ET.SubElement(icon, f"{SVG}desc", id="desc").text = (
-        "🚀 rocket on a nebula" + (" with a berry development rim." if worktree else ".")
+        "🛸 flying saucer on a nebula" + (" with a berry development rim." if worktree else ".")
     )
     ET.SubElement(icon, f"{SVG}metadata").text = "Derived from sheprd-avatar.svg; " + avatar.find(f"{SVG}metadata").text
     icon.append(defs)
@@ -87,7 +89,7 @@ def artwork(source, shape="circle", worktree=False, badge=False):
         "tile": "translate(64 64) scale(8.96)",
         "square": "scale(10.24)",
     }
-    # Circular exports need room for the nose and plume, beyond the tile crop.
+    # Circular exports inset the tile so the spacecraft stays clear of the crop.
     mark.set("transform", transforms[shape])
     clipped = ET.SubElement(icon, f"{SVG}g", **{"clip-path": "url(#silhouette)"})
     clipped.append(mark)

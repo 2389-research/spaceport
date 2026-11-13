@@ -49,6 +49,11 @@ cropping and a berry rim for development builds. assets/icons/LICENSE-twemoji co
 assets/icons/README.md records generation. Historical cream paw artwork remains
 original Sheprd artwork, licensed under Apache-2.0.
 
+The current saucer in design/spaceport-icon/ufo-nebula.png was generated with
+OpenAI imagegen by replacing the rocket in that nebula artwork. Current icons,
+platform catalogs, installer artwork and social cards derive from the saucer master.
+The earlier artwork and its Twemoji provenance remain preserved above.
+
 Historical screenshots and earlier artwork may show the former ram icon,
 adapted from Herdr's Apache-2.0 logo:
 https://github.com/herdrdev/herdr/blob/HEAD/assets/logo.svg

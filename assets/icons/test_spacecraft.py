@@ -1,4 +1,4 @@
-# ABOUTME: Check that Spaceport uses the approved nebula rocket image unchanged.
+# ABOUTME: Check that Spaceport uses the selected nebula saucer image unchanged.
 # ABOUTME: Keep canonical source validation and platform crop behavior covered.
 import base64
 import hashlib
@@ -10,26 +10,26 @@ import xml.etree.ElementTree as ET
 
 ASSETS = Path(__file__).resolve().parent
 ROOT = ASSETS.parents[1]
-APPROVED = ROOT / "design/spaceport-icon/rocket-nebula.png"
+APPROVED = ROOT / "design/spaceport-icon/ufo-nebula.png"
 SVG = "{http://www.w3.org/2000/svg}"
 GENERATOR = runpy.run_path(str(ROOT / "scripts/generate-linux-icons.py"))
 
 
-class RocketTests(unittest.TestCase):
+class SpacecraftTests(unittest.TestCase):
     def canonical(self, png):
         self.assertTrue(callable(GENERATOR.get("canonical")), "The canonical SVG must derive from the approved PNG")
         return GENERATOR["canonical"](png)
 
     def test_approved_source_has_not_been_replaced(self):
         self.assertEqual(hashlib.sha256(APPROVED.read_bytes()).hexdigest(),
-                         "caa551b4dc59b1318f736cadc6e09c03f3ba5c8644ca4f9ed45f71d1ff4e4b00")
+                         "3d2d85e4fe2ff9520a53301181b9c4290a3ec3be9d20de38a5e8110131abce4c")
 
-    def test_canonical_mark_embeds_the_approved_nebula_rocket(self):
+    def test_canonical_mark_embeds_the_selected_nebula_saucer(self):
         source = ET.parse(ASSETS / "sheprd-avatar.svg").getroot()
         self.assertEqual(source.get("viewBox"), "0 0 100 100")
         self.assertEqual(source.find(f"{SVG}title").text, "Spaceport")
-        self.assertIn("rocket-nebula.png", source.find(f"{SVG}metadata").text)
-        mark = source.find(f"{SVG}g[@id='rocket']")
+        self.assertIn("ufo-nebula.png", source.find(f"{SVG}metadata").text)
+        mark = source.find(f"{SVG}g[@id='spacecraft']")
         self.assertIsNotNone(mark)
         viewport = mark.find(f"{SVG}svg")
         self.assertIsNotNone(viewport, "The approved image needs an explicit crop viewport")
@@ -62,7 +62,7 @@ class RocketTests(unittest.TestCase):
 
     def test_every_shape_preserves_the_approved_image_and_crop(self):
         source = (ASSETS / "sheprd-avatar.svg").read_text()
-        canonical = ET.fromstring(source).find(f"{SVG}g[@id='rocket']")
+        canonical = ET.fromstring(source).find(f"{SVG}g[@id='spacecraft']")
         self.assertIsNotNone(canonical)
         expected = [(node.tag, node.attrib) for child in canonical for node in child.iter()]
         for shape in ("circle", "tile", "square"):
@@ -70,7 +70,7 @@ class RocketTests(unittest.TestCase):
                 with self.subTest(shape=shape, worktree=worktree):
                     icon = ET.fromstring(GENERATOR["artwork"](source, shape, worktree))
                     self.assertEqual(icon.find(f"{SVG}title").text, "Spaceport")
-                    mark = icon.find(f".//{SVG}g[@id='rocket']")
+                    mark = icon.find(f".//{SVG}g[@id='spacecraft']")
                     self.assertIsNotNone(mark)
                     actual = [(node.tag, node.attrib) for child in mark for node in child.iter()]
                     self.assertTrue(actual == expected, "Platform masking must not alter PNG colors or crop")

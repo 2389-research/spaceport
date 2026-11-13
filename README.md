@@ -1,6 +1,6 @@
 # Spaceport
 
-<img src="assets/icons/sheprd-icon.png" alt="Spaceport rocket app icon" width="128" height="128">
+<img src="assets/icons/sheprd-icon.png" alt="Spaceport flying saucer app icon" width="128" height="128">
 
 Spaceport is an independent desktop fork of
 [Sheprd](https://github.com/sheprd-labs/sheprd). It is under development. A signed,
