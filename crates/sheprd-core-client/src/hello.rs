@@ -1,3 +1,5 @@
+// ABOUTME: Validates a Core handshake's generation, version, and required methods.
+// ABOUTME: Preserves runtime identity while giving Spaceport-specific update guidance.
 //! The handshake: which protocol generation and methods a core speaks.
 
 use crate::Method;
@@ -34,7 +36,7 @@ pub struct CoreInfo {
 pub enum Mismatch {
     #[error("herdr-core lacks {}", names(.0))]
     Missing(Vec<Method>),
-    #[error("herdr-core speaks protocol generation {0}; update Sheprd")]
+    #[error("herdr-core speaks protocol generation {0}; update {app}", app = sheprd_client::APP_NAME)]
     Newer(u32),
     #[error("herdr-core {have} is older than {MIN_VERSION}; run `hc update`")]
     TooOld { have: String },

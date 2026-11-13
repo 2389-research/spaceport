@@ -1,3 +1,5 @@
+# ABOUTME: Exercises real pointer input on the capture script's private Xvfb display.
+# ABOUTME: Targets only the owned Spaceport preview window and releases native resources.
 """Exercise native pointer input only on the capture script's private Xvfb display."""
 
 import ctypes as c
@@ -65,7 +67,7 @@ def capture_native_input(env, directory, app, case):
                 title = c.c_char_p()
                 if x.XFetchName(display, children[i], c.byref(title)) and title.value:
                     try:
-                        if title.value.decode(errors="replace") == "Sheprd · Rich chat preview":
+                        if title.value.decode(errors="replace") == "Spaceport · Rich chat preview":
                             matches.append(children[i])
                     finally:
                         x.XFree(c.cast(title, pointer))

@@ -1,3 +1,5 @@
+// ABOUTME: Translates Claude messages and session requests without owning I/O.
+// ABOUTME: Preserves approval envelopes and request correlation at the boundary.
 //! The translation itself, kept free of threads and pipes: each message from
 //! the session or from Claude Code yields the messages to send on.
 
@@ -327,7 +329,7 @@ impl Bridge {
                 "response": {
                     "subtype": "error",
                     "request_id": control,
-                    "error": "Sheprd does not support this request.",
+                    "error": format!("{} does not support this request.", sheprd_client::APP_NAME),
                 },
             }))];
         }

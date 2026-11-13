@@ -1,5 +1,5 @@
 [package]
-description            = "Runs an ACP agent in a terminal pane and shares its conversation with Sheprd"
+description            = "Runs an ACP agent in a terminal pane and shares its conversation with Spaceport"
 edition.workspace      = true
 license.workspace      = true
 name                   = "sheprd-acp"

@@ -1,3 +1,5 @@
+// ABOUTME: Defines typed helper failures and their original causes.
+// ABOUTME: Names the client through its shared product identity at display boundaries.
 use std::io;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -14,7 +16,7 @@ pub enum Error {
     },
     #[error("the agent stopped reading its input")]
     AgentStalled,
-    #[error("could not listen for Sheprd at {path}")]
+    #[error("could not listen for {app} at {path}", app = sheprd_client::APP_NAME)]
     Bind {
         path: std::path::PathBuf,
         #[source]
@@ -43,3 +45,6 @@ pub enum Error {
     #[error(transparent)]
     Observe(#[from] crate::observe::Error),
 }
+
+#[cfg(test)]
+mod tests;

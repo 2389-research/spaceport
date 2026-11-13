@@ -1,3 +1,5 @@
+// ABOUTME: Parses helper arguments without assuming UTF-8 paths.
+// ABOUTME: Describes Spaceport while preserving helper commands and option names.
 //! Command-line parsing, pure and on OS strings so paths need not be UTF-8.
 
 use std::{
@@ -53,7 +55,7 @@ pub(crate) struct Options {
     /// can speak to the agent itself.
     pub adapter: bool,
     pub agent: AgentChoice,
-    /// Listen for Sheprd and other clients.
+    /// Listen for Spaceport and other clients.
     pub attach: bool,
     pub cwd: Option<PathBuf>,
     /// Run without the in-pane chat view.
@@ -97,14 +99,16 @@ pub(crate) struct ObserveOptions {
     pub started: u64,
 }
 
-pub(crate) const HELP: &str = "\
-Runs an ACP agent in this terminal and shares the conversation with Sheprd.
+pub(crate) fn help() -> String {
+    format!(
+        "\
+Runs an ACP agent in this terminal and shares the conversation with {app}.
 
 Usage:
   sheprd-acp [OPTIONS] AGENT [-- AGENT_ARGS...]
   sheprd-acp [OPTIONS] -- COMMAND [ARGS...]
   sheprd-acp connect ID   Attach stdin and stdout to the running chat ID
-                         (Sheprd runs this over SSH for remote chats)
+                         ({app} runs this over SSH for remote chats)
   sheprd-acp agents       List the agents installed here, one per line
   sheprd-acp observe codex|claude SESSION_ID PID START_TICKS [--pane ID]
                         Render the existing Linux agent over stdin/stdout.
@@ -132,8 +136,8 @@ Options:
   --resume ID    Continue session ID, and stop rather than start a new one
                  when the agent cannot
   --name NAME    The name to show for a custom command
-  --headless     Draw nothing; clients such as Sheprd drive the session
-  --no-attach    Do not listen for Sheprd
+  --headless     Draw nothing; clients such as {app} drive the session
+  --no-attach    Do not listen for {app}
   -h, --help     Show this help
   -V, --version  Show the version
 
@@ -147,7 +151,10 @@ Keys:
   Ctrl+O         Settings: model, thinking level, mode (Left/Right change)
   PgUp/PgDn      Scroll
   Ctrl+D         Quit when the prompt is empty
-";
+",
+        app = sheprd_client::APP_NAME
+    )
+}
 
 pub(crate) fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Parsed, Error> {
     let mut args = args.into_iter().peekable();

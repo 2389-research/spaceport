@@ -1,3 +1,5 @@
+// ABOUTME: Installs synthetic rich-chat examples through the real renderer and reducer.
+// ABOUTME: Names previews consistently while keeping agents and daemons disconnected.
 //! Opt-in native rich-chat fixture, reached only through --sidebar-test.
 //! Synthetic messages go through the real chat reducer, parser, worker jobs,
 //! layout, input controls, and painter. No daemon or agent is contacted.
@@ -10,7 +12,9 @@ use std::{
 };
 
 use anyhow::{Context as _, Result, bail};
-use gpui::{App, AppContext as _, AsyncApp, Context, Window, WindowHandle, px, size};
+use gpui::{
+    AnyWindowHandle, App, AppContext as _, AsyncApp, Context, Window, WindowHandle, px, size,
+};
 use sheprd_chat_protocol::{Entry, EntryId, EntryKind, Status, Transcript};
 use sheprd_client::protocol::{
     AgentStatus, CellData, ClientShellPane, CursorState, FrameData, PaneSurfaceFrame,
@@ -28,6 +32,9 @@ mod input_resize;
 mod running;
 mod selection;
 mod steps;
+
+#[cfg(test)]
+mod tests;
 
 const PANE: &str = "rich-chat-preview";
 const WAIT: Duration = Duration::from_secs(20);
@@ -74,7 +81,7 @@ Messages should be comfortable to read. Ordinary paragraphs, **important details
 - **Clear structure:** headings, lists, and code have distinct styles.
 - **The same conversation:** the reply button opens your existing terminal.
 
-You can choose a layout using the **Bubbles** button in the header. See the [feature guide](https://github.com/sheprd-labs/sheprd) for the upstream project.
+You can choose a layout using the **Bubbles** button in the header.
 
 > This is a synthetic preview. No agent is connected and no message will be sent.
 "#;
@@ -226,7 +233,7 @@ async fn run(
             cx.notify();
             visuals_ready(view)
         })??;
-        // Capture only after finished worker results have had real frames.
+        // Wait for stable worker results before drawing the final capture frame.
         settled = if ready { settled + 1 } else { 0 };
         if settled >= 3 {
             break;
@@ -280,24 +287,41 @@ async fn run(
         })?;
         timer.timer(Duration::from_millis(200)).await;
     }
+    let pixels = AnyWindowHandle::from(handle).update(cx, |_, window, cx| {
+        // An inactive native window may retain the frame from before its resize.
+        window.refresh();
+        window.draw(cx).clear(cx);
+        options
+            .capture
+            .as_ref()
+            .map(|_| window.render_to_image())
+            .transpose()
+    })??;
     if options.case == "selection" {
         handle.update(cx, |view, _, cx| selection::Probe::ready(view, cx))??;
     }
     if let Some(path) = options.capture {
-        let pixels = handle.update(cx, |_, window, _| window.render_to_image())??;
+        let pixels = pixels.context("missing preview capture")?;
         cx.background_spawn(async move { pixels.save(&path) })
             .await
             .context("saving native fixture screenshot")?;
     }
-    handle.update(cx, |view, _, _| {
+    handle.update(cx, |view, window, _| -> Result<()> {
         if let Some(pane) = view.chats.pane(PANE) {
             let bounds = pane.list.viewport_bounds();
+            let viewport = window.viewport_size();
+            if options.case == "conversation" && (bounds.left() < px(0.) || bounds.top() < px(0.)
+                || bounds.right() > viewport.width || bounds.bottom() > viewport.height
+                || bounds.size.width <= px(0.) || bounds.size.height <= px(0.)) {
+                bail!("native preview conversation escapes window: {bounds:?} in {viewport:?}");
+            }
             eprintln!("RICH CHAT GEOMETRY {}", serde_json::json!({
                 "max_width": view.config.chat.max_width,
                 "viewport": {"x": f32::from(bounds.origin.x), "y": f32::from(bounds.origin.y), "width": f32::from(bounds.size.width), "height": f32::from(bounds.size.height)},
             }));
         }
-    })?;
+        Ok(())
+    })??;
     let size = handle.update(cx, |_, window, _| window.viewport_size())?;
     eprintln!(
         "RICH CHAT READY case={} theme={} width={} height={} hold_ms={}",
@@ -543,7 +567,10 @@ fn install(
             pane.attachments = options.attach.clone();
         }
     }
-    window.set_window_title("Sheprd · Rich chat preview"); // i18n: data
+    window.set_window_title(&format!(
+        "{} · Rich chat preview", // i18n: data
+        crate::constants::WINDOW_TITLE
+    )); // i18n: data
     window.resize(size(
         px(if options.narrow { 650. } else { 1280. }),
         px(860.),

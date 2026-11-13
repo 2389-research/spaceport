@@ -1,5 +1,7 @@
+// ABOUTME: Dispatches the helper's CLI before starting sessions or terminal UI.
+// ABOUTME: Preserves helper command names while presenting the Spaceport product.
 //! `herdr-acp`: runs an ACP agent in a terminal pane, draws the conversation
-//! there, and lets Sheprd attach to it.
+//! there, and lets Spaceport attach to it.
 
 mod agents;
 mod app;
@@ -30,7 +32,7 @@ pub(crate) use error::{Error, Result};
 fn main() -> ExitCode {
     match cli::parse(std::env::args_os().skip(1)) {
         Ok(cli::Parsed::Help) => {
-            print!("{}", cli::HELP);
+            print!("{}", cli::help());
             ExitCode::SUCCESS
         }
         Ok(cli::Parsed::Version) => {

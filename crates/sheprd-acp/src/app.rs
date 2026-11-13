@@ -1,3 +1,5 @@
+// ABOUTME: Owns helper session startup, attachment, and exact child cleanup.
+// ABOUTME: Reports client attachment failures without changing runtime lifecycle.
 //! Starts the agent and wires the session, the attach socket, Herdr reports,
 //! and the in-pane view together.
 
@@ -248,7 +250,11 @@ fn listen(
         Err(error) => {
             notices.push((
                 NoticeLevel::Warning,
-                format!("Sheprd cannot attach: {:#}", anyhow::Error::from(error)),
+                format!(
+                    "{} cannot attach: {:#}",
+                    sheprd_client::APP_NAME,
+                    anyhow::Error::from(error)
+                ),
             ));
             (None, None)
         }
