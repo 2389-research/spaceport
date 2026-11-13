@@ -1,3 +1,5 @@
+// ABOUTME: Checks status projection and layout in the window header.
+// ABOUTME: Keeps status text bounded and clears disconnected state.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use core::prelude::v1::test;
@@ -93,7 +95,7 @@ fn usage_display_switches_apply_independently_on_reload(cx: &mut TestAppContext)
         });
         cx.run_until_parked();
         assert_eq!(cx.debug_bounds("titlebar-status").is_some(), topbar);
-        assert!(cx.debug_bounds("titlebar-avatar").is_some());
+        assert!(cx.debug_bounds("titlebar-avatar").is_none());
         assert_eq!(cx.debug_bounds("line-herdr-2").is_some(), inline);
         assert_eq!(cx.debug_bounds("line-agent-p0-2").is_some(), inline);
     }
@@ -119,14 +121,12 @@ fn header_keeps_controls_reachable(cx: &mut TestAppContext) {
             window.refresh();
             let _ = window.draw(cx);
         });
-        let avatar = cx.debug_bounds("titlebar-avatar").unwrap();
         assert!(cx.debug_bounds("titlebar-git").is_none());
-        assert_eq!(avatar.right(), px(width - 6.));
         let status = cx.debug_bounds("titlebar-status").unwrap();
         // Clear of the leading controls, whatever room the platform
         // leaves before them.
         assert!(status.left() >= cx.debug_bounds("toggle-sidebar").unwrap().right());
-        assert!(status.right() <= avatar.left());
+        assert!(status.right() <= px(width));
     }
 }
 

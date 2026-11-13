@@ -1,3 +1,5 @@
+// ABOUTME: Checks accessible popup roles and localized page names.
+// ABOUTME: Covers retained dialogs and menus in the pseudo locale.
 use super::*;
 
 #[test]
@@ -39,7 +41,6 @@ fn every_page_title_is_a_message_under_en_xa() {
             Page::Devices,
             Page::DeviceTheme,
             Page::ForwardPort,
-            Page::Profile,
             Page::Group,
             Page::Host,
             Page::Keybinds,

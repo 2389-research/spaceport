@@ -1,4 +1,5 @@
-//! Native chrome and local profile access.
+// ABOUTME: Draws native window chrome, navigation and sidebar controls.
+// ABOUTME: Shares the trailing window controls with top tab strips.
 // i18n: migrated
 mod decorations;
 mod navigation;
@@ -11,13 +12,10 @@ pub(crate) use decorations::controls;
 pub(crate) use decorations::frame;
 pub(crate) use decorations::show_controls;
 
+use crate::SheprdWindow;
 use crate::direction::Logical;
 use crate::i18n::fl;
-use crate::{SheprdWindow, menu::Page};
 use gpui::{prelude::*, *};
-
-/// Profile icon. Smaller than the hit target, which stays a comfortable size.
-const AVATAR: f32 = 20.;
 
 const SIDEBAR_TOGGLE_SIZE: f32 = 28.;
 const SIDEBAR_GLYPH_WIDTH: f32 = 18.;
@@ -28,20 +26,11 @@ const SIDEBAR_TOGGLE_INSET: f32 = (SIDEBAR_TOGGLE_SIZE - SIDEBAR_GLYPH_WIDTH) / 
 pub(super) const HEIGHT: f32 = 34.;
 
 /// The narrowest window whose header keeps Back and Forward. Below it they
-/// give way, so the account and window controls stay reachable; the keys and
+/// give way, so the window controls stay reachable; the keys and
 /// mouse buttons still travel.
 const NAVIGATION_MIN_WIDTH: f32 = 320.;
 
 impl SheprdWindow {
-    pub(crate) fn open_profile(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let shown = self.menu.page == Some(Page::Profile);
-        if !shown && !self.open_menu(window, cx) {
-            return;
-        }
-        self.menu.page = Some(Page::Profile);
-        cx.notify();
-    }
-
     pub(super) fn render_titlebar(
         &self,
         window: &mut Window,
@@ -82,7 +71,7 @@ impl SheprdWindow {
                     center.child(status::render(&self.live, &self.config.ui, &self.theme))
                 }),
         )
-        .child(self.titlebar_end(window, cx))
+        .child(self.titlebar_end(window))
     }
 
     pub(crate) fn sidebar_toggle(&self, cx: &mut Context<Self>) -> AnyElement {
@@ -111,79 +100,12 @@ impl SheprdWindow {
             .into_any_element()
     }
 
-    /// What ends the bar: the profile and client-drawn window controls.
-    fn titlebar_end(&self, window: &Window, cx: &mut Context<Self>) -> Div {
+    /// The client-drawn window controls, unless the in-window menu carries them.
+    fn titlebar_end(&self, window: &Window) -> Div {
         div()
             .row()
             .flex_none()
             .items_center()
-            .child(
-                div()
-                    .debug_selector(|| "titlebar-account-slot".into())
-                    .row()
-                    .items_center()
-                    .justify_center()
-                    .flex_none()
-                    .w(px(40.))
-                    .h_full()
-                    .child(
-                        div()
-                            .id("titlebar-avatar")
-                            .role(Role::Button)
-                            .aria_label(fl!("titlebar-profile"))
-                            .map(|control| {
-                                self.chrome_stop(
-                                    crate::window::chrome_focus::Region::TitleBar,
-                                    control,
-                                )
-                            })
-                            .group("titlebar-account")
-                            .debug_selector(|| "titlebar-avatar".into())
-                            .row()
-                            .items_center()
-                            .justify_center()
-                            .relative()
-                            .size(px(28.))
-                            .rounded_full()
-                            .cursor_pointer()
-                            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                cx.stop_propagation();
-                                this.open_profile(window, cx);
-                            }))
-                            .on_mouse_down(
-                                MouseButton::Right,
-                                cx.listener(|this, _, window, cx| {
-                                    cx.stop_propagation();
-                                    this.open_profile(window, cx);
-                                }),
-                            )
-                            .child(
-                                div()
-                                    .debug_selector(|| "titlebar-avatar-circle".into())
-                                    .row()
-                                    .items_center()
-                                    .justify_center()
-                                    .size(px(AVATAR))
-                                    .rounded_full()
-                                    .group_hover("titlebar-account", |s| {
-                                        s.shadow(vec![BoxShadow {
-                                            color: rgba((self.theme.foreground << 8) | 0x38).into(),
-                                            offset: point(px(0.), px(0.)),
-                                            blur_radius: px(5.),
-                                            spread_radius: px(1.),
-                                            inset: false,
-                                        }])
-                                    })
-                                    .child(
-                                        svg()
-                                            .path("icons/user.svg")
-                                            .size(px(AVATAR))
-                                            .text_color(rgb(self.theme.foreground)),
-                                    ),
-                            ),
-                    ),
-            )
             // The in-window menu bar carries the window controls instead.
             .when(!crate::menus::IN_WINDOW, |end| {
                 end.children(controls(false, window, &self.theme, |window, _| {

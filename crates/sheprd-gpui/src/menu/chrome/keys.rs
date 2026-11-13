@@ -1,3 +1,5 @@
+// ABOUTME: Routes keyboard input within the active popup page.
+// ABOUTME: Keeps navigation and submission separate from terminal input.
 //! Keyboard input while a menu page holds focus: the Edit menu's shortcuts
 //! and the overlay's key handler, which routes each key to the page that owns
 //! it and leaves text editing and composition to the native input handler.
@@ -231,12 +233,8 @@ impl SheprdWindow {
                 }
                 cx.notify();
             }
-            "up" | "down" if matches!(self.menu.page, Some(Page::Menu | Page::Profile)) => {
-                let count = if self.menu.page == Some(Page::Profile) {
-                    self.profile_items().len()
-                } else {
-                    self.menu_items().len()
-                };
+            "up" | "down" if self.menu.page == Some(Page::Menu) => {
+                let count = self.menu_items().len();
                 if count > 0 {
                     self.menu.selected =
                         Some(match (self.menu.selected, event.keystroke.key.as_str()) {
@@ -281,12 +279,8 @@ impl SheprdWindow {
             "enter" if self.menu.page == Some(Page::About) => {
                 self.dismiss_menu(window, cx);
             }
-            "enter" if matches!(self.menu.page, Some(Page::Menu | Page::Profile)) => {
-                let items = if self.menu.page == Some(Page::Profile) {
-                    self.profile_items().to_vec()
-                } else {
-                    self.menu_items()
-                };
+            "enter" if self.menu.page == Some(Page::Menu) => {
+                let items = self.menu_items();
                 if let Some(item) = self
                     .menu
                     .selected

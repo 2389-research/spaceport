@@ -1,3 +1,5 @@
+// ABOUTME: Defines the closed set of popup pages and workspace actions.
+// ABOUTME: Keeps popup targets typed across rendering and input routing.
 //! What a menu popup is currently showing, and the workspace actions a row
 //! can trigger. Closed sets, so a page is never a string tag.
 // i18n: migrated
@@ -45,7 +47,6 @@ pub(crate) enum Page {
     Pane,
     /// The processes under the pane menu's pane.
     PaneProcesses,
-    Profile,
     RemoveDevice,
     /// Confirming a saved WSL distribution should be forgotten.
     RemoveWsl,

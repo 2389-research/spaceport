@@ -66,6 +66,17 @@ fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
 }
 
 pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    if std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_ONLY").is_some() {
+        cx.spawn(async move |cx| {
+            if let Err(error) = local_controls::verify(handle, cx).await {
+                eprintln!("LOCAL CONTROLS native FAIL: {error:#}");
+                std::process::exit(1);
+            }
+            std::process::exit(0);
+        })
+        .detach();
+        return;
+    }
     #[cfg(target_os = "macos")]
     if std::env::var_os("HERDR_TEST_SIDEBAR_ROUTING").is_some() {
         hosts::start_routing(handle, cx);
@@ -103,17 +114,6 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
     }
     if std::env::var_os("HERDR_TEST_NOTIFICATIONS_ONLY").is_some() {
         start_notifications(handle, cx);
-        return;
-    }
-    if std::env::var_os("HERDR_TEST_PROFILE_ONLY").is_some() {
-        cx.spawn(async move |cx| {
-            if let Err(error) = profile::verify(handle, cx).await {
-                eprintln!("PROFILE native FAIL: {error:#}");
-                std::process::exit(1);
-            }
-            std::process::exit(0);
-        })
-        .detach();
         return;
     }
     EXIT_CODE.store(1, Ordering::SeqCst);
@@ -622,8 +622,8 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                 }
             }
         }
-        if let Err(error) = profile::verify(handle, cx).await {
-            eprintln!("SIDEBAR native profile FAIL: {error:#}");
+        if let Err(error) = local_controls::verify(handle, cx).await {
+            eprintln!("SIDEBAR native local controls FAIL: {error:#}");
             std::process::exit(1);
         }
         #[cfg(target_os = "macos")]

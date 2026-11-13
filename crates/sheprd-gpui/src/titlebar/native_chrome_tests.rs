@@ -1,3 +1,5 @@
+// ABOUTME: Checks header geometry across window sizes and fullscreen states.
+// ABOUTME: Keeps navigation and the body within native chrome bounds.
 #![allow(clippy::unwrap_used)]
 use gpui::{Bounds, TestAppContext, point, px, size};
 
@@ -22,33 +24,14 @@ fn header_bounds_above_body_in_windowed_and_fullscreen(cx: &mut TestAppContext) 
                 cx.debug_bounds("titlebar").unwrap(),
                 Bounds::new(point(px(0.), px(0.)), size(px(width), px(34.)))
             );
-            assert_eq!(
-                cx.debug_bounds("titlebar-account-slot").unwrap(),
-                Bounds::new(point(px(width - 40.), px(0.)), size(px(40.), px(34.)))
-            );
-            assert_eq!(
-                cx.debug_bounds("titlebar-avatar").unwrap(),
-                Bounds::new(point(px(width - 34.), px(3.)), size(px(28.), px(28.)))
-            );
-            assert_eq!(
-                cx.debug_bounds("titlebar-avatar-circle").unwrap(),
-                Bounds::new(point(px(width - 30.), px(7.)), size(px(20.), px(20.)))
-            );
-            let hit = cx.debug_bounds("titlebar-avatar").unwrap();
-            let circle = cx.debug_bounds("titlebar-avatar-circle").unwrap();
-            assert_eq!(circle.size, size(px(super::AVATAR), px(super::AVATAR)));
-            assert_eq!(circle.center(), hit.center());
-            assert!(circle.size.width < hit.size.width);
+            assert!(cx.debug_bounds("titlebar-avatar").is_none());
             // The draggable center starts after Back and Forward and
             // the room they keep.
             let leading = cx.debug_bounds("titlebar-navigation").unwrap().right()
                 + px(super::navigation::NAVIGATION_MARGIN);
             assert_eq!(
                 cx.debug_bounds("titlebar-center").unwrap(),
-                Bounds::new(
-                    point(leading, px(0.)),
-                    size(px(width - 40.) - leading, px(34.))
-                )
+                Bounds::new(point(leading, px(0.)), size(px(width) - leading, px(34.)))
             );
             let body = cx.debug_bounds("window-body").unwrap();
             // A worktree build's banner sits at the window's foot.

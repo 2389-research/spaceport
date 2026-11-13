@@ -1,3 +1,5 @@
+// ABOUTME: Runs opt-in native fixtures without blocking the UI thread.
+// ABOUTME: Shares isolated fixture checks and explicit failure reporting.
 //! Native opt-in smoke driver. No test platform or blocking waits on the UI thread.
 use crate::{Command, LiveState, NavigationTarget, RunCommand, SheprdWindow, open_window, sidebar};
 // The window, menu, and icon checks below need an active desktop, so they and
@@ -65,8 +67,8 @@ mod bidi;
 mod sidebar_fixture;
 pub use sidebar_fixture::start_sidebar;
 
-#[path = "smoke_profile.rs"]
-mod profile;
+#[path = "smoke_local_controls.rs"]
+mod local_controls;
 
 #[path = "smoke_about.rs"]
 mod about;

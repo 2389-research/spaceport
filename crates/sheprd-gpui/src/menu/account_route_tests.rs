@@ -1,5 +1,7 @@
+// ABOUTME: Checks local menu controls and absence of account workers.
+// ABOUTME: Protects retained settings routes without authentication state.
 //! The application menu keeps its general actions without exposing sign-in.
-//! Profile access in the titlebar has its own interaction test.
+//! Local controls remain available without an account or profile shell.
 
 use crate::sidebar::layout_tests::fixture_window;
 
