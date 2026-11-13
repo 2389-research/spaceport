@@ -1,3 +1,5 @@
+// ABOUTME: Verifies configuration loading, migration and preserved user overrides.
+// ABOUTME: Shares private filesystem fixtures across configuration regression modules.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
@@ -31,6 +33,7 @@ mod focus_follows_mouse;
 mod font_aliases;
 mod font_weight;
 mod fonts;
+mod generated_guidance;
 mod herdr_2_terminals;
 mod icon_font;
 mod keybindings;

@@ -3,7 +3,7 @@
 This is the upstream Sheprd rename record. The Spaceport fork's current
 product and release contracts are in [the Spaceport specification](spaceport/SPEC.md);
 its phone service, native mobile app and custom updater have been removed.
-Its app artwork is the rocket emoji selected in D62; see
+Its app artwork is the sculpted nebula rocket selected in D63; see
 [the icon guide](../assets/icons/README.md).
 The historical contracts below are not Spaceport release configuration.
 

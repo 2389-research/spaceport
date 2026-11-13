@@ -351,6 +351,9 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
     }
     let status = gui.wait().unwrap();
     let log = fs::read_to_string(isolated.sandbox.dir.join("gui.log")).unwrap();
+    if status.success() && matches!(fixture, Fixture::LocalControls { .. }) {
+        diagnostics::assert_startup_capture(&isolated.sandbox.dir);
+    }
     eprintln!("{log}");
     Some((status, log))
 }

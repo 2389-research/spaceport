@@ -1,9 +1,9 @@
 # DO NOT EDIT -- WILL BE OVERWRITTEN
-# Managed Sheprd defaults, refreshed on startup and GUI config reload.
-# Put your overrides in config-gpui.local.toml beside this file.
-# Sheprd settings. Independent of the daemon config, except where a setting
+# Managed Spaceport defaults, refreshed on startup and GUI config reload.
+# Put your overrides in config.local.toml beside this file.
+# Spaceport settings. Independent of the daemon config, except where a setting
 # below says it starts from one the daemon config already carries.
-# Save at $XDG_CONFIG_HOME/herdr/config-gpui.toml (default ~/.config/herdr/).
+# Save at $XDG_CONFIG_HOME/spaceport/config.toml (default ~/.config/spaceport/).
 # Omitted settings use defaults. Keys this build does not know, such as ones a
 # newer build reads, are ignored and named in a dismissible warning instead of
 # failing the load. The former [github] account table is rejected explicitly.
@@ -27,14 +27,14 @@
 # popular Ghostty themes compiled in, such as TokyoNight, Gruvbox Dark,
 # Rose Pine, Atom One Dark, and GitHub Light Default (Settings lists them all).
 # Also accepts a Ghostty theme name, an absolute path, or a ~/ path.
-# Set "Follow Herdr" in config-gpui.local.toml to follow the local Herdr theme.
+# Set "Follow Herdr" in config.local.toml to follow the local Herdr theme.
 # On an Omarchy desktop, "Omarchy" follows its current theme as it switches,
-# and is what you get until config-gpui.local.toml names another theme.
+# and is what you get until config.local.toml names another theme.
 # To follow the system light/dark appearance, name a theme for each side, as
 # Ghostty does: theme = "light:Catppuccin Latte,dark:Catppuccin Mocha"
 theme = "Default"
 # Themes starred in the Color Scheme picker, listed above the rest. The
-# picker's star button keeps this list in config-gpui.local.toml.
+# picker's star button keeps this list in config.local.toml.
 # favorite_themes = ["Nord", "Catppuccin Mocha"]
 # How far the app's own colors (status dots, pull request badges, diff counts,
 # warnings, dim labels) stand off the sidebar and menus. "standard" moves a
@@ -56,7 +56,7 @@ language = "system"
 # Ask before closing a tab (closing terminates its terminal processes).
 confirm_close_tab = true
 # Ask before closing a pane, independently of tabs. The dialog's "Do not ask
-# again" checkbox sets this to false in config-gpui.local.toml.
+# again" checkbox sets this to false in config.local.toml.
 confirm_close_pane = true
 # Show the Agents section below Spaces in the sidebar.
 show_agents = true
@@ -143,7 +143,7 @@ layout = "normal"
 # between tabs), or "compact" (icons only, the chosen tab named). View > Tab
 # Layout lists them all.
 tab_layout = "classic"
-# New tabs run in herdr-core (Herdr 2), whose terminals Sheprd draws and
+# New tabs run in herdr-core (Herdr 2), whose terminals Spaceport draws and
 # splits into native panes, instead of in Herdr 1. Herdr 1 tabs keep running
 # beside them. Without Herdr 1 installed, terminals are Herdr 2's anyway.
 # herdr-core runs on this computer only, so tabs on other hosts stay Herdr's.
@@ -164,7 +164,7 @@ project_roots = []
 
 # Inherit shared [ui.toast] delivery, delay_seconds, and herdr.position.
 # Only delivery = "herdr" enables in-app toasts; "off", "terminal", and "system"
-# do not. QA previews bypass delivery policy. In config-gpui.local.toml, each
+# do not. QA previews bypass delivery policy. In config.local.toml, each
 # explicit key overrides the shared setting independently, including false.
 # [notifications]
 # enabled = false
@@ -213,7 +213,7 @@ project_roots = []
 # primary first. "" or [] unbinds it. Assigning a keystroke here takes it away
 # from its default command. Modifiers: cmd (Super on Linux, Win on Windows),
 # ctrl, alt, shift, fn; keystrokes need at least one of cmd, ctrl, alt, or fn,
-# or a function key F1 through F24. Sheprd > Keyboard Shortcuts also edits,
+# or a function key F1 through F24. Spaceport > Keyboard Shortcuts also edits,
 # unbinds, and resets them.
 # Herdr's own [keys] in config.toml (prefix chords included) add to these
 # defaults; a command named here keeps only the keystrokes listed here.
@@ -441,7 +441,7 @@ size = 12
 # layout = "timeline"
 # Maximum reading-column width in logical pixels: 320–4000, or 0 for full width.
 # Settings > General offers a width slider and Full-width chat switch.
-# Command line: sheprd config set chat.max_width 0
+# Command line: spaceport config set chat.max_width 0
 # max_width = 800
 #
 # Scroll smoothly to a streaming reply's new text, rather than jumping to it

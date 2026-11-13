@@ -1,5 +1,7 @@
+# ABOUTME: Builds the Spaceport development client and helper for Linux with Nix.
+# ABOUTME: Installs launcher metadata and runtime libraries for the packaged app.
 {
-  description = "Sheprd: a native GPUI client for an existing local Herdr daemon";
+  description = "Spaceport: a native GPUI client for Herdr";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -20,7 +22,7 @@
     let
       inherit (nixpkgs) lib;
       # GPUI's Linux backend is the only one this flake builds; macOS users
-      # install the signed DMG or the Homebrew cask instead.
+      # install a signed Spaceport preview instead.
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -83,6 +85,7 @@
             "cli"
           ];
           nativeBuildInputs = [
+            pkgs.desktop-file-utils
             pkgs.makeWrapper
             pkgs.pkg-config
             rustPlatform.bindgenHook
@@ -98,9 +101,10 @@
           # Nix owns the store path and upgrades come from the flake.
           postInstall = ''
             install -Dm644 scripts/release/org.sheprd.Sheprd.desktop \
-              $out/share/applications/org.sheprd.Sheprd.desktop
+              $out/share/applications/spaceport.development.desktop
             install -Dm644 assets/icons/sheprd-linux.svg \
-              $out/share/icons/hicolor/scalable/apps/sheprd.svg
+              $out/share/icons/hicolor/scalable/apps/spaceport.svg
+            desktop-file-validate $out/share/applications/spaceport.development.desktop
           '';
           postFixup = ''
             patchelf --add-rpath ${lib.makeLibraryPath runtimeLibraries} $out/bin/spaceport
@@ -108,8 +112,8 @@
               --prefix PATH : ${lib.makeBinPath [ pkgs.wl-clipboard pkgs.xclip ]}
           '';
           meta = {
-            description = "Native GPUI client for an existing local Herdr daemon";
-            homepage = "https://sheprd.org";
+            description = "Native GPUI client for Herdr";
+            homepage = "https://github.com/2389-research/spaceport";
             license = lib.licenses.asl20;
             mainProgram = "spaceport";
             platforms = systems;

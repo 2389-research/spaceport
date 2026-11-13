@@ -1,3 +1,5 @@
+// ABOUTME: Checks native Settings controls inside isolated GUI fixtures.
+// ABOUTME: Captures real windows and verifies input, layout and persistence behavior.
 //! Native checks run only inside live_gui's isolated HOME/XDG fixture process.
 // i18n: migrated
 use super::*;
@@ -5,6 +7,7 @@ use crate::sidebar::native_tests::Target;
 use anyhow::{Context as _, Result, bail, ensure};
 use std::time::{Duration, Instant};
 
+pub(crate) mod branding;
 mod fonts;
 mod themes;
 use fonts::verify_fonts;

@@ -1,7 +1,7 @@
 # The log window: the app's own records. Log records are not translated.
 
 log-window-title = Logs
-log-window-search-placeholder = Search, namespace:sheprd_gpui target:terminal_painter
+log-window-search-placeholder = Search, namespace:spaceport target:terminal_painter
 # The minimum level menu's button; $level is a log level such as INFO, kept as is.
 log-window-minimum = Minimum: { $level } v
 log-window-minimum-menu = Minimum level

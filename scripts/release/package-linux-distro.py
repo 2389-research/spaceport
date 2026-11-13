@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# ABOUTME: Repackages one validated Linux archive into the supported distro formats.
+# ABOUTME: Keeps installed files and dependency metadata consistent across formats.
 """Repackage the manual Linux archive as .deb, .rpm, and Arch packages.
 
 The packages install the files of Sheprd-VERSION-TARGET.tar.gz under /usr,
@@ -23,8 +25,8 @@ ARCHES = {"x86_64-unknown-linux-gnu": "amd64", "aarch64-unknown-linux-gnu": "arm
 FORMATS = (("deb", "deb"), ("rpm", "rpm"), ("archlinux", "pkg.tar.zst"))
 TREE = {
     "bin/spaceport", "bin/sheprd-acp",
-    "share/applications/org.sheprd.Sheprd.desktop",
-    "share/icons/hicolor/scalable/apps/sheprd.svg",
+    "share/applications/spaceport.development.desktop",
+    "share/icons/hicolor/scalable/apps/spaceport.svg",
     *(f"share/licenses/herdr-gpui/{name}" for name in (
         "LICENSE", "NOTICE", "LICENSE-octicons", "LICENSE-APACHE", "NOTICE.md",
         "SOUND-NOTICE.md", "THIRD-PARTY-NOTICES.txt")),

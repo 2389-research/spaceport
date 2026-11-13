@@ -73,5 +73,5 @@ jobs:
           ./result/bin/spaceport --help >/dev/null
           test ! -e result/bin/herdr-gpui
           test ! -e result/bin/sheprd
-          test -f result/share/applications/org.sheprd.Sheprd.desktop
+          test -f result/share/applications/spaceport.development.desktop
           if ldd result/bin/spaceport | grep 'not found'; then exit 1; fi
