@@ -439,8 +439,8 @@
     {
       "id": "D63",
       "title": "Ship the nebula rocket artwork",
-      "decision": "Use the approved sculpted ivory/red rocket with a violet/cyan nebula background as Spaceport's app artwork. The selected master is design/spaceport-icon/rocket-nebula.png. Generate platform and branding exports from this image.",
-      "status": "active",
+      "decision": "Use the approved sculpted ivory/red rocket with a violet/cyan nebula background as Spaceport's app artwork. The selected master is design/spaceport-icon/rocket-nebula.png. D68 replaces the rocket with a saucer while preserving the nebula style and this historical source.",
+      "status": "qualified",
       "source": "Doctor Biz, 2026-11-09: requested a much cooler icon, then a more nebula-like background, and approved the resulting image with ok. ship it."
     },
     {
@@ -470,6 +470,13 @@
       "decision": "Remove the titlebar profile/avatar and its duplicate local shortcut popup. Preserve access to Settings, keyboard shortcuts, themes and About through shared application actions and menus. Do not remove runtime machine profiles, agent message icons, credits or settings. This supersedes D50's profile/avatar retention only.",
       "status": "active",
       "source": "Doctor Biz, 2026-11-12: created Kata tj5q to remove the profile, then approved the proposed bounded profile removal and helper documentation work with let's do rxkr and tj5q."
+    },
+    {
+      "id": "D68",
+      "title": "Use a nebula flying saucer icon",
+      "decision": "Replace the rocket with a flying saucer inspired by the 🛸 emoji. Keep the nebula background, sculpted style and distinct berry development rim. Use design/spaceport-icon/ufo-nebula.png as the shared master for app, platform, installer and social artwork. Preserve the earlier rocket exploration and legal provenance. This supersedes D62 and D63's rocket subject; it does not change bundle identities, signing, update trust or release authorization.",
+      "status": "active",
+      "source": "Doctor Biz, 2026-11-13: merge. also we need to tweak the icon becuse it uses the same as apple games. let's use 🛸 instead."
     }
   ]
 }

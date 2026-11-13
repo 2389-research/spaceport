@@ -1,4 +1,5 @@
-// Render each native icon resolution from the shared nebula rocket artwork.
+// ABOUTME: Renders native macOS icon resolutions from the shared Spaceport artwork.
+// ABOUTME: Packages matching ordinary and development ICNS files and asset catalogs.
 import AppKit
 import Foundation
 
@@ -51,11 +52,11 @@ func compileAssetCatalog(name: String, worktree: Bool) throws {
   let document = temporary.appendingPathComponent("\(name)/Sheprd.icon")
   try FileManager.default.createDirectory(at: document.appendingPathComponent("Assets"), withIntermediateDirectories: true)
   try render(artwork("sheprd-icon-square.svg", worktree: worktree), pixels: 1024, macOS: false)
-    .write(to: document.appendingPathComponent("Assets/rocket.png"))
+    .write(to: document.appendingPathComponent("Assets/spacecraft.png"))
   let manifest: [String: Any] = [
     "fill": ["solid": worktree ? "srgb:0.60000,0.12157,0.26275,1.00000" : "srgb:0.04314,0.07059,0.12549,1.00000"],
     "groups": [[
-      "layers": [["glass": false, "image-name": "rocket.png", "name": "Spaceport rocket"]],
+      "layers": [["glass": false, "image-name": "spacecraft.png", "name": "Spaceport saucer"]],
       "shadow": ["kind": "none", "opacity": 0.0],
       "specular": false,
       "translucency": ["enabled": false, "value": 0.0],

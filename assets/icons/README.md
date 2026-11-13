@@ -1,10 +1,10 @@
 # Spaceport icons
 
-## Canonical nebula rocket
+## Canonical nebula saucer
 
-The approved source is [`rocket-nebula.png`](../../design/spaceport-icon/rocket-nebula.png).
-It is a sculpted ivory/red 🚀 rocket over violet and cyan nebula clouds, generated
-with OpenAI imagegen from the earlier Twemoji concept. The exact prompts are
+The selected source is [`ufo-nebula.png`](../../design/spaceport-icon/ufo-nebula.png).
+It is a sculpted silver/ivory 🛸 saucer with a teal canopy over violet and cyan nebula clouds.
+OpenAI imagegen replaced the earlier rocket while retaining its nebula tile. The exact prompts are
 in [the design notes](../../design/spaceport-icon/README.md). Twemoji provenance
 and its CC BY 4.0 license remain in [NOTICE](../../NOTICE) and
 [LICENSE-twemoji](LICENSE-twemoji).
@@ -20,7 +20,7 @@ and visible titles use Spaceport.
 
 `sheprd-avatar.png` is the generated 1024×1024 avatar; it has not been uploaded.
 This is the full-bleed square export. For a circular profile image, use the inset
-Linux artwork below so the crop retains the rocket's nose and plume.
+Linux artwork below so the crop retains the saucer's full silhouette.
 To regenerate only this square export:
 
 ```sh
@@ -32,7 +32,7 @@ rsvg-convert -w 1024 -h 1024 assets/icons/sheprd-avatar.svg \
 
 | macOS / About | Linux |
 | --- | --- |
-| <img src="sheprd-icon.png" width="128" height="128" alt="Spaceport rocket on a nebula tile"> | <img src="sheprd-linux.svg" width="128" height="128" alt="Spaceport rocket on a nebula circle"> |
+| <img src="sheprd-icon.png" width="128" height="128" alt="Spaceport saucer on a nebula tile"> | <img src="sheprd-linux.svg" width="128" height="128" alt="Spaceport saucer on a nebula circle"> |
 
 | Output | Use |
 | --- | --- |
@@ -89,7 +89,7 @@ Both variants have 1x and Retina 2x representations for logical sizes 16, 32,
 
 On macOS 26+, bundles ship the selected `.car` as `Contents/Resources/Assets.car`,
 under icon name `Sheprd` for both variants. Icon Composer uses the canonical
-full-bleed rocket PNG as a raster layer, with glass, specular effects,
+full-bleed saucer PNG as a raster layer, with glass, specular effects,
 translucency, and shadows disabled. macOS supplies the outer mask. The bundle's
 display name is Spaceport and executable is `spaceport`; development builds and
 signed previews retain their separate Spaceport bundle identities.
@@ -97,7 +97,7 @@ signed previews retain their separate Spaceport bundle identities.
 ### Linux and Windows
 
 The Linux circle is 896px across, with a 64px transparent margin on the 1024px
-canvas. The artwork is inset within that circle to keep the nose and plume clear
+canvas. The artwork is inset within that circle to keep the saucer clear
 of the crop. Packaging selects the normal or worktree SVG; the `.desktop` entry and
 installed icon lookup name must agree. Desktops may cache or theme the icon.
 `just icons-linux` needs only Python's standard library.

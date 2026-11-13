@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Render Spaceport's social cards from the canonical rocket, using librsvg."""
+# ABOUTME: Renders social cards from Spaceport's shared app artwork.
+# ABOUTME: Keeps every card within its platform dimensions and upload size limit.
+"""Render Spaceport's social cards from the canonical artwork, using librsvg."""
 from pathlib import Path
 import subprocess
 import xml.etree.ElementTree as ET
@@ -31,7 +33,7 @@ def card(width, height, dark=False):
     mark.set("y", str((height - 340) // 2))
     mark.set("width", "340")
     mark.set("height", "340")
-    # Keep the approved rounded tile; circular crops cut the nose and plume.
+    # Keep the full rounded tile rather than applying a second circular crop.
     root.append(mark)
     ET.indent(root, space="  ")
     return ET.tostring(root, encoding="unicode") + "\n"

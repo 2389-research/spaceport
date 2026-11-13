@@ -1,4 +1,27 @@
-# Spaceport rocket exploration
+# Spaceport icon exploration
+
+## Selected nebula saucer
+
+Doctor Biz requested 🛸 instead of the rocket on November 13, 2026.
+D68 records that choice. `ufo-nebula.png` is the selected shared master.
+The earlier rocket remains a historical reference.
+
+The built-in imagegen tool edited `rocket-nebula.png` after visual inspection.
+It replaced the rocket and flame with a silver/ivory disc and teal canopy.
+The nebula, orbital accent, rounded tile and transparent outer margins remain.
+The result is a 1254×1254 RGBA PNG, inspected before platform regeneration.
+Its SHA-256 is `3d2d85e4fe2ff9520a53301181b9c4290a3ec3be9d20de38a5e8110131abce4c`.
+
+The generator embeds these exact bytes in each platform SVG.
+Normal and development variants retain their existing masks and margins.
+App, installer, catalog and social exports use the same master.
+This artwork change does not establish a signed build or public release.
+
+### Saucer edit prompt
+
+Edit target: the referenced Spaceport macOS app icon. Replace the rocket and its engine flame with one bold sculpted flying saucer inspired by the immediately recognizable 🛸 emoji silhouette. Preserve the existing dark violet, indigo and muted cyan nebula tile background, subtle orbital arc and tiny cyan orbital dot, premium tactile 3D style, front-facing square canvas and rounded tile, and transparent outer margins. Saucer: wide satin-aluminum and ivory ceramic disc, a large deep teal glass canopy dome, a clean dark lower lip, a few broad cyan rim lights, one restrained warm coral accent. View the saucer from slightly above and at a small playful tilt so the elliptical disc and domed canopy are unmistakable. Make it large and readable at 32px Dock size, occupying about 70 percent of the tile width. No rocket, fins or flame; no game controller or Apple Games motif. Avoid tiny greebles, alien characters, text, labels, planets, extra spacecraft, starbursts and busy light beams. Keep the saucer's highlights and contact shadow consistent with the original upper-left studio light. Preserve the dark nebula as a secondary lower-contrast surface. One finished app icon, no mockup or presentation board. Maintain real alpha transparency outside the tile. Prefer matching the reference canvas dimensions and outer tile placement.
+
+## Historical rocket exploration
 
 Doctor Biz asked for a much cooler icon after reviewing the flat emoji tile.
 `rocket-dimensional.png` is the resulting design preview: a sculpted ivory
@@ -7,7 +30,7 @@ rocket, red fins, warm engine plume and cyan accents on a graphite tile.
 Generated with the built-in image generation tool, using the initial flat
 rocket icon as the edit target. The PNG is 1254×1254 with
 an alpha channel. The output was inspected visually; no native app was built
-or tested with this earlier variant. The later nebula variant below is selected.
+or tested with this earlier variant. D63 selected the later nebula variant below.
 
 ## Nebula background variant
 
@@ -15,8 +38,8 @@ or tested with this earlier variant. The later nebula variant below is selected.
 following Doctor Biz's request for a more nebula-like background. Generated
 with the built-in image generation tool from `rocket-dimensional.png`, then
 inspected visually. The rocket remains prominent and the outer margins retain
-an alpha channel. Doctor Biz approved this variant with “ship it.” It is now
-the source for generated app/platform artwork; the earlier dimensional image
+an alpha channel. Doctor Biz approved this variant with “ship it.” It was
+the source under D63 before the D68 saucer; the earlier dimensional image
 remains a design reference. Source selection does not establish a new signed
 application build or public release.
 
