@@ -1,3 +1,5 @@
+// ABOUTME: Loads Spaceport settings from managed defaults and personal overrides.
+// ABOUTME: Keeps typed preferences independent of runtime process ownership.
 //! GUI settings. Spaceport owns its managed defaults, local overrides and
 //! private view settings. `spaceport/config.local.toml` holds persistent user
 //! overrides; no local reader uses Herdr's own config file.
@@ -141,10 +143,11 @@ pub struct Config {
     pub features: Features,
     /// Focus the split terminal pane under the pointer without clicking.
     pub focus_follows_mouse: bool,
-    /// New tabs run in herdr-core (Herdr 2) rather than Herdr 1, for their
-    /// native panes. Off by default while Herdr 1 holds the user's sessions;
-    /// without Herdr 1 installed, terminals are Herdr 2's anyway.
+    /// Prefer Core for new terminal tabs when Core is enabled.
+    /// An enabled Core session also supplies terminals when Herdr 1 is absent.
     pub herdr_2_terminals: bool,
+    /// Explicit Core opt-in, applied once when the app starts.
+    pub herdr_core_enabled: bool,
     /// Font resolution searched for an icon font for the terminal and found
     /// none installed, so Private Use Area glyphs draw as missing-glyph boxes.
     /// Never set when the config names the terminal's `fallback` itself.
@@ -262,6 +265,7 @@ impl Default for Config {
             features: Features::default(),
             focus_follows_mouse: true,
             herdr_2_terminals: false,
+            herdr_core_enabled: false,
             icon_font_missing: false,
             keep_selection_after_copy: true,
             keybinding_overrides: BTreeMap::new(),
@@ -329,6 +333,7 @@ struct Settings {
     features: Features,
     focus_follows_mouse: Option<bool>,
     herdr_2_terminals: Option<bool>,
+    herdr_core_enabled: Option<bool>,
     keep_selection_after_copy: Option<bool>,
     keybindings: BTreeMap<String, Binding>,
     language: Option<sheprd_i18n::Language>,
@@ -678,6 +683,7 @@ impl Config {
         config.option_as_alt = settings.option_as_alt;
         config.keep_selection_after_copy = settings.keep_selection_after_copy.unwrap_or(true);
         config.herdr_2_terminals = settings.herdr_2_terminals.unwrap_or(false);
+        config.herdr_core_enabled = settings.herdr_core_enabled.unwrap_or(false);
         for (name, font, settings) in [
             ("sidebar", &mut config.sidebar, settings.sidebar.font),
             ("tabs", &mut config.tabs, settings.tabs),

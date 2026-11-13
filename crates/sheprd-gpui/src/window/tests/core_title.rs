@@ -10,7 +10,7 @@ use uuid::Uuid;
 fn selected_core_group_sets_title_from_fresh_exact_document(cx: &mut gpui::TestAppContext) {
     let first = Uuid::from_u128(71);
     let second = Uuid::from_u128(72);
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         core_terminals::set_document_for_test_as(
             cx,

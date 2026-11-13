@@ -1,3 +1,5 @@
+// ABOUTME: Presents Core workspace documents and coordinates bounded edits.
+// ABOUTME: Keeps exact runtime ownership and opt-in checks at view entry points.
 //! Shows Core's watched Spaceport groups and edits one group from a dialog.
 //! The UI reads the shared observation and sends blocking CAS work to a worker.
 
@@ -257,6 +259,9 @@ impl SheprdWindow {
     }
 
     pub(crate) fn show_core_group(&mut self, key: &CoreGroupKey, cx: &mut Context<Self>) -> bool {
+        if !self.core_enabled() {
+            return false;
+        }
         if !self.core_group_available(key, cx) {
             return false;
         }

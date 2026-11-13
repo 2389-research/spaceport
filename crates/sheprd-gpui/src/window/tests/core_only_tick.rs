@@ -1,7 +1,6 @@
 // ABOUTME: Exercises a selected Core group's full window tick without legacy endpoints.
 // ABOUTME: Uses a private join callback so no personal Core can be contacted or started.
 
-use super::*;
 use crate::{
     browser::CoreGroupKey,
     core_terminals::{self, Error, Start},
@@ -17,7 +16,7 @@ fn private_join(start: Start) -> Result<sheprd_core_client::CoreBackend, Error> 
 #[gpui::test]
 fn selected_core_group_ticks_without_legacy_endpoints(cx: &mut gpui::TestAppContext) {
     let group = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         core_terminals::set_document_for_test_as(
             cx,

@@ -1,3 +1,5 @@
+// ABOUTME: Checks focus fences behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 use super::*;
 
 #[gpui::test]
@@ -105,7 +107,7 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
     cx: &mut gpui::TestAppContext,
 ) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
-        Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)))
+        Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_core_window(window, cx)))
     });
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     for (command, method, confirm_close, explicit_tab) in [

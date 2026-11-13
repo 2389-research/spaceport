@@ -1,10 +1,13 @@
+// ABOUTME: Checks device setup source choices and retained form input.
+// ABOUTME: Uses an explicitly enabled Core window for host setup controls.
 use super::*;
 use crate::menu::devices::rail::{self, Source};
+use crate::sidebar::layout_tests::fixture_core_window;
 use gpui::{px, size};
 
 #[gpui::test]
 fn add_device_rail_offers_only_manual_hosts(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.simulate_resize(size(px(900.), px(700.)));
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_add_device(window, cx)));
     cx.run_until_parked();
@@ -27,7 +30,7 @@ fn add_device_rail_offers_only_manual_hosts(cx: &mut gpui::TestAppContext) {
 
 #[gpui::test]
 fn manual_ssh_form_keeps_its_target(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_add_device(window, cx)));
     cx.update(|_, cx| {
         let field = view.read(cx).menu.device_setup.as_ref().unwrap().fields[0].clone();

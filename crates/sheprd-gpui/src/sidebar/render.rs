@@ -1,3 +1,5 @@
+// ABOUTME: Lays out prepared sidebar rows, headings and resize controls.
+// ABOUTME: Keeps runtime-specific sections behind the running session's feature choices.
 //! Laying out the sidebar: the two lists, their headings, and the drag handle
 //! that resizes the panel. Render works from prepared state and the bounded
 //! caches only.
@@ -632,7 +634,7 @@ impl SheprdWindow {
                 filtered |= snapshot.agent_view_label.is_some();
             }
         }
-        if !devices && search.is_none() {
+        if self.core_enabled() && !devices && search.is_none() {
             spaces = spaces.child(self.core_workspace_rows(cx));
         }
         if agents_panel {

@@ -1,3 +1,5 @@
+// ABOUTME: Renders connection guidance and controls along the window's foot.
+// ABOUTME: Shows Core fallback status only during an enabled Core session.
 //! The status bar along the window's foot. `[status_bar]` chooses which of
 //! its items show and how compactly, so a crowded bar can give room back.
 // i18n: migrated
@@ -28,7 +30,7 @@ impl SheprdWindow {
     }
 
     pub(super) fn render_status_bar(&self, cx: &mut Context<Self>) -> Stateful<Div> {
-        let status = if self.live.missing_installation {
+        let status = if self.core_enabled() && self.live.missing_installation {
             Some(core_fallback_status(
                 self.core_terminals.hub.backend().is_some(),
             ))

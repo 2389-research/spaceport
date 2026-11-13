@@ -1,3 +1,5 @@
+// ABOUTME: Checks retained native tab targets and reserved retired identifiers.
+// ABOUTME: Opts into Core before restoring and targeting saved Core references.
 //! A saved tab file mixes retained Core/Devices IDs with retired IDs.
 use super::*;
 use crate::{browser::CoreGroupKey, core_terminals::set_document_for_test_as};
@@ -5,6 +7,7 @@ use sheprd_core_client::wire::Doc;
 
 #[gpui::test]
 fn restored_tabs_keep_exact_cli_targets_and_reserve_retired_ids(cx: &mut gpui::TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let group = uuid::Uuid::from_u128(71);
     let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
     let (view, cx) = window(cx);

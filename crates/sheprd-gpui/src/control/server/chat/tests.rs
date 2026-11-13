@@ -1,3 +1,5 @@
+// ABOUTME: Checks chat control requests and exact agent or terminal targets.
+// ABOUTME: Opts into Core for the Core group case while retaining legacy request tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{
@@ -9,6 +11,7 @@ use crate::{
 
 #[gpui::test]
 fn core_group_without_terminal_refuses_untargeted_legacy_chat(cx: &mut gpui::TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let group = uuid::Uuid::from_u128(71);
     let (view, cx) = cx.add_window_view(fixture_window);
     cx.cx.update(|cx| {

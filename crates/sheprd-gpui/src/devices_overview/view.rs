@@ -1,3 +1,5 @@
+// ABOUTME: Renders the prepared device overview and its search and activity sections.
+// ABOUTME: Shows Core device setup only when the running app enables Core.
 //! Drawing an overview tab: its header and search, the activity chart, the
 //! totals, and the device table, all from state the tick prepared.
 
@@ -273,36 +275,38 @@ impl SheprdWindow {
                     .max_w(px(320.))
                     .child(page.search.clone()),
             )
-            .child(
-                div()
-                    .id("devices-add")
-                    .debug_selector(|| "devices-add".into())
-                    .flex_none()
-                    .px_3()
-                    .py_1()
-                    .rounded(px(corners::CONTROL))
-                    .bg(rgb(theme.primary()))
-                    .text_color(rgb(theme.text_on(theme.primary())))
-                    .child(fl!("devices-overview-add-device"))
-                    .when_some(unavailable, |button, reason| {
-                        let (foreground, surface) = (theme.foreground, theme.surface);
-                        button.opacity(0.5).tooltip(move |_, cx| {
-                            cx.new(|_| crate::usage::Hint {
-                                text: reason.into(),
-                                foreground,
-                                surface,
+            .when(self.core_enabled(), |header| {
+                header.child(
+                    div()
+                        .id("devices-add")
+                        .debug_selector(|| "devices-add".into())
+                        .flex_none()
+                        .px_3()
+                        .py_1()
+                        .rounded(px(corners::CONTROL))
+                        .bg(rgb(theme.primary()))
+                        .text_color(rgb(theme.text_on(theme.primary())))
+                        .child(fl!("devices-overview-add-device"))
+                        .when_some(unavailable, |button, reason| {
+                            let (foreground, surface) = (theme.foreground, theme.surface);
+                            button.opacity(0.5).tooltip(move |_, cx| {
+                                cx.new(|_| crate::usage::Hint {
+                                    text: reason.into(),
+                                    foreground,
+                                    surface,
+                                })
+                                .into()
                             })
-                            .into()
                         })
-                    })
-                    .when(unavailable.is_none(), |button| {
-                        button
-                            .cursor_pointer()
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                this.open_device_setup(window, cx);
-                            }))
-                    }),
-            )
+                        .when(unavailable.is_none(), |button| {
+                            button
+                                .cursor_pointer()
+                                .on_click(cx.listener(|this, _, window, cx| {
+                                    this.open_device_setup(window, cx);
+                                }))
+                        }),
+                )
+            })
     }
 }
 

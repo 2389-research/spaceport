@@ -1,9 +1,12 @@
+// ABOUTME: Checks device setup dispatch from the Devices overview.
+// ABOUTME: Opts into Core while preserving isolated-window setup refusals.
 use super::*;
 use crate::menu::Page;
 use sheprd_client::ConnectTarget;
 
 #[gpui::test]
 fn isolated_windows_cannot_open_device_setup(cx: &mut gpui::TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = window(cx);
     for target in [
         ConnectTarget::Socket("/unused-layout-test.sock".into()),
@@ -36,6 +39,7 @@ fn isolated_windows_cannot_open_device_setup(cx: &mut gpui::TestAppContext) {
 
 #[gpui::test]
 fn add_device_opens_the_platforms_setup_form(cx: &mut gpui::TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = window(cx);
     cx.update(|_, cx| {
         view.update(cx, |view, _| {

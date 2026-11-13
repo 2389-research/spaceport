@@ -8,7 +8,7 @@ use uuid::Uuid;
 #[gpui::test]
 fn core_group_does_not_show_the_legacy_reconnect_overlay(cx: &mut gpui::TestAppContext) {
     let group = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
     cx.update(|_, cx| {
         core_terminals::set_document_for_test_as(
             cx,

@@ -1,3 +1,5 @@
+// ABOUTME: Shares paint probes and private window fixtures for layout verification.
+// ABOUTME: Keeps Core-enabled fixtures explicit and ordinary fixtures disabled by default.
 //! Paint-phase probes shared by the headless layout and native full-window tests.
 //! Headless NoopTextSystem ignores font-run lengths, so only the native smoke
 //! test can catch GPUI's stale truncation runs. Keep headless checks for geometry.
@@ -569,7 +571,7 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         selection_follow: Default::default(),
         find: None,
         copy_mode: None,
-        core_terminals: Default::default(),
+        core_terminals: crate::core_terminals::CoreTerminals::new(crate::core_feature::enabled(cx)),
         find_memory: Default::default(),
         flash: None,
         flash_motion: Default::default(),
@@ -734,4 +736,13 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         shift_taps: Default::default(),
         _prefix_interceptor: SheprdWindow::intercept_prefix(window, cx),
     }
+}
+
+#[cfg(test)]
+pub(crate) fn fixture_core_window(
+    window: &mut Window,
+    cx: &mut Context<SheprdWindow>,
+) -> SheprdWindow {
+    crate::core_feature::install(true, cx);
+    fixture_window(window, cx)
 }

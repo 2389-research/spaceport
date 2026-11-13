@@ -1,3 +1,5 @@
+// ABOUTME: Renders active Core terminal rows from prepared app state.
+// ABOUTME: Keeps Core panes out of the sidebar while the feature is disabled.
 //! The sidebar's Herdr 2 rows: every pane of the focused workspace's
 //! herdr-core tabs, under the agents, with the status dot its agent reports.
 //! Clicking a row shows its tab and gives that pane the keyboard. Mirrors are
@@ -16,6 +18,9 @@ use sheprd_backend::TerminalId;
 impl SheprdWindow {
     /// The Herdr 2 rows, or nothing when the workspace has no herdr-core tab.
     pub(crate) fn core_sidebar_rows(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
+        if !self.core_enabled() {
+            return None;
+        }
         let store = cx.try_global::<Store>()?;
         let (scope, workspace) = self.active_browser_key(cx)?;
         let panes: Vec<(TabId, TerminalId)> = store

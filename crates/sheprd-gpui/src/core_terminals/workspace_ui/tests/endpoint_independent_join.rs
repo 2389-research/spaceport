@@ -18,7 +18,7 @@ fn record_join(start: Start) -> Result<sheprd_core_client::CoreBackend, HubError
 #[gpui::test]
 fn selected_core_group_rejoins_without_a_legacy_local_endpoint(cx: &mut gpui::TestAppContext) {
     let group = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         observation::set_document_for_test_as(
             cx,

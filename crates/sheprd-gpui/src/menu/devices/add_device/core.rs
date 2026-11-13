@@ -1,3 +1,5 @@
+// ABOUTME: Submits Core machine additions through one app-wide pending outcome.
+// ABOUTME: Refuses submission while Core is disabled and preserves uncertain outcomes.
 //! Core-owned machine addition, with one app-wide pending outcome.
 //! An unconfirmed request fences every window until this app exits.
 
@@ -147,6 +149,9 @@ fn unknown(request: &Request) -> String {
 
 impl SheprdWindow {
     pub(super) fn submit_core_device(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.core_enabled() {
+            return;
+        }
         let Some(form) = &self.menu.device_setup else {
             return;
         };
@@ -224,6 +229,9 @@ impl SheprdWindow {
     }
 
     pub(super) fn poll_core_device(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.core_enabled() {
+            return;
+        }
         let Some(form) = &self.menu.device_setup else {
             return;
         };

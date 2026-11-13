@@ -1,3 +1,5 @@
+// ABOUTME: Checks activity panel control replies and resulting window presentation.
+// ABOUTME: Opts into Core only for scenarios that include the Automations panel.
 //! `ui panel` against a headless window.
 use super::*;
 use crate::sidebar::{ActivityPanel, layout_tests::fixture_window};
@@ -56,6 +58,7 @@ fn ui_panel_shows_a_section_and_workspaces_expands_the_sidebar(cx: &mut gpui::Te
 fn ui_panel_shows_the_overview_automations_and_usage_across_the_window(
     cx: &mut gpui::TestAppContext,
 ) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = cx.add_window_view(|window, cx| {
         let mut view = fixture_window(window, cx);
         view.config.sidebar_style.activity_bar = true;

@@ -19,6 +19,7 @@ mod branding;
 mod browser_page;
 mod change_counts;
 mod cjk_fonts;
+mod core_opt_in;
 mod default_fonts;
 mod device_footer;
 mod device_icons;

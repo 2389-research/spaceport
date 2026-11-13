@@ -1,3 +1,5 @@
+// ABOUTME: Lists and targets native app tabs through the local control socket.
+// ABOUTME: Preserves saved Core references while refusing their actions when Core is off.
 //! `tab` and `devices` requests.
 //! The Store keeps app tabs; caller targets still select their workspace.
 mod arrive;
@@ -82,7 +84,13 @@ fn info(tab: &Tab) -> Option<TabInfo> {
 fn list(cx: &App) -> Response {
     let tabs = cx
         .try_global::<Store>()
-        .map(|store| store.tabs().filter_map(info).collect())
+        .map(|store| {
+            store
+                .tabs()
+                .filter(|tab| !tab.requires_core() || crate::core_feature::enabled(cx))
+                .filter_map(info)
+                .collect()
+        })
         .unwrap_or_default();
     Response::Tab {
         reply: Reply::Tabs { tabs },
@@ -90,11 +98,19 @@ fn list(cx: &App) -> Response {
 }
 
 fn find(id: u64, cx: &App) -> Result<Tab, Response> {
-    cx.try_global::<Store>()
+    let tab = cx
+        .try_global::<Store>()
         .and_then(|store| store.get(TabId::from(id)))
         .filter(|tab| kind(tab).is_some())
         .cloned()
-        .ok_or_else(|| not_found(format!("Spaceport has no tab {id}; `tab list` lists them")))
+        .ok_or_else(|| not_found(format!("Spaceport has no tab {id}; `tab list` lists them")))?;
+    if tab.requires_core() && !crate::core_feature::enabled(cx) {
+        return Err(Response::error(
+            ErrorCode::Unsupported,
+            crate::core_feature::disabled_message(),
+        ));
+    }
+    Ok(tab)
 }
 
 fn closed() -> Response {

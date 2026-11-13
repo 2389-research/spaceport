@@ -1,3 +1,5 @@
+// ABOUTME: Shares native tab fixtures for local control requests.
+// ABOUTME: Covers exact targets, retained state and unavailable Core actions.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{
@@ -8,6 +10,7 @@ use crate::{
 use gpui::{Entity, VisualTestContext};
 use std::{path::Path, sync::Arc};
 
+mod core_flag;
 mod saved_tabs;
 mod windows;
 

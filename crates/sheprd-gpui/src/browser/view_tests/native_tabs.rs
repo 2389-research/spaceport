@@ -41,6 +41,7 @@ fn a_pending_core_tab_uses_the_native_terminal_connection_state(cx: &mut gpui::T
     use crate::{browser::CoreGroupKey, core_terminals::set_document_for_test_as};
     use sheprd_core_client::wire::Doc;
 
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = window(cx);
     let group = uuid::Uuid::from_u128(42);
     let key = CoreGroupKey::new("fixture-core", None, "spaceport", group).unwrap();

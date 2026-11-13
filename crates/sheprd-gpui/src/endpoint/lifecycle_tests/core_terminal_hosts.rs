@@ -1,3 +1,5 @@
+// ABOUTME: Checks core terminal hosts behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 //! herdr-core runs on this computer, so a workspace on another host never
 //! gets its terminals from it, whatever `herdr_2_terminals` says.
 
@@ -13,7 +15,7 @@ fn ssh() -> ConnectTarget {
 
 #[gpui::test]
 fn only_a_tab_on_this_computer_follows_the_herdr_2_setting(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_core_window);
     let (mut remote, _server) = connected_endpoint("ssh:fixture");
     remote.connection.target = ssh();
     view.update(cx, |view, cx| {
@@ -35,7 +37,7 @@ fn only_a_tab_on_this_computer_follows_the_herdr_2_setting(cx: &mut gpui::TestAp
 #[gpui::test]
 fn a_new_tab_on_an_ssh_host_is_created_by_its_herdr(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
-        Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)))
+        Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_core_window(window, cx)))
     });
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (mut endpoint, mut server) = connected_endpoint("ssh:fixture");
@@ -68,7 +70,7 @@ fn a_new_tab_on_an_ssh_host_is_created_by_its_herdr(cx: &mut gpui::TestAppContex
 #[gpui::test]
 fn the_herdr_2_command_is_refused_on_an_ssh_host(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
-        Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)))
+        Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_core_window(window, cx)))
     });
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (mut endpoint, _server) = connected_endpoint("ssh:fixture");

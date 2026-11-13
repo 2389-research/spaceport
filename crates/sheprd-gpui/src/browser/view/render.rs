@@ -1,3 +1,5 @@
+// ABOUTME: Builds visible native tab entries and their interaction callbacks.
+// ABOUTME: Keeps saved Core tabs hidden while the app session disables Core.
 //! Drawing browser tabs: their entries in a group's strip, and the page with
 //! its toolbar where the terminal would be.
 
@@ -30,6 +32,7 @@ impl SheprdWindow {
         };
         let tabs: Vec<Tab> = store
             .in_workspace(&scope, &workspace)
+            .filter(|tab| self.core_enabled() || !tab.requires_core())
             .filter(|tab| self.group_lists(slot.id, &Pick::Page(tab.id)))
             .cloned()
             .collect();

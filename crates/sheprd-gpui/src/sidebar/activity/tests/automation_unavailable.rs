@@ -1,8 +1,11 @@
+// ABOUTME: Checks the retained unavailable automation activity presentation.
+// ABOUTME: Opts into Core before showing its activity section.
 use super::*;
 use crate::sidebar::{activity::tests::layout::fixture, layout_tests::full_draw};
 
 #[gpui::test]
 fn automation_activity_reports_unavailable_without_script_controls(cx: &mut gpui::TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = fixture(cx);
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {

@@ -1,3 +1,5 @@
+// ABOUTME: Constructs native windows and their owned presentation state.
+// ABOUTME: Copies the app startup gate before any Core work can begin.
 //! Building a window: its effects run in a fixed order before the fields,
 //! which stay sorted so parallel additions land on different lines.
 // i18n: migrated
@@ -173,7 +175,9 @@ impl SheprdWindow {
             config_watch: None,
             configured_terminal_size,
             copy_mode: None,
-            core_terminals: Default::default(),
+            core_terminals: crate::core_terminals::CoreTerminals::new(
+                crate::core_feature::enabled(cx),
+            ),
             daemon_text: Default::default(),
             device_drag: None,
             device_filter: Default::default(),

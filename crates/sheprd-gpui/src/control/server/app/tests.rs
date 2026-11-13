@@ -1,8 +1,11 @@
+// ABOUTME: Shares headless fixtures for application and window control requests.
+// ABOUTME: Registers focused regressions for targeting, catalog state and Core opt-in.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::control::protocol::app::Switch;
 
 mod core_catalog;
+mod core_flag;
 mod core_window;
 mod core_window_new;
 

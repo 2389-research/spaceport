@@ -1,3 +1,5 @@
+// ABOUTME: Checks remote selection behavior with isolated application fixtures.
+// ABOUTME: Makes Core opt-in explicit while preserving retained behavior checks.
 use super::*;
 use crate::endpoint::Endpoint;
 use crate::i18n::fl;
@@ -6,7 +8,7 @@ use sheprd_client::ConnectTarget;
 #[gpui::test]
 fn local_core_group_new_tab_ignores_legacy_remote_selection(cx: &mut gpui::TestAppContext) {
     let group = Uuid::from_u128(71);
-    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_window);
+    let (view, cx) = cx.add_window_view(sidebar::layout_tests::fixture_core_window);
     cx.update(|window, cx| {
         observation::set_document_for_test_as(
             cx,

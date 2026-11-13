@@ -15,6 +15,8 @@ pub(crate) use layouts::{apply_loaded_layout, layout_load_revision};
 mod native;
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 pub(crate) use native::branding::capture as capture_branding;
+#[cfg(all(feature = "integration-test", target_os = "macos"))]
+pub(crate) use native::core_opt_in::verify as verify_core_opt_in;
 mod persistence;
 mod remote_history;
 mod scrollbar;

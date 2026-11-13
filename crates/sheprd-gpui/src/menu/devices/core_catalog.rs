@@ -1,3 +1,5 @@
+// ABOUTME: Renders prepared Core machine and remote grouping facts in the device picker.
+// ABOUTME: Keeps Core-specific catalog controls hidden until the app has opted in.
 //! Core-owned machine facts in the existing device picker.
 //! Rows are read only while the legacy device actions await migration.
 
@@ -54,6 +56,9 @@ impl SheprdWindow {
         &self,
         cx: &mut Context<Self>,
     ) -> Option<Stateful<Div>> {
+        if !self.core_enabled() {
+            return None;
+        }
         let machines = core_terminals::machine_catalog(cx);
         let error = core_terminals::machine_catalog_error(cx);
         if !core_terminals::machine_catalog_started(cx) {

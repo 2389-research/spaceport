@@ -1,3 +1,5 @@
+// ABOUTME: Renders general preferences and the restart-only experimental Core opt-in.
+// ABOUTME: Uses the shared preference writer for saved settings and feature toggles.
 //! General: interface toggles, the optional `[features]` flags, clipboard
 //! feedback, the browser skill and launch at login (Windows).
 // i18n: migrated
@@ -98,6 +100,36 @@ impl SettingsWindow {
                     )),
                 )
             })
+            .child(ui::section(
+                theme,
+                &fl!("settings-general-section-experimental"),
+                None,
+            ))
+            .child(
+                ui::row(
+                    theme,
+                    "general-herdr-core",
+                    fl!("settings-general-herdr-core"),
+                )
+                .description(fl!("settings-general-herdr-core-description"))
+                .switch(self.preference_toggle(
+                    "general-herdr-core-toggle",
+                    self.config.herdr_core_enabled,
+                    Preference::HerdrCoreEnabled(!self.config.herdr_core_enabled),
+                    cx,
+                )),
+            )
+            .children(
+                crate::core_feature::restart_required(self.config.herdr_core_enabled, cx).then(
+                    || {
+                        div()
+                            .debug_selector(|| "general-herdr-core-restart".into())
+                            .text_size(px(11.))
+                            .text_color(rgb(theme.subtext()))
+                            .child(fl!("settings-general-herdr-core-restart"))
+                    },
+                ),
+            )
             .child(ui::section(
                 theme,
                 &fl!("settings-general-section-features"),

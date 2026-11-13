@@ -1,3 +1,5 @@
+// ABOUTME: Checks device picker session navigation and exact endpoint targeting.
+// ABOUTME: Keeps local session actions separate from Core-only setup controls.
 //! The sessions a device unfolds in the device picker: the shortcut that
 //! opens them, the state every row carries, and where choosing a row takes
 //! this window.
@@ -384,6 +386,7 @@ fn a_disabled_device_is_never_asked_for_its_sessions(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn a_window_on_this_machine_unfolds_its_own_sessions(cx: &mut TestAppContext) {
+    cx.update(|cx| crate::core_feature::install(true, cx));
     let (view, cx) = open_list(
         cx,
         vec![session("default", SessionState::Running)],

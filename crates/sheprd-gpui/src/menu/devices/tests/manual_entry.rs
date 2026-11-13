@@ -1,4 +1,6 @@
-use super::*;
+// ABOUTME: Checks that device setup preserves the manual target without discovery.
+// ABOUTME: Uses an explicitly enabled Core window in the private fixture.
+use crate::sidebar::layout_tests::fixture_core_window;
 use gpui::{VisualTestContext, px, size};
 
 fn draw(cx: &mut VisualTestContext) {
@@ -7,7 +9,7 @@ fn draw(cx: &mut VisualTestContext) {
 
 #[gpui::test]
 fn add_device_keeps_manual_target_and_has_no_discovery(cx: &mut gpui::TestAppContext) {
-    let (view, cx) = cx.add_window_view(fixture_window);
+    let (view, cx) = cx.add_window_view(fixture_core_window);
     cx.simulate_resize(size(px(800.), px(700.)));
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_add_device(window, cx)));
     draw(cx);

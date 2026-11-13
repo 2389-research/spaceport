@@ -1,3 +1,5 @@
+// ABOUTME: Stores saved native tabs with exact runtime and workspace identities.
+// ABOUTME: Preserves Core references while feature gates control their visibility.
 //! Client-owned native tabs and the workspace each one belongs to.
 //! Windows share tab references; the selected runtime owns their terminals.
 use super::Location;
@@ -233,6 +235,11 @@ fn is_group(place: &Place) -> bool {
 }
 
 impl Tab {
+    pub(crate) fn requires_core(&self) -> bool {
+        matches!(self.scope, Scope::Core(_))
+            || matches!(self.location, Some(Location::CoreTerminal { .. }))
+    }
+
     /// The title the window shows: a page's own, or the one the app gives
     /// a tab it draws or one still waiting for an address. An editor tab
     /// keeps its product's name while it waits, and a terminal tab shows its

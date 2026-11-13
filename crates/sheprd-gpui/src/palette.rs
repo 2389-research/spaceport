@@ -1,3 +1,5 @@
+// ABOUTME: Builds the searchable palette from available native and runtime actions.
+// ABOUTME: Offers Core commands only when the current app session opted in.
 // i18n: migrated
 use crate::{
     OwnedNavigationTarget, Result, SheprdWindow,
@@ -669,6 +671,9 @@ impl SheprdWindow {
             COMMANDS
                 .iter()
                 .filter(|info| !matches!(info.command, Command::Palette | Command::ResumePalette))
+                .filter(|info| {
+                    self.core_enabled() || !crate::core_feature::command_requires_core(info.command)
+                })
                 .filter(|info| match info.command {
                     Command::ClearPane => self.live.supports_pane_clear,
                     Command::EditScrollback => self.live.supports_edit_scrollback,

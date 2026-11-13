@@ -1,3 +1,5 @@
+// ABOUTME: Checks picker wheel handling for rows that fit in the device popup.
+// ABOUTME: Opts into Core to retain the original complete picker geometry.
 use super::*;
 use gpui::{ScrollDelta, ScrollEvent};
 
@@ -7,7 +9,7 @@ use gpui::{ScrollDelta, ScrollEvent};
 fn the_wheel_does_not_move_a_device_picker_that_fits(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
-        let view = cx.new(|cx| fixture_window(window, cx));
+        let view = cx.new(|cx| fixture_core_window(window, cx));
         cx.observe(&view, |_, _, cx| cx.notify()).detach();
         SidebarFixture(view)
     });
@@ -54,7 +56,7 @@ fn the_wheel_does_not_move_a_device_picker_that_fits(cx: &mut gpui::TestAppConte
 fn a_device_picker_that_overflows_scrolls_its_list(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         crate::bind_keys(cx);
-        let view = cx.new(|cx| fixture_window(window, cx));
+        let view = cx.new(|cx| fixture_core_window(window, cx));
         cx.observe(&view, |_, _, cx| cx.notify()).detach();
         SidebarFixture(view)
     });

@@ -18,7 +18,7 @@ fn unavailable(_: Start) -> Result<CoreBackend, Error> {
 #[test]
 fn an_exact_core_join_never_starts_a_replacement() {
     EXACT_CALLS.lock().unwrap().clear();
-    let mut hub = Hub::with_join(record_join);
+    let mut hub = opted_in_hub(record_join);
     hub.bind_exact("core-a").unwrap();
     hub.connect(Start::IfMissing);
     settle(&mut hub);
@@ -27,7 +27,7 @@ fn an_exact_core_join_never_starts_a_replacement() {
 
 #[test]
 fn an_exact_core_join_rejects_a_different_core_id() {
-    let mut hub = Hub::with_join(unavailable);
+    let mut hub = opted_in_hub(unavailable);
     hub.bind_exact("core-a").unwrap();
     assert!(hub.check_identity("core-a").is_ok());
     assert!(matches!(
@@ -39,7 +39,7 @@ fn an_exact_core_join_rejects_a_different_core_id() {
 
 #[test]
 fn an_exact_core_join_cannot_change_to_a_second_identity() {
-    let mut hub = Hub::with_join(unavailable);
+    let mut hub = opted_in_hub(unavailable);
     hub.bind_exact("core-a").unwrap();
     assert!(matches!(
         hub.bind_exact("core-b"),
@@ -50,7 +50,7 @@ fn an_exact_core_join_cannot_change_to_a_second_identity() {
 
 #[test]
 fn identity_check_uses_the_latest_binding_after_clear_and_rebind() {
-    let mut hub = Hub::with_join(unavailable);
+    let mut hub = opted_in_hub(unavailable);
     hub.bind_exact("core-a").unwrap();
     hub.connect(Start::Join);
     hub.clear_exact();
@@ -79,7 +79,7 @@ fn held_join(start: Start) -> Result<CoreBackend, Error> {
 fn binding_an_exact_core_cancels_a_queued_start() {
     JOIN_CALLS.lock().unwrap().clear();
     *JOIN_GATE.0.lock().unwrap() = false;
-    let mut hub = Hub::with_join(held_join);
+    let mut hub = opted_in_hub(held_join);
     hub.connect(Start::Join);
     hub.connect(Start::IfMissing);
     hub.bind_exact("core-a").unwrap();
@@ -103,7 +103,7 @@ fn held_start(_: Start) -> Result<CoreBackend, Error> {
 #[test]
 fn binding_an_exact_core_refuses_a_start_already_in_flight() {
     *START_GATE.0.lock().unwrap() = false;
-    let mut hub = Hub::with_join(held_start);
+    let mut hub = opted_in_hub(held_start);
     hub.connect(Start::IfMissing);
     let bound = hub.bind_exact("core-a");
     *START_GATE.0.lock().unwrap() = true;

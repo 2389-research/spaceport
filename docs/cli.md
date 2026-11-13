@@ -55,6 +55,14 @@ Every command accepts:
 
 ## Commands
 
+Herdr Core is disabled until explicitly enabled in Settings > General > Experimental.
+The equivalent saved setting is `spaceport config set herdr_core_enabled true`.
+Restart Spaceport to apply either an enable or disable change.
+`config reload` keeps the current app session's Core mode unchanged.
+While disabled, Core-only commands return exit 8 (`Unsupported`) with an explanation.
+Saved Core tabs stay stored but do not appear in `tab list`.
+Changing this preference never stops Core or its terminals.
+
 ### App and windows
 
 | Command | What it does |
@@ -131,7 +139,7 @@ not take it either.
 | Command | What it does |
 | --- | --- |
 | `config [path]` | The Spaceport settings files, including the private `view.toml` path (no app needed) |
-| `config get\|set\|unset KEY [VALUE]` | Read or change `spaceport/config.local.toml`, keeping its comments. A value that would not load, or an unknown key, is refused and nothing is written; the app applies the rest at once (no app needed) |
+| `config get\|set\|unset KEY [VALUE]` | Read or change `spaceport/config.local.toml`, keeping its comments. A value that would not load, or an unknown key, is refused and nothing is written; most changes apply at once; `herdr_core_enabled` requires restart (no app needed) |
 | `config check` | Report invalid settings, exit 1 if any |
 | `config reload` | Reread Spaceport's settings files |
 | `theme [list]`, `theme set NAME` | The app theme. A device's terminal theme is `config set devices.ID.theme NAME`, with the ID from `host list` minus its `ssh:` prefix |

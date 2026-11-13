@@ -4,10 +4,15 @@
 
 settings-general-section-interface = Interface
 settings-general-section-features = Features
+settings-general-section-experimental = Experimental
 settings-general-section-clipboard = Clipboard
 settings-general-section-browser-skill = Browser skill
 settings-general-section-startup = Startup
 ## Rows.
+
+settings-general-herdr-core = Enable Herdr Core
+settings-general-herdr-core-description = Adds Core terminals and groups. Requires restart.
+settings-general-herdr-core-restart = Restart Spaceport to apply this change.
 
 # The language picker's first choice. $language is the name, in itself, of
 # the language the system's preferences pick (English, עברית).

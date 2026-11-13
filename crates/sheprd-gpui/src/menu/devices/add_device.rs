@@ -1,3 +1,5 @@
+// ABOUTME: Owns the device setup form and its confirmed background work.
+// ABOUTME: Keeps the Core host form closed when the running app has Core disabled.
 //! The Add Device dialog: its form, the host check and save that run off the
 //! UI thread, and the local workspace that carries a setup needing prompts.
 
@@ -92,6 +94,9 @@ impl SheprdWindow {
 
     /// Show an empty Add Device form with the target field focused.
     pub(in crate::menu) fn open_add_device(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.core_enabled() {
+            return;
+        }
         core::Gate::install(cx);
         let fields = std::array::from_fn(|index| {
             let input = cx.new(SearchInput::new);

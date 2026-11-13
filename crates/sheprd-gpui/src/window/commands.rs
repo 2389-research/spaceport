@@ -1,3 +1,5 @@
+// ABOUTME: Dispatches window commands and isolates focus changes from stale terminal input.
+// ABOUTME: Enforces the running app's Core opt-in before Core-only commands reach panes.
 //! Command dispatch and focus changes. A focus change is fenced behind an
 //! ordered surface barrier so input cannot reach the previous pane while the
 //! navigation and its projection are still in flight.
@@ -349,6 +351,10 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) {
         if self.menu.page.is_some() {
+            return;
+        }
+        if !self.core_enabled() && crate::core_feature::command_requires_core(command) {
+            self.show_flash(Flash::warning(crate::core_feature::disabled_message()), cx);
             return;
         }
         #[cfg(feature = "integration-test")]

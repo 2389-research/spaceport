@@ -1,3 +1,5 @@
+// ABOUTME: Attaches and synchronizes visible Core terminal panes.
+// ABOUTME: Leaves saved Core tabs untouched when the runtime feature is off.
 //! Each herdr-core tab's panes as the window keeps them: a view per pane,
 //! the pane in use, panes whose program ended, and the layout saved with the
 //! tab once a change settles.
@@ -19,6 +21,9 @@ impl SheprdWindow {
     /// once the hub is connected, and drops the views of closed tabs and
     /// panes.
     pub(super) fn sync_core_views(&mut self, cx: &mut Context<Self>) {
+        if !self.core_enabled() {
+            return;
+        }
         let Some(store) = cx.try_global::<Store>() else {
             self.core_terminals.views.clear();
             self.core_terminals.tabs.clear();
