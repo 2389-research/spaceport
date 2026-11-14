@@ -2,7 +2,7 @@
 //! daemon the notes were read, so its other clients agree. An install command
 //! is shown for the user to review and run; nothing here runs it.
 // i18n: migrated
-use super::Page;
+use super::{Page, chrome::Item};
 use crate::i18n::fl;
 use crate::{SheprdWindow, fonts::StyledFont, notifications::safe_text};
 use gpui::{prelude::*, *};
@@ -13,12 +13,12 @@ const MAX_COMMAND: usize = 1024;
 
 impl SheprdWindow {
     /// The menu entry for the sheet, when the daemon has something for it.
-    pub(super) fn release_notes_item(&self) -> Option<&'static str> {
+    pub(super) fn release_notes_item(&self) -> Option<Item> {
         let snapshot = self.live.snapshot.as_deref()?;
         if snapshot.update_available.is_some() {
-            Some("update ready") // i18n: data
+            Some(Item::UpdateReady)
         } else if snapshot.release_notes.is_some() {
-            Some("what's new")
+            Some(Item::WhatsNew)
         } else {
             None
         }
