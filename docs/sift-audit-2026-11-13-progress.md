@@ -58,19 +58,33 @@ Read the report for evidence, risks and first slices. Update this file when a fi
 | 30 | SIFT-S30-02 notification stage | done, in review | #53 | No behaviour change. A second commit gates a test helper so the Windows lint passes. |
 | 32 | SIFT-S32-01 upstream release route | done, in review | #29 (on #27) | About 4,700 lines removed, including `nix.yml` and the `sign-artifacts` action. Kept, unsure: the Windows signing helpers, `generate-changelog.sh`'s non-preview mode, `build-icon.py`'s `linux` mode. |
 
-Ranks not listed are not started.
+| 15 | SIFT-S21-01 local operation failures | first slice done, in review | #63 | `host select` returns a typed failure through `endpoint::Error`. Not done: one owner for the roughly 61 `local_error` writers; parked until the open pull requests merge. |
+| 31 | SIFT-S22-01 chat text from the selection document | done, in review | #61 | |
+| 33 | SIFT-S09-02 control request waits | done, in review | #56 | |
+| 34 | SIFT-S02-01 request lease state | done, in review | #59 | `Reply` enum and `barrier::receive`. An independent review found the change equivalent. |
+| 35 | SIFT-S10-02 CLI parses to protocol ops | done, in review | #62 (on #35) | A 177-row wire fixture pins the requests. |
+| 36 | SIFT-S08-01 change-stream follower | done, in review | #64 | `Replica` in `sheprd-chat-protocol`. The in-pane view panicked a debug build at the last sequence number; it now resyncs. The app forgets its position at once on a bad change. |
+| 37 | SIFT-S13-01 Fluent validator | done, in review | #58 | |
+| 38 | SIFT-S23-01 chat target source | done, in review | #60 (on #47) | |
+| 39 | SIFT-S06-01 typed turn-ended reply | done, in review | #57 | `out::turn_ended`, `PromptUsage`. |
+| 40 | SIFT-S18-01 cell metrics | in progress | `refactor/cell-metrics` | |
+| 41 | SIFT-S11-02 one port-forward table | in progress | `refactor/one-port-forward-table` | |
+| 42 | SIFT-S12-01 kept log targets | done, in review | #65 | A prefix rule replaces the list. The new end-to-end test failed on the old code. |
+
+Parked until the open pull requests merge, because each edits many files those pull requests touch: the rest of SIFT-S21-01, the rest of SIFT-S26-02 (nesting the page families), and step 2 of SIFT-S16-01 (one field for `detached` and `outage`).
 
 ## Merge order
 
-Two stacks and four independent pull requests:
+Stacks, then the pull requests that stand alone:
 
 - #23, then #27, then #29, then #30 (CI and release tooling).
 - #33, then #37 (endpoint state). #52 is also on #33.
 - #38, then #43, then #54 (tab store and Core).
 - #28, then #31, then #48 (SSH removal, then the response decoder).
-- #41, then #47 (chat pane).
+- #41, then #47, then #60 (chat pane).
 - #53, then #55 (notifications, then the connection fence).
-- #24, #25, #26, #32, #34, #35, #36, #39, #40, #42, #44, #45, #46, #49, #50 and #51 stand alone.
+- #35, then #62 (command line).
+- #24, #25, #26, #32, #34, #36, #39, #40, #42, #44, #45, #46, #49, #50, #51, #56, #57, #58, #59, #61, #63, #64 and #65 stand alone. #63 has a small expected conflict with #28 in `add_device.rs`; #64 has one with #47 and #60 in `chat/chats.rs`.
 
 ## Open questions for Harper
 
@@ -89,6 +103,9 @@ Two stacks and four independent pull requests:
 - #53: a full queue can evict a notice already handed to the system while waiting ones stay. Evict a waiting one first?
 - #54: should adding a Core workspace member say "stale" for a lost Core like the other refusals? Should opening tabs refuse a lost Core?
 - #55: should a held mouse gesture survive its host being removed?
+- #57: the "total" token count differs by agent (computed for Claude and Pi; Codex passes its own). Normalise?
+- #64: `Replica::transcript_mut` lets the app set an observed agent's status outside the stream. Keep the escape hatch?
+- #28: `crates/sheprd-gpui/README.md` still describes the removed wizard. It needs its own pass.
 
 ## Declined
 
