@@ -51,13 +51,14 @@ class SpaceportReleaseTransition(unittest.TestCase):
                 self.assertEqual(result.returncode == 0, expected, result.stderr.decode())
 
     def test_release_gate_requires_all_remaining_platform_jobs(self):
+        # The paused Windows jobs are not part of the gate at all.
+        self.assertFalse([name for name in CI.REQUIRED_JOBS if name.startswith("Windows ")])
         active = [{"name": name, "status": "completed", "conclusion": "success"}
-                  for name in CI.REQUIRED_JOBS if not name.startswith("Windows ")]
-        self.assertFalse(CI.missing_jobs(active, repo=REPO))
+                  for name in CI.REQUIRED_JOBS]
+        self.assertFalse(CI.missing_jobs(active))
         for job in active:
             with self.subTest(missing=job["name"]):
-                self.assertTrue(CI.missing_jobs([other for other in active if other != job], repo=REPO))
-        self.assertTrue(CI.missing_jobs(active))
+                self.assertTrue(CI.missing_jobs([other for other in active if other != job]))
 
     def test_feed_and_release_workflow_use_transferred_repository(self):
         config = json.loads((ROOT / "scripts/release/sparkle.json").read_text())
