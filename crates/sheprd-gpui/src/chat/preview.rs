@@ -22,7 +22,7 @@ use sheprd_client::protocol::{
 };
 
 use super::{
-    Route, Surface, Target,
+    Route, Source, Surface, Target,
     prepared::{Body, Part},
     visual::Shown,
 };
@@ -505,18 +505,21 @@ fn install(
     }
     view.chats.preview(
         Target {
-            existing: existing.then(|| super::existing::Binding {
-                pane_id: PANE.into(),
-                agent: sheprd_chat_protocol::Agent::Codex,
-                session_id: "synthetic-preview-session".into(),
-                herdr_session: None,
-                pid: 1,
-                shell_pid: 1,
-                started_ticks: 1,
-            }),
             pane_id: PANE.into(),
-            endpoint: sheprd_chat_protocol::EndpointId::random(),
             route: Route::Local,
+            source: if existing {
+                Source::Observed(super::existing::Binding {
+                    pane_id: PANE.into(),
+                    agent: sheprd_chat_protocol::Agent::Codex,
+                    session_id: "synthetic-preview-session".into(),
+                    herdr_session: None,
+                    pid: 1,
+                    shell_pid: 1,
+                    started_ticks: 1,
+                })
+            } else {
+                Source::Program(sheprd_chat_protocol::EndpointId::random())
+            },
             surface: Surface::Herdr,
         },
         transcript,
@@ -606,7 +609,7 @@ fn fit_surface(view: &mut SheprdWindow) {
     let existing = view
         .chats
         .pane(PANE)
-        .is_some_and(|pane| pane.target.existing.is_some());
+        .is_some_and(|pane| matches!(pane.target.source, Source::Observed(_)));
     let mut cursor = None;
     if existing && height >= 8 {
         // This is the real terminal painter, fed synthetic input/status cells.

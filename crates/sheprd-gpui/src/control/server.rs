@@ -175,6 +175,20 @@ pub(super) fn window_for(
         .ok_or_else(|| Response::error(ErrorCode::NoWindow, "Spaceport has no window open"))
 }
 
+/// Answers `chat status` as the socket would, for tests that build chats
+/// with the chat module's own fixtures.
+#[cfg(test)]
+pub(crate) fn chat_status(cx: &mut App) -> Response {
+    use super::protocol::{Call, chat::ChatOp};
+    chat::serve(
+        Call {
+            caller: Caller::default(),
+            op: ChatOp::Status,
+        },
+        cx,
+    )
+}
+
 pub(super) fn target(caller: &Caller) -> Target<'_> {
     Target {
         daemon: caller.daemon_socket.as_deref().map(Path::new),

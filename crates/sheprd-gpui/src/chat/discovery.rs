@@ -1,6 +1,6 @@
 //! Which panes run a chat program this window may attach to.
 
-use super::{MAX_CHATS, Route, Surface, Target};
+use super::{MAX_CHATS, Route, Source, Surface, Target};
 use crate::state::LiveState;
 use sheprd_chat_protocol::{EndpointId, TOKEN};
 use sheprd_client::{ConnectTarget, protocol::ClientShellSnapshot};
@@ -57,10 +57,9 @@ pub(crate) fn targets(snapshot: &ClientShellSnapshot, route: Option<&Route>) -> 
         .iter()
         .filter_map(|agent| {
             Some(Target {
-                endpoint: endpoint(&agent.tokens)?,
-                existing: None,
                 pane_id: agent.pane_id.clone(),
                 route: route.clone(),
+                source: Source::Program(endpoint(&agent.tokens)?),
                 surface: Surface::Herdr,
             })
         })
@@ -84,11 +83,13 @@ pub(crate) fn with_existing(
         }) {
             return None;
         }
+        // Only a session named by a UUID is observed, as the probe that
+        // made the binding requires too.
+        uuid::Uuid::parse_str(&binding.session_id).ok()?;
         Some(Target {
-            endpoint: uuid::Uuid::parse_str(&binding.session_id).ok()?.into(),
-            existing: Some(binding.clone()),
             pane_id: binding.pane_id.clone(),
             route: route.clone(),
+            source: Source::Observed(binding.clone()),
             surface: Surface::Herdr,
         })
     });
@@ -125,10 +126,9 @@ pub(crate) fn with_mirrors(
             return None;
         }
         Some(Target {
-            endpoint: mirror.endpoint.parse().ok()?,
-            existing: None,
             pane_id: mirror.pane.clone(),
             route: route.clone(),
+            source: Source::Program(mirror.endpoint.parse().ok()?),
             surface: Surface::Herdr,
         })
     });

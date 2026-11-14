@@ -40,7 +40,7 @@ pub(super) fn observed(
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             let pane = view.chats.pane_mut("w1:p1").unwrap();
-            pane.target.existing = Some(Binding {
+            pane.target.source = Source::Observed(Binding {
                 pane_id: "w1:p1".into(),
                 agent: sheprd_chat_protocol::Agent::Codex,
                 session_id: "synthetic-session".into(),

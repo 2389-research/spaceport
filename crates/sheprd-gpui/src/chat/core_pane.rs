@@ -10,7 +10,7 @@
 //! this machine are attached.
 
 use super::view::Place;
-use super::{MAX_CHATS, Route, Surface, Target};
+use super::{MAX_CHATS, Route, Source, Surface, Target};
 use crate::{
     SheprdWindow,
     browser::TabId,
@@ -43,10 +43,9 @@ pub(super) fn targets<'a>(terminals: impl IntoIterator<Item = &'a TerminalInfo>)
         .filter_map(|info| {
             let endpoint: EndpointId = info.labels.get(TOKEN)?.parse().ok()?;
             Some(Target {
-                endpoint,
-                existing: None,
                 pane_id: key(&info.id),
                 route: Route::Local,
+                source: Source::Program(endpoint),
                 surface: Surface::Core(info.id.clone()),
             })
         })
