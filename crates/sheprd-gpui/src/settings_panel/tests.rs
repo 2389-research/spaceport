@@ -180,5 +180,6 @@ fn gui_config_load_applies_the_loaded_fonts(cx: &mut TestAppContext) {
 }
 
 mod appearance_report;
+mod mixed_follow;
 mod system_theme;
 mod theme_reload;
