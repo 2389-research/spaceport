@@ -232,16 +232,13 @@ pub(crate) enum Purpose {
     },
 }
 
-/// One tab's panes as the window holds them. The tab's saved location
-/// follows, written when a change settles rather than on every drag step.
+/// What one window keeps of a tab's panes: the one in use and the one that
+/// fills the tab. The tree itself, and whether the tab only watches, belong
+/// to the app's tab [`Store`], which every window reads and edits.
 #[derive(Debug)]
 struct TabPanes {
     /// The pane keys go to while the tab has focus.
     active: TerminalId,
-    /// A mirror tab only watches: it neither types nor splits.
-    observe: bool,
-    panes: Panes,
-    unsaved: bool,
     /// How far the zoomed pane has grown over the tab; it shrinks back to
     /// its place when unzoomed.
     zoom: crate::motion::Toggle,
@@ -251,14 +248,27 @@ struct TabPanes {
 }
 
 impl TabPanes {
-    fn new(panes: Panes, observe: bool) -> Self {
+    fn new(active: TerminalId) -> Self {
         Self {
-            active: panes.first().clone(),
-            observe,
-            panes,
-            unsaved: false,
+            active,
             zoom: crate::motion::Toggle::default(),
             zoomed: None,
+        }
+    }
+
+    /// Lets go of a pane that left `panes`, as when another window closed
+    /// it: the first pane is in use then, and nothing fills the tab.
+    fn follow(&mut self, panes: &Panes) {
+        if !panes.contains(&self.active) {
+            self.active = panes.first().clone();
+        }
+        if self
+            .zoomed
+            .as_ref()
+            .is_some_and(|zoomed| !panes.contains(zoomed))
+        {
+            self.zoomed = None;
+            self.zoom = crate::motion::Toggle::default();
         }
     }
 
@@ -281,9 +291,21 @@ impl TabPanes {
     }
 }
 
+/// `tab`'s pane tree and whether it only watches, as the app's store holds
+/// them.
+fn layout(tab: TabId, cx: &App) -> Option<(&Panes, bool)> {
+    match &cx.try_global::<Store>()?.get(tab)?.location {
+        Some(Location::CoreTerminal { panes, observe }) => Some((panes, *observe)),
+        _ => None,
+    }
+}
+
 /// The window's herdr-core state.
 #[derive(Default)]
 pub(crate) struct CoreTerminals {
+    /// A split's line being dragged and where it is held. The store takes
+    /// the share once the drag ends, so a drag saves once.
+    dragging: Option<(split::SplitDrag, panes::Share)>,
     /// The shell shown when no Herdr 1 is installed.
     fallback: fallback::Fallback,
     /// A shown tab whose active pane should take the keyboard once its view
@@ -331,53 +353,76 @@ impl CoreTerminals {
             .any(|view| view.read(cx).focus_handle().contains_focused(window, cx))
     }
 
+    /// The pane in use and the tree of a tab this window shows and drives;
+    /// a mirror only watches.
+    fn driven<'a>(&'a self, tab: TabId, cx: &'a App) -> Option<(&'a TerminalId, &'a Panes)> {
+        let shown = self.tabs.get(&tab)?;
+        let (panes, observe) = layout(tab, cx)?;
+        // Another window may have closed the pane since this one's last tick.
+        let active = match panes.contains(&shown.active) {
+            true => &shown.active,
+            false => panes.first(),
+        };
+        (!observe).then_some((active, panes))
+    }
+
     /// What herdr-core reports of the terminals in the panes of tabs that
     /// drive them, which a chat may be drawn over. A mirror only watches.
-    pub(crate) fn chat_terminals(&self) -> impl Iterator<Item = &TerminalInfo> {
+    pub(crate) fn chat_terminals<'a>(
+        &'a self,
+        cx: &'a App,
+    ) -> impl Iterator<Item = &'a TerminalInfo> {
         self.tabs
-            .values()
-            .filter(|shown| !shown.observe)
-            .flat_map(|shown| shown.panes.terminals())
+            .keys()
+            .filter_map(|tab| self.driven(*tab, cx))
+            .flat_map(|(_, panes)| panes.terminals())
             .filter_map(|terminal| self.infos.get(terminal))
     }
 
     /// The pane a new chat in `tab` opens beside: the one in use, in a tab
     /// that drives its terminals.
-    pub(crate) fn chat_split_at(&self, tab: TabId) -> Option<TerminalId> {
-        self.tabs
-            .get(&tab)
-            .filter(|shown| !shown.observe)
-            .map(|shown| shown.active.clone())
+    pub(crate) fn chat_split_at(&self, tab: TabId, cx: &App) -> Option<TerminalId> {
+        self.driven(tab, cx).map(|(active, _)| active.clone())
     }
 
-    /// Shows `panes` as `tab`, a mirror when `observe`, with what herdr-core
-    /// reports of `infos`, as a restored tab and a finished list would.
+    /// Shows a new tab of `panes`, a mirror when `observe`, with what
+    /// herdr-core reports of `infos`, as a restored tab and a finished list
+    /// would.
     #[cfg(test)]
+    #[allow(clippy::unwrap_used)]
     pub(crate) fn show_for_test(
         &mut self,
-        tab: TabId,
         panes: Panes,
         observe: bool,
         infos: Vec<TerminalInfo>,
-    ) {
-        self.tabs.insert(tab, TabPanes::new(panes, observe));
+        cx: &mut App,
+    ) -> TabId {
+        let active = panes.first().clone();
+        let location = Location::CoreTerminal { panes, observe };
+        let tab = Store::update(cx, |store| {
+            store.open(Scope::endpoint("test"), "w", Some(location), None)
+        })
+        .unwrap();
+        self.tabs.insert(tab, TabPanes::new(active));
         for info in infos {
             self.infos.insert(info);
         }
+        tab
     }
 
     /// Whether `tab` is a herdr-core tab that drives its terminals, not a
     /// mirror that only watches.
-    pub(crate) fn drives(&self, tab: TabId) -> bool {
-        self.tabs.get(&tab).is_some_and(|shown| !shown.observe)
+    pub(crate) fn drives(&self, tab: TabId, cx: &App) -> bool {
+        self.driven(tab, cx).is_some()
     }
 
     /// Makes `terminal` the pane in use in `tab`; whether that changed.
-    pub(crate) fn set_active(&mut self, tab: TabId, terminal: TerminalId) -> bool {
+    pub(crate) fn set_active(&mut self, tab: TabId, terminal: TerminalId, cx: &App) -> bool {
         let Some(shown) = self.tabs.get_mut(&tab) else {
             return false;
         };
-        if shown.active == terminal || !shown.panes.contains(&terminal) {
+        let held = layout(tab, cx).is_some_and(|(panes, _)| panes.contains(&terminal));
+        if shown.active == terminal || !held {
             return false;
         }
         shown.active = terminal;
@@ -385,11 +430,11 @@ impl CoreTerminals {
     }
 
     /// The tab whose panes hold `terminal`, among tabs that drive them.
-    pub(crate) fn tab_of(&self, terminal: &TerminalId) -> Option<TabId> {
-        self.tabs
-            .iter()
-            .find(|(_, shown)| !shown.observe && shown.panes.contains(terminal))
-            .map(|(id, _)| *id)
+    pub(crate) fn tab_of(&self, terminal: &TerminalId, cx: &App) -> Option<TabId> {
+        self.tabs.keys().copied().find(|tab| {
+            self.driven(*tab, cx)
+                .is_some_and(|(_, panes)| panes.contains(terminal))
+        })
     }
 
     /// The tab and pane whose view holds the keyboard.
@@ -537,7 +582,17 @@ impl SheprdWindow {
             cx.notify();
         }
         self.place_started_core_terminal(window, cx);
+        // A pane another window closed takes its view with it; the tab's
+        // pane in use gets the keyboard it held.
+        let orphaned = self
+            .core_terminals
+            .focused_pane(window, cx)
+            .filter(|(tab, pane)| layout(*tab, cx).is_some_and(|(panes, _)| !panes.contains(pane)))
+            .map(|(tab, _)| tab);
         self.sync_core_views(cx);
+        if let Some(tab) = orphaned {
+            self.focus_core_terminal(tab, window, cx);
+        }
         if let Some(tab) = self.core_terminals.focus_wanted
             && self.core_pane_view(tab).is_some()
         {
@@ -581,7 +636,7 @@ impl SheprdWindow {
         self.clear_stale_core_group(cx);
         self.poll_core_workspace_edit(window, cx);
         if !cx.has_active_drag() {
-            self.save_core_panes(cx);
+            self.drop_core_split(cx);
         }
         // A zoom in motion draws a frame each tick until it lands.
         let now = crate::motion::now();
