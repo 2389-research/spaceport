@@ -18,6 +18,38 @@ const _: () = assert!(
     "Spaceport release identity is not configured"
 );
 
+/// What kind of build this is, decided once by the build script's
+/// `preview_identity::select`. Code that behaves differently in a signed
+/// preview asks this, never the app ID or version strings.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Channel {
+    /// An ordinary local or worktree build.
+    Development,
+    /// The signed macOS preview route.
+    MacosPreview,
+}
+
+impl Channel {
+    /// The channel the build script names, or `None` for any other text.
+    pub(crate) const fn parse(name: &str) -> Option<Self> {
+        match name.as_bytes() {
+            b"development" => Some(Self::Development),
+            b"macos-preview" => Some(Self::MacosPreview),
+            _ => None,
+        }
+    }
+}
+
+// An unknown channel stops the build: there is no runtime fallback.
+#[cfg_attr(
+    not(all(target_os = "macos", feature = "macos-updater")),
+    allow(dead_code, reason = "only the native updater reads the channel so far")
+)]
+pub(crate) const CHANNEL: Channel = match Channel::parse(env!("SPACEPORT_BUILD_CHANNEL")) {
+    Some(channel) => channel,
+    None => panic!("SPACEPORT_BUILD_CHANNEL is not a known build channel"),
+};
+
 /// Preview builds carry an explicit version; ordinary local builds say dev.
 pub(crate) const APP_VERSION: &str = env!("SPACEPORT_APP_VERSION");
 
@@ -29,10 +61,6 @@ pub(crate) const LINUX_APP_ID: &str = APP_ID;
 pub(crate) const TAB_WIDTH: f32 = 64.;
 // The reference strip is a shallow band: chrome, not a toolbar.
 pub(crate) const TAB_HEIGHT: f32 = 24.;
-
-// Legacy production-build policy for automatic skill management and issue reporting.
-// Signed macOS previews keep this false.
-pub(crate) const RELEASE_BUILD: bool = option_env!("HERDR_RELEASE_VERSION").is_some();
 
 // The git commit hash embedded by build.rs for source/dev builds.
 pub(crate) const BUILD_COMMIT: Option<&str> = option_env!("HERDR_BUILD_COMMIT");

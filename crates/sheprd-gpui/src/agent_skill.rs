@@ -151,11 +151,6 @@ pub(crate) fn remove(home: &Path) -> crate::Result<Vec<PathBuf>> {
     Ok(removed)
 }
 
-/// Whether any agent directory exists to install into.
-fn agents_present(home: &Path) -> bool {
-    ROOTS.iter().any(|root| home.join(root).is_dir())
-}
-
 /// What the user chose when asked.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -190,8 +185,9 @@ impl AgentSkill {
         crate::preferences::state_dir().map(|dir| dir.join("agent-skill.json"))
     }
 
-    /// Called before starting GPUI. Only a release build asks or keeps the
-    /// skill current: a development build would point agents at itself.
+    /// Called before starting GPUI. No build asks or keeps the skill current
+    /// at start: a development build would point agents at itself, and
+    /// preview signing grants no automatic skill install.
     pub(crate) fn load() -> Self {
         let path = Self::path();
         let choice = path
@@ -205,16 +201,12 @@ impl AgentSkill {
             })
             .and_then(|bytes| serde_json::from_slice::<Saved>(&bytes).ok())
             .map(|saved| saved.choice);
-        let home = crate::config::home().ok();
-        let ask =
-            crate::RELEASE_BUILD && choice.is_none() && home.as_deref().is_some_and(agents_present);
-        let refresh = crate::RELEASE_BUILD && choice == Some(Choice::Installed);
         Self {
             choice,
-            ask,
+            ask: false,
             install: None,
             path,
-            refresh,
+            refresh: false,
         }
     }
 

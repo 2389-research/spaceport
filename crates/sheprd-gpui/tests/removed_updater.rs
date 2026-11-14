@@ -26,15 +26,17 @@ fn app_constants_retain_development_identity_and_release_refusal() {
     let source = temp.path().join("identity.rs");
     fs::write(
         &source,
-        format!("#[path = {app_name:?}]\nmod sheprd_client;\n{constants}\nfn main() {{ assert_eq!(APP_VERSION, env!(\"SPACEPORT_APP_VERSION\")); assert_eq!(APP_ID, env!(\"SPACEPORT_APP_ID\")); assert_eq!(WINDOW_TITLE, \"Spaceport\"); assert_eq!(HERDR_NAME, \"Herdr\"); assert!(!RELEASE_BUILD); let _ = (LINUX_APP_ID, TAB_WIDTH, TAB_HEIGHT, BUILD_COMMIT); }}").replace("//!", "//"),
+        format!("#[path = {app_name:?}]\nmod sheprd_client;\n{constants}\nfn main() {{ assert_eq!(APP_VERSION, env!(\"SPACEPORT_APP_VERSION\")); assert_eq!(APP_ID, env!(\"SPACEPORT_APP_ID\")); assert_eq!(WINDOW_TITLE, \"Spaceport\"); assert_eq!(HERDR_NAME, \"Herdr\"); assert_eq!(CHANNEL, Channel::parse(env!(\"SPACEPORT_BUILD_CHANNEL\")).unwrap()); let _ = (LINUX_APP_ID, TAB_WIDTH, TAB_HEIGHT, BUILD_COMMIT); }}").replace("//!", "//"),
     ).unwrap();
-    let compile = |release: bool, preview: bool| {
+    let compile = |release: bool, channel: &str| {
+        let preview = channel == "macos-preview";
         let mut command = Command::new("rustc");
         command
             .arg("--edition=2024")
             .arg(&source)
             .arg("-o")
             .arg(temp.path().join("identity"))
+            .env("SPACEPORT_BUILD_CHANNEL", channel)
             .env(
                 "SPACEPORT_APP_ID",
                 if preview {
@@ -57,7 +59,7 @@ fn app_constants_retain_development_identity_and_release_refusal() {
         }
         command.output().unwrap()
     };
-    let development = compile(false, false);
+    let development = compile(false, "development");
     assert!(
         development.status.success(),
         "{}",
@@ -69,7 +71,7 @@ fn app_constants_retain_development_identity_and_release_refusal() {
             .unwrap()
             .success()
     );
-    let preview = compile(false, true);
+    let preview = compile(false, "macos-preview");
     assert!(
         preview.status.success(),
         "{}",
@@ -81,16 +83,23 @@ fn app_constants_retain_development_identity_and_release_refusal() {
             .unwrap()
             .success()
     );
-    let release = compile(true, false);
+    let release = compile(true, "development");
     assert!(!release.status.success());
     assert!(
         String::from_utf8_lossy(&release.stderr)
             .contains("Spaceport release identity is not configured")
     );
-    let release_preview = compile(true, true);
+    let release_preview = compile(true, "macos-preview");
     assert!(!release_preview.status.success());
     assert!(
         String::from_utf8_lossy(&release_preview.stderr)
             .contains("Spaceport release identity is not configured")
+    );
+    // A channel the app does not know stops compilation; nothing falls back.
+    let unknown = compile(false, "release");
+    assert!(!unknown.status.success());
+    assert!(
+        String::from_utf8_lossy(&unknown.stderr)
+            .contains("SPACEPORT_BUILD_CHANNEL is not a known build channel")
     );
 }

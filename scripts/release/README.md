@@ -142,8 +142,8 @@ Preview builds use `SPACEPORT_MACOS_PREVIEW_VERSION`, `ai.2389.spaceport`, and
 and malformed versions. The app ID files beside `crates/sheprd-gpui/build.rs` are
 the source for compiled and bundle identities; a final newline is allowed.
 Ordinary `just bundle` builds retain `spaceport.development`. The general
-`HERDR_RELEASE_VERSION` refusal and the app constants’ `RELEASE_BUILD` policy
-remain in force. Preview signing grants no provider credential reads or automatic skill install.
+`HERDR_RELEASE_VERSION` refusal remains in force. The app reads its build
+channel (`development` or `macos-preview`) from one compiled constant. Preview signing grants no provider credential reads or automatic skill install.
 The existing three-line `--build-info` output remains unchanged.
 
 ## Build Identity

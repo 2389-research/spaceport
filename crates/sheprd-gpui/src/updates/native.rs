@@ -2,7 +2,7 @@
 // ABOUTME: Retains its controller on the AppKit main thread without replacing quit hooks.
 use super::{
     Error,
-    policy::{self, Bundle},
+    policy::{self, Build, Bundle},
 };
 use gpui::{App, Global};
 use objc2_foundation::{NSBundle, NSNumber, NSString};
@@ -32,7 +32,8 @@ fn boolean(bundle: &NSBundle, key: &str) -> Option<bool> {
 }
 
 pub(super) fn install(cx: &mut App) -> Result<(), Error> {
-    if !super::supported_build() {
+    let build = Build::COMPILED;
+    if !build.can_update() {
         return Ok(());
     }
     let Some(mtm) = MainThreadMarker::new() else {
@@ -65,14 +66,7 @@ pub(super) fn install(cx: &mut App) -> Result<(), Error> {
             .objectForInfoDictionaryKey(&NSString::from_str("SUEnableAutomaticChecks"))
             .is_some(),
     };
-    if !policy::eligible(
-        &actual,
-        crate::constants::APP_ID,
-        crate::constants::APP_VERSION,
-        &trust.feed_url,
-        &trust.public_key,
-        env!("HERDR_BUILD_WORKTREE"),
-    ) {
+    if !policy::eligible(&actual, &build, &trust.feed_url, &trust.public_key) {
         return Err(Error::Unsupported);
     }
     // Clear a stored feed override before startup so automatic checks use the signed bundle feed.
