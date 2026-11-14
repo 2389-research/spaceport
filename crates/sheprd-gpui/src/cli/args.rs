@@ -10,6 +10,9 @@ pub(crate) struct Args {
     trailing: Option<Vec<OsString>>,
     /// The command being parsed, named in errors.
     command: &'static str,
+    /// The window to act in: the one `--window` names, or the one a
+    /// command takes as its own argument, which wins.
+    window: Option<u64>,
 }
 
 fn is_flag(value: &OsString) -> bool {
@@ -27,7 +30,16 @@ impl Args {
             rest,
             trailing,
             command,
+            window: None,
         }
+    }
+
+    pub(crate) fn window(&self) -> Option<u64> {
+        self.window
+    }
+
+    pub(crate) fn set_window(&mut self, window: Option<u64>) {
+        self.window = window;
     }
 
     pub(crate) fn name(&self) -> &'static str {

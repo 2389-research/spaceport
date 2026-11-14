@@ -20,7 +20,7 @@ fn tab_window_and_json_options_keep_the_exact_target() {
             .unwrap()
             .mode,
         LaunchMode::Control(control::Invocation {
-            command: control::ControlCommand::Tab(control::TabCommand::List),
+            command: control::ControlCommand::Tab(control::TabOp::List {}),
             json: true,
             window: Some(42),
         })

@@ -21,7 +21,7 @@ fn checkpoint_command_is_rejected_before_control_dispatch() {
             .unwrap()
             .mode,
         LaunchMode::Control(control::Invocation {
-            command: control::ControlCommand::Notes(control::NotesCommand::List),
+            command: control::ControlCommand::Notes(control::WorkOp::Notes),
             json: true,
             window: Some(7),
         })

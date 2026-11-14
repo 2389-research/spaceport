@@ -1,70 +1,48 @@
 //! `app`, `window`, and `ui`.
-use super::{Args, CliError, FontSize, Size, Switch, switch, unknown};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum AppCommand {
-    Focus,
-    Hide,
-    Quit,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum WindowCommand {
-    List,
-    New,
-    Focus {
-        id: u64,
-    },
-    Fullscreen(Switch),
-    /// Report the size, or set it.
-    Size(Option<Size>),
-    Detach,
-    Reconnect,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum UiCommand {
-    Sidebar(Switch),
-    StatusBar(Switch),
-    FontSize(FontSize),
-    /// The activity bar section to show.
-    Panel(crate::sidebar::ActivityPanel),
-}
+use super::{AppOp, Args, CliError, FontSize, Size, UiOp, WindowOp, switch, unknown};
 
 pub(super) const APP_USAGE: &str = "spaceport app focus|hide|quit\n    Bring the app forward, hide it, or quit it. Quitting leaves Herdr\n    and its terminals running.";
 
-pub(super) fn app(args: &mut Args) -> Result<AppCommand, CliError> {
+pub(super) fn app(args: &mut Args) -> Result<AppOp, CliError> {
     let verb = args.verb().ok_or(CliError::MissingArgument {
         command: "app",
         what: "focus|hide|quit",
     })?;
     Ok(match verb.to_str() {
-        Some("focus") => AppCommand::Focus,
-        Some("hide") => AppCommand::Hide,
-        Some("quit") => AppCommand::Quit,
+        Some("focus") => AppOp::Focus,
+        Some("hide") => AppOp::Hide,
+        Some("quit") => AppOp::Quit,
         _ => return Err(unknown("app", verb)),
     })
 }
 
 pub(super) const WINDOW_USAGE: &str = "spaceport window [list]\n    The app's windows, with IDs for --window.\nspaceport window new\n    Open another window on the selected window's exact Core group or legacy\n    launch target, the caller's host, or the frontmost/default target. A\n    stale Core group is refused before the window opens.\nspaceport window focus ID\nspaceport window fullscreen [on|off|toggle]\nspaceport window size [WIDTHxHEIGHT]\n    Print the window's size, or resize it. Windows cannot be moved.\nspaceport window detach|reconnect\n    Detach from, or reconnect to, the window's selected host.";
 
-pub(super) fn window(args: &mut Args) -> Result<WindowCommand, CliError> {
+pub(super) fn window(args: &mut Args) -> Result<WindowOp, CliError> {
     let Some(verb) = args.verb() else {
-        return Ok(WindowCommand::List);
+        return Ok(WindowOp::List);
     };
     Ok(match verb.to_str() {
-        Some("list") => WindowCommand::List,
-        Some("new") => WindowCommand::New,
-        Some("focus") => WindowCommand::Focus {
-            id: args
+        Some("list") => WindowOp::List,
+        Some("new") => WindowOp::New {},
+        Some("focus") => {
+            // The operation carries no window: the ID is the window the
+            // command acts in, whatever `--window` named.
+            let id = args
                 .required_text("ID")?
                 .parse()
-                .map_err(|_| CliError::InvalidValue("ID"))?,
+                .map_err(|_| CliError::InvalidValue("ID"))?;
+            args.set_window(Some(id));
+            WindowOp::Focus
+        }
+        Some("fullscreen") => WindowOp::Fullscreen {
+            switch: switch(args.positional())?,
         },
-        Some("fullscreen") => WindowCommand::Fullscreen(switch(args.positional())?),
-        Some("size") => WindowCommand::Size(args.positional().map(size).transpose()?),
-        Some("detach") => WindowCommand::Detach,
-        Some("reconnect") => WindowCommand::Reconnect,
+        Some("size") => WindowOp::Size {
+            size: args.positional().map(size).transpose()?,
+        },
+        Some("detach") => WindowOp::Detach,
+        Some("reconnect") => WindowOp::Reconnect,
         _ => return Err(unknown("window", verb)),
     })
 }
@@ -84,24 +62,28 @@ const PANELS: &str = "workspaces|overview|automations|usage";
 
 pub(super) const UI_USAGE: &str = "spaceport ui sidebar [on|off|toggle]\nspaceport ui statusbar [on|off|toggle]\nspaceport ui font-size +|-|reset|POINTS\nspaceport ui panel workspaces|overview|automations|usage\n    For this window and session; settings are changed with `config`.";
 
-pub(super) fn ui(args: &mut Args) -> Result<UiCommand, CliError> {
+pub(super) fn ui(args: &mut Args) -> Result<UiOp, CliError> {
     let verb = args.verb().ok_or(CliError::MissingArgument {
         command: "ui",
         what: "sidebar|statusbar|font-size|panel",
     })?;
     Ok(match verb.to_str() {
-        Some("sidebar") => UiCommand::Sidebar(switch(args.positional())?),
-        Some("statusbar" | "status-bar") => UiCommand::StatusBar(switch(args.positional())?),
+        Some("sidebar") => UiOp::Sidebar {
+            switch: switch(args.positional())?,
+        },
+        Some("statusbar" | "status-bar") => UiOp::StatusBar {
+            switch: switch(args.positional())?,
+        },
         Some("panel") => {
             let name = args.required_text(PANELS)?;
-            UiCommand::Panel(
-                crate::sidebar::ActivityPanel::parse(&name)
+            UiOp::Panel {
+                panel: crate::sidebar::ActivityPanel::parse(&name)
                     .ok_or(CliError::InvalidValue(PANELS))?,
-            )
+            }
         }
         Some("font-size") => {
             let value = args.required_text("+|-|reset|POINTS")?;
-            UiCommand::FontSize(match value.as_str() {
+            let size = match value.as_str() {
                 "+" | "larger" => FontSize::Larger,
                 "-" | "smaller" => FontSize::Smaller,
                 "reset" => FontSize::Reset,
@@ -112,7 +94,8 @@ pub(super) fn ui(args: &mut Args) -> Result<UiCommand, CliError> {
                         .filter(|points| (8..=48).contains(points))
                         .ok_or(CliError::InvalidValue("POINTS (8-48)"))?,
                 },
-            })
+            };
+            UiOp::FontSize { size }
         }
         _ => return Err(unknown("ui", verb)),
     })

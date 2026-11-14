@@ -15,7 +15,7 @@ fn px0_is_rejected_and_tab_target_remains_exact() {
             .unwrap()
             .mode,
         LaunchMode::Control(control::Invocation {
-            command: control::ControlCommand::Tab(control::TabCommand::List),
+            command: control::ControlCommand::Tab(control::TabOp::List {}),
             json: true,
             window: Some(42),
         })

@@ -21,7 +21,7 @@ fn cloud_commands_are_absent_while_host_and_port_targets_remain() {
     assert!(matches!(
         host.mode,
         LaunchMode::Control(control::Invocation {
-            command: control::ControlCommand::Host(control::HostCommand::List),
+            command: control::ControlCommand::Host(control::HostOp::List),
             window: Some(7),
             ..
         })
@@ -30,7 +30,7 @@ fn cloud_commands_are_absent_while_host_and_port_targets_remain() {
     assert!(matches!(
         ports.mode,
         LaunchMode::Control(control::Invocation {
-            command: control::ControlCommand::Ports(control::PortsCommand::Forward(3000)),
+            command: control::ControlCommand::Ports(control::HostOp::Forward { port: 3000 }),
             window: Some(7),
             ..
         })

@@ -83,9 +83,19 @@ impl Output {
 pub(crate) struct Context {
     pub json: bool,
     pub window: Option<u64>,
+    /// Carries a request to the running app and brings its answer back.
+    transport: fn(&Request) -> crate::Result<Response>,
 }
 
 impl Context {
+    pub(crate) fn new(json: bool, window: Option<u64>) -> Self {
+        Self {
+            json,
+            window,
+            transport: send,
+        }
+    }
+
     pub(crate) fn caller(&self) -> crate::Result<Caller> {
         Ok(Caller {
             window: self.window,
@@ -104,7 +114,7 @@ impl Context {
             caller: self.caller()?,
             op,
         });
-        match send(&request)? {
+        match (self.transport)(&request)? {
             Response::Error { code, message } => {
                 Err(crate::control::Error::Rejected { code, message }.into())
             }
@@ -322,10 +332,7 @@ fn print(output: &Output) -> u8 {
 
 /// Runs a control command without starting GPUI.
 pub(crate) fn run(invocation: Invocation) -> ExitCode {
-    let context = Context {
-        json: invocation.json,
-        window: invocation.window,
-    };
+    let context = Context::new(invocation.json, invocation.window);
     let result = match invocation.command {
         ControlCommand::Help(family) => {
             println!("{}", help::usage(family));

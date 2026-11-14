@@ -1,7 +1,7 @@
 use super::*;
 use control::{
-    AppCommand, ConfigCommand, ControlCommand, FontSize, Invocation, NotesCommand, PortsCommand,
-    Size, Switch, UiCommand, WaitFor, WindowCommand,
+    AppOp, ConfigCommand, ControlCommand, FontSize, HostOp, Invocation, Size, Switch, TabOp, UiOp,
+    WaitFor, WindowOp, WorkOp,
 };
 
 fn parse(args: &[&str]) -> Result<Invocation, CliError> {
@@ -21,16 +21,13 @@ fn global_options_apply_anywhere_after_the_command() {
     assert_eq!(
         invocation,
         Invocation {
-            command: ControlCommand::Window(WindowCommand::List),
+            command: ControlCommand::Window(WindowOp::List),
             json: true,
             window: Some(7),
         }
     );
     // A bare family runs its listing.
-    assert_eq!(
-        command(&["tab"]),
-        ControlCommand::Tab(control::TabCommand::List)
-    );
+    assert_eq!(command(&["tab"]), ControlCommand::Tab(TabOp::List {}));
     assert_eq!(
         parse(&["window", "--window"]).unwrap_err(),
         CliError::MissingValue("--window")
@@ -49,20 +46,21 @@ fn help_wins_over_every_other_argument() {
 
 #[test]
 fn app_window_and_ui_commands() {
-    assert_eq!(
-        command(&["app", "quit"]),
-        ControlCommand::App(AppCommand::Quit)
-    );
+    assert_eq!(command(&["app", "quit"]), ControlCommand::App(AppOp::Quit));
     assert_eq!(
         command(&["window", "fullscreen", "off"]),
-        ControlCommand::Window(WindowCommand::Fullscreen(Switch::Off))
+        ControlCommand::Window(WindowOp::Fullscreen {
+            switch: Switch::Off
+        })
     );
     assert_eq!(
         command(&["window", "size", "1200x800"]),
-        ControlCommand::Window(WindowCommand::Size(Some(Size {
-            width: 1200,
-            height: 800
-        })))
+        ControlCommand::Window(WindowOp::Size {
+            size: Some(Size {
+                width: 1200,
+                height: 800
+            })
+        })
     );
     assert_eq!(
         parse(&["window", "size", "12x8"]).unwrap_err(),
@@ -70,15 +68,21 @@ fn app_window_and_ui_commands() {
     );
     assert_eq!(
         command(&["ui", "sidebar"]),
-        ControlCommand::Ui(UiCommand::Sidebar(Switch::Toggle))
+        ControlCommand::Ui(UiOp::Sidebar {
+            switch: Switch::Toggle
+        })
     );
     assert_eq!(
         command(&["ui", "font-size", "-"]),
-        ControlCommand::Ui(UiCommand::FontSize(FontSize::Smaller))
+        ControlCommand::Ui(UiOp::FontSize {
+            size: FontSize::Smaller
+        })
     );
     assert_eq!(
         command(&["ui", "font-size", "14"]),
-        ControlCommand::Ui(UiCommand::FontSize(FontSize::Points { points: 14 }))
+        ControlCommand::Ui(UiOp::FontSize {
+            size: FontSize::Points { points: 14 }
+        })
     );
     assert_eq!(
         parse(&["ui", "font-size", "99"]).unwrap_err(),
@@ -105,7 +109,9 @@ fn removed_code_open_command_is_rejected() {
 fn work_commands() {
     assert_eq!(
         command(&["notes", "set", "waiting", "on", "review"]),
-        ControlCommand::Notes(NotesCommand::Set("waiting on review".into()))
+        ControlCommand::Notes(WorkOp::SetNote {
+            text: "waiting on review".into()
+        })
     );
     for args in [
         &["scripts"][..],
@@ -139,7 +145,7 @@ fn excluded_fan_out_command_is_rejected() {
 fn host_and_settings_commands() {
     assert_eq!(
         command(&["ports", "forward", "3000"]),
-        ControlCommand::Ports(PortsCommand::Forward(3000))
+        ControlCommand::Ports(HostOp::Forward { port: 3000 })
     );
     assert_eq!(
         parse(&["ports", "open", "0"]).unwrap_err(),
@@ -232,23 +238,23 @@ fn an_events_cursor_names_its_app_run() {
 fn mute_commands() {
     assert_eq!(
         command(&["host", "mute", "studio"]),
-        ControlCommand::Host(control::HostCommand::Mute {
+        ControlCommand::Host(HostOp::Mute {
             host: Some("studio".into()),
             muted: true
         })
     );
     assert_eq!(
         command(&["host", "unmute"]),
-        ControlCommand::Host(control::HostCommand::Mute {
+        ControlCommand::Host(HostOp::Mute {
             host: None,
             muted: false
         })
     );
     for (words, expected) in [
-        (&["worktree"][..], control::WorktreeCommand::Status),
-        (&["worktree", "status"], control::WorktreeCommand::Status),
-        (&["worktree", "mute"], control::WorktreeCommand::Mute),
-        (&["worktree", "unmute"], control::WorktreeCommand::Unmute),
+        (&["worktree"][..], WorkOp::MuteStatus),
+        (&["worktree", "status"], WorkOp::MuteStatus),
+        (&["worktree", "mute"], WorkOp::Mute { muted: true }),
+        (&["worktree", "unmute"], WorkOp::Mute { muted: false }),
     ] {
         assert_eq!(command(words), ControlCommand::Worktree(expected));
     }
@@ -259,17 +265,59 @@ fn mute_commands() {
 fn host_tag_takes_a_host_and_any_number_of_tags() {
     assert_eq!(
         command(&["host", "tag", "devbox", "work", "client acme"]),
-        ControlCommand::Host(control::HostCommand::Tag {
+        ControlCommand::Host(HostOp::Tag {
             id: "devbox".into(),
             tags: vec!["work".into(), "client acme".into()],
         })
     );
     assert_eq!(
         command(&["host", "tag", "devbox"]),
-        ControlCommand::Host(control::HostCommand::Tag {
+        ControlCommand::Host(HostOp::Tag {
             id: "devbox".into(),
             tags: Vec::new(),
         })
     );
     assert!(parse(&["host", "tag"]).is_err());
+}
+
+#[test]
+fn window_focus_acts_in_the_window_it_names() {
+    // The operation carries no ID: the argument is the target window, and
+    // wins over `--window`.
+    for args in [
+        &["window", "focus", "7"][..],
+        &["window", "focus", "7", "--window", "3"],
+        &["window", "--window", "3", "focus", "7"],
+    ] {
+        assert_eq!(
+            parse(args).unwrap(),
+            Invocation {
+                command: ControlCommand::Window(WindowOp::Focus),
+                json: false,
+                window: Some(7),
+            },
+            "{args:?}"
+        );
+    }
+    assert_eq!(
+        parse(&["window", "focus", "x", "--window", "3"]).unwrap_err(),
+        CliError::InvalidValue("ID")
+    );
+}
+
+#[test]
+fn clearing_a_note_sets_empty_text() {
+    assert_eq!(
+        command(&["notes", "clear"]),
+        ControlCommand::Notes(WorkOp::SetNote {
+            text: String::new()
+        })
+    );
+    assert_eq!(
+        parse(&["notes", "clear", "now"]).unwrap_err(),
+        CliError::Unexpected {
+            command: "notes",
+            argument: "now".into()
+        }
+    );
 }
