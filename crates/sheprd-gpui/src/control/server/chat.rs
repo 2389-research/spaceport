@@ -102,6 +102,7 @@ fn start_code(error: &crate::chat::StartError) -> ErrorCode {
 mod info {
     use crate::{
         SheprdWindow,
+        chat::{ChatInput, Source},
         control::protocol::chat::{ChatInfo, InputMode},
     };
     use sheprd_chat_protocol::Status;
@@ -118,7 +119,7 @@ mod info {
                     Status::Failed { .. } => "failed",
                     Status::Exited { .. } => "exited",
                 };
-                if chat.target.existing.is_some()
+                if matches!(chat.target.source, Source::Observed(_))
                     && view.live.snapshot.as_ref().is_some_and(|snapshot| {
                         snapshot.agents.iter().any(|agent| {
                             agent.pane_id == chat.target.pane_id
@@ -132,12 +133,10 @@ mod info {
                 ChatInfo {
                     pane_id: chat.target.pane_id.clone(),
                     agent: chat.session.agent().to_owned(),
-                    input_mode: if chat.target.existing.is_some() {
-                        InputMode::Terminal
-                    } else if transcript.read_only {
-                        InputMode::ReadOnly
-                    } else {
-                        InputMode::Chat
+                    input_mode: match chat.input() {
+                        ChatInput::Composer => InputMode::Chat,
+                        ChatInput::ReadOnly => InputMode::ReadOnly,
+                        ChatInput::Terminal => InputMode::Terminal,
                     },
                     session_id: transcript
                         .session

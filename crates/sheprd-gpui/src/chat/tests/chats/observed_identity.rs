@@ -2,7 +2,7 @@ use super::*;
 
 fn observed(pane: &str, pid: u32) -> Target {
     let mut target = target(pane, A);
-    target.existing = Some(existing::Binding {
+    target.source = Source::Observed(existing::Binding {
         pane_id: pane.into(),
         agent: sheprd_chat_protocol::Agent::Codex,
         session_id: "01234567-89ab-4cde-8123-456789abcdef".into(),
@@ -52,7 +52,9 @@ fn observer_replacement_does_not_inherit_another_targets_hide_choice() {
         let (_old_stream, _) = harness.program.accept();
         harness.chats.set_raw("p1", true);
         let mut replacement = original;
-        let binding = replacement.existing.as_mut().unwrap();
+        let Source::Observed(binding) = &mut replacement.source else {
+            panic!("an observed target");
+        };
         match change {
             "pid" => binding.pid += 1,
             "start" => binding.started_ticks += 1,
