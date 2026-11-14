@@ -165,8 +165,9 @@ impl Notice {
         }
     }
 
-    /// Moves a showing toast's expiry; a test's way to age one.
-    #[cfg(test)]
+    /// Moves a showing toast's expiry; a test's way to age one. Only the Unix
+    /// lifecycle tests age a toast.
+    #[cfg(all(test, unix))]
     pub(crate) fn set_expires(&mut self, at: Instant) {
         if let Stage::Visible { expires, .. } = &mut self.stage {
             *expires = at;
