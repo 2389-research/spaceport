@@ -6,7 +6,7 @@ use sheprd_chat_protocol::{
     PermissionId, Queued, Rejection, Status, Turn,
 };
 
-use super::{ConnId, Pending, Session, Update};
+use super::{ConnId, Pending, Phase, Session, Update};
 
 /// Prompts waiting behind a turn, and their text in bytes: the queue is
 /// copied into every change and snapshot, so it stays well inside a frame.
@@ -59,7 +59,7 @@ impl<R: FnMut(Update)> Session<R> {
         if !self.transcript.status.accepts_prompts() {
             return Err(Rejection::NotReady);
         }
-        if self.turn.is_some() || !self.ready {
+        if !self.phase.free() {
             let waiting = &self.transcript.queued;
             let text_size: usize = waiting.iter().map(|queued| queued.text.len()).sum();
             if waiting.len() >= MAX_QUEUED || text_size + text.len() > MAX_QUEUED_TEXT {
@@ -81,9 +81,10 @@ impl<R: FnMut(Update)> Session<R> {
     /// Sends a prompt with its files, read now, and shows it in the
     /// transcript: the text with a line per file, then the pictures.
     fn send_prompt(&mut self, text: &str, attachments: &[Attachment]) {
-        let Some(session) = self.acp_session.clone() else {
+        let Phase::Ready { session, .. } = &self.phase else {
             return;
         };
+        let session = session.clone();
         let prepared: Vec<_> = attachments
             .iter()
             .map(|attachment| crate::files::prepare(attachment, self.accepts))
@@ -113,7 +114,7 @@ impl<R: FnMut(Update)> Session<R> {
         if self.request("session/prompt", &request, Pending::Prompt) {
             // Only a prompt the agent received names the chat.
             (self.report)(Update::Prompt(shown));
-            self.turn = Some(self.next_request);
+            self.phase.set_turn(Some(self.next_request));
             self.emit(Change::Turn {
                 turn: Some(Turn {
                     started_ms: super::now_ms(),
@@ -125,7 +126,7 @@ impl<R: FnMut(Update)> Session<R> {
 
     /// Sends the oldest queued prompt once the agent is free.
     pub(super) fn next_queued(&mut self) {
-        if self.turn.is_some() || !self.ready {
+        if !self.phase.free() {
             return;
         }
         let mut queued = self.transcript.queued.clone();
@@ -138,13 +139,13 @@ impl<R: FnMut(Update)> Session<R> {
     }
 
     fn cancel(&mut self) -> Result<(), Rejection> {
-        if self.turn.is_none() && self.transcript.queued.is_empty() {
+        if self.phase.turn().is_none() && self.transcript.queued.is_empty() {
             return Err(Rejection::NotWorking);
         }
         self.clear_queue();
         self.resolve_all();
-        if self.turn.is_some()
-            && let Some(session) = self.acp_session.clone()
+        if self.phase.turn().is_some()
+            && let Some(session) = self.phase.session().cloned()
             && let Err(error) = self
                 .outbox
                 .notify("session/cancel", &wire::CancelNotification::new(session))
@@ -168,7 +169,7 @@ impl<R: FnMut(Update)> Session<R> {
     }
 
     fn set_mode(&mut self, mode: String) -> Result<(), Rejection> {
-        let session = self.acp_session.clone().ok_or(Rejection::NotReady)?;
+        let session = self.phase.session().cloned().ok_or(Rejection::NotReady)?;
         let known = self
             .transcript
             .modes
@@ -185,7 +186,7 @@ impl<R: FnMut(Update)> Session<R> {
     }
 
     fn set_option(&mut self, id: String, value: &OptionValue) -> Result<(), Rejection> {
-        let session = self.acp_session.clone().ok_or(Rejection::NotReady)?;
+        let session = self.phase.session().cloned().ok_or(Rejection::NotReady)?;
         let known = self
             .transcript
             .options

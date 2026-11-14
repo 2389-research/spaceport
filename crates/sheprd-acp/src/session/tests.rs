@@ -14,6 +14,7 @@ mod attach;
 mod attachments;
 mod auto_accept;
 mod bounds;
+mod closing;
 mod commands;
 mod detach;
 mod flow;
