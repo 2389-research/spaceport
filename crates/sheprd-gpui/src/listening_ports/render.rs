@@ -9,6 +9,7 @@ use crate::{
     browser::WebUrl,
     config::Theme,
     i18n::{Localize, fl},
+    port_forward::{PortForwards, Reuse},
     window::{Flash, SheprdWindow},
 };
 use gpui::{prelude::*, *};
@@ -207,6 +208,16 @@ pub(crate) fn close_button(
         }))
 }
 
+/// The hand-started forward that already reaches `key`, if one runs. Such a
+/// forward dials the remote's localhost, which a server bound to one other
+/// address never answers on, so only a key without an address has one.
+pub(super) fn forwarded(forwards: &PortForwards, key: &Key) -> Option<Reuse> {
+    key.address
+        .is_none()
+        .then(|| forwards.reuse(&key.target, key.port))
+        .flatten()
+}
+
 /// `node listening on *:3000` over what clicking does.
 pub(super) fn hint(port: &Port, link: Option<&Link>) -> String {
     let listening = match port.process.as_str() {
@@ -233,6 +244,8 @@ impl SheprdWindow {
     /// one at once, otherwise a new one started on the background executor,
     /// since SSH may take seconds to connect. The page opens once the tunnel
     /// accepts; a window closed meanwhile drops, and so kills, the tunnel.
+    /// A port this window already forwards by hand opens through that
+    /// forward instead of a second SSH child.
     pub(crate) fn open_tunneled_page(
         &mut self,
         endpoint: &str,
@@ -244,6 +257,17 @@ impl SheprdWindow {
         if let Some(local) = self.tunnels.local(&key) {
             self.open_local_port(endpoint, workspace, local, window, cx);
             return;
+        }
+        match forwarded(&self.port_forwards, &key) {
+            Some(Reuse::Listening { local_port }) => {
+                self.open_local_port(endpoint, workspace, local_port, window, cx);
+                return;
+            }
+            Some(Reuse::Starting) => {
+                self.show_flash(Flash::warning(fl!("listening-ports-tunnel-opening")), cx);
+                return;
+            }
+            None => {}
         }
         let Some(preferred) = self.tunnels.begin(&key) else {
             self.show_flash(Flash::warning(fl!("listening-ports-tunnel-opening")), cx);

@@ -524,7 +524,9 @@ another process took first is never reported. It reports
 `ForwardEvent::Listening`, then `ForwardEvent::Ended` when the master exits,
 every port is refused, or the master does not connect within 30 seconds.
 `stop`, or dropping the handle, kills the master without waiting; the worker
-reaps it and removes its directory. Nothing reconnects. Callers name the remote
+reaps it and removes its directory. `alive` says without blocking whether the
+master still runs, ahead of the worker's `Ended` report, for a caller about to
+open a listening forward's page. Nothing reconnects. Callers name the remote
 port, so discovery stays elsewhere. Windows OpenSSH has no control master, so
 there `PortForward::start` returns `ssh::Error::Unsupported`; `forward_command`,
 which holds its forward in its own child, works on Windows too.
