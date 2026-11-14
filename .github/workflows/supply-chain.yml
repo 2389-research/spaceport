@@ -20,14 +20,16 @@ concurrency:
 
 jobs:
   zizmor:
+    # Skipped jobs report green: keep this guard naming the repository that
+    # actually hosts the workflow. Pull requests run for any author, as in
+    # ci.yml; these jobs read the lockfile and hold no credentials.
     if: >-
-      (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui') &&
-      github.actor == 'penso' && github.triggering_actor == 'penso' &&
-      ((github.event_name == 'pull_request' &&
-        github.event.pull_request.user.login == 'penso' &&
-        github.event.pull_request.head.repo.full_name == github.repository) ||
-       ((github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
-         github.event_name == 'schedule') && github.ref == 'refs/heads/main'))
+      github.repository == '2389-research/spaceport' &&
+      (github.event_name == 'pull_request' ||
+       (github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
+       ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+        github.ref == 'refs/heads/main'))
     name: Supply Chain Workflow Security
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -43,14 +45,16 @@ jobs:
           online-audits: false
 
   cargo-deny:
+    # Skipped jobs report green: keep this guard naming the repository that
+    # actually hosts the workflow. Pull requests run for any author, as in
+    # ci.yml; these jobs read the lockfile and hold no credentials.
     if: >-
-      (github.repository == 'sheprd-labs/sheprd' || github.repository == 'penso/herdr-gpui') &&
-      github.actor == 'penso' && github.triggering_actor == 'penso' &&
-      ((github.event_name == 'pull_request' &&
-        github.event.pull_request.user.login == 'penso' &&
-        github.event.pull_request.head.repo.full_name == github.repository) ||
-       ((github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
-         github.event_name == 'schedule') && github.ref == 'refs/heads/main'))
+      github.repository == '2389-research/spaceport' &&
+      (github.event_name == 'pull_request' ||
+       (github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
+       ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+        github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+        github.ref == 'refs/heads/main'))
     name: cargo-deny (${{ matrix.check }})
     needs: zizmor
     # Runs on Linux deliberately: cargo-deny reads the lockfile and never
