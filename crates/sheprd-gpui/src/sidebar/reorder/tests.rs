@@ -1,6 +1,8 @@
 use super::*;
 use sheprd_client::protocol::ClientShellWorktree;
 
+mod drag_phases;
+mod exclusive;
 mod single_move;
 
 fn workspace(id: &str, tree: Option<(&str, bool)>) -> ClientShellWorkspace {
@@ -22,6 +24,23 @@ fn workspace(id: &str, tree: Option<(&str, bool)>) -> ClientShellWorkspace {
         focused: false,
         agent_status: sheprd_client::protocol::AgentStatus::Idle,
     }
+}
+
+/// A second device with three workspaces, never connected.
+fn remote(id: &str) -> crate::endpoint::Endpoint {
+    let mut endpoint = crate::endpoint::Endpoint::new(
+        format!("ssh:{id}"),
+        id.to_uppercase(),
+        sheprd_client::ConnectTarget::Ssh {
+            target: id.into(),
+            session: "default".into(),
+        },
+        true,
+    );
+    endpoint.live.snapshot = Some(std::sync::Arc::new(crate::sidebar::layout_tests::snapshot(
+        3,
+    )));
+    endpoint
 }
 
 /// `a` heads a group whose child `a2` sits after `b` in daemon order.

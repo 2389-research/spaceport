@@ -236,6 +236,9 @@ impl SheprdWindow {
             }
             changed = Redraw::Window;
         }
+        // The window's state is current: a dropped row the daemon has answered
+        // is done.
+        self.finish_workspace_settle();
         // Held input precedes any deferred navigation.
         self.flush_pending_input(cx);
         if self.navigation_ready() {

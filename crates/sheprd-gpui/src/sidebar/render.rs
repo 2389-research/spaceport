@@ -247,7 +247,7 @@ impl SheprdWindow {
                     }
                 }
                 let slot = drag
-                    .and_then(|drag| drag.target.as_ref())
+                    .and_then(|drag| drag.target())
                     .map_or(plan.dragged(), |target| target.slot);
                 crate::reorder::preview(&heights, plan.dragged(), slot)
             });
