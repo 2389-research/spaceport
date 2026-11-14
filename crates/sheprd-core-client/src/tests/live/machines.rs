@@ -2,7 +2,7 @@
 //! A test-only pipe command carries bytes without real SSH or user state.
 use super::*;
 use crate::{CoreBackend, event::Notice, wire::Run};
-use sheprd_backend::{Backend as _, Spawn};
+use sheprd_backend::Spawn;
 use std::os::unix::fs::PermissionsExt as _;
 
 #[test]

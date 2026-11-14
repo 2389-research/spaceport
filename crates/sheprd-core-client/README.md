@@ -14,7 +14,8 @@ herdr-core). No GPUI or async runtime.
 - Observers use confirmed `resize_notifications` frames in stream order with
   output; older cores retain periodic size reads.
 
-- `CoreBackend` implements `sheprd_backend::Backend`: it emulates attached
+- `CoreBackend` lists, watches, starts, and ends terminals, and implements
+  `sheprd_backend::Backend` to attach them: it emulates attached
   terminals with `sheprd-terminal`, so the app gets the same cells and sends
   the same semantic input as with Herdr 1.
 

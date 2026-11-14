@@ -2,8 +2,8 @@ use super::{MockCore, connected, terminal};
 use crate::{CoreBackend, frame::Kind};
 use serde_json::{Value, json};
 use sheprd_backend::{
-    AgentStatus, Backend, Change, Changes, ClientPaneInputEvent, Exit, KeyReporting, Role,
-    RunState, Size, SurfaceUpdate, Terminal as _, TerminalId,
+    AgentStatus, Backend as _, Change, ClientPaneInputEvent, Exit, KeyReporting, Role, RunState,
+    Size, SurfaceUpdate, Terminal as _, TerminalId,
 };
 use std::{thread, time::Duration};
 
@@ -50,7 +50,12 @@ fn watching(backend: &CoreBackend, mock: &mut MockCore) -> crate::CoreChanges {
 fn changes_after(changes: &mut crate::CoreChanges, count: usize) -> Vec<Change> {
     let mut all = Vec::new();
     for _ in 0..100 {
-        all.extend(changes.next(Duration::from_millis(50)).unwrap());
+        all.extend(
+            changes
+                .next_batch(Duration::from_millis(50))
+                .unwrap()
+                .changes,
+        );
         if all.len() >= count {
             break;
         }
@@ -148,7 +153,7 @@ fn a_document_event_fences_older_terminal_changes() {
     ]
     .concat();
     mock.send(3, Kind::Data, &bytes);
-    let all = changes.next(WAIT).unwrap();
+    let all = changes.next_batch(WAIT).unwrap().changes;
     assert!(
         matches!(all.as_slice(), [Change::Upsert(info)] if info.title.as_deref() == Some("fresh"))
     );

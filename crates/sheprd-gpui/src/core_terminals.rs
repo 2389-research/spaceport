@@ -213,7 +213,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use panes::{Axis, Panes};
-use sheprd_backend::{Backend as _, Spawn, TerminalId, TerminalInfo};
+use sheprd_backend::{Spawn, TerminalId, TerminalInfo};
 use sheprd_client::ConnectTarget;
 use std::collections::HashMap;
 

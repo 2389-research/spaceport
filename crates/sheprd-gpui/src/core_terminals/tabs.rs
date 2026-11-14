@@ -11,7 +11,7 @@ use crate::{
     window::Flash,
 };
 use gpui::{prelude::*, *};
-use sheprd_backend::{Backend as _, Role, Size, TerminalId};
+use sheprd_backend::{Role, Size, TerminalId};
 
 /// The size a terminal starts at, before its pane is laid out.
 const FIRST_SIZE: (u16, u16) = (80, 24);
