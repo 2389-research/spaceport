@@ -204,6 +204,10 @@ impl MenuState {
         if let Some(palette) = self.palette.take() {
             self.palette_resume = Some(palette.resume());
         }
+        // The shortcuts page's search field goes with the page; its
+        // subscription first, since it watches that field.
+        self._keybinds_subscription = None;
+        self.keybinds_search = None;
         self.shortcut_editor = None;
         self.selected = None;
         self.workspace_selected = None;

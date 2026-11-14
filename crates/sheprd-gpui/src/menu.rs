@@ -35,6 +35,8 @@ mod font_size_tests;
 #[cfg(test)]
 mod git_read_removal_tests;
 #[cfg(test)]
+mod reset_tests;
+#[cfg(test)]
 mod sessions_tests;
 #[cfg(test)]
 mod version_mismatch_tests;
