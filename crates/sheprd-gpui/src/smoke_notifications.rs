@@ -23,7 +23,7 @@ pub(super) fn start_notifications(handle: WindowHandle<SheprdWindow>, cx: &mut A
                     let snapshot = view.live.snapshot.clone();
                     view.show_toast_preview(kind, cx);
                     let notice = &view.endpoints[selected].toasts.entries.back().context("missing toast preview")?.1;
-                    if !notice.visible || notice.kind != kind || view.endpoints.iter().any(|e| e.connection.handle.is_some()) {
+                    if !notice.is_visible() || notice.kind != kind || view.endpoints.iter().any(|e| e.connection.handle.is_some()) {
                         bail!("preview did not bypass policy offline");
                     }
                     view.command(Command::OpenNotificationTarget, window, cx);

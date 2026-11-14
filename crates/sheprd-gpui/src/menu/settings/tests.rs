@@ -65,7 +65,7 @@ fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppCon
                 view.endpoints[0].toasts.entries[0].1.title,
                 "enabled ingress"
             );
-            assert!(view.endpoints[0].toasts.entries[0].1.visible);
+            assert!(view.endpoints[0].toasts.entries[0].1.is_visible());
         });
     }
 }
@@ -136,7 +136,7 @@ fn notification_reload_retimes_pending_clears_disabled_and_keeps_failed_settings
             .toasts
             .receive([Notice::new(notification("pending"), Instant::now())]);
         view.tick_toasts(false, Instant::now(), cx);
-        assert!(!view.endpoints[0].toasts.entries[0].1.visible);
+        assert!(!view.endpoints[0].toasts.entries[0].1.is_visible());
     });
     view.update(cx, |view, cx| {
         view.load_gui_config_with(
@@ -158,7 +158,7 @@ fn notification_reload_retimes_pending_clears_disabled_and_keeps_failed_settings
     });
     cx.run_until_parked();
     view.update(cx, |view, cx| {
-        assert!(view.endpoints[0].toasts.entries[0].1.visible);
+        assert!(view.endpoints[0].toasts.entries[0].1.is_visible());
         assert_eq!(view.config.notifications.delay_seconds, 0);
         assert_eq!(view.config.terminal.size, 18.);
         assert_eq!(view.configured_terminal_size, 18.);
@@ -173,7 +173,7 @@ fn notification_reload_retimes_pending_clears_disabled_and_keeps_failed_settings
     cx.run_until_parked();
     view.update(cx, |view, cx| {
         assert!(view.config.notifications.enabled);
-        assert!(view.endpoints[0].toasts.entries[0].1.visible);
+        assert!(view.endpoints[0].toasts.entries[0].1.is_visible());
         assert_eq!(view.config.terminal.size, 20.);
         assert_eq!(view.configured_terminal_size, 18.);
         assert_eq!(view.config.terminal_padding.x.start(), 16.);

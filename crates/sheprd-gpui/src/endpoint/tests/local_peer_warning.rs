@@ -41,7 +41,7 @@ fn local_peer_warning_becomes_a_toast_even_when_notifications_are_off() {
         Instant::now(),
     );
     assert!(
-        !endpoints[0].toasts.entries[0].1.visible,
+        !endpoints[0].toasts.entries[0].1.is_visible(),
         "wait for open menus"
     );
     crate::notifications::tick(
@@ -54,7 +54,7 @@ fn local_peer_warning_becomes_a_toast_even_when_notifications_are_off() {
         None,
         Instant::now(),
     );
-    assert!(endpoints[0].toasts.entries[0].1.visible);
+    assert!(endpoints[0].toasts.entries[0].1.is_visible());
     endpoints[0].stop();
     assert!(endpoints[0].toasts.entries.is_empty());
 }

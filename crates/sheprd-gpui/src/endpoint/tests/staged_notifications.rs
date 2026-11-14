@@ -99,7 +99,7 @@ fn notices_judge_agents_by_metadata_that_waits_for_its_surface() {
         }
         let entries = &endpoints[0].toasts.entries;
         assert!(
-            entries.len() == 1 && entries[0].1.visible,
+            entries.len() == 1 && entries[0].1.is_visible(),
             "{kind:?} for {pane} was dropped"
         );
         // The matching surface commits the metadata without another notice.
