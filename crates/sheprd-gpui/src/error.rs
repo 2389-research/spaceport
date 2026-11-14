@@ -241,9 +241,9 @@ pub enum Error {
     Tunnel(#[from] crate::listening_ports::tunnel::Error),
     #[error("This command action is not supported by this client.")]
     UnsupportedCommand,
-    /// A usage read failed, or the usage shell the port and load scans share.
     #[error(transparent)]
     Updates(#[from] crate::updates::Error),
+    /// A usage read failed, or the host shell a port scan ran its steps through.
     #[error(transparent)]
     Usage(#[from] sheprd_usage::Error),
     #[error(transparent)]
@@ -261,6 +261,14 @@ pub enum Error {
     #[error(transparent)]
     WslDrop(#[from] crate::window::wsl_drop::Error),
     // keep-sorted end
+}
+
+/// A host shell's failure is kept as `sheprd-usage` wraps it, so it reaches
+/// a window by one path whichever feature ran the step.
+impl From<sheprd_usage::shell::Error> for Error {
+    fn from(error: sheprd_usage::shell::Error) -> Self {
+        Self::Usage(error.into())
+    }
 }
 
 mod config;

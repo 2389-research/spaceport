@@ -1,6 +1,9 @@
 // ABOUTME: Bounded shell steps for listening-port inspection over SSH or WSL.
 // ABOUTME: Owns its child and SSH channel and refuses reuse after timeout or read failure.
-use crate::{Error, Result};
+mod error;
+
+pub use error::{Error, Result, START};
+
 use std::{
     io::{Read, Write},
     process::{Child, ChildStdin, Command, Stdio},
@@ -84,7 +87,7 @@ impl Shell {
     /// local shell in tests.
     pub fn start(mut command: Command) -> Result<Self> {
         let process = |source| Error::Process {
-            operation: "start the remote usage shell",
+            operation: START,
             source,
         };
         let mut child = command.spawn().map_err(process)?;
@@ -95,7 +98,7 @@ impl Shell {
         };
         let (sender, output) = mpsc::sync_channel(64);
         let reader = thread::Builder::new()
-            .name("herdr-usage-shell".into())
+            .name("herdr-host-shell".into())
             .spawn(move || {
                 let mut chunk = [0; 8192];
                 loop {

@@ -31,6 +31,7 @@ mod remote;
 mod root;
 #[cfg(unix)]
 mod setup_relay;
+mod shell;
 mod sound;
 mod terminal_attach;
 mod usage;

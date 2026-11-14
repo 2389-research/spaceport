@@ -15,9 +15,11 @@ fn a_name_that_is_not_a_distribution_starts_no_shell() {
     assert!(
         matches!(
             error,
-            Error::Usage(sheprd_usage::Error::Client(sheprd_client::Error::Wsl(
-                sheprd_client::wsl::Error::InvalidDistro
-            )))
+            Error::Usage(sheprd_usage::Error::Shell(
+                sheprd_usage::shell::Error::Client(sheprd_client::Error::Wsl(
+                    sheprd_client::wsl::Error::InvalidDistro
+                ))
+            ))
         ),
         "{error:?}"
     );
@@ -28,7 +30,12 @@ fn a_name_that_is_not_a_distribution_starts_no_shell() {
 fn a_distribution_is_only_scanned_from_windows() {
     let error = cause(&Host::Wsl("Ubuntu".into()));
     assert!(
-        matches!(error, Error::Usage(sheprd_usage::Error::WslHostUnsupported)),
+        matches!(
+            error,
+            Error::Usage(sheprd_usage::Error::Shell(
+                sheprd_usage::shell::Error::WslHostUnsupported
+            ))
+        ),
         "{error:?}"
     );
 }
