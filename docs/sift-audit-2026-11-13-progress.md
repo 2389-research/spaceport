@@ -34,10 +34,17 @@ Read the report for evidence, risks and first slices. Update this file when a fi
 | 5 | SIFT-S09-01 command table | done, in review | #32 | One `catalog!` table generates `Command`, `COMMANDS` and the macOS and Linux defaults. A snapshot of all 107 entries matched before the old lists were removed. |
 | 6 | SIFT-S16-02 live-state accessor | done, in review | #33 | `live_of` and `hosts` at 24 sites. Two loops in `overview.rs` left as they were. |
 | 7 | SIFT-S16-01 endpoint phase | step 1 done, in review | #37 (on #33) | `Phase` enum; status words pinned over 288 combinations. The devices overview now agrees with the picker. Not done: fold `detached` and `outage` into one stored field; the sidebar's online tally still derives separately. |
+| 8 | SIFT-S27-01 settings rows from the catalog | done, in review | #39 | Page text wins. Search now finds seven more rows. The test found three drifted rows beyond the audit's five. |
 | 9 | SIFT-S33-01 spec validator gate | done, in review | #25 | `just check-spec` in `just ci` and in the always-run CI job. `validation.json` stays tracked as a dated record. |
+| 10 | SIFT-S31-01 saved versus live tab schema | done, in review | #38 | Load behaviour pinned and unchanged. Retired payload validators kept so a malformed retired entry still rejects the file. |
 | 11 | SIFT-S26-01 typed footer menu items | done, in review | #34 | 15 rows in one `Item` enum; selectors byte-identical. |
 | 12 | SIFT-S10-01 CLI family table | done, in review | #35 | `Family { name, summary, usage, parse }`; a kept snapshot pins all help text. |
 | 13 | SIFT-S11-01 port-scan shell errors | done, in review | #36 | Shell has its own error type; five provider variants removed. |
+| 14 | SIFT-S22-02 chat menu and its search | done, in review | #41 | Both new tests failed on the old code: the undrawn search field kept the keyboard. |
+| 16 | SIFT-S04-01 Backend trait | done, in review | #40 | `Backend` is the attach seam only. `just test-core` not run. |
+| 17 | SIFT-S17-01 Core pane-tree owner | in progress | `fix/core-pane-tree-owner` (on #38) | Test first; no production change unless the two-window overwrite is proven. |
+| 18 | SIFT-S14-01 build channel | done, in review | #42 | Includes the update-availability part of SIFT-S29-02. Three edits behind the `macos-updater` feature were not compiled locally; the `(macos-15, all)` CI leg is the check. |
+| 19 | SIFT-S15-01 checked settings writer | in progress | `refactor/checked-settings-writer` | Round-trip test first; may stop at a smaller change. |
 | 32 | SIFT-S32-01 upstream release route | done, in review | #29 (on #27) | About 4,700 lines removed, including `nix.yml` and the `sign-artifacts` action. Kept, unsure: the Windows signing helpers, `generate-changelog.sh`'s non-preview mode, `build-icon.py`'s `linux` mode. |
 
 Ranks not listed are not started.
@@ -49,7 +56,16 @@ Two stacks and four independent pull requests:
 - #23, then #27, then #29, then #30 (CI and release tooling).
 - #28, then #31 (SSH removal).
 - #33, then #37 (endpoint state).
-- #24, #25, #26, #32, #34, #35 and #36 stand alone.
+- #38, then the Core pane-tree change if it lands.
+- #24, #25, #26, #32, #34, #35, #36, #39, #40, #41 and #42 stand alone.
+
+## Open questions for Harper
+
+- #37: a host that is stopped but not detached now shows Connecting in the devices overview (it showed Offline). Keep, or map it to Offline?
+- #42: should the signed preview offer or refresh the agent skill on first start? Should an installed preview stop reporting "Locally built app bundle" in bug reports?
+- #38: should a malformed retired tab entry stop rejecting the whole saved file?
+- #29: are the Windows signing helpers, `generate-changelog.sh`'s non-preview mode and `build-icon.py`'s `linux` mode wanted?
+- #30: `CODEOWNERS` is now `* @harperreed`. A team instead?
 
 ## Known local noise
 
