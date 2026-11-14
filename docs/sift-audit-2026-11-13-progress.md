@@ -27,12 +27,21 @@ Read the report for evidence, risks and first slices. Update this file when a fi
 
 | Rank | Finding | State | Branch | Notes |
 |---:|---|---|---|---|
-| 1 | SIFT-S32-02 CI guard | slice A done | `ci/supply-chain-fork-guard` (`2ad2418e4`) | `supply-chain.yml` now runs in the fork. Policy tests, actionlint and zizmor pass. cargo-deny is not installed here, so its first real result comes from CI and may show existing advisory or licence failures. Remaining: the nine `ci.yml` guards, `check-ci.py` defaults, and deleting the four workflows under decision 4. |
-| 2 | SIFT-S07-01 ACP session phase | done | `fix/acp-session-teardown` (`2b592c84c`, `0ed985654`) | `fail` and `exited` share one teardown; five new tests failed before the change and confirmed the audit's inferred defects. Then the three lifecycle fields became one `Phase` enum with no behaviour change. 387 `sheprd-acp` tests pass; fmt and clippy clean. |
-| 3 | SIFT-S25-01 add-device deletion | not started | | Approved. |
+| 1 | SIFT-S32-02 CI guard | partly done | #23 `ci/supply-chain-fork-guard`; #27 `ci/remove-upstream-only-workflows` (stacked on #23) | #23: `supply-chain.yml` runs in the fork. On its first real run both cargo-deny jobs and zizmor passed. #27: deleted `cancel-merged-pr`, `close-low-confidence-prs`, `star-history` with the PR-closure script and tests. Remaining: reduce the nine `ci.yml` guards to the fork identity and fix `check-ci.py` defaults. `nix.yml` goes with rank 32. |
+| 2 | SIFT-S07-01 ACP session phase | done, in review | #24 `fix/acp-session-teardown` | `fail` and `exited` share one teardown; five new tests failed before the change and confirmed the audit's inferred defects. Then the three lifecycle fields became one `Phase` enum with no behaviour change. 387 `sheprd-acp` tests pass; fmt and clippy clean. |
+| 3 | SIFT-S25-01 add-device deletion | in progress | `refactor/remove-ssh-add-device` | Approved. |
 | 4 | SIFT-S03-01 dead SSH entry points | waiting on rank 3 | | Bridge removal approved (decision 2). |
 | 5 | SIFT-S09-01 command table | not started | | Its tests build GPUI. |
 | 6 | SIFT-S16-02 live-state accessor | not started | | |
-| 9 | SIFT-S33-01 spec validator gate | done | `ci/spec-validator-gate` (`82fa05581`) | `just check-spec` in `just ci` and in the always-run CI job. The validator passes on `main`. Evidence references must now name a file in the package. `validation.json` stays tracked: acceptance and the T00 baseline cite it as a dated record. |
+| 9 | SIFT-S33-01 spec validator gate | done, in review | #25 `ci/spec-validator-gate` | `just check-spec` in `just ci` and in the always-run CI job. The validator passes on `main`. Evidence references must now name a file in the package. `validation.json` stays tracked: acceptance and the T00 baseline cite it as a dated record. |
+| 32 | SIFT-S32-01 upstream release route | in progress | `ci/remove-upstream-release-route` (stacked on #27) | Approved (decision 1). Includes `nix.yml`. |
 
 Ranks not listed are not started.
+
+## Known local noise
+
+Five tests in `scripts/release/tests/test_sparkle_native_cache.py` and `test_sparkle_native_regressions.py` fail on the development Mac on an untouched `main` checkout ("Executable-path census returned an unexpected row"). They are not caused by this work. Nobody has checked them on a clean machine yet.
+
+## Build note
+
+GPUI findings share one build directory, `.worktrees/.sift-target`, so only one of them builds at a time.
