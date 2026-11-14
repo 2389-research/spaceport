@@ -67,7 +67,7 @@ fn a_finished_removal_forgets_the_mute_after_its_window_closed(cx: &mut TestAppC
         app.run_until_parked();
         app.update(|cx| muted(cx))
     };
-    let failed = Err(crate::menu::devices::Error::Adding.into());
+    let failed = Err(crate::menu::devices::Error::Busy.into());
     assert!(finish(failed, app), "a failed removal keeps it");
     assert!(!finish(Ok(()), app));
 }
