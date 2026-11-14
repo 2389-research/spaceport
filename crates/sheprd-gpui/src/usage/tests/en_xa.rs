@@ -19,6 +19,7 @@ use sheprd_usage::{
     Text,
     details::{ClaudeAccount, ClaudeAccountStatus, OpenaiDaily},
     model::{Balance, Count, Section, Unit},
+    shell,
 };
 use std::{
     sync::Arc,
@@ -156,7 +157,7 @@ fn readings() -> Vec<Reading> {
             provider: openai,
             report: Some(full(openai).with_detail(daily)),
             // A failed refresh over an older report.
-            error: Some(Arc::new(sheprd_usage::Error::Status(503))),
+            error: Some(Arc::new(shell::Error::Timeout.into())),
         },
         Reading {
             provider: codex,
@@ -166,12 +167,12 @@ fn readings() -> Vec<Reading> {
         Reading {
             provider: copilot,
             report: None,
-            error: Some(Arc::new(sheprd_usage::Error::Status(429))),
+            error: Some(Arc::new(shell::Error::Size.into())),
         },
         Reading {
             provider: unavailable_provider(),
             report: None,
-            error: Some(Arc::new(sheprd_usage::Error::Unavailable)),
+            error: Some(Arc::new(shell::Error::Unreachable.into())),
         },
     ]
 }
@@ -251,7 +252,7 @@ fn usage_shows_only_messages_and_what_services_report() {
             let drawn = recorder.take();
             if provider == unavailable_provider() {
                 // Its own reading has an error and no reported limits.
-                let missing = sheprd_usage::Error::Unavailable.localize();
+                let missing = shell::Error::Unreachable.localize();
                 assert!(
                     drawn.iter().any(|text| text.contains(&missing)),
                     "{drawn:?}"

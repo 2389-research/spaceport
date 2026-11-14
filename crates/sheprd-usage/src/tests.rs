@@ -5,7 +5,7 @@ use super::{
     model::{Account, Kind, Provider, Report, WEEK, Window},
     registry,
 };
-use crate::Error;
+use crate::shell::Error;
 use std::time::{Duration, SystemTime};
 
 mod display_contract;
