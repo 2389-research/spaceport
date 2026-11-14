@@ -663,7 +663,49 @@ impl SheprdWindow {
         } else if page == Page::OpenLink {
             panel = panel.child(self.render_open_link(cx));
         } else {
-            panel = panel.child(self.render_release_notes(cx));
+            // Exhaustive, so a new page fails to compile here until it is
+            // drawn: by a branch above, or by an arm of its own.
+            match page {
+                Page::Update => panel = panel.child(self.render_release_notes(cx)),
+                // `render_menu` draws the application menu before this layer.
+                Page::Application => {}
+                // Drawn by the branches above.
+                Page::About
+                | Page::AddDevice
+                | Page::AddWsl
+                | Page::AgentSkill
+                | Page::ConfirmClose
+                | Page::CoreWorkspaceActions
+                | Page::CoreWorkspaceCreate
+                | Page::CoreWorkspaceDelete
+                | Page::CoreWorkspaceRename
+                | Page::Devices
+                | Page::DeviceTags
+                | Page::DeviceTheme
+                | Page::Dialog(_)
+                | Page::ForwardPort
+                | Page::Group
+                | Page::Host
+                | Page::Keybinds
+                | Page::KillProcesses
+                | Page::Menu
+                | Page::MovePane
+                | Page::MoveTab
+                | Page::OpenLink
+                | Page::Palette
+                | Page::Pane
+                | Page::PaneProcesses
+                | Page::RemoveDevice
+                | Page::RemoveWsl
+                | Page::RenameDevice
+                | Page::RenamePane
+                | Page::RenameTab
+                | Page::Tab
+                | Page::Themes
+                | Page::Usage(_)
+                | Page::VersionMismatch
+                | Page::Workspace => {}
+            }
         }
         // On Windows pages sit above everything GPUI draws, so the menu says
         // what it covers: a dimmed dialog covers the window, a popover its
