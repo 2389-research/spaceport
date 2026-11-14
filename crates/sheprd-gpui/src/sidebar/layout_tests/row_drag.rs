@@ -14,8 +14,8 @@ fn holding_a_workspace_row_lifts_it_and_a_release_picks_the_gap(cx: &mut gpui::T
     let target = |view: &Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext| {
         view.read_with(cx, |view, _| {
             let drag = view.workspace_drag.as_ref()?;
-            assert!(drag.lifted);
-            Some(drag.target.as_ref()?.params())
+            assert!(drag.lifted());
+            Some(drag.target()?.params())
         })
     };
 
@@ -31,13 +31,13 @@ fn holding_a_workspace_row_lifts_it_and_a_release_picks_the_gap(cx: &mut gpui::T
     // Held in place, the row lifts without moving.
     cx.simulate_mouse_down(first.center(), MouseButton::Left, Modifiers::default());
     view.read_with(cx, |view, _| {
-        assert!(!view.workspace_drag.as_ref().unwrap().lifted)
+        assert!(!view.workspace_drag.as_ref().unwrap().lifted())
     });
     cx.executor().advance_clock(crate::reorder::LIFT_DELAY);
     cx.run_until_parked();
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     view.read_with(cx, |view, _| {
-        assert!(view.workspace_drag.as_ref().unwrap().lifted)
+        assert!(view.workspace_drag.as_ref().unwrap().lifted())
     });
     // Over its own place it would move nothing, so nothing shifts.
     assert_eq!(target(&view, cx), None);
@@ -148,9 +148,9 @@ fn check_row_drag(style: crate::config::LayoutMode, row_gap: u16, cx: &mut gpui:
     }
     view.read_with(cx, |view, _| {
         let drag = view.workspace_drag.as_ref().unwrap();
-        assert!(drag.lifted, "{style:?}");
+        assert!(drag.lifted(), "{style:?}");
         assert_eq!(
-            drag.target.as_ref().map(|target| target.params()),
+            drag.target().map(|target| target.params()),
             Some(serde_json::json!({"workspace_ids": ["w0"], "before_workspace_id": "w2"})),
             "{style:?}"
         );
