@@ -7,12 +7,36 @@ use crate::sidebar::native_tests::Target;
 use anyhow::{Context as _, Result, bail, ensure};
 use std::time::{Duration, Instant};
 
+mod ask;
 pub(crate) mod branding;
 pub(crate) mod core_opt_in;
 mod fonts;
 mod themes;
 use fonts::verify_fonts;
 use themes::verify_themes;
+
+async fn settle_preferences(
+    settings: WindowHandle<SettingsWindow>,
+    cx: &mut AsyncApp,
+) -> Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        if settings.update(cx, |view, _, _| !view.busy())? {
+            return settings.update(cx, |view, _, _| {
+                ensure!(
+                    view.error.is_none(),
+                    "preference save failed: {:?}",
+                    view.error
+                );
+                Ok(())
+            })?;
+        }
+        ensure!(Instant::now() < deadline, "preference write did not settle");
+        cx.background_executor()
+            .timer(Duration::from_millis(10))
+            .await;
+    }
+}
 
 /// Where the Sidebar page painted, after the section rows.
 pub(super) const SIDEBAR_PAGE: usize = Section::ALL.len();

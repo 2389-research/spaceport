@@ -5,6 +5,7 @@
 
 mod agents;
 mod app;
+mod ask;
 mod attach;
 mod claude;
 mod cli;
@@ -64,6 +65,13 @@ fn main() -> ExitCode {
             }
         },
         Ok(cli::Parsed::Observe(options)) => match observe::run(options) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("sheprd-acp: {error:#}");
+                ExitCode::FAILURE
+            }
+        },
+        Ok(cli::Parsed::Ask(options)) => match ask::run(options) {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
                 eprintln!("sheprd-acp: {error:#}");

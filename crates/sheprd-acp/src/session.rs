@@ -198,9 +198,16 @@ impl<R: FnMut(Update)> Session<R> {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn transcript(&self) -> &Transcript {
         &self.transcript
+    }
+
+    pub(crate) fn confirm_role(&self, receipt: &serde_json::Value) -> crate::Result<()> {
+        self.outbox.notify("spaceport/ask_role_ready", receipt)
+    }
+
+    pub(crate) fn active_request(&self) -> Option<i64> {
+        self.turn
     }
 
     /// Says something about the session in its transcript.

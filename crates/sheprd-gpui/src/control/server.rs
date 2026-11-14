@@ -7,6 +7,7 @@ mod chat;
 mod events;
 mod hosts;
 mod links;
+pub(crate) mod observation;
 mod settings;
 mod tabs;
 mod work;
@@ -233,6 +234,7 @@ fn named_window(request: &Request) -> Option<u64> {
         Request::Events(call) => call.caller.window,
         Request::Link(call) => call.caller.window,
         Request::Chat(call) => call.caller.window,
+        Request::Observation(call) => call.caller.window,
     }
 }
 
@@ -273,6 +275,7 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
         Request::Events(call) => events::serve(call, incoming, &mut state.watches, cx),
         Request::Link(call) => incoming.respond(links::serve(call, cx)),
         Request::Chat(call) => incoming.respond(chat::serve(call, cx)),
+        Request::Observation(call) => incoming.respond(observation::serve(call, cx)),
     }
 }
 
@@ -288,6 +291,7 @@ pub(crate) fn install(cx: &mut App) {
     };
     tracing::info!(path = %server.path().display(), "Control socket listening");
     let path = server.path().to_owned();
+    cx.set_global(ObservationEndpoint(path.clone()));
     cx.on_app_quit(move |cx| {
         let path = path.clone();
         cx.background_executor()
@@ -318,3 +322,11 @@ pub(crate) fn install(cx: &mut App) {
 
 #[cfg(test)]
 mod tests;
+
+struct ObservationEndpoint(std::path::PathBuf);
+impl gpui::Global for ObservationEndpoint {}
+
+pub(crate) fn observation_endpoint(cx: &App) -> Option<std::path::PathBuf> {
+    cx.try_global::<ObservationEndpoint>()
+        .map(|endpoint| endpoint.0.clone())
+}

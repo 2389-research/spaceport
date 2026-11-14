@@ -124,6 +124,9 @@ pub(crate) struct SheprdWindow {
     pub(crate) agent_sort_modified: bool,
     /// A tab torn off another window, waiting for its host to be listed.
     pub(crate) arrival: Option<tab_tear::TornTab>,
+    pub(crate) ask: Entity<crate::ask::View>,
+    /// Startup policy stays fixed when a saved preference changes.
+    pub(crate) ask_feature: crate::ask::Feature,
     /// The picture and platform appearance `[backdrop]` asks for.
     pub(crate) backdrop: backdrop::State,
     pub(crate) bell: crate::bell::Bell,

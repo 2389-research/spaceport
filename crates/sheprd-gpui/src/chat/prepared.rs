@@ -220,6 +220,37 @@ pub(crate) struct Prepared {
 }
 
 impl Prepared {
+    /// A standalone reading surface shares bounded Markdown lines and selection,
+    /// without requesting pane-owned pictures, diagrams, or project files.
+    pub(crate) fn update_reading_lines(
+        &mut self,
+        transcript: &Transcript,
+        keys: &[(EntryId, u64)],
+    ) {
+        let live: HashSet<EntryId> = keys.iter().map(|(id, _)| *id).collect();
+        self.bodies.retain(|id, _| live.contains(id));
+        for (entry, (_, revision)) in transcript.entries.iter().zip(keys) {
+            if self
+                .bodies
+                .get(&entry.id)
+                .is_some_and(|(prepared, _)| prepared == revision)
+            {
+                continue;
+            }
+            let body = match &entry.kind {
+                EntryKind::Tool(_) => Body::Tool(ToolSummary::default()),
+                kind => {
+                    let Some(text) = kind.text() else {
+                        continue;
+                    };
+                    Body::Message(vec![Part::Text(message_lines(text))])
+                }
+            };
+            self.bodies.insert(entry.id, (*revision, Rc::new(body)));
+        }
+        self.text.update(transcript, keys, &self.bodies);
+    }
+
     pub(crate) fn body(&self, id: EntryId) -> Option<Rc<Body>> {
         self.bodies.get(&id).map(|(_, body)| body.clone())
     }

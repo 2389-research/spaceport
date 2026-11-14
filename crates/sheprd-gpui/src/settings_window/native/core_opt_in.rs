@@ -3,29 +3,6 @@
 use super::*;
 use crate::config::preferences::Preference;
 
-async fn settle(settings: WindowHandle<SettingsWindow>, cx: &mut AsyncApp) -> Result<()> {
-    let deadline = Instant::now() + Duration::from_secs(5);
-    loop {
-        if settings.update(cx, |view, _, _| !view.busy())? {
-            return settings.update(cx, |view, _, _| {
-                ensure!(
-                    view.error.is_none(),
-                    "Core preference save failed: {:?}",
-                    view.error
-                );
-                Ok(())
-            })?;
-        }
-        ensure!(
-            Instant::now() < deadline,
-            "Core preference write did not settle"
-        );
-        cx.background_executor()
-            .timer(Duration::from_millis(10))
-            .await;
-    }
-}
-
 pub(crate) async fn verify(source: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {
     let theme = if std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_LIGHT").is_some() {
         "Catppuccin Latte" // i18n: data
@@ -53,7 +30,7 @@ pub(crate) async fn verify(source: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
         settings.update(cx, |view, _, cx| {
             view.save_preference(Preference::HerdrCoreEnabled(saved), cx)
         })?;
-        settle(settings, cx).await?;
+        settle_preferences(settings, cx).await?;
         let persisted = cx
             .background_spawn(async { Config::load_startup() })
             .await?;
@@ -129,6 +106,7 @@ pub(crate) async fn verify(source: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
         );
         Ok(())
     })??;
+    ask::verify(settings, source, cx).await?;
     settings.update(cx, |_, window, _| window.remove_window())?;
     // i18n: data
     eprintln!("CORE OPT-IN native PASS: persisted edits, restart boundary and disabled fallback");

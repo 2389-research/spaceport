@@ -130,6 +130,44 @@ impl SettingsWindow {
                     },
                 ),
             )
+            .child(
+                ui::row(theme, "general-ask-enabled", fl!("ask-title"))
+                    .description(fl!("ask-settings-enabled-description"))
+                    .switch(self.preference_toggle(
+                        "general-ask-enabled-toggle",
+                        self.config.chat.ask_enabled,
+                        Preference::AskEnabled(!self.config.chat.ask_enabled),
+                        cx,
+                    )),
+            )
+            .children(
+                crate::ask::Feature::restart_required(self.config.chat.ask_enabled, cx).then(
+                    || {
+                        div()
+                            .debug_selector(|| "general-ask-restart".into())
+                            .text_size(px(11.))
+                            .text_color(rgb(theme.subtext()))
+                            .child(fl!("ask-settings-restart"))
+                    },
+                ),
+            )
+            .child(
+                ui::row(theme, "general-ask-agent", fl!("ask-settings-agent"))
+                    .description(fl!("ask-settings-agent-description"))
+                    .control(ui::segmented(
+                        theme,
+                        "general-ask-agent-control",
+                        &[
+                            (None, fl!("ask-settings-unconfigured")),
+                            (Some(crate::config::chat::AskAgent::Pi), fl!("ask-agent-pi")),
+                        ],
+                        Some(self.config.chat.ask_agent),
+                        !self.quitting && self.closing.is_none(),
+                        on_value(cx, |this, agent, _, cx| {
+                            this.save_preference(Preference::AskAgent(agent), cx)
+                        }),
+                    )),
+            )
             .child(ui::section(
                 theme,
                 &fl!("settings-general-section-features"),

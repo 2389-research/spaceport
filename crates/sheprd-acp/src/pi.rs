@@ -29,3 +29,11 @@ pub(crate) fn args(load: Option<&str>) -> Vec<OsString> {
 pub(crate) fn reach() -> Box<dyn Reach> {
     Box::new(Translated(bridge::Bridge::default()))
 }
+
+/// Reaches only the app-owned literal-text role.
+pub(crate) fn restricted_reach(resuming: bool) -> Box<dyn Reach> {
+    let mut bridge = bridge::Bridge::default();
+    bridge.restrict();
+    bridge.resume_next(resuming);
+    Box::new(Translated(bridge))
+}

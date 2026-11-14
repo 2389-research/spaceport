@@ -44,6 +44,7 @@ const BUSY_PULSE: std::time::Duration = std::time::Duration::from_millis(1600);
 fn label(panel: ActivityPanel) -> SharedString {
     match panel {
         ActivityPanel::Overview => fl!("sidebar-activity-overview"),
+        ActivityPanel::Ask => fl!("ask-title"),
         ActivityPanel::Workspaces => fl!("sidebar-activity-workspaces"),
         ActivityPanel::Automations => fl!("sidebar-activity-automations"),
         ActivityPanel::Usage => fl!("sidebar-activity-usage"),
@@ -54,6 +55,7 @@ fn label(panel: ActivityPanel) -> SharedString {
 fn icon(panel: ActivityPanel) -> &'static str {
     match panel {
         ActivityPanel::Overview => "icons/pulse.svg",
+        ActivityPanel::Ask => "icons/ask.svg",
         ActivityPanel::Workspaces => "icons/terminal.svg",
         ActivityPanel::Automations => "icons/automations.svg",
         ActivityPanel::Usage => "icons/chart.svg",
@@ -152,6 +154,7 @@ impl SheprdWindow {
     /// is not listed, and a window left on it shows Workspaces.
     pub(crate) fn activity_panel_listed(&self, panel: ActivityPanel) -> bool {
         match panel {
+            ActivityPanel::Ask => self.ask_feature.enabled(),
             ActivityPanel::Automations => {
                 self.core_enabled() && self.config.sidebar_style.automations
             }
@@ -252,6 +255,9 @@ impl SheprdWindow {
                 .clone();
             window.focus(&focus, cx);
         }
+        if panel == ActivityPanel::Ask {
+            self.ask.update(cx, |view, cx| view.focus(window, cx));
+        }
         cx.notify();
     }
 
@@ -260,6 +266,16 @@ impl SheprdWindow {
         let section = match self.activity_section()? {
             ActivityPanel::Workspaces => return None,
             ActivityPanel::Overview => self.render_overview(cx),
+            ActivityPanel::Ask => {
+                self.ask.update(cx, |view, cx| {
+                    view.appearance(&self.config, &self.theme, cx)
+                });
+                div()
+                    .size_full()
+                    .min_w_0()
+                    .child(self.ask.clone())
+                    .into_any_element()
+            }
             ActivityPanel::Automations => self.render_automations_section(cx),
             ActivityPanel::Usage => self.render_usage_section(cx),
         };
@@ -635,6 +651,7 @@ impl BubbleStyle {
 fn panel_selector(panel: ActivityPanel) -> &'static str {
     match panel {
         ActivityPanel::Overview => "activity-overview",
+        ActivityPanel::Ask => "activity-ask",
         ActivityPanel::Workspaces => "activity-workspaces",
         ActivityPanel::Automations => "activity-automations",
         ActivityPanel::Usage => "activity-usage",

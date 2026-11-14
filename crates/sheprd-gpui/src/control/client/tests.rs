@@ -1,8 +1,10 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 
+mod ask_status;
 mod chat_lines;
 mod core_catalog;
+mod observation;
 mod tab_help;
 
 #[test]

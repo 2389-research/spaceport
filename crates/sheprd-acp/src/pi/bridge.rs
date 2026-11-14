@@ -1,3 +1,5 @@
+// ABOUTME: Translates Pi RPC events into the helper's ACP session contract.
+// ABOUTME: Keeps restricted observation requests active until authoritative run settlement.
 //! The translation between the session's ACP and pi's RPC mode, free of
 //! threads and pipes.
 
@@ -14,6 +16,7 @@ const MODEL: &str = "model";
 const THINKING: &str = "thinking";
 /// pi's thinking levels, for a model that reasons.
 const LEVELS: [&str; 6] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+const MAX_FAILURE_CHARS: usize = 1024;
 /// Models kept from pi's list, so a long list cannot grow the session.
 const MAX_MODELS: usize = 64;
 
@@ -32,6 +35,7 @@ enum Pending {
         value: String,
     },
     Abort,
+    ClearQueue,
 }
 
 /// A dialog an extension opened, waiting for its answer.
@@ -43,6 +47,13 @@ struct Dialog {
     options: Vec<String>,
 }
 
+/// Only final outcome metadata is retained; provider message content stays in the incoming frame.
+#[derive(Debug)]
+struct Attempt {
+    outcome: Result<wire::StopReason, wire::Error>,
+    usage: Value,
+}
+
 #[derive(Debug, Default)]
 pub(super) struct Bridge {
     /// pi's commands, held until the session is open.
@@ -52,6 +63,8 @@ pub(super) struct Bridge {
     calls: HashMap<String, String>,
     /// The message pi is streaming, numbered as pi gives messages no id.
     message: u64,
+    last_attempt: Option<Attempt>,
+    run_started: bool,
     model: Option<String>,
     models: Option<Vec<(String, String, bool)>>,
     next_id: u64,
@@ -61,6 +74,9 @@ pub(super) struct Bridge {
     opening: Option<wire::RequestId>,
     pending: HashMap<String, Pending>,
     prompt: Option<wire::RequestId>,
+    restricted: bool,
+    role_ready: bool,
+    resume_next: bool,
     session: String,
     /// The `get_state` answer, kept until the models are in too.
     state: Option<Value>,
@@ -79,11 +95,21 @@ impl Translator for Bridge {
     fn on_session(&mut self, inbound: Inbound) -> Vec<Out> {
         match inbound {
             Inbound::Request { id, method, params } => self.request(id, &method, params),
+            Inbound::Notification { method, params }
+                if method == "spaceport/ask_role_ready" && self.restricted =>
+            {
+                self.verified_role(&params)
+            }
             Inbound::Notification { method, .. } if method == "session/cancel" => {
                 if self.prompt.is_none() {
                     return Vec::new();
                 }
-                vec![self.command(json!({"type": "abort"}), Pending::Abort)]
+                let mut outs = Vec::new();
+                if self.restricted {
+                    outs.push(self.command(json!({"type": "clear_queue"}), Pending::ClearQueue));
+                }
+                outs.push(self.command(json!({"type": "abort"}), Pending::Abort));
+                outs
             }
             Inbound::Response { id, result } => {
                 let wire::RequestId::Number(id) = id else {
@@ -117,7 +143,11 @@ impl Translator for Bridge {
     fn on_harness(&mut self, message: &Value) -> Vec<Out> {
         match message.get("type").and_then(Value::as_str) {
             Some("response") => self.response(message),
+            Some("extension_ui_request") if self.restricted => vec![Out::Harness(
+                json!({"type":"extension_ui_response", "id":message.get("id"), "cancelled":true}),
+            )],
             Some("extension_ui_request") => self.dialog(message),
+
             Some(kind) => self.event(kind, message),
             None => Vec::new(),
         }
@@ -125,6 +155,32 @@ impl Translator for Bridge {
 }
 
 impl Bridge {
+    pub(super) fn restrict(&mut self) {
+        self.restricted = true;
+    }
+    pub(super) fn resume_next(&mut self, resuming: bool) {
+        self.resume_next = resuming;
+    }
+
+    fn verified_role(&mut self, message: &Value) -> Vec<Out> {
+        let mut tools: Vec<_> = message
+            .get("tools")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_str)
+            .collect();
+        tools.sort_unstable();
+        if message.get("version").and_then(Value::as_str) == Some("1.5.2")
+            && tools == sheprd_chat_protocol::ask::TOOLS
+        {
+            self.role_ready = true;
+            self.opened()
+        } else {
+            Vec::new()
+        }
+    }
+
     fn command(&mut self, mut command: Value, pending: Pending) -> Out {
         self.next_id += 1;
         let id = format!("herdr-{}", self.next_id);
@@ -146,6 +202,9 @@ impl Bridge {
                 self.opened()
             }
             "session/prompt" => self.prompt(id, params),
+            "session/set_config_option" if self.restricted => {
+                vec![out::reply(id, Err(wire::Error::method_not_found()))]
+            }
             "session/set_config_option" => {
                 let Some((setting, value)) = out::chosen(params) else {
                     return vec![out::reply(id, Err(wire::Error::invalid_params()))];
@@ -186,6 +245,9 @@ impl Bridge {
 
     /// Answers the session's opening once pi's state and models are in.
     fn opened(&mut self) -> Vec<Out> {
+        if self.restricted && !self.role_ready {
+            return Vec::new();
+        }
         let (Some(state), Some(_)) = (&self.state, &self.models) else {
             return Vec::new();
         };
@@ -211,6 +273,9 @@ impl Bridge {
     }
 
     fn options(&self) -> Vec<wire::SessionConfigOption> {
+        if self.restricted {
+            return Vec::new();
+        }
         let mut options = Vec::new();
         let models = self.models.as_deref().unwrap_or_default();
         // pi names its model "unknown" until a provider is set up.
@@ -246,6 +311,14 @@ impl Bridge {
         let Ok(request) = serde_json::from_value::<wire::PromptRequest>(params) else {
             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
         };
+        if self.restricted
+            && request
+                .prompt
+                .iter()
+                .any(|block| !matches!(block, wire::ContentBlock::Text(_)))
+        {
+            return vec![out::reply(id, Err(wire::Error::invalid_params()))];
+        }
         if self.prompt.is_some() {
             return vec![out::reply(
                 id,
@@ -274,8 +347,22 @@ impl Bridge {
                 _ => {}
             }
         }
+        self.last_attempt = None;
+        self.run_started = false;
         self.prompt = Some(id);
-        let mut command = json!({"type": "prompt", "message": text.join("\n\n")});
+        let message = text.join("\n\n");
+        let message = if self.restricted {
+            let instruction = if std::mem::take(&mut self.resume_next) {
+                "Continue the unfinished Ask Spaceport question using the saved conversation. Original literal user text follows:"
+            } else {
+                "Spaceport question (literal user text follows):"
+            };
+            format!("{instruction}\n{message}")
+        } else {
+            message
+        };
+        let mut command = json!({"type": "prompt", "message": message});
+
         if !images.is_empty() {
             command["images"] = Value::Array(images);
         }
@@ -305,8 +392,15 @@ impl Bridge {
                     .get("thinkingLevel")
                     .and_then(Value::as_str)
                     .map(str::to_owned);
-                self.state = Some(data);
-                self.opened()
+                self.state = Some(data.clone());
+                let mut outs = self.opened();
+                if self.restricted {
+                    outs.push(Out::Session(Inbound::Notification {
+                        method: "spaceport/ask_state".into(),
+                        params: data,
+                    }));
+                }
+                outs
             }
             Pending::Models => {
                 let models = data
@@ -337,12 +431,36 @@ impl Bridge {
                     Vec::new()
                 }
             }
+            Pending::Prompt
+                if self.restricted
+                    && failed.is_none()
+                    && data.get("disposition").and_then(Value::as_str) != Some("started") =>
+            {
+                let mut outs = vec![
+                    self.command(json!({"type":"clear_queue"}), Pending::ClearQueue),
+                    self.command(json!({"type":"abort"}), Pending::Abort),
+                ];
+                if let Some(id) = self.prompt.take() {
+                    outs.push(out::reply(
+                        id,
+                        Err(out::failure("Pi did not start the observation request.")),
+                    ));
+                }
+                outs
+            }
             Pending::Prompt => match (failed, self.prompt.take()) {
                 (Some(error), Some(id)) => vec![out::reply(id, Err(out::failure(error)))],
                 (None, prompt) => {
                     // Accepted: the turn ends with `agent_end`.
                     self.prompt = prompt;
-                    Vec::new()
+                    if self.restricted {
+                        vec![Out::Session(Inbound::Notification {
+                            method: "spaceport/ask_accepted".into(),
+                            params: json!({"request": self.prompt}),
+                        })]
+                    } else {
+                        Vec::new()
+                    }
                 }
                 (Some(_), None) => Vec::new(),
             },
@@ -365,11 +483,14 @@ impl Bridge {
                     Ok(json!({"configOptions": self.options()})),
                 )]
             }
-            Pending::Abort => Vec::new(),
+            Pending::Abort | Pending::ClearQueue => Vec::new(),
         }
     }
 
     fn commands(&self, commands: Option<&Value>) -> Vec<Out> {
+        if self.restricted {
+            return Vec::new();
+        }
         let commands = commands
             .and_then(Value::as_array)
             .into_iter()
@@ -394,6 +515,11 @@ impl Bridge {
         let session = self.session.clone();
         let text = |key: &str| message.get(key).and_then(Value::as_str);
         match kind {
+            "spaceport_ask_ready" if self.restricted => self.verified_role(message),
+            "agent_start" if self.restricted && self.prompt.is_some() => {
+                self.run_started = true;
+                Vec::new()
+            }
             "message_start"
                 if message.pointer("/message/role").and_then(Value::as_str)
                     == Some("assistant") =>
@@ -445,7 +571,19 @@ impl Bridge {
                     )),
                 )]
             }
+            "agent_end" if self.restricted => {
+                if self.prompt.is_some() && self.run_started {
+                    let mut attempt = Attempt::from_messages(message.get("messages"));
+                    if let Err(error) = &mut attempt.outcome {
+                        error.message = error.message.chars().take(MAX_FAILURE_CHARS).collect();
+                    }
+                    self.last_attempt = Some(attempt);
+                }
+                Vec::new()
+            }
+            "agent_settled" if self.restricted => self.settled(message),
             "agent_end" => self.finished(message.get("messages")),
+
             "compaction_end"
                 if message
                     .get("result")
@@ -473,58 +611,37 @@ impl Bridge {
         }
     }
 
-    /// Ends the prompt from how pi's last answer stopped, and asks for the
-    /// session's usage.
+    /// Legacy Pi roles finish at agent_end; only the qualified restricted role waits for settlement.
     fn finished(&mut self, messages: Option<&Value>) -> Vec<Out> {
+        self.complete(Attempt::from_messages(messages))
+    }
+
+    fn settled(&mut self, message: &Value) -> Vec<Out> {
+        let Some(aborted) = message.get("aborted").and_then(Value::as_bool) else {
+            return Vec::new();
+        };
+        if self.prompt.is_none() || !self.run_started {
+            return Vec::new();
+        }
+        let Some(mut attempt) = self.last_attempt.take() else {
+            return Vec::new();
+        };
+        // The run abort flag can add cancellation, never erase an aborted attempt.
+        if aborted {
+            attempt.outcome = Ok(wire::StopReason::Cancelled);
+        }
+        self.complete(attempt)
+    }
+
+    fn complete(&mut self, attempt: Attempt) -> Vec<Out> {
         let Some(id) = self.prompt.take() else {
             return Vec::new();
         };
+        self.last_attempt = None;
+        self.run_started = false;
         self.calls.clear();
-        let assistant: Vec<&Value> = messages
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-            .filter(|message| message.get("role").and_then(Value::as_str) == Some("assistant"))
-            .collect();
-        let last = assistant.last();
-        let stop = last
-            .and_then(|message| message.get("stopReason"))
-            .and_then(Value::as_str);
-        let result = match stop {
-            Some("aborted") => Ok(wire::StopReason::Cancelled),
-            Some("length") => Ok(wire::StopReason::MaxTokens),
-            Some("error") => Err(last
-                .and_then(|message| message.get("errorMessage"))
-                .and_then(Value::as_str)
-                .unwrap_or("pi stopped with an error.")
-                .to_owned()),
-            _ => Ok(wire::StopReason::EndTurn),
-        };
-        let total = |key: &str| -> u64 {
-            assistant
-                .iter()
-                .filter_map(|message| {
-                    message
-                        .pointer(&format!("/usage/{key}"))
-                        .and_then(Value::as_u64)
-                })
-                .sum()
-        };
-        let tokens = json!({
-            "inputTokens": total("input") + total("cacheWrite"),
-            "cachedReadTokens": total("cacheRead"),
-            "outputTokens": total("output"),
-            "totalTokens": total("input") + total("cacheWrite") + total("cacheRead") + total("output"),
-        });
-        let reply = match result {
-            Ok(stop) => out::to_value(&wire::PromptResponse::new(stop)).map(|mut response| {
-                response["usage"] = tokens;
-                response
-            }),
-            Err(message) => Err(out::failure(message)),
-        };
         vec![
-            out::reply(id, reply),
+            out::reply(id, attempt.reply()),
             self.command(json!({"type": "get_session_stats"}), Pending::Stats),
         ]
     }
@@ -626,6 +743,59 @@ impl Bridge {
             "session/request_permission",
             &request,
         )]
+    }
+}
+
+impl Attempt {
+    fn from_messages(messages: Option<&Value>) -> Self {
+        let assistant: Vec<&Value> = messages
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter(|message| message.get("role").and_then(Value::as_str) == Some("assistant"))
+            .collect();
+        let last = assistant.last();
+        let stop = last
+            .and_then(|message| message.get("stopReason"))
+            .and_then(Value::as_str);
+        let outcome = match stop {
+            Some("aborted") => Ok(wire::StopReason::Cancelled),
+            Some("length") => Ok(wire::StopReason::MaxTokens),
+            Some("error") => Err(out::failure(
+                last.and_then(|message| message.get("errorMessage"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("pi stopped with an error."),
+            )),
+            _ => Ok(wire::StopReason::EndTurn),
+        };
+        let total = |key: &str| -> u64 {
+            assistant
+                .iter()
+                .filter_map(|message| {
+                    message
+                        .pointer(&format!("/usage/{key}"))
+                        .and_then(Value::as_u64)
+                })
+                .sum()
+        };
+        Self {
+            outcome,
+            usage: json!({
+                "inputTokens": total("input") + total("cacheWrite"),
+                "cachedReadTokens": total("cacheRead"),
+                "outputTokens": total("output"),
+                "totalTokens": total("input") + total("cacheWrite") + total("cacheRead") + total("output"),
+            }),
+        }
+    }
+
+    fn reply(self) -> Result<Value, wire::Error> {
+        self.outcome
+            .and_then(|stop| out::to_value(&wire::PromptResponse::new(stop)))
+            .map(|mut response| {
+                response["usage"] = self.usage;
+                response
+            })
     }
 }
 

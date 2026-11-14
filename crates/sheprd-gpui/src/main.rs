@@ -14,6 +14,7 @@ mod app;
 #[cfg(any(target_os = "macos", windows, test))]
 mod app_badge;
 mod app_icon;
+mod ask;
 mod automations;
 mod backdrop;
 mod bell;

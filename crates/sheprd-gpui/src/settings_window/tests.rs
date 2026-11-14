@@ -8,6 +8,7 @@ use std::sync::{
 
 mod activity_bar_windows;
 mod appearance_messages;
+mod ask;
 mod config_watch;
 mod en_xa;
 mod language_picker;

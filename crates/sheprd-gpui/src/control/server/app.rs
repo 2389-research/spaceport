@@ -119,7 +119,8 @@ pub(super) fn status(_: &Caller, cx: &mut App) -> Response {
     } else {
         None
     };
-    Response::Status(Status {
+    Response::Status(Box::new(Status {
+        ask: crate::ask::status(cx),
         version: APP_VERSION.to_owned(),
         protocol: PROTOCOL_VERSION,
         pid: std::process::id(),
@@ -130,7 +131,7 @@ pub(super) fn status(_: &Caller, cx: &mut App) -> Response {
             machine_count,
             error: error.map(str::to_owned),
         },
-    })
+    }))
 }
 
 /// Brings `handle`'s window forward. Deferred: activating a window updates
@@ -300,6 +301,12 @@ pub(super) fn ui(call: Call<UiOp>, cx: &mut App) -> Response {
             })
         }
         UiOp::Panel { panel } => {
+            if panel == crate::sidebar::ActivityPanel::Ask && !view.ask_feature.enabled() {
+                return Response::error(
+                    ErrorCode::Unsupported,
+                    crate::i18n::fl!("ask-feature-disabled"),
+                );
+            }
             if panel == crate::sidebar::ActivityPanel::Automations && !view.core_enabled() {
                 return Response::error(
                     ErrorCode::Unsupported,

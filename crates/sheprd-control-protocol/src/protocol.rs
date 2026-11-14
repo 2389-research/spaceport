@@ -5,6 +5,7 @@ pub mod app;
 pub mod chat;
 pub mod events;
 pub mod hosts;
+pub mod observation;
 pub mod settings;
 pub mod tabs;
 pub mod work;
@@ -39,7 +40,8 @@ use serde::{Deserialize, Serialize};
 /// and retired page kinds from app status/tab replies.
 /// 36: removed custom app updater operations and replies.
 /// 37: removed chat conversion requests and replies.
-pub const PROTOCOL_VERSION: u32 = 37;
+/// 38: Ask activity panel and bounded read-only observations of connected sessions.
+pub const PROTOCOL_VERSION: u32 = 38;
 
 /// Bounds a request and a response alike.
 pub const MAX_MESSAGE: usize = 256 * 1024;
@@ -73,6 +75,8 @@ pub enum Request {
     Link(Call<LinkOp>),
     #[serde(rename = "chat")]
     Chat(Call<chat::ChatOp>),
+    #[serde(rename = "observation")]
+    Observation(Call<observation::Operation>),
 }
 
 /// A `herdr-gpui://` link the shell started a second copy of the app with.
@@ -149,7 +153,7 @@ pub enum ErrorCode {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum Response {
-    Status(app::Status),
+    Status(Box<app::Status>),
     /// Done; the message says what happened, for a person.
     Done {
         message: String,
@@ -174,6 +178,9 @@ pub enum Response {
     },
     Chat {
         reply: chat::Reply,
+    },
+    Observation {
+        reply: observation::Reply,
     },
     Error {
         code: ErrorCode,

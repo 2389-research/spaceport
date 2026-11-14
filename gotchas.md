@@ -1,5 +1,7 @@
 # Gotchas
 
+- 2026-11-13: Ask's new helper-run checkpoint proves attach-listener ownership, not loaded Pi readiness. Wait for live attach Idle and check the exact command Ack before expecting inference acceptance. Pi 1.5.2 `agent_end` may precede retries; only `agent_settled` confirms final settlement. Its false abort flag never converts an aborted attempt to success. The helper consumes its quit marker, so cleanup must permit an absent marker. See `docs/spaceport/notes/ask-spaceport-runtime-evidence.md`.
+
 - 2026-11-13: D69 makes Core opt-in restart-only. Read `core_feature::enabled` or the window Hub's frozen bit for runtime availability. The saved `Config::herdr_core_enabled` may describe the next launch. Preserve hidden Core tabs in Store. Tab labels, IDs and `browser_tab_entries` have separate producers; hiding one does not hide the rendered controls. Missing-Herdr status must also respect the effective mode. See `docs/spaceport/notes/core-opt-in.md`.
 
 - 2026-11-12: GPUI `Window::dispatch_action` queues `cx.defer`; inspecting the destination in the same native update observes old state. Cross an update boundary before asserting the result. Rendering fixtures can call the shared synchronous handler, with separate tests for actual action dispatch. Focus and drawing alone do not flush the deferred action. See `docs/spaceport/evidence/t01-profile-and-chat-docs.md`.

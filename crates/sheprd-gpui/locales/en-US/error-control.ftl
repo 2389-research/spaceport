@@ -4,6 +4,8 @@
 
 error-control-message-size = Control request or response exceeds { $limit } bytes
 error-control-no-response = Spaceport closed the control connection without answering
+error-control-observation-bounds = Observation bounds must be positive and the offset must be bounded
+error-control-observation-target = Observation target must be an app-issued identifier
 error-control-pipe-foreign = { $path } is held by something other than this user's Spaceport, so it is not used
 error-control-socket-in-use = Another Spaceport already serves { $path }
 error-control-unavailable = Spaceport is not running, or its control socket { $path } is unreachable: { $error }

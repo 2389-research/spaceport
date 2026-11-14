@@ -15,6 +15,8 @@ pub enum Error {
     MessageSize { limit: usize },
     #[error("Spaceport closed the control connection without answering")]
     NoResponse,
+    #[error(transparent)]
+    Observation(#[from] crate::protocol::observation::Error),
     #[error("{} is held by something other than this user's Spaceport, so it is not used", path.display())]
     PipeForeign { path: PathBuf },
     #[error("{message}")]

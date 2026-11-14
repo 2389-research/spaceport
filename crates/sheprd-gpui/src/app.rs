@@ -379,6 +379,10 @@ pub(crate) fn run() -> std::process::ExitCode {
     }
     #[cfg(feature = "integration-test")]
     let integration_test = mode == LaunchMode::Integration;
+    #[cfg(all(feature = "integration-test", target_os = "macos"))]
+    let ask_provider_fixture = integration_test && smoke::ask_provider::enabled();
+    #[cfg(not(all(feature = "integration-test", target_os = "macos")))]
+    let ask_provider_fixture = false;
     #[cfg(feature = "integration-test")]
     let sidebar_test = mode == LaunchMode::Sidebar;
     #[cfg(feature = "integration-test")]
@@ -499,12 +503,18 @@ pub(crate) fn run() -> std::process::ExitCode {
                 crate::link::follow::defer(link, cx);
             }
             // Only the user's own app answers agents; native test modes stay private.
-            if mode == LaunchMode::Normal {
+            if mode == LaunchMode::Normal || ask_provider_fixture {
                 crate::control::install(cx);
+            }
+            if mode == LaunchMode::Normal {
                 crate::window::system_notifications::install(cx);
                 crate::device_tags::DeviceTags::install(cx);
             }
             cx.set_global(appearance.select(light_appearance(cx)));
+            if mode == LaunchMode::Normal || ask_provider_fixture {
+                let chat = &cx.global::<InitialAppearance>().config.chat;
+                crate::ask::install(chat.ask_enabled, chat.ask_agent.is_some(), cx);
+            }
             // Only the user's own app follows their saved SSH host choices.
             if mode == LaunchMode::Normal {
                 let ssh = cx.global::<InitialAppearance>().config.ssh.clone();

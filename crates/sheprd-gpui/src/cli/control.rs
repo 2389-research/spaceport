@@ -5,6 +5,7 @@
 mod app;
 mod chat;
 mod hosts;
+mod observation;
 mod settings;
 mod tabs;
 mod work;
@@ -47,6 +48,7 @@ pub enum ControlCommand {
     Tab(TabCommand),
     Devices,
     Chat(ChatCommand),
+    Observation(sheprd_control_protocol::protocol::observation::Operation),
     Notes(NotesCommand),
     Worktree(WorktreeCommand),
     Host(HostCommand),
@@ -104,6 +106,10 @@ pub const FAMILIES: &[(&str, &str)] = &[
     ("ui", "Sidebar, status bar, and terminal font size"),
     ("tab", "List, focus, or close the app's own tabs"),
     ("devices", "Open the Devices overview"),
+    (
+        "observation",
+        "Read bounded prepared session, conversation, and terminal observations",
+    ),
     (
         "chat",
         "Native views of sheprd-acp chats: start one, list them, show or hide one",
@@ -222,6 +228,7 @@ fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliE
             ControlCommand::Devices
         }
         "chat" => ControlCommand::Chat(chat::chat(args)?),
+        "observation" => ControlCommand::Observation(observation::parse(args)?),
         "notes" => ControlCommand::Notes(work::notes(args)?),
         "worktree" => ControlCommand::Worktree(work::worktree(args)?),
         "host" => ControlCommand::Host(hosts::host(args)?),

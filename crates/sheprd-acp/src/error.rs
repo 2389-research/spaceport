@@ -16,6 +16,8 @@ pub enum Error {
     },
     #[error("the agent stopped reading its input")]
     AgentStalled,
+    #[error(transparent)]
+    Ask(#[from] crate::ask::error::Error),
     #[error("could not listen for {app} at {path}", app = sheprd_client::APP_NAME)]
     Bind {
         path: std::path::PathBuf,

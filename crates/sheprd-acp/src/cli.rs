@@ -37,6 +37,7 @@ pub enum Error {
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Parsed {
     Run(Options),
+    Ask(AskOptions),
     /// Carry a client connection to a running chat over stdin and stdout.
     Connect(sheprd_chat_protocol::EndpointId),
     /// Watch an existing CLI transcript without starting or driving an agent.
@@ -47,6 +48,14 @@ pub(crate) enum Parsed {
     Agents,
     Help,
     Version,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct AskOptions {
+    pub broker: PathBuf,
+    pub conversation: uuid::Uuid,
+    pub endpoint: sheprd_chat_protocol::EndpointId,
+    pub state_dir: PathBuf,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -109,6 +118,8 @@ Usage:
   sheprd-acp [OPTIONS] -- COMMAND [ARGS...]
   sheprd-acp connect ID   Attach stdin and stdout to the running chat ID
                          ({app} runs this over SSH for remote chats)
+  sheprd-acp ask --state-dir DIR --endpoint ID --broker PATH --conversation UUID
+                        Run the app-owned observation-only Pi conversation.
   sheprd-acp agents       List the agents installed here, one per line
   sheprd-acp observe codex|claude SESSION_ID PID START_TICKS [--pane ID]
                         Render the existing Linux agent over stdin/stdout.
@@ -160,6 +171,10 @@ pub(crate) fn parse(args: impl IntoIterator<Item = OsString>) -> Result<Parsed, 
     let mut args = args.into_iter().peekable();
     // A subcommand word is consumed before its own arguments are parsed.
     match args.peek().and_then(|arg| arg.to_str()) {
+        Some("ask") => {
+            args.next();
+            return ask(args);
+        }
         Some("agents") => {
             args.next();
             return match args.next() {
@@ -320,6 +335,44 @@ fn observe(args: impl Iterator<Item = OsString>) -> Result<Parsed, Error> {
         pid,
         session,
         started,
+    }))
+}
+
+fn ask(args: impl Iterator<Item = OsString>) -> Result<Parsed, Error> {
+    let Some(mut args) = unless_help(args) else {
+        return Ok(Parsed::Help);
+    };
+    let (mut broker, mut conversation, mut endpoint, mut state_dir) = (None, None, None, None);
+    while let Some(arg) = args.next() {
+        match arg.to_str() {
+            Some("--broker") if broker.is_none() => {
+                broker = Some(PathBuf::from(
+                    args.next().ok_or(Error::MissingValue("--broker"))?,
+                ))
+            }
+            Some("--state-dir") if state_dir.is_none() => {
+                state_dir = Some(PathBuf::from(
+                    args.next().ok_or(Error::MissingValue("--state-dir"))?,
+                ))
+            }
+            Some("--endpoint") if endpoint.is_none() => {
+                let id = utf8(args.next(), "--endpoint")?;
+                endpoint = Some(id.parse().map_err(|_| Error::InvalidEndpoint(id))?);
+            }
+            Some("--conversation") if conversation.is_none() => {
+                conversation = Some(
+                    uuid::Uuid::parse_str(&utf8(args.next(), "--conversation")?)
+                        .map_err(|_| Error::ObserveIdentity)?,
+                );
+            }
+            _ => return Err(Error::UnknownOption(arg)),
+        }
+    }
+    Ok(Parsed::Ask(AskOptions {
+        broker: broker.ok_or(Error::MissingValue("--broker"))?,
+        conversation: conversation.ok_or(Error::MissingValue("--conversation"))?,
+        endpoint: endpoint.ok_or(Error::MissingValue("--endpoint"))?,
+        state_dir: state_dir.ok_or(Error::MissingValue("--state-dir"))?,
     }))
 }
 

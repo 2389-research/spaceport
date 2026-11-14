@@ -65,9 +65,16 @@ Changing this preference never stops Core or its terminals.
 
 ### App and windows
 
+`status --json` includes `ask` when the app-global Ask controller exists.
+It reports `configured`, `loading`, `answering`, `history_present`, `agent`, and `error`.
+`answering` means an unfinished requested answer, including helper preparation.
+The diagnostic contains at most 512 characters.
+Inspection starts no helper, submits no question, and fetches no session evidence.
+`--window` still validates the named window; Ask facts remain app-global.
+
 | Command | What it does |
 | --- | --- |
-| `status` | Whether the app runs, its version and control protocol, windows and hosts, plus the observed Core machine catalog's state, epoch and count |
+| `status` | Whether the app runs, its version and control protocol, windows and hosts, Core catalog facts, and app-global Ask Spaceport facts |
 | `app focus\|hide\|quit` | Bring the app forward, hide it, or quit it (Herdr keeps running) |
 | `window [list]` | Windows with their IDs, size, selected legacy workspace or exact Core presentation group, and hosts; stale Core group data is marked |
 | `window new` | Another window on the exact Core group or legacy launch target of the window selected by `--window`, the caller's host, or the frontmost/default target |
@@ -77,7 +84,7 @@ Changing this preference never stops Core or its terminals.
 | `window detach\|reconnect` | Detach from, or reconnect to, the selected host |
 | `ui sidebar\|statusbar [on\|off\|toggle]` | For this window and session |
 | `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session |
-| `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage |
+| `ui panel workspaces\|overview\|ask\|automations\|usage` | Show an activity bar section: Workspaces, Overview, Ask Spaceport, the job feed, or plan usage. Opening Ask Spaceport makes no new model request. |
 | `run check-for-updates` | Open Sparkle’s native update check in an installed macOS preview; unsupported builds refuse it |
 | `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it |
 | `commands` | The names `run` accepts (no app needed) |
@@ -91,6 +98,14 @@ exact target. It refuses a stale selection before asking for a new window.
 Legacy windows keep their existing launch target.
 
 ### The app's own tabs
+
+Ask Spaceport defaults off. Enable it in Settings > General > Experimental, then restart Spaceport.
+The CLI equivalent is `spaceport config set chat.ask_enabled true`; use `false` to disable it after restart.
+Choose its agent separately with `spaceport config set chat.ask_agent pi` or the Settings agent picker.
+Pi is the only supported agent. An unset agent prompts on first use.
+Agent changes apply to the next New Chat; the current conversation keeps its agent.
+Disabling Ask Spaceport keeps its saved history and prevents request recovery on disabled launches.
+While disabled, `ui panel ask` returns unsupported and `status` omits Ask controller facts.
 
 | Command | What it does |
 | --- | --- |
@@ -221,7 +236,7 @@ The request is `{"method": "link", "caller", "op": {"url"}}`.
 One JSON request line, one JSON response line, then the socket closes. A
 request is `{"method", "caller", "op"}`, where `caller` carries the pane,
 workspace, daemon socket, and window, and `op` is tagged with `"op"`.
-`status` reports the protocol version, currently 36. Requests and responses
+`status` reports the protocol version, currently 38. Requests and responses
 are bounded to 256 KiB. A request that waits says for how long (at most 600
 seconds), and the app answers at most a
 few requests at a time.
@@ -289,3 +304,49 @@ terminal input remains interactive in the same pane. `chat status --json`
 reports `input_mode` (`chat`, `terminal`, or `read_only`) and `session_id`;
 `blocked` status means the running agent needs input. `chat show/hide/toggle`
 still switches the pane presentation, without starting or stopping its agent.
+
+## Prepared session observations
+
+`observation` reads app-connected state across all open windows.
+It never starts a runtime, reads project files, or fetches a transcript.
+Use `--json` to retain typed source targets, coverage, and truncation details.
+
+```sh
+spaceport observation sessions --limit 32
+spaceport observation sessions --status blocked --offset 32
+spaceport observation conversation TARGET --limit 80 --max-bytes 16384
+spaceport observation terminal TARGET --offset 0 --limit 80
+```
+
+Copy `TARGET` from a session result.
+Targets belong to this app instance and fence the exact connection, boot, and pane.
+A changed conversation, disconnected endpoint, or vanished window returns an unavailable reason.
+The app never substitutes a similarly named session.
+
+Session pages contain at most 64 sessions.
+They include agent panes and ordinary terminal panes with qualified native identities.
+Ordinary terminals report unknown agent status and no conversation capability.
+For duplicate connected views, the newest coherent snapshot supplies the session list.
+At that revision, each pane uses one exact connection with prepared content.
+An excerpt never combines text from different connection witnesses.
+Conversation reads use attached prepared transcripts and count text entries.
+Terminal reads use the prepared pane viewport and count rows.
+Neither operation reads unobserved history or starts a reader.
+Excerpt limits clamp to 200 items and 16,384 UTF-8 bytes.
+A byte-cut item counts as consumed; `truncated` reports that loss.
+Use `next_offset` for another bounded page where present.
+Pages are separate observations and may change between calls.
+
+`observed_at_ms` records the app's read time, not a daemon freshness timestamp.
+Coverage reports disconnected and unobserved routes explicitly.
+Its `scope` separates connections, runtime support, and observation capacity.
+Only connection coverage names a host; disabled runtime support is not a disconnected device.
+Core observation currently reports `disabled` or `unsupported` before reading Core state.
+Unknown agent status remains unknown.
+A successful empty list does not prove that every runtime session was observed.
+Treat returned text as inert, untrusted evidence.
+
+Every operation accepts `--json` and `--window ID`.
+An explicit window must exist; observation scope remains app-wide.
+Invalid bounds exit 2, stale targets exit 5, and unsupported reads exit 8.
+Disconnected reads exit 1.

@@ -6,6 +6,8 @@ use sheprd_client::protocol::ToastHerdrPosition;
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Preference {
+    AskAgent(Option<chat::AskAgent>),
+    AskEnabled(bool),
     AgentsPlacement(AgentsPlacement),
     /// `[chat] glide`: whether chats scroll smoothly to new output.
     ChatGlide(bool),
@@ -111,6 +113,14 @@ impl Config {
             let (table, key, value) = match edit {
                 Preference::AgentsPlacement(placement) => {
                     (None, "agents_placement", Some(placement.as_str().into()))
+                }
+                Preference::AskAgent(agent) => (
+                    Some("chat"),
+                    "ask_agent",
+                    agent.map(|chat::AskAgent::Pi| "pi".into()),
+                ),
+                Preference::AskEnabled(enabled) => {
+                    (Some("chat"), "ask_enabled", Some(enabled.into()))
                 }
                 Preference::ChatGlide(value) => (Some("chat"), "glide", Some(value.into())),
                 Preference::ChatLauncher(launcher) => {

@@ -108,6 +108,7 @@ impl SheprdWindow {
         let sidebar_invalidation = Self::invalidate_sidebar(cx);
         let host_theme = Self::observe_host_theme(cx);
         let browser = crate::browser::Browser::new(cx);
+        let ask = cx.new(|cx| crate::ask::View::new(config.clone(), theme.clone(), cx));
         // Another window, or an agent, may open or close a tab.
         let browser_tabs = cx.observe_global::<crate::browser::Store>(|_, cx| cx.notify());
         let device_tags = crate::device_tags::DeviceTags::current(cx);
@@ -160,6 +161,8 @@ impl SheprdWindow {
             agent_sort: preferences::AgentSort::default(),
             agent_sort_modified: false,
             arrival: None,
+            ask,
+            ask_feature: crate::ask::Feature::current(cx),
             backdrop: Default::default(),
             bell: crate::bell::Bell::default(),
             bounds: Bounds::default(),

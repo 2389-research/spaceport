@@ -7,6 +7,8 @@
 
 mod client;
 mod server;
+pub(crate) use server::observation::open_source as open_observation_source;
+pub(crate) use server::observation_endpoint;
 
 use crate::SheprdWindow;
 #[cfg(windows)]

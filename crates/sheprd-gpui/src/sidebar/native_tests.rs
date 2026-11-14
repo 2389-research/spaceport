@@ -18,7 +18,7 @@ use std::{marker::PhantomData, rc::Rc};
 pub(crate) struct HostArrows(pub std::collections::BTreeMap<String, gpui::Bounds<gpui::Pixels>>);
 impl gpui::Global for HostArrows {}
 
-pub(super) fn host_arrow(id: String) -> impl gpui::IntoElement {
+pub(crate) fn host_arrow(id: String) -> impl gpui::IntoElement {
     use gpui::Styled;
     gpui::canvas(
         |_, _, _| (),

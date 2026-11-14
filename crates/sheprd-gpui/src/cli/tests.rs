@@ -1,10 +1,12 @@
 use super::*;
 
+mod ask_status;
 mod chat;
 mod control_commands;
 mod development_links;
 mod language;
 mod links;
+mod observation;
 mod removed_automation;
 mod removed_browser;
 mod removed_checkpoint;

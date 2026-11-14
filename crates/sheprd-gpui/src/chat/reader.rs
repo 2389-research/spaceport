@@ -13,9 +13,51 @@ pub(crate) struct Drag {
     stepped: Option<Instant>,
 }
 
+impl Drag {
+    pub(crate) fn point(&self) -> Option<Point<Pixels>> {
+        self.point
+    }
+
+    pub(crate) fn move_to(&mut self, point: Point<Pixels>) {
+        self.point = Some(point);
+    }
+
+    pub(crate) fn clear(&mut self) {
+        *self = Self::default();
+    }
+
+    /// A stationary drag scrolls virtualized rows at a bounded, frame-independent speed.
+    pub(crate) fn scroll(&mut self, list: &ListState, now: Instant) -> bool {
+        let Some(point) = self.point else {
+            return false;
+        };
+        let viewport = list.viewport_bounds();
+        if viewport.size.height <= px(0.) {
+            return false;
+        }
+        let edge = px(24.);
+        let outside = if point.y < viewport.top() + edge {
+            f32::from(point.y - viewport.top() - edge)
+        } else if point.y > viewport.bottom() - edge {
+            f32::from(point.y - viewport.bottom() + edge)
+        } else {
+            self.stepped = None;
+            return false;
+        };
+        let seconds = self.stepped.map_or(1. / 60., |last| {
+            now.saturating_duration_since(last).as_secs_f32().min(0.05)
+        });
+        self.stepped = Some(now);
+        let distance = outside.clamp(-150., 150.) * 6. * seconds;
+        let before = list.logical_scroll_top();
+        list.scroll_by(px(distance));
+        let after = list.logical_scroll_top();
+        after.item_ix != before.item_ix || after.offset_in_item != before.offset_in_item
+    }
+}
+
 impl ChatPane {
-    /// A held pointer beyond the list continues selecting through virtualized
-    /// rows, at a bounded speed independent of frame rate.
+    /// A held pointer keeps selecting through newly mounted transcript rows.
     pub(super) fn tick_text_drag(&mut self, now: Instant) -> bool {
         let Some(point) = self.text_drag.point else {
             return false;
@@ -24,28 +66,7 @@ impl ChatPane {
             .text_geometry
             .hit(point)
             .is_some_and(|caret| self.selection.drag(self.prepared.text(), caret));
-        let viewport = self.list.viewport_bounds();
-        if viewport.size.height <= px(0.) {
-            return selected;
-        }
-        let edge = px(24.);
-        let outside = if point.y < viewport.top() + edge {
-            f32::from(point.y - viewport.top() - edge)
-        } else if point.y > viewport.bottom() - edge {
-            f32::from(point.y - viewport.bottom() + edge)
-        } else {
-            self.text_drag.stepped = None;
-            return selected;
-        };
-        let seconds = self.text_drag.stepped.map_or(1. / 60., |last| {
-            now.saturating_duration_since(last).as_secs_f32().min(0.05)
-        });
-        self.text_drag.stepped = Some(now);
-        let distance = outside.clamp(-150., 150.) * 6. * seconds;
-        let before = self.list.logical_scroll_top();
-        self.list.scroll_by(px(distance));
-        let after = self.list.logical_scroll_top();
-        selected || after.item_ix != before.item_ix || after.offset_in_item != before.offset_in_item
+        self.text_drag.scroll(&self.list, now) || selected
     }
 }
 

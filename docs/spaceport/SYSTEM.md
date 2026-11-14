@@ -12,6 +12,14 @@ Spaceport should give an operator—human or agent—the same reliable loop:
 
 The central invariant is **one authority per fact, one owner per side effect, multiple views of the same semantics**. Two clients can render the same terminal without owning two processes. Two windows can display a conversation without maintaining independent permission state. A CLI can select a pane without synthesizing keystrokes against a guessed window.
 
+D70 adds the narrowly scoped Ask Spaceport design.
+One app-owned controller retains its conversation and unfinished request across views and restarts.
+Its agent reads bounded session evidence through the existing private control surface.
+The installed agent owns model routing and sign-in.
+Observed runtimes and coding agents retain their existing ownership and lifecycle.
+This does not add general runtime memory, scheduling, or a new network service.
+Tool enforcement and turn recovery require separate implementation evidence.
+
 ## 2. Tower of abstractions
 
 ```text

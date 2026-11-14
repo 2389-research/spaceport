@@ -70,6 +70,13 @@ pub use sidebar_fixture::start_sidebar;
 #[path = "smoke_local_controls.rs"]
 mod local_controls;
 
+#[path = "smoke_ask.rs"]
+mod ask_fixture;
+
+#[cfg(target_os = "macos")]
+#[path = "smoke_ask_provider.rs"]
+pub(crate) mod ask_provider;
+
 #[path = "smoke_about.rs"]
 mod about;
 
@@ -251,6 +258,11 @@ fn create_external_workspace(
 }
 
 pub fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    #[cfg(target_os = "macos")]
+    if ask_provider::enabled() {
+        ask_provider::start(handle, cx);
+        return;
+    }
     let timer = cx.background_executor().clone();
     cx.spawn(async move |cx| {
         let mut step = 0;

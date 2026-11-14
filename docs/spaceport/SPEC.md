@@ -44,6 +44,15 @@ Keep current emulation, cell model, rendering, input encoding, selection, copy/p
 
 Keep rich rendering and the existing host-side adapter/attach contract where verified compatible. Starting a host-side adapter is a selected-runtime terminal launch, not a desktop-owned agent child. Showing/hiding a chat is presentation-only: no kill/resume/convert side effects. Do not expose model/provider configuration or automatically deploy helpers. Prove local and remote routes for each supported runtime separately. A remote-chat gap must not be hidden by a new Spaceport server or by labeling terminal-only support as full native-chat parity. [D08, D23, D27–D28, D32, D56, D58; S05, S06]
 
+D70 separately approves the design of Ask Spaceport, an app-owned local session-observer chat.
+Keep it separate from Overview and ordinary terminal-attached chats.
+Limit its tools to bounded, read-only session observations with exact source links.
+Keep provider setup and sign-in owned by the installed agent.
+Persist its conversation and reconcile unfinished requests before automatic continuation on return.
+Explicit Stop, completed answers, and unknown outcomes must not trigger blind resubmission.
+Qualify tool enforcement, cancellation, persistence, and recovery before enabling each agent.
+Do not control or restart observed coding sessions. [D70]
+
 ### SP-010 — Capability-correct interaction
 
 Offer prompt composition, attachments, permission answers, queues and slash-command affordances only when their backing session supports them. Keep permission prompts distinct from ordinary messages and descriptive tool-call output. Unknown agent status is unknown, not idle. Input targets the exact runtime/terminal/conversation instance the user or caller selected. [D11, D23, D28, D32, D58]

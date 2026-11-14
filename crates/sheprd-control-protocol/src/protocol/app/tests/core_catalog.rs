@@ -3,18 +3,19 @@ use crate::protocol::Response;
 
 #[test]
 fn status_core_catalog_keeps_unknown_distinct_from_an_empty_result() {
-    let current = Response::Status(Status {
+    let current = Response::Status(Box::new(Status {
         version: "0.1".into(),
         protocol: crate::protocol::PROTOCOL_VERSION,
         pid: 1,
         windows: vec![],
+        ask: None,
         core_catalog: CoreCatalog {
             epoch: Some(7),
             state: CoreCatalogState::Current,
             machine_count: Some(0),
             error: None,
         },
-    });
+    }));
     let value = serde_json::to_value(&current).unwrap();
     assert!(value.get("browser_tabs").is_none());
     assert_eq!(value["core_catalog"]["state"], "current");

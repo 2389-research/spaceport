@@ -42,6 +42,9 @@ const RESERVED: [&str; 1] = [crate::chat::PROGRAM_ENV];
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(default, deny_unknown_fields)]
 pub struct ChatConfig {
+    pub ask_agent: Option<AskAgent>,
+    /// Opt in to Ask Spaceport on the next application launch.
+    pub ask_enabled: bool,
     pub env: BTreeMap<String, String>,
     pub glide: bool,
     pub launcher: ChatLauncher,
@@ -59,6 +62,8 @@ pub struct ChatConfig {
 impl Default for ChatConfig {
     fn default() -> Self {
         Self {
+            ask_agent: None,
+            ask_enabled: false,
             env: BTreeMap::new(),
             glide: false,
             launcher: ChatLauncher::default(),
@@ -68,6 +73,13 @@ impl Default for ChatConfig {
             render_existing: false,
         }
     }
+}
+
+/// Agents with an enforced read-only Ask role.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AskAgent {
+    Pi,
 }
 
 fn deserialize_max_width<'de, D: serde::Deserializer<'de>>(

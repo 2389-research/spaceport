@@ -557,7 +557,10 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
     let mark_layer = cx.new(|cx| crate::mark_layer::MarkLayer::new(window, hosts, cx));
     let focus = cx.focus_handle();
     let terminal_focus = SheprdWindow::leave_region_with_terminal(&focus, window, cx);
+    let ask = cx.new(|cx| crate::ask::View::new(Default::default(), Default::default(), cx));
     SheprdWindow {
+        ask_feature: crate::ask::Feature::current(cx),
+        ask,
         _terminal_focus: terminal_focus,
         chrome_region: None,
         chats: Default::default(),

@@ -13,7 +13,7 @@ Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
 fn family(name: &str) -> &'static str {
     match name {
         "status" => {
-            "spaceport status\n    Whether Spaceport runs, its version, protocol, windows, hosts, and the\n    current Core machine catalog's freshness and count. No machine lookup runs.\n    Exits 3 when it does not run."
+            "spaceport status\n    Whether Spaceport runs, its version, protocol, windows, hosts, and the\n    current Core machine catalog's freshness and count. Also reports Ask Spaceport\n    configuration, loading, active answer, retained history, agent, and error.\n    No machine lookup runs. No question is submitted. Exits 3 when it does not run."
         }
         "skill" => "spaceport skill\n    Print the agent skill describing these commands.",
         "app" => {
@@ -23,7 +23,7 @@ fn family(name: &str) -> &'static str {
             "spaceport window [list]\n    The app's windows, with IDs for --window.\nspaceport window new\n    Open another window on the selected window's exact Core group or legacy\n    launch target, the caller's host, or the frontmost/default target. A\n    stale Core group is refused before the window opens.\nspaceport window focus ID\nspaceport window fullscreen [on|off|toggle]\nspaceport window size [WIDTHxHEIGHT]\n    Print the window's size, or resize it. Windows cannot be moved.\nspaceport window detach|reconnect\n    Detach from, or reconnect to, the window's selected host."
         }
         "ui" => {
-            "spaceport ui sidebar [on|off|toggle]\nspaceport ui statusbar [on|off|toggle]\nspaceport ui font-size +|-|reset|POINTS\nspaceport ui panel workspaces|overview|automations|usage\n    For this window and session; settings are changed with `config`."
+            "spaceport ui sidebar [on|off|toggle]\nspaceport ui statusbar [on|off|toggle]\nspaceport ui font-size +|-|reset|POINTS\nspaceport ui panel workspaces|overview|ask|automations|usage\n    For this window and session; settings are changed with `config`."
         }
         "tab" => {
             "spaceport tab [list]\n    The app's own tabs: pages, Devices, Core terminals.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nspaceport tab focus|close ID\n    Show a tab, switching to its workspace, or close it."
@@ -33,6 +33,9 @@ fn family(name: &str) -> &'static str {
         }
         "chat" => {
             "spaceport chat [status]\n    The window's sheprd-acp chat panes on this machine or an SSH host: pane, agent, status,\n    and whether the native chat view or the terminal shows. Exits 4 when\n    there are none.\nspaceport chat show|hide|toggle [--pane ID]\n    Show the native chat view over the pane, or its terminal, for this\n    window. The pane is the caller's own, else the focused one. Exits 5 when\n    it runs no chat the window can show.\nspaceport chat new AGENT [--pane ID]\n    Open a tab running a sheprd-acp chat with AGENT (claude, codex, copilot,\n    gemini, opencode, or pi) in the workspace and folder of the pane, else the\n    caller's own. On an SSH host the tab runs that host's sheprd-acp, from\n    ~/.herdr/bin or PATH. With no Herdr pane to go by, a Herdr 2 tab in the\n    active group splits its pane in use with the chat instead. The chat view\n    attaches once the program starts.\n    Exits 8 when ACP chats are off in Settings, sheprd-acp is missing here,\n    the host cannot be reached, or the agent is not installed there."
+        }
+        "observation" => {
+            "spaceport observation sessions [--offset N] [--limit N] [--status idle|working|blocked|done|unknown]\nspaceport observation conversation TARGET [--offset N] [--limit N] [--max-bytes N]\nspaceport observation terminal TARGET [--offset N] [--limit N] [--max-bytes N]\n    Read prepared connected session state across all app windows. TARGET comes\n    from sessions and names one exact connection and daemon boot. No new I/O\n    or session startup runs. Limits clamp to 64 sessions, 200 text items, and\n    16384 excerpt bytes. Conversation offsets count text entries; terminal\n    offsets count viewport rows. Truncated items are consumed. Coverage\n    reports unavailable routes; app read time is not daemon freshness.\n    --window validates that window exists; observation scope remains app-wide."
         }
         "notes" => {
             "spaceport notes [list]\n    Every worktree note, most recently edited first.\nspaceport notes get|clear\nspaceport notes set TEXT...\n    The note on the caller's checkout (its repository and branch), or the\n    focused workspace's outside a Herdr pane. Notes are one line of at most\n    500 characters. `list` and `get` exit 4 when there is none."

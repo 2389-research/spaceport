@@ -24,6 +24,11 @@ struct Isolated {
     gui: Option<Child>,
 }
 
+#[path = "live_gui/ask.rs"]
+mod ask;
+#[cfg(target_os = "macos")]
+#[path = "live_gui/ask_provider.rs"]
+mod ask_provider;
 #[path = "live_gui/chat_start.rs"]
 mod chat_start;
 #[path = "live_gui/diagnostics.rs"]
@@ -173,6 +178,7 @@ fn native_input_shutdown(field: &'static str) {
 }
 
 enum Fixture {
+    Ask,
     LocalControls {
         light: bool,
     },
@@ -244,6 +250,7 @@ fn native_fixture(fixture: Fixture) {
     }
     assert!(status.success(), "native sidebar failed: {status}");
     assert!(log.contains(match fixture {
+        Fixture::Ask => "ASK native PASS:",
         Fixture::Preview { .. } => "RICH CHAT native fixture PASS",
         #[cfg(target_os = "macos")]
         Fixture::SidebarRouting => "SIDEBAR routing PASS:",
@@ -279,6 +286,17 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         command.env("HERDR_TEST_CHAT_START_CAPTURE", path);
     }
     match fixture {
+        Fixture::Ask => {
+            command.env("HERDR_TEST_ASK_ONLY", "1");
+            if let Some(root) = std::env::var_os("HERDR_TEST_ASK_CAPTURE") {
+                assert!(
+                    Path::new(&root).is_absolute(),
+                    "Ask capture root must be absolute"
+                );
+                fs::create_dir_all(&root).unwrap();
+                command.env("HERDR_TEST_ASK_CAPTURE", root);
+            }
+        }
         Fixture::Preview { light, narrow } => {
             let theme = if *light { "light" } else { "dark" };
             let size = if *narrow { "narrow" } else { "wide" };

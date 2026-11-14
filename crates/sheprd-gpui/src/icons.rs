@@ -230,6 +230,7 @@ embedded_icons! {
     "arrow-left.svg",
     "arrow-right.svg",
     "arrow-up.svg",
+    "ask.svg",
     "automations.svg",
     "azure-devops.svg",
     "bell-off.svg",

@@ -7,6 +7,7 @@ mod events;
 mod help;
 mod hosts;
 mod local;
+mod observation;
 mod settings;
 mod tabs;
 mod work;
@@ -347,6 +348,7 @@ pub(crate) fn run(invocation: Invocation) -> ExitCode {
         ControlCommand::Tab(command) => tabs::tab(command, &context),
         ControlCommand::Devices => tabs::devices(&context),
         ControlCommand::Chat(command) => chat::chat(command, &context),
+        ControlCommand::Observation(op) => observation::run(op, &context),
         ControlCommand::Notes(command) => work::notes(command, &context),
         ControlCommand::Worktree(command) => work::worktree(command, &context),
         ControlCommand::Host(command) => hosts::host(command, &context),

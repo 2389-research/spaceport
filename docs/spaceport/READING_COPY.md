@@ -165,6 +165,15 @@ Keep current emulation, cell model, rendering, input encoding, selection, copy/p
 
 Keep rich rendering and the existing host-side adapter/attach contract where verified compatible. Starting a host-side adapter is a selected-runtime terminal launch, not a desktop-owned agent child. Showing/hiding a chat is presentation-only: no kill/resume/convert side effects. Do not expose model/provider configuration or automatically deploy helpers. Prove local and remote routes for each supported runtime separately. A remote-chat gap must not be hidden by a new Spaceport server or by labeling terminal-only support as full native-chat parity. [D08, D23, D27–D28, D32, D56, D58; S05, S06]
 
+D70 separately approves the design of Ask Spaceport, an app-owned local session-observer chat.
+Keep it separate from Overview and ordinary terminal-attached chats.
+Limit its tools to bounded, read-only session observations with exact source links.
+Keep provider setup and sign-in owned by the installed agent.
+Persist its conversation and reconcile unfinished requests before automatic continuation on return.
+Explicit Stop, completed answers, and unknown outcomes must not trigger blind resubmission.
+Qualify tool enforcement, cancellation, persistence, and recovery before enabling each agent.
+Do not control or restart observed coding sessions. [D70]
+
 ### SP-010 — Capability-correct interaction
 
 Offer prompt composition, attachments, permission answers, queues and slash-command affordances only when their backing session supports them. Keep permission prompts distinct from ordinary messages and descriptive tool-call output. Unknown agent status is unknown, not idle. Input targets the exact runtime/terminal/conversation instance the user or caller selected. [D11, D23, D28, D32, D58]
@@ -255,6 +264,14 @@ Spaceport should give an operator—human or agent—the same reliable loop:
 “Agent-intuitive” means the system describes itself in domain terms. “Agent-ergonomic” means useful evidence and actions are available without screen scraping or enormous context dumps. “Agent-accretive” means each debugging or implementation pass leaves durable, tested understanding in the repository. It does not mean adding persistent runtime memory, an agent scheduler or autonomous self-modification to the product.
 
 The central invariant is **one authority per fact, one owner per side effect, multiple views of the same semantics**. Two clients can render the same terminal without owning two processes. Two windows can display a conversation without maintaining independent permission state. A CLI can select a pane without synthesizing keystrokes against a guessed window.
+
+D70 adds the narrowly scoped Ask Spaceport design.
+One app-owned controller retains its conversation and unfinished request across views and restarts.
+Its agent reads bounded session evidence through the existing private control surface.
+The installed agent owns model routing and sign-in.
+Observed runtimes and coding agents retain their existing ownership and lifecycle.
+This does not add general runtime memory, scheduling, or a new network service.
+Tool enforcement and turn recovery require separate implementation evidence.
 
 ## 2. Tower of abstractions
 
@@ -992,6 +1009,7 @@ It does not resurrect the phone server, add a custom tunnel manager, expose loop
 | D67 | **Remove the profile shell** — Remove the titlebar profile/avatar and its duplicate local shortcut popup. Preserve access to Settings, keyboard shortcuts, themes and About through shared application actions and menus. Do not remove runtime machine profiles, agent message icons, credits or settings. This supersedes D50's profile/avatar retention only. | active |
 | D68 | **Use a nebula flying saucer icon** — Replace the rocket with a flying saucer inspired by the 🛸 emoji. Keep the nebula background, sculpted style and distinct berry development rim. Use design/spaceport-icon/ufo-nebula.png as the shared master for app, platform, installer and social artwork. Preserve the earlier rocket exploration and legal provenance. This supersedes D62 and D63's rocket subject; it does not change bundle identities, signing, update trust or release authorization. | active |
 | D69 | **Keep Herdr Core behind a disabled-by-default app setting** — Keep Herdr Core available only through explicit opt-in. Add the saved herdr_core_enabled setting, default false for new and existing installs. Show Enable Herdr Core under Settings > General > Experimental with Adds Core terminals and groups. Requires restart. Freeze the effective value for each app session across all windows; saving either value requires restarting Spaceport before runtime behavior changes. While disabled, hide Core UI, prevent Core connections and startup, and refuse Core-only CLI actions explicitly. Preserve saved Core preferences, groups and terminal references, and never stop Core or its terminals. Keep regular Herdr available. This qualifies Core reachability under D58 without removing retained Core support or changing runtime ownership. | active |
+| D70 | **Add Ask Spaceport as a read-only session chat** — Design Ask Spaceport as a separate activity-bar item with a speech-bubble icon and a full-content chat page. Preserve Overview. Run its agent locally and answer only submitted questions, with read-only tools limited to session status, conversations and terminal output already exposed by Spaceport across connected workspaces and devices. Include exact session source links and honest coverage and freshness. Keep model routing and sign-in owned by the installed agent; do not add model endpoint or API-key settings. Prefer Pi, Codex and Claude Code, with Pi accepted as the first qualification target. Enforce the executable tool boundary before enabling an agent. Persist the conversation, choose its agent on first use, and apply Settings agent changes to the next New Chat. Switching views lets the requested answer finish. Returning after app shutdown automatically continues a saved unfinished request after outcome reconciliation; completed or explicitly stopped requests do not restart, and unknown submissions are not blindly retried. This narrowly permits an app-owned meta-chat conversation and its helper lifecycle. It does not restore ordinary agent-pane conversion, grant control of observed sessions, or authorize scheduling, general filesystem/system tools, credential imports or release delivery. Runtime enforcement and recovery remain qualification gates. | active |
 
 
 ---

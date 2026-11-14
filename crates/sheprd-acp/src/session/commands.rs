@@ -74,13 +74,13 @@ impl<R: FnMut(Update)> Session<R> {
             self.queue_changed(queued);
             return Ok(());
         }
-        self.send_prompt(&text, &attachments);
+        self.send_prompt(&text, &attachments, true);
         Ok(())
     }
 
     /// Sends a prompt with its files, read now, and shows it in the
     /// transcript: the text with a line per file, then the pictures.
-    fn send_prompt(&mut self, text: &str, attachments: &[Attachment]) {
+    fn send_prompt(&mut self, text: &str, attachments: &[Attachment], display: bool) {
         let Some(session) = self.acp_session.clone() else {
             return;
         };
@@ -96,8 +96,10 @@ impl<R: FnMut(Update)> Session<R> {
             shown.push_str(sheprd_chat_protocol::ATTACHED);
             shown.push_str(attachment.name());
         }
-        let prompt = self.projector.prompt(&shown, attachments.len());
-        self.emit(prompt);
+        if display {
+            let prompt = self.projector.prompt(&shown, attachments.len());
+            self.emit(prompt);
+        }
         let mut blocks = Vec::with_capacity(prepared.len() + 1);
         if !text.trim().is_empty() {
             blocks.push(wire::ContentBlock::Text(wire::TextContent::new(text)));
@@ -123,6 +125,11 @@ impl<R: FnMut(Update)> Session<R> {
         }
     }
 
+    /// Continues one confirmed interrupted app-owned turn without duplicating its user entry.
+    pub(crate) fn resume_prompt(&mut self, text: &str) {
+        self.send_prompt(text, &[], false);
+    }
+
     /// Sends the oldest queued prompt once the agent is free.
     pub(super) fn next_queued(&mut self) {
         if self.turn.is_some() || !self.ready {
@@ -134,7 +141,7 @@ impl<R: FnMut(Update)> Session<R> {
         }
         let next = queued.remove(0);
         self.queue_changed(queued);
-        self.send_prompt(&next.text, &next.attachments);
+        self.send_prompt(&next.text, &next.attachments, true);
     }
 
     fn cancel(&mut self) -> Result<(), Rejection> {

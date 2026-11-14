@@ -19,6 +19,14 @@ impl Localize for Error {
             Self::Json(error) => error.to_string(),
             Self::MessageSize { limit } => fl!("error-control-message-size", limit = *limit),
             Self::NoResponse => fl!("error-control-no-response"),
+            Self::Observation(error) => match error {
+                sheprd_control_protocol::protocol::observation::Error::InvalidBounds => {
+                    fl!("error-control-observation-bounds")
+                }
+                sheprd_control_protocol::protocol::observation::Error::InvalidTarget => {
+                    fl!("error-control-observation-target")
+                }
+            },
             Self::PipeForeign { path: file } => {
                 fl!("error-control-pipe-foreign", path = path(file))
             }

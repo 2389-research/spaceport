@@ -113,7 +113,7 @@ impl Hit {
 /// Text selection uses the nearest caret, unlike a link hit which asks which
 /// glyph is underneath the pointer. In particular, roundoff at a shaped byte
 /// boundary must not drop the final character from a copied selection.
-fn text_offset(layout: &TextLayout, position: Point<Pixels>) -> usize {
+pub(crate) fn text_offset(layout: &TextLayout, position: Point<Pixels>) -> usize {
     let mut origin = layout.bounds().origin;
     if position.y < origin.y {
         return 0;
@@ -571,7 +571,7 @@ fn background_rects(
     result
 }
 
-fn highlights(
+pub(crate) fn highlights(
     text: &str,
     marks: Vec<(Range<usize>, HighlightStyle)>,
     selected: Option<Range<usize>>,

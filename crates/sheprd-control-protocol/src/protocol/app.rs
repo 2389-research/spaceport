@@ -9,6 +9,7 @@ pub enum ActivityPanel {
     #[default]
     Workspaces,
     Overview,
+    Ask,
     Automations,
     Usage,
 }
@@ -17,6 +18,7 @@ impl ActivityPanel {
     pub const ALL: &[Self] = &[
         Self::Workspaces,
         Self::Overview,
+        Self::Ask,
         Self::Automations,
         Self::Usage,
     ];
@@ -25,6 +27,7 @@ impl ActivityPanel {
     pub fn name(self) -> &'static str {
         match self {
             Self::Overview => "overview",
+            Self::Ask => "ask",
             Self::Workspaces => "workspaces",
             Self::Automations => "automations",
             Self::Usage => "usage",
@@ -141,6 +144,23 @@ pub struct Status {
     pub windows: Vec<WindowInfo>,
     #[serde(default)]
     pub core_catalog: CoreCatalog,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ask: Option<AskStatus>,
+}
+
+pub const MAX_ASK_STATUS_ERROR_CHARS: usize = 512;
+
+/// Read-only facts from the app-global Ask controller; no helper or observation runs.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AskStatus {
+    pub agent: Option<String>,
+    /// An unfinished requested answer, including helper preparation.
+    pub answering: bool,
+    pub configured: bool,
+    /// The displayed diagnostic, bounded by `MAX_ASK_STATUS_ERROR_CHARS`.
+    pub error: Option<String>,
+    pub history_present: bool,
+    pub loading: bool,
 }
 
 /// What this client has observed from Core's machine catalog in its current epoch.

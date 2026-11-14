@@ -5,8 +5,8 @@ use crate::{
     control::protocol::{
         Request, Response,
         app::{
-            AppOp, CommandOp, CoreCatalog, CoreCatalogState, Reply, Status, UiOp, WindowInfo,
-            WindowOp,
+            AppOp, AskStatus, CommandOp, CoreCatalog, CoreCatalogState, Reply, Status, UiOp,
+            WindowInfo, WindowOp,
         },
     },
 };
@@ -76,6 +76,32 @@ pub(super) fn describe_core_catalog(catalog: &CoreCatalog) -> String {
     format!("Core machine catalog, epoch {epoch}: {detail}")
 }
 
+pub(super) fn describe_ask(ask: Option<&AskStatus>) -> String {
+    let Some(ask) = ask else {
+        return "Ask Spaceport: controller not initialized".into();
+    };
+    let yes = |value| if value { "yes" } else { "no" };
+    let agent = sheprd_client::text::safe_text(ask.agent.as_deref().unwrap_or("none"), 32);
+    let mut text = format!(
+        "Ask Spaceport: configured {}; agent {agent}; loading {}; active answer {}; history present {}",
+        yes(ask.configured),
+        yes(ask.loading),
+        yes(ask.answering),
+        yes(ask.history_present)
+    );
+    if let Some(error) = &ask.error {
+        let _ = write!(
+            text,
+            "\n    error: {}",
+            sheprd_client::text::safe_text(
+                error,
+                crate::control::protocol::app::MAX_ASK_STATUS_ERROR_CHARS
+            )
+        );
+    }
+    text
+}
+
 pub(super) fn status(context: &Context) -> crate::Result<Output> {
     let response = send(&Request::Status(context.caller()?))?;
     let Response::Status(status) = response else {
@@ -87,7 +113,8 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
         pid,
         windows,
         core_catalog,
-    } = &status;
+        ask,
+    } = status.as_ref();
     let mut text =
         format!("Spaceport {version} is running (pid {pid}, control protocol {protocol})\n");
     if *protocol != crate::control::protocol::PROTOCOL_VERSION {
@@ -98,6 +125,7 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
         );
     }
     let _ = writeln!(text, "{}", describe_core_catalog(core_catalog));
+    let _ = writeln!(text, "{}", describe_ask(ask.as_ref()));
     if windows.is_empty() {
         text.push_str("No window is open\n");
     }

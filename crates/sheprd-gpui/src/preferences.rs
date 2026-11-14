@@ -310,7 +310,7 @@ fn retained_activity_panel(name: &str) -> Option<crate::sidebar::ActivityPanel> 
         return Some(ActivityPanel::Workspaces);
     }
     ActivityPanel::parse(name).map(|panel| match panel {
-        ActivityPanel::Workspaces | ActivityPanel::Usage => panel,
+        ActivityPanel::Ask | ActivityPanel::Workspaces | ActivityPanel::Usage => panel,
         ActivityPanel::Overview | ActivityPanel::Automations => ActivityPanel::Workspaces,
     })
 }
