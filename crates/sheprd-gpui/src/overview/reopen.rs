@@ -95,7 +95,7 @@ impl SheprdWindow {
             return;
         }
         if self.endpoints[self.selected_endpoint].id != job.endpoint
-            && (self.menu.page.is_some() || !self.select_endpoint(&job.endpoint, cx))
+            && (self.menu.page.is_some() || self.select_endpoint(&job.endpoint, cx).is_err())
         {
             self.show_flash(Flash::warning(fl!("overview-host-switch")), cx);
             return;

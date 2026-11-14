@@ -15,6 +15,7 @@ mod config;
 mod control;
 mod daemon;
 mod devices;
+mod endpoint;
 mod file_drop;
 mod keymap;
 #[cfg(windows)]

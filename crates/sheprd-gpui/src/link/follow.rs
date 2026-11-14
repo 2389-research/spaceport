@@ -132,7 +132,7 @@ fn follow_link(
                 if view.menu.page.is_some() {
                     return Err(Refusal::DialogOpen);
                 }
-                if !view.select_endpoint(&id, cx) {
+                if view.select_endpoint(&id, cx).is_err() {
                     return Err(Refusal::NoDevice(id));
                 }
                 bring_forward(window, cx);

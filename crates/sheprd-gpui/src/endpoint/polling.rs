@@ -260,7 +260,7 @@ impl SheprdWindow {
                 None => fl!("endpoint-activation-failed", device = device),
             };
             if self.selected_endpoint != 0 {
-                self.switch_endpoint(LOCAL, cx);
+                let _ = self.switch_endpoint(LOCAL, cx);
             } else {
                 // Recover Local with a fresh active handshake, even if the
                 // previous surface lane or its acknowledgement was unavailable.

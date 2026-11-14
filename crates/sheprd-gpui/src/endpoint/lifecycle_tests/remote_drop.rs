@@ -68,7 +68,7 @@ fn a_dropped_remote_stays_selected_with_its_last_picture_dimmed(cx: &mut gpui::T
         assert!(view.presentation.picture(&view.live).is_some());
 
         // Leaving the endpoint leaves its picture behind.
-        assert!(view.switch_endpoint(LOCAL, cx));
+        assert!(view.switch_endpoint(LOCAL, cx).is_ok());
         assert!(!view.presentation.stale());
         assert!(view.presentation.picture(&view.live).is_none());
     });

@@ -9,6 +9,7 @@ mod ports;
 mod tests;
 
 use super::{Watches, in_free_window, in_window, socket, target, window_for};
+use crate::i18n::Localize as _;
 use crate::{
     SheprdWindow,
     browser::PageOpened,
@@ -127,7 +128,7 @@ fn tag(view: &mut SheprdWindow, name: &str, tags: Vec<String>, cx: &mut App) -> 
 fn select(
     view: &mut SheprdWindow,
     name: &str,
-    choose: impl FnOnce(&mut SheprdWindow, &str) -> bool,
+    choose: impl FnOnce(&mut SheprdWindow, &str) -> crate::Result<()>,
 ) -> Response {
     let endpoint = match named(view, name) {
         Ok(endpoint) => endpoint,
@@ -140,15 +141,14 @@ fn select(
             format!("Host {label} is turned off; turn it on in the sidebar first"),
         );
     }
-    let before = view.local_error.clone();
-    if choose(view, &id) {
-        return Response::done(format!("Showing {label}"));
-    }
-    let reason = view
-        .local_error
-        .clone()
-        .filter(|error| Some(error) != before.as_ref())
-        .unwrap_or_else(|| format!("Spaceport could not switch to {label}"));
+    let reason = match choose(view, &id) {
+        Ok(()) => return Response::done(format!("Showing {label}")),
+        // The window's own words, which its status bar shows too.
+        Err(crate::Error::Endpoint(
+            error @ crate::endpoint::Error::SurfaceSwitchingUnsupported,
+        )) => error.localize(),
+        Err(_) => format!("Spaceport could not switch to {label}"),
+    };
     Response::error(ErrorCode::Failed, reason)
 }
 

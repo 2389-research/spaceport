@@ -296,7 +296,9 @@ impl SheprdWindow {
     ) {
         match target {
             Target::Device { endpoint } => {
-                self.select_endpoint(endpoint, cx);
+                // A refusal shows in the status bar; choosing a result
+                // has nothing else to say.
+                let _ = self.select_endpoint(endpoint, cx);
             }
             Target::Workspace {
                 endpoint,

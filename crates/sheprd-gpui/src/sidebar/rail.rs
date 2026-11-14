@@ -247,7 +247,9 @@ impl SheprdWindow {
                             }),
                         )
                         .on_click(cx.listener(move |this, _, window, cx| {
-                            this.select_endpoint(&select_id, cx);
+                            // A refusal shows in the status bar; a click
+                            // has nothing else to say.
+                            let _ = this.select_endpoint(&select_id, cx);
                             window.focus(&this.focus, cx);
                         })),
                 );
