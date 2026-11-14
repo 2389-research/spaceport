@@ -8,7 +8,10 @@ use crate::config::{
     backdrop::{Edit, IMAGE_OPACITY},
 };
 use crate::direction::Logical;
-use crate::{i18n::fl, settings_window::ui};
+use crate::{
+    i18n::fl,
+    settings_window::{catalog, ui},
+};
 
 mod ruler;
 
@@ -203,12 +206,7 @@ impl SettingsWindow {
             .flex()
             .flex_col()
             .child(
-                ui::row(
-                    &self.theme,
-                    "theme-backdrop",
-                    fl!("settings-theme-backdrop"),
-                )
-                .description(current.description()),
+                ui::row(&self.theme, &catalog::THEME_BACKDROP).description(current.description()),
             )
             .child(tiles.py(px(10.)))
             .child(details)

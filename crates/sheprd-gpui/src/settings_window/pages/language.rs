@@ -2,7 +2,7 @@
 //! language with messages, each named in itself so a reader finds their own
 //! whatever the windows show.
 // i18n: migrated
-use super::{SettingsWindow, ui};
+use super::{SettingsWindow, catalog, ui};
 use crate::{
     i18n::{self, fl},
     settings_window::inputs::DropdownField,
@@ -60,13 +60,7 @@ impl SettingsWindow {
         let current = options.get(selected).cloned().unwrap_or_default();
         let view = cx.entity().downgrade();
         let (opener, picker, dismisser) = (view.clone(), view.clone(), view);
-        ui::row(
-            &self.theme,
-            "general-language",
-            fl!("settings-general-language"),
-        )
-        .description(fl!("settings-general-language-description"))
-        .control(ui::dropdown(
+        ui::row(&self.theme, &catalog::GENERAL_LANGUAGE).control(ui::dropdown(
             &self.theme,
             FIELD.selector(),
             current,

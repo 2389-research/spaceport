@@ -2,7 +2,7 @@
 //! previews the theme in the real Herdr windows, then the window backdrop and
 //! terminal padding.
 // i18n: migrated
-use super::{SettingsWindow, on_value, ui};
+use super::{SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{Config, ThemeName},
     contrast::{Contrast, luminance},
@@ -117,63 +117,62 @@ impl SettingsWindow {
         } else {
             Mode::Dark
         };
-        ui::row(&self.theme, "theme-mode", fl!("settings-theme-mode"))
-            .description(fl!("settings-theme-mode-hint"))
-            .control(ui::segmented(
-                &self.theme,
-                "theme-mode-control",
-                &[
-                    (Mode::Light, fl!("settings-theme-light")),
-                    (Mode::Dark, fl!("settings-theme-dark")),
-                    (Mode::System, fl!("settings-theme-system")),
-                ],
-                Some(selected),
-                true,
-                on_value(cx, move |this, mode, window, cx| {
-                    let focus = this.themes.search.read(cx).focus.clone();
-                    window.focus(&focus, cx);
-                    match mode {
-                        Mode::System => this.start_system_theme(cx),
-                        Mode::Light => this.use_single_theme(true, cx),
-                        Mode::Dark => this.use_single_theme(false, cx),
-                    }
-                }),
-            ))
+        ui::row(&self.theme, &catalog::THEME_MODE).control(ui::segmented(
+            &self.theme,
+            "theme-mode-control",
+            &[
+                (Mode::Light, fl!("settings-theme-light")),
+                (Mode::Dark, fl!("settings-theme-dark")),
+                (Mode::System, fl!("settings-theme-system")),
+            ],
+            Some(selected),
+            true,
+            on_value(cx, move |this, mode, window, cx| {
+                let focus = this.themes.search.read(cx).focus.clone();
+                window.focus(&focus, cx);
+                match mode {
+                    Mode::System => this.start_system_theme(cx),
+                    Mode::Light => this.use_single_theme(true, cx),
+                    Mode::Dark => this.use_single_theme(false, cx),
+                }
+            }),
+        ))
     }
 
     /// Shown while following: which side of the pair the grid changes.
     fn theme_side_row(&self, cx: &mut Context<Self>) -> Option<ui::Row> {
         let value = self.drafted_theme();
-        ThemeName::follows_system(value).then(|| {
-            ui::row(&self.theme, "theme-side", fl!("settings-theme-side"))
-                .description(fl!(
-                    "settings-theme-side-hint",
-                    light = display_name(ThemeName::side(value, true)),
-                    dark = display_name(ThemeName::side(value, false)),
-                ))
-                .control(ui::segmented(
-                    &self.theme,
-                    "theme-side-control",
-                    &[
-                        (true, fl!("settings-theme-light")),
-                        (false, fl!("settings-theme-dark")),
-                    ],
-                    Some(self.themes.editing_light),
-                    true,
-                    on_value(cx, |this, light, window, cx| {
-                        let focus = this.themes.search.read(cx).focus.clone();
-                        window.focus(&focus, cx);
-                        this.edit_theme_side(light, cx);
-                    }),
-                ))
-        })
+        self.available(catalog::THEME_SIDE.availability, cx)
+            .then(|| {
+                ui::row(&self.theme, &catalog::THEME_SIDE)
+                    // The page also names the pair's two themes.
+                    .description(fl!(
+                        "settings-theme-side-hint",
+                        light = display_name(ThemeName::side(value, true)),
+                        dark = display_name(ThemeName::side(value, false)),
+                    ))
+                    .control(ui::segmented(
+                        &self.theme,
+                        "theme-side-control",
+                        &[
+                            (true, fl!("settings-theme-light")),
+                            (false, fl!("settings-theme-dark")),
+                        ],
+                        Some(self.themes.editing_light),
+                        true,
+                        on_value(cx, |this, light, window, cx| {
+                            let focus = this.themes.search.read(cx).focus.clone();
+                            window.focus(&focus, cx);
+                            this.edit_theme_side(light, cx);
+                        }),
+                    ))
+            })
     }
 
     fn theme_follow_row(&self, cx: &mut Context<Self>) -> ui::Row {
         let following = self.config.theme == FOLLOW;
-        ui::row(&self.theme, "theme-follow", fl!("settings-theme-follow"))
+        ui::row(&self.theme, &catalog::THEME_FOLLOW)
             .tag(ui::Source::Herdr)
-            .description(fl!("settings-theme-follow-description"))
             .switch(
                 ui::toggle(&self.theme, "theme-follow-toggle", following, true).on_click(
                     cx.listener(move |this, _, _, cx| {
@@ -199,13 +198,7 @@ impl SettingsWindow {
 
     fn theme_contrast_row(&self, cx: &mut Context<Self>) -> ui::Row {
         let high = self.config.contrast == Contrast::High;
-        ui::row(
-            &self.theme,
-            "theme-contrast",
-            fl!("settings-theme-contrast"),
-        )
-        .description(fl!("settings-theme-contrast-description"))
-        .switch(
+        ui::row(&self.theme, &catalog::THEME_CONTRAST).switch(
             ui::toggle(&self.theme, "theme-contrast-toggle", high, true).on_click(cx.listener(
                 move |this, _, _, cx| {
                     let contrast = if high {
@@ -225,13 +218,11 @@ impl SettingsWindow {
             (true, false) => Library::Ghostty,
             (false, _) => Library::Herdr,
         };
-        let note = if Scope::Herdr.editable() {
-            fl!("settings-theme-source-description")
-        } else {
-            fl!("settings-theme-library-read-only")
-        };
-        ui::row(&self.theme, "theme-source", fl!("settings-theme-source"))
-            .description(note)
+        ui::row(&self.theme, &catalog::THEME_SOURCE)
+            // Where Herdr's themes cannot be saved the row says so instead.
+            .when(!Scope::Herdr.editable(), |row| {
+                row.description(fl!("settings-theme-library-read-only"))
+            })
             .control(ui::segmented(
                 &self.theme,
                 "theme-source-control",
