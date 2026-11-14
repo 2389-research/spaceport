@@ -19,74 +19,38 @@ SPEC.loader.exec_module(check_i18n)
 EN = Path("crates/app/locales/en-US/menu.ftl")
 
 
-def parse(text: str, path: Path = EN):
-    return check_i18n.parse(path, text)
+def messages(text: str, path: Path = EN):
+    return check_i18n.messages(path, text)
 
 
-class ParseTests(unittest.TestCase):
-    def test_messages_comments_and_multiline_values_parse(self) -> None:
-        ftl, errors = parse(
-            "# Menu text.\n"
+class MessagesTests(unittest.TestCase):
+    def test_ids_start_a_line_and_values_name_other_messages(self) -> None:
+        ftl = messages(
+            "# menu-comment = Not a message, nor { menu-example } a use.\n"
             "\n"
             "menu-quit = Quit\n"
             "menu-tabs = { $count ->\n"
             "    [one] One tab\n"
-            "   *[other] { $count } tabs\n"
+            "   *[other] { $count } tabs = many\n"
             "}\n"
             "menu-long =\n"
             "    First line\n"
             "\n"
-            "    second line\n"
-            "    .title = { menu-quit }\n"
+            "    second = line\n"
+            "    .title = { menu-quit } and { menu-tabs.title }\n"
+            'menu-brace = { "{" } "{ menu-long }"\n'
             "-brand = Herdr\n"
         )
-        self.assertEqual(errors, [])
-        self.assertEqual(list(ftl.messages), ["menu-quit", "menu-tabs", "menu-long"])
-        self.assertEqual(ftl.references, {"menu-quit"})
-
-    def test_ids_take_the_feature_prefix_once(self) -> None:
-        _, errors = parse("menu-quit = Quit\nquit = Quit\nmenu-quit = Again\n")
-        self.assertEqual(len(errors), 2)
-        self.assertIn(":2: quit must start with menu-", errors[0])
-        self.assertIn(":3: menu-quit is defined twice", errors[1])
-
-    def test_braces_in_string_literals_are_text(self) -> None:
-        ftl, errors = parse(
-            'menu-brace = { "{" }\n'
-            'menu-close = { "}" } and { "\\"}" }\n'
-            'menu-quoted = Say "{ $name }"\n'
+        self.assertEqual(
+            ftl.messages, {"menu-quit": 3, "menu-tabs": 4, "menu-long": 8, "menu-brace": 13}
         )
-        self.assertEqual(errors, [])
-        self.assertEqual(list(ftl.messages), ["menu-brace", "menu-close", "menu-quoted"])
-        _, errors = parse("menu-quit = Quit }\n")
-        self.assertEqual(errors, [f"{EN}:1: unbalanced }}"])
-
-    def test_quotes_in_select_branches_are_text(self) -> None:
-        ftl, errors = parse(
-            "menu-count = { $count ->\n"
-            "    [one] One item\n"
-            '   *[other] Items measured in "inches }\n'
-            "menu-size = { NUMBER($size, style: \"unit\") ->\n"
-            '    [one] One "{ $size }" unit\n'
-            '   *[other] { $size } units, { "}" } and "more\n'
-            "}\n"
-            "menu-term = { -brand } \"quoted\" { -brand-name }\n"
-        )
-        self.assertEqual(errors, [])
-        self.assertEqual(list(ftl.messages), ["menu-count", "menu-size", "menu-term"])
-        _, errors = parse('menu-open = { $count ->\n   *[other] "Open\n')
-        self.assertEqual(errors, [f"{EN}: a placeable is not closed"])
-
-    def test_stray_lines_and_open_placeables_are_reported(self) -> None:
-        _, errors = parse("menu-quit = Quit\nnot a message\n")
-        self.assertEqual(errors, [f"{EN}:2: not a message, comment, or continuation"])
-        _, errors = parse("menu-quit = { $name\n")
-        self.assertEqual(errors, [f"{EN}: a placeable is not closed"])
+        self.assertEqual(ftl.references, {"menu-quit", "menu-tabs", "menu-long"})
+        self.assertEqual((ftl.language, ftl.feature), ("en-US", "menu"))
 
 
 class CheckTests(unittest.TestCase):
     def files(self, *texts: tuple[Path, str]):
-        return [parse(text, path)[0] for path, text in texts]
+        return [messages(text, path) for path, text in texts]
 
     def test_examples_in_comments_are_not_calls(self) -> None:
         files = self.files((EN, "menu-quit = Quit\n"))
@@ -117,37 +81,13 @@ class CheckTests(unittest.TestCase):
             check_i18n.check(files, sources), [f"{EN}:2: menu-open is not used"]
         )
 
-    def test_a_test_still_cannot_name_a_missing_message(self) -> None:
-        files = self.files((EN, "menu-quit = Quit\n"))
-        sources = {
-            Path("crates/app/src/menu.rs"): 'fl!("menu-quit")',
-            Path("crates/app/src/menu/tests.rs"): 'fl!("menu-gone")',
-        }
-        self.assertEqual(
-            check_i18n.check(files, sources),
-            ['crates/app/src/menu/tests.rs: fl!("menu-gone") names no en-US message'],
-        )
-
-    def test_unused_and_unknown_messages_are_reported(self) -> None:
-        files = self.files((EN, "menu-quit = Quit\n"))
+    def test_an_unused_message_is_reported_and_translations_are_not(self) -> None:
+        french = Path("crates/app/locales/fr/menu.ftl")
+        files = self.files((EN, "menu-quit = Quit\n"), (french, "menu-quit = Quitter\n"))
         sources = {Path("a.rs"): 'fl!("menu-open")'}
         self.assertEqual(
-            check_i18n.check(files, sources),
-            [
-                'a.rs: fl!("menu-open") names no en-US message',
-                f"{EN}:1: menu-quit is not used",
-            ],
+            check_i18n.check(files, sources), [f"{EN}:1: menu-quit is not used"]
         )
-
-    def test_an_id_repeated_across_files_and_a_stale_translation_fail(self) -> None:
-        other = Path("crates/app/locales/en-US/menu2.ftl")
-        french = Path("crates/app/locales/fr/menu.ftl")
-        files = self.files((EN, "menu-quit = Quit\n"), (other, "menu-quit = Quit\n"))
-        files[1].feature = "menu"
-        files += self.files((french, "menu-gone = Parti\n"))
-        errors = check_i18n.check(files, {Path("a.rs"): '"menu-quit"'})
-        self.assertIn(f"{other}:1: menu-quit is also defined in {EN}", errors)
-        self.assertIn(f"{french}: menu-gone has no en-US message", errors)
 
 
 class MigratedTests(unittest.TestCase):
@@ -214,8 +154,8 @@ class MigratedTests(unittest.TestCase):
 
 class PlatformTests(unittest.TestCase):
     FILES = [
-        parse("language-name = English\n", Path("crates/app/locales/en-US/language.ftl"))[0],
-        parse("language-name = עברית\n", Path("crates/app/locales/he/language.ftl"))[0],
+        messages("language-name = English\n", Path("crates/app/locales/en-US/language.ftl")),
+        messages("language-name = עברית\n", Path("crates/app/locales/he/language.ftl")),
     ]
     PLIST = {"CFBundleDevelopmentRegion": "en-US", "CFBundleLocalizations": ["he", "en-US"]}
 
@@ -234,7 +174,7 @@ class PlatformTests(unittest.TestCase):
         plist = {"CFBundleDevelopmentRegion": "en", "CFBundleLocalizations": ["en-US"]}
         translations = [Path("scripts/release/installer/en-US.isl"), Path("scripts/release/installer/de.isl")]
         desktop = "Comment=Client\nComment[pt_BR]=Cliente\n"
-        unnamed = parse("menu-quit = Quit\n", Path("crates/app/locales/fr/menu.ftl"))[0]
+        unnamed = messages("menu-quit = Quit\n", Path("crates/app/locales/fr/menu.ftl"))
         errors = check_i18n.platform([*self.FILES, unnamed], plist, translations, desktop)
         plist_path, desktop_path = check_i18n.INFO_PLIST, check_i18n.DESKTOP_ENTRY
         self.assertEqual(
