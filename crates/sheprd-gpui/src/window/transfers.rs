@@ -4,7 +4,10 @@
 
 use super::{SheprdWindow, pending_input::Delivery};
 use crate::i18n::{Localize, fl};
-use crate::{connection::ConnectionBridge, fonts::StyledFont, terminal::InputTarget};
+use crate::{
+    connection::ConnectionBridge, endpoint::fence::InputFence, fonts::StyledFont,
+    terminal::InputTarget,
+};
 use gpui::{prelude::*, *};
 use sheprd_client::{ConnectTarget, protocol::ClientPaneInputEvent};
 use std::{
@@ -16,11 +19,8 @@ use std::{
 };
 
 pub(crate) struct FileTransfer {
-    endpoint: String,
+    fence: InputFence,
     host: String,
-    epoch: u64,
-    generation: u64,
-    boot: String,
     target: InputTarget,
     label: String,
     cancelled: Arc<AtomicBool>,
@@ -103,20 +103,17 @@ impl SheprdWindow {
 impl SheprdWindow {
     fn file_transfer_current(&self, transfer: &FileTransfer) -> bool {
         let endpoint = &self.endpoints[self.selected_endpoint];
-        transfer.epoch == self.selection_epoch
-            && transfer.generation == endpoint.generation
-            && transfer.endpoint == endpoint.id
+        self.fence_holds(&transfer.fence)
             && matches!(&endpoint.connection.target, ConnectTarget::Ssh { target, .. } if target == &transfer.host)
             && self.live.status.is_connected()
-            && self.live.snapshot.as_ref().is_some_and(|snapshot| {
-                snapshot.boot_id == transfer.boot
-                    && match &transfer.target {
-                        InputTarget::Pane(id) => {
-                            snapshot.panes.iter().any(|pane| &pane.pane_id == id)
-                        }
-                        InputTarget::Popup(_) => true,
-                    }
-            })
+            && self
+                .live
+                .snapshot
+                .as_ref()
+                .is_some_and(|snapshot| match &transfer.target {
+                    InputTarget::Pane(id) => snapshot.panes.iter().any(|pane| &pane.pane_id == id),
+                    InputTarget::Popup(_) => true,
+                })
             && self
                 .live
                 .surface
@@ -201,14 +198,11 @@ impl SheprdWindow {
         let ConnectTarget::Ssh { target: host, .. } = &endpoint.connection.target else {
             return Delivery::Refused;
         };
-        let Some(snapshot) = &self.live.snapshot else {
+        let Some(fence) = self.input_fence() else {
             return Delivery::Refused;
         };
         let host = host.clone();
-        let boot = snapshot.boot_id.clone();
-        let endpoint_id = endpoint.id.clone();
         let endpoint_label = crate::notifications::safe_text(&endpoint.label, 160);
-        let generation = endpoint.generation;
         let label = if paths.len() == 1 {
             paths[0]
                 .file_name()
@@ -262,7 +256,7 @@ impl SheprdWindow {
                                     .ok_or(crate::Error::NotConnected)?;
                                 ConnectionBridge::send_input(
                                     handle,
-                                    &transfer.boot,
+                                    &transfer.fence.boot,
                                     &transfer.target,
                                     ClientPaneInputEvent::Paste(text),
                                 )?;
@@ -332,11 +326,8 @@ impl SheprdWindow {
         })
         .detach();
         self.file_transfer = Some(FileTransfer {
-            endpoint: endpoint_id,
+            fence,
             host,
-            epoch: self.selection_epoch,
-            generation,
-            boot,
             target,
             label,
             cancelled,

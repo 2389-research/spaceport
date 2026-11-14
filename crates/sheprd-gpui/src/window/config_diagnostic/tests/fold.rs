@@ -145,13 +145,15 @@ fn the_endpoint_card_opens_only_for_its_own_connection(cx: &mut TestAppContext) 
     view.update(cx, |view, _| {
         let endpoint = &view.endpoints[0];
         let current = super::super::DrawnFrom {
-            endpoint_id: endpoint.id.clone(),
-            generation: endpoint.generation,
-            inbox: endpoint.connection.inbox.clone(),
+            connection: endpoint.connection_ref(),
             lines: endpoint.config_diagnostic.visible().unwrap().clone(),
         };
         let retired = super::super::DrawnFrom {
-            generation: current.generation + 1,
+            connection: ConnectionRef::for_test(
+                &endpoint.id,
+                endpoint.generation + 1,
+                &endpoint.connection.inbox,
+            ),
             ..current.clone()
         };
         assert!(retired.diagnostic(view).is_none());
