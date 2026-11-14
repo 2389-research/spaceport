@@ -145,11 +145,7 @@ impl SheprdWindow {
             .displayed_devices()
             .into_iter()
             .filter_map(|(index, endpoint)| {
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
+                let live = self.live_of(index);
                 let snapshot = live.snapshot.as_deref()?;
                 Some((index, mutes?.silenced(&Daemon::of(endpoint), snapshot)))
             })
@@ -255,7 +251,7 @@ impl SheprdWindow {
             if multi && endpoint.collapsed {
                 continue;
             }
-            let live = if selected { &self.live } else { &endpoint.live };
+            let live = self.live_of(endpoint_index);
             let Some(snapshot) = &live.snapshot else {
                 continue;
             };
@@ -388,7 +384,7 @@ impl SheprdWindow {
                 continue;
             }
             let selected = index == self.selected_endpoint;
-            let live = if selected { &self.live } else { &endpoint.live };
+            let live = self.live_of(index);
             let Some(snapshot) = live.snapshot.as_deref() else {
                 continue;
             };

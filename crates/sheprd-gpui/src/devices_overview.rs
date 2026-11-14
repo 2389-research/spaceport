@@ -224,17 +224,8 @@ impl SheprdWindow {
     /// Every device the window knows, in sidebar order, read from the live
     /// state each draws from.
     pub(crate) fn overview_devices(&self) -> Vec<Device> {
-        self.endpoints
-            .iter()
-            .enumerate()
-            .map(|(index, endpoint)| {
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
-                Device::new(index, endpoint, live)
-            })
+        self.hosts()
+            .map(|(index, endpoint, live)| Device::new(index, endpoint, live))
             .collect()
     }
 }

@@ -568,11 +568,7 @@ impl SheprdWindow {
             .iter()
             .position(|endpoint| endpoint.id == crate::endpoint::LOCAL)
             .and_then(|index| {
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &self.endpoints[index].live
-                };
+                let live = self.live_of(index);
                 live.snapshot.as_ref().map(|snapshot| LocalTarget {
                     generation: self.endpoints[index].generation,
                     boot: snapshot.boot_id.clone(),
@@ -629,11 +625,7 @@ impl SheprdWindow {
             .chain((0..self.endpoints.len()).filter(|index| *index != self.selected_endpoint))
             .map(|index| {
                 let endpoint = &self.endpoints[index];
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
+                let live = self.live_of(index);
                 Source {
                     endpoint: endpoint.id.clone(),
                     generation: endpoint.generation,
