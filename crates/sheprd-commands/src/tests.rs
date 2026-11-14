@@ -1,6 +1,7 @@
 use super::*;
 
 mod browser_page;
+mod catalog;
 mod removed_git;
 mod removed_orchestrator;
 mod retired_ide;
@@ -17,147 +18,6 @@ fn snapshot() -> ClientShellSnapshot {
     .unwrap()
 }
 
-#[test]
-fn catalog_has_all_native_commands_and_gpui_shortcuts() {
-    use Command::*;
-    let expected: &[(Command, &[&str])] = &[
-        (OpenNotificationTarget, &["cmd-alt-n"]),
-        (Logs, &[]),
-        (NewWindow, &["cmd-alt-shift-n"]),
-        (Workspace, &["cmd-shift-n"]),
-        (OpenWorktree, &[]),
-        (WorktreeNotes, &[]),
-        (EditWorktreeNote, &[]),
-        (PreviousWorkspace, &[]),
-        (NextWorkspace, &[]),
-        (WorkspaceNumber(1), &[]),
-        (WorkspaceNumber(2), &[]),
-        (WorkspaceNumber(3), &[]),
-        (WorkspaceNumber(4), &[]),
-        (WorkspaceNumber(5), &[]),
-        (WorkspaceNumber(6), &[]),
-        (WorkspaceNumber(7), &[]),
-        (WorkspaceNumber(8), &[]),
-        (WorkspaceNumber(9), &[]),
-        (RenameWorkspace, &[]),
-        (Tab, &["cmd-t"]),
-        (SplitRight, &["cmd-d"]),
-        (SplitDown, &["cmd-shift-d"]),
-        (NextTab, &["cmd-shift-]"]),
-        (PreviousTab, &["cmd-shift-["]),
-        (MoveTabPrevious, &[]),
-        (MoveTabNext, &[]),
-        (RenameTab, &[]),
-        (FocusLeft, &["cmd-alt-left"]),
-        (FocusRight, &["cmd-alt-right"]),
-        (FocusUp, &["cmd-alt-up"]),
-        (FocusDown, &["cmd-alt-down"]),
-        (NextPane, &["cmd-alt-]"]),
-        (PreviousPane, &["cmd-alt-["]),
-        (LastPane, &[]),
-        (Back, &["cmd-["]),
-        (Forward, &["cmd-]"]),
-        (SwapLeft, &[]),
-        (SwapRight, &[]),
-        (SwapUp, &[]),
-        (SwapDown, &[]),
-        (ResizeLeft, &[]),
-        (ResizeRight, &[]),
-        (ResizeUp, &[]),
-        (ResizeDown, &[]),
-        (ResizeMode, &[]),
-        (EqualizeSplits, &[]),
-        (RenamePane, &[]),
-        (MovePane, &[]),
-        (Zoom, &["cmd-shift-enter"]),
-        (ClearPane, &["cmd-k"]),
-        (Find, &["cmd-f"]),
-        (FindNext, &["cmd-g"]),
-        (FindPrevious, &["cmd-shift-g"]),
-        (CopyMode, &["cmd-shift-c"]),
-        (EditScrollback, &[]),
-        (ClosePane, &["cmd-w"]),
-        (CloseTab, &["cmd-shift-w"]),
-        (ReopenClosedTab, &["cmd-shift-t"]),
-        (TabNumber(1), &["cmd-1"]),
-        (TabNumber(2), &["cmd-2"]),
-        (TabNumber(3), &["cmd-3"]),
-        (TabNumber(4), &["cmd-4"]),
-        (TabNumber(5), &["cmd-5"]),
-        (TabNumber(6), &["cmd-6"]),
-        (TabNumber(7), &["cmd-7"]),
-        (TabNumber(8), &["cmd-8"]),
-        (TabNumber(9), &["cmd-9"]),
-        (PreviousAgent, &[]),
-        (NextAgent, &[]),
-        (AgentNumber(1), &[]),
-        (AgentNumber(2), &[]),
-        (AgentNumber(3), &[]),
-        (AgentNumber(4), &[]),
-        (AgentNumber(5), &[]),
-        (AgentNumber(6), &[]),
-        (AgentNumber(7), &[]),
-        (AgentNumber(8), &[]),
-        (AgentNumber(9), &[]),
-        (ToggleSidebar, &["cmd-b"]),
-        (ToggleStatusBar, &["cmd-alt-b"]),
-        (FocusNextRegion, &["cmd-f6"]),
-        (FocusPreviousRegion, &["cmd-shift-f6"]),
-        (ToggleZenMode, &["ctrl-cmd-z"]),
-        (DevicesOverview, &[]),
-        (NewCoreTerminal, &[]),
-        (MirrorCorePane, &[]),
-        (IncreaseFontSize, &["cmd-=", "cmd-+"]),
-        (DecreaseFontSize, &["cmd--"]),
-        (ResetFontSize, &["cmd-0"]),
-        (Settings, &["cmd-,"]),
-        (ReloadConfig, &[]),
-        (Keybinds, &["cmd-/"]),
-        (Sessions, &["cmd-shift-s"]),
-        (Themes, &[]),
-        (WorkspacePicker, &["cmd-p"]),
-        (Palette, &["cmd-shift-p"]),
-        (ResumePalette, &["cmd-shift-r"]),
-        (Detach, &[]),
-        (Reconnect, &[]),
-        (Quit, &["cmd-q"]),
-        (CheckForUpdates, &[]),
-        (About, &[]),
-        (InstallBrowserSkill, &[]),
-        (SplitEditor, &["cmd-\\"]),
-        (ToggleFullScreen, &["ctrl-cmd-f"]),
-        (CycleWindows, &["cmd-`"]),
-        (CloseWindow, &["cmd-alt-shift-w"]),
-    ];
-    assert_eq!(COMMANDS.len(), expected.len());
-    let shortcuts: std::collections::HashSet<_> = COMMANDS
-        .iter()
-        .flat_map(|info| info.base_shortcuts())
-        .collect();
-    assert_eq!(
-        shortcuts.len(),
-        COMMANDS
-            .iter()
-            .map(|info| info.base_shortcuts().len())
-            .sum::<usize>()
-    );
-    let names: std::collections::HashSet<_> = COMMANDS.iter().map(|info| info.name).collect();
-    assert_eq!(names.len(), COMMANDS.len());
-    for (info, &(command, shortcuts)) in COMMANDS.iter().zip(expected) {
-        assert_eq!(info.command, command);
-        assert_eq!(info.base_shortcuts(), shortcuts);
-        assert!(!info.name.is_empty());
-        assert!(info.message.starts_with("commands-"));
-        let value = match command {
-            TabNumber(number) => json!({"TabNumber": number}),
-            WorkspaceNumber(number) => json!({"WorkspaceNumber": number}),
-            AgentNumber(number) => json!({"AgentNumber": number}),
-            _ => json!(format!("{command:?}")),
-        };
-        assert_eq!(serde_json::from_value::<Command>(value).unwrap(), command);
-    }
-}
-
 /// `cmd--` is the one shortcut whose key is itself the separator, so it
 /// exercises a parser branch no other entry reaches. Binding an unparseable
 /// keystroke would fail at startup rather than here.
@@ -171,61 +31,6 @@ fn every_catalog_shortcut_parses_as_a_keystroke() {
     let minus = gpui::Keystroke::parse("cmd--").unwrap();
     assert_eq!(minus.key, "-");
     assert!(!minus.modifiers.shift);
-}
-
-#[test]
-fn gui_commands_never_send_daemon_requests() {
-    let s = snapshot();
-    for command in [
-        Command::OpenNotificationTarget,
-        Command::Logs,
-        Command::NewWindow,
-        Command::OpenWorktree,
-        Command::Find,
-        Command::FindNext,
-        Command::FindPrevious,
-        Command::CopyMode,
-        Command::ToggleSidebar,
-        Command::ToggleStatusBar,
-        Command::ToggleZenMode,
-        Command::IncreaseFontSize,
-        Command::DecreaseFontSize,
-        Command::ResetFontSize,
-        Command::Settings,
-        Command::Keybinds,
-        Command::Sessions,
-        Command::Themes,
-        Command::WorkspacePicker,
-        Command::Palette,
-        Command::Detach,
-        Command::Reconnect,
-        Command::Quit,
-        Command::About,
-        Command::InstallBrowserSkill,
-        Command::SplitEditor,
-        Command::ToggleFullScreen,
-        Command::CycleWindows,
-        Command::CloseWindow,
-        Command::RenameTab,
-        Command::ReopenClosedTab,
-        Command::LastPane,
-        Command::Back,
-        Command::Forward,
-        Command::ResizeMode,
-        Command::EqualizeSplits,
-        Command::RenamePane,
-        Command::MovePane,
-        Command::PreviousWorkspace,
-        Command::NextWorkspace,
-        Command::WorkspaceNumber(1),
-        Command::RenameWorkspace,
-        Command::PreviousAgent,
-        Command::NextAgent,
-        Command::AgentNumber(1),
-        Command::ReloadConfig,
-    ] {
-        assert!(request(command, &s).is_none(), "{command:?}");
-    }
 }
 
 #[test]
