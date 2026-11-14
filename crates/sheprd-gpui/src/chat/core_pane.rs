@@ -98,8 +98,8 @@ pub(super) fn spawn(
 
 impl SheprdWindow {
     /// The chats in the panes of the focused workspace's herdr-core tabs.
-    pub(super) fn core_chat_targets(&self) -> Vec<Target> {
-        targets(self.core_terminals.chat_terminals())
+    pub(super) fn core_chat_targets(&self, cx: &gpui::App) -> Vec<Target> {
+        targets(self.core_terminals.chat_terminals(cx))
     }
 
     /// Splits `tab`'s pane in use with a chat running `agent`, beside it in
@@ -108,6 +108,7 @@ impl SheprdWindow {
         &mut self,
         agent: Agent,
         tab: TabId,
+        cx: &gpui::App,
     ) -> Result<(), super::StartError> {
         if !self.config.features.acp_chats {
             return Err(super::StartError::Disabled);
@@ -118,7 +119,7 @@ impl SheprdWindow {
         let program = self.chats.program.found()?.to_owned();
         let at = self
             .core_terminals
-            .chat_split_at(tab)
+            .chat_split_at(tab, cx)
             .ok_or(super::StartError::NoWorkspace)?;
         let spawn = spawn(
             agent,
@@ -152,7 +153,7 @@ impl SheprdWindow {
         let pane_id = key(terminal);
         let chat = self
             .core_terminals
-            .drives(tab)
+            .drives(tab, cx)
             .then(|| self.chats.pane(&pane_id))
             .flatten()
             .filter(|chat| chat.available());
@@ -184,9 +185,9 @@ impl SheprdWindow {
 
     /// The herdr-core tab whose pane the chat keyed `pane_id` is drawn
     /// over, when it is a herdr-core pane's.
-    pub(crate) fn core_chat_tab(&self, pane_id: &str) -> Option<TabId> {
+    pub(crate) fn core_chat_tab(&self, pane_id: &str, cx: &gpui::App) -> Option<TabId> {
         match &self.chats.pane(pane_id)?.target.surface {
-            Surface::Core(terminal) => self.core_terminals.tab_of(terminal),
+            Surface::Core(terminal) => self.core_terminals.tab_of(terminal, cx),
             Surface::Herdr => None,
         }
     }
@@ -202,7 +203,7 @@ impl SheprdWindow {
         cx: &gpui::App,
     ) -> Option<gpui::FocusHandle> {
         let pane_id = key(terminal);
-        if !self.core_terminals.drives(tab) || self.chats.raw(&pane_id) {
+        if !self.core_terminals.drives(tab, cx) || self.chats.raw(&pane_id) {
             return None;
         }
         let pane = self.chats.pane(&pane_id).filter(|pane| pane.available())?;
@@ -241,7 +242,8 @@ impl SheprdWindow {
             .focused_core_chat(window, cx)
             .or_else(|| self.core_terminals.focused_pane(window, cx))?;
         let pane_id = key(&terminal);
-        (self.core_terminals.drives(tab) && self.chats.pane(&pane_id).is_some()).then_some(pane_id)
+        (self.core_terminals.drives(tab, cx) && self.chats.pane(&pane_id).is_some())
+            .then_some(pane_id)
     }
 
     /// The herdr-core tab and pane whose chat holds the keyboard.
@@ -256,7 +258,7 @@ impl SheprdWindow {
             };
             pane.focus_handles(cx)
                 .any(|focus| focus.is_focused(window))
-                .then(|| Some((self.core_terminals.tab_of(terminal)?, terminal.clone())))
+                .then(|| Some((self.core_terminals.tab_of(terminal, cx)?, terminal.clone())))
                 .flatten()
         })
     }
@@ -272,8 +274,8 @@ impl SheprdWindow {
             .map(|pane| pane.target.surface.clone());
         match surface {
             Some(Surface::Core(terminal)) => {
-                if let Some(tab) = self.core_terminals.tab_of(&terminal)
-                    && self.core_terminals.set_active(tab, terminal)
+                if let Some(tab) = self.core_terminals.tab_of(&terminal, cx)
+                    && self.core_terminals.set_active(tab, terminal, cx)
                 {
                     cx.notify();
                 }
@@ -300,7 +302,9 @@ impl SheprdWindow {
         }
         let group = group.or_else(|| self.active_group())?;
         match self.group_shown(group, cx) {
-            crate::browser::Shown::Page(tab) => self.core_terminals.chat_split_at(tab).map(|_| tab),
+            crate::browser::Shown::Page(tab) => {
+                self.core_terminals.chat_split_at(tab, cx).map(|_| tab)
+            }
             _ => None,
         }
     }

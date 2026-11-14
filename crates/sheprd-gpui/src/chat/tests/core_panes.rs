@@ -4,10 +4,13 @@
 
 use super::{overlay::open, *};
 use crate::{
-    SheprdWindow, browser::TabId, chat::core_pane::key, core_terminals::panes::Panes,
+    SheprdWindow,
+    browser::{Location, Store, TabId},
+    chat::core_pane::key,
+    core_terminals::panes::Panes,
     sidebar::layout_tests::full_draw,
 };
-use gpui::{Entity, TestAppContext, VisualTestContext};
+use gpui::{App, Entity, TestAppContext, VisualTestContext};
 use sheprd_backend::{RunState, TerminalId, TerminalInfo};
 use sheprd_client::{ConnectTarget, protocol::AgentStatus};
 use std::collections::BTreeMap;
@@ -32,8 +35,16 @@ fn info(name: &str, endpoint: Option<&str>) -> TerminalInfo {
     }
 }
 
-const DRIVEN: u64 = 1;
-const MIRROR: u64 = 2;
+/// The fixture's tab that drives its terminals, or its mirror.
+fn tab(mirror: bool, cx: &App) -> TabId {
+    let tab = cx.global::<Store>().tabs().find(|tab| {
+        matches!(&tab.location, Some(Location::CoreTerminal { observe, .. }) if *observe == mirror)
+    });
+    tab.unwrap().id
+}
+
+const DRIVEN: bool = false;
+const MIRROR: bool = true;
 
 /// A window whose only chat runs in herdr-core terminal t1, split beside a
 /// shell in t2 that is in use, with a mirror tab of t1; the chat attached to
@@ -44,7 +55,7 @@ fn attached(
     let (view, _peer, cx) = open(cx, ConnectTarget::Local);
     let program = Program::new();
     let endpoint = "fedcba9876543210fedcba9876543210";
-    view.update(cx, |view, _| {
+    view.update(cx, |view, cx| {
         // The fixture's Herdr pane runs no chat here.
         let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
         snapshot.agents[0].tokens.clear();
@@ -52,20 +63,11 @@ fn attached(
         panes
             .split(&id("t1"), crate::core_terminals::panes::Axis::Row, id("t2"))
             .unwrap();
-        view.core_terminals.show_for_test(
-            TabId::test(DRIVEN),
-            panes,
-            false,
-            vec![info("t1", Some(endpoint)), info("t2", None)],
-        );
+        let infos = vec![info("t1", Some(endpoint)), info("t2", None)];
+        let driven = view.core_terminals.show_for_test(panes, false, infos, cx);
+        view.core_terminals.set_active(driven, id("t2"), cx);
         view.core_terminals
-            .set_active(TabId::test(DRIVEN), id("t2"));
-        view.core_terminals.show_for_test(
-            TabId::test(MIRROR),
-            Panes::single(id("t1")),
-            true,
-            Vec::new(),
-        );
+            .show_for_test(Panes::single(id("t1")), true, Vec::new(), cx);
     });
     let path = program.path.clone();
     let poll = |cx: &mut VisualTestContext| {
@@ -112,16 +114,16 @@ fn only_the_tab_that_drives_the_terminal_gives_its_chat_the_keyboard(cx: &mut Te
             Some(&Surface::Core(id("t1")))
         );
         assert!(
-            view.core_chat_focus(TabId::test(DRIVEN), &id("t1"), window, cx)
+            view.core_chat_focus(tab(DRIVEN, cx), &id("t1"), window, cx)
                 .is_some()
         );
         // A mirror only watches: no composer, no permission buttons.
         assert!(
-            view.core_chat_focus(TabId::test(MIRROR), &id("t1"), window, cx)
+            view.core_chat_focus(tab(MIRROR, cx), &id("t1"), window, cx)
                 .is_none()
         );
-        assert!(view.core_terminals.drives(TabId::test(DRIVEN)));
-        assert!(!view.core_terminals.drives(TabId::test(MIRROR)));
+        assert!(view.core_terminals.drives(tab(DRIVEN, cx), cx));
+        assert!(!view.core_terminals.drives(tab(MIRROR, cx), cx));
     });
 }
 
@@ -134,13 +136,13 @@ fn a_click_on_a_core_chat_moves_the_pane_in_use_without_herdr(cx: &mut TestAppCo
             view.live.surface = None;
             assert!(!view.input_ready());
             assert_eq!(
-                view.core_terminals.chat_split_at(TabId::test(DRIVEN)),
+                view.core_terminals.chat_split_at(tab(DRIVEN, cx), cx),
                 Some(id("t2"))
             );
             // What a click on the chat runs.
             view.focus_chat(&key(&id("t1")), window, cx);
             assert_eq!(
-                view.core_terminals.chat_split_at(TabId::test(DRIVEN)),
+                view.core_terminals.chat_split_at(tab(DRIVEN, cx), cx),
                 Some(id("t1"))
             );
         });
@@ -154,7 +156,7 @@ fn the_default_pane_is_the_core_chat_holding_the_keyboard(cx: &mut TestAppContex
         assert_eq!(view.read(cx).focused_core_chat_key(window, cx), None);
         let focus = view
             .read(cx)
-            .core_chat_focus(TabId::test(DRIVEN), &id("t1"), window, cx)
+            .core_chat_focus(tab(DRIVEN, cx), &id("t1"), window, cx)
             .unwrap();
         window.focus(&focus, cx);
         assert_eq!(

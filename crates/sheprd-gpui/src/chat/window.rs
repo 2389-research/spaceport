@@ -100,7 +100,7 @@ impl SheprdWindow {
                 )
             })
             .unwrap_or_default();
-        let core = enabled.then(|| self.core_chat_targets());
+        let core = enabled.then(|| self.core_chat_targets(cx));
         let targets = super::core_pane::with_core(targets, core.unwrap_or_default());
         if enabled {
             self.locate_chat_program(cx);
@@ -925,7 +925,7 @@ impl SheprdWindow {
             return false;
         }
         // A herdr-core pane gives the keyboard to whichever it shows now.
-        if let Some(tab) = self.core_chat_tab(pane_id) {
+        if let Some(tab) = self.core_chat_tab(pane_id, cx) {
             self.focus_core_terminal(tab, window, cx);
         } else if raw && self.chat_focused(window, cx) {
             window.focus(&self.focus, cx);

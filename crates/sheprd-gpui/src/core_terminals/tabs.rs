@@ -1,10 +1,14 @@
 // ABOUTME: Attaches and synchronizes visible Core terminal panes.
 // ABOUTME: Leaves saved Core tabs untouched when the runtime feature is off.
-//! Each herdr-core tab's panes as the window keeps them: a view per pane,
-//! the pane in use, panes whose program ended, and the layout saved with the
-//! tab once a change settles.
+//! Each herdr-core tab's panes as the window shows them: a view per pane,
+//! the pane in use, and panes whose program ended. The layout itself is the
+//! tab's, in the app's store, and every edit here goes through it.
 
-use super::{CoreTerminalView, Start, TabPanes, panes::Axis, worker};
+use super::{
+    CoreTerminalView, Start, TabPanes, layout,
+    panes::{Axis, Direction},
+    worker,
+};
 use crate::{
     SheprdWindow,
     browser::{Location, Store, TabId},
@@ -30,11 +34,19 @@ impl SheprdWindow {
             return;
         };
         let terminals = &mut self.core_terminals;
-        terminals.tabs.retain(|id, _| store.get(*id).is_some());
+        terminals.tabs.retain(|id, shown| {
+            let Some(Location::CoreTerminal { panes, .. }) =
+                store.get(*id).and_then(|tab| tab.location.as_ref())
+            else {
+                return false;
+            };
+            shown.follow(panes);
+            true
+        });
         let tabs = &terminals.tabs;
         terminals.views.retain(|(tab, terminal), _| {
-            tabs.get(tab)
-                .is_some_and(|shown| shown.panes.contains(terminal))
+            tabs.contains_key(tab)
+                && layout(*tab, cx).is_some_and(|(panes, _)| panes.contains(terminal))
         });
         let Some((scope, workspace)) = self.active_browser_key(cx) else {
             return;
@@ -44,14 +56,12 @@ impl SheprdWindow {
             let Some(Location::CoreTerminal { panes, observe }) = &tab.location else {
                 continue;
             };
-            let shown = self
-                .core_terminals
+            self.core_terminals
                 .tabs
                 .entry(tab.id)
-                .or_insert_with(|| TabPanes::new(panes.clone(), *observe));
+                .or_insert_with(|| TabPanes::new(panes.first().clone()));
             missing.extend(
-                shown
-                    .panes
+                panes
                     .terminals()
                     .into_iter()
                     .filter(|terminal| {
@@ -61,7 +71,7 @@ impl SheprdWindow {
                             .contains_key(&(tab.id, (*terminal).clone()))
                     })
                     .map(|terminal| {
-                        let role = if shown.observe {
+                        let role = if *observe {
                             Role::Observer
                         } else {
                             Role::Active
@@ -128,11 +138,7 @@ impl SheprdWindow {
         let mut ended = Vec::new();
         for ((tab, terminal), view) in views {
             view.update(cx, |view, cx| view.poll(cx));
-            let split = self
-                .core_terminals
-                .tabs
-                .get(&tab)
-                .is_some_and(|shown| shown.panes.len() > 1);
+            let split = layout(tab, cx).is_some_and(|(panes, _)| panes.len() > 1);
             if split && view.read(cx).ended() {
                 ended.push((tab, terminal));
             }
@@ -174,14 +180,19 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let placed = match self.core_terminals.tabs.get_mut(&tab) {
-            Some(shown) => shown.panes.split(at, axis, new.clone()).map(|()| {
-                shown.active = new.clone();
-                shown.set_zoom(None);
-                shown.unsaved = true;
+        let placed = match self.core_terminals.tabs.contains_key(&tab) {
+            true => Store::update(cx, |store| {
+                store.edit_panes(tab, |panes| panes.split(at, axis, new.clone()))
             }),
-            None => Err(super::panes::Error::Missing(at.clone())),
-        };
+            false => None,
+        }
+        .unwrap_or_else(|| Err(super::panes::Error::Missing(at.clone())));
+        if let Some(shown) = self.core_terminals.tabs.get_mut(&tab)
+            && placed.is_ok()
+        {
+            shown.active = new.clone();
+            shown.set_zoom(None);
+        }
         if let Err(error) = placed {
             self.show_flash(Flash::warning(error.to_string()), cx);
             self.end_core_terminal(new);
@@ -206,28 +217,36 @@ impl SheprdWindow {
             .views
             .get(&(tab, terminal.clone()))
             .is_some_and(|view| view.read(cx).focus_handle().is_focused(window));
-        let Some(shown) = self.core_terminals.tabs.get_mut(&tab) else {
-            return false;
-        };
-        let next = [
-            super::panes::Direction::Left,
-            super::panes::Direction::Up,
-            super::panes::Direction::Right,
-            super::panes::Direction::Down,
-        ]
-        .into_iter()
-        .find_map(|direction| shown.panes.neighbor(terminal, direction));
-        if !shown.panes.remove(terminal) {
+        if !self.core_terminals.tabs.contains_key(&tab) {
             return false;
         }
+        // The pane beside it, read before it leaves the tree.
+        let removed = Store::update(cx, |store| {
+            store.edit_panes(tab, |panes| {
+                let next = [
+                    Direction::Left,
+                    Direction::Up,
+                    Direction::Right,
+                    Direction::Down,
+                ]
+                .into_iter()
+                .find_map(|direction| panes.neighbor(terminal, direction));
+                panes
+                    .remove(terminal)
+                    .then(|| next.unwrap_or_else(|| panes.first().clone()))
+            })
+        })
+        .flatten();
+        let (Some(next), Some(shown)) = (removed, self.core_terminals.tabs.get_mut(&tab)) else {
+            return false;
+        };
         if shown.zoomed.as_ref() == Some(terminal) {
             shown.zoomed = None;
             shown.zoom = crate::motion::Toggle::default();
         }
         if &shown.active == terminal {
-            shown.active = next.unwrap_or_else(|| shown.panes.first().clone());
+            shown.active = next;
         }
-        shown.unsaved = true;
         self.core_terminals.views.remove(&(tab, terminal.clone()));
         if had_focus {
             self.focus_core_terminal(tab, window, cx);
@@ -251,27 +270,6 @@ impl SheprdWindow {
             });
         if let Err(error) = ended {
             tracing::warn!(%error, "Could not start a herdr-core kill worker");
-        }
-    }
-
-    /// Writes changed layouts into their tabs, which saves them.
-    pub(super) fn save_core_panes(&mut self, cx: &mut Context<Self>) {
-        let changed: Vec<(TabId, Location)> = self
-            .core_terminals
-            .tabs
-            .iter_mut()
-            .filter_map(|(tab, shown)| {
-                std::mem::take(&mut shown.unsaved).then(|| {
-                    let location = Location::CoreTerminal {
-                        panes: shown.panes.clone(),
-                        observe: shown.observe,
-                    };
-                    (*tab, location)
-                })
-            })
-            .collect();
-        for (tab, location) in changed {
-            Store::update(cx, |store| store.visited(tab, Some(location), None));
         }
     }
 }
