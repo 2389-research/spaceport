@@ -3,6 +3,7 @@ use crate::chat::{Chats, link::Link};
 use sheprd_chat_protocol::{Command, EndpointId};
 
 mod observed_identity;
+mod phase;
 
 const A: &str = "0123456789abcdef0123456789abcdef";
 const B: &str = "fedcba9876543210fedcba9876543210";
