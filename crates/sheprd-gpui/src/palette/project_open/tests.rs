@@ -57,7 +57,7 @@ fn creation_response_is_typed_and_requires_a_workspace_id() {
     ));
     assert!(matches!(
         created_workspace(&json!({"error": {"code": "refused", "message": "not trusted"}})),
-        Err(crate::Error::Daemon(crate::daemon::Error::Response(_)))
+        Err(crate::Error::Client(sheprd_client::Error::Endpoint { .. }))
     ));
 }
 
@@ -331,4 +331,37 @@ fn a_created_project_under_a_symlinked_root_reuses_its_workspace(cx: &mut TestAp
             Some(NavigationTarget::Workspace("w1".into()))
         );
     });
+}
+
+#[test]
+fn created_workspace_reads_each_response_envelope() {
+    use crate::response_envelope_tests::{assert_outcomes, outcomes};
+    assert_outcomes(
+        "project open",
+        outcomes(
+            json!({"type": "workspace_created", "workspace": {"workspace_id": "w"}}),
+            |response| match created_workspace(response) {
+                Ok(id) => format!("ok {id}"),
+                Err(error) => format!("err {error}"),
+            },
+        ),
+        [
+            ("absent", "ok w"),
+            ("null", "ok w"),
+            ("object", "err no"),
+            ("no_message", "err denied"),
+            ("no_code", "err no"),
+            ("string", "err busy"),
+            (
+                "no_result",
+                "err Unexpected workspace creation response. Review workspace state before retrying.",
+            ),
+            (
+                "wrong_type",
+                "err Unexpected workspace creation response. Review workspace state before retrying.",
+            ),
+            ("control", "err bad[31mnews"),
+            ("long", "err xxxxxxxx..(1028)"),
+        ],
+    );
 }

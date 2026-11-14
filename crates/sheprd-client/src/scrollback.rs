@@ -6,6 +6,7 @@
 //! scrollback, so a point stays put while the pane scrolls; the viewport's
 //! top row is `max_offset_from_bottom - offset_from_bottom`.
 
+pub use crate::response::EndpointErrorCode;
 use crate::{ClientHandle, Error, Result, method::Method};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -149,42 +150,6 @@ pub enum ScrollbackResponse {
     Ok {},
 }
 
-/// An endpoint error code this client acts on. Codes are open-ended on the
-/// wire, so anything else is kept verbatim for display.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EndpointErrorCode {
-    /// The pane's content changed after the request's revision was read.
-    StaleContent,
-    PaneNotFound,
-    QueryTooLarge,
-    Other(String),
-}
-
-impl From<String> for EndpointErrorCode {
-    fn from(code: String) -> Self {
-        match code.as_str() {
-            "stale_content" => Self::StaleContent,
-            "pane_not_found" => Self::PaneNotFound,
-            "query_too_large" => Self::QueryTooLarge,
-            _ => Self::Other(code),
-        }
-    }
-}
-
-#[derive(Deserialize)]
-struct ErrorBody {
-    code: String,
-    message: String,
-}
-
-#[derive(Deserialize)]
-struct Envelope {
-    #[serde(default)]
-    result: Option<Value>,
-    #[serde(default)]
-    error: Option<ErrorBody>,
-}
-
 impl CopySearchParams {
     /// Rejects what the daemon would refuse before it is queued.
     pub fn validate(&self) -> Result<()> {
@@ -242,15 +207,8 @@ impl ClientHandle {
 /// Decodes the response envelope of a scrollback request: its result, or
 /// the endpoint error it carried.
 pub fn decode_response(response: &Value) -> Result<ScrollbackResponse> {
-    let envelope = Envelope::deserialize(response).map_err(Error::ResponseSchema)?;
-    if let Some(ErrorBody { code, message }) = envelope.error {
-        return Err(Error::Endpoint {
-            code: code.into(),
-            message,
-        });
-    }
-    let result = envelope.result.ok_or(Error::ResponseMissingResult)?;
-    ScrollbackResponse::deserialize(result).map_err(Error::ResponseSchema)
+    ScrollbackResponse::deserialize(crate::response::result(response)?)
+        .map_err(Error::ResponseSchema)
 }
 
 /// Decodes the answer to a `pane.copy_search` request.

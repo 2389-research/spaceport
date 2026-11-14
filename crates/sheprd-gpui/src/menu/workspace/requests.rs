@@ -4,7 +4,7 @@ use super::chosen_label;
 use crate::{
     NavigationTarget, SheprdWindow,
     i18n::fl,
-    menu::{Page, Submission, WorkspaceAction, endpoint_error},
+    menu::{Page, Submission, WorkspaceAction, refusal},
 };
 use gpui::*;
 
@@ -68,9 +68,8 @@ impl SheprdWindow {
                 return;
             }
         };
-        if let Some(error) = response.get("error") {
-            let (code, message) = endpoint_error(error);
-            self.menu.error = Some(format!("{code}: {message}"));
+        if let Some(refusal) = refusal(&response) {
+            self.menu.error = Some(refusal);
             cx.notify();
             return;
         }

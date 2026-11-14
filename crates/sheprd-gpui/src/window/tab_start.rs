@@ -8,13 +8,11 @@ use sheprd_client::protocol::ClientPaneInputEvent;
 /// The tab and root pane a successful `tab.create` response made.
 /// A malformed success is absent; a daemon refusal keeps its structured error.
 pub(crate) fn created_tab(response: &Value) -> crate::Result<Option<(String, String)>> {
-    if let Some(error) = response.get("error").filter(|error| !error.is_null()) {
-        return Err(crate::daemon::Error::Response(error.clone()).into());
-    }
-    let result = &response["result"];
-    if result["type"] != "tab_created" {
-        return Ok(None);
-    }
+    let result = match sheprd_client::response::tagged(response, "tab_created") {
+        Ok(result) => result,
+        Err(error @ sheprd_client::Error::Endpoint { .. }) => return Err(error.into()),
+        Err(_) => return Ok(None),
+    };
     let id = |value: &Value| {
         value
             .as_str()

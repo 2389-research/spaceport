@@ -57,6 +57,11 @@ fn every_client_variant_has_a_message() {
         Error::Disconnected,
         Error::EmptySurface,
         Error::EncodedSurfaceBeforeBaseline,
+        // The daemon refused without a word of its own.
+        Error::Endpoint {
+            code: EndpointErrorCode::Other("endpoint_error".into()),
+            message: String::new(),
+        },
         Error::EndpointGeneration {
             generation: newer,
             server_version: "0.12.0".into(),

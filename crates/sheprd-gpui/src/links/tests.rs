@@ -220,7 +220,10 @@ fn a_failed_plugin_handler_spends_the_click() {
     };
     assert!(matches!(
         error,
-        crate::Error::Daemon(crate::daemon::Error::Response(_))
+        crate::Error::Client(sheprd_client::Error::Endpoint {
+            code: EndpointErrorCode::PluginLinkFailed,
+            ..
+        })
     ));
     assert_eq!(error.to_string(), "handler exited with status 1");
 }
@@ -292,4 +295,80 @@ fn rejection_and_disconnection_answer_the_pending_request() {
         inbox.take(LinkRequest::Resolve, "gpui-4"),
         Some(Err(crate::Error::NotConnected))
     ));
+}
+
+#[test]
+fn link_answers_read_each_response_envelope() {
+    use crate::response_envelope_tests::{assert_outcomes, outcomes};
+    assert_outcomes(
+        "link resolution",
+        outcomes(
+            json!({"type": "pane_link_resolved",
+                "regions": [{"row": 2, "start_col": 0, "end_col": 9}]}),
+            |response| {
+                ResolvedLink::from_response(cell(&surface(4, 0), 5, 3).unwrap(), response)
+                    .regions
+                    .len()
+                    .to_string()
+            },
+        ),
+        [
+            ("absent", "1"),
+            ("null", "1"),
+            ("object", "0"),
+            ("no_message", "0"),
+            ("no_code", "0"),
+            ("string", "0"),
+            ("no_result", "0"),
+            ("wrong_type", "0"),
+            ("control", "0"),
+            ("long", "0"),
+        ],
+    );
+    assert_outcomes(
+        "link activation",
+        outcomes(
+            json!({"type": "pane_link_activated", "handled": true}),
+            |response| match Activation::from(Ok(response.clone())) {
+                Activation::Handled => "handled".into(),
+                Activation::HandlerFailed(error) => format!("failed {error}"),
+                Activation::Declined(_) => "declined".into(),
+            },
+        ),
+        [
+            ("absent", "handled"),
+            ("null", "handled"),
+            ("object", "declined"),
+            ("no_message", "declined"),
+            ("no_code", "declined"),
+            ("string", "declined"),
+            ("no_result", "declined"),
+            ("wrong_type", "declined"),
+            ("control", "declined"),
+            ("long", "declined"),
+        ],
+    );
+    let mut plugin = crate::response_envelope_tests::envelopes(json!({}));
+    for (_, response) in &mut plugin {
+        if response["error"].is_object() && response["error"]["code"].is_string() {
+            response["error"]["code"] = json!("plugin_link_failed");
+        }
+    }
+    let failures: Vec<_> = plugin
+        .into_iter()
+        .filter_map(|(case, response)| match Activation::from(Ok(response)) {
+            Activation::HandlerFailed(error) => Some((case, error.to_string())),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        failures,
+        [
+            ("object", "no".to_owned()),
+            ("no_message", "plugin_link_failed".into()),
+            ("control", "bad[31mnews".into()),
+            ("long", "x".repeat(1024)),
+        ],
+        "failed link handler"
+    );
 }

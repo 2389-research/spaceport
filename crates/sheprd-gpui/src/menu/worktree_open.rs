@@ -1,7 +1,7 @@
 //! Existing checkouts come only from the selected daemon, never local Git.
 
 // i18n: migrated
-use super::{MenuState, Page, WorkspaceAction, endpoint_error};
+use super::{MenuState, Page, WorkspaceAction, refusal};
 use crate::{SheprdWindow, i18n::fl, search_input::SearchInput};
 use gpui::{prelude::*, *};
 use serde::Deserialize;
@@ -138,9 +138,8 @@ impl MenuState {
         self.error = match result {
             Err(error) => Some(error.to_string()),
             Ok(response) => {
-                if let Some(error) = response.get("error") {
-                    let (code, message) = endpoint_error(error);
-                    Some(format!("{code}: {message}"))
+                if let Some(refusal) = refusal(&response) {
+                    Some(refusal)
                 } else {
                     match listing(&response) {
                         Ok((source, entries)) => {

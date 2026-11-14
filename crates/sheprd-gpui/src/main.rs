@@ -122,6 +122,8 @@ mod worktree_notes;
 
 #[cfg(feature = "integration-test")]
 mod performance;
+#[cfg(test)]
+mod response_envelope_tests;
 #[cfg(feature = "integration-test")]
 mod smoke;
 #[cfg(all(test, unix))]
