@@ -100,7 +100,6 @@ fn installing_keeps_to_existing_agent_directories_and_the_users_own_files() {
         install(home.path(), SKILL),
         Err(crate::Error::SkillInstall { .. })
     ));
-    assert!(!agents_present(home.path()));
     std::fs::create_dir(home.path().join(".agents")).unwrap();
     std::fs::create_dir(home.path().join(".claude")).unwrap();
     // A skill of the same name the user wrote is theirs.

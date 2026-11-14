@@ -2,17 +2,35 @@
 // ABOUTME: Run pure build selection without GPUI or signing credentials.
 #[path = "../preview_identity.rs"]
 mod preview_identity;
+use preview_identity::Identity;
 
 #[test]
 fn development_and_macos_preview_are_distinct() {
     assert_eq!(
         preview_identity::select(None, "linux"),
-        Some(("spaceport.development", "dev"))
+        Some(Identity {
+            channel: "development",
+            app_id: "spaceport.development",
+            version: "dev",
+        })
     );
     assert_eq!(
         preview_identity::select(Some("20261109.1"), "macos"),
-        Some(("ai.2389.spaceport", "20261109.1"))
+        Some(Identity {
+            channel: "macos-preview",
+            app_id: "ai.2389.spaceport",
+            version: "20261109.1",
+        })
     );
+}
+
+#[test]
+fn every_target_without_a_preview_version_is_a_development_build() {
+    for target in ["macos", "linux", "windows", ""] {
+        let channel = preview_identity::select(None, target).map(|identity| identity.channel);
+        assert_eq!(channel, Some(preview_identity::DEVELOPMENT));
+        assert_ne!(channel, Some(preview_identity::MACOS_PREVIEW));
+    }
 }
 
 #[test]

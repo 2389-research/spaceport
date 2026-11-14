@@ -156,31 +156,24 @@ fn extract_ioreg_string_handles_quotes_and_brackets() {
 }
 
 #[test]
-fn client_version_names_the_commit_of_source_builds_only() {
+fn client_version_names_the_commit_when_it_is_known() {
     let app = crate::APP_VERSION;
     assert_eq!(
-        client_version(false, Some("2f643d73")),
+        client_version(Some("2f643d73")),
         format!("{app} (2f643d73)")
     );
-    assert_eq!(client_version(false, Some("")), app);
-    assert_eq!(client_version(false, None), app);
-    assert_eq!(client_version(true, Some("2f643d73")), app);
+    assert_eq!(client_version(Some("")), app);
+    assert_eq!(client_version(None), app);
 }
 
 #[test]
-fn install_method_tells_source_builds_and_leaves_releases_unset() {
+fn install_method_tells_source_builds_apart() {
     let bundle = Path::new("/Users/me/herdr-gpui/target/release/Herdr.app/Contents/MacOS/Herdr");
-    assert_eq!(
-        install_method(bundle, false),
-        Some("Locally built app bundle")
-    );
+    assert_eq!(install_method(bundle), Some("Locally built app bundle"));
     let cargo = Path::new("/Users/me/herdr-gpui/target/debug/sheprd");
-    assert_eq!(install_method(cargo, false), Some("cargo run / just run"));
+    assert_eq!(install_method(cargo), Some("cargo run / just run"));
     let installed = Path::new("/usr/local/bin/herdr-gpui");
-    assert_eq!(install_method(installed, false), None);
-    let release = Path::new("/Applications/Herdr.app/Contents/MacOS/Herdr");
-    assert_eq!(install_method(release, true), None);
-    assert_eq!(install_method(cargo, true), None);
+    assert_eq!(install_method(installed), None);
 }
 
 #[gpui::test]
