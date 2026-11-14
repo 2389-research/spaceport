@@ -235,3 +235,20 @@ fn every_scrollback_result_decodes_by_its_tag() {
         Error::ResponseSchema(_)
     ));
 }
+
+#[test]
+fn decode_response_reads_the_shared_envelope() {
+    let ok = json!({"type": "ok"});
+    for response in [
+        json!({"id": "r", "result": ok}),
+        json!({"id": "r", "error": null, "result": ok}),
+    ] {
+        assert_eq!(
+            decode_response(&response).unwrap(),
+            ScrollbackResponse::Ok {}
+        );
+    }
+    // A lenient error body is the daemon's refusal, not a schema failure.
+    let error = decode_response(&json!({"id": "r", "error": "busy"})).unwrap_err();
+    assert!(matches!(&error, Error::Endpoint { message, .. } if message == "busy"));
+}

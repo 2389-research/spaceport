@@ -801,7 +801,10 @@ impl Session {
                     }
                     let elapsed = p.started.elapsed();
                     let elapsed_ms = elapsed.as_millis() as u64;
-                    let api_error = response.get("error").is_some_and(|error| !error.is_null());
+                    let api_error = matches!(
+                        crate::response::result(&response),
+                        Err(Error::Endpoint { .. })
+                    );
                     if api_error {
                         tracing::warn!(elapsed_ms, "API request failed");
                     } else if elapsed > SLOW_REQUEST {

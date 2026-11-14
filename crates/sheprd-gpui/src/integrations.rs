@@ -54,17 +54,13 @@ fn text(value: &Value, limit: usize) -> Result<&str, ResponseError> {
 }
 
 fn result<'a>(response: &'a Value, kind: &str) -> Result<&'a Value, ResponseError> {
-    if let Some(error) = response.get("error").filter(|error| !error.is_null()) {
-        return Err(ResponseError::Daemon {
-            code: text(&error["code"], 128)?.into(),
-            message: text(&error["message"], MAX_TEXT)?.into(),
-        });
-    }
-    let result = &response["result"];
-    if result["type"] != kind {
-        return Err(ResponseError::Invalid);
-    }
-    Ok(result)
+    sheprd_client::response::tagged(response, kind).map_err(|error| match &error {
+        sheprd_client::Error::Endpoint { code, .. } => ResponseError::Daemon {
+            code: code.as_str().into(),
+            message: error.to_string(),
+        },
+        _ => ResponseError::Invalid,
+    })
 }
 
 fn parse_list(response: &Value, method: Method) -> Result<Vec<Integration>, ResponseError> {
@@ -618,7 +614,35 @@ mod tests {
     }
 
     #[test]
-    fn daemon_errors_are_validated_before_display() {
+    fn result_reads_each_response_envelope() {
+        use crate::response_envelope_tests::{assert_outcomes, outcomes};
+        assert_outcomes(
+            "integrations",
+            outcomes(list()["result"].clone(), |response| {
+                match result(response, "integration_list") {
+                    Ok(_) => "ok".into(),
+                    Err(ResponseError::Daemon { code, message }) => format!("{code}:{message}"),
+                    Err(ResponseError::Invalid) => "invalid".into(),
+                    Err(ResponseError::Limit) => "limit".into(),
+                }
+            }),
+            [
+                ("absent", "ok"),
+                ("null", "ok"),
+                ("object", "denied:no"),
+                ("no_message", "denied:denied"),
+                ("no_code", "endpoint_error:no"),
+                ("string", "endpoint_error:busy"),
+                ("no_result", "invalid"),
+                ("wrong_type", "invalid"),
+                ("control", "denied:bad[31mnews"),
+                ("long", "denied:xxxxx..(1031)"),
+            ],
+        );
+    }
+
+    #[test]
+    fn daemon_errors_are_bounded_before_display() {
         let response =
             // i18n: data
             json!({"error":{"code":"integration_install_failed","message":"Permission denied"}});
@@ -629,7 +653,7 @@ mod tests {
         let response = json!({"error":{"code":"failure","message":"x".repeat(MAX_TEXT + 1)}});
         assert!(matches!(
             parse_list(&response, Method::IntegrationList),
-            Err(ResponseError::Limit)
+            Err(ResponseError::Daemon { message, .. }) if message.len() == MAX_TEXT
         ));
     }
 

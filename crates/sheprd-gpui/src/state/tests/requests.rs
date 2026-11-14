@@ -134,7 +134,10 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
         .unwrap_err();
     assert!(Arc::ptr_eq(error, shared));
     assert!(
-        matches!(error.as_ref(), crate::Error::Daemon(crate::daemon::Error::Response(value)) if value == &payload)
+        matches!(error.as_ref(), crate::Error::Client(sheprd_client::Error::Endpoint {
+            code: sheprd_client::response::EndpointErrorCode::Other(code),
+            message,
+        }) if code == "invalid_label" && message == "Invalid label")
     );
     assert_eq!(error.to_string(), "Invalid label");
     state.apply(ClientEvent::CommandRejected {
