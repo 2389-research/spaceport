@@ -1,0 +1,354 @@
+$ app
+error MissingArgument { command: "app", what: "focus|hide|quit" }: app requires focus|hide|quit
+$ app focus
+json=false window=none {"method":"app","op":{"op":"focus"}}
+$ app hide
+json=false window=none {"method":"app","op":{"op":"hide"}}
+$ app quit
+json=false window=none {"method":"app","op":{"op":"quit"}}
+$ app quit --json
+json=true window=none {"method":"app","op":{"op":"quit"}}
+$ app focus --window 2
+json=false window=2 {"method":"app","op":{"op":"focus"}}
+$ app explode
+error UnknownCommand { family: "app", command: "explode" }: Unknown app command: explode
+$ app focus extra
+error Unexpected { command: "app", argument: "extra" }: app: unexpected extra
+$ window
+json=false window=none {"method":"window","op":{"op":"list"}}
+$ window list
+json=false window=none {"method":"window","op":{"op":"list"}}
+$ window list --json
+json=true window=none {"method":"window","op":{"op":"list"}}
+$ window --json list --window 7
+json=true window=7 {"method":"window","op":{"op":"list"}}
+$ window new
+json=false window=none {"method":"window","op":{"op":"new"}}
+$ window focus 7
+json=false window=7 {"method":"window","op":{"op":"focus"}}
+$ window focus 7 --window 3
+json=false window=7 {"method":"window","op":{"op":"focus"}}
+$ window --window 3 focus 7
+json=false window=7 {"method":"window","op":{"op":"focus"}}
+$ window focus 7 --json
+json=true window=7 {"method":"window","op":{"op":"focus"}}
+$ window focus
+error MissingArgument { command: "window", what: "ID" }: window requires ID
+$ window focus x
+error InvalidValue("ID"): Invalid ID
+$ window focus -1
+error MissingArgument { command: "window", what: "ID" }: window requires ID
+$ window focus 7 8
+error Unexpected { command: "window", argument: "8" }: window: unexpected 8
+$ window fullscreen
+json=false window=none {"method":"window","op":{"op":"fullscreen","switch":"toggle"}}
+$ window fullscreen on
+json=false window=none {"method":"window","op":{"op":"fullscreen","switch":"on"}}
+$ window fullscreen off
+json=false window=none {"method":"window","op":{"op":"fullscreen","switch":"off"}}
+$ window fullscreen toggle
+json=false window=none {"method":"window","op":{"op":"fullscreen","switch":"toggle"}}
+$ window fullscreen show
+json=false window=none {"method":"window","op":{"op":"fullscreen","switch":"on"}}
+$ window fullscreen hide
+json=false window=none {"method":"window","op":{"op":"fullscreen","switch":"off"}}
+$ window fullscreen maybe
+error InvalidValue("on|off|toggle"): Invalid on|off|toggle
+$ window size
+json=false window=none {"method":"window","op":{"op":"size","size":null}}
+$ window size 1200x800
+json=false window=none {"method":"window","op":{"op":"size","size":{"width":1200,"height":800}}}
+$ window size 1200X800
+json=false window=none {"method":"window","op":{"op":"size","size":{"width":1200,"height":800}}}
+$ window size 200x150
+json=false window=none {"method":"window","op":{"op":"size","size":{"width":200,"height":150}}}
+$ window size 16384x16384
+json=false window=none {"method":"window","op":{"op":"size","size":{"width":16384,"height":16384}}}
+$ window size 199x150
+error InvalidValue("WIDTHxHEIGHT"): Invalid WIDTHxHEIGHT
+$ window size 200x149
+error InvalidValue("WIDTHxHEIGHT"): Invalid WIDTHxHEIGHT
+$ window size 16385x200
+error InvalidValue("WIDTHxHEIGHT"): Invalid WIDTHxHEIGHT
+$ window size 12x8
+error InvalidValue("WIDTHxHEIGHT"): Invalid WIDTHxHEIGHT
+$ window size wide
+error InvalidValue("WIDTHxHEIGHT"): Invalid WIDTHxHEIGHT
+$ window detach
+json=false window=none {"method":"window","op":{"op":"detach"}}
+$ window reconnect
+json=false window=none {"method":"window","op":{"op":"reconnect"}}
+$ window detach --window 4
+json=false window=4 {"method":"window","op":{"op":"detach"}}
+$ window explode
+error UnknownCommand { family: "window", command: "explode" }: Unknown window command: explode
+$ window list extra
+error Unexpected { command: "window", argument: "extra" }: window: unexpected extra
+$ window --window
+error MissingValue("--window"): --window requires a value
+$ window --window x
+error InvalidValue("--window"): Invalid --window
+$ window list --window 1 --window 2
+error DuplicateOption("--window"): --window may only be specified once
+$ ui
+error MissingArgument { command: "ui", what: "sidebar|statusbar|font-size|panel" }: ui requires sidebar|statusbar|font-size|panel
+$ ui sidebar
+json=false window=none {"method":"ui","op":{"op":"sidebar","switch":"toggle"}}
+$ ui sidebar on
+json=false window=none {"method":"ui","op":{"op":"sidebar","switch":"on"}}
+$ ui sidebar off
+json=false window=none {"method":"ui","op":{"op":"sidebar","switch":"off"}}
+$ ui sidebar toggle
+json=false window=none {"method":"ui","op":{"op":"sidebar","switch":"toggle"}}
+$ ui sidebar show
+json=false window=none {"method":"ui","op":{"op":"sidebar","switch":"on"}}
+$ ui sidebar hide
+json=false window=none {"method":"ui","op":{"op":"sidebar","switch":"off"}}
+$ ui sidebar maybe
+error InvalidValue("on|off|toggle"): Invalid on|off|toggle
+$ ui statusbar
+json=false window=none {"method":"ui","op":{"op":"status_bar","switch":"toggle"}}
+$ ui statusbar on
+json=false window=none {"method":"ui","op":{"op":"status_bar","switch":"on"}}
+$ ui status-bar off
+json=false window=none {"method":"ui","op":{"op":"status_bar","switch":"off"}}
+$ ui statusbar maybe
+error InvalidValue("on|off|toggle"): Invalid on|off|toggle
+$ ui font-size
+error MissingArgument { command: "ui", what: "+|-|reset|POINTS" }: ui requires +|-|reset|POINTS
+$ ui font-size +
+json=false window=none {"method":"ui","op":{"op":"font_size","size":{"change":"larger"}}}
+$ ui font-size larger
+json=false window=none {"method":"ui","op":{"op":"font_size","size":{"change":"larger"}}}
+$ ui font-size -
+json=false window=none {"method":"ui","op":{"op":"font_size","size":{"change":"smaller"}}}
+$ ui font-size smaller
+json=false window=none {"method":"ui","op":{"op":"font_size","size":{"change":"smaller"}}}
+$ ui font-size reset
+json=false window=none {"method":"ui","op":{"op":"font_size","size":{"change":"reset"}}}
+$ ui font-size 14
+json=false window=none {"method":"ui","op":{"op":"font_size","size":{"change":"points","points":14}}}
+$ ui font-size 8
+json=false window=none {"method":"ui","op":{"op":"font_size","size":{"change":"points","points":8}}}
+$ ui font-size 48
+json=false window=none {"method":"ui","op":{"op":"font_size","size":{"change":"points","points":48}}}
+$ ui font-size 7
+error InvalidValue("POINTS (8-48)"): Invalid POINTS (8-48)
+$ ui font-size 49
+error InvalidValue("POINTS (8-48)"): Invalid POINTS (8-48)
+$ ui font-size big
+error InvalidValue("POINTS (8-48)"): Invalid POINTS (8-48)
+$ ui panel
+error MissingArgument { command: "ui", what: "workspaces|overview|automations|usage" }: ui requires workspaces|overview|automations|usage
+$ ui panel workspaces
+json=false window=none {"method":"ui","op":{"op":"panel","panel":"workspaces"}}
+$ ui panel overview
+json=false window=none {"method":"ui","op":{"op":"panel","panel":"overview"}}
+$ ui panel automations
+json=false window=none {"method":"ui","op":{"op":"panel","panel":"automations"}}
+$ ui panel usage
+json=false window=none {"method":"ui","op":{"op":"panel","panel":"usage"}}
+$ ui panel usage --json --window 5
+json=true window=5 {"method":"ui","op":{"op":"panel","panel":"usage"}}
+$ ui panel dashboard
+error InvalidValue("workspaces|overview|automations|usage"): Invalid workspaces|overview|automations|usage
+$ ui panel security
+error InvalidValue("workspaces|overview|automations|usage"): Invalid workspaces|overview|automations|usage
+$ ui explode
+error UnknownCommand { family: "ui", command: "explode" }: Unknown ui command: explode
+$ ui sidebar on extra
+error Unexpected { command: "ui", argument: "extra" }: ui: unexpected extra
+$ tab
+json=false window=none {"method":"tab","op":{"op":"list"}}
+$ tab list
+json=false window=none {"method":"tab","op":{"op":"list"}}
+$ tab focus 4
+json=false window=none {"method":"tab","op":{"op":"focus","id":4}}
+$ tab close 4
+json=false window=none {"method":"tab","op":{"op":"close","id":4}}
+$ tab focus 4 --window 2 --json
+json=true window=2 {"method":"tab","op":{"op":"focus","id":4}}
+$ tab focus
+error MissingArgument { command: "tab", what: "ID" }: tab requires ID
+$ tab close
+error MissingArgument { command: "tab", what: "ID" }: tab requires ID
+$ tab focus x
+error InvalidValue("ID"): Invalid ID
+$ tab close -4
+error MissingArgument { command: "tab", what: "ID" }: tab requires ID
+$ tab open
+error UnknownCommand { family: "tab", command: "open" }: Unknown tab command: open
+$ tab devices
+error UnknownCommand { family: "tab", command: "devices" }: Unknown tab command: devices
+$ tab list extra
+error Unexpected { command: "tab", argument: "extra" }: tab: unexpected extra
+$ host
+json=false window=none {"method":"host","op":{"op":"list"}}
+$ host list
+json=false window=none {"method":"host","op":{"op":"list"}}
+$ host list --json --window 4
+json=true window=4 {"method":"host","op":{"op":"list"}}
+$ host select devbox
+json=false window=none {"method":"host","op":{"op":"select","id":"devbox"}}
+$ host select
+error MissingArgument { command: "host", what: "HOST" }: host requires HOST
+$ host select a b
+error Unexpected { command: "host", argument: "b" }: host: unexpected b
+$ host mute
+json=false window=none {"method":"host","op":{"op":"mute","muted":true}}
+$ host mute studio
+json=false window=none {"method":"host","op":{"op":"mute","host":"studio","muted":true}}
+$ host unmute
+json=false window=none {"method":"host","op":{"op":"mute","muted":false}}
+$ host unmute studio
+json=false window=none {"method":"host","op":{"op":"mute","host":"studio","muted":false}}
+$ host mute a b
+error Unexpected { command: "host", argument: "b" }: host: unexpected b
+$ host tag
+error MissingArgument { command: "host", what: "HOST" }: host requires HOST
+$ host tag devbox
+json=false window=none {"method":"host","op":{"op":"tag","id":"devbox","tags":[]}}
+$ host tag devbox work "client acme"
+json=false window=none {"method":"host","op":{"op":"tag","id":"devbox","tags":["work","client acme"]}}
+$ host explode
+error UnknownCommand { family: "host", command: "explode" }: Unknown host command: explode
+$ host ports
+error UnknownCommand { family: "host", command: "ports" }: Unknown host command: ports
+$ host forward 3000
+error UnknownCommand { family: "host", command: "forward" }: Unknown host command: forward
+$ host usage
+error UnknownCommand { family: "host", command: "usage" }: Unknown host command: usage
+$ ports
+json=false window=none {"method":"host","op":{"op":"ports"}}
+$ ports list
+json=false window=none {"method":"host","op":{"op":"ports"}}
+$ ports list --json --window 4
+json=true window=4 {"method":"host","op":{"op":"ports"}}
+$ ports forward 3000
+json=false window=none {"method":"host","op":{"op":"forward","port":3000}}
+$ ports unforward 3000
+json=false window=none {"method":"host","op":{"op":"unforward","port":3000}}
+$ ports open 3000
+json=false window=none {"method":"host","op":{"op":"open_port","port":3000}}
+$ ports open 65535
+json=false window=none {"method":"host","op":{"op":"open_port","port":65535}}
+$ ports open 0
+error InvalidValue("PORT"): Invalid PORT
+$ ports forward
+error MissingArgument { command: "ports", what: "PORT" }: ports requires PORT
+$ ports unforward
+error MissingArgument { command: "ports", what: "PORT" }: ports requires PORT
+$ ports open
+error MissingArgument { command: "ports", what: "PORT" }: ports requires PORT
+$ ports forward 65536
+error InvalidValue("PORT"): Invalid PORT
+$ ports forward http
+error InvalidValue("PORT"): Invalid PORT
+$ ports forward 3000 3001
+error Unexpected { command: "ports", argument: "3001" }: ports: unexpected 3001
+$ ports select devbox
+error UnknownCommand { family: "ports", command: "select" }: Unknown ports command: select
+$ ports mute
+error UnknownCommand { family: "ports", command: "mute" }: Unknown ports command: mute
+$ chat
+json=false window=none {"method":"chat","op":{"op":"status"}}
+$ chat status
+json=false window=none {"method":"chat","op":{"op":"status"}}
+$ chat list
+json=false window=none {"method":"chat","op":{"op":"status"}}
+$ chat --json --window 7
+json=true window=7 {"method":"chat","op":{"op":"status"}}
+$ chat show
+json=false window=none {"method":"chat","op":{"op":"view","switch":"on","pane":null}}
+$ chat hide
+json=false window=none {"method":"chat","op":{"op":"view","switch":"off","pane":null}}
+$ chat toggle
+json=false window=none {"method":"chat","op":{"op":"view","switch":"toggle","pane":null}}
+$ chat hide --pane w1:p2
+json=false window=none {"method":"chat","op":{"op":"view","switch":"off","pane":"w1:p2"}}
+$ chat --pane w1:p2 show
+error UnknownCommand { family: "chat", command: "--pane" }: Unknown chat command: --pane
+$ chat show --pane
+error MissingValue("--pane"): --pane requires a value
+$ chat show --pane a --pane b
+error DuplicateOption("--pane"): --pane may only be specified once
+$ chat show extra
+error Unexpected { command: "chat", argument: "extra" }: chat: unexpected extra
+$ chat status --pane w1:p2
+error Unexpected { command: "chat", argument: "--pane" }: chat: unexpected --pane
+$ chat new claude
+json=false window=none {"method":"chat","op":{"op":"new","agent":"claude","pane":null}}
+$ chat new codex
+json=false window=none {"method":"chat","op":{"op":"new","agent":"codex","pane":null}}
+$ chat new copilot
+json=false window=none {"method":"chat","op":{"op":"new","agent":"copilot","pane":null}}
+$ chat new gemini
+json=false window=none {"method":"chat","op":{"op":"new","agent":"gemini","pane":null}}
+$ chat new opencode
+json=false window=none {"method":"chat","op":{"op":"new","agent":"opencode","pane":null}}
+$ chat new pi
+json=false window=none {"method":"chat","op":{"op":"new","agent":"pi","pane":null}}
+$ chat new --pane w1:p2 codex
+json=false window=none {"method":"chat","op":{"op":"new","agent":"codex","pane":"w1:p2"}}
+$ chat new codex --pane w1:p2 --json
+json=true window=none {"method":"chat","op":{"op":"new","agent":"codex","pane":"w1:p2"}}
+$ chat new
+error MissingArgument { command: "chat", what: "an agent, such as claude" }: chat requires an agent, such as claude
+$ chat new cursor
+error InvalidValue("AGENT"): Invalid AGENT
+$ chat new Claude
+error InvalidValue("AGENT"): Invalid AGENT
+$ chat new claude codex
+error Unexpected { command: "chat", argument: "codex" }: chat: unexpected codex
+$ chat new --pane
+error MissingValue("--pane"): --pane requires a value
+$ chat prompt hello
+error UnknownCommand { family: "chat", command: "prompt" }: Unknown chat command: prompt
+$ notes
+json=false window=none {"method":"work","op":{"op":"notes"}}
+$ notes list
+json=false window=none {"method":"work","op":{"op":"notes"}}
+$ notes get
+json=false window=none {"method":"work","op":{"op":"note"}}
+$ notes clear
+json=false window=none {"method":"work","op":{"op":"set_note","text":""}}
+$ notes clear --json --window 2
+json=true window=2 {"method":"work","op":{"op":"set_note","text":""}}
+$ notes set
+error MissingArgument { command: "notes set", what: "TEXT" }: notes set requires TEXT
+$ notes set waiting on review
+json=false window=none {"method":"work","op":{"op":"set_note","text":"waiting on review"}}
+$ notes set "waiting on review" --json
+json=true window=none {"method":"work","op":{"op":"set_note","text":"waiting on review"}}
+$ notes set ""
+json=false window=none {"method":"work","op":{"op":"set_note","text":""}}
+$ notes set -- --json
+error MissingArgument { command: "notes set", what: "TEXT" }: notes set requires TEXT
+$ notes clear extra
+error Unexpected { command: "notes", argument: "extra" }: notes: unexpected extra
+$ notes list extra
+error Unexpected { command: "notes", argument: "extra" }: notes: unexpected extra
+$ notes explode
+error UnknownCommand { family: "notes", command: "explode" }: Unknown notes command: explode
+$ worktree
+json=false window=none {"method":"work","op":{"op":"mute_status"}}
+$ worktree status
+json=false window=none {"method":"work","op":{"op":"mute_status"}}
+$ worktree mute
+json=false window=none {"method":"work","op":{"op":"mute","muted":true}}
+$ worktree unmute
+json=false window=none {"method":"work","op":{"op":"mute","muted":false}}
+$ worktree mute --json --window 9
+json=true window=9 {"method":"work","op":{"op":"mute","muted":true}}
+$ worktree silence
+error UnknownCommand { family: "worktree", command: "silence" }: Unknown worktree command: silence
+$ worktree mute extra
+error Unexpected { command: "worktree", argument: "extra" }: worktree: unexpected extra
+$ notes set <x * 16384>
+json=false window=none {"method":"work","op":{"op":"set_note","text":"<x * 16384>"}}
+$ notes set <x * 16384>x
+error InvalidValue("text over 16 KiB"): Invalid text over 16 KiB
+$ notes set <é * 8192>
+json=false window=none {"method":"work","op":{"op":"set_note","text":"<é * 8192>"}}
+$ notes set <é * 8192>é
+error InvalidValue("text over 16 KiB"): Invalid text over 16 KiB

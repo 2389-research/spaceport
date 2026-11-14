@@ -1,5 +1,5 @@
 use super::*;
-use control::{ControlCommand, Invocation, WindowCommand};
+use control::{ControlCommand, Invocation, WindowOp};
 
 #[test]
 fn window_new_refuses_named_legacy_session_and_keeps_explicit_window() {
@@ -16,7 +16,7 @@ fn window_new_refuses_named_legacy_session_and_keeps_explicit_window() {
     assert!(matches!(
         mode,
         LaunchMode::Control(Invocation {
-            command: ControlCommand::Window(WindowCommand::New),
+            command: ControlCommand::Window(WindowOp::New {}),
             json: false,
             window: Some(42),
         })
