@@ -3,7 +3,7 @@
 // i18n: migrated
 use super::{Section, SettingsWindow, layouts, themes};
 use crate::{
-    config::{Config, FontFace, Theme},
+    config::{Config, FontFace, Theme, ThemeName},
     herdr_settings::{self, Edit},
     i18n::{Localize, fl},
 };
@@ -209,16 +209,15 @@ impl SettingsWindow {
             let (shared, error, theme) = match herdr_settings::Settings::load() {
                 Ok(shared) => {
                     config.apply_shared_notifications(&shared);
-                    // i18n: data
-                    let theme = if config.theme == "Follow Herdr" {
+                    let theme = if ThemeName::follows_herdr(&config.theme, light) {
                         shared.theme(light)?.styled_for(&config)
                     } else {
                         config.theme(light)?
                     };
                     (Some(shared), None, theme)
                 }
-                // i18n: data
-                Err(error) if config.theme == "Follow Herdr" => return Err(error),
+                // The side shown has no theme without Herdr's settings.
+                Err(error) if ThemeName::follows_herdr(&config.theme, light) => return Err(error),
                 Err(error) => (
                     None,
                     Some(fl!("settings-error-load-herdr", error = error.localize())),

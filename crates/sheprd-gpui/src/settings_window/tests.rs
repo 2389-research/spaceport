@@ -16,6 +16,7 @@ mod language_reload;
 mod launch_at_login;
 mod layout_drafts;
 mod load_save;
+mod mixed_follow;
 mod navigation_groups;
 mod navigation_resize;
 mod navigation_scroll;

@@ -31,6 +31,7 @@ mod favorite_themes;
 mod features;
 mod finished_notifications;
 mod focus_follows_mouse;
+mod follows_herdr;
 mod font_aliases;
 mod font_weight;
 mod fonts;

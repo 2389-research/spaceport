@@ -1,4 +1,7 @@
-use crate::{SheprdWindow, config::Config};
+use crate::{
+    SheprdWindow,
+    config::{Config, ThemeName},
+};
 use chrono::{DateTime, Utc};
 use gpui::*;
 use std::collections::HashMap;
@@ -34,7 +37,7 @@ impl SheprdWindow {
                 save()?;
                 let mut config = Config::load()?;
                 config.resolve_fonts(|| text_system.all_font_names());
-                let theme = if config.theme == "Follow Herdr" {
+                let theme = if ThemeName::follows_herdr(&config.theme, light) {
                     Default::default()
                 } else {
                     config.theme(light)?

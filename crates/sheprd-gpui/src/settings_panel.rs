@@ -2,13 +2,11 @@
 // i18n: migrated
 use crate::{
     SheprdWindow,
+    config::ThemeName,
     herdr_settings::Settings,
     i18n::{Localize, fl},
 };
 use gpui::*;
-
-/// The theme setting's value that shows the daemon's theme.
-const FOLLOW_HERDR: &str = "Follow Herdr"; // i18n: data
 
 #[derive(Default)]
 pub(crate) struct SettingsPanel {
@@ -68,21 +66,19 @@ impl SheprdWindow {
     }
 
     pub(crate) fn apply_shared_theme(&mut self, cx: &mut Context<Self>) {
-        if self.config.theme == FOLLOW_HERDR
+        // The side shown decides: a pair may follow Herdr in one appearance.
+        let light = crate::app::light_appearance(cx);
+        if ThemeName::follows_herdr(&self.config.theme, light)
             && self.menu.page != Some(crate::menu::Page::Themes)
             && !self.theme_save_in_flight()
             && let Some(shared) = &self.settings.shared
         {
-            let light = matches!(
-                cx.window_appearance(),
-                WindowAppearance::Light | WindowAppearance::VibrantLight
-            );
             match shared.theme(light) {
                 Ok(theme) => {
                     self.theme = theme.styled_for(&self.config);
                     if let Some(mut appearance) =
                         cx.try_global::<crate::app::InitialAppearance>().cloned()
-                        && appearance.config.theme == FOLLOW_HERDR
+                        && ThemeName::follows_herdr(&appearance.config.theme, light)
                     {
                         appearance.theme = self.theme.clone();
                         cx.set_global(appearance);
@@ -99,9 +95,10 @@ impl SheprdWindow {
     /// theme switcher rewrote before it changed the appearance. Herdr hears
     /// of the new appearance only with the colors loaded for it.
     pub(crate) fn apply_system_theme(&mut self, cx: &mut Context<Self>) {
-        // Follow Herdr already shows the daemon's theme for it.
-        if self.config.theme == FOLLOW_HERDR || !self.reload_theme(cx) {
-            self.theme_light = crate::app::light_appearance(cx);
+        let light = crate::app::light_appearance(cx);
+        // A side that follows Herdr already shows the daemon's theme for it.
+        if ThemeName::follows_herdr(&self.config.theme, light) || !self.reload_theme(cx) {
+            self.theme_light = light;
         }
     }
 

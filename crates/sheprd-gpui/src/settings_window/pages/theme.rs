@@ -4,10 +4,10 @@
 // i18n: migrated
 use super::{SettingsWindow, on_value, ui};
 use crate::{
-    config::{Config, ThemeName},
+    config::{Config, FOLLOW_HERDR, ThemeName},
     contrast::{Contrast, luminance},
     i18n::fl,
-    settings_window::themes::{Choice, FOLLOW, Scope},
+    settings_window::themes::{Choice, Scope},
 };
 use gpui::{prelude::*, *};
 
@@ -25,10 +25,10 @@ enum Library {
     Herdr,
 }
 
-/// How the page shows a theme value: [`FOLLOW`] is a config value, shown
+/// How the page shows a theme value: [`FOLLOW_HERDR`] is a config value, shown
 /// as a message; every other name is data.
 pub(in crate::settings_window) fn display_name(name: &str) -> String {
-    if name == FOLLOW {
+    if name == FOLLOW_HERDR {
         fl!("settings-theme-follow-herdr")
     } else {
         name.to_owned()
@@ -170,7 +170,11 @@ impl SettingsWindow {
     }
 
     fn theme_follow_row(&self, cx: &mut Context<Self>) -> ui::Row {
-        let following = self.config.theme == FOLLOW;
+        // The switch speaks for the whole setting: on only when Herdr names
+        // the theme in both appearances, and turning it on replaces a pair.
+        let following = [true, false]
+            .into_iter()
+            .all(|light| ThemeName::follows_herdr(&self.config.theme, light));
         ui::row(&self.theme, "theme-follow", fl!("settings-theme-follow"))
             .tag(ui::Source::Herdr)
             .description(fl!("settings-theme-follow-description"))
@@ -183,7 +187,7 @@ impl SettingsWindow {
                                 .filter(|choice| choice.scope == Scope::App)
                                 .map_or_else(|| "Default".to_owned(), |choice| choice.name) // i18n: data
                         } else {
-                            FOLLOW.to_owned()
+                            FOLLOW_HERDR.to_owned()
                         };
                         this.accept_theme_choice(
                             Choice {

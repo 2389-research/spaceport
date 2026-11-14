@@ -2,7 +2,7 @@
 // i18n: migrated
 use super::SettingsWindow;
 use crate::{
-    config::{Config, Theme, ThemeName},
+    config::{Config, FOLLOW_HERDR, Theme, ThemeName},
     contrast::Contrast,
     herdr_settings::{self, Edit},
     i18n::{Localize, fl},
@@ -13,9 +13,6 @@ mod appearance;
 mod grid;
 mod system;
 
-/// The theme value that uses Herdr's own theme. A config value, not text:
-/// the page shows `settings-theme-follow-herdr` for it.
-pub(super) const FOLLOW: &str = "Follow Herdr"; // i18n: data
 const ROW_HEIGHT: f32 = 80.;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -353,7 +350,7 @@ impl SettingsWindow {
                     // styled once, in `apply_theme_draft`.
                     Ok((theme.with_contrast(config.contrast), Some(shared)))
                 }
-                (Scope::App, Some(shared)) if ThemeName::side(&config.theme, light) == FOLLOW => {
+                (Scope::App, Some(shared)) if ThemeName::follows_herdr(&config.theme, light) => {
                     Ok((shared.theme(light)?, None))
                 }
                 _ => Ok((config.theme(light)?, None)),
@@ -414,7 +411,7 @@ impl SettingsWindow {
         let light = crate::app::light_appearance(cx);
         if let Some(intent) = &mut self.theme_intent
             && intent.choice.scope == Scope::App
-            && ThemeName::side(&intent.choice.name, light) == FOLLOW
+            && ThemeName::follows_herdr(&intent.choice.name, light)
             && let Some(shared) = &self.shared
             && let Ok(theme) = shared.theme(light)
         {
@@ -449,7 +446,7 @@ impl SettingsWindow {
                                     current.shared = shared;
                                 }
                                 let name = ThemeName::side(&intent.choice.name, light);
-                                if intent.choice.scope == Scope::App && name != FOLLOW {
+                                if intent.choice.scope == Scope::App && name != FOLLOW_HERDR {
                                     if this.theme_cache.len() == 64 {
                                         this.theme_cache.pop_front();
                                     }
@@ -509,7 +506,7 @@ impl SettingsWindow {
                     Some((self.config.theme.clone(), theme.clone()));
                 self.theme = theme.styled_for(&self.config);
                 self.broadcast_theme(cx);
-            } else if self.config.theme == FOLLOW {
+            } else if ThemeName::follows_herdr(&self.config.theme, light) {
                 cx.default_global::<ThemeDraft>().appearance =
                     Some((self.config.theme.clone(), theme.clone()));
                 self.theme = theme.styled_for(&self.config);
@@ -653,7 +650,7 @@ impl SettingsWindow {
                 match result {
                     Ok(mut names) => {
                         names.extend(this.selected_theme_names());
-                        names.retain(|name| name != FOLLOW);
+                        names.retain(|name| name != FOLLOW_HERDR);
                         names.sort_by_cached_key(|name| (name.to_lowercase(), name.clone()));
                         names.dedup();
                         let selected = this.themes.choice();
