@@ -1,6 +1,6 @@
 //! Toasts, OS notifications, agent sound volume, and the terminal bell.
 use super::Config;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Where the "copied to clipboard" flash sits, and whether it appears at all.
 /// Resolved from the daemon's `[ui.toast.clipboard]`, then from this GUI's own
@@ -22,7 +22,7 @@ impl Default for ClipboardToast {
 }
 
 /// From herdr src/config/model.rs.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ClipboardToastPosition {
     TopLeft,
@@ -104,6 +104,11 @@ pub struct NotificationConfig {
     /// counterpart: turning it off keeps "needs attention" and custom
     /// notifications, so a hook can post its own summary in their place.
     pub finished: bool,
+}
+
+impl NotificationConfig {
+    /// The longest a toast may wait; a delay above it is refused.
+    pub const MAX_DELAY_SECONDS: u64 = 3600;
 }
 
 impl Default for NotificationConfig {
@@ -209,7 +214,7 @@ fn optional_notification_delay<'de, D: serde::Deserializer<'de>>(
 
 fn notification_delay<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
     let seconds = u64::deserialize(d)?;
-    if seconds > 3600 {
+    if seconds > NotificationConfig::MAX_DELAY_SECONDS {
         // Part of TOML's parser text, which errors show as written.
         return Err(serde::de::Error::custom(
             // i18n: data

@@ -1,6 +1,7 @@
 // ABOUTME: Saves targeted native preferences through the managed-config lock.
 // ABOUTME: Preserves unrelated settings and comments in personal overrides.
 //! Targeted native preference edits, serialized by the managed-config lock.
+use super::edit::{NewTable, set, spelled, table_at};
 use super::*;
 use sheprd_client::protocol::ToastHerdrPosition;
 
@@ -79,13 +80,7 @@ fn sidebar_metric(
     value: Option<f32>,
 ) -> Result<(Option<&'static str>, &'static str, Option<toml_edit::Value>)> {
     if let Some(value) = value {
-        let max = SidebarOverrides::BANDS
-            .iter()
-            .find_map(|(name, max)| (*name == key).then_some(*max))
-            .unwrap_or(0.);
-        if !value.is_finite() || !(0.0..=max).contains(&value) {
-            return Err(Error::InvalidSidebarMetric { key, max }.into());
-        }
+        SidebarOverrides::check(key, value)?;
     }
     Ok((
         Some("sidebar"),
@@ -108,9 +103,13 @@ impl Config {
                 Err(error) => return Err(error.into()),
             };
             let mut document = text.parse::<toml_edit::DocumentMut>()?;
-            let (table, key, value) = match edit {
+            // Outlives the match so a host's name can be the key it yields.
+            let host_name;
+            // The table, by its dotted name, then the key, which is never
+            // split: a host's name may hold a dot of its own.
+            let (table, key, value): (Option<&'static str>, &str, _) = match edit {
                 Preference::AgentsPlacement(placement) => {
-                    (None, "agents_placement", Some(placement.as_str().into()))
+                    (None, "agents_placement", Some(spelled(placement)?))
                 }
                 Preference::ChatGlide(value) => (Some("chat"), "glide", Some(value.into())),
                 Preference::ChatLauncher(launcher) => {
@@ -173,7 +172,7 @@ impl Config {
                     (Some("notifications"), "enabled", value.map(Into::into))
                 }
                 Preference::NotificationDelay(value) => {
-                    if value.is_some_and(|value| value > 3600) {
+                    if value.is_some_and(|value| value > NotificationConfig::MAX_DELAY_SECONDS) {
                         return Err(crate::herdr_settings::Error::ToastDelay.into());
                     }
                     (
@@ -185,14 +184,7 @@ impl Config {
                 Preference::NotificationPosition(value) => (
                     Some("notifications"),
                     "position",
-                    value.map(|value| {
-                        toml_edit::Value::from(match value {
-                            ToastHerdrPosition::TopLeft => "top-left",
-                            ToastHerdrPosition::TopRight => "top-right",
-                            ToastHerdrPosition::BottomLeft => "bottom-left",
-                            ToastHerdrPosition::BottomRight => "bottom-right",
-                        })
-                    }),
+                    value.map(spelled).transpose()?,
                 ),
                 Preference::NotificationFinished(value) => {
                     (Some("notifications"), "finished", Some(value.into()))
@@ -203,41 +195,24 @@ impl Config {
                 Preference::ClipboardPosition(value) => (
                     Some("clipboard_toast"),
                     "position",
-                    value.map(|value| {
-                        toml_edit::Value::from(match value {
-                            ClipboardToastPosition::TopLeft => "top-left",
-                            ClipboardToastPosition::TopCenter => "top-center",
-                            ClipboardToastPosition::TopRight => "top-right",
-                            ClipboardToastPosition::BottomLeft => "bottom-left",
-                            ClipboardToastPosition::BottomCenter => "bottom-center",
-                            ClipboardToastPosition::BottomRight => "bottom-right",
-                        })
-                    }),
+                    value.map(spelled).transpose()?,
                 ),
                 Preference::SidebarIndent(value) => sidebar_metric("indent", value)?,
                 Preference::SidebarRowPadding(value) => sidebar_metric("row_padding", value)?,
                 Preference::SidebarRowGap(value) => sidebar_metric("gap", value)?,
                 Preference::SidebarHostGap(value) => sidebar_metric("host_gap", value)?,
-                Preference::SidebarSelect(mode) => (
-                    Some("sidebar"),
-                    "select",
-                    Some(toml_edit::Value::from(match mode {
-                        SelectMode::Row => "row",
-                        SelectMode::Group => "group",
-                        SelectMode::GroupDim => "group-dim",
-                    })),
-                ),
+                Preference::SidebarSelect(mode) => {
+                    (Some("sidebar"), "select", Some(spelled(mode)?))
+                }
                 Preference::SidebarActivityBar(value) => {
                     (Some("sidebar"), "activity_bar", Some(value.into()))
                 }
                 Preference::SidebarAutomations(value) => {
                     (Some("sidebar"), "automations", Some(value.into()))
                 }
-                Preference::SidebarDeviceFooter(footer) => (
-                    Some("sidebar"),
-                    "device_footer",
-                    Some(toml_edit::Value::from(footer.as_str())),
-                ),
+                Preference::SidebarDeviceFooter(footer) => {
+                    (Some("sidebar"), "device_footer", Some(spelled(footer)?))
+                }
                 Preference::HostColor { host, color } => {
                     if let Some(color) = color.filter(|color| *color > 0xFF_FFFF) {
                         return Err(Error::InvalidHostColor {
@@ -246,35 +221,15 @@ impl Config {
                         }
                         .into());
                     }
-                    let sidebar = document
-                        .entry("sidebar")
-                        .or_insert(toml_edit::Item::Table(toml_edit::Table::new()))
-                        .as_table_like_mut()
-                        .ok_or(crate::herdr_settings::Error::Table("sidebar"))?;
-                    let hosts = sidebar
-                        .entry("hosts")
-                        .or_insert(toml_edit::Item::Table(toml_edit::Table::new()))
-                        .as_table_like_mut()
-                        .ok_or(crate::herdr_settings::Error::Table("sidebar.hosts"))?;
-                    match color {
-                        Some(color) => {
-                            let mut value = toml_edit::Value::from(format!("#{color:06x}"));
-                            // A comment on the old colour stays with the new one.
-                            if let Some(previous) =
-                                hosts.get(&host).and_then(toml_edit::Item::as_value)
-                            {
-                                *value.decor_mut() = previous.decor().clone();
-                            }
-                            hosts.insert(&host, toml_edit::Item::Value(value));
-                        }
-                        None => {
-                            hosts.remove(&host);
-                        }
-                    }
-                    return write_config(path, &document.to_string());
+                    host_name = host;
+                    (
+                        Some("sidebar.hosts"),
+                        host_name.as_str(),
+                        color.map(|color| toml_edit::Value::from(format!("#{color:06x}"))),
+                    )
                 }
                 Preference::StatusBar(edit) => {
-                    let (key, value) = edit.entry();
+                    let (key, value) = edit.entry()?;
                     (Some("status_bar"), key, Some(value))
                 }
                 Preference::SoundVolume(value) => {
@@ -319,24 +274,26 @@ impl Config {
                     (Some("terminal"), axis.key(), Some(value))
                 }
             };
-            let target: &mut dyn toml_edit::TableLike = if let Some(table) = table {
-                document
-                    .entry(table)
-                    .or_insert(toml_edit::Item::Table(toml_edit::Table::new()))
-                    .as_table_like_mut()
-                    .ok_or(crate::herdr_settings::Error::Table(table))?
-            } else {
-                document.as_table_mut()
-            };
-            if let Some(mut value) = value {
-                if let Some(previous) = target.get(key).and_then(toml_edit::Item::as_value) {
-                    *value.decor_mut() = previous.decor().clone();
+            let name = table.unwrap_or_default();
+            let tables: Vec<&str> = name.split('.').filter(|part| !part.is_empty()).collect();
+            // An emptied table stays, and an unset key's table is created, as
+            // this writer always has: the file's text is a contract.
+            let created = NewTable::Headed;
+            let target = table_at(document.as_table_mut(), &tables, created).map_err(|depth| {
+                // The part of the name that leads to the value in the way.
+                let end = name
+                    .match_indices('.')
+                    .nth(depth)
+                    .map_or(name.len(), |at| at.0);
+                crate::herdr_settings::Error::Table(&name[..end])
+            })?;
+            match value {
+                Some(value) => set(target, key, value),
+                None => {
+                    target.remove(key);
                 }
-                target.insert(key, toml_edit::Item::Value(value));
-            } else {
-                target.remove(key);
             }
-            write_config(path, &document.to_string())
+            Self::write_unless_broken(path, &text, &document.to_string())
         })();
         result.map_err(|error| error.at_path(path))
     }

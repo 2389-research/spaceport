@@ -10,8 +10,11 @@ fn agents_placement_is_named_and_defaults_to_the_panel() -> anyhow::Result<()> {
     ] {
         assert_eq!(config.agents_placement, AgentsPlacement::Panel);
     }
-    for placement in [AgentsPlacement::Panel, AgentsPlacement::Nested] {
-        let text = format!("agents_placement = \"{}\"", placement.as_str());
+    for (placement, name) in [
+        (AgentsPlacement::Panel, "panel"),
+        (AgentsPlacement::Nested, "nested"),
+    ] {
+        let text = format!("agents_placement = \"{name}\"");
         assert_eq!(Config::parse(&text)?.agents_placement, placement);
     }
     for bad in ["\"Nested\"", "\"inline\"", "true"] {
