@@ -42,9 +42,14 @@ Read the report for evidence, risks and first slices. Update this file when a fi
 | 13 | SIFT-S11-01 port-scan shell errors | done, in review | #36 | Shell has its own error type; five provider variants removed. |
 | 14 | SIFT-S22-02 chat menu and its search | done, in review | #41 | Both new tests failed on the old code: the undrawn search field kept the keyboard. |
 | 16 | SIFT-S04-01 Backend trait | done, in review | #40 | `Backend` is the attach seam only. `just test-core` not run. |
-| 17 | SIFT-S17-01 Core pane-tree owner | in progress | `fix/core-pane-tree-owner` (on #38) | Test first; no production change unless the two-window overwrite is proven. |
+| 17 | SIFT-S17-01 Core pane-tree owner | done, in review | #43 (on #38) | Both suspected defects proven by tests first. Independent read-only review found nothing blocking. Left: a drag addresses its split by position. No native two-window check. |
 | 18 | SIFT-S14-01 build channel | done, in review | #42 | Includes the update-availability part of SIFT-S29-02. Three edits behind the `macos-updater` feature were not compiled locally; the `(macos-15, all)` CI leg is the check. |
-| 19 | SIFT-S15-01 checked settings writer | in progress | `refactor/checked-settings-writer` | Round-trip test first; may stop at a smaller change. |
+| 19 | SIFT-S15-01 checked settings writer | in review, **CI failing on Linux** | #44 | Round-trip test over all 42 preferences found no defect. Smaller version of the audit's proposal. The Linux test legs fail; cause not yet read from the logs. Do not merge until fixed. |
+| 20 | SIFT-S20-01 shared key mapping | done, in review | #45 | 1,545 pinned key behaviours unchanged. Dialog keys left as they are. Key tables pinned on macOS only; watch the Linux and Windows legs. |
+| 23 | SIFT-S02B-01 response envelope | done, in review | #48 (on #31) | One decoder; `error: null` is no error everywhere; daemon messages bounded and stripped once. |
+| 25 | SIFT-S23-02 chat pane phase | done, in review | #47 (on #41) | No behaviour change. Pinned: a pane past the failure limit keeps reconnecting in the background. |
+| 26 | SIFT-S19-01 tab drag phase | done, in review | #46 | The stray-release test failed on the old code. Side effect: a press that leaves the window lifts at once. |
+| 27 | SIFT-S24-02 sidebar drags | in progress | `fix/sidebar-drag-phase` | Tests first for the stray release and the armed-after-cancel press. |
 | 32 | SIFT-S32-01 upstream release route | done, in review | #29 (on #27) | About 4,700 lines removed, including `nix.yml` and the `sign-artifacts` action. Kept, unsure: the Windows signing helpers, `generate-changelog.sh`'s non-preview mode, `build-icon.py`'s `linux` mode. |
 
 Ranks not listed are not started.
@@ -54,10 +59,11 @@ Ranks not listed are not started.
 Two stacks and four independent pull requests:
 
 - #23, then #27, then #29, then #30 (CI and release tooling).
-- #28, then #31 (SSH removal).
 - #33, then #37 (endpoint state).
-- #38, then the Core pane-tree change if it lands.
-- #24, #25, #26, #32, #34, #35, #36, #39, #40, #41 and #42 stand alone.
+- #38, then #43 (tab store).
+- #28, then #31, then #48 (SSH removal, then the response decoder).
+- #41, then #47 (chat pane).
+- #24, #25, #26, #32, #34, #35, #36, #39, #40, #42, #44, #45 and #46 stand alone.
 
 ## Open questions for Harper
 
@@ -66,6 +72,10 @@ Two stacks and four independent pull requests:
 - #38: should a malformed retired tab entry stop rejecting the whole saved file?
 - #29: are the Windows signing helpers, `generate-changelog.sh`'s non-preview mode and `build-icon.py`'s `linux` mode wanted?
 - #30: `CODEOWNERS` is now `* @harperreed`. A team instead?
+- #45: should dialog text fields adopt the shared key table? They would gain the Emacs-style Ctrl keys and lose some modified Home, End, arrow and delete combinations.
+- #46: a press that leaves the window now lifts the tab at once, without the 250 ms wait. Keep?
+- #47: a chat pane past its failure limit keeps reconnecting in the background. Should it stop?
+- #44: unsetting a key in a table that does not exist writes an empty `[table]` header. Stop doing that?
 
 ## Known local noise
 
@@ -73,4 +83,4 @@ Five tests in `scripts/release/tests/test_sparkle_native_cache.py` and `test_spa
 
 ## Build note
 
-Do not share one `CARGO_TARGET_DIR` between worktrees that build at the same time. Cargo keeps one compiled copy of each workspace crate there, not one per worktree, so a build can link another worktree's output. That produced false failures ("module `shell` is private") and could produce false passes. Give each concurrent change its own build directory, keep to two at once on this disk, and rerun key tests alone before committing.
+Do not share one `CARGO_TARGET_DIR` between worktrees that build at the same time. Cargo keeps one compiled copy of each workspace crate there, not one per worktree, so a build can link another worktree's output. That produced false failures ("module `shell` is private") and could produce false passes. Give each concurrent change its own build directory. A GPUI debug build directory grows past 20 GB, so on this disk run one build at a time and delete `debug/incremental` between changes.
