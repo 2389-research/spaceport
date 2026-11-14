@@ -75,7 +75,7 @@ impl SheprdWindow {
                                 entry.id,
                                 Region::Body(0),
                                 Cell::default(),
-                                summary.gist.clone(),
+                                || summary.gist.clone(),
                                 cx,
                             ),
                         ))

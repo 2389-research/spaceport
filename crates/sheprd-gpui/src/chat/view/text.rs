@@ -24,29 +24,41 @@ impl SheprdWindow {
         ))
     }
 
-    /// One selectable run of an entry's plain text, at `cell` of `region`.
-    /// It is drawn plain when the selection document holds other text there.
+    /// The selection document's text at `cell` of `region`, drawn
+    /// selectable: what is drawn is what is selected and copied. `None`
+    /// where the document holds no text.
+    pub(super) fn render_chat_segment(
+        &self,
+        pane_id: &str,
+        entry: EntryId,
+        region: Region,
+        cell: Cell,
+        cx: &mut Context<Self>,
+    ) -> Option<Div> {
+        let scope = self.chat_text_scope(pane_id, entry, region)?;
+        let fragment = scope.fragment(cell)?;
+        let text = SharedString::from(scope.segment(cell)?.shared());
+        let styled = fragment.styled(text, [], &self.theme);
+        let layout = styled.layout().clone();
+        Some(fragment.wrap(div().min_w_0().child(styled), layout, cx))
+    }
+
+    /// One run of an entry's plain text, at `cell` of `region`: the
+    /// document's segment. The document is projected whenever the transcript
+    /// or a card's fold changes, before the row is drawn; `fallback` is what
+    /// the row shows, plain, should the document hold no text there, so a
+    /// row is never blank.
     pub(super) fn render_chat_text(
         &self,
         pane_id: &str,
         entry: EntryId,
         region: Region,
         cell: Cell,
-        text: impl Into<SharedString>,
+        fallback: impl FnOnce() -> String,
         cx: &mut Context<Self>,
     ) -> Div {
-        let text = text.into();
-        let scope = self.chat_text_scope(pane_id, entry, region);
-        let Some(fragment) = scope.and_then(|scope| {
-            (scope.text(cell) == Some(text.as_ref()))
-                .then(|| scope.fragment(cell))
-                .flatten()
-        }) else {
-            return div().child(text);
-        };
-        let styled = fragment.styled(text, [], &self.theme);
-        let layout = styled.layout().clone();
-        fragment.wrap(div().min_w_0().child(styled), layout, cx)
+        self.render_chat_segment(pane_id, entry, region, cell, cx)
+            .unwrap_or_else(|| div().child(fallback()))
     }
 
     pub(super) fn render_chat_lines(

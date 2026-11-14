@@ -5,7 +5,9 @@
 use super::{
     super::{
         chats::ChatPane,
-        prepared::{Body, Part, ToolSummary, folded_thought, notice_label, tool_header, tool_text},
+        prepared::{
+            Body, Part, ToolSummary, folded_thought, notice_label, shown_text, tool_header,
+        },
         rich::{Block, Inline},
         selection::{Cell, Region},
         visual::Visuals,
@@ -167,7 +169,7 @@ impl SheprdWindow {
                         entry.id,
                         Region::Body(0),
                         Cell::default(),
-                        text.clone(),
+                        || shown_text(text).to_owned(),
                         cx,
                     ),
                 };
@@ -187,7 +189,7 @@ impl SheprdWindow {
                     entry.id,
                     Region::Body(0),
                     Cell::default(),
-                    crate::chat::text::turn(summary),
+                    || crate::chat::text::turn(summary),
                     cx,
                 );
                 layout_for(self.config.chat.layout).turn(text.into_any_element(), &self.chat_look())
@@ -267,11 +269,6 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) -> Div {
         let theme = &self.theme;
-        let shown = if expanded {
-            text.to_owned()
-        } else {
-            folded_thought(text)
-        };
         let id = entry.id;
         let header = div()
             .id(("chat-thought", id.0))
@@ -292,7 +289,13 @@ impl SheprdWindow {
                         id,
                         Region::Body(0),
                         Cell::default(),
-                        shown,
+                        || {
+                            if expanded {
+                                shown_text(text).to_owned()
+                            } else {
+                                folded_thought(text)
+                            }
+                        },
                         cx,
                     )),
             );
@@ -322,6 +325,17 @@ impl SheprdWindow {
             ToolState::Pending | ToolState::Stopped => theme.muted,
         };
         let steps = chat.map_or(&[][..], |chat| chat.prepared.steps(&tool.call_id));
+        // An open call lists the locations and output the selection document
+        // holds, each by its own cell, rather than deriving them again.
+        let cells = |region| {
+            chat.map(|chat| {
+                chat.prepared
+                    .text()
+                    .cells(entry, region)
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+        };
         let small = self.chat_small_text();
         let summary = match body {
             Some(Body::Tool(summary)) => Some(summary),
@@ -381,7 +395,7 @@ impl SheprdWindow {
                         entry,
                         Region::Label,
                         Cell::default(),
-                        tool_header(&tool.title),
+                        || tool_header(&tool.title),
                         cx,
                     )),
             )
@@ -435,23 +449,31 @@ impl SheprdWindow {
                             entry,
                             Region::ToolTitle,
                             Cell::default(),
-                            tool.title.clone(),
+                            || tool.title.clone(),
                             cx,
                         ))
-                        .children(tool.locations.iter().enumerate().map(|(index, location)| {
-                            self.render_chat_text(
+                        .children(cells(Region::ToolLocations).into_iter().filter_map(|cell| {
+                            self.render_chat_segment(
                                 pane_id,
                                 entry,
                                 Region::ToolLocations,
-                                Cell::row(index),
-                                location.clone(),
+                                cell,
                                 cx,
                             )
                         }))
-                        .children(tool.content.iter().enumerate().filter_map(|(index, item)| {
-                            tool_text(item).map(|text| {
-                                // Keep the full retained output; long unbroken lines
-                                // scroll horizontally instead of disappearing.
+                        .children(cells(Region::ToolContent).into_iter().filter_map(|cell| {
+                            // A cell's block is the index of its content item.
+                            let index = cell.block;
+                            let text = self.render_chat_segment(
+                                pane_id,
+                                entry,
+                                Region::ToolContent,
+                                cell,
+                                cx,
+                            )?;
+                            // Keep the full retained output; long unbroken lines
+                            // scroll horizontally instead of disappearing.
+                            Some(
                                 div()
                                     .id(SharedString::from(format!(
                                         "chat-tool-content-{}-{index}",
@@ -463,15 +485,8 @@ impl SheprdWindow {
                                     .w_full()
                                     .overflow_x_scroll()
                                     .py(px(3.))
-                                    .child(self.render_chat_text(
-                                        pane_id,
-                                        entry,
-                                        Region::ToolContent,
-                                        Cell::block(index),
-                                        text,
-                                        cx,
-                                    ))
-                            })
+                                    .child(text),
+                            )
                         })),
                 )
             });
@@ -603,35 +618,54 @@ impl SheprdWindow {
         if !answers.is_empty() {
             return self.render_chat_answers(pane_id, entry, cx);
         }
-        self.render_chat_notice_record(pane_id, entry.id, *level, text, details.as_deref(), cx)
+        let id = entry.id;
+        let Some(details) = details else {
+            return div()
+                .text_color(rgb(self.notice_color(*level)))
+                .child(self.render_chat_text(
+                    pane_id,
+                    id,
+                    Region::Body(0),
+                    Cell::default(),
+                    || shown_text(text).to_owned(),
+                    cx,
+                ));
+        };
+        let label = self.render_chat_text(
+            pane_id,
+            id,
+            Region::Body(0),
+            Cell::default(),
+            || notice_label(text),
+            cx,
+        );
+        self.render_chat_notice_record(pane_id, id, *level, label, details, cx)
     }
 
+    fn notice_color(&self, level: NoticeLevel) -> u32 {
+        let theme = &self.theme;
+        let hues = Hues::of(theme);
+        match level {
+            NoticeLevel::Info => theme.subtext(),
+            NoticeLevel::Warning => hues.yellow,
+            NoticeLevel::Error => hues.red,
+        }
+    }
+
+    /// A notice's original record, folded under `label`. The caller draws
+    /// the label: a notice's own text is a segment of the document, and the
+    /// label above answered questions is not.
     fn render_chat_notice_record(
         &self,
         pane_id: &str,
         id: sheprd_chat_protocol::EntryId,
         level: NoticeLevel,
-        text: &str,
-        details: Option<&str>,
+        label: Div,
+        details: &str,
         cx: &mut Context<Self>,
     ) -> Div {
         let theme = &self.theme;
-        let hues = Hues::of(theme);
-        let color = match level {
-            NoticeLevel::Info => theme.subtext(),
-            NoticeLevel::Warning => hues.yellow,
-            NoticeLevel::Error => hues.red,
-        };
-        let Some(details) = details else {
-            return div().text_color(rgb(color)).child(self.render_chat_text(
-                pane_id,
-                id,
-                Region::Body(0),
-                Cell::default(),
-                text.to_owned(),
-                cx,
-            ));
-        };
+        let color = self.notice_color(level);
         let expanded = self
             .chats
             .pane(pane_id)
@@ -644,14 +678,7 @@ impl SheprdWindow {
             .min_w_0()
             .gap(px(6.))
             .child(chevron(expanded, theme))
-            .child(div().min_w_0().truncate().child(self.render_chat_text(
-                pane_id,
-                id,
-                Region::Body(0),
-                Cell::default(),
-                notice_label(text),
-                cx,
-            )));
+            .child(div().min_w_0().truncate().child(label));
         div()
             .flex()
             .flex_col()
@@ -687,7 +714,7 @@ impl SheprdWindow {
                                     id,
                                     Region::Details,
                                     Cell::default(),
-                                    details.to_owned(),
+                                    || shown_text(details).to_owned(),
                                     cx,
                                 )),
                         )

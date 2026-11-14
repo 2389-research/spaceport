@@ -529,13 +529,13 @@ fn install(
     if options.case == "activity-open"
         && let Some(pane) = view.chats.pane_mut(PANE)
     {
-        pane.expanded.insert(EntryId(1));
+        pane.toggle_expanded(EntryId(1));
     }
     // The first sub-agent's steps and the table of what runs, open.
     if options.case == "running-open"
         && let Some(pane) = view.chats.pane_mut(PANE)
     {
-        pane.expanded.insert(EntryId(3));
+        pane.toggle_expanded(EntryId(3));
         pane.running.set(true, crate::motion::now(), true);
     }
     // Every running step in full, from the working row.
@@ -548,7 +548,7 @@ fn install(
     if options.case == "tools"
         && let Some(pane) = view.chats.pane_mut(PANE)
     {
-        pane.expanded.insert(EntryId(3));
+        pane.toggle_expanded(EntryId(3));
     }
     if !options.read_only && !existing {
         let font = view.config.ui.clone();

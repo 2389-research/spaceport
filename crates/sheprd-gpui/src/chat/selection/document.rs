@@ -3,7 +3,7 @@
 use super::{Caret, Cell, Key, Position, Region};
 use crate::{
     chat::{
-        prepared::{Body, MESSAGE, Part, folded_thought, notice_label, tool_header, tool_text},
+        prepared::{Body, Part, folded_thought, notice_label, shown_text, tool_header, tool_text},
         rich::{Block, CodeText, Inline, Kind, MAX_CODE_LINES, remote_content},
     },
     release_notes::Line,
@@ -18,7 +18,6 @@ use std::{
 };
 
 enum Text {
-    Owned(String),
     Shared(Arc<str>),
     Lines(Rc<[Line]>, usize),
     /// A code line as drawn, and the block's source it starts at `start` of,
@@ -40,10 +39,18 @@ pub(crate) struct Segment {
 impl Segment {
     pub(crate) fn text(&self) -> &str {
         match &self.text {
-            Text::Owned(text) => text,
             Text::Shared(text) => text,
             Text::Lines(lines, index) => &lines[*index].text,
             Text::Code { line, .. } => &line.text,
+        }
+    }
+
+    /// The text for the view to draw. Plain entry text and prose are shared
+    /// with the document rather than copied each frame.
+    pub(in crate::chat) fn shared(&self) -> Arc<str> {
+        match &self.text {
+            Text::Shared(text) => text.clone(),
+            Text::Lines(..) | Text::Code { .. } => self.text().into(),
         }
     }
 
@@ -140,6 +147,22 @@ impl Document {
             epoch: self.epoch,
             position,
         })
+    }
+
+    /// The cells of `region` that hold text, in order. An expanded tool
+    /// call lists its locations and output by them.
+    pub(in crate::chat) fn cells(
+        &self,
+        entry: EntryId,
+        region: Region,
+    ) -> impl Iterator<Item = Cell> + '_ {
+        self.positions
+            .get(&entry)
+            .and_then(|index| self.entries.get(*index))
+            .into_iter()
+            .flat_map(|projection| &projection.segments)
+            .filter(move |segment| segment.position.region == region)
+            .map(|segment| segment.position.cell)
     }
 
     pub(crate) fn segment(&self, key: Key) -> Option<&Segment> {
@@ -309,7 +332,7 @@ fn project(
                 builder.plain(
                     Region::Body(0),
                     Cell::default(),
-                    MESSAGE.clip(text).to_owned(),
+                    shown_text(text).to_owned(),
                 );
             }
             EntryKind::Turn(turn) => builder.plain(
@@ -329,7 +352,7 @@ fn project(
         builder.plain(
             Region::Details,
             Cell::default(),
-            MESSAGE.clip(details).to_owned(),
+            shown_text(details).to_owned(),
         );
     }
     let positions = builder
@@ -372,7 +395,7 @@ impl Builder {
     fn plain(&mut self, region: Region, cell: Cell, text: String) {
         self.push(
             Position { region, cell },
-            Text::Owned(text),
+            Text::Shared(text.into()),
             Vec::new(),
             "\n",
         );
@@ -504,6 +527,6 @@ impl Builder {
                 Inline::Break => text.push('\n'),
             }
         }
-        self.push(position, Text::Owned(text), atoms, separator);
+        self.push(position, Text::Shared(text.into()), atoms, separator);
     }
 }
