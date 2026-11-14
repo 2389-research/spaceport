@@ -104,7 +104,6 @@ impl Localize for Error {
             Self::HealthTimeout => fl!("error-client-health-timeout"),
             Self::IncompatibleCodecs => fl!("error-client-incompatible-codecs"),
             Self::InputWriteTimeout => fl!("error-client-input-write-timeout"),
-            Self::InvalidGitDir => fl!("error-client-invalid-git-dir"),
             Self::InvalidSession => fl!("error-client-invalid-session"),
             Self::Io(error) => fl!("error-client-io", error = error.to_string()),
             Self::Json(error) => fl!("error-client-json", error = error.to_string()),

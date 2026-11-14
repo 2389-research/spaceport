@@ -1,13 +1,14 @@
 use super::*;
 
-// The list is process-wide, so each test uses targets no other test names.
+// The list is process-wide, so each test uses targets no other test names
+// and changes it only through `while_unverified`.
 
 #[test]
 fn a_target_is_verified_unless_the_user_skipped_it() {
     assert_eq!(HostKeys::of("verified.test"), HostKeys::Verify);
-    set_host_keys("skipped.test", HostKeys::Skip);
-    assert_eq!(HostKeys::of("skipped.test"), HostKeys::Skip);
-    set_host_keys("skipped.test", HostKeys::Verify);
+    crate::tests::while_unverified("skipped.test", || {
+        assert_eq!(HostKeys::of("skipped.test"), HostKeys::Skip);
+    });
     assert_eq!(HostKeys::of("skipped.test"), HostKeys::Verify);
 }
 
@@ -22,8 +23,9 @@ fn skipping_overrides_the_strict_policy_and_reads_no_known_hosts() {
 
 #[test]
 fn commands_for_a_skipped_target_put_the_override_before_the_policy() {
-    set_host_keys("command.test", HostKeys::Skip);
-    let command = crate::ssh::command("command.test", "true");
+    let command = crate::tests::while_unverified("command.test", || {
+        crate::ssh::command("command.test", "true")
+    });
     let args: Vec<_> = command.get_args().filter_map(|arg| arg.to_str()).collect();
     let skip = args
         .iter()
@@ -38,7 +40,6 @@ fn commands_for_a_skipped_target_put_the_override_before_the_policy() {
             .get_args()
             .any(|arg| arg == "StrictHostKeyChecking=no")
     );
-    set_host_keys("command.test", HostKeys::Verify);
 }
 
 #[test]
