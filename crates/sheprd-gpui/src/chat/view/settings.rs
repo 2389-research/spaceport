@@ -181,7 +181,7 @@ impl SheprdWindow {
         let Some(pane) = self.chats.pane_mut(pane_id) else {
             return;
         };
-        let opening = pane.menu.as_ref() != Some(&menu);
+        let opening = pane.menu() != Some(&menu);
         let long = match &menu {
             Menu::Setting(id) => pane
                 .session
@@ -195,7 +195,6 @@ impl SheprdWindow {
                 }),
             Menu::Modes | Menu::Settings => false,
         };
-        pane.menu = opening.then_some(menu);
         let search = (opening && long).then(|| {
             let input = cx.new(|cx| {
                 let mut input = SearchInput::new(cx);
@@ -211,9 +210,13 @@ impl SheprdWindow {
         let Some(pane) = self.chats.pane_mut(pane_id) else {
             return;
         };
-        pane.menu_search = search;
-        let focus = match &pane.menu_search {
-            Some((input, _)) => Some(input.read(cx).focus.clone()),
+        if opening {
+            pane.open_menu(menu, search);
+        } else {
+            pane.close_menu();
+        }
+        let focus = match pane.menu_search() {
+            Some(input) => Some(input.read(cx).focus.clone()),
             None => pane
                 .composer
                 .as_ref()
@@ -611,11 +614,10 @@ impl SheprdWindow {
                 };
                 rows.push(heading(&option.name).into_any_element());
                 let query = chat
-                    .menu_search
-                    .as_ref()
-                    .map(|(search, _)| search.read(cx).text().to_owned())
+                    .menu_search()
+                    .map(|search| search.read(cx).text().to_owned())
                     .unwrap_or_default();
-                if let Some(search) = chat.menu_search.as_ref().map(|(search, _)| search.clone()) {
+                if let Some(search) = chat.menu_search().cloned() {
                     rows.push(
                         div()
                             .debug_selector(|| "chat-menu-search".into())

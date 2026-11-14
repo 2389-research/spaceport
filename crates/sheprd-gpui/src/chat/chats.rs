@@ -92,6 +92,15 @@ pub(crate) enum Menu {
     Settings,
 }
 
+/// A menu while it is open, with the search field a long one carries, so
+/// closing the menu drops the field as well.
+struct OpenMenu {
+    kind: Menu,
+    /// The search field, with the subscription that redraws the menu as it
+    /// changes.
+    search: Option<(Entity<SearchInput>, gpui::Subscription)>,
+}
+
 /// What takes the user's typing in a chat.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ChatInput {
@@ -137,10 +146,7 @@ pub(crate) struct ChatPane {
     pub(crate) list: ListState,
     list_keys: Vec<(EntryId, u64)>,
     list_snapshots: u64,
-    pub(crate) menu: Option<Menu>,
-    /// The search field over a long menu while one is open, with the
-    /// subscription that redraws the menu as it changes.
-    pub(crate) menu_search: Option<(Entity<SearchInput>, gpui::Subscription)>,
+    menu: Option<OpenMenu>,
     /// Trying again cannot help: the program speaks another version.
     permanent: bool,
     pub(crate) prepared: Prepared,
@@ -208,6 +214,39 @@ impl ChatPane {
         }
     }
 
+    /// The menu open over the header.
+    pub(crate) fn menu(&self) -> Option<&Menu> {
+        self.menu.as_ref().map(|open| &open.kind)
+    }
+
+    /// The open menu's search field, when it is a long one.
+    pub(crate) fn menu_search(&self) -> Option<&Entity<SearchInput>> {
+        let (search, _) = self.menu.as_ref()?.search.as_ref()?;
+        Some(search)
+    }
+
+    /// Whether the open menu's search field holds the keyboard.
+    pub(crate) fn menu_search_focused(&self, window: &Window, cx: &App) -> bool {
+        self.menu_search()
+            .is_some_and(|search| search.read(cx).focus.is_focused(window))
+    }
+
+    /// Opens `kind` in place of any open menu, with the search field and
+    /// redraw subscription of a long one.
+    pub(crate) fn open_menu(
+        &mut self,
+        kind: Menu,
+        search: Option<(Entity<SearchInput>, gpui::Subscription)>,
+    ) {
+        self.menu = Some(OpenMenu { kind, search });
+    }
+
+    /// Closes the open menu and its search field, returning whether one
+    /// was open. Moving the keyboard is the caller's.
+    pub(crate) fn close_menu(&mut self) -> bool {
+        self.menu.take().is_some()
+    }
+
     /// Every handle through which the chat holds the keyboard: its composer,
     /// its inert mirror focus, its selectable text, and a picture shown large.
     pub(crate) fn focus_handles<'a>(
@@ -251,7 +290,6 @@ impl ChatPane {
             list_keys: Vec::new(),
             list_snapshots: 0,
             menu: None,
-            menu_search: None,
             permanent: false,
             prepared,
             #[cfg(feature = "integration-test")]
@@ -327,7 +365,9 @@ impl ChatPane {
         tracing::debug!(%error, pane = %self.target.pane_id, "Chat connection ended");
         self.link = None;
         self.session.lost(error);
-        self.menu = None;
+        // No window here: `poll_chats_with` gives the keyboard back to the
+        // composer when the closed menu's search field held it.
+        self.close_menu();
         if error.permanent()
             || (self.target.existing.is_some()
                 && matches!(error, Error::Bye(sheprd_chat_protocol::ByeReason::Exiting)))

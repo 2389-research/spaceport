@@ -107,12 +107,26 @@ impl SheprdWindow {
             self.probe_chat_agents(cx);
         }
         self.poll_chat_start(cx);
+        let searching = self
+            .chats
+            .panes()
+            .find(|pane| pane.menu_search_focused(window, cx))
+            .map(|pane| pane.target.pane_id.clone());
         let mut changed = self.chats.reconcile(targets, now, connect) || discovered;
         // A layout saved from Settings or the command line arrives here.
         changed |= self.chats.relayout(self.config.chat.layout);
         changed |= self.chats.rewidth(self.config.chat.max_width);
         changed |= self.chats.relocale(crate::i18n::shown_locale());
         changed |= self.chats.poll(now);
+        // A connection that ended closed its pane's menu, and the search
+        // field that held the keyboard went with it.
+        if let Some(focus) = searching
+            .and_then(|pane_id| self.chats.pane(&pane_id))
+            .filter(|pane| pane.menu_search().is_none())
+            .and_then(|pane| pane.input_focus(cx))
+        {
+            window.focus(&focus, cx);
+        }
         // Observed panes, whether a discovered agent or a `[chat.mirrors]`
         // entry, take their status from the daemon; live chats ignore it.
         for pane in self.chats.panes_mut() {
@@ -315,10 +329,7 @@ impl SheprdWindow {
     pub(crate) fn chat_focused(&self, window: &Window, cx: &App) -> bool {
         self.chats.panes().any(|pane| {
             pane.focus_handles(cx).any(|focus| focus.is_focused(window))
-                || pane
-                    .menu_search
-                    .as_ref()
-                    .is_some_and(|(search, _)| search.read(cx).focus.is_focused(window))
+                || pane.menu_search_focused(window, cx)
                 || pane.widgets.focused(window, cx)
         })
     }
@@ -391,7 +402,7 @@ impl SheprdWindow {
         let Some(pane) = self.chats.pane(pane_id) else {
             return;
         };
-        let Some(menu) = pane.menu.clone() else {
+        let Some(menu) = pane.menu().cloned() else {
             return;
         };
         match event.keystroke.key.as_str() {
@@ -468,10 +479,9 @@ impl SheprdWindow {
             ChatInput::Terminal => return,
         }
         if let Some(search) = pane
-            .menu_search
-            .as_ref()
-            .map(|(search, _)| search.clone())
-            .filter(|search| search.read(cx).focus.is_focused(window))
+            .menu_search()
+            .filter(|_| pane.menu_search_focused(window, cx))
+            .cloned()
         {
             self.chat_menu_search_key(pane_id, &search, event, window, cx);
             return;
@@ -547,11 +557,7 @@ impl SheprdWindow {
             return;
         };
         // The menu's search field takes its own keys.
-        if pane
-            .menu_search
-            .as_ref()
-            .is_some_and(|(search, _)| search.read(cx).focus.is_focused(window))
-        {
+        if pane.menu_search_focused(window, cx) {
             return;
         }
         let Some(input) = pane.composer.clone() else {
