@@ -216,36 +216,17 @@ pub(super) fn in_free_window(
     })
 }
 
-/// The window a request names with `--window`. Every request honors it or
-/// is refused: one naming a window that is gone never acts elsewhere, even
-/// where the work is app-wide.
-fn named_window(request: &Request) -> Option<u64> {
-    match request {
-        Request::Status(caller) => caller.window,
-        Request::App(call) => call.caller.window,
-        Request::Window(call) => call.caller.window,
-        Request::Ui(call) => call.caller.window,
-        Request::Command(call) => call.caller.window,
-        Request::Tab(call) => call.caller.window,
-        Request::Work(call) => call.caller.window,
-        Request::Host(call) => call.caller.window,
-        Request::Settings(call) => call.caller.window,
-        Request::Events(call) => call.caller.window,
-        Request::Link(call) => call.caller.window,
-        Request::Chat(call) => call.caller.window,
-    }
+/// Whether the app may park `request`. The protocol's wait is the only
+/// record of which requests wait: a caller's read timeout and this both
+/// come from it, so the two cannot disagree.
+fn may_park(request: &Request) -> bool {
+    request.wait_seconds() > 0
 }
 
 fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
-    let may_park = matches!(
-        incoming.request,
-        Request::Tab(_)
-            | Request::Work(_)
-            | Request::Host(_)
-            | Request::Settings(_)
-            | Request::Events(_)
-    );
-    if let Some(id) = named_window(&incoming.request)
+    // Every request honors `--window` or is refused: one naming a window
+    // that is gone never acts elsewhere, even where the work is app-wide.
+    if let Some(id) = incoming.request.caller().window
         && !main_windows(cx)
             .iter()
             .any(|handle| handle.window_id().as_u64() == id)
@@ -253,7 +234,7 @@ fn serve(incoming: socket::Incoming, state: &mut State, cx: &mut App) {
         incoming.respond(not_found(format!("Spaceport has no window {id}")));
         return;
     }
-    if may_park && state.watches.full() {
+    if may_park(&incoming.request) && state.watches.full() {
         incoming.respond(Response::error(
             ErrorCode::Busy,
             "Too many requests are waiting",
