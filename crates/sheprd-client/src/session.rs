@@ -12,8 +12,7 @@ use crate::{
     frame::FrameReader,
     handle::Command,
     limits::{
-        COMMAND_TIMEOUT, IDLE_WAIT, LIVENESS_TIMEOUT, MAX_RESPONSE_BYTES, PING_TIMEOUT, POLL,
-        QUIET_PING, SLOW_REQUEST, TIMEOUT,
+        COMMAND_TIMEOUT, IDLE_WAIT, LIVENESS_TIMEOUT, PING_TIMEOUT, POLL, QUIET_PING, TIMEOUT,
     },
     method::Method,
     options::ConnectOptions,
@@ -23,7 +22,6 @@ use crate::{
     transport::Stream,
 };
 use crossbeam_channel::{Sender, TryRecvError};
-use serde_json::Value;
 use std::{
     io::Write,
     sync::{
@@ -413,10 +411,7 @@ pub(crate) fn run_connection(
                     return Ok(());
                 }
                 stream.write_all(&barrier.request)?;
-                session.pending = Some(Pending {
-                    started: Instant::now(),
-                    ..barrier.pending
-                });
+                session.resent(barrier);
                 continue;
             }
             let Some(mut command) = queued.take().or_else(|| commands.try_recv().ok()) else {
@@ -519,16 +514,7 @@ pub(crate) fn run_connection(
                     bytes: Vec::new(),
                     started: Instant::now(),
                 };
-                if session.pending.is_some() {
-                    session.barrier = Some(Barrier {
-                        pending,
-                        request: command.bytes,
-                        held: None,
-                        refused: false,
-                    });
-                } else {
-                    session.pending = Some(pending);
-                }
+                session.request_sent(pending, command.bytes);
             }
         }
         let image = queued
@@ -767,80 +753,18 @@ impl Session {
                 if snapshot.as_ref().is_none_or(|s| s.boot_id != boot_id) {
                     return Err(Error::ResponseBoot);
                 }
-                let total = pending
-                    .iter()
-                    .chain(barrier.iter().map(|b| &b.pending))
-                    .map(|p| p.bytes.len())
-                    .sum::<usize>();
-                if data.len() > MAX_RESPONSE_BYTES.saturating_sub(total) {
-                    return Err(Error::ResponseLimit);
-                }
-                let to_barrier = barrier.as_ref().is_some_and(|b| b.awaits(&request_id));
-                let p = if to_barrier {
-                    barrier.as_mut().map(|b| &mut b.pending)
-                } else {
-                    pending.as_mut().filter(|p| p.id == request_id)
-                }
-                .ok_or(Error::UnsolicitedResponse)?;
-                p.bytes.extend(data);
-                if final_chunk {
-                    let p = if to_barrier {
-                        let p = &mut barrier.as_mut().ok_or(Error::UnsolicitedResponse)?.pending;
-                        Pending {
-                            id: p.id.clone(),
-                            method: p.method,
-                            bytes: std::mem::take(&mut p.bytes),
-                            started: p.started,
-                        }
-                    } else {
-                        pending.take().ok_or(Error::UnsolicitedResponse)?
-                    };
-                    let response: Value = serde_json::from_slice(&p.bytes)?;
-                    if response.get("id").and_then(Value::as_str) != Some(&request_id) {
-                        return Err(Error::ResponseId);
-                    }
-                    let elapsed = p.started.elapsed();
-                    let elapsed_ms = elapsed.as_millis() as u64;
-                    let api_error = response.get("error").is_some_and(|error| !error.is_null());
-                    if api_error {
-                        tracing::warn!(elapsed_ms, "API request failed");
-                    } else if elapsed > SLOW_REQUEST {
-                        tracing::warn!(elapsed_ms, api_error, "slow API request completed");
-                    } else {
-                        tracing::trace!(elapsed_ms, api_error, "API request completed");
-                    }
-                    if let Some(b) = barrier.as_mut().filter(|_| to_barrier) {
-                        if barrier::endpoint_busy(&response) {
-                            tracing::debug!(
-                                category = "api",
-                                "surface activation resent after focus"
-                            );
-                            *pipeline_barriers = false;
-                            b.refused = true;
-                            return Ok(());
-                        }
-                        if pending.is_some() {
-                            // Its bytes stay counted until delivery, so the two
-                            // responses share one assembly bound.
-                            b.pending.bytes = p.bytes;
-                            b.held = Some(response);
-                            return Ok(());
-                        }
-                        *barrier = None;
-                    }
-                    emit(ClientEvent::Response {
-                        request_id,
-                        response,
-                    })?;
-                    if pending.is_none()
-                        && let Some(held) = barrier.as_mut().and_then(|b| b.held.take())
-                    {
-                        let id = barrier.take().map(|b| b.pending.id).unwrap_or_default();
-                        emit(ClientEvent::Response {
-                            request_id: id,
-                            response: held,
-                        })?;
-                    }
+                for event in barrier::receive(
+                    pending,
+                    barrier,
+                    pipeline_barriers,
+                    request_id,
+                    final_chunk,
+                    data,
+                )?
+                .into_iter()
+                .flatten()
+                {
+                    emit(event)?;
                 }
             }
             ServerMessage::ServerShutdown { reason } => {

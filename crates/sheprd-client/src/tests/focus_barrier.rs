@@ -3,6 +3,7 @@ use super::*;
 // A Windows worker has no wake to wait on: it still polls every 10 ms.
 #[cfg(unix)]
 mod image_wake;
+mod lease;
 
 fn connected() -> (Client, Stream, thread::JoinHandle<Result<()>>) {
     connected_reporting("0.9.5")
@@ -306,17 +307,15 @@ fn reboot_and_cancellation_drop_a_refused_activation() {
 fn a_waiting_activation_shares_the_request_deadline() {
     let mut session = ready_session();
     let stale = Instant::now() - COMMAND_TIMEOUT - Duration::from_millis(1);
-    session.barrier = Some(session::Barrier {
-        pending: Pending {
+    session.barrier = Some(session::Barrier::new(
+        Pending {
             id: "activation".into(),
             method: Method::ClientShellSurfaceSet,
             bytes: Vec::new(),
             started: stale,
         },
-        request: Vec::new(),
-        held: None,
-        refused: false,
-    });
+        Vec::new(),
+    ));
     assert_eq!(session.deadline(), Some(stale + COMMAND_TIMEOUT));
     assert!(matches!(
         session.check_timeouts(),
@@ -341,12 +340,10 @@ fn a_held_activation_response_counts_toward_the_shared_response_bound() {
     for excess in [0, 1] {
         let mut session = ready_session();
         session.pending = Some(pending("focus", Method::PaneFocus));
-        session.barrier = Some(session::Barrier {
-            pending: pending("activation", Method::ClientShellSurfaceSet),
-            request: Vec::new(),
-            held: None,
-            refused: false,
-        });
+        session.barrier = Some(session::Barrier::new(
+            pending("activation", Method::ClientShellSurfaceSet),
+            Vec::new(),
+        ));
         let mut held = br#"{"id":"activation","result":{}}"#.to_vec();
         held.resize(MAX_RESPONSE_BYTES / 2, b' ');
         let held_len = held.len();

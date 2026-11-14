@@ -257,17 +257,29 @@ fn an_outstanding_pipelined_activation_blocks_partial_input_like_a_request() {
         let input = command(pane_input(vec![key()]));
         assert!(session.permits_partial_input(&input, &reader));
         // Focus answered first; its activation is still unanswered or awaits resend.
-        session.barrier = Some(Barrier {
-            pending: Pending {
+        session.barrier = Some(Barrier::new(
+            Pending {
                 id: "activation".into(),
                 method: Method::ClientShellSurfaceSet,
                 bytes: Vec::new(),
                 started: Instant::now(),
             },
-            request: Vec::new(),
-            held: None,
-            refused,
-        });
+            Vec::new(),
+        ));
+        if refused {
+            let refusal = ServerMessage::ClientShellEndpointResponseChunk {
+                boot_id: "boot-v1".into(),
+                request_id: "activation".into(),
+                final_chunk: true,
+                data: br#"{"id":"activation","error":{"code":"endpoint_busy"}}"#.to_vec(),
+            };
+            session
+                .handle_message(refusal, |_| -> Result<()> {
+                    panic!("a refusal is not reported")
+                })
+                .unwrap();
+        }
+        assert_eq!(session.resend_ready(), refused);
         assert!(session.pending.is_none());
         assert!(!session.permits_partial_input(&input, &reader));
         session.barrier = None;
