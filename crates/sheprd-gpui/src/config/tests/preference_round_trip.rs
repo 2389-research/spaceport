@@ -300,6 +300,10 @@ rows! {
         Preference::ShowWindowControls(true) =>
             "show_window_controls = true\n", Root("show_window_controls = true\n"),
             |c| c.show_window_controls;
+        // Linux shows the controls by default, so only this row differs there.
+        Preference::ShowWindowControls(false) =>
+            "show_window_controls = false\n", Root("show_window_controls = false\n"),
+            |c| !c.show_window_controls;
     }
     SidebarActivityBar {
         Preference::SidebarActivityBar(false) =>
