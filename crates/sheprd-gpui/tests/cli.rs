@@ -14,7 +14,7 @@ mod removed_project_open;
 mod removed_scripts;
 #[path = "cli/removed_updater.rs"]
 mod removed_updater;
-#[cfg(unix)]
+
 use std::{
     process::{Child, Command, Output, Stdio},
     sync::Once,

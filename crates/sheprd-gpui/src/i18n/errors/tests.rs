@@ -29,7 +29,6 @@ mod processes;
 mod protocol;
 mod remote;
 mod root;
-#[cfg(unix)]
 mod sound;
 mod terminal_attach;
 mod usage;

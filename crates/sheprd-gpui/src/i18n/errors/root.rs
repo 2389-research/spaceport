@@ -134,7 +134,6 @@ impl Localize for Error {
             Self::ServerKeybindings(error) => error.localize(),
             Self::Settings(error) => error.localize(),
             Self::SettingsSave(source) => fl!("error-settings-save", error = source.localize()),
-            #[cfg(unix)]
             Self::SkillInstall { path: dir, source } => fl!(
                 "error-skill-install",
                 path = path(dir),

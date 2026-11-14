@@ -33,7 +33,6 @@ mod processes;
 mod protocol;
 mod remote;
 mod root;
-#[cfg(unix)]
 mod sound;
 #[cfg(test)]
 pub(crate) mod tests;
