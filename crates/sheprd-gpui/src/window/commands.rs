@@ -370,7 +370,7 @@ impl SheprdWindow {
                     e.toasts
                         .entries
                         .iter()
-                        .find(|(_, n)| n.visible)
+                        .find(|(_, n)| n.is_visible())
                         .map(|(id, _)| (e, *id))
                 }) {
                     let (origin, generation, inbox) = (

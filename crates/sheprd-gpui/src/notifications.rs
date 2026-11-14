@@ -19,6 +19,28 @@ mod context;
 #[cfg(test)]
 mod policy_tests;
 
+/// Where a notice is in its life. Each stage carries only what means
+/// something in it. [`tick`] moves a waiting notice to ready,
+/// [`Notice::promote`] shows it and [`Notice::post`] hands it to the OS.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Stage {
+    /// Waiting out its delay and for the agent's state to confirm it.
+    /// `checked` is when that evidence was last read.
+    Waiting { checked: Option<Instant> },
+    /// Passed the policy: queued for a toast, or for the OS notification
+    /// center under system delivery.
+    Ready,
+    /// Shown as a toast until `expires`. `displayed` is the last tick that
+    /// saw it and whether it was paused then, which extends its lifetime.
+    Visible {
+        expires: Instant,
+        displayed: (Instant, bool),
+    },
+    /// Handed to the OS notification center. Retained only so a click can
+    /// resolve its target through the same boot-fenced validation as a toast.
+    Posted,
+}
+
 #[derive(Clone)]
 pub(crate) struct Notice {
     pub title: String,
@@ -27,7 +49,6 @@ pub(crate) struct Notice {
     /// The sending agent's mark, when Herdr named an agent this build knows.
     pub agent: Option<AgentIcon>,
     pub position: ToastHerdrPosition,
-    pub expires: Instant,
     pub workspace_id: Option<String>,
     pub tab_id: Option<String>,
     pub pane_id: Option<String>,
@@ -37,14 +58,8 @@ pub(crate) struct Notice {
     order: u64,
     explicit_position: bool,
     client_local: bool,
-    ready: bool,
-    pub(crate) visible: bool,
-    checked: Option<Instant>,
-    displayed: Option<(Instant, bool)>,
+    stage: Stage,
     suppression_target: Option<crate::navigation::OwnedNavigationTarget>,
-    /// Handed to the OS notification center. Retained only so a click can
-    /// resolve its target through the same boot-fenced validation as a toast.
-    pub(crate) posted: bool,
     /// The body is the client's task and place lines, each shown on one row.
     pub(crate) described: bool,
 }
@@ -102,17 +117,63 @@ impl Notice {
         notice
     }
 
+    /// Shows the notice as a toast, whose lifetime starts at `now`.
     pub fn promote(&mut self, now: Instant) {
-        self.ready = true;
-        self.visible = true;
-        self.displayed = Some((now, false));
-        self.expires = now
-            + Duration::from_secs(match self.kind {
-                SemanticNotificationKind::NeedsAttention => 8,
-                SemanticNotificationKind::Finished | SemanticNotificationKind::Custom => 5,
-                SemanticNotificationKind::UpdateInstalled => 3,
-            });
+        self.stage = Stage::Visible {
+            expires: now
+                + Duration::from_secs(match self.kind {
+                    SemanticNotificationKind::NeedsAttention => 8,
+                    SemanticNotificationKind::Finished | SemanticNotificationKind::Custom => 5,
+                    SemanticNotificationKind::UpdateInstalled => 3,
+                }),
+            displayed: (now, false),
+        };
     }
+
+    /// Records the notice as handed to the OS notification center.
+    /// [`take_system`] posts ready notices; a QA preview posts its own.
+    pub(crate) fn post(&mut self) {
+        self.stage = Stage::Posted;
+    }
+
+    /// Still waiting out its delay or for the agent's state to confirm it.
+    pub(crate) fn is_waiting(&self) -> bool {
+        matches!(self.stage, Stage::Waiting { .. })
+    }
+
+    /// Passed the policy and neither shown nor posted yet.
+    pub(crate) fn is_ready(&self) -> bool {
+        self.stage == Stage::Ready
+    }
+
+    /// Shown as a toast.
+    pub(crate) fn is_visible(&self) -> bool {
+        matches!(self.stage, Stage::Visible { .. })
+    }
+
+    /// Handed to the OS notification center.
+    pub(crate) fn is_posted(&self) -> bool {
+        self.stage == Stage::Posted
+    }
+
+    /// When a showing toast leaves. A notice in any other stage has no
+    /// lifetime.
+    pub(crate) fn expires(&self) -> Option<Instant> {
+        match self.stage {
+            Stage::Visible { expires, .. } => Some(expires),
+            _ => None,
+        }
+    }
+
+    /// Moves a showing toast's expiry; a test's way to age one. Only the Unix
+    /// lifecycle tests age a toast.
+    #[cfg(all(test, unix))]
+    pub(crate) fn set_expires(&mut self, at: Instant) {
+        if let Stage::Visible { expires, .. } = &mut self.stage {
+            *expires = at;
+        }
+    }
+
     pub fn new(notification: SemanticNotification, now: Instant) -> Self {
         let title = safe_text(&notification.title, 160);
         let suppression_target = notification
@@ -146,7 +207,6 @@ impl Notice {
             position: notification
                 .position
                 .unwrap_or(ToastHerdrPosition::BottomRight),
-            expires: now,
             workspace_id: notification.workspace_id,
             tab_id: notification.tab_id,
             pane_id: notification.pane_id,
@@ -156,12 +216,8 @@ impl Notice {
             order: ARRIVAL.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             explicit_position: notification.position.is_some(),
             client_local: false,
-            ready: false,
-            visible: false,
-            checked: None,
-            displayed: None,
+            stage: Stage::Waiting { checked: None },
             suppression_target,
-            posted: false,
             described: false,
         }
     }
@@ -294,7 +350,7 @@ impl Toasts {
                     .retain(|(_, old)| old.pane_id.as_ref() != Some(pane));
             }
             if self.entries.len() == PENDING_LIMIT * 2 + 1
-                && let Some(index) = self.entries.iter().position(|(_, n)| !n.visible)
+                && let Some(index) = self.entries.iter().position(|(_, n)| !n.is_visible())
             {
                 self.entries.remove(index);
             }
@@ -367,10 +423,9 @@ pub(crate) fn tick(
                         n.initialize(s);
                     }
                 }
-                if n.posted {
-                    return true;
-                }
-                if !n.client_local
+                // A posted notice is past muting: it only answers its click.
+                if !n.is_posted()
+                    && !n.client_local
                     && !silenced.is_empty()
                     && silenced.notice(
                         n.workspace_id.as_deref(),
@@ -380,18 +435,19 @@ pub(crate) fn tick(
                 {
                     return false;
                 }
-                if n.visible {
-                    let paused = hidden || (index == selected && pending_navigation == Some(*id));
-                    if let Some((last, was_hidden)) = n.displayed.replace((now, paused))
-                        && (paused || was_hidden)
-                    {
-                        n.expires += now.saturating_duration_since(last);
+                let checked = match &mut n.stage {
+                    Stage::Posted | Stage::Ready => return true,
+                    Stage::Visible { expires, displayed } => {
+                        let paused =
+                            hidden || (index == selected && pending_navigation == Some(*id));
+                        let (last, was_hidden) = std::mem::replace(displayed, (now, paused));
+                        if paused || was_hidden {
+                            *expires += now.saturating_duration_since(last);
+                        }
+                        return paused || now < *expires;
                     }
-                    return paused || now < n.expires;
-                }
-                if n.ready {
-                    return true;
-                }
+                    Stage::Waiting { checked } => checked,
+                };
                 if !n.client_local {
                     let delay = if n.kind == Kind::Custom {
                         0
@@ -399,12 +455,11 @@ pub(crate) fn tick(
                         config.delay_seconds
                     };
                     if now < n.arrived + Duration::from_secs(delay)
-                        || n.checked
-                            .is_some_and(|last| now < (last + RECHECK).min(n.arrived + GRACE))
+                        || checked.is_some_and(|last| now < (last + RECHECK).min(n.arrived + GRACE))
                     {
                         return true;
                     }
-                    n.checked = Some(now);
+                    *checked = Some(now);
                     if delay > 0 || n.kind == Kind::Finished {
                         if let Some(pane) = n.pane_id.as_deref() {
                             let status = snapshot
@@ -444,7 +499,7 @@ pub(crate) fn tick(
                         return false;
                     }
                 }
-                n.ready = true;
+                n.stage = Stage::Ready;
                 true
             })();
             changed |= !keep;
@@ -461,7 +516,8 @@ pub(crate) fn tick(
                     .entries
                     .iter()
                     .filter(move |(_, n)| {
-                        n.ready == ready && !n.visible && !n.posted && (n.client_local || !system)
+                        (if ready { n.is_ready() } else { n.is_waiting() })
+                            && (n.client_local || !system)
                     })
                     .map(move |(id, n)| (n.arrived, n.order, index, *id))
             })
@@ -469,7 +525,7 @@ pub(crate) fn tick(
         queued.sort_unstable();
         let visible = endpoints
             .iter()
-            .any(|e| e.toasts.entries.iter().any(|(_, n)| n.visible));
+            .any(|e| e.toasts.entries.iter().any(|(_, n)| n.is_visible()));
         if ready && !visible && !hidden && !queued.is_empty() {
             let (_, _, index, id) = queued.remove(0);
             if let Some((_, n)) = endpoints[index]
@@ -518,10 +574,10 @@ pub(crate) fn take_system(
     let mut posts = Vec::new();
     for (index, endpoint) in endpoints.iter_mut().enumerate() {
         for (id, n) in &mut endpoint.toasts.entries {
-            if !n.ready || n.posted || n.visible || n.client_local {
+            if !n.is_ready() || n.client_local {
                 continue;
             }
-            n.posted = true;
+            n.post();
             let boot = n.boot.as_deref().unwrap_or_default();
             let tag = match &n.pane_id {
                 Some(pane) => format!("herdr:{}:{boot}:{pane}", endpoint.id),
@@ -543,11 +599,11 @@ pub(crate) fn take_system(
             .toasts
             .entries
             .iter()
-            .filter(|(_, n)| n.posted)
+            .filter(|(_, n)| n.is_posted())
             .count();
         let mut excess = posted.saturating_sub(PENDING_LIMIT);
         endpoint.toasts.entries.retain(|(_, n)| {
-            let drop = excess > 0 && n.posted;
+            let drop = excess > 0 && n.is_posted();
             excess -= usize::from(drop);
             !drop
         });

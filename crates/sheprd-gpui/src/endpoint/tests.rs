@@ -88,7 +88,7 @@ fn notifications_stay_endpoint_owned_and_expire_without_new_updates() {
         None,
         now
     ));
-    let deadline = endpoints[1].toasts.entries[0].1.expires;
+    let deadline = endpoints[1].toasts.entries[0].1.expires().unwrap();
     assert!(crate::notifications::tick(
         &mut endpoints,
         0,

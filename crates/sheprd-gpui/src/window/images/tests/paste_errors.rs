@@ -23,7 +23,7 @@ fn clipboard_failures_report_a_discarded_paste(cx: &mut gpui::TestAppContext) {
             );
             let (_, notice) = view.endpoints[0].toasts.entries.back().unwrap();
             assert_eq!(notice.title, "Paste discarded");
-            assert!(notice.visible);
+            assert!(notice.is_visible());
             assert_eq!(
                 notice.body.as_deref(),
                 Some(format!("{error} Nothing was uploaded or pasted.").as_str())
