@@ -29,11 +29,6 @@ fn ssh_errors_keep_kind_and_text() {
             "invalid SSH target (options, controls, and passwords are forbidden)",
         ),
         (
-            ssh::Error::KnownHostsUnavailable.into(),
-            InvalidData,
-            "SSH has no user known hosts file to save the host key to",
-        ),
-        (
             ssh::Error::OutputLimit.into(),
             InvalidData,
             "SSH startup output exceeds limit",

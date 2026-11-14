@@ -86,20 +86,5 @@ where
         .collect()
 }
 
-/// Record the user's choice for one target, effective for the next `ssh`.
-pub fn set_host_keys(target: &str, keys: HostKeys) {
-    let changed = {
-        let mut hosts = HOSTS.write().unwrap_or_else(PoisonError::into_inner);
-        match keys {
-            HostKeys::Skip if hosts.len() < MAX_UNVERIFIED_HOSTS => hosts.insert(target.to_owned()),
-            HostKeys::Skip => false,
-            HostKeys::Verify => hosts.remove(target),
-        }
-    };
-    if changed {
-        super::mux::host_keys_changed(target);
-    }
-}
-
 #[cfg(test)]
 mod tests;

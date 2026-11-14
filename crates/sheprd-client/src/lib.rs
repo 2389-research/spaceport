@@ -60,12 +60,12 @@ pub use sheprd_protocol as protocol;
 
 pub use app_name::APP_NAME;
 pub use catalog::{
-    SavedHost, load_saved_host_selection, load_saved_hosts, store_saved_host,
-    store_saved_host_selection, valid_profile_id,
+    SavedHost, load_saved_host_selection, load_saved_hosts, store_saved_host_selection,
+    valid_profile_id,
 };
 pub use clipboard::{ClipboardImageCancellation, ClipboardImageUpload};
 pub use compat::{MIN_HERDR_VERSION, VersionMismatch};
-pub use connect::{Transport, connect, connect_with_connector, connect_with_surface_active};
+pub use connect::{connect, connect_with_connector, connect_with_surface_active};
 pub use discovery::{ConnectTarget, local_var, session_socket, set_login_config_home};
 pub use environment::set_command_environment;
 /// Error returned when queueing commands; also available as the crate's `Error`.
@@ -75,7 +75,7 @@ pub use event::ClientEvent;
 pub use forward::{ForwardEvent, PortForward, preferred_local_port};
 pub use handle::{Client, ClientHandle};
 pub use host_theme::HostTheme;
-pub use local_network::{LocalNetworkAccess, local_network_access, wait_for_local_network};
+pub use local_network::{LocalNetworkAccess, local_network_access};
 pub use method::Method;
 pub use options::ConnectOptions;
 #[cfg(windows)]
@@ -89,14 +89,9 @@ pub use sessions::{
 };
 pub use ssh::mux::Lane as SshLane;
 pub use ssh::{
-    Bridge, SshChannel, connect_command, remote_socket, script_command, serve_command,
+    Destination, FORWARD_READY, HostProbe, MAX_UNVERIFIED_HOSTS, SshChannel, SshFailure,
+    forward_command, resolve_destination, script_command, set_unverified_hosts,
     shared_script_command,
-};
-pub use ssh::{
-    Destination, FORWARD_READY, HostKeyFingerprint, HostKeyScan, HostKeys, HostProbe,
-    MAX_UNVERIFIED_HOSTS, NewHostKey, SshFailure, forward_command, probe_host, probe_host_with,
-    remote_config_value, remote_origin_url, resolve_destination, scan_host_key, set_host_keys,
-    set_unverified_hosts, trust_host_key,
 };
 pub use surface_images::{
     MAX_IMAGE_BYTES, MAX_IMAGE_SIDE, MAX_IMAGES, MAX_PLACEMENTS, SurfaceImage, SurfaceImages,

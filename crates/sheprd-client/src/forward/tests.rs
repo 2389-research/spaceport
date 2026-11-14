@@ -287,9 +287,9 @@ fn a_master_that_cannot_start_ends_the_forward_with_its_cause() {
 #[test]
 fn a_forward_for_a_skipped_host_reads_no_known_hosts_ahead_of_the_default() {
     let socket = Path::new("/tmp/herdr-fwd-1-1/c");
-    ssh::set_host_keys("skipped-forward.test", ssh::HostKeys::Skip);
-    let master = master_command("skipped-forward.test", socket);
-    ssh::set_host_keys("skipped-forward.test", ssh::HostKeys::Verify);
+    let master = crate::tests::while_unverified("skipped-forward.test", || {
+        master_command("skipped-forward.test", socket)
+    });
     let args: Vec<&OsStr> = master.get_args().collect();
     let at = |option: &str| args.iter().position(|arg| *arg == OsStr::new(option));
     let strict = at("StrictHostKeyChecking=yes").unwrap();

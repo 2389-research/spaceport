@@ -229,7 +229,7 @@ impl ConnectionBridge {
                     state.missing_installation = true;
                     state.dirty = true;
                 }
-                result.map(sheprd_client::Transport::from)
+                result
             })
             .map_err(crate::Error::from)
             .and_then(|client| {
