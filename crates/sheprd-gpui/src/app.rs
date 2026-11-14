@@ -367,8 +367,8 @@ pub(crate) fn run() -> std::process::ExitCode {
         );
         // i18n: data
         println!("\nCommands for the running app (each with --help):");
-        for (name, summary) in cli::control::FAMILIES {
-            println!("  {name:<18}{summary}");
+        for family in cli::control::FAMILIES {
+            println!("  {:<18}{}", family.name, family.summary);
         }
         #[cfg(feature = "integration-test")]
         println!(
