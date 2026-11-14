@@ -23,11 +23,13 @@ mod follow;
 mod history;
 mod order;
 pub(crate) mod origin;
+mod phase;
 mod polling;
 mod wake;
 
 pub(super) use catalog::Catalog;
 pub(crate) use history::Step;
+pub(crate) use phase::Phase;
 pub(super) use wake::WakeClock;
 pub(crate) use wake::watch_network;
 
@@ -394,10 +396,7 @@ impl Endpoint {
         {
             self.recovery = None;
         }
-        if self.connection.handle.is_some()
-            && self.live.status.is_connected()
-            && self.live.snapshot.is_some()
-        {
+        if self.serving() {
             self.outage = None;
             let since = self.online_since.get_or_insert(now);
             if now.duration_since(*since) >= STABLE_CONNECTION_PERIOD {
@@ -464,44 +463,6 @@ impl Endpoint {
 
     fn retry_delay(&self) -> Duration {
         Duration::from_millis(500u64 << self.attempts.min(8)).min(MAX_RETRY_DELAY)
-    }
-
-    /// The endpoint's state as `herdr-gpui` commands report it, in English.
-    pub fn status(&self) -> &'static str {
-        match self.state() {
-            "daemon-outdated" => "Herdr update needed", // i18n: data
-            "client-outdated" => "app update needed",   // i18n: data
-            state => state,
-        }
-    }
-
-    /// The endpoint's state as the device picker shows it.
-    pub fn status_label(&self) -> String {
-        fl!("endpoint-status", state = self.state())
-    }
-
-    /// Which of `endpoint-status`'s cases the endpoint is in.
-    fn state(&self) -> &'static str {
-        if !self.enabled {
-            "disabled"
-        } else if self.detached {
-            "detached"
-        } else if let Some(mismatch) = &self.version_mismatch {
-            // A refused handshake is an outage too, but says what fixes it.
-            match mismatch {
-                VersionMismatch::DaemonOutdated { .. } => "daemon-outdated",
-                VersionMismatch::ClientOutdated { .. } => "client-outdated",
-            }
-        } else if self.outage.is_some() {
-            // Before `live`: a stopped handle can precede its disconnect state.
-            "reconnecting"
-        } else if self.live.status.is_connected() {
-            "online"
-        } else if self.live.error.is_some() {
-            "reconnecting"
-        } else {
-            "connecting"
-        }
     }
 }
 
