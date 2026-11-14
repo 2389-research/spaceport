@@ -1,9 +1,12 @@
 //! One setting at a time, by its dotted key, for the command line: read the
 //! effective value, or change the local overrides file. A change is checked
 //! the way loading checks the file before it is written, so a value the app
-//! would refuse never reaches the disk.
+//! would refuse never reaches the disk. The Settings window's writer
+//! (`preferences`) shares the table editing and that check.
 use super::Error;
-use super::{Config, DEFAULT_CONFIG, daemon_settings, files::write_config, view_settings_path};
+use super::{
+    Config, DEFAULT_CONFIG, Daemon, daemon_settings, files::write_config, view_settings_path,
+};
 use crate::Result;
 use std::path::Path;
 use toml_edit::{Item, TableLike};
@@ -23,6 +26,13 @@ pub(crate) fn parse_value(text: &str) -> toml_edit::Value {
     text.trim()
         .parse::<toml_edit::Value>()
         .unwrap_or_else(|_| toml_edit::Value::from(text))
+}
+
+/// A config enum's value as the name serde gives it, so the text a writer
+/// saves is the text the parser reads back.
+pub(super) fn spelled(value: impl serde::Serialize) -> Result<toml_edit::Value> {
+    let name: String = serde_json::from_value(serde_json::to_value(value)?)?;
+    Ok(name.into())
 }
 
 fn lookup<'a>(mut value: &'a toml::Value, key: &str) -> Option<&'a toml::Value> {
@@ -75,6 +85,30 @@ impl Config {
         Self::parse_layers([DEFAULT_CONFIG, &text], &base).map_err(|error| error.at_path(&source))
     }
 
+    /// The overrides in `text` as loading checks them: alone, so a bad type
+    /// or unknown key cannot hide inside the merge, then over the defaults.
+    /// Every writer of the overrides file asks this before it writes.
+    pub(super) fn check_overrides(text: &str, base: &Daemon) -> Result<Self> {
+        let checked = Self::parse_over(text, base)?;
+        Self::parse_layers([DEFAULT_CONFIG, text], base)?;
+        Ok(checked)
+    }
+
+    /// Writes `edited` over the overrides at `path`, unless that would break
+    /// a file that loads. A file the loader already refuses is written as
+    /// asked: the edit may be the repair, and refusing would leave the
+    /// Settings window unable to change anything. The daemon's own config is
+    /// left out of the check: no preference edits what it can conflict with.
+    pub(super) fn write_unless_broken(path: &Path, before: &str, edited: &str) -> Result<()> {
+        let base = Daemon::default();
+        if let Err(error) = Self::check_overrides(edited, &base)
+            && Self::check_overrides(before, &base).is_ok()
+        {
+            return Err(error);
+        }
+        write_config(path, edited)
+    }
+
     /// Sets `key` in the local overrides file, keeping everything else in it.
     pub(crate) fn set_key(key: &str, value: toml_edit::Value) -> Result<()> {
         let daemon = view_settings_path(sheprd_client::local_var);
@@ -116,8 +150,7 @@ impl Config {
         }
         let edited = document.to_string();
         let base = daemon_settings(daemon);
-        let checked = Self::parse_over(&edited, &base)?;
-        Self::parse_layers([DEFAULT_CONFIG, &edited], &base)?;
+        let checked = Self::check_overrides(&edited, &base)?;
         let before = Self::parse_over(&text, &base)
             .map(|config| config.unknown_keys)
             .unwrap_or_default();
@@ -134,36 +167,70 @@ impl Config {
     }
 }
 
+/// How a writer shapes a table it has to create. Each is what its writer's
+/// users already have in their files, so neither may drift to the other.
+#[derive(Clone, Copy)]
+pub(super) enum NewTable {
+    /// The command line: no header of its own, only its children's, and an
+    /// inline table inside an inline one.
+    Implicit,
+    /// The Settings window: its own header, and dotted keys inside an
+    /// inline table.
+    Headed,
+}
+
+/// The table `tables` names under `root`, with the missing ones created.
+/// The error is how many names lead to the part that holds a value, not a
+/// table.
+pub(super) fn table_at<'a>(
+    root: &'a mut dyn TableLike,
+    tables: &[&str],
+    new: NewTable,
+) -> std::result::Result<&'a mut dyn TableLike, usize> {
+    let mut table = root;
+    for (depth, name) in tables.iter().enumerate() {
+        if !table.contains_key(name) {
+            let mut child = toml_edit::Table::new();
+            match new {
+                NewTable::Implicit => {
+                    child.set_implicit(true);
+                    table.insert(name, Item::Table(child));
+                }
+                NewTable::Headed => {
+                    table.entry(name).or_insert(Item::Table(child));
+                }
+            }
+        }
+        table = table
+            .get_mut(name)
+            .and_then(Item::as_table_like_mut)
+            .ok_or(depth)?;
+    }
+    Ok(table)
+}
+
+/// Sets `key`, keeping the comment beside the value it replaces.
+pub(super) fn set(table: &mut dyn TableLike, key: &str, mut value: toml_edit::Value) {
+    if let Some(previous) = table.get(key).and_then(Item::as_value) {
+        *value.decor_mut() = previous.decor().clone();
+    }
+    table.insert(key, Item::Value(value));
+}
+
 fn insert(
-    table: &mut dyn TableLike,
+    root: &mut dyn TableLike,
     parts: &[&str],
-    mut value: toml_edit::Value,
+    value: toml_edit::Value,
     key: &str,
 ) -> Result<()> {
-    match parts {
-        [] => Ok(()),
-        [last] => {
-            if let Some(previous) = table.get(last).and_then(Item::as_value) {
-                *value.decor_mut() = previous.decor().clone();
-            }
-            table.insert(last, Item::Value(value));
-            Ok(())
-        }
-        [first, rest @ ..] => {
-            if !table.contains_key(first) {
-                let mut child = toml_edit::Table::new();
-                child.set_implicit(true);
-                table.insert(first, Item::Table(child));
-            }
-            let child = table
-                .get_mut(first)
-                .and_then(Item::as_table_like_mut)
-                .ok_or_else(|| Error::KeyNotTable {
-                    key: key.to_owned(),
-                })?;
-            insert(child, rest, value, key)
-        }
-    }
+    let Some((last, tables)) = parts.split_last() else {
+        return Ok(());
+    };
+    let table = table_at(root, tables, NewTable::Implicit).map_err(|_| Error::KeyNotTable {
+        key: key.to_owned(),
+    })?;
+    set(table, last, value);
+    Ok(())
 }
 
 /// Removes the key and the tables it leaves empty.

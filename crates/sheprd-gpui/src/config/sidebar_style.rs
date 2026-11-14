@@ -6,7 +6,7 @@
 use super::Error;
 use super::fonts::FontSettings;
 use crate::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// Spacing the config file sets over the active layout's numbers. Unset keys
@@ -36,24 +36,30 @@ impl SidebarOverrides {
         ("host_gap", 48.),
     ];
 
-    fn validate(&self) -> Result<()> {
-        for ((key, max), value) in
-            Self::BANDS
-                .into_iter()
-                .zip([self.indent, self.row_padding, self.gap, self.host_gap])
-        {
-            if let Some(value) = value
-                && (!value.is_finite() || !(0.0..=max).contains(&value))
-            {
-                return Err(Error::InvalidSidebarMetric { key, max }.into());
-            }
+    /// Refuses a value outside `key`'s band, for the parser and the
+    /// settings writer alike.
+    pub(super) fn check(key: &'static str, value: f32) -> Result<()> {
+        let max = Self::BANDS
+            .iter()
+            .find_map(|(name, max)| (*name == key).then_some(*max))
+            .unwrap_or(0.);
+        if !value.is_finite() || !(0.0..=max).contains(&value) {
+            return Err(Error::InvalidSidebarMetric { key, max }.into());
         }
         Ok(())
+    }
+
+    fn validate(&self) -> Result<()> {
+        Self::BANDS
+            .into_iter()
+            .zip([self.indent, self.row_padding, self.gap, self.host_gap])
+            .filter_map(|((key, _), value)| Some((key, value?)))
+            .try_for_each(|(key, value)| Self::check(key, value))
     }
 }
 
 /// What selecting a workspace marks beyond its own row.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 pub enum SelectMode {
     /// Only the row, as before.
     #[default]
@@ -69,7 +75,7 @@ pub enum SelectMode {
 
 /// When the sidebar draws its device footer: the device picker, the
 /// connection mark, and the Sessions and Settings buttons.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DeviceFooter {
     #[default]
@@ -81,15 +87,6 @@ pub enum DeviceFooter {
 }
 
 impl DeviceFooter {
-    /// The value written to the config file; matches the serde name.
-    pub(crate) fn as_str(self) -> &'static str {
-        match self {
-            Self::Always => "always",
-            Self::Auto => "auto",
-            Self::Never => "never",
-        }
-    }
-
     pub(crate) fn shown(self, devices: usize) -> bool {
         match self {
             Self::Always => true,
