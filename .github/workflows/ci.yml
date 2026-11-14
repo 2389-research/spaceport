@@ -100,6 +100,14 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         run: python3 scripts/test_close_low_confidence_prs.py
+      # Runs here, not in `checks`, because a specification-only change is
+      # Markdown and JSON and would skip the build and test jobs.
+      - name: Check the Spaceport specification
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          python3 -m unittest discover -s docs/spaceport/tools -p 'test_*.py'
+          python3 docs/spaceport/tools/spec.py check --skip-schema
       - name: Detect build and test inputs
         id: changes
         env:

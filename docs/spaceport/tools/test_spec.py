@@ -64,6 +64,19 @@ class SpecificationToolsTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             spec.text(spec.ROOT,'../build_spaceport_spec.py')
 
+    def test_evidence_must_name_an_existing_file(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root=Path(raw)
+            (root/'evidence').mkdir()
+            (root/'evidence/run.md').write_text('ok',encoding='utf-8')
+            spec.validate_evidence(root,{'id':'A','evidence':['evidence/run.md']})
+            with self.assertRaises(ValueError) as missing:
+                spec.validate_evidence(root,{'id':'A','evidence':['evidence/gone.md']})
+            self.assertIn('A',str(missing.exception))
+            self.assertIn('evidence/gone.md',str(missing.exception))
+            with self.assertRaises(ValueError):
+                spec.validate_evidence(root,{'id':'A','evidence':['../outside.md']})
+
     def test_unknown_outcome_cannot_be_retry_safe(self):
         from jsonschema import Draft202012Validator
         schema=spec.load(spec.ROOT/'contracts/control.schema.json')
