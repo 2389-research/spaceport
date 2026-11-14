@@ -162,13 +162,10 @@ impl SheprdWindow {
     /// the folded list, where every header is one row. `devices` and `query`
     /// list the headers as render does.
     fn listed_headers(&self, devices: bool, query: &str) -> Vec<(usize, usize)> {
-        self.displayed_devices()
-            .into_iter()
-            .filter(|&(index, endpoint)| {
-                self.device_visible(&endpoint.id) && (!devices || self.device_listed(index, query))
-            })
+        self.listed_hosts()
+            .filter(|&(index, _, _)| !devices || self.device_listed(index, query))
             .enumerate()
-            .map(|(row, (index, _))| (index, row))
+            .map(|(row, (index, _, _))| (index, row))
             .collect()
     }
 

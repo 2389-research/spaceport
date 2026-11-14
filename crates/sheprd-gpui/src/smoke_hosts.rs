@@ -112,7 +112,7 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
             }
             view.selected_endpoint = 0;
             view.live = view.endpoints[0].live.clone();
-            view.collapsed_repos.clear();
+            view.endpoints[0].collapsed_repos.clear();
             view.marked = "preserve collapse composition".into();
             window.resize(fixture_size(480., height));
             cx.notify();
@@ -286,7 +286,7 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
                     && (!view.endpoints[1]
                         .collapsed_repos
                         .contains("/fixture/agent-launcher/.git")
-                        || !view.collapsed_repos.is_empty())
+                        || !view.endpoints[0].collapsed_repos.is_empty())
                 {
                     bail!("repository collapse escaped endpoint scope");
                 }
@@ -486,7 +486,7 @@ async fn run(handle: WindowHandle<SheprdWindow>, focus: Focus, cx: &mut AsyncApp
     decoy
         .update(cx, |view, window, _| -> Result<()> {
             if view.selected_endpoint != 0
-                || !view.collapsed_repos.is_empty()
+                || !view.endpoints[0].collapsed_repos.is_empty()
                 || view.menu.page.is_some()
                 || view.pending_navigation.is_some()
                 || view.selection_epoch != 0

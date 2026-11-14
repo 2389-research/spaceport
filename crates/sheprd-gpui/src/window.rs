@@ -136,7 +136,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) chats: crate::chat::Chats,
     /// The chrome region whose controls take Tab; see `chrome_focus`.
     pub(crate) chrome_region: Option<chrome_focus::Region>,
-    pub(crate) collapsed_repos: std::collections::HashSet<String>,
     pub(crate) config: config::Config,
     pub(crate) config_load: Option<Task<()>>,
     pub(crate) config_load_revision: u64,

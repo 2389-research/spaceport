@@ -2,62 +2,89 @@
 //! next, and numbered shortcuts step through, as Herdr's TUI steps through
 //! its own sidebar: every listed host's rows, top to bottom.
 
-use super::{agents::panel_agents, visible_workspace_entries};
-use crate::{SheprdWindow, controls::Command, state::LiveState};
-use sheprd_client::protocol::{ClientShellAgent, ClientShellSnapshot};
+use super::{SidebarMode, agents::panel_agents, visible_workspace_entries};
+use crate::{SheprdWindow, controls::Command, endpoint::Endpoint, state::LiveState};
+use sheprd_client::protocol::ClientShellAgent;
 
 /// A listed row: its host, by endpoint index, and the workspace or agent
 /// pane it shows.
 pub(crate) type Row<'a> = (usize, &'a str);
 
+// What the sidebar lists. The expanded list and the rail paint through these
+// and the shortcuts step through them, so a step lands on a painted row.
 impl SheprdWindow {
-    /// Each host the sidebar lists, with the live state it draws from.
-    fn listed_lives(&self) -> impl Iterator<Item = (usize, &LiveState)> {
+    /// Each host the sidebar lists, in its order, with its current state.
+    pub(super) fn listed_hosts(&self) -> impl Iterator<Item = (usize, &Endpoint, &LiveState)> {
         self.displayed_devices()
             .into_iter()
-            .filter(|(_, endpoint)| endpoint.enabled && self.device_visible(&endpoint.id))
-            .map(|(index, _)| (index, self.live_of(index)))
+            .filter(|(_, endpoint)| self.device_visible(&endpoint.id))
+            .map(|(index, endpoint)| (index, endpoint, self.live_of(index)))
     }
 
-    /// Each host the sidebar lists, with the snapshot it draws from.
-    fn listed_hosts(&self) -> impl Iterator<Item = (usize, &ClientShellSnapshot)> {
-        self.listed_lives()
-            .filter_map(|(index, live)| live.snapshot.as_deref().map(|snapshot| (index, snapshot)))
+    /// Whether the expanded list arranges its hosts under tag sections, which
+    /// fold. `headed` is whether hosts have headers at all, and `query` what
+    /// the device tree is searched for: results are not arranged by group.
+    pub(super) fn lists_tag_sections(&self, headed: bool, query: &str) -> bool {
+        headed && query.is_empty() && self.device_tags.any()
     }
 
-    /// The workspace rows the sidebar shows: a folded group or host hides
-    /// its rows here too.
+    /// Whether `endpoint`'s own arrow folds its rows away. One host alone
+    /// has no header to fold.
+    pub(super) fn host_folded(&self, endpoint: &Endpoint) -> bool {
+        self.endpoints.len() > 1 && endpoint.collapsed
+    }
+
+    /// The workspace rows the current mode paints, in its order. The rail
+    /// has no tag sections, so only the expanded list hides a folded
+    /// section's hosts. A hidden sidebar steps as the expanded one. The
+    /// Devices layout and a lifted device paint headers only; stepping keeps
+    /// the workspaces under them.
     pub(crate) fn sidebar_workspaces(&self) -> Vec<Row<'_>> {
-        let multi = self.endpoints.len() > 1;
+        let sections = self.sidebar_mode() != SidebarMode::Rail
+            && self.lists_tag_sections(self.endpoints.len() > 1, "");
         self.listed_hosts()
-            .filter(|(index, _)| {
-                let endpoint = &self.endpoints[*index];
-                !(multi && (endpoint.collapsed || self.device_tag_folded(&endpoint.id)))
+            .filter(|(_, endpoint, _)| {
+                !(sections && self.device_tag_folded(&endpoint.id)) && !self.host_folded(endpoint)
             })
-            .flat_map(|(index, snapshot)| {
-                let collapsed = if index == 0 {
-                    &self.collapsed_repos
-                } else {
-                    &self.endpoints[index].collapsed_repos
-                };
-                visible_workspace_entries(&snapshot.workspaces, collapsed)
+            .filter_map(|(index, endpoint, live)| {
+                Some((index, endpoint, live.snapshot.as_deref()?))
+            })
+            .flat_map(|(index, endpoint, snapshot)| {
+                visible_workspace_entries(&snapshot.workspaces, &endpoint.collapsed_repos)
                     .into_iter()
                     .map(move |(row, _, _)| (index, snapshot.workspaces[row].workspace_id.as_str()))
             })
             .collect()
     }
 
-    /// The agents the panel paints, by host index, in its order. Painting
-    /// and stepping both read it, so a shortcut lands on the row below.
+    /// Every listed host's agents in the panel's order, by host index. The
+    /// expanded list and the rail each paint these less the rows their own
+    /// rule leaves out.
     pub(super) fn panel_agents(&self) -> Vec<(usize, &ClientShellAgent)> {
-        panel_agents(self.listed_lives(), self.agent_sort)
+        panel_agents(
+            self.listed_hosts()
+                .filter(|(_, endpoint, _)| endpoint.enabled)
+                .map(|(index, _, live)| (index, live)),
+            self.agent_sort,
+        )
     }
 
-    /// The agent panel's rows, whether or not the panel is shown, as Herdr
-    /// steps through its agents either way.
+    /// The agent rows the current mode paints, in its order, whether or not
+    /// the agents are shown, as Herdr steps through its agents either way.
+    /// The rail folds a collapsed host's agents away; the expanded list
+    /// leaves out an agent its configured rows have no lines for. A hidden
+    /// sidebar steps as the expanded one.
     pub(crate) fn sidebar_agents(&self) -> Vec<Row<'_>> {
+        let rail = self.sidebar_mode() == SidebarMode::Rail;
         self.panel_agents()
             .into_iter()
+            .filter(|&(index, agent)| {
+                if rail {
+                    !self.host_folded(&self.endpoints[index])
+                } else {
+                    self.panel_agent_lines(index, agent).is_some()
+                }
+            })
             .map(|(index, agent)| (index, agent.pane_id.as_str()))
             .collect()
     }

@@ -168,7 +168,6 @@ impl SheprdWindow {
             cell_width: 9.,
             chats: Default::default(),
             chrome_region: None,
-            collapsed_repos: Default::default(),
             config,
             config_load: None,
             config_load_revision: 0,

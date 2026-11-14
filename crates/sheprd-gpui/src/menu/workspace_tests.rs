@@ -8,6 +8,7 @@ mod dialog_layout;
 mod en_xa;
 mod excluded_creation;
 mod excluded_remote_workspace;
+mod group_fold;
 mod left_checkout;
 mod mute;
 mod naming;
