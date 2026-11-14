@@ -103,8 +103,8 @@ impl EntityInputHandler for SheprdWindow {
         if self.menu.page.is_some() {
             let input = self.menu.input.as_ref()?;
             return Some(UTF16Selection {
-                range: input.to_utf16(input.selection.clone()),
-                reversed: input.reversed,
+                range: input.to_utf16(input.selection()),
+                reversed: input.reversed(),
             });
         }
         let end = self.marked.encode_utf16().count();

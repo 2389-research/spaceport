@@ -1,0 +1,315 @@
+start | left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | right => "one e\u{301}\u{1f600} two" 1..1 passed=0 clipboard=kept
+start | home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+start | up => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | down => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | backspace => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | delete => "ne e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | escape => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | shift-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | shift-right => "one e\u{301}\u{1f600} two" 0..1 passed=0 clipboard=kept
+start | shift-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | shift-end => "one e\u{301}\u{1f600} two" 0..15 passed=0 clipboard=kept
+start | shift-up => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | shift-down => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | shift-backspace => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | shift-delete => "ne e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | cmd-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+start | cmd-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | cmd-end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+start | cmd-up => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | cmd-down => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | cmd-backspace => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | cmd-delete => "" 0..0 passed=0 clipboard=kept
+start | cmd-shift-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | cmd-shift-right => "one e\u{301}\u{1f600} two" 0..15 passed=0 clipboard=kept
+start | cmd-shift-backspace => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | cmd-shift-delete => "" 0..0 passed=0 clipboard=kept
+start | cmd-shift-a => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | alt-cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | alt-cmd-backspace => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | word-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | word-right => "one e\u{301}\u{1f600} two" 3..3 passed=0 clipboard=kept
+start | word-backspace => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | word-delete => " e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | word-shift-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | word-shift-right => "one e\u{301}\u{1f600} two" 0..3 passed=0 clipboard=kept
+start | word-shift-backspace => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | word-shift-delete => " e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | edit-a => "one e\u{301}\u{1f600} two" 0..15 passed=0 clipboard=kept
+start | edit-c => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | edit-x => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | edit-v => "PQRone e\u{301}\u{1f600} two" 3..3 passed=0 clipboard=kept
+start | ctrl-a => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-e => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-b => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-f => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-h => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-d => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-k => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-y => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 0..0 passed=2 clipboard=kept
+start | ctrl-k ctrl-a ctrl-y => "one e\u{301}\u{1f600} two" 0..0 passed=3 clipboard=kept
+start | ctrl-k ctrl-e ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 0..0 passed=4 clipboard=kept
+start | ctrl-shift-a => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-shift-e => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-cmd-a => "one e\u{301}\u{1f600} two" 0..0 passed=1 clipboard=kept
+start | ctrl-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | ctrl-right => "one e\u{301}\u{1f600} two" 1..1 passed=0 clipboard=kept
+start | ctrl-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | ctrl-backspace => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+start | ctrl-delete => "ne e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | left => "one e\u{301}\u{1f600} two" 4..4 passed=0 clipboard=kept
+middle | right => "one e\u{301}\u{1f600} two" 11..11 passed=0 clipboard=kept
+middle | home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+middle | up => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | down => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | backspace => "one \u{1f600} two" 4..4 passed=0 clipboard=kept
+middle | delete => "one e\u{301} two" 7..7 passed=0 clipboard=kept
+middle | escape => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | shift-left => "one e\u{301}\u{1f600} two" 7..4 passed=0 clipboard=kept
+middle | shift-right => "one e\u{301}\u{1f600} two" 7..11 passed=0 clipboard=kept
+middle | shift-home => "one e\u{301}\u{1f600} two" 7..0 passed=0 clipboard=kept
+middle | shift-end => "one e\u{301}\u{1f600} two" 7..15 passed=0 clipboard=kept
+middle | shift-up => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | shift-down => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | shift-backspace => "one \u{1f600} two" 4..4 passed=0 clipboard=kept
+middle | shift-delete => "one e\u{301} two" 7..7 passed=0 clipboard=kept
+middle | cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | cmd-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+middle | cmd-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | cmd-end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+middle | cmd-up => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | cmd-down => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | cmd-backspace => "\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | cmd-delete => "one e\u{301}" 7..7 passed=0 clipboard=kept
+middle | cmd-shift-left => "one e\u{301}\u{1f600} two" 7..0 passed=0 clipboard=kept
+middle | cmd-shift-right => "one e\u{301}\u{1f600} two" 7..15 passed=0 clipboard=kept
+middle | cmd-shift-backspace => "\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | cmd-shift-delete => "one e\u{301}" 7..7 passed=0 clipboard=kept
+middle | cmd-shift-a => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | alt-cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | alt-cmd-backspace => "\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | word-left => "one e\u{301}\u{1f600} two" 4..4 passed=0 clipboard=kept
+middle | word-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+middle | word-backspace => "one \u{1f600} two" 4..4 passed=0 clipboard=kept
+middle | word-delete => "one e\u{301}" 7..7 passed=0 clipboard=kept
+middle | word-shift-left => "one e\u{301}\u{1f600} two" 7..4 passed=0 clipboard=kept
+middle | word-shift-right => "one e\u{301}\u{1f600} two" 7..15 passed=0 clipboard=kept
+middle | word-shift-backspace => "one \u{1f600} two" 4..4 passed=0 clipboard=kept
+middle | word-shift-delete => "one e\u{301}" 7..7 passed=0 clipboard=kept
+middle | edit-a => "one e\u{301}\u{1f600} two" 0..15 passed=0 clipboard=kept
+middle | edit-c => "one e\u{301}\u{1f600} two" 7..7 passed=0 clipboard=kept
+middle | edit-x => "one e\u{301}\u{1f600} two" 7..7 passed=0 clipboard=kept
+middle | edit-v => "one e\u{301}PQR\u{1f600} two" 10..10 passed=0 clipboard=kept
+middle | ctrl-a => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-e => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-b => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-f => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-h => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-d => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-k => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-y => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 7..7 passed=2 clipboard=kept
+middle | ctrl-k ctrl-a ctrl-y => "one e\u{301}\u{1f600} two" 7..7 passed=3 clipboard=kept
+middle | ctrl-k ctrl-e ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 7..7 passed=4 clipboard=kept
+middle | ctrl-shift-a => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-shift-e => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-cmd-a => "one e\u{301}\u{1f600} two" 7..7 passed=1 clipboard=kept
+middle | ctrl-left => "one e\u{301}\u{1f600} two" 4..4 passed=0 clipboard=kept
+middle | ctrl-right => "one e\u{301}\u{1f600} two" 11..11 passed=0 clipboard=kept
+middle | ctrl-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+middle | ctrl-backspace => "one \u{1f600} two" 4..4 passed=0 clipboard=kept
+middle | ctrl-delete => "one e\u{301} two" 7..7 passed=0 clipboard=kept
+end | left => "one e\u{301}\u{1f600} two" 14..14 passed=0 clipboard=kept
+end | right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+end | end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | up => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | down => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | backspace => "one e\u{301}\u{1f600} tw" 14..14 passed=0 clipboard=kept
+end | delete => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | escape => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | shift-left => "one e\u{301}\u{1f600} two" 15..14 passed=0 clipboard=kept
+end | shift-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | shift-home => "one e\u{301}\u{1f600} two" 15..0 passed=0 clipboard=kept
+end | shift-end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | shift-up => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | shift-down => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | shift-backspace => "one e\u{301}\u{1f600} tw" 14..14 passed=0 clipboard=kept
+end | shift-delete => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+end | cmd-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | cmd-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+end | cmd-end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | cmd-up => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | cmd-down => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | cmd-backspace => "" 0..0 passed=0 clipboard=kept
+end | cmd-delete => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | cmd-shift-left => "one e\u{301}\u{1f600} two" 15..0 passed=0 clipboard=kept
+end | cmd-shift-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | cmd-shift-backspace => "" 0..0 passed=0 clipboard=kept
+end | cmd-shift-delete => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | cmd-shift-a => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | alt-cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+end | alt-cmd-backspace => "" 0..0 passed=0 clipboard=kept
+end | word-left => "one e\u{301}\u{1f600} two" 12..12 passed=0 clipboard=kept
+end | word-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | word-backspace => "one e\u{301}\u{1f600} " 12..12 passed=0 clipboard=kept
+end | word-delete => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | word-shift-left => "one e\u{301}\u{1f600} two" 15..12 passed=0 clipboard=kept
+end | word-shift-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | word-shift-backspace => "one e\u{301}\u{1f600} " 12..12 passed=0 clipboard=kept
+end | word-shift-delete => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | edit-a => "one e\u{301}\u{1f600} two" 0..15 passed=0 clipboard=kept
+end | edit-c => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | edit-x => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | edit-v => "one e\u{301}\u{1f600} twoPQR" 18..18 passed=0 clipboard=kept
+end | ctrl-a => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-e => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-b => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-f => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-h => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-d => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-k => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-y => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 15..15 passed=2 clipboard=kept
+end | ctrl-k ctrl-a ctrl-y => "one e\u{301}\u{1f600} two" 15..15 passed=3 clipboard=kept
+end | ctrl-k ctrl-e ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 15..15 passed=4 clipboard=kept
+end | ctrl-shift-a => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-shift-e => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-cmd-a => "one e\u{301}\u{1f600} two" 15..15 passed=1 clipboard=kept
+end | ctrl-left => "one e\u{301}\u{1f600} two" 14..14 passed=0 clipboard=kept
+end | ctrl-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+end | ctrl-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+end | ctrl-backspace => "one e\u{301}\u{1f600} tw" 14..14 passed=0 clipboard=kept
+end | ctrl-delete => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+selected | left => "one e\u{301}\u{1f600} two" 4..4 passed=0 clipboard=kept
+selected | right => "one e\u{301}\u{1f600} two" 11..11 passed=0 clipboard=kept
+selected | home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+selected | end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+selected | up => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | down => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | backspace => "one  two" 4..4 passed=0 clipboard=kept
+selected | delete => "one  two" 4..4 passed=0 clipboard=kept
+selected | escape => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | shift-left => "one e\u{301}\u{1f600} two" 4..7 passed=0 clipboard=kept
+selected | shift-right => "one e\u{301}\u{1f600} two" 4..12 passed=0 clipboard=kept
+selected | shift-home => "one e\u{301}\u{1f600} two" 4..0 passed=0 clipboard=kept
+selected | shift-end => "one e\u{301}\u{1f600} two" 4..15 passed=0 clipboard=kept
+selected | shift-up => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | shift-down => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | shift-backspace => "one  two" 4..4 passed=0 clipboard=kept
+selected | shift-delete => "one  two" 4..4 passed=0 clipboard=kept
+selected | cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+selected | cmd-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+selected | cmd-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+selected | cmd-end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+selected | cmd-up => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | cmd-down => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | cmd-backspace => "one  two" 4..4 passed=0 clipboard=kept
+selected | cmd-delete => "one  two" 4..4 passed=0 clipboard=kept
+selected | cmd-shift-left => "one e\u{301}\u{1f600} two" 4..0 passed=0 clipboard=kept
+selected | cmd-shift-right => "one e\u{301}\u{1f600} two" 4..15 passed=0 clipboard=kept
+selected | cmd-shift-backspace => "one  two" 4..4 passed=0 clipboard=kept
+selected | cmd-shift-delete => "one  two" 4..4 passed=0 clipboard=kept
+selected | cmd-shift-a => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | alt-cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+selected | alt-cmd-backspace => "one  two" 4..4 passed=0 clipboard=kept
+selected | word-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+selected | word-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+selected | word-backspace => "one  two" 4..4 passed=0 clipboard=kept
+selected | word-delete => "one  two" 4..4 passed=0 clipboard=kept
+selected | word-shift-left => "one e\u{301}\u{1f600} two" 4..4 passed=0 clipboard=kept
+selected | word-shift-right => "one e\u{301}\u{1f600} two" 4..15 passed=0 clipboard=kept
+selected | word-shift-backspace => "one  two" 4..4 passed=0 clipboard=kept
+selected | word-shift-delete => "one  two" 4..4 passed=0 clipboard=kept
+selected | edit-a => "one e\u{301}\u{1f600} two" 0..15 passed=0 clipboard=kept
+selected | edit-c => "one e\u{301}\u{1f600} two" 4..11 passed=0 clipboard="e\u{301}\u{1f600}"
+selected | edit-x => "one  two" 4..4 passed=0 clipboard="e\u{301}\u{1f600}"
+selected | edit-v => "one PQR two" 7..7 passed=0 clipboard=kept
+selected | ctrl-a => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-e => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-b => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-f => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-h => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-d => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-k => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-y => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 4..11 passed=2 clipboard=kept
+selected | ctrl-k ctrl-a ctrl-y => "one e\u{301}\u{1f600} two" 4..11 passed=3 clipboard=kept
+selected | ctrl-k ctrl-e ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 4..11 passed=4 clipboard=kept
+selected | ctrl-shift-a => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-shift-e => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-cmd-a => "one e\u{301}\u{1f600} two" 4..11 passed=1 clipboard=kept
+selected | ctrl-left => "one e\u{301}\u{1f600} two" 4..4 passed=0 clipboard=kept
+selected | ctrl-right => "one e\u{301}\u{1f600} two" 11..11 passed=0 clipboard=kept
+selected | ctrl-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+selected | ctrl-backspace => "one  two" 4..4 passed=0 clipboard=kept
+selected | ctrl-delete => "one  two" 4..4 passed=0 clipboard=kept
+reversed | left => "one e\u{301}\u{1f600} two" 4..4 passed=0 clipboard=kept
+reversed | right => "one e\u{301}\u{1f600} two" 11..11 passed=0 clipboard=kept
+reversed | home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+reversed | end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+reversed | up => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | down => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | backspace => "one  two" 4..4 passed=0 clipboard=kept
+reversed | delete => "one  two" 4..4 passed=0 clipboard=kept
+reversed | escape => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | shift-left => "one e\u{301}\u{1f600} two" 11..3 passed=0 clipboard=kept
+reversed | shift-right => "one e\u{301}\u{1f600} two" 11..7 passed=0 clipboard=kept
+reversed | shift-home => "one e\u{301}\u{1f600} two" 11..0 passed=0 clipboard=kept
+reversed | shift-end => "one e\u{301}\u{1f600} two" 11..15 passed=0 clipboard=kept
+reversed | shift-up => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | shift-down => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | shift-backspace => "one  two" 4..4 passed=0 clipboard=kept
+reversed | shift-delete => "one  two" 4..4 passed=0 clipboard=kept
+reversed | cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+reversed | cmd-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+reversed | cmd-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+reversed | cmd-end => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+reversed | cmd-up => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | cmd-down => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | cmd-backspace => "one  two" 4..4 passed=0 clipboard=kept
+reversed | cmd-delete => "one  two" 4..4 passed=0 clipboard=kept
+reversed | cmd-shift-left => "one e\u{301}\u{1f600} two" 11..0 passed=0 clipboard=kept
+reversed | cmd-shift-right => "one e\u{301}\u{1f600} two" 11..15 passed=0 clipboard=kept
+reversed | cmd-shift-backspace => "one  two" 4..4 passed=0 clipboard=kept
+reversed | cmd-shift-delete => "one  two" 4..4 passed=0 clipboard=kept
+reversed | cmd-shift-a => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | alt-cmd-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+reversed | alt-cmd-backspace => "one  two" 4..4 passed=0 clipboard=kept
+reversed | word-left => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+reversed | word-right => "one e\u{301}\u{1f600} two" 15..15 passed=0 clipboard=kept
+reversed | word-backspace => "one  two" 4..4 passed=0 clipboard=kept
+reversed | word-delete => "one  two" 4..4 passed=0 clipboard=kept
+reversed | word-shift-left => "one e\u{301}\u{1f600} two" 11..0 passed=0 clipboard=kept
+reversed | word-shift-right => "one e\u{301}\u{1f600} two" 11..7 passed=0 clipboard=kept
+reversed | word-shift-backspace => "one  two" 4..4 passed=0 clipboard=kept
+reversed | word-shift-delete => "one  two" 4..4 passed=0 clipboard=kept
+reversed | edit-a => "one e\u{301}\u{1f600} two" 0..15 passed=0 clipboard=kept
+reversed | edit-c => "one e\u{301}\u{1f600} two" 11..4 passed=0 clipboard="e\u{301}\u{1f600}"
+reversed | edit-x => "one  two" 4..4 passed=0 clipboard="e\u{301}\u{1f600}"
+reversed | edit-v => "one PQR two" 7..7 passed=0 clipboard=kept
+reversed | ctrl-a => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-e => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-b => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-f => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-h => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-d => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-k => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-y => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 11..4 passed=2 clipboard=kept
+reversed | ctrl-k ctrl-a ctrl-y => "one e\u{301}\u{1f600} two" 11..4 passed=3 clipboard=kept
+reversed | ctrl-k ctrl-e ctrl-k ctrl-y => "one e\u{301}\u{1f600} two" 11..4 passed=4 clipboard=kept
+reversed | ctrl-shift-a => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-shift-e => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-cmd-a => "one e\u{301}\u{1f600} two" 11..4 passed=1 clipboard=kept
+reversed | ctrl-left => "one e\u{301}\u{1f600} two" 4..4 passed=0 clipboard=kept
+reversed | ctrl-right => "one e\u{301}\u{1f600} two" 11..11 passed=0 clipboard=kept
+reversed | ctrl-home => "one e\u{301}\u{1f600} two" 0..0 passed=0 clipboard=kept
+reversed | ctrl-backspace => "one  two" 4..4 passed=0 clipboard=kept
+reversed | ctrl-delete => "one  two" 4..4 passed=0 clipboard=kept

@@ -19,11 +19,11 @@ fn word_backspace_and_delete_remove_a_word(cx: &mut gpui::TestAppContext) {
         assert_eq!(input.text, "feature/login ");
         input.key(&word("backspace"), cx);
         assert_eq!(input.text, "feature/");
-        assert_eq!(input.selection, 8..8);
+        assert_eq!(input.selection(), 8..8);
         input.key(&Keystroke::parse("home").unwrap_or_default(), cx);
         input.key(&word("delete"), cx);
         assert_eq!(input.text, "/");
-        assert_eq!(input.selection, 0..0);
+        assert_eq!(input.selection(), 0..0);
     });
 }
 
@@ -33,14 +33,14 @@ fn word_arrows_move_and_shift_extends(cx: &mut gpui::TestAppContext) {
         let mut input = DialogInput::new("one two three".into());
         input.key(&Keystroke::parse("end").unwrap_or_default(), cx);
         input.key(&word("left"), cx);
-        assert_eq!(input.selection, 8..8);
+        assert_eq!(input.selection(), 8..8);
         input.key(&word("shift-left"), cx);
-        assert_eq!(input.selection, 4..8);
+        assert_eq!(input.selection(), 4..8);
         input.key(&word("right"), cx);
-        assert_eq!(input.selection, 13..13);
+        assert_eq!(input.selection(), 13..13);
         input.key(&word("shift-left"), cx);
         input.key(&word("backspace"), cx);
         assert_eq!(input.text, "one two ");
-        assert_eq!(input.selection, 8..8);
+        assert_eq!(input.selection(), 8..8);
     });
 }

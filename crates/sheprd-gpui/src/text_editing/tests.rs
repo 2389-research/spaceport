@@ -1,0 +1,81 @@
+use super::*;
+
+mod keys;
+
+#[test]
+fn utf16_ranges_are_clamped_to_scalar_boundaries() {
+    let text = "a\u{1f600}\u{e9}\u{4e2d}";
+    assert_eq!(byte_range(text, 1..3), 1..5);
+    assert_eq!(byte_range(text, 2..99), 5..text.len());
+    assert_eq!(byte_range(text, Range { start: 99, end: 1 }), 1..text.len());
+    for (byte, _) in text.char_indices() {
+        assert_eq!(from_utf16(text, to_utf16(text, byte)), byte);
+    }
+}
+
+#[test]
+fn replaces_unicode_selection_and_explicit_utf16_range() {
+    let mut edit = Editing::default();
+    assert!(edit.replace(None, "a\u{1f600}\u{e9}z", false, None, Newlines::Strip));
+    edit.anchor = 7;
+    edit.cursor = 1;
+    assert_eq!(edit.selection(), 1..7);
+    assert!(edit.replace(None, "\u{4e2d}", false, None, Newlines::Strip));
+    assert_eq!(edit.text, "a\u{4e2d}z");
+    assert_eq!(edit.cursor, 4);
+    assert!(edit.replace(Some(1..2), "\u{1f600}", false, None, Newlines::Strip));
+    assert_eq!(edit.text, "a\u{1f600}z");
+    assert_eq!(edit.cursor, 5);
+    assert_eq!(edit.previous(), 1);
+    edit.select_to(1, false);
+    assert_eq!(edit.next(), 5);
+}
+
+#[test]
+fn composition_selection_is_relative_to_inserted_text() {
+    let mut edit = Editing::default();
+    edit.replace(None, "\u{1f600}prefix", false, None, Newlines::Strip);
+    let start = edit.cursor;
+    edit.replace(
+        None,
+        "\u{4e2d}\u{1f600}a",
+        true,
+        Some(1..3),
+        Newlines::Strip,
+    );
+    assert_eq!(edit.selection(), start + 3..start + 7);
+    assert_eq!(edit.marked, Some(start..start + 8));
+    edit.replace(None, "\u{e9}", true, Some(0..1), Newlines::Strip);
+    assert_eq!(edit.selection(), start..start + 2);
+    assert_eq!(edit.marked, Some(start..start + 2));
+    assert!(!edit.replace(None, "\u{e9}", false, None, Newlines::Strip));
+    assert_eq!(edit.marked, None);
+    assert_eq!(edit.selection(), start + 2..start + 2);
+    assert_eq!(edit.text, "\u{1f600}prefix\u{e9}");
+}
+
+#[test]
+fn strips_newlines_and_maps_composition_selection() {
+    let mut edit = Editing::default();
+    edit.replace(None, "a\r\n\u{1f600}\nz", true, Some(3..6), Newlines::Strip);
+    assert_eq!(edit.text, "a\u{1f600}z");
+    assert_eq!(edit.selection(), 1..5);
+    edit.replace(None, "", true, None, Newlines::Strip);
+    assert!(edit.text.is_empty());
+    assert_eq!(edit.marked, None);
+    assert_eq!(edit.selection(), 0..0);
+    assert!(!edit.replace(None, "\r\n", false, None, Newlines::Strip));
+}
+
+#[test]
+fn extending_selection_can_cross_its_anchor() {
+    let mut edit = Editing::default();
+    edit.replace(None, "a\u{1f600}b", false, None, Newlines::Strip);
+    edit.select_to(1, false);
+    edit.select_to(0, true);
+    assert_eq!(edit.selection(), 0..1);
+    edit.select_to(5, true);
+    assert_eq!(edit.selection(), 1..5);
+    edit.select_to(edit.next(), true);
+    assert_eq!(edit.selection(), 1..6);
+}
