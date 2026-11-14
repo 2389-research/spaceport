@@ -5,6 +5,7 @@
 //! keystrokes macOS gives every app unless the keymap binds a command to one.
 
 use crate::controls::{CTRL_SHORTCUTS, Command};
+use crate::text_editing::Platform;
 use gpui::{Action, App, KeyBinding, KeyDownEvent, Keystroke, Modifiers, actions};
 
 actions!(
@@ -185,21 +186,7 @@ pub(crate) const EDIT_KEYS: [&str; 4] = if cfg!(target_os = "windows") {
 /// working in fields so Edit menu clicks and keyboard shortcuts share the
 /// same path.
 pub(crate) fn edit_modifiers(modifiers: Modifiers) -> bool {
-    !modifiers.alt
-        && !modifiers.function
-        && ((modifiers.platform && !modifiers.control && !modifiers.shift)
-            || (CTRL_SHORTCUTS && modifiers.control && !modifiers.platform))
-}
-
-/// Whether a field moves or deletes by word on an arrow, Backspace, or
-/// Delete: Option on macOS, Ctrl on the other desktops. Shift extends.
-pub(crate) fn word_modifiers(modifiers: Modifiers) -> bool {
-    let (word, other) = if cfg!(target_os = "macos") {
-        (modifiers.alt, modifiers.control)
-    } else {
-        (modifiers.control, modifiers.alt)
-    };
-    word && !other && !modifiers.platform && !modifiers.function
+    Platform::CURRENT.edit_modifiers(modifiers)
 }
 
 /// macOS's Hide, Hide Others, and Minimize, bound there alone.

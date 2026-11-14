@@ -2,6 +2,7 @@ use super::DialogInput;
 use gpui::Keystroke;
 
 mod graphemes;
+mod key_table;
 mod word_keys;
 
 #[test]
@@ -11,14 +12,14 @@ fn utf16_replacement_and_composition_use_relative_selection() {
     assert_eq!(input.to_utf16(1..5), 1..3);
     input.replace(Some(1..3), "\u{65e5}\u{1f600}", true, Some(1..3));
     assert_eq!(input.text, "a\u{65e5}\u{1f600}z");
-    assert_eq!(input.selection, 4..8);
+    assert_eq!(input.selection(), 4..8);
     assert_eq!(input.marked, Some(1..8));
     input.replace(None, "\u{672c}", true, Some(1..1));
     assert_eq!(input.text, "a\u{672c}z");
-    assert_eq!(input.selection, 4..4);
+    assert_eq!(input.selection(), 4..4);
     input.replace(None, "\u{65e5}\u{672c}", false, None);
     assert_eq!(input.text, "a\u{65e5}\u{672c}z");
-    assert_eq!(input.selection, 7..7);
+    assert_eq!(input.selection(), 7..7);
     assert!(input.marked.is_none());
     assert_eq!(
         input.range_from_utf16(999..1000),
@@ -37,7 +38,7 @@ fn editing_uses_graphemes_selection_clipboard_and_bounded_single_line_text(
         input.key(&Keystroke::parse("backspace").unwrap_or_default(), cx);
         assert_eq!(input.text, "e\u{301}");
         input.key(&Keystroke::parse("shift-left").unwrap_or_default(), cx);
-        assert_eq!(input.selection, 0..3);
+        assert_eq!(input.selection(), 0..3);
         input.key(&Keystroke::parse("cmd-x").unwrap_or_default(), cx);
         assert_eq!(input.text, "");
         input.key(&Keystroke::parse("cmd-v").unwrap_or_default(), cx);
@@ -62,6 +63,6 @@ fn cmd_backspace_and_cmd_delete_reach_the_line_ends(cx: &mut gpui::TestAppContex
         input.key(&Keystroke::parse("left").unwrap_or_default(), cx);
         input.key(&Keystroke::parse("cmd-backspace").unwrap_or_default(), cx);
         assert_eq!(input.text, "e");
-        assert_eq!(input.selection, 0..0);
+        assert_eq!(input.selection(), 0..0);
     });
 }

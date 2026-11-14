@@ -6,6 +6,13 @@
 use std::ops::Range;
 use unicode_segmentation::UnicodeSegmentation;
 
+mod keys;
+
+pub(crate) use keys::{EditCommand, KeyTable, Keys, Platform, edit_command};
+
+#[cfg(test)]
+pub(crate) mod key_matrix;
+
 /// Whether replaced text keeps its newlines.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Newlines {
@@ -75,6 +82,17 @@ impl Editing {
         self.anchor.min(self.cursor)..self.anchor.max(self.cursor)
     }
 
+    /// Selects `range`, the caret at its end.
+    pub(crate) fn select(&mut self, range: Range<usize>) {
+        self.anchor = range.start;
+        self.cursor = range.end;
+    }
+
+    /// Whether the caret is at the selection's start rather than its end.
+    pub(crate) fn reversed(&self) -> bool {
+        self.cursor < self.anchor
+    }
+
     pub(crate) fn select_to(&mut self, offset: usize, extend: bool) {
         self.cursor = offset;
         if !extend {
@@ -111,6 +129,15 @@ impl Editing {
             .unwrap_or(self.text.len())
     }
 
+    /// The bytes a replacement of UTF-16 `range` covers: that range, else
+    /// the text being composed, else the selection.
+    pub(crate) fn replaced(&self, range: Option<Range<usize>>) -> Range<usize> {
+        range
+            .map(|r| byte_range(&self.text, r))
+            .or_else(|| self.marked.clone())
+            .unwrap_or_else(|| self.selection())
+    }
+
     pub(crate) fn replace(
         &mut self,
         range: Option<Range<usize>>,
@@ -119,10 +146,20 @@ impl Editing {
         selection: Option<Range<usize>>,
         newlines: Newlines,
     ) -> bool {
-        let range = range
-            .map(|r| byte_range(&self.text, r))
-            .or_else(|| self.marked.clone())
-            .unwrap_or_else(|| self.selection());
+        let range = self.replaced(range);
+        self.replace_bytes(range, text, composing, selection, newlines)
+    }
+
+    /// Replaces the bytes of `range` with `text`. `selection` is the input
+    /// method's, in UTF-16 units of `text`.
+    pub(crate) fn replace_bytes(
+        &mut self,
+        range: Range<usize>,
+        text: &str,
+        composing: bool,
+        selection: Option<Range<usize>>,
+        newlines: Newlines,
+    ) -> bool {
         let inserted = normalize(text, newlines);
         let changed = self.text[range.clone()] != inserted;
         self.text.replace_range(range.clone(), &inserted);
@@ -143,3 +180,6 @@ impl Editing {
         changed
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -1,11 +1,11 @@
 //! Key handling for the multi-line prompt field: the arrows move the caret
-//! between visual rows, macOS keeps its Emacs keys, and the platform's edit
-//! keys do what they do in every field.
+//! between visual rows, and every other key is read from the table the
+//! fields share (`crate::text_editing::edit_command`).
 
 use gpui::{ClipboardItem, Context, EntityInputHandler, KeyDownEvent, Window, px};
 
 use super::{MultilineInput, caret_position, is_rtl, line_range, rows_total};
-use crate::{actions, words};
+use crate::text_editing::{EditCommand, KeyTable, Keys, Platform, edit_command};
 
 impl MultilineInput {
     /// Move the caret one visual row up or down at its screen column,
@@ -80,76 +80,6 @@ impl MultilineInput {
         true
     }
 
-    /// Edits for `key` when it is one of macOS's Emacs keys: Ctrl-A and
-    /// Ctrl-E to the line's ends, Ctrl-B and Ctrl-F a character back and
-    /// forward, Ctrl-H and Ctrl-D delete one, Ctrl-K cuts to the line's
-    /// end, and Ctrl-Y puts the cut text back. The other desktops use
-    /// Ctrl for Select All, Copy, and the rest, so there these keys keep
-    /// that meaning. Whether it was one.
-    fn control_key(
-        &mut self,
-        key: &str,
-        modifiers: gpui::Modifiers,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> bool {
-        if !cfg!(target_os = "macos")
-            || !modifiers.control
-            || modifiers.platform
-            || modifiers.alt
-            || modifiers.shift
-            || modifiers.function
-        {
-            return false;
-        }
-        let range = line_range(&self.edit.text, self.edit.cursor);
-        match key {
-            "a" => self.edit.select_to(range.start, false),
-            "e" => self.edit.select_to(range.end, false),
-            "b" => {
-                let offset = self.edit.previous();
-                self.edit.select_to(offset, false);
-            }
-            "f" => {
-                let offset = self.edit.next();
-                self.edit.select_to(offset, false);
-            }
-            "h" | "d" => {
-                if self.edit.selection().is_empty() {
-                    let offset = if key == "h" {
-                        self.edit.previous()
-                    } else {
-                        self.edit.next()
-                    };
-                    self.edit.select_to(offset, true);
-                }
-                self.replace_text_in_range(None, "", window, cx);
-            }
-            "k" => {
-                // A selection is cut as it stands; otherwise the line's rest.
-                let mut cut = self.edit.selection();
-                if cut.is_empty() {
-                    cut = self.edit.cursor..range.end;
-                }
-                if !cut.is_empty() {
-                    self.killed = self.edit.text[cut.clone()].to_owned();
-                    self.edit.anchor = cut.start;
-                    self.edit.cursor = cut.end;
-                    self.replace_text_in_range(None, "", window, cx);
-                }
-            }
-            // With nothing cut yet, a selection stays rather than being
-            // replaced by nothing.
-            "y" if self.killed.is_empty() => {}
-            "y" => {
-                let killed = self.killed.clone();
-                self.replace_text_in_range(None, &killed, window, cx);
-            }
-            _ => return false,
-        }
-        true
-    }
-
     pub(super) fn key_down(
         &mut self,
         event: &KeyDownEvent,
@@ -177,124 +107,61 @@ impl MultilineInput {
             }
             return;
         }
-        // The window handles Enter and Escape.
-        if matches!(key, "enter" | "escape") {
+        let keys = Keys {
+            line: line_range(&self.edit.text, self.edit.cursor),
+            words_hidden: false,
+            table: KeyTable::Field,
+            platform: Platform::CURRENT,
+        };
+        // Enter, Escape, and Option/dead-key text are not edits: the window
+        // and the native input handler take them.
+        let Some(command) = edit_command(key, modifiers, &self.edit, &keys) else {
             return;
-        }
-        if self.control_key(key, modifiers, window, cx) {
-            self.reveal_caret |= self.edit.cursor != previous_cursor;
-            cx.stop_propagation();
-            window.prevent_default();
-            cx.notify();
-            return;
-        }
-        let edit = actions::edit_modifiers(modifiers) && matches!(key, "a" | "c" | "v" | "x");
-        if edit || (modifiers.platform && !modifiers.control && !modifiers.alt) {
-            match key {
-                // As in every macOS text field: Cmd-Left and Cmd-Right go to
-                // the line's ends, Cmd-Backspace and Cmd-Delete delete to them.
-                "left" | "right" => {
-                    let range = line_range(&self.edit.text, self.edit.cursor);
-                    let offset = if key == "left" {
-                        range.start
-                    } else {
-                        range.end
-                    };
-                    self.edit.select_to(offset, modifiers.shift);
-                }
-                "backspace" | "delete" if !modifiers.shift => {
-                    if self.edit.selection().is_empty() {
-                        let range = line_range(&self.edit.text, self.edit.cursor);
-                        let offset = if key == "backspace" {
-                            range.start
-                        } else {
-                            range.end
-                        };
-                        self.edit.select_to(offset, true);
-                    }
-                    self.replace_text_in_range(None, "", window, cx);
-                }
-                _ if modifiers.shift && !edit => return,
-                "a" => {
-                    self.edit.anchor = 0;
-                    self.edit.cursor = self.edit.text.len();
-                }
-                "c" | "x" => {
-                    let selection = self.edit.selection();
-                    if !selection.is_empty() {
-                        cx.write_to_clipboard(ClipboardItem::new_string(
-                            self.edit.text[selection].into(),
-                        ));
-                        if key == "x" {
-                            self.replace_text_in_range(None, "", window, cx);
-                        }
-                    }
-                }
-                "v" => {
-                    if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
-                        self.replace_text_in_range(None, &text, window, cx);
-                    }
-                }
-                _ => return,
-            }
-        } else if !modifiers.platform && !modifiers.control && !modifiers.alt {
-            match key {
-                "backspace" | "delete" => {
-                    if self.edit.selection().is_empty() {
-                        let offset = if key == "backspace" {
-                            self.edit.previous()
-                        } else {
-                            self.edit.next()
-                        };
-                        self.edit.select_to(offset, true);
-                    }
-                    self.replace_text_in_range(None, "", window, cx);
-                }
-                "left" | "right" | "home" | "end" => {
-                    let selection = self.edit.selection();
-                    let offset = match key {
-                        "home" => line_range(&self.edit.text, self.edit.cursor).start,
-                        "end" => line_range(&self.edit.text, self.edit.cursor).end,
-                        "left" if !modifiers.shift && !selection.is_empty() => selection.start,
-                        "right" if !modifiers.shift && !selection.is_empty() => selection.end,
-                        "left" => self.edit.previous(),
-                        _ => self.edit.next(),
-                    };
-                    self.edit.select_to(offset, modifiers.shift);
-                }
-                _ => return,
-            }
-        } else if actions::word_modifiers(modifiers)
-            && matches!(key, "backspace" | "delete" | "left" | "right")
-        {
-            // macOS sends these as commands, never text, so the native
-            // handler below would drop them.
-            let selection = self.edit.selection();
-            let backward = matches!(key, "backspace" | "left");
-            let from = match key {
-                "left" if !modifiers.shift && !selection.is_empty() => selection.start,
-                "right" if !modifiers.shift && !selection.is_empty() => selection.end,
-                _ => self.edit.cursor,
-            };
-            let offset = match backward {
-                true => words::previous_start(&self.edit.text, from),
-                false => words::next_end(&self.edit.text, from),
-            };
-            if matches!(key, "left" | "right") {
-                self.edit.select_to(offset, modifiers.shift);
-            } else {
-                if selection.is_empty() {
-                    self.edit.select_to(offset, true);
-                }
-                self.replace_text_in_range(None, "", window, cx);
-            }
-        } else {
-            // Option/dead-key text also goes through the native input handler.
-            return;
-        }
+        };
+        self.apply(command, window, cx);
         cx.stop_propagation();
         window.prevent_default();
         self.reveal_caret |= self.edit.cursor != previous_cursor;
         cx.notify();
+    }
+
+    fn apply(&mut self, command: EditCommand, window: &mut Window, cx: &mut Context<Self>) {
+        match command {
+            EditCommand::Move { to, extend } => self.edit.select_to(to, extend),
+            EditCommand::SelectAll => self.edit.select(0..self.edit.text.len()),
+            EditCommand::Delete(range) => {
+                self.edit.select(range);
+                self.replace_text_in_range(None, "", window, cx);
+            }
+            EditCommand::Kill(range) if range.is_empty() => {}
+            EditCommand::Kill(range) => {
+                self.killed = self.edit.text[range.clone()].to_owned();
+                self.edit.select(range);
+                self.replace_text_in_range(None, "", window, cx);
+            }
+            // With nothing cut yet, a selection stays rather than being
+            // replaced by nothing.
+            EditCommand::Yank if self.killed.is_empty() => {}
+            EditCommand::Yank => {
+                let killed = self.killed.clone();
+                self.replace_text_in_range(None, &killed, window, cx);
+            }
+            EditCommand::Copy | EditCommand::Cut => {
+                let selection = self.edit.selection();
+                if !selection.is_empty() {
+                    cx.write_to_clipboard(ClipboardItem::new_string(
+                        self.edit.text[selection].into(),
+                    ));
+                    if command == EditCommand::Cut {
+                        self.replace_text_in_range(None, "", window, cx);
+                    }
+                }
+            }
+            EditCommand::Paste => {
+                if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
+                    self.replace_text_in_range(None, &text, window, cx);
+                }
+            }
+        }
     }
 }
