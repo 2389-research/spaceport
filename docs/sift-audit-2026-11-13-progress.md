@@ -44,12 +44,18 @@ Read the report for evidence, risks and first slices. Update this file when a fi
 | 16 | SIFT-S04-01 Backend trait | done, in review | #40 | `Backend` is the attach seam only. `just test-core` not run. |
 | 17 | SIFT-S17-01 Core pane-tree owner | done, in review | #43 (on #38) | Both suspected defects proven by tests first. Independent read-only review found nothing blocking. Left: a drag addresses its split by position. No native two-window check. |
 | 18 | SIFT-S14-01 build channel | done, in review | #42 | Includes the update-availability part of SIFT-S29-02. Three edits behind the `macos-updater` feature were not compiled locally; the `(macos-15, all)` CI leg is the check. |
-| 19 | SIFT-S15-01 checked settings writer | in review, **CI failing on Linux** | #44 | Round-trip test over all 42 preferences found no defect. Smaller version of the audit's proposal. The Linux test legs fail; cause not yet read from the logs. Do not merge until fixed. |
+| 19 | SIFT-S15-01 checked settings writer | done, in review | #44 | Round-trip test over all 42 preferences found no defect. Smaller version of the audit's proposal. The first push failed on Linux: the test lacked a row for `show_window_controls`, which defaults to on there. Fixed. |
 | 20 | SIFT-S20-01 shared key mapping | done, in review | #45 | 1,545 pinned key behaviours unchanged. Dialog keys left as they are. Key tables pinned on macOS only; watch the Linux and Windows legs. |
 | 23 | SIFT-S02B-01 response envelope | done, in review | #48 (on #31) | One decoder; `error: null` is no error everywhere; daemon messages bounded and stripped once. |
 | 25 | SIFT-S23-02 chat pane phase | done, in review | #47 (on #41) | No behaviour change. Pinned: a pane past the failure limit keeps reconnecting in the background. |
 | 26 | SIFT-S19-01 tab drag phase | done, in review | #46 | The stray-release test failed on the old code. Side effect: a press that leaves the window lifts at once. |
-| 27 | SIFT-S24-02 sidebar drags | in progress | `fix/sidebar-drag-phase` | Tests first for the stray release and the armed-after-cancel press. |
+| 21 | SIFT-S26-02 menu pages | first slice done, in review | #50 | `reset()` clears the shortcuts page's search; the draw chain's last branch is an exhaustive match. Not done: nesting the page families. |
+| 22 | SIFT-S17-02 Core identity fence | done, in review | #54 (on #43) | `Hub::backend_for`. No check changes what it accepts; three differences kept and made explicit. |
+| 24 | SIFT-S24-01 sidebar listing rule | done, in review | #52 (on #33) | Stepping matches painting; five of twelve setups disagreed before. The window's duplicate fold set is gone. |
+| 27 | SIFT-S24-02 sidebar drags | done, in review | #49 | Three defects proven and fixed. Merging the three gestures into one type declined. |
+| 28 | SIFT-G7-01 follows-Herdr predicate | done, in review | #51 | The mixed-pair test failed on the old code. |
+| 29 | SIFT-S21-02 connection fence | done, in review | #55 (on #53) | Three fences in `endpoint/fence.rs`. The mouse gesture keeps its own rule. No site changes what it accepts. |
+| 30 | SIFT-S30-02 notification stage | done, in review | #53 | No behaviour change. A second commit gates a test helper so the Windows lint passes. |
 | 32 | SIFT-S32-01 upstream release route | done, in review | #29 (on #27) | About 4,700 lines removed, including `nix.yml` and the `sign-artifacts` action. Kept, unsure: the Windows signing helpers, `generate-changelog.sh`'s non-preview mode, `build-icon.py`'s `linux` mode. |
 
 Ranks not listed are not started.
@@ -59,11 +65,12 @@ Ranks not listed are not started.
 Two stacks and four independent pull requests:
 
 - #23, then #27, then #29, then #30 (CI and release tooling).
-- #33, then #37 (endpoint state).
-- #38, then #43 (tab store).
+- #33, then #37 (endpoint state). #52 is also on #33.
+- #38, then #43, then #54 (tab store and Core).
 - #28, then #31, then #48 (SSH removal, then the response decoder).
 - #41, then #47 (chat pane).
-- #24, #25, #26, #32, #34, #35, #36, #39, #40, #42, #44, #45 and #46 stand alone.
+- #53, then #55 (notifications, then the connection fence).
+- #24, #25, #26, #32, #34, #35, #36, #39, #40, #42, #44, #45, #46, #49, #50 and #51 stand alone.
 
 ## Open questions for Harper
 
@@ -76,6 +83,17 @@ Two stacks and four independent pull requests:
 - #46: a press that leaves the window now lifts the tab at once, without the 250 ms wait. Keep?
 - #47: a chat pane past its failure limit keeps reconnecting in the background. Should it stop?
 - #44: unsetting a key in a table that does not exist writes an empty `[table]` header. Stop doing that?
+- #50: keep the exhaustive match over pages (it repeats about 40 lines of page names), or drop it until the page families are nested?
+- #51: on a mixed light and dark pair, should the Follow Herdr toggle change only the side being edited?
+- #52: the rail shows hosts in a folded tag section and the expanded list hides them; the expanded panel shows a collapsed host's agents and the rail hides them. Bugs or choices?
+- #53: a full queue can evict a notice already handed to the system while waiting ones stay. Evict a waiting one first?
+- #54: should adding a Core workspace member say "stale" for a lost Core like the other refusals? Should opening tabs refuse a lost Core?
+- #55: should a held mouse gesture survive its host being removed?
+
+## Declined
+
+- SIFT-S24-02, the larger part: one `Gesture` type for the three sidebar gestures. Both real defects were inside one drag's phase and are fixed in #49. The merge would churn seven files that other open pull requests edit.
+- SIFT-S15-01, the larger part: reducing every `Preference` to a key path. About 120 call-site edits for no added safety once the load check and shared spellings are in (#44).
 
 ## Known local noise
 
