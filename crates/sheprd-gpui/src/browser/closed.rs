@@ -258,7 +258,6 @@ impl Store {
     /// when the workspace already has one open.
     pub(crate) fn reopen_page(&mut self, tab: Tab) -> Option<TabId> {
         if let Some(existing) = match &tab.location {
-            Some(Location::RetiredOrchestrator { .. }) => return None,
             Some(Location::Devices) => self
                 .in_workspace(&tab.scope, &tab.workspace_id)
                 .find(|open| matches!(open.location, Some(Location::Devices)))

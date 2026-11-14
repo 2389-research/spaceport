@@ -3,7 +3,7 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{
-    browser::{LocalFile, RetiredOrchestratorRepo, Scope, WebUrl},
+    browser::Scope,
     control::protocol::Request,
     sidebar::layout_tests::{fixture_window, snapshot},
 };
@@ -14,32 +14,11 @@ mod core_flag;
 mod saved_tabs;
 mod windows;
 
-fn web(url: &str) -> Location {
-    Location::Web {
-        url: WebUrl::try_from(url).unwrap(),
-    }
-}
-
 #[test]
-fn retired_pages_are_not_listed_but_native_tabs_keep_their_targets() {
+fn blank_tabs_are_not_listed_but_native_tabs_keep_their_targets() {
     let scope = Scope::local(Path::new("/tmp/herdr.sock"));
     let mut store = Store::default();
-    // Hidden folders are never served, so the folder has a plain name.
-    let folder = tempfile::Builder::new().prefix("page").tempdir().unwrap();
-    let page = folder.path().join("index.html");
-    std::fs::write(&page, "<p>hi</p>").unwrap();
-    let locations = [
-        None,
-        Some(web("https://a.test/docs")),
-        Some(Location::Local {
-            file: LocalFile::new(&page, None).unwrap(),
-        }),
-        Some(Location::RetiredOrchestrator {
-            repo: RetiredOrchestratorRepo::new("/src/app".into()).unwrap(),
-        }),
-        Some(Location::Devices),
-    ];
-    for location in locations {
+    for location in [None, Some(Location::Devices)] {
         store.open(scope.clone(), "w_1", location, Some("w_1:p1".into()));
     }
     let listed: Vec<TabInfo> = store.tabs().filter_map(info).collect();
@@ -51,22 +30,6 @@ fn retired_pages_are_not_listed_but_native_tabs_keep_their_targets() {
     assert_eq!(first.host, "local:/tmp/herdr.sock");
     assert_eq!(first.opened_by.as_deref(), Some("w_1:p1"));
     assert_eq!(first.title, "Devices");
-}
-
-#[test]
-fn retired_source_is_never_listed_even_with_an_editor_place() {
-    let path = std::env::temp_dir().join("main.rs");
-    assert!(path.is_absolute());
-    let tab: Tab = serde_json::from_value(serde_json::json!({
-        "id": 7,
-        "scope": "local",
-        "workspace_id": "w",
-        "location": {"kind": "code", "file": {"path": path, "line": 4}},
-        "title": "Source",
-        "place": "px0"
-    }))
-    .unwrap();
-    assert!(info(&tab).is_none());
 }
 
 /// The fixture window, showing workspace `w0` of two as a connected daemon

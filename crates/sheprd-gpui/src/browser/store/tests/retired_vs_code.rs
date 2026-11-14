@@ -24,24 +24,21 @@ fn old_vs_code_tabs_are_dropped_without_reusing_their_ids() {
         .unwrap();
     let code = old.open(scope.clone(), "w1", None, None).unwrap();
     let code_group = old.open(scope.clone(), "w2", None, None).unwrap();
-    for tab in &mut old.tabs {
-        if tab.id == code || tab.id == code_group {
-            tab.place = Place::RetiredVsCode;
-        }
-    }
-
     let mut saved = serde_json::to_value(Saved {
         tabs: old.tabs.clone(),
         next: 0,
     })
     .unwrap();
     for tab in saved["tabs"].as_array_mut().unwrap() {
+        if tab["id"] == u64::from(code) {
+            tab["place"] = "code".into();
+        }
         if tab["id"] == u64::from(code_group) {
             tab["place"] = "code_group".into();
         }
     }
     let bytes = serde_json::to_vec(&saved).unwrap();
-    let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
+    let mut restored = Store::restored_for_test(&bytes).unwrap();
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
         [devices, core]
@@ -59,13 +56,14 @@ fn discarded_max_id_cannot_wrap_to_a_new_tab() {
     let mut old = Store::default();
     old.open(scope.clone(), "w1", None, None).unwrap();
     old.tabs[0].id = TabId::test(u64::MAX);
-    old.tabs[0].place = Place::RetiredVsCode;
-    let bytes = serde_json::to_vec(&Saved {
+    let mut saved = serde_json::to_value(Saved {
         tabs: old.tabs,
         next: 0,
     })
     .unwrap();
-    let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
+    saved["tabs"][0]["place"] = "code".into();
+    let bytes = serde_json::to_vec(&saved).unwrap();
+    let mut restored = Store::restored_for_test(&bytes).unwrap();
     assert!(restored.tabs().next().is_none());
     assert!(restored.open(scope, "w1", None, None).is_none());
 }

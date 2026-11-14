@@ -9,12 +9,7 @@ fn tabs_of_a_closed_workspace_are_forgotten_but_a_restart_keeps_them(
     let open = |cx: &mut VisualTestContext, workspace: &str| {
         cx.update(|_, cx| {
             Store::update(cx, |store| {
-                store.open(
-                    tab_scope.clone(),
-                    workspace,
-                    Some(url("https://a.test/")),
-                    None,
-                )
+                store.open(tab_scope.clone(), workspace, Some(Location::Devices), None)
             })
             .unwrap()
         })
