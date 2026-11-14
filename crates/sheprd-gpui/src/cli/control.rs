@@ -5,6 +5,7 @@
 mod app;
 mod chat;
 mod hosts;
+mod plain;
 mod settings;
 mod tabs;
 mod work;
@@ -88,56 +89,195 @@ pub enum ControlCommand {
     Integrations(IntegrationsCommand),
 }
 
-/// The words that start a control command, with a one-line summary each,
-/// for the top-level help.
-pub const FAMILIES: &[(&str, &str)] = &[
-    (
-        "status",
-        "Whether Spaceport runs, its version, windows, and hosts",
-    ),
-    ("skill", "Print the agent skill describing these commands"),
-    ("app", "Bring the app forward, hide it, or quit it"),
-    (
-        "window",
-        "List, open, focus, resize, detach, or reconnect windows",
-    ),
-    ("ui", "Sidebar, status bar, and terminal font size"),
-    ("tab", "List, focus, or close the app's own tabs"),
-    ("devices", "Open the Devices overview"),
-    (
-        "chat",
-        "Native views of sheprd-acp chats: start one, list them, show or hide one",
-    ),
-    ("notes", "Notes kept on worktrees"),
-    ("worktree", "Mute or unmute the caller's worktree"),
-    ("host", "List the window's hosts, show one, or mute one"),
-    (
-        "ports",
-        "Listening ports, and forwarding them to this machine",
-    ),
-    ("processes", "The processes running under a pane"),
-    ("usage", "AI plan usage on the selected host"),
-    (
-        "config",
-        "Spaceport settings: path, get, set, reload, check",
-    ),
-    ("theme", "List or choose a color theme"),
-    ("font", "List or choose the terminal font"),
-    ("language", "The language Spaceport shows, or choose one"),
-    ("keybinds", "List shortcuts and check them for conflicts"),
-    ("caffeine", "Keep the machine awake"),
-    ("sound", "List or play notification sounds"),
-    ("bell", "Ring the terminal bell"),
-    ("events", "What happened in the app, as a stream"),
-    ("wait", "Wait for a window or a tab to close"),
-    (
-        "run",
-        "Run any app command by name, as the command palette does",
-    ),
-    ("commands", "List the commands `run` accepts"),
-    ("logs", "Print or locate the app's log"),
-    ("diagnostics", "Write a redacted bundle for a bug report"),
-    ("integrations", "Agent integrations and the agent skill"),
+/// One word that starts a control command.
+pub(crate) struct Family {
+    pub(crate) name: &'static str,
+    /// One line for the top-level help.
+    pub(crate) summary: &'static str,
+    /// What `spaceport NAME --help` prints before the shared text.
+    pub(crate) usage: &'static str,
+    /// Parses what follows the family word and the shared options.
+    parse: fn(&mut Args) -> Result<ControlCommand, CliError>,
+}
+
+/// Every control command family, in the order the top-level help lists
+/// them. `theme` and `font` share a parser, which reads which one it is
+/// from the arguments.
+pub(crate) const FAMILIES: &[Family] = &[
+    Family {
+        name: "status",
+        summary: "Whether Spaceport runs, its version, windows, and hosts",
+        usage: plain::STATUS_USAGE,
+        parse: plain::status,
+    },
+    Family {
+        name: "skill",
+        summary: "Print the agent skill describing these commands",
+        usage: plain::SKILL_USAGE,
+        parse: plain::skill,
+    },
+    Family {
+        name: "app",
+        summary: "Bring the app forward, hide it, or quit it",
+        usage: app::APP_USAGE,
+        parse: |args| app::app(args).map(ControlCommand::App),
+    },
+    Family {
+        name: "window",
+        summary: "List, open, focus, resize, detach, or reconnect windows",
+        usage: app::WINDOW_USAGE,
+        parse: |args| app::window(args).map(ControlCommand::Window),
+    },
+    Family {
+        name: "ui",
+        summary: "Sidebar, status bar, and terminal font size",
+        usage: app::UI_USAGE,
+        parse: |args| app::ui(args).map(ControlCommand::Ui),
+    },
+    Family {
+        name: "tab",
+        summary: "List, focus, or close the app's own tabs",
+        usage: tabs::TAB_USAGE,
+        parse: |args| tabs::tab(args).map(ControlCommand::Tab),
+    },
+    Family {
+        name: "devices",
+        summary: "Open the Devices overview",
+        usage: tabs::DEVICES_USAGE,
+        parse: tabs::devices,
+    },
+    Family {
+        name: "chat",
+        summary: "Native views of sheprd-acp chats: start one, list them, show or hide one",
+        usage: chat::CHAT_USAGE,
+        parse: |args| chat::chat(args).map(ControlCommand::Chat),
+    },
+    Family {
+        name: "notes",
+        summary: "Notes kept on worktrees",
+        usage: work::NOTES_USAGE,
+        parse: |args| work::notes(args).map(ControlCommand::Notes),
+    },
+    Family {
+        name: "worktree",
+        summary: "Mute or unmute the caller's worktree",
+        usage: work::WORKTREE_USAGE,
+        parse: |args| work::worktree(args).map(ControlCommand::Worktree),
+    },
+    Family {
+        name: "host",
+        summary: "List the window's hosts, show one, or mute one",
+        usage: hosts::HOST_USAGE,
+        parse: |args| hosts::host(args).map(ControlCommand::Host),
+    },
+    Family {
+        name: "ports",
+        summary: "Listening ports, and forwarding them to this machine",
+        usage: hosts::PORTS_USAGE,
+        parse: |args| hosts::ports(args).map(ControlCommand::Ports),
+    },
+    Family {
+        name: "processes",
+        summary: "The processes running under a pane",
+        usage: plain::PROCESSES_USAGE,
+        parse: plain::processes,
+    },
+    Family {
+        name: "usage",
+        summary: "AI plan usage on the selected host",
+        usage: plain::USAGE_USAGE,
+        parse: plain::usage,
+    },
+    Family {
+        name: "config",
+        summary: "Spaceport settings: path, get, set, reload, check",
+        usage: settings::CONFIG_USAGE,
+        parse: |args| settings::config(args).map(ControlCommand::Config),
+    },
+    Family {
+        name: "theme",
+        summary: "List or choose a color theme",
+        usage: settings::THEME_USAGE,
+        parse: |args| settings::theme(args).map(ControlCommand::Theme),
+    },
+    Family {
+        name: "font",
+        summary: "List or choose the terminal font",
+        usage: settings::FONT_USAGE,
+        parse: |args| settings::theme(args).map(ControlCommand::Font),
+    },
+    Family {
+        name: "language",
+        summary: "The language Spaceport shows, or choose one",
+        usage: settings::LANGUAGE_USAGE,
+        parse: |args| settings::language(args).map(ControlCommand::Language),
+    },
+    Family {
+        name: "keybinds",
+        summary: "List shortcuts and check them for conflicts",
+        usage: settings::KEYBINDS_USAGE,
+        parse: |args| settings::keybinds(args).map(ControlCommand::Keybinds),
+    },
+    Family {
+        name: "caffeine",
+        summary: "Keep the machine awake",
+        usage: settings::CAFFEINE_USAGE,
+        parse: |args| settings::caffeine(args).map(ControlCommand::Caffeine),
+    },
+    Family {
+        name: "sound",
+        summary: "List or play notification sounds",
+        usage: settings::SOUND_USAGE,
+        parse: |args| settings::sound(args).map(ControlCommand::Sound),
+    },
+    Family {
+        name: "bell",
+        summary: "Ring the terminal bell",
+        usage: plain::BELL_USAGE,
+        parse: plain::bell,
+    },
+    Family {
+        name: "events",
+        summary: "What happened in the app, as a stream",
+        usage: plain::EVENTS_USAGE,
+        parse: plain::events,
+    },
+    Family {
+        name: "wait",
+        summary: "Wait for a window or a tab to close",
+        usage: work::WAIT_USAGE,
+        parse: work::wait,
+    },
+    Family {
+        name: "run",
+        summary: "Run any app command by name, as the command palette does",
+        usage: plain::RUN_USAGE,
+        parse: plain::run,
+    },
+    Family {
+        name: "commands",
+        summary: "List the commands `run` accepts",
+        usage: plain::COMMANDS_USAGE,
+        parse: plain::commands,
+    },
+    Family {
+        name: "logs",
+        summary: "Print or locate the app's log",
+        usage: plain::LOGS_USAGE,
+        parse: plain::logs,
+    },
+    Family {
+        name: "diagnostics",
+        summary: "Write a redacted bundle for a bug report",
+        usage: plain::DIAGNOSTICS_USAGE,
+        parse: plain::diagnostics,
+    },
+    Family {
+        name: "integrations",
+        summary: "Agent integrations and the agent skill",
+        usage: settings::INTEGRATIONS_USAGE,
+        parse: |args| settings::integrations(args).map(ControlCommand::Integrations),
+    },
 ];
 
 /// Whether `args` are a control command asking for JSON, whose errors,
@@ -151,7 +291,7 @@ pub fn wants_json(args: &[OsString]) -> bool {
 }
 
 pub fn is_family(word: &OsString) -> bool {
-    FAMILIES.iter().any(|(name, _)| word == *name)
+    FAMILIES.iter().any(|family| word == family.name)
 }
 
 /// The longest wait any command accepts, in seconds.
@@ -187,106 +327,24 @@ pub fn parse(
 ) -> Result<Invocation, CliError> {
     let family = FAMILIES
         .iter()
-        .map(|(name, _)| *name)
-        .find(|name| family == *name)
+        .find(|entry| family == entry.name)
         .ok_or(CliError::UnknownOption(family))?;
-    let mut args = Args::new(rest, family);
+    let mut args = Args::new(rest, family.name);
     if args.wants_help() {
         return Ok(Invocation {
-            command: ControlCommand::Help(Some(family)),
+            command: ControlCommand::Help(Some(family.name)),
             json: false,
             window: None,
         });
     }
     let json = args.flag("--json");
     let window = args.number("--window", 0..=u64::MAX)?;
-    let command = command(family, &mut args)?;
+    let command = (family.parse)(&mut args)?;
     args.finish()?;
     Ok(Invocation {
         command,
         json,
         window,
-    })
-}
-
-fn command(family: &'static str, args: &mut Args) -> Result<ControlCommand, CliError> {
-    Ok(match family {
-        "status" => ControlCommand::Status,
-        "skill" => ControlCommand::Skill,
-        "app" => ControlCommand::App(app::app(args)?),
-        "window" => ControlCommand::Window(app::window(args)?),
-        "ui" => ControlCommand::Ui(app::ui(args)?),
-        "tab" => ControlCommand::Tab(tabs::tab(args)?),
-        "devices" => {
-            tabs::open_only(args)?;
-            ControlCommand::Devices
-        }
-        "chat" => ControlCommand::Chat(chat::chat(args)?),
-        "notes" => ControlCommand::Notes(work::notes(args)?),
-        "worktree" => ControlCommand::Worktree(work::worktree(args)?),
-        "host" => ControlCommand::Host(hosts::host(args)?),
-        "ports" => ControlCommand::Ports(hosts::ports(args)?),
-        "processes" => ControlCommand::Processes {
-            pane: args.text_option("--pane")?,
-        },
-        "usage" => ControlCommand::Usage,
-        "config" => ControlCommand::Config(settings::config(args)?),
-        "theme" => ControlCommand::Theme(settings::theme(args)?),
-        "font" => ControlCommand::Font(settings::theme(args)?),
-        "language" => ControlCommand::Language(settings::language(args)?),
-        "keybinds" => ControlCommand::Keybinds(settings::keybinds(args)?),
-        "caffeine" => ControlCommand::Caffeine(settings::caffeine(args)?),
-        "sound" => ControlCommand::Sound(settings::sound(args)?),
-        "bell" => ControlCommand::Bell,
-        "events" => {
-            let kinds = args
-                .options("--kind")?
-                .iter()
-                .map(|kind| {
-                    kind.to_str()
-                        .and_then(|kind| kind.parse().ok())
-                        .ok_or(CliError::InvalidValue("--kind"))
-                })
-                .collect::<Result<_, _>>()?;
-            ControlCommand::Events {
-                follow: args.flag("--follow"),
-                after: args
-                    .text_option("--after")?
-                    .map(|after| {
-                        after
-                            .parse()
-                            .map_err(|()| CliError::InvalidValue("--after"))
-                    })
-                    .transpose()?,
-                wait: wait_option(args, "--wait")?,
-                kinds,
-            }
-        }
-        "wait" => ControlCommand::Wait {
-            timeout: args.number("--timeout", 1..=MAX_WAIT)?.unwrap_or(60),
-            what: work::wait_for(args)?,
-        },
-        "run" => ControlCommand::Run {
-            name: args.required_text("COMMAND")?,
-        },
-        "commands" => ControlCommand::Commands,
-        "logs" => ControlCommand::Logs {
-            path: args.flag("--path"),
-            lines: args
-                .number("--lines", 1..=crate::diagnostics::TAIL_RECORDS)?
-                .unwrap_or(100),
-        },
-        "diagnostics" => {
-            match args.verb().as_ref().and_then(|verb| verb.to_str()) {
-                Some("bundle") => {}
-                _ => return Err(CliError::InvalidValue("bundle")),
-            }
-            ControlCommand::Diagnostics {
-                output: args.required("PATH")?.into(),
-            }
-        }
-        "integrations" => ControlCommand::Integrations(settings::integrations(args)?),
-        _ => return Err(CliError::UnknownOption(family.into())),
     })
 }
 

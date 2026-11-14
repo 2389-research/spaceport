@@ -1,5 +1,5 @@
 //! `notes`, `worktree`, and `wait`.
-use super::{Args, CliError, unknown};
+use super::{Args, CliError, ControlCommand, MAX_WAIT, unknown};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum WorktreeCommand {
@@ -34,6 +34,8 @@ fn bounded(text: String) -> Result<String, CliError> {
     Ok(text)
 }
 
+pub(super) const WORKTREE_USAGE: &str = "spaceport worktree [status]\n    Whether the caller's worktree is muted.\nspaceport worktree mute|unmute\n    Silence its notifications, or let them through again. Mutes stay in\n    this app; nothing reaches the daemon.";
+
 pub(super) fn worktree(args: &mut Args) -> Result<WorktreeCommand, CliError> {
     let Some(verb) = args.verb() else {
         return Ok(WorktreeCommand::Status);
@@ -45,6 +47,8 @@ pub(super) fn worktree(args: &mut Args) -> Result<WorktreeCommand, CliError> {
         _ => return Err(unknown("worktree", verb)),
     })
 }
+
+pub(super) const NOTES_USAGE: &str = "spaceport notes [list]\n    Every worktree note, most recently edited first.\nspaceport notes get|clear\nspaceport notes set TEXT...\n    The note on the caller's checkout (its repository and branch), or the\n    focused workspace's outside a Herdr pane. Notes are one line of at most\n    500 characters. `list` and `get` exit 4 when there is none.";
 
 pub(super) fn notes(args: &mut Args) -> Result<NotesCommand, CliError> {
     let Some(verb) = args.verb() else {
@@ -64,7 +68,16 @@ pub(super) fn notes(args: &mut Args) -> Result<NotesCommand, CliError> {
     })
 }
 
-pub(super) fn wait_for(args: &mut Args) -> Result<WaitFor, CliError> {
+pub(super) const WAIT_USAGE: &str = "spaceport wait window|online|tab-closed ID [--timeout SECONDS]\n    Wait (default 60, at most 600 seconds). Exits 4 when time runs out.";
+
+pub(super) fn wait(args: &mut Args) -> Result<ControlCommand, CliError> {
+    Ok(ControlCommand::Wait {
+        timeout: args.number("--timeout", 1..=MAX_WAIT)?.unwrap_or(60),
+        what: wait_for(args)?,
+    })
+}
+
+fn wait_for(args: &mut Args) -> Result<WaitFor, CliError> {
     let verb = args.verb().ok_or(CliError::MissingArgument {
         command: "wait",
         what: "window|tab-closed|online",

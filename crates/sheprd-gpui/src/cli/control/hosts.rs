@@ -25,6 +25,8 @@ pub enum PortsCommand {
     Open(u16),
 }
 
+pub(super) const HOST_USAGE: &str = "spaceport host [list]\n    The window's hosts and their status. Herdr's `machine` command\n    manages saved hosts.\nspaceport host mute|unmute [HOST]\n    Silence a host's notifications as a whole, or let them through again,\n    by ID or label; absent, the caller's host. Works while it is offline.\nspaceport host select ID\n    Show that host in the window, as choosing it in the sidebar does.\nspaceport host tag ID [TAG...]\n    Replace the local tags that group that host in the sidebar; with no\n    tags, clear them.";
+
 pub(super) fn host(args: &mut Args) -> Result<HostCommand, CliError> {
     let Some(verb) = args.verb() else {
         return Ok(HostCommand::List);
@@ -52,6 +54,8 @@ fn port(args: &mut Args) -> Result<u16, CliError> {
         .filter(|port| *port > 0)
         .ok_or(CliError::InvalidValue("PORT"))
 }
+
+pub(super) const PORTS_USAGE: &str = "spaceport ports [list]\n    Ports the caller's workspace's processes listen on, and forwards.\n    Listening ports are known only while show_listening_ports is on.\nspaceport ports forward|unforward PORT\n    Forward a port of the workspace's SSH host to this machine, or stop.\nspaceport ports open PORT\n    Open localhost:PORT with the system URL handler, forwarding it first if remote.";
 
 pub(super) fn ports(args: &mut Args) -> Result<PortsCommand, CliError> {
     let Some(verb) = args.verb() else {
