@@ -6,7 +6,7 @@
 mod render;
 
 use super::{
-    observation,
+    Mismatch, observation,
     panes::Panes,
     workspace_document::{VersionedDocument, Workspace as CoreWorkspace, edit},
 };
@@ -201,14 +201,34 @@ impl SheprdWindow {
         )
     }
 
-    fn select_core_workspace(&mut self, id: Uuid, cx: &mut Context<Self>) {
-        let Some(core_id) = cx
-            .try_global::<observation::Observation>()
-            .and_then(|observation| observation.projection().core_id())
-        else {
-            return;
+    /// What a dialog opened now on group `id` targets, and the group's row:
+    /// the current document's version and the observation's epoch. A target
+    /// taken earlier still holds only while this returns an equal one.
+    fn core_workspace_target<'a>(
+        &self,
+        id: Uuid,
+        cx: &'a App,
+    ) -> Option<(DialogTarget, &'a CoreWorkspace)> {
+        let Access::Ready(document) = self.core_workspace_access(cx) else {
+            return None;
         };
-        let Some(key) = CoreGroupKey::new(core_id, None, super::workspace_document::NAME, id)
+        let row = document
+            .value
+            .workspaces()
+            .iter()
+            .find(|row| row.id == id)?;
+        let target = DialogTarget {
+            epoch: Self::core_workspace_epoch(cx)?,
+            id,
+            version: document.version,
+        };
+        Some((target, row))
+    }
+
+    fn select_core_workspace(&mut self, id: Uuid, cx: &mut Context<Self>) {
+        let Some(key) = cx
+            .try_global::<observation::Observation>()
+            .and_then(|observation| observation.projection().group_key(id))
         else {
             return;
         };
@@ -244,10 +264,12 @@ impl SheprdWindow {
         key: &CoreGroupKey,
         cx: &'a App,
     ) -> Option<&'a CoreWorkspace> {
-        if self.core_terminals.hub.backend().is_some_and(|backend| {
-            backend.core().is_lost() || backend.core().hello().core.id != key.hub_core_id()
-        }) {
-            return None;
+        match self.core_terminals.hub.backend_for(key.hub_core_id()) {
+            // Reading needs no connection of this window's: the observation
+            // is shared by every window, and a group is shown before its
+            // window joins that group's Core.
+            Ok(_) | Err(Mismatch::Absent) => {}
+            Err(Mismatch::Lost | Mismatch::Other) => return None,
         }
         super::core_group_workspace(key, cx)
     }
@@ -323,23 +345,18 @@ impl SheprdWindow {
             return;
         }
         if member {
-            let local = self
-                .core_terminals
-                .hub
-                .backend()
-                .map(|backend| &backend.core().hello().core.id);
+            let local = match self.core_terminals.hub.backend_for(&core_id) {
+                // Identity only: the edit refuses a dropped connection
+                // itself, and says to connect rather than to wait.
+                Ok(_) | Err(Mismatch::Lost) => true,
+                Err(Mismatch::Absent | Mismatch::Other) => false,
+            };
             let observed = cx
                 .try_global::<observation::Observation>()
                 .is_some_and(|observation| {
-                    observation.projection().fresh()
-                        && observation.projection().core_id() == Some(core_id.as_str())
-                        && observation
-                            .projection()
-                            .terminals()
-                            .iter()
-                            .any(|info| info.id.as_str() == terminal_id)
+                    observation.projection().observes(&core_id, &terminal_id)
                 });
-            if local != Some(&core_id) || terminal_id.contains('/') || !observed {
+            if !local || terminal_id.contains('/') || !observed {
                 self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
                 return;
             }
@@ -371,11 +388,10 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let Some(backend) = self.core_terminals.hub.backend() else {
-            return;
-        };
-        if backend.core().is_lost() || backend.core().hello().core.id != core_id {
-            return;
+        match self.core_terminals.hub.backend_for(core_id) {
+            Ok(_) => {}
+            // A member opens only on its own live Core, already joined.
+            Err(Mismatch::Absent | Mismatch::Lost | Mismatch::Other) => return,
         }
         let Access::Ready(document) = self.core_workspace_access(cx) else {
             return;
@@ -391,28 +407,16 @@ impl SheprdWindow {
         }
         let observed = cx
             .try_global::<observation::Observation>()
-            .is_some_and(|observation| {
-                observation.projection().fresh()
-                    && observation.projection().core_id() == Some(core_id)
-                    && observation
-                        .projection()
-                        .terminals()
-                        .iter()
-                        .any(|info| info.id.as_str() == terminal_id)
-            });
+            .is_some_and(|observation| observation.projection().observes(core_id, terminal_id));
         if !observed || terminal_id.contains('/') {
             return;
         }
         let Ok(terminal) = TerminalId::new(terminal_id.to_owned()) else {
             return;
         };
-        let Some(core_id) = cx
+        let Some(key) = cx
             .try_global::<observation::Observation>()
-            .and_then(|observation| observation.projection().core_id())
-        else {
-            return;
-        };
-        let Some(key) = CoreGroupKey::new(core_id, None, super::workspace_document::NAME, group)
+            .and_then(|observation| observation.projection().group_key(group))
         else {
             return;
         };
@@ -471,25 +475,17 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let (version, label) = match self.core_workspace_access(cx) {
-            Access::Ready(document) => {
-                match document.value.workspaces().iter().find(|row| row.id == id) {
-                    Some(row) => (document.version, row.label.clone()),
-                    None => return,
-                }
-            }
-            Access::Error(_) | Access::Missing => return,
-        };
-        let Some(epoch) = Self::core_workspace_epoch(cx) else {
+        let Some((target, label)) = self
+            .core_workspace_target(id, cx)
+            .map(|(target, row)| (target, row.label.clone()))
+        else {
             return;
         };
         if !self.open_menu(window, cx) {
             return;
         }
         self.menu.page = Some(Page::CoreWorkspaceRename);
-        self.core_terminals
-            .workspace_ui
-            .open(Some(DialogTarget { epoch, id, version }));
+        self.core_terminals.workspace_ui.open(Some(target));
         let mut input = DialogInput::new(label);
         input.label = Some(fl!("workspace-dialog-name").into());
         self.menu.input = Some(input);
@@ -502,24 +498,14 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let version = match self.core_workspace_access(cx) {
-            Access::Ready(document)
-                if document.value.workspaces().iter().any(|row| row.id == id) =>
-            {
-                document.version
-            }
-            _ => return,
-        };
-        let Some(epoch) = Self::core_workspace_epoch(cx) else {
+        let Some((target, _)) = self.core_workspace_target(id, cx) else {
             return;
         };
         if !self.open_menu(window, cx) {
             return;
         }
         self.menu.page = Some(Page::CoreWorkspaceDelete);
-        self.core_terminals
-            .workspace_ui
-            .open(Some(DialogTarget { epoch, id, version }));
+        self.core_terminals.workspace_ui.open(Some(target));
         cx.notify();
     }
 
@@ -530,15 +516,7 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let version = match self.core_workspace_access(cx) {
-            Access::Ready(document)
-                if document.value.workspaces().iter().any(|row| row.id == id) =>
-            {
-                document.version
-            }
-            _ => return,
-        };
-        let Some(epoch) = Self::core_workspace_epoch(cx) else {
+        let Some((target, _)) = self.core_workspace_target(id, cx) else {
             return;
         };
         if !self.open_menu(window, cx) {
@@ -546,9 +524,7 @@ impl SheprdWindow {
         }
         self.menu.anchor = anchor;
         self.menu.page = Some(Page::CoreWorkspaceActions);
-        self.core_terminals
-            .workspace_ui
-            .open(Some(DialogTarget { epoch, id, version }));
+        self.core_terminals.workspace_ui.open(Some(target));
         cx.notify();
     }
 
@@ -598,21 +574,8 @@ impl SheprdWindow {
         let Some(target) = self.core_terminals.workspace_ui.target else {
             return;
         };
-        let archived = match self.core_workspace_access(cx) {
-            Access::Ready(document)
-                if document.version == target.version
-                    && Self::core_workspace_epoch(cx) == Some(target.epoch) =>
-            {
-                match document
-                    .value
-                    .workspaces()
-                    .iter()
-                    .find(|row| row.id == target.id)
-                {
-                    Some(row) => row.archived,
-                    None => return,
-                }
-            }
+        let archived = match self.core_workspace_target(target.id, cx) {
+            Some((current, row)) if current == target => row.archived,
             _ => return,
         };
         match action {
@@ -726,13 +689,9 @@ impl SheprdWindow {
         };
         if let Some(target) = self.core_terminals.workspace_ui.target
             && matches!(edit, edit::Edit::Rename { .. } | edit::Edit::Delete { .. })
-            && (target.version != base.version
-                || Self::core_workspace_epoch(cx) != Some(target.epoch)
-                || !base
-                    .value
-                    .workspaces()
-                    .iter()
-                    .any(|row| row.id == target.id))
+            && self
+                .core_workspace_target(target.id, cx)
+                .is_none_or(|(current, _)| current != target)
         {
             self.menu.error = Some(fl!("core-workspace-changed"));
             cx.notify();

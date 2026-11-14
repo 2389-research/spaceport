@@ -14,7 +14,7 @@ use super::{MAX_CHATS, Route, Surface, Target};
 use crate::{
     SheprdWindow,
     browser::TabId,
-    core_terminals::{CoreTerminalView, Purpose},
+    core_terminals::{CoreTerminalView, Mismatch, Purpose},
 };
 use sheprd_backend::{Spawn, TerminalId, TerminalInfo};
 use sheprd_chat_protocol::{Agent, ENDPOINT_ENV, EndpointId, TOKEN};
@@ -293,12 +293,12 @@ impl SheprdWindow {
         group: Option<crate::browser::GroupId>,
         cx: &gpui::App,
     ) -> Option<TabId> {
-        if let Some(key) = self.selected_core_group()
-            && self.core_terminals.hub.backend().is_none_or(|backend| {
-                backend.core().is_lost() || backend.core().hello().core.id != key.hub_core_id()
-            })
-        {
-            return None;
+        if let Some(key) = self.selected_core_group() {
+            match self.core_terminals.hub.backend_for(key.hub_core_id()) {
+                Ok(_) => {}
+                // A chat splits a group's tab only on that group's live Core.
+                Err(Mismatch::Absent | Mismatch::Lost | Mismatch::Other) => return None,
+            }
         }
         let group = group.or_else(|| self.active_group())?;
         match self.group_shown(group, cx) {

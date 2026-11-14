@@ -5,6 +5,8 @@
 use super::*;
 use std::sync::{Condvar, Mutex};
 
+#[cfg(unix)]
+mod backend_for;
 mod target;
 
 fn opted_in_hub(join: Join) -> Hub {

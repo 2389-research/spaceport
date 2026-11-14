@@ -50,7 +50,7 @@ pub(crate) fn set_document_stale_for_test(cx: &mut App) {
 mod tests;
 
 pub(crate) use error::Error;
-pub(crate) use hub::{Hub, Start, State};
+pub(crate) use hub::{Hub, Mismatch, Start, State};
 pub(crate) use view::{CoreTerminalView, Look};
 
 pub(crate) fn core_group_workspace<'a>(
@@ -61,13 +61,7 @@ pub(crate) fn core_group_workspace<'a>(
     if !projection.fresh() {
         return None;
     }
-    let expected = CoreGroupKey::new(
-        projection.core_id()?,
-        None,
-        workspace_document::NAME,
-        key.group_id(),
-    )?;
-    if &expected != key {
+    if &projection.group_key(key.group_id())? != key {
         return None;
     }
     projection
@@ -477,13 +471,16 @@ impl SheprdWindow {
             self.show_flash(Flash::warning(fl!("core-terminals-open-workspace")), cx);
             return;
         };
-        if let Some(key) = self.selected_core_group()
-            && self.core_terminals.hub.backend().is_none_or(|backend| {
-                backend.core().is_lost() || backend.core().hello().core.id != key.hub_core_id()
-            })
-        {
-            self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
-            return;
+        if let Some(key) = self.selected_core_group() {
+            match self.core_terminals.hub.backend_for(key.hub_core_id()) {
+                Ok(_) => {}
+                // A group's terminal starts only on its own live Core; a
+                // window not joined yet does not join from here.
+                Err(Mismatch::Absent | Mismatch::Lost | Mismatch::Other) => {
+                    self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
+                    return;
+                }
+            }
         }
         self.dismiss_menu(window, cx);
         self.start_core_program(Purpose::Tab { scope, workspace }, Spawn::default());
