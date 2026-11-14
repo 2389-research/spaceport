@@ -2,7 +2,7 @@
 """Package the Windows executable as Sheprd-VERSION-TARGET.zip.
 
 Pure standard library so the Windows runner needs no zip tool. The layout
-mirrors package-linux.sh: the executable plus the same license and notice files.
+holds the executable plus the license and notice files.
 Beside spaceport.exe, which is a console program because it is also the CLI,
 the zip carries spaceport-launcher.exe, the windowed launcher that starts it without a
 console window from Explorer or the Start menu, and sheprd-acp.exe, which the app

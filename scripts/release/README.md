@@ -1,14 +1,17 @@
 # Release Packaging
 
-**Spaceport development status:** These are inherited Sheprd packaging notes,
-not instructions to release this fork. The current release build rejects
+**Spaceport development status:** The only release route in this fork is the
+macOS preview route below. The inherited upstream production route (its release
+and promotion workflows, Linux packages, Homebrew, winget, artifact signing and
+SBOM) has been removed; restore it from git history when the release gate
+opens. The current release build rejects
 `HERDR_RELEASE_VERSION` because general production identity, update delivery,
 and native package checks remain unresolved. The separate macOS preview
 route below uses the approved 2389 Developer ID inputs and `ai.2389.spaceport`;
 that approval does not enable general production releases. See the
 [release identity audit](../../docs/spaceport/evidence/release-identity-audit.md)
-and [open gates](../../docs/spaceport/plan/gaps.json). Do not run an inherited
-publish or install route. D64 approves the separate tagged prerelease route below.
+and [open gates](../../docs/spaceport/plan/gaps.json). D64 approves the
+separate tagged prerelease route below.
 The inherited custom updater, its feeds and update archives have been removed.
 D65 selects Sparkle for installed macOS previews, with a separate Spaceport
 signing key and preview feed. Other platform/package update routes and the
@@ -100,7 +103,7 @@ Malformed version tags cannot sign and do not reserve a valid version. The
 serialized workflow checks again before signing. Inspect retained notarization
 receipts after a failure; never rerun, move or delete a used tag to force another
 submission. Use a new version after resolving the failure. D65 adds the preview
-updater feed; Homebrew and general production publication remain excluded.
+updater feed; general production publication remains excluded.
 
 ### Preview updates
 
@@ -152,11 +155,12 @@ Packaging and `just bundle` require Python 3 and read a versioned identity recor
 embedded in the supplied executable, never the packaging checkout's Git state.
 On Linux, linked-worktree binaries select `assets/icons/sheprd-linux-worktree.svg`;
 other builds select `assets/icons/sheprd-linux.svg`. Both circular variants are
-installed as `share/icons/hicolor/scalable/apps/spaceport.svg`, so manual archives
-and distribution packages use the same layout without a pixmaps fallback.
+meant to be installed as `share/icons/hicolor/scalable/apps/spaceport.svg`,
+without a pixmaps fallback.
 Regenerate both SVGs with `just icons-linux`; see the
 [icon guide](../../assets/icons/README.md#linux-and-windows) for the composition and
-desktop lookup behavior. On macOS, linked-worktree binaries select
+desktop lookup behavior. No Linux package is built here now; the Nix flake
+installs the ordinary Linux icon. On macOS, linked-worktree binaries select
 `assets/icons/Sheprd-worktree.icns` and `Sheprd-worktree.car`; other builds use
 `Sheprd.icns` and `Sheprd.car`. The installed icons keep their standard filenames.
 No binary is executed, so foreign
@@ -194,36 +198,18 @@ for reproducible builds and matching cross-architecture PR metadata.
 
 ## Packaging Commands
 
-The release workflow's `ci-gate` job runs `scripts/release/check-ci.py` against
-the exact release SHA, waiting for a CI run that is still going. A successful
-CI workflow alone is insufficient: every platform check (both its
-default-features and all-features legs), native Windows test job, and Linux
-optimized build must have completed successfully in the same owner-triggered
-push or manual run on `main`. Skipped or missing jobs fail the gate. CI runs
-the macOS optimized builds on pull requests only, where the final gate requires
-them: on `main` they would hold the account-wide macOS runners this workflow's
-own macOS builds wait for. `just release` dispatches without waiting, so the
-release builds overlap CI; `sign`, `windows-sign`, and everything after them
-wait behind `ci-gate`, so nothing is signed or published before CI passes. CI
-never cancels a run on `main`, so a later merge cannot strand a release commit
-without one. For documentation-only commits, start a full run with
-`gh workflow run ci.yml --repo sheprd-labs/sheprd --ref main` before releasing.
-
 ```sh
 cargo install cargo-about --version 0.9.2 --locked --features cli
 python3 scripts/release/generate-notices.py OUTPUT_DIR/THIRD-PARTY-NOTICES.txt
 bash scripts/release/package-macos.sh VERSION ARM64_BINARY X86_64_BINARY OUTPUT_DIR OUTPUT_DIR/THIRD-PARTY-NOTICES.txt
 bash scripts/release/sign-macos.sh VERSION OUTPUT_DIR/Spaceport.app OUTPUT_DIR universal import
-bash scripts/release/package-linux.sh VERSION TARGET BINARY OUTPUT_DIR OUTPUT_DIR/THIRD-PARTY-NOTICES.txt
-bash scripts/release/render-cask.sh VERSION SHA256 [TOKEN] > /path/to/rendered/TOKEN.rb
 ```
 
 macOS assembly requires Apple command-line tools. It produces unsigned
 `Spaceport.app`, containing the arm64 or universal GUI, plist, icon, root `LICENSE` and `NOTICE`,
 protocol license/attribution, Octicons license, and third-party notices.
 Both plist versions are set to the supplied version.
-The package floor is macOS 14.2 (`LSMinimumSystemVersion`; Homebrew can only
-express `:sonoma`). The binary strongly links CoreAudio's process-tap functions,
+The package floor is macOS 14.2 (`LSMinimumSystemVersion`). The binary strongly links CoreAudio's process-tap functions,
 introduced in 14.2, through rodio's cpal backend, so dyld refuses to launch it
 on 14.0 and 14.1. GPUI checks for macOS 15 at runtime before using its newer
 window behavior. The `macos-14` CI job that ran the workspace tests on that
@@ -275,58 +261,17 @@ Gatekeeper before publishing the local output filename:
 `Spaceport-VERSION-ARCHITECTURE-apple-darwin.dmg`. Any failed operation aborts.
 Existing DMG outputs are refused before loading credentials.
 
-Linux targets are `x86_64-unknown-linux-gnu` or `aarch64-unknown-linux-gnu`.
-The release workflow builds both natively on Ubuntu 24.04 architecture runners,
-using the same `scripts/install-linux-deps.sh` library setup as CI. Both archives
-are mandatory in the single immutable asset manifest; signing, provenance and
-consumer verification cover both. The SBOM unions both Linux, both macOS, and
-the Windows target graphs, each the app's joined with those of the programs shipped beside it (`SHIPPED` in
-`generate-sbom.py`). No separate per-platform manifest or publication job is used.
-The caller must supply the matching release binary; packaging does not cross-build
-or resolve shared libraries. Output is `Sheprd-VERSION-TARGET.tar.gz`, with a
-same-named root containing `bin/spaceport` and `bin/sheprd-acp`
-(the companion taken from beside the binary), a scalable SVG icon, desktop entry, license and
-notice under `share/`.
-Install that tree into a chosen prefix with its `bin` on
-PATH. Archives are not promised to be bit-for-bit reproducible.
-
-`scripts/release/package-linux-distro.py VERSION TARGET ARCHIVE OUTPUT_DIR
---nfpm NFPM` then repackages that manual archive as `Sheprd-VERSION-TARGET.deb`,
-`.rpm` and `.pkg.tar.zst`. It extracts only the expected regular files, installs
-them under `/usr`, and builds all three formats before publishing any, so every
-Linux format ships the tarball's exact bytes. nfpm is the only packaging tool;
-`scripts/release/install-nfpm.sh` downloads its pinned release and checks a
-SHA-256 copied from that release's Sigstore-verified `checksums.txt`. Package
-dependencies are declared explicitly, not inferred: the binary requires
-GLIBC_2.39 (it is built on Ubuntu 24.04), links ALSA, FreeType, Fontconfig, xcb and
-xkbcommon, and dlopens the Vulkan loader and libwayland-client. RPM
-requirements are sonames so they resolve on any RPM distribution. Entries are
-stamped with the release date, and the release host name is kept out of the
-RPM header, so repackaging one release produces identical bytes.
-The same completed packages are also published as `Herdr-VERSION-TARGET.deb`,
-`.rpm` and `.pkg.tar.zst` to preserve the inherited download names. The
-`Sheprd-*` packages retain their Sigstore sidecars and provenance; the bare
-legacy aliases must match them byte-for-byte at publication and verification
-and appear in both checksum manifests.
-`scripts/release/smoke-linux-packages.sh VERSION TARGET DIST_DIR` then installs
-each package into digest-pinned Ubuntu 24.04, Debian 13 and Fedora 42 containers,
-plus Arch Linux on x86_64 (no official ARM64 image exists), runs `spaceport --help`
-and the shipped programs' `--help` or `--version`,
-fails if `ldd` reports a missing library or a dlopened loader is absent, and removes
-the package again. When packaged dependencies change, update `DEPENDS` in
-`package-linux-distro.py` and rerun the smoke script.
-
 The Windows targets are `x86_64-pc-windows-msvc` and
-`aarch64-pc-windows-msvc`, built natively on `windows-2025` and
-`windows-11-arm` after clippy, the protocol/client suites and the CLI tests pass
-there. `scripts/release/package-windows.py VERSION TARGET BINARY LAUNCHER
+`aarch64-pc-windows-msvc`. No workflow publishes a Windows package now; CI's
+`windows-package` job, paused for the fork under D66, is the only caller of
+these scripts. `scripts/release/package-windows.py VERSION TARGET BINARY LAUNCHER
 OUTPUT_DIR THIRD_PARTY_NOTICES` (standard-library Python, since the runner has no
 zip tool) writes one `Sheprd-VERSION-TARGET.zip` per target with a same-named root
 containing `spaceport.exe`, the windowed `spaceport-launcher.exe` that the
 installer's Start menu shortcut opens, `sheprd-acp.exe`, which the app starts
 chats with (taken from beside `BINARY`), real legacy executable
-and helper copies, and `licenses/` holding the same license
-and notice files as the Linux tree. Entries carry a fixed timestamp.
+and helper copies, and `licenses/` holding the license
+and notice files. Entries carry a fixed timestamp.
 
 `scripts/release/windows-installer.py` then installs the pinned Inno Setup
 compiler (`install-iscc`, checked against its SHA-256), compiles
@@ -347,223 +292,38 @@ The smoke test seeds a disabled `Herdr UI` startup entry targeting the legacy
 launcher and requires the command and `StartupApproved` bytes to survive the
 upgrade unchanged. Setup renames only shortcuts targeting this installation;
 it preserves a preexisting desktop shortcut even without a new desktop task.
-Both zips and both
-installers are mandatory in the asset manifest and receive checksums, Sigstore
-sidecars and provenance like every other asset, after the Authenticode signing
-below when it is set up.
 
 ## Windows Signing
 
-The `windows` job's zip and installer are unsigned, and so are every local and
-pull request build: `windows-installer.py build` signs only when given `--sign`,
-and `sheprd.iss` only sets `SignTool` when ISCC receives one. The release
-workflow then signs in `windows-sign`, one job per target on `windows-2025`,
-gated by the protected **`release`** environment like `sign`.
+Every Windows zip and installer built here is unsigned: `windows-installer.py
+build` signs only when given `--sign`, and `sheprd.iss` only sets `SignTool`
+when ISCC receives one. The upstream release workflow's `windows-sign` job was
+the only caller of that mode and was removed with that workflow.
+`windows-signing.py` (`unpack`, `repack`, `verify`), `windows-sign-file.ps1`,
+and the installer's `--sign` and `smoke --signed` modes remain with their
+tests, and nothing calls them. Restoring Authenticode signing needs a new
+protected signing job and its Azure Artifact Signing setup.
 
-Signing is optional until it is set up: `validate` turns it on once the
-`WINDOWS_SIGNING_SUBJECT` repository variable (below) is set, and warns while it
-is not. Until then `windows-sign`, `windows-smoke` and `winget` are skipped,
-`sign` and `attest` take the unsigned `windows-package-TARGET` artifacts, and
-the release ships unsigned Windows zips and installers, and Windows
-SmartScreen warns on first run. Once the variable is
-set, `windows-sign` requires the Azure setup below, and a release without it
-fails instead of falling back to unsigned. When signing is on:
+## Retained Identities
 
-1. `windows-signing.py unpack` extracts the tested zip without running anything.
-2. `azure/login` signs in to Azure with the job's OIDC token, and
-   `azure/artifact-signing-action` signs `spaceport.exe`,
-   `spaceport-launcher.exe` and `sheprd-acp.exe`
-   with SHA-256 and an RFC 3161 timestamp from
-   `http://timestamp.acs.microsoft.com`.
-3. `windows-signing.py repack` refuses unless the tree holds exactly the zip's
-   files and each executable differs from the tested one only by its appended
-   or replaced trailing signature (checksum, certificate table entry, alignment
-   padding). The script then writes
-   the zip again with the same entry order and timestamps.
-4. `windows-installer.py build --sign` compiles the installer from the signed
-   zip. ISCC calls `windows-sign-file.ps1` as its `SignTool`, with
-   `SignedUninstaller=yes`, to sign the uninstaller it embeds and the final
-   `-setup.exe`, through the ArtifactSigning module and Azure CLI login of
-   step 2 and the same digest and timestamp.
-5. `windows-signing.py verify` requires Windows to report every signature as
-   valid and timestamped, from exactly `WINDOWS_SIGNING_SUBJECT`.
-
-`windows-smoke` then installs and uninstalls each signed installer on its own
-architecture, outside the signing environment, and checks the signatures of
-the installer and of the installed app, launcher and uninstaller. `attest`
-then takes only the signed `windows-signed-TARGET` artifacts, so checksums,
-Sigstore and GitHub provenance (`actions/attest-build-provenance`) cover the
-bytes users download.
-
-Signing needs this one-time Azure setup, which only the maintainer can do:
-
-1. An Azure Artifact Signing (formerly Trusted Signing) account with a
-   completed identity validation and a public-trust certificate profile.
-2. A Microsoft Entra app registration with a federated credential for issuer
-   `https://token.actions.githubusercontent.com` and subject
-   `repo:sheprd-labs/sheprd:environment:release`, holding the **Artifact Signing
-   Certificate Profile Signer** role on the certificate profile and nothing
-   else. No client secret: only an OIDC token from a job in the protected
-   `release` environment can use it.
-3. These variables on the `release` environment (not the repository), none
-   secret, except `WINDOWS_SIGNING_SUBJECT`, below:
-
-   | Variable | Value |
-   | --- | --- |
-   | `AZURE_CLIENT_ID` | the app registration's client ID |
-   | `AZURE_TENANT_ID` | its tenant ID |
-   | `AZURE_SUBSCRIPTION_ID` | the subscription holding the signing account |
-   | `ARTIFACT_SIGNING_ENDPOINT` | the account's regional endpoint, such as `https://eus.codesigning.azure.net/` |
-   | `ARTIFACT_SIGNING_ACCOUNT` | the signing account name |
-   | `ARTIFACT_SIGNING_PROFILE` | the certificate profile name |
-
-4. `WINDOWS_SIGNING_SUBJECT` as a **repository** variable: the certificate
-   subject Windows reports, such as `CN=..., O=..., L=..., S=..., C=...`. The
-   `windows-sign` job verifies against this value. The subject is the validated
-   identity, so read it from a first signed
-   file (`(Get-AuthenticodeSignature file.exe).SignerCertificate.Subject`).
-   Set it only once the Azure variables above are in place: it is the switch
-   that turns signing on. Artifact Signing certificates last
-   days, so pin the subject, never a thumbprint.
-
-## Winget
-
-After a stable release publishes, the `winget` job (and the same job in
-`promote.yml` when a beta is promoted) submits it to
-[microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) as
-`Penso.HerdrUI`. It downloads the published `SHA256SUMS`, installs the pinned
-[Komac](https://github.com/russellbanks/Komac) after checking its SHA-256, and
-runs `winget.py submit`: Komac writes the new version's manifests from the
-previous winget-pkgs version and the `-setup.exe` release URLs (x64, plus
-arm64 whenever the release lists it), and the script refuses to submit unless
-every installer is a per-user (`Scope: user`) Inno Setup installer with the
-release's URL and SHA-256, the publisher is `Herdr UI`, and the product code is
-the installer's `AppId`. Only then does `komac submit` open the pull request.
-Betas never reach winget.
-
-`Penso.HerdrUI` and the publisher must never change: winget matches installed
-copies and upgrades by them. `winget.py` holds both, and its tests tie them to
-`sheprd.iss`.
-
-The maintainer has to:
-
-1. Create the protected **`winget`** environment, with required reviewers and
-   deployments limited to `main`, like `homebrew`.
-2. Fork `microsoft/winget-pkgs` to the account that will submit, and store a
-   classic personal access token for that account with only the `public_repo`
-   scope as the `winget` environment secret `WINGET_TOKEN`. Komac cannot open
-   pull requests with a fine-grained token.
-3. Submit the first version by hand, after the first signed release: Komac's
-   update needs an existing version to start from. Run
-   `komac new Penso.HerdrUI --version VERSION --urls URL_X64 URL_ARM64` with
-   the two published `-setup.exe` URLs, check that it detects `inno` and
-   `user` scope, retain publisher `Herdr UI`, set package name to `Sheprd`, the license
-   and URLs, and submit. Until that version is merged, the job only prints a
-   warning.
-
-Without `WINGET_TOKEN` the job also prints a warning and submits nothing, so a
-release does not fail while winget is not set up. Once winget is live, that
-warning is the only sign a lost token leaves.
-
-## Artifact Signing
-
-The blocked public-release scripts retain inherited Sheprd package identities;
-the separate macOS preview route uses the Spaceport identity described above. Ordinary CI accepts
-both `penso/herdr-gpui` and `sheprd-labs/sheprd` so
-the rename can be validated before transfer; release/promotion dispatch and
-publication are restricted to `sheprd-labs/sheprd`, with the same `penso` owner
-checks and protected environments. Before publication, configure the successor's
-environment approvals, secrets, Azure OIDC federation and provenance trust policy.
-This source change performs no transfer or deployment. Netlify's Git integration
-and the root `netlify.toml` now own website publication; there is no Cloudflare
-Actions deploy job.
-
-The compatibility exceptions are intentional:
+The retained packaging scripts keep inherited Sheprd identities on purpose:
 
 - macOS preview bundles are `Spaceport.app`, with `spaceport` and `sheprd-acp`,
-  signed for Team `HD9NM9NSMK`. The preview does not approve inherited Homebrew
-  destinations or any public release identity.
-- Homebrew publishes `sheprd-labs/tap/sheprd` for new installs. For existing ones,
-  `penso/tap/herdr-gpui` installs `Sheprd.app` to
-  **`Herdr.app`**, preserving its existing installation destination. The cask exposes
-  `spaceport` on PATH. Moving that target or cask token needs a separate migration.
-- Linux packages retain package ownership **`herdr-gpui`**, version `VERSION-1`,
-  but ship one app command at `/usr/bin/spaceport`. The desktop ID is
-  `org.sheprd.Sheprd`, matching the app's Wayland app ID and X11 `WM_CLASS`.
-  The chat helper remains `sheprd-acp`. Distro packaging rejects symlinks.
-  Nix wraps the same `spaceport` command.
+  signed for Team `HD9NM9NSMK`. The preview approves no other public release
+  identity.
+- The Linux desktop ID is `org.sheprd.Sheprd`, matching the app's Wayland app ID
+  and X11 `WM_CLASS`. The chat helper remains `sheprd-acp`. Nix wraps the
+  `spaceport` command.
 - Windows retains AppId `{7FA70894-4FC0-4923-BDCB-B05F7475610A}`,
-  `%LOCALAPPDATA%\Programs\Herdr UI`, AppUserModelID `so.pen.herdr-gpui`,
-  winget `Penso.HerdrUI`, publisher `Herdr UI`, and the configured Authenticode
-  subject. ZIPs and installers ship `spaceport.exe` / `spaceport-launcher.exe`
-  and `sheprd-acp.exe`; **all executables are signed**. Shortcuts
-  and Explorer text show Sheprd. The installer registers neither inherited
-  `sheprd://` nor `herdr-gpui://` scheme.
-  Setup gracefully stops automation running under either executable name.
+  `%LOCALAPPDATA%\Programs\Herdr UI`, AppUserModelID `so.pen.herdr-gpui` and
+  publisher `Herdr UI`. ZIPs and installers ship `spaceport.exe`,
+  `spaceport-launcher.exe` and `sheprd-acp.exe`. Shortcuts and Explorer text
+  show Sheprd. The installer registers neither inherited `sheprd://` nor
+  `herdr-gpui://` scheme. Setup gracefully stops automation running under
+  either executable name.
 - Runtime service/state identities and the upstream `herdr-core` / `hc` and
   `herdr` command remain compatible. Preview signing uses the explicit environment
   interface above; no local `.envrc` or signing hook is sourced.
-
-`scripts/verify-release.sh --legacy` selects legacy package names and the
-`penso/herdr-gpui` Sigstore/provenance identity. Default verification requires
-the successor identity; neither mode falls back to another trust identity. The
-manifest generator's corresponding option is `--legacy-names`. Both modes cover
-the retained package artifacts and checksum layouts. They no longer verify
-complete historical upstream releases containing retired updater feeds and
-archives.
-
-The release base set contains the DMG, two manual Linux archives and their
-`.deb`, `.rpm` and Arch packages, two Windows zips, two Windows installers,
-and the SBOM. All base files receive SHA-256 and Sigstore sidecars and GitHub
-provenance in the separate protected OIDC job.
-Starting with `20261102.2`, `artifact-manifest.py create` validates and combines
-the signer's SHA-512 sidecars into one `SHA512SUMS` file. `SHA256SUMS` covers
-every other published file, including `SHA512SUMS`. The six bare Linux package
-aliases also appear in both manifests and must equal their signed base files.
-The compact layout retains every platform, signature, and checksum algorithm.
-Earlier versions use the per-file SHA-512 layout. Missing or additional files
-fail closed. `artifact-manifest.py base-names VERSION DIRECTORY` lists the
-retained package and SBOM base names.
-The publication job verifies downloaded draft bytes and the complete exact asset
-set before making it public; Homebrew still verifies and uses only the final DMG.
-
-## Beta Channel
-
-`just release-beta` publishes a normal release as a GitHub prerelease and skips
-Homebrew; `just release-promote VERSION` runs `.github/workflows/promote.yml` to
-make that published beta the latest stable release and update the tap, without
-rebuilding or re-uploading anything. `generate-changelog.sh VERSION OUTPUT_DIR
-[BETA_TAG...]` folds the listed unpromoted beta tags into the release after them.
-Beta publication does not provide an in-app update channel.
-
-## Homebrew
-
-`homebrew/Casks/sheprd.rb` and `herdr-gpui.rb` are deliberately templates, not installable
-unverified releases. Render with the final stapled DMG's SHA-256 (64 hex digits).
-Rendering is deterministic, normalizes hexadecimal to lowercase, and writes only
-stdout. Do not redirect onto the input template. The rendered cask belongs at
-`Casks/sheprd.rb` in `sheprd-labs/homebrew-tap`, installed as
-`brew install sheprd-labs/tap/sheprd`, or `Casks/herdr-gpui.rb` in
-`penso/homebrew-tap`. Downloads use repository
-`sheprd-labs/sheprd`, tag `vVERSION`, and the exact DMG filename above.
-
-`bash scripts/release/update-homebrew.sh VERSION RENDERED_CASK TAP_REPOSITORY`
-publishes that cask to the resolved default branch of `sheprd-labs/homebrew-tap` or
-`penso/homebrew-tap`, refusing a cask that is not that tap's; each release runs it for both, with `SHEPRD_TAP_SSH_KEY` and
-`HOMEBREW_TAP_SSH_KEY` respectively, because Homebrew will not move an installed
-cask to an untrusted tap. Run only after the
-published DMG checksum has been verified. It requires `git`, `ssh`, `curl`, `jq`,
-and the literal private deploy key in `HOMEBREW_TAP_SSH_KEY`, supplied only to the
-approved Homebrew workflow step. It uses HTTPS GitHub metadata for strict SSH host
-verification, stages only the cask, and skips identical same-version content.
-It rejects numeric version downgrades, changed same-version content (including
-checksums), and malformed or missing versions in an existing cask without
-evaluating Ruby. Leave newer tap releases intact; publish a new version for changed
-assets, and manually review/repair malformed tap metadata before retrying.
-The key and clone
-are trap-cleaned on exit/INT/TERM (not SIGKILL or power loss). No personal SSH keys,
-PAT, credential helper, or global author configuration is used. Keep tap Actions
-disabled and the key scoped to this tap; see the root README's protection setup.
 
 ## Third-Party Notices
 
@@ -617,8 +377,7 @@ resolution and collection succeed; existing reports are refused to prevent stale
 reuse. Neither Cargo.lock nor dependency versions are updated by this command.
 
 All package interfaces require a nonempty report. macOS includes it in
-`Contents/Resources/THIRD-PARTY-NOTICES.txt`; Linux includes it in
-`share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt`; Windows includes it in
+`Contents/Resources/THIRD-PARTY-NOTICES.txt`; Windows includes it in
 `licenses/THIRD-PARTY-NOTICES.txt`. Secret-free build jobs generate
 reports before packaging. Each macOS binary artifact carries its report; assembly
 requires the two reports to match byte-for-byte before signing. Local DMG builds
@@ -734,14 +493,12 @@ cover job eligibility and credential declarations, not GitHub's approval service
 for script in scripts/release/*.sh; do bash -n "$script" || exit; done
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/release/tests -v
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/release/test-release-security.py
-actionlint .github/workflows/release.yml
-zizmor --offline .github/workflows/release.yml
+actionlint .github/workflows/*.yml
+zizmor --offline .github/workflows/
 ```
 
 Tests run on macOS and Linux with Python 3, Git and `jq`. They use dummy credentials
 and mocked Apple tools/OS detection, check rejection and cleanup paths (including
-macOS-only production guards), and inspect both Linux target tarballs.
-Tap tests mock HTTPS/SSH transport and push only to disposable local repositories;
-they cover default-branch resolution, cask-only commits, no-op updates and failures.
+macOS-only production guards).
 They do not perform real signing, notarization, Gatekeeper assessment or native
 launch testing. Real release validation still needs the trusted signing runner.

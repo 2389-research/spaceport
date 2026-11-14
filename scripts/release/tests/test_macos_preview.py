@@ -281,7 +281,6 @@ class PreviewRoute(unittest.TestCase):
         for name in ('validate', 'sign', 'publish'):
             self.assertIn('preview-request.py', jobs[name])
             self.assertIn('fetch-depth: 0', jobs[name])
-        self.assertIn("github.repository == 'sheprd-labs/sheprd'", (ROOT / '.github/workflows/release.yml').read_text())
 
     def test_metadata_has_no_inherited_owner_or_removed_feature_claim(self):
         metadata = plistlib.loads((ROOT / 'assets/macos/Info.plist').read_bytes())

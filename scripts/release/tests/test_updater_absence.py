@@ -2,7 +2,6 @@
 ABOUTME: Protects the retained package, signing, and release refusal boundaries.
 """
 
-import importlib.util
 from pathlib import Path
 import unittest
 
@@ -18,7 +17,7 @@ class UpdaterAbsenceTests(unittest.TestCase):
                 self.assertFalse((ROOT / name).exists(), name)
 
     def test_release_routes_do_not_create_or_sign_custom_feeds(self):
-        for name in (".github/workflows/release.yml", ".github/workflows/ci.yml",
+        for name in (".github/workflows/ci.yml", ".github/workflows/macos-preview.yml",
                      "scripts/release/build-macos.sh", "scripts/release/sign-macos.sh",
                      "justfile", "flake.nix"):
             source = (ROOT / name).read_text()
@@ -30,17 +29,6 @@ class UpdaterAbsenceTests(unittest.TestCase):
                 with self.subTest(name=name, token=token):
                     self.assertNotIn(token, source)
 
-    def test_current_artifacts_are_packages_and_sbom(self):
-        spec = importlib.util.spec_from_file_location(
-            "artifact_manifest", ROOT / "scripts/release/artifact-manifest.py")
-        manifest = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(manifest)
-        names = manifest.base_names("20261109.1")
-        self.assertTrue(names)
-        self.assertTrue(all(name.startswith("Sheprd-") for name in names), names)
-        self.assertTrue(all(name.endswith((".dmg", ".tar.gz", ".deb", ".rpm", ".pkg.tar.zst",
-                                          ".zip", ".exe", ".cdx.json")) for name in names), names)
-
     def test_windows_installer_retains_restart_manager_without_custom_relaunch(self):
         source = (ROOT / "scripts/release/sheprd.iss").read_text()
         self.assertIn("CloseApplications=yes", source)
@@ -50,15 +38,6 @@ class UpdaterAbsenceTests(unittest.TestCase):
         smoke = (ROOT / "scripts/release/windows-installer.py").read_text()
         self.assertNotIn("check_update_relaunches", smoke)
         self.assertNotIn("/RELAUNCH=1", smoke)
-
-    def test_protected_publication_and_release_version_remain(self):
-        release = (ROOT / ".github/workflows/release.yml").read_text()
-        for token in ("github.repository == 'sheprd-labs/sheprd'", "github.actor == 'penso'",
-                      "github.ref == 'refs/heads/main'", "environment: release",
-                      "HERDR_RELEASE_VERSION:", "scripts/release/check-ci.py",
-                      "scripts/release/artifact-manifest.py verify", "actions/attest-build-provenance@",
-                      "scripts/release/smoke-cli.py"):
-            self.assertIn(token, release)
 
     def test_install_references_do_not_advertise_custom_update_controls(self):
         for directory in ("site", "website/site", "website/herdrui/public"):
