@@ -1,9 +1,10 @@
-use crate::sidebar::layout_tests::fixture_window;
+use crate::{endpoint::fence::ConnectionRef, sidebar::layout_tests::fixture_window};
 use gpui::{TestAppContext, VisualTestContext, px, size};
 use sheprd_client::protocol::ClientShellSnapshot;
 use std::sync::Arc;
 
 mod command_chip;
+mod fence;
 mod fold;
 mod narrow_window;
 mod stack;
@@ -144,9 +145,13 @@ fn stale_dismissal_cannot_hide_new_text(cx: &mut TestAppContext) {
             endpoint.config_diagnostic.visible().unwrap().clone(),
         )
     });
+    let drawn = |generation, lines: &Arc<[String]>| super::DrawnFrom {
+        connection: ConnectionRef::for_test(&id, generation, &inbox),
+        lines: lines.clone(),
+    };
     set_diagnostic(&view, 0, Some("new"), cx);
     view.update(cx, |view, cx| {
-        view.dismiss_config_diagnostic(&id, generation, &inbox, &lines, cx);
+        view.dismiss_config_diagnostic(&drawn(generation, &lines), cx);
         assert!(view.endpoints[0].config_diagnostic.visible().is_some());
         // A retired connection generation cannot dismiss either.
         let current = view.endpoints[0]
@@ -154,9 +159,9 @@ fn stale_dismissal_cannot_hide_new_text(cx: &mut TestAppContext) {
             .visible()
             .unwrap()
             .clone();
-        view.dismiss_config_diagnostic(&id, generation + 1, &inbox, &current, cx);
+        view.dismiss_config_diagnostic(&drawn(generation + 1, &current), cx);
         assert!(view.endpoints[0].config_diagnostic.visible().is_some());
-        view.dismiss_config_diagnostic(&id, generation, &inbox, &current, cx);
+        view.dismiss_config_diagnostic(&drawn(generation, &current), cx);
         assert!(view.endpoints[0].config_diagnostic.visible().is_none());
     });
 }

@@ -1,5 +1,6 @@
 #![allow(clippy::unwrap_used)]
 
+mod fence;
 mod held;
 
 use super::*;
@@ -41,10 +42,7 @@ fn mapping(cx: &mut TestAppContext) -> (Entity<SheprdWindow>, MockPeer, &mut Vis
         view.flush_pending_input(cx);
         view.wsl_paste = Some(WslPaste {
             token: Arc::new(()),
-            endpoint: view.endpoints[0].id.clone(),
-            generation: view.endpoints[0].generation,
-            epoch: view.selection_epoch,
-            boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
+            fence: view.input_fence().unwrap(),
             target: InputTarget::Pane(PANE.into()),
             mapped: None,
         });

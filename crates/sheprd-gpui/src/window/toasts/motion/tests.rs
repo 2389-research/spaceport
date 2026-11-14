@@ -23,7 +23,7 @@ fn drawn(id: u64, corner: ToastHerdrPosition) -> Drawn {
             id,
         },
         label: "Local".into(),
-        inbox: Arc::default(),
+        source: ConnectionRef::for_test("local", 1, &Default::default()),
         notice,
         corner,
     }

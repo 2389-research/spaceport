@@ -9,7 +9,7 @@ use super::{
     pending_input::Delivery,
 };
 use crate::i18n::{Localize, fl};
-use crate::{Error, terminal::InputTarget};
+use crate::{Error, endpoint::fence::InputFence, terminal::InputTarget};
 use gpui::{ClipboardEntry, ClipboardItem, Context, Task};
 use sheprd_client::{
     ClipboardImageCancellation,
@@ -48,10 +48,7 @@ impl PreparationKind {
 pub(crate) struct PendingImage {
     token: Arc<()>,
     kind: PreparationKind,
-    endpoint: String,
-    epoch: u64,
-    generation: u64,
-    boot: String,
+    fence: InputFence,
     remote: bool,
     target: InputTarget,
     cancellation: ClipboardImageCancellation,
@@ -160,20 +157,12 @@ impl SheprdWindow {
     }
 
     fn image_target_current(&self, image: &PendingImage) -> bool {
-        let endpoint = &self.endpoints[self.selected_endpoint];
-        if self.selected_is_remote() != image.remote
+        if !self.fence_holds(&image.fence)
+            || self.selected_is_remote() != image.remote
             || self.menu.page.is_some()
             || !self.live.status.is_connected()
             || self.pending_navigation.is_some()
             || self.live.activation_pending()
-            || image.epoch != self.selection_epoch
-            || image.generation != endpoint.generation
-            || image.endpoint != endpoint.id
-            || self
-                .live
-                .snapshot
-                .as_ref()
-                .is_none_or(|snapshot| snapshot.boot_id != image.boot)
         {
             return false;
         }
@@ -390,8 +379,7 @@ impl SheprdWindow {
             return Delivery::Refused;
         }
         let endpoint = &self.endpoints[self.selected_endpoint];
-        let (Some(handle), Some(snapshot)) = (&endpoint.connection.handle, &self.live.snapshot)
-        else {
+        let (Some(handle), Some(fence)) = (&endpoint.connection.handle, self.input_fence()) else {
             return Delivery::Refused;
         };
         let wire_target = match &target {
@@ -399,12 +387,8 @@ impl SheprdWindow {
             InputTarget::Popup(id) => ClientClipboardImageTarget::Popup(id.clone()),
         };
         let upload = match match kind {
-            PreparationKind::Image => {
-                handle.reserve_clipboard_image(&snapshot.boot_id, wire_target)
-            }
-            PreparationKind::Input => {
-                handle.reserve_clipboard_input(&snapshot.boot_id, wire_target)
-            }
+            PreparationKind::Image => handle.reserve_clipboard_image(&fence.boot, wire_target),
+            PreparationKind::Input => handle.reserve_clipboard_input(&fence.boot, wire_target),
         } {
             Ok(upload) => upload,
             Err(error) => {
@@ -414,9 +398,6 @@ impl SheprdWindow {
             }
         };
         let cancellation = upload.cancellation_handle();
-        let endpoint = endpoint.id.clone();
-        let generation = self.endpoints[self.selected_endpoint].generation;
-        let boot = snapshot.boot_id.clone();
         let executor = cx.background_executor().clone();
         let prepare = executor.spawn(async move {
             let result = if upload.is_cancelled() {
@@ -482,10 +463,7 @@ impl SheprdWindow {
         self.pending_images.push(PendingImage {
             token,
             kind,
-            endpoint,
-            epoch: self.selection_epoch,
-            generation,
-            boot,
+            fence,
             remote: self.selected_is_remote(),
             target,
             cancellation,

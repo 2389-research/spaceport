@@ -18,7 +18,9 @@ pub(crate) use error::Error;
 
 use super::{SheprdWindow, file_drop::quote_paths, pending_input::Delivery};
 use crate::i18n::{Localize, fl};
-use crate::{Result, connection::ConnectionBridge, terminal::InputTarget};
+use crate::{
+    Result, connection::ConnectionBridge, endpoint::fence::InputFence, terminal::InputTarget,
+};
 use gpui::Context;
 use sheprd_client::protocol::ClientPaneInputEvent;
 use std::{
@@ -36,10 +38,7 @@ pub(crate) struct WslPaste {
     /// Tells this drop's answer from a later drop's once a reconnect has
     /// forgotten this one.
     token: Arc<()>,
-    endpoint: String,
-    generation: u64,
-    epoch: u64,
-    boot: String,
+    fence: InputFence,
     target: InputTarget,
     /// The distribution's paths, once mapped, and when, until the pane
     /// takes them.
@@ -59,20 +58,12 @@ impl SheprdWindow {
         }
         // Records where held keys go before any are held.
         self.flush_pending_input(cx);
-        let endpoint = &self.endpoints[self.selected_endpoint];
-        let snapshot = self
-            .live
-            .snapshot
-            .as_ref()
-            .ok_or(crate::Error::NoSnapshot)?;
+        let fence = self.input_fence().ok_or(crate::Error::NoSnapshot)?;
         let token = Arc::new(());
         let answer = token.clone();
         self.wsl_paste = Some(WslPaste {
             token,
-            endpoint: endpoint.id.clone(),
-            generation: endpoint.generation,
-            epoch: self.selection_epoch,
-            boot: snapshot.boot_id.clone(),
+            fence,
             target,
             mapped: None,
         });
@@ -136,16 +127,7 @@ impl SheprdWindow {
         let Some((_, mapped_at)) = &paste.mapped else {
             return false;
         };
-        let endpoint = &self.endpoints[self.selected_endpoint];
-        let same_connection = paste.epoch == self.selection_epoch
-            && paste.generation == endpoint.generation
-            && paste.endpoint == endpoint.id
-            && self
-                .live
-                .snapshot
-                .as_ref()
-                .is_some_and(|snapshot| snapshot.boot_id == paste.boot);
-        if same_connection
+        if self.fence_holds(&paste.fence)
             && !self.disconnected()
             && self.menu.page.is_none()
             && !self.input_ready()
@@ -171,16 +153,9 @@ impl SheprdWindow {
         let endpoint = &self.endpoints[self.selected_endpoint];
         // The window moved on to another device or connection, or the pane
         // or popup the files were dropped on no longer takes input.
-        let current = paste.epoch == self.selection_epoch
-            && paste.generation == endpoint.generation
-            && paste.endpoint == endpoint.id
+        let current = self.fence_holds(&paste.fence)
             && self.menu.page.is_none()
             && self.input_ready()
-            && self
-                .live
-                .snapshot
-                .as_ref()
-                .is_some_and(|snapshot| snapshot.boot_id == paste.boot)
             && self.input_target_shown(&paste.target);
         if !current {
             return Err(Error::TargetGone.into());
@@ -193,7 +168,7 @@ impl SheprdWindow {
             .ok_or(crate::Error::NotConnected)?;
         ConnectionBridge::send_input(
             handle,
-            &paste.boot,
+            &paste.fence.boot,
             &paste.target,
             ClientPaneInputEvent::Paste(text),
         )?;

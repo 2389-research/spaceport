@@ -60,11 +60,10 @@ impl SheprdWindow {
                 .on_scroll(|_, _, cx| cx.stop_propagation())
                 .when(look.navigable, |d| d.cursor_pointer())
                 .on_click({
-                    let endpoint_id = endpoint_id.clone();
-                    let inbox = toast.inbox.clone();
+                    let source = toast.source.clone();
                     cx.listener(move |this, _, _, cx| {
                         cx.stop_propagation();
-                        this.click_toast(&endpoint_id, generation, &inbox, id, cx);
+                        this.click_toast(&source, id, cx);
                     })
                 })
             })
@@ -174,18 +173,14 @@ impl SheprdWindow {
                             .text_color(rgb(self.theme.foreground)),
                     )
                     .when(look.live, |button| {
-                        let inbox = toast.inbox.clone();
+                        let source = toast.source.clone();
                         button
                             .cursor_pointer()
                             .hover(|s| s.bg(rgb(self.theme.active)))
                             .on_click(cx.listener(move |this, _, _, cx| {
                                 cx.stop_propagation();
-                                if let Some(endpoint) = this.endpoints.iter_mut().find(|e| {
-                                    e.id == endpoint_id
-                                        && e.generation == generation
-                                        && std::sync::Arc::ptr_eq(&e.connection.inbox, &inbox)
-                                }) {
-                                    endpoint.toasts.dismiss(id);
+                                if let Some(index) = this.endpoint_for(&source) {
+                                    this.endpoints[index].toasts.dismiss(id);
                                     cx.notify();
                                 }
                             }))

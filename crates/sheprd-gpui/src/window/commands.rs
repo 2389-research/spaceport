@@ -373,12 +373,8 @@ impl SheprdWindow {
                         .find(|(_, n)| n.is_visible())
                         .map(|(id, _)| (e, *id))
                 }) {
-                    let (origin, generation, inbox) = (
-                        endpoint.id.clone(),
-                        endpoint.generation,
-                        endpoint.connection.inbox.clone(),
-                    );
-                    self.click_toast(&origin, generation, &inbox, id, cx);
+                    let source = endpoint.connection_ref();
+                    self.click_toast(&source, id, cx);
                 }
                 return;
             }

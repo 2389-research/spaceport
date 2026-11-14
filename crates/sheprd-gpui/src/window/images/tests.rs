@@ -4,6 +4,7 @@ use sheprd_client::ConnectTarget;
 use std::io;
 
 mod en_xa;
+mod fence;
 mod key_fallback;
 mod paste_errors;
 
