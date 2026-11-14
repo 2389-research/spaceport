@@ -12,39 +12,31 @@ impl SheprdWindow {
         target: &Target<'_>,
         strict: bool,
     ) -> Option<(usize, String)> {
-        self.endpoints
-            .iter()
-            .enumerate()
-            .find_map(|(index, endpoint)| {
-                if strict {
-                    let matches = match target.daemon {
-                        Some(daemon) => {
-                            endpoint.connection.target.socket_path().ok().as_deref() == Some(daemon)
-                        }
-                        None => index == self.selected_endpoint,
-                    };
-                    if !matches {
-                        return None;
+        self.hosts().find_map(|(index, endpoint, live)| {
+            if strict {
+                let matches = match target.daemon {
+                    Some(daemon) => {
+                        endpoint.connection.target.socket_path().ok().as_deref() == Some(daemon)
                     }
-                } else if target.workspace.is_none() {
+                    None => index == self.selected_endpoint,
+                };
+                if !matches {
                     return None;
                 }
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
-                let snapshot = live.snapshot.as_ref()?;
-                let workspace = match target.workspace {
-                    Some(id) => id,
-                    None => snapshot.focused_workspace_id.as_deref()?,
-                };
-                snapshot
-                    .workspaces
-                    .iter()
-                    .any(|candidate| candidate.workspace_id == workspace)
-                    .then(|| (index, workspace.to_owned()))
-            })
+            } else if target.workspace.is_none() {
+                return None;
+            }
+            let snapshot = live.snapshot.as_ref()?;
+            let workspace = match target.workspace {
+                Some(id) => id,
+                None => snapshot.focused_workspace_id.as_deref()?,
+            };
+            snapshot
+                .workspaces
+                .iter()
+                .any(|candidate| candidate.workspace_id == workspace)
+                .then(|| (index, workspace.to_owned()))
+        })
     }
 
     /// Whether the host this window shows is the daemon at `daemon`, listing
@@ -61,24 +53,16 @@ impl SheprdWindow {
     /// The endpoint of this window whose live snapshot lists `workspace` of
     /// `scope`, whether or not the window shows it now.
     pub(crate) fn endpoint_showing(&self, scope: &Scope, workspace: &str) -> Option<usize> {
-        self.endpoints
-            .iter()
-            .enumerate()
-            .find_map(|(index, endpoint)| {
-                if &super::scope(endpoint) != scope {
-                    return None;
-                }
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
-                live.snapshot
-                    .as_ref()?
-                    .workspaces
-                    .iter()
-                    .any(|candidate| candidate.workspace_id == workspace)
-                    .then_some(index)
-            })
+        self.hosts().find_map(|(index, endpoint, live)| {
+            if &super::scope(endpoint) != scope {
+                return None;
+            }
+            live.snapshot
+                .as_ref()?
+                .workspaces
+                .iter()
+                .any(|candidate| candidate.workspace_id == workspace)
+                .then_some(index)
+        })
     }
 }

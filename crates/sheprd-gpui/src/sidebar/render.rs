@@ -208,7 +208,7 @@ impl SheprdWindow {
                     .then_some(endpoint.label.as_str()),
             };
             let daemon = crate::listening_ports::Daemon::of(&endpoint.connection.target);
-            let live = if selected { &self.live } else { &endpoint.live };
+            let live = self.live_of(endpoint_index);
             let Some(snapshot) = &live.snapshot else {
                 continue;
             };

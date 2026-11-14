@@ -39,11 +39,7 @@ impl SheprdWindow {
             .iter()
             .enumerate()
             .filter(|(index, endpoint)| {
-                let live = if *index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
+                let live = self.live_of(*index);
                 endpoint.enabled
                     && (live.status.is_connected() || !endpoint.connection.target.is_remote())
             })

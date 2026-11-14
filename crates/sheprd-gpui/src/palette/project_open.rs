@@ -61,11 +61,7 @@ impl SheprdWindow {
         if endpoint.connection.target.is_remote() {
             return Err(Error::HostUnavailable.into());
         }
-        let live = if index == self.selected_endpoint {
-            &self.live
-        } else {
-            &endpoint.live
-        };
+        let live = self.live_of(index);
         if endpoint.generation != target.generation {
             return Err(Error::LocalChanged.into());
         }
@@ -237,11 +233,7 @@ impl SheprdWindow {
                 return self.palette_project_error(error, cx);
             }
         };
-        let live = if index == self.selected_endpoint {
-            &self.live
-        } else {
-            &self.endpoints[index].live
-        };
+        let live = self.live_of(index);
         let Some((id, Some(result))) = &live.dialog_response else {
             return;
         };
