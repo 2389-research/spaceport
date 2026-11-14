@@ -138,10 +138,53 @@ struct Asked {
     request: wire::RequestId,
 }
 
+/// Where the agent's ACP session stands. One value, so a turn cannot exist
+/// without an open session and nothing outlives a closed one.
+enum Phase {
+    /// No ACP session yet: the handshake or `session/new` is under way.
+    Opening,
+    /// `session/load` was sent for this session and its reply is awaited.
+    Loading(wire::SessionId),
+    /// The session is open. `turn` is the running prompt's request id.
+    Ready {
+        session: wire::SessionId,
+        turn: Option<i64>,
+    },
+    /// The agent failed or its process ended.
+    Closed,
+}
+
+impl Phase {
+    /// The session the agent's messages must name, open or still loading.
+    fn session(&self) -> Option<&wire::SessionId> {
+        match self {
+            Self::Loading(session) | Self::Ready { session, .. } => Some(session),
+            Self::Opening | Self::Closed => None,
+        }
+    }
+
+    fn turn(&self) -> Option<i64> {
+        match self {
+            Self::Ready { turn, .. } => *turn,
+            Self::Opening | Self::Loading(_) | Self::Closed => None,
+        }
+    }
+
+    /// Whether a prompt can be sent now: the session is open with no turn.
+    fn free(&self) -> bool {
+        matches!(self, Self::Ready { turn: None, .. })
+    }
+
+    fn set_turn(&mut self, running: Option<i64>) {
+        if let Self::Ready { turn, .. } = self {
+            *turn = running;
+        }
+    }
+}
+
 pub(crate) struct Session<R: FnMut(Update)> {
     /// What the agent takes in a prompt besides text, from its handshake.
     accepts: crate::files::Accepts,
-    acp_session: Option<wire::SessionId>,
     activity: Option<Activity>,
     asked: HashMap<PermissionId, Asked>,
     config: Config,
@@ -154,14 +197,13 @@ pub(crate) struct Session<R: FnMut(Update)> {
     next_request: i64,
     outbox: rpc::Outbox,
     pending: HashMap<i64, Pending>,
+    phase: Phase,
     pictures: pictures::Pictures,
     projector: Projector,
-    ready: bool,
     report: R,
     seq: u64,
     subscribers: Vec<Subscriber>,
     transcript: Transcript,
-    turn: Option<i64>,
 }
 
 impl<R: FnMut(Update)> Session<R> {
@@ -178,7 +220,6 @@ impl<R: FnMut(Update)> Session<R> {
             .map_or_else(Projector::default, |entry| Projector::after(entry.id));
         Self {
             accepts: crate::files::Accepts::default(),
-            acp_session: None,
             activity: None,
             asked: HashMap::new(),
             config,
@@ -190,14 +231,13 @@ impl<R: FnMut(Update)> Session<R> {
             next_request: 0,
             outbox,
             pending: HashMap::new(),
+            phase: Phase::Opening,
             pictures: pictures::Pictures::default(),
             projector,
-            ready: false,
             report,
             seq: 0,
             subscribers: Vec::new(),
             transcript,
-            turn: None,
         }
     }
 
@@ -453,10 +493,7 @@ impl<R: FnMut(Update)> Session<R> {
 
     /// Whether the agent is gone for good: it failed or its process ended.
     fn closed(&self) -> bool {
-        matches!(
-            self.transcript.status,
-            Status::Failed { .. } | Status::Exited { .. }
-        )
+        matches!(self.phase, Phase::Closed)
     }
 
     /// Ends everything that needed the agent: the turn, its open questions,
@@ -469,9 +506,7 @@ impl<R: FnMut(Update)> Session<R> {
             self.emit(Change::PermissionResolved { id });
         }
         self.pending.clear();
-        self.acp_session = None;
-        self.turn = None;
-        self.ready = false;
+        self.phase = Phase::Closed;
         if self.transcript.turn.is_some() {
             self.emit(Change::Turn { turn: None });
         }
