@@ -21,7 +21,10 @@ use sheprd_chat_protocol::{
 };
 use uuid::Uuid;
 
-use crate::{project::Projector, rpc};
+use crate::{
+    project::{self, Projector},
+    rpc,
+};
 
 /// Changes kept for clients that reconnect with a cursor.
 const LOG: usize = 8192;
@@ -448,8 +451,41 @@ impl<R: FnMut(Update)> Session<R> {
         }
     }
 
+    /// Whether the agent is gone for good: it failed or its process ended.
+    fn closed(&self) -> bool {
+        matches!(
+            self.transcript.status,
+            Status::Failed { .. } | Status::Exited { .. }
+        )
+    }
+
+    /// Ends everything that needed the agent: the turn, its open questions,
+    /// queued prompts, running activities, and requests still awaiting a
+    /// reply. A reply that arrives later finds nothing to resume.
+    fn close(&mut self) {
+        self.asked.clear();
+        let open: Vec<PermissionId> = self.transcript.permissions.iter().map(|p| p.id).collect();
+        for id in open {
+            self.emit(Change::PermissionResolved { id });
+        }
+        self.pending.clear();
+        self.acp_session = None;
+        self.turn = None;
+        self.ready = false;
+        if self.transcript.turn.is_some() {
+            self.emit(Change::Turn { turn: None });
+        }
+        self.clear_queue();
+        let gone = project::kill_all(&self.transcript, now_ms());
+        self.emit_all(gone);
+    }
+
     /// The session cannot continue: say why, and stop taking prompts.
     fn fail(&mut self, message: &str) {
+        if self.closed() {
+            return;
+        }
+        self.close();
         let notice = self
             .projector
             .notice(sheprd_chat_protocol::NoticeLevel::Error, message);
@@ -457,7 +493,6 @@ impl<R: FnMut(Update)> Session<R> {
         self.status(Status::Failed {
             message: message.to_owned(),
         });
-        self.clear_queue();
     }
 
     fn clear_queue(&mut self) {

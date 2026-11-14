@@ -364,19 +364,7 @@ impl<R: FnMut(Update)> Session<R> {
             message.push('\n');
             message.push_str(&stderr.join("\n"));
         }
-        self.asked.clear();
-        let pending: Vec<PermissionId> = self.transcript.permissions.iter().map(|p| p.id).collect();
-        for id in pending {
-            self.emit(Change::PermissionResolved { id });
-        }
-        self.turn = None;
-        self.ready = false;
-        if self.transcript.turn.is_some() {
-            self.emit(Change::Turn { turn: None });
-        }
-        self.clear_queue();
-        let gone = project::kill_all(&self.transcript, now_ms());
-        self.emit_all(gone);
+        self.close();
         let level = if code == Some(0) {
             NoticeLevel::Info
         } else {
