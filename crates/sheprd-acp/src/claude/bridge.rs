@@ -15,9 +15,9 @@ use super::{
 use crate::{
     harness::{
         Out, Translator, out,
-        out::{failure, reply, to_value},
+        out::{failure, reply},
     },
-    project::Tag,
+    project::{PromptUsage, Tag},
     rpc::Inbound,
 };
 
@@ -191,7 +191,7 @@ impl Bridge {
             return vec![reply(id, Err(wire::Error::invalid_params()))];
         };
         if self.prompt.is_some() {
-            return vec![reply(id, Err(failure("A turn is already running.")))];
+            return vec![reply(id, Err(failure(out::BUSY)))];
         }
         self.prompt = Some(id);
         self.interrupted = false;
@@ -353,11 +353,11 @@ impl Bridge {
             wire::ToolCallUpdate::new(tool_use.to_owned(), fields),
             options,
         );
-        vec![Out::Session(Inbound::Request {
-            id: wire::RequestId::Number(self.next_request),
-            method: "session/request_permission".to_owned(),
-            params: serde_json::to_value(params).unwrap_or(Value::Null),
-        })]
+        vec![out::ask(
+            self.next_request,
+            "session/request_permission",
+            &params,
+        )]
     }
 
     fn system(&mut self, message: &Value) -> Vec<Out> {
@@ -392,7 +392,7 @@ impl Bridge {
                     self.background
                         .notified(task, field("tool_use_id"), status, field("summary"))
                 })
-                .map(|elsewhere| self.reported(elsewhere))
+                .map(|elsewhere| out::activity(&self.session, elsewhere))
                 .into_iter()
                 .collect(),
             Some("compact_boundary") => {
@@ -566,13 +566,6 @@ impl Bridge {
         }
     }
 
-    /// The update that says how another call's activity stands.
-    fn reported(&self, (call, report): background::Elsewhere) -> Out {
-        let update = wire::ToolCallUpdate::new(call, wire::ToolCallUpdateFields::new())
-            .meta(Tag::activity(report).meta());
-        self.update(wire::SessionUpdate::ToolCallUpdate(update))
-    }
-
     fn user(&mut self, envelope: &Value) -> Vec<Out> {
         let Some(message) = envelope.get("message") else {
             return Vec::new();
@@ -582,7 +575,7 @@ impl Bridge {
                 return self
                     .background
                     .notified(task, call, status, summary)
-                    .map(|elsewhere| self.reported(elsewhere))
+                    .map(|elsewhere| out::activity(&self.session, elsewhere))
                     .into_iter()
                     .collect();
             }
@@ -649,7 +642,7 @@ impl Bridge {
                 update = update.meta(Tag::activity(report).meta());
             }
             outs.push(self.update(wire::SessionUpdate::ToolCallUpdate(update)));
-            outs.extend(elsewhere.map(|elsewhere| self.reported(elsewhere)));
+            outs.extend(elsewhere.map(|elsewhere| out::activity(&self.session, elsewhere)));
         }
         outs
     }
@@ -681,21 +674,12 @@ impl Bridge {
         outs.extend(
             stopped
                 .into_iter()
-                .map(|elsewhere| self.reported(elsewhere)),
+                .map(|elsewhere| out::activity(&self.session, elsewhere)),
         );
         self.calls.clear();
         self.streamed.clear();
         self.message = None;
-        let result = match stop {
-            Ok(stop) => to_value(&wire::PromptResponse::new(stop)).map(|mut response| {
-                if let Some(tokens) = tokens(message) {
-                    response["usage"] = tokens;
-                }
-                response
-            }),
-            Err(message) => Err(failure(message)),
-        };
-        outs.push(reply(id, result));
+        outs.push(out::turn_ended(id, stop, tokens(message)));
         outs
     }
 
@@ -765,7 +749,7 @@ fn usage(message: &Value) -> Option<wire::UsageUpdate> {
 }
 
 /// The turn's tokens in the shape the session reads from a prompt result.
-fn tokens(message: &Value) -> Option<Value> {
+fn tokens(message: &Value) -> Option<PromptUsage> {
     let usage = message.get("usage")?;
     let count = |key: &str| usage.get(key).and_then(Value::as_u64).unwrap_or(0);
     let input = count("input_tokens") + count("cache_creation_input_tokens");
@@ -775,13 +759,13 @@ fn tokens(message: &Value) -> Option<Value> {
         .pointer("/output_tokens_details/thinking_tokens")
         .and_then(Value::as_u64)
         .unwrap_or(0);
-    Some(json!({
-        "inputTokens": input,
-        "outputTokens": output,
-        "cachedReadTokens": cached,
-        "thoughtTokens": thought,
-        "totalTokens": input + cached + output,
-    }))
+    Some(PromptUsage {
+        cached_read_tokens: cached,
+        input_tokens: input,
+        output_tokens: output,
+        thought_tokens: Some(thought),
+        total_tokens: input + cached + output,
+    })
 }
 
 #[cfg(test)]

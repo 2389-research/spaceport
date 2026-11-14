@@ -85,24 +85,12 @@ impl Ask {
     /// The control response for the session's answer: the chosen option,
     /// or a refusal that also stops the turn when the question was dropped.
     pub(super) fn answer(self, result: &Result<Value, wire::Error>) -> Value {
-        let chosen = result
-            .as_ref()
-            .ok()
-            .and_then(|value| {
-                serde_json::from_value::<wire::RequestPermissionResponse>(value.clone()).ok()
-            })
-            .and_then(|response| match response.outcome {
-                wire::RequestPermissionOutcome::Selected(selected) => {
-                    Some(selected.option_id.0.to_string())
-                }
-                _ => None,
-            })
-            .and_then(|id| {
-                self.choices
-                    .iter()
-                    .find(|(known, _)| *known == id)
-                    .map(|(_, choice)| choice.clone())
-            });
+        let chosen = out::selected(result).and_then(|id| {
+            self.choices
+                .iter()
+                .find(|(known, _)| *known == id)
+                .map(|(_, choice)| choice.clone())
+        });
         let decision = match chosen {
             Some(Choice::Allow { input, updates }) => {
                 let mut decision = json!({

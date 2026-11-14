@@ -4,6 +4,8 @@
 use acp::v1 as wire;
 use serde_json::Value;
 
+use crate::harness::out;
+
 pub(super) const MODEL: &str = "model";
 pub(super) const EFFORT: &str = "effort";
 /// The effort choice that leaves the level to the model.
@@ -105,29 +107,33 @@ impl Settings {
     pub(super) fn options(&self) -> Vec<wire::SessionConfigOption> {
         let mut options = Vec::with_capacity(2);
         if !self.models.is_empty() {
-            let choices: Vec<_> = self
-                .models
-                .iter()
-                .map(|model| {
-                    wire::SessionConfigSelectOption::new(model.value.clone(), model.name.clone())
-                        .description(model.description.clone())
-                })
-                .collect();
-            options.push(
-                wire::SessionConfigOption::select(MODEL, "Model", self.model.clone(), choices)
-                    .category(Some(wire::SessionConfigOptionCategory::Model)),
-            );
+            options.push(out::select(
+                MODEL,
+                "Model",
+                wire::SessionConfigOptionCategory::Model,
+                &self.model,
+                self.models.iter().map(|model| {
+                    (
+                        model.value.clone(),
+                        model.name.clone(),
+                        model.description.clone(),
+                    )
+                }),
+            ));
         }
         let efforts = self.efforts();
         if !efforts.is_empty() {
-            let mut choices = vec![wire::SessionConfigSelectOption::new(DEFAULT_EFFORT, "Auto")];
-            choices.extend(efforts.iter().map(|level| {
-                wire::SessionConfigSelectOption::new(level.clone(), capitalized(level))
-            }));
-            options.push(
-                wire::SessionConfigOption::select(EFFORT, "Effort", self.effort.clone(), choices)
-                    .category(Some(wire::SessionConfigOptionCategory::ThoughtLevel)),
-            );
+            let auto = (DEFAULT_EFFORT.to_owned(), "Auto".to_owned(), None);
+            let levels = efforts
+                .iter()
+                .map(|level| (level.clone(), capitalized(level), None));
+            options.push(out::select(
+                EFFORT,
+                "Effort",
+                wire::SessionConfigOptionCategory::ThoughtLevel,
+                &self.effort,
+                std::iter::once(auto).chain(levels),
+            ));
         }
         options
     }
