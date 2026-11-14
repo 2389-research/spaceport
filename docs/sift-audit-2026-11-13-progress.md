@@ -67,8 +67,8 @@ Read the report for evidence, risks and first slices. Update this file when a fi
 | 37 | SIFT-S13-01 Fluent validator | done, in review | #58 | |
 | 38 | SIFT-S23-01 chat target source | done, in review | #60 (on #47) | |
 | 39 | SIFT-S06-01 typed turn-ended reply | done, in review | #57 | `out::turn_ended`, `PromptUsage`. |
-| 40 | SIFT-S18-01 cell metrics | in progress | `refactor/cell-metrics` | |
-| 41 | SIFT-S11-02 one port-forward table | in progress | `refactor/one-port-forward-table` | |
+| 40 | SIFT-S18-01 cell metrics | first slice done, in review | #66 | `CellMetrics` at the hand-built bounds sites; helpers match the old expressions bit for bit. Not done: `paint_frame` and peers still take `cell_width`. Pinned, not fixed: the slide paints on a whole device pixel while hit testing does not round. |
+| 41 | SIFT-S11-02 one port-forward table | first slice done, in review | #67 | A port click reuses a hand-started forward while its SSH master runs. The tables are not merged: the forward type does not exist on Windows, and the two differ in lifetime and in `spaceport ports` output. |
 | 42 | SIFT-S12-01 kept log targets | done, in review | #65 | A prefix rule replaces the list. The new end-to-end test failed on the old code. |
 
 Parked until the open pull requests merge, because each edits many files those pull requests touch: the rest of SIFT-S21-01, the rest of SIFT-S26-02 (nesting the page families), and step 2 of SIFT-S16-01 (one field for `detached` and `outage`).
@@ -84,7 +84,7 @@ Stacks, then the pull requests that stand alone:
 - #41, then #47, then #60 (chat pane).
 - #53, then #55 (notifications, then the connection fence).
 - #35, then #62 (command line).
-- #24, #25, #26, #32, #34, #36, #39, #40, #42, #44, #45, #46, #49, #50, #51, #56, #57, #58, #59, #61, #63, #64 and #65 stand alone. #63 has a small expected conflict with #28 in `add_device.rs`; #64 has one with #47 and #60 in `chat/chats.rs`.
+- #24, #25, #26, #32, #34, #36, #39, #40, #42, #44, #45, #46, #49, #50, #51, #56, #57, #58, #59, #61, #63, #64, #65, #66 and #67 stand alone. #63 has a small expected conflict with #28 in `add_device.rs`; #64 has one with #47 and #60 in `chat/chats.rs`.
 
 ## Open questions for Harper
 
@@ -105,6 +105,8 @@ Stacks, then the pull requests that stand alone:
 - #55: should a held mouse gesture survive its host being removed?
 - #57: the "total" token count differs by agent (computed for Claude and Pi; Codex passes its own). Normalise?
 - #64: `Replica::transcript_mut` lets the app set an observed agent's status outside the stream. Keep the escape hatch?
+- #66: fix the half-device-pixel gap between a sliding pane's paint and its hit testing? It needs the window scale in `scroll_shift`.
+- #67: give a connecting forward its own notice and the chip its own tooltip (both still say tunnel)? Also stop the reverse duplicate, a host-menu forward started over a click tunnel?
 - #28: `crates/sheprd-gpui/README.md` still describes the removed wizard. It needs its own pass.
 
 ## Declined
