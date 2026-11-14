@@ -104,7 +104,6 @@ impl Localize for ssh_hosts::Error {
     fn localize(&self) -> String {
         match self {
             // keep-sorted start
-            Self::InvalidTable => fl!("error-config-ssh-invalid-table"),
             Self::InvalidTarget(target) => fl!(
                 "error-config-ssh-invalid-target",
                 target = format!("{target:?}")

@@ -7,6 +7,8 @@ use crate::sidebar::layout_tests::fixture_core_window;
 use gpui::{VisualTestContext, px, size};
 use sheprd_core_client::{Error as CoreError, Method};
 
+mod submit;
+
 #[test]
 fn unknown_core_add_stays_fenced_after_the_form_is_gone() {
     let gate = Gate::default();
@@ -121,7 +123,7 @@ fn unknown_add_remains_blocked_after_the_dialog_closes(cx: &mut gpui::TestAppCon
             );
             view.dismiss_menu(window, cx);
             view.open_add_device(window, cx);
-            view.submit_device_setup(window, cx);
+            view.submit_core_device(window, cx);
             assert!(matches!(
                 view.menu.device_setup.as_ref().unwrap().step,
                 Step::CoreUnknown

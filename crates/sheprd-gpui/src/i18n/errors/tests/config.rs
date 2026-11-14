@@ -84,7 +84,6 @@ fn every_theme_parse_variant_has_a_message() {
 #[test]
 fn every_ssh_hosts_variant_has_a_message() {
     assert_localized(&[
-        ssh_hosts::Error::InvalidTable,
         ssh_hosts::Error::InvalidTarget("-oProxyCommand=x".into()),
         ssh_hosts::Error::TooMany(256),
     ]);
