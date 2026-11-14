@@ -27,16 +27,24 @@ Read the report for evidence, risks and first slices. Update this file when a fi
 
 | Rank | Finding | State | Branch | Notes |
 |---:|---|---|---|---|
-| 1 | SIFT-S32-02 CI guard | partly done | #23 `ci/supply-chain-fork-guard`; #27 `ci/remove-upstream-only-workflows` (stacked on #23) | #23: `supply-chain.yml` runs in the fork. On its first real run both cargo-deny jobs and zizmor passed. #27: deleted `cancel-merged-pr`, `close-low-confidence-prs`, `star-history` with the PR-closure script and tests. Remaining: reduce the nine `ci.yml` guards to the fork identity and fix `check-ci.py` defaults. `nix.yml` goes with rank 32. |
-| 2 | SIFT-S07-01 ACP session phase | done, in review | #24 `fix/acp-session-teardown` | `fail` and `exited` share one teardown; five new tests failed before the change and confirmed the audit's inferred defects. Then the three lifecycle fields became one `Phase` enum with no behaviour change. 387 `sheprd-acp` tests pass; fmt and clippy clean. |
-| 3 | SIFT-S25-01 add-device deletion | in progress | `refactor/remove-ssh-add-device` | Approved. |
-| 4 | SIFT-S03-01 dead SSH entry points | waiting on rank 3 | | Bridge removal approved (decision 2). |
-| 5 | SIFT-S09-01 command table | not started | | Its tests build GPUI. |
-| 6 | SIFT-S16-02 live-state accessor | not started | | |
-| 9 | SIFT-S33-01 spec validator gate | done, in review | #25 `ci/spec-validator-gate` | `just check-spec` in `just ci` and in the always-run CI job. The validator passes on `main`. Evidence references must now name a file in the package. `validation.json` stays tracked: acceptance and the T00 baseline cite it as a dated record. |
-| 32 | SIFT-S32-01 upstream release route | in progress | `ci/remove-upstream-release-route` (stacked on #27) | Approved (decision 1). Includes `nix.yml`. |
+| 1 | SIFT-S32-02 CI guard | done, in review | #23, #27 (on #23), #30 (on #29) | #23: `supply-chain.yml` runs in this repository; cargo-deny and zizmor passed on their first real run. #27: deleted `cancel-merged-pr`, `close-low-confidence-prs`, `star-history` with the PR-closure script and tests. #30: every `ci.yml` guard names only this repository; the Windows pause is the repository variable `WINDOWS_ENABLED`; `check-ci.py` defaults to this repository; `CODEOWNERS` names `harperreed` (it named the upstream maintainer). |
+| 2 | SIFT-S07-01 ACP session phase | done, in review | #24 | `fail` and `exited` share one teardown; five new tests failed before the change and confirmed the audit's inferred defects. Then the three lifecycle fields became one `Phase` enum with no behaviour change. |
+| 3 | SIFT-S25-01 add-device deletion | done, in review | #28 | About 4,650 lines removed, including `setup_relay`. 3,791 GPUI tests pass. The remaining claim error is renamed `Busy`. Not done: `crates/sheprd-gpui/README.md` still describes the wizard. |
+| 4 | SIFT-S03-01 dead SSH entry points | done, in review | #31 (on #28) | About 1,600 lines removed, including the bridge; `Transport` is gone. Kept as live: `set_login_config_home`, `local_network_access`, the WSL probe helpers. Kept, unsure: `HostProbe::SshFailed`, `login_env::probe_for_tests`. |
+| 5 | SIFT-S09-01 command table | in progress | `refactor/command-table` | |
+| 6 | SIFT-S16-02 live-state accessor | in progress | `refactor/endpoint-live-accessor` | |
+| 9 | SIFT-S33-01 spec validator gate | done, in review | #25 | `just check-spec` in `just ci` and in the always-run CI job. `validation.json` stays tracked as a dated record. |
+| 32 | SIFT-S32-01 upstream release route | done, in review | #29 (on #27) | About 4,700 lines removed, including `nix.yml` and the `sign-artifacts` action. Kept, unsure: the Windows signing helpers, `generate-changelog.sh`'s non-preview mode, `build-icon.py`'s `linux` mode. |
 
 Ranks not listed are not started.
+
+## Merge order
+
+Two stacks and four independent pull requests:
+
+- #23, then #27, then #29, then #30 (CI and release tooling).
+- #28, then #31 (SSH removal).
+- #24, #25 and #26 stand alone.
 
 ## Known local noise
 
