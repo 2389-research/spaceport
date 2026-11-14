@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-import tarfile
 import tempfile
 import unittest
 import zipfile
@@ -30,18 +29,6 @@ class ExternalCorePackages(unittest.TestCase):
         self.notices = self.work / "notices.txt"
         self.notices.write_text("Third-party notice\n")
 
-    def test_linux_archive_needs_no_core_and_contains_no_core(self):
-        result = subprocess.run(
-            ["bash", str(RELEASE / "package-linux.sh"), VERSION,
-             "x86_64-unknown-linux-gnu", str(self.binary), str(self.work), str(self.notices)],
-            env={"PATH": os.environ["PATH"], "HOME": str(self.work)},
-            capture_output=True, text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        with tarfile.open(result.stdout.strip()) as archive:
-            names = archive.getnames()
-        self.assertFalse(any("herdr-core" in name.lower() for name in names))
-
     def test_windows_archive_needs_no_core_and_contains_no_core(self):
         launcher = self.work / "spaceport-launcher.exe"
         launcher.write_bytes(b"launcher")
@@ -62,7 +49,7 @@ class ExternalCorePackages(unittest.TestCase):
 
     def test_builds_and_installer_do_not_fetch_or_install_core(self):
         for path in ("justfile", ".github/workflows/ci.yml",
-                     ".github/workflows/release.yml", "scripts/release/build-macos.sh"):
+                     ".github/workflows/macos-preview.yml", "scripts/release/build-macos.sh"):
             self.assertNotIn("fetch-herdr-core.py", (ROOT / path).read_text(), path)
         self.assertFalse((RELEASE / "fetch-herdr-core.py").exists())
         self.assertNotIn("herdr-core.exe", (RELEASE / "sheprd.iss").read_text())

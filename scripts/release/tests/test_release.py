@@ -1,13 +1,11 @@
 # ABOUTME: Verifies release assembly and rejection paths with private filesystem fixtures.
 # ABOUTME: Checks actual package contents and metadata from the release producers.
 """Run: uv run --no-project python -m unittest discover -s scripts/release/tests -v"""
-import configparser
 import json
 import os
 from pathlib import Path
 import subprocess
 import shutil
-import tarfile
 import tempfile
 import unittest
 import zipfile
@@ -42,63 +40,6 @@ class ReleaseTests(unittest.TestCase):
         else:
             self.assertNotEqual(result.returncode, 0)
         return result
-
-    def test_cask(self):
-        first = self.run_script("render-cask.sh", "20260920.3", "AB" * 32).stdout
-        self.assertEqual(first, self.run_script("render-cask.sh", "20260920.3", "ab" * 32).stdout)
-        self.assertIn('version "20260920.3"', first)
-        self.assertIn('sha256 "' + "ab" * 32 + '"', first)
-        self.assertIn("sheprd-labs/sheprd/releases/download/v#{version}/Sheprd-#{version}-universal-apple-darwin.dmg", first)
-        # Symbol form, not the deprecated string comparison. Cask `depends_on
-        # macos:` always parses with comparator ">=", so this still means
-        # "Sonoma or newer" and does not pin an exact release.
-        self.assertIn("depends_on macos: :sonoma", first)
-        for version in ["v20260920.3", "1.2", "020260920.3", "20260920.3-rc1", "20260920.3+build", "20260920.3\n", "$(id)"]:
-            self.run_script("render-cask.sh", version, "ab" * 32, success=False)
-        for sha in ["abc", "g" * 64, "a" * 65, "a" * 63 + "\n"]:
-            self.run_script("render-cask.sh", "20260920.3", sha, success=False)
-
-    def test_linux_archive(self):
-        binary = self.work / "input binary"
-        binary.write_bytes(build_identity())
-        acp = self.work / "sheprd-acp"
-        acp.write_bytes(b"chat program")
-        for target in ("x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"):
-            with self.subTest(target=target):
-                result = self.run_script("package-linux.sh", "20260920.3", target, binary, self.work, self.notices)
-                with tarfile.open(result.stdout.strip()) as archive:
-                    base = f"Sheprd-20260920.3-{target}/"
-                    files = {m.name: m for m in archive.getmembers() if m.isfile()}
-                    self.assertEqual(set(files), {base + p for p in [
-                        "bin/spaceport", "bin/sheprd-acp",
-                        "share/applications/spaceport.development.desktop",
-                        "share/icons/hicolor/scalable/apps/spaceport.svg",
-                        "share/licenses/herdr-gpui/LICENSE-APACHE", "share/licenses/herdr-gpui/NOTICE.md",
-                        "share/licenses/herdr-gpui/LICENSE", "share/licenses/herdr-gpui/NOTICE",
-                        "share/licenses/herdr-gpui/LICENSE-octicons",
-                        "share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt",
-                        "share/licenses/herdr-gpui/SOUND-NOTICE.md",
-                    ]})
-                    desktop = configparser.ConfigParser(interpolation=None)
-                    desktop.read_string(archive.extractfile(base + "share/applications/spaceport.development.desktop").read().decode())
-                    entry = desktop["Desktop Entry"]
-                    self.assertEqual(entry["Name"], "Spaceport")
-                    self.assertEqual(entry["Exec"], "spaceport")
-                    self.assertEqual(entry["Icon"], "spaceport")
-                    self.assertEqual(entry["StartupWMClass"], (ROOT / "crates/sheprd-gpui/development-app-id").read_text().strip())
-                    self.assertEqual(files[base + "bin/sheprd-acp"].mode & 0o777, 0o755)
-                    self.assertEqual(archive.extractfile(base + "bin/sheprd-acp").read(), acp.read_bytes())
-                    self.assertEqual(archive.extractfile(base + "share/icons/hicolor/scalable/apps/spaceport.svg").read(), (ROOT / "assets/icons/sheprd-linux.svg").read_bytes())
-                    self.assertEqual(archive.extractfile(base + "share/licenses/herdr-gpui/THIRD-PARTY-NOTICES.txt").read(), self.notices.read_bytes())
-                    for source in ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons", "crates/sheprd-protocol/NOTICE.md", "crates/sheprd-gpui/SOUND-NOTICE.md"):
-                        self.assertEqual(archive.extractfile(base + "share/licenses/herdr-gpui/" + Path(source).name).read(), (ROOT / source).read_bytes())
-                self.run_script("package-linux.sh", "20260920.3", target, binary, self.work, self.notices, success=False)
-        self.run_script("package-linux.sh", "20260920.3", "bad-target", binary, self.work, self.notices, success=False)
-        acp.unlink()
-        result = self.run_script("package-linux.sh", "20260920.3", "x86_64-unknown-linux-gnu", binary, self.work,
-                                 self.notices, success=False)
-        self.assertIn("A sheprd-acp beside the binary required", result.stderr)
-        acp.write_bytes(b"chat program")
 
     def run_windows(self, *args, success=True):
         result = subprocess.run(["python3", str(SCRIPTS / "package-windows.py"), *map(str, args)],
@@ -169,14 +110,12 @@ class ReleaseTests(unittest.TestCase):
         self.mock_tools()
         binary = self.work / "binary"
         binary.touch()
-        for script, inputs in [("package-linux.sh", ["x86_64-unknown-linux-gnu", binary]),
-                               ("package-macos.sh", [binary, binary])]:
-            self.run_script(script, "20260920.3", *inputs, self.work, success=False)
-            for notices in [self.work / "missing", binary]:
-                result = self.run_script(script, "20260920.3", *inputs, self.work, notices, success=False)
-                self.assertIn("Nonempty third-party notices", result.stderr)
+        self.run_script("package-macos.sh", "20260920.3", binary, binary, self.work, success=False)
+        for notices in [self.work / "missing", binary]:
+            result = self.run_script("package-macos.sh", "20260920.3", binary, binary, self.work, notices,
+                                     success=False)
+            self.assertIn("Nonempty third-party notices", result.stderr)
         self.assertFalse((self.work / "Spaceport.app").exists())
-        self.assertFalse(list(self.work.glob("*.tar.gz")))
 
     def mock_tools(self):
         tools = self.work / "tools"
@@ -207,8 +146,7 @@ class ReleaseTests(unittest.TestCase):
             fixture = self.work / 'packaging checkout'
             self.scripts = fixture / 'scripts/release'
             self.scripts.mkdir(parents=True)
-            for name in ('package-macos.sh', 'package-linux.sh', 'common.sh', 'build-icon.py',
-                         'preview-identity.py', 'org.sheprd.Sheprd.desktop'):
+            for name in ('package-macos.sh', 'common.sh', 'build-icon.py', 'preview-identity.py'):
                 shutil.copyfile(SCRIPTS / name, self.scripts / name)
             for name in ('assets', 'crates', 'LICENSE', 'NOTICE'):
                 (fixture / name).symlink_to(ROOT / name)
@@ -269,9 +207,9 @@ class ReleaseTests(unittest.TestCase):
         # Distinct fixture artwork proves selection without generating real icons.
         fixture = self.work / "packaging checkout"
         for path in ["scripts/release/common.sh", "scripts/release/package-macos.sh",
-                     "scripts/release/package-linux.sh", "scripts/release/build-icon.py",
+                     "scripts/release/build-icon.py",
                      "scripts/release/preview-identity.py", "crates/sheprd-gpui/macos-preview-app-id",
-                     "scripts/release/org.sheprd.Sheprd.desktop", "assets/macos/Info.plist",
+                     "assets/macos/Info.plist",
                       "LICENSE", "NOTICE", "assets/icons/LICENSE-octicons",
                       "crates/sheprd-gpui/SOUND-NOTICE.md",
                      "crates/sheprd-protocol/LICENSE-APACHE", "crates/sheprd-protocol/NOTICE.md"]:
@@ -280,7 +218,7 @@ class ReleaseTests(unittest.TestCase):
             shutil.copyfile(ROOT / path, destination)
         sdk_fixture(fixture / 'scripts/release', self.work / 'sdk')
         self.env['SPARKLE_FRAMEWORK_PATH'] = str(self.work / 'sdk')
-        for name in ["Sheprd-worktree.icns", "Sheprd-worktree.car", "sheprd-linux-worktree.svg"]:
+        for name in ["Sheprd-worktree.icns", "Sheprd-worktree.car"]:
             (fixture / "assets/icons" / name).write_bytes(b"red fixture " + name.encode())
         self.scripts = fixture / "scripts/release"
         arm, intel = self.macos_builds(arm_worktree=True)
@@ -290,9 +228,6 @@ class ReleaseTests(unittest.TestCase):
         self.run_script("package-macos.sh", "20260920.3", arm, intel, self.work, self.notices)
         self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Sheprd.icns").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.icns").read_bytes())
         self.assertEqual((self.work / "Spaceport.app/Contents/Resources/Assets.car").read_bytes(), (fixture / "assets/icons/Sheprd-worktree.car").read_bytes())
-        result = self.run_script("package-linux.sh", "20260920.3", "aarch64-unknown-linux-gnu", arm, self.work, self.notices)
-        with tarfile.open(result.stdout.strip()) as archive:
-            self.assertEqual(archive.extractfile("Sheprd-20260920.3-aarch64-unknown-linux-gnu/share/icons/hicolor/scalable/apps/spaceport.svg").read(), (fixture / "assets/icons/sheprd-linux-worktree.svg").read_bytes())
 
     def test_missing_malformed_conflicting_identity_fails_closed(self):
         binary = self.work / "binary"
@@ -300,8 +235,11 @@ class ReleaseTests(unittest.TestCase):
                      build_identity().replace(b"pr=\n", b"pr=0\n"),
                      build_identity().replace(b"worktree=0", b"worktree=9")]:
             binary.write_bytes(data)
-            self.run_script("package-linux.sh", "20260920.3", "x86_64-unknown-linux-gnu", binary, self.work, self.notices, success=False)
-            self.assertFalse(list(self.work.glob("*.tar.gz")))
+            result = subprocess.run(["python3", str(SCRIPTS / "build-icon.py"), "macos", str(binary)],
+                                    env=self.env, capture_output=True, text=True, timeout=30)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("build identity", result.stderr)
+            self.assertEqual(result.stdout, "")
 
     # Signing state, cleanup and no-resubmit contracts live in test_macos_preview.py.
 

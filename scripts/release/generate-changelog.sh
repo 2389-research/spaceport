@@ -39,9 +39,9 @@ if [[ $preview == true ]]; then
     exit 0
 fi
 
-# Windows is signed, and so updates in the app, only once release.yml's
-# validate job finds the signing publisher set. No default, so a preview can
-# never promise a signature the release will not have.
+# Windows is signed, and so updates in the app, only once the signing
+# publisher is set. No default, so a preview can never promise a signature
+# the release will not have.
 case ${WINDOWS_SIGNED:-} in
     true) windows='Authenticode-signed Windows x86_64 and ARM64 installers and zips; installed copies update in the app' ;;
     false) windows='experimental, unsigned Windows x86_64 and ARM64 installers and zips; installed copies update in the app, except on Windows' ;;

@@ -234,14 +234,6 @@ audit-workflows:
 audit-deps:
     cargo deny check
 
-# Sign published release artifacts with the local GPG key (YubiKey). Not a CI step.
-sign-release *args:
-    ./scripts/gpg-sign-release.sh {{args}}
-
-# Verify published checksums, Sigstore and provenance; optional local GPG approval.
-verify-release *args:
-    ./scripts/verify-release.sh {{args}}
-
 # Check commit subjects the way CI does; the changelog is generated from them.
 check-commits base="origin/main":
     python3 scripts/release/check-commit-messages.py range "{{base}}..HEAD"
@@ -263,33 +255,6 @@ changelog-unreleased:
 # The whole generated changelog; it is never tracked in git.
 changelog:
     git-cliff --config cliff.toml
-
-# Exactly what a release would publish: CHANGELOG.md and RELEASE_NOTES.md.
-# Windows counts as signed once WINDOWS_SIGNING_SUBJECT is set, as in
-# release.yml; set WINDOWS_SIGNED=true or false to preview either without gh.
-changelog-release version output:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [[ -z ${WINDOWS_SIGNED:-} ]]; then
-        if [[ -n $(gh variable get WINDOWS_SIGNING_SUBJECT --repo sheprd-labs/sheprd 2>/dev/null) ]]; then
-            WINDOWS_SIGNED=true
-        else
-            WINDOWS_SIGNED=false
-        fi
-    fi
-    WINDOWS_SIGNED=$WINDOWS_SIGNED bash scripts/release/generate-changelog.sh "{{version}}" "{{output}}"
-
-# Owner-only remote release; CI derives the YYYYMMDD.COUNTER version itself.
-release:
-    bash scripts/release/dispatch.sh
-
-# Owner-only beta: a GitHub prerelease kept out of Homebrew until promoted.
-release-beta:
-    bash scripts/release/dispatch.sh --beta
-
-# Owner-only: make a published beta the latest stable release, then update Homebrew.
-release-promote version:
-    bash scripts/release/dispatch.sh --promote "{{version}}"
 
 # Local signed/notarized preview; uses the installed identity, never publishes.
 dmg $VERSION profile="debug" architecture="arm64":
