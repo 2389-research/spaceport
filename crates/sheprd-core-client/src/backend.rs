@@ -1,4 +1,4 @@
-//! herdr-core as a `sheprd_backend::Backend`: terminal records become
+//! herdr-core in `sheprd_backend` terms: terminal records become
 //! `TerminalInfo`, events become changes, and attached terminals are
 //! emulated here so the app receives cells as it does from Herdr 1.
 
@@ -10,7 +10,7 @@ use crate::{
     wire::{Run, Status, StatusState, Terminal, TerminalState},
 };
 use sheprd_backend::{
-    AgentStatus, Change, Exit, Generation, Role, RunState, Size, Spawn, TerminalId, TerminalInfo,
+    AgentStatus, Change, Exit, Role, RunState, Size, Spawn, TerminalId, TerminalInfo,
 };
 use std::{collections::BTreeMap, path::PathBuf, sync::Arc, time::Duration};
 
@@ -35,22 +35,15 @@ impl CoreBackend {
     pub fn core(&self) -> &Core {
         &self.core
     }
-}
 
-impl sheprd_backend::Backend for CoreBackend {
-    type Changes = CoreChanges;
-    type Error = Error;
-    type Terminal = CoreTerminal;
-
-    fn generation(&self) -> Generation {
-        Generation::Herdr2
-    }
-
-    fn terminals(&self) -> Result<Vec<TerminalInfo>> {
+    /// The terminals running now.
+    pub fn terminals(&self) -> Result<Vec<TerminalInfo>> {
         self.core.list(false)?.terminals.iter().map(info).collect()
     }
 
-    fn watch(&self) -> Result<(Vec<TerminalInfo>, CoreChanges)> {
+    /// The terminals now, and every change after that snapshot with no gap
+    /// between the two.
+    pub fn watch(&self) -> Result<(Vec<TerminalInfo>, CoreChanges)> {
         let subscription = self.core.subscribe()?;
         let records: BTreeMap<String, Terminal> = subscription
             .terminals
@@ -66,11 +59,8 @@ impl sheprd_backend::Backend for CoreBackend {
         Ok((snapshot, changes))
     }
 
-    fn attach(&self, id: &TerminalId, size: Size, role: Role) -> Result<CoreTerminal> {
-        CoreTerminal::attach(&self.core, id, size, role, self.scrollback)
-    }
-
-    fn spawn(&self, spawn: &Spawn) -> Result<TerminalInfo> {
+    /// Starts a terminal; an empty `argv` starts the host's shell.
+    pub fn spawn(&self, spawn: &Spawn) -> Result<TerminalInfo> {
         let cwd = spawn.cwd.as_deref().map(|cwd| cwd.to_string_lossy());
         let run = Run {
             argv: &spawn.argv,
@@ -93,8 +83,18 @@ impl sheprd_backend::Backend for CoreBackend {
         info(&self.core.run(&run)?)
     }
 
-    fn kill(&self, id: &TerminalId) -> Result<()> {
+    /// Ends `id` and its program.
+    pub fn kill(&self, id: &TerminalId) -> Result<()> {
         self.core.kill(id.as_str()).map(drop)
+    }
+}
+
+impl sheprd_backend::Backend for CoreBackend {
+    type Error = Error;
+    type Terminal = CoreTerminal;
+
+    fn attach(&self, id: &TerminalId, size: Size, role: Role) -> Result<CoreTerminal> {
+        CoreTerminal::attach(&self.core, id, size, role, self.scrollback)
     }
 }
 
@@ -123,15 +123,8 @@ pub struct CoreBatch {
     pub missed: bool,
 }
 
-impl sheprd_backend::Changes for CoreChanges {
-    type Error = Error;
-
-    fn next(&mut self, timeout: Duration) -> Result<Vec<Change>> {
-        Ok(self.next_batch(timeout)?.changes)
-    }
-}
-
 impl CoreChanges {
+    /// What changed, waiting at most `timeout`; empty when nothing did.
     pub fn next_batch(&mut self, timeout: Duration) -> Result<CoreBatch> {
         let mut changes = Vec::new();
         let mut documents = Vec::new();

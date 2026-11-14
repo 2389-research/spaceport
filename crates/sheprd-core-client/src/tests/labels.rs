@@ -1,7 +1,7 @@
 use super::{connected, terminal};
 use crate::CoreBackend;
 use serde_json::json;
-use sheprd_backend::{Backend, Spawn};
+use sheprd_backend::Spawn;
 use std::{collections::BTreeMap, thread};
 
 #[test]
