@@ -19,19 +19,17 @@ fn a_host_is_selected_by_id_or_label_and_a_refusal_says_why(cx: &mut TestAppCont
             let mut chosen = Vec::new();
             let shown = select(view, "LOCAL", |_, id| {
                 chosen.push(id.to_owned());
-                true
+                Ok(())
             });
             assert_eq!(shown, Response::done("Showing Local"));
             assert_eq!(chosen, ["local"]);
-            let missing = select(view, "nowhere", |_, _| true);
+            let missing = select(view, "nowhere", |_, _| Ok(()));
             assert_eq!(error_code(&missing), Some(ErrorCode::NotFound));
-            let disabled = select(view, "ssh:devbox", |_, _| true);
+            let disabled = select(view, "ssh:devbox", |_, _| Ok(()));
             assert_eq!(error_code(&disabled), Some(ErrorCode::InvalidRequest));
             // The window's own reason for refusing is passed on.
-            let failed = select(view, "local", |view, _| {
-                view.local_error =
-                    Some("Current endpoint does not support surface switching".into());
-                false
+            let failed = select(view, "local", |_, _| {
+                Err(crate::endpoint::Error::SurfaceSwitchingUnsupported.into())
             });
             assert_eq!(
                 failed,
@@ -39,6 +37,14 @@ fn a_host_is_selected_by_id_or_label_and_a_refusal_says_why(cx: &mut TestAppCont
                     ErrorCode::Failed,
                     "Current endpoint does not support surface switching"
                 )
+            );
+            // Any other refusal has no words of the window's to pass on.
+            let unlisted = select(view, "local", |_, id| {
+                Err(crate::endpoint::Error::NoHost { id: id.to_owned() }.into())
+            });
+            assert_eq!(
+                unlisted,
+                Response::error(ErrorCode::Failed, "Spaceport could not switch to Local")
             );
         })
     });

@@ -226,7 +226,7 @@ impl SheprdWindow {
             // One handoff attempt: activation failure may fall back to Local,
             // but must neither overwrite the preference nor loop on every tick.
             self.catalog.restore_pending = false;
-            self.switch_endpoint(&id, cx);
+            let _ = self.switch_endpoint(&id, cx);
         }
     }
 
@@ -259,7 +259,7 @@ impl SheprdWindow {
                     && !entry_changed(selected, &device.target)
             });
         if selected_retired {
-            self.switch_endpoint(LOCAL, cx);
+            let _ = self.switch_endpoint(LOCAL, cx);
         }
         let selected_id = self.endpoints[self.selected_endpoint].id.clone();
         for endpoint in &self.endpoints[1..] {

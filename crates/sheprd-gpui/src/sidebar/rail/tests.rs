@@ -312,7 +312,7 @@ fn the_selected_workspaces_host_stands_apart(cx: &mut TestAppContext) {
     // row being visible in the spaces pane, which the platform's font metrics
     // decide, and this test is about the chrome, not about hit testing.
     view.update(cx, |view, cx| {
-        assert!(view.select_endpoint("ssh:host1", cx));
+        assert!(view.select_endpoint("ssh:host1", cx).is_ok());
     });
     // The made-up host never answers; its activation timer must not send the
     // window back to Local while the test looks at the host boxes.

@@ -91,7 +91,7 @@ impl SheprdWindow {
             return;
         }
         let id = endpoint.id.clone();
-        self.switch_endpoint(&id, cx);
+        let _ = self.switch_endpoint(&id, cx);
     }
 
     /// Notes the window leaving the host it shows at `now`. A change of host

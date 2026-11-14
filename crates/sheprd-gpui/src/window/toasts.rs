@@ -61,7 +61,7 @@ impl SheprdWindow {
             return;
         };
         let endpoint_id = self.endpoints[index].id.clone();
-        if !self.select_endpoint(&endpoint_id, cx) {
+        if self.select_endpoint(&endpoint_id, cx).is_err() {
             return;
         }
         self.pending_navigation = Some(target);

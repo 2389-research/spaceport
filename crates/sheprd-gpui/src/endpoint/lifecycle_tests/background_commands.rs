@@ -62,7 +62,7 @@ fn switching_devices_holds_commands_until_the_new_surface_is_activated(
         view.reset_selected(cx);
         // Settings saved while the target is in the background.
         view.endpoints[2].reload_config().unwrap();
-        assert!(view.select_endpoint("ssh:target", cx));
+        assert!(view.select_endpoint("ssh:target", cx).is_ok());
         // The source's release is not acknowledged yet, so the target's
         // activation waits, and so must the resize's tab claim.
         let now = Instant::now();

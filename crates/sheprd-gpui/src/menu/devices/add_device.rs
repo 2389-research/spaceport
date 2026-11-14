@@ -676,7 +676,7 @@ impl SheprdWindow {
         // moves to Local first; it ends there anyway once the setup opens.
         // Switching closes every dialog, so this one is put back over Local.
         let (page, form) = (self.menu.page, self.menu.device_setup.take());
-        let selected = self.select_endpoint(crate::endpoint::LOCAL, cx);
+        let selected = self.select_endpoint(crate::endpoint::LOCAL, cx).is_ok();
         (self.menu.page, self.menu.device_setup) = (page, form);
         if !selected {
             return self.fail_setup_space(request, offer, &crate::Error::NotConnected, cx);

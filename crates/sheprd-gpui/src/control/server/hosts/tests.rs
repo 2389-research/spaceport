@@ -6,6 +6,7 @@ use gpui::{Entity, TestAppContext, VisualTestContext};
 mod info;
 mod muting;
 mod ports;
+mod select_refused;
 mod strict;
 mod usage;
 mod usage_display_filter;
