@@ -17,5 +17,7 @@ error-chat-protocol-json = chat message is not valid JSON for this protocol
 error-chat-protocol-no-modes = the session has no modes
 error-chat-protocol-not-text = entry { $id } has no text to append to
 error-chat-protocol-question-answers-limit = question answers in entry { $id } exceed their count or text limit
+# $got and $after are positions in the chat program's stream of changes.
+error-chat-protocol-stream-gap = chat change { $got } does not follow { $after }
 error-chat-protocol-unknown-entry = no entry { $id }
 error-chat-protocol-unknown-permission = no pending permission request { $id }

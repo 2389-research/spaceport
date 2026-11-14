@@ -2,13 +2,15 @@
 
 use crossterm::event::KeyEventState;
 use sheprd_chat_protocol::{
-    Entry, EntryKind, Mode, Modes, Permission, PermissionId, PermissionKind, PermissionOption,
+    Change, Entry, EntryKind, Mode, Modes, Permission, PermissionId, PermissionKind,
+    PermissionOption,
 };
 use uuid::Uuid;
 
 use super::*;
 
 mod attachments;
+mod follow;
 
 fn key(code: KeyCode, modifiers: KeyModifiers) -> KeyEvent {
     KeyEvent {

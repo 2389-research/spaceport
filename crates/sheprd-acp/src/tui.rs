@@ -92,7 +92,7 @@ fn event_loop(
     let mut tick = 0_usize;
     let mut reported = None;
     loop {
-        let status = view::program_status(&view.transcript);
+        let status = view::program_status(view.transcript());
         if reported != Some(status) {
             reported = Some(status);
             let mut out = stdout();

@@ -41,6 +41,12 @@ impl Localize for Error {
                 "error-chat-protocol-question-answers-limit",
                 id = format!("{id:?}")
             ),
+            // Stream positions, as the chat protocol writes them.
+            Self::StreamGap { after, got } => fl!(
+                "error-chat-protocol-stream-gap",
+                got = format!("{got:?}"),
+                after = format!("{after:?}")
+            ),
             Self::UnknownEntry(id) => {
                 fl!("error-chat-protocol-unknown-entry", id = format!("{id:?}"))
             }

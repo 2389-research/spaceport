@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::{EntryId, PermissionId};
+use crate::{Cursor, EntryId, PermissionId};
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -30,6 +30,8 @@ pub enum Error {
     NotText(EntryId),
     #[error("question answers in entry {0:?} exceed their count or text limit")]
     QuestionAnswersLimit(EntryId),
+    #[error("chat change {got:?} does not follow {after:?}")]
+    StreamGap { after: Option<Cursor>, got: Cursor },
     #[error("no entry {0:?}")]
     UnknownEntry(EntryId),
     #[error("no pending permission request {0:?}")]

@@ -10,10 +10,11 @@ mod error;
 mod frame;
 mod media;
 mod model;
+mod replica;
 mod wire;
 
 pub use agents::{Agent, UnknownAgent};
-pub use change::Change;
+pub use change::{Change, Touched};
 pub use endpoint::{
     ENDPOINT_ENV, EndpointId, TOKEN, endpoint_address, endpoint_dir, endpoint_dir_with,
     endpoint_path,
@@ -22,6 +23,7 @@ pub use error::{Error, Result};
 pub use frame::{MAX_FRAME_SIZE, encode_frame, read_frame, write_frame};
 pub use media::{Author, Image, ImageType, MAX_IMAGE_DATA};
 pub use model::*;
+pub use replica::Replica;
 pub use wire::*;
 
 #[cfg(test)]

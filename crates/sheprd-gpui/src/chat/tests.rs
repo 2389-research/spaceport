@@ -51,6 +51,7 @@ mod relocale;
 mod running;
 mod selection;
 mod session;
+mod session_stream;
 #[cfg(unix)]
 mod spaceport_discovery;
 mod start;
