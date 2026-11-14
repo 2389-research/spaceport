@@ -213,6 +213,15 @@ impl Geometry {
         })
     }
 
+    /// The text shaped for `key` this frame, when its fragment is mounted
+    /// and so can be selected.
+    #[cfg(test)]
+    pub(crate) fn drawn(&self, key: Key) -> Option<String> {
+        let state = self.0.borrow();
+        let target = state.targets.iter().find(|target| target.key == key)?;
+        target.layout.as_ref().map(TextLayout::text)
+    }
+
     #[cfg(any(test, feature = "integration-test"))]
     pub(crate) fn position(&self, key: Key, offset: usize) -> Option<Point<Pixels>> {
         self.0.borrow().targets.iter().find_map(|target| {
@@ -298,10 +307,6 @@ impl<'a> Scope<'a> {
     pub(crate) fn segment(&self, cell: Cell) -> Option<&Segment> {
         self.document
             .segment(self.document.key(self.entry, self.region, cell)?)
-    }
-
-    pub(crate) fn text(&self, cell: Cell) -> Option<&str> {
-        self.segment(cell).map(Segment::text)
     }
 }
 
