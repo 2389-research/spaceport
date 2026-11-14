@@ -39,34 +39,29 @@ pub(super) fn serve(
 
 /// What a tab is, as `tab list` names it.
 fn kind(tab: &Tab) -> Option<TabKind> {
-    if tab.place.is_editor() {
-        return None;
-    }
     match &tab.location {
         None if tab.core_group().is_some() => Some(TabKind::CoreTerminal),
+        // A blank tab outside a Core group has nothing to name.
+        None => None,
         Some(Location::Devices) => Some(TabKind::Devices),
         Some(Location::CoreTerminal { .. }) => Some(TabKind::CoreTerminal),
-        _ => None,
     }
 }
 
 /// The runtime terminal IDs a Core tab shows.
 fn location(tab: &Tab) -> Option<String> {
-    Some(match tab.location.as_ref()? {
-        Location::Web { .. }
-        | Location::Local { .. }
-        | Location::RetiredSource { .. }
-        | Location::RetiredReview { .. }
-        | Location::RetiredOrchestrator { .. } => return None,
+    match tab.location.as_ref()? {
         // Every pane's terminal, for `herdr-core attach` and the like.
-        Location::CoreTerminal { panes, .. } => panes
-            .terminals()
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join(","),
-        Location::Devices => return None,
-    })
+        Location::CoreTerminal { panes, .. } => Some(
+            panes
+                .terminals()
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(","),
+        ),
+        Location::Devices => None,
+    }
 }
 
 fn info(tab: &Tab) -> Option<TabInfo> {

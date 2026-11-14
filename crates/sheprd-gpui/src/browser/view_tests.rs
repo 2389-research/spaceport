@@ -12,12 +12,6 @@ fn draw(cx: &mut VisualTestContext) {
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
 }
 
-fn url(value: &str) -> Location {
-    Location::Web {
-        url: WebUrl::try_from(value).unwrap(),
-    }
-}
-
 /// The fixture window, showing workspace `w0` as a connected daemon would.
 fn window(cx: &mut gpui::TestAppContext) -> (Entity<SheprdWindow>, &mut VisualTestContext) {
     cx.add_window_view(|window, cx| {

@@ -1,19 +1,20 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
-use crate::browser::WebUrl;
 
 mod core_groups;
 mod labels;
-mod orchestrator_tabs;
-mod retired_browser_pages;
 mod retired_code_view;
 mod retired_px0;
 mod retired_review;
 mod retired_vs_code;
+mod saved_schema;
 
-fn url(value: &str) -> Option<Location> {
-    Some(Location::Web {
-        url: WebUrl::try_from(value).unwrap(),
+fn terminal(id: &str) -> Option<Location> {
+    Some(Location::CoreTerminal {
+        panes: crate::core_terminals::panes::Panes::single(
+            sheprd_backend::TerminalId::try_from(id.to_owned()).unwrap(),
+        ),
+        observe: false,
     })
 }
 
@@ -23,10 +24,10 @@ fn tabs_belong_to_one_workspace_of_one_daemon() {
     let local = Scope::local("/tmp/herdr-client.sock".as_ref());
     let remote = Scope::endpoint("ssh:box");
     let a = store
-        .open(local.clone(), "w_1", url("http://localhost:3000"), None)
+        .open(local.clone(), "w_1", Some(Location::Devices), None)
         .unwrap();
     let b = store
-        .open(remote.clone(), "w_1", url("https://example.com/"), None)
+        .open(remote.clone(), "w_1", terminal("t1"), None)
         .unwrap();
     assert_ne!(a, b);
     let ids = |scope, workspace| {
@@ -38,7 +39,8 @@ fn tabs_belong_to_one_workspace_of_one_daemon() {
     assert_eq!(ids(&local, "w_1"), [a]);
     assert_eq!(ids(&remote, "w_1"), [b]);
     assert!(ids(&local, "w_2").is_empty());
-    assert_eq!(store.get(a).unwrap().title, "localhost");
+    assert_eq!(store.get(a).unwrap().title, "Devices");
+    assert_eq!(store.get(b).unwrap().title, "Terminal");
     let blank = store.open(local, "w_1", None, None).unwrap();
     assert_eq!(store.get(blank).unwrap().title, "New Tab");
 }
@@ -82,12 +84,10 @@ fn a_moved_tab_lands_beside_another_of_its_workspace() {
 fn visits_update_address_and_a_clean_title() {
     let mut store = Store::default();
     let scope = Scope::endpoint("local");
-    let id = store
-        .open(scope, "w_1", url("https://a.test/"), None)
-        .unwrap();
-    assert!(store.visited(id, url("https://b.test/x"), Some(" Docs\u{7}\n ")));
+    let id = store.open(scope, "w_1", terminal("t1"), None).unwrap();
+    assert!(store.visited(id, terminal("t2"), Some(" Docs\u{7}\n ")));
     let tab = store.get(id).unwrap();
-    assert_eq!(tab.location, url("https://b.test/x"));
+    assert_eq!(tab.location, terminal("t2"));
     assert_eq!(tab.title, "Docs");
     assert!(!store.visited(id, None, Some("")));
     assert!(!store.visited(id, None, Some("Docs")));
@@ -103,13 +103,13 @@ fn closing_a_workspace_only_touches_the_named_daemon() {
     let mut store = Store::default();
     let (one, two) = (Scope::endpoint("local"), Scope::endpoint("ssh:x"));
     let gone = store
-        .open(one.clone(), "w_gone", url("https://a.test/"), None)
+        .open(one.clone(), "w_gone", Some(Location::Devices), None)
         .unwrap();
     let kept = store
-        .open(one.clone(), "w_1", url("https://a.test/"), None)
+        .open(one.clone(), "w_1", Some(Location::Devices), None)
         .unwrap();
     let other = store
-        .open(two, "w_gone", url("https://a.test/"), None)
+        .open(two, "w_gone", Some(Location::Devices), None)
         .unwrap();
     let closed = ["w_gone".to_owned()];
     assert!(store.has_workspaces(&one, &closed));
@@ -138,7 +138,7 @@ fn saved_tabs_round_trip_and_invalid_files_are_rejected() {
         next: 0,
     })
     .unwrap();
-    let restored = Store::with_tabs(parse(&bytes).unwrap(), None);
+    let restored = Store::restored_for_test(&bytes).unwrap();
     assert_eq!(restored.tabs, store.tabs);
     // New tabs never reuse a restored ID.
     assert!(restored.next > id.0);
@@ -148,52 +148,10 @@ fn saved_tabs_round_trip_and_invalid_files_are_rejected() {
         r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":null,"title":"","origin":""}]}"#,
         r#"{"tabs":"#,
     ] {
-        assert!(parse(invalid.as_bytes()).is_err(), "{invalid}");
-    }
-}
-
-/// Old VS Code spellings still parse so they cannot discard other saved tabs.
-#[test]
-fn saved_vs_code_tabs_parse_but_do_not_restore() {
-    let mut store = Store::default();
-    let scope = Scope::endpoint("local");
-    store
-        .open(scope.clone(), "w_1", Some(Location::Devices), None)
-        .unwrap();
-    let retired = store.open(scope.clone(), "w_1", None, None).unwrap();
-    store
-        .tabs
-        .iter_mut()
-        .find(|tab| tab.id == retired)
-        .unwrap()
-        .place = Place::RetiredVsCode;
-    let bytes = serde_json::to_vec(&Saved {
-        tabs: store.tabs.clone(),
-        next: 0,
-    })
-    .unwrap();
-    let restored = Store::with_tabs(parse(&bytes).unwrap(), None);
-    assert_eq!(restored.tabs.len(), 1);
-    assert_eq!(restored.tabs[0].id, store.tabs[0].id);
-    assert!(restored.get(retired).is_none());
-    let old =
-        r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":null,"title":""}]}"#;
-    let tabs = parse(old.as_bytes()).unwrap();
-    assert_eq!(tabs[0].place, Place::Group);
-    for place in ["code", "code_group"] {
-        let saved = format!(
-            r#"{{"tabs":[{{"id":0,"scope":"local","workspace_id":"w","location":null,"title":"","place":"{place}"}}]}}"#
+        assert!(
+            Store::restored_for_test(invalid.as_bytes()).is_err(),
+            "{invalid}"
         );
-        assert_eq!(
-            parse(saved.as_bytes()).unwrap()[0].place,
-            Place::RetiredVsCode
-        );
-    }
-    for invalid in [
-        r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":null,"title":"","origin":"w:p1","place":"code"}]}"#,
-        r#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":null,"title":"","place":"sidebar"}]}"#,
-    ] {
-        assert!(parse(invalid.as_bytes()).is_err(), "{invalid}");
     }
 }
 
@@ -203,13 +161,13 @@ fn the_store_is_bounded() {
     for _ in 0..MAX_TABS {
         assert!(
             store
-                .open(Scope::endpoint("local"), "w", url("https://a.test/"), None)
+                .open(Scope::endpoint("local"), "w", None, None)
                 .is_some()
         );
     }
     assert!(
         store
-            .open(Scope::endpoint("local"), "w", url("https://a.test/"), None)
+            .open(Scope::endpoint("local"), "w", None, None)
             .is_none()
     );
 }
