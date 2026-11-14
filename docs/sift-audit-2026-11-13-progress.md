@@ -31,9 +31,13 @@ Read the report for evidence, risks and first slices. Update this file when a fi
 | 2 | SIFT-S07-01 ACP session phase | done, in review | #24 | `fail` and `exited` share one teardown; five new tests failed before the change and confirmed the audit's inferred defects. Then the three lifecycle fields became one `Phase` enum with no behaviour change. |
 | 3 | SIFT-S25-01 add-device deletion | done, in review | #28 | About 4,650 lines removed, including `setup_relay`. 3,791 GPUI tests pass. The remaining claim error is renamed `Busy`. Not done: `crates/sheprd-gpui/README.md` still describes the wizard. |
 | 4 | SIFT-S03-01 dead SSH entry points | done, in review | #31 (on #28) | About 1,600 lines removed, including the bridge; `Transport` is gone. Kept as live: `set_login_config_home`, `local_network_access`, the WSL probe helpers. Kept, unsure: `HostProbe::SshFailed`, `login_env::probe_for_tests`. |
-| 5 | SIFT-S09-01 command table | in progress | `refactor/command-table` | |
-| 6 | SIFT-S16-02 live-state accessor | in progress | `refactor/endpoint-live-accessor` | |
+| 5 | SIFT-S09-01 command table | done, in review | #32 | One `catalog!` table generates `Command`, `COMMANDS` and the macOS and Linux defaults. A snapshot of all 107 entries matched before the old lists were removed. |
+| 6 | SIFT-S16-02 live-state accessor | done, in review | #33 | `live_of` and `hosts` at 24 sites. Two loops in `overview.rs` left as they were. |
+| 7 | SIFT-S16-01 endpoint phase | step 1 done, in review | #37 (on #33) | `Phase` enum; status words pinned over 288 combinations. The devices overview now agrees with the picker. Not done: fold `detached` and `outage` into one stored field; the sidebar's online tally still derives separately. |
 | 9 | SIFT-S33-01 spec validator gate | done, in review | #25 | `just check-spec` in `just ci` and in the always-run CI job. `validation.json` stays tracked as a dated record. |
+| 11 | SIFT-S26-01 typed footer menu items | done, in review | #34 | 15 rows in one `Item` enum; selectors byte-identical. |
+| 12 | SIFT-S10-01 CLI family table | done, in review | #35 | `Family { name, summary, usage, parse }`; a kept snapshot pins all help text. |
+| 13 | SIFT-S11-01 port-scan shell errors | done, in review | #36 | Shell has its own error type; five provider variants removed. |
 | 32 | SIFT-S32-01 upstream release route | done, in review | #29 (on #27) | About 4,700 lines removed, including `nix.yml` and the `sign-artifacts` action. Kept, unsure: the Windows signing helpers, `generate-changelog.sh`'s non-preview mode, `build-icon.py`'s `linux` mode. |
 
 Ranks not listed are not started.
@@ -44,7 +48,8 @@ Two stacks and four independent pull requests:
 
 - #23, then #27, then #29, then #30 (CI and release tooling).
 - #28, then #31 (SSH removal).
-- #24, #25 and #26 stand alone.
+- #33, then #37 (endpoint state).
+- #24, #25, #26, #32, #34, #35 and #36 stand alone.
 
 ## Known local noise
 
@@ -52,4 +57,4 @@ Five tests in `scripts/release/tests/test_sparkle_native_cache.py` and `test_spa
 
 ## Build note
 
-GPUI findings share one build directory, `.worktrees/.sift-target`, so only one of them builds at a time.
+Do not share one `CARGO_TARGET_DIR` between worktrees that build at the same time. Cargo keeps one compiled copy of each workspace crate there, not one per worktree, so a build can link another worktree's output. That produced false failures ("module `shell` is private") and could produce false passes. Give each concurrent change its own build directory, keep to two at once on this disk, and rerun key tests alone before committing.
