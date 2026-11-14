@@ -48,10 +48,15 @@ impl SettingsWindow {
     pub(super) fn available(&self, availability: catalog::Availability, cx: &App) -> bool {
         match availability {
             catalog::Availability::Always => true,
+            catalog::Availability::AcpChats => self.config.features.acp_chats,
             catalog::Availability::Core => crate::core_feature::enabled(cx),
             catalog::Availability::FollowingSystemTheme => {
                 ThemeName::follows_system(self.drafted_theme())
             }
+            catalog::Availability::LimitedChatWidth => {
+                self.config.features.acp_chats && self.config.chat.max_width != 0
+            }
+            catalog::Availability::Linux => cfg!(target_os = "linux"),
             catalog::Availability::Windows => cfg!(windows),
         }
     }
@@ -159,7 +164,7 @@ impl SettingsWindow {
                         title = entry.title()
                     );
                     let description = entry.description();
-                    let mut row = ui::row(theme, id.clone(), title.clone());
+                    let mut row = ui::data_row(theme, id.clone(), title.clone());
                     if !description.is_empty() {
                         row = row.description(description.clone());
                     }

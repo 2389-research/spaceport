@@ -21,13 +21,13 @@ impl Render for Harness {
             .size_full()
             .child(section(&theme, "Layout", Some(Source::Herdr)))
             .child(
-                row(&theme, "row-a", "Indent")
+                data_row(&theme, "row-a", "Indent")
                     .description("Pixels per level")
                     .tag(Source::Sheprd)
                     .control(toggle(&theme, "toggle-a", self.checked, true)),
             )
             .child(
-                row(&theme, "row-b", "Off")
+                data_row(&theme, "row-b", "Off")
                     .description("Original")
                     .disabled("Read-only here")
                     .control(toggle(&theme, "toggle-b", false, false)),

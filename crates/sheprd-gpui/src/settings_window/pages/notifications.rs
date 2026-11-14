@@ -1,7 +1,7 @@
 //! Notifications: delivery, in-app toasts, and sound.
 // i18n: migrated
 use super::{
-    SettingsWindow, TOAST_POSITIONS, on_off, on_off_choices, on_value, position_name,
+    SettingsWindow, TOAST_POSITIONS, catalog, on_off, on_off_choices, on_value, position_name,
     position_names, ui,
 };
 use crate::settings_window::inputs::{DropdownField, NumberField};
@@ -40,42 +40,38 @@ impl SettingsWindow {
                 Some(ui::Source::Herdr),
             ))
             .child(
-                self.gate_shared(
-                    ui::row(theme, "notif-delivery", fl!("settings-notif-delivery"))
-                        .description(fl!("settings-notif-delivery-description")),
-                )
-                .control(ui::segmented(
-                    theme,
-                    "notif-delivery-control",
-                    &[
-                        (
-                            ToastDelivery::Off,
-                            fl!("settings-notifications-delivery-off"),
-                        ),
-                        (
-                            ToastDelivery::Herdr,
-                            fl!("settings-notifications-delivery-herdr"),
-                        ),
-                        (
-                            ToastDelivery::Terminal,
-                            fl!("settings-notifications-delivery-terminal"),
-                        ),
-                        (
-                            ToastDelivery::System,
-                            fl!("settings-notifications-delivery-system"),
-                        ),
-                    ],
-                    shared.map(|shared| shared.toast_delivery),
-                    ready,
-                    on_value(cx, |this, mode, _, cx| {
-                        this.save_shared(Edit::Toasts(mode), cx)
-                    }),
-                )),
+                self.gate_shared(ui::row(theme, &catalog::NOTIF_DELIVERY))
+                    .control(ui::segmented(
+                        theme,
+                        "notif-delivery-control",
+                        &[
+                            (
+                                ToastDelivery::Off,
+                                fl!("settings-notifications-delivery-off"),
+                            ),
+                            (
+                                ToastDelivery::Herdr,
+                                fl!("settings-notifications-delivery-herdr"),
+                            ),
+                            (
+                                ToastDelivery::Terminal,
+                                fl!("settings-notifications-delivery-terminal"),
+                            ),
+                            (
+                                ToastDelivery::System,
+                                fl!("settings-notifications-delivery-system"),
+                            ),
+                        ],
+                        shared.map(|shared| shared.toast_delivery),
+                        ready,
+                        on_value(cx, |this, mode, _, cx| {
+                            this.save_shared(Edit::Toasts(mode), cx)
+                        }),
+                    )),
             )
             .child(
-                ui::row(theme, "notif-finished", fl!("settings-notif-finished"))
+                ui::row(theme, &catalog::NOTIF_FINISHED)
                     .tag(ui::Source::Sheprd)
-                    .description(fl!("settings-notifications-finished-description"))
                     .switch(self.preference_toggle(
                         "notif-finished-toggle",
                         finished,
@@ -89,27 +85,23 @@ impl SettingsWindow {
                 Some(ui::Source::Sheprd),
             ))
             .child(
-                ui::row(theme, "notif-show", fl!("settings-notif-show")).control(
-                    self.override_dropdown(
-                        DropdownField::ToastEnabled,
-                        &on_off(shared_enabled),
-                        &on_off_choices(),
-                        overrides.enabled().map(|on| usize::from(!on)),
-                        cx,
-                    ),
-                ),
+                ui::row(theme, &catalog::NOTIF_SHOW).control(self.override_dropdown(
+                    DropdownField::ToastEnabled,
+                    &on_off(shared_enabled),
+                    &on_off_choices(),
+                    overrides.enabled().map(|on| usize::from(!on)),
+                    cx,
+                )),
             )
             .child(self.delay_row(cx))
             .child(
-                ui::row(theme, "notif-position", fl!("settings-notif-position"))
-                    .description(fl!("settings-notifications-position-description"))
-                    .control(self.override_dropdown(
-                        DropdownField::ToastPosition,
-                        &base_position,
-                        &position_names,
-                        position,
-                        cx,
-                    )),
+                ui::row(theme, &catalog::NOTIF_POSITION).control(self.override_dropdown(
+                    DropdownField::ToastPosition,
+                    &base_position,
+                    &position_names,
+                    position,
+                    cx,
+                )),
             )
             .child(ui::section(
                 theme,
@@ -118,12 +110,13 @@ impl SettingsWindow {
             ))
             .child(
                 self.gate_shared(
-                    ui::row(theme, "notif-sound", fl!("settings-notif-sound"))
+                    ui::row(theme, &catalog::NOTIF_SOUND)
                         .tag(ui::Source::Herdr)
-                        .description(if source_alive {
-                            fl!("settings-notifications-sound-description")
-                        } else {
-                            fl!("settings-notifications-sound-description-no-window")
+                        // Without a main window the row adds how to preview.
+                        .when(!source_alive, |row| {
+                            row.description(fl!(
+                                "settings-notifications-sound-description-no-window"
+                            ))
                         }),
                 )
                 .control(
@@ -161,8 +154,7 @@ impl SettingsWindow {
         });
         let value = self.config.notifications.delay_seconds as f32;
         let view = cx.entity().downgrade();
-        ui::row(&self.theme, "notif-delay", fl!("settings-notif-delay"))
-            .description(fl!("settings-notifications-delay-description"))
+        ui::row(&self.theme, &catalog::NOTIF_DELAY)
             .control(ui::number(
                 &self.theme,
                 ui::Number {
@@ -208,9 +200,8 @@ impl SettingsWindow {
             f32::from(self.config.sound.volume),
         );
         let view = cx.entity().downgrade();
-        ui::row(&self.theme, "notif-volume", fl!("settings-notif-volume"))
+        ui::row(&self.theme, &catalog::NOTIF_VOLUME)
             .tag(ui::Source::Sheprd)
-            .description(fl!("settings-notif-volume-description"))
             .control(ui::number(
                 &self.theme,
                 ui::Number {

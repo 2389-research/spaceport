@@ -1,6 +1,10 @@
 //! Configuration: the files behind these settings, and reload.
 // i18n: migrated
-use super::{SettingsWindow, ui};
+use super::{
+    SettingsWindow,
+    catalog::{self, Entry},
+    ui,
+};
 use crate::i18n::fl;
 use gpui::{prelude::*, *};
 use std::path::PathBuf;
@@ -50,15 +54,13 @@ impl SettingsWindow {
                 None,
             ))
             .child(self.file_row(
-                "config-local",
-                fl!("settings-config-local"),
+                &catalog::CONFIG_LOCAL,
                 ui::Source::Sheprd,
                 self.controls.local_path.clone(),
                 self.controls.local_file.clone(),
             ))
             .child(self.gate_shared(self.file_row(
-                "config-shared",
-                fl!("settings-config-shared"),
+                &catalog::CONFIG_SHARED,
                 ui::Source::Herdr,
                 shared_path.as_ref().map_or_else(
                     || fl!("settings-configuration-unavailable"),
@@ -67,39 +69,30 @@ impl SettingsWindow {
                 shared_path.clone(),
             )))
             .child(
-                ui::row(theme, "config-reload", fl!("settings-config-reload"))
-                    .description(fl!("settings-config-reload-description"))
-                    .control(
-                        ui::button(theme, "config-reload-button", fl!("settings-reload"), true)
-                            .on_click(cx.listener(|this, _, _, cx| this.reload(cx))),
-                    ),
+                ui::row(theme, &catalog::CONFIG_RELOAD).control(
+                    ui::button(theme, "config-reload-button", fl!("settings-reload"), true)
+                        .on_click(cx.listener(|this, _, _, cx| this.reload(cx))),
+                ),
             )
     }
 
-    fn file_row_base(
-        &self,
-        id: &'static str,
-        title: String,
-        source: ui::Source,
-        path: String,
-    ) -> ui::Row {
-        ui::row(&self.theme, id, title)
-            .tag(source)
-            .description(path)
+    /// A file's row, which shows the file's path where search matches the
+    /// entry's description of the file.
+    fn file_row_base(&self, entry: &Entry, source: ui::Source, path: String) -> ui::Row {
+        ui::row(&self.theme, entry).tag(source).description(path)
     }
 
     /// A file's row with Reveal and Open buttons, which only exist where the
     /// platform has something to hand the path to.
     fn file_row(
         &self,
-        id: &'static str,
-        title: String,
+        entry: &'static Entry,
         source: ui::Source,
         text: String,
         file: Option<PathBuf>,
     ) -> ui::Row {
-        let row = self.file_row_base(id, title, source, text);
-        self.file_buttons(row, id, file)
+        let row = self.file_row_base(entry, source, text);
+        self.file_buttons(row, entry.id, file)
     }
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]

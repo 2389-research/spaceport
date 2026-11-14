@@ -12,7 +12,7 @@ mod tabs;
 mod theme;
 mod window;
 
-use super::{SettingsWindow, inputs::DropdownField, ui};
+use super::{SettingsWindow, catalog, inputs::DropdownField, ui};
 use crate::i18n::{self, fl};
 pub(super) use fonts::size_control;
 use gpui::{prelude::*, *};

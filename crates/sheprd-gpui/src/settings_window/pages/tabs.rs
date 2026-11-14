@@ -3,7 +3,7 @@
 //! Tabs & panes: tab layout and bar, closing confirmations, pane focus and
 //! session restore.
 // i18n: migrated
-use super::{SettingsWindow, on_value, ui};
+use super::{SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{TabLayoutMode, preferences::Preference},
     herdr_settings::{Edit, TabBarPosition},
@@ -33,81 +33,68 @@ impl SettingsWindow {
                 &fl!("settings-tabs-section-layout"),
                 None,
             ))
+            .child(ui::row(theme, &catalog::TABS_LAYOUT).control(ui::segmented(
+                theme,
+                "tabs-layout-control",
+                &layouts,
+                Some(self.config.tab_layout),
+                open,
+                on_value(cx, |this, mode, _, cx| {
+                    this.save_preference(Preference::TabLayout(mode), cx)
+                }),
+            )))
             .child(
-                ui::row(theme, "tabs-layout", fl!("settings-tabs-layout"))
-                    .description(fl!("settings-tabs-layout-description"))
-                    .control(ui::segmented(
-                        theme,
-                        "tabs-layout-control",
-                        &layouts,
-                        Some(self.config.tab_layout),
-                        open,
-                        on_value(cx, |this, mode, _, cx| {
-                            this.save_preference(Preference::TabLayout(mode), cx)
-                        }),
-                    )),
+                ui::row(theme, &catalog::TABS_AGENT_TITLE).switch(self.preference_toggle(
+                    "tabs-agent-title-toggle",
+                    self.config.tab_labels.agent_title,
+                    Preference::TabAgentTitle(!self.config.tab_labels.agent_title),
+                    cx,
+                )),
             )
-            .child(
-                ui::row(theme, "tabs-agent-title", fl!("settings-tabs-agent-title"))
-                    .description(fl!("settings-tabs-agent-title-description"))
-                    .switch(self.preference_toggle(
-                        "tabs-agent-title-toggle",
-                        self.config.tab_labels.agent_title,
-                        Preference::TabAgentTitle(!self.config.tab_labels.agent_title),
-                        cx,
-                    )),
+            .children(
+                self.available(catalog::TABS_HERDR_2.availability, cx)
+                    .then(|| {
+                        ui::row(theme, &catalog::TABS_HERDR_2).switch(self.preference_toggle(
+                            "tabs-herdr-2-toggle",
+                            self.config.herdr_2_terminals,
+                            Preference::Herdr2Terminals(!self.config.herdr_2_terminals),
+                            cx,
+                        ))
+                    }),
             )
-            .children(crate::core_feature::enabled(cx).then(|| {
-                ui::row(theme, "tabs-herdr-2", fl!("settings-tabs-herdr-2"))
-                    .description(fl!("settings-tabs-herdr-2-description"))
-                    .switch(self.preference_toggle(
-                        "tabs-herdr-2-toggle",
-                        self.config.herdr_2_terminals,
-                        Preference::Herdr2Terminals(!self.config.herdr_2_terminals),
-                        cx,
-                    ))
-            }))
             .child(ui::section(
                 theme,
                 &fl!("settings-tabs-section-tab-bar"),
                 Some(ui::Source::Herdr),
             ))
             .child(
-                self.gate_shared(ui::row(
-                    theme,
-                    "tabs-position",
-                    fl!("settings-tabs-position"),
-                ))
-                .control(ui::segmented(
-                    theme,
-                    "tabs-position-control",
-                    &[
-                        (TabBarPosition::Top, fl!("settings-tabs-position-top")),
-                        (TabBarPosition::Bottom, fl!("settings-tabs-position-bottom")),
-                    ],
-                    position,
-                    ready,
-                    on_value(cx, |this, choice, _, cx| {
-                        this.save_shared(Edit::TabBarPosition(choice), cx)
-                    }),
-                )),
+                self.gate_shared(ui::row(theme, &catalog::TABS_POSITION))
+                    .control(ui::segmented(
+                        theme,
+                        "tabs-position-control",
+                        &[
+                            (TabBarPosition::Top, fl!("settings-tabs-position-top")),
+                            (TabBarPosition::Bottom, fl!("settings-tabs-position-bottom")),
+                        ],
+                        position,
+                        ready,
+                        on_value(cx, |this, choice, _, cx| {
+                            this.save_shared(Edit::TabBarPosition(choice), cx)
+                        }),
+                    )),
             )
             .child(
-                self.gate_shared(ui::row(
-                    theme,
-                    "tabs-hide-single",
-                    fl!("settings-tabs-hide-single"),
-                ))
-                .switch(
-                    ui::toggle(theme, "tabs-hide-single-toggle", hide, ready).when(
-                        ready,
-                        |toggle| {
-                            toggle.on_click(cx.listener(move |this, _, _, cx| {
-                                this.save_shared(Edit::HideSingleTabBar(!hide), cx)
-                            }))
-                        },
+                self.gate_shared(ui::row(theme, &catalog::TABS_HIDE_SINGLE))
+                    .switch(
+                        ui::toggle(theme, "tabs-hide-single-toggle", hide, ready).when(
+                            ready,
+                            |toggle| {
+                                toggle.on_click(cx.listener(move |this, _, _, cx| {
+                                    this.save_shared(Edit::HideSingleTabBar(!hide), cx)
+                                }))
+                            },
+                        ),
                     ),
-                ),
             )
             .child(ui::section(
                 theme,
@@ -115,22 +102,15 @@ impl SettingsWindow {
                 None,
             ))
             .child(
-                ui::row(theme, "tabs-confirm-tab", fl!("settings-tabs-confirm-tab")).switch(
-                    self.preference_toggle(
-                        "tabs-confirm-tab-toggle",
-                        self.config.confirm_close_tab,
-                        Preference::ConfirmCloseTab(!self.config.confirm_close_tab),
-                        cx,
-                    ),
-                ),
+                ui::row(theme, &catalog::TABS_CONFIRM_TAB).switch(self.preference_toggle(
+                    "tabs-confirm-tab-toggle",
+                    self.config.confirm_close_tab,
+                    Preference::ConfirmCloseTab(!self.config.confirm_close_tab),
+                    cx,
+                )),
             )
             .child(
-                ui::row(
-                    theme,
-                    "tabs-confirm-pane",
-                    fl!("settings-tabs-confirm-pane"),
-                )
-                .switch(self.preference_toggle(
+                ui::row(theme, &catalog::TABS_CONFIRM_PANE).switch(self.preference_toggle(
                     "tabs-confirm-pane-toggle",
                     self.config.confirm_close_pane,
                     Preference::ConfirmClosePane(!self.config.confirm_close_pane),
@@ -142,20 +122,14 @@ impl SettingsWindow {
                 &fl!("settings-tabs-section-panes"),
                 None,
             ))
-            .child(
-                ui::row(
-                    theme,
-                    "tabs-focus-follows-mouse",
-                    fl!("settings-tabs-focus-follows-mouse"),
-                )
-                .description(fl!("settings-tabs-focus-follows-mouse-description"))
-                .switch(self.preference_toggle(
+            .child(ui::row(theme, &catalog::TABS_FOCUS_FOLLOWS_MOUSE).switch(
+                self.preference_toggle(
                     "tabs-focus-follows-mouse-toggle",
                     self.config.focus_follows_mouse,
                     Preference::FocusFollowsMouse(!self.config.focus_follows_mouse),
                     cx,
-                )),
-            )
+                ),
+            ))
             .child(ui::section(
                 theme,
                 &fl!("settings-tabs-section-session-restore"),
@@ -163,13 +137,7 @@ impl SettingsWindow {
             ))
             .child(
                 self.gate_shared(
-                    ui::row(
-                        theme,
-                        "tabs-pane-history",
-                        fl!("settings-tabs-pane-history"),
-                    )
-                    .tag(ui::Source::Herdr)
-                    .description(fl!("settings-tabs-pane-history-description")),
+                    ui::row(theme, &catalog::TABS_PANE_HISTORY).tag(ui::Source::Herdr),
                 )
                 .switch(
                     ui::toggle(theme, "tabs-pane-history-toggle", history, ready).when(
@@ -200,7 +168,7 @@ impl SettingsWindow {
             };
             let id = format!("tabs-pane-history-host-{index}");
             page = page.child(
-                ui::row(theme, id.clone(), host.label.clone())
+                ui::data_row(theme, id.clone(), host.label.clone())
                     .description(note)
                     .switch(
                         ui::toggle(theme, format!("{id}-toggle"), checked, enabled).when(

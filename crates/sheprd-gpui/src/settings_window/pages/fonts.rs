@@ -1,12 +1,12 @@
 //! Fonts: one family and size per face, then a live specimen of the face in use.
 // i18n: migrated
-use super::{SettingsWindow, ui};
+use super::{SettingsWindow, catalog, ui};
 use crate::{
     config::{FONT_SIZE_RANGE, FontFace},
     font_picker::FontTarget,
-    i18n::{self, fl},
+    i18n::fl,
     settings_window::{
-        controls::{FACES, face_font, face_message, family_label},
+        controls::{FACES, face_font, family_label},
         inputs::NumberField,
     },
 };
@@ -31,6 +31,16 @@ fn specimen_title(face: FontFace) -> String {
     }
 }
 
+/// The catalog entry of a face's row.
+const fn face_entry(face: FontFace) -> &'static catalog::Entry {
+    match face {
+        FontFace::Terminal => &catalog::FONTS_TERMINAL,
+        FontFace::Sidebar => &catalog::FONTS_SIDEBAR,
+        FontFace::Tabs => &catalog::FONTS_TABS,
+        FontFace::Ui => &catalog::FONTS_UI,
+    }
+}
+
 impl SettingsWindow {
     pub(in crate::settings_window) fn render_fonts(&self, cx: &mut Context<Self>) -> Div {
         #[cfg(all(feature = "integration-test", target_os = "macos"))]
@@ -45,12 +55,11 @@ impl SettingsWindow {
             page = page.child(self.face_row(face, cx));
         }
         page.child(
-            ui::row(theme, "fonts-all-row", fl!("settings-fonts-all-row")).control(
-                self.all_families_button()
-                    .on_click(cx.listener(|this, _, window, cx| {
-                        this.open_control_font_picker(FontTarget::All, window, cx)
-                    })),
-            ),
+            ui::row(theme, &catalog::FONTS_ALL_ROW).control(self.all_families_button().on_click(
+                cx.listener(|this, _, window, cx| {
+                    this.open_control_font_picker(FontTarget::All, window, cx)
+                }),
+            )),
         )
         .child(ui::section(
             theme,
@@ -73,8 +82,7 @@ impl SettingsWindow {
         let id = field.selector();
         let size = self.control_face_size(face);
         let view = cx.entity().downgrade();
-        let label = i18n::message(face_message(face), &[]);
-        let row = ui::row(theme, format!("fonts-{}", face.name()), label)
+        let row = ui::row(theme, face_entry(face))
             .control(self.family_button(face, cx))
             .control(
                 ui::number(
