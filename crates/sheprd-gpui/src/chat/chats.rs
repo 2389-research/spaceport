@@ -101,6 +101,22 @@ struct OpenMenu {
     search: Option<(Entity<SearchInput>, gpui::Subscription)>,
 }
 
+/// Where a chat's connection to its program stands.
+enum Phase {
+    /// A failed attempt; connect again at this time.
+    Backoff(Instant),
+    /// Never connected; connect on the next reconcile.
+    Due,
+    /// Trying again cannot help, or the observed agent exited: no more
+    /// attempts.
+    Ended,
+    /// Connected. Replacing the link drops it, which closes it.
+    Linked(Link),
+    /// A native fixture: no connection, and none is ever started.
+    #[cfg(feature = "integration-test")]
+    Preview,
+}
+
 /// What takes the user's typing in a chat.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ChatInput {
@@ -138,25 +154,21 @@ pub(crate) struct ChatPane {
     failures: u32,
     /// Prompts sent from this window, for Up and Down to recall.
     pub(crate) history: sheprd_chat_protocol::assist::History,
-    /// Bumped for each connection, so nothing of an earlier one is applied.
+    /// Bumped for each connection attempt, so a resize drag begun on an
+    /// earlier connection is let go.
     generation: u64,
     /// How the list follows a streaming reply.
     pub(crate) glide: super::glide::Glide,
-    link: Option<(u64, Link)>,
     pub(crate) list: ListState,
     list_keys: Vec<(EntryId, u64)>,
     list_snapshots: u64,
     menu: Option<OpenMenu>,
-    /// Trying again cannot help: the program speaks another version.
-    permanent: bool,
+    phase: Phase,
     pub(crate) prepared: Prepared,
-    #[cfg(feature = "integration-test")]
-    preview: bool,
     /// Whether the plan and changed files show beside the entries.
     pub(crate) rail: bool,
     /// A read-only overlay owns the keyboard without installing an input handler.
     pub(crate) read_only_focus: Option<FocusHandle>,
-    retry_at: Option<Instant>,
     /// Whether the table of running sub-agents and shells is open.
     pub(crate) running: crate::motion::Toggle,
     pub(crate) selection: super::selection::Selection,
@@ -285,18 +297,14 @@ impl ChatPane {
             generation: 0,
             glide,
             history: Default::default(),
-            link: None,
             list,
             list_keys: Vec::new(),
             list_snapshots: 0,
             menu: None,
-            permanent: false,
+            phase: Phase::Due,
             prepared,
-            #[cfg(feature = "integration-test")]
-            preview: false,
             rail: true,
             read_only_focus: None,
-            retry_at: None,
             running: Default::default(),
             selection: Default::default(),
             send: SendButton::Off,
@@ -316,20 +324,32 @@ impl ChatPane {
     /// Whether the view can stand in for the pane's terminal: it has a
     /// transcript, and its program is reachable or only briefly away.
     pub(crate) fn available(&self) -> bool {
-        self.session.synced() && !self.permanent && self.failures < MAX_FAILURES
+        self.session.synced() && !matches!(self.phase, Phase::Ended) && self.failures < MAX_FAILURES
     }
 
     pub(crate) fn attached(&self) -> bool {
-        #[cfg(feature = "integration-test")]
-        if self.preview {
-            return self.session.live();
+        match self.phase {
+            Phase::Linked(_) => self.session.live(),
+            #[cfg(feature = "integration-test")]
+            Phase::Preview => self.session.live(),
+            Phase::Backoff(_) | Phase::Due | Phase::Ended => false,
         }
-        self.link.is_some() && self.session.live()
     }
 
     #[cfg(test)]
     pub(crate) fn has_link(&self) -> bool {
-        self.link.is_some()
+        matches!(self.phase, Phase::Linked(_))
+    }
+
+    /// Whether to start a connection at `now`.
+    fn due(&self, now: Instant) -> bool {
+        match self.phase {
+            Phase::Backoff(at) => at <= now,
+            Phase::Due => true,
+            Phase::Ended | Phase::Linked(_) => false,
+            #[cfg(feature = "integration-test")]
+            Phase::Preview => false,
+        }
     }
 
     pub(crate) fn generation(&self) -> u64 {
@@ -341,7 +361,7 @@ impl ChatPane {
     /// next connection.
     pub(crate) fn send(&mut self, command: Command) -> Result<()> {
         let message = self.session.submit(command)?;
-        let Some((_, link)) = &self.link else {
+        let Phase::Linked(link) = &self.phase else {
             return Ok(());
         };
         match link.send(message) {
@@ -351,19 +371,19 @@ impl ChatPane {
     }
 
     fn start(&mut self, now: Instant, connect: &mut Connect<'_>) {
-        self.retry_at = None;
         self.generation += 1;
         self.session.begin();
         let resend = self.session.resend();
         match connect(&self.target, self.session.since(), resend) {
-            Ok(link) => self.link = Some((self.generation, link)),
+            Ok(link) => self.phase = Phase::Linked(link),
             Err(error) => self.fail(&error, now),
         }
     }
 
     fn fail(&mut self, error: &Error, now: Instant) {
         tracing::debug!(%error, pane = %self.target.pane_id, "Chat connection ended");
-        self.link = None;
+        // Ended unless a retry is set below; this drops and closes the link.
+        self.phase = Phase::Ended;
         self.session.lost(error);
         // No window here: `poll_chats_with` gives the keyboard back to the
         // composer when the closed menu's search field held it.
@@ -372,7 +392,6 @@ impl ChatPane {
             || (self.target.existing.is_some()
                 && matches!(error, Error::Bye(sheprd_chat_protocol::ByeReason::Exiting)))
         {
-            self.permanent = true;
             return;
         }
         // A stream that stopped fitting is fetched again at once, as a
@@ -385,18 +404,14 @@ impl ChatPane {
                 .saturating_mul(1 << self.failures.min(5))
                 .min(LAST_RETRY)
         };
-        self.retry_at = Some(now + delay);
+        self.phase = Phase::Backoff(now + delay);
     }
 
     /// Applies what the link read, returning whether anything shown changed.
     fn poll(&mut self, now: Instant) -> bool {
-        let Some((generation, link)) = &self.link else {
+        let Phase::Linked(link) = &self.phase else {
             return false;
         };
-        if *generation != self.generation {
-            self.link = None;
-            return false;
-        }
         let polled = link.poll(POLL_BUDGET);
         let mut changed = false;
         let mut end = None;
@@ -579,7 +594,7 @@ impl Chats {
         transcript: sheprd_chat_protocol::Transcript,
     ) -> Result<()> {
         let mut pane = ChatPane::new(target);
-        pane.preview = true;
+        pane.phase = Phase::Preview;
         pane.session.begin();
         pane.session
             .receive(sheprd_chat_protocol::ServerMessage::Welcome {
@@ -699,9 +714,7 @@ impl Chats {
         let targets: HashSet<&Target> = self.panes.iter().map(|pane| &pane.target).collect();
         self.raw.retain(|target| targets.contains(target));
         for pane in &mut self.panes {
-            let due =
-                pane.link.is_none() && !pane.permanent && pane.retry_at.is_none_or(|at| at <= now);
-            if due {
+            if pane.due(now) {
                 pane.start(now, connect);
             }
         }
