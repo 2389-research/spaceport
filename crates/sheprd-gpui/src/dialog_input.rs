@@ -1,18 +1,18 @@
 // i18n: migrated
 use gpui::{prelude::*, *};
 use std::ops::Range;
-use unicode_segmentation::UnicodeSegmentation;
 
-use super::{SheprdWindow, input::ViewInputHandler, words};
+use super::{SheprdWindow, input::ViewInputHandler};
 use crate::caret::Carets;
+use crate::text_editing::{
+    EditCommand, Editing, KeyTable, Keys, Newlines, Platform, edit_command, from_utf16, to_utf16,
+};
 
 // Byte offsets internally; only the platform input boundary uses UTF-16.
 #[derive(Default)]
 pub(super) struct DialogInput {
-    pub text: String,
-    pub selection: Range<usize>,
-    pub reversed: bool,
-    pub marked: Option<Range<usize>>,
+    /// The draft's text, selection, and composition, read through `Deref`.
+    edit: Editing,
     pub bounds: Bounds<Pixels>,
     /// Where the last drawn text puts each caret.
     carets: Option<Carets>,
@@ -22,25 +22,49 @@ pub(super) struct DialogInput {
     pub label: Option<SharedString>,
 }
 
+/// One replacement inserts at most this many characters.
+const MAX_INSERTED_CHARS: usize = 4096;
+/// A replacement that would leave the draft longer than this is refused.
+const MAX_BYTES: usize = 16384;
+
+impl std::ops::Deref for DialogInput {
+    type Target = Editing;
+
+    fn deref(&self) -> &Editing {
+        &self.edit
+    }
+}
+
+impl std::ops::DerefMut for DialogInput {
+    fn deref_mut(&mut self) -> &mut Editing {
+        &mut self.edit
+    }
+}
+
 impl DialogInput {
     pub fn new(text: String) -> Self {
         Self {
-            selection: 0..text.len(),
-            text,
+            edit: Editing {
+                cursor: text.len(),
+                text,
+                ..Editing::default()
+            },
             ..Self::default()
         }
     }
 
     pub fn range_from_utf16(&self, range: Range<usize>) -> Range<usize> {
-        let start = byte_offset(&self.text, range.start);
-        start..byte_offset(&self.text, range.end).max(start)
+        let start = from_utf16(&self.edit.text, range.start);
+        start..from_utf16(&self.edit.text, range.end).max(start)
     }
 
     pub fn to_utf16(&self, range: Range<usize>) -> Range<usize> {
-        self.text[..range.start].encode_utf16().count()
-            ..self.text[..range.end].encode_utf16().count()
+        to_utf16(&self.edit.text, range.start)..to_utf16(&self.edit.text, range.end)
     }
 
+    /// Replaces UTF-16 `range`, else the composition, else the selection.
+    /// A draft is one bounded line: control characters are dropped, and a
+    /// replacement past the limits is cut short or refused.
     pub fn replace(
         &mut self,
         range: Option<Range<usize>>,
@@ -50,155 +74,65 @@ impl DialogInput {
     ) {
         let range = range
             .map(|r| self.range_from_utf16(r))
-            .or_else(|| self.marked.clone())
-            .unwrap_or_else(|| self.selection.clone());
+            .unwrap_or_else(|| self.edit.replaced(None));
         let text: String = text
             .chars()
             .filter(|c| !c.is_control())
-            .take(4096)
+            .take(MAX_INSERTED_CHARS)
             .collect();
-        if self.text.len() - range.len() + text.len() > 16384 {
+        if self.edit.text.len() - range.len() + text.len() > MAX_BYTES {
             return;
         }
-        self.text.replace_range(range.clone(), &text);
-        let mut end = range.start + text.len();
-        if !marked {
-            // What was typed can join the cluster after it, as a letter typed
-            // before a combining accent does; the caret goes after the cluster.
-            end = self
-                .text
-                .grapheme_indices(true)
-                .map(|(i, _)| i)
-                .find(|i| *i >= end)
-                .unwrap_or(self.text.len());
-        }
-        self.selection = if let Some(selected) = selected {
-            let start = byte_offset(&text, selected.start);
-            range.start + start..range.start + byte_offset(&text, selected.end).max(start)
-        } else {
-            end..end
-        };
-        self.reversed = false;
-        self.marked = (marked && !text.is_empty()).then_some(range.start..end);
+        // An input method's backwards selection is its start alone.
+        let selected = selected.map(|selected| selected.start..selected.end.max(selected.start));
+        self.edit
+            .replace_bytes(range, &text, marked, selected, Newlines::Strip);
         self.carets = None;
     }
 
     /// End a composition without changing its text.
     pub fn unmark(&mut self) {
-        self.marked = None;
-    }
-
-    fn cursor(&self) -> usize {
-        if self.reversed {
-            self.selection.start
-        } else {
-            self.selection.end
-        }
-    }
-
-    fn move_to(&mut self, offset: usize, extend: bool) {
-        let anchor = if self.reversed {
-            self.selection.end
-        } else {
-            self.selection.start
-        };
-        self.selection = if extend {
-            anchor.min(offset)..anchor.max(offset)
-        } else {
-            offset..offset
-        };
-        self.reversed = extend && offset < anchor;
+        self.edit.marked = None;
     }
 
     pub fn key(&mut self, key: &Keystroke, cx: &mut App) -> bool {
-        if self.marked.is_some() {
+        if self.edit.marked.is_some() {
             return false;
         }
-        let cursor = self.cursor();
-        let previous = self
-            .text
-            .grapheme_indices(true)
-            .map(|(i, _)| i)
-            .rfind(|i| *i < cursor)
-            .unwrap_or(0);
-        let next = self
-            .text
-            .grapheme_indices(true)
-            .map(|(i, _)| i)
-            .find(|i| *i > cursor)
-            .unwrap_or(self.text.len());
-        match key.key.as_str() {
-            "a" if crate::actions::edit_modifiers(key.modifiers) => {
-                self.selection = 0..self.text.len();
-                self.reversed = false;
+        let keys = Keys {
+            line: 0..self.edit.text.len(),
+            words_hidden: false,
+            table: KeyTable::Dialog,
+            platform: Platform::CURRENT,
+        };
+        let Some(command) = edit_command(&key.key, key.modifiers, &self.edit, &keys) else {
+            return false;
+        };
+        match command {
+            EditCommand::Move { to, extend } => self.edit.select_to(to, extend),
+            EditCommand::SelectAll => self.edit.select(0..self.edit.text.len()),
+            EditCommand::Delete(range) => {
+                self.edit.select(range);
+                self.replace(None, "", false, None);
             }
-            "v" if crate::actions::edit_modifiers(key.modifiers) => {
-                if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
-                    self.replace(None, &text, false, None);
-                }
-            }
-            "c" | "x" if crate::actions::edit_modifiers(key.modifiers) => {
-                if !self.selection.is_empty() {
+            EditCommand::Copy | EditCommand::Cut => {
+                let selection = self.edit.selection();
+                if !selection.is_empty() {
                     cx.write_to_clipboard(ClipboardItem::new_string(
-                        self.text[self.selection.clone()].into(),
+                        self.edit.text[selection].into(),
                     ));
-                    if key.key == "x" {
+                    if command == EditCommand::Cut {
                         self.replace(None, "", false, None);
                     }
                 }
             }
-            "left" | "right" | "backspace" | "delete"
-                if crate::actions::word_modifiers(key.modifiers) =>
-            {
-                let selected = !self.selection.is_empty();
-                let from = match key.key.as_str() {
-                    "left" if !key.modifiers.shift && selected => self.selection.start,
-                    "right" if !key.modifiers.shift && selected => self.selection.end,
-                    _ => cursor,
-                };
-                let offset = match key.key.as_str() {
-                    "left" | "backspace" => words::previous_start(&self.text, from),
-                    _ => words::next_end(&self.text, from),
-                };
-                if matches!(key.key.as_str(), "left" | "right") {
-                    self.move_to(offset, key.modifiers.shift);
-                } else {
-                    if !selected {
-                        self.selection = offset.min(cursor)..offset.max(cursor);
-                    }
-                    self.replace(None, "", false, None);
+            EditCommand::Paste => {
+                if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
+                    self.replace(None, &text, false, None);
                 }
             }
-            "left" | "right" | "home" | "end" => {
-                let offset = match key.key.as_str() {
-                    "home" => 0,
-                    "end" => self.text.len(),
-                    "left" if key.modifiers.platform => 0,
-                    "right" if key.modifiers.platform => self.text.len(),
-                    "left" if !key.modifiers.shift && !self.selection.is_empty() => {
-                        self.selection.start
-                    }
-                    "right" if !key.modifiers.shift && !self.selection.is_empty() => {
-                        self.selection.end
-                    }
-                    "left" => previous,
-                    _ => next,
-                };
-                self.move_to(offset, key.modifiers.shift);
-            }
-            "backspace" | "delete" => {
-                if self.selection.is_empty() {
-                    // Cmd deletes to the line's start or end, as macOS fields do.
-                    self.selection = match (key.key.as_str(), key.modifiers.platform) {
-                        ("backspace", true) => 0..cursor,
-                        ("backspace", false) => previous..cursor,
-                        (_, true) => cursor..self.text.len(),
-                        (_, false) => cursor..next,
-                    };
-                }
-                self.replace(None, "", false, None);
-            }
-            _ => return false,
+            // The dialog table has no kill keys, and a draft no kill buffer.
+            EditCommand::Kill(_) | EditCommand::Yank => return false,
         }
         true
     }
@@ -220,17 +154,6 @@ impl DialogInput {
             point(x(extent.end), self.bounds.bottom()),
         ))
     }
-}
-
-fn byte_offset(text: &str, offset: usize) -> usize {
-    let mut units = 0;
-    for (byte, ch) in text.char_indices() {
-        if units >= offset {
-            return byte;
-        }
-        units += ch.len_utf16();
-    }
-    text.len()
 }
 
 impl SheprdWindow {
@@ -272,7 +195,7 @@ impl SheprdWindow {
                         && input.marked.is_none()
                         && let Some(index) = input.index_at(event.position)
                     {
-                        input.move_to(index, event.modifiers.shift);
+                        input.select_to(index, event.modifiers.shift);
                         cx.notify();
                     }
                 }),
@@ -308,7 +231,7 @@ impl SheprdWindow {
                                 None,
                             );
                             let carets = Carets::new(&input.text, &line);
-                            let caret = carets.x(input.cursor());
+                            let caret = carets.x(input.cursor);
                             input.scroll = input
                                 .scroll
                                 .min(caret)
@@ -324,8 +247,8 @@ impl SheprdWindow {
                             window.with_content_mask(Some(ContentMask { bounds }), |window| {
                                 // Across a change of direction, a selection
                                 // is a stretch on each side of it.
-                                if focused && !input.selection.is_empty() {
-                                    for span in carets.spans(input.selection.clone()) {
+                                if focused && !input.selection().is_empty() {
+                                    for span in carets.spans(input.selection()) {
                                         window.paint_quad(fill(
                                             Bounds::from_corners(
                                                 point(origin.x + span.start, bounds.top()),

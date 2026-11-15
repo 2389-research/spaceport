@@ -11,12 +11,11 @@ use gpui::{
 use crate::caret::Carets;
 use crate::config::{Config, FontConfig, Theme};
 use crate::fonts::StyledFont;
-#[cfg(test)]
-use crate::text_editing::from_utf16;
-use crate::text_editing::{Editing, Newlines, byte_range, normalize, to_utf16};
-use crate::{actions, input::ViewInputHandler, words};
-
-mod control_keys;
+use crate::text_editing::{
+    EditCommand, Editing, KeyTable, Keys, Newlines, Platform, byte_range, edit_command, normalize,
+    to_utf16,
+};
+use crate::{actions, input::ViewInputHandler};
 
 pub struct Changed;
 
@@ -251,127 +250,69 @@ impl SearchInput {
         if self.is_composing() {
             return;
         }
-        let key = event.keystroke.key.as_str();
-        let modifiers = event.keystroke.modifiers;
-        if matches!(key, "up" | "down" | "enter" | "escape") {
+        let keys = Keys {
+            line: 0..self.edit.text.len(),
+            // A masked secret is one word, as in a native secure field.
+            words_hidden: self.masked,
+            table: KeyTable::Field,
+            platform: Platform::CURRENT,
+        };
+        let keystroke = &event.keystroke;
+        // Up, Down, Enter, Escape, and Option/dead-key text are not edits:
+        // the owner and the native input handler take them.
+        let Some(command) = edit_command(&keystroke.key, keystroke.modifiers, &self.edit, &keys)
+        else {
             return;
-        }
-        if self.control_key(key, modifiers, window, cx) {
-            cx.stop_propagation();
-            window.prevent_default();
-            cx.notify();
-            return;
-        }
-        let edit = actions::edit_modifiers(modifiers) && matches!(key, "a" | "c" | "v" | "x");
-        if edit || (modifiers.platform && !modifiers.control && !modifiers.alt) {
-            match key {
-                // As in every macOS text field: Cmd-Left and Cmd-Right go to
-                // the line's ends, Cmd-Backspace and Cmd-Delete delete to them.
-                "left" | "right" => {
-                    let offset = if key == "left" {
-                        0
-                    } else {
-                        self.edit.text.len()
-                    };
-                    self.edit.select_to(offset, modifiers.shift);
-                }
-                "backspace" | "delete" if !modifiers.shift => {
-                    if self.edit.selection().is_empty() {
-                        let offset = if key == "backspace" {
-                            0
-                        } else {
-                            self.edit.text.len()
-                        };
-                        self.edit.select_to(offset, true);
-                    }
-                    self.replace_text_in_range(None, "", window, cx);
-                }
-                _ if modifiers.shift && !edit => return,
-                "a" => {
-                    self.edit.anchor = 0;
-                    self.edit.cursor = self.edit.text.len();
-                }
-                // A masked secret never reaches the clipboard.
-                "c" | "x" if self.masked => {}
-                "c" | "x" => {
-                    let selection = self.edit.selection();
-                    if !selection.is_empty() {
-                        cx.write_to_clipboard(ClipboardItem::new_string(
-                            self.edit.text[selection].into(),
-                        ));
-                        if key == "x" {
-                            self.replace_text_in_range(None, "", window, cx);
-                        }
-                    }
-                }
-                "v" => {
-                    if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
-                        self.replace_text_in_range(None, &text, window, cx);
-                    }
-                }
-                _ => return,
-            }
-        } else if !modifiers.platform && !modifiers.control && !modifiers.alt {
-            match key {
-                "backspace" | "delete" => {
-                    if self.edit.selection().is_empty() {
-                        let offset = if key == "backspace" {
-                            self.edit.previous()
-                        } else {
-                            self.edit.next()
-                        };
-                        self.edit.select_to(offset, true);
-                    }
-                    self.replace_text_in_range(None, "", window, cx);
-                }
-                "left" | "right" | "home" | "end" => {
-                    let selection = self.edit.selection();
-                    let offset = match key {
-                        "home" => 0,
-                        "end" => self.edit.text.len(),
-                        "left" if !modifiers.shift && !selection.is_empty() => selection.start,
-                        "right" if !modifiers.shift && !selection.is_empty() => selection.end,
-                        "left" => self.edit.previous(),
-                        _ => self.edit.next(),
-                    };
-                    self.edit.select_to(offset, modifiers.shift);
-                }
-                _ => return,
-            }
-        } else if actions::word_modifiers(modifiers)
-            && matches!(key, "backspace" | "delete" | "left" | "right")
-        {
-            // macOS sends these as commands, never text, so the native
-            // handler below would drop them. A masked secret is one word,
-            // as in a native secure field, so its words are not revealed.
-            let selection = self.edit.selection();
-            let backward = matches!(key, "backspace" | "left");
-            let from = match key {
-                "left" if !modifiers.shift && !selection.is_empty() => selection.start,
-                "right" if !modifiers.shift && !selection.is_empty() => selection.end,
-                _ => self.edit.cursor,
-            };
-            let offset = match (backward, self.masked) {
-                (true, true) => 0,
-                (false, true) => self.edit.text.len(),
-                (true, false) => words::previous_start(&self.edit.text, from),
-                (false, false) => words::next_end(&self.edit.text, from),
-            };
-            if matches!(key, "left" | "right") {
-                self.edit.select_to(offset, modifiers.shift);
-            } else {
-                if selection.is_empty() {
-                    self.edit.select_to(offset, true);
-                }
-                self.replace_text_in_range(None, "", window, cx);
-            }
-        } else {
-            // Option/dead-key text also goes through the native input handler.
-            return;
-        }
+        };
+        self.apply(command, window, cx);
         cx.stop_propagation();
         window.prevent_default();
         cx.notify();
+    }
+
+    fn apply(&mut self, command: EditCommand, window: &mut Window, cx: &mut Context<Self>) {
+        match command {
+            EditCommand::Move { to, extend } => self.edit.select_to(to, extend),
+            EditCommand::SelectAll => self.edit.select(0..self.edit.text.len()),
+            EditCommand::Delete(range) => {
+                self.edit.select(range);
+                self.replace_text_in_range(None, "", window, cx);
+            }
+            EditCommand::Kill(range) if range.is_empty() => {}
+            EditCommand::Kill(range) => {
+                // A masked secret is never kept to put back elsewhere.
+                if !self.masked {
+                    self.killed = self.edit.text[range.clone()].to_owned();
+                }
+                self.edit.select(range);
+                self.replace_text_in_range(None, "", window, cx);
+            }
+            // With nothing cut yet, a selection stays rather than being
+            // replaced by nothing.
+            EditCommand::Yank if self.killed.is_empty() => {}
+            EditCommand::Yank => {
+                let killed = self.killed.clone();
+                self.replace_text_in_range(None, &killed, window, cx);
+            }
+            // A masked secret never reaches the clipboard.
+            EditCommand::Copy | EditCommand::Cut if self.masked => {}
+            EditCommand::Copy | EditCommand::Cut => {
+                let selection = self.edit.selection();
+                if !selection.is_empty() {
+                    cx.write_to_clipboard(ClipboardItem::new_string(
+                        self.edit.text[selection].into(),
+                    ));
+                    if command == EditCommand::Cut {
+                        self.replace_text_in_range(None, "", window, cx);
+                    }
+                }
+            }
+            EditCommand::Paste => {
+                if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
+                    self.replace_text_in_range(None, &text, window, cx);
+                }
+            }
+        }
     }
 }
 
@@ -405,7 +346,7 @@ impl EntityInputHandler for SearchInput {
         let selection = self.edit.selection();
         Some(UTF16Selection {
             range: to_utf16(self.text(), selection.start)..to_utf16(self.text(), selection.end),
-            reversed: self.edit.cursor < self.edit.anchor,
+            reversed: self.edit.reversed(),
         })
     }
 
@@ -723,130 +664,4 @@ impl Render for SearchInput {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    mod composition;
-    mod control_keys;
-    mod placeholder;
-    mod rtl_caret;
-    mod word_keys;
-
-    #[test]
-    fn masked_offsets_count_characters_both_ways() {
-        let text = "a\u{e9}\u{1f600}z";
-        for (shown, (byte, _)) in text.char_indices().enumerate() {
-            assert_eq!(masked_offset(text, byte), shown);
-            assert_eq!(unmasked_offset(text, shown), byte);
-        }
-        assert_eq!(masked_offset(text, text.len()), 4);
-        assert_eq!(unmasked_offset(text, 4), text.len());
-        assert_eq!(unmasked_offset(text, 99), text.len());
-    }
-
-    #[test]
-    fn utf16_ranges_are_clamped_to_scalar_boundaries() {
-        let text = "a\u{1f600}\u{e9}\u{4e2d}";
-        assert_eq!(byte_range(text, 1..3), 1..5);
-        assert_eq!(byte_range(text, 2..99), 5..text.len());
-        assert_eq!(byte_range(text, Range { start: 99, end: 1 }), 1..text.len());
-        for (byte, _) in text.char_indices() {
-            assert_eq!(from_utf16(text, to_utf16(text, byte)), byte);
-        }
-    }
-
-    #[test]
-    fn replaces_unicode_selection_and_explicit_utf16_range() {
-        let mut edit = Editing::default();
-        assert!(edit.replace(None, "a\u{1f600}\u{e9}z", false, None, Newlines::Strip));
-        edit.anchor = 7;
-        edit.cursor = 1;
-        assert_eq!(edit.selection(), 1..7);
-        assert!(edit.replace(None, "\u{4e2d}", false, None, Newlines::Strip));
-        assert_eq!(edit.text, "a\u{4e2d}z");
-        assert_eq!(edit.cursor, 4);
-        assert!(edit.replace(Some(1..2), "\u{1f600}", false, None, Newlines::Strip));
-        assert_eq!(edit.text, "a\u{1f600}z");
-        assert_eq!(edit.cursor, 5);
-        assert_eq!(edit.previous(), 1);
-        edit.select_to(1, false);
-        assert_eq!(edit.next(), 5);
-    }
-
-    #[test]
-    fn composition_selection_is_relative_to_inserted_text() {
-        let mut edit = Editing::default();
-        edit.replace(None, "\u{1f600}prefix", false, None, Newlines::Strip);
-        let start = edit.cursor;
-        edit.replace(
-            None,
-            "\u{4e2d}\u{1f600}a",
-            true,
-            Some(1..3),
-            Newlines::Strip,
-        );
-        assert_eq!(edit.selection(), start + 3..start + 7);
-        assert_eq!(edit.marked, Some(start..start + 8));
-        edit.replace(None, "\u{e9}", true, Some(0..1), Newlines::Strip);
-        assert_eq!(edit.selection(), start..start + 2);
-        assert_eq!(edit.marked, Some(start..start + 2));
-        assert!(!edit.replace(None, "\u{e9}", false, None, Newlines::Strip));
-        assert_eq!(edit.marked, None);
-        assert_eq!(edit.selection(), start + 2..start + 2);
-        assert_eq!(edit.text, "\u{1f600}prefix\u{e9}");
-    }
-
-    #[test]
-    fn strips_newlines_and_maps_composition_selection() {
-        let mut edit = Editing::default();
-        edit.replace(None, "a\r\n\u{1f600}\nz", true, Some(3..6), Newlines::Strip);
-        assert_eq!(edit.text, "a\u{1f600}z");
-        assert_eq!(edit.selection(), 1..5);
-        edit.replace(None, "", true, None, Newlines::Strip);
-        assert!(edit.text.is_empty());
-        assert_eq!(edit.marked, None);
-        assert_eq!(edit.selection(), 0..0);
-        assert!(!edit.replace(None, "\r\n", false, None, Newlines::Strip));
-    }
-
-    #[gpui::test]
-    fn cmd_arrows_and_cmd_backspace_reach_the_line_ends(cx: &mut gpui::TestAppContext) {
-        let (input, cx) = cx.add_window_view(|_, cx| SearchInput::new(cx));
-        cx.update(|window, cx| {
-            input.update(cx, |input, cx| {
-                input
-                    .edit
-                    .replace(None, "one two", false, None, Newlines::Strip);
-                input.edit.select_to(3, false);
-                window.focus(&input.focus, cx);
-            });
-            window.draw(cx).clear(cx);
-        });
-        let edit = |cx: &mut gpui::VisualTestContext| {
-            input.read_with(cx, |input, _| {
-                (input.edit.text.clone(), input.edit.selection())
-            })
-        };
-        cx.simulate_keystrokes("cmd-shift-right");
-        assert_eq!(edit(cx), ("one two".into(), 3..7));
-        cx.simulate_keystrokes("cmd-left");
-        assert_eq!(edit(cx), ("one two".into(), 0..0));
-        cx.simulate_keystrokes("cmd-right left left cmd-backspace");
-        assert_eq!(edit(cx), ("wo".into(), 0..0));
-        cx.simulate_keystrokes("cmd-delete");
-        assert_eq!(edit(cx), (String::new(), 0..0));
-    }
-
-    #[test]
-    fn extending_selection_can_cross_its_anchor() {
-        let mut edit = Editing::default();
-        edit.replace(None, "a\u{1f600}b", false, None, Newlines::Strip);
-        edit.select_to(1, false);
-        edit.select_to(0, true);
-        assert_eq!(edit.selection(), 0..1);
-        edit.select_to(5, true);
-        assert_eq!(edit.selection(), 1..5);
-        edit.select_to(edit.next(), true);
-        assert_eq!(edit.selection(), 1..6);
-    }
-}
+mod tests;
