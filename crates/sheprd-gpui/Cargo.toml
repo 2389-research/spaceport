@@ -71,6 +71,8 @@ fluent-syntax.workspace = true
 winresource.workspace = true
 
 [dev-dependencies]
+# `tests/locales.rs` runs the build script's message checks.
+fluent-syntax.workspace = true
 gpui = { features = ["test-support"], workspace = true }
 sheprd-client = { features = ["test-support"], workspace = true }
 sheprd-commands = { features = ["test-support"], workspace = true }

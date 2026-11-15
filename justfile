@@ -187,8 +187,9 @@ check-sorted:
     python3 scripts/test_check_sorted.py
     python3 scripts/check-sorted.py
 
-# Fail when a Fluent message does not parse, repeats, or is unused, or an
-# `fl!` names none (docs/i18n.md).
+# Fail when a Fluent message is unused, a migrated module shows English, or
+# a platform file names other languages (docs/i18n.md). The build, not this,
+# rejects a malformed `.ftl` file.
 check-i18n:
     PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_check_i18n.py
     python3 scripts/check-i18n.py
