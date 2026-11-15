@@ -1,15 +1,22 @@
 use super::super::{Posted, REGISTRY_LIMIT, SheprdWindow};
 use super::*;
 use gpui::{WindowHandle, WindowId};
-use std::{sync::Weak, time::Instant};
+use std::{
+    sync::{Arc, Mutex},
+    time::Instant,
+};
 
 pub(super) fn posted(tag: &str) -> Posted {
     Posted {
         tag: tag.to_owned().into(),
         window: WindowHandle::<SheprdWindow>::new(WindowId::from(1)),
-        endpoint: "local".into(),
-        generation: 0,
-        inbox: Weak::new(),
+        // The state is dropped at once, so this names no live connection.
+        source: crate::endpoint::fence::ConnectionRef::for_test(
+            "local",
+            0,
+            &Arc::new(Mutex::new(crate::state::LiveState::default())),
+        )
+        .downgrade(),
         id: 0,
         at: Instant::now(),
         bus_id: None,

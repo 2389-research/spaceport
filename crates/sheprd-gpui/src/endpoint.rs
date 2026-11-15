@@ -19,6 +19,7 @@ use std::{
 
 mod catalog;
 mod config_reload;
+pub(crate) mod fence;
 mod follow;
 mod history;
 mod order;

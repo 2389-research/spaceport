@@ -8,6 +8,7 @@ use super::SheprdWindow;
 use crate::i18n::{Localize, fl};
 use crate::{
     connection::ConnectionBridge,
+    endpoint::fence::SelectionFence,
     navigation::NavigationTarget,
     terminal::{
         InputTarget, Scrollbar, WheelTarget,
@@ -34,9 +35,7 @@ pub(crate) struct Gesture {
     /// Modifiers the application never sees for this gesture: the
     /// passthrough combination that sent a right-click to it.
     strip: Modifiers,
-    boot: String,
-    epoch: u64,
-    generation: u64,
+    fence: SelectionFence,
 }
 
 /// A drag of a pane's native scrollbar. `grab` keeps the pointer's place on
@@ -115,21 +114,14 @@ impl SheprdWindow {
         let Some(gesture) = self.terminal_mouse.take() else {
             return;
         };
-        if gesture.epoch != self.selection_epoch
-            || gesture.generation != self.selected_generation
-            || self
-                .live
-                .snapshot
-                .as_ref()
-                .is_none_or(|snapshot| snapshot.boot_id != gesture.boot)
-        {
+        if !self.selection_fence_holds(&gesture.fence) {
             return;
         }
         if let Some(handle) = &self.endpoints[self.selected_endpoint].connection.handle
             && let Some(button) = button(gesture.button)
             && let Err(error) = ConnectionBridge::send_input(
                 handle,
-                &gesture.boot,
+                &gesture.fence.boot,
                 &gesture.hit.target,
                 gesture
                     .hit
@@ -279,27 +271,23 @@ impl SheprdWindow {
                 without(event.modifiers, strip),
                 cx,
             )
-            && let Some(snapshot) = &self.live.snapshot
+            && let Some(fence) = self.selection_fence()
         {
             self.terminal_mouse = Some(Gesture {
                 hit,
                 button: event.button,
                 dragged: false,
                 strip,
-                boot: snapshot.boot_id.clone(),
-                epoch: self.selection_epoch,
-                generation: self.selected_generation,
+                fence,
             });
         }
         true
     }
 
     fn gesture_hit(&self, gesture: &Gesture, position: Point<Pixels>) -> Option<WheelTarget> {
-        if self.menu.page.is_some()
+        if !self.selection_fence_holds(&gesture.fence)
+            || self.menu.page.is_some()
             || !self.input_ready()
-            || gesture.epoch != self.selection_epoch
-            || gesture.generation != self.selected_generation
-            || self.live.snapshot.as_ref()?.boot_id != gesture.boot
         {
             return None;
         }
@@ -374,14 +362,8 @@ impl SheprdWindow {
     /// application keeps its button until the next coherent frame decides,
     /// rather than taking an early release as the end of its selection.
     fn gesture_waits(&self, gesture: &Gesture) -> bool {
-        self.menu.page.is_none()
-            && gesture.epoch == self.selection_epoch
-            && gesture.generation == self.selected_generation
-            && self
-                .live
-                .snapshot
-                .as_ref()
-                .is_some_and(|snapshot| snapshot.boot_id == gesture.boot)
+        self.selection_fence_holds(&gesture.fence)
+            && self.menu.page.is_none()
             && (!self.live.surface_ready() || !self.surface_matches_options())
     }
 

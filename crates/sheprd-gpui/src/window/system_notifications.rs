@@ -21,11 +21,10 @@ mod handler;
 mod toast;
 
 use super::SheprdWindow;
-use crate::{notifications::SystemPost, state::LiveState};
+use crate::{endpoint::fence::WeakConnectionRef, notifications::SystemPost};
 use gpui::{App, Context, Global, SharedString, SystemNotification, Window, WindowHandle};
 use std::{
     collections::VecDeque,
-    sync::{Mutex, Weak},
     time::{Duration, Instant},
 };
 
@@ -40,9 +39,8 @@ const PREVIEW_DELAY: Duration = Duration::from_secs(3);
 struct Posted {
     tag: SharedString,
     window: WindowHandle<SheprdWindow>,
-    endpoint: String,
-    generation: u64,
-    inbox: Weak<Mutex<LiveState>>,
+    /// Weak, so the registry keeps no dropped connection's state alive.
+    source: WeakConnectionRef,
     id: u64,
     at: Instant,
     /// The notification daemon's id, once its reply arrives.
@@ -142,24 +140,16 @@ pub(crate) fn install_registry(cx: &mut App) {
 /// Brings forward the window that posted `tag` and opens its target, as a
 /// click on the notification does; whether this app posted it recently.
 pub(crate) fn open(tag: &str, cx: &mut App) -> bool {
-    let Some((window, endpoint, generation, inbox, id)) =
-        cx.try_global::<Registry>().and_then(|registry| {
-            let posted = registry.find(tag)?;
-            Some((
-                posted.window,
-                posted.endpoint.clone(),
-                posted.generation,
-                posted.inbox.clone(),
-                posted.id,
-            ))
-        })
-    else {
+    let Some((window, source, id)) = cx.try_global::<Registry>().and_then(|registry| {
+        let posted = registry.find(tag)?;
+        Some((posted.window, posted.source.clone(), posted.id))
+    }) else {
         return false;
     };
     cx.activate(true);
     window
         .update(cx, |view, window, cx| {
-            view.open_system_notification(&endpoint, generation, &inbox, id, window, cx);
+            view.open_system_notification(&source, id, window, cx);
         })
         .is_ok()
 }
@@ -240,9 +230,7 @@ impl SheprdWindow {
         cx.global_mut::<Registry>().record(Posted {
             tag,
             window: handle,
-            endpoint: source.id.clone(),
-            generation: source.generation,
-            inbox: std::sync::Arc::downgrade(&source.connection.inbox),
+            source: source.connection_ref().downgrade(),
             id,
             at: now,
             #[cfg(target_os = "linux")]
@@ -346,9 +334,7 @@ impl SheprdWindow {
     /// when the posting connection is still the current one.
     pub(crate) fn open_system_notification(
         &mut self,
-        endpoint_id: &str,
-        generation: u64,
-        inbox: &Weak<Mutex<LiveState>>,
+        source: &WeakConnectionRef,
         id: u64,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -357,14 +343,10 @@ impl SheprdWindow {
         if self.menu.page.is_some() {
             return;
         }
-        let Some(inbox) = inbox.upgrade() else {
-            return;
-        };
-        let Some(index) = self.endpoints.iter().position(|e| {
-            e.id == endpoint_id
-                && e.generation == generation
-                && std::sync::Arc::ptr_eq(&e.connection.inbox, &inbox)
-        }) else {
+        let Some(index) = source
+            .upgrade()
+            .and_then(|source| self.endpoint_for(&source))
+        else {
             return;
         };
         self.open_notice(index, id, cx);

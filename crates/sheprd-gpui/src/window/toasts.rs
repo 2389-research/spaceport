@@ -1,6 +1,7 @@
 // i18n: migrated
 use super::SheprdWindow;
 use crate::{
+    endpoint::fence::ConnectionRef,
     i18n::fl,
     notifications::{Notice, VISIBLE_LIMIT},
 };
@@ -16,22 +17,11 @@ use card::Look;
 use motion::{Drawn, Key};
 
 impl SheprdWindow {
-    pub(crate) fn click_toast(
-        &mut self,
-        endpoint_id: &str,
-        generation: u64,
-        inbox: &std::sync::Arc<std::sync::Mutex<crate::state::LiveState>>,
-        id: u64,
-        cx: &mut Context<Self>,
-    ) {
+    pub(crate) fn click_toast(&mut self, source: &ConnectionRef, id: u64, cx: &mut Context<Self>) {
         if self.menu.page.is_some() || self.toasts_hidden {
             return;
         }
-        let Some(index) = self.endpoints.iter().position(|e| {
-            e.id == endpoint_id
-                && e.generation == generation
-                && std::sync::Arc::ptr_eq(&e.connection.inbox, inbox)
-        }) else {
+        let Some(index) = self.endpoint_for(source) else {
             return;
         };
         self.open_notice(index, id, cx);
@@ -256,7 +246,7 @@ impl SheprdWindow {
                                 id: *id,
                             },
                             label: endpoint.label.clone(),
-                            inbox: endpoint.connection.inbox.clone(),
+                            source: endpoint.connection_ref(),
                             notice: notice.clone(),
                             corner: if narrow {
                                 ToastHerdrPosition::BottomRight

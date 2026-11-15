@@ -279,7 +279,11 @@ fn toast_rendered_clicks_reject_replaced_removed_and_disabled_origins(
         // Invoke the captured callback identity directly: simulate_click redraws
         // first and would correctly capture the replacement generation instead.
         view.update(cx, |view, cx| {
-            view.click_toast("ssh:toast", generation, &inbox, 0, cx)
+            view.click_toast(
+                &fence::ConnectionRef::for_test("ssh:toast", generation, &inbox),
+                0,
+                cx,
+            )
         });
         view.read_with(cx, |view, _| {
             assert_eq!(view.selected_endpoint, 0);
