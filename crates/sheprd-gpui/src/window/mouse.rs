@@ -526,7 +526,7 @@ impl SheprdWindow {
             .panes
             .iter()
             .find(|p| p.pane_id == pane)?;
-        Scrollbar::new(pane, self.cell_width, self.config.terminal.line_height())
+        Scrollbar::new(pane, self.metrics())
     }
 
     /// Grabs the thumb where pressed, or jumps it under the pointer when the
@@ -547,9 +547,9 @@ impl SheprdWindow {
             return false;
         }
         let local = event.position - self.bounds.origin;
-        let cell_height = self.config.terminal.line_height();
+        let metrics = self.metrics();
         let Some((pane, bar)) = surface.panes.iter().find_map(|pane| {
-            Scrollbar::new(pane, self.cell_width, cell_height)
+            Scrollbar::new(pane, metrics)
                 .filter(|bar| bar.track.contains(&local))
                 .map(|bar| (pane.pane_id.clone(), bar))
         }) else {

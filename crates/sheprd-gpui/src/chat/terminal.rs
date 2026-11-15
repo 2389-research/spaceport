@@ -2,10 +2,7 @@
 //! are replaced by rich prose; the bottom cells, focus, IME, image paste and
 //! approval dialogs remain the original running program's UI.
 
-use super::{
-    chats::{ChatInput, ChatPane},
-    view::pane_bounds,
-};
+use super::chats::{ChatInput, ChatPane};
 use crate::i18n::fl;
 use crate::{SheprdWindow, fonts::StyledFont};
 use gpui::{prelude::*, *};
@@ -174,11 +171,7 @@ impl SheprdWindow {
         layout: Layout,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        let bounds = pane_bounds(
-            layout.divider,
-            self.cell_width,
-            self.config.terminal.line_height(),
-        );
+        let bounds = self.metrics().bounds(layout.divider);
         let pane = chat.target.pane_id.clone();
         let focus_pane = pane.clone();
         let expanded = chat

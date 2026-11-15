@@ -3,7 +3,7 @@
 use serde_json::{Value, json};
 
 use super::PANE;
-use crate::{SheprdWindow, chat::view::pane_bounds};
+use crate::SheprdWindow;
 
 #[derive(Default)]
 pub(super) struct Probe {
@@ -24,11 +24,7 @@ impl Probe {
         let Some(layout) = view.chat_terminal_layout(pane, surface) else {
             return;
         };
-        let bounds = pane_bounds(
-            layout.divider,
-            view.cell_width,
-            view.config.terminal.line_height(),
-        );
+        let bounds = view.metrics().bounds(layout.divider);
         let state = json!({
             "mode": format!("{:?}", chat.terminal_size),
             "input_rows": layout.input.height,

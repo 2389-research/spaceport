@@ -6,7 +6,7 @@
 //! Both are optional. A daemon that does not advertise them keeps the
 //! row-local detector in `terminal::links`, which needs no round trip.
 
-use crate::terminal::{InputTarget, wheel_target};
+use crate::terminal::{CellMetrics, InputTarget, wheel_target};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use sheprd_client::{
@@ -171,8 +171,8 @@ impl LinkCell {
             return None;
         }
         let rect = pane.inner_rect;
-        let col = ((x / cell_width).floor() as u16).checked_sub(rect.x)?;
-        let row = ((y / cell_height).floor() as u16).checked_sub(rect.y)?;
+        let (col, row) = CellMetrics::new(cell_width, cell_height).cell_at(x, y);
+        let (col, row) = (col.checked_sub(rect.x)?, row.checked_sub(rect.y)?);
         (col < rect.width && row < rect.height).then(|| Self {
             boot: surface.boot_id.clone(),
             pane_id,

@@ -1,5 +1,6 @@
 mod accessibility;
 mod links;
+mod metrics;
 mod selection;
 pub(crate) mod splits;
 pub(crate) use accessibility::Transcript;
@@ -7,6 +8,7 @@ pub(crate) use links::{
     ExternalUrl, PaneLink, RowLink, RowTarget, escape_into, escaped_len, file_target, link_at,
     pane_hyperlink_at, pane_link_at,
 };
+pub(crate) use metrics::CellMetrics;
 pub(crate) use selection::{MAX_SELECTION_BYTES, Selection};
 
 use crate::{config::Theme, keymap::PaneKey};
@@ -16,8 +18,8 @@ use gpui::{
 };
 use sheprd_client::protocol::{
     CellData, ClientKeyCode, ClientKeyKind, ClientMouseGeometry, ClientMouseKind,
-    ClientMousePosition, ClientPaneInputEvent, ClientSurfaceSize, CursorState, FrameData,
-    PaneSurfaceFrame, PaneSurfacePane, SurfaceRect,
+    ClientMousePosition, ClientPaneInputEvent, ClientSurfaceSize, FrameData, PaneSurfaceFrame,
+    PaneSurfacePane, SurfaceRect,
 };
 use std::num::NonZeroU16;
 
@@ -36,48 +38,37 @@ pub(crate) const REVERSED: u16 = 1 << 6;
 pub(crate) const HIDDEN: u16 = 1 << 7;
 pub(crate) const STRIKETHROUGH: u16 = 1 << 8;
 
+/// Where a popup's grid starts inside its frame's grid: centred, with only
+/// the horizontal offset floored to a whole pixel.
 pub(crate) fn popup_origin(
     frame: &FrameData,
     popup: &FrameData,
-    cell_width: f32,
-    cell_height: f32,
+    metrics: CellMetrics,
 ) -> Point<Pixels> {
     point(
-        px((frame.width.saturating_sub(popup.width) as f32 * cell_width / 2.).floor()),
-        px(frame.height.saturating_sub(popup.height) as f32 * cell_height / 2.),
-    )
-}
-
-pub(crate) fn cursor_offset(
-    cursor: &CursorState,
-    cell_width: f32,
-    cell_height: f32,
-) -> Point<Pixels> {
-    point(
-        px(cursor.x as f32 * cell_width),
-        px(cursor.y as f32 * cell_height),
+        px((frame.width.saturating_sub(popup.width) as f32 * metrics.width / 2.).floor()),
+        px(frame.height.saturating_sub(popup.height) as f32 * metrics.height / 2.),
     )
 }
 
 pub(crate) fn input_cursor_bounds(
     surface: Option<&PaneSurfaceFrame>,
     origin: Point<Pixels>,
-    cell_width: f32,
-    cell_height: f32,
+    metrics: CellMetrics,
 ) -> Bounds<Pixels> {
     let mut origin = origin;
     if let Some(surface) = surface {
         let frame = if let Some(popup) = &surface.popup {
-            origin += popup_origin(&surface.frame, &popup.frame, cell_width, cell_height);
+            origin += popup_origin(&surface.frame, &popup.frame, metrics);
             &popup.frame
         } else {
             &surface.frame
         };
         if let Some(cursor) = &frame.cursor {
-            origin += cursor_offset(cursor, cell_width, cell_height);
+            origin += metrics.origin(cursor.x, cursor.y);
         }
     }
-    Bounds::new(origin, size(px(cell_width), px(cell_height)))
+    Bounds::new(origin, metrics.cell())
 }
 
 /// Where input lands: the popup when one is open, otherwise the whole grid.
@@ -85,8 +76,7 @@ pub(crate) fn input_cursor_bounds(
 pub(crate) fn input_area(
     surface: Option<&PaneSurfaceFrame>,
     grid: Bounds<Pixels>,
-    cell_width: f32,
-    cell_height: f32,
+    metrics: CellMetrics,
 ) -> Bounds<Pixels> {
     let Some((frame, popup)) =
         surface.and_then(|surface| Some((&surface.frame, surface.popup.as_ref()?)))
@@ -94,11 +84,8 @@ pub(crate) fn input_area(
         return grid;
     };
     Bounds::new(
-        grid.origin + popup_origin(frame, &popup.frame, cell_width, cell_height),
-        size(
-            px(f32::from(popup.frame.width) * cell_width),
-            px(f32::from(popup.frame.height) * cell_height),
-        ),
+        grid.origin + popup_origin(frame, &popup.frame, metrics),
+        metrics.extent(popup.frame.width, popup.frame.height),
     )
 }
 
@@ -114,18 +101,15 @@ pub(crate) fn pane_at(
     surface: &PaneSurfaceFrame,
     bounds: Bounds<Pixels>,
     position: Point<Pixels>,
-    cell_width: f32,
-    cell_height: f32,
+    metrics: CellMetrics,
 ) -> Option<&str> {
+    let (cell_width, cell_height) = (metrics.width, metrics.height);
     let x = (position.x - bounds.origin.x).to_f64() as f32;
     let y = (position.y - bounds.origin.y).to_f64() as f32;
     if surface.popup.is_some()
         || !x.is_finite()
         || !y.is_finite()
-        || !cell_width.is_finite()
-        || !cell_height.is_finite()
-        || cell_width <= 0.
-        || cell_height <= 0.
+        || !metrics.usable()
         || x < 0.
         || y < 0.
         || x >= bounds.size.width.to_f64() as f32
@@ -352,20 +336,13 @@ pub fn wheel_target(
     cell_width: f32,
     cell_height: f32,
 ) -> Option<WheelTarget> {
-    if !x.is_finite()
-        || !y.is_finite()
-        || !cell_width.is_finite()
-        || !cell_height.is_finite()
-        || cell_width <= 0.
-        || cell_height <= 0.
-        || x < 0.
-        || y < 0.
-    {
+    let metrics = CellMetrics::new(cell_width, cell_height);
+    if !x.is_finite() || !y.is_finite() || !metrics.usable() || x < 0. || y < 0. {
         return None;
     }
     let (target, rect, mouse_reporting, pixel_mouse, width_px, height_px, origin_x, origin_y) =
         if let Some(popup) = &surface.popup {
-            let origin = popup_origin(&surface.frame, &popup.frame, cell_width, cell_height);
+            let origin = popup_origin(&surface.frame, &popup.frame, metrics);
             (
                 InputTarget::Popup(popup.terminal_id.clone()),
                 SurfaceRect {
@@ -409,8 +386,7 @@ pub fn wheel_target(
     {
         return None;
     }
-    let column = (x / cell_width).floor() as u16;
-    let row = (y / cell_height).floor() as u16;
+    let (column, row) = metrics.cell_at(x, y);
     let geometry = (pixel_mouse && width_px > 0 && height_px > 0).then_some(ClientMouseGeometry {
         cols: rect.width,
         rows: rect.height,
@@ -439,10 +415,7 @@ pub fn wheel_target(
         stepwise,
         bounds: Bounds::new(
             point(px(origin_x), px(origin_y)),
-            size(
-                px(rect.width as f32 * cell_width),
-                px(rect.height as f32 * cell_height),
-            ),
+            metrics.extent(rect.width, rect.height),
         ),
         position,
         geometry,
@@ -672,21 +645,12 @@ pub(crate) struct Scrollbar {
 }
 
 impl Scrollbar {
-    pub(crate) fn new(pane: &PaneSurfacePane, cell_width: f32, cell_height: f32) -> Option<Self> {
+    pub(crate) fn new(pane: &PaneSurfacePane, metrics: CellMetrics) -> Option<Self> {
         let (rect, scroll) = (pane.scrollbar_rect?, pane.scroll?);
         if scroll.max_offset_from_bottom == 0 || rect.height == 0 {
             return None;
         }
-        let track = Bounds::new(
-            point(
-                px(f32::from(rect.x) * cell_width),
-                px(f32::from(rect.y) * cell_height),
-            ),
-            size(
-                px(f32::from(rect.width) * cell_width),
-                px(f32::from(rect.height) * cell_height),
-            ),
-        );
+        let track = metrics.bounds(rect);
         let height = f32::from(track.size.height);
         let max = scroll.max_offset_from_bottom as f32;
         let visible = scroll.viewport_rows as f32;

@@ -148,6 +148,7 @@ impl Render for SheprdWindow {
         let focus = self.focus.clone();
         let menu_open = self.menu.page.is_some();
         let cell_width = self.cell_width;
+        let metrics = self.metrics();
         let painter = self.painter.clone();
         // The highlight is grid coordinates, so it paints with the frame that
         // owns the cells rather than being recomputed from the pointer here.
@@ -208,8 +209,7 @@ impl Render for SheprdWindow {
         let look = super::regions::Look {
             font: font.clone(),
             font_size: self.config.terminal.size,
-            cell_width,
-            cell_height,
+            metrics,
             theme: self.terminal_theme().clone(),
             ground,
         };
@@ -219,12 +219,9 @@ impl Render for SheprdWindow {
         let now = crate::motion::now();
         let slide = self.presentation.scroll.slide(now);
         // A link in a pane drawn mid-row underlines where its text is drawn.
-        let link_shift = link_rows.first().and_then(|(row, columns)| {
-            self.shift_at(point(
-                px(f32::from(columns.start) * cell_width),
-                px(f32::from(*row) * cell_height),
-            ))
-        });
+        let link_shift = link_rows
+            .first()
+            .and_then(|(row, columns)| self.shift_at(metrics.origin(columns.start, *row)));
         if self.presentation.scroll.moving(now) {
             // Advance the drawing on the next refresh through the surface
             // signal: notifying this view would also rebuild the cached sidebar.
@@ -367,14 +364,8 @@ impl Render for SheprdWindow {
                     if this.input_ready()
                         && let Some(surface) = &this.live.surface
                     {
-                        let pane = pane_at(
-                            surface,
-                            this.bounds,
-                            event.position,
-                            this.cell_width,
-                            this.config.terminal.line_height(),
-                        )
-                        .map(str::to_owned);
+                        let pane = pane_at(surface, this.bounds, event.position, this.metrics())
+                            .map(str::to_owned);
                         if let Some(id) = pane {
                             this.focus_clicked_pane(&id, cx);
                         }
@@ -536,12 +527,8 @@ impl Render for SheprdWindow {
                                         None => paint_link(window, px(0.)),
                                     }
                                     if let Some(popup) = &surface.popup {
-                                        let offset = popup_origin(
-                                            &surface.frame,
-                                            &popup.frame,
-                                            cell_width,
-                                            cell_height,
-                                        );
+                                        let offset =
+                                            popup_origin(&surface.frame, &popup.frame, metrics);
                                         painter.borrow_mut().paint_frame(
                                             &popup.frame,
                                             bounds.origin + offset,
@@ -566,15 +553,9 @@ impl Render for SheprdWindow {
                                     let live = live.as_deref();
                                     painter.borrow().paint_composition(
                                         marked,
-                                        input_cursor_bounds(
-                                            live,
-                                            bounds.origin,
-                                            cell_width,
-                                            cell_height,
-                                        )
-                                        .origin
+                                        input_cursor_bounds(live, bounds.origin, metrics).origin
                                             + point(px(0.), *shift),
-                                        input_area(live, bounds, cell_width, cell_height),
+                                        input_area(live, bounds, metrics),
                                         &font,
                                         window,
                                     );
