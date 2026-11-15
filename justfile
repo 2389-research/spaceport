@@ -200,10 +200,9 @@ sort:
 
 # Fail when the Spaceport specification's cross-file references, evidence
 # paths or generated views are out of step (docs/spaceport/tools/README.md).
-# The JSON Schema examples need tools/requirements.txt and are not run here.
+# Runs the tool tests in a virtual environment with the pinned requirements.
 check-spec:
-    PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s docs/spaceport/tools -p 'test_*.py'
-    PYTHONDONTWRITEBYTECODE=1 python3 docs/spaceport/tools/spec.py check --skip-schema
+    scripts/check-spec.sh
 
 ci: format-check check-file-size check-sorted check-i18n check-spec check-artwork lint test
 
