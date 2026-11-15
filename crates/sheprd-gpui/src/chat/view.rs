@@ -520,10 +520,8 @@ impl SheprdWindow {
         }
         self.focus_chat_surface(pane_id, cx);
         if let Some(pane) = self.chats.pane_mut(pane_id)
-            && pane.menu.is_some()
+            && pane.close_menu()
         {
-            pane.menu = None;
-            pane.menu_search = None;
             cx.notify();
         }
     }
