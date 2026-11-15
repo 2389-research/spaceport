@@ -682,19 +682,6 @@ impl Render for SheprdWindow {
                 (Shown::Terminal, _) if self.shows_parked_terminal(slot.id, cx) => {
                     self.render_parked_terminal(slot, parked_font.clone(), cell_height, cx)
                 }
-                // Retired tabs are dropped on load and never opened.
-                (Shown::Page(_), Some(tab))
-                    if matches!(
-                        tab.location,
-                        Some(
-                            crate::browser::Location::RetiredOrchestrator { .. }
-                                | crate::browser::Location::RetiredSource { .. }
-                                | crate::browser::Location::RetiredReview { .. }
-                        )
-                    ) =>
-                {
-                    div().into_any_element()
-                }
                 (Shown::Page(_), Some(tab)) => match tab.location {
                     None if tab.core_group().is_some() => {
                         self.render_core_terminal_tab(slot, &tab, cx)
@@ -705,7 +692,8 @@ impl Render for SheprdWindow {
                     Some(crate::browser::Location::CoreTerminal { .. }) => {
                         self.render_core_terminal_tab(slot, &tab, cx)
                     }
-                    _ => div().into_any_element(),
+                    // A blank tab outside a Core group shows nothing.
+                    None => div().into_any_element(),
                 },
                 (Shown::Elsewhere(tab), _) => match self.live_frame_of(tab, window_frame.clone()) {
                     Some(frame) => self.render_terminal_mirror(

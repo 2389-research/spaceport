@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use uuid::Uuid;
 
+mod saved;
+
 const MAX_TABS: usize = 256;
 const MAX_FILE_BYTES: u64 = 1024 * 1024;
 const MAX_TITLE_CHARS: usize = 200;
@@ -167,53 +169,7 @@ impl Scope {
     }
 }
 
-/// Retired editor names remain parseable so a saved file can retain its other tabs.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(crate) enum Place {
-    #[default]
-    Group,
-    /// Read only while loading an old px0 tab; never restored or created.
-    RetiredPx0,
-    /// Read only while loading an old tab file; never restored or created.
-    RetiredVsCode,
-}
-
-impl Serialize for Place {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::Group => serializer.serialize_str("group"),
-            Self::RetiredPx0 => serializer.serialize_str("px0"),
-            Self::RetiredVsCode => serializer.serialize_str("code"),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for Place {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let name = String::deserialize(deserializer)?;
-        if name == "group" {
-            return Ok(Self::Group);
-        }
-        if name == "code" || name == "code_group" {
-            return Ok(Self::RetiredVsCode);
-        }
-        if name == "px0" {
-            return Ok(Self::RetiredPx0);
-        }
-        Err(serde::de::Error::unknown_variant(
-            &name,
-            &["group", "code", "code_group", "px0"],
-        ))
-    }
-}
-
-impl Place {
-    pub(crate) fn is_editor(self) -> bool {
-        matches!(self, Self::RetiredPx0 | Self::RetiredVsCode)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub(crate) struct Tab {
     pub id: TabId,
     pub scope: Scope,
@@ -223,15 +179,7 @@ pub(crate) struct Tab {
     /// The native content title, updated from terminal reports.
     pub title: String,
     /// The Herdr pane that opened the tab, when it has one.
-    #[serde(default)]
     pub origin: Option<String>,
-    /// Tabs saved before panels existed are all `Group` tabs.
-    #[serde(default, skip_serializing_if = "is_group")]
-    pub place: Place,
-}
-
-fn is_group(place: &Place) -> bool {
-    *place == Place::Group
 }
 
 impl Tab {
@@ -240,32 +188,19 @@ impl Tab {
             || matches!(self.location, Some(Location::CoreTerminal { .. }))
     }
 
-    /// The title the window shows: a page's own, or the one the app gives
-    /// a tab it draws or one still waiting for an address. An editor tab
-    /// keeps its product's name while it waits, and a terminal tab shows its
-    /// program's title once the program sets one.
+    /// The title the window shows: the one the app gives a tab it draws or
+    /// one still waiting for its content. A terminal tab shows its program's
+    /// title once the program sets one.
     pub(crate) fn label(&self) -> String {
         match &self.location {
-            None if self.place.is_editor() => self.title.clone(),
             None => fl!("browser-tab-new"),
             Some(location @ Location::CoreTerminal { .. })
                 if !self.title.is_empty() && self.title != location.default_title() =>
             {
                 self.title.clone()
             }
-            Some(location) => location.drawn_title().unwrap_or_else(|| self.title.clone()),
+            Some(location) => location.drawn_title(),
         }
-    }
-
-    fn valid(&self) -> bool {
-        self.scope.valid_workspace(&self.workspace_id)
-            && self.title.chars().count() <= MAX_TITLE_CHARS
-            && self
-                .origin
-                .as_ref()
-                .is_none_or(|pane| !pane.is_empty() && pane.len() <= 256)
-            // Editor tabs do not have a terminal agent to own them.
-            && (!self.place.is_editor() || self.origin.is_none())
     }
 
     pub(crate) fn core_group(&self) -> Option<CoreGroupKey> {
@@ -273,11 +208,11 @@ impl Tab {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+/// The tabs as they are written, and as [`saved::parse`] restores them.
+#[derive(Default, Serialize)]
 struct Saved {
     tabs: Vec<Tab>,
     /// Preserve IDs of tabs removed by a later app version across saves.
-    #[serde(default)]
     next: u64,
 }
 
@@ -303,23 +238,10 @@ fn clean_title(title: &str) -> String {
         .to_owned()
 }
 
-#[cfg(test)]
-fn parse(bytes: &[u8]) -> crate::Result<Vec<Tab>> {
-    Ok(parse_saved(bytes)?.tabs)
-}
-
-fn parse_saved(bytes: &[u8]) -> crate::Result<Saved> {
-    let saved: Saved = serde_json::from_slice(bytes)?;
-    if saved.tabs.len() > MAX_TABS || !saved.tabs.iter().all(Tab::valid) {
-        return Err(crate::Error::InvalidBrowserTabs);
-    }
-    Ok(saved)
-}
-
 impl Store {
     #[cfg(test)]
     pub(crate) fn restored_for_test(bytes: &[u8]) -> crate::Result<Self> {
-        Ok(Self::with_saved(parse_saved(bytes)?, None))
+        Ok(Self::with_saved(saved::parse(bytes)?, None))
     }
 
     fn path() -> Option<PathBuf> {
@@ -334,7 +256,7 @@ impl Store {
             .as_deref()
             .map(|path| {
                 state_file::read(path, MAX_FILE_BYTES)
-                    .and_then(|bytes| bytes.as_deref().map_or(Ok(Saved::default()), parse_saved))
+                    .and_then(|bytes| bytes.as_deref().map_or(Ok(Saved::default()), saved::parse))
             })
             .transpose()
             .unwrap_or_else(|error| {
@@ -354,33 +276,10 @@ impl Store {
         Self::with_saved(tabs, writer)
     }
 
-    #[cfg(test)]
-    fn with_tabs(tabs: Vec<Tab>, writer: Option<state_file::Writer<Saved>>) -> Self {
-        Self::with_saved(Saved { tabs, next: 0 }, writer)
-    }
-
     fn with_saved(saved: Saved, writer: Option<state_file::Writer<Saved>>) -> Self {
-        let Saved { mut tabs, next } = saved;
-        // Saved group picks may still name a discarded tab. Never assign its
-        // ID to a new tab or that old pick could show unrelated content.
-        let next = next.max(
-            tabs.iter()
-                .map(|tab| tab.id.0.saturating_add(1))
-                .max()
-                .unwrap_or(0),
-        );
-        // Only the retained native views restore. Old page and editor IDs
-        // stay reserved so a saved group pick cannot show unrelated content.
-        tabs.retain(|tab| {
-            !matches!(tab.place, Place::RetiredVsCode | Place::RetiredPx0)
-                && (matches!(
-                    tab.location,
-                    Some(Location::Devices | Location::CoreTerminal { .. })
-                ) || matches!((&tab.scope, &tab.location), (Scope::Core(_), None)))
-        });
         Self {
-            tabs,
-            next,
+            tabs: saved.tabs,
+            next: saved.next,
             closed: Default::default(),
             writer,
             quitting: false,
@@ -465,26 +364,6 @@ impl Store {
         location: Option<Location>,
         origin: Option<String>,
     ) -> Option<TabId> {
-        self.push(scope, workspace_id, location, origin, Place::Group)
-    }
-
-    pub(crate) fn open_core(
-        &mut self,
-        key: &CoreGroupKey,
-        location: Option<Location>,
-    ) -> Option<TabId> {
-        let (scope, workspace_id) = key.parts();
-        self.push(scope, &workspace_id, location, None, Place::Group)
-    }
-
-    fn push(
-        &mut self,
-        scope: Scope,
-        workspace_id: &str,
-        location: Option<Location>,
-        origin: Option<String>,
-        place: Place,
-    ) -> Option<TabId> {
         let title = location
             .as_ref()
             // i18n: data
@@ -496,8 +375,16 @@ impl Store {
             location,
             title,
             origin,
-            place,
         })
+    }
+
+    pub(crate) fn open_core(
+        &mut self,
+        key: &CoreGroupKey,
+        location: Option<Location>,
+    ) -> Option<TabId> {
+        let (scope, workspace_id) = key.parts();
+        self.open(scope, &workspace_id, location, None)
     }
 
     pub(super) fn restore_tab(&mut self, mut tab: Tab) -> Option<TabId> {
