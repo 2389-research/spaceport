@@ -19,6 +19,7 @@ use std::{
 
 mod catalog;
 mod config_reload;
+mod error;
 pub(crate) mod fence;
 mod follow;
 mod history;
@@ -29,6 +30,7 @@ mod polling;
 mod wake;
 
 pub(super) use catalog::Catalog;
+pub use error::Error;
 pub(crate) use history::Step;
 pub(crate) use phase::Phase;
 pub(super) use wake::WakeClock;
@@ -594,10 +596,14 @@ impl SheprdWindow {
         self.pending_toast = None;
     }
 
-    pub(super) fn select_endpoint(&mut self, id: &str, cx: &mut Context<Self>) -> bool {
-        if !self.switch_endpoint(id, cx) {
-            return false;
-        }
+    /// Shows the host `id` and remembers the choice. A refusal is returned,
+    /// and the one a person can act on also shows in the status bar.
+    pub(super) fn select_endpoint(
+        &mut self,
+        id: &str,
+        cx: &mut Context<Self>,
+    ) -> crate::Result<()> {
+        self.switch_endpoint(id, cx)?;
         self.leave_core_group(cx);
         self.catalog.choose(id);
         if let Some(error) = self.catalog.poll_write() {
@@ -607,7 +613,7 @@ impl SheprdWindow {
             ));
             cx.notify();
         }
-        true
+        Ok(())
     }
 
     /// The installation this window's local endpoint belongs to. A development
@@ -638,7 +644,7 @@ impl SheprdWindow {
         if self.endpoints[0].connection.target != target {
             self.endpoints[0].retarget(target);
         }
-        if self.selected_endpoint != 0 && !self.switch_endpoint(LOCAL, cx) {
+        if self.selected_endpoint != 0 && self.switch_endpoint(LOCAL, cx).is_err() {
             return;
         }
         // This is a deliberate move off any remote selection, which must not be
@@ -687,7 +693,7 @@ impl SheprdWindow {
         if retargeted {
             self.endpoints[index].retarget(target);
         }
-        if self.selected_endpoint != index && !self.switch_endpoint(id, cx) {
+        if self.selected_endpoint != index && self.switch_endpoint(id, cx).is_err() {
             return;
         }
         self.catalog.choose(id);
@@ -708,12 +714,12 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    fn switch_endpoint(&mut self, id: &str, cx: &mut Context<Self>) -> bool {
+    fn switch_endpoint(&mut self, id: &str, cx: &mut Context<Self>) -> Result<(), Error> {
         let Some(index) = self.endpoints.iter().position(|e| e.id == id && e.enabled) else {
-            return false;
+            return Err(Error::NoHost { id: id.to_owned() });
         };
         if index == self.selected_endpoint {
-            return true;
+            return Ok(());
         }
         if index != 0
             && self.endpoints[self.selected_endpoint]
@@ -722,9 +728,10 @@ impl SheprdWindow {
                 .is_connected()
             && !self.endpoints[self.selected_endpoint].live.supports_surface
         {
-            self.local_error = Some(fl!("endpoint-surface-switching-unsupported"));
+            let error = Error::SurfaceSwitchingUnsupported;
+            self.local_error = Some(error.localize());
             cx.notify();
-            return false;
+            return Err(error);
         }
         self.leave_selected(Instant::now());
         self.release_selected();
@@ -746,7 +753,7 @@ impl SheprdWindow {
         self.activation_deadline =
             (!self.endpoints[index].detached).then(|| Instant::now() + ACTIVATION_TIMEOUT);
         cx.notify();
-        true
+        Ok(())
     }
 
     fn release_selected(&mut self) {
@@ -790,7 +797,7 @@ impl SheprdWindow {
         if self.menu.page.is_some() {
             return false;
         }
-        if !self.select_endpoint(endpoint, cx) {
+        if self.select_endpoint(endpoint, cx).is_err() {
             return false;
         }
         self.pending_toast = None;

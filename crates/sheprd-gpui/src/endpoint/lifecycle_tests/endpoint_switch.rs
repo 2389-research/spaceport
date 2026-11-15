@@ -31,14 +31,14 @@ fn saved_selection_waits_for_snapshot_without_overwriting_preference(
         assert!(!view.catalog.restore_pending);
         assert!(view.catalog.queued_write.is_none());
         // Automatic fallback is not a user choice and must not cause a loop.
-        view.switch_endpoint(LOCAL, cx);
+        let _ = view.switch_endpoint(LOCAL, cx);
         view.restore_selection(cx);
         assert_eq!(view.selected_endpoint, 0);
         assert_eq!(view.catalog.desired.as_deref(), Some("ssh:saved"));
         assert!(view.catalog.queued_write.is_none());
         // An explicit Local click cancels even a not-yet-ready restore.
         view.catalog.restore_pending = true;
-        view.select_endpoint(LOCAL, cx);
+        let _ = view.select_endpoint(LOCAL, cx);
         view.restore_selection(cx);
         assert_eq!(view.catalog.desired, None);
         assert_eq!(view.selected_endpoint, 0);
@@ -97,7 +97,7 @@ fn deferred_release_is_generation_fenced_and_local_can_escape(cx: &mut gpui::Tes
             view.endpoints.extend([source, target]);
             view.selected_endpoint = 1;
             view.reset_selected(cx);
-            assert!(view.select_endpoint("ssh:target", cx));
+            assert!(view.select_endpoint("ssh:target", cx).is_ok());
             assert!(matches!(
                 view.pending_releases[0].phase,
                 ReleasePhase::Deferred(_)
@@ -113,7 +113,7 @@ fn deferred_release_is_generation_fenced_and_local_can_escape(cx: &mut gpui::Tes
                     Arc::make_mut(held.snapshot.as_mut().unwrap()).boot_id = "replacement".into()
                 }
                 _ => {
-                    assert!(view.select_endpoint(LOCAL, cx));
+                    assert!(view.select_endpoint(LOCAL, cx).is_ok());
                     assert!(view.pending_releases.is_empty());
                     assert!(handle.is_disconnected());
                 }
@@ -178,7 +178,7 @@ fn retiring_release_source_unblocks_destination_without_waiting_for_timeout(
             view.endpoints.extend([source, target]);
             view.selected_endpoint = 1;
             view.reset_selected(cx);
-            view.select_endpoint("ssh:target", cx);
+            let _ = view.select_endpoint("ssh:target", cx);
             assert_eq!(view.pending_releases.len(), 1);
             view.poll_endpoints(cx);
             assert!(!view.endpoints[2].initial_surface);

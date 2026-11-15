@@ -60,6 +60,8 @@ pub enum Error {
     #[error("Workspace label must not be empty.")]
     EmptyWorkspaceLabel,
     #[error(transparent)]
+    Endpoint(#[from] crate::endpoint::Error),
+    #[error(transparent)]
     FileDrop(#[from] crate::window::file_drop::Error),
     #[error("Oversized GIF, WebP, and animated PNG images cannot be resized safely.")]
     ImageAnimationResize,

@@ -642,7 +642,7 @@ impl SheprdWindow {
             };
             self.dismiss_menu(window, cx);
             if let Some(id) = &id
-                && !self.select_endpoint(id, cx)
+                && self.select_endpoint(id, cx).is_err()
             {
                 return;
             }
@@ -687,7 +687,7 @@ impl SheprdWindow {
             else {
                 return;
             };
-            if !self.select_endpoint(&next, cx) {
+            if self.select_endpoint(&next, cx).is_err() {
                 return;
             }
         }

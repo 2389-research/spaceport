@@ -25,7 +25,7 @@ fn releasing_a_surface_publishes_metadata_that_no_longer_needs_matching_cells(
         project_until(view, cx, "staged metadata", |view| {
             view.live.pending_snapshot.is_some()
         });
-        assert!(view.select_endpoint("release-destination", cx));
+        assert!(view.select_endpoint("release-destination", cx).is_ok());
         let state = inbox.lock().unwrap();
         assert_eq!(state.snapshot.as_ref().unwrap().revision, revision);
         assert!(state.pending_snapshot.is_none());

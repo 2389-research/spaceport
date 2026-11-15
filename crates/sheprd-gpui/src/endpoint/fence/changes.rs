@@ -46,7 +46,7 @@ pub(crate) fn apply(
     match change {
         Change::Reselect => {
             let id = view.endpoints[index].id.clone();
-            assert!(view.select_endpoint(&id, cx));
+            assert!(view.select_endpoint(&id, cx).is_ok());
         }
         Change::SwitchAndReturn => view.selection_epoch += 2,
         Change::ReconnectUnseen => replace_connection(view, index),

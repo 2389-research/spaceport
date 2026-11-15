@@ -211,12 +211,12 @@ fn a_change_of_host_settles_a_focus_held_by_typing(cx: &mut TestAppContext) {
     let (view, cx) = window_beside_host(cx);
     let typed = Instant::now();
     view.update(cx, |view, cx| {
-        assert!(view.switch_endpoint(HOST, cx));
+        assert!(view.switch_endpoint(HOST, cx).is_ok());
         view.last_input = Some(typed);
         // A click in the shown host, whose answer the typing holds.
         receive(&mut view.endpoints[1], on_tab("t1", 2));
         assert!(view.endpoints[1].focus_requested);
-        assert!(view.switch_endpoint(LOCAL, cx));
+        assert!(view.switch_endpoint(LOCAL, cx).is_ok());
         assert!(!view.endpoints[1].focus_requested);
     });
     follow(&view, typed + Duration::from_secs(2), cx);
@@ -263,7 +263,7 @@ fn an_open_dialog_keeps_the_window_and_the_focus_is_not_kept_for_later(cx: &mut 
 fn the_shown_host_has_nothing_to_follow(cx: &mut TestAppContext) {
     let (view, cx) = window_with_focus_asked_for(cx);
     view.update(cx, |view, cx| {
-        assert!(view.switch_endpoint(HOST, cx));
+        assert!(view.switch_endpoint(HOST, cx).is_ok());
         view.endpoints[1].focus_requested = true;
     });
     follow(&view, Instant::now() + Duration::from_secs(5), cx);
