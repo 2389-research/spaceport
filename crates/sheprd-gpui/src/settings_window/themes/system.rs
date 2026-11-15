@@ -1,9 +1,9 @@
 //! Themes that follow the system appearance, written as Ghostty's
 //! `light:NAME,dark:NAME`: which side the grid edits, turning following on
 //! and off, and showing the side the current appearance calls for.
-use super::{Choice, FOLLOW, Scope, SettingsWindow};
+use super::{Choice, Scope, SettingsWindow};
 use crate::{
-    config::{Theme, ThemeName},
+    config::{FOLLOW_HERDR, Theme, ThemeName},
     contrast::{Contrast, luminance},
     i18n::{Localize, fl},
 };
@@ -36,7 +36,7 @@ impl SettingsWindow {
             ThemeName::side(&self.config.theme, false).to_owned(),
         ];
         names.dedup();
-        names.retain(|name| name != FOLLOW);
+        names.retain(|name| name != FOLLOW_HERDR);
         names
     }
 
@@ -47,10 +47,10 @@ impl SettingsWindow {
         value: &str,
         light: bool,
     ) -> Option<Theme> {
-        let name = ThemeName::side(value, light);
-        if name == FOLLOW {
+        if ThemeName::follows_herdr(value, light) {
             return self.shared.as_ref()?.theme(light).ok();
         }
+        let name = ThemeName::side(value, light);
         Theme::builtin(name).or_else(|| {
             self.theme_cache
                 .iter()
@@ -136,7 +136,7 @@ impl SettingsWindow {
             scope: Scope::App,
             name: ThemeName::side(self.drafted_theme(), self.themes.editing_light).to_owned(),
         };
-        if !self.themes.names.contains(&edited.name) && edited.name != FOLLOW {
+        if !self.themes.names.contains(&edited.name) && edited.name != FOLLOW_HERDR {
             self.themes.names.push(edited.name.clone());
             self.themes
                 .names
@@ -199,7 +199,7 @@ impl SettingsWindow {
                     }
                 };
                 let name = ThemeName::side(&value, light);
-                if name != FOLLOW {
+                if name != FOLLOW_HERDR {
                     if this.theme_cache.len() == 64 {
                         this.theme_cache.pop_front();
                     }

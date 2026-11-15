@@ -11,7 +11,9 @@ use std::{
     sync::LazyLock,
 };
 
-const FOLLOW_HERDR: &str = "Follow Herdr"; // i18n: data
+/// The `theme` value, or side of a pair, that shows the theme Herdr's shared
+/// settings name. A config value, not text.
+pub(crate) const FOLLOW_HERDR: &str = "Follow Herdr"; // i18n: data
 
 /// A `theme` value: one theme, or Ghostty's `light:NAME,dark:NAME`, which
 /// follows the system appearance. Either side may itself be a built-in, file,
@@ -66,6 +68,13 @@ impl<'a> ThemeName<'a> {
 
     pub(crate) fn follows_system(value: &str) -> bool {
         matches!(ThemeName::parse(value), Ok(ThemeName::System { .. }))
+    }
+
+    /// Whether the side `value` shows for `light` is [`FOLLOW_HERDR`], so
+    /// Herdr's shared settings name its theme. A pair may follow on one side
+    /// only: ask for the appearance shown, never compare the whole value.
+    pub(crate) fn follows_herdr(value: &str, light: bool) -> bool {
+        Self::side(value, light) == FOLLOW_HERDR
     }
 
     /// `value` with the side for `light` replaced by `name`. A single theme

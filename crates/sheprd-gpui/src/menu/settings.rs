@@ -7,7 +7,11 @@
 // i18n: migrated
 use super::{Page, accent};
 use crate::i18n::fl;
-use crate::{SheprdWindow, config::Config, keymap::Reach};
+use crate::{
+    SheprdWindow,
+    config::{Config, ThemeName},
+    keymap::Reach,
+};
 use gpui::{prelude::*, *};
 use sheprd_client::protocol::ClientShellCommand;
 use std::borrow::Cow;
@@ -145,8 +149,7 @@ impl SheprdWindow {
                 let mut config = Config::load()?;
                 config.resolve_fonts(|| text_system.all_font_names());
                 // Follow Herdr is resolved from the latest prepared snapshot on completion.
-                // i18n: data
-                let theme = if config.theme == "Follow Herdr" {
+                let theme = if ThemeName::follows_herdr(&config.theme, light) {
                     Default::default()
                 } else {
                     config.theme(light)?
@@ -219,8 +222,7 @@ impl SheprdWindow {
                             this.status_bar_visible = config.status_bar.show;
                         }
                         this.config = config.clone();
-                        // i18n: data
-                        if this.config.theme != "Follow Herdr" {
+                        if !ThemeName::follows_herdr(&this.config.theme, light) {
                             this.theme = theme;
                         }
                         this.apply_shared_theme(cx);

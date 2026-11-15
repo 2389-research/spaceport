@@ -94,8 +94,8 @@ use std::{
 pub use tab_labels::TabLabels;
 pub use tab_layout::TabLayoutMode;
 pub use theme::Theme;
-pub(crate) use theme::ThemeName;
 pub(crate) use theme::mix;
+pub(crate) use theme::{FOLLOW_HERDR, ThemeName};
 pub use zen::{Zen, ZenWidth};
 
 const DEFAULT_CONFIG: &str = include_str!("../config-gpui.example.toml");

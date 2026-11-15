@@ -422,14 +422,11 @@ impl SettingsWindow {
     }
 
     fn sync_appearance(&mut self, cx: &mut Context<Self>) {
-        if self.config.theme == themes::FOLLOW
+        let light = crate::app::light_appearance(cx);
+        if crate::config::ThemeName::follows_herdr(&self.config.theme, light)
             && self.theme_intent.is_none()
             && let Some(shared) = &self.shared
         {
-            let light = matches!(
-                cx.window_appearance(),
-                WindowAppearance::Light | WindowAppearance::VibrantLight
-            );
             match shared.theme(light) {
                 Ok(theme) => self.theme = theme.styled_for(&self.config),
                 Err(error) => {
