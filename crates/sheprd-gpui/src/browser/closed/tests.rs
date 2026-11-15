@@ -1,11 +1,13 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
-use crate::browser::WebUrl;
 use sheprd_client::protocol::AgentStatus;
 
-fn web(value: &str) -> Option<Location> {
-    Some(Location::Web {
-        url: WebUrl::try_from(value).unwrap(),
+fn terminal(id: &str) -> Option<Location> {
+    Some(Location::CoreTerminal {
+        panes: crate::core_terminals::panes::Panes::single(
+            sheprd_backend::TerminalId::try_from(id.to_owned()).unwrap(),
+        ),
+        observe: false,
     })
 }
 
@@ -62,7 +64,7 @@ fn closed_pages_and_terminals_reopen_last_closed_first() {
     let mut store = Store::default();
     let scope = Scope::endpoint("local");
     let page = store
-        .open(scope.clone(), "w", web("https://example.com/a"), None)
+        .open(scope.clone(), "w", terminal("t-a"), None)
         .unwrap();
     store.visited(page, None, Some("Example A"));
     store.close(page);
@@ -80,7 +82,7 @@ fn closed_pages_and_terminals_reopen_last_closed_first() {
     assert_ne!(reopened, page);
     let tab = store.get(reopened).unwrap();
     assert_eq!(tab.title, "Example A");
-    assert_eq!(tab.location, web("https://example.com/a"));
+    assert_eq!(tab.location, terminal("t-a"));
     assert!(store.pop_closed(&scope, "w").is_none());
 }
 
@@ -202,11 +204,11 @@ fn reopened_page_restores_latest_visited_location() {
     let mut store = Store::default();
     let scope = Scope::endpoint("local");
     let page = store
-        .open(scope.clone(), "w", web("https://example.com/first"), None)
+        .open(scope.clone(), "w", terminal("t-first"), None)
         .unwrap();
     store.visited(page, None, Some("First Page"));
     // Navigate to a second page before closing.
-    store.visited(page, web("https://example.com/second"), Some("Second Page"));
+    store.visited(page, terminal("t-second"), Some("Second Page"));
     store.close(page);
 
     let Some(ClosedTab::Page(closed)) = store.pop_closed(&scope, "w") else {
@@ -215,7 +217,7 @@ fn reopened_page_restores_latest_visited_location() {
     let reopened = store.reopen_page(closed).unwrap();
     let tab = store.get(reopened).unwrap();
     assert_eq!(tab.title, "Second Page");
-    assert_eq!(tab.location, web("https://example.com/second"));
+    assert_eq!(tab.location, terminal("t-second"));
 }
 
 #[test]

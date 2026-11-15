@@ -14,7 +14,7 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 root=$(git rev-parse --show-toplevel)
 tools=${HERDR_CI_TOOLS:-${XDG_DATA_HOME:-$HOME/.local/share}/herdr-gpui/ci-tools}
-git_cliff_version=2.12.0 # Matches the release workflow's changelog job.
+git_cliff_version=2.12.0 # Matches .github/actions/macos-build-cache.
 # Tools pinned into $tools count as installed even before the developer adds
 # the directory to PATH, so reruns never download them again.
 user_path=$PATH
@@ -78,14 +78,6 @@ case "$(uname -s)" in
         ;;
 esac
 
-# Lets the release script tests build real Linux packages, as CI does. The
-# installer owns the pin, so read the version from it rather than repeat it.
-nfpm=$tools/bin/nfpm
-nfpm_version=$(sed -n 's/^version=//p' "$root/scripts/release/install-nfpm.sh")
-if ! { [[ -x $nfpm ]] && "$nfpm" --version 2>/dev/null | grep -F "$nfpm_version" >/dev/null; }; then
-    nfpm=$(bash "$root/scripts/release/install-nfpm.sh" "$tools/bin")
-fi
-
 missing=()
 for tool in cargo actionlint zizmor cargo-deny git-cliff jq x86_64-w64-mingw32-gcc; do
     have "$tool" || missing+=("$tool")
@@ -97,6 +89,5 @@ have docker || printf 'note: docker not found; `just lint-linux` needs it\n' >&2
 if [[ $(uname -s) == Linux && ":$user_path:" != *":$tools/bin:"* ]]; then
     printf 'Add the pinned tools to PATH:\n  export PATH=%q:"$PATH"\n' "$tools/bin"
 fi
-printf 'To build real .deb/.rpm/Arch packages in `just release-check`:\n  export HERDR_TEST_NFPM=%q\n' "$nfpm"
 ((${#missing[@]} == 0)) || fail "Still missing: ${missing[*]}"
 echo 'CI tools ready.'

@@ -2,7 +2,7 @@
 //! over a mock peer so each dismissal is checked on the wire.
 #![allow(clippy::unwrap_used)]
 
-use super::Page;
+use super::{Page, chrome::Item};
 use crate::{
     SheprdWindow, sidebar::layout_tests::fixture_window, state::ConnectionStatus, window::MockPeer,
 };
@@ -160,18 +160,21 @@ fn the_menu_offers_release_notes_only_when_the_daemon_has_them(cx: &mut TestAppC
     nothing.release_notes = None;
     let (view, cx) = connected(cx, &peer, snapshot());
     for (snapshot, item) in [
-        (snapshot(), Some("update ready")),
-        (notes_only, Some("what's new")),
+        (snapshot(), Some(Item::UpdateReady)),
+        (notes_only, Some(Item::WhatsNew)),
         (nothing, None),
     ] {
         view.update(cx, |view, _| {
             view.live.snapshot = Some(Arc::new(snapshot));
             let items = view.menu_items();
             assert_eq!(view.release_notes_item(), item);
-            assert_eq!(items.contains(&"what's new"), item == Some("what's new"));
             assert_eq!(
-                items.contains(&"update ready"),
-                item == Some("update ready")
+                items.contains(&Item::WhatsNew),
+                item == Some(Item::WhatsNew)
+            );
+            assert_eq!(
+                items.contains(&Item::UpdateReady),
+                item == Some(Item::UpdateReady)
             );
         });
     }
@@ -187,7 +190,7 @@ fn closing_the_sheet_marks_the_notes_read(cx: &mut TestAppContext) {
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.open_menu(window, cx);
-            view.activate_menu("update ready", window, cx);
+            view.activate_menu(Item::UpdateReady, window, cx);
         })
     });
     draw(cx);

@@ -47,8 +47,8 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-acp` | `sheprd-acp` binary run inside a Herdr pane: the only ACP client of an agent, its in-pane chat view, the attach socket Sheprd connects to, and Herdr status reports |
 | `crates/sheprd-chat-protocol` | Attach wire between `sheprd-acp` and its clients: transcript model, the shared change reducer, framing, and endpoint discovery; no ACP or GPUI types |
 | `crates/sheprd-client` | Discovery, socket worker, session transitions, ordered commands, and client-local activity projection |
-| `crates/sheprd-backend` | The `Backend` and `Terminal` traits both Herdr generations implement: terminals listed, watched, attached, started, and ended, as `sheprd-protocol` cells and semantic input; no GPUI or transport |
-| `crates/sheprd-core-client` | herdr-core (`hc`, Herdr 2): endpoint discovery, the framed JSON-RPC connection worker, credit-flowed terminal and event streams, starting a core, and its `sheprd-backend` implementation; no GPUI |
+| `crates/sheprd-backend` | The terminal value types herdr-core terminals share with the app, and the `Backend` (attach) and `Terminal` traits `sheprd-core-client` implements, as `sheprd-protocol` cells and semantic input; no GPUI or transport |
+| `crates/sheprd-core-client` | herdr-core (`hc`, Herdr 2): endpoint discovery, the framed JSON-RPC connection worker, credit-flowed terminal and event streams, starting a core, and `CoreBackend`, which lists, watches, starts, ends, and attaches terminals in `sheprd-backend` types; no GPUI |
 | `crates/sheprd-terminal` | The terminal emulator for herdr-core's raw byte streams (alacritty_terminal): bytes in, `sheprd-protocol` cells and damage out, and semantic input encoded for the program's modes; no GPUI or I/O |
 | `crates/sheprd-gpui` | Native UI, connection bridge, presentation state, semantic input, geometry, and painting |
 | `crates/sheprd-control-protocol` | The control socket between `spaceport <command>` and the running app: request and response types, bounds, and the Unix socket or named pipe; no GPUI |
@@ -212,7 +212,7 @@ agents in Herdr panes can use what only this client shows or keeps
 
 Users learn what changed from the GitHub release body, which is generated from
 git history by `git-cliff` (`cliff.toml`) rather than written by hand. The
-release workflow's `changelog` job runs `scripts/release/generate-changelog.sh`
+macOS preview workflow's `build` job runs `scripts/release/generate-changelog.sh`
 and `publish` passes its `RELEASE_NOTES.md` to `gh release create --notes-file`.
 `CHANGELOG.md` is generated for each release and is not tracked in git.
 
@@ -254,9 +254,7 @@ what was deferred to CI.
   equivalents) against a pinned `herdr.exe`, and the release-mode performance
   budget, on both Windows runners, except the live-daemon test on
   ARM64, where the emulated daemon ignores Enter; the optimized Windows build
-  and its installer run in `windows-package` when their inputs change, and in
-  the release workflow, which only smoke-tests the CLI of the bytes it ships
-  and requires CI to have passed on the commit. Keep the `cfg(unix)`/`cfg(windows)`
+  and its installer run in `windows-package` when their inputs change. Keep the `cfg(unix)`/`cfg(windows)`
   split honest and say plainly what a platform cannot do instead of stubbing
   behavior that appears to work.
 - A `cfg` gate is only proven on the platform it names. For changes that touch

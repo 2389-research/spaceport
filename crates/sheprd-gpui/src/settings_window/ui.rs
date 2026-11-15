@@ -1,6 +1,7 @@
 //! Shared row and control builders for the Settings pages. Pure rendering:
 //! they take the theme and return elements; state and saves stay on the view.
 // i18n: migrated
+use super::catalog::Entry;
 use crate::direction::Logical;
 use crate::{
     config::{Theme, corners},
@@ -76,7 +77,21 @@ pub(in crate::settings_window) struct Row {
     controls: Vec<AnyElement>,
 }
 
-pub(in crate::settings_window) fn row(
+/// A catalogued row: its id, title and description are its entry's, the
+/// ones search matches, so a page states none of them itself.
+pub(in crate::settings_window) fn row(theme: &Theme, entry: &Entry) -> Row {
+    let row = data_row(theme, entry.id, entry.title());
+    let description = entry.description();
+    if description.is_empty() {
+        row
+    } else {
+        row.description(description)
+    }
+}
+
+/// A row the catalog does not list because it is built from data: a search
+/// result, or one row per SSH host.
+pub(in crate::settings_window) fn data_row(
     theme: &Theme,
     id: impl Into<SharedString>,
     title: impl Into<SharedString>,
@@ -93,6 +108,8 @@ pub(in crate::settings_window) fn row(
 }
 
 impl Row {
+    /// Sets the text under the title. On a catalogued row this replaces the
+    /// entry's description, for a page that reports state or data there.
     pub(in crate::settings_window) fn description(mut self, text: impl Into<SharedString>) -> Self {
         self.description = Some(text.into());
         self

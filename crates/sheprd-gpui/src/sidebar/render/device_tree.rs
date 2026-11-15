@@ -29,11 +29,7 @@ impl SheprdWindow {
         let Some(endpoint) = self.endpoints.get(index) else {
             return false;
         };
-        let live = if index == self.selected_endpoint {
-            &self.live
-        } else {
-            &endpoint.live
-        };
+        let live = self.live_of(index);
         crate::devices_overview::Device::new(index, endpoint, live).matches(query)
     }
 
@@ -57,7 +53,7 @@ impl SheprdWindow {
             return (list, 0, None);
         }
         let selected = index == self.selected_endpoint;
-        let live = if selected { &self.live } else { &endpoint.live };
+        let live = self.live_of(index);
         let Some(snapshot) = live
             .snapshot
             .as_deref()

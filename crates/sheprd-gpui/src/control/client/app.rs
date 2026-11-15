@@ -1,13 +1,9 @@
 //! `status`, `app`, `window`, `ui`, and `run`.
 use super::{Context, Output, send, unexpected};
-use crate::{
-    cli::control::{AppCommand, UiCommand, WindowCommand},
-    control::protocol::{
-        Request, Response,
-        app::{
-            AppOp, CommandOp, CoreCatalog, CoreCatalogState, Reply, Status, UiOp, WindowInfo,
-            WindowOp,
-        },
+use crate::control::protocol::{
+    Request, Response,
+    app::{
+        AppOp, CommandOp, CoreCatalog, CoreCatalogState, Reply, Status, UiOp, WindowInfo, WindowOp,
     },
 };
 use std::fmt::Write as _;
@@ -107,33 +103,15 @@ pub(super) fn status(context: &Context) -> crate::Result<Output> {
     Output::data(text.trim_end(), &status)
 }
 
-pub(super) fn app(command: AppCommand, context: &Context) -> crate::Result<Output> {
-    context.act(
-        Request::App,
-        match command {
-            AppCommand::Focus => AppOp::Focus,
-            AppCommand::Hide => AppOp::Hide,
-            AppCommand::Quit => AppOp::Quit,
-        },
-    )
+pub(super) fn app(op: AppOp, context: &Context) -> crate::Result<Output> {
+    context.act(Request::App, op)
 }
 
-pub(super) fn window(command: WindowCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        WindowCommand::List => WindowOp::List,
-        WindowCommand::New => WindowOp::New {},
-        WindowCommand::Focus { id } => {
-            let context = Context {
-                json: context.json,
-                window: Some(id),
-            };
-            return context.act(Request::Window, WindowOp::Focus);
-        }
-        WindowCommand::Fullscreen(switch) => WindowOp::Fullscreen { switch },
-        WindowCommand::Size(size) => WindowOp::Size { size },
-        WindowCommand::Detach => WindowOp::Detach,
-        WindowCommand::Reconnect => WindowOp::Reconnect,
-    };
+pub(super) fn window(op: WindowOp, context: &Context) -> crate::Result<Output> {
+    // Focusing answers only `Done`.
+    if op == WindowOp::Focus {
+        return context.act(Request::Window, op);
+    }
     match context.call(Request::Window, op)? {
         Response::Done { message } => Ok(Output::message(message)),
         Response::App {
@@ -158,13 +136,7 @@ pub(super) fn window(command: WindowCommand, context: &Context) -> crate::Result
     }
 }
 
-pub(super) fn ui(command: UiCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        UiCommand::Sidebar(switch) => UiOp::Sidebar { switch },
-        UiCommand::StatusBar(switch) => UiOp::StatusBar { switch },
-        UiCommand::FontSize(size) => UiOp::FontSize { size },
-        UiCommand::Panel(panel) => UiOp::Panel { panel },
-    };
+pub(super) fn ui(op: UiOp, context: &Context) -> crate::Result<Output> {
     match context.call(Request::Ui, op)? {
         Response::Done { message } => Ok(Output::message(message)),
         Response::App {

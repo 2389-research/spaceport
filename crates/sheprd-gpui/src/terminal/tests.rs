@@ -2,6 +2,7 @@ use super::*;
 
 mod bold_color;
 mod layout_chords;
+mod metrics;
 mod wheel;
 mod wheel_notches;
 mod wheel_reports;
@@ -62,7 +63,13 @@ fn pane_context_hit_testing_uses_canvas_origin_and_rects_not_focus() {
     let origin = point(px(217.), px(93.));
     let bounds = Bounds::new(origin, size(px(700.), px(500.)));
     let hit = |surface: &PaneSurfaceFrame, x, y| {
-        pane_at(surface, bounds, origin + point(px(x), px(y)), 8.5, 20.).map(str::to_owned)
+        pane_at(
+            surface,
+            bounds,
+            origin + point(px(x), px(y)),
+            CellMetrics::new(8.5, 20.),
+        )
+        .map(str::to_owned)
     };
     // Border cells belong to the pane; the exact split edge belongs to its neighbor.
     assert_eq!(hit(&surface, 0., 0.).as_deref(), Some("left"));
@@ -80,8 +87,8 @@ fn pane_context_hit_testing_uses_canvas_origin_and_rects_not_focus() {
         assert!(hit(&surface, x, y).is_none());
     }
     for invalid in [0., -1., f32::NAN, f32::INFINITY] {
-        assert!(pane_at(&surface, bounds, origin, invalid, 20.).is_none());
-        assert!(pane_at(&surface, bounds, origin, 8.5, invalid).is_none());
+        assert!(pane_at(&surface, bounds, origin, CellMetrics::new(invalid, 20.)).is_none());
+        assert!(pane_at(&surface, bounds, origin, CellMetrics::new(8.5, invalid)).is_none());
     }
     let clipped = Bounds::new(origin, size(px(350.), px(300.)));
     assert!(
@@ -89,8 +96,7 @@ fn pane_context_hit_testing_uses_canvas_origin_and_rects_not_focus() {
             &surface,
             clipped,
             origin + point(px(351.), px(20.)),
-            8.5,
-            20.
+            CellMetrics::new(8.5, 20.)
         )
         .is_none()
     );
@@ -259,51 +265,57 @@ fn wheel_hits_inner_pane_and_uses_relative_coordinates_and_semantic_modes() {
     surface.popup.as_mut().unwrap().frame.cursor = Some(cursor);
     // A hidden popup cursor still anchors IME; never use the base cursor.
     assert_eq!(
-        input_cursor_bounds(Some(&surface), origin, 8.5, CELL_HEIGHT),
+        input_cursor_bounds(Some(&surface), origin, CellMetrics::new(8.5, CELL_HEIGHT)),
         Bounds::new(origin + point(px(272.), px(200.)), size(px(8.5), px(20.)))
     );
     assert_eq!(
-        input_cursor_bounds(Some(&surface), origin, 8.5, 30.5),
+        input_cursor_bounds(Some(&surface), origin, CellMetrics::new(8.5, 30.5)),
         Bounds::new(origin + point(px(272.), px(305.)), size(px(8.5), px(30.5)))
     );
     surface.popup.as_mut().unwrap().frame.cursor = None;
     assert_eq!(
-        input_cursor_bounds(Some(&surface), origin, 8.5, CELL_HEIGHT).origin,
+        input_cursor_bounds(Some(&surface), origin, CellMetrics::new(8.5, CELL_HEIGHT)).origin,
         origin + point(px(255.), px(140.))
     );
     assert_eq!(
-        input_cursor_bounds(Some(&surface), origin, 8.5, 30.5).origin,
+        input_cursor_bounds(Some(&surface), origin, CellMetrics::new(8.5, 30.5)).origin,
         origin + point(px(255.), px(213.5))
     );
     let grid = Bounds::new(origin, size(px(680.), px(480.)));
     // A composition in a popup stays inside the popup, not the grid.
     assert_eq!(
-        input_area(Some(&surface), grid, 8.5, CELL_HEIGHT),
+        input_area(Some(&surface), grid, CellMetrics::new(8.5, CELL_HEIGHT)),
         Bounds::new(origin + point(px(255.), px(140.)), size(px(170.), px(200.)))
     );
     surface.popup = None;
-    assert_eq!(input_area(Some(&surface), grid, 8.5, CELL_HEIGHT), grid);
-    assert_eq!(input_area(None, grid, 8.5, CELL_HEIGHT), grid);
     assert_eq!(
-        input_cursor_bounds(Some(&surface), origin, 8.5, CELL_HEIGHT).origin,
+        input_area(Some(&surface), grid, CellMetrics::new(8.5, CELL_HEIGHT)),
+        grid
+    );
+    assert_eq!(
+        input_area(None, grid, CellMetrics::new(8.5, CELL_HEIGHT)),
+        grid
+    );
+    assert_eq!(
+        input_cursor_bounds(Some(&surface), origin, CellMetrics::new(8.5, CELL_HEIGHT)).origin,
         origin + point(px(595.), px(400.))
     );
     assert_eq!(
-        input_cursor_bounds(Some(&surface), origin, 8.5, 30.5).origin,
+        input_cursor_bounds(Some(&surface), origin, CellMetrics::new(8.5, 30.5)).origin,
         origin + point(px(595.), px(610.))
     );
     surface.frame.cursor = None;
     assert_eq!(
-        input_cursor_bounds(Some(&surface), origin, 8.5, CELL_HEIGHT).origin,
+        input_cursor_bounds(Some(&surface), origin, CellMetrics::new(8.5, CELL_HEIGHT)).origin,
         origin
     );
     assert_eq!(
-        input_cursor_bounds(None, origin, 8.5, CELL_HEIGHT).origin,
+        input_cursor_bounds(None, origin, CellMetrics::new(8.5, CELL_HEIGHT)).origin,
         origin
     );
     for surface in [Some(&surface), None] {
         assert_eq!(
-            input_cursor_bounds(surface, origin, 8.5, 30.5),
+            input_cursor_bounds(surface, origin, CellMetrics::new(8.5, 30.5)),
             Bounds::new(origin, size(px(8.5), px(30.5)))
         );
     }
@@ -325,18 +337,21 @@ fn popup_origin_rounds_horizontal_pixels_and_saturates_oversized_frames() {
         ..frame.clone()
     };
     assert_eq!(
-        popup_origin(&frame, &popup, 8.5, CELL_HEIGHT),
+        popup_origin(&frame, &popup, CellMetrics::new(8.5, CELL_HEIGHT)),
         point(px(259.), px(150.))
     );
     assert_eq!(
-        popup_origin(&popup, &frame, 8.5, CELL_HEIGHT),
+        popup_origin(&popup, &frame, CellMetrics::new(8.5, CELL_HEIGHT)),
         Point::default()
     );
     assert_eq!(
-        popup_origin(&frame, &popup, 8.5, 30.5),
+        popup_origin(&frame, &popup, CellMetrics::new(8.5, 30.5)),
         point(px(259.), px(228.75))
     );
-    assert_eq!(popup_origin(&popup, &frame, 8.5, 30.5), Point::default());
+    assert_eq!(
+        popup_origin(&popup, &frame, CellMetrics::new(8.5, 30.5)),
+        Point::default()
+    );
 }
 
 #[test]
@@ -653,10 +668,10 @@ fn scrollbar_thumb_tracks_offset_to_the_pixel_and_round_trips() {
         pixel_width: 0,
         pixel_height: 0,
     };
-    assert!(Scrollbar::new(&pane(0, 0), 8., 20.).is_none());
-    let bottom = Scrollbar::new(&pane(0, 1978), 8., 20.).unwrap();
-    let top = Scrollbar::new(&pane(1978, 1978), 8., 20.).unwrap();
-    let one = Scrollbar::new(&pane(1, 1978), 8., 20.).unwrap();
+    assert!(Scrollbar::new(&pane(0, 0), CellMetrics::new(8., 20.)).is_none());
+    let bottom = Scrollbar::new(&pane(0, 1978), CellMetrics::new(8., 20.)).unwrap();
+    let top = Scrollbar::new(&pane(1978, 1978), CellMetrics::new(8., 20.)).unwrap();
+    let one = Scrollbar::new(&pane(1, 1978), CellMetrics::new(8., 20.)).unwrap();
     assert_eq!(
         bottom.track,
         Bounds::new(point(px(632.), px(0.)), size(px(8.), px(480.)))
@@ -668,7 +683,7 @@ fn scrollbar_thumb_tracks_offset_to_the_pixel_and_round_trips() {
     let step = f32::from(bottom.thumb.top() - one.thumb.top());
     assert!(step > 0. && step < 1., "{step}");
     for offset in [0, 1, 500, 1977, 1978] {
-        let bar = Scrollbar::new(&pane(offset, 1978), 8., 20.).unwrap();
+        let bar = Scrollbar::new(&pane(offset, 1978), CellMetrics::new(8., 20.)).unwrap();
         assert_eq!(bar.offset_at(f32::from(bar.thumb.top())), offset);
     }
     assert_eq!(bottom.offset_at(-100.), 1978);

@@ -4,7 +4,9 @@
 //! diagnostic.
 // i18n: migrated
 use super::{Flash, SheprdWindow, chrome_focus::Region, render::Notice};
-use crate::{fonts::StyledFont, i18n::fl, notifications::safe_text};
+use crate::{
+    endpoint::fence::ConnectionRef, fonts::StyledFont, i18n::fl, notifications::safe_text,
+};
 use gpui::{prelude::*, *};
 use std::sync::Arc;
 
@@ -83,9 +85,7 @@ impl SheprdWindow {
             .and_then(|endpoint| {
                 let lines = endpoint.config_diagnostic.visible()?;
                 let source = DrawnFrom {
-                    endpoint_id: endpoint.id.clone(),
-                    generation: endpoint.generation,
-                    inbox: endpoint.connection.inbox.clone(),
+                    connection: endpoint.connection_ref(),
                     lines: lines.clone(),
                 };
                 let toggled = source.clone();
@@ -97,15 +97,7 @@ impl SheprdWindow {
                         expanded: endpoint.config_diagnostic.expanded(),
                         footer: None,
                     },
-                    move |this, cx| {
-                        this.dismiss_config_diagnostic(
-                            &source.endpoint_id,
-                            source.generation,
-                            &source.inbox,
-                            &source.lines,
-                            cx,
-                        );
-                    },
+                    move |this, cx| this.dismiss_config_diagnostic(&source, cx),
                     move |this, cx| {
                         if toggled
                             .diagnostic(this)
@@ -342,21 +334,11 @@ impl SheprdWindow {
 
     /// Dismisses the banner only for the connection and text it was drawn
     /// from: a click delivered after either changed does nothing.
-    fn dismiss_config_diagnostic(
-        &mut self,
-        endpoint_id: &str,
-        generation: u64,
-        inbox: &Arc<std::sync::Mutex<crate::state::LiveState>>,
-        lines: &Arc<[String]>,
-        cx: &mut Context<Self>,
-    ) {
-        let source = DrawnFrom {
-            endpoint_id: endpoint_id.to_owned(),
-            generation,
-            inbox: inbox.clone(),
-            lines: lines.clone(),
-        };
-        if source.diagnostic(self).is_some_and(|d| d.dismiss(lines)) {
+    fn dismiss_config_diagnostic(&mut self, source: &DrawnFrom, cx: &mut Context<Self>) {
+        if source
+            .diagnostic(self)
+            .is_some_and(|d| d.dismiss(&source.lines))
+        {
             cx.notify();
         }
     }
@@ -366,9 +348,7 @@ impl SheprdWindow {
 /// delivered after either changed reaches nothing.
 #[derive(Clone)]
 struct DrawnFrom {
-    endpoint_id: String,
-    generation: u64,
-    inbox: Arc<std::sync::Mutex<crate::state::LiveState>>,
+    connection: ConnectionRef,
     lines: Arc<[String]>,
 }
 
@@ -377,15 +357,8 @@ impl DrawnFrom {
         &self,
         window: &'a mut SheprdWindow,
     ) -> Option<&'a mut crate::config_diagnostic::ConfigDiagnostic> {
-        window
-            .endpoints
-            .iter_mut()
-            .find(|e| {
-                e.id == self.endpoint_id
-                    && e.generation == self.generation
-                    && Arc::ptr_eq(&e.connection.inbox, &self.inbox)
-            })
-            .map(|endpoint| &mut endpoint.config_diagnostic)
+        let index = window.endpoint_for(&self.connection)?;
+        Some(&mut window.endpoints[index].config_diagnostic)
     }
 }
 

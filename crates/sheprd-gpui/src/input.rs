@@ -103,8 +103,8 @@ impl EntityInputHandler for SheprdWindow {
         if self.menu.page.is_some() {
             let input = self.menu.input.as_ref()?;
             return Some(UTF16Selection {
-                range: input.to_utf16(input.selection.clone()),
-                reversed: input.reversed,
+                range: input.to_utf16(input.selection()),
+                reversed: input.reversed(),
             });
         }
         let end = self.marked.encode_utf16().count();
@@ -203,15 +203,14 @@ impl EntityInputHandler for SheprdWindow {
             return self.menu.input.as_ref()?.range_bounds(range);
         }
         let surface = self.live.surface.as_deref();
-        let cell_height = self.config.terminal.line_height();
-        let mut cursor =
-            input_cursor_bounds(surface, self.bounds.origin, self.cell_width, cell_height);
+        let metrics = self.metrics();
+        let mut cursor = input_cursor_bounds(surface, self.bounds.origin, metrics);
         cursor.origin.y += self.ime_shift();
         Some(self.painter.borrow().composition_bounds(
             &self.marked,
             range,
             cursor,
-            input_area(surface, self.bounds, self.cell_width, cell_height),
+            input_area(surface, self.bounds, metrics),
             &self.config.terminal.font(),
             window,
         ))

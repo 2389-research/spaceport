@@ -21,6 +21,8 @@ pub use protocol::{
     events::{Cursor, EventKind},
     settings::Sound,
 };
+#[cfg(test)]
+pub(crate) use server::chat_status;
 pub(crate) use sheprd_control_protocol::Error;
 use sheprd_control_protocol::{protocol, socket};
 use std::path::{Path, PathBuf};

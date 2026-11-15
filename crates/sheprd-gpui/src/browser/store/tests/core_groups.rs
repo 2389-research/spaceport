@@ -36,7 +36,7 @@ fn core_tabs_keep_permanent_machine_and_group_identity_through_save() {
     );
 
     let bytes = serde_json::to_vec(&store.saved()).unwrap();
-    let restored = Store::with_saved(parse_saved(&bytes).unwrap(), None);
+    let restored = Store::restored_for_test(&bytes).unwrap();
     assert_eq!(
         restored
             .in_core_group(&first)
@@ -67,7 +67,7 @@ fn old_flat_page_tabs_do_not_restore_as_core_groups() {
     let legacy = format!(
         r#"{{"tabs":[{{"id":4,"scope":"local:/tmp/herdr.sock","workspace_id":"{group}","location":null,"title":"Old","origin":null}}],"next":5}}"#
     );
-    let restored = Store::with_saved(parse_saved(legacy.as_bytes()).unwrap(), None);
+    let restored = Store::restored_for_test(legacy.as_bytes()).unwrap();
     let legacy_scope = Scope::local("/tmp/herdr.sock".as_ref());
     let core_key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();
     assert_eq!(
@@ -93,5 +93,5 @@ fn core_saved_group_ids_must_use_one_canonical_shape() {
         serde_json::to_string(&scope).unwrap(),
         canonical.to_uppercase()
     );
-    assert!(parse_saved(saved.as_bytes()).is_err());
+    assert!(Store::restored_for_test(saved.as_bytes()).is_err());
 }

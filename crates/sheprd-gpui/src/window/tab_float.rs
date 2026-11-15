@@ -50,7 +50,7 @@ impl SheprdWindow {
         if self
             .tab_drag
             .as_ref()
-            .is_none_or(|drag| drag.float != Float::Unopened)
+            .is_none_or(|drag| drag.float() != Float::Unopened)
         {
             return;
         }
@@ -92,7 +92,7 @@ impl SheprdWindow {
                 if this
                     .tab_drag
                     .as_ref()
-                    .is_some_and(|drag| drag.float == Float::Opening)
+                    .is_some_and(|drag| drag.float() == Float::Opening)
                 {
                     this.settle_float(float, cx);
                 }
@@ -102,7 +102,7 @@ impl SheprdWindow {
 
     fn settle_float(&mut self, float: Float, cx: &mut Context<Self>) {
         if let Some(drag) = self.tab_drag.as_mut() {
-            drag.float = float;
+            drag.set_float(float);
             cx.notify();
         }
     }
@@ -149,7 +149,7 @@ impl TabFloat {
             window.remove_window();
             return;
         };
-        if !drag.outside {
+        if !drag.outside() {
             own.orderOut(None);
             return;
         }

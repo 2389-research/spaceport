@@ -58,6 +58,17 @@ fn send(stream: &mut Stream, message: ServerMessage) {
 fn receive(stream: &mut Stream) -> ClientMessage {
     read_message(stream, MAX_FRAME_SIZE).unwrap()
 }
+/// Runs `check` while `target` is the one host whose key is not verified.
+/// The list is process-wide and replaced whole, so callers take turns.
+pub(crate) fn while_unverified<T>(target: &str, check: impl FnOnce() -> T) -> T {
+    static TURN: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _turn = TURN.lock().unwrap_or_else(|error| error.into_inner());
+    set_unverified_hosts([target]);
+    let result = check();
+    set_unverified_hosts([""; 0]);
+    result
+}
+
 fn event(client: &Client) -> ClientEvent {
     client.events.recv_timeout(Duration::from_secs(3)).unwrap()
 }

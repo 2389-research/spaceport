@@ -4,7 +4,7 @@
 //! rather than letting them reach Herdr.
 
 use super::{
-    Purpose,
+    Purpose, layout,
     panes::{Axis, Direction, Panes},
 };
 use crate::{
@@ -31,11 +31,13 @@ impl SheprdWindow {
         let Some((tab, terminal)) = focused.or_else(|| self.focused_core_chat(window, cx)) else {
             return false;
         };
-        let Some(shown) = self.core_terminals.tabs.get_mut(&tab) else {
+        let (Some(shown), Some((panes, observe))) =
+            (self.core_terminals.tabs.get_mut(&tab), layout(tab, cx))
+        else {
             return false;
         };
         // A mirror only watches: it moves focus and zooms, never splits.
-        if shown.observe && matches!(command, Command::SplitRight | Command::SplitDown) {
+        if observe && matches!(command, Command::SplitRight | Command::SplitDown) {
             return true;
         }
         let direction = |command: Command| match command {
@@ -61,8 +63,8 @@ impl SheprdWindow {
                 );
             }
             Command::FocusLeft | Command::FocusRight | Command::FocusUp | Command::FocusDown => {
-                let Some(next) = direction(command)
-                    .and_then(|direction| shown.panes.neighbor(&terminal, direction))
+                let Some(next) =
+                    direction(command).and_then(|direction| panes.neighbor(&terminal, direction))
                 else {
                     return true;
                 };
@@ -78,15 +80,15 @@ impl SheprdWindow {
             | Command::ResizeRight
             | Command::ResizeUp
             | Command::ResizeDown => {
-                if direction(command)
-                    .is_some_and(|direction| shown.panes.resize(&terminal, direction))
-                {
-                    shown.unsaved = true;
-                    cx.notify();
+                if let Some(direction) = direction(command) {
+                    // The store's change redraws every window that shows it.
+                    Store::update(cx, |store| {
+                        store.edit_panes(tab, |panes| panes.resize(&terminal, direction))
+                    });
                 }
             }
             Command::Zoom => {
-                if shown.panes.len() > 1 {
+                if panes.len() > 1 {
                     let zoom = (!shown.zoom.is_open()).then_some(terminal);
                     shown.set_zoom(zoom);
                     cx.notify();
@@ -94,10 +96,9 @@ impl SheprdWindow {
             }
             Command::MirrorCorePane => self.mirror_core_pane(tab, terminal, window, cx),
             // The last pane closes as its tab does: the window's own close.
-            Command::ClosePane if shown.panes.len() > 1 => {
+            Command::ClosePane if panes.len() > 1 => {
                 // A mirror's pane stops watching; the terminal runs on.
-                let mirror = shown.observe;
-                if self.remove_core_pane(tab, &terminal, window, cx) && !mirror {
+                if self.remove_core_pane(tab, &terminal, window, cx) && !observe {
                     self.end_core_terminal(terminal);
                 }
             }

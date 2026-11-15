@@ -135,7 +135,7 @@ fn double_clicking_the_fold_chevron_does_not_rename(cx: &mut gpui::TestAppContex
     view.read_with(cx, |view, _| {
         assert!(view.menu.page.is_none());
         // Folded by the first click and unfolded by the second.
-        assert!(!view.collapsed_repos.contains(REPO_KEY));
+        assert!(!view.endpoints[0].collapsed_repos.contains(REPO_KEY));
     });
     assert!(cx.debug_bounds("row-sidebar-child").is_some());
 }

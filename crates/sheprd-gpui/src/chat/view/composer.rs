@@ -290,9 +290,8 @@ impl SheprdWindow {
             }))
             .child(card)
             .children(
-                chat.menu
-                    .clone()
-                    .map(|menu| self.render_chat_menu(chat, &menu, cx)),
+                chat.menu()
+                    .map(|menu| self.render_chat_menu(chat, menu, cx)),
             )
     }
 }

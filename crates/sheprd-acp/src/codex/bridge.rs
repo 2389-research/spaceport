@@ -8,10 +8,10 @@ use std::collections::{HashMap, HashSet};
 use acp::v1 as wire;
 use serde_json::{Value, json};
 
-use super::{approval, background, background::Background, items, settings::Settings};
+use super::{approval, background::Background, items, settings::Settings};
 use crate::{
     harness::{Out, Translator, out},
-    project::Tag,
+    project::{PromptUsage, Tag},
     rpc::Inbound,
 };
 
@@ -56,7 +56,7 @@ pub(super) struct Bridge {
     streamed: HashSet<String>,
     thread: Option<String>,
     /// The turn's tokens, from the last usage update.
-    tokens: Option<Value>,
+    tokens: Option<PromptUsage>,
     turn: Option<String>,
     /// The session asked to cancel before the turn had an id.
     interrupting: bool,
@@ -181,10 +181,7 @@ impl Bridge {
             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
         };
         if self.prompt.is_some() {
-            return vec![out::reply(
-                id,
-                Err(out::failure("A turn is already running.")),
-            )];
+            return vec![out::reply(id, Err(out::failure(out::BUSY)))];
         }
         let Ok(request) = serde_json::from_value::<wire::PromptRequest>(params.clone()) else {
             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
@@ -425,7 +422,11 @@ impl Bridge {
                     })
                     .into_iter()
                     .collect();
-                outs.extend(others.into_iter().map(|other| self.reported(other)));
+                outs.extend(
+                    others
+                        .into_iter()
+                        .map(|other| out::activity(self.session(), other)),
+                );
                 outs
             }
         }
@@ -464,7 +465,7 @@ impl Bridge {
                 let status = params.pointer("/turn/status").and_then(Value::as_str);
                 self.background
                     .child_turn_completed(thread, status)
-                    .map(|ended| self.reported(ended))
+                    .map(|ended| out::activity(self.session(), ended))
                     .into_iter()
                     .collect()
             }
@@ -472,25 +473,19 @@ impl Bridge {
         }
     }
 
-    /// The update that says how another call's activity stands.
-    fn reported(&self, (call, report): background::Elsewhere) -> Out {
-        let update = wire::ToolCallUpdate::new(call, wire::ToolCallUpdateFields::new())
-            .meta(Tag::activity(report).meta());
-        out::update(self.session(), wire::SessionUpdate::ToolCallUpdate(update))
-    }
-
     fn usage(&mut self, usage: Option<&Value>) -> Vec<Out> {
         let Some(usage) = usage else {
             return Vec::new();
         };
         let count = |path: &str| usage.pointer(path).and_then(Value::as_u64).unwrap_or(0);
-        self.tokens = Some(json!({
-            "inputTokens": count("/last/inputTokens").saturating_sub(count("/last/cachedInputTokens")),
-            "cachedReadTokens": count("/last/cachedInputTokens"),
-            "outputTokens": count("/last/outputTokens"),
-            "thoughtTokens": count("/last/reasoningOutputTokens"),
-            "totalTokens": count("/last/totalTokens"),
-        }));
+        self.tokens = Some(PromptUsage {
+            cached_read_tokens: count("/last/cachedInputTokens"),
+            input_tokens: count("/last/inputTokens")
+                .saturating_sub(count("/last/cachedInputTokens")),
+            output_tokens: count("/last/outputTokens"),
+            thought_tokens: Some(count("/last/reasoningOutputTokens")),
+            total_tokens: count("/last/totalTokens"),
+        });
         let Some(size) = usage.get("modelContextWindow").and_then(Value::as_u64) else {
             return Vec::new();
         };
@@ -505,7 +500,7 @@ impl Bridge {
         let backgrounded = self.background.turn_ended();
         let mut outs: Vec<Out> = backgrounded
             .into_iter()
-            .map(|started| self.reported(started))
+            .map(|started| out::activity(self.session(), started))
             .collect();
         let Some(id) = self.prompt.take() else {
             return outs;
@@ -525,16 +520,7 @@ impl Bridge {
                 .to_owned()),
             _ => Ok(wire::StopReason::EndTurn),
         };
-        let result = match result {
-            Ok(stop) => out::to_value(&wire::PromptResponse::new(stop)).map(|mut response| {
-                if let Some(tokens) = self.tokens.take() {
-                    response["usage"] = tokens;
-                }
-                response
-            }),
-            Err(message) => Err(out::failure(message)),
-        };
-        outs.push(out::reply(id, result));
+        outs.push(out::turn_ended(id, result, self.tokens.take()));
         outs
     }
 }
