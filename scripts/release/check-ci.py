@@ -13,9 +13,8 @@ REPO = "sheprd-labs/sheprd"
 ACTOR = "penso"
 LOGIN = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?"
 # Job names are the API contract with ci.yml. Missing/renamed jobs fail closed.
-# Windows packaging is path-selected and also runs in the release workflow;
-# the macOS release builds run on pull requests only, since the release
-# workflow builds those targets itself.
+# Windows packaging is path-selected; the macOS release builds run on pull
+# requests only, so main CI does not hold the account's macOS runners.
 REQUIRED_JOBS = frozenset({
     "Workflow Security", "Commit messages", "Format, lint, and test",
     *(f"Format, lint, and test ({runner}, {features})" for runner in

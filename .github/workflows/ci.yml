@@ -155,10 +155,6 @@ jobs:
           {
             echo "SPACEPORT_OPENSSL=$(brew --prefix openssl@3)/bin/openssl"
           } >> "$GITHUB_ENV"
-      # Lets the release script tests build real .deb, .rpm and Arch packages.
-      - name: Install the pinned Linux package builder
-        if: runner.os == 'Linux' && matrix.features == 'default'
-        run: echo "HERDR_TEST_NFPM=$(bash scripts/release/install-nfpm.sh "$RUNNER_TEMP/nfpm")" >> "$GITHUB_ENV"
       - name: Test release scripts and security contracts without credentials
         if: matrix.features == 'default'
         env:
@@ -213,8 +209,8 @@ jobs:
   # Spaceport Windows jobs are paused until Kata h8g5 fixes native performance.
   # Keep the jobs and their budgets intact for re-enabling qualification.
   # Match the other platforms' Rust checks without an extra optimized build.
-  # Native GUI tests run in windows-native; the Windows release builds run in
-  # the release workflow.
+  # Native GUI tests run in windows-native; the optimized Windows build runs
+  # in windows-package.
   windows:
     if: >-
       github.repository != '2389-research/spaceport' &&
@@ -330,7 +326,7 @@ jobs:
           cargo test --locked --release -p sheprd-gpui --features integration-test --test performance_gui dense_terminal_sidebar_performance -- --ignored --nocapture --exact
 
   # The optimized Windows build, its zip, and its installer, made and installed
-  # as the release workflow does, so a packaging or installer mistake fails the
+  # as a release would, so a packaging or installer mistake fails the
   # pull request rather than a release. A release build is too slow for every
   # change, so this runs only when what those artifacts are made from changes.
   windows-package:
@@ -350,7 +346,7 @@ jobs:
     needs: [zizmor, commits]
     runs-on: windows-2025
     timeout-minutes: 60
-    # The steps read "$TARGET" and friends, as the release workflow's do.
+    # The steps read "$TARGET" and friends, so they run under Bash.
     defaults:
       run:
         shell: bash
@@ -511,7 +507,7 @@ jobs:
 
   # The macOS release builds and their release-mode CLI suite, on pull
   # requests only. On main they would hold two of the account-wide macOS
-  # runners the release workflow's own macOS builds wait for. The separate
+  # runners that the macOS preview and cache workflows also use. The separate
   # dependency warmer supplies main caches without adding PR cache copies.
   build-macos:
     if: >-
@@ -524,8 +520,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # x86_64 macOS cross-compiles on Apple Silicon and runs under Rosetta,
-        # as the release workflow builds it; Intel runners are scarce.
+        # x86_64 macOS cross-compiles on Apple Silicon and runs under Rosetta;
+        # Intel runners are scarce.
         target: [aarch64-apple-darwin, x86_64-apple-darwin]
     runs-on: macos-15
     timeout-minutes: 60

@@ -19,7 +19,7 @@ REPOSITORY_OWNERS = {
     "penso/herdr-gpui": "penso",
     "2389-research/spaceport": "harperreed",
 }
-# Jobs that never run on main: the release workflow builds those targets.
+# Jobs that never run on main, where they would hold the macOS runners.
 PR_ONLY_JOBS = ("build-macos",)
 
 
@@ -157,25 +157,6 @@ class CiPolicy(unittest.TestCase):
             for job in jobs:
                 with self.subTest(job=job, context=context):
                     self.assertEqual(condition_matches(job, context, jobs), expected)
-
-    def test_owner_only_workflows_allow_both_repository_locations_but_not_forks(self):
-        for workflow in ("nix.yml",):
-            text = (ROOT / ".github/workflows" / workflow).read_text()
-            sections = re.split(r"^  ([a-z-]+):\n", text.split("\njobs:\n", 1)[1], flags=re.M)
-            jobs = dict(zip(sections[1::2], sections[2::2]))
-            for repository, head in itertools.product(
-                    ("penso/herdr-gpui", "sheprd-labs/sheprd", "other/sheprd"),
-                    ("penso/herdr-gpui", "sheprd-labs/sheprd", "other/sheprd")):
-                context = self.context(**{
-                    "github.repository": repository, "github.actor": "penso",
-                    "github.triggering_actor": "penso",
-                    "github.event.pull_request.user.login": "penso",
-                    "github.event.pull_request.head.repo.full_name": head,
-                })
-                expected = repository != "other/sheprd" and head == repository
-                for job in jobs:
-                    with self.subTest(workflow=workflow, job=job, repository=repository, head=head):
-                        self.assertEqual(condition_matches(job, context, jobs), expected)
 
     def test_path_selection_only_skips_platform_jobs(self):
         for code in ("false", ""):

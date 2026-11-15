@@ -172,6 +172,6 @@ class CheckCi(unittest.TestCase):
         self.assertEqual(CI.REQUIRED_JOBS, expected)
 
     def test_main_runs_no_macos_release_build(self):
-        # The release workflow's macOS builds share the account's macOS
-        # runners; CI on main must not hold them, nor may the gate wait for it.
+        # The macOS preview builds share the account's macOS runners; CI on
+        # main must not hold them, nor may the gate wait for it.
         self.assertFalse(any("apple-darwin" in name for name in CI.REQUIRED_JOBS))
