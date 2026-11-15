@@ -37,7 +37,7 @@ impl SheprdWindow {
                 continue;
             };
             let selected = index == self.selected_endpoint;
-            let live = if selected { &self.live } else { &endpoint.live };
+            let live = self.live_of(index);
             let Some(snapshot) = live.snapshot.as_deref() else {
                 continue;
             };

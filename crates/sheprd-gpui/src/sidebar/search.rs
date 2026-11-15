@@ -267,11 +267,7 @@ impl SheprdWindow {
             .into_iter()
             .filter(|(_, endpoint)| self.device_visible(&endpoint.id))
             .map(|(index, endpoint)| {
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
+                let live = self.live_of(index);
                 Device {
                     id: &endpoint.id,
                     label: &endpoint.label,

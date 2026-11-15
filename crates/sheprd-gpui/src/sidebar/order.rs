@@ -16,14 +16,7 @@ impl SheprdWindow {
         self.displayed_devices()
             .into_iter()
             .filter(|(_, endpoint)| endpoint.enabled && self.device_visible(&endpoint.id))
-            .map(|(index, endpoint)| {
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
-                (index, live)
-            })
+            .map(|(index, _)| (index, self.live_of(index)))
     }
 
     /// Each host the sidebar lists, with the snapshot it draws from.

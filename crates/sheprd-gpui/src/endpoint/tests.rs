@@ -4,6 +4,7 @@ use sheprd_client::{ClientEvent, SavedHost};
 
 mod en_xa;
 mod follow_focus;
+mod live_of;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer_warning;

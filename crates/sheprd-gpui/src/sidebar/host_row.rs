@@ -322,11 +322,7 @@ impl SheprdWindow {
     /// `2/5`: a connected host's working agents of all its agents.
     fn working_summary(&self, endpoint: &Endpoint) -> Option<String> {
         let index = self.endpoints.iter().position(|e| e.id == endpoint.id)?;
-        let live = if index == self.selected_endpoint {
-            &self.live
-        } else {
-            &endpoint.live
-        };
+        let live = self.live_of(index);
         let tally = crate::devices_overview::online_tally(endpoint, live)?;
         Some(format!("{}/{}", tally.working, tally.total()))
     }

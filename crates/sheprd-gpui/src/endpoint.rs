@@ -573,6 +573,28 @@ impl SheprdWindow {
         self.reset_selected(cx);
     }
 
+    /// The current state of endpoint `index`: the window's own copy for the
+    /// selected endpoint, the endpoint's otherwise. `reset_selected` copies
+    /// the endpoint's state into the window's; from then on only the window's
+    /// copy follows the selected connection.
+    ///
+    /// Panics when `index` is not an endpoint, as indexing `endpoints` does.
+    pub(crate) fn live_of(&self, index: usize) -> &LiveState {
+        if index == self.selected_endpoint {
+            &self.live
+        } else {
+            &self.endpoints[index].live
+        }
+    }
+
+    /// Every endpoint with its current state, in `self.endpoints` order.
+    pub(crate) fn hosts(&self) -> impl Iterator<Item = (usize, &Endpoint, &LiveState)> {
+        self.endpoints
+            .iter()
+            .enumerate()
+            .map(|(index, endpoint)| (index, endpoint, self.live_of(index)))
+    }
+
     pub(super) fn reset_selected(&mut self, cx: &mut Context<Self>) {
         if let Some(transfer) = &self.file_transfer {
             transfer.cancel();
