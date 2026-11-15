@@ -162,8 +162,6 @@ pub enum Error {
         generation: Option<u32>,
         version: Option<String>,
     },
-    #[error("remote repository directory must be an absolute path")]
-    InvalidGitDir,
     #[error("remote command failed ({0})")]
     RemoteCommand(std::process::ExitStatus),
     #[error("remote command returned unexpected output")]

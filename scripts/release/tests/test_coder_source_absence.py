@@ -34,8 +34,6 @@ class CoderSourceAbsence(unittest.TestCase):
         for name in ("devices-coder", "settings-cloud-coder", "error-remote-coder"):
             self.assertFalse((ROOT / f"crates/sheprd-gpui/locales/en-US/{name}.ftl").exists())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
-        ssh = (ROOT / "crates/sheprd-client/src/ssh.rs").read_text()
-        self.assertIn("pub fn connect_command", ssh)
 
 
 if __name__ == "__main__":

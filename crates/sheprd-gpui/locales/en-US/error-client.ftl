@@ -51,7 +51,6 @@ error-client-handshake-timeout = handshake/snapshot timed out
 error-client-health-timeout = endpoint health check timed out
 error-client-incompatible-codecs = incompatible endpoint generation/codecs
 error-client-input-write-timeout = terminal input write timed out; reconnect required
-error-client-invalid-git-dir = remote repository directory must be an absolute path
 error-client-invalid-session = invalid session name
 error-client-io = client I/O failed: { $error }
 error-client-json = invalid endpoint JSON: { $error }

@@ -35,7 +35,6 @@ while let Ok(event) = client.events.recv() {
 connect(ConnectTarget, ConnectOptions) -> Result<Client>
 connect_with_surface_active(ConnectTarget, ConnectOptions, bool) -> Result<Client>
 load_saved_hosts(development: bool) -> Result<Vec<SavedHost>>
-store_saved_host(development: bool, host: &SavedHost) -> Result<SavedHost>
 load_saved_host_selection(development: bool) -> Result<(Vec<SavedHost>, Option<String>)>
 store_saved_host_selection(development: bool, selected: Option<&str>) -> Result<()>
 SavedHost { pub id: String, pub label: String, pub target: String, pub session: String, pub enabled: bool }
@@ -61,14 +60,6 @@ text::tab_label(&ClientShellSnapshot, &ClientShellTab) -> &str
 The text helpers unwrap an agent's leading `pasted_content` envelope for display;
 a wrapper-only title falls back to a pane, agent, or workspace caption. They
 leave the authoritative snapshot and ordinary titles unchanged.
-
-`store_saved_host` atomically appends a validated profile without connecting to
-or provisioning the remote host. It preserves existing profiles and selection,
-enforces the catalog's count and byte limits, and returns the existing profile
-for an exact target/session duplicate. Callers check connectivity and resolve
-SSH aliases before saving. Calls are serialized within this process; Herdr's
-CLI does not participate in a shared catalog lock. Like the catalog loaders,
-this is blocking worker-only I/O.
 
 Session listing and deletion are blocking worker-only functions. Deletion
 requires explicit user confirmation: it delegates stopping the named session
@@ -120,11 +111,8 @@ nothing. A reconnect is a new connection and reports everything again. Like
 other commands it needs the snapshot boot ID, and a failed call leaves nothing
 recorded so the next one starts over in full.
 
-`remote_config_value` reads a single Git configuration key on a saved SSH host
-with the same bounded, noninteractive process policy as `remote_origin_url`.
-
-On Unix, one-shot commands on a saved SSH host (`remote_config_value`,
-`run_script` with `ScriptHost::Ssh`, and `shared_script_command`) share a
+On Unix, one-shot commands on a saved SSH host (`run_script` with
+`ScriptHost::Ssh`, and `shared_script_command`) share a
 master connection per host and `SshLane`: `Quick` for small reads, `Bulk` for
 transfers, so a large upload never queues ahead of a read. `ssh::mux` starts
 each master on first use, under a `/bin/sh` watchdog that ends it when this
