@@ -7,8 +7,9 @@ use sheprd_chat_protocol::Agent;
 
 fn observed() -> Target {
     Target {
-        endpoint: "0123456789abcdef0123456789abcdef".parse().unwrap(),
-        existing: Some(Binding {
+        pane_id: "w1:p1".into(),
+        route: Route::Local,
+        source: Source::Observed(Binding {
             pane_id: "w1:p1".into(),
             agent: Agent::Codex,
             session_id: "12345678-1234-4123-8123-123456789abc".into(),
@@ -17,8 +18,6 @@ fn observed() -> Target {
             shell_pid: 20,
             started_ticks: 123,
         }),
-        pane_id: "w1:p1".into(),
-        route: Route::Local,
         surface: Surface::Herdr,
     }
 }

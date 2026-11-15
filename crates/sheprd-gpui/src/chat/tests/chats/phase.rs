@@ -19,7 +19,7 @@ fn generation(chats: &Chats) -> u64 {
 
 fn observed() -> Target {
     let mut target = target("p1", A);
-    target.existing = Some(existing::Binding {
+    target.source = Source::Observed(existing::Binding {
         pane_id: "p1".into(),
         agent: sheprd_chat_protocol::Agent::Codex,
         session_id: "01234567-89ab-4cde-8123-456789abcdef".into(),

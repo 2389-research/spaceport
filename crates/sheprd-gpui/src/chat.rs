@@ -144,18 +144,31 @@ impl Error {
     }
 }
 
-/// The pane a chat belongs to, the program it talks to, and how the window
-/// reaches that program.
+/// The pane a chat belongs to, where its transcript comes from, and how the
+/// window reaches that source. Every field is part of the chat's identity:
+/// a pane whose target changes gets a new connection and a new transcript.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct Target {
-    pub(crate) endpoint: EndpointId,
-    pub(crate) existing: Option<existing::Binding>,
     /// The chat's key in the window: a Herdr pane's id, or for a herdr-core
     /// terminal the key [`core_pane::key`] makes. Code that acts on the pane
     /// itself matches [`Self::surface`] instead.
     pub(crate) pane_id: String,
     pub(crate) route: Route,
+    pub(crate) source: Source,
     pub(crate) surface: Surface,
+}
+
+/// Where a chat pane's transcript comes from.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub(crate) enum Source {
+    /// An agent CLI the user started themselves, watched read-only by a
+    /// `sheprd-acp observe` the window starts. Two panes may observe one
+    /// session, so the binding names its pane too.
+    Observed(existing::Binding),
+    /// `sheprd-acp` running in the pane, reached at its attach endpoint. A
+    /// `[chat.mirrors]` entry is one as well; its transcript says whether it
+    /// takes prompts.
+    Program(EndpointId),
 }
 
 /// Which daemon's pane a chat is drawn over.

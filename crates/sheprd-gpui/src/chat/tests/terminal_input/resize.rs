@@ -104,7 +104,10 @@ fn an_active_input_drag_cannot_resize_a_replaced_cli_session(cx: &mut TestAppCon
     begin_drag(cx, bar.center() - point(px(0.), px(100.)));
     view.update(cx, |view, _| {
         let pane = view.chats.pane_mut("w1:p1").unwrap();
-        pane.target.existing.as_mut().unwrap().session_id = "replacement-session".into();
+        let Source::Observed(binding) = &mut pane.target.source else {
+            panic!("an observed pane");
+        };
+        binding.session_id = "replacement-session".into();
         pane.terminal_size = InputSize::Compact;
     });
     draw(cx);
