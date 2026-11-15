@@ -691,7 +691,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         settings: Default::default(),
         integrations: Default::default(),
         version_notice_shown: false,
-        collapsed_repos: Default::default(),
         wheel: WheelAccumulator::default(),
         sidebar_width: None,
         sidebar_drag: None,

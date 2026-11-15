@@ -29,7 +29,6 @@ impl SheprdWindow {
     ) -> (Stateful<Div>, usize, Option<usize>) {
         let font = &self.config.sidebar;
         let theme = &self.theme;
-        let multi = self.endpoints.len() > 1;
         let mut count = 0;
         let mut focused = None;
         for (index, agent) in self.panel_agents() {
@@ -56,10 +55,9 @@ impl SheprdWindow {
                     selected,
                     theme,
                 ),
-                host: (multi && endpoint.id != crate::endpoint::LOCAL)
-                    .then_some(endpoint.label.as_str()),
+                host: self.agent_host(endpoint),
             };
-            let Some(lines) = self.configured_agent_lines(agent, snapshot, row_cx.host) else {
+            let Some(lines) = self.panel_agent_lines(index, agent) else {
                 continue;
             };
             if selected && agent.focused {
@@ -77,6 +75,25 @@ impl SheprdWindow {
     fn custom_agent_rows(&self) -> bool {
         self.config.usage.inline
             && self.config.sidebar_layout.agents != crate::config::AgentLayout::default()
+    }
+
+    /// The host an agent's row names: a remote's label, among several hosts.
+    fn agent_host<'a>(&self, endpoint: &'a crate::endpoint::Endpoint) -> Option<&'a str> {
+        (self.endpoints.len() > 1 && endpoint.id != crate::endpoint::LOCAL)
+            .then_some(endpoint.label.as_str())
+    }
+
+    /// The lines the expanded panel paints for host `index`'s agent, or None
+    /// when it paints no row for it: [`Self::configured_agent_lines`] for
+    /// that host. Stepping asks this too, so it skips what is not painted.
+    pub(in crate::sidebar) fn panel_agent_lines(
+        &self,
+        index: usize,
+        agent: &ClientShellAgent,
+    ) -> Option<Vec<Vec<tokens::ResolvedToken>>> {
+        let endpoint = self.endpoints.get(index)?;
+        let snapshot = self.live_of(index).snapshot.as_deref()?;
+        self.configured_agent_lines(agent, snapshot, self.agent_host(endpoint))
     }
 
     /// The lines a configured agent row shows, empty for Herdr's own row, or

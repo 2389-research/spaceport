@@ -131,7 +131,7 @@ impl SheprdWindow {
         let worktree_glyph = self.config.worktrees.glyph(theme);
         // A lifted device folds the list to headers alone, and search results
         // are not arranged by group.
-        let grouped = headed && device_plan.is_none() && query.is_empty() && self.device_tags.any();
+        let grouped = device_plan.is_none() && self.lists_tag_sections(headed, &query);
         let tag_filter = self.device_tag_filter.as_deref();
         let mut section = None;
         // Sections are headings, so what lists under them steps in, with
@@ -145,10 +145,8 @@ impl SheprdWindow {
             },
             ..look
         };
-        for (endpoint_index, endpoint) in self.displayed_devices() {
-            if !self.device_visible(&endpoint.id)
-                || (devices && !self.device_listed(endpoint_index, &query))
-            {
+        for (endpoint_index, endpoint, live) in self.listed_hosts() {
+            if devices && !self.device_listed(endpoint_index, &query) {
                 continue;
             }
             if grouped {
@@ -208,16 +206,11 @@ impl SheprdWindow {
                     .then_some(endpoint.label.as_str()),
             };
             let daemon = crate::listening_ports::Daemon::of(&endpoint.connection.target);
-            let live = self.live_of(endpoint_index);
             let Some(snapshot) = &live.snapshot else {
                 continue;
             };
             let silenced = crate::notification_mutes::Mutes::silenced_in(cx, endpoint, snapshot);
-            let collapsed_repos = if endpoint_index == 0 {
-                &self.collapsed_repos
-            } else {
-                &endpoint.collapsed_repos
-            };
+            let collapsed_repos = &endpoint.collapsed_repos;
             let entries = visible_workspace_entries(&snapshot.workspaces, collapsed_repos);
             let drag = self
                 .workspace_drag
@@ -261,7 +254,7 @@ impl SheprdWindow {
             // the linked worktrees under it. Reset per host.
             let mut previous_indented = None;
             for (position, (index, indented, group)) in entries.into_iter().enumerate() {
-                if multi && endpoint.collapsed {
+                if self.host_folded(endpoint) {
                     break;
                 }
                 let workspace = &snapshot.workspaces[index];

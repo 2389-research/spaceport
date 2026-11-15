@@ -306,13 +306,10 @@ impl SheprdWindow {
         key: &String,
         cx: &mut Context<Self>,
     ) {
-        let collapsed = if endpoint_id == crate::endpoint::LOCAL {
-            &mut self.collapsed_repos
-        } else if let Some(endpoint) = self.endpoints.iter_mut().find(|e| e.id == endpoint_id) {
-            &mut endpoint.collapsed_repos
-        } else {
+        let Some(endpoint) = self.endpoints.iter_mut().find(|e| e.id == endpoint_id) else {
             return;
         };
+        let collapsed = &mut endpoint.collapsed_repos;
         if !collapsed.remove(key) {
             collapsed.insert(key.clone());
         }

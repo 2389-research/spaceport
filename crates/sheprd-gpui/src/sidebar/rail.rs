@@ -173,10 +173,7 @@ impl SheprdWindow {
             .flex_1()
             .min_h_0()
             .overflow_y_scroll();
-        for (endpoint_index, endpoint) in self.displayed_devices() {
-            if !self.device_visible(&endpoint.id) {
-                continue;
-            }
+        for (endpoint_index, endpoint, live) in self.listed_hosts() {
             let selected = endpoint_index == self.selected_endpoint;
             let endpoint_id = endpoint.id.clone();
             let initial = host_initial(&endpoint.label);
@@ -248,18 +245,13 @@ impl SheprdWindow {
                         })),
                 );
             }
-            if multi && endpoint.collapsed {
+            if self.host_folded(endpoint) {
                 continue;
             }
-            let live = self.live_of(endpoint_index);
             let Some(snapshot) = &live.snapshot else {
                 continue;
             };
-            let collapsed_repos = if endpoint_index == 0 {
-                &self.collapsed_repos
-            } else {
-                &endpoint.collapsed_repos
-            };
+            let collapsed_repos = &endpoint.collapsed_repos;
             let host = multi.then_some(endpoint.label.as_str());
             for (index, indented, _) in
                 visible_workspace_entries(&snapshot.workspaces, collapsed_repos)
@@ -380,7 +372,7 @@ impl SheprdWindow {
                 continue;
             };
             // A collapsed host folds its agents away with its workspaces.
-            if multi && endpoint.collapsed {
+            if self.host_folded(endpoint) {
                 continue;
             }
             let selected = index == self.selected_endpoint;
