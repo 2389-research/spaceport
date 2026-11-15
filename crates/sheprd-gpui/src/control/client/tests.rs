@@ -3,6 +3,7 @@ use super::*;
 
 mod chat_lines;
 mod core_catalog;
+mod family_help;
 mod tab_help;
 
 #[test]

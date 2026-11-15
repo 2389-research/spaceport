@@ -31,6 +31,8 @@ pub enum UiCommand {
     Panel(crate::sidebar::ActivityPanel),
 }
 
+pub(super) const APP_USAGE: &str = "spaceport app focus|hide|quit\n    Bring the app forward, hide it, or quit it. Quitting leaves Herdr\n    and its terminals running.";
+
 pub(super) fn app(args: &mut Args) -> Result<AppCommand, CliError> {
     let verb = args.verb().ok_or(CliError::MissingArgument {
         command: "app",
@@ -43,6 +45,8 @@ pub(super) fn app(args: &mut Args) -> Result<AppCommand, CliError> {
         _ => return Err(unknown("app", verb)),
     })
 }
+
+pub(super) const WINDOW_USAGE: &str = "spaceport window [list]\n    The app's windows, with IDs for --window.\nspaceport window new\n    Open another window on the selected window's exact Core group or legacy\n    launch target, the caller's host, or the frontmost/default target. A\n    stale Core group is refused before the window opens.\nspaceport window focus ID\nspaceport window fullscreen [on|off|toggle]\nspaceport window size [WIDTHxHEIGHT]\n    Print the window's size, or resize it. Windows cannot be moved.\nspaceport window detach|reconnect\n    Detach from, or reconnect to, the window's selected host.";
 
 pub(super) fn window(args: &mut Args) -> Result<WindowCommand, CliError> {
     let Some(verb) = args.verb() else {
@@ -77,6 +81,8 @@ fn size(text: std::ffi::OsString) -> Result<Size, CliError> {
 
 /// The panel names `ui panel` takes, as its errors and help name them.
 const PANELS: &str = "workspaces|overview|automations|usage";
+
+pub(super) const UI_USAGE: &str = "spaceport ui sidebar [on|off|toggle]\nspaceport ui statusbar [on|off|toggle]\nspaceport ui font-size +|-|reset|POINTS\nspaceport ui panel workspaces|overview|automations|usage\n    For this window and session; settings are changed with `config`.";
 
 pub(super) fn ui(args: &mut Args) -> Result<UiCommand, CliError> {
     let verb = args.verb().ok_or(CliError::MissingArgument {
