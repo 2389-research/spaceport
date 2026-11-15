@@ -14,11 +14,13 @@ WORKFLOW = (ROOT / ".github/workflows/ci.yml").read_text()
 SECTIONS = re.split(r"^  ([a-z-]+):\n", WORKFLOW.split("\njobs:\n", 1)[1], flags=re.M)
 JOBS = dict(zip(SECTIONS[1::2], SECTIONS[2::2]))
 PR_JOBS = tuple(job for job in JOBS if job != "build")
-REPOSITORY_OWNERS = {
-    "sheprd-labs/sheprd": "penso",
-    "penso/herdr-gpui": "penso",
-    "2389-research/spaceport": "harperreed",
-}
+REPOSITORY = "2389-research/spaceport"
+OWNER = "harperreed"
+# The repositories this was forked from, and one stranger's fork: none may run a job.
+OTHER_REPOSITORIES = ("sheprd-labs/sheprd", "penso/herdr-gpui", "larry0x/spaceport")
+# Paused until native Windows performance is fixed; the repository variable
+# WINDOWS_ENABLED turns these back on without editing the workflow.
+WINDOWS_JOBS = ("windows", "windows-native", "windows-package")
 # Jobs that never run on main, where they would hold the macOS runners.
 PR_ONLY_JOBS = ("build-macos",)
 
@@ -56,79 +58,87 @@ def condition_matches(job, context, jobs=JOBS):
 class CiPolicy(unittest.TestCase):
     def context(self, **overrides):
         return {
-            "github.repository": "sheprd-labs/sheprd",
+            "github.repository": REPOSITORY,
             "github.event_name": "pull_request",
             "github.ref": "refs/pull/456/merge",
             "github.actor": "larry0x",
             "github.triggering_actor": "larry0x",
             "github.event.pull_request.user.login": "larry0x",
-            "github.event.pull_request.head.repo.full_name": "larry0x/herdr-gpui",
+            "github.event.pull_request.head.repo.full_name": "larry0x/spaceport",
             "needs.commits.outputs.code": "true",
             "needs.commits.outputs.windows_package": "true",
+            "vars.WINDOWS_ENABLED": "",
             **overrides,
         }
+
+    def runs(self, job, context):
+        return condition_matches(job, context)
+
+    def test_every_job_names_only_this_repository(self):
+        # A guard naming another repository is skipped here and reports green.
+        for name, job in JOBS.items():
+            self.assertIn(f"github.repository == '{REPOSITORY}'", job, name)
+            for other in OTHER_REPOSITORIES[:2]:
+                self.assertNotIn(other, job, name)
 
     def test_fork_pr_can_run_after_github_approval_or_owner_rerun(self):
         # Approval does not rewrite actor/author/source repo. An owner rerun
         # changes triggering_actor only; neither case may skip the PR checks.
-        for repository, owner in REPOSITORY_OWNERS.items():
-            for actor in ("larry0x", owner):
-                context = self.context(**{"github.repository": repository,
-                                          "github.triggering_actor": actor})
-                for job in PR_JOBS:
-                    with self.subTest(repository=repository, actor=actor, job=job):
-                        self.assertEqual(condition_matches(job, context),
-                                         repository != "2389-research/spaceport" or not job.startswith("windows"))
-                self.assertFalse(condition_matches("build", context))
+        for actor in ("larry0x", OWNER):
+            context = self.context(**{"github.triggering_actor": actor})
+            for job in PR_JOBS:
+                with self.subTest(actor=actor, job=job):
+                    self.assertEqual(self.runs(job, context), job not in WINDOWS_JOBS)
+            self.assertFalse(self.runs("build", context))
 
     def test_owner_pr_still_runs_checks_but_not_release_build(self):
-        for repository, owner in REPOSITORY_OWNERS.items():
-            context = self.context(**{
-                "github.repository": repository,
-                "github.actor": owner, "github.triggering_actor": owner,
-                "github.event.pull_request.user.login": owner,
-                "github.event.pull_request.head.repo.full_name": repository,
-            })
-            for job in PR_JOBS:
-                self.assertEqual(condition_matches(job, context),
-                                 repository != "2389-research/spaceport" or not job.startswith("windows"),
-                                 (repository, job))
-            self.assertFalse(condition_matches("build", context))
+        context = self.context(**{
+            "github.actor": OWNER, "github.triggering_actor": OWNER,
+            "github.event.pull_request.user.login": OWNER,
+            "github.event.pull_request.head.repo.full_name": REPOSITORY,
+        })
+        for job in PR_JOBS:
+            self.assertEqual(self.runs(job, context), job not in WINDOWS_JOBS, job)
+        self.assertFalse(self.runs("build", context))
+
+    def test_windows_jobs_run_only_when_the_repository_variable_enables_them(self):
+        self.assertTrue(set(WINDOWS_JOBS) <= set(JOBS))
+        for value, enabled in (("true", True), ("", False), ("false", False), ("1", False)):
+            context = self.context(**{"vars.WINDOWS_ENABLED": value})
+            for job in WINDOWS_JOBS:
+                with self.subTest(value=value, job=job):
+                    self.assertEqual(self.runs(job, context), enabled)
+        # The variable gates only the Windows jobs.
+        context = self.context(**{"vars.WINDOWS_ENABLED": "true"})
+        for job in PR_JOBS:
+            self.assertTrue(self.runs(job, context), job)
 
     def test_non_pr_events_require_owner_main_and_expected_event(self):
-        for repository, event, ref, actor, triggering_actor in itertools.product(
-                (*REPOSITORY_OWNERS, "larry0x/spaceport"),
+        for event, ref, actor, triggering_actor in itertools.product(
                 ("push", "workflow_dispatch", "pull_request_target", "workflow_run"),
                 ("refs/heads/main", "refs/heads/topic", "refs/tags/v1"),
-                ("penso", "harperreed", "larry0x"), ("penso", "harperreed", "larry0x")):
+                ("penso", OWNER, "larry0x"), ("penso", OWNER, "larry0x")):
             context = self.context(**{
-                "github.repository": repository,
                 "github.event_name": event, "github.ref": ref,
                 "github.actor": actor, "github.triggering_actor": triggering_actor,
             })
-            owner = REPOSITORY_OWNERS.get(repository)
             allowed = (event in ("push", "workflow_dispatch") and ref == "refs/heads/main"
-                       and actor == owner and triggering_actor == owner)
+                       and actor == OWNER and triggering_actor == OWNER)
             for job in JOBS:
                 with self.subTest(job=job, context=context):
-                    self.assertEqual(condition_matches(job, context),
-                                     allowed and job not in PR_ONLY_JOBS
-                                     and (repository != "2389-research/spaceport" or not job.startswith("windows")))
+                    self.assertEqual(self.runs(job, context),
+                                     allowed and job not in PR_ONLY_JOBS and job not in WINDOWS_JOBS)
 
     def test_other_repositories_cannot_run_jobs(self):
-        for event in ("pull_request", "push", "workflow_dispatch"):
+        for repository, event, actor in itertools.product(
+                OTHER_REPOSITORIES, ("pull_request", "push", "workflow_dispatch"), ("penso", OWNER)):
             context = self.context(**{
-                "github.repository": "larry0x/herdr-gpui", "github.event_name": event,
-                "github.ref": "refs/heads/main", "github.actor": "penso",
-                "github.triggering_actor": "penso",
+                "github.repository": repository, "github.event_name": event,
+                "github.ref": "refs/heads/main", "github.actor": actor,
+                "github.triggering_actor": actor, "vars.WINDOWS_ENABLED": "true",
             })
             for job in JOBS:
-                self.assertFalse(condition_matches(job, context), (job, event))
-
-    def test_pretransfer_repository_still_runs_pull_request_checks(self):
-        context = self.context(**{"github.repository": "penso/herdr-gpui"})
-        for job in PR_JOBS:
-            self.assertTrue(condition_matches(job, context), job)
+                self.assertFalse(self.runs(job, context), (repository, job, event))
 
     def test_supply_chain_runs_for_spaceport_and_no_other_repository(self):
         # A skipped job reports green, so a guard naming another repository
@@ -137,9 +147,9 @@ class CiPolicy(unittest.TestCase):
         sections = re.split(r"^  ([a-z-]+):\n", text.split("\njobs:\n", 1)[1], flags=re.M)
         jobs = dict(zip(sections[1::2], sections[2::2]))
         self.assertEqual(set(jobs), {"zizmor", "cargo-deny"})
-        spaceport = "2389-research/spaceport"
+        spaceport = REPOSITORY
         for repository, event, ref, actor in itertools.product(
-                (*REPOSITORY_OWNERS, "larry0x/spaceport"),
+                (REPOSITORY, *OTHER_REPOSITORIES),
                 ("pull_request", "push", "workflow_dispatch", "schedule", "pull_request_target"),
                 ("refs/heads/main", "refs/heads/topic"),
                 ("harperreed", "penso", "larry0x")):
@@ -163,7 +173,7 @@ class CiPolicy(unittest.TestCase):
             context = self.context(**{"needs.commits.outputs.code": code})
             for job in PR_JOBS:
                 self.assertEqual(condition_matches(job, context),
-                                 job not in ("checks", "windows", "windows-native", "build-macos"),
+                                 job not in ("checks", "build-macos", *WINDOWS_JOBS),
                                  (job, code))
 
     def test_required_gate_rejects_failures_skips_and_missing_detection(self):

@@ -17,17 +17,12 @@ class ReleaseTargets(unittest.TestCase):
         sections = re.split(r"^  ([a-z-]+):\n", workflow.split("\njobs:\n", 1)[1], flags=re.M)
         jobs = dict(zip(sections[1::2], sections[2::2]))
         for name, job in jobs.items():
-            self.assertIn("github.repository == 'sheprd-labs/sheprd'", job)
             self.assertIn("github.repository == '2389-research/spaceport'", job)
+            self.assertNotIn("sheprd-labs/sheprd", job, name)
             if name != "build-macos":
                 condition = " ".join(re.search(r"^    if: >-\n((?:      .*\n)+)", job, re.M)[1].split())
-                mapping = " ".join("""
-                  ((github.repository == '2389-research/spaceport' &&
-                    github.actor == 'harperreed' && github.triggering_actor == 'harperreed') ||
-                   (github.repository != '2389-research/spaceport' &&
-                    github.actor == 'penso' && github.triggering_actor == 'penso'))
-                """.split())
-                self.assertIn(mapping, condition, name)
+                self.assertIn("github.actor == 'harperreed' && github.triggering_actor == 'harperreed'",
+                              condition, name)
             self.assertNotIn("secrets.", job, name)
         # Keeps every main cache inside the repository's 10 GB cache budget.
         self.assertIn("\nenv:\n  CARGO_PROFILE_DEV_DEBUG: '0'\n\njobs:\n", workflow)

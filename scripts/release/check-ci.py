@@ -9,19 +9,19 @@ import re
 import subprocess
 import sys
 
-REPO = "sheprd-labs/sheprd"
-ACTOR = "penso"
+REPO = "2389-research/spaceport"
+ACTOR = "harperreed"
 LOGIN = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?"
 # Job names are the API contract with ci.yml. Missing/renamed jobs fail closed.
+# The Windows jobs are paused (ci.yml runs them only when the repository
+# variable WINDOWS_ENABLED is "true"), so they are not required here. Add
+# them back when that variable is set.
 # Windows packaging is path-selected; the macOS release builds run on pull
 # requests only, so main CI does not hold the account's macOS runners.
 REQUIRED_JOBS = frozenset({
     "Workflow Security", "Commit messages", "Format, lint, and test",
     *(f"Format, lint, and test ({runner}, {features})" for runner in
       ("macos-15", "ubuntu-24.04", "ubuntu-24.04-arm") for features in ("default", "all")),
-    *(f"Windows check ({runner}, {features})" for runner in ("windows-2025", "windows-11-arm")
-      for features in ("default", "all")),
-    *(f"Windows native GUI ({runner})" for runner in ("windows-2025", "windows-11-arm")),
     *(f"Release ({target})" for target in
       ("x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu")),
 })
@@ -49,15 +49,10 @@ def eligible(run, sha, actor=ACTOR):
             and run["triggering_actor"]["login"] == actor)
 
 
-def missing_jobs(jobs, *, repo=REPO):
+def missing_jobs(jobs):
     successful = {job["name"] for job in jobs
                   if job["status"] == "completed" and job["conclusion"] == "success"}
-    required = REQUIRED_JOBS
-    # Doctor Biz paused Spaceport Windows builds until native performance is fixed.
-    # Upstream release policy and every active platform remain mandatory.
-    if repo == "2389-research/spaceport":
-        required = {name for name in required if not name.startswith("Windows ")}
-    return required - successful
+    return REQUIRED_JOBS - successful
 
 
 def require_ci(sha, wait=False, *, repo=REPO, actor=ACTOR):
@@ -67,7 +62,7 @@ def require_ci(sha, wait=False, *, repo=REPO, actor=ACTOR):
         if run["status"] != "completed" or run["conclusion"] != "success":
             continue
         pages = api(f"actions/runs/{run['id']}/jobs?filter=latest&per_page=100", repo=repo, paginate=True)
-        missing = missing_jobs((job for page in pages for job in page["jobs"]), repo=repo)
+        missing = missing_jobs(job for page in pages for job in page["jobs"])
         if not missing:
             print(f"Full CI passed: https://github.com/{repo}/actions/runs/{run['id']}")
             return
