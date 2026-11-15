@@ -32,18 +32,27 @@ pub(crate) struct WorkspaceDrag {
     pub(super) workspace: String,
     origin: Point<Pixels>,
     pub(super) pointer: Point<Pixels>,
-    pub(super) lifted: bool,
-    /// The gap under the pointer, `None` over the carried unit's own place.
-    pub(super) target: Option<Target>,
-    /// The order the list had when the drag was dropped with a move sent,
-    /// kept so the preview lasts exactly until the daemon's answer.
-    dropped: Option<Vec<String>>,
+    phase: Phase,
     /// Each shifted row's slide, by workspace. Render reads and advances them,
     /// so they live behind a cell; they end with the drag.
     slides: RefCell<HashMap<String, Slide>>,
     /// Lifts the row once the press has rested, then ends a dropped preview
     /// the daemon never answered. Dropping the drag cancels it.
     _timer: Task<()>,
+}
+
+/// Where a drag is in its life. A press lifts, and a lifted row dropped over
+/// a gap settles; nothing goes back a step.
+enum Phase {
+    /// Pressed, and not yet held or moved far enough to lift.
+    Pressed,
+    /// Lifted and following the pointer. `target` is the gap under it, `None`
+    /// over the carried unit's own place.
+    Floating { target: Option<Target> },
+    /// Dropped into `target` with its move sent. `order` is the order the
+    /// list had then, kept so the preview lasts exactly until the daemon's
+    /// answer.
+    Dropped { target: Target, order: Vec<String> },
 }
 
 impl WorkspaceDrag {
@@ -80,18 +89,40 @@ impl WorkspaceDrag {
 
     /// Whether the lifted row still follows the pointer.
     pub(super) fn floating(&self) -> bool {
-        self.lifted && self.dropped.is_none()
+        matches!(self.phase, Phase::Floating { .. })
+    }
+
+    /// Whether the press has lifted, floating or dropped.
+    #[cfg(test)]
+    pub(super) fn lifted(&self) -> bool {
+        !matches!(self.phase, Phase::Pressed)
+    }
+
+    /// Whether the row was dropped with its move sent, and the daemon's
+    /// answer is still awaited.
+    fn settling(&self) -> bool {
+        matches!(self.phase, Phase::Dropped { .. })
+    }
+
+    /// The gap the row floats over or was dropped into.
+    pub(super) fn target(&self) -> Option<&Target> {
+        match &self.phase {
+            Phase::Pressed => None,
+            Phase::Floating { target } => target.as_ref(),
+            Phase::Dropped { target, .. } => Some(target),
+        }
     }
 
     /// Whether the list should show the drop in place: while it floats, and
     /// after it is dropped until the daemon's order replaces the old one.
     pub(super) fn previewing(&self, workspaces: &[ClientShellWorkspace]) -> bool {
-        self.lifted
-            && self.dropped.as_ref().is_none_or(|order| {
-                order.iter().map(String::as_str).eq(workspaces
-                    .iter()
-                    .map(|workspace| workspace.workspace_id.as_str()))
-            })
+        match &self.phase {
+            Phase::Pressed => false,
+            Phase::Floating { .. } => true,
+            Phase::Dropped { order, .. } => order.iter().map(String::as_str).eq(workspaces
+                .iter()
+                .map(|workspace| workspace.workspace_id.as_str())),
+        }
     }
 }
 
@@ -272,7 +303,9 @@ impl Plan {
 }
 
 impl SheprdWindow {
-    /// Arms a reorder for a left press on a row of the selected endpoint.
+    /// Arms a reorder for a left press on a row of the selected endpoint. One
+    /// reorder runs at a time: a device header already pressed keeps the
+    /// gesture, as a pressed row keeps it from a header.
     pub(super) fn press_workspace(
         &mut self,
         workspace: &str,
@@ -283,6 +316,7 @@ impl SheprdWindow {
             return;
         };
         if self.menu.page.is_some()
+            || self.device_drag.is_some()
             || !self.live.status.is_connected()
             || Plan::new(&snapshot.workspaces, workspace).is_none()
         {
@@ -297,9 +331,7 @@ impl SheprdWindow {
             workspace: workspace.to_owned(),
             origin: position,
             pointer: position,
-            lifted: false,
-            target: None,
-            dropped: None,
+            phase: Phase::Pressed,
             slides: RefCell::default(),
             _timer: lift,
         });
@@ -307,9 +339,9 @@ impl SheprdWindow {
 
     fn lift_workspace(&mut self, cx: &mut Context<Self>) {
         if let Some(drag) = &mut self.workspace_drag
-            && !drag.lifted
+            && matches!(drag.phase, Phase::Pressed)
         {
-            drag.lifted = true;
+            drag.phase = Phase::Floating { target: None };
             // The resting pointer is carrying a row, not asking for its menu.
             self.hover = None;
             cx.notify();
@@ -326,40 +358,46 @@ impl SheprdWindow {
         target: impl FnOnce(Pixels) -> Option<Target>,
         cx: &mut Context<Self>,
     ) -> bool {
-        let Some(drag) = self.workspace_drag.as_mut().filter(|d| d.dropped.is_none()) else {
+        let Some(drag) = self.workspace_drag.as_mut().filter(|d| !d.settling()) else {
             return false;
         };
         // A release outside the window never reaches the sidebar.
         if !held {
-            let lifted = drag.lifted;
+            let lifted = drag.floating();
             self.workspace_drag = None;
             cx.notify();
             return lifted;
         }
         drag.pointer = position;
         let moved = position - drag.origin;
-        if !drag.lifted && f32::from(moved.x.abs().max(moved.y.abs())) > LIFT_DISTANCE {
+        if f32::from(moved.x.abs().max(moved.y.abs())) > LIFT_DISTANCE {
             self.lift_workspace(cx);
         }
-        let Some(drag) = self.workspace_drag.as_mut().filter(|drag| drag.lifted) else {
+        let Some(drag) = self.workspace_drag.as_mut() else {
             return false;
         };
-        drag.target = target(drag.offset());
+        let offset = drag.offset();
+        let Phase::Floating { target: gap } = &mut drag.phase else {
+            return false;
+        };
+        *gap = target(offset);
         cx.notify();
         true
     }
 
     /// Ends the drag on release, sending its move if it was lifted over a gap.
     /// Returns whether it had lifted, in which case the release is not a click.
+    /// A row already dropped stays as it is: its preview holds until the
+    /// daemon answers, and this release belongs to some later click.
     pub(super) fn release_workspace_drag(&mut self, cx: &mut Context<Self>) -> bool {
-        let Some(mut drag) = self.workspace_drag.take() else {
+        let Some(drag) = self.workspace_drag.take_if(|drag| !drag.settling()) else {
             return false;
         };
-        if !drag.floating() {
+        let Phase::Floating { target } = drag.phase else {
             return false;
-        }
+        };
         cx.notify();
-        let Some(target) = &drag.target else {
+        let Some(target) = target else {
             return true;
         };
         let connection = &self.endpoints[self.selected_endpoint].connection;
@@ -374,21 +412,23 @@ impl SheprdWindow {
             .reorder(&snapshot.workspaces, self.live.supports_workspace_move);
         match handle.reorder_workspaces(&drag.boot, &reorder) {
             Ok(_) => {
-                drag.dropped = Some(
-                    snapshot
-                        .workspaces
-                        .iter()
-                        .map(|workspace| workspace.workspace_id.clone())
-                        .collect(),
-                );
-                drag._timer = cx.spawn(async move |this, cx| {
+                let order = snapshot
+                    .workspaces
+                    .iter()
+                    .map(|workspace| workspace.workspace_id.clone())
+                    .collect();
+                let settle = cx.spawn(async move |this, cx| {
                     cx.background_executor().timer(SETTLE_TIMEOUT).await;
                     let _ = this.update(cx, |this, cx| {
                         this.workspace_drag = None;
                         cx.notify();
                     });
                 });
-                self.workspace_drag = Some(drag);
+                self.workspace_drag = Some(WorkspaceDrag {
+                    phase: Phase::Dropped { target, order },
+                    _timer: settle,
+                    ..drag
+                });
             }
             Err(error) => {
                 self.local_error = Some(fl!(
@@ -400,18 +440,33 @@ impl SheprdWindow {
         true
     }
 
-    /// Drops a lifted row where it came from. Returns whether one was lifted.
-    pub(crate) fn cancel_workspace_drag(&mut self, cx: &mut Context<Self>) -> bool {
-        if !self
-            .workspace_drag
+    /// Forgets a dropped row once the window's order is no longer the one it
+    /// was dropped on: the daemon answered, so nothing is left to preview and
+    /// the next gesture need not wait out the timeout. Called on every tick,
+    /// after the window takes the selected endpoint's state.
+    pub(crate) fn finish_workspace_settle(&mut self) {
+        let workspaces = self
+            .live
+            .snapshot
             .as_ref()
-            .is_some_and(WorkspaceDrag::floating)
-        {
+            .map_or(&[][..], |snapshot| &snapshot.workspaces);
+        self.workspace_drag
+            .take_if(|drag| drag.settling() && !drag.previewing(workspaces));
+    }
+
+    /// Drops a lifted row where it came from, and forgets a press that has
+    /// not lifted yet, so its timer cannot lift it later. A dropped row's move
+    /// is already sent, so its preview stays. Returns whether one was lifted:
+    /// only then is the key the drag's.
+    pub(crate) fn cancel_workspace_drag(&mut self, cx: &mut Context<Self>) -> bool {
+        let Some(drag) = self.workspace_drag.take_if(|drag| !drag.settling()) else {
             return false;
+        };
+        let lifted = drag.floating();
+        if lifted {
+            cx.notify();
         }
-        self.workspace_drag = None;
-        cx.notify();
-        true
+        lifted
     }
 }
 
