@@ -7,7 +7,7 @@ use super::workspace_document::{self, NAME, VersionedDocument};
 use gpui::{App, Global};
 pub(super) use remote::RemoteStatus;
 use remote::{Remote, RemoteRequest};
-use sheprd_backend::{Backend as _, Change, TerminalInfo};
+use sheprd_backend::{Change, TerminalInfo};
 use sheprd_core_client::{
     CoreBackend, CoreBatch,
     wire::{Doc, MachineList, MachineView},

@@ -3,7 +3,7 @@
 use super::{MockCore, connected, terminal};
 use crate::{CoreBackend, frame::Kind};
 use serde_json::json;
-use sheprd_backend::{Backend as _, Change};
+use sheprd_backend::Change;
 use std::{thread, time::Duration};
 
 mod owner;
