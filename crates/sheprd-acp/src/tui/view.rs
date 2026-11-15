@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::text::Line;
 use sheprd_chat_protocol::{
-    Attachment, Change, Command, Cursor, EntryId, MAX_ATTACHMENTS, Rejection, ServerMessage,
-    Status, Transcript,
+    Attachment, Command, Cursor, EntryId, MAX_ATTACHMENTS, Rejection, Replica, ServerMessage,
+    Status, Touched, Transcript,
 };
 use unicode_width::UnicodeWidthChar;
 
@@ -134,43 +134,45 @@ pub(crate) struct View {
     /// Which option of the oldest permission request is selected.
     pub choice: usize,
     pub composer: Composer,
-    cursor: Option<Cursor>,
     /// Which of the composer's command completions is selected.
     pub completion: usize,
     /// A short message about the last thing that did not work.
     pub flash: Option<String>,
     history: History,
     quit_armed: bool,
+    /// The transcript, and the stream position it reflects.
+    replica: Replica,
     /// Lines scrolled up from the bottom; 0 follows new output.
     pub scroll: usize,
     /// The settings panel, open on the selected setting.
     pub settings: Option<usize>,
-    pub transcript: Transcript,
 }
 
 impl View {
+    /// Where to resume when attaching again, or `None` for a snapshot.
     pub(crate) fn cursor(&self) -> Option<Cursor> {
-        self.cursor
+        self.replica.since()
+    }
+
+    /// The transcript on screen; stale while the view waits for a snapshot.
+    pub(crate) fn transcript(&self) -> &Transcript {
+        self.replica.transcript()
     }
 
     pub(crate) fn receive(&mut self, message: ServerMessage) -> Received {
         match message {
             ServerMessage::Welcome { .. } => {}
             ServerMessage::Snapshot { cursor, transcript } => {
-                self.transcript = *transcript;
-                self.cursor = Some(cursor);
+                self.replica.reset(cursor, *transcript);
                 self.cache.clear();
             }
             ServerMessage::Change { change, cursor } => {
-                let follows = self.cursor.is_some_and(|known| {
-                    known.epoch == cursor.epoch && known.seq + 1 == cursor.seq
-                });
-                if !follows || self.transcript.apply(&change).is_err() {
-                    self.cursor = None;
+                // The replica has forgotten its position by now, so the
+                // program attaches again for a snapshot.
+                let Ok(touched) = self.replica.follow(&change, cursor) else {
                     return Received::Resync;
-                }
-                self.cursor = Some(cursor);
-                self.invalidate(&change);
+                };
+                self.invalidate(touched);
             }
             ServerMessage::Ack { rejected, .. } => {
                 self.flash = rejected.map(|rejected: Rejection| rejected.to_string());
@@ -183,21 +185,19 @@ impl View {
         Received::Applied
     }
 
-    fn invalidate(&mut self, change: &Change) {
-        match change {
-            Change::Push { entry } | Change::Replace { entry } => {
-                self.cache.remove(&entry.id);
+    fn invalidate(&mut self, touched: Touched) {
+        match touched {
+            Touched::Entry(id) => {
+                self.cache.remove(&id);
             }
-            Change::Append { id, .. } => {
-                self.cache.remove(id);
-            }
-            Change::Truncate { before } => self.cache.retain(|id, _| id >= before),
-            _ => {}
+            Touched::Truncated { before } => self.cache.retain(|id, _| *id >= before),
+            Touched::Other => {}
         }
     }
 
     fn options(&self) -> usize {
-        self.transcript
+        self.replica
+            .transcript()
             .permissions
             .first()
             .map_or(0, |permission| permission.options.len())
@@ -210,13 +210,13 @@ impl View {
             self.cache_width = width;
         }
         let mut out = Vec::new();
-        if self.transcript.truncated {
+        if self.replica.transcript().truncated {
             out.push(Line::styled(
                 "  (earlier messages were dropped)",
                 ratatui::style::Style::default().fg(ratatui::style::Color::DarkGray),
             ));
         }
-        for entry in &self.transcript.entries {
+        for entry in &self.replica.transcript().entries {
             let lines = self
                 .cache
                 .entry(entry.id)
@@ -247,12 +247,12 @@ impl View {
 
     /// The agent's commands the composer's text would complete to.
     pub(crate) fn completions(&self) -> Vec<&sheprd_chat_protocol::SlashCommand> {
-        assist::completions(&self.transcript, &self.composer.text)
+        assist::completions(self.replica.transcript(), &self.composer.text)
     }
 
     /// Keys while the settings panel is open: it takes every key.
     fn settings_key(&mut self, key: &KeyEvent, at: usize) -> Option<Out> {
-        let count = self.transcript.options.len();
+        let count = self.replica.transcript().options.len();
         let ctrl = key.modifiers.contains(KeyModifiers::CONTROL);
         match key.code {
             KeyCode::Esc => self.settings = None,
@@ -261,7 +261,7 @@ impl View {
             KeyCode::Down => self.settings = Some((at + 1).min(count.saturating_sub(1))),
             KeyCode::Left | KeyCode::Right | KeyCode::Enter | KeyCode::Char(' ') => {
                 let step = if key.code == KeyCode::Left { -1 } else { 1 };
-                let option = self.transcript.options.get(at)?;
+                let option = self.replica.transcript().options.get(at)?;
                 return assist::step(option, step).map(Out::Command);
             }
             _ => {}
@@ -282,7 +282,7 @@ impl View {
         if let Some(at) = self.settings {
             return self.settings_key(&key, at);
         }
-        if ctrl && key.code == KeyCode::Char('o') && !self.transcript.options.is_empty() {
+        if ctrl && key.code == KeyCode::Char('o') && !self.replica.transcript().options.is_empty() {
             self.settings = Some(0);
             return None;
         }
@@ -308,11 +308,15 @@ impl View {
             }
         }
         let empty = self.composer.text.is_empty();
-        let asking = !self.transcript.permissions.is_empty();
+        let asking = !self.replica.transcript().permissions.is_empty();
         let recall = (empty || self.history.recalling()) && !asking && !shift;
         match key.code {
             KeyCode::Up if recall => {
-                if let Some(prompt) = self.history.older(&self.transcript).map(str::to_owned) {
+                if let Some(prompt) = self
+                    .history
+                    .older(self.replica.transcript())
+                    .map(str::to_owned)
+                {
                     self.composer.set(prompt);
                 }
                 return None;
@@ -344,7 +348,7 @@ impl View {
                 self.scroll = 0;
                 let text = self.composer.take();
                 if !text.trim().is_empty() {
-                    self.history.push(&text, &self.transcript);
+                    self.history.push(&text, self.replica.transcript());
                 }
                 return Some(Out::Command(Command::Prompt {
                     text,
@@ -393,7 +397,8 @@ impl View {
     }
 
     fn working(&self) -> bool {
-        matches!(self.transcript.status, Status::Working) || !self.transcript.queued.is_empty()
+        matches!(self.replica.transcript().status, Status::Working)
+            || !self.replica.transcript().queued.is_empty()
     }
 
     fn cancel(&mut self) -> Option<Out> {
@@ -419,7 +424,7 @@ impl View {
     }
 
     fn answer(&mut self, index: usize) -> Option<Out> {
-        let permission = self.transcript.permissions.first()?;
+        let permission = self.replica.transcript().permissions.first()?;
         let option = permission.options.get(index)?;
         Some(Out::Command(Command::Answer {
             option: option.id.clone(),
@@ -428,7 +433,7 @@ impl View {
     }
 
     fn next_mode(&mut self) -> Option<Out> {
-        assist::next_mode(&self.transcript).map(Out::Command)
+        assist::next_mode(self.replica.transcript()).map(Out::Command)
     }
 }
 

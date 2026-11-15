@@ -80,6 +80,44 @@ pub enum Change {
     },
 }
 
+/// What a change touched, for a client that redraws only what changed.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Touched {
+    /// One entry was added or its content changed.
+    Entry(EntryId),
+    /// Entries before `before` were dropped.
+    Truncated { before: EntryId },
+    /// Something beside the entries: status, permissions, settings.
+    Other,
+}
+
+impl Change {
+    /// What this change touches. Every variant is named, so a new one must
+    /// be classified here rather than in each client.
+    pub fn touched(&self) -> Touched {
+        match self {
+            Self::Push { entry } | Self::Replace { entry } => Touched::Entry(entry.id),
+            Self::Append { id, .. } => Touched::Entry(*id),
+            Self::Truncate { before } => Touched::Truncated { before: *before },
+            Self::Status { .. }
+            | Self::PermissionAsked { .. }
+            | Self::PermissionResolved { .. }
+            | Self::Plan { .. }
+            | Self::Modes { .. }
+            | Self::CurrentMode { .. }
+            | Self::Options { .. }
+            | Self::Turn { .. }
+            | Self::Queue { .. }
+            | Self::Clients { .. }
+            | Self::Session { .. }
+            | Self::Commands { .. }
+            | Self::Usage { .. }
+            | Self::AutoAccept { .. }
+            | Self::Activity { .. } => Touched::Other,
+        }
+    }
+}
+
 impl Transcript {
     /// Applies `change`, or leaves the transcript as it was and reports why it
     /// does not fit.

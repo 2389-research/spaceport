@@ -19,8 +19,19 @@ a request that offers none still waits for a person. `Change` is
 one step from one transcript to the next, and `Transcript::apply` is the only
 reducer: the program and every client run the same function, so they cannot
 disagree about what a change means. A change that does not fit (an unknown
-entry, a resolved permission that was never asked) is an error, and the client
-answers it by asking for a fresh snapshot.
+entry, a resolved permission that was never asked) is an error and leaves the
+transcript as it was.
+
+`Replica` is how a client follows the stream: a transcript together with the
+`Cursor` it reflects. `reset` takes a snapshot. `follow` takes a change only
+right after the one before it, the same epoch and the next sequence number,
+applies it, and returns what it `Touched` (one entry, a truncation, or
+something beside the entries) so the client redraws only that. A change that
+does not follow (`Error::StreamGap`, with both positions) or does not fit
+keeps the transcript, so it can stay on screen, and forgets the position:
+`since` then returns nothing, and the next connection gets a snapshot.
+`Change::touched` names every variant, so a new change must be classified
+there once rather than in each client.
 
 An image is a PNG, JPEG, GIF, or WebP as base64 text of at most
 `MAX_IMAGE_DATA` bytes, either an entry of its own (from the user or the agent)
@@ -60,7 +71,7 @@ Frames are a little-endian `u32` byte length and a JSON payload, at most
 `MAX_FRAME_SIZE` bytes. A client sends `Hello` with the protocol version and,
 when reconnecting, the `Cursor` it last applied. The program answers `Welcome`,
 then either the changes after that cursor or a `Snapshot`, then every change as
-it happens. The cursor's epoch changes whenever the program starts or reloads
+it happens (a client applies them through `Replica`, above). The cursor's epoch changes whenever the program starts or reloads
 its session, so a cursor from an earlier run always gets a snapshot.
 
 `Hello` also carries the `REVISION` the client reads: additions within one

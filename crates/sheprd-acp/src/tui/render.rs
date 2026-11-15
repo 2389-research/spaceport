@@ -17,13 +17,13 @@ const COMPOSER_ROWS: usize = 8;
 pub(crate) fn draw(frame: &mut Frame<'_>, view: &mut View, tick: usize) {
     let area = frame.area();
     let width = usize::from(area.width);
-    let plan = lines::plan(&view.transcript.plan, width);
+    let plan = lines::plan(&view.transcript().plan, width);
     let plan_height = plan.len().min(6);
-    let queued = view.transcript.queued.len().min(3);
-    let (bottom_height, bottom) = if !view.transcript.permissions.is_empty() {
+    let queued = view.transcript().queued.len().min(3);
+    let (bottom_height, bottom) = if !view.transcript().permissions.is_empty() {
         permission_height(view, width)
     } else if view.settings.is_some() {
-        (view.transcript.options.len() + 2, Bottom::Settings)
+        (view.transcript().options.len() + 2, Bottom::Settings)
     } else {
         composer_height(view, width)
     };
@@ -57,7 +57,7 @@ pub(crate) fn draw(frame: &mut Frame<'_>, view: &mut View, tick: usize) {
         plan_area,
     );
     let queue: Vec<Line<'_>> = view
-        .transcript
+        .transcript()
         .queued
         .iter()
         .take(3)
@@ -145,7 +145,7 @@ fn draw_settings(frame: &mut Frame<'_>, view: &View, area: Rect) {
     frame.render_widget(block, area);
     let selected = view.settings.unwrap_or(0);
     let rows: Vec<Line<'_>> = view
-        .transcript
+        .transcript()
         .options
         .iter()
         .enumerate()
@@ -169,7 +169,7 @@ fn draw_settings(frame: &mut Frame<'_>, view: &View, area: Rect) {
 }
 
 fn header_line(view: &View, tick: usize) -> Line<'static> {
-    let transcript = &view.transcript;
+    let transcript = view.transcript();
     let (status, color) = match &transcript.status {
         _ if transcript.is_blocked() => ("waiting for you".to_owned(), Color::Magenta),
         Status::Starting => (
@@ -290,12 +290,12 @@ fn draw_composer(frame: &mut Frame<'_>, view: &View, area: Rect) {
     let inner = block.inner(area);
     frame.render_widget(block, area);
     if view.composer.text.is_empty() {
-        let hint = match view.transcript.status {
+        let hint = match view.transcript().status {
             Status::Working => "Type to queue a prompt…".to_owned(),
             Status::Failed { .. } | Status::Exited { .. } => {
                 "The agent is not running. Ctrl+D quits.".to_owned()
             }
-            _ => format!("Ask {}…", view.transcript.agent),
+            _ => format!("Ask {}…", view.transcript().agent),
         };
         frame.render_widget(
             Paragraph::new(Line::styled(hint, Style::default().fg(Color::DarkGray))),
@@ -320,7 +320,7 @@ fn draw_composer(frame: &mut Frame<'_>, view: &View, area: Rect) {
 }
 
 fn permission_height(view: &View, width: usize) -> (usize, Bottom) {
-    let Some(permission) = view.transcript.permissions.first() else {
+    let Some(permission) = view.transcript().permissions.first() else {
         return (0, Bottom::Permission);
     };
     let title = lines::wrap(&permission.title, width.saturating_sub(2))
@@ -330,10 +330,10 @@ fn permission_height(view: &View, width: usize) -> (usize, Bottom) {
 }
 
 fn draw_permission(frame: &mut Frame<'_>, view: &View, area: Rect) {
-    let Some(permission) = view.transcript.permissions.first() else {
+    let Some(permission) = view.transcript().permissions.first() else {
         return;
     };
-    let more = view.transcript.permissions.len() - 1;
+    let more = view.transcript().permissions.len() - 1;
     let title = if more > 0 {
         format!(" Permission (+{more} more) ")
     } else {

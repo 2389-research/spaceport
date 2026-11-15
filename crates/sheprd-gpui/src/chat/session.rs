@@ -5,7 +5,7 @@
 
 use super::{Error, MAX_PENDING, Result};
 use sheprd_chat_protocol::{
-    Change, ClientMessage, Command, CommandId, Cursor, EntryId, Rejection, ServerMessage,
+    ClientMessage, Command, CommandId, Cursor, EntryId, Rejection, Replica, ServerMessage, Touched,
     Transcript, VERSION,
 };
 use std::collections::HashMap;
@@ -29,12 +29,12 @@ struct Pending {
 pub(crate) struct Session {
     /// The agent the program greeted with, until a transcript names one.
     agent: String,
-    /// The last change applied, or `None` when the next connection must
-    /// start from a snapshot.
-    cursor: Option<Cursor>,
     pending: Vec<Pending>,
     /// The last command the program refused, shown until the next one.
     rejection: Option<Rejection>,
+    /// The transcript and the stream position it reflects. It holds no
+    /// position when the next connection must start from a snapshot.
+    replica: Replica,
     /// The revision each entry last changed at, so the view redraws only
     /// the entries that did.
     revisions: HashMap<EntryId, u64>,
@@ -44,7 +44,6 @@ pub(crate) struct Session {
     /// Whether a snapshot brought a different last entry than the session
     /// held, until the view takes it.
     tail_changed: bool,
-    transcript: Transcript,
     /// Whether the current connection has greeted.
     welcomed: bool,
 }
@@ -59,14 +58,16 @@ impl Session {
     /// asks for a snapshot; the transcript stays on screen meanwhile.
     pub(crate) fn lost(&mut self, error: &Error) {
         self.welcomed = false;
+        // `receive` forgot the position already when it returned such an
+        // error; this covers one that reaches the session any other way.
         if error.desynced() {
-            self.cursor = None;
+            self.replica.lose();
         }
     }
 
     /// Where the next connection resumes.
     pub(crate) fn since(&self) -> Option<Cursor> {
-        self.cursor
+        self.replica.since()
     }
 
     /// Whether a transcript has arrived since the session began.
@@ -76,28 +77,30 @@ impl Session {
 
     /// Greeted, and holding the program's current transcript.
     pub(crate) fn live(&self) -> bool {
-        self.welcomed && self.cursor.is_some()
+        self.welcomed && self.replica.since().is_some()
     }
 
     pub(crate) fn transcript(&self) -> &Transcript {
-        &self.transcript
+        self.replica.transcript()
     }
 
     /// A log observer cannot infer live execution state from historical text.
     /// Its daemon supplies status without changing the transcript wire cursor.
     pub(crate) fn set_observed_status(&mut self, status: sheprd_chat_protocol::Status) -> bool {
-        if !self.transcript.read_only || self.transcript.status == status {
+        let transcript = self.replica.transcript_mut();
+        if !transcript.read_only || transcript.status == status {
             return false;
         }
-        self.transcript.status = status;
+        transcript.status = status;
         true
     }
 
     pub(crate) fn agent(&self) -> &str {
-        if self.transcript.agent.is_empty() {
+        let transcript = self.transcript();
+        if transcript.agent.is_empty() {
             &self.agent
         } else {
-            &self.transcript.agent
+            &transcript.agent
         }
     }
 
@@ -121,7 +124,7 @@ impl Session {
     pub(crate) fn keys(&self) -> Vec<(EntryId, u64)> {
         let revision = |id: &EntryId| self.revisions.get(id).copied().unwrap_or(0);
         let mut steps: HashMap<&str, u64> = HashMap::new();
-        for entry in &self.transcript.entries {
+        for entry in &self.transcript().entries {
             if let sheprd_chat_protocol::EntryKind::Tool(tool) = &entry.kind
                 && let Some(parent) = &tool.parent
             {
@@ -129,7 +132,7 @@ impl Session {
                 *latest = (*latest).max(revision(&entry.id));
             }
         }
-        self.transcript
+        self.transcript()
             .entries
             .iter()
             .map(|entry| {
@@ -166,7 +169,7 @@ impl Session {
 
     /// Records `command` as waiting and returns the message that sends it.
     pub(crate) fn submit(&mut self, command: Command) -> Result<ClientMessage> {
-        if self.transcript.read_only {
+        if self.transcript().read_only {
             return Err(Error::ReadOnly);
         }
         if self.pending.len() >= MAX_PENDING {
@@ -184,7 +187,8 @@ impl Session {
     }
 
     /// Applies one message, returning whether anything shown changed. An
-    /// error ends the connection; the session keeps what it had.
+    /// error ends the connection; the session keeps the transcript it had,
+    /// and after a change that did not follow or fit, no stream position.
     pub(crate) fn receive(&mut self, message: ServerMessage) -> Result<bool> {
         match message {
             ServerMessage::Welcome { agent, version, .. } => {
@@ -201,26 +205,23 @@ impl Session {
             }
             _ if !self.welcomed => Err(Error::Handshake),
             ServerMessage::Snapshot { cursor, transcript } => {
-                self.tail_changed |= self.transcript.entries.last() != transcript.entries.last();
-                self.transcript = *transcript;
-                self.cursor = Some(cursor);
+                self.tail_changed |= self.transcript().entries.last() != transcript.entries.last();
+                self.replica.reset(cursor, *transcript);
                 self.revisions.clear();
                 self.snapshots += 1;
                 Ok(true)
             }
             ServerMessage::Change { change, cursor } => {
-                let follows = self.cursor.is_some_and(|after| {
-                    after.epoch == cursor.epoch && after.seq.checked_add(1) == Some(cursor.seq)
-                });
-                if !follows {
-                    return Err(Error::Stream {
-                        after: self.cursor,
-                        got: cursor,
-                    });
-                }
-                self.transcript.apply(&change).map_err(Error::Apply)?;
-                self.cursor = Some(cursor);
-                self.touch(&change);
+                let touched =
+                    self.replica
+                        .follow(&change, cursor)
+                        .map_err(|error| match error {
+                            sheprd_chat_protocol::Error::StreamGap { after, got } => {
+                                Error::Stream { after, got }
+                            }
+                            misfit => Error::Apply(misfit),
+                        })?;
+                self.touch(touched);
                 Ok(true)
             }
             ServerMessage::Ack { id, rejected } => {
@@ -237,19 +238,18 @@ impl Session {
         }
     }
 
-    fn touch(&mut self, change: &Change) {
+    fn touch(&mut self, touched: Touched) {
         self.revision += 1;
-        let id = match change {
-            Change::Push { entry } | Change::Replace { entry } => entry.id,
-            Change::Append { id, .. } => *id,
-            Change::Truncate { .. } => {
-                let entries = &self.transcript.entries;
+        match touched {
+            Touched::Entry(id) => {
+                self.revisions.insert(id, self.revision);
+            }
+            Touched::Truncated { .. } => {
+                let entries = &self.replica.transcript().entries;
                 self.revisions
                     .retain(|id, _| entries.binary_search_by_key(id, |entry| entry.id).is_ok());
-                return;
             }
-            _ => return,
-        };
-        self.revisions.insert(id, self.revision);
+            Touched::Other => {}
+        }
     }
 }

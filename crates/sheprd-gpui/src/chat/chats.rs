@@ -421,16 +421,23 @@ impl ChatPane {
         let polled = link.poll(POLL_BUDGET);
         let mut changed = false;
         let mut end = None;
+        // As of the last message that applied: one that does not fit makes
+        // the session forget its position, which must not hide that the
+        // connection was live until then.
+        let mut live = self.session.live();
         for message in polled.messages {
             match self.session.receive(message) {
-                Ok(shown) => changed |= shown,
+                Ok(shown) => {
+                    changed |= shown;
+                    live = self.session.live();
+                }
                 Err(error) => {
                     end = Some(error);
                     break;
                 }
             }
         }
-        if self.session.live() {
+        if live {
             self.failures = 0;
         }
         if let Some(error) = end.or(polled.end) {

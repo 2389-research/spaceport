@@ -135,7 +135,9 @@ fn a_change_that_does_not_fit_leaves_the_transcript() {
         .unwrap_err();
     assert!(matches!(error, Error::Apply(_)));
     assert!(std::error::Error::source(&error).is_some());
-    assert_eq!(session.since(), Some(cursor(1, 0)));
+    assert_eq!(session.transcript().entries, vec![agent(1, "a")]);
+    // The position is gone at once, not only when the connection ends.
+    assert_eq!(session.since(), None);
     session.lost(&error);
     assert_eq!(session.since(), None);
 }

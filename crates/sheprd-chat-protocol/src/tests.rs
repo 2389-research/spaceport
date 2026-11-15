@@ -14,6 +14,7 @@ mod media;
 mod notices;
 mod product_identity;
 mod removed_phone;
+mod replica;
 mod revisions;
 mod wire;
 

@@ -1,5 +1,5 @@
 use super::*;
-use sheprd_chat_protocol::{EntryId, Error, PermissionId};
+use sheprd_chat_protocol::{Cursor, EntryId, Error, PermissionId};
 
 #[test]
 fn every_chat_protocol_variant_has_a_message() {
@@ -19,6 +19,13 @@ fn every_chat_protocol_variant_has_a_message() {
         Error::NoModes,
         Error::NotText(EntryId(3)),
         Error::QuestionAnswersLimit(EntryId(7)),
+        Error::StreamGap {
+            after: None,
+            got: Cursor {
+                epoch: uuid::Uuid::nil(),
+                seq: 2,
+            },
+        },
         Error::UnknownEntry(EntryId(8)),
         Error::UnknownPermission(PermissionId(9)),
     ]);
