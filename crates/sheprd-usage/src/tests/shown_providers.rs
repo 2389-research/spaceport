@@ -53,7 +53,7 @@ fn panel_tabs_leave_out_sign_ins_with_nothing_to_show() {
     let without = |id: &str| Reading {
         provider: provider(id),
         report: None,
-        error: Some(Error::NoPlan.into()),
+        error: Some(crate::Error::from(Error::Unreachable).into()),
     };
     let entry = super::super::Entry {
         readings: vec![with("codex"), without("gemini"), without("cursor")],

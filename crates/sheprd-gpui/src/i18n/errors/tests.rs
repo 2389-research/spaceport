@@ -29,6 +29,7 @@ mod processes;
 mod protocol;
 mod remote;
 mod root;
+mod shell;
 mod sound;
 mod terminal_attach;
 mod usage;

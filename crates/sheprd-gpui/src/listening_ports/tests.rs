@@ -13,6 +13,7 @@ mod en_xa;
 mod forward_reuse;
 #[cfg(unix)]
 mod repeated_scans;
+mod shell_errors;
 mod ssh_links;
 mod status_bar;
 mod wsl_hosts;
@@ -190,7 +191,7 @@ fn only_a_different_scan_changes_what_is_shown() {
     assert!(!reading.apply(Ok(found.clone())));
     // A failed scan keeps the last ports and is not a change.
     assert!(!reading.apply(Err(
-        super::Error::Scan(Box::new(sheprd_usage::Error::Unreachable.into())).into()
+        super::Error::Scan(Box::new(sheprd_usage::shell::Error::Unreachable.into())).into()
     )));
     assert_eq!(reading.ports, found);
     let error = reading.error.clone().unwrap();
@@ -198,7 +199,7 @@ fn only_a_different_scan_changes_what_is_shown() {
         error.starts_with("Could not read listening ports"),
         "{error}"
     );
-    assert!(error.contains("SSH"), "the cause is kept: {error}");
+    assert!(error.contains("shell"), "the cause is kept: {error}");
     assert!(reading.apply(Ok(Ports::new())));
     assert_eq!(reading.error, None);
 }

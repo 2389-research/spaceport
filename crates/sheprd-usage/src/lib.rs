@@ -7,7 +7,7 @@ mod error;
 pub mod model;
 pub mod registry;
 pub mod settings;
-mod shell;
+pub mod shell;
 pub mod text;
 
 #[cfg(all(test, unix))]
