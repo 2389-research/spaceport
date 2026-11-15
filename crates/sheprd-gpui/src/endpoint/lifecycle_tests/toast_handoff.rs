@@ -24,7 +24,11 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
         view.reset_selected(cx);
         view.tick_toasts(false, Instant::now(), cx);
         let held = inbox.lock().unwrap();
-        view.click_toast("ssh:toast", view.endpoints[1].generation, &inbox, 0, cx);
+        view.click_toast(
+            &fence::ConnectionRef::for_test("ssh:toast", view.endpoints[1].generation, &inbox),
+            0,
+            cx,
+        );
         assert_eq!(view.pending_toast, Some(0));
         assert_eq!(
             view.pending_navigation,
@@ -148,7 +152,11 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
             let inbox = view.endpoints[1].connection.inbox.clone();
             view.tick_toasts(false, Instant::now(), cx);
             let held = busy_click.then(|| inbox.lock().unwrap());
-            view.click_toast("ssh:toast", view.endpoints[1].generation, &inbox, 0, cx);
+            view.click_toast(
+                &fence::ConnectionRef::for_test("ssh:toast", view.endpoints[1].generation, &inbox),
+                0,
+                cx,
+            );
             drop(held);
             assert_eq!(view.pending_toast, Some(0));
             assert!(!view.input_ready());
@@ -249,15 +257,21 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
             view.endpoints.push(endpoint);
             view.tick_toasts(false, Instant::now(), cx);
             let inbox = view.endpoints[1].connection.inbox.clone();
-            view.click_toast("ssh:toast", view.endpoints[1].generation, &inbox, 0, cx);
+            view.click_toast(
+                &fence::ConnectionRef::for_test("ssh:toast", view.endpoints[1].generation, &inbox),
+                0,
+                cx,
+            );
             assert_eq!(view.pending_toast, Some(0));
             assert!(!view.input_ready());
             let after_expiry =
-                view.endpoints[1].toasts.entries[0].1.expires + Duration::from_secs(1);
+                view.endpoints[1].toasts.entries[0].1.expires().unwrap() + Duration::from_secs(1);
             view.tick_toasts(false, after_expiry, cx);
             assert_eq!(view.endpoints[1].toasts.entries.len(), 1);
             // An accepted intent also remains eligible between timer samples.
-            view.endpoints[1].toasts.entries[0].1.expires = Instant::now();
+            view.endpoints[1].toasts.entries[0]
+                .1
+                .set_expires(Instant::now());
             assert!(matches!(
                 view.toast_target(1, 0),
                 std::task::Poll::Ready(Some(_))
@@ -361,10 +375,9 @@ fn toast_handoff_defers_a_contended_source_without_activating_destination(
         view.selected_endpoint = 1;
         view.reset_selected(cx);
         view.tick_toasts(false, Instant::now(), cx);
+        let clicked = view.endpoints[2].generation;
         view.click_toast(
-            "ssh:target",
-            view.endpoints[2].generation,
-            &target_inbox,
+            &fence::ConnectionRef::for_test("ssh:target", clicked, &target_inbox),
             0,
             cx,
         );

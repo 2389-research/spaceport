@@ -4,7 +4,7 @@
 //! scheme. Reading a row decides nothing about the disk: whether a path is
 //! there is asked once the link modifier is held over it, and every link
 //! opens only on a link-modifier click.
-use super::{HIDDEN, InputTarget, popup_origin, selection::shown, wheel_target};
+use super::{CellMetrics, HIDDEN, InputTarget, popup_origin, selection::shown, wheel_target};
 use sheprd_client::protocol::{CellData, FrameData, PaneSurfaceFrame};
 use std::ops::Range;
 
@@ -216,7 +216,11 @@ fn located(
     let (frame, x, y, columns, rows, pane_id) = match target.target {
         InputTarget::Popup(_) => {
             let popup = surface.popup.as_ref()?;
-            let origin = popup_origin(&surface.frame, &popup.frame, cell_width, cell_height);
+            let origin = popup_origin(
+                &surface.frame,
+                &popup.frame,
+                CellMetrics::new(cell_width, cell_height),
+            );
             (
                 &popup.frame,
                 x - f32::from(origin.x),
@@ -239,13 +243,8 @@ fn located(
             )
         }
     };
-    let link = frame_link(
-        frame,
-        (x / cell_width).floor() as u16,
-        (y / cell_height).floor() as u16,
-        columns,
-        rows,
-    )?;
+    let (column, row) = CellMetrics::new(cell_width, cell_height).cell_at(x, y);
+    let link = frame_link(frame, column, row, columns, rows)?;
     Some((pane_id, link))
 }
 
@@ -269,10 +268,11 @@ pub(crate) fn pane_hyperlink_at(
         return false;
     };
     let rect = pane.inner_rect;
+    let (column, row) = CellMetrics::new(cell_width, cell_height).cell_at(x, y);
     link_cell(
         &surface.frame,
-        (x / cell_width).floor() as u16,
-        (y / cell_height).floor() as u16,
+        column,
+        row,
         rect.x,
         rect.x.saturating_add(rect.width),
     )

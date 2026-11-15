@@ -104,12 +104,7 @@ impl SheprdWindow {
     /// sidebar order.
     pub(crate) fn overview_rows(&self, cx: &App) -> Vec<Row> {
         let mut rows = Vec::new();
-        for (index, endpoint) in self.endpoints.iter().enumerate() {
-            let live = if index == self.selected_endpoint {
-                &self.live
-            } else {
-                &endpoint.live
-            };
+        for (_, endpoint, live) in self.hosts() {
             rows.extend(model::agent_rows(
                 endpoint,
                 live,
@@ -126,14 +121,9 @@ impl SheprdWindow {
 
     /// What the rows read now, to compare with the last rebuild's.
     fn overview_inputs(&self, now: SystemTime, cx: &App) -> inputs::Inputs {
-        let hosts = self.endpoints.iter().enumerate().map(|(index, endpoint)| {
-            let live = if index == self.selected_endpoint {
-                &self.live
-            } else {
-                &endpoint.live
-            };
-            (endpoint.enabled, live)
-        });
+        let hosts = self
+            .hosts()
+            .map(|(_, endpoint, live)| (endpoint.enabled, live));
         let revisions = (
             Marks::of(cx).map_or(0, Marks::revision),
             crate::notification_mutes::Mutes::of(cx)
@@ -296,12 +286,7 @@ impl SheprdWindow {
             workspace,
             ..
         } = &agent.row.open;
-        let current = self.endpoints.iter().enumerate().any(|(index, host)| {
-            let live = if index == self.selected_endpoint {
-                &self.live
-            } else {
-                &host.live
-            };
+        let current = self.hosts().any(|(_, host, live)| {
             host.id == *endpoint
                 && host.enabled
                 && live.status.is_connected()

@@ -33,7 +33,11 @@ mod en_xa_tests;
 #[cfg(test)]
 mod font_size_tests;
 #[cfg(test)]
+mod footer_items_tests;
+#[cfg(test)]
 mod git_read_removal_tests;
+#[cfg(test)]
+mod reset_tests;
 #[cfg(test)]
 mod sessions_tests;
 #[cfg(test)]
@@ -91,11 +95,12 @@ fn action_icon(
 /// to be clamped still shows that it stops short of the frame.
 const MENU_MARGIN: f32 = 8.;
 
-/// Daemon failures arrive as an open envelope. Keep the code so callers can
-/// classify the refusal, and the message for display.
-pub(crate) fn endpoint_error(error: &serde_json::Value) -> (&str, &str) {
-    (
-        error["code"].as_str().unwrap_or("endpoint_error"),
-        error["message"].as_str().unwrap_or("Invalid daemon error"),
-    )
+/// The text a workspace dialog shows when the daemon refused its request:
+/// the code, which names the refusal, then the daemon's message.
+pub(crate) fn refusal(response: &serde_json::Value) -> Option<String> {
+    let error = sheprd_client::response::result(response).err()?;
+    let sheprd_client::Error::Endpoint { code, .. } = &error else {
+        return None;
+    };
+    Some(format!("{}: {error}", code.as_str()))
 }

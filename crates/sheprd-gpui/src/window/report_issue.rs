@@ -4,7 +4,7 @@
 // i18n: migrated
 
 use super::SheprdWindow;
-use crate::{APP_VERSION, RELEASE_BUILD};
+use crate::APP_VERSION;
 use gpui::Context;
 use std::{path::Path, sync::OnceLock};
 
@@ -25,7 +25,7 @@ impl SheprdWindow {
         let report = self.report_issue();
         let install_method = std::env::current_exe()
             .ok()
-            .and_then(|exe| install_method(&exe, RELEASE_BUILD));
+            .and_then(|exe| install_method(&exe));
         let platform = cx
             .background_executor()
             .spawn(async { PLATFORM.get_or_init(report_issue_os).as_str() });
@@ -51,7 +51,7 @@ impl SheprdWindow {
             .or(self.local_error.as_deref())
             .map(|err| format!("{}: {err}", self.live.status));
         ReportIssue {
-            version: client_version(RELEASE_BUILD, crate::constants::BUILD_COMMIT),
+            version: client_version(crate::constants::BUILD_COMMIT),
             daemon_version: daemon_version.map(str::to_owned),
             logs,
         }
@@ -80,10 +80,10 @@ impl ReportIssue {
     }
 }
 
-/// The client version for bug reports, followed by the git commit for
-/// source builds when it is known (e.g. "dev (2f643d73)").
-pub(super) fn client_version(release: bool, commit: Option<&str>) -> String {
-    match commit.filter(|commit| !release && !commit.is_empty()) {
+/// The client version for bug reports, followed by the git commit when it
+/// is known (e.g. "dev (2f643d73)").
+pub(super) fn client_version(commit: Option<&str>) -> String {
+    match commit.filter(|commit| !commit.is_empty()) {
         Some(commit) => format!("{APP_VERSION} ({commit})"),
         None => APP_VERSION.to_owned(),
     }
@@ -246,15 +246,9 @@ pub(super) fn format_mac_model(raw: &str) -> String {
     trimmed.to_owned()
 }
 
-/// How the executable at `exe` was installed, when that can be told.
-///
-/// A release build is left unset: the template's choices are both source
-/// builds, and release packaging also produces an app bundle, so the user
-/// picks the answer rather than the report claiming a local build.
-pub(super) fn install_method(exe: &Path, release: bool) -> Option<&'static str> {
-    if release {
-        return None;
-    }
+/// How the executable at `exe` was installed, when that can be told. The
+/// template's choices are both source builds.
+pub(super) fn install_method(exe: &Path) -> Option<&'static str> {
     if exe
         .ancestors()
         .any(|p| p.extension().is_some_and(|ext| ext == "app"))

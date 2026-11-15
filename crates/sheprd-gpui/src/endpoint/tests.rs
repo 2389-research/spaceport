@@ -4,6 +4,8 @@ use sheprd_client::{ClientEvent, SavedHost};
 
 mod en_xa;
 mod follow_focus;
+mod live_of;
+mod phase;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer_warning;
@@ -88,7 +90,7 @@ fn notifications_stay_endpoint_owned_and_expire_without_new_updates() {
         None,
         now
     ));
-    let deadline = endpoints[1].toasts.entries[0].1.expires;
+    let deadline = endpoints[1].toasts.entries[0].1.expires().unwrap();
     assert!(crate::notifications::tick(
         &mut endpoints,
         0,

@@ -24,6 +24,7 @@ use std::{
 mod cancellation;
 mod completion;
 mod en_xa;
+mod fence;
 mod progress;
 mod taskbar;
 
@@ -333,11 +334,8 @@ fn popup(view: &mut SheprdWindow, id: &str) {
 
 fn pending(view: &SheprdWindow, target: InputTarget) -> FileTransfer {
     FileTransfer {
-        endpoint: view.endpoints[0].id.clone(),
+        fence: view.input_fence().unwrap(),
         host: HOST.into(),
-        epoch: view.selection_epoch,
-        generation: view.endpoints[0].generation,
-        boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
         target,
         label: "large file".into(),
         cancelled: Arc::new(AtomicBool::new(false)),

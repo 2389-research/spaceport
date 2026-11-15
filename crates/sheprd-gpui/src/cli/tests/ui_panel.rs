@@ -1,6 +1,6 @@
 use super::*;
 use crate::sidebar::ActivityPanel;
-use control::{ControlCommand, Invocation, UiCommand};
+use control::{ControlCommand, Invocation, UiOp};
 
 fn parse(args: &[&str]) -> Result<Invocation, CliError> {
     LaunchOptions::parse(args.iter().copied()).map(|options| match options.mode {
@@ -15,7 +15,7 @@ fn ui_panel_takes_every_panel_by_name() {
         assert_eq!(
             parse(&["ui", "panel", panel.name(), "--json"]).unwrap(),
             Invocation {
-                command: ControlCommand::Ui(UiCommand::Panel(panel)),
+                command: ControlCommand::Ui(UiOp::Panel { panel }),
                 json: true,
                 window: None,
             }

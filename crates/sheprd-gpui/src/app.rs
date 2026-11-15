@@ -300,10 +300,6 @@ pub(crate) fn run() -> std::process::ExitCode {
     if let Some(exit) = crate::restart_manager::hand_off(&mut args) {
         return exit;
     }
-    #[cfg(unix)]
-    if let Some(exit) = crate::setup_relay::run_helper(&args) {
-        return exit;
-    }
     // A control command asked for JSON gets its usage errors as JSON too.
     let json_errors = cli::control::wants_json(&args);
     let LaunchOptions { target, mut mode } = match LaunchOptions::parse(&args) {
@@ -367,8 +363,8 @@ pub(crate) fn run() -> std::process::ExitCode {
         );
         // i18n: data
         println!("\nCommands for the running app (each with --help):");
-        for (name, summary) in cli::control::FAMILIES {
-            println!("  {name:<18}{summary}");
+        for family in cli::control::FAMILIES {
+            println!("  {:<18}{}", family.name, family.summary);
         }
         #[cfg(feature = "integration-test")]
         println!(

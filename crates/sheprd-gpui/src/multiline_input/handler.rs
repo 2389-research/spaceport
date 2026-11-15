@@ -40,7 +40,7 @@ impl EntityInputHandler for MultilineInput {
         let selection = self.edit.selection();
         Some(UTF16Selection {
             range: to_utf16(self.text(), selection.start)..to_utf16(self.text(), selection.end),
-            reversed: self.edit.cursor < self.edit.anchor,
+            reversed: self.edit.reversed(),
         })
     }
 

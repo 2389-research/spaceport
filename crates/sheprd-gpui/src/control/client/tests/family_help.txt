@@ -1,0 +1,265 @@
+spaceport COMMAND ... [--json] [--window ID]
+
+  status        Whether Spaceport runs, its version, windows, and hosts
+  skill         Print the agent skill describing these commands
+  app           Bring the app forward, hide it, or quit it
+  window        List, open, focus, resize, detach, or reconnect windows
+  ui            Sidebar, status bar, and terminal font size
+  tab           List, focus, or close the app's own tabs
+  devices       Open the Devices overview
+  chat          Native views of sheprd-acp chats: start one, list them, show or hide one
+  notes         Notes kept on worktrees
+  worktree      Mute or unmute the caller's worktree
+  host          List the window's hosts, show one, or mute one
+  ports         Listening ports, and forwarding them to this machine
+  processes     The processes running under a pane
+  usage         AI plan usage on the selected host
+  config        Spaceport settings: path, get, set, reload, check
+  theme         List or choose a color theme
+  font          List or choose the terminal font
+  language      The language Spaceport shows, or choose one
+  keybinds      List shortcuts and check them for conflicts
+  caffeine      Keep the machine awake
+  sound         List or play notification sounds
+  bell          Ring the terminal bell
+  events        What happened in the app, as a stream
+  wait          Wait for a window or a tab to close
+  run           Run any app command by name, as the command palette does
+  commands      List the commands `run` accepts
+  logs          Print or locate the app's log
+  diagnostics   Write a redacted bundle for a bug report
+  integrations  Agent integrations and the agent skill
+
+Run `spaceport COMMAND --help` for one command's usage.
+
+Every command accepts --json, printing one JSON document, and --window ID,
+acting in that window (IDs come from `window list`). By default a command
+acts in the window showing the caller's workspace (HERDR_WORKSPACE_ID), and
+exits 5 when no window shows it; outside Herdr, in the frontmost window.
+Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
+4 nothing yet (no event), 5 not found, 6 busy (a dialog is open),
+7 timed out, 8 unsupported on this platform or by this app version.
+
+=== status ===
+spaceport status
+    Whether Spaceport runs, its version, protocol, windows, hosts, and the
+    current Core machine catalog's freshness and count. No machine lookup runs.
+    Exits 3 when it does not run.
+
+=== skill ===
+spaceport skill
+    Print the agent skill describing these commands.
+
+=== app ===
+spaceport app focus|hide|quit
+    Bring the app forward, hide it, or quit it. Quitting leaves Herdr
+    and its terminals running.
+
+=== window ===
+spaceport window [list]
+    The app's windows, with IDs for --window.
+spaceport window new
+    Open another window on the selected window's exact Core group or legacy
+    launch target, the caller's host, or the frontmost/default target. A
+    stale Core group is refused before the window opens.
+spaceport window focus ID
+spaceport window fullscreen [on|off|toggle]
+spaceport window size [WIDTHxHEIGHT]
+    Print the window's size, or resize it. Windows cannot be moved.
+spaceport window detach|reconnect
+    Detach from, or reconnect to, the window's selected host.
+
+=== ui ===
+spaceport ui sidebar [on|off|toggle]
+spaceport ui statusbar [on|off|toggle]
+spaceport ui font-size +|-|reset|POINTS
+spaceport ui panel workspaces|overview|automations|usage
+    For this window and session; settings are changed with `config`.
+
+=== tab ===
+spaceport tab [list]
+    The app's own tabs: pages, Devices, Core terminals.
+    Terminal tabs belong to Herdr: use `herdr tab`.
+spaceport tab focus|close ID
+    Show a tab, switching to its workspace, or close it.
+
+=== devices ===
+spaceport devices [open]
+    Open the Devices overview tab in the caller's workspace.
+
+=== chat ===
+spaceport chat [status]
+    The window's sheprd-acp chat panes on this machine or an SSH host: pane, agent, status,
+    and whether the native chat view or the terminal shows. Exits 4 when
+    there are none.
+spaceport chat show|hide|toggle [--pane ID]
+    Show the native chat view over the pane, or its terminal, for this
+    window. The pane is the caller's own, else the focused one. Exits 5 when
+    it runs no chat the window can show.
+spaceport chat new AGENT [--pane ID]
+    Open a tab running a sheprd-acp chat with AGENT (claude, codex, copilot,
+    gemini, opencode, or pi) in the workspace and folder of the pane, else the
+    caller's own. On an SSH host the tab runs that host's sheprd-acp, from
+    ~/.herdr/bin or PATH. With no Herdr pane to go by, a Herdr 2 tab in the
+    active group splits its pane in use with the chat instead. The chat view
+    attaches once the program starts.
+    Exits 8 when ACP chats are off in Settings, sheprd-acp is missing here,
+    the host cannot be reached, or the agent is not installed there.
+
+=== notes ===
+spaceport notes [list]
+    Every worktree note, most recently edited first.
+spaceport notes get|clear
+spaceport notes set TEXT...
+    The note on the caller's checkout (its repository and branch), or the
+    focused workspace's outside a Herdr pane. Notes are one line of at most
+    500 characters. `list` and `get` exit 4 when there is none.
+
+=== worktree ===
+spaceport worktree [status]
+    Whether the caller's worktree is muted.
+spaceport worktree mute|unmute
+    Silence its notifications, or let them through again. Mutes stay in
+    this app; nothing reaches the daemon.
+
+=== host ===
+spaceport host [list]
+    The window's hosts and their status. Herdr's `machine` command
+    manages saved hosts.
+spaceport host mute|unmute [HOST]
+    Silence a host's notifications as a whole, or let them through again,
+    by ID or label; absent, the caller's host. Works while it is offline.
+spaceport host select ID
+    Show that host in the window, as choosing it in the sidebar does.
+spaceport host tag ID [TAG...]
+    Replace the local tags that group that host in the sidebar; with no
+    tags, clear them.
+
+=== ports ===
+spaceport ports [list]
+    Ports the caller's workspace's processes listen on, and forwards.
+    Listening ports are known only while show_listening_ports is on.
+spaceport ports forward|unforward PORT
+    Forward a port of the workspace's SSH host to this machine, or stop.
+spaceport ports open PORT
+    Open localhost:PORT with the system URL handler, forwarding it first if remote.
+
+=== processes ===
+spaceport processes [--pane ID]
+    The processes under a pane (default HERDR_PANE_ID), with CPU and
+    memory. Runs here; Spaceport need not run.
+
+=== usage ===
+spaceport usage
+    Plan usage on the selected host when Core supplies a feed; currently unavailable.
+
+=== config ===
+spaceport config [path]
+    The settings files.
+spaceport config get KEY
+    The setting's value, as TOML: your override, else the default.
+spaceport config set KEY VALUE
+spaceport config unset KEY
+    Change a setting in spaceport/config.local.toml. VALUE is read as TOML
+    (14, true, ["a"], { show = true }), else as text. A value or key
+    Spaceport would not load is refused and the file left as it was.
+    A running Spaceport applies the change at once. KEY is dotted, such
+    as terminal.size. Unsetting a key that is not set exits 4.
+spaceport config check
+    Report settings that do not load and unknown keys, and, when Spaceport
+    runs, fonts that are not installed; exits 1 when there are any.
+spaceport config reload
+    Reread Spaceport's settings files.
+Only reload needs Spaceport running.
+
+=== theme ===
+spaceport theme [list]
+    The themes there are; * marks the selected one.
+spaceport theme set NAME...
+    Choose and save a theme, or light:NAME,dark:NAME to follow the
+    system appearance. Saved even when Spaceport is not running.
+
+=== font ===
+spaceport font [list]
+    The installed font families.
+spaceport font set NAME...
+spaceport font reset
+    The font of every face; reset goes back to the default.
+These need Spaceport running, which knows the installed fonts.
+
+=== language ===
+spaceport language [status]
+    The language set, and the locale Spaceport shows: the best match for
+    the setting among the languages there are, else en-US.
+spaceport language list
+    The languages there are, each named in itself, and the en-XA and en-XB
+    pseudo-locales.
+spaceport language set system|TAG
+    Save the language setting: system follows the OS's languages; TAG is
+    a BCP 47 tag such as fr-CA. A running Spaceport switches at once.
+Only status asks Spaceport; without it, status reports what it would show.
+
+=== keybinds ===
+spaceport keybinds [list]
+    The window's shortcuts.
+spaceport keybinds check
+    Herdr's custom commands this client cannot reach; exits 1 if any.
+
+=== caffeine ===
+spaceport caffeine [status]
+spaceport caffeine on|off|toggle [--for 90s|30m|2h]
+    Keep the display and the machine awake. With --for (at most 24h),
+    caffeine turns off then, unless it was changed in the meantime.
+
+=== sound ===
+spaceport sound [list]
+    The notification sounds.
+spaceport sound play [done|request]
+    Play one now, from the file Herdr's sound settings name or the
+    built-in one.
+
+=== bell ===
+spaceport bell
+    Ring the system bell, as a terminal bell does.
+
+=== events ===
+spaceport events [--after CURSOR] [--wait SECONDS] [--kind KIND]... [--follow]
+    What happened since CURSOR, the INSTANCE:SEQ the last call printed:
+    windows and tabs opening and closing, notes, and host status. A cursor
+    from an earlier app run gets everything this run kept. --follow keeps
+    printing until interrupted. Kinds:
+    window_opened, window_closed, window_focused, tab_opened, tab_closed,
+    note, host.
+
+=== wait ===
+spaceport wait window|online|tab-closed ID [--timeout SECONDS]
+    Wait (default 60, at most 600 seconds). Exits 4 when time runs out.
+
+=== run ===
+spaceport run COMMAND
+    Run an app command by its [keybindings] name, as the command palette
+    does, for example toggle_sidebar. See `commands`.
+
+=== commands ===
+spaceport commands
+    The commands `run` accepts, with their shortcuts.
+
+=== logs ===
+spaceport logs [--lines N] [--path]
+    The app's latest log records (default 100, at most 5000), or the log file's path.
+    Runs here; Spaceport need not run. Exits 4 when there is no log yet.
+
+=== diagnostics ===
+spaceport diagnostics bundle PATH
+    Write build information, settings diagnostics, your settings
+    overrides, and recent logs to a new file at PATH for a bug report,
+    with home paths shortened and secret-looking values redacted. Read
+    it before sharing. Never replaces an existing file. Runs here.
+
+=== integrations ===
+spaceport integrations [list]
+    The agent integrations Herdr offers the window's host. Install them
+    from Spaceport's integrations settings.
+spaceport integrations install-skill
+    Install or update the agent skill for Claude Code and other agents.
+    Runs here; Spaceport need not run.

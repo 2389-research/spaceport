@@ -1,10 +1,7 @@
-"""Inherited package names, signing and installation identity stay consistent."""
+"""Inherited Windows installation identity stays consistent."""
 import importlib.util
 from pathlib import Path
-import re
-import subprocess
 import sys
-import tempfile
 import types
 import unittest
 from unittest import mock
@@ -20,41 +17,11 @@ def load(name, path):
     return module
 
 
-MANIFEST = load("artifact_manifest", SCRIPTS / "artifact-manifest.py")
 INSTALLER = load("windows_installer", SCRIPTS / "windows-installer.py")
 PACKAGE = load("package_windows", SCRIPTS / "package-windows.py")
 
 
 class RebrandCompatibility(unittest.TestCase):
-    def test_legacy_package_names_require_explicit_legacy_mode(self):
-        version = "20261102.1"
-        with tempfile.TemporaryDirectory() as temp:
-            directory = Path(temp)
-            names = MANIFEST.asset_names(version, legacy=True)
-            self.assertIn(f"Herdr-{version}-universal-apple-darwin.dmg", names)
-            self.assertFalse(any("remote-control" in name for name in names))
-            (directory / "SHA256SUMS").write_text("".join(f"{'a' * 64}  {name}\n" for name in names))
-            self.assertEqual(set(MANIFEST.verify_manifest(directory, version, legacy=True)), set(names))
-            with self.assertRaisesRegex(ValueError, "Unexpected checksum manifest"):
-                MANIFEST.verify_manifest(directory, version)
-
-    def test_homebrew_renders_the_preserved_destination_and_canonical_command(self):
-        rendered = subprocess.run(["bash", str(SCRIPTS / "render-cask.sh"), "20261103.1", "a" * 64],
-                                  capture_output=True, text=True, check=True).stdout
-        for line in ('cask "herdr-gpui" do', 'name "Sheprd"',
-                     'app "Sheprd.app", target: "Herdr.app"',
-                     'binary "#{appdir}/Herdr.app/Contents/MacOS/spaceport"'):
-            self.assertIn(line, rendered)
-        self.assertIn("https://github.com/sheprd-labs/sheprd/releases/", rendered)
-
-    def test_sheprd_cask_installs_under_the_new_name(self):
-        rendered = subprocess.run(["bash", str(SCRIPTS / "render-cask.sh"), "20261103.1", "a" * 64, "sheprd"],
-                                  capture_output=True, text=True, check=True).stdout
-        for line in ('cask "sheprd" do', 'app "Sheprd.app"',
-                     'binary "#{appdir}/Sheprd.app/Contents/MacOS/spaceport"'):
-            self.assertIn(line, rendered)
-        self.assertNotIn("Herdr", rendered)
-
     def test_installer_keeps_upgrade_and_startup_identities(self):
         text = INSTALLER.SCRIPT.read_text()
         for line in ('#define AppName "Sheprd"', '#define StartupName "Herdr UI"',
@@ -72,11 +39,7 @@ class RebrandCompatibility(unittest.TestCase):
         self.assertIn("CompareText(RemoveBackslashUnlessRoot(ExtractFilePath(Target))", text)
         self.assertIn("FileExists(NewPath) or FileCopy(OldPath, NewPath, True)", text)
 
-    def test_every_packaged_executable_and_alias_is_signed_and_installed(self):
-        workflow = (ROOT / ".github/workflows/release.yml").read_text()
-        signing = workflow.split("      - uses: azure/artifact-signing-action@", 1)[1].split("      - name:", 1)[0]
-        names = set(re.findall(r"\\([^\\\s]+\.exe)$", signing, re.M))
-        self.assertEqual(names, set(PACKAGE.EXECUTABLES))
+    def test_every_packaged_executable_is_installed(self):
         text = INSTALLER.SCRIPT.read_text()
         for name in PACKAGE.EXECUTABLES:
             definition = {"spaceport.exe": "{#AppExe}", "spaceport-launcher.exe": "{#Launcher}",

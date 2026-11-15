@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
-"""Check the app's Fluent messages (docs/i18n.md).
+"""Check how the app uses its Fluent messages (docs/i18n.md).
 
-Every `crates/*/locales/<tag>/<feature>.ftl` must parse as Fluent's message
-syntax, and each message ID start with its file's feature and a hyphen.
-Within a language no ID repeats, and a translation has no ID English lacks.
+Whether a `crates/*/locales/<tag>/<feature>.ftl` is a valid file is the
+build's to say, not this script's: `crates/sheprd-gpui/locales.rs` parses
+each one with Fluent's own parser and fails the build when a file does not
+parse, an ID lacks its file's feature prefix or repeats within a language,
+or a translation has an ID English lacks, and the compiler rejects an `fl!`
+that names no English message. This script reads only message IDs and
+references from files the build accepts: a message starts a line with its
+ID, and Fluent indents every line that continues one.
+
 Every English message is used: the app's Rust code names it as a string
 literal (`fl!("id")`, or a table such as the command catalog's), or another
 message references it. Tests do not count, so a message only a test names is
-reported. Every `fl!` names an English message; the compiler checks
-that too, and the build script parses each file in full.
+reported.
 
 A module whose code shows only messages carries the line `// i18n: migrated`.
 That file, and every file in the directory of the same name, may then hold
@@ -41,10 +46,8 @@ from pathlib import Path
 
 FALLBACK = "en-US"
 IDENTIFIER = r"[a-zA-Z][a-zA-Z0-9_-]*"
-ENTRY = re.compile(rf"^(-?{IDENTIFIER})\s*=(.*)$")
-ATTRIBUTE = re.compile(rf"^\s+\.{IDENTIFIER}\s*=")
+MESSAGE = re.compile(rf"^({IDENTIFIER})\s*=")
 REFERENCE = re.compile(rf"\{{\s*({IDENTIFIER})(?:\.{IDENTIFIER})?\s*\}}")
-FL = re.compile(r"\bfl!\(\s*\"([^\"]*)\"")
 LITERAL = re.compile(r"\"([a-z][a-z0-9-]*)\"")
 LOCALIZED_KEY = re.compile(r"^\w+\[([^\]]+)\]=", re.MULTILINE)
 # The message each language names itself by in the Settings language picker.
@@ -102,38 +105,6 @@ class Ftl:
     # ID -> line, in file order.
     messages: dict[str, int] = field(default_factory=dict)
     references: set[str] = field(default_factory=set)
-
-
-def placeables(text: str, stack: list[str]) -> bool:
-    """Reads `text` into `stack`, the placeables open around it, innermost
-    last: an `expression`, or a `select` once its `->` is read. Returns
-    whether a `}` closed none. Only an expression has string literals, so
-    `{ "{" }` holds text; a select's branches are text, where a quote is a
-    quote, as it is outside any placeable."""
-    unbalanced = False
-    quoted = False
-    escaped = False
-    for index, ch in enumerate(text):
-        if quoted:
-            if escaped:
-                escaped = False
-            elif ch == "\\":
-                escaped = True
-            elif ch == '"':
-                quoted = False
-        elif ch == "{":
-            stack.append("expression")
-        elif ch == "}":
-            if stack:
-                stack.pop()
-            else:
-                unbalanced = True
-        elif stack and stack[-1] == "expression":
-            if ch == '"':
-                quoted = True
-            elif ch == "-" and text[index + 1 : index + 2] == ">":
-                stack[-1] = "select"
-    return unbalanced
 
 
 @dataclass
@@ -260,72 +231,29 @@ def is_test(path: Path) -> bool:
     )
 
 
-def parse(path: Path, text: str) -> tuple[Ftl, list[str]]:
-    """The file's messages and the problems in it, each as `path:line: why`."""
+def messages(path: Path, text: str) -> Ftl:
+    """The IDs of the file's messages, and the messages its values name.
+    Not a parser: see the module's first paragraphs."""
     ftl = Ftl(path, path.parent.name, path.stem)
-    errors: list[str] = []
-    stack: list[str] = []
-    in_entry = False
     for number, line in enumerate(text.splitlines(), start=1):
-        stripped = line.strip()
-        if not stripped or (line.startswith("#") and not stack):
-            # A blank line ends no message: values may span them.
-            in_entry = in_entry and not line.startswith("#")
+        if line.startswith("#"):
             continue
-        entry = ENTRY.match(line) if not stack else None
-        if entry:
-            in_entry = True
-            name = entry.group(1)
-            if not name.startswith("-"):
-                if name in ftl.messages:
-                    errors.append(f"{path}:{number}: {name} is defined twice")
-                if not name.startswith(f"{ftl.feature}-"):
-                    errors.append(
-                        f"{path}:{number}: {name} must start with {ftl.feature}-, the file's name"
-                    )
-                ftl.messages.setdefault(name, number)
-            body = entry.group(2)
-        elif in_entry and (line[0] in " \t" or stack):
-            body = line
-            if ATTRIBUTE.match(line) and not stack:
-                body = line.split("=", 1)[1]
-        else:
-            errors.append(f"{path}:{number}: not a message, comment, or continuation")
-            continue
-        ftl.references.update(REFERENCE.findall(body))
-        if placeables(body, stack):
-            errors.append(f"{path}:{number}: unbalanced }}")
-    if stack:
-        errors.append(f"{path}: a placeable is not closed")
-    return ftl, errors
+        message = MESSAGE.match(line)
+        if message:
+            ftl.messages.setdefault(message.group(1), number)
+        ftl.references.update(REFERENCE.findall(line))
+    return ftl
 
 
 def check(files: list[Ftl], sources: dict[Path, str]) -> list[str]:
     errors: list[str] = []
-    by_language: dict[str, dict[str, Path]] = {}
-    for ftl in files:
-        seen = by_language.setdefault(ftl.language, {})
-        for name, line in ftl.messages.items():
-            if name in seen and seen[name] != ftl.path:
-                errors.append(f"{ftl.path}:{line}: {name} is also defined in {seen[name]}")
-            seen.setdefault(name, ftl.path)
-    english = by_language.get(FALLBACK, {})
-    if files and not english:
-        errors.append(f"no {FALLBACK} messages")
-    for language, messages in sorted(by_language.items()):
-        if language == FALLBACK:
-            continue
-        for name in sorted(set(messages) - set(english)):
-            errors.append(f"{messages[name]}: {name} has no {FALLBACK} message")
     used = {name for ftl in files for name in ftl.references}
     for path, text in sources.items():
+        if is_test(path):
+            continue
         # Comments name messages by way of example.
         text = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("//"))
-        if not is_test(path):
-            used.update(LITERAL.findall(text))
-        for name in FL.findall(text):
-            if name not in english:
-                errors.append(f"{path}: fl!(\"{name}\") names no {FALLBACK} message")
+        used.update(LITERAL.findall(text))
     for path in sorted(migrated(sources)):
         errors.extend(shown_english(path, sources[path]))
     for ftl in files:
@@ -386,9 +314,7 @@ def main() -> int:
     errors: list[str] = []
     files: list[Ftl] = []
     for path in tracked("crates/*/locales/*/*.ftl"):
-        ftl, problems = parse(path, path.read_text(encoding="utf-8"))
-        files.append(ftl)
-        errors.extend(problems)
+        files.append(messages(path, path.read_text(encoding="utf-8")))
     sources = {path: path.read_text(encoding="utf-8") for path in tracked("crates/*.rs")}
     errors.extend(check(files, sources))
     translations = sorted(

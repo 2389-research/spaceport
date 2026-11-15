@@ -4,7 +4,13 @@ use acp::v1 as wire;
 use serde_json::Value;
 
 use super::Out;
-use crate::rpc::Inbound;
+use crate::{
+    project::{PromptUsage, Report, Tag},
+    rpc::Inbound,
+};
+
+/// What a prompt is refused with while another turn runs.
+pub(crate) const BUSY: &str = "A turn is already running.";
 
 /// A `session/update` for `session`.
 pub(crate) fn update(session: &str, update: wire::SessionUpdate) -> Out {
@@ -18,6 +24,32 @@ pub(crate) fn update(session: &str, update: wire::SessionUpdate) -> Out {
 /// The answer to the session's request `id`.
 pub(crate) fn reply(id: wire::RequestId, result: Result<Value, wire::Error>) -> Out {
     Out::Session(Inbound::Response { id, result })
+}
+
+/// The answer to the prompt `id` once its turn ends: why it stopped, with
+/// the tokens it used when the harness counted them, or what failed.
+pub(crate) fn turn_ended(
+    id: wire::RequestId,
+    stop: Result<wire::StopReason, String>,
+    usage: Option<PromptUsage>,
+) -> Out {
+    let result = match stop {
+        Ok(stop) => to_value(&wire::PromptResponse::new(stop)).and_then(|mut response| {
+            if let Some(usage) = usage {
+                response["usage"] = to_value(&usage)?;
+            }
+            Ok(response)
+        }),
+        Err(message) => Err(failure(message)),
+    };
+    reply(id, result)
+}
+
+/// The update that says how another call's activity stands.
+pub(crate) fn activity(session: &str, (call, report): (String, Report)) -> Out {
+    let fields = wire::ToolCallUpdateFields::new();
+    let tagged = wire::ToolCallUpdate::new(call, fields).meta(Tag::activity(report).meta());
+    update(session, wire::SessionUpdate::ToolCallUpdate(tagged))
 }
 
 /// A request of the harness's own the session answers, such as a permission

@@ -1,17 +1,17 @@
 # Terminal backends
 
-What Sheprd needs from whatever runs its terminals, as two traits:
+The types the app shares with whatever runs its herdr-core terminals
+(`TerminalId`, `TerminalInfo`, `Size`, `Spawn`, `Change`, `SurfaceUpdate`),
+and two traits:
 
-- `Backend`: list, watch, attach, start, and end terminals on one host.
+- `Backend`: attach one terminal on a host.
 - `Terminal`: one attached terminal: semantic input, size, focus, and the
   next surface updates.
 
-Two generations implement them:
-
-| Generation | Crate | Terminal content |
-| --- | --- | --- |
-| Herdr 1 | `sheprd-client` | The daemon emulates and sends cells |
-| Herdr 2 (herdr-core) | `sheprd-core-client` | Raw bytes, emulated in the client by `sheprd-terminal` |
+`sheprd-core-client` is the one implementation: herdr-core (Herdr 2) sends
+raw bytes, which `sheprd-terminal` emulates in the client. Herdr 1
+(`sheprd-client`) does not use this crate; its daemon emulates and sends
+cells over `sheprd-protocol`.
 
 Either way the app receives `sheprd_protocol` cells (`FrameData`,
 `PaneSurfacePatchRow`) and sends `ClientPaneInputEvent`, so painting, hit

@@ -51,21 +51,10 @@ pub(crate) struct TabDrag {
     boot: Option<String>,
     pub(super) origin: Point<Pixels>,
     pub(super) pointer: Point<Pixels>,
-    /// Whether the pointer is past the window's edges, where a drop opens
-    /// the tab in a new window.
-    pub(super) outside: bool,
-    /// The window carrying the tab's card out of this one; see `tab_float`.
-    #[cfg(target_os = "macos")]
-    pub(super) float: super::tab_float::Float,
     /// The strip's scroll when pressed, so the carried tab stays under the
     /// pointer while the strip scrolls beneath it.
     scrolled: Pixels,
-    pub(super) lifted: Option<Instant>,
-    /// Where it lands, `None` over its own place.
-    pub(super) target: Option<Target>,
-    /// The workspace's Herdr tab order when the move was sent, kept so the
-    /// preview lasts exactly until the daemon's answer.
-    dropped: Option<Vec<String>>,
+    phase: Phase,
     /// Each moving tab's slide, and the shift it last painted at, which the
     /// strip's last layout includes and the gaps must not.
     slides: RefCell<HashMap<Pick, Slide>>,
@@ -75,6 +64,35 @@ pub(crate) struct TabDrag {
     /// Lifts the tab once the press has rested, then ends a dropped preview
     /// the daemon never answered. Dropping the drag cancels it.
     _timer: Task<()>,
+}
+
+/// How far a press on a tab has got. Each step replaces the last, so a tab
+/// is never both carried and dropped.
+enum Phase {
+    /// Held down, and not yet lifted: let go now, it is a click.
+    Pressed,
+    /// Lifted, and following the pointer.
+    Carried {
+        /// When it lifted, from which it grows.
+        since: Instant,
+        /// Whether the pointer is past the window's edges, where a drop
+        /// opens the tab in a new window.
+        outside: bool,
+        /// Where it lands, `None` over its own place.
+        target: Option<Target>,
+        /// The window carrying the tab's card out of this one; see
+        /// `tab_float`.
+        #[cfg(target_os = "macos")]
+        float: super::tab_float::Float,
+    },
+    /// Dropped, with its move sent: the strip shows it at `target` until the
+    /// daemon's order replaces `sent_order`, or the daemon never answers.
+    Settling {
+        /// The workspace's Herdr tab order when the move was sent, kept so
+        /// the preview lasts exactly until the daemon's answer.
+        sent_order: Vec<String>,
+        target: Target,
+    },
 }
 
 /// Where a lifted tab would land: the gap before the tab of its kind at
@@ -155,28 +173,68 @@ impl TabDrag {
     /// Whether it would land anywhere if dropped now.
     #[cfg(test)]
     pub(crate) fn has_target(&self) -> bool {
-        self.target.is_some()
+        self.target().is_some()
     }
 
+    /// Whether it is lifted and following the pointer.
     pub(super) fn floating(&self) -> bool {
-        self.lifted.is_some() && self.dropped.is_none()
+        matches!(self.phase, Phase::Carried { .. })
+    }
+
+    /// Whether it was dropped and waits for the daemon's order.
+    fn settling(&self) -> bool {
+        matches!(self.phase, Phase::Settling { .. })
+    }
+
+    /// Whether it is carried past the window's edges, where a drop opens
+    /// the tab in a new window.
+    pub(super) fn outside(&self) -> bool {
+        matches!(self.phase, Phase::Carried { outside: true, .. })
+    }
+
+    /// Where it lands, or has landed; `None` over its own place.
+    pub(super) fn target(&self) -> Option<&Target> {
+        match &self.phase {
+            Phase::Pressed => None,
+            Phase::Carried { target, .. } => target.as_ref(),
+            Phase::Settling { target, .. } => Some(target),
+        }
+    }
+
+    /// How far the window carrying its card has got; unopened unless the
+    /// tab is being carried.
+    #[cfg(target_os = "macos")]
+    pub(super) fn float(&self) -> super::tab_float::Float {
+        match self.phase {
+            Phase::Carried { float, .. } => float,
+            Phase::Pressed | Phase::Settling { .. } => Default::default(),
+        }
+    }
+
+    /// Records how far the window carrying its card has got. A tab no
+    /// longer carried has no card.
+    #[cfg(target_os = "macos")]
+    pub(super) fn set_float(&mut self, to: super::tab_float::Float) {
+        if let Phase::Carried { float, .. } = &mut self.phase {
+            *float = to;
+        }
     }
 
     /// Whether the strip shows the drop in place: while it floats, and after
     /// it is dropped until the daemon's order replaces the old one.
     fn previewing(&self, snapshot: Option<&ClientShellSnapshot>) -> bool {
-        let Pick::Herdr(tab) = &self.pick else {
-            return self.lifted.is_some();
-        };
-        self.lifted.is_some()
-            && self.dropped.as_ref().is_none_or(|order| {
+        match (&self.phase, &self.pick) {
+            (Phase::Pressed, _) => false,
+            (Phase::Carried { .. }, _) | (Phase::Settling { .. }, Pick::Page(_)) => true,
+            (Phase::Settling { sent_order, .. }, Pick::Herdr(tab)) => {
                 snapshot.is_some_and(|snapshot| {
-                    order
+                    sent_order
                         .iter()
                         .map(String::as_str)
                         .eq(workspace_tabs(snapshot, tab))
                 })
-            })
+            }
+        }
     }
 
     /// Where a tab paints on its way to shift `to`, and whether it is still
@@ -250,7 +308,7 @@ impl SheprdWindow {
         };
         let lift = cx.spawn(async move |this, cx| {
             cx.background_executor().timer(LIFT_DELAY).await;
-            let _ = this.update(cx, |this, cx| this.lift_tab(cx));
+            let _ = this.update(cx, |this, cx| this.lift_tab(false, cx));
         });
         self.tab_drag = Some(TabDrag {
             group,
@@ -258,13 +316,8 @@ impl SheprdWindow {
             boot,
             origin: position,
             pointer: position,
-            outside: false,
-            #[cfg(target_os = "macos")]
-            float: Default::default(),
             scrolled: self.strip_scroll(group).offset().x,
-            lifted: None,
-            target: None,
-            dropped: None,
+            phase: Phase::Pressed,
             slides: RefCell::default(),
             painted: RefCell::default(),
             edge_scrolled: Cell::new(None),
@@ -272,11 +325,18 @@ impl SheprdWindow {
         });
     }
 
-    fn lift_tab(&mut self, cx: &mut Context<Self>) {
+    /// Lifts a pressed tab, `outside` the window or in it.
+    fn lift_tab(&mut self, outside: bool, cx: &mut Context<Self>) {
         if let Some(drag) = &mut self.tab_drag
-            && drag.lifted.is_none()
+            && matches!(drag.phase, Phase::Pressed)
         {
-            drag.lifted = Some(motion::now());
+            drag.phase = Phase::Carried {
+                since: motion::now(),
+                outside,
+                target: None,
+                #[cfg(target_os = "macos")]
+                float: Default::default(),
+            };
             cx.notify();
         }
     }
@@ -291,23 +351,34 @@ impl SheprdWindow {
         viewport: Size<Pixels>,
         cx: &mut Context<Self>,
     ) -> bool {
-        let Some(drag) = self.tab_drag.as_mut().filter(|d| d.dropped.is_none()) else {
+        let Some(drag) = self.tab_drag.as_mut().filter(|drag| !drag.settling()) else {
             return false;
         };
         // A release outside the window never reaches the strip.
         if !held {
-            let lifted = drag.lifted.is_some();
+            let lifted = drag.floating();
             self.tab_drag = None;
             cx.notify();
             return lifted;
         }
         drag.pointer = position;
-        drag.outside = !Bounds::new(Point::default(), viewport).contains(&position);
+        let outside = !Bounds::new(Point::default(), viewport).contains(&position);
         let moved = position - drag.origin;
-        if drag.lifted.is_none() && f32::from(moved.x.abs().max(moved.y.abs())) > LIFT_DISTANCE {
-            self.lift_tab(cx);
+        // A press lifts once it has travelled, or has left the window.
+        let lifts = match &mut drag.phase {
+            Phase::Pressed => {
+                outside || f32::from(moved.x.abs().max(moved.y.abs())) > LIFT_DISTANCE
+            }
+            Phase::Carried { outside: was, .. } => {
+                *was = outside;
+                false
+            }
+            Phase::Settling { .. } => false,
+        };
+        if lifts {
+            self.lift_tab(outside, cx);
         }
-        if self.tab_drag.as_ref().is_some_and(|d| d.lifted.is_some()) {
+        if self.tab_drag.as_ref().is_some_and(TabDrag::floating) {
             cx.notify();
             return true;
         }
@@ -320,7 +391,7 @@ impl SheprdWindow {
         let drag = self
             .tab_drag
             .as_ref()
-            .filter(|drag| drag.floating() && !drag.outside)?;
+            .filter(|drag| drag.floating() && !drag.outside())?;
         let bounds = self.browser.group_bounds.borrow();
         self.group_slots()
             .into_iter()
@@ -336,17 +407,23 @@ impl SheprdWindow {
     /// Ends the drag on release, moving the tab if it was lifted over a gap
     /// or another group, or opening it in a new window if it was carried
     /// out of this one. Returns whether it had lifted, in which case the
-    /// release is not a click.
+    /// release is not a click. A tab already dropped is not this release's:
+    /// its preview stays until the daemon answers, and the release is a
+    /// click on whatever is under it.
     pub(super) fn release_tab_drag(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         let over = self.drop_group();
-        let Some(drag) = self.tab_drag.take() else {
+        let Some(drag) = self.tab_drag.take_if(|drag| !drag.settling()) else {
             return false;
         };
-        if !drag.floating() {
+        let Phase::Carried {
+            outside, target, ..
+        } = &drag.phase
+        else {
             return false;
-        }
+        };
+        let (outside, target) = (*outside, target.clone());
         cx.notify();
-        if drag.outside {
+        if outside {
             self.tear_off_tab(&drag, window, cx);
             return true;
         }
@@ -354,7 +431,7 @@ impl SheprdWindow {
             self.move_tab_to_group(drag.pick.clone(), group, window, cx);
             return true;
         }
-        let Some(target) = drag.target.clone() else {
+        let Some(target) = target else {
             return true;
         };
         match drag.pick.clone() {
@@ -368,23 +445,26 @@ impl SheprdWindow {
                 }
             }
             Pick::Herdr(tab) => {
-                let beside = target.beside.and_then(|anchor| match anchor {
+                let beside = target.beside.clone().and_then(|anchor| match anchor {
                     Pick::Herdr(anchor) => Some(anchor),
                     Pick::Page(_) => None,
                 });
                 if let Some(beside) = beside {
-                    self.send_tab_move(drag, tab, beside, cx);
+                    self.send_tab_move(drag, tab, beside, target, cx);
                 }
             }
         }
         true
     }
 
+    /// Asks the daemon to land `tab` beside `beside`, and holds the strip's
+    /// preview of it at `target` until the daemon's order arrives.
     fn send_tab_move(
         &mut self,
         mut drag: TabDrag,
         tab: String,
         beside: Beside<String>,
+        target: Target,
         cx: &mut Context<Self>,
     ) {
         let connection = &self.endpoints[self.selected_endpoint].connection;
@@ -401,12 +481,13 @@ impl SheprdWindow {
         };
         match handle.request(boot, Method::TabMove, params) {
             Ok(_) => {
-                drag.dropped = Some(
-                    workspace_tabs(snapshot, &tab)
+                drag.phase = Phase::Settling {
+                    sent_order: workspace_tabs(snapshot, &tab)
                         .into_iter()
                         .map(str::to_owned)
                         .collect(),
-                );
+                    target,
+                };
                 drag._timer = cx.spawn(async move |this, cx| {
                     cx.background_executor().timer(SETTLE_TIMEOUT).await;
                     let _ = this.update(cx, |this, cx| {
@@ -456,11 +537,11 @@ impl SheprdWindow {
     ) -> Option<StripDrag> {
         let snapshot = self.live.snapshot.clone();
         let away =
-            self.drop_group().is_some() || self.tab_drag.as_ref().is_some_and(|drag| drag.outside);
+            self.drop_group().is_some() || self.tab_drag.as_ref().is_some_and(TabDrag::outside);
         let drag = self.tab_drag.as_mut().filter(|drag| drag.group == group)?;
         if !drag.previewing(snapshot.as_deref()) {
             // The daemon's new order has arrived; the strip now shows it.
-            if drag.dropped.is_some() {
+            if drag.settling() {
                 self.tab_drag = None;
             }
             return None;
@@ -473,7 +554,7 @@ impl SheprdWindow {
             .collect();
         let Some(dragged) = kin.iter().position(|(pick, _)| **pick == drag.pick) else {
             // The carried tab closed under it.
-            if drag.dropped.is_none() {
+            if !drag.settling() {
                 self.tab_drag = None;
             }
             return None;
@@ -514,11 +595,9 @@ impl SheprdWindow {
         // there, and a Herdr tab
         // the daemon cannot move has no place to take in its own strip.
         let reorders = !away && (drag.boot.is_some() || matches!(drag.pick, Pick::Page(_)));
-        if floating && !reorders {
-            drag.target = None;
-        } else if floating {
-            let kin_picks: Vec<Pick> = kin.iter().map(|(pick, _)| (*pick).clone()).collect();
-            drag.target = spans.as_ref().and_then(|spans| {
+        if let Phase::Carried { target, .. } = &mut drag.phase {
+            *target = spans.as_ref().filter(|_| reorders).and_then(|spans| {
+                let kin_picks: Vec<Pick> = kin.iter().map(|(pick, _)| (*pick).clone()).collect();
                 let card = (
                     spans[dragged].0 + carried_shift,
                     spans[dragged].1 + carried_shift,
@@ -529,7 +608,7 @@ impl SheprdWindow {
                 Some(Target { slot, beside })
             });
         }
-        let slot = drag.target.as_ref().map_or(dragged, |target| target.slot);
+        let slot = drag.target().map_or(dragged, |target| target.slot);
         let resting = preview(&widths, dragged, slot);
         let mut shifts = HashMap::new();
         for (unit, (pick, _)) in kin.iter().enumerate() {
@@ -552,9 +631,10 @@ impl SheprdWindow {
             shifts.insert((*pick).clone(), shift);
         }
         *drag.painted.borrow_mut() = shifts.clone();
-        let grown = drag
-            .lifted
-            .and_then(|lifted| motion::progress(lifted, now, GROW));
+        let grown = match drag.phase {
+            Phase::Carried { since, .. } => motion::progress(since, now, GROW),
+            Phase::Pressed | Phase::Settling { .. } => None,
+        };
         moving |= grown.is_some();
         Some(StripDrag {
             shifts,

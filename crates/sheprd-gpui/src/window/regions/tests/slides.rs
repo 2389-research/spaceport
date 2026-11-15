@@ -2,7 +2,7 @@ use super::*;
 use crate::{
     smooth_scroll::Slide,
     terminal_painter::Span,
-    window::regions::{Region, Sliding, split},
+    window::regions::{Region, Sliding, painted_shift, split},
 };
 
 fn span(row: u16, columns: std::ops::Range<u16>) -> Span {
@@ -136,4 +136,33 @@ fn a_sliding_region_fills_only_its_uncovered_edge_from_earlier_frames(cx: &mut T
         assert_eq!(after.glyphs - before.glyphs, (1 + 5 + band) * 4);
         assert_eq!(after.decorations - before.decorations, 1, "one cursor");
     }
+}
+
+/// Known drift, pinned and not fixed here: a slide paints on a whole device
+/// pixel, while `SheprdWindow::scroll_shift` gives hit testing, link
+/// underlines, and the IME the unrounded `rows * cell_height`. The two differ
+/// by at most half a device pixel, and agree whenever the slide rests.
+#[test]
+fn a_slide_paints_within_half_a_device_pixel_of_where_hit_testing_puts_it() {
+    let mut drifted = false;
+    for cell_height in [17., 18.2, 20., 21.25, 30.5] {
+        for scale in [1., 1.25, 1.5, 2., 3.] {
+            for step in -40..=40 {
+                let rows = step as f32 / 16.3;
+                let painted = painted_shift(rows, cell_height, scale);
+                let hit_tested = rows * cell_height;
+                assert!(
+                    (painted - hit_tested).abs() <= 0.5 / scale + 1e-4,
+                    "{rows} rows of {cell_height} at {scale}x: {painted} vs {hit_tested}"
+                );
+                assert_eq!((painted * scale).round(), painted * scale);
+                drifted |= painted != hit_tested;
+            }
+            assert_eq!(painted_shift(0., cell_height, scale), 0.);
+        }
+    }
+    assert!(drifted, "the painted and hit-tested shifts never differed");
+    // The audit's example: 0.3 rows of 17 pixels at 2x.
+    assert_eq!(painted_shift(0.3, 17., 2.), 5.);
+    assert!((0.3_f32 * 17. - 5.1).abs() < 1e-5);
 }

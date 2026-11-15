@@ -7,6 +7,7 @@ use super::SheprdWindow;
 use crate::{
     config::Theme,
     smooth_scroll::Slide,
+    terminal::CellMetrics,
     terminal_painter::{self, Highlight, Layer, Part, Span, TerminalPainter},
 };
 use gpui::{prelude::*, *};
@@ -26,8 +27,7 @@ enum Owner {
 pub(super) struct Look {
     pub(super) font: Font,
     pub(super) font_size: f32,
-    pub(super) cell_width: f32,
-    pub(super) cell_height: f32,
+    pub(super) metrics: CellMetrics,
     pub(super) theme: Theme,
     pub(super) ground: terminal_painter::Ground,
 }
@@ -225,7 +225,7 @@ impl Render for RegionView {
                         origin,
                         available,
                         look.ground,
-                        look.cell_width,
+                        look.metrics.width,
                         &look.font,
                         highlights,
                         panes,
@@ -266,21 +266,10 @@ impl Render for RegionView {
                     still,
                     window,
                 );
-                let (cell_width, cell_height) = (look.cell_width, look.cell_height);
-                // Whole device pixels, so every glyph rasterizes as it does at rest.
-                let scale = window.scale_factor();
-                let offset = (slide.offset * cell_height * scale).round() / scale;
-                let mask = Bounds::new(
-                    bounds.origin
-                        + point(
-                            px(f32::from(rect.x) * cell_width),
-                            px(f32::from(rect.y) * cell_height),
-                        ),
-                    size(
-                        px(f32::from(rect.width) * cell_width),
-                        px(f32::from(rect.height) * cell_height),
-                    ),
-                );
+                let metrics = look.metrics;
+                let offset = painted_shift(slide.offset, metrics.height, window.scale_factor());
+                let pane = metrics.bounds(rect);
+                let mask = Bounds::new(bounds.origin + pane.origin, pane.size);
                 window.with_content_mask(Some(ContentMask { bounds: mask }), |window| {
                     // Each earlier frame fills the edge rows the newer ones lack.
                     let mut filled = 0;
@@ -294,7 +283,7 @@ impl Render for RegionView {
                             true => bottom - rows..bottom,
                             false => rect.y..rect.y + rows,
                         };
-                        let y = offset + *shift as f32 * cell_height;
+                        let y = offset + *shift as f32 * metrics.height;
                         paint(
                             &earlier.frame,
                             bounds.origin + point(px(0.), px(y)),
@@ -319,6 +308,13 @@ impl Render for RegionView {
         )
         .size_full()
     }
+}
+
+/// How far below its rows a slide's content paints, in logical pixels: `rows`
+/// of `cell_height`, on a whole device pixel so every glyph rasterizes as it
+/// does at rest.
+fn painted_shift(rows: f32, cell_height: f32, scale: f32) -> f32 {
+    (rows * cell_height * scale).round() / scale
 }
 
 /// The parts of `area` inside `rect`, and the parts outside it.

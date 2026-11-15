@@ -216,13 +216,11 @@ impl SheprdWindow {
         let Some(id) = self.catalog.desired.clone() else {
             return;
         };
-        if self.endpoints.iter().any(|endpoint| {
-            endpoint.id == id
-                && endpoint.enabled
-                && endpoint.connection.handle.is_some()
-                && endpoint.live.status.is_connected()
-                && endpoint.live.snapshot.is_some()
-        }) {
+        if self
+            .endpoints
+            .iter()
+            .any(|endpoint| endpoint.id == id && endpoint.enabled && endpoint.serving())
+        {
             // One handoff attempt: activation failure may fall back to Local,
             // but must neither overwrite the preference nor loop on every tick.
             self.catalog.restore_pending = false;

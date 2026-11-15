@@ -5,6 +5,7 @@
 
 use gpui::{Modifiers, point, px};
 
+use super::chrome::Item;
 use crate::{
     config::{Config, FONT_SIZE_STEP},
     sidebar::layout_tests::fixture_window,
@@ -20,21 +21,21 @@ fn the_in_app_menu_applies_a_size_and_dismisses(cx: &mut gpui::TestAppContext) {
     view.read_with(cx, |view, _| {
         let items = view.menu_items();
         for item in [
-            "increase font size",
-            "decrease font size",
-            "reset font size",
+            Item::IncreaseFontSize,
+            Item::DecreaseFontSize,
+            Item::ResetFontSize,
         ] {
-            assert!(items.contains(&item), "{item} missing from {items:?}");
+            assert!(items.contains(&item), "{item:?} missing from {items:?}");
         }
         // Other tests locate these two rows by selector; keep their places.
-        assert_eq!(items[0], "settings");
-        assert_eq!(items[1], "shortcuts");
+        assert_eq!(items[0], Item::Settings);
+        assert_eq!(items[1], Item::Shortcuts);
     });
 
     for (item, expected) in [
-        ("increase font size", start + FONT_SIZE_STEP),
-        ("decrease font size", start),
-        ("reset font size", start),
+        (Item::IncreaseFontSize, start + FONT_SIZE_STEP),
+        (Item::DecreaseFontSize, start),
+        (Item::ResetFontSize, start),
     ] {
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
@@ -43,8 +44,8 @@ fn the_in_app_menu_applies_a_size_and_dismisses(cx: &mut gpui::TestAppContext) {
             })
         });
         view.read_with(cx, |view, _| {
-            assert_eq!(view.config.terminal.size, expected, "{item}");
-            assert!(view.menu.page.is_none(), "{item} left the menu open");
+            assert_eq!(view.config.terminal.size, expected, "{item:?}");
+            assert!(view.menu.page.is_none(), "{item:?} left the menu open");
         });
     }
 }

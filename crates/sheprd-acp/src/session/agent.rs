@@ -8,7 +8,7 @@ use sheprd_chat_protocol::{
     TurnEnd, TurnSummary,
 };
 
-use super::{Asked, Pending, Session, Update, now_ms};
+use super::{Asked, Pending, Phase, Session, Update, now_ms};
 use crate::{project, rpc::Inbound};
 
 impl<R: FnMut(Update)> Session<R> {
@@ -90,7 +90,7 @@ impl<R: FnMut(Update)> Session<R> {
         match self.config.load.clone() {
             Some(id) if response.agent_capabilities.load_session => {
                 let id = wire::SessionId::new(id);
-                self.acp_session = Some(id.clone());
+                self.phase = Phase::Loading(id.clone());
                 self.request(
                     "session/load",
                     &wire::LoadSessionRequest::new(id, cwd),
@@ -141,25 +141,26 @@ impl<R: FnMut(Update)> Session<R> {
             .as_object_mut()
             .and_then(|object| object.remove("configOptions"));
         let options = project::options(options.as_ref());
-        let modes = if loaded {
-            serde_json::from_value::<wire::LoadSessionResponse>(value)
+        let (id, modes) = if loaded {
+            let Phase::Loading(id) = &self.phase else {
+                return;
+            };
+            let modes = serde_json::from_value::<wire::LoadSessionResponse>(value)
                 .map(|response| response.modes)
-                .unwrap_or_default()
+                .unwrap_or_default();
+            (id.clone(), modes)
         } else {
             match serde_json::from_value::<wire::NewSessionResponse>(value) {
-                Ok(response) => {
-                    self.acp_session = Some(response.session_id);
-                    response.modes
-                }
+                Ok(response) => (response.session_id, response.modes),
                 Err(error) => {
                     return self.fail(&format!("The agent's session was invalid: {error}"));
                 }
             }
         };
-        let Some(id) = self.acp_session.clone() else {
-            return;
+        self.phase = Phase::Ready {
+            session: id.clone(),
+            turn: None,
         };
-        self.ready = true;
         self.emit(Change::Session {
             session: Some(project::session(&id, &self.config.cwd)),
         });
@@ -180,7 +181,7 @@ impl<R: FnMut(Update)> Session<R> {
         let ours = params
             .get("sessionId")
             .and_then(Value::as_str)
-            .is_some_and(|id| self.acp_session.as_ref().is_some_and(|ours| *ours.0 == *id));
+            .is_some_and(|id| self.phase.session().is_some_and(|ours| *ours.0 == *id));
         let update = params.get("update");
         if ours
             && update.and_then(|update| update.get("sessionUpdate"))
@@ -194,7 +195,7 @@ impl<R: FnMut(Update)> Session<R> {
         let Ok(notification) = serde_json::from_value::<wire::SessionNotification>(params) else {
             return;
         };
-        if self.acp_session.as_ref() != Some(&notification.session_id) {
+        if self.phase.session() != Some(&notification.session_id) {
             return;
         }
         let changes = self
@@ -213,7 +214,7 @@ impl<R: FnMut(Update)> Session<R> {
             return;
         }
         let request = match serde_json::from_value::<wire::RequestPermissionRequest>(params) {
-            Ok(request) if self.acp_session.as_ref() == Some(&request.session_id) => request,
+            Ok(request) if self.phase.session() == Some(&request.session_id) => request,
             _ => {
                 let _ = self.outbox.respond(&id, Err(wire::Error::invalid_params()));
                 return;
@@ -306,10 +307,10 @@ impl<R: FnMut(Update)> Session<R> {
     }
 
     fn turn_ended(&mut self, id: i64, result: Result<Value, wire::Error>) {
-        if self.turn != Some(id) {
+        if self.phase.turn() != Some(id) {
             return;
         }
-        self.turn = None;
+        self.phase.set_turn(None);
         self.resolve_all();
         self.projector.close();
         let tokens = result.as_ref().ok().and_then(project::tokens);
@@ -364,19 +365,7 @@ impl<R: FnMut(Update)> Session<R> {
             message.push('\n');
             message.push_str(&stderr.join("\n"));
         }
-        self.asked.clear();
-        let pending: Vec<PermissionId> = self.transcript.permissions.iter().map(|p| p.id).collect();
-        for id in pending {
-            self.emit(Change::PermissionResolved { id });
-        }
-        self.turn = None;
-        self.ready = false;
-        if self.transcript.turn.is_some() {
-            self.emit(Change::Turn { turn: None });
-        }
-        self.clear_queue();
-        let gone = project::kill_all(&self.transcript, now_ms());
-        self.emit_all(gone);
+        self.close();
         let level = if code == Some(0) {
             NoticeLevel::Info
         } else {

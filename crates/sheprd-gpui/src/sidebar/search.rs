@@ -263,24 +263,15 @@ impl SheprdWindow {
         };
         let notes = crate::worktree_notes::Notes::of(cx);
         let devices: Vec<_> = self
-            .displayed_devices()
-            .into_iter()
-            .filter(|(_, endpoint)| self.device_visible(&endpoint.id))
-            .map(|(index, endpoint)| {
-                let live = if index == self.selected_endpoint {
-                    &self.live
-                } else {
-                    &endpoint.live
-                };
-                Device {
-                    id: &endpoint.id,
-                    label: &endpoint.label,
-                    workspaces: live
-                        .snapshot
-                        .as_deref()
-                        .map_or(&[], |snapshot| &snapshot.workspaces),
-                    notes,
-                }
+            .listed_hosts()
+            .map(|(_, endpoint, live)| Device {
+                id: &endpoint.id,
+                label: &endpoint.label,
+                workspaces: live
+                    .snapshot
+                    .as_deref()
+                    .map_or(&[], |snapshot| &snapshot.workspaces),
+                notes,
             })
             .collect();
         search(query, &devices)

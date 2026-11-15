@@ -1,6 +1,8 @@
 //! Embeds `locales/<tag>/<feature>.ftl` and checks them (docs/i18n.md):
-//! every file parses, every message is prefixed by its feature, and no ID
-//! repeats within a language. Writes `$OUT_DIR/messages.rs` with the files
+//! every file parses, every message is prefixed by its feature, no ID
+//! repeats within a language, and a translation has no ID `en-US` lacks.
+//! This is the only definition of a valid file: `scripts/check-i18n.py`
+//! reads message IDs from files this accepted. Writes `$OUT_DIR/messages.rs` with the files
 //! and the `en-US` messages with the variables each takes, which `fl!`
 //! checks its calls against while compiling.
 
@@ -21,6 +23,7 @@ pub enum Error {
     Prefix { path: PathBuf, id: String },
     Duplicate { language: String, id: String },
     Missing(PathBuf),
+    Untranslated { language: String, id: String },
 }
 
 impl fmt::Display for Error {
@@ -38,6 +41,9 @@ impl fmt::Display for Error {
             ),
             Self::Duplicate { language, id } => write!(f, "{id} is defined twice in {language}"),
             Self::Missing(path) => write!(f, "{} has no {FALLBACK} messages", path.display()),
+            Self::Untranslated { language, id } => {
+                write!(f, "{id} in {language} has no {FALLBACK} message")
+            }
         }
     }
 }
@@ -115,6 +121,17 @@ pub fn generate(manifest: &Path, out: &Path) -> Result<(), Error> {
                 fallback.insert(id, uses);
             }
         }
+    }
+    // A translation may leave messages out, which fall back to English, but
+    // one English never had, or dropped, would be shown nowhere.
+    if let Some((language, id)) = seen
+        .iter()
+        .find(|(language, id)| language != FALLBACK && !fallback.contains_key(id))
+    {
+        return Err(Error::Untranslated {
+            language: language.clone(),
+            id: id.clone(),
+        });
     }
     let mut code = String::from("pub(crate) const FILES: &[sheprd_i18n::File] = &[\n");
     for file in &files {

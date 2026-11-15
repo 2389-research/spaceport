@@ -19,6 +19,7 @@ use std::sync::Arc;
 
 mod finished;
 mod mutes;
+mod stages;
 
 fn endpoints() -> [Endpoint; 2] {
     ["local", "remote"].map(|id| {
@@ -56,11 +57,35 @@ fn receive(endpoint: &mut Endpoint, wire: SemanticNotification, now: Instant) {
         .receive([Notice::new(wire, now).with_snapshot(endpoint.live.snapshot.as_deref())]);
 }
 
+/// The stage `notice` is in, by name.
+fn stage(notice: &Notice) -> &'static str {
+    if notice.is_posted() {
+        "posted"
+    } else if notice.is_visible() {
+        "visible"
+    } else if notice.is_ready() {
+        "ready"
+    } else {
+        assert!(notice.is_waiting());
+        "waiting"
+    }
+}
+
+/// Whether `notice` reads as both a toast and an OS notification.
+fn visible_and_posted(notice: &Notice) -> bool {
+    notice.is_visible() && notice.is_posted()
+}
+
+/// When a showing toast leaves; a notice in any other stage has no lifetime.
+fn expires(notice: &Notice) -> Option<Instant> {
+    notice.expires()
+}
+
 fn visible(endpoints: &[Endpoint]) -> Vec<&str> {
     endpoints
         .iter()
         .flat_map(|e| e.toasts.entries.iter())
-        .filter(|(_, n)| n.visible)
+        .filter(|(_, n)| n.is_visible())
         .map(|(_, n)| n.title.as_str())
         .collect()
 }
@@ -261,9 +286,9 @@ fn global_order_survives_coalesced_host_polling_and_queue_overflow() {
         let n = endpoints
             .iter()
             .flat_map(|e| &e.toasts.entries)
-            .find(|(_, n)| n.visible)
+            .find(|(_, n)| n.is_visible())
             .unwrap();
-        assert_eq!(n.1.expires, time + Duration::from_secs(5));
+        assert_eq!(n.1.expires(), Some(time + Duration::from_secs(5)));
     }
 }
 
@@ -299,8 +324,8 @@ fn lifetimes_start_at_promotion_and_pause_while_hidden() {
         tick(&mut endpoints, 0, config(0), false, time);
         assert_eq!(visible(&endpoints), [title]);
         assert_eq!(
-            endpoints[1].toasts.entries.front().unwrap().1.expires,
-            time + Duration::from_secs(seconds)
+            endpoints[1].toasts.entries.front().unwrap().1.expires(),
+            Some(time + Duration::from_secs(seconds))
         );
         tick(
             &mut endpoints,
@@ -336,7 +361,7 @@ fn replacement_spans_pending_queued_visible_and_is_endpoint_scoped() {
     assert_eq!(endpoints[1].toasts.entries.len(), 1);
     receive(&mut endpoints[0], event, now);
     assert_eq!(endpoints[0].toasts.entries.len(), 1);
-    assert!(!endpoints[0].toasts.entries[0].1.visible);
+    assert!(!endpoints[0].toasts.entries[0].1.is_visible());
     tick(&mut endpoints, 2, config(1), false, now);
     assert_eq!(
         endpoints
@@ -432,7 +457,7 @@ fn settings_changes_bound_pending_and_preserve_explicit_corners_and_previews() {
         };
         tick(&mut endpoints, 1, config, false, now);
         let n = &endpoints[1].toasts.entries[0].1;
-        assert!(n.visible);
+        assert!(n.is_visible());
         assert_eq!(
             n.position,
             if explicit {
@@ -458,7 +483,7 @@ fn posted(endpoints: &[Endpoint]) -> usize {
     endpoints
         .iter()
         .flat_map(|e| e.toasts.entries.iter())
-        .filter(|(_, n)| n.posted)
+        .filter(|(_, n)| n.is_posted())
         .count()
 }
 

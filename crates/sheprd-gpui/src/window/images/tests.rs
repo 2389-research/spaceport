@@ -4,6 +4,7 @@ use sheprd_client::ConnectTarget;
 use std::io;
 
 mod en_xa;
+mod fence;
 mod key_fallback;
 mod paste_errors;
 
@@ -107,7 +108,7 @@ fn all_processing_errors_show_redacted_local_feedback(cx: &mut gpui::TestAppCont
             view.report_preparation_error(PreparationKind::Image, &error, cx);
             let (_, notice) = view.endpoints[0].toasts.entries.back().unwrap();
             assert_eq!(notice.title, "Image discarded");
-            assert!(notice.visible);
+            assert!(notice.is_visible());
             assert_eq!(
                 notice.body.as_deref(),
                 Some(format!("{error} Nothing was uploaded or pasted.").as_str())
@@ -139,7 +140,7 @@ fn shared_transfer_notice_uses_selected_endpoint_and_sanitizes_text(cx: &mut gpu
         let (_, notice) = view.endpoints[1].toasts.entries.back().unwrap();
         assert_eq!(notice.title, "Copy failed");
         assert_eq!(notice.body.as_deref(), Some("Cannot copytext"));
-        assert!(notice.visible);
+        assert!(notice.is_visible());
         assert!(view.local_error.is_none());
     });
 }

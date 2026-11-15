@@ -15,7 +15,6 @@ fn development_update_check_is_unsupported(cx: &mut gpui::TestAppContext) {
     });
 }
 
-#[cfg(all(target_os = "macos", feature = "macos-updater"))]
 #[test]
 fn update_check_busy_is_reported_as_busy() {
     assert_eq!(

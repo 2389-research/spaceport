@@ -20,10 +20,7 @@ fn saved_px0_tab_is_discarded_without_reusing_its_id() {
     saved["tabs"].as_array_mut().unwrap().push(retired);
     saved["next"] = 0.into();
 
-    let mut restored = Store::with_saved(
-        parse_saved(&serde_json::to_vec(&saved).unwrap()).unwrap(),
-        None,
-    );
+    let mut restored = Store::restored_for_test(&serde_json::to_vec(&saved).unwrap()).unwrap();
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
         [devices, core]
