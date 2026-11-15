@@ -130,8 +130,36 @@ class CiPolicy(unittest.TestCase):
         for job in PR_JOBS:
             self.assertTrue(condition_matches(job, context), job)
 
+    def test_supply_chain_runs_for_spaceport_and_no_other_repository(self):
+        # A skipped job reports green, so a guard naming another repository
+        # turns cargo-deny and the advisory scan off without any signal.
+        text = (ROOT / ".github/workflows/supply-chain.yml").read_text()
+        sections = re.split(r"^  ([a-z-]+):\n", text.split("\njobs:\n", 1)[1], flags=re.M)
+        jobs = dict(zip(sections[1::2], sections[2::2]))
+        self.assertEqual(set(jobs), {"zizmor", "cargo-deny"})
+        spaceport = "2389-research/spaceport"
+        for repository, event, ref, actor in itertools.product(
+                (*REPOSITORY_OWNERS, "larry0x/spaceport"),
+                ("pull_request", "push", "workflow_dispatch", "schedule", "pull_request_target"),
+                ("refs/heads/main", "refs/heads/topic"),
+                ("harperreed", "penso", "larry0x")):
+            context = self.context(**{
+                "github.repository": repository, "github.event_name": event,
+                "github.ref": ref, "github.actor": actor, "github.triggering_actor": actor,
+            })
+            # The scheduled scan has no meaningful actor: GitHub reports
+            # whoever last edited the cron line.
+            expected = repository == spaceport and (
+                event == "pull_request"
+                or (event == "schedule" and ref == "refs/heads/main")
+                or (event in ("push", "workflow_dispatch") and ref == "refs/heads/main"
+                    and actor == "harperreed"))
+            for job in jobs:
+                with self.subTest(job=job, context=context):
+                    self.assertEqual(condition_matches(job, context, jobs), expected)
+
     def test_owner_only_workflows_allow_both_repository_locations_but_not_forks(self):
-        for workflow in ("nix.yml", "supply-chain.yml"):
+        for workflow in ("nix.yml",):
             text = (ROOT / ".github/workflows" / workflow).read_text()
             sections = re.split(r"^  ([a-z-]+):\n", text.split("\njobs:\n", 1)[1], flags=re.M)
             jobs = dict(zip(sections[1::2], sections[2::2]))
