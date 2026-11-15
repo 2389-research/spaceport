@@ -28,6 +28,8 @@ error-client-command-boot = command does not match a ready snapshot boot
 error-client-disconnected = client is disconnected
 error-client-empty-surface = surface dimensions must be nonzero
 error-client-encoded-surface-before-baseline = encoded surface before baseline
+# The server refused a request without saying why.
+error-client-endpoint = Invalid daemon error
 # $server_version is the daemon's version; $generation and $ours are the
 # protocol generations the daemon and this app speak. $fix is who must
 # update: app (this app) or daemon (Herdr).

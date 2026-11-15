@@ -279,13 +279,13 @@ impl SheprdWindow {
 }
 
 fn created_workspace(response: &Value) -> Result<String> {
-    if let Some(error) = response.get("error") {
-        return Err(crate::daemon::Error::Response(error.clone()).into());
-    }
-    let result = &response["result"];
-    (result["type"] == "workspace_created")
-        .then(|| result["workspace"]["workspace_id"].as_str())
-        .flatten()
+    let result = match sheprd_client::response::tagged(response, "workspace_created") {
+        Ok(result) => result,
+        Err(error @ sheprd_client::Error::Endpoint { .. }) => return Err(error.into()),
+        Err(_) => return Err(Error::ProjectResponse.into()),
+    };
+    result["workspace"]["workspace_id"]
+        .as_str()
         .filter(|id| !id.is_empty() && id.len() <= 8192 && !id.chars().any(char::is_control))
         .map(str::to_owned)
         .ok_or(Error::ProjectResponse.into())

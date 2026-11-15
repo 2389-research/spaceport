@@ -30,6 +30,7 @@ pub mod private_endpoint;
 mod process;
 mod queue;
 mod remote_host;
+pub mod response;
 mod script;
 pub mod scrollback;
 mod session;

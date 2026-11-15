@@ -71,8 +71,11 @@ impl Localize for Error {
             Self::EncodedSurfaceBeforeBaseline => {
                 fl!("error-client-encoded-surface-before-baseline")
             }
-            // The daemon's own words for a refused request.
-            Self::Endpoint { message, .. } => message.clone(),
+            // The daemon's own words for a refused request, when it sent any.
+            Self::Endpoint { message, .. } => match message.as_str() {
+                "" => fl!("error-client-endpoint"),
+                _ => message.clone(),
+            },
             Self::EndpointGeneration {
                 generation,
                 server_version,
