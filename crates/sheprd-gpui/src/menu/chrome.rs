@@ -94,21 +94,21 @@ impl SheprdWindow {
             });
     }
 
-    pub(super) fn menu_items(&self) -> Vec<&'static str> {
+    pub(super) fn menu_items(&self) -> Vec<Item> {
         let mut items = vec![
-            "settings",
-            "shortcuts",
-            "themes",
-            "increase font size", // i18n: data
-            "decrease font size", // i18n: data
-            "reset font size",    // i18n: data
-            "command palette",    // i18n: data
-            "workspaces",
-            "reload GUI config", // i18n: data
-            "about",
+            Item::Settings,
+            Item::Shortcuts,
+            Item::Themes,
+            Item::IncreaseFontSize,
+            Item::DecreaseFontSize,
+            Item::ResetFontSize,
+            Item::CommandPalette,
+            Item::Workspaces,
+            Item::ReloadGuiConfig,
+            Item::About,
         ];
         if self.live.status.is_connected() {
-            items.push("reload daemon config"); // i18n: data
+            items.push(Item::ReloadDaemonConfig);
         }
         items.extend(self.release_notes_item());
         items.push(
@@ -117,9 +117,9 @@ impl SheprdWindow {
                 .handle
                 .is_some()
             {
-                "detach"
+                Item::Detach
             } else {
-                "reconnect"
+                Item::Reconnect
             },
         );
         items
@@ -127,45 +127,46 @@ impl SheprdWindow {
 
     pub(super) fn activate_menu(
         &mut self,
-        item: &str,
+        item: Item,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        use crate::config::FONT_SIZE_STEP;
         match item {
-            "about" => self.open_about(window, cx),
-            "settings" => self.open_preferences(window, cx),
-            "shortcuts" => self.open_keybinds(window, cx),
-            "themes" => self.open_theme_picker(window, cx),
-            // i18n: data
-            "increase font size" | "decrease font size" | "reset font size" => {
-                use crate::config::FONT_SIZE_STEP;
-                let size = match item {
-                    "increase font size" => self.config.terminal.size + FONT_SIZE_STEP, // i18n: data
-                    "decrease font size" => self.config.terminal.size - FONT_SIZE_STEP, // i18n: data
-                    _ => self.configured_terminal_size,
-                };
-                // `command` refuses to act while a page is open, so apply here.
-                self.set_terminal_font_size(size, cx);
+            Item::About => self.open_about(window, cx),
+            Item::Settings => self.open_preferences(window, cx),
+            Item::Shortcuts => self.open_keybinds(window, cx),
+            Item::Themes => self.open_theme_picker(window, cx),
+            // `command` refuses to act while a page is open, so the font
+            // size rows apply here.
+            Item::IncreaseFontSize => {
+                self.set_terminal_font_size(self.config.terminal.size + FONT_SIZE_STEP, cx);
                 self.dismiss_menu(window, cx);
             }
-            "command palette" => self.open_palette(crate::palette::Filter::All, window, cx), // i18n: data
-            "workspaces" => self.open_palette(crate::palette::Filter::Navigation, window, cx),
-            "update ready" | "what's new" => self.menu.page = Some(Page::Update), // i18n: data
-            "reload GUI config" => self.reload_gui_config(window, cx),            // i18n: data
-            // i18n: data
-            "reload daemon config" => {
+            Item::DecreaseFontSize => {
+                self.set_terminal_font_size(self.config.terminal.size - FONT_SIZE_STEP, cx);
+                self.dismiss_menu(window, cx);
+            }
+            Item::ResetFontSize => {
+                self.set_terminal_font_size(self.configured_terminal_size, cx);
+                self.dismiss_menu(window, cx);
+            }
+            Item::CommandPalette => self.open_palette(crate::palette::Filter::All, window, cx),
+            Item::Workspaces => self.open_palette(crate::palette::Filter::Navigation, window, cx),
+            Item::UpdateReady | Item::WhatsNew => self.menu.page = Some(Page::Update),
+            Item::ReloadGuiConfig => self.reload_gui_config(window, cx),
+            Item::ReloadDaemonConfig => {
                 self.reload_daemon_config();
                 self.dismiss_menu(window, cx);
             }
-            "detach" => {
+            Item::Detach => {
                 self.detach_endpoint(cx);
                 self.dismiss_menu(window, cx);
             }
-            "reconnect" => {
+            Item::Reconnect => {
                 self.reconnect(cx);
                 self.dismiss_menu(window, cx);
             }
-            _ => {}
         }
         cx.notify();
     }
@@ -569,10 +570,10 @@ impl SheprdWindow {
             for (index, item) in items.into_iter().enumerate() {
                 panel = panel.child(
                     div()
-                        .id(item)
-                        .debug_selector(move || format!("menu-{item}"))
+                        .id(item.selector())
+                        .debug_selector(move || format!("menu-{}", item.selector()))
                         .role(Role::MenuItem)
-                        .aria_label(menu_item_label(item))
+                        .aria_label(item.label())
                         .when(Some(index) == self.menu.selected, |row| {
                             row.aria_active_descendant()
                         })
@@ -592,7 +593,7 @@ impl SheprdWindow {
                             }
                             cx.notify();
                         }))
-                        .child(menu_item_label(item))
+                        .child(item.label())
                         .on_click(cx.listener(move |this, _, window, cx| {
                             cx.stop_propagation();
                             this.activate_menu(item, window, cx);
@@ -800,25 +801,69 @@ impl SheprdWindow {
     }
 }
 
-/// What the menu shows for `item`, one of [`SheprdWindow::menu_items`]'
-/// keys, which stay English as its selectors and dispatch do.
-fn menu_item_label(item: &str) -> String {
-    match item {
-        "settings" => fl!("menu-chrome-settings"),
-        "shortcuts" => fl!("menu-chrome-shortcuts"),
-        "themes" => fl!("menu-chrome-themes"),
-        "increase font size" => fl!("menu-chrome-increase-font-size"), // i18n: data
-        "decrease font size" => fl!("menu-chrome-decrease-font-size"), // i18n: data
-        "reset font size" => fl!("menu-chrome-reset-font-size"),       // i18n: data
-        "command palette" => fl!("menu-chrome-command-palette"),       // i18n: data
-        "workspaces" => fl!("menu-chrome-workspaces"),
-        "reload GUI config" => fl!("menu-chrome-reload-gui-config"), // i18n: data
-        "about" => fl!("menu-chrome-about"),
-        "reload daemon config" => fl!("menu-chrome-reload-daemon-config"), // i18n: data
-        "update ready" => fl!("menu-chrome-update-ready"),                 // i18n: data
-        "what's new" => fl!("menu-chrome-whats-new"),                      // i18n: data
-        "detach" => fl!("menu-chrome-detach"),
-        "reconnect" => fl!("menu-chrome-reconnect"),
-        item => item.to_owned(),
+/// Declares the footer menu's rows once: each [`Item`] with the English key
+/// its `menu-{key}` debug selector is built from. The keys stay English
+/// whatever language the labels are shown in.
+macro_rules! items {
+    ($($variant:ident => $selector:literal,)*) => {
+        /// A row of the in-window app menu ([`Page::Menu`]).
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        pub(super) enum Item {
+            $($variant,)*
+        }
+
+        impl Item {
+            /// Every row, whether or not the window offers it now.
+            #[cfg(test)]
+            pub(super) const ALL: &[Self] = &[$(Self::$variant,)*];
+
+            /// The row's element id and the tail of its debug selector.
+            pub(super) fn selector(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $selector,)*
+                }
+            }
+        }
+    };
+}
+
+items! {
+    Settings => "settings",
+    Shortcuts => "shortcuts",
+    Themes => "themes",
+    IncreaseFontSize => "increase font size", // i18n: data
+    DecreaseFontSize => "decrease font size", // i18n: data
+    ResetFontSize => "reset font size", // i18n: data
+    CommandPalette => "command palette", // i18n: data
+    Workspaces => "workspaces",
+    ReloadGuiConfig => "reload GUI config", // i18n: data
+    About => "about",
+    ReloadDaemonConfig => "reload daemon config", // i18n: data
+    UpdateReady => "update ready", // i18n: data
+    WhatsNew => "what's new", // i18n: data
+    Detach => "detach",
+    Reconnect => "reconnect",
+}
+
+impl Item {
+    /// What the menu shows for the row.
+    pub(super) fn label(self) -> String {
+        match self {
+            Self::Settings => fl!("menu-chrome-settings"),
+            Self::Shortcuts => fl!("menu-chrome-shortcuts"),
+            Self::Themes => fl!("menu-chrome-themes"),
+            Self::IncreaseFontSize => fl!("menu-chrome-increase-font-size"),
+            Self::DecreaseFontSize => fl!("menu-chrome-decrease-font-size"),
+            Self::ResetFontSize => fl!("menu-chrome-reset-font-size"),
+            Self::CommandPalette => fl!("menu-chrome-command-palette"),
+            Self::Workspaces => fl!("menu-chrome-workspaces"),
+            Self::ReloadGuiConfig => fl!("menu-chrome-reload-gui-config"),
+            Self::About => fl!("menu-chrome-about"),
+            Self::ReloadDaemonConfig => fl!("menu-chrome-reload-daemon-config"),
+            Self::UpdateReady => fl!("menu-chrome-update-ready"),
+            Self::WhatsNew => fl!("menu-chrome-whats-new"),
+            Self::Detach => fl!("menu-chrome-detach"),
+            Self::Reconnect => fl!("menu-chrome-reconnect"),
+        }
     }
 }
