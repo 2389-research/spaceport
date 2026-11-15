@@ -5,7 +5,7 @@
 //! tab's, in the app's store, and every edit here goes through it.
 
 use super::{
-    CoreTerminalView, Start, TabPanes, layout,
+    CoreTerminalView, Mismatch, Start, TabPanes, layout,
     panes::{Axis, Direction},
     worker,
 };
@@ -88,11 +88,16 @@ impl SheprdWindow {
             self.core_terminals.hub.connect(Start::Join);
             return;
         };
-        if self
-            .selected_core_group()
-            .is_some_and(|key| backend.core().hello().core.id != key.hub_core_id())
-        {
-            return;
+        if let Some(key) = self.selected_core_group() {
+            match self.core_terminals.hub.backend_for(key.hub_core_id()) {
+                Ok(_) => {}
+                // Kept as it was: only identity is compared here, so a
+                // connection to the group's own Core that dropped since the
+                // group was read still attaches. Its panes fail to attach
+                // and the next tick drops their views and rejoins.
+                Err(Mismatch::Lost) => {}
+                Err(Mismatch::Absent | Mismatch::Other) => return,
+            }
         }
         let look = self.core_look();
         for (tab, terminal, role) in missing {

@@ -64,15 +64,7 @@ impl SheprdWindow {
                     let archived = workspace.archived;
                     let selected = cx
                         .try_global::<observation::Observation>()
-                        .and_then(|observation| observation.projection().core_id())
-                        .and_then(|core_id| {
-                            CoreGroupKey::new(
-                                core_id,
-                                None,
-                                crate::core_terminals::workspace_document::NAME,
-                                id,
-                            )
-                        })
+                        .and_then(|observation| observation.projection().group_key(id))
                         .as_ref()
                         == self.core_terminals.workspace_ui.selected_group.as_ref();
                     section = section.child(

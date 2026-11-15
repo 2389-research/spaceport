@@ -87,6 +87,8 @@ fn a_closed_core_page_reopens_in_its_exact_group(cx: &mut gpui::TestAppContext) 
     });
 }
 
+#[cfg(unix)]
+mod backend_identity;
 mod endpoint_independent_join;
 mod hub_target;
 #[cfg(unix)]

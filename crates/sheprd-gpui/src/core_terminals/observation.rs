@@ -67,6 +67,22 @@ impl Projection {
         self.epoch
     }
 
+    /// The key of group `id` in the Spaceport document of the Core observed.
+    pub(super) fn group_key(&self, id: uuid::Uuid) -> Option<crate::browser::CoreGroupKey> {
+        crate::browser::CoreGroupKey::new(self.core_id()?, None, NAME, id)
+    }
+
+    /// Whether this is a fresh observation of `core_id` that lists
+    /// `terminal_id`.
+    pub(super) fn observes(&self, core_id: &str, terminal_id: &str) -> bool {
+        self.fresh()
+            && self.core_id() == Some(core_id)
+            && self
+                .terminals()
+                .iter()
+                .any(|info| info.id.as_str() == terminal_id)
+    }
+
     pub fn begin(&mut self, epoch: u64) {
         self.core_id = None;
         self.epoch = epoch;
@@ -449,6 +465,14 @@ pub(super) fn set_document_for_test_as(cx: &mut App, core_id: &str, doc: Doc) {
     observation
         .projection
         .initial(epoch, vec![], Ok(VersionedDocument::read(doc).unwrap()));
+}
+
+/// Replaces what the current observation reports of Core's terminals.
+#[cfg(all(test, unix))]
+pub(super) fn set_terminals_for_test(cx: &mut App, terminals: Vec<TerminalInfo>) {
+    let projection = &mut cx.global_mut::<Observation>().projection;
+    projection.terminals = terminals;
+    projection.revision += 1;
 }
 
 #[cfg(test)]
