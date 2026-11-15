@@ -3,16 +3,16 @@ use crate::chat::{Chats, link::Link};
 use sheprd_chat_protocol::{Command, EndpointId};
 
 mod observed_identity;
+mod phase;
 
 const A: &str = "0123456789abcdef0123456789abcdef";
 const B: &str = "fedcba9876543210fedcba9876543210";
 
 fn target(pane: &str, endpoint: &str) -> Target {
     Target {
-        existing: None,
-        endpoint: endpoint.parse::<EndpointId>().unwrap(),
         pane_id: pane.into(),
         route: Route::Local,
+        source: Source::Program(endpoint.parse::<EndpointId>().unwrap()),
         surface: Surface::Herdr,
     }
 }
@@ -21,7 +21,7 @@ fn target(pane: &str, endpoint: &str) -> Target {
 fn an_observed_process_exit_immediately_restores_the_terminal() {
     let mut harness = Harness::new();
     let mut target = target("p1", A);
-    target.existing = Some(existing::Binding {
+    target.source = Source::Observed(existing::Binding {
         pane_id: "p1".into(),
         agent: sheprd_chat_protocol::Agent::Codex,
         session_id: "01234567-89ab-4cde-8123-456789abcdef".into(),

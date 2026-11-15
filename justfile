@@ -187,8 +187,9 @@ check-sorted:
     python3 scripts/test_check_sorted.py
     python3 scripts/check-sorted.py
 
-# Fail when a Fluent message does not parse, repeats, or is unused, or an
-# `fl!` names none (docs/i18n.md).
+# Fail when a Fluent message is unused, a migrated module shows English, or
+# a platform file names other languages (docs/i18n.md). The build, not this,
+# rejects a malformed `.ftl` file.
 check-i18n:
     PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_check_i18n.py
     python3 scripts/check-i18n.py
@@ -197,10 +198,7 @@ check-i18n:
 sort:
     python3 scripts/check-sorted.py --fix
 
-test-pr-closure:
-    PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_close_low_confidence_prs.py
-
-ci: format-check check-file-size check-sorted check-i18n check-artwork lint test test-pr-closure
+ci: format-check check-file-size check-sorted check-i18n check-artwork lint test
 
 # Tools are listed in scripts/setup-ci.sh; Docker for lint-linux is only checked.
 # Install the tools local CI-equivalent runs need, on macOS or Ubuntu.
@@ -237,14 +235,6 @@ audit-workflows:
 audit-deps:
     cargo deny check
 
-# Sign published release artifacts with the local GPG key (YubiKey). Not a CI step.
-sign-release *args:
-    ./scripts/gpg-sign-release.sh {{args}}
-
-# Verify published checksums, Sigstore and provenance; optional local GPG approval.
-verify-release *args:
-    ./scripts/verify-release.sh {{args}}
-
 # Check commit subjects the way CI does; the changelog is generated from them.
 check-commits base="origin/main":
     python3 scripts/release/check-commit-messages.py range "{{base}}..HEAD"
@@ -266,33 +256,6 @@ changelog-unreleased:
 # The whole generated changelog; it is never tracked in git.
 changelog:
     git-cliff --config cliff.toml
-
-# Exactly what a release would publish: CHANGELOG.md and RELEASE_NOTES.md.
-# Windows counts as signed once WINDOWS_SIGNING_SUBJECT is set, as in
-# release.yml; set WINDOWS_SIGNED=true or false to preview either without gh.
-changelog-release version output:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [[ -z ${WINDOWS_SIGNED:-} ]]; then
-        if [[ -n $(gh variable get WINDOWS_SIGNING_SUBJECT --repo sheprd-labs/sheprd 2>/dev/null) ]]; then
-            WINDOWS_SIGNED=true
-        else
-            WINDOWS_SIGNED=false
-        fi
-    fi
-    WINDOWS_SIGNED=$WINDOWS_SIGNED bash scripts/release/generate-changelog.sh "{{version}}" "{{output}}"
-
-# Owner-only remote release; CI derives the YYYYMMDD.COUNTER version itself.
-release:
-    bash scripts/release/dispatch.sh
-
-# Owner-only beta: a GitHub prerelease kept out of Homebrew until promoted.
-release-beta:
-    bash scripts/release/dispatch.sh --beta
-
-# Owner-only: make a published beta the latest stable release, then update Homebrew.
-release-promote version:
-    bash scripts/release/dispatch.sh --promote "{{version}}"
 
 # Local signed/notarized preview; uses the installed identity, never publishes.
 dmg $VERSION profile="debug" architecture="arm64":

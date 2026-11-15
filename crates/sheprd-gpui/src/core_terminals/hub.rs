@@ -40,6 +40,20 @@ pub(crate) enum Start {
     IfMissing,
 }
 
+/// Why the hub holds no live connection to one exact Core. Each caller
+/// matches it, so what a site accepts is written at that site.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
+pub(crate) enum Mismatch {
+    #[error("no Core connection is ready")]
+    Absent,
+    /// The connection is to that Core, and has dropped.
+    #[error("the Core connection dropped")]
+    Lost,
+    /// The connection is to another Core, dropped or not.
+    #[error("the connection is to another Core")]
+    Other,
+}
+
 /// How an attempt joins: the real one dials herdr-core; tests stand in.
 type Join = fn(Start) -> Result<CoreBackend, Error>;
 
@@ -134,6 +148,19 @@ impl Hub {
             State::Ready(backend) => Some(backend),
             _ => None,
         }
+    }
+
+    /// The live connection to exactly `core_id`. Identity is compared
+    /// first, so `Lost` always means that Core's own connection dropped.
+    pub(crate) fn backend_for(&self, core_id: &str) -> Result<&CoreBackend, Mismatch> {
+        let backend = self.backend().ok_or(Mismatch::Absent)?;
+        if backend.core().hello().core.id != core_id {
+            return Err(Mismatch::Other);
+        }
+        if backend.core().is_lost() {
+            return Err(Mismatch::Lost);
+        }
+        Ok(backend)
     }
 
     #[cfg(all(test, unix))]

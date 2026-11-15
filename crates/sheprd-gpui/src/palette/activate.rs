@@ -192,11 +192,7 @@ impl SheprdWindow {
             .position(|e| e.id == endpoint && e.enabled)
             .ok_or(Error::HostUnavailable)?;
         let selected = index == self.selected_endpoint;
-        let live = if selected {
-            &self.live
-        } else {
-            &self.endpoints[index].live
-        };
+        let live = self.live_of(index);
         let snapshot = live.snapshot.as_ref().ok_or(Error::HostUnavailable)?;
         destination_exists(snapshot, boot, target)?;
         if selected && !self.input_ready() {

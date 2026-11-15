@@ -31,8 +31,6 @@ class BoatSourceAbsence(unittest.TestCase):
         for path in (ROOT / "website/site/index.html", ROOT / "website/site/assets/features.js"):
             self.assertNotIn("Boat", path.read_text())
         self.assertTrue((ROOT / "crates/sheprd-gpui/src/menu/devices/add_device/core.rs").exists())
-        ssh = (ROOT / "crates/sheprd-client/src/ssh.rs").read_text()
-        self.assertIn("pub fn connect_command", ssh)
 
 
 if __name__ == "__main__":

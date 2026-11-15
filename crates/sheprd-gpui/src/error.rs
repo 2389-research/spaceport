@@ -206,9 +206,6 @@ pub enum Error {
     Settings(#[from] crate::config::Error),
     #[error("Could not finish saving Settings: {0}")]
     SettingsSave(#[source] std::sync::Arc<Error>),
-    #[cfg(unix)]
-    #[error(transparent)]
-    SetupRelay(#[from] crate::setup_relay::Error),
     #[error("Could not install the agent skill at {}: {source}", path.display())]
     SkillInstall {
         path: PathBuf,

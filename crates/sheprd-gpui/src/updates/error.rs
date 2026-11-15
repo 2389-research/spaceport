@@ -2,7 +2,6 @@
 // ABOUTME: Keeps Sparkle errors typed until the user-facing boundary.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[cfg(all(target_os = "macos", feature = "macos-updater"))]
     #[error("An update check is already in progress.")]
     Busy,
     #[cfg(all(target_os = "macos", feature = "macos-updater"))]
@@ -19,7 +18,6 @@ impl Error {
     pub(crate) fn localize(&self) -> String {
         match self {
             Self::Unsupported => crate::i18n::fl!("updates-unsupported"),
-            #[cfg(all(target_os = "macos", feature = "macos-updater"))]
             Self::Busy => crate::i18n::fl!("updates-busy"),
             #[cfg(all(target_os = "macos", feature = "macos-updater"))]
             Self::Sparkle(_) | Self::Trust(_) => {

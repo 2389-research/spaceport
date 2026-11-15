@@ -5,8 +5,9 @@ use super::{
     overlay::{attach_with, open, poll},
     *,
 };
+use crate::SheprdWindow;
 use crate::chat::view::matching;
-use gpui::{Modifiers, TestAppContext};
+use gpui::{Entity, Modifiers, TestAppContext, VisualTestContext};
 use sheprd_chat_protocol::{
     Choice, Command, ConfigOption, Mode, Modes, OptionCategory, OptionKind, OptionValue,
 };
@@ -193,4 +194,57 @@ fn the_shield_turns_auto_accepting_on(cx: &mut TestAppContext) {
         next_command(&mut stream),
         Command::SetAutoAccept { on: true }
     );
+}
+
+/// Opens the long model menu, whose search field takes the keyboard, then
+/// ends the chat connection.
+fn lose_the_connection_under_the_model_search(
+    view: &Entity<SheprdWindow>,
+    program: &Program,
+    cx: &mut VisualTestContext,
+) {
+    let stream = attach_with(view, program, settings(), cx);
+    let model = cx.debug_bounds("chat-setting-model").unwrap();
+    cx.simulate_click(model.center(), Modifiers::default());
+    poll(view, program, cx);
+    assert!(cx.debug_bounds("chat-menu-search").is_some());
+    drop(stream);
+    wait_until(|| {
+        poll(view, program, cx);
+        view.read_with(cx, |view, _| !view.chats.panes().next().unwrap().attached())
+    });
+}
+
+#[gpui::test]
+fn a_lost_connection_closes_the_menu_and_its_search(cx: &mut TestAppContext) {
+    let (view, _peer, cx) = open(cx, ConnectTarget::Local);
+    let program = Program::new();
+    lose_the_connection_under_the_model_search(&view, &program, cx);
+    view.read_with(cx, |view, _| {
+        let pane = view.chats.panes().next().unwrap();
+        assert!(pane.menu().is_none(), "the menu closed");
+        assert!(
+            pane.menu_search().is_none(),
+            "its search field went with it"
+        );
+    });
+}
+
+#[gpui::test]
+fn typing_after_a_lost_connection_reaches_the_composer(cx: &mut TestAppContext) {
+    let (view, _peer, cx) = open(cx, ConnectTarget::Local);
+    let program = Program::new();
+    lose_the_connection_under_the_model_search(&view, &program, cx);
+    cx.simulate_input("hello");
+    poll(&view, &program, cx);
+    let (focused, draft) = cx.update(|window, cx| {
+        let pane = view.read(cx).chats.panes().next().unwrap();
+        let composer = pane.composer.as_ref().unwrap().read(cx);
+        (
+            composer.focus.is_focused(window),
+            composer.text().to_owned(),
+        )
+    });
+    assert!(focused, "the composer has the keyboard");
+    assert_eq!(draft, "hello");
 }

@@ -279,12 +279,12 @@ fn a_tab_carried_off_its_strip_is_drawn_under_the_pointer(cx: &mut TestAppContex
     {
         use crate::window::tab_float::Float;
         assert_eq!(
-            view.read_with(cx, |view, _| view.tab_drag.as_ref().unwrap().float),
+            view.read_with(cx, |view, _| view.tab_drag.as_ref().unwrap().float()),
             Float::Failed
         );
         // Once a window of its own carries the card, this one draws none.
         view.update(cx, |view, cx| {
-            view.tab_drag.as_mut().unwrap().float = Float::Open;
+            view.tab_drag.as_mut().unwrap().set_float(Float::Open);
             cx.notify();
         });
         draw(cx);

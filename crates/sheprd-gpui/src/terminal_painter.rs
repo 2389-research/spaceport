@@ -341,6 +341,11 @@ impl TerminalPainter {
         )
     }
 
+    /// The painter's own cell height with the width its caller measured.
+    fn metrics(&self, cell_width: f32) -> CellMetrics {
+        CellMetrics::new(cell_width, self.cell_height)
+    }
+
     fn configure(&mut self, font: &Font) {
         if self.config.as_ref() != Some(font) {
             self.glyphs.clear();
@@ -396,16 +401,10 @@ impl TerminalPainter {
         let Some(bounds) = link_bounds(frame, rows) else {
             return;
         };
+        let metrics = self.metrics(cell_width);
         let layer = Bounds::new(
-            origin
-                + point(
-                    px(f32::from(bounds.x) * cell_width),
-                    px(f32::from(bounds.y) * self.cell_height),
-                ),
-            size(
-                px(f32::from(bounds.width) * cell_width),
-                px(f32::from(bounds.height) * self.cell_height),
-            ),
+            origin + metrics.origin(bounds.x, bounds.y),
+            metrics.extent(bounds.width, bounds.height),
         );
         window.paint_layer(layer, |window| {
             for (row, columns) in rows {
@@ -472,22 +471,13 @@ impl TerminalPainter {
         let cached = cached && !self.uncached;
         #[cfg(feature = "integration-test")]
         let mut counts = crate::performance::Counts::default();
-        let grid = Bounds::new(
-            origin,
-            size(
-                px(f32::from(frame.width) * cell_width),
-                px(f32::from(frame.height) * self.cell_height),
-            ),
-        );
+        let metrics = self.metrics(cell_width);
+        let grid = Bounds::new(origin, metrics.extent(frame.width, frame.height));
         // Only fill a sub-cell remainder. Retained frames during resize and
         // mirrored groups must not stretch across whole missing rows/columns.
         // Popups have no remainder; their background stays inside their grid.
         let background = available.map_or(grid.size, |available| {
-            background_extent(
-                grid.size,
-                available,
-                size(px(cell_width), px(self.cell_height)),
-            )
+            background_extent(grid.size, available, metrics.cell())
         });
         let extend_last_row =
             background.height > grid.size.height && !last_row_has_separator(frame);
@@ -705,7 +695,7 @@ impl TerminalPainter {
                 if let Some(cursor) = frame.cursor.as_ref().filter(|c| {
                     c.visible && c.x < frame.width && c.y < frame.height && covers(area, c.x, c.y)
                 }) {
-                    let position = origin + cursor_offset(cursor, cell_width, self.cell_height);
+                    let position = origin + metrics.origin(cursor.x, cursor.y);
                     let (offset, dimensions) = match cursor.shape {
                         3 | 4 => (
                             point(px(0.), px(self.cell_height - 2.)),
@@ -733,7 +723,7 @@ impl TerminalPainter {
                         pane.scrollbar_rect
                             .is_some_and(|rect| covers(area, rect.x, rect.y))
                     })
-                    .filter_map(|pane| Scrollbar::new(pane, cell_width, self.cell_height))
+                    .filter_map(|pane| Scrollbar::new(pane, metrics))
                 {
                     let width =
                         (f32::from(bar.track.size.width) - 2. * SCROLLBAR_INSET).clamp(2., 4.);

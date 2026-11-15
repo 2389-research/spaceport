@@ -123,7 +123,8 @@ pub(crate) fn menus(config: &Config) -> Vec<Menu> {
                         command: Command::CheckForUpdates,
                     },
                 )
-                .disabled(!crate::updates::supported_build()),
+                // Off until `install` asks the updater: no other caller may offer it.
+                .disabled(true),
                 MenuItem::separator(),
                 MenuItem::action(
                     fl!("menus-command-palette"),

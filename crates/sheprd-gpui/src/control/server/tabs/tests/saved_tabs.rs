@@ -20,13 +20,11 @@ fn restored_tabs_keep_exact_cli_targets_and_reserve_retired_ids(cx: &mut gpui::T
         let core = store.open_core(&key, None).unwrap();
         let scope = crate::browser::scope(&view.read(cx).endpoints[0]);
         let devices = store.open(scope.clone(), "w0", Some(Location::Devices), None).unwrap();
-        let retired = store.open(
-            scope,
-            "w0",
-            Some(Location::RetiredOrchestrator { repo: RetiredOrchestratorRepo::new("/src/old".into()).unwrap() }),
-            None,
-        ).unwrap();
-        let bytes = serde_json::to_vec(&serde_json::json!({"tabs":store.tabs().collect::<Vec<_>>(),"next":0})).unwrap();
+        // The file names this tab as an old Orchestrator tab.
+        let retired = store.open(scope, "w0", None, None).unwrap();
+        let mut saved = serde_json::json!({"tabs":store.tabs().collect::<Vec<_>>(),"next":0});
+        saved["tabs"][2]["location"] = serde_json::json!({"kind":"orchestrator","repo":{"checkout":"/src/old"}});
+        let bytes = serde_json::to_vec(&saved).unwrap();
         cx.set_global(Store::restored_for_test(&bytes).unwrap());
         (core, devices, retired)
     });

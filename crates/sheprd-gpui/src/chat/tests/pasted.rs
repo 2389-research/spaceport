@@ -77,7 +77,7 @@ fn a_picture_never_joins_a_conversation_that_replaced_its_own(cx: &mut TestAppCo
     // Another program takes the pane while the picture is saved.
     view.update(cx, |view, _| {
         let pane = view.chats.pane_mut(&pane).unwrap();
-        pane.target.endpoint = EndpointId::random();
+        pane.target.source = Source::Program(EndpointId::random());
     });
     cx.run_until_parked();
     let (_, attached) = pane_state(&view, cx);

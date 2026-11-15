@@ -179,5 +179,5 @@ fn an_os_notification_posted_before_a_mute_still_answers_its_click() {
     );
     tick_muted(&mut endpoints, system(0), &mutes, now);
     assert_eq!(endpoints[1].toasts.entries.len(), 1);
-    assert!(endpoints[1].toasts.entries[0].1.posted);
+    assert!(endpoints[1].toasts.entries[0].1.is_posted());
 }

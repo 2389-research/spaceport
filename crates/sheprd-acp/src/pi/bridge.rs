@@ -8,6 +8,7 @@ use serde_json::{Value, json};
 
 use super::tools;
 use crate::harness::{Out, Translator, out};
+use crate::project::PromptUsage;
 use crate::rpc::Inbound;
 
 const MODEL: &str = "model";
@@ -247,10 +248,7 @@ impl Bridge {
             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
         };
         if self.prompt.is_some() {
-            return vec![out::reply(
-                id,
-                Err(out::failure("A turn is already running.")),
-            )];
+            return vec![out::reply(id, Err(out::failure(out::BUSY)))];
         }
         let mut text = Vec::new();
         let mut images = Vec::new();
@@ -510,21 +508,19 @@ impl Bridge {
                 })
                 .sum()
         };
-        let tokens = json!({
-            "inputTokens": total("input") + total("cacheWrite"),
-            "cachedReadTokens": total("cacheRead"),
-            "outputTokens": total("output"),
-            "totalTokens": total("input") + total("cacheWrite") + total("cacheRead") + total("output"),
-        });
-        let reply = match result {
-            Ok(stop) => out::to_value(&wire::PromptResponse::new(stop)).map(|mut response| {
-                response["usage"] = tokens;
-                response
-            }),
-            Err(message) => Err(out::failure(message)),
+        let tokens = PromptUsage {
+            cached_read_tokens: total("cacheRead"),
+            input_tokens: total("input") + total("cacheWrite"),
+            output_tokens: total("output"),
+            // pi counts no reasoning tokens.
+            thought_tokens: None,
+            total_tokens: total("input")
+                + total("cacheWrite")
+                + total("cacheRead")
+                + total("output"),
         };
         vec![
-            out::reply(id, reply),
+            out::turn_ended(id, result, Some(tokens)),
             self.command(json!({"type": "get_session_stats"}), Pending::Stats),
         ]
     }

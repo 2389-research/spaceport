@@ -5,7 +5,7 @@
 use super::*;
 use crate::{
     SheprdWindow,
-    chat::{link::Link, view::pane_bounds},
+    chat::link::Link,
     sidebar::layout_tests::{fixture_window, full_draw},
     window::MockPeer,
 };
@@ -92,16 +92,14 @@ fn a_local_chat_pane_is_drawn_over_its_cells(cx: &mut TestAppContext) {
     let _stream = attach(&view, &program, cx);
     let chat = cx.debug_bounds("chat-view").unwrap();
     let terminal = view.read_with(cx, |view, _| view.bounds);
-    let pane = pane_bounds(
-        sheprd_client::protocol::SurfaceRect {
-            x: 0,
-            y: 0,
-            width: 80,
-            height: 24,
-        },
-        view.read_with(cx, |view, _| view.cell_width),
-        view.read_with(cx, |view, _| view.config.terminal.line_height()),
-    );
+    let pane =
+        view.read_with(cx, |view, _| view.metrics())
+            .bounds(sheprd_client::protocol::SurfaceRect {
+                x: 0,
+                y: 0,
+                width: 80,
+                height: 24,
+            });
     assert_eq!(chat.origin, terminal.origin + pane.origin);
     assert_eq!(chat.size, pane.size);
     assert!(cx.debug_bounds("chat-agent").is_some());

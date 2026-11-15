@@ -1,11 +1,8 @@
 //! `chat`: list the window's chat panes, or show a chat view or its terminal.
 use super::{Context, Output, unexpected};
-use crate::{
-    cli::control::ChatCommand,
-    control::protocol::{
-        Request, Response,
-        chat::{ChatInfo, ChatOp, Reply},
-    },
+use crate::control::protocol::{
+    Request, Response,
+    chat::{ChatInfo, ChatOp, Reply},
 };
 use std::fmt::Write as _;
 
@@ -38,15 +35,7 @@ pub(super) fn describe(chat: &ChatInfo) -> String {
     line
 }
 
-pub(super) fn chat(command: ChatCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        ChatCommand::Status => ChatOp::Status,
-        ChatCommand::New { agent, pane } => ChatOp::New {
-            agent: agent.name().to_owned(),
-            pane,
-        },
-        ChatCommand::View { switch, pane } => ChatOp::View { switch, pane },
-    };
+pub(super) fn chat(op: ChatOp, context: &Context) -> crate::Result<Output> {
     match context.call(Request::Chat, op)? {
         Response::Chat {
             reply: Reply::Chats { chats },

@@ -1,8 +1,8 @@
 //! Status bar visibility and detail for retained controls.
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// How much of a reading an item spells out.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Detail {
     /// Meters and every figure.
@@ -13,7 +13,7 @@ pub enum Detail {
 }
 
 /// What the cup keeps awake.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AwakeScope {
     /// The display and the system, so the screen never locks.
@@ -23,17 +23,8 @@ pub enum AwakeScope {
     System,
 }
 
-impl AwakeScope {
-    fn name(self) -> &'static str {
-        match self {
-            Self::Display => "display",
-            Self::System => "system",
-        }
-    }
-}
-
 /// How a status bar button appears.
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Button {
     /// Icon and name.
@@ -47,23 +38,6 @@ pub enum Button {
 impl Button {
     pub(crate) fn shown(self) -> bool {
         self != Self::Hidden
-    }
-
-    fn name(self) -> &'static str {
-        match self {
-            Self::Label => "label",
-            Self::Icon => "icon",
-            Self::Hidden => "hidden",
-        }
-    }
-}
-
-impl Detail {
-    fn name(self) -> &'static str {
-        match self {
-            Self::Detailed => "detailed",
-            Self::Compact => "compact",
-        }
     }
 }
 
@@ -106,14 +80,15 @@ pub(crate) enum Edit {
 }
 
 impl Edit {
-    pub(super) fn entry(self) -> (&'static str, toml_edit::Value) {
-        match self {
-            Self::Usage(detail) => ("usage", detail.name().into()),
+    pub(super) fn entry(self) -> crate::Result<(&'static str, toml_edit::Value)> {
+        use super::edit::spelled;
+        Ok(match self {
+            Self::Usage(detail) => ("usage", spelled(detail)?),
             Self::KeepAwake(shown) => ("keep_awake", shown.into()),
-            Self::KeepAwakeScope(scope) => ("keep_awake_scope", scope.name().into()),
-            Self::Theme(button) => ("theme", button.name().into()),
-            Self::Shortcuts(button) => ("shortcuts", button.name().into()),
-            Self::ReportIssue(button) => ("report_issue", button.name().into()),
-        }
+            Self::KeepAwakeScope(scope) => ("keep_awake_scope", spelled(scope)?),
+            Self::Theme(button) => ("theme", spelled(button)?),
+            Self::Shortcuts(button) => ("shortcuts", spelled(button)?),
+            Self::ReportIssue(button) => ("report_issue", spelled(button)?),
+        })
     }
 }

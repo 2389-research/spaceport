@@ -112,3 +112,21 @@ fn stopping_removes_only_the_named_forward_and_hosts_that_leave_lose_theirs() {
     forwards.stop_all();
     assert!(ports(&forwards, "other").is_empty());
 }
+
+#[test]
+fn only_a_running_forward_of_that_host_and_port_can_be_reused() {
+    let mut forwards = PortForwards::default();
+    forwards.fixture("box", 3000, State::Starting);
+    forwards.fixture("box", 4000, State::Listening { local_port: 14_000 });
+    forwards.fixture("box", 5000, State::Ended("gone".into()));
+    assert_eq!(forwards.reuse("box", 3000), Some(Reuse::Starting));
+    assert_eq!(
+        forwards.reuse("box", 4000),
+        Some(Reuse::Listening { local_port: 14_000 })
+    );
+    // An ended forward holds no port, and the local port is not the key.
+    assert_eq!(forwards.reuse("box", 5000), None);
+    assert_eq!(forwards.reuse("box", 14_000), None);
+    assert_eq!(forwards.reuse("other", 4000), None);
+    assert_eq!(forwards.reuse("box", 0), None);
+}

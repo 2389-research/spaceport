@@ -10,7 +10,7 @@ fn teleport_cli_is_absent_while_worktree_targeting_remains() {
     assert!(matches!(
         parsed.mode,
         LaunchMode::Control(control::Invocation {
-            command: control::ControlCommand::Worktree(control::WorktreeCommand::Mute),
+            command: control::ControlCommand::Worktree(control::WorkOp::Mute { muted: true }),
             window: Some(7),
             ..
         })

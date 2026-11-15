@@ -3,7 +3,7 @@
 //! Sidebar: layout preset, selection marks, spacing and host colours. Every
 //! change reaches the open windows at once; see `settings_window::sidebar`.
 // i18n: migrated
-use super::{SettingsWindow, on_value, ui};
+use super::{SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{
         AgentsPlacement, Config, DeviceFooter, LayoutMode, SelectMode, SidebarOverrides,
@@ -33,12 +33,13 @@ impl Spacing {
     pub(in crate::settings_window) const ALL: [Self; 4] =
         [Self::Indent, Self::RowPadding, Self::RowGap, Self::HostGap];
 
-    fn row(self) -> &'static str {
+    /// The catalog entry of the row.
+    pub(in crate::settings_window) const fn entry(self) -> &'static catalog::Entry {
         match self {
-            Self::Indent => "sidebar-indent",
-            Self::RowPadding => "sidebar-row-padding",
-            Self::RowGap => "sidebar-row-gap",
-            Self::HostGap => "sidebar-host-gap",
+            Self::Indent => &catalog::SIDEBAR_INDENT,
+            Self::RowPadding => &catalog::SIDEBAR_ROW_PADDING,
+            Self::RowGap => &catalog::SIDEBAR_ROW_GAP,
+            Self::HostGap => &catalog::SIDEBAR_HOST_GAP,
         }
     }
 
@@ -57,28 +58,6 @@ impl Spacing {
             Self::RowPadding => "sidebar-row-padding-reset",
             Self::RowGap => "sidebar-row-gap-reset",
             Self::HostGap => "sidebar-host-gap-reset",
-        }
-    }
-
-    /// The messages titling and describing the row, the catalog's.
-    pub(in crate::settings_window) fn messages(self) -> (&'static str, &'static str) {
-        match self {
-            Self::Indent => (
-                "settings-sidebar-indent",
-                "settings-sidebar-indent-description",
-            ),
-            Self::RowPadding => (
-                "settings-sidebar-row-padding",
-                "settings-sidebar-row-padding-description",
-            ),
-            Self::RowGap => (
-                "settings-sidebar-row-gap",
-                "settings-sidebar-row-gap-description",
-            ),
-            Self::HostGap => (
-                "settings-sidebar-host-gap",
-                "settings-sidebar-host-gap-description",
-            ),
         }
     }
 
@@ -165,19 +144,12 @@ impl SettingsWindow {
                 None,
             ))
             .child(
-                ui::row(theme, "sidebar-layout", fl!("settings-sidebar-layout"))
+                ui::row(theme, &catalog::SIDEBAR_LAYOUT)
                     .tag(ui::Source::Sheprd)
-                    .description(fl!("settings-sidebar-layout-description"))
                     .control(self.layout_dropdown(ready, cx)),
             )
             .child(
-                ui::row(
-                    theme,
-                    "sidebar-activity-bar",
-                    fl!("settings-sidebar-activity-bar-title"),
-                )
-                .description(fl!("settings-sidebar-activity-bar-hint"))
-                .switch(
+                ui::row(theme, &catalog::SIDEBAR_ACTIVITY_BAR).switch(
                     ui::toggle(
                         theme,
                         "sidebar-activity-bar-toggle",
@@ -191,58 +163,47 @@ impl SettingsWindow {
                     })),
                 ),
             )
-            .children(crate::core_feature::enabled(cx).then(|| {
-                ui::row(
-                    theme,
-                    "sidebar-automations",
-                    fl!("settings-sidebar-automations-title"),
-                )
-                .description(fl!("settings-sidebar-automations-hint"))
-                .switch(
-                    ui::toggle(
-                        theme,
-                        "sidebar-automations-toggle",
-                        self.config.sidebar_style.automations,
-                        ready,
-                    )
-                    .on_click(cx.listener(|this, _, _, cx| {
-                        let mut intent = SidebarIntent::of(&this.config);
-                        intent.style.automations = !intent.style.automations;
-                        this.commit_sidebar(intent, cx);
-                    })),
-                )
-            }))
-            .child(
-                ui::row(theme, "sidebar-select", fl!("settings-sidebar-select"))
-                    .description(fl!("settings-sidebar-select-description"))
-                    .control(ui::segmented(
-                        theme,
-                        "sidebar-select-control",
-                        &[
-                            (SelectMode::Row, fl!("settings-sidebar-select-row")),
-                            (SelectMode::Group, fl!("settings-sidebar-select-group")),
-                            (
-                                SelectMode::GroupDim,
-                                fl!("settings-sidebar-select-group-dim"),
-                            ),
-                        ],
-                        Some(self.config.sidebar_style.select),
-                        ready,
-                        on_value(cx, |this, select, _, cx| {
-                            let mut intent = SidebarIntent::of(&this.config);
-                            intent.style.select = select;
-                            this.commit_sidebar(intent, cx);
-                        }),
-                    )),
+            .children(
+                self.available(catalog::SIDEBAR_AUTOMATIONS.availability, cx)
+                    .then(|| {
+                        ui::row(theme, &catalog::SIDEBAR_AUTOMATIONS).switch(
+                            ui::toggle(
+                                theme,
+                                "sidebar-automations-toggle",
+                                self.config.sidebar_style.automations,
+                                ready,
+                            )
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                let mut intent = SidebarIntent::of(&this.config);
+                                intent.style.automations = !intent.style.automations;
+                                this.commit_sidebar(intent, cx);
+                            })),
+                        )
+                    }),
             )
             .child(
-                ui::row(
+                ui::row(theme, &catalog::SIDEBAR_SELECT).control(ui::segmented(
                     theme,
-                    "sidebar-device-footer",
-                    fl!("settings-sidebar-device-footer"),
-                )
-                .description(fl!("settings-sidebar-device-footer-description"))
-                .control(ui::segmented(
+                    "sidebar-select-control",
+                    &[
+                        (SelectMode::Row, fl!("settings-sidebar-select-row")),
+                        (SelectMode::Group, fl!("settings-sidebar-select-group")),
+                        (
+                            SelectMode::GroupDim,
+                            fl!("settings-sidebar-select-group-dim"),
+                        ),
+                    ],
+                    Some(self.config.sidebar_style.select),
+                    ready,
+                    on_value(cx, |this, select, _, cx| {
+                        let mut intent = SidebarIntent::of(&this.config);
+                        intent.style.select = select;
+                        this.commit_sidebar(intent, cx);
+                    }),
+                )),
+            )
+            .child(
+                ui::row(theme, &catalog::SIDEBAR_DEVICE_FOOTER).control(ui::segmented(
                     theme,
                     "sidebar-device-footer-control",
                     &[
@@ -260,13 +221,7 @@ impl SettingsWindow {
                 )),
             )
             .child(
-                ui::row(
-                    theme,
-                    "sidebar-show-agents",
-                    fl!("settings-sidebar-show-agents"),
-                )
-                .description(fl!("settings-sidebar-show-agents-description"))
-                .switch(
+                ui::row(theme, &catalog::SIDEBAR_SHOW_AGENTS).switch(
                     ui::toggle(
                         theme,
                         "sidebar-show-agents-toggle",
@@ -279,28 +234,16 @@ impl SettingsWindow {
                     })),
                 ),
             )
-            .child(
-                ui::row(
-                    theme,
-                    "sidebar-show-agents-header",
-                    fl!("settings-sidebar-show-agents-header"),
-                )
-                .description(fl!("settings-sidebar-agents-header-hint"))
-                .switch(self.preference_toggle(
+            .child(ui::row(theme, &catalog::SIDEBAR_SHOW_AGENTS_HEADER).switch(
+                self.preference_toggle(
                     "sidebar-show-agents-header-toggle",
                     self.config.show_agents_header,
                     Preference::ShowAgentsHeader(!self.config.show_agents_header),
                     cx,
-                )),
-            )
+                ),
+            ))
             .child(
-                ui::row(
-                    theme,
-                    "sidebar-agents-placement",
-                    fl!("settings-sidebar-agents-placement"),
-                )
-                .description(fl!("settings-sidebar-agents-placement-description"))
-                .control(ui::segmented(
+                ui::row(theme, &catalog::SIDEBAR_AGENTS_PLACEMENT).control(ui::segmented(
                     theme,
                     "sidebar-agents-placement-control",
                     &[
@@ -321,41 +264,23 @@ impl SettingsWindow {
                 )),
             )
             .child(
-                ui::row(
-                    theme,
-                    "sidebar-show-search",
-                    fl!("settings-sidebar-show-search"),
-                )
-                .description(fl!("settings-sidebar-show-search-description"))
-                .switch(self.preference_toggle(
+                ui::row(theme, &catalog::SIDEBAR_SHOW_SEARCH).switch(self.preference_toggle(
                     "sidebar-show-search-toggle",
                     self.config.show_sidebar_search,
                     Preference::ShowSidebarSearch(!self.config.show_sidebar_search),
                     cx,
                 )),
             )
-            .child(
-                ui::row(
-                    theme,
-                    "sidebar-repository-icons",
-                    fl!("settings-sidebar-repository-icons"),
-                )
-                .description(fl!("settings-sidebar-repository-icons-description"))
-                .switch(self.preference_toggle(
+            .child(ui::row(theme, &catalog::SIDEBAR_REPOSITORY_ICONS).switch(
+                self.preference_toggle(
                     "sidebar-repository-icons-toggle",
                     self.config.show_repository_icons,
                     Preference::ShowRepositoryIcons(!self.config.show_repository_icons),
                     cx,
-                )),
-            )
+                ),
+            ))
             .child(
-                ui::row(
-                    theme,
-                    "sidebar-device-icons",
-                    fl!("settings-sidebar-device-icons"),
-                )
-                .description(fl!("settings-sidebar-device-icons-description"))
-                .switch(self.preference_toggle(
+                ui::row(theme, &catalog::SIDEBAR_DEVICE_ICONS).switch(self.preference_toggle(
                     "sidebar-device-icons-toggle",
                     self.config.show_device_icons,
                     Preference::ShowDeviceIcons(!self.config.show_device_icons),
@@ -371,11 +296,12 @@ impl SettingsWindow {
             page = page.child(self.spacing_row(spacing, ready, cx));
         }
         page = page.child(
-            ui::section(theme, &fl!("settings-sidebar-host-colours"), None)
+            // A heading search opens, so it takes its entry's id and title.
+            ui::section(theme, &catalog::SIDEBAR_HOST_COLOURS.title(), None)
                 .relative()
-                .debug_selector(|| "sidebar-host-colours".into())
+                .debug_selector(|| catalog::SIDEBAR_HOST_COLOURS.id.into())
                 .child(super::super::search::track_bounds(
-                    "sidebar-host-colours".into(),
+                    catalog::SIDEBAR_HOST_COLOURS.id.into(),
                 )),
         );
         let rows = self.host_rows(cx);
@@ -481,9 +407,7 @@ impl SettingsWindow {
         let field = NumberField::Spacing(spacing);
         let value = spacing.value(&self.config);
         let view = cx.entity().downgrade();
-        let (title, description) = spacing.messages();
-        ui::row(&self.theme, spacing.row(), i18n::message(title, &[]))
-            .description(i18n::message(description, &[]))
+        ui::row(&self.theme, spacing.entry())
             .control(ui::number(
                 &self.theme,
                 ui::Number {

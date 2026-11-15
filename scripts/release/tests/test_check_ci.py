@@ -18,7 +18,7 @@ SHA = "a" * 40
 
 def run():
     return dict(id=123, head_sha=SHA, head_branch="main", event="push",
-                actor={"login": "penso"}, triggering_actor={"login": "penso"},
+                actor={"login": "harperreed"}, triggering_actor={"login": "harperreed"},
                 status="completed", conclusion="success")
 
 
@@ -157,7 +157,8 @@ class CheckCi(unittest.TestCase):
         definitions = dict(zip(sections[1::2], sections[2::2]))
         expected = set()
         # build-macos runs on pull requests only, so main's runs never have it.
-        for key in ("zizmor", "commits", "checks-passed", "checks", "windows", "windows-native", "build"):
+        # The Windows jobs are paused behind the WINDOWS_ENABLED variable.
+        for key in ("zizmor", "commits", "checks-passed", "checks", "build"):
             definition = definitions[key]
             names = [re.search(r"^    name: (.+)$", definition, re.M)[1]]
             for dimension in ("runner", "features"):
@@ -172,6 +173,6 @@ class CheckCi(unittest.TestCase):
         self.assertEqual(CI.REQUIRED_JOBS, expected)
 
     def test_main_runs_no_macos_release_build(self):
-        # The release workflow's macOS builds share the account's macOS
-        # runners; CI on main must not hold them, nor may the gate wait for it.
+        # The macOS preview builds share the account's macOS runners; CI on
+        # main must not hold them, nor may the gate wait for it.
         self.assertFalse(any("apple-darwin" in name for name in CI.REQUIRED_JOBS))
