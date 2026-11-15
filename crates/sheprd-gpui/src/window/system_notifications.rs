@@ -325,7 +325,7 @@ impl SheprdWindow {
         .with_message(title, body)
         .with_snapshot(snapshot.as_deref());
         // Retained like a real post, so a click resolves through the same path.
-        notice.posted = true;
+        notice.post();
         let post = SystemPost {
             endpoint: index,
             id: 0,
@@ -400,7 +400,7 @@ mod tests {
         assert!(shown.body.starts_with("QA preview"));
         view.read_with(cx, |view, _| {
             let (_, notice) = view.endpoints[0].toasts.entries.back().unwrap();
-            assert!(notice.posted && !notice.visible);
+            assert!(notice.is_posted() && !notice.is_visible());
             assert_eq!(
                 notice.pane_id,
                 view.live.snapshot.as_ref().unwrap().focused_pane_id

@@ -253,11 +253,13 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
             assert_eq!(view.pending_toast, Some(0));
             assert!(!view.input_ready());
             let after_expiry =
-                view.endpoints[1].toasts.entries[0].1.expires + Duration::from_secs(1);
+                view.endpoints[1].toasts.entries[0].1.expires().unwrap() + Duration::from_secs(1);
             view.tick_toasts(false, after_expiry, cx);
             assert_eq!(view.endpoints[1].toasts.entries.len(), 1);
             // An accepted intent also remains eligible between timer samples.
-            view.endpoints[1].toasts.entries[0].1.expires = Instant::now();
+            view.endpoints[1].toasts.entries[0]
+                .1
+                .set_expires(Instant::now());
             assert!(matches!(
                 view.toast_target(1, 0),
                 std::task::Poll::Ready(Some(_))

@@ -90,7 +90,11 @@ impl SheprdWindow {
         let accepted = index == self.selected_endpoint && self.pending_toast == Some(id);
         // A posted OS notification has no in-app lifetime; its click is
         // fenced by the boot, inbox, and loss checks below instead.
-        if !notice.posted && (!notice.visible || (!accepted && notice.expires <= Instant::now())) {
+        if !notice.is_posted()
+            && notice
+                .expires()
+                .is_none_or(|expires| !accepted && expires <= Instant::now())
+        {
             return Poll::Ready(None);
         }
         let state = match endpoint.connection.inbox.try_lock() {
@@ -184,7 +188,7 @@ impl SheprdWindow {
         .with_snapshot(snapshot.as_deref());
         // Each QA action immediately presents its own card, even offline.
         for endpoint in &mut self.endpoints {
-            endpoint.toasts.entries.retain(|(_, n)| !n.visible);
+            endpoint.toasts.entries.retain(|(_, n)| !n.is_visible());
         }
         notice.position = self.config.notifications.position;
         notice.promote(Instant::now());
@@ -237,7 +241,7 @@ impl SheprdWindow {
                     .toasts
                     .entries
                     .iter()
-                    .filter(|(_, notice)| notice.visible)
+                    .filter(|(_, notice)| notice.is_visible())
                     .map(move |(id, notice)| {
                         let navigable = endpoint
                             .live
