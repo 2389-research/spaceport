@@ -5,6 +5,7 @@ mod chat_lines;
 mod core_catalog;
 mod family_help;
 mod tab_help;
+mod wire;
 
 #[test]
 fn output_is_whole_and_only_a_terminal_loses_controls() {

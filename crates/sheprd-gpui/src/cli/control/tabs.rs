@@ -1,12 +1,5 @@
 //! `tab` and `devices`.
-use super::{Args, CliError, ControlCommand, unknown};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TabCommand {
-    List,
-    Focus { id: u64 },
-    Close { id: u64 },
-}
+use super::{Args, CliError, ControlCommand, TabOp, unknown};
 
 fn id(args: &mut Args) -> Result<u64, CliError> {
     args.required_text("ID")?
@@ -16,14 +9,14 @@ fn id(args: &mut Args) -> Result<u64, CliError> {
 
 pub(super) const TAB_USAGE: &str = "spaceport tab [list]\n    The app's own tabs: pages, Devices, Core terminals.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nspaceport tab focus|close ID\n    Show a tab, switching to its workspace, or close it.";
 
-pub(super) fn tab(args: &mut Args) -> Result<TabCommand, CliError> {
+pub(super) fn tab(args: &mut Args) -> Result<TabOp, CliError> {
     let Some(verb) = args.verb() else {
-        return Ok(TabCommand::List);
+        return Ok(TabOp::List {});
     };
     Ok(match verb.to_str() {
-        Some("list") => TabCommand::List,
-        Some("focus") => TabCommand::Focus { id: id(args)? },
-        Some("close") => TabCommand::Close { id: id(args)? },
+        Some("list") => TabOp::List {},
+        Some("focus") => TabOp::Focus { id: id(args)? },
+        Some("close") => TabOp::Close { id: id(args)? },
         _ => return Err(unknown("tab", verb)),
     })
 }

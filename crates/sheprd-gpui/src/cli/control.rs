@@ -13,16 +13,19 @@ mod work;
 use super::CliError;
 pub(crate) use super::args::Args;
 pub use crate::control::{Cursor, EventKind, FontSize, Size, Sound, Switch};
-pub use app::{AppCommand, UiCommand, WindowCommand};
-pub use chat::ChatCommand;
-pub use hosts::{HostCommand, PortsCommand};
 pub use settings::{
     CaffeineCommand, ConfigCommand, IntegrationsCommand, KeybindsCommand, LanguageCommand,
     SoundCommand, ThemeCommand,
 };
+pub use sheprd_control_protocol::protocol::{
+    app::{AppOp, UiOp, WindowOp},
+    chat::ChatOp,
+    hosts::HostOp,
+    tabs::TabOp,
+    work::WorkOp,
+};
 use std::ffi::OsString;
-pub use tabs::TabCommand;
-pub use work::{NotesCommand, WaitFor, WorktreeCommand};
+pub use work::WaitFor;
 
 /// What to do, and how the answer is printed.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,16 +45,18 @@ pub enum ControlCommand {
     Help(Option<&'static str>),
     Status,
     Skill,
-    App(AppCommand),
-    Window(WindowCommand),
-    Ui(UiCommand),
-    Tab(TabCommand),
+    App(AppOp),
+    Window(WindowOp),
+    Ui(UiOp),
+    Tab(TabOp),
     Devices,
-    Chat(ChatCommand),
-    Notes(NotesCommand),
-    Worktree(WorktreeCommand),
-    Host(HostCommand),
-    Ports(PortsCommand),
+    Chat(ChatOp),
+    /// `notes` and `worktree` send the same family's operations, as `host`
+    /// and `ports` do; each prints its answer its own way.
+    Notes(WorkOp),
+    Worktree(WorkOp),
+    Host(HostOp),
+    Ports(HostOp),
     Processes {
         pane: Option<String>,
     },
@@ -339,12 +344,13 @@ pub fn parse(
     }
     let json = args.flag("--json");
     let window = args.number("--window", 0..=u64::MAX)?;
+    args.set_window(window);
     let command = (family.parse)(&mut args)?;
     args.finish()?;
     Ok(Invocation {
         command,
         json,
-        window,
+        window: args.window(),
     })
 }
 
