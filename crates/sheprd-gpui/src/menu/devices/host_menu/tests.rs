@@ -206,7 +206,7 @@ fn a_removal_pulses_the_host_header_until_the_device_leaves(cx: &mut TestAppCont
             view.device_removed(
                 HOST,
                 "m5max-ms",
-                Err(crate::menu::devices::Error::Adding.into()),
+                Err(crate::menu::devices::Error::Busy.into()),
                 cx,
             );
             assert!(view.menu.removing_devices.is_empty());
@@ -216,7 +216,7 @@ fn a_removal_pulses_the_host_header_until_the_device_leaves(cx: &mut TestAppCont
                     .map(|error| error.replace(['\u{2068}', '\u{2069}'], "")),
                 Some(format!(
                     "Remove m5max-ms: {}",
-                    crate::menu::devices::Error::Adding
+                    crate::menu::devices::Error::Busy
                 ))
             );
             // Success keeps the mark until the catalog drops the device,
