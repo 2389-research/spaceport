@@ -62,6 +62,14 @@ def text(root: Path, relative: str) -> str:
     return resolved.read_text(encoding='utf-8')
 
 
+def validate_evidence(root: Path, item: dict[str, Any]) -> None:
+    """Evidence names a file in the package; presence only, not sufficiency."""
+    for relative in item.get('evidence', []):
+        resolved = (root / relative).resolve()
+        if not resolved.is_relative_to(root.resolve()) or not resolved.is_file():
+            raise ValueError(f"{item['id']}: evidence is not a file in the specification: {relative}")
+
+
 def index(items: list[dict[str, Any]], kind: str) -> dict[str, dict[str, Any]]:
     result: dict[str, dict[str, Any]] = {}
     for item in items:
@@ -241,6 +249,7 @@ def validate(root: Path, require_schema: bool = True) -> dict[str, Any]:
         if task['status'] not in {'not_started','in_progress','blocked','done'}:
             raise ValueError(f"Invalid task status: {task['id']}")
         validate_task_completion(task, r['gaps'])
+        validate_evidence(root, task)
         for relative in task['read']:
             text(root, relative)
         assigned.update(task['acceptance'])
@@ -256,6 +265,7 @@ def validate(root: Path, require_schema: bool = True) -> dict[str, Any]:
             raise ValueError(f"Invalid acceptance status: {scenario['id']}")
         if scenario['status'] in {'passed','failed'} and not scenario['evidence']:
             raise ValueError(f"Executed scenario lacks evidence: {scenario['id']}")
+        validate_evidence(root, scenario)
         covered.update(scenario['requirements'])
     if covered != set(r['requirements']):
         raise ValueError(f'Uncovered requirements: {sorted(set(r["requirements"])-covered)}')

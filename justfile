@@ -198,7 +198,14 @@ check-i18n:
 sort:
     python3 scripts/check-sorted.py --fix
 
-ci: format-check check-file-size check-sorted check-i18n check-artwork lint test
+# Fail when the Spaceport specification's cross-file references, evidence
+# paths or generated views are out of step (docs/spaceport/tools/README.md).
+# The JSON Schema examples need tools/requirements.txt and are not run here.
+check-spec:
+    PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s docs/spaceport/tools -p 'test_*.py'
+    PYTHONDONTWRITEBYTECODE=1 python3 docs/spaceport/tools/spec.py check --skip-schema
+
+ci: format-check check-file-size check-sorted check-i18n check-spec check-artwork lint test
 
 # Tools are listed in scripts/setup-ci.sh; Docker for lint-linux is only checked.
 # Install the tools local CI-equivalent runs need, on macOS or Ubuntu.
