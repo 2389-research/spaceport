@@ -301,3 +301,58 @@ fn a_forward_for_a_skipped_host_reads_no_known_hosts_ahead_of_the_default() {
         assert!(at(option).is_some_and(|at| at < strict), "{option}");
     }
 }
+
+/// A click may open a listening forward's page only while the forward still
+/// holds its port. `alive` says so at once, ahead of the worker's report:
+/// between the master's exit and that report the local port is free for any
+/// other process to take.
+#[test]
+fn a_forward_is_alive_only_while_its_master_runs() {
+    let dir = scratch("alive");
+    let forward = PortForward::start_with(port(3000), WAIT, master(&dir), grant(&dir, 0)).unwrap();
+    assert!(matches!(
+        next_event(&forward),
+        ForwardEvent::Listening { local_port: 3000 }
+    ));
+    assert!(forward.alive());
+    let pid = read(&dir.join("pid"));
+    let killed = Command::new("/bin/kill")
+        .args(["-9", pid.trim()])
+        .status()
+        .unwrap();
+    assert!(killed.success());
+    // No report is taken here: `alive` must not depend on one.
+    wait_until(|| !forward.alive(), "a dead master still counted as alive");
+    // The worker still reports the end, with the exit it or `alive` reaped.
+    assert!(matches!(
+        next_event(&forward),
+        ForwardEvent::Ended(Error::ForwardExit(_))
+    ));
+    assert!(!forward.alive());
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_stopped_or_never_started_forward_is_not_alive() {
+    let dir = scratch("stopped-alive");
+    let forward = PortForward::start_with(port(3000), WAIT, master(&dir), grant(&dir, 0)).unwrap();
+    assert!(matches!(
+        next_event(&forward),
+        ForwardEvent::Listening { .. }
+    ));
+    forward.stop();
+    assert!(!forward.alive());
+    let failed = PortForward::start_with(
+        port(3000),
+        WAIT,
+        |_| Command::new("/nonexistent/herdr-test-ssh"),
+        |_, _| unreachable!("no master to ask"),
+    )
+    .unwrap();
+    assert!(matches!(
+        next_event(&failed),
+        ForwardEvent::Ended(Error::ForwardSpawn(_))
+    ));
+    assert!(!failed.alive());
+    let _ = std::fs::remove_dir_all(dir);
+}

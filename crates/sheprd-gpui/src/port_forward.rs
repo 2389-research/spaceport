@@ -55,6 +55,24 @@ impl Forward {
         crate::browser::WebUrl::try_from(format!("http://127.0.0.1:{local_port}/").as_str()).ok()
     }
 
+    /// What a click on this forward's remote port can use of it. A listening
+    /// forward counts only while its SSH still runs: once that exits, another
+    /// process may take the local port before the worker's report arrives.
+    fn reuse(&self) -> Option<Reuse> {
+        match self.state {
+            State::Starting => Some(Reuse::Starting),
+            // A listening forward always holds its handle, except one driven
+            // by hand in tests. Outside tests a missing handle proves nothing
+            // about the local port, so it is not reused.
+            State::Listening { local_port }
+                if self.handle.as_ref().map_or(cfg!(test), PortForward::alive) =>
+            {
+                Some(Reuse::Listening { local_port })
+            }
+            State::Listening { .. } | State::Ended(_) => None,
+        }
+    }
+
     /// Applies one worker report, returning what the user should be told.
     fn apply(&mut self, event: ForwardEvent) -> Notice {
         let remote_port = self.remote_port.get();
@@ -89,6 +107,16 @@ fn display(error: &dyn std::error::Error) -> String {
         source = cause.source();
     }
     text
+}
+
+/// A forward already running for a remote port someone asks to open.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Reuse {
+    /// SSH is still connecting; its page cannot open yet.
+    Starting,
+    Listening {
+        local_port: u16,
+    },
 }
 
 /// A change the user did not just ask for, worth a flash.
@@ -132,6 +160,14 @@ impl PortForwards {
         self.forwards
             .iter()
             .filter(move |forward| forward.target == target)
+    }
+
+    /// The running forward of `remote_port` on `target`'s localhost, for a
+    /// caller that would otherwise start an SSH child of its own for it.
+    pub fn reuse(&self, target: &str, remote_port: u16) -> Option<Reuse> {
+        self.for_host(target)
+            .find(|forward| forward.remote_port.get() == remote_port)
+            .and_then(Forward::reuse)
     }
 
     /// Starts forwarding `remote_port` on `target`. An ended forward of the
