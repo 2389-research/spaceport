@@ -1,15 +1,10 @@
 use super::*;
 
-#[cfg(unix)]
-mod command;
-#[cfg(unix)]
-mod config_dir;
 mod forward;
 mod incompatible;
 #[cfg(unix)]
 mod mise;
 mod probe_failure;
-mod serve;
 mod windows_host;
 #[cfg(windows)]
 mod windows_pipes;
@@ -106,7 +101,7 @@ esac
 "#, 0o700).unwrap();
     let run = || {
         let output = Command::new("/bin/sh")
-            .args(["-c", &probe_command("work's")])
+            .args(["-c", &probe_script("work's")])
             .env("PATH", &root)
             .env("HOME", &root)
             .output()
@@ -117,71 +112,6 @@ esac
     std::fs::write(root.join("up"), "").unwrap();
     assert_eq!(run(), Some(HostProbe::Running));
     std::fs::remove_dir_all(root).unwrap();
-}
-
-#[cfg(unix)]
-#[test]
-fn origin_command_reads_only_the_named_repository() {
-    let root = std::env::temp_dir().join(format!("herdr-origin-{}-a ' $(b)", std::process::id()));
-    std::fs::create_dir(&root).unwrap();
-    let git = |args: &[&str]| {
-        assert!(
-            Command::new("git")
-                .arg("-C")
-                .arg(&root)
-                .args(args)
-                .output()
-                .unwrap()
-                .status
-                .success()
-        );
-    };
-    git(&["init", "-q"]);
-    let git_dir = root.join(".git");
-    let run = || {
-        Command::new("/bin/sh")
-            .args([
-                "-c",
-                &config_command(git_dir.to_str().unwrap(), "remote.origin.url"),
-            ])
-            .output()
-            .unwrap()
-    };
-    // No origin: `git config --get` exits 1, which callers read as none.
-    assert_eq!(run().status.code(), Some(1));
-    git(&["remote", "add", "origin", "git@github.com:owner/repo.git"]);
-    let output = run();
-    assert!(output.status.success());
-    assert_eq!(output.stdout, b"git@github.com:owner/repo.git\n");
-    // Both the repository path and branch-derived key are shell quoted.
-    let key = "branch.pr/'$(false).merge";
-    git(&["config", key, "refs/heads/feat/inline-ime-preedit"]);
-    let output = Command::new("/bin/sh")
-        .args(["-c", &config_command(git_dir.to_str().unwrap(), key)])
-        .output()
-        .unwrap();
-    assert!(output.status.success());
-    assert_eq!(output.stdout, b"refs/heads/feat/inline-ime-preedit\n");
-    std::fs::remove_dir_all(root).unwrap();
-}
-
-#[test]
-fn origin_lookup_rejects_relative_or_control_git_dirs_before_ssh() {
-    for dir in ["relative/.git", "/repo\n/.git", ""] {
-        assert!(matches!(
-            remote_origin_url("host", dir, Duration::from_secs(1), || false),
-            Err(crate::Error::InvalidGitDir)
-        ));
-    }
-    assert!(matches!(
-        remote_origin_url(
-            "-oProxyCommand=x",
-            "/repo/.git",
-            Duration::from_secs(1),
-            || false
-        ),
-        Err(crate::Error::Ssh(Error::InvalidTarget))
-    ));
 }
 
 /// Runs the real `ssh -G`, trying again when a busy machine times it out.
@@ -218,18 +148,6 @@ fn destinations_come_from_the_resolved_config_not_the_spelling() {
     assert!(matches!(
         resolve_destination("-oProxyCommand=x"),
         Err(crate::Error::Ssh(Error::InvalidTarget))
-    ));
-}
-
-#[test]
-fn probe_rejects_bad_targets_before_spawning_ssh() {
-    assert!(matches!(
-        probe_host("-oProxyCommand=x", "default"),
-        Err(crate::Error::Ssh(Error::InvalidTarget))
-    ));
-    assert!(matches!(
-        probe_host("host", "../escape"),
-        Err(crate::Error::InvalidSession)
     ));
 }
 

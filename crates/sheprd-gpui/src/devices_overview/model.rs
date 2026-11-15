@@ -3,7 +3,10 @@
 
 use super::history::Counts;
 use crate::i18n::fl;
-use crate::{endpoint::Endpoint, state::LiveState};
+use crate::{
+    endpoint::{Endpoint, Phase},
+    state::LiveState,
+};
 use sheprd_client::{ConnectTarget, protocol::AgentStatus};
 
 /// A device's agents by state.
@@ -83,6 +86,22 @@ pub(crate) enum Link {
     Disabled,
 }
 
+impl From<Phase> for Link {
+    /// The overview's four states for the endpoint's seven: a host that is
+    /// detached, refused as outdated, or waiting to reconnect is offline.
+    fn from(phase: Phase) -> Self {
+        match phase {
+            Phase::Disabled => Self::Disabled,
+            Phase::Detached
+            | Phase::DaemonOutdated
+            | Phase::ClientOutdated
+            | Phase::Reconnecting => Self::Offline,
+            Phase::Connecting => Self::Connecting,
+            Phase::Online => Self::Online,
+        }
+    }
+}
+
 /// One agent as an expanded device row lists it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct AgentLine {
@@ -120,21 +139,7 @@ pub(crate) struct Device {
 
 impl Device {
     pub(crate) fn new(index: usize, endpoint: &Endpoint, live: &LiveState) -> Self {
-        let link = if !endpoint.enabled {
-            Link::Disabled
-        } else if live.status.is_connected() {
-            Link::Online
-        } else if live.error.is_some()
-            || matches!(
-                live.status,
-                crate::state::ConnectionStatus::Disconnected
-                    | crate::state::ConnectionStatus::Detached
-            )
-        {
-            Link::Offline
-        } else {
-            Link::Connecting
-        };
+        let link = Link::from(endpoint.phase_with(live));
         // A device out of reach shows no agents rather than stale ones.
         let snapshot = live.snapshot.as_deref().filter(|_| link == Link::Online);
         let agents = snapshot.map_or(&[][..], |snapshot| &snapshot.agents[..]);

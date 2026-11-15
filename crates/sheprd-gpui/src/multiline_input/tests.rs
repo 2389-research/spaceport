@@ -3,6 +3,7 @@
 use super::*;
 use gpui::{Entity, Modifiers, TestAppContext, TouchPhase, VisualTestContext};
 
+mod key_table;
 mod resize;
 mod scrolling;
 

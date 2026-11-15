@@ -76,6 +76,8 @@ fn key(text: String) -> Result<String, CliError> {
     valid.then_some(text).ok_or(CliError::InvalidValue("KEY"))
 }
 
+pub(super) const CONFIG_USAGE: &str = "spaceport config [path]\n    The settings files.\nspaceport config get KEY\n    The setting's value, as TOML: your override, else the default.\nspaceport config set KEY VALUE\nspaceport config unset KEY\n    Change a setting in spaceport/config.local.toml. VALUE is read as TOML\n    (14, true, [\"a\"], { show = true }), else as text. A value or key\n    Spaceport would not load is refused and the file left as it was.\n    A running Spaceport applies the change at once. KEY is dotted, such\n    as terminal.size. Unsetting a key that is not set exits 4.\nspaceport config check\n    Report settings that do not load and unknown keys, and, when Spaceport\n    runs, fonts that are not installed; exits 1 when there are any.\nspaceport config reload\n    Reread Spaceport's settings files.\nOnly reload needs Spaceport running.";
+
 pub(super) fn config(args: &mut Args) -> Result<ConfigCommand, CliError> {
     let Some(verb) = args.verb() else {
         return Ok(ConfigCommand::Path);
@@ -97,6 +99,9 @@ pub(super) fn config(args: &mut Args) -> Result<ConfigCommand, CliError> {
     })
 }
 
+pub(super) const THEME_USAGE: &str = "spaceport theme [list]\n    The themes there are; * marks the selected one.\nspaceport theme set NAME...\n    Choose and save a theme, or light:NAME,dark:NAME to follow the\n    system appearance. Saved even when Spaceport is not running.";
+pub(super) const FONT_USAGE: &str = "spaceport font [list]\n    The installed font families.\nspaceport font set NAME...\nspaceport font reset\n    The font of every face; reset goes back to the default.\nThese need Spaceport running, which knows the installed fonts.";
+
 pub(super) fn theme(args: &mut Args) -> Result<ThemeCommand, CliError> {
     let family = args.name();
     let Some(verb) = args.verb() else {
@@ -113,6 +118,8 @@ pub(super) fn theme(args: &mut Args) -> Result<ThemeCommand, CliError> {
     })
 }
 
+pub(super) const KEYBINDS_USAGE: &str = "spaceport keybinds [list]\n    The window's shortcuts.\nspaceport keybinds check\n    Herdr's custom commands this client cannot reach; exits 1 if any.";
+
 pub(super) fn keybinds(args: &mut Args) -> Result<KeybindsCommand, CliError> {
     let Some(verb) = args.verb() else {
         return Ok(KeybindsCommand::List);
@@ -123,6 +130,8 @@ pub(super) fn keybinds(args: &mut Args) -> Result<KeybindsCommand, CliError> {
         _ => return Err(unknown("keybinds", verb)),
     })
 }
+
+pub(super) const CAFFEINE_USAGE: &str = "spaceport caffeine [status]\nspaceport caffeine on|off|toggle [--for 90s|30m|2h]\n    Keep the display and the machine awake. With --for (at most 24h),\n    caffeine turns off then, unless it was changed in the meantime.";
 
 pub(super) fn caffeine(args: &mut Args) -> Result<CaffeineCommand, CliError> {
     let seconds = args
@@ -143,6 +152,8 @@ pub(super) fn caffeine(args: &mut Args) -> Result<CaffeineCommand, CliError> {
     Ok(CaffeineCommand::Set { switch, seconds })
 }
 
+pub(super) const SOUND_USAGE: &str = "spaceport sound [list]\n    The notification sounds.\nspaceport sound play [done|request]\n    Play one now, from the file Herdr's sound settings name or the\n    built-in one.";
+
 pub(super) fn sound(args: &mut Args) -> Result<SoundCommand, CliError> {
     let Some(verb) = args.verb() else {
         return Ok(SoundCommand::List);
@@ -160,6 +171,8 @@ pub(super) fn sound(args: &mut Args) -> Result<SoundCommand, CliError> {
     })
 }
 
+pub(super) const INTEGRATIONS_USAGE: &str = "spaceport integrations [list]\n    The agent integrations Herdr offers the window's host. Install them\n    from Spaceport's integrations settings.\nspaceport integrations install-skill\n    Install or update the agent skill for Claude Code and other agents.\n    Runs here; Spaceport need not run.";
+
 pub(super) fn integrations(args: &mut Args) -> Result<IntegrationsCommand, CliError> {
     let Some(verb) = args.verb() else {
         return Ok(IntegrationsCommand::List);
@@ -170,6 +183,8 @@ pub(super) fn integrations(args: &mut Args) -> Result<IntegrationsCommand, CliEr
         _ => return Err(unknown("integrations", verb)),
     })
 }
+
+pub(super) const LANGUAGE_USAGE: &str = "spaceport language [status]\n    The language set, and the locale Spaceport shows: the best match for\n    the setting among the languages there are, else en-US.\nspaceport language list\n    The languages there are, each named in itself, and the en-XA and en-XB\n    pseudo-locales.\nspaceport language set system|TAG\n    Save the language setting: system follows the OS's languages; TAG is\n    a BCP 47 tag such as fr-CA. A running Spaceport switches at once.\nOnly status asks Spaceport; without it, status reports what it would show.";
 
 pub(super) fn language(args: &mut Args) -> Result<LanguageCommand, CliError> {
     let Some(verb) = args.verb() else {

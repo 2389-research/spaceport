@@ -4,7 +4,7 @@
 //! feedback, the browser skill and launch at login (Windows).
 // i18n: migrated
 use super::{
-    CLIPBOARD_POSITIONS, SettingsWindow, on_off, on_off_choices, on_value, position_name,
+    CLIPBOARD_POSITIONS, SettingsWindow, catalog, on_off, on_off_choices, on_value, position_name,
     position_names, ui,
 };
 use crate::settings_window::inputs::{DropdownField, NumberField};
@@ -12,7 +12,7 @@ use crate::{
     agent_skill::{AgentSkill, Choice},
     config::{ChatLauncher, ChatLayoutMode, ClipboardToast, Feature, preferences::Preference},
     herdr_settings::Edit,
-    i18n::{self, fl},
+    i18n::fl,
 };
 use gpui::{prelude::*, *};
 
@@ -61,58 +61,41 @@ impl SettingsWindow {
             ))
             .child(self.language_row(cx))
             .child(
-                ui::row(theme, "general-ports", fl!("settings-general-ports"))
-                    .description(fl!("settings-general-ports-description"))
-                    .switch(self.preference_toggle(
-                        "general-ports-toggle",
-                        self.config.show_listening_ports,
-                        Preference::ShowListeningPorts(!self.config.show_listening_ports),
-                        cx,
-                    )),
+                ui::row(theme, &catalog::GENERAL_PORTS).switch(self.preference_toggle(
+                    "general-ports-toggle",
+                    self.config.show_listening_ports,
+                    Preference::ShowListeningPorts(!self.config.show_listening_ports),
+                    cx,
+                )),
             )
             .child(
-                ui::row(
-                    theme,
-                    "general-smooth-scroll",
-                    fl!("settings-general-smooth-scroll"),
-                )
-                .description(fl!("settings-general-smooth-scroll-description"))
-                .switch(self.preference_toggle(
+                ui::row(theme, &catalog::GENERAL_SMOOTH_SCROLL).switch(self.preference_toggle(
                     "general-smooth-scroll-toggle",
                     self.config.smooth_scroll,
                     Preference::SmoothScroll(!self.config.smooth_scroll),
                     cx,
                 )),
             )
-            .when(cfg!(target_os = "linux"), |page| {
-                page.child(
-                    ui::row(
-                        theme,
-                        "general-window-controls",
-                        fl!("settings-general-window-controls"),
-                    )
-                    .description(fl!("settings-general-window-controls-description"))
-                    .switch(self.preference_toggle(
-                        "general-window-controls-toggle",
-                        self.config.show_window_controls,
-                        Preference::ShowWindowControls(!self.config.show_window_controls),
-                        cx,
-                    )),
-                )
-            })
+            .when(
+                self.available(catalog::GENERAL_WINDOW_CONTROLS.availability, cx),
+                |page| {
+                    page.child(ui::row(theme, &catalog::GENERAL_WINDOW_CONTROLS).switch(
+                        self.preference_toggle(
+                            "general-window-controls-toggle",
+                            self.config.show_window_controls,
+                            Preference::ShowWindowControls(!self.config.show_window_controls),
+                            cx,
+                        ),
+                    ))
+                },
+            )
             .child(ui::section(
                 theme,
                 &fl!("settings-general-section-experimental"),
                 None,
             ))
             .child(
-                ui::row(
-                    theme,
-                    "general-herdr-core",
-                    fl!("settings-general-herdr-core"),
-                )
-                .description(fl!("settings-general-herdr-core-description"))
-                .switch(self.preference_toggle(
+                ui::row(theme, &catalog::GENERAL_HERDR_CORE).switch(self.preference_toggle(
                     "general-herdr-core-toggle",
                     self.config.herdr_core_enabled,
                     Preference::HerdrCoreEnabled(!self.config.herdr_core_enabled),
@@ -136,70 +119,59 @@ impl SettingsWindow {
                 None,
             ))
             .children(self.feature_rows(cx))
-            .children(self.config.features.acp_chats.then(|| {
-                let layouts: Vec<_> = ChatLayoutMode::ALL
-                    .iter()
-                    .map(|&mode| (mode, mode.label()))
-                    .collect();
-                ui::row(
-                    theme,
-                    "general-chat-layout",
-                    fl!("settings-general-chat-layout"),
-                )
-                .description(fl!("settings-general-chat-layout-description"))
-                .control(ui::segmented(
-                    theme,
-                    "general-chat-layout-control",
-                    &layouts,
-                    Some(self.config.chat.layout),
-                    !self.quitting && self.closing.is_none(),
-                    on_value(cx, |this, mode, _, cx| {
-                        this.save_preference(Preference::ChatLayout(mode), cx)
-                    }),
-                ))
-            }))
             .children(
-                self.config
-                    .features
-                    .acp_chats
+                self.available(catalog::GENERAL_CHAT_LAYOUT.availability, cx)
+                    .then(|| {
+                        let layouts: Vec<_> = ChatLayoutMode::ALL
+                            .iter()
+                            .map(|&mode| (mode, mode.label()))
+                            .collect();
+                        ui::row(theme, &catalog::GENERAL_CHAT_LAYOUT).control(ui::segmented(
+                            theme,
+                            "general-chat-layout-control",
+                            &layouts,
+                            Some(self.config.chat.layout),
+                            !self.quitting && self.closing.is_none(),
+                            on_value(cx, |this, mode, _, cx| {
+                                this.save_preference(Preference::ChatLayout(mode), cx)
+                            }),
+                        ))
+                    }),
+            )
+            .children(
+                self.available(catalog::GENERAL_CHAT_FULL_WIDTH.availability, cx)
                     .then(|| self.chat_width_controls(cx)),
             )
-            .children(self.config.features.acp_chats.then(|| {
-                let launchers: Vec<_> = ChatLauncher::ALL
-                    .iter()
-                    .map(|&launcher| (launcher, launcher.label()))
-                    .collect();
-                ui::row(
-                    theme,
-                    "general-chat-launcher",
-                    fl!("settings-general-chat-launcher"),
-                )
-                .description(fl!("settings-general-chat-launcher-description"))
-                .control(ui::segmented(
-                    theme,
-                    "general-chat-launcher-control",
-                    &launchers,
-                    Some(self.config.chat.launcher),
-                    !self.quitting && self.closing.is_none(),
-                    on_value(cx, |this, launcher, _, cx| {
-                        this.save_preference(Preference::ChatLauncher(launcher), cx)
+            .children(
+                self.available(catalog::GENERAL_CHAT_LAUNCHER.availability, cx)
+                    .then(|| {
+                        let launchers: Vec<_> = ChatLauncher::ALL
+                            .iter()
+                            .map(|&launcher| (launcher, launcher.label()))
+                            .collect();
+                        ui::row(theme, &catalog::GENERAL_CHAT_LAUNCHER).control(ui::segmented(
+                            theme,
+                            "general-chat-launcher-control",
+                            &launchers,
+                            Some(self.config.chat.launcher),
+                            !self.quitting && self.closing.is_none(),
+                            on_value(cx, |this, launcher, _, cx| {
+                                this.save_preference(Preference::ChatLauncher(launcher), cx)
+                            }),
+                        ))
                     }),
-                ))
-            }))
-            .children(self.config.features.acp_chats.then(|| {
-                ui::row(
-                    theme,
-                    "general-chat-glide",
-                    fl!("settings-general-chat-glide"),
-                )
-                .description(fl!("settings-general-chat-glide-description"))
-                .switch(self.preference_toggle(
-                    "general-chat-glide-toggle",
-                    self.config.chat.glide,
-                    Preference::ChatGlide(!self.config.chat.glide),
-                    cx,
-                ))
-            }))
+            )
+            .children(
+                self.available(catalog::GENERAL_CHAT_GLIDE.availability, cx)
+                    .then(|| {
+                        ui::row(theme, &catalog::GENERAL_CHAT_GLIDE).switch(self.preference_toggle(
+                            "general-chat-glide-toggle",
+                            self.config.chat.glide,
+                            Preference::ChatGlide(!self.config.chat.glide),
+                            cx,
+                        ))
+                    }),
+            )
             .children(self.render_chat_env_controls(cx))
             .child(ui::section(
                 theme,
@@ -208,13 +180,7 @@ impl SettingsWindow {
             ))
             .child(
                 self.gate_shared(
-                    ui::row(
-                        theme,
-                        "general-copy-on-select",
-                        fl!("settings-general-copy-on-select"),
-                    )
-                    .tag(ui::Source::Herdr)
-                    .description(fl!("settings-general-copy-on-select-description")),
+                    ui::row(theme, &catalog::GENERAL_COPY_ON_SELECT).tag(ui::Source::Herdr),
                 )
                 .switch(
                     ui::toggle(theme, "general-copy-on-select-toggle", copy, ready).when(
@@ -228,34 +194,26 @@ impl SettingsWindow {
                 ),
             )
             .child(
-                ui::row(
-                    theme,
-                    "general-copied-toast",
-                    fl!("settings-general-copied-toast"),
-                )
-                .tag(ui::Source::Sheprd)
-                .control(self.override_dropdown(
-                    DropdownField::ClipboardEnabled,
-                    &on_off(base.0),
-                    &on_off_choices(),
-                    overrides.enabled().map(|on| usize::from(!on)),
-                    cx,
-                )),
+                ui::row(theme, &catalog::GENERAL_COPIED_TOAST)
+                    .tag(ui::Source::Sheprd)
+                    .control(self.override_dropdown(
+                        DropdownField::ClipboardEnabled,
+                        &on_off(base.0),
+                        &on_off_choices(),
+                        overrides.enabled().map(|on| usize::from(!on)),
+                        cx,
+                    )),
             )
             .child(
-                ui::row(
-                    theme,
-                    "general-clipboard-position",
-                    fl!("settings-general-clipboard-position"),
-                )
-                .tag(ui::Source::Sheprd)
-                .control(self.override_dropdown(
-                    DropdownField::ClipboardPosition,
-                    &base_position,
-                    &position_names,
-                    position,
-                    cx,
-                )),
+                ui::row(theme, &catalog::GENERAL_CLIPBOARD_POSITION)
+                    .tag(ui::Source::Sheprd)
+                    .control(self.override_dropdown(
+                        DropdownField::ClipboardPosition,
+                        &base_position,
+                        &position_names,
+                        position,
+                        cx,
+                    )),
             )
             .child(ui::section(
                 theme,
@@ -263,20 +221,16 @@ impl SettingsWindow {
                 None,
             ))
             .child(
-                ui::row(
-                    theme,
-                    "general-browser-skill",
-                    fl!("settings-general-browser-skill"),
-                )
-                .description(if installed {
-                    fl!("settings-general-browser-skill-description")
-                } else {
-                    fl!("settings-general-browser-skill-missing")
-                })
-                .control(
-                    ui::button(theme, skill_id, skill_label, true)
-                        .on_click(cx.listener(move |this, _, _, cx| this.save_skill(choice, cx))),
-                ),
+                ui::row(theme, &catalog::GENERAL_BROWSER_SKILL)
+                    // Until it is installed the row reports that instead.
+                    .when(!installed, |row| {
+                        row.description(fl!("settings-general-browser-skill-missing"))
+                    })
+                    .control(
+                        ui::button(theme, skill_id, skill_label, true).on_click(
+                            cx.listener(move |this, _, _, cx| this.save_skill(choice, cx)),
+                        ),
+                    ),
             )
             .children(self.startup_rows(cx))
     }
@@ -301,14 +255,12 @@ impl SettingsWindow {
             .map(|&feature| {
                 let id = feature.setting_id();
                 let on = features.enabled(feature);
-                ui::row(&self.theme, id, i18n::message(feature.message(), &[]))
-                    .description(i18n::message(feature.description_message(), &[]))
-                    .switch(self.preference_toggle(
-                        format!("{id}-toggle"),
-                        on,
-                        Preference::Feature(feature, !on),
-                        cx,
-                    ))
+                ui::row(&self.theme, &catalog::feature(feature)).switch(self.preference_toggle(
+                    format!("{id}-toggle"),
+                    on,
+                    Preference::Feature(feature, !on),
+                    cx,
+                ))
             })
             .collect()
     }
@@ -362,52 +314,45 @@ impl SettingsWindow {
         let view = cx.entity().downgrade();
         div()
             .child(
-                ui::row(
-                    &self.theme,
-                    "general-chat-full-width",
-                    fl!("settings-general-chat-full-width"),
-                )
-                .description(fl!("settings-general-chat-full-width-description"))
-                .switch(self.preference_toggle(
-                    "general-chat-full-width-toggle",
-                    full,
-                    Preference::ChatMaxWidth(if full {
-                        crate::config::chat::DEFAULT_MAX_WIDTH
-                    } else {
-                        0
-                    }),
-                    cx,
-                )),
-            )
-            .when(!full, |controls| {
-                controls.child(
-                    ui::row(
-                        &self.theme,
-                        "general-chat-width",
-                        fl!("settings-general-chat-width"),
-                    )
-                    .description(fl!("settings-general-chat-width-description"))
-                    .control(ui::number(
-                        &self.theme,
-                        ui::Number {
-                            id: field.selector(),
-                            value,
-                            range: field.range(),
-                            unit: ui::Unit::Pixels,
-                            look: ui::Look::Slider,
-                            enabled: !self.quitting && self.closing.is_none(),
-                        },
-                        self.number_edit_for(field),
-                        on_value(cx, move |this, change, _, cx| {
-                            this.commit_number(field, change, cx)
+                ui::row(&self.theme, &catalog::GENERAL_CHAT_FULL_WIDTH).switch(
+                    self.preference_toggle(
+                        "general-chat-full-width-toggle",
+                        full,
+                        Preference::ChatMaxWidth(if full {
+                            crate::config::chat::DEFAULT_MAX_WIDTH
+                        } else {
+                            0
                         }),
-                        move |window, cx| {
-                            let _ = view.update(cx, |this, cx| {
-                                this.begin_number_edit(field, value, window, cx)
-                            });
-                        },
-                    )),
-                )
-            })
+                        cx,
+                    ),
+                ),
+            )
+            .when(
+                self.available(catalog::GENERAL_CHAT_WIDTH.availability, cx),
+                |controls| {
+                    controls.child(ui::row(&self.theme, &catalog::GENERAL_CHAT_WIDTH).control(
+                        ui::number(
+                            &self.theme,
+                            ui::Number {
+                                id: field.selector(),
+                                value,
+                                range: field.range(),
+                                unit: ui::Unit::Pixels,
+                                look: ui::Look::Slider,
+                                enabled: !self.quitting && self.closing.is_none(),
+                            },
+                            self.number_edit_for(field),
+                            on_value(cx, move |this, change, _, cx| {
+                                this.commit_number(field, change, cx)
+                            }),
+                            move |window, cx| {
+                                let _ = view.update(cx, |this, cx| {
+                                    this.begin_number_edit(field, value, window, cx)
+                                });
+                            },
+                        ),
+                    ))
+                },
+            )
     }
 }

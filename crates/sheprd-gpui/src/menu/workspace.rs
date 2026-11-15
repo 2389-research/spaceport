@@ -504,20 +504,12 @@ impl SheprdWindow {
 
     /// The collapsed set the sidebar paints for the selected endpoint.
     pub(super) fn collapsed_repos_for_selection(&self) -> &std::collections::HashSet<String> {
-        if self.selected_endpoint == 0 {
-            &self.collapsed_repos
-        } else {
-            &self.endpoints[self.selected_endpoint].collapsed_repos
-        }
+        &self.endpoints[self.selected_endpoint].collapsed_repos
     }
 
     /// The collapsed set the sidebar paints for the selected endpoint.
     pub(super) fn collapsed_repos_mut(&mut self) -> &mut std::collections::HashSet<String> {
-        if self.selected_endpoint == 0 {
-            &mut self.collapsed_repos
-        } else {
-            &mut self.endpoints[self.selected_endpoint].collapsed_repos
-        }
+        &mut self.endpoints[self.selected_endpoint].collapsed_repos
     }
 
     pub(super) fn toggle_selected_group(&mut self, cx: &mut Context<Self>) {

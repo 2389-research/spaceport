@@ -3,7 +3,6 @@
 
 use super::*;
 use crate::CoreBackend;
-use sheprd_backend::Backend as _;
 use std::os::unix::fs::PermissionsExt as _;
 
 #[test]

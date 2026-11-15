@@ -1,4 +1,5 @@
 use super::*;
+use crate::chat::prepared::tool_text;
 use sheprd_chat_protocol::ToolContent;
 
 mod states;

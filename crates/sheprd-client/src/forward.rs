@@ -126,6 +126,12 @@ impl PortForward {
         self.events.try_recv().ok()
     }
 
+    /// Whether the master still runs, so a listener it reported is still its
+    /// own. Never blocks; it does not wait for the worker to report the end.
+    pub fn alive(&self) -> bool {
+        matches!(master(&self.slot), Master::Running)
+    }
+
     /// Kills the master without waiting for it; the worker reaps it. Safe on
     /// the UI thread and while quitting, when the worker may never run again.
     pub fn stop(&self) {
@@ -153,6 +159,10 @@ impl PortForward {
     }
 
     pub fn try_event(&self) -> Option<ForwardEvent> {
+        match *self {}
+    }
+
+    pub fn alive(&self) -> bool {
         match *self {}
     }
 

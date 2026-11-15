@@ -7,21 +7,13 @@ pub(super) use text::bytes;
 mod tests;
 
 use super::{Context, Output, unexpected};
-use crate::{
-    cli::control::{HostCommand, PortsCommand},
-    control::protocol::{
-        Request, Response,
-        hosts::{HostOp, Reply},
-    },
+use crate::control::protocol::{
+    Request, Response,
+    hosts::{HostOp, Reply},
 };
 
-pub(super) fn host(command: HostCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        HostCommand::List => HostOp::List,
-        HostCommand::Select(id) => HostOp::Select { id },
-        HostCommand::Mute { host, muted } => HostOp::Mute { host, muted },
-        HostCommand::Tag { id, tags } => HostOp::Tag { id, tags },
-    };
+/// Prints what `spaceport host` answers.
+pub(super) fn host(op: HostOp, context: &Context) -> crate::Result<Output> {
     match context.call(Request::Host, op)? {
         Response::Done { message } => Ok(Output::message(message)),
         Response::Host {
@@ -31,13 +23,9 @@ pub(super) fn host(command: HostCommand, context: &Context) -> crate::Result<Out
     }
 }
 
-pub(super) fn ports(command: PortsCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        PortsCommand::List => HostOp::Ports,
-        PortsCommand::Forward(port) => HostOp::Forward { port },
-        PortsCommand::Unforward(port) => HostOp::Unforward { port },
-        PortsCommand::Open(port) => HostOp::OpenPort { port },
-    };
+/// Prints what `spaceport ports` answers. Its operations are the host
+/// family's too, so the word the user typed picks the printing.
+pub(super) fn ports(op: HostOp, context: &Context) -> crate::Result<Output> {
     match context.call(Request::Host, op)? {
         Response::Done { message } => Ok(Output::message(message)),
         Response::Host {

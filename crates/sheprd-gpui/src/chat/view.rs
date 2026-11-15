@@ -36,7 +36,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use sheprd_chat_protocol::Status;
-use sheprd_client::protocol::{PaneSurfaceFrame, SurfaceRect};
+use sheprd_client::protocol::PaneSurfaceFrame;
 
 /// Where a chat view goes: over a Herdr pane's cells, at their place on the
 /// terminal canvas, or filling a herdr-core pane of the given size.
@@ -55,22 +55,6 @@ impl Place {
             Self::Fill(size) => Bounds::new(Point::default(), size),
         }
     }
-}
-
-/// Where a pane's cells are, relative to the terminal canvas: the box the
-/// chat view paints in and takes the pointer over, and that its composer
-/// places the IME in.
-pub(crate) fn pane_bounds(rect: SurfaceRect, cell_width: f32, cell_height: f32) -> Bounds<Pixels> {
-    Bounds::new(
-        point(
-            px(f32::from(rect.x) * cell_width),
-            px(f32::from(rect.y) * cell_height),
-        ),
-        size(
-            px(f32::from(rect.width) * cell_width),
-            px(f32::from(rect.height) * cell_height),
-        ),
-    )
 }
 
 /// Small text needs text contrast even when the theme's colored marks use 3:1.
@@ -183,7 +167,9 @@ impl SheprdWindow {
         let Some(surface) = surface.filter(|surface| surface.popup.is_none()) else {
             return Vec::new();
         };
-        let cell_height = self.config.terminal.line_height();
+        // A pane's cells relative to the terminal canvas: the box its chat
+        // view paints in, takes the pointer over, and places the IME in.
+        let metrics = self.metrics();
         surface
             .panes
             .iter()
@@ -194,7 +180,7 @@ impl SheprdWindow {
                 if !chat.available() {
                     return Vec::new();
                 }
-                let bounds = pane_bounds(pane.inner_rect, self.cell_width, cell_height);
+                let bounds = metrics.bounds(pane.inner_rect);
                 if self.chats.raw(&pane.pane_id) {
                     return vec![self.render_chat_switch(&pane.pane_id, Place::At(bounds), cx)];
                 }
@@ -203,11 +189,7 @@ impl SheprdWindow {
                     if layout.conversation.height > 0 {
                         views.push(self.render_chat(
                             chat,
-                            Place::At(pane_bounds(
-                                layout.conversation,
-                                self.cell_width,
-                                cell_height,
-                            )),
+                            Place::At(metrics.bounds(layout.conversation)),
                             cx,
                         ));
                     }
@@ -520,10 +502,8 @@ impl SheprdWindow {
         }
         self.focus_chat_surface(pane_id, cx);
         if let Some(pane) = self.chats.pane_mut(pane_id)
-            && pane.menu.is_some()
+            && pane.close_menu()
         {
-            pane.menu = None;
-            pane.menu_search = None;
             cx.notify();
         }
     }

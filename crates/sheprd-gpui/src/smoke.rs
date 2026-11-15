@@ -221,7 +221,7 @@ fn create_external_workspace(
             } => {
                 let responded = Instant::now();
                 let (expected, sent) = request.as_ref().context("unsolicited external response")?;
-                if &request_id != expected || response.get("error").is_some() {
+                if &request_id != expected || sheprd_client::response::result(&response).is_err() {
                     bail!("external workspace response: {response}");
                 }
                 let id = response["result"]["workspace"]["workspace_id"]

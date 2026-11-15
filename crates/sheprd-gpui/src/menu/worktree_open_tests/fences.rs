@@ -55,11 +55,11 @@ fn open_worktree_replies_cannot_revive_dismissed_or_stale_pickers(cx: &mut TestA
             view.live.dialog_response = Some(("old-open".into(), Some(Ok(opened.clone()))));
             view.update_workspace_dialog(window, cx);
             assert_eq!(view.menu.opening.as_deref(), Some("open"));
-            view.collapsed_repos.insert(crate::sidebar::layout_tests::REPO_KEY.into());
+            view.endpoints[0].collapsed_repos.insert(crate::sidebar::layout_tests::REPO_KEY.into());
             view.live.dialog_response = Some(("open".into(), Some(Ok(opened))));
             view.update_workspace_dialog(window, cx);
             assert!(view.menu.page.is_none());
-            assert!(view.collapsed_repos.is_empty());
+            assert!(view.endpoints[0].collapsed_repos.is_empty());
             assert_eq!(view.pending_navigation, Some(crate::NavigationTarget::Workspace("w6".into())));
         });
     });
@@ -239,7 +239,9 @@ fn open_worktree_branch_only_parent_membership_preserves_correlated_navigation(
             view.open_workspace_dialog(WorkspaceAction::OpenWorktree, window, cx);
             assert!(view.menu.error.is_none());
             assert!(view.menu.worktree_open.as_ref().unwrap().pending.is_some());
-            view.collapsed_repos.insert("/remote/repo/.git".into());
+            view.endpoints[0]
+                .collapsed_repos
+                .insert("/remote/repo/.git".into());
         });
     });
     for (method, response) in [
@@ -318,7 +320,11 @@ fn open_worktree_branch_only_parent_membership_preserves_correlated_navigation(
                     assert_eq!(view.menu.opening, pending);
                 } else {
                     assert!(view.menu.page.is_none());
-                    assert!(!view.collapsed_repos.contains("/remote/repo/.git"));
+                    assert!(
+                        !view.endpoints[0]
+                            .collapsed_repos
+                            .contains("/remote/repo/.git")
+                    );
                     assert_eq!(
                         view.pending_navigation,
                         Some(crate::NavigationTarget::Workspace(

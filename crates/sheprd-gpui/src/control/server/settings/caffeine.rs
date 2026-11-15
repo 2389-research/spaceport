@@ -7,7 +7,7 @@ use crate::{
     control::protocol::{
         ErrorCode, Response,
         app::Switch,
-        settings::{MAX_CAFFEINE_SECONDS, Reply},
+        settings::{CAFFEINE_WAIT_SECONDS, MAX_CAFFEINE_SECONDS, Reply},
     },
 };
 use gpui::{App, Global};
@@ -18,7 +18,7 @@ use std::{
 };
 
 /// How long a hold or release may take to settle.
-const SETTLE: Duration = Duration::from_secs(5);
+const SETTLE: Duration = Duration::from_secs(CAFFEINE_WAIT_SECONDS);
 /// How often a timed hold looks whether it has settled.
 const POLL: Duration = Duration::from_millis(50);
 

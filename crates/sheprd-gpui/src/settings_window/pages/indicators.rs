@@ -2,11 +2,11 @@
 //! edge rail. Each card's preview is the sidebar's own marks, so a mark that
 //! moves there moves here too.
 // i18n: migrated
-use super::{SettingsWindow, ui};
+use super::{SettingsWindow, catalog, ui};
 use crate::direction::Logical;
 use crate::{
     config::{StatusIcons, corners, preferences::Preference},
-    i18n::{self, fl},
+    i18n,
     settings_window::controls::indicators::set_messages,
     sidebar::{Indicators, status_indicator},
 };
@@ -43,32 +43,27 @@ impl SettingsWindow {
             .flex()
             .flex_col()
             .child(
-                ui::row(
-                    theme,
-                    "indicators-edge-rail",
-                    fl!("settings-indicators-edge-rail"),
-                )
-                .tag(ui::Source::Sheprd)
-                .description(fl!("settings-indicators-edge-rail-description"))
-                .switch(self.preference_toggle(
-                    "indicators-edge-rail-toggle",
-                    rail,
-                    Preference::EdgeRail(!rail),
-                    cx,
-                )),
+                ui::row(theme, &catalog::INDICATORS_EDGE_RAIL)
+                    .tag(ui::Source::Sheprd)
+                    .switch(self.preference_toggle(
+                        "indicators-edge-rail-toggle",
+                        rail,
+                        Preference::EdgeRail(!rail),
+                        cx,
+                    )),
             )
             .child(ui::section(
                 theme,
-                &fl!("settings-indicators-sets"),
+                &catalog::INDICATORS_SETS.title(),
                 Some(ui::Source::Sheprd),
             ))
             .child(
                 div()
                     .relative()
-                    .debug_selector(|| "indicators-sets".into())
+                    .debug_selector(|| catalog::INDICATORS_SETS.id.into())
                     // Search scrolls to the cards by these bounds.
                     .child(crate::settings_window::search::track_bounds(
-                        "indicators-sets".into(),
+                        catalog::INDICATORS_SETS.id.into(),
                     ))
                     .row()
                     .flex_wrap()

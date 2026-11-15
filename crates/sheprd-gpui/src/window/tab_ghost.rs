@@ -95,11 +95,11 @@ impl SheprdWindow {
     pub(super) fn tab_ghost(&self) -> Option<Ghost> {
         let drag = self.tab_drag.as_ref().filter(|drag| drag.floating())?;
         let off = f32::from((drag.pointer.y - drag.origin.y).abs()) > self.tab_strip_height();
-        (off || drag.outside).then(|| Ghost {
+        (off || drag.outside()).then(|| Ghost {
             pick: drag.pick.clone(),
             group: drag.group,
             at: drag.pointer,
-            outside: drag.outside,
+            outside: drag.outside(),
         })
     }
 
@@ -139,7 +139,7 @@ impl SheprdWindow {
         return self
             .tab_drag
             .as_ref()
-            .is_some_and(|drag| drag.float != super::tab_float::Float::Failed);
+            .is_some_and(|drag| drag.float() != super::tab_float::Float::Failed);
         #[cfg(not(target_os = "macos"))]
         false
     }

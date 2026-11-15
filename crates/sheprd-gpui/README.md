@@ -809,7 +809,10 @@ server's own address for one bound to a single address. Its local port is the
 server's own number when that is free (a privileged port moves up by 10000, as
 **Forward port…** moves it), otherwise any free one. The page opens only once SSH
 itself reports the forward bound, never because something answers on the
-port. Tunnels do not share a `ControlMaster` connection, so they need
+port. A port this window already forwards from the remote's `localhost`
+(**Forward port…** or `spaceport ports forward`) opens through that forward
+instead of a second tunnel: at once when it listens, and with a notice to try
+again while it is still connecting. Tunnels do not share a `ControlMaster` connection, so they need
 noninteractive authentication (keys or an agent). The tunnel stays up while
 the port is listed, is reused by later clicks, and closes when the port
 stops listening, the host disconnects, scanning is turned off, or the window

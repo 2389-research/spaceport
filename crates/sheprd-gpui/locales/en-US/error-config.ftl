@@ -55,7 +55,6 @@ error-config-theme-parse-missing-palette-color = expected index=color
 error-config-theme-parse-palette-index = palette index must be between 0 and 255
 
 # The [ssh] table: hosts whose key the app does not verify.
-error-config-ssh-invalid-table = ssh must be a table and ssh.skip_host_key_verification a list of SSH targets
 # $target is the entry as the config wrote it, quoted.
 error-config-ssh-invalid-target = ssh.skip_host_key_verification: { $target } is not an SSH target
 # $limit is the most hosts the list may name.

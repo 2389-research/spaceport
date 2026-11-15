@@ -218,11 +218,7 @@ impl SheprdWindow {
             return None;
         };
         let index = self.endpoints.iter().position(|e| e.id == *endpoint)?;
-        let live = if index == self.selected_endpoint {
-            &self.live
-        } else {
-            &self.endpoints[index].live
-        };
+        let live = self.live_of(index);
         preview::preview(
             live.snapshot.as_deref(),
             live.surface.as_ref(),

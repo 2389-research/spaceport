@@ -4,8 +4,6 @@
 error-daemon-cancelled = daemon startup cancelled
 # $status is how the server ended, in the system's words.
 error-daemon-exited = herdr server exited before accepting connections: { $status }. Check the Herdr server log.
-# The server reported an error without saying what it was.
-error-daemon-response = Invalid daemon error
 # $error is the system's text.
 error-daemon-spawn = Could not start herdr server: { $error }. Use Terminal > Reconnect to retry.
 # $path is the server's socket.

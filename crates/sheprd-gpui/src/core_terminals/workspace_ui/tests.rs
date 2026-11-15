@@ -87,6 +87,8 @@ fn a_closed_core_page_reopens_in_its_exact_group(cx: &mut gpui::TestAppContext) 
     });
 }
 
+#[cfg(unix)]
+mod backend_identity;
 mod endpoint_independent_join;
 mod hub_target;
 #[cfg(unix)]
@@ -564,7 +566,7 @@ fn a_pending_core_pane_cannot_take_focus_after_its_group_is_hidden(cx: &mut gpui
             store.open_core(
                 &key,
                 Some(Location::CoreTerminal {
-                    panes: panes.clone(),
+                    panes,
                     observe: false,
                 }),
             )
@@ -587,7 +589,8 @@ fn a_pending_core_pane_cannot_take_focus_after_its_group_is_hidden(cx: &mut gpui
                 )
             });
             view.core_terminals
-                .show_for_test(tab, panes, false, Vec::new());
+                .tabs
+                .insert(tab, crate::core_terminals::TabPanes::new(terminal.clone()));
             view.core_terminals
                 .views
                 .insert((tab, terminal), pane.clone());

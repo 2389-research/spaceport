@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     SheprdWindow,
-    browser::{Slot, Tab, TabId},
+    browser::{Location, Slot, Store, Tab, TabId},
     i18n::fl,
     sidebar::Indicators,
     tab_layout::panes::{PaneChrome, PaneContext, PaneFace},
@@ -39,6 +39,13 @@ pub(crate) struct SplitDrag {
     axis: Axis,
 }
 
+#[cfg(test)]
+impl SplitDrag {
+    pub(super) fn for_test(tab: TabId, path: Vec<bool>, axis: Axis) -> Self {
+        Self { tab, path, axis }
+    }
+}
+
 impl SheprdWindow {
     pub(crate) fn render_core_terminal_tab(
         &mut self,
@@ -46,11 +53,15 @@ impl SheprdWindow {
         tab: &Tab,
         cx: &mut Context<Self>,
     ) -> AnyElement {
-        let Some(shown) = self.core_terminals.tabs.get(&tab.id) else {
+        let (Some(shown), Some(Location::CoreTerminal { panes, .. })) =
+            (self.core_terminals.tabs.get_mut(&tab.id), &tab.location)
+        else {
             return self.core_placeholder();
         };
-        if shown.panes.len() == 1 {
-            let key = (tab.id, shown.panes.first().clone());
+        // Another window may have closed a pane since this one's last tick.
+        shown.follow(panes);
+        if panes.len() == 1 {
+            let key = (tab.id, panes.first().clone());
             let Some(view) = self.core_terminals.views.get(&key).cloned() else {
                 return self.core_placeholder();
             };
@@ -60,9 +71,17 @@ impl SheprdWindow {
         let zoom = shown
             .zoom_at(crate::motion::now())
             .map(|(zoomed, shown)| (zoomed.clone(), shown));
-        let rects = shown.panes.rects();
-        let root = shown.panes.root().clone();
         let active = shown.active.clone();
+        // A split being dragged draws where it is held; the store has the
+        // rest of the tree.
+        let mut panes = panes.clone();
+        if let Some((drag, share)) = &self.core_terminals.dragging
+            && drag.tab == tab.id
+        {
+            panes.set_share(&drag.path, *share);
+        }
+        let rects = panes.rects();
+        let root = panes.root();
         let chrome = self.tab_layout().panes();
         let indicators = self.core_indicators(cx);
         let draw = Draw {
@@ -80,7 +99,7 @@ impl SheprdWindow {
         // A zoom that has landed hides the split; one in motion grows over it
         // from the pane's place, and shrinks back to it.
         let landed = zoom.as_ref().is_some_and(|(_, shown)| *shown >= 1.);
-        let split = (!landed).then(|| self.core_node(&draw, &root, &mut Vec::new(), cx));
+        let split = (!landed).then(|| self.core_node(&draw, root, &mut Vec::new(), cx));
         let zoomed = zoom.and_then(|(zoomed, shown)| {
             let (_, from) = rects.iter().find(|(pane, _)| *pane == zoomed)?;
             let lerp = |from: f32, to: f32| from + (to - from) * shown;
@@ -315,14 +334,25 @@ impl SheprdWindow {
         )
     }
 
-    /// Moves the split a drag holds; true when it moved.
-    fn set_core_share(&mut self, drag: &SplitDrag, share: Share) -> bool {
-        let Some(shown) = self.core_terminals.tabs.get_mut(&drag.tab) else {
+    /// Moves the split a drag holds, in this window only; true when it
+    /// moved.
+    pub(super) fn set_core_share(&mut self, drag: &SplitDrag, share: Share) -> bool {
+        let held = Some((drag.clone(), share));
+        if self.core_terminals.dragging == held {
             return false;
+        }
+        self.core_terminals.dragging = held;
+        true
+    }
+
+    /// Hands the split a finished drag held to the tab, which saves it once.
+    pub(super) fn drop_core_split(&mut self, cx: &mut Context<Self>) {
+        let Some((drag, share)) = self.core_terminals.dragging.take() else {
+            return;
         };
-        let moved = shown.panes.set_share(&drag.path, share);
-        shown.unsaved |= moved;
-        moved
+        Store::update(cx, |store| {
+            store.edit_panes(drag.tab, |panes| panes.set_share(&drag.path, share))
+        });
     }
 
     /// What a herdr-core tab shows before its panes have views.

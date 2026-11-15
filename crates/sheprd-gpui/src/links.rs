@@ -6,10 +6,14 @@
 //! Both are optional. A daemon that does not advertise them keeps the
 //! row-local detector in `terminal::links`, which needs no round trip.
 
-use crate::terminal::{InputTarget, wheel_target};
+use crate::terminal::{CellMetrics, InputTarget, wheel_target};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use sheprd_client::{ClientEvent, Method, protocol::PaneSurfaceFrame, protocol::SurfaceRect};
+use sheprd_client::{
+    ClientEvent, Method,
+    protocol::{PaneSurfaceFrame, SurfaceRect},
+    response::{self, EndpointErrorCode},
+};
 
 /// The resolve and activate requests in flight on one connection. Their
 /// responses stop here instead of reaching the live state, so a hover that
@@ -167,8 +171,8 @@ impl LinkCell {
             return None;
         }
         let rect = pane.inner_rect;
-        let col = ((x / cell_width).floor() as u16).checked_sub(rect.x)?;
-        let row = ((y / cell_height).floor() as u16).checked_sub(rect.y)?;
+        let (col, row) = CellMetrics::new(cell_width, cell_height).cell_at(x, y);
+        let (col, row) = (col.checked_sub(rect.x)?, row.checked_sub(rect.y)?);
         (col < rect.width && row < rect.height).then(|| Self {
             boot: surface.boot_id.clone(),
             pane_id,
@@ -252,13 +256,8 @@ impl ResolvedLink {
             regions: Vec<LinkRegion>,
         }
         let rect = cell.inner_rect;
-        let regions = response
-            .get("error")
-            .is_none_or(Value::is_null)
-            .then(|| response.get("result"))
-            .flatten()
-            .filter(|result| result["type"] == "pane_link_resolved")
-            .and_then(|result| Resolved::deserialize(result).ok())
+        let regions = response::typed::<Resolved>(response, "pane_link_resolved")
+            .ok()
             .map(|resolved| resolved.regions)
             .filter(|regions| {
                 regions.len() <= usize::from(rect.height)
@@ -313,17 +312,16 @@ impl From<crate::Result<Value>> for Activation {
         let Ok(response) = response else {
             return Self::Declined(None);
         };
-        if let Some(error) = response.get("error").filter(|error| !error.is_null()) {
-            return if error["code"] == "plugin_link_failed" {
-                Self::HandlerFailed(crate::daemon::Error::Response(error.clone()).into())
-            } else {
-                Self::Declined(None)
-            };
-        }
-        let result = &response["result"];
-        if result["type"] != "pane_link_activated" {
-            return Self::Declined(None);
-        }
+        let result = match response::tagged(&response, "pane_link_activated") {
+            Ok(result) => result,
+            Err(
+                error @ sheprd_client::Error::Endpoint {
+                    code: EndpointErrorCode::PluginLinkFailed,
+                    ..
+                },
+            ) => return Self::HandlerFailed(error.into()),
+            Err(_) => return Self::Declined(None),
+        };
         if result["handled"] == true {
             return Self::Handled;
         }

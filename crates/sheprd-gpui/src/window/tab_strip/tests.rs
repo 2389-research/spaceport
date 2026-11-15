@@ -392,7 +392,7 @@ fn draw(cx: &mut VisualTestContext) {
 
 fn target(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Option<(usize, String)> {
     view.read_with(cx, |view, _| {
-        let target = view.tab_drag.as_ref()?.target.as_ref()?;
+        let target = view.tab_drag.as_ref()?.target()?;
         let beside = match &target.beside {
             crate::reorder::Beside::Before(Pick::Herdr(id)) => format!("before {id}"),
             crate::reorder::Beside::After(Pick::Herdr(id)) => format!("after {id}"),
@@ -419,13 +419,13 @@ fn holding_a_tab_lifts_it_bigger_and_a_release_picks_the_gap(cx: &mut TestAppCon
     // Held in place, it lifts without moving, on a card larger than it.
     cx.simulate_mouse_down(a.center(), MouseButton::Left, Modifiers::default());
     view.read_with(cx, |view, _| {
-        assert!(view.tab_drag.as_ref().unwrap().lifted.is_none())
+        assert!(!view.tab_drag.as_ref().unwrap().floating())
     });
     cx.executor().advance_clock(crate::reorder::LIFT_DELAY);
     cx.run_until_parked();
     draw(cx);
     view.read_with(cx, |view, _| {
-        assert!(view.tab_drag.as_ref().unwrap().lifted.is_some())
+        assert!(view.tab_drag.as_ref().unwrap().floating())
     });
     assert_eq!(target(&view, cx), None);
     assert_eq!(cx.debug_bounds("tab-a").unwrap(), a);
@@ -650,6 +650,7 @@ fn a_bottom_strip_still_reorders_by_dragging(cx: &mut TestAppContext) {
 /// A chosen page's tab stays in view as its title comes in.
 mod group_drop;
 mod page_title;
+mod settle;
 mod tear_off;
 
 /// The dividers between groups, and the grips that drag them.

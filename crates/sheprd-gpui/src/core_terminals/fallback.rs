@@ -9,7 +9,7 @@
 use super::{CoreTerminalView, Start, worker};
 use crate::SheprdWindow;
 use gpui::{prelude::*, *};
-use sheprd_backend::{Backend as _, Role, Size, Spawn, TerminalId};
+use sheprd_backend::{Role, Size, Spawn, TerminalId};
 use std::sync::mpsc;
 
 /// The name of the shell the window shows in place of Herdr 1.

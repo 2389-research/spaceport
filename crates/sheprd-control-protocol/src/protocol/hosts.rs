@@ -47,7 +47,14 @@ impl HostOp {
     pub fn wait_seconds(&self) -> u64 {
         match self {
             Self::OpenPort { .. } => FORWARD_WAIT_SECONDS,
-            _ => 0,
+            Self::List
+            | Self::Select { .. }
+            | Self::Mute { .. }
+            | Self::Tag { .. }
+            | Self::Ports
+            | Self::Forward { .. }
+            | Self::Unforward { .. }
+            | Self::Usage => 0,
         }
     }
 }

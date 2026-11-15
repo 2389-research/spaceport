@@ -41,5 +41,5 @@ See [macOS preview verification](scripts/release/README.md#spaceport-macos-previ
 for the artifact checks and publishing process.
 
 Broader platform packaging and update qualification remain release gates.
-The inherited production release workflow does not establish Spaceport release support.
+The inherited production release workflow has been removed and establishes no Spaceport release support.
 See the [Spaceport specification](docs/spaceport/START_HERE.md) for current scope.

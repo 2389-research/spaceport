@@ -254,7 +254,10 @@ pub(super) fn check_collapse_toggle(
             } else {
                 "\u{25be}"
             }));
-            assert_eq!(view.collapsed_repos.contains(REPO_KEY), collapsed);
+            assert_eq!(
+                view.endpoints[0].collapsed_repos.contains(REPO_KEY),
+                collapsed
+            );
             assert_eq!(
                 !cx.global::<TextProbes>().0.contains_key("sidebar-child"),
                 collapsed

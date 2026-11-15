@@ -41,7 +41,7 @@ fn system_notification_click_opens_its_origin_and_rejects_a_reconnect(
                 .toasts
                 .entries
                 .iter()
-                .all(|(_, n)| !n.visible)
+                .all(|(_, n)| !n.is_visible())
         );
     });
 
