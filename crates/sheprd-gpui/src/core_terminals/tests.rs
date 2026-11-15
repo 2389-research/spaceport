@@ -1,6 +1,7 @@
 mod chats;
 mod focus;
 mod keys;
+mod pane_owner;
 mod panes;
 mod paste;
 mod screen;

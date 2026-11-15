@@ -472,6 +472,26 @@ impl Store {
         changed
     }
 
+    /// Changes a Core terminal tab's pane tree in place, and saves when the
+    /// tree changed. Every window draws this one tree. `None` when `id` is
+    /// not a Core terminal tab.
+    pub(crate) fn edit_panes<R>(
+        &mut self,
+        id: TabId,
+        edit: impl FnOnce(&mut crate::core_terminals::panes::Panes) -> R,
+    ) -> Option<R> {
+        let tab = self.tabs.iter_mut().find(|tab| tab.id == id)?;
+        let Some(Location::CoreTerminal { panes, .. }) = &mut tab.location else {
+            return None;
+        };
+        let before = panes.clone();
+        let result = edit(panes);
+        if *panes != before {
+            self.save();
+        }
+        Some(result)
+    }
+
     /// Drops the tabs of workspaces the daemon closed.
     pub(crate) fn forget_workspaces(&mut self, scope: &Scope, closed: &[String]) -> bool {
         self.closed.forget_workspaces(scope, closed);
