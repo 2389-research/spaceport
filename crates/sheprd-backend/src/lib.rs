@@ -19,32 +19,14 @@ pub use terminal::{
     SurfaceUpdate, TerminalId, TerminalInfo,
 };
 
-/// Which Herdr runs a host's terminals.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum Generation {
-    /// The Herdr 1 daemon: it owns workspaces, tabs, and panes and sends rendered cells.
-    Herdr1,
-    /// herdr-core (`hc`): it owns terminals only and streams their raw output.
-    Herdr2,
-}
-
-/// One host's terminals, whichever generation runs them.
+/// What attaches one host's terminals.
 ///
-/// Shared between workers, so implementations are `Send + Sync`. Every
-/// method may block on the backend: never call one on the UI thread.
+/// Moved to the worker thread that attaches, so implementations are
+/// `Send + Sync`. `attach` may block on the host: never call it on the UI
+/// thread.
 pub trait Backend: Send + Sync {
     type Error: std::error::Error + Send + Sync + 'static;
     type Terminal: Terminal<Error = Self::Error>;
-    type Changes: Changes<Error = Self::Error>;
-
-    fn generation(&self) -> Generation;
-
-    /// The terminals running now.
-    fn terminals(&self) -> Result<Vec<TerminalInfo>, Self::Error>;
-
-    /// The terminals now, and every change after that snapshot with no gap
-    /// between the two.
-    fn watch(&self) -> Result<(Vec<TerminalInfo>, Self::Changes), Self::Error>;
 
     /// Shows `id` at `size`. An observer never types into or resizes it.
     fn attach(
@@ -53,12 +35,6 @@ pub trait Backend: Send + Sync {
         size: Size,
         role: Role,
     ) -> Result<Self::Terminal, Self::Error>;
-
-    /// Starts a terminal; an empty `argv` starts the host's shell.
-    fn spawn(&self, spawn: &Spawn) -> Result<TerminalInfo, Self::Error>;
-
-    /// Ends `id` and its program.
-    fn kill(&self, id: &TerminalId) -> Result<(), Self::Error>;
 }
 
 /// One attached terminal, owned by the worker that drains it.
@@ -75,12 +51,4 @@ pub trait Terminal: Send {
 
     /// What changed, waiting at most `timeout`; empty when nothing did.
     fn next(&mut self, timeout: Duration) -> Result<Vec<SurfaceUpdate>, Self::Error>;
-}
-
-/// Changes to a host's terminals after a `Backend::watch` snapshot.
-pub trait Changes: Send {
-    type Error: std::error::Error + Send + Sync + 'static;
-
-    /// What changed, waiting at most `timeout`; empty when nothing did.
-    fn next(&mut self, timeout: Duration) -> Result<Vec<Change>, Self::Error>;
 }

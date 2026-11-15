@@ -283,7 +283,7 @@ impl SheprdWindow {
     /// A herdr-core tab in the active group splits with the chat instead.
     pub(crate) fn start_chat_or_flash(&mut self, agent: Agent, cx: &mut Context<Self>) {
         let started = match self.core_chat_group_tab(None, cx) {
-            Some(tab) => self.start_core_chat(agent, tab),
+            Some(tab) => self.start_core_chat(agent, tab, cx),
             None if self.selected_core_group().is_some() => Err(Error::CoreTerminalRequired),
             None => self.start_chat(agent, None),
         };
@@ -298,7 +298,7 @@ impl SheprdWindow {
     /// A herdr-core tab the strip shows splits with the chat instead.
     pub(crate) fn start_chat_in(&mut self, agent: Agent, group: GroupId, cx: &mut Context<Self>) {
         if let Some(tab) = self.core_chat_group_tab(Some(group), cx) {
-            if let Err(error) = self.start_core_chat(agent, tab) {
+            if let Err(error) = self.start_core_chat(agent, tab, cx) {
                 self.flash_chat_error(&error, cx);
             }
             cx.notify();

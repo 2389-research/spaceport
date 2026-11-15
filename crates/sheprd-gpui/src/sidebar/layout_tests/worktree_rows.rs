@@ -49,7 +49,10 @@ fn the_workspace_menu_folds_and_unfolds_a_worktree_group(cx: &mut gpui::TestAppC
             let view = view.read(cx);
             // Folding is the client's own view of the list, not a daemon request.
             assert!(view.menu.page.is_none(), "{item} left the menu open");
-            assert_eq!(view.collapsed_repos.contains(REPO_KEY), collapsed);
+            assert_eq!(
+                view.endpoints[0].collapsed_repos.contains(REPO_KEY),
+                collapsed
+            );
             assert_eq!(
                 !cx.global::<TextProbes>().0.contains_key("sidebar-child"),
                 collapsed,

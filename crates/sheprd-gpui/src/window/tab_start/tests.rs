@@ -23,6 +23,6 @@ fn tab_response_names_both_tab_and_pane() {
 fn tab_response_keeps_daemon_refusal() {
     assert!(matches!(
         created_tab(&json!({"error":{"code":"denied","message":"no"}})),
-        Err(crate::Error::Daemon(crate::daemon::Error::Response(_)))
+        Err(crate::Error::Client(sheprd_client::Error::Endpoint { .. }))
     ));
 }

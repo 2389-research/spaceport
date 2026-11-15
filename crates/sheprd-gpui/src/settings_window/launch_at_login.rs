@@ -3,7 +3,7 @@
 //! time it comes to the front (Task Manager may have changed it meanwhile),
 //! and after each change, so the row shows what Windows will do.
 // i18n: migrated
-use super::{SettingsWindow, ui};
+use super::{SettingsWindow, catalog, ui};
 use crate::i18n::{Localize, fl};
 use crate::launch_at_login::{self, State};
 use gpui::{prelude::*, *};
@@ -77,12 +77,7 @@ impl SettingsWindow {
         let state = self.launch_at_login.state;
         let on = state == Some(State::On);
         let ready = !self.launch_at_login.busy && matches!(state, Some(State::On | State::Off));
-        let row = ui::row(
-            theme,
-            "general-launch-at-login",
-            fl!("settings-general-launch-at-login"),
-        )
-        .description(fl!("settings-general-launch-at-login-description"));
+        let row = ui::row(theme, &catalog::GENERAL_LAUNCH_AT_LOGIN);
         // Windows' own switch wins; the app never clears its mark.
         let row = if state == Some(State::DisabledByWindows) {
             row.disabled(fl!("settings-general-launch-at-login-disabled"))

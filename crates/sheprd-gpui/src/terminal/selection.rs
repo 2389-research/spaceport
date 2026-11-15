@@ -9,7 +9,7 @@
 //! row. A selection that reaches rows the pane no longer shows is read back
 //! from the daemon instead of from the painted cells.
 
-use super::{HIDDEN, InputTarget, popup_origin, wheel_target};
+use super::{CellMetrics, HIDDEN, InputTarget, popup_origin, wheel_target};
 use crate::error::{Error, Result};
 use sheprd_client::{
     protocol::{CellData, FrameData, PaneSurfaceFrame},
@@ -157,7 +157,11 @@ pub(super) fn region(
                 .popup
                 .as_ref()
                 .filter(|popup| popup.terminal_id == *terminal_id)?;
-            let origin = popup_origin(&surface.frame, &popup.frame, cell_width, cell_height);
+            let origin = popup_origin(
+                &surface.frame,
+                &popup.frame,
+                CellMetrics::new(cell_width, cell_height),
+            );
             Some(Region {
                 columns: 0..popup.frame.width,
                 rows: 0..popup.frame.height,

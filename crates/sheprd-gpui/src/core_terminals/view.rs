@@ -14,7 +14,7 @@ use super::{
 use crate::{
     config::{OptionAsAlt, Padding},
     i18n::fl,
-    terminal::{HeldKeys, key_input, viewport},
+    terminal::{CellMetrics, HeldKeys, key_input, viewport},
     terminal_painter::{Ground, TerminalPainter},
 };
 use gpui::{prelude::*, *};
@@ -484,14 +484,10 @@ impl EntityInputHandler for CoreTerminalView {
     ) -> Option<Bounds<Pixels>> {
         let bounds = self.bounds?;
         let cursor = self.screen.frame.as_ref()?.cursor.as_ref()?;
-        let origin = bounds.origin
-            + point(
-                px(f32::from(cursor.x) * self.look.cell_width),
-                px(f32::from(cursor.y) * self.look.cell_height),
-            );
+        let metrics = CellMetrics::new(self.look.cell_width, self.look.cell_height);
         Some(Bounds::new(
-            origin,
-            size(px(self.look.cell_width), px(self.look.cell_height)),
+            bounds.origin + metrics.origin(cursor.x, cursor.y),
+            metrics.cell(),
         ))
     }
 

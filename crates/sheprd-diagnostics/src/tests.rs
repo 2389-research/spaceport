@@ -1,9 +1,13 @@
 use super::*;
 
 mod flush;
+mod targets;
 
-/// The crates the app's own tests log from.
-const TARGETS: &[&str] = &["sheprd_client", "sheprd_gpui", "sheprd_protocol"];
+/// What the app keeps: its own crate, and every workspace crate.
+const TARGETS: Targets = Targets {
+    crate_prefix: "sheprd_",
+    roots: &["spaceport"],
+};
 
 #[test]
 fn timestamp_and_left_aligned_levels_have_exact_columns() {

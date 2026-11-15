@@ -1,12 +1,9 @@
 //! `tab` and `devices`.
 
 use super::{Context, Output, unexpected};
-use crate::{
-    cli::control::TabCommand,
-    control::protocol::{
-        Request, Response,
-        tabs::{Reply, TabInfo, TabOp},
-    },
+use crate::control::protocol::{
+    Request, Response,
+    tabs::{Reply, TabInfo, TabOp},
 };
 use std::fmt::Write as _;
 
@@ -41,11 +38,11 @@ pub(super) fn list(context: &Context) -> crate::Result<Output> {
     }
 }
 
-pub(super) fn tab(command: TabCommand, context: &Context) -> crate::Result<Output> {
-    match command {
-        TabCommand::List => list(context),
-        TabCommand::Focus { id } => context.act(Request::Tab, TabOp::Focus { id }),
-        TabCommand::Close { id } => context.act(Request::Tab, TabOp::Close { id }),
+pub(super) fn tab(op: TabOp, context: &Context) -> crate::Result<Output> {
+    match op {
+        TabOp::List {} => list(context),
+        TabOp::Devices => devices(context),
+        op @ (TabOp::Focus { .. } | TabOp::Close { .. }) => context.act(Request::Tab, op),
     }
 }
 

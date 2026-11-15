@@ -1,9 +1,27 @@
 // ABOUTME: Select the development identity or an explicit macOS preview build.
 // ABOUTME: Preview signing does not enable the production release or credential policy.
 
-pub fn select<'a>(version: Option<&'a str>, target_os: &str) -> Option<(&'static str, &'a str)> {
+/// The channel of an ordinary development build.
+pub const DEVELOPMENT: &str = "development";
+/// The channel of the signed macOS preview route.
+pub const MACOS_PREVIEW: &str = "macos-preview";
+
+/// What a build is: its channel name, the app ID the OS sees, and its version.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Identity<'a> {
+    pub channel: &'static str,
+    pub app_id: &'static str,
+    pub version: &'a str,
+}
+
+/// The only place that decides between a development and a preview build.
+pub fn select<'a>(version: Option<&'a str>, target_os: &str) -> Option<Identity<'a>> {
     let Some(version) = version else {
-        return Some((app_id(include_str!("development-app-id"))?, "dev"));
+        return Some(Identity {
+            channel: DEVELOPMENT,
+            app_id: app_id(include_str!("development-app-id"))?,
+            version: "dev",
+        });
     };
     let (date, counter) = version.split_once('.')?;
     let positive_digits = |part: &str| {
@@ -16,7 +34,11 @@ pub fn select<'a>(version: Option<&'a str>, target_os: &str) -> Option<(&'static
     {
         return None;
     }
-    Some((app_id(include_str!("macos-preview-app-id"))?, version))
+    Some(Identity {
+        channel: MACOS_PREVIEW,
+        app_id: app_id(include_str!("macos-preview-app-id"))?,
+        version,
+    })
 }
 
 /// Identity data files allow a conventional final newline, but no empty segments

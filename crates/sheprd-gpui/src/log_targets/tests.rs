@@ -1,19 +1,16 @@
-// ABOUTME: Checks diagnostic coverage for the app and its linked workspace crates.
-// ABOUTME: Keeps the compiled GUI tracing namespace in the collector filter.
+// ABOUTME: Checks the diagnostic log keeps the app's own tracing namespace.
+// ABOUTME: Keeps the compiled GUI crate name and the workspace prefix in the collector filter.
 use super::*;
 
 #[test]
-fn every_sheprd_crate_the_app_links_is_logged() {
-    let manifest: toml::Table = toml::from_str(include_str!("../../Cargo.toml")).unwrap();
-    let dependencies = manifest["dependencies"].as_table().unwrap();
-    let linked: Vec<String> = dependencies
-        .keys()
-        .filter(|name| name.starts_with("sheprd-"))
-        .map(|name| name.replace('-', "_"))
-        .collect();
-    assert!(!linked.is_empty());
-    for name in linked {
-        assert!(LOG_TARGETS.contains(&name.as_str()), "{name} is not logged");
-    }
-    assert!(LOG_TARGETS.contains(&env!("CARGO_CRATE_NAME")));
+fn the_app_passes_its_own_crate_and_the_workspace_prefix() {
+    assert_eq!(LOG_TARGETS.roots, [env!("CARGO_CRATE_NAME")]);
+    // Events here are emitted under this module's path, which starts there.
+    assert_eq!(
+        module_path!().split("::").next(),
+        Some(env!("CARGO_CRATE_NAME"))
+    );
+    // A workspace crate's paths start with the prefix.
+    assert!(std::any::type_name::<Targets>().starts_with(LOG_TARGETS.crate_prefix));
+    assert!(!LOG_TARGETS.crate_prefix.is_empty());
 }

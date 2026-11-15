@@ -1,7 +1,6 @@
 // ABOUTME: Checks that desktop labels name the owner of their data.
 // ABOUTME: Preserves runtime versions and client names in English and pseudo-locales.
 use super::*;
-use crate::menu::devices;
 use sheprd_i18n::Pseudo;
 
 #[test]
@@ -38,28 +37,19 @@ fn daemon_release_labels_identify_herdr() {
 
 #[test]
 fn client_fallback_labels_preserve_spaceport() {
-    assert_eq!(
-        devices::Error::NoStateDirectory.to_string(),
-        "Spaceport has no state directory."
-    );
     for locale in [
         Locale::FALLBACK,
         Pseudo::Accented.locale(),
         Pseudo::Bidi.locale(),
     ] {
         show(&locale);
-        let labels = [
-            message(
-                "settings-integrations-no-window",
-                &[("app", "Spaceport".into())],
-            ),
-            devices::Error::NoStateDirectory.localize(),
-        ];
+        let label = message(
+            "settings-integrations-no-window",
+            &[("app", "Spaceport".into())],
+        );
         show(&Locale::FALLBACK);
-        for label in labels {
-            assert!(label.contains("Spaceport"), "{locale:?}: {label}");
-            assert!(!label.contains("Sheprd"), "{label}");
-        }
+        assert!(label.contains("Spaceport"), "{locale:?}: {label}");
+        assert!(!label.contains("Sheprd"), "{label}");
     }
 }
 

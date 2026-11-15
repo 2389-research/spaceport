@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 const LIST_WAIT_SECONDS: u64 = 15;
 /// Saving a theme or a font waits for the file lock other saves may hold.
 const SAVE_WAIT_SECONDS: u64 = 10;
+/// How long a caffeine hold or release may take to settle.
+pub const CAFFEINE_WAIT_SECONDS: u64 = 5;
 /// The longest `caffeine on --for`: a day.
 pub const MAX_CAFFEINE_SECONDS: u64 = 24 * 60 * 60;
 
@@ -56,7 +58,18 @@ impl SettingsOp {
         match self {
             Self::Fonts | Self::Integrations => LIST_WAIT_SECONDS,
             Self::Theme { .. } | Self::Font { .. } => SAVE_WAIT_SECONDS,
-            _ => 0,
+            // Changing caffeine waits for the hold to settle; reading it
+            // answers at once.
+            Self::Caffeine {
+                switch: Some(_), ..
+            } => CAFFEINE_WAIT_SECONDS,
+            Self::Caffeine { switch: None, .. }
+            | Self::ReloadConfig
+            | Self::CheckConfig
+            | Self::Keybinds
+            | Self::Sound { .. }
+            | Self::Bell
+            | Self::Language => 0,
         }
     }
 }

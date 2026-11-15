@@ -165,6 +165,11 @@ fn relative_mise_data_is_not_resolved_against_the_project() {
     assert_eq!(host.probe(&mut probe), HostProbe::Missing);
 }
 
+/// Starts `command` as a bridge and answers its discovery, as a connection does.
+fn bridge(command: Command, stop: &AtomicBool) -> Result<(Stream, ChildGuard)> {
+    start_bridge(command, stop, handshake)?.map_err(|closed| Error::Refused(closed.failure).into())
+}
+
 #[test]
 fn bridge_skips_incompatible_install_then_uses_mise_with_quoted_session() {
     let host = Host::new();

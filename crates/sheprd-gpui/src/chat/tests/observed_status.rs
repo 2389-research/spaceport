@@ -20,7 +20,7 @@ fn a_mirrored_pane_follows_the_daemons_agent_status(cx: &mut TestAppContext) {
     let status = |view: &gpui::Entity<crate::SheprdWindow>, cx: &mut gpui::VisualTestContext| {
         view.read_with(cx, |view, _| {
             let pane = view.chats.pane("w1:p1").unwrap();
-            assert!(pane.target.existing.is_none());
+            assert!(matches!(pane.target.source, Source::Program(_)));
             pane.session.transcript().status.clone()
         })
     };

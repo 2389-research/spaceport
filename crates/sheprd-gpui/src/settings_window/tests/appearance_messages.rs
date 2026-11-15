@@ -13,7 +13,7 @@ fn assert_message(id: &str) {
 fn padding_sides_name_messages() {
     for axis in [Axis::X, Axis::Y] {
         for side in [Side::Start, Side::End] {
-            assert_message(pages::padding_ids(axis, side).2);
+            assert_message(pages::padding_ids(axis, side).0.title);
         }
     }
 }
@@ -21,9 +21,9 @@ fn padding_sides_name_messages() {
 #[test]
 fn spacing_rows_name_messages() {
     for spacing in pages::Spacing::ALL {
-        let (title, description) = spacing.messages();
-        assert_message(title);
-        assert_message(description);
+        let entry = spacing.entry();
+        assert_message(entry.title);
+        assert_message(entry.description);
     }
 }
 

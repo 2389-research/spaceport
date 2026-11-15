@@ -3,8 +3,7 @@
 
 use crate::core_terminals::worker::{self, Command};
 use sheprd_backend::{
-    Backend, Changes, ClientPaneInputEvent, FrameData, Generation, Role, Size, Spawn,
-    SurfaceUpdate, Terminal, TerminalId, TerminalInfo,
+    Backend, ClientPaneInputEvent, FrameData, Role, Size, SurfaceUpdate, Terminal, TerminalId,
 };
 use std::{
     sync::{Arc, Mutex},
@@ -26,32 +25,9 @@ struct Scripted {
 
 struct ScriptedTerminal(Scripted);
 
-struct NoChanges;
-
-impl Changes for NoChanges {
-    type Error = Failure;
-
-    fn next(&mut self, _: Duration) -> Result<Vec<sheprd_backend::Change>, Failure> {
-        Ok(Vec::new())
-    }
-}
-
 impl Backend for Scripted {
-    type Changes = NoChanges;
     type Error = Failure;
     type Terminal = ScriptedTerminal;
-
-    fn generation(&self) -> Generation {
-        Generation::Herdr2
-    }
-
-    fn terminals(&self) -> Result<Vec<TerminalInfo>, Failure> {
-        Ok(Vec::new())
-    }
-
-    fn watch(&self) -> Result<(Vec<TerminalInfo>, NoChanges), Failure> {
-        Ok((Vec::new(), NoChanges))
-    }
 
     fn attach(&self, _: &TerminalId, size: Size, _: Role) -> Result<ScriptedTerminal, Failure> {
         if self.fail_attach {
@@ -59,14 +35,6 @@ impl Backend for Scripted {
         }
         self.received.lock().unwrap().push(Command::Resize(size));
         Ok(ScriptedTerminal(self.clone()))
-    }
-
-    fn spawn(&self, _: &Spawn) -> Result<TerminalInfo, Failure> {
-        Err(Failure)
-    }
-
-    fn kill(&self, _: &TerminalId) -> Result<(), Failure> {
-        Ok(())
     }
 }
 

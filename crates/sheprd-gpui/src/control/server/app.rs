@@ -15,6 +15,7 @@ use crate::{
     },
     controls::{COMMANDS, Command},
     core_terminals,
+    endpoint::Phase,
 };
 use gpui::{App, Window, px, size};
 use sheprd_client::ConnectTarget;
@@ -33,15 +34,15 @@ impl SheprdWindow {
             .map(|(index, endpoint)| {
                 let selected = index == self.selected_endpoint;
                 // The selected host's live state is the window's own.
-                let status = match endpoint.status() {
-                    "online" | "connecting" if selected => {
+                let status = match endpoint.phase() {
+                    Phase::Online | Phase::Connecting if selected => {
                         if self.live.status.is_connected() {
-                            "online"
+                            Phase::Online.status()
                         } else {
-                            "connecting"
+                            Phase::Connecting.status()
                         }
                     }
-                    status => status,
+                    _ => endpoint.status(),
                 };
                 HostInfo {
                     id: endpoint.id.clone(),
@@ -394,7 +395,6 @@ pub(super) fn command(call: Call<CommandOp>, cx: &mut App) -> Response {
 
 fn update_error(error: crate::updates::Error) -> Response {
     let code = match &error {
-        #[cfg(all(target_os = "macos", feature = "macos-updater"))]
         crate::updates::Error::Busy => ErrorCode::Busy,
         crate::updates::Error::Unsupported => ErrorCode::Unsupported,
         #[cfg(all(target_os = "macos", feature = "macos-updater"))]

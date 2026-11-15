@@ -187,10 +187,7 @@ trusted Core when needed. Spaceport packages do not bundle or upgrade Core.
 The removed `update` command is rejected before app startup.
 
 Adding an SSH or local network device has no command: the Add Device dialog
-runs it. Its setup workspace runs `spaceport __device-setup-attach SOCKET`,
-an internal helper that shows the setup the app runs (see the Native Shell
-README's "Local Network access"); it is not a command to call yourself, and
-the socket it names is single use.
+runs it.
 
 Herdr 1 scrollback search is not repeated here: `herdr pane read` covers it. Moving a
 window and capturing a whole window have no command because the app cannot

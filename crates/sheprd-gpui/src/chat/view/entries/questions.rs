@@ -49,21 +49,18 @@ impl SheprdWindow {
                         entry.id,
                         Region::Label,
                         Cell::default(),
-                        notice_label(label),
+                        || notice_label(label),
                         cx,
                     )),
             )
             .child(message)
             .child(div().child(self.rich_copy(super::super::copy::ANSWERS, text.clone(), cx)))
-            .when(details.is_some(), |card| {
-                card.child(self.render_chat_notice_record(
-                    pane_id,
-                    entry.id,
-                    *level,
-                    &fl!("chat-answers-record"),
-                    details.as_deref(),
-                    cx,
-                ))
+            .when_some(details.as_deref(), |card, details| {
+                // The answers hold `Body(0)`, so this label is drawn plain.
+                let label = div().child(notice_label(&fl!("chat-answers-record")));
+                card.child(
+                    self.render_chat_notice_record(pane_id, entry.id, *level, label, details, cx),
+                )
             })
     }
 }

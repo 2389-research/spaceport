@@ -472,7 +472,7 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                         .map_err(|_| anyhow!("unexpected root"))?;
                     let state = view.read(cx);
                     if step < 2 {
-                        if state
+                        if state.endpoints[0]
                             .collapsed_repos
                             .contains("/fixture/agent-launcher/.git")
                             != (step == 0)

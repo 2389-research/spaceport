@@ -122,7 +122,7 @@ fn wire_completion_waits_for_evidence_then_command_uses_original_pane(
         view.config.notifications.enabled = true;
         view.config.notifications.delay_seconds = 0;
         view.tick_toasts(false, now, cx);
-        assert!(!view.endpoints[1].toasts.entries[0].1.visible);
+        assert!(!view.endpoints[1].toasts.entries[0].1.is_visible());
     });
     projection.revision += 1;
     projection.agents[0].agent_status = AgentStatus::Done;
@@ -147,7 +147,7 @@ fn wire_completion_waits_for_evidence_then_command_uses_original_pane(
             });
             // Staged metadata is evidence before its surface arrives.
             view.tick_toasts(false, now + Duration::from_millis(50), cx);
-            assert!(view.endpoints[1].toasts.entries[0].1.visible);
+            assert!(view.endpoints[1].toasts.entries[0].1.is_visible());
             view.endpoints[1]
                 .connection
                 .inbox
@@ -163,7 +163,7 @@ fn wire_completion_waits_for_evidence_then_command_uses_original_pane(
                     .is_some_and(|s| s.revision == projection.revision)
             });
             view.tick_toasts(false, now + Duration::from_millis(100), cx);
-            assert!(view.endpoints[1].toasts.entries[0].1.visible);
+            assert!(view.endpoints[1].toasts.entries[0].1.is_visible());
             // Select the already-active fixture surface without issuing unrelated activation requests.
             view.selected_endpoint = 1;
             view.reset_selected(cx);
@@ -279,7 +279,11 @@ fn toast_rendered_clicks_reject_replaced_removed_and_disabled_origins(
         // Invoke the captured callback identity directly: simulate_click redraws
         // first and would correctly capture the replacement generation instead.
         view.update(cx, |view, cx| {
-            view.click_toast("ssh:toast", generation, &inbox, 0, cx)
+            view.click_toast(
+                &fence::ConnectionRef::for_test("ssh:toast", generation, &inbox),
+                0,
+                cx,
+            )
         });
         view.read_with(cx, |view, _| {
             assert_eq!(view.selected_endpoint, 0);
@@ -343,7 +347,7 @@ fn notification_command_rejects_ineligible_cards_without_selection_or_requests(
             notice.promote(Instant::now());
         }
         if case == 3 {
-            notice.expires = Instant::now();
+            notice.set_expires(Instant::now());
         }
         endpoint.toasts.receive([notice]);
         if case == 1 || case == 2 {
