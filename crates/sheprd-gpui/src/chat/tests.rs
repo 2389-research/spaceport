@@ -25,6 +25,7 @@ mod composer;
 mod controls;
 mod core_panes;
 mod discovery;
+mod document_text;
 mod embeds;
 mod en_xa;
 mod feature;
@@ -51,6 +52,7 @@ mod relocale;
 mod running;
 mod selection;
 mod session;
+mod source;
 #[cfg(unix)]
 mod spaceport_discovery;
 mod start;

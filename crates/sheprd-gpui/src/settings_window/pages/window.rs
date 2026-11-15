@@ -1,10 +1,10 @@
 //! Theme > Window and Terminal padding: what shows behind the main window,
 //! and the space between each terminal and the edges of its tab group.
 // i18n: migrated
-use super::{SettingsWindow, on_value, ui};
+use super::{SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{Axis, Side, preferences::Preference},
-    i18n::{self, fl},
+    i18n::fl,
     settings_window::inputs::NumberField,
 };
 use gpui::{prelude::*, *};
@@ -17,33 +17,16 @@ pub(in crate::settings_window) const PADDING_SIDES: [(Axis, Side); 4] = [
     (Axis::Y, Side::End),
 ];
 
-/// The row id, the number field's id and the message titling one padded
-/// side.
+/// The catalog entry of one padded side's row, and its number field's id.
 pub(in crate::settings_window) fn padding_ids(
     axis: Axis,
     side: Side,
-) -> (&'static str, &'static str, &'static str) {
+) -> (&'static catalog::Entry, &'static str) {
     match (axis, side) {
-        (Axis::X, Side::Start) => (
-            "theme-padding-left",
-            "terminal-padding-left",
-            "settings-theme-padding-left",
-        ),
-        (Axis::X, Side::End) => (
-            "theme-padding-right",
-            "terminal-padding-right",
-            "settings-theme-padding-right",
-        ),
-        (Axis::Y, Side::Start) => (
-            "theme-padding-top",
-            "terminal-padding-top",
-            "settings-theme-padding-top",
-        ),
-        (Axis::Y, Side::End) => (
-            "theme-padding-bottom",
-            "terminal-padding-bottom",
-            "settings-theme-padding-bottom",
-        ),
+        (Axis::X, Side::Start) => (&catalog::THEME_PADDING_LEFT, "terminal-padding-left"),
+        (Axis::X, Side::End) => (&catalog::THEME_PADDING_RIGHT, "terminal-padding-right"),
+        (Axis::Y, Side::Start) => (&catalog::THEME_PADDING_TOP, "terminal-padding-top"),
+        (Axis::Y, Side::End) => (&catalog::THEME_PADDING_BOTTOM, "terminal-padding-bottom"),
     }
 }
 
@@ -75,33 +58,29 @@ impl SettingsWindow {
 
     fn padding_row(&self, axis: Axis, side: Side, cx: &mut Context<Self>) -> ui::Row {
         let field = NumberField::TerminalPadding(axis, side);
-        let (row, _, title) = padding_ids(axis, side);
+        let (entry, _) = padding_ids(axis, side);
         let value = self.number_value(field, self.config.terminal_padding.axis(axis).side(side));
         let view = cx.entity().downgrade();
-        ui::row(&self.theme, row, i18n::message(title, &[]))
-            .when(axis == Axis::X && side == Side::Start, |row| {
-                row.description(fl!("settings-theme-padding-left-hint"))
-            })
-            .control(ui::number(
-                &self.theme,
-                ui::Number {
-                    id: field.selector(),
-                    value,
-                    range: field.range(),
-                    unit: ui::Unit::Pixels,
-                    look: ui::Look::Slider,
-                    enabled: true,
-                },
-                self.number_edit_for(field),
-                on_value(cx, move |this, change, _, cx| {
-                    this.commit_number(field, change, cx)
-                }),
-                move |window, cx| {
-                    let _ = view.update(cx, |this, cx| {
-                        this.begin_number_edit(field, value, window, cx)
-                    });
-                },
-            ))
+        ui::row(&self.theme, entry).control(ui::number(
+            &self.theme,
+            ui::Number {
+                id: field.selector(),
+                value,
+                range: field.range(),
+                unit: ui::Unit::Pixels,
+                look: ui::Look::Slider,
+                enabled: true,
+            },
+            self.number_edit_for(field),
+            on_value(cx, move |this, change, _, cx| {
+                this.commit_number(field, change, cx)
+            }),
+            move |window, cx| {
+                let _ = view.update(cx, |this, cx| {
+                    this.begin_number_edit(field, value, window, cx)
+                });
+            },
+        ))
     }
 
     /// Saves one side; the other side of its axis is written along with it,

@@ -61,11 +61,7 @@ impl SheprdWindow {
         if endpoint.connection.target.is_remote() {
             return Err(Error::HostUnavailable.into());
         }
-        let live = if index == self.selected_endpoint {
-            &self.live
-        } else {
-            &endpoint.live
-        };
+        let live = self.live_of(index);
         if endpoint.generation != target.generation {
             return Err(Error::LocalChanged.into());
         }
@@ -237,11 +233,7 @@ impl SheprdWindow {
                 return self.palette_project_error(error, cx);
             }
         };
-        let live = if index == self.selected_endpoint {
-            &self.live
-        } else {
-            &self.endpoints[index].live
-        };
+        let live = self.live_of(index);
         let Some((id, Some(result))) = &live.dialog_response else {
             return;
         };
@@ -279,13 +271,13 @@ impl SheprdWindow {
 }
 
 fn created_workspace(response: &Value) -> Result<String> {
-    if let Some(error) = response.get("error") {
-        return Err(crate::daemon::Error::Response(error.clone()).into());
-    }
-    let result = &response["result"];
-    (result["type"] == "workspace_created")
-        .then(|| result["workspace"]["workspace_id"].as_str())
-        .flatten()
+    let result = match sheprd_client::response::tagged(response, "workspace_created") {
+        Ok(result) => result,
+        Err(error @ sheprd_client::Error::Endpoint { .. }) => return Err(error.into()),
+        Err(_) => return Err(Error::ProjectResponse.into()),
+    };
+    result["workspace"]["workspace_id"]
+        .as_str()
         .filter(|id| !id.is_empty() && id.len() <= 8192 && !id.chars().any(char::is_control))
         .map(str::to_owned)
         .ok_or(Error::ProjectResponse.into())

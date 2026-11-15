@@ -31,7 +31,7 @@ Paths are in `crates/sheprd-remote/src/`, which has no GPUI, unless they name
 | RFC component | Here |
 | --- | --- |
 | Provider registry, `SandboxProvider` | `cloud/providers.rs`: one `providers!` row per provider generates the name, logo, connector, background command, deletion, on-demand provisioning, and `cloud::ProviderError`. No async trait: everything blocks on workers. |
-| Session manager (PTY, reconnect) | The sandbox's own Herdr daemon, through `sheprd_client::connect_command`. |
+| Session manager (PTY, reconnect) | The sandbox's own Herdr daemon. The `sheprd_client::connect_command` bridge that reached it is removed. |
 | Exec / attach | The provider's command: `docker exec -i` or `ssh`. |
 | Git sync | `teleport/`: `fresh.rs` (new worktree from a base commit, cloned or bundled), `carry.rs`, and Teleport itself, untracked files included. |
 | Workspace lifecycle | `crates/sheprd-gpui/src/cloud/jobs.rs` (create with progress), `cloud/catalog.rs` (saved devices), provider `setup.rs` (create, delete, roll back a failed create). |

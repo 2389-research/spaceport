@@ -5,19 +5,13 @@
 //! it took closes as it goes, so the toasts around it do not jump.
 
 use crate::{
+    endpoint::fence::ConnectionRef,
     motion::{self, ENTER, LEAVE},
     notifications::Notice,
-    state::LiveState,
 };
 use gpui::Pixels;
 use sheprd_client::protocol::ToastHerdrPosition;
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    rc::Rc,
-    sync::{Arc, Mutex},
-    time::Instant,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Instant};
 
 /// How far a toast slides in from its side of the window.
 const SLIDE: f32 = 16.;
@@ -35,7 +29,9 @@ pub(super) struct Key {
 pub(super) struct Drawn {
     pub(super) key: Key,
     pub(super) label: String,
-    pub(super) inbox: Arc<Mutex<LiveState>>,
+    /// The connection the toast came from, which a click on it reaches.
+    /// It rides beside `key`, which must hash without the inbox.
+    pub(super) source: ConnectionRef,
     pub(super) notice: Notice,
     pub(super) corner: ToastHerdrPosition,
 }

@@ -87,8 +87,14 @@ fn tool_label(title: &str) -> Cow<'_, str> {
     }
 }
 
-// The view and the selection document both draw these labels from the
-// helpers below, so the drawn text always matches its selectable segment.
+// The selection document writes an entry's plain text with the helpers
+// below, and the view draws the document's segments. The view calls them
+// itself only for text the document does not hold.
+
+/// As much of an entry's plain text as is drawn.
+pub(super) fn shown_text(text: &str) -> &str {
+    MESSAGE.clip(text)
+}
 
 /// A tool call's header.
 pub(super) fn tool_header(title: &str) -> String {
@@ -110,7 +116,7 @@ pub(super) fn folded_thought(text: &str) -> String {
 }
 
 /// Expanded tool output comes from the retained transcript, not its preview.
-/// Shared by the view and the selection document, like [`tool_header`].
+/// The selection document holds it; the view draws it from there.
 pub(crate) fn tool_text(content: &ToolContent) -> Option<String> {
     match content {
         ToolContent::Text { text } => Some(text.clone()),

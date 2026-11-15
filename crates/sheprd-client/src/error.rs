@@ -162,8 +162,6 @@ pub enum Error {
         generation: Option<u32>,
         version: Option<String>,
     },
-    #[error("remote repository directory must be an absolute path")]
-    InvalidGitDir,
     #[error("remote command failed ({0})")]
     RemoteCommand(std::process::ExitStatus),
     #[error("remote command returned unexpected output")]
@@ -260,10 +258,11 @@ pub enum Error {
     #[error("invalid endpoint label")]
     ProfileLabel,
     /// An endpoint answered a request with an error. The message is the
-    /// daemon's own display text; act on `code`, never on the message.
-    #[error("{message}")]
+    /// daemon's own display text, empty when it sent none; act on `code`,
+    /// never on the message.
+    #[error("{}", if .message.is_empty() { "Invalid daemon error" } else { .message.as_str() })]
     Endpoint {
-        code: crate::scrollback::EndpointErrorCode,
+        code: crate::response::EndpointErrorCode,
         message: String,
     },
     #[error("invalid endpoint response")]

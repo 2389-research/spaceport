@@ -1,26 +1,18 @@
-// ABOUTME: Selects the actual GUI crate and its linked crates for diagnostic capture.
-// ABOUTME: Keeps compiler-derived GUI identity aligned with default tracing targets.
-//! The crates whose events reach the log: this app and every Herdr crate it
-//! links, so moving code into a crate of its own never silences it.
+// ABOUTME: Names the crates whose tracing events the diagnostic log keeps.
+// ABOUTME: Keeps the compiler-derived GUI crate name and the workspace prefix in one place.
+//! The crates whose events reach the log: this app, and every workspace
+//! crate, so moving code into a crate of its own never silences it.
 
-pub(crate) const LOG_TARGETS: &[&str] = &[
-    env!("CARGO_CRATE_NAME"),
-    // keep-sorted start
-    "sheprd_backend",
-    "sheprd_chat_protocol",
-    "sheprd_client",
-    "sheprd_commands",
-    "sheprd_control_protocol",
-    "sheprd_core_client",
-    "sheprd_diagnostics",
-    "sheprd_i18n",
-    "sheprd_protocol",
-    "sheprd_remote",
-    "sheprd_terminal",
-    "sheprd_usage",
-    // keep-sorted end
-];
+use sheprd_diagnostics::Targets;
+
+/// The log keeps this binary's own crate, named by the compiler so a rename
+/// cannot drop it, and every crate whose name starts with `sheprd_`, as all
+/// workspace crates the app links do. A workspace crate named any other way
+/// must be added to `roots`, or its events are dropped without a trace.
+pub(crate) const LOG_TARGETS: Targets = Targets {
+    crate_prefix: "sheprd_",
+    roots: &[env!("CARGO_CRATE_NAME")],
+};
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests;

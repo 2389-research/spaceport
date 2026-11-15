@@ -25,11 +25,7 @@ pub(crate) use group_motion::Fold;
 pub(crate) use groups::GroupIds;
 pub(crate) use groups::{GroupId, Pick, Shown, Slot};
 pub(crate) use layouts::Layouts;
-#[cfg(test)]
-pub(crate) use location::LocalFile;
 pub(crate) use location::Location;
-#[cfg(test)]
-pub(crate) use location::RetiredOrchestratorRepo;
 pub(crate) use store::{CoreGroupKey, Scope, Store, Tab, TabId};
 pub(crate) use tab_appear::{Leaving, Listed};
 pub(crate) use tab_scroll::{Thumb, ThumbDrag};

@@ -76,13 +76,17 @@ fn main() -> Result<(), BuildError> {
         Err(std::env::VarError::NotPresent) => None,
         Err(_) => return Err(BuildError::InvalidPreview),
     };
-    let (app_id, version) = preview_identity::select(
+    let identity = preview_identity::select(
         preview,
         &std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default(),
     )
     .ok_or(BuildError::InvalidPreview)?;
-    println!("cargo:rustc-env=SPACEPORT_APP_ID={app_id}");
-    println!("cargo:rustc-env=SPACEPORT_APP_VERSION={version}");
+    println!(
+        "cargo:rustc-env=SPACEPORT_BUILD_CHANNEL={}",
+        identity.channel
+    );
+    println!("cargo:rustc-env=SPACEPORT_APP_ID={}", identity.app_id);
+    println!("cargo:rustc-env=SPACEPORT_APP_VERSION={}", identity.version);
     let profile = std::env::var("PROFILE").unwrap_or_default();
     println!("cargo:rustc-env=SPACEPORT_BUILD_PROFILE={profile}");
     println!("cargo:rerun-if-changed=build_identity.rs");

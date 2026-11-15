@@ -10,7 +10,7 @@ use crate::{
     options::{ConnectOptions, validate_options},
     queue,
     session::{Pace, Signals, run_connection},
-    ssh::{self, Bridge},
+    ssh,
     transport::Stream,
     wsl,
 };
@@ -45,34 +45,15 @@ pub fn connect_with_surface_active(
     })
 }
 
-/// What an application connector produced: a local socket, or a remote bridge
-/// it spawned (see [`crate::connect_command`]) whose child the worker owns.
-pub enum Transport {
-    Local(Stream),
-    Bridge(Bridge),
-}
-
-impl From<Stream> for Transport {
-    fn from(stream: Stream) -> Self {
-        Self::Local(stream)
-    }
-}
-
-impl From<Bridge> for Transport {
-    fn from(bridge: Bridge) -> Self {
-        Self::Bridge(bridge)
-    }
-}
-
 /// Connect using application-specific setup on the I/O worker. SSH and WSL
 /// targets always use the built-in remote bridge; local targets use
 /// the connector. The connector should observe `stop` during waits so detach
 /// cancels setup.
-pub fn connect_with_connector<T: Into<Transport>>(
+pub fn connect_with_connector(
     target: ConnectTarget,
     options: ConnectOptions,
     surface_active: bool,
-    connector: impl FnOnce(&ConnectTarget, &AtomicBool) -> io::Result<T> + Send + 'static,
+    connector: impl FnOnce(&ConnectTarget, &AtomicBool) -> io::Result<Stream> + Send + 'static,
 ) -> Result<Client> {
     validate_options(options)?;
     match &target {
@@ -110,10 +91,7 @@ pub fn connect_with_connector<T: Into<Transport>>(
                         let (stream, child) = wsl::connect(distro, session, &worker_stop)?;
                         (stream, Some(child))
                     }
-                    _ => match connector(&target, &worker_stop)?.into() {
-                        Transport::Local(stream) => (stream, None),
-                        Transport::Bridge(Bridge { stream, child }) => (stream, Some(child)),
-                    },
+                    _ => (connector(&target, &worker_stop)?, None),
                 };
                 run_connection(
                     stream,

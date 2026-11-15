@@ -28,10 +28,13 @@ fn existing_sessions_keep_acp_priority_and_require_the_same_agent() {
         &bindings,
     );
     assert_eq!(targets.len(), 2);
-    assert!(targets[0].existing.is_none());
-    assert_eq!(targets[1].existing.as_ref(), Some(&bindings[0]));
+    assert_eq!(targets[0].source, Source::Program(ID.parse().unwrap()));
+    assert_eq!(targets[1].source, Source::Observed(bindings[0].clone()));
     let mut replaced = targets[1].clone();
-    replaced.existing.as_mut().unwrap().started_ticks += 1;
+    let Source::Observed(binding) = &mut replaced.source else {
+        panic!("an observed target");
+    };
+    binding.started_ticks += 1;
     assert_ne!(targets[1], replaced, "a reused pid needs a new observer");
     snapshot.agents[0].agent = Some("claude".into());
     assert!(
@@ -78,7 +81,7 @@ fn explicit_mirrors_are_bound_to_the_named_host_and_existing_pane() {
     );
     assert_eq!(targets.len(), 2);
     assert_eq!(targets[0].pane_id, "acp");
-    assert_eq!(targets[0].endpoint.as_str(), ID);
+    assert_eq!(targets[0].source, Source::Program(ID.parse().unwrap()));
     assert_eq!(targets[1].pane_id, "cli");
     assert!(
         discovery::with_mirrors(
@@ -149,7 +152,7 @@ fn a_local_daemon_lists_each_chat_pane_once() {
     let targets = discovery::targets(&snapshot, Some(&Route::Local));
     let panes: Vec<_> = targets.iter().map(|t| t.pane_id.as_str()).collect();
     assert_eq!(panes, ["p1", "p3"]);
-    assert_eq!(targets[0].endpoint.as_str(), ID);
+    assert_eq!(targets[0].source, Source::Program(ID.parse().unwrap()));
 }
 
 #[test]

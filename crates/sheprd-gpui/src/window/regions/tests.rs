@@ -64,8 +64,7 @@ fn look() -> Look {
     Look {
         font: gpui::font("Menlo"),
         font_size: 14.,
-        cell_width: 8.5,
-        cell_height: 17.,
+        metrics: crate::terminal::CellMetrics::new(8.5, 17.),
         theme: crate::config::Theme::default(),
         ground: Default::default(),
     }

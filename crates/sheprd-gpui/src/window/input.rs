@@ -8,13 +8,13 @@ use crate::i18n::{Localize, fl};
 use crate::{
     connection::ConnectionBridge,
     terminal::{
-        InputTarget, WheelAccumulator, cursor_offset, key_input, pane_key_input, wheel_rows,
+        CellMetrics, InputTarget, WheelAccumulator, key_input, pane_key_input, wheel_rows,
         wheel_target,
     },
 };
 use gpui::{
     Bounds, ClipboardItem, Context, KeyDownEvent, KeyUpEvent, Keystroke, Pixels, Point,
-    ScrollEvent, Window, point, px, size,
+    ScrollEvent, Window, px,
 };
 
 #[cfg(test)]
@@ -127,22 +127,18 @@ impl SheprdWindow {
             })
     }
 
+    /// The terminal's cell size as last measured, for every conversion
+    /// between its cells and the window's pixels.
+    pub(crate) fn metrics(&self) -> CellMetrics {
+        CellMetrics::new(self.cell_width, self.config.terminal.line_height())
+    }
+
     /// The pane drawn mid-row after a wheel scroll, in pixels from the grid's
     /// origin, and how far below its grid position its content is drawn.
     fn scroll_shift(&self) -> Option<(Bounds<Pixels>, Pixels)> {
         let (rect, offset) = self.presentation.scroll.offset()?;
-        let (cell_width, cell_height) = (self.cell_width, self.config.terminal.line_height());
-        let pane = Bounds::new(
-            point(
-                px(f32::from(rect.x) * cell_width),
-                px(f32::from(rect.y) * cell_height),
-            ),
-            size(
-                px(f32::from(rect.width) * cell_width),
-                px(f32::from(rect.height) * cell_height),
-            ),
-        );
-        Some((pane, px(offset * cell_height)))
+        let metrics = self.metrics();
+        Some((metrics.bounds(rect), px(offset * metrics.height)))
     }
 
     /// How far below its grid position the content at grid pixel `cell` is
@@ -184,7 +180,7 @@ impl SheprdWindow {
         else {
             return px(0.);
         };
-        let cell = cursor_offset(cursor, self.cell_width, self.config.terminal.line_height());
+        let cell = self.metrics().origin(cursor.x, cursor.y);
         self.shift_at(cell).map_or(px(0.), |(_, shift)| shift)
     }
 

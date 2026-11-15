@@ -234,13 +234,8 @@ impl SheprdWindow {
         let Some(surface) = &self.live.surface else {
             return;
         };
-        let Some(id) = crate::terminal::pane_at(
-            surface,
-            self.bounds,
-            position,
-            self.cell_width,
-            self.config.terminal.line_height(),
-        ) else {
+        let Some(id) = crate::terminal::pane_at(surface, self.bounds, position, self.metrics())
+        else {
             return;
         };
         let id = id.to_owned();

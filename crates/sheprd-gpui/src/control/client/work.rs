@@ -3,12 +3,9 @@
 mod tests;
 
 use super::{Context, Output, unexpected};
-use crate::{
-    cli::control::{NotesCommand, WorktreeCommand},
-    control::protocol::{
-        Request, Response,
-        work::{MuteInfo, NoteInfo, Reply, WorkOp},
-    },
+use crate::control::protocol::{
+    Request, Response,
+    work::{MuteInfo, NoteInfo, Reply, WorkOp},
 };
 use std::fmt::Write as _;
 
@@ -33,15 +30,8 @@ pub(super) fn describe_note(note: &NoteInfo) -> String {
     )
 }
 
-pub(super) fn notes(command: NotesCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        NotesCommand::List => WorkOp::Notes,
-        NotesCommand::Get => WorkOp::Note,
-        NotesCommand::Set(text) => WorkOp::SetNote { text },
-        NotesCommand::Clear => WorkOp::SetNote {
-            text: String::new(),
-        },
-    };
+/// Prints what `spaceport notes` answers.
+pub(super) fn notes(op: WorkOp, context: &Context) -> crate::Result<Output> {
     match context.call(Request::Work, op)? {
         Response::Done { message } => Ok(Output::message(message)),
         Response::Work {
@@ -87,12 +77,8 @@ pub(super) fn describe_mute(mute: &MuteInfo) -> String {
     }
 }
 
-pub(super) fn worktree(command: WorktreeCommand, context: &Context) -> crate::Result<Output> {
-    let op = match command {
-        WorktreeCommand::Status => WorkOp::MuteStatus,
-        WorktreeCommand::Mute => WorkOp::Mute { muted: true },
-        WorktreeCommand::Unmute => WorkOp::Mute { muted: false },
-    };
+/// Prints what `spaceport worktree` answers.
+pub(super) fn worktree(op: WorkOp, context: &Context) -> crate::Result<Output> {
     match context.call(Request::Work, op)? {
         Response::Work {
             reply: Reply::Mute { mute },

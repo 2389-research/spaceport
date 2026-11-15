@@ -20,7 +20,7 @@ use crate::{
     connection::ConnectionBridge,
     presentation::{Picture, Presentation},
     state::{ConnectionStatus, LiveState},
-    terminal::{popup_origin, viewport},
+    terminal::{CellMetrics, popup_origin, viewport},
     terminal_painter::{Ground, ImageTarget, PlacedImages},
     window::reasserts,
 };
@@ -635,8 +635,7 @@ impl SheprdWindow {
                                 let offset = popup_origin(
                                     &surface.frame,
                                     &popup.frame,
-                                    cell_width,
-                                    cell_height,
+                                    CellMetrics::new(cell_width, cell_height),
                                 );
                                 painter.borrow_mut().paint_frame(
                                     &popup.frame,

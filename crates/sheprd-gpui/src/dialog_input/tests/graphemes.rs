@@ -11,7 +11,7 @@ fn a_letter_typed_before_an_accent_leaves_the_caret_after_both(cx: &mut gpui::Te
         input.key(&key("home"), cx);
         input.replace(None, "e", false, None);
         assert_eq!(input.text, "e\u{301}");
-        assert_eq!(input.selection, 3..3);
+        assert_eq!(input.selection(), 3..3);
         input.key(&key("delete"), cx);
         assert_eq!(input.text, "e\u{301}");
         input.key(&key("backspace"), cx);

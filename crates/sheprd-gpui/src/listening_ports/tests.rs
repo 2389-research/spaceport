@@ -10,6 +10,7 @@ use sheprd_client::ConnectTarget;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 mod en_xa;
+mod forward_reuse;
 #[cfg(unix)]
 mod repeated_scans;
 mod ssh_links;

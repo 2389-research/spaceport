@@ -1,5 +1,5 @@
 use super::*;
-use control::{ChatCommand, ControlCommand, Invocation, Switch};
+use control::{ChatOp, ControlCommand, Invocation, Switch};
 
 fn parse(args: &[&str]) -> Result<Invocation, CliError> {
     LaunchOptions::parse(args.iter().copied()).map(|options| match options.mode {
@@ -14,13 +14,10 @@ fn command(args: &[&str]) -> ControlCommand {
 
 #[test]
 fn chat_lists_by_default() {
-    assert_eq!(
-        command(&["chat"]),
-        ControlCommand::Chat(ChatCommand::Status)
-    );
+    assert_eq!(command(&["chat"]), ControlCommand::Chat(ChatOp::Status));
     assert_eq!(
         command(&["chat", "status"]),
-        ControlCommand::Chat(ChatCommand::Status)
+        ControlCommand::Chat(ChatOp::Status)
     );
     let json = parse(&["chat", "--json", "--window", "7"]).unwrap();
     assert!(json.json);
@@ -36,12 +33,12 @@ fn chat_shows_or_hides_a_pane() {
     ] {
         assert_eq!(
             command(&["chat", verb]),
-            ControlCommand::Chat(ChatCommand::View { switch, pane: None })
+            ControlCommand::Chat(ChatOp::View { switch, pane: None })
         );
     }
     assert_eq!(
         command(&["chat", "hide", "--pane", "w1:p2"]),
-        ControlCommand::Chat(ChatCommand::View {
+        ControlCommand::Chat(ChatOp::View {
             switch: Switch::Off,
             pane: Some("w1:p2".into())
         })
@@ -62,15 +59,15 @@ fn chat_refuses_what_it_does_not_know() {
 fn chat_new_names_a_built_in_agent() {
     assert_eq!(
         command(&["chat", "new", "claude"]),
-        ControlCommand::Chat(ChatCommand::New {
-            agent: sheprd_chat_protocol::Agent::Claude,
+        ControlCommand::Chat(ChatOp::New {
+            agent: sheprd_chat_protocol::Agent::Claude.name().into(),
             pane: None
         })
     );
     assert_eq!(
         command(&["chat", "new", "--pane", "w1:p2", "codex"]),
-        ControlCommand::Chat(ChatCommand::New {
-            agent: sheprd_chat_protocol::Agent::Codex,
+        ControlCommand::Chat(ChatOp::New {
+            agent: sheprd_chat_protocol::Agent::Codex.name().into(),
             pane: Some("w1:p2".into())
         })
     );

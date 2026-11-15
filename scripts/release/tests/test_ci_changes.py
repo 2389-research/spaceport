@@ -110,7 +110,7 @@ class WindowsPackageChanges(GitFixture):
 
     def test_other_changes_skip_the_installer_check(self):
         for path in ("crates/sheprd-gpui/src/app.rs", "Cargo.lock", "README.md",
-                     "scripts/release/package-linux.sh"):
+                     "scripts/release/package-macos.sh"):
             self.base = self.git("rev-parse", "HEAD").strip()
             self.commit_path(path)
             self.assertEqual(self.outputs()["windows_package"], "false", path)

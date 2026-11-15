@@ -34,7 +34,7 @@ fn old_review_is_dropped_without_reusing_its_id() {
     });
 
     let bytes = serde_json::to_vec(&saved).unwrap();
-    let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
+    let mut restored = Store::restored_for_test(&bytes).unwrap();
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
         [devices, core]
@@ -46,7 +46,7 @@ fn old_review_is_dropped_without_reusing_its_id() {
 #[test]
 fn old_review_checkout_still_rejects_relative_paths() {
     let bytes = br#"{"tabs":[{"id":0,"scope":"local","workspace_id":"w","location":{"kind":"review","checkout":{"repo_key":"relative/.git","branch":"main","checkout":null}},"title":"Review"}]}"#;
-    assert!(parse(bytes).is_err());
+    assert!(Store::restored_for_test(bytes).is_err());
 }
 
 #[test]
@@ -67,12 +67,12 @@ fn retired_review_id_stays_reserved_after_a_second_restore() {
         "kind": "review", "checkout": {"repo_key": path, "branch": "main", "checkout": path}
     });
 
-    let first = Store::with_tabs(parse(&serde_json::to_vec(&saved).unwrap()).unwrap(), None);
+    let first = Store::restored_for_test(&serde_json::to_vec(&saved).unwrap()).unwrap();
     assert_eq!(
         first.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
         [devices]
     );
     let persisted = serde_json::to_vec(&first.saved()).unwrap();
-    let mut second = Store::with_saved(parse_saved(&persisted).unwrap(), None);
+    let mut second = Store::restored_for_test(&persisted).unwrap();
     assert!(second.open(scope, "w", None, None).unwrap() > review);
 }

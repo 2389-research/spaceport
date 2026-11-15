@@ -129,7 +129,6 @@ fn opened(
     let id = cx.try_global::<Store>().and_then(|store| {
         store
             .in_workspace(&scope, workspace)
-            .filter(|tab| !tab.place.is_editor())
             .filter(|tab| tab.location.as_ref().is_some_and(&shows))
             .last()
             .map(|tab| tab.id)

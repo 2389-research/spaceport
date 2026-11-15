@@ -34,7 +34,7 @@ fn old_source_view_is_dropped_without_reusing_its_id() {
     });
 
     let bytes = serde_json::to_vec(&saved).unwrap();
-    let mut restored = Store::with_tabs(parse(&bytes).unwrap(), None);
+    let mut restored = Store::restored_for_test(&bytes).unwrap();
     assert_eq!(
         restored.tabs().map(|tab| tab.id).collect::<Vec<_>>(),
         [devices, core]

@@ -57,6 +57,11 @@ fn every_client_variant_has_a_message() {
         Error::Disconnected,
         Error::EmptySurface,
         Error::EncodedSurfaceBeforeBaseline,
+        // The daemon refused without a word of its own.
+        Error::Endpoint {
+            code: EndpointErrorCode::Other("endpoint_error".into()),
+            message: String::new(),
+        },
         Error::EndpointGeneration {
             generation: newer,
             server_version: "0.12.0".into(),
@@ -81,7 +86,6 @@ fn every_client_variant_has_a_message() {
         Error::HealthTimeout,
         Error::IncompatibleCodecs,
         Error::InputWriteTimeout,
-        Error::InvalidGitDir,
         Error::InvalidSession,
         Error::Io(io()),
         Error::Json(json()),
@@ -222,7 +226,6 @@ fn every_ssh_variant_has_a_message() {
         ssh::Error::Cancelled,
         ssh::Error::Closed,
         ssh::Error::InvalidTarget,
-        ssh::Error::KnownHostsUnavailable,
         ssh::Error::OutputLimit,
         ssh::Error::Timeout,
         ssh::Error::Unsupported,

@@ -644,44 +644,41 @@ impl LiveState {
                 if self.drag_request.as_ref() == Some(&request_id) {
                     self.drag_request = None;
                 }
+                let (result, refusal) = match sheprd_client::response::result(&response) {
+                    Ok(result) => (Some(result), None),
+                    Err(error @ sheprd_client::Error::Endpoint { .. }) => {
+                        (None, Some(Arc::new(crate::Error::from(error))))
+                    }
+                    Err(_) => (None, None),
+                };
                 for rename in [&mut self.tab_rename, &mut self.pane_rename]
                     .into_iter()
                     .flatten()
                 {
                     if request_id == rename.request {
-                        rename.result = Some(
-                            match response.get("error").filter(|error| !error.is_null()) {
-                                Some(error) => {
-                                    Err(Arc::new(crate::daemon::Error::Response(error.clone()).into()))
-                                }
-                                None => Ok(()),
-                            },
-                        );
+                        rename.result = Some(refusal.clone().map_or(Ok(()), Err));
                     }
                 }
                 if let Some(activation) = &mut self.activation
                     && request_id == activation.request
                 {
-                    let result = &response["result"];
-                    activation.revision = (response.get("error").is_none_or(|e| e.is_null())
-                        && result["type"] == "client_shell_surface_set"
-                        && result["active"] == activation.active)
-                        .then(|| result["projection_revision"].as_u64())
-                        .flatten();
+                    activation.revision = result
+                        .filter(|result| {
+                            result["type"] == "client_shell_surface_set"
+                                && result["active"] == activation.active
+                        })
+                        .and_then(|result| result["projection_revision"].as_u64());
                     activation.failed = activation.revision.is_none();
                     if activation.failed {
                         self.error = Some(fl!("state-activation-invalid"));
                     }
                 }
-                if let Some(error) = response.get("error")
-                    && !error.is_null()
+                if let Some(refusal) = &refusal
                     && !self.has_operation_result(&request_id)
                 {
-                    self.error = Some(crate::daemon::Error::Response(error.clone()).localize());
+                    self.error = Some(refusal.localize());
                 }
-                if self.dismissal_request(&request_id)
-                    && response.get("error").is_some_and(|error| !error.is_null())
-                {
+                if self.dismissal_request(&request_id) && refusal.is_some() {
                     self.announcement_dismissal = None;
                 }
                 for (id, result) in self.script_response.iter_mut() {

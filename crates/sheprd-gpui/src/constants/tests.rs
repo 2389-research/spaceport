@@ -4,15 +4,54 @@ use std::{fs, path::Path};
 
 use super::*;
 
+// The build script's selector, for the channel names it emits.
+#[allow(dead_code)]
+#[path = "../../preview_identity.rs"]
+mod preview_identity;
+
+#[test]
+fn channel_parses_the_build_scripts_two_names_and_nothing_else() {
+    assert_eq!(
+        Channel::parse(preview_identity::DEVELOPMENT),
+        Some(Channel::Development)
+    );
+    assert_eq!(
+        Channel::parse(preview_identity::MACOS_PREVIEW),
+        Some(Channel::MacosPreview)
+    );
+    for name in [
+        "",
+        "dev",
+        "Development",
+        "development ",
+        "macos_preview",
+        "preview",
+        "release",
+        "ai.2389.spaceport",
+    ] {
+        assert_eq!(Channel::parse(name), None, "{name:?}");
+    }
+}
+
+#[test]
+fn compiled_channel_is_the_one_the_selector_picks_for_this_build() {
+    let selected = preview_identity::select(
+        option_env!("SPACEPORT_MACOS_PREVIEW_VERSION"),
+        std::env::consts::OS,
+    )
+    .map(|identity| (Channel::parse(identity.channel), identity.app_id));
+    assert_eq!(selected, Some((Some(CHANNEL), APP_ID)));
+}
+
 #[test]
 fn running_development_app_has_its_own_os_identity() {
-    if option_env!("SPACEPORT_MACOS_PREVIEW_VERSION").is_some() {
-        assert_eq!(
-            (APP_ID, RELEASE_BUILD),
-            (include_str!("../../macos-preview-app-id").trim(), false)
-        );
-    } else {
-        assert_eq!(APP_ID, include_str!("../../development-app-id").trim());
+    match CHANNEL {
+        Channel::MacosPreview => {
+            assert_eq!(APP_ID, include_str!("../../macos-preview-app-id").trim());
+        }
+        Channel::Development => {
+            assert_eq!(APP_ID, include_str!("../../development-app-id").trim());
+        }
     }
     assert_eq!(LINUX_APP_ID, APP_ID);
     assert_ne!(APP_ID, "so.pen.herdr-gpui");

@@ -188,7 +188,7 @@ fn backend_cleanup_failure_survives_host_switch_without_disclosing_diagnostics(
         assert_eq!(notices.len(), 1);
         let notice = &notices.back().unwrap().1;
         assert_eq!(notice.title, "Remote cleanup failed");
-        assert!(notice.visible);
+        assert!(notice.is_visible());
         assert_eq!(notice.body.as_deref(), Some("No path was pasted. Temporary files may remain on the original host (Original host)."));
         for forbidden in ["/private", "secret", HOST, "other.invalid", "Other host"] {
             assert!(!notice.body.as_ref().unwrap().contains(forbidden));

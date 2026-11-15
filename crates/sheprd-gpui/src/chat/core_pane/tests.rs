@@ -21,10 +21,9 @@ fn info(id: &str, endpoint: Option<&str>) -> TerminalInfo {
 
 fn herdr(pane: &str) -> Target {
     Target {
-        endpoint: A.parse().unwrap(),
-        existing: None,
         pane_id: pane.into(),
         route: Route::Local,
+        source: Source::Program(A.parse().unwrap()),
         surface: Surface::Herdr,
     }
 }
@@ -35,14 +34,13 @@ fn a_labelled_terminal_is_a_chat_drawn_over_its_pane() {
     let targets = targets(&terminals);
     assert_eq!(targets.len(), 1);
     let target = &targets[0];
-    assert_eq!(target.endpoint.as_str(), A);
+    assert_eq!(target.source, Source::Program(A.parse().unwrap()));
     assert_eq!(target.pane_id, "core:t1");
     assert_eq!(target.route, Route::Local);
     assert_eq!(
         target.surface,
         Surface::Core(TerminalId::new("t1").unwrap())
     );
-    assert!(target.existing.is_none());
 }
 
 #[test]
@@ -139,5 +137,5 @@ fn the_terminal_a_chat_is_started_in_is_found_as_that_chat() {
     started.labels = spawn.labels;
     let found = targets(&[started]);
     assert_eq!(found.len(), 1);
-    assert_eq!(found[0].endpoint, endpoint);
+    assert_eq!(found[0].source, Source::Program(endpoint));
 }

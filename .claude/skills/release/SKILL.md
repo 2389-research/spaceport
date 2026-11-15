@@ -1,212 +1,104 @@
 ---
 name: release
-description: Publish a Sheprd release. Use when the user asks to cut, push, ship, or publish a release, or to approve or verify one that is already running. Covers `just release`, the protected environments the run stops at, and the local verification step that is not part of CI.
+description: Publish a Spaceport macOS preview. Use when the user asks to cut, push, ship, or publish a release or preview, or to check one that is already running. Covers the tagged `macos-preview.yml` route, its preconditions, and the changelog preview. No other release route exists in this fork.
 ---
 
-# Releasing Sheprd
+# Releasing Spaceport
 
-The owner has given standing authorization to approve the release run's protected
-environments when they ask for a release. Do not wait to be asked again per run.
-Everything else on this page still applies: the preconditions are hard gates.
-Rerun a job that fails on a transient outside error, such as Apple's stapler
-reporting "The network connection was lost"; stop for anything that needs a fix.
+Spaceport has one release route: tagged, signed macOS arm64 previews, built by
+`.github/workflows/macos-preview.yml` (decisions D61, D64, D65). The full
+reference is the "Spaceport macOS previews" section of
+`scripts/release/README.md`; read it before a release.
 
-Releases go out to real users through the in-app updater and Homebrew. Never
-dispatch one that was not asked for.
+The inherited upstream production route is gone: `just release`,
+`just release-beta`, `just release-promote`, the upstream release and
+promotion workflows, Linux packages, Homebrew, winget, and the release
+verification and GPG signing recipes were deleted. Restore them from git
+history only when the general release gate opens
+(`docs/spaceport/plan/gaps.json`). Do not improvise a replacement.
 
-## Choose the version? No.
+A preview goes out to real users: installed previews update through Sparkle.
+Never push a release tag that the owner did not ask for.
 
-You do not pick a version and you cannot. The workflow derives
-`vYYYYMMDD.COUNTER` from today's UTC date and the tags already published. A
-second release on the same day becomes `.2`, then `.3`. Do not invent a tag, do
-not pass one, and do not create a tag locally.
+## Preconditions
 
-## Dispatch
-
-```sh
-just release          # -> bash scripts/release/dispatch.sh
-```
-
-`dispatch.sh` refuses unless every one of these holds. Check them first so a
-failure is not a surprise:
-
-| Precondition | Command |
+| Precondition | How to check |
 | --- | --- |
-| Working tree clean **including untracked files** | `git status --porcelain --untracked-files=all` |
-| On `main` | `git symbolic-ref --quiet --short HEAD` |
-| `origin` is `sheprd-labs/sheprd` | `git remote get-url origin` |
-| `gh` authenticated as `penso` | `gh api user --jq .login` |
-| Local HEAD == `origin/main` on GitHub | compare `git rev-parse HEAD` with `gh api repos/sheprd-labs/sheprd/git/ref/heads/main --jq .object.sha` |
-The release workflow runs no test suites of its own: its `ci-gate` job
-requires a successful owner-triggered push or manual CI run on main with every
-platform check and Linux optimized build completed successfully. A green run
-with skipped checks does not qualify. CI builds macOS release binaries on pull
-requests only, so the release's macOS builds get the macOS runners. `dispatch.sh` does not wait for CI: the
-release builds while CI runs, and `ci-gate` holds `sign` and `windows-sign`
-until CI passes, so a failed or cancelled CI run fails the release at `ci-gate`.
-If a CI job fails on a known flake, rerun it (`gh run rerun <id> --failed`)
-while `ci-gate` waits. `sign` also waits for the `nix` job, which calls
-`nix.yml` to build the flake on both Linux architectures from the release
-commit: its one cargo build of all five packages unifies features that CI's
-builds keep apart, so it can fail where CI passed. Rerun it the same way on a
-flake. For a documentation-only commit whose push CI skipped
-the suites, run `gh workflow run ci.yml --repo sheprd-labs/sheprd --ref main`
-before dispatching. Apple's notary and stapler calls retry ten times in
-`sign-macos.sh`, so a dropped connection there rarely needs a rerun.
+| The commit belongs to `main` | `git merge-base --is-ancestor <sha> origin/main` |
+| Main CI completed successfully on that exact commit | `gh run list --repo 2389-research/spaceport --workflow ci.yml --commit <sha>` |
+| The version is unused, even by a failed run | `gh run list --repo 2389-research/spaceport --workflow macos-preview.yml` |
+| The tag is pushed as `harperreed` | `gh api user --jq .login` |
 
-The script never fetches or checks out for you: if HEAD does not match, stop and
-tell the owner rather than pulling on their behalf.
+The workflow enforces each of these and refuses otherwise. A failed check is a
+stop, not something to work around.
 
-Untracked files block a release. If you have added files to the repo (a skill, a
-scratch script), they must be committed or ignored before `just release` will run.
+## Show what will ship
 
-Show the owner what is about to ship before dispatching. `just
-changelog-unreleased` is the same text users will read on the release page; the
-raw log is the fallback when `git-cliff` is not installed locally:
+Commit subjects are the release notes. Show them to the owner first:
 
 ```sh
-just changelog-unreleased          # only the commits since the last tag
-just changelog                     # the whole generated changelog
-just changelog-release 20260920.3 out/   # exactly the two files CI publishes
-git log --oneline "$(gh api repos/sheprd-labs/sheprd/releases/latest --jq .tag_name)"..HEAD
+just changelog-unreleased   # the commits since the last tag
+just changelog              # the whole generated changelog
 ```
 
-`just changelog*` needs `git-cliff` locally (`cargo install --locked --version
-2.12.0 git-cliff`); CI installs the same pinned version.
+Both need `git-cliff` locally (`cargo install --locked --version 2.12.0 git-cliff`).
+The workflow generates the published notes itself with
+`scripts/release/generate-changelog.sh --macos-preview`. Do not hand-write notes
+or edit a published body: fix the commit subjects instead.
 
-Dispatch is long-running. Run it with `run_in_background` so a slow build does
-not hit a foreground timeout.
+## Tag and push
 
-## Beta, then promote
-
-A beta is a full release published as a GitHub prerelease. Only installs with
-`[updates] channel = "beta"` (Settings > General > Install beta releases) are
-offered it; the stable channel, `/releases/latest` and Homebrew never see it.
+Versions are `YYYYMMDD.COUNTER`: the UTC date and a same-day counter that
+starts at 1. Pick the next unused one, then push one annotated tag:
 
 ```sh
-just release-beta                 # dispatch.sh --beta: same run, prerelease, no homebrew job
-just release-promote 20261010.1   # dispatch.sh --promote: promote.yml, flips it to stable
+git tag -a v20261110.6 FULL_MAIN_COMMIT_SHA -m 'Spaceport macOS preview 20261110.6'
+git push origin refs/tags/v20261110.6
 ```
 
-Same preconditions as `just release`, and the same rule: never dispatch either
-unless the owner asked for it. "Ship a beta" means `release-beta`; "promote" means
-`release-promote` with the exact beta version the owner names (list candidates with
-`gh release list --repo sheprd-labs/sheprd --limit 10`). Promotion rebuilds nothing:
-it refuses anything that is not a published prerelease newer than the latest
-stable, then its `promote` job (environment **`release`**) clears the prerelease
-flag and its `homebrew` job (environment **`homebrew`**) updates the tap. Approve
-both gates as below. A failed beta is not deleted or edited; it is simply never
-promoted, and the next release supersedes it.
+The push builds an optimized app, signs and notarizes it, and publishes a GitHub
+prerelease with the DMG and `SHA256SUMS`. It then replaces `appcast.xml` on the
+fixed `macos-preview-feed` release.
 
-Unpromoted betas fold into the next release's notes, so a stable release lists
-everything since the previous stable one. `release.yml` and `promote.yml` share the
-`manual-release` concurrency group: one waits for the other.
+A manual run on `main` (`workflow_dispatch` with an exact commit SHA and an
+explicit version) uploads workflow artifacts and publishes nothing.
 
-## The run stops for approvals
-
-Jobs run roughly: `audit` (shown as "Release Workflow Security") and `validate`,
-then `macos-build` (arm64 + x86_64, both on Apple Silicon), `linux` (aarch64 + x86_64),
-`windows` (x86_64 and ARM64 MSVC), `metadata` and `changelog`, then `sign` and
-`windows-sign` (Authenticode, one per Windows target), `windows-smoke` (installs
-the signed installers), `attest`, `publish`, and finally `homebrew` and `winget`.
-Until the `WINDOWS_SIGNING_SUBJECT` repository variable is set, `windows-sign`,
-`windows-smoke` and `winget` are skipped and Windows ships unsigned.
-
-`sign`, `windows-sign`, `attest` and `publish` use the **`release`** environment;
-`homebrew` uses the **`homebrew`** environment and `winget` the **`winget`**
-environment. All have required reviewers, so the run pauses at each and waits.
-`sign` is additionally gated on the actor being `penso`. Betas skip `homebrew`
-and `winget`; `just release-promote` runs both. `winget` only warns until
-`WINGET_TOKEN` is set and the first winget-pkgs version is submitted by hand
-(`scripts/release/README.md`).
-
-Approve a pending gate:
+## Watch the run
 
 ```sh
-run=<run-id>
-gh api repos/sheprd-labs/sheprd/actions/runs/$run/pending_deployments \
-  --jq '.[] | "\(.environment.name) id=\(.environment.id) can_approve=\(.current_user_can_approve)"'
-
-gh api repos/sheprd-labs/sheprd/actions/runs/$run/pending_deployments -X POST --input - <<'JSON'
-{"environment_ids":[<id>],"state":"approved","comment":"<why>"}
-JSON
+gh run list --repo 2389-research/spaceport --workflow macos-preview.yml --limit 5
+gh run view <run-id> --repo 2389-research/spaceport --json status,conclusion,jobs
 ```
 
-Use `--input` with real JSON. `-f "environment_ids[]=<id>"` sends the id as a
-string and the API rejects it with `422 ... "<id>" is not an integer`.
+The signing job uses the protected `macos-preview` environment. A job in
+`waiting` may be waiting for a runner or for that environment; read the run
+before telling the owner which.
 
-A job sitting in `waiting` is not proof a gate is open — it is also the state
-while a runner is being assigned. Check `pending_deployments` (empty means no
-gate) and `.../approvals` for who approved what, and read those before telling
-the owner anything about approval state.
+A local `gh run watch` that dies on a network error says nothing about the run.
+Re-check with `gh run view`.
 
-## `gh run watch` dying is not a failed release
+## After a failure
 
-`dispatch.sh` ends by watching the run, and that watch is a local poll against
-`api.github.com`. A network blip kills it with `error connecting to
-api.github.com` and `just release` exits 1 **while the release keeps going
-server-side**. Never report a failed release on the strength of that exit code.
-Re-check the truth:
-
-```sh
-gh run view <run-id> --repo sheprd-labs/sheprd --json status,conclusion,jobs
-```
-
-Because the watcher owns the final summary, losing it also means nothing local
-will print the published tag. Confirm with
-`gh api repos/sheprd-labs/sheprd/releases/latest --jq .tag_name`. A beta is never
-`latest`; find it with `gh release list --repo sheprd-labs/sheprd --limit 5`.
-
-## The release notes write themselves
-
-`changelog` generates the release body from git history with `git-cliff`
-(`cliff.toml`) and `publish` passes it to `gh release create --notes-file`. Do
-not hand-write notes, and do not edit a published body to add them: fix the
-commit subjects instead, since those are the entries. The standing preamble
-about GUI-only DMG, Linux packages, Windows installers and zips, and the required daemon lives in
-`scripts/release/generate-changelog.sh`.
-
-`CHANGELOG.md` is generated too, but it is **not** a release asset — the asset
-set is fixed by `artifact-manifest.py` and each asset is checksummed, signed and
-attested. Both files are uploaded as the run's `release-notes` workflow artifact.
-
-## After it publishes
-
-This is local and deliberately **not** a CI step.
-
-Verify the published artifacts — the exact asset set, both checksums, Sigstore,
-and GitHub provenance. Pin the commit with `--sha`; it is recommended:
-
-```sh
-just verify-release --version vYYYYMMDD.COUNTER --sha <release-commit-sha>
-```
-
-That completes a release. Do **not** run `just sign-release` as part of one:
-the owner skips supplemental GPG signatures. The immutable release cannot carry
-them (its asset set is exact), nothing publishes them elsewhere, and GitHub
-provenance plus Sigstore already tie every binary to its workflow and commit.
-
-Run it only when the owner asks. Then the output directory must not already
-exist, the fingerprint must be the **full** signing subkey fingerprint (ask, or
-read it from their GPG config; never guess), the owner must tap the YubiKey, and
-nothing is uploaded: the signatures land in `<output-dir>/gpg/`.
+Never rerun the workflow, and never move or delete a used tag to force another
+submission. A used version stays used, even when the run failed before signing.
+Inspect the retained notarization receipts, fix the cause, and release a new
+version.
 
 ## Before touching release machinery itself
 
-If the change is to the scripts or workflow rather than a normal release:
-
 ```sh
-just release-check    # bash -n, mocked release tests, security tests, actionlint, zizmor
+just release-check    # bash -n, mocked release tests, CI contract tests, actionlint, zizmor
 ```
 
-It dispatches and publishes nothing. `just dmg $VERSION` builds a local signed
-universal DMG and also publishes nothing.
+It dispatches and publishes nothing. `just dmg VERSION` builds a local signed
+and notarized preview DMG with the installed identity, and also publishes
+nothing.
 
 ## Never
 
-- Dispatch a release the owner did not ask for.
-- Invent, pass, or locally create a version tag.
+- Push a release tag the owner did not ask for.
+- Reuse, move, or delete a version tag.
 - Report success from a queue state, or failure from a dead watcher.
-- Run `just sign-release` unless the owner asked for it.
+- Run an inherited upstream publish or install route.
 - Edit the vendored protocol crate, the workflow pins, or `NOTICE.md` as
   incidental release cleanup.

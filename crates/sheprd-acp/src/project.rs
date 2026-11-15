@@ -610,17 +610,21 @@ pub(crate) fn usage(update: &wire::UsageUpdate) -> Usage {
 }
 
 /// The token counts of a `session/prompt` result's `usage`, which ACP still
-/// marks unstable, so it is read here rather than through the schema crate.
-#[derive(serde::Deserialize)]
+/// marks unstable, so it is read and written here rather than through the
+/// schema crate. The harness translators write it and the session reads it,
+/// so a key cannot be spelt two ways.
+#[derive(Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-struct PromptUsage {
+pub(crate) struct PromptUsage {
     #[serde(default)]
-    cached_read_tokens: u64,
-    input_tokens: u64,
-    output_tokens: u64,
-    #[serde(default)]
-    thought_tokens: u64,
-    total_tokens: u64,
+    pub(crate) cached_read_tokens: u64,
+    pub(crate) input_tokens: u64,
+    pub(crate) output_tokens: u64,
+    /// Left out by a harness that does not count reasoning.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) thought_tokens: Option<u64>,
+    /// As the harness counts it: each one's total is its own sum.
+    pub(crate) total_tokens: u64,
 }
 
 /// Tokens a prompt turn reported, when its result says.
@@ -630,7 +634,7 @@ pub(crate) fn tokens(result: &serde_json::Value) -> Option<Tokens> {
         cached: usage.cached_read_tokens,
         input: usage.input_tokens,
         output: usage.output_tokens,
-        thought: usage.thought_tokens,
+        thought: usage.thought_tokens.unwrap_or(0),
         total: usage.total_tokens,
     })
 }

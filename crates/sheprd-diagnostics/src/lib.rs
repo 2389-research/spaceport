@@ -8,7 +8,7 @@
 //! implementations must
 //! cooperate with fmt errors.
 //!
-//! Only events whose target is one of the crates `init` names are kept, so a
+//! Only events from the crates `init`'s [`Targets`] name are kept, so a
 //! dependency's own logging never fills the file.
 #![cfg_attr(test, allow(clippy::disallowed_methods))]
 
@@ -148,7 +148,7 @@ pub fn previous_log_file(current: &Path) -> PathBuf {
 /// error, never silently replaced. No tracing-log bridge is installed. Without a
 /// state directory or writer thread, every event counts as dropped. `targets`
 /// are the crates whose events are kept, each with its modules.
-pub fn init(targets: &'static [&'static str]) -> Result<()> {
+pub fn init(targets: Targets) -> Result<()> {
     let (lines, queued) = mpsc::sync_channel(QUEUE);
     let counters = Arc::new(Counters::default());
     let path = log_file().and_then(|path| {
@@ -432,16 +432,28 @@ impl Tail {
     }
 }
 
-fn kept_target(targets: &[&str], target: &str) -> bool {
-    targets.iter().any(|root| {
-        target == *root
-            || target
-                .strip_prefix(root)
-                .is_some_and(|rest| rest.starts_with("::"))
-    })
+/// The crates whose events are kept, each with its modules. An event of any
+/// other crate is dropped before it is queued, so it is not counted in
+/// [`dropped`] either.
+///
+/// A crate is the first segment of an event's target, the part before `::`,
+/// which is the emitting crate unless the event names a target of its own.
+#[derive(Clone, Copy, Debug)]
+pub struct Targets {
+    /// Every crate whose name starts with this is kept: a workspace's shared
+    /// prefix, with its trailing underscore. Empty keeps only `roots`.
+    pub crate_prefix: &'static str,
+    /// Crates kept by their whole name.
+    pub roots: &'static [&'static str],
 }
 
-fn subscriber(capture: Capture, targets: &'static [&'static str]) -> impl Subscriber + Send + Sync {
+fn kept_target(targets: Targets, target: &str) -> bool {
+    let krate = target.split_once("::").map_or(target, |(krate, _)| krate);
+    targets.roots.contains(&krate)
+        || (!targets.crate_prefix.is_empty() && krate.starts_with(targets.crate_prefix))
+}
+
+fn subscriber(capture: Capture, targets: Targets) -> impl Subscriber + Send + Sync {
     tracing_subscriber::registry().with(capture.with_filter(tracing_subscriber::filter::filter_fn(
         move |meta| kept_target(targets, meta.target()),
     )))

@@ -217,11 +217,7 @@ impl SheprdWindow {
         let Some(endpoint) = self.endpoints.get(device.index) else {
             return Vec::new();
         };
-        let live = if device.index == self.selected_endpoint {
-            &self.live
-        } else {
-            &endpoint.live
-        };
+        let live = self.live_of(device.index);
         let (Some(daemon), Some(snapshot)) = (
             crate::listening_ports::Daemon::of(&endpoint.connection.target),
             live.snapshot.as_deref(),

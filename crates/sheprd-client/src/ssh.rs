@@ -1,6 +1,5 @@
 //! POSIX discovery/stdio bridge adapted from upstream remote/attach.rs.
-//! No installers, daemon restarts, or SSH config edits. A host key is trusted
-//! only after the user approves its fingerprint (see `host_key`).
+//! No installers, daemon restarts, or SSH config edits.
 //! The remote host is POSIX or Windows. On Unix the `ssh` child's standard
 //! streams are one end of a socket pair; on Windows they are private pipes,
 //! driven with the same read and write deadlines as the daemon's named pipe (see
@@ -23,16 +22,13 @@ use std::{
 
 mod error;
 mod failure;
-mod host_key;
 pub(crate) mod mux;
 mod unverified;
 pub use error::Error;
 pub use failure::SshFailure;
-pub use host_key::{HostKeyFingerprint, HostKeyScan, NewHostKey, scan_host_key, trust_host_key};
-pub use unverified::{HostKeys, MAX_UNVERIFIED_HOSTS, set_host_keys, set_unverified_hosts};
+pub(crate) use unverified::HostKeys;
+pub use unverified::{MAX_UNVERIFIED_HOSTS, set_unverified_hosts};
 mod powershell;
-mod serve;
-pub use serve::{remote_socket, serve_command};
 
 const READY: &[u8] = b"herdr-remote-output-ready:1\n";
 
@@ -117,13 +113,11 @@ pub enum HostProbe {
     Running,
 }
 
-/// Every candidate reports its client and server status, one block each, so
-/// the choice between them stays with the same rules the bridge applies.
-fn probe_command(session: &str) -> String {
-    format!("/bin/sh -c {}", quote(&probe_script(session)))
-}
-
-/// The probe as a script for `/bin/sh -c`.
+/// The probe as a script for `/bin/sh -c`: every candidate reports its client
+/// and server status, one block each, so the choice between them stays with
+/// the same rules the bridge applies. Only a WSL distribution is probed this
+/// way, so the script and its reader are built on Windows alone.
+#[cfg(any(windows, test))]
 pub(crate) fn probe_script(session: &str) -> String {
     format!(
         r#"{CANDIDATES}
@@ -140,11 +134,13 @@ printf '%s\n' '{PROBE_DONE}'"#,
 
 /// `None` when the script never finished, so partial output is not mistaken
 /// for a host without Herdr.
+#[cfg(any(windows, test))]
 pub(crate) fn classify_probe(output: &[u8]) -> Option<HostProbe> {
     classify_probe_with(output, compatible)
 }
 
 /// [`classify_probe`] with the host's rule for a compatible client status.
+#[cfg(any(windows, test))]
 fn classify_probe_with(
     output: &[u8],
     compatible: impl Fn(&serde_json::Value) -> Option<bool>,
@@ -188,125 +184,6 @@ fn lines(output: &[u8]) -> impl Iterator<Item = &[u8]> {
     output
         .split(|b| *b == b'\n')
         .map(|line| line.strip_suffix(b"\r").unwrap_or(line))
-}
-
-/// Blocks for at most `PROBE_TIMEOUT`: call it from a background thread.
-pub fn probe_host(target: &str, session: &str) -> Result<HostProbe> {
-    probe_host_with(target, session, HostKeys::of(target))
-}
-
-/// [`probe_host`] checking host keys as `keys` says, for a host whose choice
-/// is not saved yet.
-pub fn probe_host_with(target: &str, session: &str, keys: HostKeys) -> Result<HostProbe> {
-    validate_target(target)?;
-    session_socket(Path::new(""), session)?;
-    let mut command = command_with(target, &probe_command(session), keys);
-    // Stderr is read only to classify an `ssh` failure; its text is dropped.
-    command.stderr(Stdio::piped());
-    tracing::info!(category = "probe", "probing host");
-    let started = Instant::now();
-    let (status, output, stderr) = match run_with_stderr(&mut command, PROBE_TIMEOUT, || false) {
-        Ok(result) => result,
-        Err(error) => {
-            tracing::warn!(category = "probe", kind = ?error.kind(), elapsed_ms = started.elapsed().as_millis() as u64, "probe did not finish");
-            return Err(error);
-        }
-    };
-    let elapsed_ms = started.elapsed().as_millis() as u64;
-    if status.code() == Some(255) {
-        let failure = SshFailure::classify(status.code(), &stderr);
-        tracing::warn!(category = "probe", %status, ?failure, stderr_bytes = stderr.len(), elapsed_ms, "ssh failed during probe");
-        return Ok(HostProbe::SshFailed(failure));
-    }
-    let probe = classify_probe(&output);
-    if probe.is_none() && powershell::rejected_posix(status.code()) {
-        tracing::info!(category = "probe", %status, "host cannot run /bin/sh; probing PowerShell");
-        return probe_powershell_host(target, session, keys);
-    }
-    tracing::info!(
-        category = "probe",
-                %status,
-        stdout_bytes = output.len(),
-        candidates = output.split(|b| *b == b'\n').filter(|line| *line == PROBE_CANDIDATE.as_bytes()).count(),
-        finished = output.split(|b| *b == b'\n').any(|line| line == PROBE_DONE.as_bytes()),
-        ?probe,
-        elapsed_ms,
-        "probe finished"
-    );
-    probe.ok_or(Error::Closed.into())
-}
-
-/// [`probe_host`] for a host whose shell is `cmd.exe` or PowerShell.
-fn probe_powershell_host(target: &str, session: &str, keys: HostKeys) -> Result<HostProbe> {
-    let mut command = command_with(target, &powershell::probe_command(session), keys);
-    command.stderr(Stdio::piped());
-    let (status, output, stderr) = run_with_stderr(&mut command, PROBE_TIMEOUT, || false)?;
-    if status.code() == Some(255) {
-        return Ok(HostProbe::SshFailed(SshFailure::classify(
-            status.code(),
-            &stderr,
-        )));
-    }
-    let probe = classify_probe_with(&output, powershell::compatible);
-    tracing::info!(category = "probe", %status, ?probe, "PowerShell probe finished");
-    probe.ok_or(Error::Closed.into())
-}
-
-/// The `remote.origin.url` of a repository on a saved host, read without a
-/// prompt. `git_dir` is the absolute Git directory the daemon reported for the
-/// workspace. `None` when the repository has no origin remote. Blocks for at
-/// most `timeout`: call it from a background thread.
-pub fn remote_origin_url(
-    target: &str,
-    git_dir: &str,
-    timeout: Duration,
-    cancelled: impl Fn() -> bool,
-) -> Result<Option<String>> {
-    remote_config_value(target, git_dir, "remote.origin.url", timeout, cancelled)
-}
-
-/// Read one Git configuration value on a saved host using bounded,
-/// noninteractive SSH. `dir` is an absolute Git directory or a directory in a
-/// working tree, since a daemon reports a workspace's Git directory only for
-/// some checkouts. Call only from a background thread.
-pub fn remote_config_value(
-    target: &str,
-    dir: &str,
-    key: &str,
-    timeout: Duration,
-    cancelled: impl Fn() -> bool,
-) -> Result<Option<String>> {
-    validate_target(target)?;
-    if !dir.starts_with('/') || dir.chars().any(char::is_control) {
-        return Err(crate::Error::InvalidGitDir);
-    }
-    let (status, output) = run_remote(target, &config_command(dir, key), timeout, cancelled)?;
-    match status.code() {
-        Some(0) => {}
-        // `git config --get` exits 1 when the key is absent.
-        Some(1) => return Ok(None),
-        _ => return Err(crate::Error::RemoteCommand(status)),
-    }
-    let value = String::from_utf8(output).map_err(|_| crate::Error::RemoteOutput)?;
-    let value = value.trim_end_matches(['\r', '\n']);
-    if value.is_empty() {
-        return Ok(None);
-    }
-    if value.len() > 2048 || value.chars().any(char::is_control) {
-        return Err(crate::Error::RemoteOutput);
-    }
-    Ok(Some(value.to_owned()))
-}
-
-fn config_command(dir: &str, key: &str) -> String {
-    // `-C` rather than `--git-dir`: Git finds the repository from either a
-    // Git directory or a working directory, and exits 1 outside one.
-    let script = format!(
-        "exec git -c core.fsmonitor=false -C {} config --get -- {}",
-        quote(dir),
-        quote(key)
-    );
-    format!("/bin/sh -c {}", quote(&script))
 }
 
 /// Where an SSH target connects, as the local SSH configuration resolves it.
@@ -353,30 +230,6 @@ fn parse_destination(output: &[u8]) -> Option<Destination> {
         host: value("hostname")?.to_ascii_lowercase(),
         port: value("port")?.parse().ok()?,
     })
-}
-
-/// Runs one noninteractive SSH command, keeping at most `PROBE_OUTPUT_LIMIT`
-/// bytes of stdout and never stderr, which can carry banners or secrets.
-/// It shares the host's quick-lane master when it can; waiting for one
-/// counts against `timeout`.
-fn run_remote(
-    target: &str,
-    remote_command: &str,
-    timeout: Duration,
-    cancelled: impl Fn() -> bool,
-) -> Result<(std::process::ExitStatus, Vec<u8>)> {
-    let deadline = Instant::now() + timeout;
-    let (mut command, _channel) = mux::command(
-        target,
-        remote_command,
-        mux::Lane::Quick,
-        deadline,
-        &cancelled,
-    );
-    let timeout = deadline
-        .checked_duration_since(Instant::now())
-        .ok_or(Error::Timeout)?;
-    run(&mut command, timeout, cancelled)
 }
 
 /// Runs `command` with a deadline, keeping at most `PROBE_OUTPUT_LIMIT` bytes
@@ -457,13 +310,7 @@ fn run_with_stderr(
 /// as a host without Herdr. There the policy sets `ControlPath=none`, so each
 /// connection authenticates on its own.
 pub(super) fn command(target: &str, remote_command: &str) -> Command {
-    command_with(target, remote_command, HostKeys::of(target))
-}
-
-/// [`command`] checking host keys as `keys` says rather than as the user's
-/// saved choice for `target` does.
-fn command_with(target: &str, remote_command: &str, keys: HostKeys) -> Command {
-    let mut command = noninteractive(keys);
+    let mut command = noninteractive(HostKeys::of(target));
     command.args(["-o", "ClearAllForwardings=yes", "--", target]);
     command.arg(remote_command);
     command
@@ -647,28 +494,6 @@ fn connect_powershell(
         await_ready(stream, stop, Instant::now()).map(drop)
     })?
     .map_err(|closed| Error::Refused(closed.failure).into())
-}
-
-/// The stdio bridge through an application-built remote command: the
-/// discovery script is appended as its final argument, and the command's
-/// standard streams become the connection. The caller owns the program, its
-/// arguments, and any credential it needs.
-pub fn connect_command(mut command: Command, session: &str, stop: &AtomicBool) -> Result<Bridge> {
-    session_socket(Path::new(""), session)?;
-    command.arg(bridge_command(session));
-    let (stream, child) = bridge(command, stop)?;
-    Ok(Bridge { stream, child })
-}
-
-/// A spawned remote bridge that has answered discovery. Dropping it kills and
-/// reaps the child.
-pub struct Bridge {
-    pub(crate) stream: Stream,
-    pub(crate) child: ChildGuard,
-}
-
-fn bridge(command: Command, stop: &AtomicBool) -> Result<(Stream, ChildGuard)> {
-    start_bridge(command, stop, handshake)?.map_err(|closed| Error::Refused(closed.failure).into())
 }
 
 /// A bridge whose child closed its stdout before answering, with the exit

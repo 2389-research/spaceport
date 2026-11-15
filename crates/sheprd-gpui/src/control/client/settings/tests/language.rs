@@ -38,10 +38,7 @@ fn status_names_the_setting_the_locale_and_a_pseudo_locale() {
 fn list_names_each_language_in_itself() {
     let output = super::super::language::language(
         crate::cli::control::LanguageCommand::List,
-        &crate::control::client::Context {
-            json: true,
-            window: None,
-        },
+        &crate::control::client::Context::new(true, None),
     )
     .unwrap();
     let json = &output.json;
