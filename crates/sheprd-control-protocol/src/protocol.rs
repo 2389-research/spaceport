@@ -92,15 +92,46 @@ pub struct Call<T> {
 }
 
 impl Request {
+    /// Who asks. Every request names its caller, and with it the window
+    /// `--window` chose.
+    pub fn caller(&self) -> &Caller {
+        match self {
+            Self::Status(caller) => caller,
+            Self::App(call) => &call.caller,
+            Self::Window(call) => &call.caller,
+            Self::Ui(call) => &call.caller,
+            Self::Command(call) => &call.caller,
+            Self::Tab(call) => &call.caller,
+            Self::Work(call) => &call.caller,
+            Self::Host(call) => &call.caller,
+            Self::Settings(call) => &call.caller,
+            Self::Events(call) => &call.caller,
+            Self::Link(call) => &call.caller,
+            Self::Chat(call) => &call.caller,
+        }
+    }
+
     /// How long the app may take to answer, beyond the usual bound: some
     /// requests wait for the user, a page, or an event on purpose.
+    ///
+    /// This is the one record of which requests wait. The caller's read
+    /// timeout grows by it, and the app parks a request only when it is
+    /// above zero. The matches name every family and operation, so a new one
+    /// must state its wait.
     pub fn wait_seconds(&self) -> u64 {
         let wait = match self {
             Self::Events(call) => call.op.wait_seconds(),
             Self::Tab(call) => call.op.wait_seconds(),
             Self::Host(call) => call.op.wait_seconds(),
             Self::Settings(call) => call.op.wait_seconds(),
-            _ => 0,
+            Self::Status(_)
+            | Self::App(_)
+            | Self::Window(_)
+            | Self::Ui(_)
+            | Self::Command(_)
+            | Self::Work(_)
+            | Self::Link(_)
+            | Self::Chat(_) => 0,
         };
         wait.min(MAX_WAIT_SECONDS)
     }
@@ -201,8 +232,10 @@ mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
 
+    mod caller;
     mod removed_browser;
     mod removed_phone;
+    mod waits;
 
     #[test]
     fn removed_browser_open_request_is_rejected() {
