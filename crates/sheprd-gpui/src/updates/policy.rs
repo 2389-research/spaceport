@@ -1,5 +1,7 @@
 // ABOUTME: Validates the running preview bundle before starting native updates.
 // ABOUTME: Keeps build identity and signed bundle trust settings consistent.
+use crate::constants::Channel;
+
 pub(super) struct Bundle<'a> {
     pub id: &'a str,
     pub version: &'a str,
@@ -13,20 +15,41 @@ pub(super) struct Bundle<'a> {
     pub automatic_checks_configured: bool,
 }
 
-pub(super) fn eligible(
-    bundle: &Bundle<'_>,
-    id: &str,
-    version: &str,
-    feed: &str,
-    key: &str,
-    worktree: &str,
-) -> bool {
-    worktree == "0"
-        && id == "ai.2389.spaceport"
-        && version != "dev"
-        && !version.is_empty()
-        && bundle.id == id
-        && bundle.version == version
+/// The identity a build was compiled with.
+pub(super) struct Build<'a> {
+    pub channel: Channel,
+    pub id: &'a str,
+    pub version: &'a str,
+    /// The build script's worktree marker: `"0"` outside a linked worktree.
+    pub worktree: &'a str,
+}
+
+impl Build<'static> {
+    /// This executable's own identity, from the build script.
+    pub(super) const COMPILED: Self = Self {
+        channel: crate::constants::CHANNEL,
+        id: crate::constants::APP_ID,
+        version: crate::constants::APP_VERSION,
+        worktree: env!("HERDR_BUILD_WORKTREE"),
+    };
+}
+
+impl Build<'_> {
+    /// Whether this kind of build may update at all: a signed macOS preview
+    /// built outside a worktree. Development builds never update, whatever
+    /// their ID or version text says.
+    pub(super) fn can_update(&self) -> bool {
+        self.channel == Channel::MacosPreview && self.worktree == "0"
+    }
+}
+
+/// Whether the running bundle is the installed copy of `build`, carrying the
+/// compiled trust settings. This is the only answer to "may this app update".
+pub(super) fn eligible(bundle: &Bundle<'_>, build: &Build<'_>, feed: &str, key: &str) -> bool {
+    build.can_update()
+        && !build.version.is_empty()
+        && bundle.id == build.id
+        && bundle.version == build.version
         && std::path::Path::new(bundle.path)
             .extension()
             .is_some_and(|ext| ext == "app")

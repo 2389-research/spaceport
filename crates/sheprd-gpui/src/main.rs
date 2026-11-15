@@ -150,7 +150,7 @@ pub(crate) use {
         bind_keys,
     },
     app::open_additional_window,
-    constants::{APP_VERSION, RELEASE_BUILD, TAB_HEIGHT, TAB_WIDTH, WINDOW_TITLE},
+    constants::{APP_VERSION, TAB_HEIGHT, TAB_WIDTH, WINDOW_TITLE},
     menus::menus,
     navigation::{NavigationTarget, OwnedNavigationTarget},
     window::SheprdWindow,

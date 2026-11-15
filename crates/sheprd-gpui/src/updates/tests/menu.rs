@@ -7,7 +7,6 @@ fn unsupported_update_menu_stays_disabled() {
     assert!(!menu_enabled(Err(Error::Unsupported)));
 }
 
-#[cfg(all(target_os = "macos", feature = "macos-updater"))]
 #[test]
 fn rebuild_during_busy_check_keeps_menu_enabled_after_returning_idle() {
     let mut disabled = !menu_enabled(Ok(()));

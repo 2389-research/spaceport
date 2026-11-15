@@ -8,13 +8,6 @@ mod native;
 #[cfg(any(test, all(target_os = "macos", feature = "macos-updater")))]
 mod policy;
 
-pub(crate) fn supported_build() -> bool {
-    cfg!(all(target_os = "macos", feature = "macos-updater"))
-        && env!("HERDR_BUILD_WORKTREE") == "0"
-        && crate::constants::APP_ID == "ai.2389.spaceport"
-        && crate::constants::APP_VERSION != "dev"
-}
-
 pub(crate) fn install(cx: &mut gpui::App) {
     #[cfg(all(target_os = "macos", feature = "macos-updater"))]
     if let Err(error) = native::install(cx) {
@@ -48,9 +41,7 @@ pub(crate) fn menu_available(cx: &gpui::App) -> bool {
 
 fn menu_enabled(availability: Result<(), Error>) -> bool {
     match availability {
-        Ok(()) => true,
-        #[cfg(all(target_os = "macos", feature = "macos-updater"))]
-        Err(Error::Busy) => true,
+        Ok(()) | Err(Error::Busy) => true,
         Err(_) => false,
     }
 }
