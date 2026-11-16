@@ -1,5 +1,5 @@
-"""ABOUTME: Keeps the Herdr 1 install offer out of Spaceport's desktop UI.
-ABOUTME: Checks the menu, launch prompt, action, and English text together.
+"""ABOUTME: Keeps the removed Herdr 1 install modal's routes out of Spaceport.
+ABOUTME: D70's Local card links to the Herdr website without restoring this modal.
 """
 
 from pathlib import Path

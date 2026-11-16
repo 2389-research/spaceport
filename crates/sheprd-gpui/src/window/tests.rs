@@ -22,6 +22,7 @@ mod en_xa;
 mod en_xa_input;
 mod en_xa_notices;
 mod follow_focus;
+mod herdr_missing;
 mod legacy_terminal_fallback;
 mod padding;
 mod removed_remote_browser;

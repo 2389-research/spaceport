@@ -422,9 +422,14 @@ Servers without surface-switching support remain usable as single targets.
 Default and named-session startup discovers Herdr on PATH or in standard
 Homebrew, Cargo, or `~/.local/bin` locations (`herdr.exe` on Windows, where the
 Homebrew paths are skipped), then waits up to 20 seconds to
-connect without blocking the UI. If Herdr cannot be found, an installation modal
-offers an **Install** button that opens [herdr.dev](https://herdr.dev/); it never
-downloads or runs an installer. After installing, choose Terminal > Reconnect.
+connect without blocking the UI. If Herdr cannot be found, a card over the
+terminal area says Herdr isn't installed on this computer, in place of the
+reconnecting card. Its **Install Herdr** button opens
+Herdr's TUI page, [herdr.dev/tui](https://herdr.dev/tui/); Spaceport never downloads or runs an installer.
+**Try again** redials at once. Meanwhile Spaceport retries every 30 seconds, so
+it connects on its own after Herdr is installed, and the card goes away. Other
+machines keep working. `spaceport status` reports the host as "Herdr not
+installed".
 A daemon that refuses the handshake because it is too old, or newer than this
 app supports, opens a notice naming the host, its reported version, and which
 side to update. For an old daemon it shows `herdr update`, which **Copy Command**

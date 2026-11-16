@@ -26,6 +26,7 @@ struct Flags {
     enabled: bool,
     detached: bool,
     refusal: Refusal,
+    missing: bool,
     outage: bool,
     status: ConnectionStatus,
     error: bool,
@@ -37,17 +38,20 @@ impl Flags {
         for enabled in [false, true] {
             for detached in [false, true] {
                 for refusal in [Refusal::None, Refusal::Daemon, Refusal::Client] {
-                    for outage in [false, true] {
-                        for status in STATUSES {
-                            for error in [false, true] {
-                                all.push(Self {
-                                    enabled,
-                                    detached,
-                                    refusal,
-                                    outage,
-                                    status,
-                                    error,
-                                });
+                    for missing in [false, true] {
+                        for outage in [false, true] {
+                            for status in STATUSES {
+                                for error in [false, true] {
+                                    all.push(Self {
+                                        enabled,
+                                        detached,
+                                        refusal,
+                                        missing,
+                                        outage,
+                                        status,
+                                        error,
+                                    });
+                                }
                             }
                         }
                     }
@@ -75,6 +79,7 @@ impl Flags {
                 server_version: None,
             }),
         };
+        endpoint.herdr_missing = self.missing;
         endpoint.outage = self.outage.then(|| "connection lost".into());
         endpoint.live.status = self.status;
         endpoint.live.error = self.error.then(|| "refused".into());
@@ -88,6 +93,7 @@ struct Row {
     enabled: bool,
     detached: Option<bool>,
     refusal: Option<Refusal>,
+    missing: Option<bool>,
     outage: Option<bool>,
     connected: Option<bool>,
     error: Option<bool>,
@@ -105,6 +111,7 @@ impl Row {
         self.enabled == flags.enabled
             && fits(self.detached, flags.detached)
             && self.refusal.is_none_or(|want| want == flags.refusal)
+            && fits(self.missing, flags.missing)
             && fits(self.outage, flags.outage)
             && fits(self.connected, flags.status.is_connected())
             && fits(self.error, flags.error)
@@ -115,23 +122,27 @@ impl Row {
 /// the precedence without leaning on row order.
 #[rustfmt::skip]
 const TABLE: &[Row] = &[
-    Row { enabled: false, detached: None, refusal: None, outage: None, connected: None, error: None,
+    Row { enabled: false, detached: None, refusal: None, missing: None, outage: None, connected: None, error: None,
           state: "disabled", command: "disabled", label: "disabled" },
-    Row { enabled: true, detached: Some(true), refusal: None, outage: None, connected: None, error: None,
+    Row { enabled: true, detached: Some(true), refusal: None, missing: None, outage: None, connected: None, error: None,
           state: "detached", command: "detached", label: "detached" },
-    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::Daemon), outage: None, connected: None, error: None,
+    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::Daemon), missing: None, outage: None, connected: None, error: None,
           state: "daemon-outdated", command: "Herdr update needed", label: "Herdr update needed" },
-    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::Client), outage: None, connected: None, error: None,
+    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::Client), missing: None, outage: None, connected: None, error: None,
           state: "client-outdated", command: "app update needed", label: "app update needed" },
+    // A missing Herdr says what fixes it, through retries and their outages,
+    // until a connection succeeds.
+    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), missing: Some(true), outage: None, connected: None, error: None,
+          state: "herdr-missing", command: "Herdr not installed", label: "Herdr not installed" },
     // An outage wins over a link that still looks connected: the handle can
     // stop before its disconnect state arrives.
-    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), outage: Some(true), connected: None, error: None,
+    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), missing: Some(false), outage: Some(true), connected: None, error: None,
           state: "reconnecting", command: "reconnecting", label: "reconnecting" },
-    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), outage: Some(false), connected: Some(true), error: None,
+    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), missing: Some(false), outage: Some(false), connected: Some(true), error: None,
           state: "online", command: "online", label: "online" },
-    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), outage: Some(false), connected: Some(false), error: Some(true),
+    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), missing: Some(false), outage: Some(false), connected: Some(false), error: Some(true),
           state: "reconnecting", command: "reconnecting", label: "reconnecting" },
-    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), outage: Some(false), connected: Some(false), error: Some(false),
+    Row { enabled: true, detached: Some(false), refusal: Some(Refusal::None), missing: Some(false), outage: Some(false), connected: Some(false), error: Some(false),
           state: "connecting", command: "connecting", label: "connecting" },
 ];
 
@@ -160,6 +171,7 @@ fn named(state: &str) -> Phase {
         "detached" => Phase::Detached,
         "daemon-outdated" => Phase::DaemonOutdated,
         "client-outdated" => Phase::ClientOutdated,
+        "herdr-missing" => Phase::HerdrMissing,
         "reconnecting" => Phase::Reconnecting,
         "connecting" => Phase::Connecting,
         "online" => Phase::Online,

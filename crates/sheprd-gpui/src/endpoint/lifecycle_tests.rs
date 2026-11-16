@@ -33,6 +33,7 @@ mod function_keys;
 mod group_navigation_choices;
 mod group_page_move;
 mod held_paste;
+mod herdr_missing;
 mod horizontal_wheel;
 mod image_paste;
 mod image_paste_native;
