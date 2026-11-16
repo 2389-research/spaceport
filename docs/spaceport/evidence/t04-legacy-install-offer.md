@@ -46,7 +46,7 @@ D58 allowed Herdr 1 again and D69 made Herdr Core opt-in, so the reason for
 this removal (a Core-only runtime) no longer holds. D70 restores a narrow
 offer: when Local cannot start because no `herdr` executable is found, the
 window shows a "Herdr isn't installed" card with an **Install Herdr** button
-that only opens the Herdr website, and **Try again**. Spaceport still never
+that only opens Herdr's TUI page (https://herdr.dev/tui/), and **Try again**. Spaceport still never
 downloads, runs, installs or updates Herdr. The old modal's page, action,
 keyboard route, QA entry and strings stay removed, and
 `scripts/release/tests/test_legacy_install_offer_absence.py` still guards

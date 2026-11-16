@@ -425,7 +425,7 @@ Homebrew paths are skipped), then waits up to 20 seconds to
 connect without blocking the UI. If Herdr cannot be found, a card over the
 terminal area says Herdr isn't installed on this computer, in place of the
 reconnecting card. Its **Install Herdr** button opens
-[herdr.dev](https://herdr.dev/); Spaceport never downloads or runs an installer.
+Herdr's TUI page, [herdr.dev/tui](https://herdr.dev/tui/); Spaceport never downloads or runs an installer.
 **Try again** redials at once. Meanwhile Spaceport retries every 30 seconds, so
 it connects on its own after Herdr is installed, and the card goes away. Other
 machines keep working. `spaceport status` reports the host as "Herdr not

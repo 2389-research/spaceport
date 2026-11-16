@@ -22,7 +22,7 @@ fn a_missing_herdr_shows_the_install_card_not_the_reconnecting_card(cx: &mut gpu
 
     let install = cx.debug_bounds("install-herdr").unwrap();
     cx.simulate_click(install.center(), Modifiers::default());
-    assert_eq!(cx.opened_url().as_deref(), Some(crate::about::WEBSITE));
+    assert_eq!(cx.opened_url().as_deref(), Some("https://herdr.dev/tui/"));
 
     let generation = view.read_with(cx, |view, _| view.endpoints[0].generation);
     let again = cx.debug_bounds("herdr-try-again").unwrap();

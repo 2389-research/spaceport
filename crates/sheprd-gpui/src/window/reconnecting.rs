@@ -2,14 +2,17 @@
 //! drop: the last picture dimmed, and a card naming the host, why it dropped,
 //! and a way to retry now. The endpoint keeps retrying on its own backoff and
 //! the window stays on it; nothing typed meanwhile is sent. When this
-//! computer has no Herdr to start, the card says so instead and links the
-//! Herdr website.
+//! computer has no Herdr to start, the card says so instead and links
+//! Herdr's TUI page.
 // i18n: migrated
 use super::SheprdWindow;
 use crate::{i18n::fl, notifications::safe_text};
 use gpui::{prelude::*, *};
 
 const MAX_WIDTH: f32 = 420.;
+/// Where Install Herdr leads: the page for the Herdr this app attaches to,
+/// the TUI, not Herdr Core. Opening it is all the button does.
+const INSTALL_URL: &str = "https://herdr.dev/tui/";
 const MAX_REASON: usize = 240;
 /// How much of the stale picture shows through.
 const DIM_ALPHA: u32 = 0xa0;
@@ -85,7 +88,7 @@ impl SheprdWindow {
                         card_button("install-herdr", fl!("window-install-herdr"), theme).on_click(
                             |_, _, cx| {
                                 cx.stop_propagation();
-                                cx.open_url(crate::about::WEBSITE);
+                                cx.open_url(INSTALL_URL);
                             },
                         ),
                     )
