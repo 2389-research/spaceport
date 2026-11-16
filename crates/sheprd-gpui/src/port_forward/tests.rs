@@ -130,3 +130,5 @@ fn only_a_running_forward_of_that_host_and_port_can_be_reused() {
     assert_eq!(forwards.reuse("other", 4000), None);
     assert_eq!(forwards.reuse("box", 0), None);
 }
+
+mod reuse;

@@ -59,18 +59,11 @@ impl Forward {
     /// forward counts only while its SSH still runs: once that exits, another
     /// process may take the local port before the worker's report arrives.
     fn reuse(&self) -> Option<Reuse> {
-        match self.state {
-            State::Starting => Some(Reuse::Starting),
-            // A listening forward always holds its handle, except one driven
-            // by hand in tests. Outside tests a missing handle proves nothing
-            // about the local port, so it is not reused.
-            State::Listening { local_port }
-                if self.handle.as_ref().map_or(cfg!(test), PortForward::alive) =>
-            {
-                Some(Reuse::Listening { local_port })
-            }
-            State::Listening { .. } | State::Ended(_) => None,
-        }
+        // A listening forward always holds its handle, except one driven by
+        // hand in tests. Outside tests a missing handle proves nothing about
+        // the local port, so it is not reused.
+        let alive = self.handle.as_ref().map(PortForward::alive);
+        reuse_of(&self.state, alive, cfg!(test))
     }
 
     /// Applies one worker report, returning what the user should be told.
@@ -94,6 +87,19 @@ impl Forward {
                 }
             }
         }
+    }
+}
+
+/// What a forward in `state` offers a click on its remote port. `alive` is
+/// whether its SSH still runs, `None` when it has no handle; `handleless` is
+/// what a missing handle counts as.
+fn reuse_of(state: &State, alive: Option<bool>, handleless: bool) -> Option<Reuse> {
+    match *state {
+        State::Starting => Some(Reuse::Starting),
+        State::Listening { local_port } if alive.unwrap_or(handleless) => {
+            Some(Reuse::Listening { local_port })
+        }
+        State::Listening { .. } | State::Ended(_) => None,
     }
 }
 
