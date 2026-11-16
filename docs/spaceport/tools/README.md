@@ -21,7 +21,7 @@ The context command emits a task-specific packet with the applicable requirement
 
 ## Repository gate
 
-The application repository runs `just check-spec` in `just ci`, and CI runs the same two commands on every pull request. That gate runs the tool tests and `check --skip-schema`, so cross-file references, evidence paths and generated views cannot drift unnoticed. It does not run JSON Schema validation and it does not rewrite `evidence/validation.json`, which stays a dated record of the full check someone actually ran.
+The application repository runs `just check-spec` in `just ci`, and CI runs the same `scripts/check-spec.sh` on every pull request. That gate runs the tool tests and `check --skip-schema` in a virtual environment holding the pinned `requirements.txt`, so cross-file references, evidence paths and generated views cannot drift unnoticed. It does not run JSON Schema validation and it does not rewrite `evidence/validation.json`, which stays a dated record of the full check someone actually ran.
 
 ## Task status and gates
 
