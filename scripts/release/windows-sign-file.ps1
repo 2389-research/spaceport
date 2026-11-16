@@ -1,9 +1,10 @@
 # Inno Setup's sign tool for the release installer: `windows-installer.py build
 # --sign` points ISCC at this script, which calls it once for the uninstaller it
 # embeds and once for Setup.exe. It signs through Azure Artifact Signing with
-# the ArtifactSigning module and Azure CLI login that the release workflow's
-# windows-sign job set up before the build, with the same account, profile,
-# digest and RFC 3161 timestamp as the azure/artifact-signing-action step.
+# the ArtifactSigning module and Azure CLI login that a signing job must set up
+# before the build, with the same account, profile, digest and RFC 3161
+# timestamp as its azure/artifact-signing-action step. The upstream release
+# workflow's windows-sign job did this; no workflow here does.
 param([Parameter(Mandatory)][string]$Path)
 
 $ErrorActionPreference = 'Stop'

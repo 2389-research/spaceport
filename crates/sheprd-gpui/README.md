@@ -274,30 +274,25 @@ noninteractive SSH authentication. The GUI does not install or update it.
 lists SSH hosts and WSL distributions on Windows. **Ctrl-Tab** and
 **Ctrl-Shift-Tab** move through the rail from any field.
 
-The SSH form accepts an SSH target, label, and optional remote session (default:
-`default`). **Skip host key verification (dangerous)**, off by default,
-connects without checking the host's key, now and on every later connection:
-the app passes `StrictHostKeyChecking=no` and reads no known hosts file for
-that target. It is for hosts that keep no stable key to check, whose SSH
-configuration disables host-key checks. The choice is saved before the device,
-under `[ssh] skip_host_key_verification` in the local config, by target.
-Removing the device keeps it there. To verify the host again, delete the
-target from that list (connections opened without checking take no new
-commands once it is gone), or remove the device and add it again with the
-box clear. Herdr's `machine add` saves a new profile every time and takes no
-lock, so the dialog keeps a host from being saved twice itself. A host counts as
-already saved when a profile with the same session reaches the same user, host
-name, and port as `ssh -G` resolves them, so an SSH alias, `user@address`, and
-`ssh://` spellings of one machine all match. The host is claimed for this app
-before anything else, so a second add from any window is refused while the
-first runs. The catalog file is read again right before `machine add` runs and
-right after: if another client saved the same host in between, the profile added
-second is removed, so exactly one remains. A terminal setup keeps the claim
-while it runs and releases it when it ends, saved or not, so a failed setup
-never locks the host out; if the setup workspace never runs, the claim is
-released after two minutes. Another client adding the host while a terminal
-setup runs can still create a duplicate. A host refused as already being added
-is still in another Add Device dialog or in a running "Set up" workspace.
+The SSH form adds a machine that already runs Herdr Core, and opens only
+while Herdr Core is enabled. It takes an SSH target, an optional label, and an
+optional remote session (default: `default`). Submitting asks the local Core
+to add the machine: Core checks the SSH target and saves it, without
+installing software or changing host-key trust. The app runs no SSH check of
+its own, never installs, updates or starts Herdr on the host, and opens no
+setup terminal. One add runs at a time across every window; another window's
+dialog shows that one is in progress and waits for its result. When Core
+refuses, the dialog shows its reason and any hint, and the form can be
+submitted again. When the outcome is unknown, as when the Core connection ends
+during the request, the dialog says so and the app sends no other add request
+until it restarts; check Core's machine list to see what happened.
+
+The dialog has no host-key option. Hosts that keep no stable key to check are
+listed by hand under `[ssh] skip_host_key_verification` in the local config,
+by target (see `config-gpui.example.toml`). For those targets the app passes
+`StrictHostKeyChecking=no` and reads no known hosts file. To verify a host
+again, delete its target from that list; connections opened without checking
+take no new commands once it is gone.
 
 Enter an SSH target or alias and label directly. The form does not search for
 hosts or suggest targets. **Enter** adds exactly what the target field shows.
@@ -340,63 +335,22 @@ cannot forward. It still applies `LocalForward`/`RemoteForward` entries from
 your SSH config, as `ssh -N` would. Forwarding needs a Unix client, like every
 saved SSH device.
 
-The label is optional: an empty one names the device after its SSH target as
-typed, such as `user@host` or an address. Once the device is saved, the dialog
-closes by itself unless there is recovery advice to read. That warning wraps
-inside the scrollable dialog and stays until you choose **Done**, close the
-dialog, or press Enter or Escape; the device is already saved.
-
-**Add device** first checks the host over non-interactive SSH, using
-the same executable search and compatibility rules as the connection bridge, and
-never installs or starts anything while checking:
-
-- Herdr running, or installed but stopped: the installed `herdr machine add`
-  runs without a terminal and saves the device. It starts a stopped server
-  itself. Any approval it would need fails instead of waiting for input.
-  If it refuses to save because the existing server needs a restart, the app
-  checks the host again. A still-running host that passes the app's compatibility
-  probe is saved locally with a warning about version/startup differences and
-  SSH recovery. Adding it does not require restarting the server or its panes.
-- Herdr missing: the dialog asks "Herdr was not detected on the host. Should we
-  install it?" An outdated Herdr asks to update it instead.
-- SSH needs a prompt (unknown host key, password, passphrase), the check failed,
-  or saving without a terminal failed: the dialog offers to continue in a
-  terminal.
-
-Accepting creates a new workspace on this device's Herdr and shows the setup
-there. The setup itself, `herdr machine add` (after `ssh-copy-id` when the host
-refused every key), runs as a child of this app on a terminal the app owns; the
-workspace's shell only runs `spaceport __device-setup-attach SOCKET`, which
-relays the pane's keys and size to it over a private, single-use socket in the
-app's state directory. It runs with your login `PATH` and agent, so it uses
-your own `ssh` (Homebrew's or any other), SSH config, and security key, exactly
-as a terminal would. Herdr handles SSH prompts, approval to install/update
-remote software, server startup, and saving the machine only after successful
-setup; complete any prompts in that workspace. The saved device appears
-automatically on the next catalog refresh. No credentials are collected by the
-GUI. Closing the workspace hangs the setup up, and so does quitting the app,
-since the setup belongs to it. Explicit-socket and development-catalog windows
-do not offer setup. Windows has no terminal setup yet: there the dialog names
-what needs a terminal and asks you to run `herdr machine add TARGET` in one
-(see [Windows](#ssh-hosts)).
+The label is optional: left empty, the app sends no name and Core chooses
+one. Once Core saves the device, the dialog closes by itself.
 
 #### Local Network access
 
 macOS 15 and later ask before an app reaches devices on the local network, and
-judge every process by the app responsible for it. Everything the app runs for
-devices (the Bonjour search, host checks, saving, connecting, and the setup
-above) runs as Herdr's own child, so it shares the one **Herdr** entry in
-System Settings › Privacy & Security › Local Network, with whichever `ssh` you
-use. The first time, macOS shows its alert and refuses the attempt until you
-answer; the search and the host check wait up to a minute for it and continue
-on their own once you allow it. If you denied it, **Open Local Network
-Settings** in the dialog goes to the setting; turn on Herdr and search or add
-again, without restarting the app.
+judge every process by the app responsible for it. The `ssh` children the app
+starts to connect to devices share its one entry in System Settings › Privacy
+& Security › Local Network, with whichever `ssh` you use. The first time,
+macOS shows its alert and refuses the attempt until you answer; allow it and
+connect again, without restarting the app.
 
 A refused connection reads as "no route to host", which an offline device or a
-wrong route also produces, so the dialog only blames the permission when the
-app's own multicast check is refused too. Otherwise it reports no route to the
-host.
+wrong route also produces, so a connection error only blames the permission
+when the app's own multicast check is refused too. Otherwise it reports no
+route to the host.
 
 Commands you type into a terminal are a different matter. Their processes
 belong to the Herdr daemon, not to this app, and a daemon started outside the
@@ -405,8 +359,7 @@ then lets Apple's own tools such as `/usr/bin/ssh` and `nc` reach the LAN but
 refuses third-party ones such as Homebrew's `ssh` with "no route to host",
 without an alert and without an entry you could turn on. This app cannot change
 how the daemon's processes are judged; that needs a change to how Herdr
-launches its daemon on macOS. Device setup is not affected, since it runs in
-the app.
+launches its daemon on macOS.
 
 Old `cloud-devices.json` Container rows and `[container]` / `[cloud]`
 configuration data remain untouched. The client no longer offers those devices,
@@ -3196,11 +3149,13 @@ as the pane shell. Herdr publishes no ARM64 Windows build; emulated on
 `native_gui_live` there. Both runners then run the release-mode performance
 budget, whose hover and scroll arrive as Win32 messages sent to the fixture's own
 window. The paint probes accept the sub-pixel offsets layout snapping gives at
-fractional display scales such as 150%. The release workflow builds and
-CLI-tests the optimized executable natively for each architecture, publishes
-`Herdr-VERSION-x86_64-pc-windows-msvc.zip` and
-`Herdr-VERSION-aarch64-pc-windows-msvc.zip`, and installs and uninstalls both
-signed installers. Each zip also holds
+fractional display scales such as 150%. Nothing publishes Windows builds,
+and the Windows CI jobs run only while the repository variable
+`WINDOWS_ENABLED` is `true` (it is off). When on, CI's `windows-package` job,
+when its inputs change, builds and CLI-tests the
+optimized x86_64 executable, packages
+`Sheprd-VERSION-x86_64-pc-windows-msvc.zip`, and installs and uninstalls its
+unsigned installer (see `scripts/release/README.md`). The zip also holds
 `spaceport-launcher.exe` (`crates/sheprd-launcher`), a windowed program
 that starts the console-subsystem `spaceport.exe` from its own directory with
 `CREATE_NO_WINDOW` and exits. The GUI then shows no console window, and console
@@ -3242,19 +3197,13 @@ leads with Git's MSYS `ssh`, which reads another home's config and known hosts.
 `ssh-keygen.exe` is found the same way. No console window opens for either.
 The `ssh` child's standard streams are two private pipes rather than a socket
 pair, driven with the same overlapped read and write deadlines as the daemon's
-named pipe. **Add Device** lists **SSH host** first, then **WSL**. It checks the
-host, asks before trusting an unknown host key (appended to the first user
-known hosts file `ssh -G` names, normally `%USERPROFILE%\.ssh\known_hosts`),
-and saves a host that already runs a compatible Herdr through `herdr machine
-add`. Sessions on the host can be listed, created, and deleted.
+named pipe. **Add Device** lists **SSH host** first, then **WSL**; the SSH
+host form asks the local Herdr Core to add the machine. Whether Herdr Core runs
+on Windows has not been checked.
+Sessions on the host can be listed, created, and deleted.
 
 Where this differs from macOS and Linux:
 
-- **No terminal setup.** A host that needs a password or passphrase prompt,
-  your key installed, or Herdr installed, updated, or restarted is set up in a
-  local workspace on macOS and Linux. On Windows the dialog says which of
-  these it needs and asks you to run `herdr machine add TARGET` in a terminal,
-  then add the device again.
 - **No connection sharing.** Windows OpenSSH has no `ControlMaster`, and with
   any `ControlPath` set it fails every connection ("getsockname failed: Not a
   socket"). The bridge passes `ControlPath=none`, so each connection

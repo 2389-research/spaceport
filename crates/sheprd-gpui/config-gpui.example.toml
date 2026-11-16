@@ -308,9 +308,8 @@ project_roots = []
 # SSH hosts whose host keys are never verified, by the target saved with the
 # device. Anyone who can intercept the connection to one can impersonate it.
 # Only for hosts that keep no stable key (`UserKnownHostsFile=/dev/null`).
-# Add Device's "Skip host key
-# verification" box adds the target. To verify a host again, delete its
-# target here, or remove the device and add it again with the box clear.
+# Add targets here by hand; Add Device has no host-key option. To verify a
+# host again, delete its target here.
 # [ssh]
 # skip_host_key_verification = ["ephemeral-host"]
 
