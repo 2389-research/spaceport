@@ -81,3 +81,33 @@ fn a_missing_herdr_outlives_retries_until_a_connection_succeeds() {
     assert!(!endpoint.herdr_missing());
     assert_ne!(endpoint.status(), "Herdr not installed");
 }
+
+/// Installing a Herdr too old for this app turns "not installed" into
+/// "update needed" at once: the refused handshake proves Herdr was found.
+#[test]
+fn a_version_refusal_replaces_a_missing_herdr() {
+    let (mut endpoint, _server) = connected_endpoint(LOCAL);
+    lose_herdr(&mut endpoint);
+    endpoint.connection.handle.as_ref().unwrap().disconnect();
+    wait_until(|| {
+        endpoint.poll(Instant::now());
+        endpoint.live.missing_installation
+    });
+    assert!(endpoint.herdr_missing());
+
+    // A bridge with no worker keeps the stand-in state from being raced.
+    endpoint.connection = ConnectionBridge::new(endpoint.connection.target.clone());
+    {
+        let mut state = endpoint.connection.inbox.lock().unwrap();
+        state.version_mismatch = Some(VersionMismatch::DaemonOutdated {
+            server_version: Some("0.8.2".into()),
+        });
+        state.dirty = true;
+    }
+    wait_until(|| {
+        endpoint.poll(Instant::now());
+        endpoint.live.version_mismatch.is_some()
+    });
+    assert!(!endpoint.herdr_missing(), "an outdated Herdr is installed");
+    assert_eq!(endpoint.status(), "Herdr update needed");
+}

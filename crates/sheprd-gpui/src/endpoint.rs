@@ -366,9 +366,11 @@ impl Endpoint {
             } else if state.status.is_connected() {
                 self.version_mismatch = None;
             }
+            // A refused handshake reached a running Herdr, so it is installed,
+            // only at another version: the update advice replaces this.
             if state.missing_installation {
                 self.herdr_missing = true;
-            } else if state.status.is_connected() {
+            } else if state.status.is_connected() || state.version_mismatch.is_some() {
                 self.herdr_missing = false;
             }
             // The worker stops the handle before its disconnect state reaches
