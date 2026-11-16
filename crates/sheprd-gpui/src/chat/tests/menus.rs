@@ -48,7 +48,7 @@ const MODELS: [&str; 10] = [
     "big-pickle",
 ];
 
-fn settings() -> ServerMessage {
+pub(super) fn settings() -> ServerMessage {
     let mut transcript = Transcript::new("OpenCode");
     transcript.status = Status::Idle;
     transcript.entries = vec![agent(1, "Hi.")];

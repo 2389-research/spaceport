@@ -15,7 +15,7 @@ use sheprd_backend::{RunState, TerminalId, TerminalInfo};
 use sheprd_client::{ConnectTarget, protocol::AgentStatus};
 use std::collections::BTreeMap;
 
-fn id(name: &str) -> TerminalId {
+pub(super) fn id(name: &str) -> TerminalId {
     TerminalId::new(name).unwrap()
 }
 
@@ -36,20 +36,20 @@ fn info(name: &str, endpoint: Option<&str>) -> TerminalInfo {
 }
 
 /// The fixture's tab that drives its terminals, or its mirror.
-fn tab(mirror: bool, cx: &App) -> TabId {
+pub(super) fn tab(mirror: bool, cx: &App) -> TabId {
     let tab = cx.global::<Store>().tabs().find(|tab| {
         matches!(&tab.location, Some(Location::CoreTerminal { observe, .. }) if *observe == mirror)
     });
     tab.unwrap().id
 }
 
-const DRIVEN: bool = false;
+pub(super) const DRIVEN: bool = false;
 const MIRROR: bool = true;
 
 /// A window whose only chat runs in herdr-core terminal t1, split beside a
 /// shell in t2 that is in use, with a mirror tab of t1; the chat attached to
 /// `program`.
-fn attached(
+pub(super) fn attached(
     cx: &mut TestAppContext,
 ) -> (Entity<SheprdWindow>, Peer, Program, &mut VisualTestContext) {
     let (view, _peer, cx) = open(cx, ConnectTarget::Local);

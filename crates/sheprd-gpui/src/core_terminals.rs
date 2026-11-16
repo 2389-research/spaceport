@@ -737,6 +737,22 @@ impl SheprdWindow {
         }
     }
 
+    /// Gives `tab`'s pane `terminal` a view, as its first draw would.
+    #[cfg(test)]
+    pub(crate) fn draw_core_view_for_test(
+        &mut self,
+        tab: TabId,
+        terminal: TerminalId,
+        cx: &mut Context<Self>,
+    ) {
+        let (look, painter) = (self.core_look(), self.painter.clone());
+        let id = terminal.clone();
+        let view = cx.new(|cx| {
+            CoreTerminalView::new(id, worker::Link::for_test(), look, painter, false, cx)
+        });
+        self.core_terminals.views.insert((tab, terminal), view);
+    }
+
     /// Keeps every view drawing as the window does after a font, theme, or
     /// option change.
     fn refresh_core_looks(&mut self, cx: &mut Context<Self>) {

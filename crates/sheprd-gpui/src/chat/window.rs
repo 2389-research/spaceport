@@ -119,13 +119,25 @@ impl SheprdWindow {
         changed |= self.chats.relocale(crate::i18n::shown_locale());
         changed |= self.chats.poll(now);
         // A connection that ended closed its pane's menu, and the search
-        // field that held the keyboard went with it.
-        if let Some(focus) = searching
+        // field that held the keyboard went with it. A chat still drawn
+        // takes it in its input; otherwise what the pane shows instead does:
+        // the terminal, or the original editor of an observed agent.
+        let closed = searching
             .and_then(|pane_id| self.chats.pane(&pane_id))
             .filter(|pane| pane.menu_search().is_none())
-            .and_then(|pane| pane.input_focus(cx))
-        {
-            window.focus(&focus, cx);
+            .map(|pane| {
+                let input = pane.available().then(|| pane.input_focus(cx));
+                (pane.target.surface.clone(), input.flatten())
+            });
+        match closed {
+            Some((_, Some(input))) => window.focus(&input, cx),
+            Some((super::Surface::Herdr, None)) => window.focus(&self.focus, cx),
+            Some((super::Surface::Core(terminal), None)) => {
+                if let Some(tab) = self.core_terminals.tab_of(&terminal, cx) {
+                    self.focus_core_terminal(tab, window, cx);
+                }
+            }
+            None => {}
         }
         // Observed panes, whether a discovered agent or a `[chat.mirrors]`
         // entry, take their status from the daemon; live chats ignore it.
