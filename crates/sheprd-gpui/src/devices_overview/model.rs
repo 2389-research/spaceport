@@ -87,14 +87,15 @@ pub(crate) enum Link {
 }
 
 impl From<Phase> for Link {
-    /// The overview's four states for the endpoint's seven: a host that is
-    /// detached, refused as outdated, or waiting to reconnect is offline.
+    /// The overview's four states for the endpoint's eight: a host that is
+    /// detached, refused as outdated, missing Herdr, or waiting to reconnect is offline.
     fn from(phase: Phase) -> Self {
         match phase {
             Phase::Disabled => Self::Disabled,
             Phase::Detached
             | Phase::DaemonOutdated
             | Phase::ClientOutdated
+            | Phase::HerdrMissing
             | Phase::Reconnecting => Self::Offline,
             Phase::Connecting => Self::Connecting,
             Phase::Online => Self::Online,

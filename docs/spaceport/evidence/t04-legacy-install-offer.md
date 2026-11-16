@@ -39,3 +39,15 @@ runtime path needs the Core-first retained UI route described in
 `t04-default-bridge-dependency.md`. T04/RM-LEGACY remain in progress and A32
 is not yet verified. Native desktop, Windows/Linux, full workspace and release
 checks were not run for this slice.
+
+## 2026-11-16: superseded in part by D70
+
+D58 allowed Herdr 1 again and D69 made Herdr Core opt-in, so the reason for
+this removal (a Core-only runtime) no longer holds. D70 restores a narrow
+offer: when Local cannot start because no `herdr` executable is found, the
+window shows a "Herdr isn't installed" card with an **Install Herdr** button
+that only opens the Herdr website, and **Try again**. Spaceport still never
+downloads, runs, installs or updates Herdr. The old modal's page, action,
+keyboard route, QA entry and strings stay removed, and
+`scripts/release/tests/test_legacy_install_offer_absence.py` still guards
+them. Tracked as Kata 2qr3.

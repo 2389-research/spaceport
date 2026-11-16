@@ -166,6 +166,10 @@ pub(super) struct Endpoint {
     /// The last refused handshake's update advice. Unlike `live`, it survives
     /// the retries that reset the bridge, until a handshake is accepted.
     pub(crate) version_mismatch: Option<VersionMismatch>,
+    /// Whether this computer's Herdr could not be found to start. Like
+    /// `version_mismatch`, it outlives the retries that reset the bridge,
+    /// until a connection succeeds.
+    herdr_missing: bool,
     retry_at: Instant,
     attempts: u32,
     /// A sleep or network change this endpoint has not yet recovered from;
@@ -244,6 +248,7 @@ impl Endpoint {
             toasts: Default::default(),
             config_diagnostic: Default::default(),
             version_mismatch: None,
+            herdr_missing: false,
             retry_at: Instant::now(),
             attempts: 0,
             recovery: None,
@@ -264,6 +269,19 @@ impl Endpoint {
     #[cfg(test)]
     pub(crate) fn never_connect(&mut self) {
         self.retry_at = Instant::now() + Duration::from_secs(3600);
+    }
+
+    /// Stands in for a drop whose reason `poll` has already recorded.
+    #[cfg(test)]
+    pub(crate) fn lose_connection_for_test(&mut self, reason: &str) {
+        self.outage = Some(reason.into());
+    }
+
+    /// Stands in for a drop because this computer has no Herdr to start.
+    #[cfg(test)]
+    pub(crate) fn lose_herdr_for_test(&mut self, reason: &str) {
+        self.lose_connection_for_test(reason);
+        self.herdr_missing = true;
     }
 
     fn stop(&mut self) {
@@ -305,6 +323,7 @@ impl Endpoint {
         self.detached = false;
         self.attempts = 0;
         self.version_mismatch = None;
+        self.herdr_missing = false;
         // The replacement transport has produced no state of its own yet.
         self.live = LiveState::default();
         self.sync_live();
@@ -347,6 +366,11 @@ impl Endpoint {
             } else if state.status.is_connected() {
                 self.version_mismatch = None;
             }
+            if state.missing_installation {
+                self.herdr_missing = true;
+            } else if state.status.is_connected() {
+                self.herdr_missing = false;
+            }
             // The worker stops the handle before its disconnect state reaches
             // the inbox, so a drop already seen learns its reason here.
             if self.connection.handle.is_none()
@@ -356,8 +380,6 @@ impl Endpoint {
                 if let Some(error) = &state.error {
                     self.outage = Some(error.clone());
                 }
-                let needs_user =
-                    |live: &LiveState| live.ssh_failure.is_some_and(SshFailure::needs_user);
                 if needs_user(&state) && !needs_user(&self.live) {
                     self.retry_at = self.retry_at.max(now + MAX_RETRY_DELAY);
                 }
@@ -380,7 +402,7 @@ impl Endpoint {
             self.connection.handle = None;
             // A host that refused for a reason only the user can fix is not
             // redialled every few seconds meanwhile.
-            let delay = if self.live.ssh_failure.is_some_and(SshFailure::needs_user) {
+            let delay = if self.waits_for_user() {
                 MAX_RETRY_DELAY
             } else {
                 self.retry_delay()
@@ -451,12 +473,24 @@ impl Endpoint {
         }
         match &self.connection.handle {
             Some(handle) => handle.check_liveness(),
-            None if thorough && !self.live.ssh_failure.is_some_and(SshFailure::needs_user) => {
+            None if thorough && !self.waits_for_user() => {
                 self.retry_at = self.retry_at.min(now);
             }
             None => {}
         }
         true
+    }
+
+    /// Whether the last failure is one only the user can fix, such as a
+    /// refused SSH login or no Herdr installed here, so retries wait longest.
+    fn waits_for_user(&self) -> bool {
+        self.herdr_missing || needs_user(&self.live)
+    }
+
+    /// Whether this computer's Herdr could not be found, until a connection
+    /// succeeds.
+    pub(crate) fn herdr_missing(&self) -> bool {
+        self.herdr_missing
     }
 
     /// Why the endpoint is reconnecting, while it is.
@@ -467,6 +501,11 @@ impl Endpoint {
     fn retry_delay(&self) -> Duration {
         Duration::from_millis(500u64 << self.attempts.min(8)).min(MAX_RETRY_DELAY)
     }
+}
+
+/// Whether `live` ended for a reason only the user can fix.
+fn needs_user(live: &LiveState) -> bool {
+    live.missing_installation || live.ssh_failure.is_some_and(SshFailure::needs_user)
 }
 
 impl Drop for Endpoint {

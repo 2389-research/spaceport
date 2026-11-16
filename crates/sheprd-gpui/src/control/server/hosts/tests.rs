@@ -3,6 +3,7 @@ use super::*;
 use crate::sidebar::layout_tests::fixture_window;
 use gpui::{Entity, TestAppContext, VisualTestContext};
 
+mod herdr_missing;
 mod info;
 mod muting;
 mod ports;

@@ -1,7 +1,9 @@
 //! What the terminal area shows while the selected endpoint reconnects after a
 //! drop: the last picture dimmed, and a card naming the host, why it dropped,
 //! and a way to retry now. The endpoint keeps retrying on its own backoff and
-//! the window stays on it; nothing typed meanwhile is sent.
+//! the window stays on it; nothing typed meanwhile is sent. When this
+//! computer has no Herdr to start, the card says so instead and links the
+//! Herdr website.
 // i18n: migrated
 use super::SheprdWindow;
 use crate::{i18n::fl, notifications::safe_text};
@@ -30,16 +32,69 @@ impl SheprdWindow {
         }
         let endpoint = &self.endpoints[self.selected_endpoint];
         // A device going away drops on purpose: say so, and offer no retry.
-        let removing = self.device_removing(endpoint);
-        let reason = if removing {
-            Some(fl!("window-device-being-removed"))
+        let kind = if self.device_removing(endpoint) {
+            Card::Removing
+        } else if endpoint.herdr_missing() {
+            Card::HerdrMissing
         } else {
-            endpoint.outage().map(str::to_owned)
+            Card::Reconnecting
+        };
+        let host = safe_text(&endpoint.label, 80);
+        let (id, title, reason): (&'static str, _, _) = match kind {
+            Card::Reconnecting => (
+                "reconnecting",
+                fl!("window-reconnecting", host = host),
+                endpoint
+                    .outage()
+                    .map(|reason| ("reconnecting-reason", reason.to_owned())),
+            ),
+            Card::Removing => (
+                "reconnecting",
+                fl!("window-removing", host = host),
+                Some(("reconnecting-reason", fl!("window-device-being-removed"))),
+            ),
+            // The status bar keeps the technical reason; the card says what to do.
+            Card::HerdrMissing => (
+                "herdr-missing",
+                fl!("window-herdr-missing"),
+                Some(("herdr-missing-note", fl!("window-herdr-missing-note"))),
+            ),
         };
         let theme = &self.theme;
+        let retry = |id, label| {
+            card_button(id, label, theme).on_click(cx.listener(|this, _, _, cx| {
+                cx.stop_propagation();
+                this.reconnect(cx);
+                cx.notify();
+            }))
+        };
+        let buttons = match kind {
+            Card::Reconnecting => Some(
+                div()
+                    .flex()
+                    .child(retry("reconnect-now", fl!("window-reconnect-now"))),
+            ),
+            Card::Removing => None,
+            // Opens the website only: Spaceport never downloads or runs Herdr's installer.
+            Card::HerdrMissing => Some(
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .gap(px(8.))
+                    .child(
+                        card_button("install-herdr", fl!("window-install-herdr"), theme).on_click(
+                            |_, _, cx| {
+                                cx.stop_propagation();
+                                cx.open_url(crate::about::WEBSITE);
+                            },
+                        ),
+                    )
+                    .child(retry("herdr-try-again", fl!("window-try-again"))),
+            ),
+        };
         let card = div()
-            .id("reconnecting")
-            .debug_selector(|| "reconnecting".into())
+            .id(id)
+            .debug_selector(move || id.into())
             .min_w_0()
             .max_w(px(MAX_WIDTH))
             .occlude()
@@ -55,42 +110,19 @@ impl SheprdWindow {
             .shadow_lg()
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .on_mouse_down(MouseButton::Right, |_, _, cx| cx.stop_propagation())
-            .child(div().font_weight(FontWeight::SEMIBOLD).truncate().child({
-                let host = safe_text(&endpoint.label, 80);
-                if removing {
-                    fl!("window-removing", host = host)
-                } else {
-                    fl!("window-reconnecting", host = host)
-                }
-            }))
-            .children(reason.map(|reason| {
+            .child(
                 div()
-                    .debug_selector(|| "reconnecting-reason".into())
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .truncate()
+                    .child(title),
+            )
+            .children(reason.map(|(selector, reason)| {
+                div()
+                    .debug_selector(move || selector.into())
                     .text_color(rgb(theme.muted))
                     .child(safe_text(&reason, MAX_REASON))
             }))
-            .when(!removing, |card| {
-                card.child(
-                    div().flex().child(
-                        div()
-                            .id("reconnect-now")
-                            .debug_selector(|| "reconnect-now".into())
-                            .px(px(10.))
-                            .py(px(4.))
-                            .rounded(px(crate::config::corners::CONTROL))
-                            .border_1()
-                            .border_color(rgb(theme.active))
-                            .cursor_pointer()
-                            .hover(|s| s.bg(rgb(theme.active)))
-                            .child(fl!("window-reconnect-now"))
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                cx.stop_propagation();
-                                this.reconnect(cx);
-                                cx.notify();
-                            })),
-                    ),
-                )
-            });
+            .children(buttons);
         Some(
             div()
                 .absolute()
@@ -106,4 +138,35 @@ impl SheprdWindow {
                 .into_any_element(),
         )
     }
+}
+
+/// Which card shows over the endpoint's terminal area.
+#[derive(Clone, Copy)]
+enum Card {
+    Reconnecting,
+    /// The device is going away on purpose; nothing to retry.
+    Removing,
+    /// This computer has no Herdr to start: offer its website and a retry.
+    HerdrMissing,
+}
+
+/// A button on the card, named for screen readers by its visible label.
+pub(super) fn card_button(
+    id: &'static str,
+    label: String,
+    theme: &crate::config::Theme,
+) -> Stateful<Div> {
+    div()
+        .id(id)
+        .debug_selector(move || id.into())
+        .role(Role::Button)
+        .aria_label(label.clone())
+        .px(px(10.))
+        .py(px(4.))
+        .rounded(px(crate::config::corners::CONTROL))
+        .border_1()
+        .border_color(rgb(theme.active))
+        .cursor_pointer()
+        .hover(|s| s.bg(rgb(theme.active)))
+        .child(label)
 }

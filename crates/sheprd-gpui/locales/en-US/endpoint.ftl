@@ -12,6 +12,7 @@ endpoint-status =
         [detached] detached
         [daemon-outdated] Herdr update needed
         [client-outdated] app update needed
+        [herdr-missing] Herdr not installed
         [reconnecting] reconnecting
         [online] online
        *[connecting] connecting

@@ -14,6 +14,8 @@ pub(crate) enum Phase {
     DaemonOutdated,
     /// The daemon refused the handshake as too new for this app.
     ClientOutdated,
+    /// This computer has no Herdr to start.
+    HerdrMissing,
     Reconnecting,
     Connecting,
     Online,
@@ -27,6 +29,7 @@ impl Phase {
             Self::Detached => "detached",
             Self::DaemonOutdated => "daemon-outdated",
             Self::ClientOutdated => "client-outdated",
+            Self::HerdrMissing => "herdr-missing",
             Self::Reconnecting => "reconnecting",
             Self::Connecting => "connecting",
             Self::Online => "online",
@@ -38,6 +41,7 @@ impl Phase {
         match self {
             Self::DaemonOutdated => "Herdr update needed", // i18n: data
             Self::ClientOutdated => "app update needed",   // i18n: data
+            Self::HerdrMissing => "Herdr not installed",   // i18n: data
             phase => phase.as_str(),
         }
     }
@@ -63,6 +67,9 @@ impl Endpoint {
                 VersionMismatch::DaemonOutdated { .. } => Phase::DaemonOutdated,
                 VersionMismatch::ClientOutdated { .. } => Phase::ClientOutdated,
             }
+        } else if self.herdr_missing {
+            // Retries keep failing the same way until Herdr is installed.
+            Phase::HerdrMissing
         } else if self.outage.is_some() {
             // Before `live`: a stopped handle can precede its disconnect state.
             Phase::Reconnecting
