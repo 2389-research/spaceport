@@ -227,3 +227,36 @@ Completed children do not become live merely because their parent still runs.
 - [Native evidence](evidence/tool-liveness.md) includes 24 private before/after preview windows in light/dark and wide/narrow layouts.
 
 Live-provider event delivery remains a separate integration check.
+
+## Endpoint links — 77dt
+
+[`endpoint/link.rs`](../crates/sheprd-gpui/src/endpoint/link.rs) stores Disabled, Detached, Waiting, Dialing, and Up.
+Retry deadlines and connection stability time belong to those states.
+Failure distinguishes Transport, Missing, and Version advice.
+`Endpoint::enter(Transition)` owns all link, attempt, bridge, and handle lifecycle writes.
+
+| Transition | Effect |
+| --- | --- |
+| Stop / Detach | Retire the current transport and preserve the appropriate retry advice |
+| Retarget | Replace the exact target and clear the old target's diagnostic state |
+| Connect | Start the eligible transport attempt |
+| Observe / Update | Project current worker facts into stored link state |
+| Lost | Record failure and retry policy without reusing an old inbox |
+| RetryAt / ResetAttempts | Own retry scheduling and stability accounting |
+| Trade | Transfer the bridge and observed state together |
+
+LiveState remains the independently reduced worker projection.
+Stored link phase readers use accessors rather than reconstructing flags.
+Initial surface registration and activation receipts keep their separate owners.
+A stopped handle cannot complete the stability interval from a staged connected snapshot.
+Fresh attempts without an outage reason do not inherit a reconnecting label.
+
+### Verification
+
+- [Catalog tests](../crates/sheprd-gpui/src/endpoint/tests/catalog_link.rs) pin diagnostic reset on retargeting.
+- [Real-handle tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/catalog_link.rs) fence retired inboxes.
+- [Stability tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/link_stability.rs) reject stopped-handle success.
+- Clean default checks passed 4,007 tests; integration-feature endpoint checks passed 239.
+- Scoped Clippy, formatting, size, sorting, i18n, whitespace, and independent lifecycle review passed.
+
+Native catalog interactions and other-platform execution remain separate checks.
