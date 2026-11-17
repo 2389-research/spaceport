@@ -299,3 +299,123 @@ That policy is distinct from direct worker cleanup for abandoned or unheard repl
 
 The real-Core fixture does not inspect internal viewer accounting.
 Other-platform execution remains a separate check.
+
+## Click tunnel ownership — t9fk
+
+[`listening_ports/tunnel.rs`](../crates/sheprd-gpui/src/listening_ports/tunnel.rs) stores Idle, Opening, Open, and Reopening per key.
+`Tunnels::transition` owns every entry, state, and remembered-port write.
+Begin starts one attempt; Finish and Fail accept only that exact Arc identity.
+Close cancels activity while retaining port history; Forget also removes that history.
+Prune drops dead children, and close_all/Drop dispatch Forget for each owned entry.
+Reopening preserves an existing tunnel until its replacement succeeds.
+Stale successes drop and reap their own child without consuming a replacement.
+Open tunnels and pending attempts share the existing capacity bound.
+
+### Verification
+
+- [Attempt tests](../crates/sheprd-gpui/src/listening_ports/tests/tunnel_attempts.rs) cover all cancellation paths and both completion orders.
+- Two stale-completion regressions failed before the correction.
+- Clean listening-port checks passed 45 tests; scoped Clippy and quick checks passed.
+- Independent review checked exact children, retained port preferences, bounds, and cleanup.
+
+Real SSH and native browser interactions remain separate checks.
+The host-menu duplicate-forward gap remains outside this conversion.
+
+## Core connection start intent — fj07
+
+[`core_terminals/hub.rs`](../crates/sheprd-gpui/src/core_terminals/hub.rs) stores Idle, Connecting, Ready, or Unavailable.
+Connecting owns its receiver, start mode, and that attempt's explicit upgrade request.
+Unavailable owns its typed error and retry timestamp.
+`Hub::transition` owns state and exact-binding writes.
+Connect starts or upgrades only the current attempt; Poll consumes its outcome.
+Successful joins discard pending start permission.
+Failed joins may consume their own explicit upgrade once.
+Thread-creation failures enter the same retry delay as other failures.
+BindExact suppresses startup and clears upgrades; ClearExact releases that view binding.
+Known Core identity is checked again when the result arrives.
+
+### Verification
+
+- [Intent tests](../crates/sheprd-gpui/src/core_terminals/hub/tests/start_intent.rs) cover stale start, worker failure, dropped workers, retry expiry, and latest binding.
+- Two original regressions failed before conversion.
+- Clean default Core checks passed 189 tests; integration-feature checks passed 192.
+- Clippy, quick checks, and independent lifecycle review passed.
+
+Real installed-runtime startup, native GUI, and platform execution remain separate checks.
+
+## Completed transfer delivery — hmqh
+
+[`window/transfers.rs`](../crates/sheprd-gpui/src/window/transfers.rs) stores Idle, Uploading, Cancelling, Waiting, Accepted, or Cleaning.
+`SheprdWindow::transition_file_transfer` owns live phases, displayed progress, and explicit cancellation.
+Start captures the original host, target, and input fence.
+Uploaded retains successful quoted paths in Waiting while menus or activation block input.
+Poll sends only when that captured target is current and ready.
+Accepted and Cleaning are terminal send outcomes; the same paste is never submitted again.
+Finished releases the active slot after result and cleanup ownership settle.
+Waiting retains a task waker, so cancellation or teardown resumes its completion task.
+Upload and cleanup remain off the UI thread.
+
+The exact-worker Transfer lease separately signals cancellation during RAII destruction.
+That cleanup remains valid after the GUI owner disappears and cannot require a window context.
+Moving a live payload preserves the lease; destroying an old payload cannot cancel its replacement.
+This resource-cleanup boundary follows AGENTS' rule-by-intent instruction.
+It does not introduce a second live phase writer.
+
+### Verification
+
+- [Readiness tests](../crates/sheprd-gpui/src/window/transfers/tests/readiness.rs) cover menu/input waits, refusal, cancellation, and teardown.
+- Clean default checks passed 4,016 tests, including all 15 transfer tests.
+- Clippy, quick checks, and independent lifecycle review passed.
+
+Real SSH/native transfer execution and other-platform taskbar checks remain separate checks.
+
+## Surface activation fence — 7dc6
+
+[`state/activation.rs`](../crates/sheprd-gpui/src/state/activation.rs) stores Open, Releasing, Retry, Sent, Acknowledged, Ready, or Failed.
+`Fence::transition` owns lifecycle writes for inbox state and its UI projection.
+The deadline belongs to the fence; no independent window deadline remains.
+Queued success enters Sent; a known unqueued Full enters Retry without an expiry.
+Other failures retain a typed cause and do not replay an uncertain submission.
+Responses, boot changes, and focus settlement advance only the matching request.
+Select renews an inactive release receipt's selection budget while preserving its identity.
+Window-originated selection, opening, renewal, and expiry persist through the inbox owner.
+Dirty inbox copies cannot resurrect an old selection deadline.
+Initial surface registration remains a separate Link-owned transport fact.
+
+### Verification
+
+- [Backpressure tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/activation_backpressure.rs) exercise real queue saturation, drain, and acknowledgement.
+- [Selection tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/selection_activation_budget.rs) reproduce the stale deadline race.
+- [Reducer tests](../crates/sheprd-gpui/src/state/tests/activation_retry.rs) cover receipt preservation and newer active requests.
+- Original Full fallback and stale selection regressions failed before correction.
+- Clean default and integration-feature suites passed 4,028 and 4,061 tests.
+- Both Clippy configurations, quick checks, and independent re-review passed.
+
+Native host switching and platform execution remain separate checks.
+
+## Chat command delivery — d84r
+
+[`chat/session.rs`](../crates/sheprd-gpui/src/chat/session.rs) stores Queued, Writing, or AwaitingAck for each pending command.
+`Session::transition` owns pending-delivery and local-refusal writes.
+Dispatch waits for a validated cursor-bearing snapshot or change.
+Welcome alone never makes the session live or replays pending commands.
+Only a completed frame and flush produce Written and increment the bounded attempt count.
+The captured transcript epoch fences resumed delivery.
+Partial or unknown writes produce an honest local refusal and never replay automatically.
+DeliveryUnconfirmed and SessionChanged remain local types; wire Rejection is unchanged.
+
+[`chat/link.rs`](../crates/sheprd-gpui/src/chat/link.rs) stores Active or Draining.
+Its WriterProgress transition serializes begin, receipt publication, and timeout without holding a lock during I/O.
+The dedicated reader waits at most 100 milliseconds for writer completion after stopping.
+On timeout, it marks only the actual in-progress command uncertain and fences later receipts or attempts.
+An already blocked writer may remain detached on Windows; native cancellation is not qualified.
+No extra reaper or shared-executor wait was added.
+
+### Verification
+
+- Session and link tests cover unwritten flaps, epoch changes, flush errors, and bounded stalled-writer draining.
+- Coordinated tests cover both receipt-publication/stop orders and explicitly reap their owned stalled writer.
+- Clean default and integration-feature package checks passed 4,035 and 4,068 unit tests plus integration targets.
+- Both Clippy configurations, quick checks, and renewed independent review passed.
+
+Native Windows transport cancellation and live provider sessions remain separate checks.
