@@ -21,6 +21,7 @@ mod chats;
 mod core_pane;
 mod discovery;
 mod existing;
+mod files;
 mod glide;
 mod harnesses;
 mod highlight;
