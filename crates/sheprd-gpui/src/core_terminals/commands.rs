@@ -13,7 +13,7 @@ use crate::{
     SheprdWindow,
     browser::{Location, Store, TabId},
     controls::Command,
-    i18n::fl,
+    i18n::{Localize, fl},
     window::Flash,
 };
 use gpui::{Context, Window};
@@ -55,15 +55,16 @@ impl SheprdWindow {
                     Command::SplitRight => Axis::Row,
                     _ => Axis::Column,
                 };
-                if !self.start_core_program(
+                if let Err(error) = self.start_core_program(
                     Purpose::Split {
                         tab,
                         at: terminal,
                         axis,
                     },
                     sheprd_backend::Spawn::default(),
+                    cx,
                 ) {
-                    self.show_flash(Flash::warning(fl!("error-connection-busy")), cx);
+                    self.show_flash(Flash::warning(error.localize()), cx);
                 }
             }
             Command::FocusLeft | Command::FocusRight | Command::FocusUp | Command::FocusDown => {
