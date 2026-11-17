@@ -5,30 +5,36 @@ use serde_json::Value;
 
 #[derive(Debug, Default)]
 enum Handshake {
+    // keep-sorted start
+    Failed(String),
+    Ready,
     #[default]
     Waiting,
-    Ready,
-    Failed(String),
+    // keep-sorted end
 }
 
 #[derive(Debug, Default)]
 enum Opening {
+    // keep-sorted start
+    Asked(Request),
     #[default]
     None,
-    Asked(Request),
+    Open(String),
     Thread {
         acp: wire::RequestId,
         result: Option<Value>,
     },
-    Open(String),
+    // keep-sorted end
 }
 
 #[derive(Debug, Default)]
 enum Models {
+    // keep-sorted start
     #[default]
     NotAsked,
-    Waiting,
     Ready(Value),
+    Waiting,
+    // keep-sorted end
 }
 
 #[derive(Debug)]
@@ -39,22 +45,26 @@ pub(super) struct Request {
 }
 
 pub(super) enum Event {
+    // keep-sorted start
     Ask(Request),
     Initialize(Result<Value, wire::Error>),
     Models(Result<Value, wire::Error>),
     Thread(Result<Value, wire::Error>),
+    // keep-sorted end
 }
 
 pub(super) enum Effect {
+    // keep-sorted start
+    Failed(wire::RequestId, String),
     Initialized,
     Models,
-    Thread(Request),
     Opened {
         acp: wire::RequestId,
         thread: Value,
         models: Value,
     },
-    Failed(wire::RequestId, String),
+    Thread(Request),
+    // keep-sorted end
 }
 
 #[derive(Debug, Default)]

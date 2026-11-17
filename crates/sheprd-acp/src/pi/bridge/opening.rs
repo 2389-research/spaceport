@@ -10,41 +10,49 @@ type Models = Vec<(String, String, bool)>;
 
 #[derive(Debug)]
 enum Handshake {
-    Waiting {
-        state: Option<Value>,
-        models: Option<Models>,
-    },
+    // keep-sorted start
+    Failed(String),
     Ready {
         state: Value,
         models: Models,
     },
-    Failed(String),
+    Waiting {
+        state: Option<Value>,
+        models: Option<Models>,
+    },
+    // keep-sorted end
 }
 
 #[derive(Debug, Default)]
 enum Opening {
-    #[default]
-    None,
+    // keep-sorted start
     Asked {
         acp: wire::RequestId,
         loaded: Option<String>,
     },
+    #[default]
+    None,
     Open(String),
+    // keep-sorted end
 }
 
 pub(super) enum Event {
+    // keep-sorted start
     Ask {
         acp: wire::RequestId,
         loaded: Option<String>,
     },
-    State(Result<Value, wire::Error>),
     Models(Result<Value, wire::Error>),
+    State(Result<Value, wire::Error>),
+    // keep-sorted end
 }
 
 pub(super) enum Effect {
-    Settings(Value),
-    Opened(wire::RequestId),
+    // keep-sorted start
     Failed(wire::RequestId, String),
+    Opened(wire::RequestId),
+    Settings(Value),
+    // keep-sorted end
 }
 
 #[derive(Debug)]
