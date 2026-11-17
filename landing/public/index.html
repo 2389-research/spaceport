@@ -25,6 +25,7 @@
     <nav aria-label="Sections">
       <a href="#inside">What it does</a>
       <a href="#ledger">Who does what</a>
+      <a href="#sheprd">vs Sheprd</a>
       <a href="#install">Install</a>
       <a href="https://github.com/2389-research/spaceport">GitHub</a>
     </nav>
@@ -155,6 +156,43 @@ spaceport status --json</code></pre>
         </div>
       </div>
       <p class="fine">Spaceport does not bundle, install, update or migrate Herdr. Read about Herdr at <a href="https://herdr.dev/">herdr.dev</a>.</p>
+    </section>
+
+    <section class="page" id="sheprd">
+      <h2>How it differs from Sheprd</h2>
+      <p class="lede">Spaceport is a fork of <a href="https://github.com/sheprd-labs/sheprd">Sheprd</a> that does less on purpose. It keeps the terminals and the chats, and leaves the rest out.</p>
+
+      <div class="ledger">
+        <div>
+          <h3>Kept</h3>
+          <ul>
+            <li>Native terminals</li>
+            <li>Rich agent chats</li>
+            <li>Workspaces</li>
+            <li>Themes, fonts and shortcuts</li>
+            <li>File drops and uploads</li>
+            <li>Port forwarding</li>
+            <li>Notifications</li>
+            <li>Logs and diagnostics</li>
+            <li>A command line for the app</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Left out</h3>
+          <ul>
+            <li>The built-in IDE</li>
+            <li>Git and GitHub tools</li>
+            <li>The embedded browser</li>
+            <li>Cloud provisioning</li>
+            <li>Teleport</li>
+            <li>Agent orchestration</li>
+            <li>Mods</li>
+            <li>The scheduler</li>
+            <li>Phone control</li>
+          </ul>
+        </div>
+      </div>
+      <p class="fine">The cutting is still under way, so a preview can show traces of the right-hand list. Spaceport also ships without a Herdr runtime; you install Herdr yourself. If you want the features on the right, use Sheprd.</p>
     </section>
 
     <section class="page" id="install">
