@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spaceport: a native workspace for terminals and AI agent chats</title>
+  <meta name="description" content="Spaceport is a native desktop workspace for terminals and AI agent chats. Download the signed macOS preview. Runs with Herdr, which you install separately.">
+  <meta name="theme-color" content="#17132e">
+  <meta property="og:title" content="Spaceport">
+  <meta property="og:description" content="A native desktop workspace for terminals and AI agent chats. macOS preview available.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://2389-research.github.io/spaceport/">
+  <meta property="og:image" content="https://2389-research.github.io/spaceport/assets/social-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="assets/icon-48.png">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="preload" href="assets/fonts/michroma-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#cover">Skip to content</a>
+
+  <header class="band">
+    <a class="imprint" href="#cover">2389 Research <span>Preview edition</span></a>
+    <nav aria-label="Sections">
+      <a href="#inside">What it does</a>
+      <a href="#ledger">Who does what</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/2389-research/spaceport">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="cover" id="cover">
+      <div class="spine" aria-hidden="true"><span>Spaceport</span><span>2389</span></div>
+
+      <h1>Spaceport</h1>
+
+      <div class="cover-row">
+        <div class="pitch">
+          <p>A native desktop workspace for terminals and AI agent chats.</p>
+          <p class="aside">Runs with <a href="https://herdr.dev/">Herdr</a>, which you install separately.</p>
+        </div>
+
+        <figure class="painting">
+          <div class="plate-box"><img src="assets/rocket-1024.webp" srcset="assets/rocket-560.webp 560w, assets/rocket-1024.webp 1024w" sizes="(min-width: 900px) 34rem, 80vw" width="1024" height="1024" alt="The Spaceport icon: a red and cream rocket crossing a violet nebula"></div>
+          <a class="sticker" data-download href="https://github.com/2389-research/spaceport/releases">
+            <span class="sticker-main">Download the preview</span>
+            <span class="sticker-sub" data-version>macOS .dmg</span>
+          </a>
+        </figure>
+
+        <dl class="edition">
+          <div><dt>Edition</dt><dd>macOS preview</dd></div>
+          <div><dt>Requires</dt><dd>macOS 14.2 or later, Apple silicon</dd></div>
+          <div><dt>Build</dt><dd>Signed and notarized</dd></div>
+          <div><dt>License</dt><dd>Apache-2.0</dd></div>
+        </dl>
+      </div>
+
+      <p class="byline">2389 Research, Inc. <a href="https://github.com/2389-research/spaceport">Read the source</a></p>
+    </section>
+
+    <section class="back" id="inside">
+      <h2>Every terminal and every agent chat, in one native window.</h2>
+
+      <figure class="plate">
+        <div class="win" role="img" aria-label="Illustration of the Spaceport window: a sidebar of workspaces, a terminal pane running tests, and a chat with an agent beside it">
+          <div class="win-inner" aria-hidden="true">
+            <div class="win-bar"><i></i><i></i><i></i><b>api-server</b></div>
+            <div class="win-body">
+              <div class="win-side">
+                <p class="side-head">Workspaces</p>
+                <ul>
+                  <li class="on"><span class="dot busy"></span>api-server<small>claude is working</small></li>
+                  <li><span class="dot wait"></span>docs-site<small>codex needs you</small></li>
+                  <li><span class="dot idle"></span>infra<small>idle</small></li>
+                </ul>
+                <p class="side-head">Hosts</p>
+                <ul>
+                  <li><span class="dot idle"></span>This Mac</li>
+                  <li><span class="dot idle"></span>build-box</li>
+                </ul>
+              </div>
+              <div class="win-main">
+                <div class="win-tabs"><span class="on">zsh</span><span>claude</span><span>Devices</span></div>
+                <div class="win-panes">
+                  <pre class="term"><span class="dim">~/src/api-server</span> <span class="vio">main</span>
+<span class="cy">&gt;</span> cargo test --locked
+   <span class="ok">Compiling</span> api-server v0.4.2
+     <span class="ok">Running</span> unittests src/lib.rs
+test routes::health ... <span class="ok">ok</span>
+test routes::login ... <span class="ok">ok</span>
+test result: <span class="ok">ok</span>. 2 passed; 0 failed
+
+<span class="cy">&gt;</span> <span class="typed">spaceport notes set "tests green"</span><span class="caret"></span></pre>
+                  <div class="chat">
+                    <p class="msg you">Add rate limiting to the login route.</p>
+                    <p class="msg agent"><b>Claude</b>I'll add a limiter in front of the handler and cover it with a test.</p>
+                    <p class="tool">Edited <code>src/routes/login.rs</code></p>
+                    <p class="tool">Ran <code>cargo test --locked</code></p>
+                    <p class="msg agent"><b>Claude</b>Both tests pass. Want a burst limit as well?</p>
+                    <p class="composer">Reply to Claude</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <figcaption>An illustration with made-up project names, not a screenshot.</figcaption>
+      </figure>
+
+      <div class="lower">
+      <div class="blurbs">
+        <p><strong>Native terminals.</strong> Spaceport draws every terminal itself in a native window, in the font and theme you pick.</p>
+        <p><strong>Rich chats.</strong> Open a chat with Claude, Codex, Copilot, Gemini, opencode or Pi beside your shells. Flip between the chat view and the terminal under it.</p>
+        <p><strong>One sidebar.</strong> Your workspaces and hosts sit in one list, with an overview of what needs you on each.</p>
+        <p><strong>Yours to set up.</strong> Themes, fonts, shortcuts and language are all settings, in the app or in a file.</p>
+        <p><strong>Quiet when you want.</strong> Notifications and sounds tell you when an agent finishes or asks. Mute a worktree or a whole host.</p>
+        <p><strong>A command line for agents.</strong> The <code>spaceport</code> command drives the running app, so an agent in a pane can use it too.</p>
+      </div>
+
+      <figure class="excerpt">
+        <pre><code>spaceport chat new claude
+spaceport notes set "waiting on review"
+spaceport theme set NAME
+spaceport status --json</code></pre>
+        <figcaption>From the <a href="https://github.com/2389-research/spaceport/blob/main/docs/cli.md">command reference</a>.</figcaption>
+      </figure>
+      </div>
+    </section>
+
+    <section class="page" id="ledger">
+      <h2>Who does what</h2>
+      <p class="lede">Spaceport is the window. Herdr is the runtime behind it. They are separate projects with separate jobs.</p>
+
+      <div class="ledger">
+        <div>
+          <h3>Spaceport</h3>
+          <ul>
+            <li>Draws your terminals, chats and sidebar</li>
+            <li>Holds your themes, fonts, shortcuts and language</li>
+            <li>Sends notifications and plays sounds</li>
+            <li>Answers the <code>spaceport</code> command</li>
+            <li>Updates itself when you choose Check for Updates</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Herdr</h3>
+          <ul>
+            <li>Runs your terminal processes</li>
+            <li>Keeps your sessions and their state</li>
+            <li>Is installed and updated by you, on its own</li>
+          </ul>
+        </div>
+      </div>
+      <p class="fine">Spaceport does not bundle, install, update or migrate Herdr. Read about Herdr at <a href="https://herdr.dev/">herdr.dev</a>.</p>
+    </section>
+
+    <section class="page" id="install">
+      <h2>Get the preview</h2>
+      <div class="install">
+        <ol>
+          <li><span><strong>Install Herdr.</strong> Follow the steps at <a href="https://herdr.dev/">herdr.dev</a>.</span></li>
+          <li><span><strong>Download Spaceport.</strong> Open the disk image and drag Spaceport to Applications.</span></li>
+          <li><span><strong>Open it.</strong> Later previews arrive through Check for Updates in the app.</span></li>
+        </ol>
+        <div class="get">
+          <a class="btn" data-download href="https://github.com/2389-research/spaceport/releases">Download the macOS preview</a>
+          <p><span data-version>macOS 14.2 or later, Apple silicon</span> · <a href="https://github.com/2389-research/spaceport/releases">All releases</a></p>
+        </div>
+      </div>
+
+      <h3 class="notyet-head">Not in this edition</h3>
+      <ul class="notyet">
+        <li><span class="stamp">Not yet</span>Linux and Windows builds</li>
+        <li><span class="stamp">Not yet</span>A general production release</li>
+        <li><span class="stamp">Opt-in</span>Herdr Core support, which is experimental and off by default</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="colophon">
+    <p><strong>Spaceport</strong>, preview edition. Published by 2389 Research, Inc.</p>
+    <p>Spaceport is an independent fork of <a href="https://github.com/sheprd-labs/sheprd">Sheprd</a> by Fabien Penso. It is not affiliated with or endorsed by Sheprd or Herdr.</p>
+    <p>Licensed under Apache-2.0. See <a href="https://github.com/2389-research/spaceport/blob/main/LICENSE">LICENSE</a> and <a href="https://github.com/2389-research/spaceport/blob/main/NOTICE">NOTICE</a>, which also records the rocket artwork's Twemoji origin.</p>
+    <p>Set in Michroma, Barlow Condensed and Spectral, each under the SIL Open Font License.</p>
+  </footer>
+
+  <script src="assets/site.js" defer></script>
+</body>
+</html>

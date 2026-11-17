@@ -55,7 +55,8 @@ class CiChanges(GitFixture):
                      "scripts/release/README.md", "assets/social-preview-dark.png",
                      "assets/social-preview-light.svg", "assets/icons/sheprd-icon-badge.png",
                      "assets/icons/sheprd-icon-badge.svg", "site/index.html",
-                     "site/assets/site.js", ".github/workflows/site.yml"):
+                     "site/assets/site.js", ".github/workflows/site.yml",
+                     "landing/public/index.html", ".github/workflows/pages.yml"):
             self.commit_path(path)
             self.assertEqual(self.detect(), "code=false", path)
 
