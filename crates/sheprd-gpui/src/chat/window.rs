@@ -14,7 +14,7 @@ use crate::{
     search_input::SearchInput,
 };
 use gpui::{prelude::*, *};
-use sheprd_chat_protocol::{Attachment, Command, MAX_ATTACHMENTS, MAX_PROMPT_SIZE, Status, assist};
+use sheprd_chat_protocol::{Attachment, Command, MAX_PROMPT_SIZE, Status, assist};
 use std::time::Instant;
 
 impl SheprdWindow {
@@ -760,109 +760,6 @@ impl SheprdWindow {
         self.upload_chat_files(pane_id, host, paths, window, cx);
     }
 
-    /// Copies files to `host` off the UI thread, then attaches the copies.
-    fn upload_chat_files(
-        &mut self,
-        pane_id: &str,
-        host: String,
-        paths: Vec<std::path::PathBuf>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let Some(pane) = self.chats.pane_mut(pane_id) else {
-            return;
-        };
-        if paths.is_empty() {
-            return;
-        }
-        pane.uploading += paths.len();
-        let count = paths.len();
-        let upload = cx.background_spawn(async move {
-            let cancelled = std::sync::atomic::AtomicBool::new(false);
-            sheprd_client::upload_files(&host, &paths, &cancelled, |_, _| {})
-        });
-        let pane_id = pane_id.to_owned();
-        cx.spawn_in(window, async move |this, cx| {
-            let uploaded = upload.await;
-            let _ = this.update_in(cx, |this, window, cx| {
-                let Some(pane) = this.chats.pane_mut(&pane_id) else {
-                    return;
-                };
-                pane.uploading = pane.uploading.saturating_sub(count);
-                match uploaded {
-                    Ok(remote) => {
-                        let remote = remote.into_iter().map(std::path::PathBuf::from).collect();
-                        this.add_chat_files(&pane_id, remote, window, cx);
-                    }
-                    Err(error) => {
-                        pane.error = Some(fl!("chat-files-not-attached", error = error.localize()));
-                        this.redraw_terminal(cx);
-                    }
-                }
-            });
-        })
-        .detach();
-        self.redraw_terminal(cx);
-    }
-
-    /// Adds paths, as the program will read them, to the next prompt,
-    /// skipping ones already there and any past [`MAX_ATTACHMENTS`]. Whether
-    /// each exists is checked by the program when the prompt goes out.
-    fn add_chat_files(
-        &mut self,
-        pane_id: &str,
-        paths: Vec<std::path::PathBuf>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let Some(pane) = self.chats.pane_mut(pane_id) else {
-            return;
-        };
-        if pane.input() != ChatInput::Composer {
-            return;
-        }
-        for path in paths {
-            if pane.attachments.len() >= MAX_ATTACHMENTS {
-                pane.error = Some(fl!("chat-files-too-many", count = MAX_ATTACHMENTS));
-                break;
-            }
-            if !pane.attachments.contains(&path) {
-                pane.attachments.push(path);
-            }
-        }
-        if let Some(input) = pane.composer.clone() {
-            let focus = input.read(cx).focus.clone();
-            window.focus(&focus, cx);
-        }
-        self.redraw_terminal(cx);
-        cx.notify();
-    }
-
-    /// The system file dialog; the chosen files join the next prompt.
-    pub(super) fn browse_chat_files(
-        &mut self,
-        pane_id: &str,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let paths = cx.prompt_for_paths(PathPromptOptions {
-            files: true,
-            directories: false,
-            multiple: true,
-            prompt: Some(fl!("chat-files-attach").into()),
-        });
-        let pane_id = pane_id.to_owned();
-        cx.spawn_in(window, async move |this, cx| {
-            let Ok(Ok(Some(paths))) = paths.await else {
-                return;
-            };
-            let _ = this.update_in(cx, |this, window, cx| {
-                this.attach_chat_files(&pane_id, paths, window, cx);
-            });
-        })
-        .detach();
-    }
-
     /// Takes a file back off the next prompt.
     pub(super) fn detach_chat_file(&mut self, pane_id: &str, index: usize, cx: &mut Context<Self>) {
         if let Some(pane) = self.chats.pane_mut(pane_id)
@@ -897,12 +794,12 @@ impl SheprdWindow {
             return;
         };
         let text = input.read(cx).text().to_owned();
-        if text.trim().is_empty() && pane.attachments.is_empty() && pane.uploading == 0 {
+        if text.trim().is_empty() && pane.attachments.is_empty() && pane.uploading() == 0 {
             return;
         }
         // Files still copying to an SSH host belong to this prompt; sending
         // now would leave them for the next one.
-        if pane.uploading > 0 {
+        if pane.uploading() > 0 {
             pane.error = Some(fl!("chat-files-copying"));
             return;
         }
