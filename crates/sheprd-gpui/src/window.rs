@@ -113,7 +113,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) _window_closed: Subscription,
     /// Another window may edit a note this one shows.
     pub(crate) _worktree_notes: Subscription,
-    pub(crate) activation_deadline: Option<std::time::Instant>,
     pub(crate) active: bool,
     /// The activity bar's panel and filter.
     pub(crate) activity: sidebar::Activity,

@@ -1,6 +1,6 @@
 //! The window's periodic endpoint work: draining each connection, activating
 //! the selected surface, and probing sessions.
-use super::{ACTIVATION_TIMEOUT, LOCAL, Redraw};
+use super::{LOCAL, Redraw};
 use crate::{
     SheprdWindow,
     i18n::{Localize, fl},
@@ -172,7 +172,17 @@ impl SheprdWindow {
         }
         let endpoint = &mut self.endpoints[self.selected_endpoint];
         if selected_changed {
+            let budget = self
+                .live
+                .activation
+                .deadline()
+                .filter(|_| !endpoint.initial_surface);
             self.live = endpoint.live.clone();
+            if let Some(deadline) = budget {
+                self.live
+                    .activation
+                    .transition(crate::state::activation::Transition::Select(deadline));
+            }
             if !self.live.status.is_connected() {
                 self.local_error = None;
             }
@@ -187,49 +197,96 @@ impl SheprdWindow {
         // The handle stops before the disconnect state reaches the inbox, so
         // `live` can still hold the lost connection's snapshot for a poll; the
         // outage is recorded as soon as the stop is seen.
-        if (self.live.snapshot.is_none() || endpoint.outage().is_some())
-            && let Some(deadline) = &mut self.activation_deadline
-        {
-            *deadline = Instant::now() + ACTIVATION_TIMEOUT;
+        if self.live.snapshot.is_none() || endpoint.outage().is_some() {
+            let now = Instant::now();
+            self.live
+                .activation
+                .transition(crate::state::activation::Transition::Renew(now));
+            if let Ok(mut state) = endpoint.connection.inbox.try_lock() {
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Renew(now));
+            }
+        }
+        if !endpoint.initial_surface && !endpoint.detached() {
+            if let Some(deadline) = self.live.activation.deadline()
+                && let Ok(mut state) = endpoint.connection.inbox.try_lock()
+            {
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Select(deadline));
+            }
+            self.live
+                .activation
+                .transition(crate::state::activation::Transition::Wait(Instant::now()));
+            if let Ok(mut state) = endpoint.connection.inbox.try_lock() {
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Wait(Instant::now()));
+            }
         }
         self.pending_releases
             .retain_mut(|release| !release.resolved());
-        if !endpoint.initial_surface
+        let retry = match &self.live.activation {
+            crate::state::activation::Fence::Retry { boot, focus, .. } => {
+                Some((boot.clone(), focus.clone()))
+            }
+            _ => None,
+        };
+        if (!endpoint.initial_surface || retry.is_some())
             && self.pending_releases.is_empty()
             && let (Some(handle), Some(snapshot)) =
                 (&endpoint.connection.handle, &endpoint.live.snapshot)
             && let Ok(mut state) = endpoint.connection.inbox.try_lock()
         {
-            let result = handle
-                .resize(&snapshot.boot_id, self.options)
+            // A newer inbox transition can supersede this window's retry.
+            let current_retry = retry.as_ref().is_none_or(|(boot, focus)| {
+                matches!(&state.activation, crate::state::activation::Fence::Retry { boot: current, focus: target, .. } if current == boot && target == focus)
+            });
+            if current_retry
+                && retry
+                    .as_ref()
+                    .is_some_and(|(boot, _)| *boot != snapshot.boot_id)
+            {
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Boot(
+                        &snapshot.boot_id,
+                    ));
+            } else if current_retry {
+                let result = if endpoint.initial_surface {
+                    Ok(())
+                } else {
+                    handle.resize(&snapshot.boot_id, self.options)
+                }
                 .and_then(|()| handle.set_surface_active(&snapshot.boot_id, true));
-            match result {
-                Ok(request) => {
-                    state.invalidate_surface();
-                    state.activation = Some(crate::state::SurfaceActivation {
-                        request,
+                let queued = result.is_ok();
+                if let Err(error) = &result
+                    && !matches!(error, sheprd_client::Error::Full)
+                {
+                    self.local_error =
+                        Some(fl!("endpoint-activate-failed", error = error.localize()));
+                }
+                state.invalidate_surface();
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Queued {
+                        result,
                         boot: snapshot.boot_id.clone(),
-                        revision: None,
-                        failed: false,
-                        focus: None,
+                        focus: retry.and_then(|(_, focus)| focus),
                         active: true,
+                        now: Instant::now(),
                     });
-                    state.dirty = true;
+                if queued {
                     endpoint.initial_surface = true;
-                    self.live = state.clone();
-                    // take_update already moved this response out of the inbox.
-                    // Installing an activation fence must not discard that delivery.
-                    self.live.dialog_response = endpoint.live.dialog_response.clone();
-                    self.activation_deadline = Some(Instant::now() + ACTIVATION_TIMEOUT);
                     self.last_queued_options = Some(self.options);
                     self.sent_focus = None;
                 }
-                Err(error) => {
-                    self.local_error =
-                        Some(fl!("endpoint-activate-failed", error = error.localize()));
-                    self.activation_deadline = Some(Instant::now());
-                }
             }
+            state.dirty = true;
+            self.live = state.clone();
+            // take_update already moved this response out of the inbox.
+            self.live.dialog_response = endpoint.live.dialog_response.clone();
             changed = Redraw::Window;
         }
         // The window's state is current: a dropped row the daemon has answered
@@ -238,35 +295,59 @@ impl SheprdWindow {
         // Held input precedes any deferred navigation.
         self.flush_pending_input(cx);
         if self.navigation_ready() {
-            self.activation_deadline = None;
+            if let Ok(mut state) = self.endpoints[self.selected_endpoint]
+                .connection
+                .inbox
+                .try_lock()
+                && state.activation.request() == self.live.activation.request()
+            {
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Opened);
+            }
+            self.live
+                .activation
+                .transition(crate::state::activation::Transition::Opened);
             if let Some(id) = self.pending_toast {
                 self.navigate_toast(id, cx);
             } else if let Some(target) = self.pending_navigation.take() {
                 self.dispatch_navigation(target.as_deref(), cx);
             }
-        } else if self
-            .activation_deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
-            || self.live.activation.as_ref().is_some_and(|a| a.failed)
-        {
-            let device = self.endpoints[self.selected_endpoint].label.clone();
-            let error = match &self.live.error {
-                Some(reason) => fl!(
-                    "endpoint-activation-failed-because",
-                    device = device,
-                    reason = reason.clone()
-                ),
-                None => fl!("endpoint-activation-failed", device = device),
-            };
-            if self.selected_endpoint != 0 {
-                let _ = self.switch_endpoint(LOCAL, cx);
-            } else {
-                // Recover Local with a fresh active handshake, even if the
-                // previous surface lane or its acknowledgement was unavailable.
-                self.reconnect(cx);
+        } else {
+            let now = Instant::now();
+            if let Ok(mut state) = self.endpoints[self.selected_endpoint]
+                .connection
+                .inbox
+                .try_lock()
+                && state.activation.request() == self.live.activation.request()
+            {
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Expire(now));
             }
-            self.local_error = Some(error);
-            changed = Redraw::Window;
+            self.live
+                .activation
+                .transition(crate::state::activation::Transition::Expire(now));
+            if self.live.activation.failed() {
+                let device = self.endpoints[self.selected_endpoint].label.clone();
+                let error = match &self.live.error {
+                    Some(reason) => fl!(
+                        "endpoint-activation-failed-because",
+                        device = device,
+                        reason = reason.clone()
+                    ),
+                    None => fl!("endpoint-activation-failed", device = device),
+                };
+                if self.selected_endpoint != 0 {
+                    let _ = self.switch_endpoint(LOCAL, cx);
+                } else {
+                    // Recover Local with a fresh active handshake, even if the
+                    // previous surface lane or its acknowledgement was unavailable.
+                    self.reconnect(cx);
+                }
+                self.local_error = Some(error);
+                changed = Redraw::Window;
+            }
         }
         self.sync_server_keymap(cx);
         match changed {

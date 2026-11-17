@@ -157,7 +157,10 @@ fn clear_pane_is_offered_and_sent_only_when_the_daemon_advertises_it(cx: &mut Te
                     .as_deref()
                     .is_some_and(|error| error.contains("newer Herdr"))
             );
-            assert!(view.activation_deadline.is_none(), "nothing was sent");
+            assert!(
+                view.live.activation.deadline().is_none(),
+                "nothing was sent"
+            );
         })
     });
 }

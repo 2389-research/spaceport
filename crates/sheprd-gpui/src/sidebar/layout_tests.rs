@@ -631,7 +631,6 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         )),
         sessions: Default::default(),
         sessions_anchor: Default::default(),
-        activation_deadline: None,
         pending_navigation: None,
         arrival: None,
         strip_navigation_fits: true,

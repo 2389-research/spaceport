@@ -316,7 +316,11 @@ fn the_selected_workspaces_host_stands_apart(cx: &mut TestAppContext) {
     });
     // The made-up host never answers; its activation timer must not send the
     // window back to Local while the test looks at the host boxes.
-    view.update(cx, |view, _| view.activation_deadline = None);
+    view.update(cx, |view, _| {
+        view.live
+            .activation
+            .transition(crate::state::activation::Transition::Reset(None))
+    });
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     view.read_with(cx, |view, _| {
         assert_eq!(view.endpoints[view.selected_endpoint].id, "ssh:host1");

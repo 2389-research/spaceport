@@ -119,7 +119,7 @@ impl SheprdWindow {
                     // after the change and undo it. The change claims the
                     // tab it lands on itself.
                     self.sent_focus = None;
-                    if self.activation_deadline.is_none()
+                    if !self.live.activation.fenced()
                         && let Some(tab) = snapshot.focused_tab_id.clone()
                     {
                         let _ = handle.request(

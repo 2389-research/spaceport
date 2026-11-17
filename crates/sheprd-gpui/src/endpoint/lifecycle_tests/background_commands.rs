@@ -11,7 +11,7 @@ fn endpoint_request(server: &mut Server) -> serde_json::Value {
 
 /// Answers an activation the way Herdr does. The worker keeps one request in
 /// flight, so nothing queued behind the activation goes out until then.
-fn acknowledge_activation(server: &mut Server, request: &serde_json::Value) {
+pub(super) fn acknowledge_activation(server: &mut Server, request: &serde_json::Value) {
     let id = request["id"].as_str().unwrap();
     let response = serde_json::json!({"id": id, "result": {
         "type": "client_shell_surface_set", "active": true,

@@ -17,7 +17,7 @@ fn dialog_response_survives_initial_surface_activation(cx: &mut gpui::TestAppCon
         view.selected_endpoint = 1;
         view.reset_selected(cx);
         view.poll_endpoints(cx);
-        assert!(view.live.activation.is_some());
+        assert!(view.live.activation != crate::state::activation::Fence::Open);
         assert!(matches!(&view.live.dialog_response, Some((id, Some(Ok(value)))) if id == "lookup" && value == &response));
         assert!(
             view.endpoints[1]
@@ -97,7 +97,9 @@ fn name_prompts_follow_shared_config_and_label_creations(cx: &mut gpui::TestAppC
                 view.selected_endpoint = 1;
                 view.options = ConnectOptions::default();
                 view.reset_selected(cx);
-                view.activation_deadline = None;
+                view.live
+                    .activation
+                    .transition(crate::state::activation::Transition::Reset(None));
                 // A reload replaces the prepared settings; nothing is re-read here.
                 view.settings.shared = (!config.is_empty())
                     .then(|| crate::herdr_settings::Settings::parse_text(config).unwrap());
@@ -107,7 +109,7 @@ fn name_prompts_follow_shared_config_and_label_creations(cx: &mut gpui::TestAppC
                     assert_eq!(view.menu.input.as_ref().unwrap().text, proposed);
                     // Cancelling sends nothing and leaves input unfenced.
                     view.dismiss_menu(window, cx);
-                    assert!(view.activation_deadline.is_none());
+                    assert!(view.live.activation.deadline().is_none());
                     view.command(command, window, cx);
                     if let Some(typed) = typed {
                         view.menu.input = Some(crate::dialog_input::DialogInput::new(typed.into()));
@@ -117,7 +119,7 @@ fn name_prompts_follow_shared_config_and_label_creations(cx: &mut gpui::TestAppC
                 } else {
                     assert!(view.menu.page.is_none());
                 }
-                assert!(view.activation_deadline.is_some());
+                assert!(view.live.activation.deadline().is_some());
             })
         });
         let ClientMessage::ClientShellEndpointRequest { request, .. } = server.receive() else {
@@ -145,7 +147,9 @@ fn unconfirmed_tab_close_rejects_invalid_targets_and_unready_input(cx: &mut gpui
             view.endpoints.push(endpoint);
             view.selected_endpoint = 1;
             view.reset_selected(cx);
-            view.activation_deadline = None;
+            view.live
+                .activation
+                .transition(crate::state::activation::Transition::Reset(None));
             view.config.confirm_close_tab = false;
             assert!(view.input_ready());
             let ready = view.live.clone();
@@ -176,7 +180,7 @@ fn unconfirmed_tab_close_rejects_invalid_targets_and_unready_input(cx: &mut gpui
                     } else {
                         view.command(Command::CloseTab, window, cx);
                     }
-                    assert!(view.activation_deadline.is_none());
+                    assert!(view.live.activation.deadline().is_none());
                     assert!(view.pending_navigation.is_none());
                     view.dismiss_menu(window, cx);
                 }

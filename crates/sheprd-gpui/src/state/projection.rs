@@ -156,11 +156,8 @@ impl LiveState {
             self.surface_images = Default::default();
             self.pending_surface_images = None;
         }
-        if let Some(activation) = &mut self.activation
-            && activation.boot != snapshot.boot_id
-        {
-            activation.failed = true;
-        }
+        self.activation
+            .transition(super::activation::Transition::Boot(&snapshot.boot_id));
         self.missing_installation = false;
         if self
             .surface

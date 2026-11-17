@@ -16,6 +16,7 @@ use std::{
     sync::atomic::AtomicU64,
 };
 
+mod activation_backpressure;
 mod atomic_projection;
 mod background_commands;
 mod catalog_link;
@@ -57,6 +58,7 @@ mod resize_claim_fence;
 mod resize_reassert;
 mod retry_dialog_fencing;
 mod scrollbar_drag;
+mod selection_activation_budget;
 mod shift_select_hint;
 mod shifted_keys;
 mod smooth_scroll_off;
@@ -303,7 +305,9 @@ fn prepare_mouse(view: &mut SheprdWindow, endpoint: Endpoint, cx: &mut Context<S
     view.selected_endpoint = 1;
     view.options = ConnectOptions::default();
     view.reset_selected(cx);
-    view.activation_deadline = None;
+    view.live
+        .activation
+        .transition(crate::state::activation::Transition::Reset(None));
     let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
     let mut inactive = snapshot.panes[0].clone();
     inactive.pane_id = "w1:p2".into();
