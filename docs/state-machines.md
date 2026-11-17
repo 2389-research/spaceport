@@ -265,3 +265,42 @@ Fresh attempts without an outage reason do not inherit a reconnecting label.
 - Scoped Clippy, formatting, size, sorting, i18n, whitespace, and independent lifecycle review passed.
 
 Native catalog interactions and other-platform execution remain separate checks.
+
+## Core call and stream ownership — 674p
+
+[`connection.rs`](../crates/sheprd-core-client/src/connection.rs) stores each Call as Registered, Sent, Answered, or Abandoned.
+`Shared::transition(CallEvent)` owns every production pending-call and loss-fence write.
+Narrow wrappers dispatch events and return typed outcomes.
+
+| Event | Transition or effect |
+| --- | --- |
+| Register | Refuse lost/full connections; install a bounded reply owner |
+| Sent | Mark accepted outbound work without overwriting an earlier answer |
+| CancelUnsent | Remove work that was never accepted |
+| Finish | Claim an answer or retain an Abandoned tombstone after timeout |
+| Deliver | Hand off the reply atomically or return its unclaimed route to the worker |
+| Lose | Fence later registrations, fail waiters, and end routes |
+
+Answers and abandoned tombstones both count toward MAX_IN_FLIGHT.
+A late answer frees its tombstone and closes any unclaimed stream channel.
+A full or disconnected reply waiter also returns channel ownership to the worker.
+The worker sends those CLOSE frames directly, independent of outbound queue saturation.
+The timeout/answer lock handoff claims an already delivered reply instead of leaking its route.
+No timed-out request is replayed.
+
+[`Stream::drop`](../crates/sheprd-core-client/src/stream.rs) owns ordinary attachment/subscription cleanup once.
+A stream exists before successful reply metadata is parsed, so typed parse errors also release ownership.
+Ordinary stream destruction retains the existing bounded best-effort queue policy.
+That policy is distinct from direct worker cleanup for abandoned or unheard replies.
+
+### Verification
+
+- [Abandoned-call tests](../crates/sheprd-core-client/src/connection/tests/abandoned.rs) cover late answers and unclaimed routes.
+- [Owner tests](../crates/sheprd-core-client/src/connection/tests/lifecycle.rs) cover bounds, loss fencing, and handoff races.
+- [Isolated Core test](../crates/sheprd-core-client/src/connection/tests/live.rs) delays actual Core replies and observes CLOSE writes.
+- Clean-member default and all-feature suites each passed 77 tests; opt-in tests remained ignored.
+- The selected hc0.1.20 fixture passed and confirmed the terminal remained Live.
+- All-target/all-feature Clippy, repository quick checks, and independent re-reviews passed.
+
+The real-Core fixture does not inspect internal viewer accounting.
+Other-platform execution remains a separate check.

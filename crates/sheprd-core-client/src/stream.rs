@@ -1,3 +1,5 @@
+// ABOUTME: Owns bounded Core stream inboxes and channel cleanup.
+// ABOUTME: Exposes terminal attachments and event subscriptions with credit flow.
 //! Stream channels: an attached terminal's bytes and a subscription's event
 //! lines. The connection worker parks what arrives in a route's inbox and
 //! never waits for its reader, so a stalled view cannot block channel 0 or
@@ -221,6 +223,12 @@ impl Stream {
     }
 }
 
+impl Drop for Stream {
+    fn drop(&mut self) {
+        self.close();
+    }
+}
+
 /// One attached terminal: its first paint and live output, and the viewer's
 /// keys, size, focus, and display facts going back.
 pub struct Attachment {
@@ -284,12 +292,6 @@ impl Attachment {
     }
 }
 
-impl Drop for Attachment {
-    fn drop(&mut self) {
-        self.stream.close();
-    }
-}
-
 /// Terminal events after a snapshot.
 pub struct Subscription {
     ended: bool,
@@ -333,12 +335,6 @@ impl Subscription {
             return Err(Error::Lost);
         }
         Ok(notices)
-    }
-}
-
-impl Drop for Subscription {
-    fn drop(&mut self) {
-        self.stream.close();
     }
 }
 
