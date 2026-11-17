@@ -392,3 +392,30 @@ Initial surface registration remains a separate Link-owned transport fact.
 - Both Clippy configurations, quick checks, and independent re-review passed.
 
 Native host switching and platform execution remain separate checks.
+
+## Chat command delivery — d84r
+
+[`chat/session.rs`](../crates/sheprd-gpui/src/chat/session.rs) stores Queued, Writing, or AwaitingAck for each pending command.
+`Session::transition` owns pending-delivery and local-refusal writes.
+Dispatch waits for a validated cursor-bearing snapshot or change.
+Welcome alone never makes the session live or replays pending commands.
+Only a completed frame and flush produce Written and increment the bounded attempt count.
+The captured transcript epoch fences resumed delivery.
+Partial or unknown writes produce an honest local refusal and never replay automatically.
+DeliveryUnconfirmed and SessionChanged remain local types; wire Rejection is unchanged.
+
+[`chat/link.rs`](../crates/sheprd-gpui/src/chat/link.rs) stores Active or Draining.
+Its WriterProgress transition serializes begin, receipt publication, and timeout without holding a lock during I/O.
+The dedicated reader waits at most 100 milliseconds for writer completion after stopping.
+On timeout, it marks only the actual in-progress command uncertain and fences later receipts or attempts.
+An already blocked writer may remain detached on Windows; native cancellation is not qualified.
+No extra reaper or shared-executor wait was added.
+
+### Verification
+
+- Session and link tests cover unwritten flaps, epoch changes, flush errors, and bounded stalled-writer draining.
+- Coordinated tests cover both receipt-publication/stop orders and explicitly reap their owned stalled writer.
+- Clean default and integration-feature package checks passed 4,035 and 4,068 unit tests plus integration targets.
+- Both Clippy configurations, quick checks, and renewed independent review passed.
+
+Native Windows transport cancellation and live provider sessions remain separate checks.
