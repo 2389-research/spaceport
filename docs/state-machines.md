@@ -368,3 +368,27 @@ It does not introduce a second live phase writer.
 - Clippy, quick checks, and independent lifecycle review passed.
 
 Real SSH/native transfer execution and other-platform taskbar checks remain separate checks.
+
+## Surface activation fence — 7dc6
+
+[`state/activation.rs`](../crates/sheprd-gpui/src/state/activation.rs) stores Open, Releasing, Retry, Sent, Acknowledged, Ready, or Failed.
+`Fence::transition` owns lifecycle writes for inbox state and its UI projection.
+The deadline belongs to the fence; no independent window deadline remains.
+Queued success enters Sent; a known unqueued Full enters Retry without an expiry.
+Other failures retain a typed cause and do not replay an uncertain submission.
+Responses, boot changes, and focus settlement advance only the matching request.
+Select renews an inactive release receipt's selection budget while preserving its identity.
+Window-originated selection, opening, renewal, and expiry persist through the inbox owner.
+Dirty inbox copies cannot resurrect an old selection deadline.
+Initial surface registration remains a separate Link-owned transport fact.
+
+### Verification
+
+- [Backpressure tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/activation_backpressure.rs) exercise real queue saturation, drain, and acknowledgement.
+- [Selection tests](../crates/sheprd-gpui/src/endpoint/lifecycle_tests/selection_activation_budget.rs) reproduce the stale deadline race.
+- [Reducer tests](../crates/sheprd-gpui/src/state/tests/activation_retry.rs) cover receipt preservation and newer active requests.
+- Original Full fallback and stale selection regressions failed before correction.
+- Clean default and integration-feature suites passed 4,028 and 4,061 tests.
+- Both Clippy configurations, quick checks, and independent re-review passed.
+
+Native host switching and platform execution remain separate checks.
