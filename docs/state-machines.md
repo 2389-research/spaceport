@@ -304,3 +304,24 @@ That policy is distinct from direct worker cleanup for abandoned or unheard repl
 
 The real-Core fixture does not inspect internal viewer accounting.
 Other-platform execution remains a separate check.
+
+## Click tunnel ownership — t9fk
+
+[`listening_ports/tunnel.rs`](../crates/sheprd-gpui/src/listening_ports/tunnel.rs) stores Idle, Opening, Open, and Reopening per key.
+`Tunnels::transition` owns every entry, state, and remembered-port write.
+Begin starts one attempt; Finish and Fail accept only that exact Arc identity.
+Close cancels activity while retaining port history; Forget also removes that history.
+Prune drops dead children, and close_all/Drop dispatch Forget for each owned entry.
+Reopening preserves an existing tunnel until its replacement succeeds.
+Stale successes drop and reap their own child without consuming a replacement.
+Open tunnels and pending attempts share the existing capacity bound.
+
+### Verification
+
+- [Attempt tests](../crates/sheprd-gpui/src/listening_ports/tests/tunnel_attempts.rs) cover all cancellation paths and both completion orders.
+- Two stale-completion regressions failed before the correction.
+- Clean listening-port checks passed 45 tests; scoped Clippy and quick checks passed.
+- Independent review checked exact children, retained port preferences, bounds, and cleanup.
+
+Real SSH and native browser interactions remain separate checks.
+The host-menu duplicate-forward gap remains outside this conversion.

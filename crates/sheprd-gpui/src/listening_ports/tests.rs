@@ -1,3 +1,5 @@
+// ABOUTME: Tests listening-port discovery, presentation, and SSH lifetimes.
+// ABOUTME: Shares isolated child helpers for tunnel lifecycle tests.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
 use super::{
@@ -16,6 +18,8 @@ mod repeated_scans;
 mod shell_errors;
 mod ssh_links;
 mod status_bar;
+#[cfg(unix)]
+mod tunnel_attempts;
 mod wsl_hosts;
 
 /// The ports one workspace was found with, whichever daemon it named.
@@ -420,13 +424,17 @@ fn tunnels_close_with_their_port_and_never_open_twice() {
     let child = idle_child();
     let pid = child.id();
     assert_eq!(
-        tunnels.finish(key.clone(), tunnel::Tunnel::around(child, 41000)),
+        tunnels.finish(
+            key.clone(),
+            &tunnels.attempt(&key).unwrap(),
+            tunnel::Tunnel::around(child, 41000)
+        ),
         Some(41000)
     );
     assert_eq!(tunnels.local(&key), Some(41000));
     // Reopening after a close prefers the same local port.
     assert_eq!(tunnels.begin(&key), Some(Some(41000)));
-    tunnels.fail(&key);
+    tunnels.fail(&key, &tunnels.attempt(&key).unwrap());
     // The port stops listening: its tunnel's child is killed and reaped.
     tunnels.retain(|_| false);
     assert_eq!(tunnels.len(), 0);
@@ -452,9 +460,17 @@ fn a_tunnel_can_be_closed_by_hand_and_reopens_on_its_old_port() {
     let (child, kept) = (idle_child(), idle_child());
     let (pid, kept_pid) = (child.id(), kept.id());
     assert!(tunnels.begin(&mine).is_some());
-    tunnels.finish(mine.clone(), tunnel::Tunnel::around(child, 41005));
+    tunnels.finish(
+        mine.clone(),
+        &tunnels.attempt(&mine).unwrap(),
+        tunnel::Tunnel::around(child, 41005),
+    );
     assert!(tunnels.begin(&other).is_some());
-    tunnels.finish(other.clone(), tunnel::Tunnel::around(kept, 41006));
+    tunnels.finish(
+        other.clone(),
+        &tunnels.attempt(&other).unwrap(),
+        tunnel::Tunnel::around(kept, 41006),
+    );
     assert!(tunnels.is_open(&mine));
 
     assert!(tunnels.close(&mine));
@@ -477,11 +493,12 @@ fn closing_a_tunnel_still_opening_drops_its_result() {
     };
     let mut tunnels = tunnel::Tunnels::default();
     assert!(tunnels.begin(&key).is_some());
+    let attempt = tunnels.attempt(&key).unwrap();
     assert!(tunnels.close(&key));
     let child = idle_child();
     let pid = child.id();
     assert_eq!(
-        tunnels.finish(key.clone(), tunnel::Tunnel::around(child, 41007)),
+        tunnels.finish(key.clone(), &attempt, tunnel::Tunnel::around(child, 41007)),
         None
     );
     assert!(!tunnels.is_open(&key));
@@ -506,7 +523,7 @@ fn closing_all_kills_a_tunnel_that_is_still_connecting() {
 
     assert!(killed(&attempt), "the connecting child outlived close_all");
     assert!(
-        !tunnels.fail(&key),
+        !tunnels.fail(&key, &attempt),
         "nobody waits for the cancelled attempt"
     );
 }
@@ -565,7 +582,7 @@ fn quitting_kills_a_finished_tunnel_still_on_its_way_to_the_window() {
         killed(&attempt),
         "the finished tunnel's child outlived quit"
     );
-    assert_eq!(tunnels.finish(key, in_flight), None);
+    assert_eq!(tunnels.finish(key, &attempt, in_flight), None);
 }
 
 #[cfg(unix)]
@@ -623,6 +640,7 @@ fn closing_all_tunnels_kills_every_child_and_drops_late_results() {
     let pid = child.id();
     tunnels.insert(open.clone(), tunnel::Tunnel::around(child, 41003));
     assert!(tunnels.begin(&opening).is_some());
+    let attempt = tunnels.attempt(&opening).unwrap();
 
     tunnels.close_all();
 
@@ -632,7 +650,7 @@ fn closing_all_tunnels_kills_every_child_and_drops_late_results() {
     let late = idle_child();
     let late_pid = late.id();
     assert_eq!(
-        tunnels.finish(opening, tunnel::Tunnel::around(late, 41004)),
+        tunnels.finish(opening, &attempt, tunnel::Tunnel::around(late, 41004)),
         None
     );
     assert!(gone(late_pid));
@@ -653,11 +671,12 @@ fn a_tunnel_finished_after_its_port_closed_is_dropped() {
     };
     let mut tunnels = tunnel::Tunnels::default();
     assert!(tunnels.begin(&key).is_some());
+    let attempt = tunnels.attempt(&key).unwrap();
     tunnels.retain(|_| false);
     let child = idle_child();
     let pid = child.id();
     assert_eq!(
-        tunnels.finish(key.clone(), tunnel::Tunnel::around(child, 41001)),
+        tunnels.finish(key.clone(), &attempt, tunnel::Tunnel::around(child, 41001)),
         None
     );
     assert_eq!(tunnels.local(&key), None);
@@ -755,7 +774,11 @@ fn a_local_port_is_never_handed_back_to_a_previous_remote_port() {
     assert!(tunnels.begin(&first).is_some());
     let (exiting, _) = scripted("exit 0");
     assert_eq!(
-        tunnels.finish(first.clone(), tunnel::Tunnel::around(exiting, 41000)),
+        tunnels.finish(
+            first.clone(),
+            &tunnels.attempt(&first).unwrap(),
+            tunnel::Tunnel::around(exiting, 41000)
+        ),
         Some(41000)
     );
     // The first tunnel dies; its local port is reused by the second.
@@ -769,7 +792,11 @@ fn a_local_port_is_never_handed_back_to_a_previous_remote_port() {
     }
     assert!(tunnels.begin(&second).is_some());
     assert_eq!(
-        tunnels.finish(second.clone(), tunnel::Tunnel::around(idle_child(), 41000)),
+        tunnels.finish(
+            second.clone(),
+            &tunnels.attempt(&second).unwrap(),
+            tunnel::Tunnel::around(idle_child(), 41000)
+        ),
         Some(41000)
     );
     // Reopening the first must not prefer the port now showing the second.
