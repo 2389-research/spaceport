@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings load save behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 use super::*;
 
 #[gpui::test]
@@ -28,9 +30,12 @@ fn footer_reload_stays_compact_and_ignores_busy_clicks(cx: &mut TestAppContext) 
     }
     for busy in 0..3 {
         view.update(cx, |view, cx| {
-            view.loading = busy == 0;
-            view.saving = busy == 1;
-            view.quitting = busy == 2;
+            view.persistence = Lifecycle::default();
+            match busy {
+                0 => view.persistence.begin_load(),
+                1 => view.persistence.begin_save(Kind::Ordinary),
+                _ => view.persistence.quit(),
+            }
             cx.notify();
         });
         cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
@@ -38,9 +43,9 @@ fn footer_reload_stays_compact_and_ignores_busy_clicks(cx: &mut TestAppContext) 
         cx.simulate_click(button.center(), Default::default());
         cx.run_until_parked();
         view.read_with(cx, |view, _| {
-            assert_eq!(view.loading, busy == 0);
-            assert_eq!(view.saving, busy == 1);
-            assert_eq!(view.quitting, busy == 2);
+            assert_eq!(view.persistence.loading(), busy == 0);
+            assert_eq!(view.persistence.saving(), busy == 1);
+            assert_eq!(view.persistence.quitting(), busy == 2);
             assert!(view.error.is_some(), "busy reload must not clear the error");
         });
     }
@@ -118,13 +123,9 @@ fn accepted_save_survives_both_windows_closing_and_reopen_reuses_model(cx: &mut 
                     false,
                     cx,
                 );
-                view.save_with(
-                    || panic!("writes must be serialized"),
-                    || Ok(fixture()),
-                    false,
-                    cx,
-                );
-                assert!(view.saving);
+                // The next accepted edit waits behind the running write.
+                view.save_with(|| Ok(()), || Ok(fixture()), false, cx);
+                assert!(view.persistence.saving());
                 window.remove_window();
                 cx.weak_entity()
             })
@@ -134,7 +135,7 @@ fn accepted_save_survives_both_windows_closing_and_reopen_reuses_model(cx: &mut 
         reopened
             .update(cx, |view, window, cx| {
                 assert_eq!(cx.entity_id(), retained.entity_id());
-                assert!(view.saving);
+                assert!(view.persistence.saving());
                 window.remove_window();
             })
             .unwrap();
@@ -205,7 +206,7 @@ fn sizes_accepted_behind_a_load_survive_closing_the_window(cx: &mut TestAppConte
                 view.accept_control_size(FontFace::Terminal, 19., cx);
                 view.accept_control_size(FontFace::Terminal, 21., cx);
                 view.accept_control_size(FontFace::Sidebar, 17., cx);
-                assert!(view.loading);
+                assert!(view.persistence.loading());
                 assert!(writes.lock().unwrap().is_empty());
                 window.remove_window();
                 cx.weak_entity()

@@ -1,3 +1,5 @@
+// ABOUTME: Reads and edits shared Herdr preferences with guarded file replacement.
+// ABOUTME: Preserves unknown settings and the snapshot used for conflict checks.
 //! Shared release-namespace Herdr settings. `load` and `save` do blocking I/O:
 //! callers MUST run them on a background worker, never in render/input handlers.
 //!
@@ -382,6 +384,16 @@ impl Default for ClipboardToast {
 }
 
 impl Settings {
+    /// Compare the exact expected file, including its identity and revision.
+    pub(crate) fn same_snapshot(&self, other: &Self) -> bool {
+        self.path == other.path && self.original == other.original
+    }
+
+    #[cfg(all(test, unix))]
+    pub(crate) fn load_fixture(path: PathBuf) -> crate::Result<Self> {
+        Self::load_path(path)
+    }
+
     #[cfg(test)]
     pub(crate) fn parse_text(text: &str) -> Result<Self, Error> {
         #[cfg(unix)]

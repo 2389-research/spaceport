@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings layout drafts behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 use super::*;
 
 #[gpui::test]
@@ -149,7 +151,7 @@ fn layout_close_failure_retains_live_draft_until_explicit_retry(cx: &mut TestApp
     cx.update(|cx| {
         settings
             .update(cx, |view, _, cx| {
-                assert!(view.closing.is_none());
+                assert!(view.persistence.closing().is_none());
                 assert!(!view.busy());
                 assert!(view.error.as_ref().unwrap().contains("Save settings"));
                 assert_eq!(view.layout_intent, Some(LayoutMode::Orca));

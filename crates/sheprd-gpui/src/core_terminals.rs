@@ -24,6 +24,7 @@ pub(crate) mod panes;
 mod screen;
 mod selection;
 mod sidebar;
+mod spawning;
 mod split;
 mod tabs;
 mod view;
@@ -211,8 +212,6 @@ use sheprd_backend::{Spawn, TerminalId, TerminalInfo};
 use sheprd_client::ConnectTarget;
 use std::collections::HashMap;
 
-type Started = std::sync::mpsc::Receiver<Result<TerminalInfo, sheprd_core_client::Error>>;
-
 /// What a terminal being started is for.
 #[derive(Clone, Debug)]
 pub(crate) enum Purpose {
@@ -309,13 +308,9 @@ pub(crate) struct CoreTerminals {
     infos: infos::Infos,
     /// How the views draw now, to tell when the window's look changed.
     look: Option<Look>,
-    /// A shell starting, and what for.
-    starting: Option<(Purpose, Started)>,
+    spawning: spawning::Spawning,
     tabs: HashMap<TabId, TabPanes>,
     views: HashMap<(TabId, TerminalId), Entity<CoreTerminalView>>,
-    /// A terminal to start once the hub connects: a shell, or the program
-    /// its spawn names.
-    wanted: Option<(Purpose, Spawn)>,
     workspace_ui: workspace_ui::State,
 }
 
@@ -483,56 +478,45 @@ impl SheprdWindow {
             }
         }
         self.dismiss_menu(window, cx);
-        self.start_core_program(Purpose::Tab { scope, workspace }, Spawn::default());
+        if !self.start_core_program(Purpose::Tab { scope, workspace }, Spawn::default()) {
+            self.show_flash(Flash::warning(fl!("error-connection-busy")), cx);
+        }
     }
 
     /// Starts `spawn` in herdr-core for `purpose`, once the hub connects.
-    pub(crate) fn start_core_program(&mut self, purpose: Purpose, spawn: Spawn) {
+    pub(crate) fn start_core_program(&mut self, purpose: Purpose, spawn: Spawn) -> bool {
         if !self.core_enabled() {
-            return;
+            return false;
         }
-        self.core_terminals.wanted = Some((purpose, spawn));
+        let core_id = self
+            .core_terminals
+            .hub
+            .backend()
+            .map(|backend| backend.core().hello().core.id.clone());
+        let queued = self
+            .core_terminals
+            .spawning
+            .transition(spawning::Event::Queue(purpose, Box::new(spawn), core_id));
+        if !matches!(queued, spawning::Outcome::Accepted) {
+            return false;
+        }
         self.core_terminals.hub.connect(Start::IfMissing);
         self.start_core_shell();
+        true
     }
 
-    /// Starts the wanted shell once the hub is connected, in the folder of
-    /// the pane it splits when herdr-core knows it.
+    /// Submits the oldest queued request once the hub is ready.
     fn start_core_shell(&mut self) -> bool {
         let terminals = &mut self.core_terminals;
-        if terminals.starting.is_some() {
-            return false;
-        }
-        let Some(backend) = terminals.hub.backend().cloned() else {
+        let Some(backend) = terminals.hub.backend() else {
             return false;
         };
-        let wrong_core = terminals.wanted.as_ref().is_some_and(|(purpose, _)| {
-            !purpose_matches_core(purpose, &backend.core().hello().core.id)
-        });
-        if wrong_core {
-            terminals.wanted = None;
-            tracing::warn!("Refused Core tab spawn after Core identity changed");
-            return true;
-        }
-        let Some((purpose, mut spawn)) = terminals.wanted.take() else {
-            return false;
-        };
-        if spawn.cwd.is_none()
-            && let Purpose::Split { at, .. } = &purpose
-        {
-            spawn.cwd = terminals.infos.get(at).and_then(|info| info.cwd.clone());
-        }
-        let (send, receive) = std::sync::mpsc::sync_channel(1);
-        let spawned = std::thread::Builder::new()
-            .name("herdr-core-spawn".into())
-            .spawn(move || {
-                let _ = send.send(backend.spawn(&spawn));
-            });
-        match spawned {
-            Ok(_) => terminals.starting = Some((purpose, receive)),
-            Err(error) => tracing::warn!(%error, "Could not start a herdr-core spawn worker"),
-        }
-        false
+        matches!(
+            terminals
+                .spawning
+                .transition(spawning::Event::Start(backend, &terminals.infos)),
+            spawning::Outcome::Stale
+        )
     }
 
     /// Runs every window tick: joins Core for local metadata and restored tabs,
@@ -565,7 +549,12 @@ impl SheprdWindow {
                 self.core_terminals.views.clear();
             }
             if let State::Unavailable(error) = self.core_terminals.hub.state()
-                && self.core_terminals.wanted.take().is_some()
+                && matches!(
+                    self.core_terminals
+                        .spawning
+                        .transition(spawning::Event::Unavailable),
+                    spawning::Outcome::Cleared
+                )
             {
                 let reason = error.to_string();
                 self.show_flash(
@@ -648,21 +637,21 @@ impl SheprdWindow {
     }
 
     fn place_started_core_terminal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some((_, started)) = &self.core_terminals.starting else {
+        self.finish_started_core_terminal(window, cx);
+        if self.start_core_shell() {
+            self.show_flash(Flash::warning(fl!("core-workspace-stale")), cx);
+        }
+    }
+
+    fn finish_started_core_terminal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let spawning::Outcome::Finished(purpose, outcome) = self
+            .core_terminals
+            .spawning
+            .transition(spawning::Event::Poll)
+        else {
             return;
         };
-        let outcome = match started.try_recv() {
-            Ok(outcome) => outcome,
-            Err(std::sync::mpsc::TryRecvError::Empty) => return,
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                self.core_terminals.starting = None;
-                return;
-            }
-        };
-        let Some((purpose, _)) = self.core_terminals.starting.take() else {
-            return;
-        };
-        let info = match outcome {
+        let info = match *outcome {
             // Known at once, so a chat it labels attaches without waiting
             // for the next list.
             Ok(info) => self.core_terminals.infos.insert(info),

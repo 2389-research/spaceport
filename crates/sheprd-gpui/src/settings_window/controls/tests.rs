@@ -2,6 +2,7 @@
 // ABOUTME: Shares test helpers for persistence, keyboard input and layout regressions.
 use super::*;
 use crate::config::{FontFace, LayoutMode};
+use crate::settings_window::Kind;
 use crate::settings_window::inputs::NumberField;
 use core::prelude::v1::test;
 
@@ -91,7 +92,7 @@ fn show_agents_is_in_appearance_and_disabled_during_saves(cx: &mut TestAppContex
         view.update(cx, |view, cx| {
             view.section = Section::Sidebar;
             view.config.show_agents = show;
-            view.saving = true;
+            view.persistence.begin_save(Kind::Ordinary);
             cx.notify();
         });
         cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
@@ -100,7 +101,7 @@ fn show_agents_is_in_appearance_and_disabled_during_saves(cx: &mut TestAppContex
         view.update(cx, |view, cx| {
             assert_eq!(view.config.show_agents, show);
             assert!(view.save_completion.is_none());
-            view.saving = false;
+            view.persistence.finish_save();
             view.accept_layout_choice(LayoutMode::Orca, cx);
             // Exercise reconciliation without touching personal configuration.
             view.save_with(
@@ -165,7 +166,7 @@ fn sidebar_rows_stack_inside_the_body_and_layout_picks_are_drafts(cx: &mut TestA
         }
     }
     view.update(cx, |view, cx| {
-        view.saving = true;
+        view.persistence.begin_save(Kind::Ordinary);
         view.error = Some("Existing error".into());
         cx.notify();
     });
@@ -180,7 +181,7 @@ fn sidebar_rows_stack_inside_the_body_and_layout_picks_are_drafts(cx: &mut TestA
         assert_eq!(view.layout_intent, Some(LayoutMode::Orca));
         assert!(view.save_completion.is_none());
         assert_eq!(view.error.as_deref(), Some("Existing error"));
-        view.saving = false;
+        view.persistence.finish_save();
     });
 }
 
@@ -264,7 +265,7 @@ fn browser_skill_general_card_tracks_choice_without_a_source(cx: &mut TestAppCon
     }
     // Busy buttons must not invoke the real installer even when clicked.
     view.update(cx, |view, cx| {
-        view.saving = true;
+        view.persistence.begin_save(Kind::Ordinary);
         cx.notify();
     });
     cx.update(|window, cx| window.draw(cx).clear(cx));
@@ -273,7 +274,7 @@ fn browser_skill_general_card_tracks_choice_without_a_source(cx: &mut TestAppCon
     view.update(cx, |view, cx| {
         assert_eq!(AgentSkill::choice(cx), Some(Choice::Declined));
         assert!(view.save_completion.is_none());
-        view.saving = false;
+        view.persistence.finish_save();
     });
 }
 
@@ -366,7 +367,7 @@ fn busy_size_clicks_survive_config_refresh_without_starting_a_write(cx: &mut Tes
     let (source, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     let settings = cx.new(|cx| SettingsWindow::new(source.downgrade(), cx));
     settings.update(cx, |settings, cx| {
-        settings.saving = true;
+        settings.persistence.begin_save(Kind::Ordinary);
         settings.controls.saving_sizes = vec![(FontFace::Sidebar, 20.)];
         for size in 21..=40 {
             settings.accept_control_size(FontFace::Sidebar, size as f32, cx);
@@ -387,7 +388,7 @@ fn busy_size_clicks_survive_config_refresh_without_starting_a_write(cx: &mut Tes
         // Keep the test entirely in memory: completion and persistence are
         // exercised by the root save tests, not the user's configuration.
         settings.controls.pending_sizes.clear();
-        settings.saving = false;
+        settings.persistence.finish_save();
         settings.sync_controls(cx);
         assert_eq!(
             settings.controls.size(FontFace::Sidebar, &settings.config),
@@ -424,7 +425,7 @@ fn numeric_fixture(window: &mut Window, cx: &mut Context<SettingsWindow>) -> Set
     let mut view = SettingsWindow::new(source.downgrade(), cx);
     view.section = Section::Fonts;
     // Accepted intents remain in memory while assertions inspect the queue.
-    view.saving = true;
+    view.persistence.begin_save(Kind::Ordinary);
     view.controls.discovering = false;
     window.focus(&view.focus, cx);
     view

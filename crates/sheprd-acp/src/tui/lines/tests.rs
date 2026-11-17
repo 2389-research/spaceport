@@ -1,3 +1,5 @@
+// ABOUTME: Checks chat behavior against synthetic transcript fixtures.
+// ABOUTME: Keeps lifecycle and rendering expectations explicit at the test boundary.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use sheprd_chat_protocol::{EntryId, ToolKind};
@@ -70,7 +72,7 @@ fn a_tool_entry_shows_status_title_and_diff_summary() {
             title: "Edit x".to_owned(),
         }),
     };
-    let lines = plain(&entry(&item, 40));
+    let lines = plain(&entry(&item, 40, true));
     assert_eq!(lines[0], "✓ Edit x");
     assert_eq!(lines[1], "  src/x.rs:1");
     assert_eq!(lines[2], "  src/x.rs +1 -0");
@@ -88,7 +90,7 @@ fn long_thoughts_fold() {
                 .join("\n"),
         },
     };
-    let lines = plain(&entry(&item, 40));
+    let lines = plain(&entry(&item, 40, true));
     assert_eq!(lines.len(), THOUGHT_LINES + 2);
     assert_eq!(lines[THOUGHT_LINES], "  … 6 more lines");
 }
@@ -102,7 +104,7 @@ fn no_line_is_wider_than_asked() {
             files: 0,
         },
     };
-    for line in plain(&entry(&item, 12)) {
+    for line in plain(&entry(&item, 12, true)) {
         assert!(line.chars().count() <= 12, "{line}");
     }
 }

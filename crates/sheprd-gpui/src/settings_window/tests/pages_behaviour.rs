@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings pages behaviour behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 use super::*;
 use crate::config::preferences::Preference;
 use crate::herdr_settings::TabBarPosition;
@@ -269,7 +271,7 @@ fn shared_controls_hold_while_a_save_is_in_flight(cx: &mut TestAppContext) {
             )
             .unwrap(),
         );
-        view.saving = true;
+        view.persistence.begin_save(Kind::Ordinary);
         cx.notify();
     });
     draw(cx);
