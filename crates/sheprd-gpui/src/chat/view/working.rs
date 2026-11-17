@@ -1,3 +1,5 @@
+// ABOUTME: Renders current turn activity and unfinished tool steps.
+// ABOUTME: Uses the shared transcript rule to exclude stopped work.
 //! The sign that the agent is still on a turn, under the conversation in
 //! every layout: a pulsing dot, what the agent is doing now, how long that
 //! step and the turn have run, and on a click every step running, in full.
@@ -134,7 +136,8 @@ fn running_steps(transcript: &Transcript) -> Vec<&Tool> {
         .take_while(|entry| !matches!(entry.kind, EntryKind::User { .. } | EntryKind::Turn(_)))
         .filter_map(|entry| match &entry.kind {
             EntryKind::Tool(tool)
-                if matches!(tool.status, ToolStatus::Pending | ToolStatus::InProgress) =>
+                if matches!(tool.status, ToolStatus::Pending | ToolStatus::InProgress)
+                    && transcript.tool_live(tool) =>
             {
                 Some(tool)
             }

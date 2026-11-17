@@ -195,3 +195,5 @@ settings-config-shared = Herdr configuration
 settings-config-shared-description = Herdr's configuration file, which its terminal client reads too.
 settings-config-reload = Reload configuration
 settings-config-reload-description = Re-reads both files. Does not restart the daemon.
+
+settings-save-queue-full = Too many pending changes. Wait for saving to finish, then try again.

@@ -2,6 +2,7 @@
 //! from, as commands and the device picker word it. The words are the CLI's
 //! output and the `endpoint-status` selector, so they are pinned here.
 use super::*;
+use crate::endpoint::link::Failure;
 use sheprd_i18n::Locale;
 
 const STATUSES: [ConnectionStatus; 6] = [
@@ -69,20 +70,45 @@ impl Flags {
             self.enabled,
         );
         endpoint.never_connect();
-        endpoint.detached = self.detached;
-        endpoint.version_mismatch = match self.refusal {
-            Refusal::None => None,
-            Refusal::Daemon => Some(VersionMismatch::DaemonOutdated {
-                server_version: None,
-            }),
-            Refusal::Client => Some(VersionMismatch::ClientOutdated {
-                server_version: None,
-            }),
-        };
-        endpoint.herdr_missing = self.missing;
-        endpoint.outage = self.outage.then(|| "connection lost".into());
         endpoint.live.status = self.status;
         endpoint.live.error = self.error.then(|| "refused".into());
+        let reason = self.outage.then(|| "connection lost".into());
+        let why = match self.refusal {
+            Refusal::Daemon => Some(Failure::Version {
+                mismatch: VersionMismatch::DaemonOutdated {
+                    server_version: None,
+                },
+                reason,
+            }),
+            Refusal::Client => Some(Failure::Version {
+                mismatch: VersionMismatch::ClientOutdated {
+                    server_version: None,
+                },
+                reason,
+            }),
+            Refusal::None if self.missing => Some(Failure::Missing { reason }),
+            Refusal::None if self.outage || (!self.status.is_connected() && self.error) => {
+                Some(Failure::Transport {
+                    reason: reason.or_else(|| endpoint.live.error.clone()),
+                    needs_user: false,
+                })
+            }
+            Refusal::None => None,
+        };
+        let retry_at = endpoint.retry_at();
+        let link = if !self.enabled {
+            Link::Disabled
+        } else if self.detached {
+            Link::Detached { retry_at, why }
+        } else if self.status.is_connected() && why.is_none() {
+            Link::Up {
+                retry_at,
+                since: None,
+            }
+        } else {
+            Link::Waiting { retry_at, why }
+        };
+        endpoint.enter(Transition::Fixture(link));
         endpoint
     }
 }
@@ -182,19 +208,16 @@ fn named(state: &str) -> Phase {
 #[test]
 fn every_combination_of_link_fields_has_one_phase() {
     for flags in Flags::all() {
-        let endpoint = flags.endpoint();
+        let mut endpoint = flags.endpoint();
         let row = row(flags);
         assert_eq!(endpoint.phase(), named(row.state), "{flags:?}");
-        // The window's copy of the state decides for the selected endpoint.
+        // The stored link remains authoritative over an older window projection.
         let mut other = flags;
         other.status = ConnectionStatus::Connecting;
         other.error = false;
         let stale = other.endpoint();
-        assert_eq!(
-            stale.phase_with(&endpoint.live),
-            named(row.state),
-            "{flags:?}"
-        );
+        endpoint.live = stale.live.clone();
+        assert_eq!(endpoint.phase(), named(row.state), "{flags:?}");
     }
 }
 
@@ -217,11 +240,12 @@ fn the_devices_overview_does_not_show_a_dropped_host_online() {
     endpoint.never_connect();
     endpoint.live.status = ConnectionStatus::Connected;
     endpoint.live.snapshot = Some(Arc::new(crate::sidebar::layout_tests::snapshot(1)));
+    endpoint.sync_live();
     let device = Device::new(1, &endpoint, &endpoint.live);
     assert_eq!(device.link, Link::Online);
     assert!(device.tally.total() > 0);
 
-    endpoint.outage = Some("connection lost".into());
+    endpoint.lose_connection_for_test("connection lost");
     assert_eq!(endpoint.status(), "reconnecting");
     let device = Device::new(1, &endpoint, &endpoint.live);
     assert_eq!(device.link, Link::Offline);

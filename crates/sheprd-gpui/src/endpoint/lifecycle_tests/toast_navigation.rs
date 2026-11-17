@@ -196,7 +196,7 @@ fn toast_click_uses_origin_and_close_never_navigates(cx: &mut gpui::TestAppConte
         view.update(cx, |view, cx| {
             // The same IDs on Local must not win over the notification's origin.
             view.endpoints[0].live.snapshot = remote.live.snapshot.clone();
-            view.endpoints[0].detached = true;
+            view.endpoints[0].detach_for_test();
             view.endpoints.push(remote);
             window.focus(&view.focus, cx);
             view.marked = "composition".into();
@@ -274,7 +274,7 @@ fn toast_rendered_clicks_reject_replaced_removed_and_disabled_origins(
             2 => {
                 view.endpoints.pop();
             }
-            _ => view.endpoints[1].enabled = false,
+            _ => view.endpoints[1].set_enabled_for_test(false),
         });
         // Invoke the captured callback identity directly: simulate_click redraws
         // first and would correctly capture the replacement generation instead.
