@@ -14,6 +14,7 @@ use crate::project::PromptUsage;
 use crate::rpc::Inbound;
 
 mod opening;
+mod turn;
 
 const MODEL: &str = "model";
 const THINKING: &str = "thinking";
@@ -28,7 +29,7 @@ enum Pending {
     State,
     Models,
     Commands,
-    Prompt,
+    Prompt(u64),
     Stats,
     /// A model or thinking change, answering the session's request.
     Setting {
@@ -62,8 +63,8 @@ pub(super) struct Bridge {
     next_request: i64,
     opening: opening::State,
     pending: HashMap<String, Pending>,
-    prompt: Option<wire::RequestId>,
     thinking: Option<String>,
+    turn: turn::Turn,
 }
 
 impl Translator for Bridge {
@@ -79,7 +80,10 @@ impl Translator for Bridge {
         match inbound {
             Inbound::Request { id, method, params } => self.request(id, &method, params),
             Inbound::Notification { method, .. } if method == "session/cancel" => {
-                if self.prompt.is_none() {
+                if !matches!(
+                    self.turn.transition(turn::Event::Cancel),
+                    turn::Effect::Abort
+                ) {
                     return Vec::new();
                 }
                 vec![self.command(json!({"type": "abort"}), Pending::Abort)]
@@ -250,7 +254,11 @@ impl Bridge {
         let Ok(request) = serde_json::from_value::<wire::PromptRequest>(params) else {
             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
         };
-        if self.prompt.is_some() {
+        let request_id = self.next_id + 1;
+        if let turn::Effect::Busy(id) = self.turn.transition(turn::Event::Start {
+            prompt: id,
+            request: request_id,
+        }) {
             return vec![out::reply(id, Err(out::failure(out::BUSY)))];
         }
         let mut text = Vec::new();
@@ -275,12 +283,11 @@ impl Bridge {
                 _ => {}
             }
         }
-        self.prompt = Some(id);
         let mut command = json!({"type": "prompt", "message": text.join("\n\n")});
         if !images.is_empty() {
             command["images"] = Value::Array(images);
         }
-        vec![self.command(command, Pending::Prompt)]
+        vec![self.command(command, Pending::Prompt(request_id))]
     }
 
     fn response(&mut self, message: &Value) -> Vec<Out> {
@@ -315,15 +322,16 @@ impl Bridge {
                     Vec::new()
                 }
             }
-            Pending::Prompt => match (failed, self.prompt.take()) {
-                (Some(error), Some(id)) => vec![out::reply(id, Err(out::failure(error)))],
-                (None, prompt) => {
+            Pending::Prompt(request) => {
+                let Some(error) = failed else {
                     // Accepted: the turn ends with `agent_end`.
-                    self.prompt = prompt;
-                    Vec::new()
+                    return Vec::new();
+                };
+                match self.turn.transition(turn::Event::Refused(request)) {
+                    turn::Effect::Completed(id) => vec![out::reply(id, Err(out::failure(error)))],
+                    _ => Vec::new(),
                 }
-                (Some(_), None) => Vec::new(),
-            },
+            }
             Pending::Stats => self.stats(&data),
             Pending::Setting {
                 acp,
@@ -454,7 +462,7 @@ impl Bridge {
     /// Ends the prompt from how pi's last answer stopped, and asks for the
     /// session's usage.
     fn finished(&mut self, messages: Option<&Value>) -> Vec<Out> {
-        let Some(id) = self.prompt.take() else {
+        let turn::Effect::Completed(id) = self.turn.transition(turn::Event::Complete) else {
             return Vec::new();
         };
         self.calls.clear();

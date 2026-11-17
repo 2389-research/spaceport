@@ -11,6 +11,7 @@ mod names;
 mod settings;
 mod tasks;
 mod turn_ended;
+mod turn_state;
 mod turns;
 
 const SESSION: &str = "c3a1e0d4-0000-4000-8000-000000000001";

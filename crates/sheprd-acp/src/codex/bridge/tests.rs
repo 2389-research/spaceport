@@ -12,6 +12,7 @@ mod branding;
 mod opening;
 mod reopening;
 mod turn_ended;
+mod turn_state;
 
 const THREAD: &str = "01a160d5-4de7-7262-b413-0ce5180918ce";
 
