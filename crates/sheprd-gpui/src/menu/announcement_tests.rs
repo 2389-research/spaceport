@@ -83,7 +83,7 @@ fn dismissing_the_card_asks_the_daemon_and_hides_it(cx: &mut TestAppContext) {
                 .request
                 .is_some()
         );
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
     });
 }
 

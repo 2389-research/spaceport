@@ -30,7 +30,7 @@ fn a_key_held_after_a_preparing_paste_stays_held(cx: &mut TestAppContext) {
         view.send(text("a"), cx);
         frame_returns(view, cx);
         assert_eq!(view.pending_input.len(), 1, "the key waits for the paste");
-        assert!(view.local_error.is_none(), "{:?}", view.local_error);
+        assert!(view.notices.is_none(), "{:?}", view.notices);
     });
     cx.run_until_parked();
     assert_eq!(next_pane_input(&mut peer), typed(text(CTRL_V)));
@@ -79,8 +79,8 @@ fn input_after_a_paste_whose_preparation_fails_is_discarded(cx: &mut TestAppCont
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         let error = view
-            .local_error
-            .as_deref()
+            .notices
+            .text()
             .map(crate::i18n::leak_tests::unmarked)
             .unwrap_or_default();
         assert!(error.starts_with("Paste not sent: "), "{error:?}");
@@ -104,13 +104,13 @@ fn a_key_made_after_the_frame_returns_passes_a_refused_paste_mark(cx: &mut TestA
             ctrl_v(view, cx);
         }
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(STOPPED)
         );
-        view.local_error = None;
+        view.notices.clear();
         frame_returns(view, cx);
         view.send(text("a"), cx);
     });
@@ -125,7 +125,7 @@ fn a_key_made_after_the_frame_returns_passes_a_refused_paste_mark(cx: &mut TestA
     });
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
-        assert!(view.local_error.is_none(), "{:?}", view.local_error);
+        assert!(view.notices.is_none(), "{:?}", view.notices);
         assert_eq!(view.pending_input.len(), 0);
     });
     for expected in [CTRL_V, CTRL_V, CTRL_V, CTRL_V, "a"] {
@@ -155,5 +155,5 @@ fn input_made_behind_a_preparing_paste_joins_the_queue(cx: &mut TestAppContext) 
         assert_eq!(next_pane_input(&mut peer), typed(text(expected)));
     }
     sentinel_is_next(&mut peer);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }

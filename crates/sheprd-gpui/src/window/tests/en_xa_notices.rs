@@ -49,11 +49,14 @@ fn the_main_windows_notices_draw_only_messages() {
         check("Flash", &view, cx, recorder);
 
         view.update(cx, |view, cx| {
-            view.local_error = Some(crate::i18n::fl!(
-                "window-notices-request-failed",
-                operation = crate::i18n::fl!("window-notices-navigate"),
-                error = crate::i18n::Localize::localize(&crate::Error::NotConnected)
-            ));
+            view.notices.show(
+                crate::notice::Cause::Command,
+                crate::i18n::fl!(
+                    "window-notices-request-failed",
+                    operation = crate::i18n::fl!("window-notices-navigate"),
+                    error = crate::i18n::Localize::localize(&crate::Error::NotConnected)
+                ),
+            );
             cx.notify();
         });
         check("Status error", &view, cx, recorder);

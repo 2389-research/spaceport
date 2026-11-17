@@ -60,7 +60,10 @@ impl SheprdWindow {
                 Ok(()) => this.load_gui_config(cx),
                 Err(error) => {
                     tracing::warn!(%error, "Could not save GUI preference");
-                    this.local_error = Some(format!("Save GUI config: {error}"));
+                    this.notices.show(
+                        crate::notice::Cause::Configuration,
+                        format!("Save GUI config: {error}"),
+                    );
                     cx.notify();
                 }
             });
@@ -452,7 +455,7 @@ mod busy_load_tests {
         });
         cx.run_until_parked();
         view.read_with(cx, |view, _| {
-            let error = view.local_error.as_deref().unwrap();
+            let error = view.notices.text().unwrap();
             assert!(error.starts_with("Save GUI config:"), "{error}");
             // The busy load is left alone; the watcher applies the write.
             assert!(view.config_load.is_some());

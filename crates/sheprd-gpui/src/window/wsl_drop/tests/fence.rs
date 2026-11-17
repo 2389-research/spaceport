@@ -14,7 +14,7 @@ fn mapped_paths_are_pasted_only_on_the_connection_they_were_dropped_on(cx: &mut 
             apply(view, 0, change, cx);
             finish(view, &["/mnt/c/a"], cx);
             assert!(view.wsl_paste.is_none(), "{change:?}");
-            view.local_error.is_none()
+            view.notices.is_none()
         })
     });
     // Reselect, SwitchAndReturn, ReconnectUnseen, Reconnect, Reboot, Removed.

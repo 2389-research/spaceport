@@ -220,7 +220,7 @@ fn config_reload_toggles_tab_flags_and_preserves_them_on_failure(cx: &mut gpui::
                 (confirm_close_tab, show_agents)
             );
             assert!(view.config_load.is_none());
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
         });
         for error in [
             crate::Error::MissingHome,
@@ -236,7 +236,7 @@ fn config_reload_toggles_tab_flags_and_preserves_them_on_failure(cx: &mut gpui::
                     (confirm_close_tab, show_agents)
                 );
                 assert!(view.config_load.is_none());
-                assert!(view.local_error.is_some());
+                assert!(view.notices.is_some());
             });
         }
     }
@@ -250,7 +250,7 @@ fn failed_config_load_keeps_the_current_window_settings(cx: &mut gpui::TestAppCo
     });
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
-        assert!(view.local_error.is_some());
+        assert!(view.notices.is_some());
         assert!(view.menu.page.is_none());
     });
 }
@@ -289,8 +289,8 @@ fn config_load_is_coherent_bounded_and_cancellable(cx: &mut gpui::TestAppContext
             assert_eq!(view.theme, view.config.theme(false).unwrap());
             assert_eq!(view.config_load_revision, 2);
             assert!(
-                view.local_error
-                    .as_deref()
+                view.notices
+                    .text()
                     .unwrap()
                     .contains("theme must not be empty")
             );

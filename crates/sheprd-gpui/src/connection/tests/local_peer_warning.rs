@@ -25,7 +25,7 @@ fn local_peer_warning_waits_for_the_handshake_and_is_delivered_once() {
     let connected = bridge.take_update().unwrap();
     assert_eq!(connected.local_peer_warning, Some(warning()));
     assert!(!connected.local_daemon_peer);
-    assert!(connected.error.is_none());
+    assert!(connected.notices.is_none());
     assert!(!connecting.only_surface_changed(&connected));
     bridge.inbox.lock().unwrap().dirty = true;
     assert!(bridge.take_update().unwrap().local_peer_warning.is_none());

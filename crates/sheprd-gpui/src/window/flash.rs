@@ -134,6 +134,18 @@ impl SheprdWindow {
         self.flash_motion.moving(motion::now())
     }
 
+    pub(crate) fn clear_flash(&mut self, fade: bool) {
+        let leaving = self
+            .flash
+            .take()
+            .filter(|_| fade)
+            .map(|(flash, _)| (flash, motion::now()));
+        self.flash_motion = Motion {
+            since: None,
+            leaving,
+        };
+    }
+
     /// Retires the flash once its time is up. `true` when the window has to
     /// repaint without it.
     pub(crate) fn tick_flash(&mut self, now: Instant) -> bool {
@@ -144,9 +156,7 @@ impl SheprdWindow {
         {
             return false;
         }
-        if let Some((flash, _)) = self.flash.take() {
-            self.flash_motion.leaving = Some((flash, motion::now()));
-        }
+        self.clear_flash(true);
         true
     }
 }

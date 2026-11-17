@@ -266,7 +266,10 @@ impl SheprdWindow {
             ConnectionBridge::send_inputs(handle, &snapshot.boot_id, &target.target, inputs)
         };
         if let Err(error) = result {
-            self.local_error = Some(fl!("window-input-wheel-failed", error = error.localize()));
+            self.notices.show(
+                crate::notice::Cause::Input,
+                fl!("window-input-wheel-failed", error = error.localize()),
+            );
             // The rows asked for never left, so nothing may wait on them.
             self.presentation.scroll.clear();
             cx.notify();

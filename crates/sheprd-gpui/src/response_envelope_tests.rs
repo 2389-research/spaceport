@@ -82,7 +82,7 @@ fn renamed(response: &Value, request: &str) -> String {
         Some(Ok(())) => "ok".into(),
         Some(Err(error)) => format!("err {error}"),
     };
-    format!("{rename} | {}", state.error.as_deref().unwrap_or("-"))
+    format!("{rename} | {}", state.notices.text().unwrap_or("-"))
 }
 
 #[test]

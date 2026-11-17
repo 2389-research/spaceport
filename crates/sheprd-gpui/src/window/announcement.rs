@@ -131,10 +131,13 @@ impl SheprdWindow {
     pub(crate) fn dismiss_announcement(&mut self, version: &str, id: &str, cx: &mut Context<Self>) {
         let endpoint = &self.endpoints[self.selected_endpoint];
         let Ok(mut inbox) = endpoint.connection.inbox.try_lock() else {
-            self.local_error = Some(fl!(
-                "window-dismiss-announcement-failed",
-                error = crate::Error::ConnectionBusy.localize()
-            ));
+            self.notices.show(
+                crate::notice::Cause::Command,
+                fl!(
+                    "window-dismiss-announcement-failed",
+                    error = crate::Error::ConnectionBusy.localize()
+                ),
+            );
             cx.notify();
             return;
         };
@@ -166,10 +169,13 @@ impl SheprdWindow {
                 Ok(request) => Some(request),
                 Err(error) => {
                     drop(inbox);
-                    self.local_error = Some(fl!(
-                        "window-dismiss-announcement-failed",
-                        error = error.localize()
-                    ));
+                    self.notices.show(
+                        crate::notice::Cause::Command,
+                        fl!(
+                            "window-dismiss-announcement-failed",
+                            error = error.localize()
+                        ),
+                    );
                     cx.notify();
                     return;
                 }

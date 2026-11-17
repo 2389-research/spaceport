@@ -280,7 +280,7 @@ pub fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                     let (before, inbox) = baseline.as_ref().context("missing external baseline")?;
                     if !Arc::ptr_eq(inbox, &view.endpoints[view.selected_endpoint].connection.inbox) || !view.live.status.is_connected()
                         || view.endpoints[view.selected_endpoint].connection.handle.as_ref().is_none_or(|h| h.is_disconnected())
-                        || view.local_error.is_some() || view.live.error.is_some() {
+                        || view.notices.is_some() || view.live.notices.is_some() {
                         bail!("GUI connection changed or failed during external creation");
                     }
                     if external.is_none() {
@@ -337,17 +337,17 @@ pub fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                 let ready = view.read(cx).navigation_ready();
                 let (live, local_error, options, last_queued_options, bounds) = {
                     let view = view.read(cx);
-                    (view.live.clone(), view.local_error.clone(), view.options, view.last_queued_options, view.bounds)
+                    (view.live.clone(), view.notices.text().map(str::to_owned), view.options, view.last_queued_options, view.bounds)
                 };
                 let handoff = handoff_diagnostic(&live, &workspace, &first_tab);
                 let diagnostic = || format!(
                     "step={step} ({}) elapsed={:?} {} frames={frames} focus={focused} actions_ready={actions_ready} fenced={fenced} ready={ready} active={} probe={probe:?} status={:.160} local_error={:.240} live.error={:.240} connected={} snapshot={:?} surface={:?} size={:?} last_queued_options={last_queued_options:?} navigations={navigations:?}",
                     STEPS[step], since.elapsed(), handoff, active, live.status,
-                    local_error.as_deref().unwrap_or("none"), live.error.as_deref().unwrap_or("none"), live.status.is_connected(),
+                    local_error.as_deref().unwrap_or("none"), live.notices.text().unwrap_or("none"), live.status.is_connected(),
                     live.snapshot.as_ref().map(|s| (s.revision, s.workspaces.len(), s.tabs.len())),
                     live.surface.as_ref().map(|s| (s.projection_revision, s.panes.len(), s.frame.width, s.frame.height)), options.surface_size
                 );
-                if local_error.is_some() || live.error.is_some() {
+                if local_error.is_some() || live.notices.is_some() {
                     bail!(diagnostic());
                 }
                 if since.elapsed() > Duration::from_secs(20) {
@@ -558,13 +558,13 @@ async fn second_window(first: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> 
                     window.draw(cx).clear(cx);
                 }
                 let view = view.read(cx);
-                Ok((view.live.clone(), view.local_error.clone()))
+                Ok((view.live.clone(), view.notices.text().map(str::to_owned)))
             })
             .context("observing window")?
     }
 
     fn healthy(live: &LiveState, local_error: Option<&str>) -> Result<Option<(String, String)>> {
-        if let Some(error) = local_error.or(live.error.as_deref()) {
+        if let Some(error) = local_error.or(live.notices.text()) {
             bail!("window error: {error:.240}");
         }
         let (Some(snapshot), Some(surface)) = (&live.snapshot, &live.surface) else {
@@ -712,14 +712,14 @@ async fn wait<T>(
                 window.refresh();
                 window.draw(cx).clear(cx);
                 let state = view.read(cx);
-                if state.local_error.is_some()
-                    || state.live.error.is_some()
+                if state.notices.is_some()
+                    || state.live.notices.is_some()
                     || !state.live.status.is_connected()
                 {
                     bail!(
                         "CJK fixture connection failed: {:?} {:?}",
-                        state.local_error,
-                        state.live.error
+                        state.notices,
+                        state.live.notices
                     );
                 }
                 inspect(&view, window, cx)

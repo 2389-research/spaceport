@@ -46,7 +46,7 @@ fn a_key_held_after_a_wsl_drop_follows_its_paths(cx: &mut TestAppContext) {
         assert!(view.wsl_paste.is_some(), "the paths are being mapped");
         assert_eq!(view.pending_input.len(), 1, "Enter waits for them");
         finish(view, &["/mnt/c/a"], cx);
-        assert!(view.local_error.is_none(), "{:?}", view.local_error);
+        assert!(view.notices.is_none(), "{:?}", view.notices);
     });
     let mut next = || loop {
         let message = peer.receive();
@@ -73,8 +73,8 @@ fn a_key_held_after_a_wsl_drop_whose_mapping_fails_is_not_sent(cx: &mut TestAppC
         assert!(view.wsl_paste.is_none());
         assert_eq!(view.pending_input.len(), 0);
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some("Files not pasted: invalid WSL distribution name (1 held input discarded)")
@@ -92,8 +92,8 @@ fn a_key_held_after_a_drop_refused_by_an_open_menu_is_not_sent(cx: &mut TestAppC
         frame_returns(view, cx);
         assert!(view.wsl_paste.is_none(), "nothing was mapped");
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some("Files not pasted: a menu is open (1 held input discarded)")

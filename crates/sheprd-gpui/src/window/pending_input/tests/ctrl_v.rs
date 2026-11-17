@@ -22,7 +22,7 @@ fn a_ctrl_v_held_for_the_frame_pastes_the_clipboard_once_it_returns(cx: &mut Tes
         assert_eq!(view.pending_input.len(), 1, "Ctrl+V waits for the frame");
         cx.write_to_clipboard(ClipboardItem::new_string("copied after".into()));
         frame_returns(view, cx);
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
     });
     cx.run_until_parked();
     assert_eq!(next_pane_input(&mut peer), typed(paste("copied after")));

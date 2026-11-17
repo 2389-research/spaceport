@@ -147,7 +147,7 @@ fn a_new_terminal_in_a_group_needs_the_live_matching_core(cx: &mut gpui::TestApp
                 view.core_terminals
                     .spawning
                     .transition(crate::core_terminals::spawning::Event::Unavailable);
-                view.flash = None;
+                view.clear_flash(false);
                 view.new_core_terminal(window, cx);
                 let terminals = &view.core_terminals;
                 if !matches!(
@@ -237,7 +237,7 @@ fn adding_a_member_checks_identity_then_the_edit_checks_the_connection(
         let seen = HELD.map(|held| {
             view.update(cx, |view, cx| {
                 hold(view, held, &mut peers);
-                view.flash = None;
+                view.clear_flash(false);
                 view.toggle_core_workspace_member(GROUP, HUB.into(), LOOSE.into(), true, cx);
                 if view.core_terminals.workspace_ui.pending.is_some() {
                     "submitted".to_owned()

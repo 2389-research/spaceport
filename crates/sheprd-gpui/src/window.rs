@@ -203,7 +203,6 @@ pub(crate) struct SheprdWindow {
     pub(crate) links: links::DaemonLinks,
     pub(crate) listening_ports: crate::listening_ports::ListeningPorts,
     pub(crate) live: LiveState,
-    pub(crate) local_error: Option<String>,
     /// Draws the moving status marks the sidebar and the tab strip reserve
     /// room for; see `mark_layer`.
     pub(crate) mark_layer: Entity<crate::mark_layer::MarkLayer>,
@@ -219,6 +218,7 @@ pub(crate) struct SheprdWindow {
     pub(crate) network_quality_seen: u64,
     /// Which notice cards had lines too long for their row when last laid out.
     pub(crate) notice_overflow: std::rc::Rc<config_diagnostic::Overflow>,
+    pub(crate) notices: crate::notice::Notices,
     pub(crate) options: ConnectOptions,
     /// The activity bar's Overview page.
     pub(crate) overview: crate::overview::Page,
@@ -541,7 +541,9 @@ impl SheprdWindow {
         );
         self.poll_device_setup(window, cx);
         self.poll_hover_menu(std::time::Instant::now(), window, cx);
-        if self.tick_flash(std::time::Instant::now()) {
+        let now = std::time::Instant::now();
+        let notices_expired = self.expire_status_notices(now);
+        if self.tick_flash(now) || notices_expired {
             cx.notify();
         }
         self.poll_tab_rename(window, cx);

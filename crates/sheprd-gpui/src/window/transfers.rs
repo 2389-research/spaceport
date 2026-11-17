@@ -368,7 +368,10 @@ impl SheprdWindow {
             return Delivery::Refused;
         }
         if self.file_transfer.active().is_some() {
-            self.local_error = Some(fl!("window-input-files-busy"));
+            self.notices.show(
+                crate::notice::Cause::Transfer,
+                fl!("window-input-files-busy"),
+            );
             self.local_transfer_notice(
                 &fl!("window-input-copy-not-started"),
                 fl!("window-input-copy-not-started-body"),

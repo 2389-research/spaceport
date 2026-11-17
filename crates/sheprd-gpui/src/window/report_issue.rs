@@ -46,9 +46,9 @@ impl SheprdWindow {
         });
         let logs = self
             .live
-            .error
-            .as_deref()
-            .or(self.local_error.as_deref())
+            .notices
+            .text()
+            .or(self.notices.text())
             .map(|err| format!("{}: {err}", self.live.status));
         ReportIssue {
             version: client_version(crate::constants::BUILD_COMMIT),

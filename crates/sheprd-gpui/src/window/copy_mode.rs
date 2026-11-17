@@ -311,11 +311,14 @@ impl SheprdWindow {
                     Request::Motion(_) => "motion",
                     Request::Search { .. } => "search",
                 };
-                self.local_error = Some(fl!(
-                    "window-find-copy-request-not-sent",
-                    request = request,
-                    error = error.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!(
+                        "window-find-copy-request-not-sent",
+                        request = request,
+                        error = error.localize()
+                    ),
+                );
                 cx.notify();
             }
         }
@@ -349,10 +352,10 @@ impl SheprdWindow {
         match sent {
             Ok(request) => self.await_selection_read(state.inbox.clone(), request),
             Err(error) => {
-                self.local_error = Some(fl!(
-                    "window-find-selection-not-copied",
-                    error = error.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-find-selection-not-copied", error = error.localize()),
+                );
                 cx.notify();
             }
         }
@@ -380,10 +383,10 @@ impl SheprdWindow {
             Method::PaneScroll,
             serde_json::json!({"pane_id": pane_id, "offset_from_bottom": offset}),
         ) {
-            self.local_error = Some(fl!(
-                "window-find-copy-scroll-failed",
-                error = error.localize()
-            ));
+            self.notices.show(
+                crate::notice::Cause::Input,
+                fl!("window-find-copy-scroll-failed", error = error.localize()),
+            );
             cx.notify();
         }
     }
@@ -428,12 +431,10 @@ impl SheprdWindow {
             match state.mode.answer(&request, answer) {
                 Ok(true) => self.reveal_copy_cursor(cx),
                 Ok(false) => {}
-                Err(error) => {
-                    self.local_error = Some(fl!(
-                        "window-find-copy-request-failed",
-                        error = error.localize()
-                    ))
-                }
+                Err(error) => self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-find-copy-request-failed", error = error.localize()),
+                ),
             }
             cx.notify();
         }

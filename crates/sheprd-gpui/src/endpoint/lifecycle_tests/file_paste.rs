@@ -71,7 +71,7 @@ fn copied_files_paste_their_escaped_paths_into_a_local_pane(cx: &mut gpui::TestA
             );
         }
         wait_image_finished(&view, cx);
-        view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+        view.read_with(cx, |view, _| assert!(view.notices.is_none()));
     }
 }
 
@@ -110,7 +110,7 @@ fn one_copied_image_uses_the_image_bridge_on_a_remote_pane(cx: &mut gpui::TestAp
         );
         wait_image_finished(&view, cx);
         view.read_with(cx, |view, _| {
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
             assert!(view.file_transfer.active().is_none());
         });
     }
@@ -127,7 +127,7 @@ fn unpastable_file_paths_report_like_a_drop_and_paste_nothing(cx: &mut gpui::Tes
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
                 prepare_mouse(view, endpoint, cx);
-                view.local_error = None;
+                view.notices.clear();
                 let item = file_copy(&["/tmp/bad\nname.png".into()], "bad name.png");
                 if keyed {
                     cx.write_to_clipboard(item);
@@ -141,8 +141,8 @@ fn unpastable_file_paths_report_like_a_drop_and_paste_nothing(cx: &mut gpui::Tes
         wait_image_finished(&view, cx);
         view.update(cx, |view, cx| {
             assert_eq!(
-                view.local_error
-                    .as_deref()
+                view.notices
+                    .text()
                     .map(crate::i18n::leak_tests::unmarked)
                     .as_deref(),
                 Some(
@@ -195,7 +195,7 @@ fn a_remote_pane_that_turns_unready_never_gets_local_paths(cx: &mut gpui::TestAp
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
                 prepare_remote_image(view, endpoint, cx);
-                view.local_error = None;
+                view.notices.clear();
                 cx.write_to_clipboard(file_copy(copied, "a.png"));
                 view.key_down(&cmd_v(), window, cx);
                 assert_eq!(view.pending_images.len(), 1);
@@ -208,8 +208,8 @@ fn a_remote_pane_that_turns_unready_never_gets_local_paths(cx: &mut gpui::TestAp
         wait_image_finished(&view, cx);
         view.update(cx, |view, cx| {
             assert_eq!(
-                view.local_error
-                    .as_deref()
+                view.notices
+                    .text()
                     .map(crate::i18n::leak_tests::unmarked)
                     .as_deref(),
                 Some(format!("Files not pasted: {}", crate::Error::ConnectionNotReady).as_str()),

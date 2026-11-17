@@ -150,11 +150,11 @@ fn clear_pane_is_offered_and_sent_only_when_the_daemon_advertises_it(cx: &mut Te
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.live.supports_pane_clear = false;
-            view.local_error = None;
+            view.notices.clear();
             view.command(Command::ClearPane, window, cx);
             assert!(
-                view.local_error
-                    .as_deref()
+                view.notices
+                    .text()
                     .is_some_and(|error| error.contains("newer Herdr"))
             );
             assert!(

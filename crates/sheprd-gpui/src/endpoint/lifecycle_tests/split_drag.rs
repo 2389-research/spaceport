@@ -148,7 +148,7 @@ fn connected_split_drag_sends_coalesced_ratios_and_stops_on_layout_change(
             drag(view, 30.5, cx);
             assert!(view.split_drag.is_none());
             assert!(view.live.drag_request.is_none());
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
         });
     });
 }

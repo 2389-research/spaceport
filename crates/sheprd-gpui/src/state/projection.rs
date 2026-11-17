@@ -177,6 +177,9 @@ impl LiveState {
         {
             self.announcement_dismissal = None;
         }
+        if self.notices.connection_reason().is_some() {
+            self.notices.clear();
+        }
         self.status = ConnectionStatus::Connected;
         self.previous_pane = match &self.snapshot {
             Some(old) if old.boot_id == snapshot.boot_id => old

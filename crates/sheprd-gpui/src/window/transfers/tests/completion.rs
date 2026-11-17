@@ -47,7 +47,7 @@ fn success_pastes_quoted_paths_to_captured_pane_or_popup(cx: &mut TestAppContext
         );
         view.read_with(cx, |view, _| {
             assert!(view.file_transfer.active().is_none());
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
             assert_eq!(
                 view.endpoints[0].toasts.entries.back().unwrap().1.title,
                 "Copy complete"
@@ -180,7 +180,7 @@ fn backend_cleanup_failure_survives_host_switch_without_disclosing_diagnostics(
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         assert!(view.file_transfer.active().is_none());
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
         assert!(view.endpoints[0].toasts.entries.is_empty());
         let notices = &view.endpoints[1].toasts.entries;
         assert_eq!(notices.len(), 1);

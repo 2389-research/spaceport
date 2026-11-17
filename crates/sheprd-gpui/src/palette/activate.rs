@@ -172,7 +172,9 @@ impl SheprdWindow {
                 });
                 self.discard_composition(cx);
             }
-            Err(error) => self.local_error = Some(error.to_string()),
+            Err(error) => self
+                .notices
+                .show(crate::notice::Cause::Command, error.to_string()),
         }
         cx.notify();
     }

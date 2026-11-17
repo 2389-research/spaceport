@@ -176,7 +176,7 @@ fn a_failed_save_drops_its_choice_and_says_why(cx: &mut TestAppContext) {
     assert_eq!(terminal_theme(&view, cx), builtin("Dracula"));
     assert!(!pinned(&view, cx));
     view.read_with(cx, |view, _| {
-        let error = view.local_error.as_deref().unwrap_or_default();
+        let error = view.notices.text().unwrap_or_default();
         assert!(error.starts_with("Save GUI config:"), "{error}");
     });
 }

@@ -140,6 +140,10 @@ impl SheprdWindow {
         });
         let window_closed = Self::give_back_torn_tabs(cx);
         let terminal_focus = Self::leave_region_with_terminal(&focus, window, cx);
+        let mut notices = crate::notice::Notices::default();
+        if let Some(error) = error {
+            notices.show(crate::notice::Cause::Configuration, error);
+        }
         let mut this = Self {
             // keep-sorted start
             _activation: activation,
@@ -209,7 +213,6 @@ impl SheprdWindow {
             links: Default::default(),
             listening_ports: Default::default(),
             live: LiveState::default(),
-            local_error: error,
             mark_layer,
             marked: String::new(),
             marked_selection: None,
@@ -218,6 +221,7 @@ impl SheprdWindow {
             navigations: Default::default(),
             network_quality_seen: 0,
             notice_overflow: Default::default(),
+            notices,
             options: ConnectOptions::default(),
             overview: Default::default(),
             painter: Default::default(),

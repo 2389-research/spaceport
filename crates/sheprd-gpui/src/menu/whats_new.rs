@@ -140,7 +140,10 @@ impl SheprdWindow {
             Method::ReleaseNotesDismiss,
             serde_json::json!({ "version": notes.version }),
         ) {
-            self.local_error = Some(fl!("whats-new-dismiss-failed", error = error.to_string()));
+            self.notices.show(
+                crate::notice::Cause::Command,
+                fl!("whats-new-dismiss-failed", error = error.to_string()),
+            );
         }
     }
 }

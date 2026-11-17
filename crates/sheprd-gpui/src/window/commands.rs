@@ -258,11 +258,14 @@ impl SheprdWindow {
             &self.live.snapshot,
         ) {
             if let Err(error) = enqueue(handle, &snapshot.boot_id) {
-                self.local_error = Some(fl!(
-                    "window-notices-request-failed",
-                    operation = label,
-                    error = error.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Command,
+                    fl!(
+                        "window-notices-request-failed",
+                        operation = label,
+                        error = error.localize()
+                    ),
+                );
             } else {
                 #[cfg(feature = "integration-test")]
                 self.navigations
@@ -293,7 +296,8 @@ impl SheprdWindow {
             if let Err(error) = &result
                 && !matches!(error, sheprd_client::Error::Full)
             {
-                self.local_error = Some(error.localize());
+                self.notices
+                    .show(crate::notice::Cause::Command, error.localize());
             }
             state
                 .activation
@@ -477,7 +481,8 @@ impl SheprdWindow {
             }
             Command::CheckForUpdates => {
                 if let Err(error) = crate::updates::check(cx) {
-                    self.local_error = Some(error.localize());
+                    self.notices
+                        .show(crate::notice::Cause::Command, error.localize());
                     cx.notify();
                 }
                 return;
@@ -564,7 +569,10 @@ impl SheprdWindow {
             Command::ClearPane if !self.live.supports_pane_clear => {
                 // Older daemons do not advertise `pane.clear`. Say so rather than
                 // typing `clear` into the pane, which could reach a running program.
-                self.local_error = Some(fl!("window-notices-clear-needs-newer"));
+                self.notices.show(
+                    crate::notice::Cause::Command,
+                    fl!("window-notices-clear-needs-newer"),
+                );
                 cx.notify();
                 return;
             }
@@ -651,7 +659,10 @@ impl SheprdWindow {
                 return;
             }
             Command::MoveTabPrevious | Command::MoveTabNext if !self.live.supports_tab_move => {
-                self.local_error = Some(fl!("window-notices-move-tabs-needs-newer"));
+                self.notices.show(
+                    crate::notice::Cause::Command,
+                    fl!("window-notices-move-tabs-needs-newer"),
+                );
                 cx.notify();
                 return;
             }

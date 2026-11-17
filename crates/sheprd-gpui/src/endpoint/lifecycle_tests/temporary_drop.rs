@@ -46,7 +46,7 @@ fn a_screenshot_thumbnail_takes_the_image_bridge_on_a_local_pane(cx: &mut gpui::
             "keyed={keyed}"
         );
         wait_image_finished(&view, cx);
-        view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+        view.read_with(cx, |view, _| assert!(view.notices.is_none()));
     }
 }
 
@@ -76,7 +76,7 @@ fn a_thumbnail_that_cannot_be_read_still_pastes_its_path(cx: &mut gpui::TestAppC
             events: vec![ClientPaneInputEvent::Paste(expected)],
         }
     );
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -120,5 +120,5 @@ fn a_pasted_thumbnail_reaches_the_pane_before_enter_typed_after_it(cx: &mut gpui
         }
     );
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }

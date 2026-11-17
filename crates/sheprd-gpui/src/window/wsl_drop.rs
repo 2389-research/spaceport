@@ -102,10 +102,13 @@ impl SheprdWindow {
             }
             Err(error) => {
                 self.wsl_paste = None;
-                self.local_error = Some(fl!(
-                    "window-input-files-failed",
-                    error = crate::Error::from(error).localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Transfer,
+                    fl!(
+                        "window-input-files-failed",
+                        error = crate::Error::from(error).localize()
+                    ),
+                );
                 // Keys typed after the drop never run without its paths.
                 self.discard_all_held(Delivery::Refused, cx);
                 cx.notify();
@@ -142,7 +145,10 @@ impl SheprdWindow {
             return true;
         };
         if let Err(error) = self.send_wsl_paths(&paste, mapped) {
-            self.local_error = Some(fl!("window-input-files-failed", error = error.localize()));
+            self.notices.show(
+                crate::notice::Cause::Transfer,
+                fl!("window-input-files-failed", error = error.localize()),
+            );
             self.discard_all_held(Delivery::Refused, cx);
             cx.notify();
         }

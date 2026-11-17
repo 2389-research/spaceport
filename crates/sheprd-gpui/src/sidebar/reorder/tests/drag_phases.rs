@@ -73,7 +73,10 @@ fn drop_first_before_third(
         (true, false, true),
         "the drop settles with its preview"
     );
-    assert_eq!(view.read_with(cx, |view, _| view.local_error.clone()), None);
+    assert_eq!(
+        view.read_with(cx, |view, _| view.notices.text().map(str::to_owned)),
+        None
+    );
     (first, second)
 }
 

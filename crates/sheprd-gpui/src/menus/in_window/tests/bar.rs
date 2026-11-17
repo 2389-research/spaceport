@@ -104,7 +104,7 @@ fn f10_opens_and_dismisses_without_typing_into_the_terminal(cx: &mut TestAppCont
     cx.simulate_keystrokes("a b c");
     view.read_with(cx, |view, _| {
         assert!(view.marked.is_empty());
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
         assert_eq!(view.menu.page, Some(Page::Application));
     });
     cx.simulate_keystrokes("f10");

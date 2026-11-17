@@ -113,10 +113,7 @@ fn all_processing_errors_show_redacted_local_feedback(cx: &mut gpui::TestAppCont
                 notice.body.as_deref(),
                 Some(format!("{error} Nothing was uploaded or pasted.").as_str())
             );
-            for text in [
-                notice.body.as_ref().unwrap(),
-                view.local_error.as_ref().unwrap(),
-            ] {
+            for text in [notice.body.as_ref().unwrap(), view.notices.text().unwrap()] {
                 assert!(!text.contains("/private"));
                 assert!(!text.contains("secret"));
             }
@@ -141,6 +138,6 @@ fn shared_transfer_notice_uses_selected_endpoint_and_sanitizes_text(cx: &mut gpu
         assert_eq!(notice.title, "Copy failed");
         assert_eq!(notice.body.as_deref(), Some("Cannot copytext"));
         assert!(notice.is_visible());
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
     });
 }

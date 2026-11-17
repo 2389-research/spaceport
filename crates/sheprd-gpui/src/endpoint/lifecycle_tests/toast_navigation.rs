@@ -324,7 +324,7 @@ fn toast_queue_failure_retains_notice(cx: &mut gpui::TestAppContext) {
         view.tick_toasts(false, Instant::now(), cx);
         view.navigate_toast(0, cx);
         assert_eq!(view.endpoints[1].toasts.entries.len(), 1);
-        assert!(view.local_error.is_some());
+        assert!(view.notices.is_some());
     });
 }
 

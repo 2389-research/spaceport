@@ -213,7 +213,8 @@ fn herdr_window_report_issue_url_integrates_state(cx: &mut TestAppContext) {
 
     // An error populates logs
     view.update(cx, |this, _| {
-        this.local_error = Some("Connection refused".into());
+        this.notices
+            .show(crate::notice::Cause::Command, "Connection refused".into());
     });
     let with_error = view.read_with(cx, |this, _| {
         this.report_issue().url("macOS, Apple Silicon", None)
@@ -227,14 +228,15 @@ fn herdr_window_report_issue_keeps_the_error_seen_at_the_click(cx: &mut TestAppC
     let (view, cx) = cx.add_window_view(fixture_window);
     view.update(cx, |this, _| {
         this.live.daemon_version = Some("0.9.5".into());
-        this.local_error = Some("Connection refused".into());
+        this.notices
+            .show(crate::notice::Cause::Command, "Connection refused".into());
     });
     let report = view.read_with(cx, |this, _| this.report_issue());
 
     // A reconnect or host switch while the platform is gathered.
     view.update(cx, |this, _| {
         this.live.daemon_version = Some("0.10.0".into());
-        this.local_error = None;
+        this.notices.clear();
     });
 
     let url = report.url("macOS, Apple Silicon", None);

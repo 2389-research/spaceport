@@ -54,7 +54,7 @@ fn dragging_copies_on_release_keeps_the_highlight_and_reports(cx: &mut TestAppCo
 
     // A press with no drag selects nothing, so neither the clipboard nor
     // the flash reports one.
-    view.update(cx, |view, _| view.flash = None);
+    view.update(cx, |view, _| view.clear_flash(false));
     cx.simulate_click(at(2., 0.), Modifiers::default());
     assert_eq!(
         cx.update(|_, cx| cx.read_from_clipboard().and_then(|item| item.text())),

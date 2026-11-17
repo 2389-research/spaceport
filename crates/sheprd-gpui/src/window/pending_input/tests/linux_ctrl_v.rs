@@ -40,7 +40,7 @@ fn ctrl_v_mapped(
         .unwrap();
         cx.write_to_clipboard(clipboard);
         view.key_down(&ctrl_v(), window, cx);
-        assert!(view.local_error.is_none(), "{:?}", view.local_error);
+        assert!(view.notices.is_none(), "{:?}", view.notices);
     });
     cx.run_until_parked();
     let sent = loop {

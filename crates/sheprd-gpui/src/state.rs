@@ -92,7 +92,7 @@ pub struct LiveState {
     pub(crate) surface_images: Arc<SurfaceImages>,
     pub(crate) pending_surface_images: Option<Arc<SurfaceImages>>,
     pub status: ConnectionStatus,
-    pub error: Option<String>,
+    pub(crate) notices: crate::notice::Notices,
     /// Why `ssh` refused the bridge, when that is how the connection ended.
     pub(crate) ssh_failure: Option<sheprd_client::SshFailure>,
     pub missing_installation: bool,
@@ -209,7 +209,7 @@ impl Default for LiveState {
             surface_images: Default::default(),
             pending_surface_images: None,
             status: ConnectionStatus::Connecting,
-            error: None,
+            notices: Default::default(),
             ssh_failure: None,
             missing_installation: false,
             daemon_version: None,
@@ -304,7 +304,7 @@ impl LiveState {
             surface_images: _,
             pending_surface_images: _,
             status,
-            error,
+            notices,
             ssh_failure,
             missing_installation,
             daemon_version,
@@ -363,7 +363,7 @@ impl LiveState {
             && same_arc(snapshot, &self.snapshot)
             && *previous_pane == self.previous_pane
             && *status == self.status
-            && *error == self.error
+            && *notices == self.notices
             && *ssh_failure == self.ssh_failure
             && *missing_installation == self.missing_installation
             && *daemon_version == self.daemon_version
@@ -454,9 +454,9 @@ impl LiveState {
 
     pub fn status_text(&self, local_error: Option<&str>) -> String {
         let error = if self.status.is_connected() {
-            local_error.or(self.error.as_deref())
+            local_error.or(self.notices.text())
         } else {
-            self.error.as_deref()
+            self.notices.connection_reason()
         };
         match error {
             Some(error) => fl!(
@@ -533,7 +533,7 @@ impl LiveState {
                 // The daemon reports the mode to each new connection.
                 self.keyboard_report_all = false;
                 self.status = ConnectionStatus::AwaitingSnapshot;
-                self.error = None;
+                self.notices.clear();
             }
             ClientEvent::Snapshot(snapshot) => self.receive_snapshot(snapshot),
             ClientEvent::Surface(surface) => self.receive_surface(surface),
@@ -554,7 +554,7 @@ impl LiveState {
                 self.bells = 0;
                 self.window_title = None;
                 self.status = ConnectionStatus::Disconnected;
-                self.error = Some(reason);
+                self.notices.show(crate::notice::Cause::Connection, reason);
                 self.snapshot = None;
                 self.pending_snapshot = None;
                 self.pending_surface_images = None;
@@ -571,7 +571,7 @@ impl LiveState {
                     .as_deref()
                     .is_some_and(|id| self.has_operation_result(id))
                 {
-                    self.error = Some(reason.localize());
+                    self.notices.show(crate::notice::Cause::Daemon, reason.localize());
                 }
                 let reason = Arc::new(crate::Error::Client(reason));
                 for (id, result) in [&mut self.dialog_response, &mut self.script_response]
@@ -629,12 +629,12 @@ impl LiveState {
                 if matches!(self.activation, activation::Fence::Failed { cause: activation::Failure::InvalidResponse, .. })
                     && self.activation.request().is_some_and(|request| request.request == request_id)
                 {
-                    self.error = Some(fl!("state-activation-invalid"));
+                    self.notices.show(crate::notice::Cause::Activation, fl!("state-activation-invalid"));
                 }
                 if let Some(refusal) = &refusal
                     && !self.has_operation_result(&request_id)
                 {
-                    self.error = Some(refusal.localize());
+                    self.notices.show(crate::notice::Cause::Daemon, refusal.localize());
                 }
                 if self.dismissal_request(&request_id) && refusal.is_some() {
                     self.announcement_dismissal = None;
@@ -651,7 +651,7 @@ impl LiveState {
                 }
             }
             ClientEvent::Message(ServerMessage::ClientShellError { message }) => {
-                self.error = Some(message)
+                self.notices.show(crate::notice::Cause::Daemon, message)
             }
             ClientEvent::Message(ServerMessage::SemanticNotification(notification)) => {
                 if !self.status.is_connected() {

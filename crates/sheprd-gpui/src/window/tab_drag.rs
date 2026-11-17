@@ -497,12 +497,10 @@ impl SheprdWindow {
                 });
                 self.tab_drag = Some(drag);
             }
-            Err(error) => {
-                self.local_error = Some(fl!(
-                    "window-input-tab-move-failed",
-                    error = error.localize()
-                ))
-            }
+            Err(error) => self.notices.show(
+                crate::notice::Cause::Command,
+                fl!("window-input-tab-move-failed", error = error.localize()),
+            ),
         }
     }
 

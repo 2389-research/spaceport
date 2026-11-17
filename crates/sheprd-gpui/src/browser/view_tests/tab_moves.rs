@@ -59,7 +59,7 @@ fn move_tab_moves_the_page_shown_among_the_pages(cx: &mut gpui::TestAppContext) 
         assert_eq!(shown(&view, cx), Some(Pick::Page(c)));
     }
     assert_eq!(herdr_tabs(&view, cx), terminals);
-    view.read_with(cx, |view, _| assert_eq!(view.local_error, None));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -71,7 +71,7 @@ fn move_tab_leaves_a_lone_page_in_place(cx: &mut gpui::TestAppContext) {
     run(&view, cx, Command::MoveTabPrevious);
     assert_eq!(pages(&view, cx), [TabId::test(0)]);
     assert_eq!(shown(&view, cx), Some(Pick::Page(TabId::test(0))));
-    view.read_with(cx, |view, _| assert_eq!(view.local_error, None));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 /// A terminal tab is still the daemon's to move, so this one, which cannot,
@@ -88,7 +88,7 @@ fn move_tab_on_a_terminal_still_asks_the_daemon(cx: &mut gpui::TestAppContext) {
     assert_eq!(pages(&view, cx), [TabId::test(0), TabId::test(1)]);
     view.read_with(cx, |view, _| {
         assert_eq!(
-            view.local_error.as_deref(),
+            view.notices.text(),
             Some("Moving tabs needs a newer Herdr daemon.")
         )
     });

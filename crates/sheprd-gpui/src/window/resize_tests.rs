@@ -27,36 +27,27 @@ fn resize_tracks_cell_metrics_and_retries_failed_options(cx: &mut gpui::TestAppC
         let queued = view.options;
         view.last_queued_options = Some(queued);
         view.resize();
-        assert!(
-            view.local_error.is_none(),
-            "identical options are not resent"
-        );
+        assert!(view.notices.is_none(), "identical options are not resent");
         let start = std::time::Instant::now();
         view.options.surface_size.cols += 1;
         view.resize_at(start);
         view.options.surface_size.cols += 1;
         view.resize_at(start + super::lifecycle::RESIZE_SETTLE);
-        assert!(
-            view.local_error.is_none(),
-            "a size still changing is not sent"
-        );
+        assert!(view.notices.is_none(), "a size still changing is not sent");
         let settled = start + super::lifecycle::RESIZE_SETTLE * 2;
         view.options.cell_width_px += 1;
         view.resize_at(settled);
         view.resize_at(settled + super::lifecycle::RESIZE_SETTLE / 2);
-        assert!(
-            view.local_error.is_none(),
-            "the last change restarts the wait"
-        );
+        assert!(view.notices.is_none(), "the last change restarts the wait");
         view.resize_at(settled + super::lifecycle::RESIZE_SETTLE);
         assert!(
-            view.local_error.is_some(),
+            view.notices.is_some(),
             "cell metrics alone trigger a send once settled"
         );
         assert_eq!(view.last_queued_options, Some(queued));
-        view.local_error = None;
+        view.notices.clear();
         view.resize_at(settled + super::lifecycle::RESIZE_SETTLE);
-        assert!(view.local_error.is_some(), "failed options are retried");
+        assert!(view.notices.is_some(), "failed options are retried");
     });
 }
 
@@ -107,17 +98,17 @@ fn resize_reasks_when_the_daemon_frame_is_a_different_size(cx: &mut gpui::TestAp
         view.last_input = Some(start);
         view.resize_at(start + super::lifecycle::RESIZE_SETTLE);
         assert!(
-            view.local_error.is_none(),
+            view.notices.is_none(),
             "a disagreeing frame still settles before a send"
         );
         view.resize_at(start + super::lifecycle::RESIZE_REASSERT);
         assert!(
-            view.local_error.is_none(),
+            view.notices.is_none(),
             "a frame of another size is not re-claimed before it has been answered"
         );
         view.resize_at(start + super::lifecycle::RESIZE_REASSERT + super::lifecycle::RESIZE_SETTLE);
         assert!(
-            view.local_error.is_some(),
+            view.notices.is_some(),
             "a frame of another size asks for the size again"
         );
     });
@@ -173,9 +164,9 @@ fn a_full_command_queue_is_retried_without_a_status_error(cx: &mut gpui::TestApp
         view.resize_at(start);
         view.resize_at(start + super::lifecycle::RESIZE_SETTLE);
         assert!(
-            view.local_error.is_none(),
+            view.notices.is_none(),
             "backpressure is not reported: {:?}",
-            view.local_error
+            view.notices
         );
         assert_eq!(
             view.last_queued_options,
@@ -195,9 +186,9 @@ fn a_full_command_queue_is_retried_without_a_status_error(cx: &mut gpui::TestApp
             view.resize_at(start + super::lifecycle::RESIZE_SETTLE);
         }
         assert!(
-            view.local_error.is_none(),
+            view.notices.is_none(),
             "a retried resize leaves no status error: {:?}",
-            view.local_error
+            view.notices
         );
         client.handle.disconnect();
     });

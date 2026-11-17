@@ -85,7 +85,7 @@ fn keys_typed_while_paths_are_mapped_follow_them(cx: &mut TestAppContext) {
         assert!(!view.flush_pending_input(cx));
         finish(view, &["/mnt/c/it's here.txt"], cx);
         assert!(view.wsl_paste.is_none());
-        assert!(view.local_error.is_none(), "{:?}", view.local_error);
+        assert!(view.notices.is_none(), "{:?}", view.notices);
     });
     assert!(matches!(
         peer.receive(),
@@ -116,7 +116,7 @@ fn paths_for_a_covered_pane_are_not_pasted(cx: &mut TestAppContext) {
         }));
         finish(view, &["/mnt/c/a"], cx);
         assert_eq!(
-            view.local_error.as_deref().map(crate::i18n::leak_tests::unmarked).as_deref(),
+            view.notices.text().map(crate::i18n::leak_tests::unmarked).as_deref(),
             Some(
                 "Files not pasted: The pane the files were dropped on changed before their paths were ready."
             )
@@ -133,7 +133,7 @@ fn a_reconnect_forgets_the_drop_and_its_late_answer(cx: &mut TestAppContext) {
         view.clear_pending_input();
         assert!(view.wsl_paste.is_none());
         view.finish_wsl_paste(&token, Ok(vec!["/mnt/c/a".into()]), cx);
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
         sentinel(view, &mut peer);
     });
 }
@@ -174,13 +174,13 @@ fn paths_mapped_during_a_surface_gap_wait_and_then_lead_the_held_keys(cx: &mut T
         finish(view, &["/mnt/c/a"], cx);
         // Nothing is lost or sent while the surface is missing.
         assert!(view.wsl_paste.is_some());
-        assert!(view.local_error.is_none(), "{:?}", view.local_error);
+        assert!(view.notices.is_none(), "{:?}", view.notices);
         assert!(!view.flush_pending_input(cx));
         close_gap(view);
         // Polling delivers the paths first, then the key typed after them.
         assert!(view.flush_pending_input(cx));
         assert!(view.wsl_paste.is_none());
-        assert!(view.local_error.is_none(), "{:?}", view.local_error);
+        assert!(view.notices.is_none(), "{:?}", view.notices);
     });
     assert_eq!(
         peer.receive(),
@@ -202,7 +202,7 @@ fn paths_stop_waiting_for_a_surface_that_never_comes(cx: &mut TestAppContext) {
         *mapped_at -= GAP_LIMIT;
         assert!(!view.flush_pending_input(cx));
         assert!(view.wsl_paste.is_none());
-        assert!(view.local_error.is_some());
+        assert!(view.notices.is_some());
         close_gap(view);
         sentinel(view, &mut peer);
     });
@@ -219,7 +219,7 @@ fn paths_waiting_in_a_gap_are_refused_once_the_connection_drops(cx: &mut TestApp
         assert!(!view.flush_pending_input(cx));
         assert!(view.wsl_paste.is_none());
         assert_eq!(
-            view.local_error.as_deref().map(crate::i18n::leak_tests::unmarked).as_deref(),
+            view.notices.text().map(crate::i18n::leak_tests::unmarked).as_deref(),
             Some(
                 "Files not pasted: The pane the files were dropped on changed before their paths were ready."
             )

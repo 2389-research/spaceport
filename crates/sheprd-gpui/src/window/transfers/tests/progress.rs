@@ -55,7 +55,7 @@ fn progress_above_four_gib_and_real_cancel_click_are_isolated(cx: &mut TestAppCo
     view.read_with(cx, |view, _| {
         assert!(view.file_transfer.active().unwrap().shown.2);
         assert!(view.terminal_mouse.is_none());
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
     });
     peer.sentinel(&view, cx);
 }

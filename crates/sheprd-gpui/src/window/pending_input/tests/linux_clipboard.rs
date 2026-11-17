@@ -19,7 +19,7 @@ fn ordinary_linux_pastes_prepare_in_background_and_keep_input_order(cx: &mut Tes
             "each paste reserves a background read"
         );
         assert!(view.send(text("after"), cx));
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
     });
     cx.run_until_parked();
     for expected in [paste("first"), paste("second"), text("after")] {

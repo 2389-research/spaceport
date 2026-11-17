@@ -71,7 +71,12 @@ impl Flags {
         );
         endpoint.never_connect();
         endpoint.live.status = self.status;
-        endpoint.live.error = self.error.then(|| "refused".into());
+        if self.error {
+            endpoint
+                .live
+                .notices
+                .show(crate::notice::Cause::Connection, "refused".into());
+        }
         let reason = self.outage.then(|| "connection lost".into());
         let why = match self.refusal {
             Refusal::Daemon => Some(Failure::Version {
@@ -89,7 +94,8 @@ impl Flags {
             Refusal::None if self.missing => Some(Failure::Missing { reason }),
             Refusal::None if self.outage || (!self.status.is_connected() && self.error) => {
                 Some(Failure::Transport {
-                    reason: reason.or_else(|| endpoint.live.error.clone()),
+                    reason: reason
+                        .or_else(|| endpoint.live.notices.connection_reason().map(str::to_owned)),
                     needs_user: false,
                 })
             }

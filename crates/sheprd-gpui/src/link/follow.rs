@@ -62,7 +62,7 @@ impl Refusal {
 
 /// Puts a failed startup link's complaint on the window's status line.
 fn complain(view: &mut SheprdWindow, text: String, cx: &mut Context<SheprdWindow>) {
-    view.local_error = Some(text);
+    view.notices.show(crate::notice::Cause::Command, text);
     cx.notify();
 }
 

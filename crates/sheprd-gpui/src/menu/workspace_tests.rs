@@ -74,7 +74,7 @@ pub(crate) fn submit_focus_change(
         }})));
     }
     view.submit_workspace_dialog(window, cx);
-    assert!(view.menu.error.is_none() && view.local_error.is_none());
+    assert!(view.menu.error.is_none() && view.notices.is_none());
     let pending = view.menu.opening.clone();
     if pending.is_some() {
         let inbox = view.endpoints[view.selected_endpoint]

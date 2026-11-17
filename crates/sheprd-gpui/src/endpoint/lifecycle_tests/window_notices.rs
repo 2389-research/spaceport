@@ -181,3 +181,16 @@ fn bell_and_window_title_follow_the_selected_endpoint(cx: &mut gpui::TestAppCont
         });
     });
 }
+
+#[gpui::test]
+fn endpoint_reset_clears_a_flash_that_was_already_fading(cx: &mut gpui::TestAppContext) {
+    let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
+    view.update(cx, |view, cx| {
+        view.show_flash(crate::window::Flash::warning("old host"), cx);
+        assert!(view.tick_flash(Instant::now() + Duration::from_secs(5)));
+        assert!(view.flash_shown().is_some());
+        view.reset_selected(cx);
+        assert!(view.flash_shown().is_none());
+        assert!(!view.flash_moving());
+    });
+}

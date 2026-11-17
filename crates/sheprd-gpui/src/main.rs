@@ -70,6 +70,7 @@ mod motion;
 mod multiline_input;
 mod navigation;
 mod network_quality;
+mod notice;
 mod notification_mutes;
 mod notifications;
 mod osc52;

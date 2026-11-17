@@ -60,10 +60,10 @@ impl SheprdWindow {
         self.flush_pending_input(cx);
         if let Some(error) = self.catalog.poll_write() {
             crate::storage_warning::warn_storage_failure("Save host selection", &error); // i18n: data
-            self.local_error = Some(fl!(
-                "endpoint-save-selection-failed",
-                error = error.localize()
-            ));
+            self.notices.show(
+                crate::notice::Cause::Configuration,
+                fl!("endpoint-save-selection-failed", error = error.localize()),
+            );
             cx.notify();
         }
         if let Some(result) = self.catalog.poll() {
@@ -73,8 +73,10 @@ impl SheprdWindow {
                     self.reconcile_devices(update.hosts, update.wsl, cx);
                 }
                 Err(error) => {
-                    self.local_error =
-                        Some(fl!("endpoint-catalog-failed", error = error.localize()));
+                    self.notices.show(
+                        crate::notice::Cause::Configuration,
+                        fl!("endpoint-catalog-failed", error = error.localize()),
+                    );
                     cx.notify();
                 }
             }
@@ -144,10 +146,10 @@ impl SheprdWindow {
             if let Err(error) = endpoint.flush_config_reload()
                 && index == self.selected_endpoint
             {
-                self.local_error = Some(fl!(
-                    "endpoint-reload-config-failed",
-                    error = error.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Configuration,
+                    fl!("endpoint-reload-config-failed", error = error.localize()),
+                );
             }
         }
         crate::palette::LastSeen::trim(
@@ -184,7 +186,7 @@ impl SheprdWindow {
                     .transition(crate::state::activation::Transition::Select(deadline));
             }
             if !self.live.status.is_connected() {
-                self.local_error = None;
+                self.notices.clear();
             }
         }
         if endpoint.outage().is_some() {
@@ -264,8 +266,10 @@ impl SheprdWindow {
                 if let Err(error) = &result
                     && !matches!(error, sheprd_client::Error::Full)
                 {
-                    self.local_error =
-                        Some(fl!("endpoint-activate-failed", error = error.localize()));
+                    self.notices.show(
+                        crate::notice::Cause::Activation,
+                        fl!("endpoint-activate-failed", error = error.localize()),
+                    );
                 }
                 state.invalidate_surface();
                 state
@@ -330,11 +334,11 @@ impl SheprdWindow {
                 .transition(crate::state::activation::Transition::Expire(now));
             if self.live.activation.failed() {
                 let device = self.endpoints[self.selected_endpoint].label.clone();
-                let error = match &self.live.error {
+                let error = match self.live.notices.text() {
                     Some(reason) => fl!(
                         "endpoint-activation-failed-because",
                         device = device,
-                        reason = reason.clone()
+                        reason = reason
                     ),
                     None => fl!("endpoint-activation-failed", device = device),
                 };
@@ -345,7 +349,7 @@ impl SheprdWindow {
                     // previous surface lane or its acknowledgement was unavailable.
                     self.reconnect(cx);
                 }
-                self.local_error = Some(error);
+                self.notices.show(crate::notice::Cause::Activation, error);
                 changed = Redraw::Window;
             }
         }

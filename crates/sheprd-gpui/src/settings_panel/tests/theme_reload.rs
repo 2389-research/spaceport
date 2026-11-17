@@ -20,7 +20,7 @@ fn reloading_reads_a_theme_file_rewritten_in_place(cx: &mut TestAppContext) {
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         assert_eq!(view.theme.background, 0x120d0a);
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
     });
 
     write("1a1b26");

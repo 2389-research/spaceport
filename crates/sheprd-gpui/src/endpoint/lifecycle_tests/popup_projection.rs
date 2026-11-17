@@ -55,7 +55,7 @@ fn external_popup_at_unchanged_revision_never_receives_earlier_pane_input(
             events: vec![ClientPaneInputEvent::TextCommit("after".into())],
         }
     );
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]

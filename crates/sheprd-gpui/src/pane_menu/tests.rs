@@ -402,7 +402,7 @@ fn right_click_follows_the_panes_routing(cx: &mut TestAppContext) {
                 v.dismiss_menu(window, cx);
                 // Only the click under test may report a send failure.
                 v.last_queued_options = Some(v.options);
-                v.local_error = None;
+                v.notices.clear();
                 let snapshot = Arc::make_mut(v.live.snapshot.as_mut().unwrap());
                 for pane in &mut snapshot.panes {
                     pane.right_click_passthrough = routed && pane.pane_id == "inactive";
@@ -416,8 +416,8 @@ fn right_click_follows_the_panes_routing(cx: &mut TestAppContext) {
     // which tells a forwarded click from one the window kept.
     let forwarded = |view: &Entity<SheprdWindow>, cx: &mut VisualTestContext| {
         view.read_with(cx, |v, _| {
-            v.local_error
-                .as_deref()
+            v.notices
+                .text()
                 .is_some_and(|error| error.starts_with("Mouse input not sent"))
         })
     };

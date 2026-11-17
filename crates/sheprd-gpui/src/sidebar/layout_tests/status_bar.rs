@@ -17,8 +17,14 @@ fn healthy_connection_status_is_quiet_but_diagnostics_remain(cx: &mut gpui::Test
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
                 view.live.status = status;
-                view.local_error = Some("Local operation failed".into());
-                view.live.error = Some("Connection interrupted".into());
+                view.notices.show(
+                    crate::notice::Cause::Command,
+                    "Local operation failed".into(),
+                );
+                view.live.notices.show(
+                    crate::notice::Cause::Connection,
+                    "Connection interrupted".into(),
+                );
                 cx.notify();
             });
             full_draw(window, cx).clear(cx);
