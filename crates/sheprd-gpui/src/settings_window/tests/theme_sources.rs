@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings theme sources behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 use super::*;
 
 #[gpui::test]
@@ -32,7 +34,7 @@ fn shared_theme_edit_support_does_not_restrict_native_or_follow_choices(cx: &mut
                     assert_eq!(source.read(cx).unwrap().theme, main_theme);
                     assert!(view.status.as_ref().unwrap().contains("read-only"));
                     assert!(!view.theme_loading);
-                    assert!(!view.saving);
+                    assert!(!view.persistence.saving());
                 }
                 choose(view, "Nord", cx);
                 assert!(view.theme_dirty());
@@ -151,7 +153,7 @@ fn failed_definition_keeps_close_pending_draft_for_explicit_retry(cx: &mut TestA
     cx.update(|cx| {
         let view = settings.read(cx).unwrap();
         assert!(view.theme_dirty());
-        assert!(view.closing.is_none());
+        assert!(view.persistence.closing().is_none());
         assert!(view.error.as_ref().unwrap().contains("Load theme"));
         source
             .update(cx, |view, _, cx| {
@@ -189,7 +191,7 @@ fn shared_selection_preserves_native_override_and_follow_uses_prepared_colors(
                     )
                     .unwrap(),
                 );
-                view.saving = true; // Hold the root slot, without scheduling any real I/O.
+                view.persistence.begin_save(Kind::Ordinary); // Hold the root slot, without scheduling any real I/O.
                 view.accept_theme_choice(
                     themes::Choice {
                         scope: themes::Scope::Herdr,
@@ -231,7 +233,7 @@ fn explicit_theme_applies_contrast_once_and_shared_callbacks_cannot_restore_old_
         settings
             .update(cx, |view, _, cx| {
                 view.config.contrast = crate::contrast::Contrast::High;
-                view.saving = true;
+                view.persistence.begin_save(Kind::Ordinary);
                 choose(view, "Nord", cx);
                 assert_eq!(view.theme, expected);
                 assert_eq!(source.read(cx).unwrap().theme, expected);
