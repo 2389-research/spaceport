@@ -10,7 +10,7 @@ async function pointAtNewestPreview() {
   if (!response.ok) return;
   const releases = await response.json();
   for (const release of releases) {
-    if (release.draft) continue;
+    if (release.draft || !release.prerelease) continue;
     const image = release.assets.find((asset) => asset.name.endsWith(".dmg"));
     if (!image) continue;
     for (const link of document.querySelectorAll("[data-download]")) {

@@ -38,7 +38,10 @@ body { margin: 0; background: var(--navy); color: var(--ink); font-family: var(-
 ::selection { background: var(--red); color: var(--cream); }
 a { color: inherit; text-decoration-thickness: 0.08em; text-underline-offset: 0.18em; }
 a:hover { text-decoration-thickness: 0.16em; }
-:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; border-radius: 2px; }
+/* Navy rings on the orange cover and cream pages, cyan on navy surfaces:
+   each keeps at least 3:1 against what sits behind it. */
+:focus-visible { outline: 3px solid var(--navy); outline-offset: 3px; border-radius: 2px; }
+.band :focus-visible, .back :focus-visible { outline-color: var(--cyan); }
 h1, h2, h3, p, ul, ol, dl, dd, figure, pre { margin: 0; }
 ul, ol { padding: 0; list-style: none; }
 code, pre { font-family: var(--mono); }
