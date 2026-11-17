@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings tests behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use core::prelude::v1::test;
@@ -116,7 +118,7 @@ fn source_chips_preserve_search_identity_and_draft_without_writing(cx: &mut Test
             assert_eq!(view.theme_revision, revision);
             assert_eq!(view.theme, theme);
             assert_eq!(view.config.theme, config_theme);
-            assert!(!view.saving && !view.theme_saving);
+            assert!(!view.persistence.saving());
         });
         assert!(cx.debug_bounds("theme-source-control-0").is_some());
     }
@@ -289,7 +291,7 @@ fn row_click_and_keyboard_accept_intent_while_validation_is_held(cx: &mut TestAp
     cx.simulate_keystrokes("down enter");
     view.read_with(cx, |view, _| {
         assert_eq!(view.themes.selected, Some(5));
-        assert!(!view.saving);
+        assert!(!view.persistence.saving());
         assert_eq!(view.config.theme, Config::default().theme);
         assert_eq!(
             view.theme_intent.as_ref().unwrap().choice.name,

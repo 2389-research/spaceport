@@ -26,6 +26,7 @@ use section::{Group, Section};
 mod sidebar;
 #[cfg(test)]
 use persistence::SizeIo;
+use persistence::lifecycle::{Kind, Lifecycle};
 use persistence::{Loaded, SaveCompletion};
 use sidebar::SidebarIntent;
 pub(crate) use sidebar::{apply_loaded_sidebar, sidebar_load_revision};
@@ -188,9 +189,7 @@ struct SettingsWindow {
     navigation_width: crate::panel_resize::PanelWidth,
     /// The window's width at its last render, which caps the section list.
     viewport_width: f32,
-    loading: bool,
-    saving: bool,
-    quitting: bool,
+    persistence: Lifecycle,
     save_completion: Option<std::sync::mpsc::Receiver<SaveCompletion>>,
     _quit: Subscription,
     _search: Subscription,
@@ -209,14 +208,8 @@ struct SettingsWindow {
     load_revision: u64,
     theme_revision: u64,
     theme_intent: Option<themes::ThemeIntent>,
-    theme_saving: bool,
     layout_intent: Option<crate::config::LayoutMode>,
-    layout_saving: bool,
     sidebar_intent: Option<SidebarIntent>,
-    /// The draft a running save is writing.
-    sidebar_saving: Option<SidebarIntent>,
-    /// A committed draft waiting for the running save to finish.
-    sidebar_queued: bool,
     #[cfg(test)]
     layout_io: Option<layouts::LayoutIo>,
     remote_history: remote_history::RemoteHistory,
@@ -224,9 +217,6 @@ struct SettingsWindow {
     theme_waiting: bool,
     theme_light: bool,
     theme_load_failed: bool,
-    closing: Option<AnyWindowHandle>,
-    /// True while the footer's "Save now" writes the pending drafts.
-    flushing: bool,
     theme_cache: std::collections::VecDeque<(String, Theme)>,
     _theme_guard: Subscription,
     #[cfg(test)]
@@ -307,9 +297,7 @@ impl SettingsWindow {
             thumb_grab: 0.,
             navigation_width: crate::panel_resize::SETTINGS_NAVIGATION,
             viewport_width: 0.,
-            loading: false,
-            saving: false,
-            quitting: false,
+            persistence: Lifecycle::default(),
             save_completion: None,
             _quit: quit,
             new_window_target,
@@ -323,12 +311,8 @@ impl SettingsWindow {
             load_revision: 0,
             theme_revision: 0,
             theme_intent: None,
-            theme_saving: false,
             layout_intent: None,
-            layout_saving: false,
             sidebar_intent: None,
-            sidebar_saving: None,
-            sidebar_queued: false,
             #[cfg(test)]
             layout_io: None,
             remote_history: Default::default(),
@@ -336,8 +320,6 @@ impl SettingsWindow {
             theme_waiting: false,
             theme_light: false,
             theme_load_failed: false,
-            closing: None,
-            flushing: false,
             theme_cache: Default::default(),
             // Shared-theme/OS callbacks in main windows also publish here. Fence
             // their prepared, older palette while an explicit choice is live.
@@ -483,7 +465,7 @@ impl SettingsWindow {
     }
 
     pub(super) fn busy(&self) -> bool {
-        self.loading || self.saving || self.quitting
+        self.persistence.busy()
     }
 
     pub(super) fn theme_dirty(&self) -> bool {
@@ -497,17 +479,12 @@ impl SettingsWindow {
             return;
         }
         self.theme_load_failed = false;
-        self.flushing = true;
+        self.persistence.flush();
         self.finish_flush(cx);
     }
 
     fn finish_flush(&mut self, cx: &mut Context<Self>) {
-        if !self.flushing {
-            return;
-        }
-        if self.closing.is_some() {
-            // Closing writes the same drafts and removes the window itself.
-            self.flushing = false;
+        if !self.persistence.flushing() {
             return;
         }
         if self.busy() {
@@ -520,7 +497,7 @@ impl SettingsWindow {
         } else if self.sidebar_dirty() {
             self.save_sidebar_draft(cx);
         } else {
-            self.flushing = false;
+            self.persistence.stop_flush();
             self.status = None;
             cx.notify();
         }
@@ -529,7 +506,7 @@ impl SettingsWindow {
     /// Shared entry point for the native titlebar and keyboard close actions.
     pub(super) fn should_close(&mut self, window: &mut Window, cx: &mut Context<Self>) -> bool {
         self.hover_theme(None, cx);
-        if self.closing.is_some() {
+        if self.persistence.closing().is_some() {
             return false;
         }
         if !self.finish_number_edit(true, cx) || !self.finish_hex_edit(true, cx) {
@@ -543,7 +520,7 @@ impl SettingsWindow {
         {
             return true;
         }
-        self.closing = Some(window.window_handle());
+        self.persistence.close(window.window_handle());
         self.status = Some(fl!("settings-finishing"));
         self.theme_load_failed = false;
         self.drive_theme_intent(cx);
@@ -558,10 +535,11 @@ impl SettingsWindow {
 
     fn finish_close(&mut self, cx: &mut Context<Self>) {
         self.finish_flush(cx);
-        if self.sidebar_queued && self.closing.is_none() && !self.busy() {
-            self.save_sidebar_draft(cx);
+        if self.persistence.sidebar_queued() && self.persistence.closing().is_none() && !self.busy()
+        {
+            self.save_queued_sidebar(cx);
         }
-        if !self.busy() && !self.theme_dirty() && self.closing.is_some() {
+        if !self.busy() && !self.theme_dirty() && self.persistence.closing().is_some() {
             if self.layout_intent.is_some() {
                 self.save_layout_draft(cx);
                 return;
@@ -575,7 +553,7 @@ impl SettingsWindow {
             && !self.theme_dirty()
             && self.layout_intent.is_none()
             && !self.sidebar_dirty()
-            && let Some(handle) = self.closing.take()
+            && let Some(handle) = self.persistence.take_close()
         {
             cx.defer(move |cx| {
                 let _ = handle.update(cx, |_, window, _| window.remove_window());
