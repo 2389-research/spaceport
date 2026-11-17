@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings save now behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 //! The footer's "Save now" commits every pending draft in one call.
 use super::*;
 use crate::config::LayoutMode;
@@ -42,7 +44,7 @@ fn assert_saved(fixture: &Fixture, cx: &mut VisualTestContext) {
     fixture.view.read_with(cx, |view, _| {
         assert!(!view.theme_dirty());
         assert!(view.layout_intent.is_none());
-        assert!(!view.flushing);
+        assert!(!view.persistence.flushing());
         assert!(!view.busy());
         assert_eq!(view.footer_text(), "All changes saved.");
     });
@@ -134,7 +136,7 @@ fn a_failed_theme_load_ends_the_flush_and_later_choices_stay_drafts(cx: &mut Tes
         .update(cx, |view, cx| view.save_pending_drafts(cx));
     cx.run_until_parked();
     fixture.view.read_with(cx, |view, _| {
-        assert!(!view.flushing);
+        assert!(!view.persistence.flushing());
         assert!(view.error.is_some());
         assert_eq!(view.footer_text(), view.error.clone().unwrap());
     });
@@ -149,5 +151,5 @@ fn a_failed_theme_load_ends_the_flush_and_later_choices_stay_drafts(cx: &mut Tes
     assert!(fixture.layouts.lock().unwrap().is_empty());
     fixture
         .view
-        .read_with(cx, |view, _| assert!(!view.flushing));
+        .read_with(cx, |view, _| assert!(!view.persistence.flushing()));
 }

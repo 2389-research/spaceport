@@ -1,5 +1,8 @@
+// ABOUTME: Verifies Settings backdrop behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 use super::*;
 use crate::config::{Backdrop, backdrop::Edit};
+use crate::settings_window::Kind;
 use crate::settings_window::controls::backdrop::{Mode, fraction, opacity_at};
 
 fn backdrop(opacity: f32, image: Option<&str>) -> Backdrop {
@@ -101,7 +104,7 @@ fn the_ruler_follows_a_drag_and_writes_nothing_until_release(cx: &mut TestAppCon
     // Released while a save runs, the value is dropped, not written, and
     // the knob returns to the saved value. A release while idle writes the
     // user's configuration, which tests leave alone.
-    view.update(cx, |view, _| view.saving = true);
+    view.update(cx, |view, _| view.persistence.begin_save(Kind::Ordinary));
     cx.simulate_mouse_up(at(0.), MouseButton::Left, Modifiers::default());
     draw(cx);
     view.read_with(cx, |view, _| {
@@ -127,7 +130,7 @@ fn a_write_shows_its_value_only_while_it_runs(cx: &mut TestAppContext) {
     view.update(cx, |view, cx| {
         view.section = Section::Theme;
         view.config.backdrop = backdrop(0.85, None);
-        view.saving = true;
+        view.persistence.begin_save(Kind::Ordinary);
         view.controls.set_ruler_saving(Some(0.1));
         cx.notify();
     });
@@ -147,7 +150,7 @@ fn a_write_shows_its_value_only_while_it_runs(cx: &mut TestAppContext) {
     // Once it ends, failed or not, the config's value shows again: the
     // config was never changed ahead of the write.
     view.update(cx, |view, cx| {
-        view.saving = false;
+        view.persistence.finish_save();
         cx.notify();
     });
     draw(cx);
