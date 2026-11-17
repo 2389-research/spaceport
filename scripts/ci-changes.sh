@@ -8,12 +8,17 @@
 # Prints `code=` for the native jobs, and `windows_package=` for the optimized
 # Windows packaging and installer check, which is too slow to run for every
 # change and covers only what the Windows release artifacts are made from.
+# Prints `macos_release=` for the macOS release builds on pull requests. They
+# share one account-wide macOS runner limit with every other macOS job, so they
+# run only for what a release build or its CLI suite reads beyond the sources
+# the debug checks already compile. The scheduled run of cache-macos.yml covers
+# every other change on main. Each path here must also be a `code` path.
 set -euo pipefail
 
 if [[ "$EVENT" == workflow_dispatch ]] ||
    [[ ! "$BASE" =~ ^[0-9a-f]{40}$ ]] ||
    ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
-  printf 'code=true\nwindows_package=true\n'
+  printf 'code=true\nwindows_package=true\nmacos_release=true\n'
   exit 0
 fi
 
@@ -49,4 +54,11 @@ windows_package=$(changed \
   crates/sheprd-gpui/build.rs crates/sheprd-gpui/windows_resource.rs \
   assets/icons/Sheprd.ico assets/icons/Sheprd-worktree.ico assets/icons/windows \
   .github/workflows/ci.yml)
-printf 'code=%s\nwindows_package=%s\n' "$code" "$windows_package"
+macos_release=$(changed \
+  Cargo.toml Cargo.lock .cargo rust-toolchain.toml \
+  ':(glob)crates/*/Cargo.toml' ':(glob)crates/*/build.rs' \
+  ':(glob)crates/sheprd-gpui/*.rs' \
+  crates/sheprd-gpui/src/main.rs crates/sheprd-gpui/src/cli.rs crates/sheprd-gpui/src/cli \
+  crates/sheprd-gpui/tests/cli.rs crates/sheprd-gpui/tests/cli crates/sheprd-gpui/tests/support \
+  .github/workflows/ci.yml)
+printf 'code=%s\nwindows_package=%s\nmacos_release=%s\n' "$code" "$windows_package" "$macos_release"

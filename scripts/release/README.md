@@ -50,6 +50,8 @@ the mounted CLI before writing the checksum. This does not prove native GUI beha
 
 Unsigned macOS builds restore dependency caches, pinned helper binaries and the public Sparkle SDK.
 The main-only `cache-macos.yml` workflow warms matching profiles when build inputs change.
+It also runs nightly, building both macOS targets and running the release-mode CLI suite on main.
+Pull requests run those macOS release builds only when `scripts/ci-changes.sh` reports `macos_release=true`.
 Release tags read main caches because GitHub isolates caches between different tags.
 Signing and publication jobs remain cache-free.
 Tool installers can choose different binary directories on hosted runners.
