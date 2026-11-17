@@ -21,7 +21,6 @@ use crate::{
     open_additional_window, state,
 };
 use gpui::{Context, Window};
-use std::time::Duration;
 
 impl SheprdWindow {
     /// Switches the sidebar layout here at once, then keeps it: the choice is
@@ -290,32 +289,24 @@ impl SheprdWindow {
             // An ordered surface barrier prevents input hitting the previous
             // pane while navigation/creation and its projection are in flight.
             // Register the barrier under the inbox lock before input can resume.
-            let (request, failed) = match handle.set_surface_active(&snapshot.boot_id, true) {
-                Ok(request) => (request, false),
-                Err(error) => {
-                    self.local_error = Some(error.localize());
-                    (String::new(), true)
-                }
-            };
-            state.activation = Some(state::SurfaceActivation {
-                request,
-                boot: snapshot.boot_id.clone(),
-                revision: None,
-                failed,
-                focus,
-                active: true,
-            });
+            let result = handle.set_surface_active(&snapshot.boot_id, true);
+            if let Err(error) = &result
+                && !matches!(error, sheprd_client::Error::Full)
+            {
+                self.local_error = Some(error.localize());
+            }
+            state
+                .activation
+                .transition(state::activation::Transition::Queued {
+                    result,
+                    boot: snapshot.boot_id.clone(),
+                    focus,
+                    active: true,
+                    now: std::time::Instant::now(),
+                });
             state.invalidate_surface();
             state.dirty = true;
             self.live = state.clone();
-            self.activation_deadline = Some(
-                std::time::Instant::now()
-                    + if failed {
-                        Duration::ZERO
-                    } else {
-                        Duration::from_secs(5)
-                    },
-            );
         }
     }
 
@@ -666,7 +657,7 @@ impl SheprdWindow {
             }
             _ => {}
         }
-        if self.activation_deadline.is_some()
+        if self.live.activation.fenced()
             || !self.endpoints[self.selected_endpoint].surface_requested()
         {
             return;

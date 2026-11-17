@@ -443,7 +443,6 @@ impl SheprdWindow {
         self.discard_composition(cx);
         self.wheel = Default::default();
         self.sent_focus = None;
-        self.activation_deadline = None;
         self.pending_navigation = None;
     }
 

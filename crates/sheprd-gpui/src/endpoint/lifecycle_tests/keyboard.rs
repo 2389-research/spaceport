@@ -35,14 +35,15 @@ fn keyboard_report_all_releases_sent_keys(cx: &mut gpui::TestAppContext) {
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             prepare_mouse(view, endpoint, cx);
-            view.live.activation = Some(crate::state::SurfaceActivation {
-                request: "activate-1".into(),
-                boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
-                revision: Some(view.live.surface.as_ref().unwrap().projection_revision),
-                failed: false,
-                focus: None,
-                active: true,
-            });
+            view.live.activation = crate::state::activation::Fence::for_test(
+                crate::state::SurfaceActivation {
+                    request: "activate-1".into(),
+                    boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
+                    focus: None,
+                    active: true,
+                },
+                Some(view.live.surface.as_ref().unwrap().projection_revision),
+            );
             view.live.keyboard_report_all = true;
             view.key_down(&down("ctrl-c"), window, cx);
             view.key_up(&up("c"), window, cx);
@@ -111,7 +112,9 @@ fn custom_command_and_resize_mode_keys_send_endpoint_requests(cx: &mut gpui::Tes
                 view.selected_endpoint = 1;
                 view.options = ConnectOptions::default();
                 view.reset_selected(cx);
-                view.activation_deadline = None;
+                view.live
+                    .activation
+                    .transition(crate::state::activation::Transition::Reset(None));
                 // The fixture's `prefix+x` is Close Pane's chord, which wins.
                 let relabel = |snapshot: &mut Arc<ClientShellSnapshot>| {
                     Arc::make_mut(snapshot).commands[0].binding_labels = vec!["prefix+y".into()];
@@ -191,7 +194,9 @@ fn a_custom_command_runs_from_a_catalog_default_keystroke(cx: &mut gpui::TestApp
                 view.selected_endpoint = 1;
                 view.options = ConnectOptions::default();
                 view.reset_selected(cx);
-                view.activation_deadline = None;
+                view.live
+                    .activation
+                    .transition(crate::state::activation::Transition::Reset(None));
                 // As with a daemon without surface projection, the custom
                 // command raises no focus fence. The fence would make New Tab
                 // refuse after it and hide a keystroke that reached both.

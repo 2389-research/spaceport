@@ -19,14 +19,15 @@ fn a_dead_key_reaches_the_pane_only_as_the_composed_character(cx: &mut gpui::Tes
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             prepare_mouse(view, endpoint, cx);
-            view.live.activation = Some(crate::state::SurfaceActivation {
-                request: "activate-1".into(),
-                boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
-                revision: Some(view.live.surface.as_ref().unwrap().projection_revision),
-                failed: false,
-                focus: None,
-                active: true,
-            });
+            view.live.activation = crate::state::activation::Fence::for_test(
+                crate::state::SurfaceActivation {
+                    request: "activate-1".into(),
+                    boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
+                    focus: None,
+                    active: true,
+                },
+                Some(view.live.surface.as_ref().unwrap().projection_revision),
+            );
             view.replace_and_mark_text_in_range(None, "\u{b4}", Some(1..1), window, cx);
             assert_eq!(view.marked, "\u{b4}");
             assert_eq!(

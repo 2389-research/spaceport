@@ -28,7 +28,7 @@ fn focus_follows_mouse_uses_one_ordered_focus_fence(cx: &mut gpui::TestAppContex
             event.position = mouse_position(view, 43.5, 4.5);
             view.focus_hovered_pane(&event, window, cx);
             assert!(!view.input_ready());
-            assert!(view.live.activation.is_some());
+            assert!(view.live.activation != crate::state::activation::Fence::Open);
             for _ in 0..10 {
                 view.focus_hovered_pane(&event, window, cx);
             }
@@ -120,7 +120,7 @@ fn focus_follows_mouse_respects_input_ownership(cx: &mut gpui::TestAppContext) {
             }));
             view.focus_hovered_pane(&event, window, cx);
             assert!(view.input_ready());
-            assert!(view.live.activation.is_none());
+            assert!(view.live.activation == crate::state::activation::Fence::Open);
             Arc::make_mut(view.live.surface.as_mut().unwrap()).popup = None;
         });
     });
@@ -133,7 +133,7 @@ fn focus_follows_mouse_respects_input_ownership(cx: &mut gpui::TestAppContext) {
                 ..Default::default()
             };
             view.focus_hovered_pane(&event, window, cx);
-            assert!(view.live.activation.is_none());
+            assert!(view.live.activation == crate::state::activation::Fence::Open);
             view.endpoints[1]
                 .connection
                 .handle

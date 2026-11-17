@@ -43,13 +43,17 @@ fn a_dropped_remote_stays_selected_with_its_last_picture_dimmed(cx: &mut gpui::T
             view.endpoints[1].connection.handle.is_none()
         });
         // An expired activation budget is renewed while there is no snapshot.
-        view.activation_deadline = Some(Instant::now());
+        view.live
+            .activation
+            .transition(crate::state::activation::Transition::Reset(Some(
+                Instant::now(),
+            )));
         view.poll_endpoints(cx);
         assert_eq!(
             view.selected_endpoint, 1,
             "a drop must not fall back to Local"
         );
-        assert!(view.activation_deadline.unwrap() > Instant::now());
+        assert!(view.live.activation.deadline().unwrap() > Instant::now());
         assert!(view.presentation.stale());
         assert!(view.presentation.picture(&view.live).is_some());
 
@@ -124,6 +128,21 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
     view.update(cx, |view, cx| {
         prepare_mouse(view, endpoint, cx);
         view.endpoints[1].set_retry_at_for_test(Instant::now() + Duration::from_secs(120));
+        // Keep an acknowledged frame while its presentation budget expires.
+        let snapshot = view.live.snapshot.as_ref().unwrap();
+        let mut activation = crate::state::activation::Fence::Open;
+        activation.transition(crate::state::activation::Transition::Queued {
+            result: Ok("acknowledged".into()), boot: snapshot.boot_id.clone(), focus: None, active: true,
+            now: Instant::now() - ACTIVATION_TIMEOUT,
+        });
+        activation.transition(crate::state::activation::Transition::Response {
+            request: "acknowledged", result: Some(&serde_json::json!({
+                "type": "client_shell_surface_set", "active": true, "projection_revision": snapshot.revision,
+            })),
+        });
+        view.endpoints[1].connection.inbox.lock().unwrap().activation = activation.clone();
+        view.endpoints[1].live.activation = activation.clone();
+        view.live.activation = activation;
         // A stopped handle delivers no disconnect state at all.
         view.endpoints[1]
             .connection
@@ -131,7 +150,6 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
             .as_ref()
             .unwrap()
             .disconnect();
-        view.activation_deadline = Some(Instant::now());
         view.poll_endpoints(cx);
         assert_eq!(
             view.selected_endpoint, 1,
@@ -139,7 +157,7 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
         );
         assert!(view.endpoints[1].connection.handle.is_none());
         assert!(view.live.snapshot.is_some(), "the gap under test");
-        assert!(view.activation_deadline.unwrap() > Instant::now());
+        assert!(view.live.activation.deadline().unwrap() > Instant::now());
         // `live` still holds the lost connection's ready frame; painting it
         // must not undo the dimming.
         assert!(view.live.surface_ready());

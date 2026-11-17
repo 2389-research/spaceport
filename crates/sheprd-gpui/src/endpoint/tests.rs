@@ -261,14 +261,15 @@ fn retired_generation_cannot_publish_into_replacement() {
 #[test]
 fn release_waits_for_its_own_successful_inactive_acknowledgement() {
     let inbox = Arc::new(Mutex::new(LiveState::default()));
-    inbox.lock().unwrap().activation = Some(crate::state::SurfaceActivation {
-        request: "off".into(),
-        boot: "boot".into(),
-        revision: None,
-        failed: false,
-        focus: None,
-        active: false,
-    });
+    inbox.lock().unwrap().activation = crate::state::activation::Fence::for_test(
+        crate::state::SurfaceActivation {
+            request: "off".into(),
+            boot: "boot".into(),
+            focus: None,
+            active: false,
+        },
+        None,
+    );
     let mut release = Release {
         inbox: inbox.clone(),
         drained: Arc::new(AtomicBool::new(false)),
@@ -289,9 +290,17 @@ fn release_waits_for_its_own_successful_inactive_acknowledgement() {
         response,
     });
     assert!(release.resolved());
-    inbox.lock().unwrap().activation.as_mut().unwrap().failed = true;
+    inbox
+        .lock()
+        .unwrap()
+        .activation
+        .transition(crate::state::activation::Transition::Rejected("off"));
     assert!(!release.resolved());
-    inbox.lock().unwrap().activation = None;
+    inbox
+        .lock()
+        .unwrap()
+        .activation
+        .transition(crate::state::activation::Transition::Reset(None));
     assert!(
         !release.resolved(),
         "discarding the acknowledgement is not retirement"
@@ -457,9 +466,18 @@ fn timeout_and_return_to_local_do_not_wait_for_remote_release(cx: &mut gpui::Tes
                 .lock()
                 .unwrap();
             state.snapshot = Some(Arc::new(crate::sidebar::layout_tests::snapshot(1)));
+            state
+                .activation
+                .transition(crate::state::activation::Transition::Reset(Some(
+                    Instant::now(),
+                )));
             state.dirty = true;
         }
-        view.activation_deadline = Some(Instant::now());
+        view.live
+            .activation
+            .transition(crate::state::activation::Transition::Reset(Some(
+                Instant::now(),
+            )));
         view.poll_endpoints(cx);
         assert_eq!(view.selected_endpoint, 0);
         assert!(!current(view));

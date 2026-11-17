@@ -149,7 +149,7 @@ impl SheprdWindow {
         action: ClientShellCommandAction,
         cx: &mut Context<Self>,
     ) {
-        if self.activation_deadline.is_some()
+        if self.live.activation.fenced()
             || !self.endpoints[self.selected_endpoint].surface_requested()
         {
             return;

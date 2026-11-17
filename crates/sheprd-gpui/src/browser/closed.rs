@@ -379,7 +379,7 @@ impl SheprdWindow {
                 }
             }
             ClosedTab::Herdr(_) => {
-                if self.activation_deadline.is_some()
+                if self.live.activation.fenced()
                     || !self.endpoints[self.selected_endpoint].surface_requested()
                     || self.endpoints[self.selected_endpoint]
                         .connection

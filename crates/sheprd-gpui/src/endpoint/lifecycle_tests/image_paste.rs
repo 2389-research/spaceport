@@ -17,15 +17,16 @@ fn text_paste_survives_a_settled_navigation(cx: &mut gpui::TestAppContext) {
     let settled = |view: &SheprdWindow| crate::state::SurfaceActivation {
         request: "activate-1".into(),
         boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
-        revision: Some(view.live.surface.as_ref().unwrap().projection_revision),
-        failed: false,
         focus: None,
         active: true,
     };
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             prepare_mouse(view, endpoint, cx);
-            view.live.activation = Some(settled(view));
+            view.live.activation = crate::state::activation::Fence::for_test(
+                settled(view),
+                Some(view.live.surface.as_ref().unwrap().projection_revision),
+            );
             assert!(view.live.surface_ready() && !view.live.activation_pending());
             cx.write_to_clipboard(ClipboardItem::new_string("after navigation".into()));
             view.key_down(&paste, window, cx);
@@ -51,14 +52,17 @@ fn text_paste_survives_a_settled_navigation(cx: &mut gpui::TestAppContext) {
         view.update(cx, |view, cx| {
             cx.write_to_clipboard(ClipboardItem::new_string("stale target".into()));
             view.key_down(&paste, window, cx);
-            view.live.activation.as_mut().unwrap().revision = None;
+            view.live.activation = crate::state::activation::Fence::for_test(settled(view), None);
             assert!(view.live.activation_pending());
         });
     });
     cx.run_until_parked();
     wait_image_finished(&view, cx);
     view.update(cx, |view, cx| {
-        view.live.activation = Some(settled(view));
+        view.live.activation = crate::state::activation::Fence::for_test(
+            settled(view),
+            Some(view.live.surface.as_ref().unwrap().projection_revision),
+        );
         view.send(ClientPaneInputEvent::TextCommit("sentinel".into()), cx);
     });
     assert_eq!(

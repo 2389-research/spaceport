@@ -284,10 +284,10 @@ fn dismissing_a_queued_local_creation_cannot_resume_input_against_an_old_surface
                 view.menu.palette.as_ref().unwrap().project_operation,
                 ProjectOperation::Awaiting(_)
             ));
-            assert!(view.live.activation.is_some());
+            assert!(view.live.activation != crate::state::activation::Fence::Open);
             view.dismiss_menu(window, cx);
             assert!(!view.input_ready());
-            assert!(view.activation_deadline.is_some());
+            assert!(view.live.activation.deadline().is_some());
         })
     });
 }

@@ -89,7 +89,7 @@ fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::T
                         if index == 1 {
                             view.input_ready()
                         } else if ack_first {
-                            view.live.activation.as_ref().unwrap().revision == Some(next.revision)
+                            view.live.activation.revision() == Some(next.revision)
                         } else {
                             view.live.surface.is_some()
                         }
@@ -99,7 +99,7 @@ fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::T
                     assert!(view.browser.closing.is_some());
                     if index == 0 {
                         assert_eq!(
-                            view.live.activation.as_ref().unwrap().request,
+                            view.live.activation.request().unwrap().request,
                             barrier["id"].as_str().unwrap()
                         );
                     }

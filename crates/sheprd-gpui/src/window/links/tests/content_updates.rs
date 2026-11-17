@@ -359,6 +359,9 @@ fn endpoint_retargeting_drops_a_pending_press(cx: &mut gpui::TestAppContext) {
         view.live.snapshot = snapshot;
         view.live.status = ConnectionStatus::Connected;
         view.live.supports_link_activate = true;
+        view.live
+            .activation
+            .transition(crate::state::activation::Transition::Reset(None));
     });
     cx.simulate_mouse_up(link, MouseButton::Left, crate::keymap::secondary_key());
     assert_not_activated(&view, cx, "retarget");

@@ -1,6 +1,7 @@
 use super::*;
 use sheprd_client::protocol::FrameData;
 
+mod activation_retry;
 mod agent_recency;
 mod agent_status;
 mod announcements;

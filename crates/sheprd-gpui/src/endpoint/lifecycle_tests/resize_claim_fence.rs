@@ -17,12 +17,14 @@ fn a_resize_during_a_focus_change_does_not_claim_the_tab_being_left(cx: &mut gpu
             view.endpoints = vec![endpoint];
             view.options = ConnectOptions::default();
             view.reset_selected(cx);
-            view.activation_deadline = None;
+            view.live
+                .activation
+                .transition(crate::state::activation::Transition::Reset(None));
             view.last_queued_options = Some(view.options);
             view.pending_resize = None;
             view.command(Command::Tab, window, cx);
             crate::menu::workspace_tests::submit_dialog(view, window, cx);
-            assert!(view.activation_deadline.is_some());
+            assert!(view.live.activation.deadline().is_some());
             // A late font or scale change: the cell size moves, the grid not.
             view.options.cell_width_px += 1;
             view.resize_at(start);

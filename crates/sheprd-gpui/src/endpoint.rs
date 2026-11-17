@@ -6,6 +6,7 @@ use super::{
     state::ConnectionStatus,
 };
 use crate::i18n::{Localize, fl};
+use crate::state::activation::TIMEOUT as ACTIVATION_TIMEOUT;
 use gpui::Context;
 use sheprd_client::{ClientHandle, ConnectOptions, ConnectTarget, SshFailure, VersionMismatch};
 use std::{
@@ -53,7 +54,6 @@ pub(crate) fn saved_profile_id(endpoint_id: &str) -> Option<&str> {
         .strip_prefix(SAVED_PREFIX)
         .filter(|id| sheprd_client::valid_profile_id(id))
 }
-const ACTIVATION_TIMEOUT: Duration = Duration::from_secs(5);
 const STABLE_CONNECTION_PERIOD: Duration = Duration::from_secs(60);
 /// Upstream rechecks failed SSH machines every 30 seconds, so authentication
 /// repaired outside the app (a new master, a loaded key) is picked up promptly.
@@ -115,14 +115,15 @@ impl Release {
                 .and_then(|()| handle.set_surface_active(&self.boot, false));
             match result {
                 Ok(request) => {
-                    state.activation = Some(super::state::SurfaceActivation {
-                        request: request.clone(),
-                        boot: self.boot.clone(),
-                        revision: None,
-                        failed: false,
-                        focus: None,
-                        active: false,
-                    });
+                    state
+                        .activation
+                        .transition(crate::state::activation::Transition::Queued {
+                            result: Ok(request.clone()),
+                            boot: self.boot.clone(),
+                            focus: None,
+                            active: false,
+                            now: Instant::now(),
+                        });
                     self.phase = ReleasePhase::Sent(request);
                 }
                 Err(_) => {
@@ -132,12 +133,12 @@ impl Release {
             }
         }
         match &self.phase {
-            ReleasePhase::Sent(request) => state.activation.as_ref().is_some_and(|a| {
+            ReleasePhase::Sent(request) => state.activation.request().is_some_and(|a| {
                 a.request == *request
                     && a.boot == self.boot
                     && !a.active
-                    && !a.failed
-                    && a.revision.is_some()
+                    && !state.activation.failed()
+                    && state.activation.revision().is_some()
             }),
             _ => false,
         }
@@ -507,8 +508,17 @@ impl SheprdWindow {
         self.last_queued_options = None;
         self.sent_focus = None;
         self.wheel = WheelAccumulator::default();
-        self.activation_deadline = (self.selected_endpoint != 0 && !endpoint.detached())
-            .then(|| Instant::now() + ACTIVATION_TIMEOUT);
+        if !endpoint.detached() && !endpoint.initial_surface {
+            let deadline = Instant::now() + ACTIVATION_TIMEOUT;
+            self.live
+                .activation
+                .transition(crate::state::activation::Transition::Select(deadline));
+            if let Ok(mut state) = endpoint.connection.inbox.try_lock() {
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Select(deadline));
+            }
+        }
         self.pending_navigation = None;
         self.pending_toast = None;
     }
@@ -671,8 +681,6 @@ impl SheprdWindow {
         self.reset_selected(cx);
         // The picture kept for an outage is the previous endpoint's.
         self.presentation.clear();
-        self.activation_deadline =
-            (!self.endpoints[index].detached()).then(|| Instant::now() + ACTIVATION_TIMEOUT);
         cx.notify();
         Ok(())
     }

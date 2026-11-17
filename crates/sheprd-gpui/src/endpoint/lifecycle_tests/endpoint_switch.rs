@@ -23,7 +23,7 @@ fn saved_selection_waits_for_snapshot_without_overwriting_preference(
         for _ in 0..10 {
             view.restore_selection(cx);
             assert_eq!(view.selected_endpoint, 0);
-            assert!(view.activation_deadline.is_none());
+            assert!(view.live.activation.deadline().is_none());
         }
         view.endpoints[1].live = ready;
         view.restore_selection(cx);
@@ -224,7 +224,7 @@ fn retiring_release_source_unblocks_destination_without_waiting_for_timeout(
             assert!(view.pending_releases.is_empty(), "{change}");
             assert_eq!(view.endpoints[view.selected_endpoint].id, "ssh:target");
             assert!(view.endpoints[view.selected_endpoint].initial_surface);
-            assert!(view.activation_deadline.unwrap() > Instant::now());
+            assert!(view.live.activation.deadline().unwrap() > Instant::now());
         });
         assert!(matches!(
             target_server.receive(),
