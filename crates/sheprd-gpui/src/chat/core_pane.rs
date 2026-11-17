@@ -1,3 +1,5 @@
+// ABOUTME: Starts and presents ACP chats in Core terminal panes.
+// ABOUTME: Preserves runtime labels and reports refused spawn requests.
 //! Chats in herdr-core (Herdr 2) panes. herdr-core keeps no pane metadata
 //! a program could report its endpoint through, so the window chooses the
 //! endpoint itself when it starts `herdr-acp` in a terminal: it passes the
@@ -126,15 +128,17 @@ impl SheprdWindow {
             &EndpointId::random(),
             &self.config.chat.env,
         );
-        self.chats.last_started = Some(agent);
-        self.start_core_program(
+        if !self.start_core_program(
             Purpose::Split {
                 tab,
                 at,
                 axis: crate::core_terminals::panes::Axis::Row,
             },
             spawn,
-        );
+        ) {
+            return Err(super::StartError::SlotBusy);
+        }
+        self.chats.last_started = Some(agent);
         Ok(())
     }
 
