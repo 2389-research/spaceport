@@ -235,7 +235,7 @@ impl SheprdWindow {
         if !self
             .endpoints
             .iter()
-            .any(|entry| entry.id == *endpoint && entry.enabled)
+            .any(|entry| entry.id == *endpoint && entry.enabled())
         {
             if !listed {
                 self.arrival = Some(torn);

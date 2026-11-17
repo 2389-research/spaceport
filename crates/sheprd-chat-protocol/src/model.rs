@@ -1,3 +1,5 @@
+// ABOUTME: Defines the shared chat transcript and wire data.
+// ABOUTME: Projects live tool work from session, turn, and activity state.
 //! The conversation a client draws, as the chat program projected it from ACP.
 //!
 //! Field order in these structs is not a wire contract: frames are JSON, read
@@ -77,6 +79,33 @@ pub struct Transcript {
 }
 
 impl Transcript {
+    /// Whether this call still has work owned by a live session or turn.
+    pub fn tool_live(&self, tool: &Tool) -> bool {
+        if matches!(self.status, Status::Failed { .. } | Status::Exited { .. }) {
+            return false;
+        }
+        if let Some(activity) = self.activity(&tool.call_id) {
+            return activity.is_running();
+        }
+        if !matches!(tool.status, ToolStatus::Pending | ToolStatus::InProgress) {
+            return false;
+        }
+        if let Some(activity) = tool
+            .parent
+            .as_deref()
+            .and_then(|parent| self.activity(parent))
+        {
+            return activity.is_running();
+        }
+        self.status == Status::Working
+            && self
+                .entries
+                .iter()
+                .rev()
+                .take_while(|entry| !matches!(entry.kind, EntryKind::User { .. } | EntryKind::Turn(_)))
+                .any(|entry| matches!(&entry.kind, EntryKind::Tool(current) if current.call_id == tool.call_id))
+    }
+
     pub fn new(agent: impl Into<String>) -> Self {
         Self {
             agent: agent.into(),

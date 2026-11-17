@@ -21,7 +21,9 @@ fn connect(
             view.selected_endpoint = 1;
             view.options = ConnectOptions::default();
             view.reset_selected(cx);
-            view.activation_deadline = None;
+            view.live
+                .activation
+                .transition(crate::state::activation::Transition::Reset(None));
             let relabel = |snapshot: &mut Arc<ClientShellSnapshot>| {
                 Arc::make_mut(snapshot).commands[0].binding_labels = vec![binding.into()];
             };

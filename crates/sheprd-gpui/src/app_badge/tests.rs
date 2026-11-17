@@ -249,10 +249,10 @@ fn hosts_disconnect_reconnect_and_disable_without_local_acknowledgement(
                 sync(id, &view.endpoints, cx);
                 assert_eq!(cx.global::<Badge>().published, Some(1));
             }
-            view.endpoints[1].enabled = false;
+            view.endpoints[1].set_enabled_for_test(false);
             sync(id, &view.endpoints, cx);
             assert_eq!(cx.global::<Badge>().published, Some(0));
-            view.endpoints[1].enabled = true;
+            view.endpoints[1].set_enabled_for_test(true);
             sync(id, &view.endpoints, cx);
             assert_eq!(cx.global::<Badge>().published, Some(1));
             view.endpoints.remove(1);

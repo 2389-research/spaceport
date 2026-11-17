@@ -1,13 +1,20 @@
+// ABOUTME: Runs Settings loads and serial saves off the UI thread.
+// ABOUTME: Reconciles captured writes and drains accepted edits before shutdown.
 //! Loading and saving preferences off the UI thread, then reconciling the result,
 //! including the config watcher and the saves that finish when the app quits.
 // i18n: migrated
-use super::{Section, SettingsWindow, layouts, themes};
+use super::{Kind, Section, SettingsWindow, layouts, themes};
+pub(super) mod lifecycle;
+
+mod operation;
 use crate::{
     config::{Config, FontFace, Theme, ThemeName},
     herdr_settings::{self, Edit},
     i18n::{Localize, fl},
 };
 use gpui::*;
+use operation::{Operation, reconcile};
+pub(super) use operation::{Reconciled, Request, SharedWrite};
 
 pub(super) struct Loaded {
     pub(super) config: Config,
@@ -16,8 +23,7 @@ pub(super) struct Loaded {
     pub(super) error: Option<String>,
 }
 
-pub(super) type SaveCompletion =
-    std::result::Result<Option<herdr_settings::Settings>, std::sync::Arc<crate::Error>>;
+pub(super) type SaveCompletion = std::result::Result<Reconciled, std::sync::Arc<crate::Error>>;
 
 /// The watched GUI-local and daemon config files, read together.
 pub(super) type Sample = [crate::config::watch::Fingerprint; 2];
@@ -129,17 +135,18 @@ impl SettingsWindow {
         cx: &mut Context<Self>,
     ) -> Task<crate::Result<()>> {
         self.hover_theme(None, cx);
-        self.quitting = true;
+        self.persistence.quit();
         self._watch = None;
         let pending = self.take_pending_control_sizes();
         let theme = self.take_shutdown_theme();
         let layout = self
             .layout_intent
             .take()
-            .filter(|_| !self.layout_saving)
+            .filter(|mode| !matches!(self.persistence.kind(), Some(Kind::Layout(saved)) if saved == mode))
             .map(|mode| self.layout_operation(mode));
         let sidebar = self.take_shutdown_sidebar();
         let completion = self.save_completion.take();
+        let mut pending_writes = self.persistence.take_pending();
         let executor = cx.background_executor().clone();
         cx.background_executor().spawn(async move {
             let mut shared = None;
@@ -151,7 +158,14 @@ impl SettingsWindow {
                     match completion.try_recv() {
                         Ok(result) => {
                             match result {
-                                Ok(snapshot) => shared = snapshot,
+                                Ok(reconciled) => {
+                                    shared = reconciled.snapshot;
+                                    if let Some(write) = reconciled.write {
+                                        for request in &mut pending_writes {
+                                            request.advance_shared(&write);
+                                        }
+                                    }
+                                }
                                 Err(error) => preceding = Err(crate::Error::SettingsSave(error)),
                             }
                             break;
@@ -162,6 +176,23 @@ impl SettingsWindow {
                         }
                     }
                 }
+            }
+            while let Some(Request {
+                operation, load, ..
+            }) = pending_writes.pop_front()
+            {
+                let saved = operation.run();
+                let loaded = load();
+                let reconciled = reconcile(&saved, &loaded);
+                if saved.is_ok() {
+                    shared = reconciled.snapshot;
+                }
+                if let Some(write) = reconciled.write {
+                    for request in &mut pending_writes {
+                        request.advance_shared(&write);
+                    }
+                }
+                preceding = preceding.and(saved.map(|_| ()));
             }
             let sizes = if pending.is_empty() {
                 Ok(())
@@ -182,10 +213,22 @@ impl SettingsWindow {
     ) {
         #[cfg(test)]
         if let Some(io) = self.size_io.clone() {
-            self.save_with(move || (io.write)(sizes), io.load, false, cx);
+            self.save_kind(
+                move || (io.write)(sizes),
+                io.load,
+                false,
+                Kind::Ordinary,
+                cx,
+            );
             return;
         }
-        self.save_native(move || Config::save_font_sizes(&sizes), cx);
+        self.save_kind(
+            move || Config::save_font_sizes(&sizes),
+            self.loader(cx),
+            false,
+            Kind::Ordinary,
+            cx,
+        );
     }
 
     pub(super) fn loader(
@@ -323,7 +366,7 @@ impl SettingsWindow {
         if self.busy() {
             return;
         }
-        self.loading = true;
+        self.persistence.begin_load();
         self.error = None;
         // Size intents can arrive while this read is running. Keep the model
         // alive until reconciliation has transferred them to the save worker.
@@ -332,10 +375,11 @@ impl SettingsWindow {
         cx.spawn(async move |_, cx| {
             let loaded = load.await;
             retained.update(cx, |this, cx| {
-                this.loading = false;
-                if this.quitting {
+                this.persistence.finish_load();
+                if this.persistence.quitting() {
                     return;
                 }
+                this.resume_pending(cx);
                 this.apply_loaded(loaded, cx);
                 this.finish_close(cx);
             });
@@ -353,13 +397,27 @@ impl SettingsWindow {
     }
 
     pub(super) fn save_shared(&mut self, edit: Edit, cx: &mut Context<Self>) {
+        self.save_shared_with(edit, self.loader(cx), cx);
+    }
+
+    pub(super) fn save_shared_with(
+        &mut self,
+        edit: Edit,
+        load: impl FnOnce() -> crate::Result<Loaded> + Send + 'static,
+        cx: &mut Context<Self>,
+    ) {
         let Some(shared) = self.shared.clone() else {
             return;
         };
-        self.save_with(
-            move || shared.save(edit).map(|_| ()),
-            self.loader(cx),
-            true,
+        self.submit(
+            Request {
+                operation: Operation::Shared {
+                    snapshot: std::sync::Arc::new(shared),
+                    edit,
+                },
+                load: Box::new(load),
+                shared: true,
+            },
             cx,
         );
     }
@@ -371,7 +429,28 @@ impl SettingsWindow {
         shared: bool,
         cx: &mut Context<Self>,
     ) {
-        self.save_with_completion(operation, load, shared, |_| {}, cx);
+        self.submit(
+            Request {
+                operation: Operation::plain(operation),
+                load: Box::new(load),
+                shared,
+            },
+            cx,
+        );
+    }
+
+    fn submit(&mut self, request: Request, cx: &mut Context<Self>) {
+        if self.persistence.quitting() || self.persistence.closing().is_some() {
+            return;
+        }
+        if self.busy() {
+            if !self.persistence.enqueue(request) {
+                self.error = Some(fl!("settings-save-queue-full"));
+                cx.notify();
+            }
+            return;
+        }
+        self.start_save(request, Kind::Ordinary, |_| {}, cx);
     }
 
     pub(super) fn save_with_completion(
@@ -382,10 +461,76 @@ impl SettingsWindow {
         on_saved: impl FnOnce(&mut Context<Self>) + 'static,
         cx: &mut Context<Self>,
     ) {
+        // This action's UI is disabled while busy. Its callback records the
+        // managed skill choice, so retain its existing single-write contract.
+        if self.busy() || self.persistence.closing().is_some() {
+            return;
+        }
+        self.start_save(
+            Request {
+                operation: Operation::plain(operation),
+                load: Box::new(load),
+                shared,
+            },
+            Kind::Ordinary,
+            on_saved,
+            cx,
+        );
+    }
+
+    pub(super) fn save_kind(
+        &mut self,
+        operation: impl FnOnce() -> crate::Result<()> + Send + 'static,
+        load: impl FnOnce() -> crate::Result<Loaded> + Send + 'static,
+        shared: bool,
+        kind: Kind,
+        cx: &mut Context<Self>,
+    ) {
+        self.save_kind_with_snapshot(move || operation().map(|_| None), load, shared, kind, cx);
+    }
+
+    pub(super) fn save_kind_with_snapshot(
+        &mut self,
+        operation: impl FnOnce() -> crate::Result<Option<SharedWrite>> + Send + 'static,
+        load: impl FnOnce() -> crate::Result<Loaded> + Send + 'static,
+        shared: bool,
+        kind: Kind,
+        cx: &mut Context<Self>,
+    ) {
         if self.busy() {
             return;
         }
-        self.saving = true;
+        self.start_save(
+            Request {
+                operation: Operation::Captured(Box::new(operation)),
+                load: Box::new(load),
+                shared,
+            },
+            kind,
+            |_| {},
+            cx,
+        );
+    }
+
+    fn resume_pending(&mut self, cx: &mut Context<Self>) {
+        if let Some(request) = self.persistence.next() {
+            self.start_save(request, Kind::Ordinary, |_| {}, cx);
+        }
+    }
+
+    fn start_save(
+        &mut self,
+        request: Request,
+        kind: Kind,
+        on_saved: impl FnOnce(&mut Context<Self>) + 'static,
+        cx: &mut Context<Self>,
+    ) {
+        let Request {
+            operation,
+            load,
+            shared,
+        } = request;
+        self.persistence.begin_save(kind);
         self.error = None;
         let retained = cx.entity();
         let (finished, completion) = std::sync::mpsc::sync_channel(1);
@@ -393,59 +538,54 @@ impl SettingsWindow {
         // Only a watched window needs its own write fingerprinted.
         let watched = self._watch.is_some().then(watched_paths).flatten();
         let work = cx.background_executor().spawn(async move {
-            let saved = operation().map_err(std::sync::Arc::new);
+            let saved = operation.run();
             // Fingerprint before loading: the load then reflects at least this
             // state, and any later edit still differs for the watcher.
             let written = watched.as_ref().map(sample);
             // A persistence error can occur after replacement. Always reconcile.
             let loaded = load();
-            // Only our successful, reconciled write may advance the queued
-            // shared edit's optimistic-concurrency snapshot during shutdown.
-            let shared = if saved.is_ok() {
-                loaded
-                    .as_ref()
-                    .ok()
-                    .and_then(|loaded| loaded.shared.clone())
-            } else {
-                None
-            };
-            let _ = finished.send(saved.clone().map(|()| shared));
-            (saved, loaded, written)
+            let reconciled = reconcile(&saved, &loaded);
+            let saved = saved.map(|_| ()).map_err(std::sync::Arc::new);
+            let _ = finished.send(saved.clone().map(|()| reconciled.clone()));
+            (saved, loaded, written, reconciled.write)
         });
         cx.spawn(async move |_, cx| {
-            let (saved, loaded, written) = work.await;
+            let (saved, loaded, written, shared_write) = work.await;
             retained.update(cx, |this, cx| {
-                this.saving = false;
+                let kind = this.persistence.finish_save();
                 this.save_completion = None;
                 this.saved_sample = written;
                 if saved.is_ok() {
                     on_saved(cx);
                 }
-                if this.quitting {
+                if this.persistence.quitting() {
                     return;
                 }
                 let reloaded = loaded.is_ok();
-                let theme_save = std::mem::take(&mut this.theme_saving);
-                let layout_save = std::mem::take(&mut this.layout_saving);
-                let sidebar_save = this.sidebar_saving.take();
+                let theme_save = matches!(kind, Kind::Theme(_));
+                let layout_save = matches!(kind, Kind::Layout(_));
                 if saved.is_err() {
-                    this.closing = None;
-                    this.flushing = false;
-                    // A failed write keeps its draft for close or Save now,
-                    // rather than retrying on every completion.
-                    this.sidebar_queued = false;
+                    // Failed drafts stay live until an explicit retry.
+                    this.persistence.fail();
                 }
-                if theme_save && saved.is_ok() {
+                if saved.is_ok() && matches!(&kind, Kind::Theme(revision)
+                    if this.theme_intent.as_ref().is_some_and(|intent| intent.revision == *revision)) {
                     this.theme_intent = None;
                     themes::clear_theme_draft(cx);
                 }
-                if layout_save && saved.is_ok() {
+                if saved.is_ok() && matches!(&kind, Kind::Layout(mode) if this.layout_intent == Some(*mode)) {
                     this.layout_intent = None;
                     layouts::clear_layout_draft(cx);
                 }
+                let sidebar_save = match kind { Kind::Sidebar(intent) => Some(intent), _ => None };
                 let sidebar_saved = this.finish_sidebar_save(sidebar_save, saved.is_ok(), cx);
                 this.finish_chat_env_save(saved.is_ok(), cx);
+                // A later queued success must not hide an earlier refused or failed edit.
+                let earlier_error = this.error.take();
+                if let Some(write) = shared_write { this.persistence.advance_shared(write); }
+                this.resume_pending(cx);
                 this.apply_loaded(loaded, cx);
+                this.error = earlier_error.or(this.error.take());
                 if sidebar_saved {
                     this.broadcast_sidebar(cx);
                 }
@@ -458,7 +598,7 @@ impl SettingsWindow {
                 this.finish_close(cx);
                 // Success is visible in the controls themselves; only problems
                 // earn a footer line.
-                if !this.saving {
+                if !this.persistence.saving() {
                     this.status = match (saved.is_ok(), reloaded) {
                         (true, true) => None,
                         (true, false) => Some(fl!("settings-saved-unreloaded")),
@@ -481,7 +621,7 @@ impl SettingsWindow {
                             .iter_mut()
                             .find(|endpoint| !endpoint.connection.target.is_remote())
                             && let Err(error) = endpoint.reload_config()
-                            && !this.saving
+                            && !this.persistence.saving()
                         {
                             this.status = Some(fl!(
                                 "settings-saved-daemon-unqueued",

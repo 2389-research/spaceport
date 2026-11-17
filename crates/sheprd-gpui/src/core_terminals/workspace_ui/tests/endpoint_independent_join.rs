@@ -44,7 +44,7 @@ fn selected_core_group_rejoins_without_a_legacy_local_endpoint(cx: &mut gpui::Te
         loop {
             let connecting = view.update(cx, |view, _| {
                 view.core_terminals.hub.poll();
-                matches!(view.core_terminals.hub.state(), State::Connecting(_))
+                matches!(view.core_terminals.hub.state(), State::Connecting { .. })
             });
             if !connecting {
                 break;

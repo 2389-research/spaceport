@@ -444,7 +444,7 @@ impl SheprdWindow {
                     state = endpoint.status_label()
                 ),
                 self.device_filter.picks(&endpoint.id),
-                endpoint.enabled,
+                endpoint.enabled(),
             ),
             _ => (
                 fl!("devices-add"),
@@ -635,7 +635,7 @@ impl SheprdWindow {
             let id = if index == 0 {
                 None
             } else {
-                let Some(endpoint) = self.endpoints.get(index - 1).filter(|e| e.enabled) else {
+                let Some(endpoint) = self.endpoints.get(index - 1).filter(|e| e.enabled()) else {
                     return;
                 };
                 Some(endpoint.id.clone())
@@ -663,13 +663,13 @@ impl SheprdWindow {
         else {
             return self.choose_device(index, window, cx);
         };
-        if !endpoint.enabled {
+        if !endpoint.enabled() {
             return;
         }
         let enabled = self
             .endpoints
             .iter()
-            .filter(|endpoint| endpoint.enabled)
+            .filter(|endpoint| endpoint.enabled())
             .map(|endpoint| endpoint.id.as_str());
         let Some(scope) = self.device_filter.toggled(
             &endpoint.id,
@@ -682,7 +682,7 @@ impl SheprdWindow {
             let Some(next) = self
                 .displayed_devices()
                 .into_iter()
-                .find(|(_, endpoint)| endpoint.enabled && scope.shows(&endpoint.id))
+                .find(|(_, endpoint)| endpoint.enabled() && scope.shows(&endpoint.id))
                 .map(|(_, endpoint)| endpoint.id.clone())
             else {
                 return;

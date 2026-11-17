@@ -1,6 +1,9 @@
+// ABOUTME: Checks pure transcript and pending-command session contracts.
+// ABOUTME: Covers acknowledgement, stream fencing, and bounded retries.
 use super::*;
 use crate::chat::session::Session;
-use sheprd_chat_protocol::{ByeReason, Command, CommandId, Rejection};
+use crate::chat::{Refusal, link::WriteOutcome};
+use sheprd_chat_protocol::{ByeReason, Command, Rejection};
 
 fn live(at: Cursor, entries: Vec<Entry>) -> Session {
     let mut session = Session::default();
@@ -149,6 +152,15 @@ fn a_dropped_connection_resumes_from_its_cursor() {
     assert_eq!(session.since(), Some(cursor(1, 3)));
     session.begin();
     session.receive(welcome()).unwrap();
+    assert!(!session.live(), "the greeting has not confirmed the epoch");
+    session
+        .receive(change(
+            Change::Status {
+                status: Status::Idle,
+            },
+            cursor(1, 4),
+        ))
+        .unwrap();
     assert!(session.live());
 }
 
@@ -190,17 +202,25 @@ fn commands_wait_for_their_acknowledgement() {
 #[test]
 fn a_command_that_keeps_ending_the_connection_is_given_up() {
     let mut session = live(cursor(1, 0), Vec::new());
-    session.submit(Command::SetAutoAccept { on: true }).unwrap();
+    let ClientMessage::Command { id, .. } =
+        session.submit(Command::SetAutoAccept { on: true }).unwrap()
+    else {
+        panic!("command")
+    };
+    assert_eq!(session.resend().len(), 1);
+    session.delivered(WriteOutcome::Written(id));
     // It reached this connection, which ended; the next one gets it again.
     session.lost(&Error::Closed);
     session.begin();
-    assert_eq!(session.resend().len(), 1);
     session.receive(welcome()).unwrap();
+    session.receive(snapshot(cursor(1, 0), Vec::new())).unwrap();
+    assert_eq!(session.resend().len(), 1);
+    session.delivered(WriteOutcome::Written(id));
     // That connection ended too, so the third leaves it behind.
     session.lost(&Error::Closed);
     session.begin();
     assert!(session.resend().is_empty());
-    assert_eq!(session.rejection(), Some(Rejection::Unsupported));
+    assert_eq!(session.rejection(), Some(Refusal::DeliveryUnconfirmed));
 }
 
 #[test]
@@ -216,23 +236,43 @@ fn an_outage_alone_never_drops_a_prompt() {
     // Connections that never greeted do not count against it.
     for _ in 0..10 {
         session.begin();
-        assert_eq!(session.resend().len(), 1);
+        assert!(
+            session.resend().is_empty(),
+            "wait for an epoch-bearing message"
+        );
         session.lost(&Error::Closed);
     }
+    session.begin();
+    session.receive(welcome()).unwrap();
+    session.receive(snapshot(cursor(1, 0), Vec::new())).unwrap();
+    assert_eq!(session.resend().len(), 1);
     assert_eq!(session.rejection(), None);
 }
 
 #[test]
 fn a_refusal_shows_but_a_lost_race_does_not() {
     let mut session = live(cursor(1, 0), Vec::new());
-    let ack = |rejected| ServerMessage::Ack {
-        id: CommandId::random(),
+    let ack = |id, rejected| ServerMessage::Ack {
+        id,
         rejected: Some(rejected),
     };
-    assert!(!session.receive(ack(Rejection::UnknownPermission)).unwrap());
+    let ClientMessage::Command { id, .. } = session.submit(Command::Cancel).unwrap() else {
+        panic!("command")
+    };
+    assert!(
+        !session
+            .receive(ack(id, Rejection::UnknownPermission))
+            .unwrap()
+    );
     assert_eq!(session.rejection(), None);
-    assert!(session.receive(ack(Rejection::NotReady)).unwrap());
-    assert_eq!(session.rejection(), Some(Rejection::NotReady));
+    let ClientMessage::Command { id, .. } = session.submit(Command::Cancel).unwrap() else {
+        panic!("command")
+    };
+    assert!(session.receive(ack(id, Rejection::NotReady)).unwrap());
+    assert_eq!(
+        session.rejection(),
+        Some(Refusal::Remote(Rejection::NotReady))
+    );
     session.submit(Command::Cancel).unwrap();
     assert_eq!(session.rejection(), None);
 }

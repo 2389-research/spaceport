@@ -175,7 +175,7 @@ fn rendered_hover_resumes_typing_in_the_hovered_pane(cx: &mut gpui::TestAppConte
             SheprdWindow::input_ready,
         );
         assert!(!view.live.activation_pending());
-        assert!(view.activation_deadline.is_none());
+        assert!(view.live.activation.deadline().is_none());
     });
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     cx.simulate_input("a");

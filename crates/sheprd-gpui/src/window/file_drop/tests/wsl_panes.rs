@@ -22,7 +22,7 @@ fn a_wsl_pane_is_given_mapped_paths_and_never_a_file_copy(cx: &mut gpui::TestApp
             view.paste_files(InputTarget::Pane("pane-0".into()), &dropped, cx),
             Delivery::Refused
         );
-        assert!(view.file_transfer.is_none());
+        assert!(view.file_transfer.active().is_none());
     });
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
@@ -33,7 +33,7 @@ fn a_wsl_pane_is_given_mapped_paths_and_never_a_file_copy(cx: &mut gpui::TestApp
                 .as_deref(),
             Some("Files not pasted: invalid WSL distribution name")
         );
-        assert!(view.file_transfer.is_none());
+        assert!(view.file_transfer.active().is_none());
     });
 }
 

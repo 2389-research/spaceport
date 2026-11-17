@@ -12,7 +12,7 @@ fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppCon
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     let inbox = view.update(cx, |view, _| {
         // This fixture has no transport; polling must not start one.
-        view.endpoints[0].enabled = false;
+        view.endpoints[0].set_enabled_for_test(false);
         view.endpoints[0].connection.inbox.clone()
     });
     let mut wire = notification("disabled ingress");

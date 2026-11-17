@@ -46,6 +46,7 @@ pub(crate) mod widgets;
 mod window;
 
 pub(crate) use chats::{ChatInput, Chats, LauncherDeck, Toward};
+pub(crate) use session::Refusal;
 
 /// The wall clock in milliseconds since the Unix epoch, which the program
 /// on this machine stamps a running turn with.

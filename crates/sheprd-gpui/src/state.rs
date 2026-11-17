@@ -7,6 +7,7 @@ use sheprd_client::{
 };
 use std::sync::Arc;
 
+pub(crate) mod activation;
 mod agent_recency;
 mod projection;
 
@@ -134,7 +135,7 @@ pub struct LiveState {
     pub(crate) notifications: std::collections::VecDeque<crate::notifications::Notice>,
     pub(crate) notifications_lost: bool,
     outer_focused: Option<bool>,
-    pub activation: Option<SurfaceActivation>,
+    pub(crate) activation: activation::Fence,
     pub supports_surface: bool,
     // Bounded rename slots survive coalesced snapshots and do not overwrite a
     // worktree operation whose dialog has already closed.
@@ -181,12 +182,10 @@ pub struct RenameResult {
     pub result: Option<Result<(), Arc<crate::Error>>>,
 }
 
-#[derive(Clone)]
-pub struct SurfaceActivation {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct SurfaceActivation {
     pub request: String,
     pub boot: String,
-    pub revision: Option<u64>,
-    pub failed: bool,
     pub focus: Option<crate::OwnedNavigationTarget>,
     pub active: bool,
 }
@@ -234,7 +233,7 @@ impl Default for LiveState {
             notifications_lost: false,
             keyboard_report_all: false,
             outer_focused: None,
-            activation: None,
+            activation: activation::Fence::default(),
             supports_surface: false,
             tab_rename: None,
             pane_rename: None,
@@ -390,17 +389,7 @@ impl LiveState {
             && notifications.is_empty()
             && !notifications_lost
             && *outer_focused == self.outer_focused
-            && match (activation, &self.activation) {
-                (Some(a), Some(b)) => {
-                    a.request == b.request
-                        && a.boot == b.boot
-                        && a.revision == b.revision
-                        && a.failed == b.failed
-                        && a.focus == b.focus
-                        && a.active == b.active
-                }
-                (a, b) => a.is_none() && b.is_none(),
-            }
+            && *activation == self.activation
             && *supports_surface == self.supports_surface
             && pending_rename(tab_rename, &self.tab_rename)
             && pending_rename(pane_rename, &self.pane_rename)
@@ -448,38 +437,14 @@ impl LiveState {
     /// for its focus. An acknowledged activation stays recorded afterwards, so
     /// its presence alone does not mean navigation is in flight.
     pub fn activation_pending(&self) -> bool {
-        self.activation.as_ref().is_some_and(|activation| {
-            activation.failed
-                || !activation.active
-                || activation.revision.is_none()
-                || activation.focus.is_some()
-        })
+        self.activation.pending()
     }
 
     pub fn surface_ready(&self) -> bool {
         let (Some(snapshot), Some(surface)) = (&self.snapshot, &self.surface) else {
             return false;
         };
-        coherent(snapshot, surface)
-            && self.activation.as_ref().is_none_or(|activation| {
-                !activation.failed
-                    && activation.active
-                    && activation.boot == snapshot.boot_id
-                    && activation
-                        .revision
-                        .is_some_and(|revision| surface.projection_revision >= revision)
-                    && activation.focus.as_ref().is_none_or(|target| match target {
-                        crate::NavigationTarget::Workspace(id) => {
-                            snapshot.focused_workspace_id.as_ref() == Some(id)
-                        }
-                        crate::NavigationTarget::Tab(id) => {
-                            snapshot.focused_tab_id.as_ref() == Some(id)
-                        }
-                        crate::NavigationTarget::Pane(id) => {
-                            snapshot.focused_pane_id.as_ref() == Some(id)
-                        }
-                    })
-            })
+        coherent(snapshot, surface) && self.activation.ready(snapshot, surface)
     }
 
     pub fn daemon_starting(&mut self) {
@@ -625,10 +590,8 @@ impl LiveState {
                         rename.result = Some(Err(reason.clone()));
                     }
                 }
-                if let Some(activation) = &mut self.activation
-                    && request_id.as_ref() == Some(&activation.request)
-                {
-                    activation.failed = true;
+                if let Some(id) = &request_id {
+                    self.activation.transition(activation::Transition::Rejected(id));
                 }
                 if request_id
                     .as_deref()
@@ -659,19 +622,14 @@ impl LiveState {
                         rename.result = Some(refusal.clone().map_or(Ok(()), Err));
                     }
                 }
-                if let Some(activation) = &mut self.activation
-                    && request_id == activation.request
+                self.activation.transition(activation::Transition::Response {
+                    request: &request_id,
+                    result,
+                });
+                if matches!(self.activation, activation::Fence::Failed { cause: activation::Failure::InvalidResponse, .. })
+                    && self.activation.request().is_some_and(|request| request.request == request_id)
                 {
-                    activation.revision = result
-                        .filter(|result| {
-                            result["type"] == "client_shell_surface_set"
-                                && result["active"] == activation.active
-                        })
-                        .and_then(|result| result["projection_revision"].as_u64());
-                    activation.failed = activation.revision.is_none();
-                    if activation.failed {
-                        self.error = Some(fl!("state-activation-invalid"));
-                    }
+                    self.error = Some(fl!("state-activation-invalid"));
                 }
                 if let Some(refusal) = &refusal
                     && !self.has_operation_result(&request_id)
@@ -788,10 +746,8 @@ impl LiveState {
         // Focus is evidence for completing one navigation, not a permanent
         // constraint on later server-driven focus changes. Settle in the inbox
         // reducer so coalesced updates cannot miss the successful transition.
-        if self.surface_ready()
-            && let Some(activation) = &mut self.activation
-        {
-            activation.focus = None;
+        if self.surface_ready() {
+            self.activation.transition(activation::Transition::Settled);
         }
         self.dirty = true;
     }

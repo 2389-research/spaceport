@@ -75,7 +75,8 @@ fn newer_choice(cx: &mut gpui::TestAppContext, choice: Choice) {
             }
             project_until(view, cx, "surface after newer choice", |view| {
                 view.pending_navigation.is_none()
-                    && (view.live.activation.is_some() || view.input_ready())
+                    && (view.live.activation != crate::state::activation::Fence::Open
+                        || view.input_ready())
             });
             assert_eq!(view.group_pick(source), Some(expected));
             // A wire sentinel proves that cancellation sends no old target.

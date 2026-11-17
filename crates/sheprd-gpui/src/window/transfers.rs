@@ -1,3 +1,5 @@
+// ABOUTME: Uploads files off the UI thread and pastes into their captured terminal.
+// ABOUTME: Owns transfer transitions, readiness waits, cancellation, and cleanup.
 //! Large files travel on an independent SSH stream; the daemon input lane stays
 //! responsive. Only completed copies can paste paths, into their captured target.
 // i18n: migrated
@@ -16,9 +18,25 @@ use std::{
         Arc,
         atomic::{AtomicBool, AtomicU64, Ordering},
     },
+    task::{Poll, Waker},
 };
 
-pub(crate) struct FileTransfer {
+#[derive(Default)]
+pub(crate) enum FileTransfer {
+    #[default]
+    Idle,
+    Uploading(Transfer),
+    Cancelling(Transfer),
+    Waiting {
+        transfer: Transfer,
+        text: String,
+        wake: WakeOnDrop,
+    },
+    Accepted(Transfer),
+    Cleaning(Transfer),
+}
+
+pub(crate) struct Transfer {
     fence: InputFence,
     host: String,
     target: InputTarget,
@@ -29,11 +47,41 @@ pub(crate) struct FileTransfer {
     shown: (u64, u64, bool),
 }
 
-impl FileTransfer {
-    pub(crate) fn cancel(&self) {
-        self.cancelled.store(true, Ordering::Release);
-    }
+/// The completion task owns cleanup, even after the waiting window disappears.
+pub(crate) struct WakeOnDrop(Waker);
 
+impl Drop for WakeOnDrop {
+    fn drop(&mut self) {
+        self.0.wake_by_ref();
+    }
+}
+
+enum Event<'a> {
+    Start(Transfer),
+    Cancel,
+    Poll,
+    Uploaded {
+        token: &'a Arc<AtomicBool>,
+        result: &'a sheprd_client::Result<Vec<String>>,
+        waker: &'a Waker,
+    },
+    Finished(&'a Arc<AtomicBool>),
+}
+
+impl FileTransfer {
+    pub(crate) fn active(&self) -> Option<&Transfer> {
+        match self {
+            Self::Idle => None,
+            Self::Uploading(transfer)
+            | Self::Cancelling(transfer)
+            | Self::Waiting { transfer, .. }
+            | Self::Accepted(transfer)
+            | Self::Cleaning(transfer) => Some(transfer),
+        }
+    }
+}
+
+impl Transfer {
     /// How far the copy is, for the taskbar: busy until its size is known,
     /// and nothing once cancelled.
     #[cfg(any(windows, test))]
@@ -51,9 +99,10 @@ impl FileTransfer {
     }
 }
 
-impl Drop for FileTransfer {
+impl Drop for Transfer {
     fn drop(&mut self) {
-        self.cancel();
+        // This worker signal also covers window teardown, outside UI transitions.
+        self.cancelled.store(true, Ordering::Release);
     }
 }
 
@@ -96,12 +145,12 @@ fn transfer_progress(sent: u64, total: u64) -> (f32, String) {
 impl SheprdWindow {
     /// The file copy this window's taskbar button reports.
     pub(crate) fn taskbar_progress(&self) -> Option<crate::progress::Progress> {
-        self.file_transfer.as_ref().and_then(FileTransfer::progress)
+        self.file_transfer.active().and_then(Transfer::progress)
     }
 }
 
 impl SheprdWindow {
-    fn file_transfer_current(&self, transfer: &FileTransfer) -> bool {
+    fn file_transfer_current(&self, transfer: &Transfer) -> bool {
         let endpoint = &self.endpoints[self.selected_endpoint];
         self.fence_holds(&transfer.fence)
             && matches!(&endpoint.connection.target, ConnectTarget::Ssh { target, .. } if target == &transfer.host)
@@ -131,23 +180,156 @@ impl SheprdWindow {
     }
 
     pub(crate) fn poll_file_transfer(&mut self, cx: &mut Context<Self>) {
-        let Some(transfer) = &self.file_transfer else {
-            return;
+        self.transition_file_transfer(Event::Poll, cx);
+    }
+
+    pub(crate) fn cancel_file_transfer(&mut self, cx: &mut Context<Self>) {
+        self.transition_file_transfer(Event::Cancel, cx);
+    }
+
+    /// The only writer of transfer phases and their displayed progress.
+    fn transition_file_transfer(
+        &mut self,
+        event: Event<'_>,
+        cx: &mut Context<Self>,
+    ) -> Option<bool> {
+        if let Event::Start(transfer) = event {
+            self.file_transfer = FileTransfer::Uploading(transfer);
+            cx.notify();
+            return None;
+        }
+        let mut state = std::mem::take(&mut self.file_transfer);
+        let transfer = match &mut state {
+            FileTransfer::Idle => return Some(false),
+            FileTransfer::Uploading(transfer)
+            | FileTransfer::Cancelling(transfer)
+            | FileTransfer::Waiting { transfer, .. }
+            | FileTransfer::Accepted(transfer)
+            | FileTransfer::Cleaning(transfer) => transfer,
         };
-        if !self.file_transfer_current(transfer) {
-            transfer.cancel();
+        if let Event::Uploaded { token, .. } | Event::Finished(token) = &event
+            && !Arc::ptr_eq(&transfer.cancelled, token)
+        {
+            self.file_transfer = state;
+            return Some(false);
+        }
+        if matches!(event, Event::Finished(_)) {
+            cx.notify();
+            return Some(false);
+        }
+        let current = self.file_transfer_current(transfer);
+        if matches!(event, Event::Cancel) || !current {
+            transfer.cancelled.store(true, Ordering::Release);
         }
         let progress = (
             transfer.sent.load(Ordering::Relaxed),
             transfer.total.load(Ordering::Relaxed),
             transfer.cancelled.load(Ordering::Acquire),
         );
-        if progress != transfer.shown
-            && let Some(transfer) = &mut self.file_transfer
-        {
+        if transfer.shown != progress {
             transfer.shown = progress;
             cx.notify();
         }
+        let cancelled = progress.2;
+        if cancelled && let FileTransfer::Uploading(transfer) = state {
+            state = FileTransfer::Cancelling(transfer);
+        }
+        let mut error = None;
+        let mut cleanup_failed = false;
+        if let Event::Uploaded { result, waker, .. } = event {
+            match &mut state {
+                FileTransfer::Uploading(_) | FileTransfer::Cancelling(_) => {
+                    match result {
+                        Ok(paths) => match super::file_drop::quote_paths(
+                            &paths.iter().map(PathBuf::from).collect::<Vec<_>>(),
+                        ) {
+                            Ok(text) => {
+                                if let FileTransfer::Uploading(transfer)
+                                | FileTransfer::Cancelling(transfer) = state
+                                {
+                                    state = FileTransfer::Waiting {
+                                        transfer,
+                                        text,
+                                        wake: WakeOnDrop(waker.clone()),
+                                    };
+                                }
+                            }
+                            Err(source) => error = Some(source.localize()),
+                        },
+                        Err(source) => {
+                            // i18n: data
+                            crate::storage_warning::warn_storage_failure("File transfer", source);
+                            cleanup_failed =
+                                matches!(source, sheprd_client::Error::UploadCleanup { .. });
+                            error = Some(source.localize());
+                        }
+                    }
+                }
+                FileTransfer::Waiting { wake, .. } => wake.0.clone_from(waker),
+                _ => {}
+            }
+        }
+        let ready = self.menu.page.is_none() && self.input_ready();
+        let accepted = match &state {
+            FileTransfer::Waiting { transfer, text, .. } if cancelled || ready => {
+                if cancelled {
+                    error = Some(sheprd_client::Error::UploadCancelled.localize());
+                    Some(false)
+                } else {
+                    let result = self.endpoints[self.selected_endpoint]
+                        .connection
+                        .handle
+                        .as_ref()
+                        .ok_or(crate::Error::NotConnected)
+                        .and_then(|handle| {
+                            ConnectionBridge::send_input(
+                                handle,
+                                &transfer.fence.boot,
+                                &transfer.target,
+                                ClientPaneInputEvent::Paste(text.clone()),
+                            )
+                            .map_err(crate::Error::from)
+                        });
+                    error = result.as_ref().err().map(Localize::localize);
+                    Some(result.is_ok())
+                }
+            }
+            FileTransfer::Accepted(_) => Some(true),
+            FileTransfer::Cleaning(_) => Some(false),
+            _ if error.is_some() => Some(false),
+            _ => None,
+        };
+        if let Some(accepted) = accepted
+            && !matches!(state, FileTransfer::Accepted(_) | FileTransfer::Cleaning(_))
+        {
+            let transfer = match state {
+                FileTransfer::Uploading(transfer)
+                | FileTransfer::Cancelling(transfer)
+                | FileTransfer::Waiting { transfer, .. } => transfer,
+                _ => unreachable!(),
+            };
+            state = if accepted {
+                FileTransfer::Accepted(transfer)
+            } else {
+                FileTransfer::Cleaning(transfer)
+            };
+            if current && !cleanup_failed {
+                self.local_transfer_notice(
+                    &if accepted {
+                        fl!("window-input-copy-complete")
+                    } else if cancelled {
+                        fl!("window-input-copy-cancelled")
+                    } else {
+                        fl!("window-input-copy-failed")
+                    },
+                    error.unwrap_or_else(|| fl!("window-input-copy-complete-body")),
+                    cx,
+                );
+            }
+            cx.notify();
+        }
+        self.file_transfer = state;
+        accepted
     }
 
     pub(super) fn start_file_transfer(
@@ -185,7 +367,7 @@ impl SheprdWindow {
         if !self.accepts_remote_images() || paths.is_empty() {
             return Delivery::Refused;
         }
-        if self.file_transfer.is_some() {
+        if self.file_transfer.active().is_some() {
             self.local_error = Some(fl!("window-input-files-busy"));
             self.local_transfer_notice(
                 &fl!("window-input-copy-not-started"),
@@ -231,71 +413,23 @@ impl SheprdWindow {
         // result so successful but unclaimed files are still cleaned up.
         cx.spawn(async move |this, cx| {
             let result = work.await;
-            let accepted = this
-                .update(cx, |this, cx| {
-                    let Some(transfer) = &this.file_transfer else {
-                        return false;
-                    };
-                    if !Arc::ptr_eq(&transfer.cancelled, &task_cancel) {
-                        return false;
-                    }
-                    let current = this.file_transfer_current(transfer);
-                    let cancelled = transfer.cancelled.load(Ordering::Acquire) || !current;
-                    let error = match &result {
-                        Ok(paths)
-                            if !cancelled && this.menu.page.is_none() && this.input_ready() =>
-                        {
-                            let text = super::file_drop::quote_paths(
-                                &paths.iter().map(PathBuf::from).collect::<Vec<_>>(),
-                            );
-                            text.and_then(|text| {
-                                let handle = this.endpoints[this.selected_endpoint]
-                                    .connection
-                                    .handle
-                                    .as_ref()
-                                    .ok_or(crate::Error::NotConnected)?;
-                                ConnectionBridge::send_input(
-                                    handle,
-                                    &transfer.fence.boot,
-                                    &transfer.target,
-                                    ClientPaneInputEvent::Paste(text),
-                                )?;
-                                Ok(())
-                            })
-                            .err()
-                            .map(|error: crate::Error| error.localize())
-                        }
-                        Ok(_) => Some(sheprd_client::Error::UploadCancelled.localize()),
-                        Err(error) => {
-                            // i18n: data
-                            crate::storage_warning::warn_storage_failure("File transfer", error);
-                            Some(error.localize())
-                        }
-                    };
-                    let accepted = error.is_none();
-                    if current
-                        && !matches!(&result, Err(sheprd_client::Error::UploadCleanup { .. }))
-                    {
-                        match error {
-                            None => this.local_transfer_notice(
-                                &fl!("window-input-copy-complete"),
-                                fl!("window-input-copy-complete-body"),
-                                cx,
-                            ),
-                            Some(error) => this.local_transfer_notice(
-                                &if cancelled {
-                                    fl!("window-input-copy-cancelled")
-                                } else {
-                                    fl!("window-input-copy-failed")
-                                },
-                                error,
-                                cx,
-                            ),
-                        }
-                    }
-                    accepted
-                })
-                .unwrap_or(false);
+            let accepted = std::future::poll_fn(|task| {
+                match this.update(cx, |this, cx| {
+                    this.transition_file_transfer(
+                        Event::Uploaded {
+                            token: &task_cancel,
+                            result: &result,
+                            waker: task.waker(),
+                        },
+                        cx,
+                    )
+                }) {
+                    Ok(None) => Poll::Pending,
+                    Ok(Some(accepted)) => Poll::Ready(accepted),
+                    Err(_) => Poll::Ready(false),
+                }
+            })
+            .await;
             let cleanup_failed = match result {
                 Ok(paths) if !accepted => executor
                     .spawn(async move { cleanup(&cleanup_host, &paths) })
@@ -314,28 +448,23 @@ impl SheprdWindow {
                 });
             }
             let _ = this.update(cx, |this, cx| {
-                if this
-                    .file_transfer
-                    .as_ref()
-                    .is_some_and(|transfer| Arc::ptr_eq(&transfer.cancelled, &task_cancel))
-                {
-                    this.file_transfer = None;
-                    cx.notify();
-                }
+                this.transition_file_transfer(Event::Finished(&task_cancel), cx);
             });
         })
         .detach();
-        self.file_transfer = Some(FileTransfer {
-            fence,
-            host,
-            target,
-            label,
-            cancelled,
-            sent,
-            total,
-            shown: (0, 0, false),
-        });
-        cx.notify();
+        self.transition_file_transfer(
+            Event::Start(Transfer {
+                fence,
+                host,
+                target,
+                label,
+                cancelled,
+                sent,
+                total,
+                shown: (0, 0, false),
+            }),
+            cx,
+        );
         Delivery::Copying
     }
 
@@ -344,7 +473,7 @@ impl SheprdWindow {
         window: &Window,
         cx: &mut Context<Self>,
     ) -> Option<AnyElement> {
-        let transfer = self.file_transfer.as_ref()?;
+        let transfer = self.file_transfer.active()?;
         if self.menu.page.is_some() {
             return None;
         }
@@ -413,10 +542,7 @@ impl SheprdWindow {
                         })
                         .on_click(cx.listener(|this, _, _, cx| {
                             cx.stop_propagation();
-                            if let Some(transfer) = &this.file_transfer {
-                                transfer.cancel();
-                            }
-                            this.poll_file_transfer(cx);
+                            this.cancel_file_transfer(cx);
                         })),
                 )
                 .into_any_element(),

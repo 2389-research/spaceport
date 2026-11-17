@@ -94,8 +94,11 @@ fn tab_commands_wait_for_a_focus_change_in_flight(cx: &mut gpui::TestAppContext)
     // Next Tab asked the daemon for t1, which has not answered yet.
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
-            view.activation_deadline =
-                Some(std::time::Instant::now() + std::time::Duration::from_secs(5));
+            view.live
+                .activation
+                .transition(crate::state::activation::Transition::Reset(Some(
+                    std::time::Instant::now() + std::time::Duration::from_secs(5),
+                )));
         })
     });
     run(&view, cx, Command::TabNumber(3));
@@ -103,7 +106,9 @@ fn tab_commands_wait_for_a_focus_change_in_flight(cx: &mut gpui::TestAppContext)
     // Its answer lands on t1 rather than taking a page shown since.
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
-            view.activation_deadline = None;
+            view.live
+                .activation
+                .transition(crate::state::activation::Transition::Reset(None));
             let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
             snapshot.focused_tab_id = Some("t1".into());
             view.terminal_focus_moved("t1", false, cx);

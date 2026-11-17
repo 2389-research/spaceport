@@ -17,7 +17,7 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
             .with_snapshot(endpoint.live.snapshot.as_deref())
             .preview()]);
     view.update(cx, |view, cx| {
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.push(endpoint);
         view.selected_endpoint = 1;
         view.options = ConnectOptions::default();
@@ -68,15 +68,7 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
             "type": "client_shell_surface_set", "active": true, "projection_revision": next.revision
         }})).unwrap(),
     }, MAX_GRAPHICS_FRAME_SIZE).unwrap();
-    wait_until(|| {
-        inbox
-            .lock()
-            .unwrap()
-            .activation
-            .as_ref()
-            .and_then(|a| a.revision)
-            == Some(next.revision)
-    });
+    wait_until(|| inbox.lock().unwrap().activation.revision() == Some(next.revision));
     {
         let mut state = inbox.lock().unwrap();
         state.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
@@ -141,7 +133,7 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
             view.endpoints.truncate(1);
-            view.endpoints[0].detached = true;
+            view.endpoints[0].detach_for_test();
             view.endpoints.push(endpoint);
             view.options = ConnectOptions::default();
             if already_active {
@@ -170,7 +162,9 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
                         .clear();
                 }
                 state.surface = Some(surface(state.snapshot.as_ref().unwrap()));
-                state.activation = None;
+                state
+                    .activation
+                    .transition(crate::state::activation::Transition::Reset(None));
                 state.dirty = true;
                 view.endpoints[1].initial_surface = true;
                 // Project the completed handoff, then deterministically hold
@@ -252,7 +246,7 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
             view.endpoints.truncate(1);
-            view.endpoints[0].detached = true;
+            view.endpoints[0].detach_for_test();
             view.reset_selected(cx);
             view.endpoints.push(endpoint);
             view.tick_toasts(false, Instant::now(), cx);
@@ -309,7 +303,9 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
                 view.endpoints[1].initial_surface = true;
                 view.live = inbox.lock().unwrap().clone();
                 view.live.surface = Some(surface(view.live.snapshot.as_ref().unwrap()));
-                view.live.activation = None;
+                view.live
+                    .activation
+                    .transition(crate::state::activation::Transition::Reset(None));
                 view.navigate_toast(0, cx);
                 assert!(view.pending_toast.is_none());
                 if invalidation == "none" {
@@ -370,7 +366,7 @@ fn toast_handoff_defers_a_contended_source_without_activating_destination(
             .preview()]);
     let held = source_inbox.lock().unwrap();
     view.update(cx, |view, cx| {
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.extend([source, target]);
         view.selected_endpoint = 1;
         view.reset_selected(cx);

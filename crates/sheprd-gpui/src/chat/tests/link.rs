@@ -1,3 +1,5 @@
+// ABOUTME: Checks bounded chat workers through isolated sockets and children.
+// ABOUTME: Verifies frame order, delivery receipts, and connection cleanup.
 use super::*;
 use crate::chat::link::{Link, Polled};
 use sheprd_chat_protocol::{ByeReason, Command, CommandId};
@@ -8,6 +10,7 @@ fn collect(link: &Link, count: usize) -> Polled {
     wait_until(|| {
         let polled = link.poll(usize::MAX);
         all.messages.extend(polled.messages);
+        all.writes.extend(polled.writes);
         all.end = all.end.take().or(polled.end);
         all.messages.len() >= count || all.end.is_some()
     });
@@ -24,7 +27,7 @@ fn command(command: Command) -> ClientMessage {
 #[test]
 fn the_worker_greets_and_delivers_in_order() {
     let program = Program::new();
-    let link = Link::start(program.path.clone(), Some(cursor(1, 7)), []).unwrap();
+    let link = Link::start(program.path.clone(), Some(cursor(1, 7))).unwrap();
     let (mut stream, greeting) = program.accept();
     assert_eq!(greeting, hello(Some(cursor(1, 7))));
     send(&mut stream, &welcome());
@@ -41,13 +44,14 @@ fn the_worker_greets_and_delivers_in_order() {
 }
 
 #[test]
-fn commands_follow_the_greeting_and_resent_ones_go_first() {
+fn commands_follow_the_greeting_in_queue_order() {
     let program = Program::new();
     let resent = command(Command::Prompt {
         text: "a".into(),
         attachments: Vec::new(),
     });
-    let link = Link::start(program.path.clone(), None, [resent.clone()]).unwrap();
+    let link = Link::start(program.path.clone(), None).unwrap();
+    link.send(resent.clone()).unwrap();
     let later = command(Command::Cancel);
     link.send(later.clone()).unwrap();
     let (mut stream, greeting) = program.accept();
@@ -57,9 +61,44 @@ fn commands_follow_the_greeting_and_resent_ones_go_first() {
 }
 
 #[test]
+fn completed_socket_writes_are_drained_before_the_connection_end() {
+    use crate::chat::link::WriteOutcome;
+    let program = Program::new();
+    let link = Link::start(program.path.clone(), None).unwrap();
+    let message = command(Command::Cancel);
+    let ClientMessage::Command { id, .. } = message else {
+        panic!("command")
+    };
+    link.send(message.clone()).unwrap();
+    let (mut stream, _) = program.accept();
+    send(&mut stream, &welcome());
+    assert_eq!(read(&mut stream), Some(message));
+    drop(stream);
+    let polled = collect(&link, usize::MAX);
+    assert!(polled.end.is_some());
+    assert_eq!(polled.writes, vec![WriteOutcome::Written(id)]);
+}
+
+#[test]
+fn stopping_a_link_refuses_new_work_and_preserves_its_reason() {
+    let program = Program::new();
+    let link = Link::start(program.path.clone(), None).unwrap();
+    let (_stream, _) = program.accept();
+    link.stop(Error::Handshake);
+    assert!(matches!(
+        link.send(command(Command::Cancel)),
+        Err(Error::NotAttached)
+    ));
+    let polled = collect(&link, usize::MAX);
+    assert!(polled.messages.is_empty());
+    assert!(polled.writes.is_empty());
+    assert!(matches!(polled.end, Some(Error::Handshake)));
+}
+
+#[test]
 fn a_closed_connection_ends_after_its_messages() {
     let program = Program::new();
-    let link = Link::start(program.path.clone(), None, []).unwrap();
+    let link = Link::start(program.path.clone(), None).unwrap();
     let (mut stream, _) = program.accept();
     send(&mut stream, &welcome());
     send(
@@ -77,7 +116,7 @@ fn a_closed_connection_ends_after_its_messages() {
 #[test]
 fn an_unreachable_program_ends_the_link() {
     let (_dir, missing) = address("missing");
-    let link = Link::start(missing, None, []).unwrap();
+    let link = Link::start(missing, None).unwrap();
     let polled = collect(&link, usize::MAX);
     assert!(polled.messages.is_empty());
     assert!(matches!(polled.end, Some(Error::Connect(_))));
@@ -86,7 +125,7 @@ fn an_unreachable_program_ends_the_link() {
 #[test]
 fn dropping_the_link_closes_the_socket() {
     let program = Program::new();
-    let link = Link::start(program.path.clone(), None, []).unwrap();
+    let link = Link::start(program.path.clone(), None).unwrap();
     let (mut stream, _) = program.accept();
     drop(link);
     // The program sees the end of the stream rather than waiting.
@@ -96,7 +135,7 @@ fn dropping_the_link_closes_the_socket() {
 #[test]
 fn a_window_that_falls_behind_is_cut_off() {
     let program = Program::new();
-    let link = Link::start(program.path.clone(), None, []).unwrap();
+    let link = Link::start(program.path.clone(), None).unwrap();
     let (mut stream, _) = program.accept();
     for _ in 0..MAX_EVENTS + 8 {
         if write_frame(&mut stream, &welcome()).is_err() {
@@ -124,7 +163,7 @@ fn a_window_that_falls_behind_is_cut_off() {
 #[test]
 fn a_frame_the_program_cannot_have_sent_ends_the_link() {
     let program = Program::new();
-    let link = Link::start(program.path.clone(), None, []).unwrap();
+    let link = Link::start(program.path.clone(), None).unwrap();
     let (mut stream, _) = program.accept();
     stream.write_all(&[3, 0, 0, 0, b'{', b'x', b'}']).unwrap();
     let polled = collect(&link, usize::MAX);
@@ -149,7 +188,7 @@ fn a_child_process_carries_the_connection() {
         "-c",
         &format!("printf '{}'; exec sleep 30", printf_format(&frame)),
     ]);
-    let link = Link::start(Dial::Process(command), None, []).unwrap();
+    let link = Link::start(Dial::Process(command), None).unwrap();
     let polled = collect(&link, 1);
     assert_eq!(polled.messages.first(), Some(&welcome()));
     assert!(polled.end.is_none(), "{:?}", polled.end);
@@ -162,7 +201,7 @@ fn a_child_that_exits_ends_the_link() {
     use crate::chat::link::Dial;
     let mut command = std::process::Command::new("/bin/sh");
     command.args(["-c", "exit 127"]);
-    let link = Link::start(Dial::Process(command), None, []).unwrap();
+    let link = Link::start(Dial::Process(command), None).unwrap();
     let polled = collect(&link, 1);
     assert!(polled.messages.is_empty());
     assert!(matches!(polled.end, Some(Error::Closed)));

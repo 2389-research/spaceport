@@ -24,10 +24,18 @@ const JOIN_RETRY: Duration = Duration::from_secs(2);
 pub(crate) enum State {
     #[default]
     Idle,
-    Connecting(std::sync::mpsc::Receiver<Result<CoreBackend, Error>>),
+    Connecting {
+        outcome: Attempt,
+        start: Start,
+        /// A later explicit request may upgrade only this join's failure.
+        upgrade: bool,
+    },
     Ready(CoreBackend),
     /// Shared so the window can show it without moving it.
-    Unavailable(Arc<Error>),
+    Unavailable {
+        error: Arc<Error>,
+        at: Instant,
+    },
 }
 
 /// Whether the window may start a core when none is running.
@@ -56,20 +64,26 @@ pub(crate) enum Mismatch {
 
 /// How an attempt joins: the real one dials herdr-core; tests stand in.
 type Join = fn(Start) -> Result<CoreBackend, Error>;
+type Attempt = std::sync::mpsc::Receiver<Result<CoreBackend, Error>>;
+type Spawn = fn(Join, Start) -> std::io::Result<Attempt>;
 
 pub(crate) struct Hub {
     enabled: bool,
-    /// What the attempt in flight may do.
-    attempt: Option<Start>,
     /// Persistent Core identity for an exact existing-runtime view.
     expected_core: Option<String>,
-    /// When the last attempt failed.
-    failed: Option<Instant>,
     join: Join,
+    spawn: Spawn,
     state: State,
-    /// A start asked for while a join-only attempt was in flight; it runs if
-    /// that attempt fails, rather than being dropped.
-    wants_start: bool,
+}
+
+/// Inputs accepted by the hub's single lifecycle owner.
+enum Event {
+    BindExact(String),
+    ClearExact,
+    Connect(Start),
+    Poll,
+    #[cfg(test)]
+    SetState(State),
 }
 
 impl Default for Hub {
@@ -95,7 +109,13 @@ impl Hub {
     pub(crate) fn bind_exact(&mut self, core_id: &str) -> Result<(), Error> {
         self.check_identity(core_id)?;
         // A start already running cannot be turned into a join-only attempt.
-        if matches!(self.state, State::Connecting(_)) && self.attempt == Some(Start::IfMissing) {
+        if matches!(
+            self.state,
+            State::Connecting {
+                start: Start::IfMissing,
+                ..
+            }
+        ) {
             return Err(Error::StartPending);
         }
         if let State::Ready(backend) = &self.state {
@@ -107,14 +127,13 @@ impl Hub {
                 });
             }
         }
-        self.expected_core = Some(core_id.to_owned());
-        self.wants_start = false;
+        self.transition(Event::BindExact(core_id.to_owned()));
         Ok(())
     }
 
     /// Releases the view's exact target when it leaves that Core group.
     pub(crate) fn clear_exact(&mut self) {
-        self.expected_core = None;
+        self.transition(Event::ClearExact);
     }
 
     fn check_identity(&self, core_id: &str) -> Result<(), Error> {
@@ -130,12 +149,10 @@ impl Hub {
     fn with_join(join: Join) -> Self {
         Self {
             enabled: false,
-            attempt: None,
             expected_core: None,
-            failed: None,
             join,
+            spawn: spawn_attempt,
             state: State::Idle,
-            wants_start: false,
         }
     }
 
@@ -165,17 +182,24 @@ impl Hub {
 
     #[cfg(all(test, unix))]
     pub(super) fn set_backend_for_test(&mut self, backend: CoreBackend) {
-        self.state = State::Ready(backend);
+        self.transition(Event::SetState(State::Ready(backend)));
     }
 
     #[cfg(test)]
     pub(crate) fn set_unavailable_for_test(&mut self, error: Error) {
-        self.state = State::Unavailable(Arc::new(error));
+        self.transition(Event::SetState(State::Unavailable {
+            error: Arc::new(error),
+            at: Instant::now(),
+        }));
     }
 
     #[cfg(test)]
     pub(crate) fn set_connecting_for_test(&mut self) {
-        self.state = State::Connecting(std::sync::mpsc::channel().1);
+        self.transition(Event::SetState(State::Connecting {
+            outcome: std::sync::mpsc::channel().1,
+            start: Start::Join,
+            upgrade: false,
+        }));
     }
 
     #[cfg(test)]
@@ -187,77 +211,111 @@ impl Hub {
     /// A join-only ask waits a moment after a failure; asking to start
     /// always tries, and upgrades a join-only attempt in flight.
     pub(crate) fn connect(&mut self, start: Start) {
-        if !self.enabled {
-            return;
-        }
-        // A view bound to one Core can rejoin, but must not start a replacement.
-        let start = if self.expected_core.is_some() {
-            Start::Join
-        } else {
-            start
-        };
-        match &self.state {
-            State::Ready(_) => return,
-            State::Connecting(_) => {
-                self.wants_start |= start == Start::IfMissing && self.attempt == Some(Start::Join);
-                return;
-            }
-            State::Unavailable(_)
-                if start == Start::Join
-                    && self
-                        .failed
-                        .is_some_and(|failed| failed.elapsed() < JOIN_RETRY) =>
-            {
-                return;
-            }
-            State::Idle | State::Unavailable(_) => {}
-        }
-        self.attempt = Some(start);
-        let join = self.join;
-        let (send, receive) = std::sync::mpsc::sync_channel(1);
-        let spawned = std::thread::Builder::new()
-            .name("herdr-core-connect".into())
-            .spawn(move || {
-                let _ = send.send(join(start));
-            });
-        self.state = match spawned {
-            Ok(_) => State::Connecting(receive),
-            Err(error) => State::Unavailable(Arc::new(Error::Worker(error))),
-        };
+        self.transition(Event::Connect(start));
     }
 
     /// Takes the connection's outcome; true when the state changed. A lost
     /// connection reads as idle again, so the next ask reconnects.
     pub(crate) fn poll(&mut self) -> bool {
-        match &self.state {
-            State::Connecting(outcome) => match outcome.try_recv() {
-                Ok(Ok(backend)) => {
-                    let actual = &backend.core().hello().core.id;
-                    self.state = match self.check_identity(actual) {
-                        Ok(()) => State::Ready(backend),
-                        Err(error) => {
-                            self.failed = Some(Instant::now());
-                            State::Unavailable(Arc::new(error))
-                        }
-                    };
+        self.transition(Event::Poll)
+    }
+
+    /// Owns connection lifecycle writes, including exact-target start suppression.
+    fn transition(&mut self, event: Event) -> bool {
+        match event {
+            Event::BindExact(core_id) => {
+                self.expected_core = Some(core_id);
+                if let State::Connecting { upgrade, .. } = &mut self.state {
+                    *upgrade = false;
                 }
-                Ok(Err(_)) if std::mem::take(&mut self.wants_start) => {
-                    self.state = State::Idle;
-                    self.connect(Start::IfMissing);
+            }
+            Event::ClearExact => self.expected_core = None,
+            #[cfg(test)]
+            Event::SetState(state) => self.state = state,
+            Event::Connect(start) => {
+                if !self.enabled {
                     return false;
                 }
-                Ok(Err(error)) => {
-                    self.failed = Some(Instant::now());
-                    self.state = State::Unavailable(Arc::new(error));
+                // An exact Core view may rejoin, but never start a replacement.
+                let start = if self.expected_core.is_some() {
+                    Start::Join
+                } else {
+                    start
+                };
+                match &mut self.state {
+                    State::Ready(_) => return false,
+                    State::Connecting {
+                        start: attempt,
+                        upgrade,
+                        ..
+                    } => {
+                        *upgrade |= start == Start::IfMissing && *attempt == Start::Join;
+                        return false;
+                    }
+                    State::Unavailable { at, .. }
+                        if start == Start::Join && at.elapsed() < JOIN_RETRY =>
+                    {
+                        return false;
+                    }
+                    State::Idle | State::Unavailable { .. } => {}
                 }
-                Err(std::sync::mpsc::TryRecvError::Empty) => return false,
-                Err(std::sync::mpsc::TryRecvError::Disconnected) => self.state = State::Idle,
+                self.state = match (self.spawn)(self.join, start) {
+                    Ok(outcome) => State::Connecting {
+                        outcome,
+                        start,
+                        upgrade: false,
+                    },
+                    Err(error) => State::Unavailable {
+                        error: Arc::new(Error::Worker(error)),
+                        at: Instant::now(),
+                    },
+                };
+            }
+            Event::Poll => match &self.state {
+                State::Connecting {
+                    outcome, upgrade, ..
+                } => match outcome.try_recv() {
+                    Ok(Ok(backend)) => {
+                        let actual = &backend.core().hello().core.id;
+                        // Success consumes this attempt's start permission too.
+                        self.state = match self.check_identity(actual) {
+                            Ok(()) => State::Ready(backend),
+                            Err(error) => State::Unavailable {
+                                error: Arc::new(error),
+                                at: Instant::now(),
+                            },
+                        };
+                    }
+                    Ok(Err(_)) if *upgrade => {
+                        self.state = State::Idle;
+                        self.transition(Event::Connect(Start::IfMissing));
+                        return false;
+                    }
+                    Ok(Err(error)) => {
+                        self.state = State::Unavailable {
+                            error: Arc::new(error),
+                            at: Instant::now(),
+                        };
+                    }
+                    Err(std::sync::mpsc::TryRecvError::Empty) => return false,
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => self.state = State::Idle,
+                },
+                State::Ready(backend) if backend.core().is_lost() => self.state = State::Idle,
+                _ => return false,
             },
-            State::Ready(backend) if backend.core().is_lost() => self.state = State::Idle,
-            _ => return false,
         }
         true
     }
+}
+
+fn spawn_attempt(join: Join, start: Start) -> std::io::Result<Attempt> {
+    let (send, receive) = std::sync::mpsc::sync_channel(1);
+    std::thread::Builder::new()
+        .name("herdr-core-connect".into())
+        .spawn(move || {
+            let _ = send.send(join(start));
+        })?;
+    Ok(receive)
 }
 
 /// Blocking: joins the session's core, starting one first when allowed.

@@ -5,7 +5,7 @@ fn retry_backoff_resets_only_after_sixty_seconds_of_healthy_connection() {
     let (mut endpoint, _server) = connected_endpoint(LOCAL);
     endpoint.attempts = 8;
     let now = Instant::now();
-    endpoint.online_since = None;
+    endpoint.clear_stability_for_test();
     endpoint.poll(now);
     endpoint.poll(now + Duration::from_secs(59));
     assert_eq!(endpoint.retry_delay(), Duration::from_secs(30));
@@ -15,10 +15,10 @@ fn retry_backoff_resets_only_after_sixty_seconds_of_healthy_connection() {
     endpoint.connection.handle.as_ref().unwrap().disconnect();
     endpoint.poll(now + Duration::from_secs(61));
     assert_eq!(
-        endpoint.retry_at,
+        endpoint.retry_at(),
         now + Duration::from_secs(61) + Duration::from_millis(500)
     );
-    assert!(endpoint.online_since.is_none());
+    assert!(endpoint.online_since().is_none());
 }
 
 #[test]
@@ -50,20 +50,20 @@ fn brief_success_preserves_backoff_and_disconnect_restarts_stability_window() {
     let (mut endpoint, _server) = connected_endpoint(LOCAL);
     endpoint.attempts = 8;
     let now = Instant::now();
-    endpoint.online_since = None;
+    endpoint.clear_stability_for_test();
     endpoint.poll(now);
     endpoint.poll(now + Duration::from_secs(59));
     endpoint.connection.handle.as_ref().unwrap().disconnect();
     endpoint.poll(now + Duration::from_secs(59));
     assert_eq!(endpoint.attempts, 8);
-    assert!(endpoint.online_since.is_none());
-    assert_eq!(endpoint.retry_at, now + Duration::from_secs(59 + 30));
+    assert!(endpoint.online_since().is_none());
+    assert_eq!(endpoint.retry_at(), now + Duration::from_secs(59 + 30));
     endpoint.connect(ConnectOptions::default(), false);
     assert_eq!(
         endpoint.attempts, 9,
         "automatic retry must preserve failed attempts"
     );
-    assert!(endpoint.online_since.is_none());
+    assert!(endpoint.online_since().is_none());
 }
 
 #[gpui::test]
@@ -96,7 +96,7 @@ fn changed_target_and_manual_reconnect_reset_retry_history(cx: &mut gpui::TestAp
             cx,
         );
         assert_eq!(view.endpoints[1].attempts, 0);
-        assert!(view.endpoints[1].online_since.is_none());
+        assert!(view.endpoints[1].online_since().is_none());
         view.endpoints[0].attempts = 8;
         view.reconnect(cx); // Explicit isolated missing socket, never SSH/discovery.
         assert_eq!(

@@ -1,8 +1,10 @@
+// ABOUTME: Localizes chat connection, command, and helper failures.
+// ABOUTME: Keeps local delivery uncertainty distinct from wire refusals.
 //! Agent chats and starting one: `error-chat.ftl`.
 
 use super::Localize;
 use crate::{
-    chat::{Error, Program, StartError, page, pasted, visual, widgets},
+    chat::{Error, Program, Refusal, StartError, page, pasted, visual, widgets},
     config::chat::{MAX_ENV, MAX_ENV_BYTES},
     i18n::fl,
 };
@@ -151,6 +153,16 @@ impl Localize for sheprd_chat_protocol::Rejection {
             Self::UnknownFile => fl!("error-chat-rejection-unknown-file"),
             Self::Unsupported => fl!("error-chat-rejection-unsupported"),
             Self::Other => fl!("error-chat-rejection-other"),
+        }
+    }
+}
+
+impl Localize for Refusal {
+    fn localize(&self) -> String {
+        match self {
+            Self::DeliveryUnconfirmed => fl!("error-chat-delivery-unconfirmed"),
+            Self::Remote(rejection) => rejection.localize(),
+            Self::SessionChanged => fl!("error-chat-session-changed"),
         }
     }
 }

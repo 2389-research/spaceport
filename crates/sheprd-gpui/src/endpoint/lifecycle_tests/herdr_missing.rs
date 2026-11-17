@@ -27,7 +27,7 @@ fn a_missing_herdr_waits_the_longest_retry_delay() {
         endpoint.poll(now);
         endpoint.live.missing_installation
     });
-    assert_eq!(endpoint.retry_at, now + MAX_RETRY_DELAY);
+    assert_eq!(endpoint.retry_at(), now + MAX_RETRY_DELAY);
     assert_eq!(endpoint.outage(), Some(MISSING));
     assert!(endpoint.herdr_missing());
     assert_eq!(endpoint.status(), "Herdr not installed");
@@ -40,13 +40,13 @@ fn a_missing_herdr_seen_after_its_stop_still_waits_the_longest_delay() {
     endpoint.connection.handle.as_ref().unwrap().disconnect();
     let dropped = Instant::now();
     endpoint.poll(dropped);
-    assert_eq!(endpoint.retry_at, dropped + endpoint.retry_delay());
+    assert_eq!(endpoint.retry_at(), dropped + endpoint.retry_delay());
 
     lose_herdr(&mut endpoint);
     let arrived = dropped + Duration::from_millis(16);
     endpoint.poll(arrived);
     assert_eq!(endpoint.outage(), Some(MISSING));
-    assert_eq!(endpoint.retry_at, arrived + MAX_RETRY_DELAY);
+    assert_eq!(endpoint.retry_at(), arrived + MAX_RETRY_DELAY);
     assert!(endpoint.herdr_missing());
 }
 

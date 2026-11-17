@@ -1,3 +1,5 @@
+// ABOUTME: Exercises the chat overlay in an isolated headless window.
+// ABOUTME: Shares real endpoint fixtures for composer and focus regressions.
 //! The chat view in a headless window: drawn over its pane only for a local
 //! daemon, typed into instead of the terminal, and turned back to the
 //! terminal and again.
@@ -47,11 +49,7 @@ pub(super) fn poll(view: &Entity<SheprdWindow>, program: &Program, cx: &mut Visu
     let path = program.path.clone();
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
-            view.poll_chats_with(
-                &mut |_, since, resend| Link::start(path.clone(), since, resend),
-                window,
-                cx,
-            );
+            view.poll_chats_with(&mut |_, since| Link::start(path.clone(), since), window, cx);
         });
         full_draw(window, cx).clear(cx);
     });
@@ -120,7 +118,7 @@ fn an_ssh_daemons_chat_is_dialled_over_ssh_and_keeps_its_terminal_until_it_answe
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.poll_chats_with(
-                &mut |target, _, _| {
+                &mut |target, _| {
                     routes.push(target.route.clone());
                     Err(Error::Closed)
                 },

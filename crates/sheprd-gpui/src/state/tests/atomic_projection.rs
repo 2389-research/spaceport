@@ -97,14 +97,15 @@ fn staged_metadata_cannot_satisfy_changed_focus_surface_barrier_in_either_ack_or
         let mut pending = (*old).clone();
         pending.revision += 1;
         state.apply(ClientEvent::Snapshot(Arc::new(pending.clone())));
-        state.activation = Some(SurfaceActivation {
-            request: "focus".into(),
-            boot: old.boot_id.clone(),
-            revision: None,
-            failed: false,
-            focus: Some(crate::NavigationTarget::Pane("destination".into())),
-            active: true,
-        });
+        state.activation = activation::Fence::for_test(
+            SurfaceActivation {
+                request: "focus".into(),
+                boot: old.boot_id.clone(),
+                focus: Some(crate::NavigationTarget::Pane("destination".into())),
+                active: true,
+            },
+            None,
+        );
         state.surface = None;
         let ack = ClientEvent::Response {
             request_id: "focus".into(),
@@ -121,7 +122,7 @@ fn staged_metadata_cannot_satisfy_changed_focus_surface_barrier_in_either_ack_or
         } {
             state.apply(event);
             assert!(!state.surface_ready());
-            assert!(state.activation.as_ref().unwrap().focus.is_some());
+            assert!(state.activation.request().unwrap().focus.is_some());
         }
         let mut destination = pending;
         destination.revision += 1;
@@ -130,7 +131,7 @@ fn staged_metadata_cannot_satisfy_changed_focus_surface_barrier_in_either_ack_or
         assert!(!state.surface_ready());
         state.apply(ClientEvent::Surface(surface(&destination)));
         assert!(state.surface_ready());
-        assert!(state.activation.as_ref().unwrap().focus.is_none());
+        assert!(state.activation.request().unwrap().focus.is_none());
     }
 }
 
@@ -144,17 +145,18 @@ fn staged_metadata_cannot_satisfy_same_target_surface_activation_below_its_floor
         state.apply(ClientEvent::Snapshot(Arc::new(pending.clone())));
         let mut activated = pending.clone();
         activated.revision += 1;
-        state.activation = Some(SurfaceActivation {
-            request: "activate".into(),
-            boot: old.boot_id.clone(),
-            revision: None,
-            failed: false,
-            focus: old
-                .focused_pane_id
-                .clone()
-                .map(crate::NavigationTarget::Pane),
-            active: true,
-        });
+        state.activation = activation::Fence::for_test(
+            SurfaceActivation {
+                request: "activate".into(),
+                boot: old.boot_id.clone(),
+                focus: old
+                    .focused_pane_id
+                    .clone()
+                    .map(crate::NavigationTarget::Pane),
+                active: true,
+            },
+            None,
+        );
         state.surface = None;
         let ack = ClientEvent::Response {
             request_id: "activate".into(),

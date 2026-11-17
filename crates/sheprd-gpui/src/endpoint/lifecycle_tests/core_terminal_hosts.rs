@@ -48,7 +48,9 @@ fn a_new_tab_on_an_ssh_host_is_created_by_its_herdr(cx: &mut gpui::TestAppContex
             view.selected_endpoint = 1;
             view.options = ConnectOptions::default();
             view.reset_selected(cx);
-            view.activation_deadline = None;
+            view.live
+                .activation
+                .transition(crate::state::activation::Transition::Reset(None));
             view.config.herdr_2_terminals = true;
             view.settings.shared =
                 Some(crate::herdr_settings::Settings::parse_text(NO_TAB_PROMPT).unwrap());

@@ -18,7 +18,7 @@ fn a_drop_is_an_outage_until_a_connection_has_a_snapshot() {
     assert_eq!(endpoint.status(), "reconnecting");
 
     let (mut endpoint, _server) = connected_endpoint("ssh:remote");
-    endpoint.outage = Some("connection lost".into());
+    endpoint.lose_connection_for_test("connection lost");
     endpoint.poll(Instant::now());
     assert_eq!(endpoint.outage(), None);
     assert_eq!(endpoint.status(), "online");
@@ -35,7 +35,7 @@ fn a_dropped_remote_stays_selected_with_its_last_picture_dimmed(cx: &mut gpui::T
         prepare_mouse(view, endpoint, cx);
         assert!(view.presentation.picture(&view.live).is_some());
         assert!(!view.presentation.stale());
-        view.endpoints[1].retry_at = Instant::now() + Duration::from_secs(120);
+        view.endpoints[1].set_retry_at_for_test(Instant::now() + Duration::from_secs(120));
     });
     server.stream.shutdown(std::net::Shutdown::Both).unwrap();
     view.update(cx, |view, cx| {
@@ -43,13 +43,17 @@ fn a_dropped_remote_stays_selected_with_its_last_picture_dimmed(cx: &mut gpui::T
             view.endpoints[1].connection.handle.is_none()
         });
         // An expired activation budget is renewed while there is no snapshot.
-        view.activation_deadline = Some(Instant::now());
+        view.live
+            .activation
+            .transition(crate::state::activation::Transition::Reset(Some(
+                Instant::now(),
+            )));
         view.poll_endpoints(cx);
         assert_eq!(
             view.selected_endpoint, 1,
             "a drop must not fall back to Local"
         );
-        assert!(view.activation_deadline.unwrap() > Instant::now());
+        assert!(view.live.activation.deadline().unwrap() > Instant::now());
         assert!(view.presentation.stale());
         assert!(view.presentation.picture(&view.live).is_some());
 
@@ -60,7 +64,7 @@ fn a_dropped_remote_stays_selected_with_its_last_picture_dimmed(cx: &mut gpui::T
         assert_eq!(view.pending_input.len(), 0);
 
         // An automatic retry keeps the picture up while it connects.
-        view.endpoints[1].retry_at = Instant::now();
+        view.endpoints[1].set_retry_at_for_test(Instant::now());
         view.poll_endpoints(cx);
         assert_eq!(view.selected_endpoint, 1);
         assert_eq!(view.selected_generation, view.endpoints[1].generation);
@@ -106,7 +110,7 @@ fn a_refusal_only_the_user_can_fix_waits_the_longest_retry_delay() {
         } else {
             endpoint.retry_delay()
         };
-        assert_eq!(endpoint.retry_at, now + expected, "{failure:?}");
+        assert_eq!(endpoint.retry_at(), now + expected, "{failure:?}");
         assert_eq!(endpoint.outage(), Some(error.as_str()));
     }
 }
@@ -123,7 +127,22 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
     let (endpoint, _server) = connected_endpoint("ssh:remote");
     view.update(cx, |view, cx| {
         prepare_mouse(view, endpoint, cx);
-        view.endpoints[1].retry_at = Instant::now() + Duration::from_secs(120);
+        view.endpoints[1].set_retry_at_for_test(Instant::now() + Duration::from_secs(120));
+        // Keep an acknowledged frame while its presentation budget expires.
+        let snapshot = view.live.snapshot.as_ref().unwrap();
+        let mut activation = crate::state::activation::Fence::Open;
+        activation.transition(crate::state::activation::Transition::Queued {
+            result: Ok("acknowledged".into()), boot: snapshot.boot_id.clone(), focus: None, active: true,
+            now: Instant::now() - ACTIVATION_TIMEOUT,
+        });
+        activation.transition(crate::state::activation::Transition::Response {
+            request: "acknowledged", result: Some(&serde_json::json!({
+                "type": "client_shell_surface_set", "active": true, "projection_revision": snapshot.revision,
+            })),
+        });
+        view.endpoints[1].connection.inbox.lock().unwrap().activation = activation.clone();
+        view.endpoints[1].live.activation = activation.clone();
+        view.live.activation = activation;
         // A stopped handle delivers no disconnect state at all.
         view.endpoints[1]
             .connection
@@ -131,7 +150,6 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
             .as_ref()
             .unwrap()
             .disconnect();
-        view.activation_deadline = Some(Instant::now());
         view.poll_endpoints(cx);
         assert_eq!(
             view.selected_endpoint, 1,
@@ -139,7 +157,7 @@ fn a_drop_seen_before_its_state_arrives_does_not_fall_back_to_local(cx: &mut gpu
         );
         assert!(view.endpoints[1].connection.handle.is_none());
         assert!(view.live.snapshot.is_some(), "the gap under test");
-        assert!(view.activation_deadline.unwrap() > Instant::now());
+        assert!(view.live.activation.deadline().unwrap() > Instant::now());
         // `live` still holds the lost connection's ready frame; painting it
         // must not undo the dimming.
         assert!(view.live.surface_ready());
@@ -169,7 +187,7 @@ fn a_refusal_that_arrives_after_its_stop_still_waits_the_longest_delay() {
     let dropped = Instant::now();
     endpoint.poll(dropped);
     assert_eq!(endpoint.outage(), Some("connection lost"));
-    assert_eq!(endpoint.retry_at, dropped + endpoint.retry_delay());
+    assert_eq!(endpoint.retry_at(), dropped + endpoint.retry_delay());
 
     let error = sheprd_client::Error::Ssh(sheprd_client::ssh::Error::Refused(SshFailure::HostKey))
         .to_string();
@@ -185,7 +203,7 @@ fn a_refusal_that_arrives_after_its_stop_still_waits_the_longest_delay() {
     let arrived = dropped + Duration::from_millis(16);
     endpoint.poll(arrived);
     assert_eq!(endpoint.outage(), Some(error.as_str()));
-    assert_eq!(endpoint.retry_at, arrived + MAX_RETRY_DELAY);
+    assert_eq!(endpoint.retry_at(), arrived + MAX_RETRY_DELAY);
 }
 
 /// The replacement connection's snapshot ends the outage before its first
@@ -200,7 +218,7 @@ fn the_card_stays_until_the_replacement_frame_lands(cx: &mut gpui::TestAppContex
     view.update(cx, |view, cx| {
         prepare_mouse(view, endpoint, cx);
         let first = view.presentation.picture(&view.live).unwrap().frame;
-        view.endpoints[1].retry_at = Instant::now() + Duration::from_secs(120);
+        view.endpoints[1].set_retry_at_for_test(Instant::now() + Duration::from_secs(120));
         view.endpoints[1]
             .connection
             .handle
@@ -212,7 +230,7 @@ fn the_card_stays_until_the_replacement_frame_lands(cx: &mut gpui::TestAppContex
 
         // Stand in for the replacement: a connection with a snapshot ends the
         // outage, and its surface is not ready yet.
-        view.endpoints[1].outage = None;
+        view.endpoints[1].clear_outage_for_test();
         view.poll_endpoints(cx);
         let mut waiting = view.live.clone();
         waiting.surface = None;

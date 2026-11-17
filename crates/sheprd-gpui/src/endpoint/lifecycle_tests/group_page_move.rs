@@ -66,7 +66,7 @@ fn moving_a_native_tab_steers_its_source_terminal_without_taking_focus(
                 assert_eq!(
                     view.live
                         .activation
-                        .as_ref()
+                        .request()
                         .and_then(|activation| activation.focus.as_ref()),
                     Some(&NavigationTarget::Tab("next".into()))
                 );

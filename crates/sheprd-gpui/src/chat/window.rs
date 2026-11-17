@@ -1,3 +1,5 @@
+// ABOUTME: Connects window input and focus to the selected chat pane.
+// ABOUTME: Polls bounded chat work and presents command failures.
 //! The window's side of chat panes: attaching to the panes its daemon
 //! reports, moving the keyboard between a chat's composer and the terminal
 //! as Herdr's focus moves, and sending what the user asks.
@@ -24,7 +26,7 @@ impl SheprdWindow {
     pub(crate) fn poll_chats(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let program = self.chats.program.clone();
         self.poll_chats_with(
-            &mut |target, since, resend| chats::connect(target, &program, since, resend),
+            &mut |target, since| chats::connect(target, &program, since),
             window,
             cx,
         );

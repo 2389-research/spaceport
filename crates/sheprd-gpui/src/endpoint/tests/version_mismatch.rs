@@ -18,14 +18,14 @@ fn refusal_survives_retries_until_a_handshake_is_accepted() {
     };
     refuse(&mut endpoint, mismatch.clone());
     endpoint.poll(Instant::now());
-    assert_eq!(endpoint.version_mismatch, Some(mismatch.clone()));
+    assert_eq!(endpoint.version_mismatch().cloned(), Some(mismatch.clone()));
     assert_eq!(endpoint.status(), "Herdr update needed");
 
     // A retry replaces the bridge's state before the daemon answers again.
     endpoint.stop();
     endpoint.poll(Instant::now());
     assert!(endpoint.live.version_mismatch.is_none());
-    assert_eq!(endpoint.version_mismatch, Some(mismatch));
+    assert_eq!(endpoint.version_mismatch().cloned(), Some(mismatch));
 
     let welcome: EndpointServerWelcome = serde_json::from_str(include_str!(
         "../../../../sheprd-protocol/tests/fixtures/endpoint-welcome-v1.json"
@@ -38,7 +38,7 @@ fn refusal_survives_retries_until_a_handshake_is_accepted() {
         .unwrap()
         .apply(ClientEvent::Connected(welcome));
     endpoint.poll(Instant::now());
-    assert_eq!(endpoint.version_mismatch, None);
+    assert_eq!(endpoint.version_mismatch().cloned(), None);
     assert_eq!(endpoint.status(), "online");
 }
 
@@ -57,5 +57,5 @@ fn a_newer_daemon_asks_for_an_app_update_and_retargeting_forgets_it() {
         name: "other".into(),
         development: false,
     });
-    assert_eq!(endpoint.version_mismatch, None);
+    assert_eq!(endpoint.version_mismatch().cloned(), None);
 }

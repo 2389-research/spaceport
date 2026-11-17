@@ -6,7 +6,7 @@ use super::*;
 /// `error`, returning how many connections it was asked for.
 fn refused(chats: &mut Chats, target: Target, now: Instant, error: impl Fn() -> Error) -> usize {
     let mut attempts = 0;
-    chats.reconcile(vec![target], now, &mut |_, _, _| {
+    chats.reconcile(vec![target], now, &mut |_, _| {
         attempts += 1;
         Err(error())
     });

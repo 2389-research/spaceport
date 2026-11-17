@@ -63,7 +63,7 @@ impl SheprdWindow {
     pub(super) fn panel_agents(&self) -> Vec<(usize, &ClientShellAgent)> {
         panel_agents(
             self.listed_hosts()
-                .filter(|(_, endpoint, _)| endpoint.enabled)
+                .filter(|(_, endpoint, _)| endpoint.enabled())
                 .map(|(index, _, live)| (index, live)),
             self.agent_sort,
         )

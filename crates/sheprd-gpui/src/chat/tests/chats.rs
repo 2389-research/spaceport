@@ -1,7 +1,10 @@
+// ABOUTME: Exercises chat pane attachment through isolated endpoint peers.
+// ABOUTME: Shares pane fixtures for connection and conversation regressions.
 use super::*;
 use crate::chat::{Chats, link::Link};
 use sheprd_chat_protocol::{Command, EndpointId};
 
+mod delivery;
 mod observed_identity;
 mod phase;
 
@@ -69,11 +72,10 @@ impl Harness {
     fn reconcile(&mut self, targets: Vec<Target>) {
         let path = self.program.path.clone();
         let sinces = &mut self.sinces;
-        self.chats
-            .reconcile(targets, self.now, &mut |_, since, resend| {
-                sinces.push(since);
-                Link::start(path.clone(), since, resend)
-            });
+        self.chats.reconcile(targets, self.now, &mut |_, since| {
+            sinces.push(since);
+            Link::start(path.clone(), since)
+        });
     }
 
     /// Lets every retry come due.
@@ -160,7 +162,7 @@ fn nothing_after_a_change_that_does_not_fit_is_applied() {
     // gap, and what it read after is never applied.
     send(&mut stream, &change(append(1, "x"), cursor(1, 2)));
     send(&mut stream, &change(append(1, "y"), cursor(1, 3)));
-    harness.poll_until(|chats| !chats.pane("p1").unwrap().attached());
+    harness.poll_until(|chats| !chats.pane("p1").unwrap().has_link());
     assert_eq!(text(&harness.chats), ["a"]);
     // The next connection starts over from a snapshot, at once.
     harness.reconcile(vec![target("p1", A)]);
@@ -249,6 +251,9 @@ fn a_command_sent_while_away_goes_out_on_reconnect() {
     harness.later();
     harness.reconcile(vec![target("p1", A)]);
     let (mut stream, _) = harness.program.accept();
+    send(&mut stream, &welcome());
+    send(&mut stream, &snapshot(cursor(1, 0), Vec::new()));
+    harness.poll_until(|chats| chats.pane("p1").unwrap().attached());
     let Some(ClientMessage::Command { command, .. }) = read(&mut stream) else {
         panic!("the prompt");
     };

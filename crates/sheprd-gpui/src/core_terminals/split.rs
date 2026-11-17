@@ -358,7 +358,7 @@ impl SheprdWindow {
     /// What a herdr-core tab shows before its panes have views.
     fn core_placeholder(&self) -> AnyElement {
         let note = match self.core_terminals.hub.state() {
-            State::Unavailable(error) => {
+            State::Unavailable { error, .. } => {
                 let reason = error.to_string();
                 fl!("core-terminals-unavailable", reason = reason)
             }

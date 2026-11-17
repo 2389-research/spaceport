@@ -149,7 +149,7 @@ impl SheprdWindow {
         action: ClientShellCommandAction,
         cx: &mut Context<Self>,
     ) {
-        if self.activation_deadline.is_some()
+        if self.live.activation.fenced()
             || !self.endpoints[self.selected_endpoint].surface_requested()
         {
             return;
@@ -189,7 +189,7 @@ impl SheprdWindow {
         let index = self
             .endpoints
             .iter()
-            .position(|e| e.id == endpoint && e.enabled)
+            .position(|e| e.id == endpoint && e.enabled())
             .ok_or(Error::HostUnavailable)?;
         let selected = index == self.selected_endpoint;
         let live = self.live_of(index);

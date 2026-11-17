@@ -55,14 +55,15 @@ fn f20_window(
     cx.update(|_, cx| {
         view.update(cx, |view, cx| {
             prepare_mouse(view, endpoint, cx);
-            view.live.activation = Some(crate::state::SurfaceActivation {
-                request: "activate-1".into(),
-                boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
-                revision: Some(view.live.surface.as_ref().unwrap().projection_revision),
-                failed: false,
-                focus: None,
-                active: true,
-            });
+            view.live.activation = crate::state::activation::Fence::for_test(
+                crate::state::SurfaceActivation {
+                    request: "activate-1".into(),
+                    boot: view.live.snapshot.as_ref().unwrap().boot_id.clone(),
+                    focus: None,
+                    active: true,
+                },
+                Some(view.live.surface.as_ref().unwrap().projection_revision),
+            );
             let keys: toml::Table = "prefix = \"f20\"".parse().unwrap();
             view.config.keybindings = crate::keymap::Keymap::with_overrides(
                 &Default::default(),

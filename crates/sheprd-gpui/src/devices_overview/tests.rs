@@ -33,6 +33,8 @@ fn window(cx: &mut gpui::TestAppContext) -> (Entity<SheprdWindow>, &mut VisualTe
         shown.focused_tab_id = Some("t0".into());
         view.live.snapshot = Some(Arc::new(shown));
         view.live.status = ConnectionStatus::Connected;
+        view.endpoints[0].live = view.live.clone();
+        view.endpoints[0].sync_live();
         view
     })
 }

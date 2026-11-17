@@ -77,7 +77,7 @@ impl SheprdWindow {
         if self
             .endpoints
             .get(self.selected_endpoint)
-            .and_then(|endpoint| endpoint.version_mismatch.as_ref())
+            .and_then(|endpoint| endpoint.version_mismatch())
             .is_none()
         {
             self.version_notice_shown = false;
@@ -92,7 +92,7 @@ impl SheprdWindow {
         let Some(endpoint) = self.endpoints.get(self.selected_endpoint) else {
             return;
         };
-        let Some(mismatch) = endpoint.version_mismatch.clone() else {
+        let Some(mismatch) = endpoint.version_mismatch().cloned() else {
             return;
         };
         let host = matches!(

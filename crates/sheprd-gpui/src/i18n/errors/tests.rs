@@ -1,3 +1,5 @@
+// ABOUTME: Shares localization assertions across typed error families.
+// ABOUTME: Checks English diagnostics and complete pseudo-locale messages.
 //! Shared checks for every error mapping, and a topic file per mapping.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
@@ -14,6 +16,7 @@ mod clipboard;
 mod config;
 mod control;
 mod daemon;
+mod delivery;
 mod devices;
 mod endpoint;
 mod file_drop;

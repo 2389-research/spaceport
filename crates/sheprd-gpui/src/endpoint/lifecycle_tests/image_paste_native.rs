@@ -216,7 +216,9 @@ fn connected_image_paste_native_preparations_stay_bounded_across_reset(
             for index in 0..4 {
                 if index == 3 {
                     view.reset_selected(cx);
-                    view.activation_deadline = None;
+                    view.live
+                        .activation
+                        .transition(crate::state::activation::Transition::Reset(None));
                     view.live.surface = surface.clone();
                 }
                 cx.write_to_clipboard(ClipboardItem::new_string(format!("paste {index}")));
@@ -230,7 +232,9 @@ fn connected_image_paste_native_preparations_stay_bounded_across_reset(
             view.cancel_stale_image();
             assert_eq!(view.pending_images.len(), 4);
             // Even cancelled tasks count until their background work returns.
-            view.activation_deadline = None;
+            view.live
+                .activation
+                .transition(crate::state::activation::Transition::Reset(None));
             cx.write_to_clipboard(ClipboardItem::new_string("overflow".into()));
             view.paste_native_clipboard(false, None, cx);
             assert_eq!(view.pending_images.len(), 4);
