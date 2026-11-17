@@ -1,3 +1,5 @@
+// ABOUTME: Owns chat pane connections, presentation state, and pending file work.
+// ABOUTME: Reconciles daemon targets and applies bounded conversation updates.
 //! The chats a window attaches to: one per chat pane of its daemon, each
 //! with its connection, retries, and the view state drawn from it.
 
@@ -158,6 +160,7 @@ pub(crate) struct ChatPane {
     /// Thoughts shown in full.
     pub(crate) expanded: HashSet<EntryId>,
     failures: u32,
+    pub(super) file_work: super::files::FileWork,
     /// Prompts sent from this window, for Up and Down to recall.
     pub(crate) history: sheprd_chat_protocol::assist::History,
     /// Bumped for each connection attempt, so a resize drag begun on an
@@ -190,8 +193,6 @@ pub(crate) struct ChatPane {
     pub(crate) text_drag: super::reader::Drag,
     pub(crate) text_focus: Option<FocusHandle>,
     pub(crate) text_geometry: super::view::selection::Geometry,
-    /// Files being copied to the chat's SSH host to attach there.
-    pub(crate) uploading: usize,
     /// The picture shown large over the chat, while one is.
     pub(crate) viewer: Option<super::view::viewer::Viewer>,
     /// Interactive message state, scoped to this pane and transcript revision.
@@ -203,7 +204,8 @@ impl ChatPane {
     /// the phone app, it stops a running turn while nothing is written or
     /// attached, and sends only once something is.
     pub(crate) fn send_button(&self, text: &str) -> SendButton {
-        let drafted = !text.trim().is_empty() || !self.attachments.is_empty() || self.uploading > 0;
+        let drafted =
+            !text.trim().is_empty() || !self.attachments.is_empty() || self.uploading() > 0;
         let status = &self.session.transcript().status;
         match (drafted, status) {
             (false, sheprd_chat_protocol::Status::Working) => SendButton::Stop,
@@ -215,8 +217,7 @@ impl ChatPane {
     /// Whether a callback made for `target` at `cursor` still applies: the
     /// same binding and the same transcript epoch, not a replacement session.
     pub(crate) fn is_current(&self, target: &Target, cursor: Option<Cursor>) -> bool {
-        self.target == *target
-            && self.session.since().map(|cursor| cursor.epoch) == cursor.map(|cursor| cursor.epoch)
+        super::files::is_current(&self.target, self.session.since(), target, cursor)
     }
 
     /// The handle that takes the chat's typing; its original terminal takes
@@ -300,6 +301,7 @@ impl ChatPane {
             error: None,
             expanded: HashSet::new(),
             failures: 0,
+            file_work: Default::default(),
             generation: 0,
             glide,
             history: Default::default(),
@@ -321,7 +323,6 @@ impl ChatPane {
             text_drag: Default::default(),
             text_focus: None,
             text_geometry: Default::default(),
-            uploading: 0,
             viewer: None,
             widgets: Default::default(),
         }
@@ -426,7 +427,10 @@ impl ChatPane {
         // connection was live until then.
         let mut live = self.session.live();
         for message in polled.messages {
-            match self.session.receive(message) {
+            let received = self.session.receive(message);
+            self.file_work
+                .synchronize(&self.target, self.session.since());
+            match received {
                 Ok(shown) => {
                     changed |= shown;
                     live = self.session.live();
