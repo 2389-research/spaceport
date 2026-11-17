@@ -40,3 +40,32 @@ Cleanup remains best effort under the existing transfer API and application life
 - Three regression tests failed before the conversion.
 
 Live SSH cleanup and native window teardown remain separate integration checks.
+
+## Core terminal spawning — 1w6g
+
+[`core_terminals/spawning.rs`](../crates/sheprd-gpui/src/core_terminals/spawning.rs) owns `Spawning`.
+Its states are Idle, Queued(FIFO), and Running(purpose, receiver, FIFO).
+Only `Spawning::transition(Event)` mutates the state or queue.
+
+| Event | Transition or effect |
+| --- | --- |
+| Queue | Retain the complete request and captured Core identity; refuse the newest when 64 requests wait |
+| Start | Remove the oldest request; validate its Core and purpose; submit one worker |
+| Poll | Consume a completed or disconnected worker once; preserve its waiting successors |
+| Unavailable | Clear waiting requests while retaining an already submitted worker |
+
+Completion placement always attempts to start the next request.
+Success, placement refusal, and errors therefore cannot strand the FIFO.
+The worker retains its original backend and performs blocking work off the UI thread.
+A disconnected receiver has an uncertain outcome and never requeues its request.
+A stale Core request is refused before submission.
+Core terminals remain runtime-owned when a view disappears.
+
+### Verification
+
+- [Queue integration tests](../crates/sheprd-gpui/src/core_terminals/tests/spawn_queue.rs) observe framed requests and post-placement draining.
+- [Owner tests](../crates/sheprd-gpui/src/core_terminals/spawning/tests.rs) cover bounds, Core mismatch, unavailable cleanup, and uncertain completion.
+- `cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport core_terminals::`: 114 passed, eight opt-in tests ignored.
+- Seven chat Core tests and applicable quick checks passed.
+
+Native GUI and isolated real-runtime spawning remain separate integration checks.
