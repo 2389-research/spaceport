@@ -29,7 +29,7 @@ fn system_notification_click_opens_its_origin_and_rejects_a_reconnect(
             delay_seconds: 0,
             ..Default::default()
         };
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         remote.toasts.receive([first]);
         view.endpoints.push(remote);
     });

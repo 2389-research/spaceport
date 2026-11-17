@@ -21,7 +21,7 @@ fn core_group_does_not_show_the_legacy_reconnect_overlay(cx: &mut gpui::TestAppC
             },
         );
         view.update(cx, |view, cx| {
-            view.endpoints[0].outage = Some("legacy connection lost".into());
+            view.endpoints[0].lose_connection_for_test("legacy connection lost");
             assert!(view.reconnecting());
 
             let key = CoreGroupKey::new("hub-a", None, "spaceport", group).unwrap();

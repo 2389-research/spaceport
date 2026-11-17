@@ -24,7 +24,7 @@ fn noticed(
     let inbox = endpoint.connection.inbox.clone();
     let generation = view.update(cx, |view, cx| {
         view.endpoints.truncate(1);
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.push(endpoint);
         view.selected_endpoint = 1;
         view.options = ConnectOptions::default();

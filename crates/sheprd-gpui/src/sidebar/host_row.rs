@@ -179,7 +179,7 @@ impl SheprdWindow {
                     look.washed(row, &key, mark, layer)
                 }
             })
-            .text_color(rgb(if endpoint.enabled {
+            .text_color(rgb(if endpoint.enabled() {
                 theme.foreground
             } else {
                 theme.muted
@@ -232,7 +232,7 @@ impl SheprdWindow {
                             origin,
                             format!("{prefix}host-origin-{endpoint_id}"),
                             icon_size,
-                            if endpoint.enabled {
+                            if endpoint.enabled() {
                                 theme.subtext()
                             } else {
                                 theme.muted

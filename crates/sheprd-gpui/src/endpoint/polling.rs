@@ -134,7 +134,7 @@ impl SheprdWindow {
                 },
             );
             changed = changed.max(updated);
-            if endpoint.may_dial() && Instant::now() >= endpoint.retry_at {
+            if endpoint.may_dial() && Instant::now() >= endpoint.retry_at() {
                 endpoint.connect(self.options, index == 0 && self.selected_endpoint == 0);
                 selected_changed |= index == self.selected_endpoint;
                 changed = Redraw::Window;
@@ -320,7 +320,7 @@ impl SheprdWindow {
         self.endpoints
             .iter()
             .skip(1)
-            .filter(|endpoint| endpoint.enabled)
+            .filter(|endpoint| endpoint.enabled())
             .filter_map(|endpoint| {
                 Some((
                     endpoint.id.clone(),

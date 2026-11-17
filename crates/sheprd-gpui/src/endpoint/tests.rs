@@ -2,6 +2,7 @@
 use super::*;
 use sheprd_client::{ClientEvent, SavedHost};
 
+mod catalog_link;
 mod en_xa;
 mod follow_focus;
 mod live_of;
@@ -435,7 +436,7 @@ fn timeout_and_return_to_local_do_not_wait_for_remote_release(cx: &mut gpui::Tes
         assert!(current(view));
         view.reconcile_catalog(vec![host("remote", true)], Vec::new(), cx);
         for endpoint in &mut view.endpoints {
-            endpoint.detached = true;
+            endpoint.detach_for_test();
         }
         let _ = view.select_endpoint("ssh:remote", cx);
         assert!(!current(view));
