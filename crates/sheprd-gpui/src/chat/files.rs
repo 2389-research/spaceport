@@ -224,6 +224,7 @@ impl SheprdWindow {
                     .spawn(async move { sheprd_client::remove_uploaded_files(&host, &paths) })
                     .await;
                 if let Err(error) = cleanup {
+                    // i18n: data
                     crate::storage_warning::warn_storage_failure("Chat upload cleanup", &error);
                     tracing::warn!(%error, "Unclaimed chat upload cleanup failed");
                 }
