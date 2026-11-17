@@ -8,6 +8,40 @@ Keep wire and saved representations separate from these private states.
 The [implementation plan](plans/2026-11-17-explicit-state-machines.md) lists all 15 conversions and their dependencies.
 The [earlier SIFT progress](sift-audit-2026-11-13-progress.md) records preceding conversions.
 
+## Core terminal spawning — 1w6g
+
+[`core_terminals/spawning.rs`](../crates/sheprd-gpui/src/core_terminals/spawning.rs) owns `Spawning`.
+Its states are Idle, Queued(FIFO), and Running(purpose, receiver, FIFO).
+Only `Spawning::transition(Event)` mutates the state or queue.
+
+| Event | Transition or effect |
+| --- | --- |
+| Queue | Retain the complete request and captured Core identity; refuse the newest when 64 requests wait |
+| Start | Remove the oldest request; validate its Core and purpose; submit one worker |
+| Poll | Consume a completed or disconnected worker once; preserve its waiting successors |
+| Unavailable | Clear waiting requests while retaining an already submitted worker |
+
+Completion placement always attempts to start the next request.
+Success, placement refusal, and errors therefore cannot strand the FIFO.
+The worker retains its original backend and performs blocking work off the UI thread.
+A disconnected receiver has an uncertain outcome and never requeues its request.
+A stale Core request is refused before submission.
+Splits retain their saved tab's Core identity, even while the hub is absent.
+Unscoped splits require fresh catalog ownership and a matching retained chat target.
+Unknown or conflicting targets return a typed refusal before enqueueing.
+Worker creation failures use the typed completion path and preserve FIFO draining.
+Core terminals remain runtime-owned when a view disappears.
+
+### Verification
+
+- [Queue integration tests](../crates/sheprd-gpui/src/core_terminals/tests/spawn_queue.rs) observe framed requests and post-placement draining.
+- [Owner tests](../crates/sheprd-gpui/src/core_terminals/spawning/tests.rs) cover bounds, Core mismatch, unavailable cleanup, and uncertain completion.
+- Clean `cargo test --locked -p sheprd-gpui --bin spaceport core_terminals::`: 118 passed, eight opt-in tests ignored.
+- Clean chat checks passed 495 tests, including keyboard target-identity regressions.
+- Default and integration-feature Clippy, quick checks, and independent follow-up review passed.
+
+Native GUI and isolated real-runtime spawning remain separate integration checks.
+
 ## Chat file work — xtjm
 
 [`chat/files.rs`](../crates/sheprd-gpui/src/chat/files.rs) owns each pane's unfinished file operations.

@@ -1,3 +1,5 @@
+// ABOUTME: Starts and presents ACP chats in Core terminal panes.
+// ABOUTME: Preserves runtime labels and reports refused spawn requests.
 //! Chats in herdr-core (Herdr 2) panes. herdr-core keeps no pane metadata
 //! a program could report its endpoint through, so the window chooses the
 //! endpoint itself when it starts `herdr-acp` in a terminal: it passes the
@@ -101,6 +103,15 @@ impl SheprdWindow {
         targets(self.core_terminals.chat_terminals(cx))
     }
 
+    /// A retained chat must still name the current terminal's complete target after a Core reconnect.
+    pub(crate) fn core_chat_matches_terminal(&self, info: &TerminalInfo) -> bool {
+        let current = targets([info]).pop();
+        self.chats
+            .panes()
+            .filter(|pane| matches!(&pane.target.surface, Surface::Core(id) if id == &info.id))
+            .all(|pane| current.as_ref() == Some(&pane.target))
+    }
+
     /// Splits `tab`'s pane in use with a chat running `agent`, beside it in
     /// its folder.
     pub(crate) fn start_core_chat(
@@ -126,7 +137,6 @@ impl SheprdWindow {
             &EndpointId::random(),
             &self.config.chat.env,
         );
-        self.chats.last_started = Some(agent);
         self.start_core_program(
             Purpose::Split {
                 tab,
@@ -134,7 +144,10 @@ impl SheprdWindow {
                 axis: crate::core_terminals::panes::Axis::Row,
             },
             spawn,
-        );
+            cx,
+        )
+        .map_err(|error| super::StartError::Request(std::sync::Arc::new(error)))?;
+        self.chats.last_started = Some(agent);
         Ok(())
     }
 
