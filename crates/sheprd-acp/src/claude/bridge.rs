@@ -21,6 +21,8 @@ use crate::{
     rpc::Inbound,
 };
 
+mod turn;
+
 /// What a control request this side sent is waiting for.
 #[derive(Debug)]
 enum Control {
@@ -56,20 +58,18 @@ pub(super) struct Bridge {
     calls: HashMap<String, Call>,
     controls: HashMap<String, Control>,
     handshake: Handshake,
-    interrupted: bool,
     /// The message Claude is streaming now.
     message: Option<String>,
     next_control: u64,
     next_request: i64,
     /// `session/new` or `session/load`, answered once Claude's handshake is.
     opening: Option<wire::RequestId>,
-    /// The running `session/prompt`, answered by Claude's `result`.
-    prompt: Option<wire::RequestId>,
     session: String,
     /// Messages whose text came in pieces, so the whole message that follows
     /// is not shown again.
     streamed: HashSet<String>,
     tasks: Tasks,
+    turn: turn::Turn,
 }
 
 impl Bridge {
@@ -80,15 +80,14 @@ impl Bridge {
             calls: HashMap::new(),
             controls: HashMap::new(),
             handshake: Handshake::Waiting,
-            interrupted: false,
             message: None,
             next_control: 0,
             next_request: 0,
             opening: None,
-            prompt: None,
             session,
             streamed: HashSet::new(),
             tasks: Tasks::default(),
+            turn: turn::Turn::default(),
         }
     }
 }
@@ -190,11 +189,9 @@ impl Bridge {
         let Ok(request) = serde_json::from_value::<wire::PromptRequest>(params) else {
             return vec![reply(id, Err(wire::Error::invalid_params()))];
         };
-        if self.prompt.is_some() {
+        if let turn::Effect::Busy(id) = self.turn.transition(turn::Event::Start(id)) {
             return vec![reply(id, Err(failure(out::BUSY)))];
         }
-        self.prompt = Some(id);
-        self.interrupted = false;
         let content: Vec<Value> = request.prompt.iter().filter_map(super::content).collect();
         vec![Out::Harness(json!({
             "type": "user",
@@ -205,10 +202,12 @@ impl Bridge {
     }
 
     fn cancel(&mut self) -> Vec<Out> {
-        if self.prompt.is_none() || self.interrupted {
+        if !matches!(
+            self.turn.transition(turn::Event::Cancel),
+            turn::Effect::Interrupt
+        ) {
             return Vec::new();
         }
-        self.interrupted = true;
         vec![self.control(json!({"subtype": "interrupt"}), Control::Interrupt)]
     }
 
@@ -652,12 +651,16 @@ impl Bridge {
             .map(|usage| self.update(wire::SessionUpdate::UsageUpdate(usage)))
             .into_iter()
             .collect();
-        let Some(id) = self.prompt.take() else {
+        let turn::Effect::Completed {
+            prompt: id,
+            cancelled,
+        } = self.turn.transition(turn::Event::Complete)
+        else {
             return outs;
         };
         let field = |key: &str| message.get(key).and_then(Value::as_str);
         let failed = message.get("is_error").and_then(Value::as_bool) == Some(true);
-        let stop = match (self.interrupted, field("subtype")) {
+        let stop = match (cancelled, field("subtype")) {
             (true, _) => Ok(wire::StopReason::Cancelled),
             (false, Some("success")) if !failed => Ok(match field("stop_reason") {
                 Some("max_tokens") => wire::StopReason::MaxTokens,
@@ -669,7 +672,6 @@ impl Bridge {
             }
             (false, subtype) => Err(error_text(message, subtype)),
         };
-        self.interrupted = false;
         let stopped = self.background.turn_ended();
         outs.extend(
             stopped

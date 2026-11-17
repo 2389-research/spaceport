@@ -16,6 +16,7 @@ use crate::{
 };
 
 mod opening;
+mod turn;
 
 /// What a request to Codex is waiting for.
 #[derive(Debug)]
@@ -37,17 +38,13 @@ pub(super) struct Bridge {
     next_request: i64,
     opening: opening::State,
     pending: HashMap<i64, Pending>,
-    /// The running `session/prompt`, answered when its turn completes.
-    prompt: Option<wire::RequestId>,
     settings: Settings,
     /// Items whose text came in pieces, so their whole text is not shown
     /// again.
     streamed: HashSet<String>,
     /// The turn's tokens, from the last usage update.
     tokens: Option<PromptUsage>,
-    turn: Option<String>,
-    /// The session asked to cancel before the turn had an id.
-    interrupting: bool,
+    turn: turn::Turn,
 }
 
 impl Translator for Bridge {
@@ -183,14 +180,18 @@ impl Bridge {
         let Some(thread) = self.opening.session().map(str::to_owned) else {
             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
         };
-        if self.prompt.is_some() {
+        if !self.turn.is_idle() {
             return vec![out::reply(id, Err(out::failure(out::BUSY)))];
         }
         let Ok(request) = serde_json::from_value::<wire::PromptRequest>(params.clone()) else {
             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
         };
-        self.prompt = Some(id);
-        self.interrupting = false;
+        if let turn::Effect::Busy(id) = self.turn.transition(turn::Event::Start {
+            prompt: id,
+            request: self.next_id + 1,
+        }) {
+            return vec![out::reply(id, Err(out::failure(out::BUSY)))];
+        }
         self.tokens = None;
         let input: Vec<Value> = request.prompt.iter().filter_map(input).collect();
         let mut turn = self.settings.turn();
@@ -200,25 +201,26 @@ impl Bridge {
     }
 
     fn cancel(&mut self) -> Vec<Out> {
-        if self.prompt.is_none() {
-            return Vec::new();
-        }
-        match (self.opening.session().map(str::to_owned), self.turn.clone()) {
-            (Some(thread), Some(turn)) => vec![self.call(
+        let effect = self.turn.transition(turn::Event::Cancel);
+        self.turn_effect(effect)
+    }
+
+    fn turn_effect(&mut self, effect: turn::Effect) -> Vec<Out> {
+        match effect {
+            turn::Effect::Interrupt(turn) => vec![self.call(
                 "turn/interrupt",
-                json!({"threadId": thread, "turnId": turn}),
+                json!({"threadId": self.session(), "turnId": turn}),
                 Pending::Interrupt,
             )],
-            // The turn's id comes with its start; it is interrupted then.
-            _ => {
-                self.interrupting = true;
-                Vec::new()
-            }
+            _ => Vec::new(),
         }
     }
 
     fn response(&mut self, id: &Value, message: &Value) -> Vec<Out> {
-        let Some(pending) = id.as_i64().and_then(|id| self.pending.remove(&id)) else {
+        let Some(id) = id.as_i64() else {
+            return Vec::new();
+        };
+        let Some(pending) = self.pending.remove(&id) else {
             return Vec::new();
         };
         let result = match message.get("error") {
@@ -236,27 +238,25 @@ impl Bridge {
             Pending::Models => self.transition_opening(opening::Event::Models(result)),
             Pending::Thread => self.transition_opening(opening::Event::Thread(result)),
             Pending::Turn => match result {
-                Ok(started) => self.turn_started(started.pointer("/turn/id")),
-                Err(message) => self
-                    .prompt
-                    .take()
-                    .map(|id| out::reply(id, Err(message)))
-                    .into_iter()
-                    .collect(),
+                Ok(started) => self.turn_started(Some(id), started.pointer("/turn/id")),
+                Err(message) => match self.turn.transition(turn::Event::Refused(id)) {
+                    turn::Effect::Completed(id) => vec![out::reply(id, Err(message))],
+                    _ => Vec::new(),
+                },
             },
             Pending::Interrupt => Vec::new(),
         }
     }
 
-    fn turn_started(&mut self, turn: Option<&Value>) -> Vec<Out> {
+    fn turn_started(&mut self, request: Option<i64>, turn: Option<&Value>) -> Vec<Out> {
         let Some(turn) = turn.and_then(Value::as_str) else {
             return Vec::new();
         };
-        self.turn = Some(turn.to_owned());
-        if std::mem::take(&mut self.interrupting) {
-            return self.cancel();
-        }
-        Vec::new()
+        let effect = self.turn.transition(turn::Event::Started {
+            request,
+            id: turn.to_owned(),
+        });
+        self.turn_effect(effect)
     }
 
     fn server_request(&mut self, method: &str, id: Value, params: &Value) -> Vec<Out> {
@@ -315,7 +315,7 @@ impl Bridge {
                     .collect()
             }
             "item/completed" => self.item_completed(params.get("item")),
-            "turn/started" => self.turn_started(params.pointer("/turn/id")),
+            "turn/started" => self.turn_started(None, params.pointer("/turn/id")),
             "turn/completed" => self.turn_completed(params.get("turn")),
             "turn/plan/updated" => vec![out::update(
                 &session,
@@ -456,16 +456,22 @@ impl Bridge {
     }
 
     fn turn_completed(&mut self, turn: Option<&Value>) -> Vec<Out> {
+        let completed = turn
+            .and_then(|turn| turn.get("id"))
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        let effect = self.turn.transition(turn::Event::Complete(completed));
+        if matches!(effect, turn::Effect::Stale) {
+            return Vec::new();
+        }
         let backgrounded = self.background.turn_ended();
         let mut outs: Vec<Out> = backgrounded
             .into_iter()
             .map(|started| out::activity(self.session(), started))
             .collect();
-        let Some(id) = self.prompt.take() else {
+        let turn::Effect::Completed(id) = effect else {
             return outs;
         };
-        self.turn = None;
-        self.interrupting = false;
         self.streamed.clear();
         let status = turn
             .and_then(|turn| turn.get("status"))

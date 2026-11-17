@@ -424,3 +424,26 @@ No extra reaper or shared-executor wait was added.
 - Both Clippy configurations, quick checks, and renewed independent review passed.
 
 Native Windows transport cancellation and live provider sessions remain separate checks.
+
+## Provider turn ownership — rd2q
+
+Each bridge stores its turn in one enum with a private `Turn::transition` writer.
+[Claude](../crates/sheprd-acp/src/claude/bridge/turn.rs) and [Pi](../crates/sheprd-acp/src/pi/bridge/turn.rs) use Idle, Running, and Interrupting.
+[Codex](../crates/sheprd-acp/src/codex/bridge/turn.rs) also uses Starting for a prompt awaiting its turn identity.
+Start refuses overlapping prompts; Cancel emits one interruption.
+A completion or matching refusal releases the stored prompt.
+Codex defers cancellation during Starting and interrupts once its identity arrives.
+Known native request and turn identities fence delayed replies, including reused ACP request IDs.
+Claude retains its existing Cancelled result when cancellation races natural completion.
+Pi and Codex preserve the provider's authoritative stop reason.
+Claude/Pi completion messages and early Codex completion lack reliable correlation identities.
+Those existing provider uncertainties remain explicit.
+Opening and Herdr activity-report owners remain unchanged.
+
+### Verification
+
+- Provider turn-state topic tests pin prior behavior and stale/duplicate-cancel regressions.
+- Root clean-member verification passed 437 ACP unit and five process/branding tests.
+- All-target/all-feature Clippy, quick checks, and independent provider review passed.
+
+Live provider and cross-platform execution remain separate checks.
