@@ -24,9 +24,9 @@
 #ifndef OutputDir
   #error Pass /DOutputDir=DIRECTORY
 #endif
-; Optional: the release workflow passes /DSignTool=NAME with a matching
-; /SNAME=COMMAND, and ISCC then Authenticode-signs the uninstaller and Setup.exe.
-; Local and pull request builds pass neither and stay unsigned.
+; Optional: /DSignTool=NAME with a matching /SNAME=COMMAND makes ISCC
+; Authenticode-sign the uninstaller and Setup.exe. Nothing passes them since
+; the upstream release workflow was removed, so every build stays unsigned.
 
 #define AppName "Sheprd"
 #define StartupName "Herdr UI"

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Authenticode-sign the Windows release zip's executables in the release workflow.
+"""Authenticode-sign the Windows release zip's executables in a signing job.
+
+No workflow runs this since the upstream release workflow was removed.
 
   unpack ZIP DIRECTORY
       Extract the tested release zip that package-windows.py wrote

@@ -10,9 +10,10 @@ Build the per-user Windows installer, Sheprd-VERSION-TARGET-setup.exe.
       Compile sheprd.iss over the tree of the release ZIP that
       package-windows.py wrote, so the installer holds exactly the zip's files,
       and print the installer's path. With --sign, ISCC Authenticode-signs the
-      uninstaller it embeds and Setup.exe through windows-sign-file.ps1, which
-      only the release workflow's windows-sign job can run; local and pull
-      request builds leave it out and stay unsigned.
+      uninstaller it embeds and Setup.exe through windows-sign-file.ps1.
+      Nothing passes it: its only caller, the upstream release workflow's
+      windows-sign job, was removed with that workflow, so every build here
+      stays unsigned (see README.md, Windows Signing).
   smoke [--signed] INSTALLER
       On Windows: install silently into a scratch directory with the PATH
       task, check the files, their subsystems, spaceport.exe's output, the
