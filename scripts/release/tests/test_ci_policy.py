@@ -67,6 +67,7 @@ class CiPolicy(unittest.TestCase):
             "github.event.pull_request.head.repo.full_name": "larry0x/spaceport",
             "needs.commits.outputs.code": "true",
             "needs.commits.outputs.windows_package": "true",
+            "needs.commits.outputs.macos_release": "true",
             "vars.WINDOWS_ENABLED": "",
             **overrides,
         }
@@ -176,13 +177,21 @@ class CiPolicy(unittest.TestCase):
                                  job not in ("checks", "build-macos", *WINDOWS_JOBS),
                                  (job, code))
 
+    def test_macos_release_builds_run_only_for_their_inputs(self):
+        for inputs, expected in (("true", True), ("false", False), ("", False)):
+            context = self.context(**{"needs.commits.outputs.macos_release": inputs})
+            for job in PR_JOBS:
+                self.assertEqual(self.runs(job, context),
+                                 job not in WINDOWS_JOBS and (expected or job != "build-macos"),
+                                 (job, inputs))
+
     def test_required_gate_rejects_failures_skips_and_missing_detection(self):
         # Run the actual shell gate, including the docs-only exception.
         script = JOBS["checks-passed"].split("        run: |\n", 1)[1]
         script = "\n".join(line[10:] for line in script.splitlines() if line.startswith("          "))
 
         def gate(code, checks, windows, native, commits, package_inputs="false", package="skipped",
-                 event="push", macos=None):
+                 event="push", macos=None, macos_inputs="true"):
             if macos is None:
                 macos = "success" if code == "true" and event == "pull_request" else "skipped"
             return subprocess.run(
@@ -190,7 +199,8 @@ class CiPolicy(unittest.TestCase):
                 env={**os.environ, "CODE": code, "RESULT": checks, "WINDOWS": windows,
                      "NATIVE": native, "COMMITS": commits, "WINDOWS_ENABLED": "true",
                      "PACKAGE_INPUTS": package_inputs, "PACKAGE": package,
-                     "EVENT": event, "MACOS_RELEASE": macos},
+                     "EVENT": event, "MACOS_RELEASE": macos,
+                     "MACOS_RELEASE_INPUTS": macos_inputs},
             ).returncode == 0
 
         for code, checks, windows, commits in itertools.product(
@@ -213,15 +223,21 @@ class CiPolicy(unittest.TestCase):
                         or (inputs == "false" and package == "skipped"))
             self.assertEqual(gate("true", "success", "success", "success", "success", inputs, package),
                              expected, (inputs, package))
-        # The macOS release builds run, and must pass, on pull requests with
-        # code changes only; anywhere else they must have been skipped.
-        for code, event, macos in itertools.product(
+        # The macOS release builds run, and must pass, on pull requests that
+        # change their inputs; anywhere else they must have been skipped.
+        # Missing detection on a pull request fails rather than skipping.
+        for code, event, inputs, macos in itertools.product(
                 ("true", "false"), ("pull_request", "push", "workflow_dispatch"),
-                ("success", "failure", "cancelled", "skipped")):
+                ("true", "false", ""), ("success", "failure", "cancelled", "skipped")):
             platform = "success" if code == "true" else "skipped"
-            expected = macos == ("success" if code == "true" and event == "pull_request" else "skipped")
-            self.assertEqual(gate(code, platform, platform, platform, "success", event=event, macos=macos),
-                             expected, (code, event, macos))
+            if code == "true" and event == "pull_request":
+                expected = ((inputs == "true" and macos == "success")
+                            or (inputs == "false" and macos == "skipped"))
+            else:
+                expected = macos == "skipped"
+            self.assertEqual(gate(code, platform, platform, platform, "success", event=event,
+                                  macos=macos, macos_inputs=inputs),
+                             expected, (code, event, inputs, macos))
 
     def test_ci_has_no_privileged_trigger_or_credentials(self):
         triggers = WORKFLOW.split("\npermissions:", 1)[0]

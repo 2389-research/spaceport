@@ -66,6 +66,7 @@ jobs:
     outputs:
       code: ${{ steps.changes.outputs.code }}
       windows_package: ${{ steps.changes.outputs.windows_package }}
+      macos_release: ${{ steps.changes.outputs.macos_release }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -394,6 +395,7 @@ jobs:
           COMMITS: ${{ needs.commits.result }}
           CODE: ${{ needs.commits.outputs.code }}
           PACKAGE_INPUTS: ${{ needs.commits.outputs.windows_package }}
+          MACOS_RELEASE_INPUTS: ${{ needs.commits.outputs.macos_release }}
         run: |
           test "$COMMITS" = success || exit 1
           if [ "$CODE" = true ]; then
@@ -401,9 +403,14 @@ jobs:
           else
             test "$CODE" = false && test "$RESULT" = skipped || exit 1
           fi
-          # The macOS release builds run on pull requests only.
+          # The macOS release builds run on pull requests only, and only
+          # when their inputs change.
           if [ "$CODE" = true ] && [ "$EVENT" = pull_request ]; then
-            test "$MACOS_RELEASE" = success || exit 1
+            if [ "$MACOS_RELEASE_INPUTS" = true ]; then
+              test "$MACOS_RELEASE" = success || exit 1
+            else
+              test "$MACOS_RELEASE_INPUTS" = false && test "$MACOS_RELEASE" = skipped || exit 1
+            fi
           else
             test "$MACOS_RELEASE" = skipped || exit 1
           fi
@@ -482,9 +489,14 @@ jobs:
   # requests only. On main they would hold two of the account-wide macOS
   # runners that the macOS preview and cache workflows also use. The separate
   # dependency warmer supplies main caches without adding PR cache copies.
+  # Pull requests waited longer for a macOS runner than their jobs ran, so
+  # these run only when a release build's own inputs change (ci-changes.sh).
+  # The warmer's scheduled run exercises the same builds and suite on main
+  # for every other change.
   build-macos:
     if: >-
       needs.commits.outputs.code == 'true' &&
+      needs.commits.outputs.macos_release == 'true' &&
       github.repository == '2389-research/spaceport' &&
       github.event_name == 'pull_request'
     name: Release (${{ matrix.target }})

@@ -44,10 +44,24 @@ class ReleaseTargets(unittest.TestCase):
         self.assertIn("github.ref == 'refs/heads/main'", jobs["build"])
         self.assertNotIn("github.event_name == 'pull_request'", jobs["build"])
         self.assertNotIn("apple-darwin", jobs["build"])
-        # The macOS release builds hold no runner on main; pull requests keep
-        # their release-mode CLI suite, and the gate requires it.
+        # The macOS release builds hold no runner on main. Pull requests that
+        # change their inputs keep the release-mode CLI suite, and the gate
+        # requires it then, and its absence otherwise. The scheduled cache
+        # warmer runs the same suite on main for every other change.
         macos = jobs["build-macos"]
         self.assertIn("github.event_name == 'pull_request'", macos)
+        self.assertIn("needs.commits.outputs.macos_release == 'true'", macos)
+        self.assertIn("macos_release: ${{ steps.changes.outputs.macos_release }}", jobs["commits"])
+        self.assertIn("MACOS_RELEASE_INPUTS: ${{ needs.commits.outputs.macos_release }}",
+                      jobs["checks-passed"])
+        self.assertIn('test "$MACOS_RELEASE_INPUTS" = false && test "$MACOS_RELEASE" = skipped',
+                      jobs["checks-passed"])
+        warmer = (ROOT / ".github/workflows/cache-macos.yml").read_text()
+        self.assertRegex(warmer, r"\n  schedule:\n    - cron: '\d+ \d+ \* \* \*'\n")
+        self.assertEqual(warmer.count("(github.event_name == 'schedule' ||"), 2)
+        for command in ('cargo build --locked --release -p sheprd-gpui --target "$TARGET"',
+                        'cargo test --locked --release -p sheprd-gpui --test cli --target "$TARGET"\n'):
+            self.assertIn(command, warmer)
         self.assertNotIn("refs/heads/main", macos)
         self.assertIn("target: [aarch64-apple-darwin, x86_64-apple-darwin]\n", macos)
         for command in ('cargo build --locked --release -p sheprd-gpui --target "$TARGET"',

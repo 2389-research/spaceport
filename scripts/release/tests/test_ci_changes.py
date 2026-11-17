@@ -118,3 +118,34 @@ class WindowsPackageChanges(GitFixture):
     def test_manual_and_unknown_base_run_the_installer_check(self):
         self.assertEqual(self.outputs("workflow_dispatch")["windows_package"], "true")
         self.assertEqual(self.outputs("push", "0" * 40)["windows_package"], "true")
+
+
+class MacosReleaseChanges(GitFixture):
+    """The macOS release builds run on pull requests only for their own inputs."""
+
+    def test_release_build_inputs_run_the_macos_release_builds(self):
+        for path in ("Cargo.toml", "Cargo.lock", ".cargo/config.toml", "rust-toolchain.toml",
+                     "crates/sheprd-client/Cargo.toml", "crates/sheprd-launcher/build.rs",
+                     "crates/sheprd-gpui/build.rs", "crates/sheprd-gpui/release_version.rs",
+                     "crates/sheprd-gpui/src/main.rs", "crates/sheprd-gpui/src/cli.rs",
+                     "crates/sheprd-gpui/src/cli/parse.rs", "crates/sheprd-gpui/tests/cli.rs",
+                     "crates/sheprd-gpui/tests/cli/help.rs", "crates/sheprd-gpui/tests/support/mod.rs",
+                     ".github/workflows/ci.yml"):
+            self.base = self.git("rev-parse", "HEAD").strip()
+            self.commit_path(path)
+            outputs = self.outputs()
+            self.assertEqual(outputs["macos_release"], "true", path)
+            # The job also needs `code`, so every input must be a build input.
+            self.assertEqual(outputs["code"], "true", path)
+
+    def test_other_changes_skip_the_macos_release_builds(self):
+        for path in ("crates/sheprd-gpui/src/app.rs", "crates/sheprd-client/src/lib.rs",
+                     "crates/sheprd-gpui/tests/live_gui.rs", "crates/sheprd-gpui/locales/en-US/app.ftl",
+                     "README.md", "scripts/release/package-windows.py"):
+            self.base = self.git("rev-parse", "HEAD").strip()
+            self.commit_path(path)
+            self.assertEqual(self.outputs()["macos_release"], "false", path)
+
+    def test_manual_and_unknown_base_run_the_macos_release_builds(self):
+        self.assertEqual(self.outputs("workflow_dispatch")["macos_release"], "true")
+        self.assertEqual(self.outputs("push", "0" * 40)["macos_release"], "true")
