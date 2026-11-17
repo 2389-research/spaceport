@@ -1,0 +1,421 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T21:31:29Z",
+  "title": "Design System: Spaceport landing page",
+  "extensions": {
+    "colorMeta": {
+      "flame": {
+        "role": "primary",
+        "displayName": "Flame",
+        "canonical": "#f4741c",
+        "tonalRamp": [
+          "oklch(20% 0.05 50)",
+          "oklch(32% 0.09 50)",
+          "oklch(44% 0.13 50)",
+          "oklch(56% 0.16 50)",
+          "oklch(69% 0.18 50)",
+          "oklch(79% 0.13 55)",
+          "oklch(88% 0.08 60)",
+          "oklch(95% 0.03 65)"
+        ]
+      },
+      "flame-deep": {
+        "role": "primary",
+        "displayName": "Flame Deep",
+        "canonical": "#d95a0c",
+        "tonalRamp": [
+          "oklch(18% 0.05 45)",
+          "oklch(30% 0.09 45)",
+          "oklch(42% 0.13 45)",
+          "oklch(52% 0.16 45)",
+          "oklch(61% 0.17 45)",
+          "oklch(74% 0.13 50)",
+          "oklch(86% 0.07 55)",
+          "oklch(95% 0.03 60)"
+        ]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Rocket Red",
+        "canonical": "#c4230f",
+        "tonalRamp": [
+          "oklch(16% 0.05 32)",
+          "oklch(28% 0.10 32)",
+          "oklch(40% 0.15 32)",
+          "oklch(52% 0.19 32)",
+          "oklch(63% 0.17 32)",
+          "oklch(75% 0.12 35)",
+          "oklch(87% 0.06 38)",
+          "oklch(95% 0.02 40)"
+        ]
+      },
+      "cyan": {
+        "role": "tertiary",
+        "displayName": "Terminal Cyan",
+        "canonical": "#2fe0ee",
+        "tonalRamp": [
+          "oklch(18% 0.04 200)",
+          "oklch(30% 0.06 200)",
+          "oklch(44% 0.09 200)",
+          "oklch(58% 0.11 200)",
+          "oklch(71% 0.13 200)",
+          "oklch(83% 0.13 200)",
+          "oklch(91% 0.07 200)",
+          "oklch(96% 0.03 200)"
+        ]
+      },
+      "violet": {
+        "role": "tertiary",
+        "displayName": "Nebula Violet",
+        "canonical": "#a98bff",
+        "tonalRamp": [
+          "oklch(18% 0.05 290)",
+          "oklch(30% 0.09 290)",
+          "oklch(44% 0.14 290)",
+          "oklch(58% 0.17 290)",
+          "oklch(71% 0.16 290)",
+          "oklch(81% 0.11 290)",
+          "oklch(90% 0.06 290)",
+          "oklch(96% 0.02 290)"
+        ]
+      },
+      "navy": {
+        "role": "neutral",
+        "displayName": "Nebula Navy",
+        "canonical": "#17132e",
+        "tonalRamp": [
+          "oklch(15% 0.04 285)",
+          "oklch(21% 0.06 285)",
+          "oklch(32% 0.08 285)",
+          "oklch(45% 0.09 285)",
+          "oklch(58% 0.08 285)",
+          "oklch(72% 0.06 285)",
+          "oklch(85% 0.03 285)",
+          "oklch(95% 0.01 285)"
+        ]
+      },
+      "navy-soft": {
+        "role": "neutral",
+        "displayName": "Navy Soft",
+        "canonical": "#262048",
+        "tonalRamp": [
+          "oklch(16% 0.04 285)",
+          "oklch(28% 0.08 285)",
+          "oklch(38% 0.09 285)",
+          "oklch(50% 0.09 285)",
+          "oklch(62% 0.08 285)",
+          "oklch(74% 0.06 285)",
+          "oklch(86% 0.03 285)",
+          "oklch(95% 0.01 285)"
+        ]
+      },
+      "cream": {
+        "role": "neutral",
+        "displayName": "Cream",
+        "canonical": "#f6ecd6",
+        "tonalRamp": [
+          "oklch(18% 0.02 88)",
+          "oklch(32% 0.03 88)",
+          "oklch(46% 0.04 88)",
+          "oklch(60% 0.045 88)",
+          "oklch(74% 0.045 88)",
+          "oklch(85% 0.04 88)",
+          "oklch(94% 0.03 88)",
+          "oklch(97% 0.015 88)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f1e7d0",
+        "tonalRamp": [
+          "oklch(18% 0.02 88)",
+          "oklch(31% 0.03 88)",
+          "oklch(45% 0.04 88)",
+          "oklch(59% 0.045 88)",
+          "oklch(72% 0.045 88)",
+          "oklch(83% 0.04 88)",
+          "oklch(92.5% 0.032 88)",
+          "oklch(96% 0.015 88)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1d1830",
+        "tonalRamp": [
+          "oklch(15% 0.03 290)",
+          "oklch(22% 0.045 290)",
+          "oklch(34% 0.05 290)",
+          "oklch(47% 0.05 290)",
+          "oklch(60% 0.045 290)",
+          "oklch(73% 0.035 290)",
+          "oklch(86% 0.02 290)",
+          "oklch(95% 0.01 290)"
+        ]
+      },
+      "on-navy-2": {
+        "role": "neutral",
+        "displayName": "Faded Lilac",
+        "canonical": "#cfc4d6",
+        "tonalRamp": [
+          "oklch(18% 0.015 310)",
+          "oklch(32% 0.02 310)",
+          "oklch(46% 0.025 310)",
+          "oklch(60% 0.03 310)",
+          "oklch(72% 0.03 310)",
+          "oklch(83% 0.025 310)",
+          "oklch(91% 0.015 310)",
+          "oklch(96% 0.008 310)"
+        ]
+      },
+      "on-paper-2": {
+        "role": "neutral",
+        "displayName": "Faded Plum",
+        "canonical": "#554a5e",
+        "tonalRamp": [
+          "oklch(17% 0.02 310)",
+          "oklch(30% 0.03 310)",
+          "oklch(43% 0.035 310)",
+          "oklch(56% 0.035 310)",
+          "oklch(68% 0.03 310)",
+          "oklch(80% 0.02 310)",
+          "oklch(90% 0.012 310)",
+          "oklch(96% 0.006 310)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The word SPACEPORT across the full cover width. Uppercase, one line."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The back cover claim. Max 19ch, balanced. Its first line is flame."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section heads on paper pages. Uppercase."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "One short paragraph under a title."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Blurbs and list text. Italic marks asides, captions, and fine print."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Band, nav, edition terms, stamps. Always uppercase and tracked."
+      },
+      "label-strong": {
+        "displayName": "Label Strong",
+        "purpose": "Buttons, blurb heads, ledger heads, byline. Always uppercase and tracked."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Commands and inline code."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sticker",
+        "value": "0 0.5rem 1.1rem rgb(40 8 0 / 0.45)",
+        "purpose": "The sticker at rest."
+      },
+      {
+        "name": "sticker-hover",
+        "value": "0 0.9rem 1.6rem rgb(40 8 0 / 0.5)",
+        "purpose": "The sticker lifted on hover."
+      },
+      {
+        "name": "button",
+        "value": "0 0.4rem 0.9rem rgb(60 10 0 / 0.3)",
+        "purpose": "The download button on paper."
+      },
+      {
+        "name": "window",
+        "value": "0 2.2rem 4rem rgb(0 0 0 / 0.5)",
+        "purpose": "The illustrated window on navy."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Easing for the sticker and button transitions and the sticker slap."
+      },
+      {
+        "name": "slap",
+        "value": "0.7s var(--ease) 0.25s backwards, from rotate(-26deg) scale(1.5)",
+        "purpose": "The sticker lands on the cover once at load."
+      },
+      {
+        "name": "sticker-transition",
+        "value": "0.35s",
+        "purpose": "Sticker hover and active transform and shadow."
+      },
+      {
+        "name": "button-transition",
+        "value": "0.25s",
+        "purpose": "Button hover lift and background."
+      },
+      {
+        "name": "type",
+        "value": "1.6s steps(32) 0.3s backwards",
+        "purpose": "The last terminal command types out once when half the window is in view."
+      },
+      {
+        "name": "blink",
+        "value": "1.1s steps(2) infinite",
+        "purpose": "The terminal caret."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation: none; transition: none; scroll-behavior: auto",
+        "purpose": "All of the above stop under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow-max",
+        "value": "560px"
+      },
+      {
+        "name": "two-column",
+        "value": "640px"
+      },
+      {
+        "name": "cover-wide",
+        "value": "900px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Download Sticker",
+      "kind": "button",
+      "refersTo": "sticker",
+      "description": "The round red download control that overlaps the cover painting.",
+      "html": "<a class=\"ds-sticker\" href=\"#\"><span class=\"ds-sticker-main\">Download the preview</span><span class=\"ds-sticker-sub\">macOS .dmg</span></a>",
+      "css": ".ds-sticker { position: relative; width: 10.5rem; aspect-ratio: 1; border-radius: 50%; display: grid; place-content: center; gap: 0.3rem; padding: 1rem; text-align: center; text-decoration: none; background: var(--red, #c4230f); color: var(--cream, #f6ecd6); font-family: var(--label, 'Barlow Condensed', sans-serif); text-transform: uppercase; transform: rotate(-9deg); box-shadow: 0 0.5rem 1.1rem rgb(40 8 0 / 0.45); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1); } .ds-sticker::after { content: ''; position: absolute; inset: 0.4rem; border: 2px dashed rgb(246 236 214 / 0.6); border-radius: 50%; pointer-events: none; } .ds-sticker-main { font-weight: 700; font-size: 1.55rem; line-height: 0.98; letter-spacing: 0.02em; } .ds-sticker-sub { font-weight: 500; font-size: 1rem; letter-spacing: 0.06em; } .ds-sticker:hover { transform: rotate(-3deg) scale(1.06); box-shadow: 0 0.9rem 1.6rem rgb(40 8 0 / 0.5); } .ds-sticker:active { transform: rotate(-3deg) scale(0.98); } .ds-sticker:focus-visible { outline: 3px solid var(--cyan, #2fe0ee); outline-offset: 3px; } @media (prefers-reduced-motion: reduce) { .ds-sticker { transition: none; } }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The red download button on paper pages.",
+      "html": "<a class=\"ds-btn\" href=\"#\">Download the macOS preview</a>",
+      "css": ".ds-btn { display: inline-block; padding: 1rem 1.6rem; background: var(--red, #c4230f); color: var(--cream, #f6ecd6); font-family: var(--label, 'Barlow Condensed', sans-serif); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.05em; text-transform: uppercase; text-decoration: none; border-radius: 10px; box-shadow: 0 0.4rem 0.9rem rgb(60 10 0 / 0.3); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s; } .ds-btn:hover { transform: translateY(-2px); background: #a81c0a; } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 3px solid var(--cyan, #2fe0ee); outline-offset: 3px; } @media (prefers-reduced-motion: reduce) { .ds-btn { transition: none; } }"
+    },
+    {
+      "name": "Publisher Band",
+      "kind": "nav",
+      "refersTo": "band",
+      "description": "The sticky navy bar with the imprint and section links.",
+      "html": "<header class=\"ds-band\"><a class=\"ds-imprint\" href=\"#\">2389 Research <span>Preview edition</span></a><nav><a href=\"#\">What it does</a><a href=\"#\">Install</a><a href=\"#\">GitHub</a></nav></header>",
+      "css": ".ds-band { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 3rem; padding: 0.4rem 1.5rem; background: var(--navy, #17132e); color: var(--cream, #f6ecd6); font-family: var(--label, 'Barlow Condensed', sans-serif); font-weight: 500; font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase; } .ds-band a { color: inherit; text-decoration: none; padding: 0.35rem 0; } .ds-band a:hover { color: var(--flame, #f4741c); } .ds-band a:focus-visible { outline: 3px solid var(--cyan, #2fe0ee); outline-offset: 3px; border-radius: 2px; } .ds-imprint { font-weight: 700; white-space: nowrap; } .ds-imprint span { font-weight: 500; color: var(--flame, #f4741c); margin-left: 0.6em; } .ds-band nav { display: flex; gap: 1.5rem; white-space: nowrap; }"
+    },
+    {
+      "name": "Stamp",
+      "kind": "chip",
+      "refersTo": "stamp",
+      "description": "A tilted outlined status mark for items not in this edition.",
+      "html": "<span class=\"ds-stamp-row\"><span class=\"ds-stamp\">Not yet</span>Linux and Windows builds</span>",
+      "css": ".ds-stamp-row { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--paper, #f1e7d0); color: var(--ink, #1d1830); font-family: var(--text, 'Spectral', serif); font-size: 1.125rem; } .ds-stamp { flex: none; display: inline-block; min-width: 8.6rem; text-align: center; padding: 0.1rem 0.6rem; border: 2px solid var(--red, #c4230f); border-radius: 4px; color: var(--red, #c4230f); font-family: var(--label, 'Barlow Condensed', sans-serif); font-weight: 700; font-size: 1rem; letter-spacing: 0.12em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Edition List",
+      "kind": "custom",
+      "description": "Ruled facts on the cover: a small tracked term over a large value.",
+      "html": "<dl class=\"ds-edition\"><div><dt>Edition</dt><dd>macOS preview</dd></div><div><dt>Build</dt><dd>Signed and notarized</dd></div></dl>",
+      "css": ".ds-edition { display: grid; gap: 0.9rem; margin: 0; padding: 1.5rem; background: var(--flame, #f4741c); color: var(--navy, #17132e); font-family: var(--label, 'Barlow Condensed', sans-serif); } .ds-edition div { border-top: 2px solid var(--navy, #17132e); padding-top: 0.45rem; } .ds-edition dt { font-weight: 500; font-size: 0.95rem; letter-spacing: 0.12em; text-transform: uppercase; } .ds-edition dd { margin: 0; font-weight: 700; font-size: 1.45rem; line-height: 1.1; }"
+    },
+    {
+      "name": "Ledger",
+      "kind": "custom",
+      "description": "Two ruled columns that say who does what. The first head is red.",
+      "html": "<div class=\"ds-ledger\"><div><h3>Spaceport</h3><ul><li>Draws your terminals, chats and sidebar</li><li>Sends notifications and plays sounds</li></ul></div><div><h3>Herdr</h3><ul><li>Runs your terminal processes</li><li>Keeps your sessions and their state</li></ul></div></div>",
+      "css": ".ds-ledger { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; padding: 0 1.5rem 1.5rem; background: var(--paper, #f1e7d0); color: var(--ink, #1d1830); border-top: 3px solid var(--ink, #1d1830); font-family: var(--text, 'Spectral', serif); font-size: 1.125rem; line-height: 1.55; } .ds-ledger h3 { margin: 0; font-family: var(--label, 'Barlow Condensed', sans-serif); font-weight: 700; font-size: 1.7rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.7rem 0 0.5rem; } .ds-ledger div:first-child h3 { color: var(--red, #c4230f); } .ds-ledger ul { margin: 0; padding: 0; list-style: none; } .ds-ledger li { padding: 0.65rem 0; border-top: 1px solid rgb(29 24 48 / 0.28); }"
+    },
+    {
+      "name": "Blurb",
+      "kind": "custom",
+      "description": "Back-cover copy: a flame label head, then serif text. No box.",
+      "html": "<p class=\"ds-blurb\"><strong>Native terminals.</strong> Spaceport draws every terminal itself in a native window, in the font and theme you pick.</p>",
+      "css": ".ds-blurb { margin: 0; padding: 1.5rem; max-width: 34ch; background: var(--navy, #17132e); color: var(--cream, #f6ecd6); font-family: var(--text, 'Spectral', serif); font-size: 1.125rem; line-height: 1.55; } .ds-blurb strong { display: block; font-family: var(--label, 'Barlow Condensed', sans-serif); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--flame, #f4741c); line-height: 1.15; margin-bottom: 0.15rem; }"
+    },
+    {
+      "name": "Code Excerpt",
+      "kind": "card",
+      "refersTo": "code-excerpt",
+      "description": "A navy-soft block of real commands with an italic caption.",
+      "html": "<figure class=\"ds-excerpt\"><pre><code>spaceport chat new claude\nspaceport status --json</code></pre><figcaption>From the command reference.</figcaption></figure>",
+      "css": ".ds-excerpt { margin: 0; padding: 1.5rem; background: var(--navy, #17132e); } .ds-excerpt pre { margin: 0; padding: 1.4rem 1.6rem; background: var(--navy-soft, #262048); border-radius: 12px; font-family: var(--mono, ui-monospace, 'SF Mono', Menlo, Consolas, monospace); font-size: 1rem; line-height: 1.8; overflow-x: auto; color: #e6e0f5; } .ds-excerpt figcaption { margin-top: 0.9rem; font-family: var(--text, 'Spectral', serif); font-style: italic; font-size: 1rem; color: var(--on-navy-2, #cfc4d6); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Seventies Paperback",
+    "overview": "The page is one 1970s sci-fi paperback. The visitor scrolls from the front cover to the copyright page. Each section is a part of the book: an orange front cover, a navy back cover, cream interior pages, and a colophon.\n\nThe mood is loud on the cover and calm inside. The cover uses flat cover stock, one painting, and one round red sticker. The inside uses ruled lists and plain serif text. Print parts carry the structure: a publisher band, a spine, an edition list, blurbs, a ledger, and a stamp.\n\nThe page is flat color, not gradients or glass. Depth comes from objects that sit on the cover, such as the painting and the sticker. The page has one theme. It does not switch for dark mode.",
+    "keyCharacteristics": [
+      "One book, read top to bottom: cover, back cover, pages, colophon.",
+      "Three surfaces: flame orange, nebula navy, cream paper.",
+      "Three type voices: wide Michroma titles, Barlow Condensed labels, Spectral text.",
+      "Red is for the download action and for marks stamped on paper.",
+      "Rules and bands divide content. Cards do not.",
+      "Motion is rare: one sticker slap, one typed command, one caret."
+    ],
+    "rules": [
+      {
+        "name": "The Red Means Download Rule",
+        "body": "A filled red shape is a download control. Elsewhere red appears only as a mark on paper: a stamp outline, a step number, one ledger head.",
+        "section": "colors"
+      },
+      {
+        "name": "The Screen Light Rule",
+        "body": "Cyan and violet are light from a screen. Keep them inside the illustrated window and code. The one exception is the cyan focus ring.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Stocks Rule",
+        "body": "Every section sits on flame, navy, or paper. Do not add a fourth surface.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Title Face Rule",
+        "body": "Michroma sets titles and step numbers only. It never sets a sentence.",
+        "section": "typography"
+      },
+      {
+        "name": "The Labels Shout Rule",
+        "body": "Barlow Condensed is always uppercase and always tracked. Spectral is never uppercase.",
+        "section": "typography"
+      },
+      {
+        "name": "The Objects Only Rule",
+        "body": "A shadow means a thing was placed on the cover or page. Text blocks, lists, and sections stay flat.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do treat each new section as a part of the book: cover, back cover, page, or colophon.",
+      "Do put each section on flame, navy, or paper.",
+      "Do divide lists with ink rules: 3px on top, 1px between rows.",
+      "Do set every label in uppercase Barlow Condensed with tracking.",
+      "Do keep red fills for download controls.",
+      "Do tilt stuck-on objects and give them a soft, warm shadow.",
+      "Do label the window plate as an illustration.",
+      "Do honor `prefers-reduced-motion`: the slap, the typing, the caret, and the hover transitions all stop."
+    ],
+    "donts": [
+      "Don't apply these rules to the native app under `crates/`.",
+      "Don't set sentences in Michroma.",
+      "Don't use cyan or violet outside the window, code, and the focus ring.",
+      "Don't add shadows to sections, lists, or text blocks.",
+      "Don't wrap blurbs or ledger rows in cards.",
+      "Don't add a second theme or a dark mode switch. The book has one printing."
+    ]
+  }
+}

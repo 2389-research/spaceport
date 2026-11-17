@@ -46,7 +46,8 @@ code=$(changed \
   ':(exclude)**/*.md' \
   ':(exclude)assets/social-preview-*' \
   ':(exclude)assets/icons/sheprd-icon-badge.*' \
-  ':(exclude).github/workflows/site.yml')
+  ':(exclude).github/workflows/site.yml' \
+  ':(exclude).github/workflows/pages.yml')
 windows_package=$(changed \
   scripts/release/package-windows.py scripts/release/windows-installer.py \
   scripts/release/sheprd.iss scripts/release/installer site/install.ps1 \
