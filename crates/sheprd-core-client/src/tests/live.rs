@@ -1,3 +1,5 @@
+// ABOUTME: Runs Core integration tests in a private home and socket.
+// ABOUTME: Owns and reaps only the explicitly selected fixture runtime.
 //! Against a real herdr-core in a private home and socket. Opt in with
 //! `HERDR_CORE_TEST_BINARY=/path/to/herdr-core cargo test -p sheprd-core-client -- --ignored`.
 
@@ -34,7 +36,7 @@ mod resize;
 #[cfg(unix)]
 mod termination;
 
-struct Sandbox {
+pub(crate) struct Sandbox {
     _dir: tempfile::TempDir,
     binary: OsString,
     child: Child,
@@ -43,7 +45,7 @@ struct Sandbox {
 }
 
 impl Sandbox {
-    fn start(binary: OsString) -> Self {
+    pub(crate) fn start(binary: OsString) -> Self {
         Self::start_with(binary, Vec::new())
     }
 
@@ -94,14 +96,14 @@ impl Sandbox {
         command
     }
 
-    fn var(&self, name: &str) -> Option<OsString> {
+    pub(crate) fn var(&self, name: &str) -> Option<OsString> {
         self.vars
             .iter()
             .find(|(key, _)| *key == name)
             .map(|(_, value)| value.clone())
     }
 
-    fn connect(&self) -> Core {
+    pub(crate) fn connect(&self) -> Core {
         let endpoint = Endpoint::resolve(|name| self.var(name)).unwrap();
         assert_eq!(endpoint.socket, Path::new(&self.var("HC_SOCKET").unwrap()));
         let deadline = Instant::now() + Duration::from_secs(10);

@@ -186,7 +186,7 @@ impl SheprdWindow {
             device_themes: Default::default(),
             devices_overview: Default::default(),
             endpoints,
-            file_transfer: None,
+            file_transfer: Default::default(),
             find: None,
             find_memory: Default::default(),
             flash: None,

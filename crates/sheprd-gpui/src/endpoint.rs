@@ -478,9 +478,7 @@ impl SheprdWindow {
     }
 
     pub(super) fn reset_selected(&mut self, cx: &mut Context<Self>) {
-        if let Some(transfer) = &self.file_transfer {
-            transfer.cancel();
-        }
+        self.cancel_file_transfer(cx);
         for image in &self.pending_images {
             image.cancel();
         }

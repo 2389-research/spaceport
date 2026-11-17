@@ -1,3 +1,5 @@
+// ABOUTME: Checks chat behavior against synthetic transcript fixtures.
+// ABOUTME: Keeps lifecycle and rendering expectations explicit at the test boundary.
 //! A tool call stays quiet beside the reply: a muted title without its
 //! code ticks, cut after a couple of lines.
 
@@ -21,7 +23,7 @@ fn call(title: &str) -> Entry {
 
 #[test]
 fn a_command_title_is_muted_and_loses_its_ticks() {
-    let lines = entry(&call("`git status --short`"), 40);
+    let lines = entry(&call("`git status --short`"), 40, true);
     assert_eq!(plain(&lines)[0], "✓ git status --short");
     assert_eq!(lines[0].spans[0].style.fg, Some(Color::Green));
     assert_eq!(lines[0].spans[1].style.fg, Some(Color::DarkGray));
@@ -35,14 +37,14 @@ fn a_command_title_is_muted_and_loses_its_ticks() {
 
 #[test]
 fn ticks_inside_a_title_are_kept() {
-    let lines = plain(&entry(&call("`a` then `b`"), 40));
+    let lines = plain(&entry(&call("`a` then `b`"), 40, true));
     assert_eq!(lines[0], "✓ `a` then `b`");
 }
 
 #[test]
 fn a_long_command_is_cut_after_two_lines() {
     let title = format!("`{}`", "word ".repeat(40));
-    let lines = plain(&entry(&call(&title), 30));
+    let lines = plain(&entry(&call(&title), 30, true));
     assert_eq!(lines.len(), TITLE_LINES + 1, "{lines:?}");
     let last = &lines[TITLE_LINES - 1];
     assert!(last.ends_with('…'), "{last}");

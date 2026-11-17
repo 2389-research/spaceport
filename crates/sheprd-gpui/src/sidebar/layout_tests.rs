@@ -669,7 +669,7 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         // No AppKit event to read; a test that needs one supplies its own.
         key_press: || None,
         key_layout: |_| None,
-        file_transfer: None,
+        file_transfer: Default::default(),
         presentation: Default::default(),
         wake: crate::endpoint::WakeClock::new(
             std::time::Instant::now(),

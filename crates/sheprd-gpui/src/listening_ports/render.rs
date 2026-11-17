@@ -1,3 +1,5 @@
+// ABOUTME: Renders listening ports and opens their local or tunneled pages.
+// ABOUTME: Applies tunnel results only for the originating click attempt.
 //! Drawing a workspace's listening ports: a globe and `:3000 :5173` after
 //! it, each number opening its page with the system URL handler.
 
@@ -275,21 +277,22 @@ impl SheprdWindow {
         };
         let opening = key.clone();
         let attempt = self.tunnels.attempt(&key).unwrap_or_default();
+        let worker_attempt = attempt.clone();
         let task = cx
             .background_executor()
-            .spawn(async move { tunnel::open(&opening, preferred, &attempt) });
+            .spawn(async move { tunnel::open(&opening, preferred, &worker_attempt) });
         let (endpoint, workspace) = (endpoint.to_owned(), workspace.to_owned());
         cx.spawn_in(window, async move |this, cx| {
             let result = task.await;
             let _ = this.update_in(cx, |this, window, cx| match result {
                 Ok(tunnel) => {
-                    if let Some(local) = this.tunnels.finish(key, tunnel) {
+                    if let Some(local) = this.tunnels.finish(key, &attempt, tunnel) {
                         this.open_local_port(&endpoint, &workspace, local, window, cx);
                     }
                 }
                 Err(error) => {
                     // Not worth a complaint once the user closed the port.
-                    if this.tunnels.fail(&key) {
+                    if this.tunnels.fail(&key, &attempt) {
                         // The display boundary for a failed tunnel.
                         this.show_flash(
                             Flash::warning(fl!(

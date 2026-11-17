@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings quit saves behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 use super::*;
 
 #[gpui::test]
@@ -176,12 +178,12 @@ fn quit_waits_for_current_save_then_drains_latest_sizes_once(cx: &mut TestAppCon
             .update(cx, |view, window, cx| {
                 view.size_io = Some(recording_sizes(writes.clone()));
                 view.accept_control_size(FontFace::Terminal, 18., cx);
-                assert!(view.saving);
+                assert!(view.persistence.saving());
                 view.accept_control_size(FontFace::Terminal, 20., cx);
                 view.accept_control_size(FontFace::Sidebar, 16., cx);
                 view.accept_control_size(FontFace::Terminal, 24., cx);
                 let quit = view.shutdown(cx);
-                assert!(view.quitting);
+                assert!(view.persistence.quitting());
                 assert!(view.take_pending_control_sizes().is_empty());
                 view.accept_control_size(FontFace::Terminal, 48., cx);
                 assert!(view.take_pending_control_sizes().is_empty());

@@ -15,46 +15,34 @@ use crate::{
     rpc::Inbound,
 };
 
+mod opening;
+
 /// What a request to Codex is waiting for.
 #[derive(Debug)]
 enum Pending {
     Initialize,
     Models,
     /// `thread/start` or `thread/resume`, answering `session/new` or `load`.
-    Thread(wire::RequestId),
+    Thread,
     /// `turn/start`, answering nothing itself: the turn ends the prompt.
     Turn,
     Interrupt,
-}
-
-/// The session's request to open a thread, waiting for the handshake.
-#[derive(Debug)]
-struct Opening {
-    acp: wire::RequestId,
-    cwd: String,
-    resume: Option<String>,
 }
 
 #[derive(Debug, Default)]
 pub(super) struct Bridge {
     asks: HashMap<i64, approval::Ask>,
     background: Background,
-    /// Codex's `model/list`, kept until the thread opens.
-    models: Option<Value>,
     next_id: i64,
     next_request: i64,
-    opening: Option<Opening>,
+    opening: opening::State,
     pending: HashMap<i64, Pending>,
-    /// A thread opened before `model/list` answered, finished once it has.
-    opened: Option<(wire::RequestId, Value)>,
     /// The running `session/prompt`, answered when its turn completes.
     prompt: Option<wire::RequestId>,
-    ready: bool,
     settings: Settings,
     /// Items whose text came in pieces, so their whole text is not shown
     /// again.
     streamed: HashSet<String>,
-    thread: Option<String>,
     /// The turn's tokens, from the last usage update.
     tokens: Option<PromptUsage>,
     turn: Option<String>,
@@ -113,7 +101,7 @@ impl Bridge {
     }
 
     fn session(&self) -> &str {
-        self.thread.as_deref().unwrap_or_default()
+        self.opening.session().unwrap_or_default()
     }
 
     fn request(&mut self, id: wire::RequestId, method: &str, params: Value) -> Vec<Out> {
@@ -121,14 +109,13 @@ impl Bridge {
         match method {
             "initialize" => vec![out::reply(id, out::initialized())],
             "session/new" | "session/load" => {
-                self.opening = Some(Opening {
+                self.transition_opening(opening::Event::Ask(opening::Request {
                     acp: id,
                     cwd: field("cwd").unwrap_or_default(),
                     resume: (method == "session/load")
                         .then(|| field("sessionId"))
                         .flatten(),
-                });
-                self.open()
+                }))
             }
             "session/prompt" => self.prompt(id, &params),
             "session/set_mode" => {
@@ -153,31 +140,47 @@ impl Bridge {
         }
     }
 
-    /// Opens the thread once the handshake is done and a session asked.
-    fn open(&mut self) -> Vec<Out> {
-        if !self.ready {
-            return Vec::new();
-        }
-        let Some(opening) = self.opening.take() else {
-            return Vec::new();
-        };
-        let mut outs = Vec::new();
-        if self.models.is_none() {
-            outs.push(self.call("model/list", json!({}), Pending::Models));
-        }
-        let (method, params) = match &opening.resume {
-            Some(thread) => (
-                "thread/resume",
-                json!({"threadId": thread, "cwd": opening.cwd}),
-            ),
-            None => ("thread/start", json!({"cwd": opening.cwd})),
-        };
-        outs.push(self.call(method, params, Pending::Thread(opening.acp)));
-        outs
+    fn transition_opening(&mut self, event: opening::Event) -> Vec<Out> {
+        self.opening
+            .transition(event)
+            .into_iter()
+            .map(|effect| match effect {
+                opening::Effect::Initialized => Out::Harness(json!({"method": "initialized"})),
+                opening::Effect::Models => self.call("model/list", json!({}), Pending::Models),
+                opening::Effect::Thread(request) => {
+                    let (method, params) = match request.resume {
+                        Some(thread) => (
+                            "thread/resume",
+                            json!({"threadId": thread, "cwd": request.cwd}),
+                        ),
+                        None => ("thread/start", json!({"cwd": request.cwd})),
+                    };
+                    self.call(method, params, Pending::Thread)
+                }
+                opening::Effect::Opened {
+                    acp,
+                    thread,
+                    models,
+                } => {
+                    self.settings = Settings::new(&models, &thread);
+                    out::reply(
+                        acp,
+                        out::opened(
+                            self.session(),
+                            Some(self.settings.modes()),
+                            &self.settings.options(),
+                        ),
+                    )
+                }
+                opening::Effect::Failed(acp, message) => {
+                    out::reply(acp, Err(out::failure(message)))
+                }
+            })
+            .collect()
     }
 
     fn prompt(&mut self, id: wire::RequestId, params: &Value) -> Vec<Out> {
-        let Some(thread) = self.thread.clone() else {
+        let Some(thread) = self.opening.session().map(str::to_owned) else {
             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
         };
         if self.prompt.is_some() {
@@ -200,7 +203,7 @@ impl Bridge {
         if self.prompt.is_none() {
             return Vec::new();
         }
-        match (self.thread.clone(), self.turn.clone()) {
+        match (self.opening.session().map(str::to_owned), self.turn.clone()) {
             (Some(thread), Some(turn)) => vec![self.call(
                 "turn/interrupt",
                 json!({"threadId": thread, "turnId": turn}),
@@ -219,74 +222,30 @@ impl Bridge {
             return Vec::new();
         };
         let result = match message.get("error") {
-            Some(error) => Err(error
-                .get("message")
-                .and_then(Value::as_str)
-                .unwrap_or("Codex refused the request.")
-                .to_owned()),
+            Some(error) => Err(out::failure(
+                error
+                    .get("message")
+                    .and_then(Value::as_str)
+                    .unwrap_or("Codex refused the request.")
+                    .to_owned(),
+            )),
             None => Ok(message.get("result").cloned().unwrap_or(Value::Null)),
         };
         match pending {
-            Pending::Initialize => match result {
-                Ok(_) => {
-                    self.ready = true;
-                    let mut outs = vec![Out::Harness(json!({"method": "initialized"}))];
-                    outs.extend(self.open());
-                    outs
-                }
-                Err(message) => self
-                    .opening
-                    .take()
-                    .map(|opening| {
-                        out::reply(
-                            opening.acp,
-                            Err(out::failure(format!("Codex's handshake failed: {message}"))),
-                        )
-                    })
-                    .into_iter()
-                    .collect(),
-            },
-            Pending::Models => {
-                // Without a list the session still opens, with no model setting.
-                self.models = Some(result.unwrap_or(Value::Null));
-                self.opened
-                    .take()
-                    .map(|(acp, thread)| self.thread_opened(acp, &thread))
-                    .into_iter()
-                    .collect()
-            }
-            Pending::Thread(acp) => match result {
-                Ok(thread) if self.models.is_none() => {
-                    self.opened = Some((acp, thread));
-                    Vec::new()
-                }
-                Ok(thread) => vec![self.thread_opened(acp, &thread)],
-                Err(message) => vec![out::reply(acp, Err(out::failure(message)))],
-            },
+            Pending::Initialize => self.transition_opening(opening::Event::Initialize(result)),
+            Pending::Models => self.transition_opening(opening::Event::Models(result)),
+            Pending::Thread => self.transition_opening(opening::Event::Thread(result)),
             Pending::Turn => match result {
                 Ok(started) => self.turn_started(started.pointer("/turn/id")),
                 Err(message) => self
                     .prompt
                     .take()
-                    .map(|id| out::reply(id, Err(out::failure(message))))
+                    .map(|id| out::reply(id, Err(message)))
                     .into_iter()
                     .collect(),
             },
             Pending::Interrupt => Vec::new(),
         }
-    }
-
-    fn thread_opened(&mut self, acp: wire::RequestId, thread: &Value) -> Out {
-        let id = thread
-            .pointer("/thread/id")
-            .and_then(Value::as_str)
-            .unwrap_or_default();
-        self.thread = Some(id.to_owned());
-        self.settings = Settings::new(self.models.as_ref().unwrap_or(&Value::Null), thread);
-        out::reply(
-            acp,
-            out::opened(id, Some(self.settings.modes()), &self.settings.options()),
-        )
     }
 
     fn turn_started(&mut self, turn: Option<&Value>) -> Vec<Out> {
@@ -319,7 +278,7 @@ impl Bridge {
 
     fn notification(&mut self, method: &str, params: &Value) -> Vec<Out> {
         let thread = params.get("threadId").and_then(Value::as_str);
-        if let Some(thread) = thread.filter(|thread| Some(*thread) != self.thread.as_deref()) {
+        if let Some(thread) = thread.filter(|thread| Some(*thread) != self.opening.session()) {
             return self.child(method, params, thread);
         }
         let session = self.session().to_owned();

@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings sidebar drafts behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 //! The Sidebar page's live drafts: previews reach every main window at once,
 //! commits write through one serial save, and close waits for that save.
 use super::*;
@@ -124,7 +126,7 @@ fn closing_with_a_live_draft_saves_first_and_a_failed_save_keeps_the_window(
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         assert!(view.error.is_some(), "footer shows the error");
-        assert!(view.closing.is_none(), "window stays open");
+        assert!(view.persistence.closing().is_none(), "window stays open");
         assert!(view.sidebar_dirty(), "draft kept for retry");
         assert_eq!(view.config.sidebar_style.overrides.gap, Some(9.));
     });

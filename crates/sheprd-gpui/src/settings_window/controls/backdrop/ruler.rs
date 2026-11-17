@@ -1,3 +1,5 @@
+// ABOUTME: Implements Settings ruler interactions.
+// ABOUTME: Connects native controls to Settings state and persistence.
 //! The backdrop's opacity ruler: a 10–100% track with a tick every 5% and
 //! labeled marks. A click lands anywhere at once and a drag follows the
 //! pointer; either is written once, when the button is released, so a drag
@@ -77,7 +79,7 @@ impl SettingsWindow {
         }
         self.save_backdrop(vec![Edit::Opacity(opacity)], cx);
         // Shown at once rather than after the reload, which confirms it.
-        self.controls.ruler.saving = self.saving.then_some(opacity);
+        self.controls.ruler.saving = self.persistence.saving().then_some(opacity);
     }
 
     pub(in crate::settings_window) fn backdrop_ruler(&self, cx: &mut Context<Self>) -> Div {
@@ -91,7 +93,7 @@ impl SettingsWindow {
         let ruler = &self.controls.ruler;
         let opacity = ruler
             .held
-            .or(ruler.saving.filter(|_| self.saving))
+            .or(ruler.saving.filter(|_| self.persistence.saving()))
             .unwrap_or(self.config.backdrop.opacity);
         let along = fraction(opacity);
         let percent = (opacity * 100.).round() as i32;

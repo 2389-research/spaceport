@@ -1,3 +1,5 @@
+// ABOUTME: Verifies Settings theme drafts behavior.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 use super::*;
 
 #[gpui::test]
@@ -75,7 +77,7 @@ fn non_theme_save_preserves_draft_and_reapplies_contrast_once(cx: &mut TestAppCo
         assert_eq!(view.theme, expected);
         assert_eq!(source.read(cx).unwrap().theme, expected);
         assert!(view.theme_dirty());
-        assert!(!view.saving);
+        assert!(!view.persistence.saving());
     });
 }
 
@@ -113,7 +115,7 @@ fn close_while_latest_external_choice_loads_saves_only_that_choice(cx: &mut Test
                     choose(view, name, cx);
                 }
                 assert!(!view.should_close(window, cx));
-                assert!(!view.saving);
+                assert!(!view.persistence.saving());
                 assert!(view.theme_loading);
             })
             .unwrap();
@@ -163,7 +165,7 @@ fn theme_draft_paints_all_windows_and_allows_non_theme_reload(cx: &mut TestAppCo
             .update(cx, |view, _, cx| {
                 view.theme_io = Some(recording_themes(writes.clone(), false));
                 choose(view, "Nord", cx);
-                assert!(!view.saving);
+                assert!(!view.persistence.saving());
                 assert!(view.theme_dirty());
                 assert_eq!(view.theme, Theme::builtin("Nord").unwrap());
                 assert!(writes.lock().unwrap().is_empty());
@@ -259,10 +261,10 @@ fn theme_close_failure_keeps_window_and_draft_without_retrying(cx: &mut TestAppC
         let view = settings.read(cx).unwrap();
         assert_eq!(view.theme, Theme::builtin("Nord").unwrap());
         assert!(view.error.as_ref().unwrap().contains("Save settings"));
-        assert!(!view.saving);
+        assert!(!view.persistence.saving());
         assert!(theme_pending(cx));
         assert!(view.theme_dirty());
-        assert!(view.closing.is_none());
+        assert!(view.persistence.closing().is_none());
         assert_eq!(
             source.read(cx).unwrap().theme,
             Theme::builtin("Nord").unwrap()
@@ -306,7 +308,7 @@ fn accepted_close_survives_source_close_and_reactivation_and_fences_late_theme_r
                 view.theme_io = Some(recording_themes(writes.clone(), false));
                 choose(view, "Nord", cx);
                 view.close(window, cx);
-                assert!(view.saving);
+                assert!(view.persistence.saving());
             })
             .unwrap();
         open_fixture(weak, cx);
