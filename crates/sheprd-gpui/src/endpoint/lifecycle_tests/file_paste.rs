@@ -111,7 +111,7 @@ fn one_copied_image_uses_the_image_bridge_on_a_remote_pane(cx: &mut gpui::TestAp
         wait_image_finished(&view, cx);
         view.read_with(cx, |view, _| {
             assert!(view.local_error.is_none());
-            assert!(view.file_transfer.is_none());
+            assert!(view.file_transfer.active().is_none());
         });
     }
 }
@@ -216,7 +216,7 @@ fn a_remote_pane_that_turns_unready_never_gets_local_paths(cx: &mut gpui::TestAp
                 "{} files",
                 copied.len()
             );
-            assert!(view.file_transfer.is_none());
+            assert!(view.file_transfer.active().is_none());
             view.options.surface_size.cols -= 1;
             assert!(view.input_ready());
             view.send(ClientPaneInputEvent::TextCommit("sentinel".into()), cx);

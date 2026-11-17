@@ -170,7 +170,7 @@ pub(crate) struct SheprdWindow {
     /// The Devices overview's activity history and open tabs.
     pub(crate) devices_overview: crate::devices_overview::Overview,
     pub(crate) endpoints: Vec<endpoint::Endpoint>,
-    pub(crate) file_transfer: Option<transfers::FileTransfer>,
+    pub(crate) file_transfer: transfers::FileTransfer,
     /// The find bar, over the pane it searches.
     pub(crate) find: Option<find::FindBar>,
     /// How the find bar was left over each pane, to bring it back there.

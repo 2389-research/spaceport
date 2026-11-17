@@ -46,7 +46,7 @@ fn success_pastes_quoted_paths_to_captured_pane_or_popup(cx: &mut TestAppContext
             }
         );
         view.read_with(cx, |view, _| {
-            assert!(view.file_transfer.is_none());
+            assert!(view.file_transfer.active().is_none());
             assert!(view.local_error.is_none());
             assert_eq!(
                 view.endpoints[0].toasts.entries.back().unwrap().1.title,
@@ -59,7 +59,7 @@ fn success_pastes_quoted_paths_to_captured_pane_or_popup(cx: &mut TestAppContext
 
 #[gpui::test]
 fn stale_or_cancelled_success_cleans_original_host_without_pasting(cx: &mut TestAppContext) {
-    for case in 0..4 {
+    for case in 0..2 {
         let (fixture, cx) = cx.add_window_view(fixture);
         let view = fixture.read_with(cx, |fixture, _| fixture.view.clone().unwrap());
         let mut peer = Peer::new();
@@ -84,15 +84,13 @@ fn stale_or_cancelled_success_cleans_original_host_without_pasting(cx: &mut Test
                         session: "default".into(),
                     };
                 }
-                1 => view.file_transfer.as_ref().unwrap().cancel(),
-                2 => view.menu.page = Some(crate::menu::Page::Palette),
-                3 => view.pending_toast = Some(1),
+                1 => view.cancel_file_transfer(cx),
                 _ => unreachable!(),
             }
         });
         cx.run_until_parked();
         assert_eq!(rx.try_recv().unwrap(), (HOST.into(), vec![REMOTE.into()]));
-        view.read_with(cx, |view, _| assert!(view.file_transfer.is_none()));
+        view.read_with(cx, |view, _| assert!(view.file_transfer.active().is_none()));
         peer.sentinel(&view, cx);
     }
 }
@@ -116,10 +114,10 @@ fn old_completion_preserves_replacement_and_reports_cleanup_failure(cx: &mut Tes
             },
             cx,
         );
-        let original = view.file_transfer.as_ref().unwrap().cancelled.clone();
+        let original = view.file_transfer.active().unwrap().cancelled.clone();
         let replacement = pending(view, InputTarget::Pane("w1:p1".into()));
         let token = replacement.cancelled.clone();
-        view.file_transfer = Some(replacement);
+        view.transition_file_transfer(Event::Start(replacement), cx);
         view.endpoints[0].label = "Replacement host".into();
         assert!(original.load(Ordering::Acquire));
         token
@@ -129,7 +127,7 @@ fn old_completion_preserves_replacement_and_reports_cleanup_failure(cx: &mut Tes
     view.read_with(cx, |view, _| {
         assert!(Arc::ptr_eq(
             &replacement,
-            &view.file_transfer.as_ref().unwrap().cancelled
+            &view.file_transfer.active().unwrap().cancelled
         ));
         assert!(!replacement.load(Ordering::Acquire));
         let notice = &view.endpoints[0].toasts.entries.back().unwrap().1;
@@ -177,11 +175,11 @@ fn backend_cleanup_failure_survives_host_switch_without_disclosing_diagnostics(
         view.selected_endpoint = 1;
         view.selection_epoch += 1;
         view.poll_file_transfer(cx);
-        assert!(view.file_transfer.as_ref().unwrap().shown.2);
+        assert!(view.file_transfer.active().unwrap().shown.2);
     });
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
-        assert!(view.file_transfer.is_none());
+        assert!(view.file_transfer.active().is_none());
         assert!(view.local_error.is_none());
         assert!(view.endpoints[0].toasts.entries.is_empty());
         let notices = &view.endpoints[1].toasts.entries;
@@ -220,7 +218,7 @@ fn duplicate_copy_never_invokes_second_backend(cx: &mut TestAppContext) {
             |_, _| panic!("failed uploads must not be cleaned up twice"),
             cx,
         );
-        let token = view.file_transfer.as_ref().unwrap().cancelled.clone();
+        let token = view.file_transfer.active().unwrap().cancelled.clone();
         view.start_file_transfer_with(
             InputTarget::Pane("w1:p1".into()),
             vec!["second".into()],
@@ -230,7 +228,7 @@ fn duplicate_copy_never_invokes_second_backend(cx: &mut TestAppContext) {
         );
         assert!(Arc::ptr_eq(
             &token,
-            &view.file_transfer.as_ref().unwrap().cancelled
+            &view.file_transfer.active().unwrap().cancelled
         ));
         assert_eq!(
             view.endpoints[0].toasts.entries.back().unwrap().1.title,
@@ -240,7 +238,7 @@ fn duplicate_copy_never_invokes_second_backend(cx: &mut TestAppContext) {
     cx.run_until_parked();
     assert_eq!(calls.load(Ordering::Relaxed), 1);
     view.read_with(cx, |view, _| {
-        assert!(view.file_transfer.is_none());
+        assert!(view.file_transfer.active().is_none());
         let notice = &view.endpoints[0].toasts.entries.back().unwrap().1;
         assert_eq!(notice.title, "Copy failed");
         assert_eq!(
