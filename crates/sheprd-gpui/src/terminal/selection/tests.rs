@@ -1,3 +1,5 @@
+// ABOUTME: Groups terminal selection and clipboard text tests.
+// ABOUTME: Shares pane geometry and painted frame fixtures.
 use super::*;
 use crate::error::Error;
 use sheprd_client::protocol::{
@@ -6,6 +8,7 @@ use sheprd_client::protocol::{
 
 mod content_range;
 mod select_all;
+mod wide_words;
 
 const CELL_WIDTH: f32 = 10.;
 const CELL_HEIGHT: f32 = 20.;

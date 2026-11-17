@@ -1,3 +1,5 @@
+// ABOUTME: Groups terminal link detection and click-routing tests.
+// ABOUTME: Shares protocol frames across path, hyperlink, and wrapping fixtures.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use sheprd_client::protocol::*;
@@ -296,4 +298,5 @@ mod drive_paths;
 mod escaped_paths;
 mod external;
 mod paths;
+mod wide_paths;
 mod wrapped;

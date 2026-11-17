@@ -1,3 +1,5 @@
+// ABOUTME: Runs bounded shell scripts on local, SSH, and WSL targets.
+// ABOUTME: Keeps cancellation and deadlines active until child pipes have drained.
 //! One-shot POSIX shell scripts on this machine, an SSH host, or a WSL
 //! distribution.
 //!
@@ -305,8 +307,14 @@ mod runner {
                 if progress.idle() >= limits.idle {
                     break Some(Error::ScriptTimeout);
                 }
-                if child.0.try_wait().map_err(Error::ScriptIo)?.is_some() {
-                    break None;
+                // Keep the leader unreaped while pipes are active, so its
+                // process-group ID cannot be reused before cancellation.
+                if feeder.is_finished() && drainer.is_finished() && stderr.is_finished() {
+                    match child.0.try_wait() {
+                        Ok(Some(_)) => break None,
+                        Err(error) => break Some(Error::ScriptIo(error)),
+                        _ => {}
+                    }
                 }
                 thread::sleep(POLL);
             };
