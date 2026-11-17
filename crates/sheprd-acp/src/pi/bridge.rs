@@ -1,3 +1,5 @@
+// ABOUTME: Translates Pi RPC events and ACP requests without owning I/O.
+// ABOUTME: Uses one opening owner to gate session identity and discovery failures.
 //! The translation between the session's ACP and pi's RPC mode, free of
 //! threads and pipes.
 
@@ -10,6 +12,8 @@ use super::tools;
 use crate::harness::{Out, Translator, out};
 use crate::project::PromptUsage;
 use crate::rpc::Inbound;
+
+mod opening;
 
 const MODEL: &str = "model";
 const THINKING: &str = "thinking";
@@ -54,17 +58,11 @@ pub(super) struct Bridge {
     /// The message pi is streaming, numbered as pi gives messages no id.
     message: u64,
     model: Option<String>,
-    models: Option<Vec<(String, String, bool)>>,
     next_id: u64,
     next_request: i64,
-    /// The session is open, so updates name it.
-    open: bool,
-    opening: Option<wire::RequestId>,
+    opening: opening::State,
     pending: HashMap<String, Pending>,
     prompt: Option<wire::RequestId>,
-    session: String,
-    /// The `get_state` answer, kept until the models are in too.
-    state: Option<Value>,
     thinking: Option<String>,
 }
 
@@ -138,13 +136,12 @@ impl Bridge {
         match method {
             "initialize" => vec![out::reply(id, out::initialized())],
             "session/new" | "session/load" => {
-                // A loaded session keeps the id the session asked for, which
-                // pi accepts shortened.
-                if let Some(loaded) = params.get("sessionId").and_then(Value::as_str) {
-                    loaded.clone_into(&mut self.session);
-                }
-                self.opening = Some(id);
-                self.opened()
+                // Pi accepts shortened loaded ids; keep the caller's identity.
+                let loaded = params
+                    .get("sessionId")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned);
+                self.transition_opening(opening::Event::Ask { acp: id, loaded })
             }
             "session/prompt" => self.prompt(id, params),
             "session/set_config_option" => {
@@ -185,35 +182,41 @@ impl Bridge {
         }
     }
 
-    /// Answers the session's opening once pi's state and models are in.
-    fn opened(&mut self) -> Vec<Out> {
-        let (Some(state), Some(_)) = (&self.state, &self.models) else {
-            return Vec::new();
-        };
-        let Some(id) = self.opening.take() else {
-            return Vec::new();
-        };
-        if self.session.is_empty() {
-            self.session = state
-                .get("sessionId")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .to_owned();
-        }
-        self.open = true;
-        let mut outs = vec![out::reply(
-            id,
-            out::opened(&self.session, None, &self.options()),
-        )];
-        if let Some(commands) = self.commands.take() {
-            outs.extend(self.commands(Some(&commands)));
+    fn session(&self) -> &str {
+        self.opening.session().unwrap_or_default()
+    }
+
+    fn transition_opening(&mut self, event: opening::Event) -> Vec<Out> {
+        let mut outs = Vec::new();
+        for effect in self.opening.transition(event) {
+            match effect {
+                opening::Effect::Failed(acp, message) => {
+                    outs.push(out::reply(acp, Err(out::failure(message))))
+                }
+                opening::Effect::Settings(state) => {
+                    self.model = model_id(state.get("model"));
+                    self.thinking = state
+                        .get("thinkingLevel")
+                        .and_then(Value::as_str)
+                        .map(str::to_owned);
+                }
+                opening::Effect::Opened(acp) => {
+                    outs.push(out::reply(
+                        acp,
+                        out::opened(self.session(), None, &self.options()),
+                    ));
+                    if let Some(commands) = self.commands.take() {
+                        outs.extend(self.commands(Some(&commands)));
+                    }
+                }
+            }
         }
         outs
     }
 
     fn options(&self) -> Vec<wire::SessionConfigOption> {
         let mut options = Vec::new();
-        let models = self.models.as_deref().unwrap_or_default();
+        let models = self.opening.models();
         // pi names its model "unknown" until a provider is set up.
         if let Some(model) = self.model.as_ref().filter(|_| !models.is_empty()) {
             options.push(out::select(
@@ -297,38 +300,15 @@ impl Bridge {
                 .to_owned()
         });
         match pending {
-            Pending::State => {
-                self.model = model_id(data.get("model"));
-                self.thinking = data
-                    .get("thinkingLevel")
-                    .and_then(Value::as_str)
-                    .map(str::to_owned);
-                self.state = Some(data);
-                self.opened()
-            }
-            Pending::Models => {
-                let models = data
-                    .get("models")
-                    .and_then(Value::as_array)
-                    .into_iter()
-                    .flatten()
-                    .filter_map(|model| {
-                        let id = model_id(Some(model))?;
-                        let name = model
-                            .get("name")
-                            .and_then(Value::as_str)
-                            .map_or_else(|| id.clone(), str::to_owned);
-                        let reasons = model.get("reasoning") == Some(&Value::Bool(true));
-                        Some((id, name, reasons))
-                    })
-                    .take(MAX_MODELS)
-                    .collect();
-                self.models = Some(models);
-                self.opened()
-            }
+            Pending::State => self.transition_opening(opening::Event::State(
+                failed.map_or(Ok(data), |message| Err(out::failure(message))),
+            )),
+            Pending::Models => self.transition_opening(opening::Event::Models(
+                failed.map_or(Ok(data), |message| Err(out::failure(message))),
+            )),
             Pending::Commands => {
                 let commands = data.get("commands").cloned().unwrap_or(Value::Null);
-                if self.open {
+                if self.opening.session().is_some() {
                     self.commands(Some(&commands))
                 } else {
                     self.commands = Some(commands);
@@ -381,7 +361,7 @@ impl Bridge {
             })
             .collect();
         vec![out::update(
-            &self.session,
+            self.session(),
             wire::SessionUpdate::AvailableCommandsUpdate(wire::AvailableCommandsUpdate::new(
                 commands,
             )),
@@ -389,7 +369,7 @@ impl Bridge {
     }
 
     fn event(&mut self, kind: &str, message: &Value) -> Vec<Out> {
-        let session = self.session.clone();
+        let session = self.session().to_owned();
         let text = |key: &str| message.get(key).and_then(Value::as_str);
         match kind {
             "message_start"
@@ -541,7 +521,7 @@ impl Bridge {
             usage = usage.cost(Some(wire::Cost::new(cost, "USD")));
         }
         vec![out::update(
-            &self.session,
+            self.session(),
             wire::SessionUpdate::UsageUpdate(usage),
         )]
     }
@@ -568,7 +548,7 @@ impl Bridge {
             ),
             Some("notify") => {
                 return text("message")
-                    .map(|note| out::notice(&self.session, wire::NoticeSeverity::Info, note))
+                    .map(|note| out::notice(self.session(), wire::NoticeSeverity::Info, note))
                     .into_iter()
                     .collect();
             }
@@ -613,7 +593,7 @@ impl Bridge {
         );
         let fields = wire::ToolCallUpdateFields::new().title(Some(title));
         let request = wire::RequestPermissionRequest::new(
-            self.session.clone(),
+            self.session().to_owned(),
             wire::ToolCallUpdate::new(format!("pi-dialog-{id}"), fields),
             offered,
         );

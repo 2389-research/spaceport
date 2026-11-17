@@ -1,3 +1,5 @@
+// ABOUTME: Tests Pi protocol translation with session and harness messages.
+// ABOUTME: Shares fixtures for opening, prompts, and event projections.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use serde_json::{Value, json};
@@ -5,6 +7,7 @@ use serde_json::{Value, json};
 use super::*;
 use crate::harness::tests::{file_name, file_uri};
 
+mod opening;
 mod turn_ended;
 
 const SESSION: &str = "5f1c9a2e-0000-4000-8000-00000000000a";
