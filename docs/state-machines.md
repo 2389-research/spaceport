@@ -320,3 +320,25 @@ Open tunnels and pending attempts share the existing capacity bound.
 
 Real SSH and native browser interactions remain separate checks.
 The host-menu duplicate-forward gap remains outside this conversion.
+
+## Core connection start intent — fj07
+
+[`core_terminals/hub.rs`](../crates/sheprd-gpui/src/core_terminals/hub.rs) stores Idle, Connecting, Ready, or Unavailable.
+Connecting owns its receiver, start mode, and that attempt's explicit upgrade request.
+Unavailable owns its typed error and retry timestamp.
+`Hub::transition` owns state and exact-binding writes.
+Connect starts or upgrades only the current attempt; Poll consumes its outcome.
+Successful joins discard pending start permission.
+Failed joins may consume their own explicit upgrade once.
+Thread-creation failures enter the same retry delay as other failures.
+BindExact suppresses startup and clears upgrades; ClearExact releases that view binding.
+Known Core identity is checked again when the result arrives.
+
+### Verification
+
+- [Intent tests](../crates/sheprd-gpui/src/core_terminals/hub/tests/start_intent.rs) cover stale start, worker failure, dropped workers, retry expiry, and latest binding.
+- Two original regressions failed before conversion.
+- Clean default Core checks passed 189 tests; integration-feature checks passed 192.
+- Clippy, quick checks, and independent lifecycle review passed.
+
+Real installed-runtime startup, native GUI, and platform execution remain separate checks.
