@@ -17,7 +17,7 @@ fn the_copy_card_draws_only_messages() {
                 transfer.total.clone(),
                 transfer.cancelled.clone(),
             );
-            view.file_transfer = Some(transfer);
+            view.transition_file_transfer(Event::Start(transfer), cx);
             shared
         });
         let (sent, total, cancelled) = transfer;

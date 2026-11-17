@@ -347,3 +347,29 @@ Known Core identity is checked again when the result arrives.
 - Clippy, quick checks, and independent lifecycle review passed.
 
 Real installed-runtime startup, native GUI, and platform execution remain separate checks.
+
+## Completed transfer delivery — hmqh
+
+[`window/transfers.rs`](../crates/sheprd-gpui/src/window/transfers.rs) stores Idle, Uploading, Cancelling, Waiting, Accepted, or Cleaning.
+`SheprdWindow::transition_file_transfer` owns live phases, displayed progress, and explicit cancellation.
+Start captures the original host, target, and input fence.
+Uploaded retains successful quoted paths in Waiting while menus or activation block input.
+Poll sends only when that captured target is current and ready.
+Accepted and Cleaning are terminal send outcomes; the same paste is never submitted again.
+Finished releases the active slot after result and cleanup ownership settle.
+Waiting retains a task waker, so cancellation or teardown resumes its completion task.
+Upload and cleanup remain off the UI thread.
+
+The exact-worker Transfer lease separately signals cancellation during RAII destruction.
+That cleanup remains valid after the GUI owner disappears and cannot require a window context.
+Moving a live payload preserves the lease; destroying an old payload cannot cancel its replacement.
+This resource-cleanup boundary follows AGENTS' rule-by-intent instruction.
+It does not introduce a second live phase writer.
+
+### Verification
+
+- [Readiness tests](../crates/sheprd-gpui/src/window/transfers/tests/readiness.rs) cover menu/input waits, refusal, cancellation, and teardown.
+- Clean default checks passed 4,016 tests, including all 15 transfer tests.
+- Clippy, quick checks, and independent lifecycle review passed.
+
+Real SSH/native transfer execution and other-platform taskbar checks remain separate checks.
