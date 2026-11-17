@@ -1,3 +1,5 @@
+// ABOUTME: Saves pasted pictures away from the UI thread.
+// ABOUTME: Applies saved files through the conversation-owned file lifecycle.
 //! A picture pasted into the composer. The program attaches files, so the
 //! image is saved to a private file of its own, named by what it holds, and
 //! attached as a dropped file would be.
@@ -32,23 +34,16 @@ impl SheprdWindow {
         let Some(pane) = self.chats.pane_mut(pane_id) else {
             return;
         };
-        pane.uploading += 1;
-        let target = pane.target.clone();
-        let cursor = pane.session.since();
+        let operation = pane.begin_files(1);
         let save = cx.background_spawn(async move { save(Source::Clipboard(image)) });
         let pane_id = pane_id.to_owned();
         cx.spawn_in(window, async move |this, cx| {
             let saved = save.await;
             let _ = this.update_in(cx, |this, window, cx| {
-                let Some(pane) = this
-                    .chats
-                    .pane_mut(&pane_id)
-                    .filter(|pane| pane.target == target)
-                else {
+                let Some(pane) = this.chats.pane_mut(&pane_id) else {
                     return;
                 };
-                pane.uploading = pane.uploading.saturating_sub(1);
-                if !pane.is_current(&target, cursor) {
+                if !pane.finish_files(&operation) {
                     // Another conversation took the pane; the picture was
                     // for the one that left.
                     this.redraw_terminal(cx);
