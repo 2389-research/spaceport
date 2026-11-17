@@ -1,3 +1,5 @@
+// ABOUTME: Tests SSH link addresses and remembered tunnel port preferences.
+// ABOUTME: Keeps remote binding identity explicit across port scans.
 //! A remote port opens through an SSH tunnel on this machine's loopback,
 //! on its own number when that is free.
 
@@ -51,13 +53,17 @@ fn a_port_another_remote_port_last_used_is_not_preferred() {
     assert!(tunnels.begin(&first).is_some());
     // 3000 was taken here, so the first remote port got 41000.
     assert_eq!(
-        tunnels.finish(first.clone(), tunnel::Tunnel::around(idle_child(), 41000)),
+        tunnels.finish(
+            first.clone(),
+            &tunnels.attempt(&first).unwrap(),
+            tunnel::Tunnel::around(idle_child(), 41000)
+        ),
         Some(41000)
     );
     assert!(tunnels.close(&first));
     // A page may still show the first server at 41000.
     assert_eq!(tunnels.begin(&second), Some(None));
-    assert!(tunnels.fail(&second));
+    assert!(tunnels.fail(&second, &tunnels.attempt(&second).unwrap()));
     // The first keeps its remembered port.
     assert_eq!(tunnels.begin(&first), Some(Some(41000)));
     tunnels.close_all();
