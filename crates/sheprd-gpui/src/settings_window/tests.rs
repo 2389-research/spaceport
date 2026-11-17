@@ -1,3 +1,5 @@
+// ABOUTME: Shares isolated Settings fixtures and persistence writers.
+// ABOUTME: Registers regression topics for the native preferences window.
 use super::*;
 use crate::config::FontFace;
 use core::prelude::v1::test;
@@ -28,10 +30,13 @@ mod remote_history_reload;
 mod removed_plugins;
 mod removed_worktree_cleanup;
 mod rtl;
+mod save_intents;
 mod save_now;
 mod scrollbars;
 mod search;
 mod section_order;
+#[cfg(unix)]
+mod shared_save_queue;
 mod sidebar_drafts;
 mod tab_layout;
 mod theme_drafts;

@@ -1,3 +1,5 @@
+// ABOUTME: Implements Settings inputs interactions.
+// ABOUTME: Connects native controls to Settings state and persistence.
 //! Transient input state the pages share: the open dropdown, the number field
 //! being typed into, and the root key routing for both.
 // i18n: migrated
@@ -95,7 +97,7 @@ impl SettingsWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.quitting {
+        if self.persistence.quitting() {
             return;
         }
         self.dropdown = Some(ui::Dropdown::open(field, options, selected, window, cx));
@@ -122,7 +124,7 @@ impl SettingsWindow {
     ) {
         use super::pages::{CLIPBOARD_POSITIONS, TOAST_POSITIONS};
         self.dropdown = None;
-        if self.quitting || self.closing.is_some() {
+        if self.persistence.quitting() || self.persistence.closing().is_some() {
             cx.notify();
             return;
         }
@@ -171,7 +173,7 @@ impl SettingsWindow {
         if let NumberField::FontSize(face) = field {
             self.controls.set_active_face(face);
         }
-        if self.quitting {
+        if self.persistence.quitting() {
             return;
         }
         if !self.finish_number_edit(true, cx) {
@@ -270,7 +272,7 @@ impl SettingsWindow {
                 return;
             }
         };
-        let valid = !self.quitting && field.range().contains(&value);
+        let valid = !self.persistence.quitting() && field.range().contains(&value);
         // A busy window refuses the write, so only an idle one starts it.
         let started = valid && !self.busy();
         if valid {
@@ -295,7 +297,7 @@ impl SettingsWindow {
             && preview.field == field
         {
             // The released value stays until the save's reload shows it.
-            if started && self.saving {
+            if started && self.persistence.saving() {
                 preview.value = value;
             } else {
                 self.number_preview = None;

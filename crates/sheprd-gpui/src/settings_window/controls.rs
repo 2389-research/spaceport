@@ -1,3 +1,5 @@
+// ABOUTME: Implements Settings controls interactions.
+// ABOUTME: Connects native controls to Settings state and persistence.
 //! Prepared controls for the standalone window; persistence belongs to its serial save path.
 // i18n: migrated
 pub(super) mod backdrop;
@@ -223,7 +225,7 @@ impl SettingsWindow {
         cx: &mut Context<Self>,
     ) {
         self.controls.active_face = face;
-        if self.quitting || !FONT_SIZE_RANGE.contains(&size) || size.fract() != 0. {
+        if self.persistence.quitting() || !FONT_SIZE_RANGE.contains(&size) || size.fract() != 0. {
             return;
         }
         if self.controls.size(face, &self.config) == size {

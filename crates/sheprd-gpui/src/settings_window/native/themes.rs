@@ -1,3 +1,5 @@
+// ABOUTME: Checks native Settings themes interactions.
+// ABOUTME: Verifies the desktop behavior against explicit test resources.
 //! Native theme section checks: catalog search, live Nord draft across
 //! windows without config writes, and persisting the final choice on close.
 use super::super::themes;
@@ -61,10 +63,13 @@ pub(super) async fn verify_themes(
                 "typing lost the theme search focus"
             );
             ensure!(
-                view.config.theme == saved_theme && !view.saving,
+                view.config.theme == saved_theme && !view.persistence.saving(),
                 "theme search saved a preference"
             );
-            Ok((!view.loading && !busy && count > 0 && count < unfiltered).then_some(count))
+            Ok(
+                (!view.persistence.loading() && !busy && count > 0 && count < unfiltered)
+                    .then_some(count),
+            )
         })??;
         if let Some(count) = ready {
             break count;
@@ -151,12 +156,12 @@ pub(super) async fn verify_themes(
         let expected = loop {
             let ready = settings.update(cx, |view, _, cx| -> Result<_> {
                 ensure!(
-                    !view.saving,
+                    !view.persistence.saving(),
                     "browsing started a save before selecting {name}"
                 );
                 // A background byte check can yield to the normal file watcher.
                 // Select and check synchronously once that unrelated read settles.
-                if view.loading || (selection == 0 && view.config.theme != name) {
+                if view.persistence.loading() || (selection == 0 && view.config.theme != name) {
                     return Ok(None);
                 }
                 if selection != 0 {
@@ -176,7 +181,7 @@ pub(super) async fn verify_themes(
                     "{name} did not synchronously update Settings chrome"
                 );
                 ensure!(
-                    view.theme_dirty() && !view.busy() && !view.saving,
+                    view.theme_dirty() && !view.busy() && !view.persistence.saving(),
                     "{name} started a save instead of remaining an idle draft"
                 );
                 let appearance = cx.global::<crate::app::InitialAppearance>();
@@ -323,7 +328,7 @@ pub(super) async fn verify_themes(
     );
     settings.update(cx, |view, _, _| -> Result<()> {
         ensure!(
-            view.theme_dirty() && !view.saving && view.config.theme == "Nord",
+            view.theme_dirty() && !view.persistence.saving() && view.config.theme == "Nord",
             "final Nord draft was lost before closing Settings"
         );
         Ok(())
