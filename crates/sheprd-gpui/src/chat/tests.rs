@@ -24,6 +24,8 @@ mod code;
 mod composer;
 mod controls;
 mod core_panes;
+mod delivery;
+mod delivery_ui;
 mod discovery;
 mod document_text;
 mod embeds;

@@ -13,7 +13,7 @@ use super::{
 use crate::multiline_input::MultilineInput;
 use crate::search_input::SearchInput;
 use gpui::{App, Entity, FocusHandle, ListAlignment, ListState, Window, px};
-use sheprd_chat_protocol::{ClientMessage, Command, Cursor, EntryId};
+use sheprd_chat_protocol::{Command, Cursor, EntryId};
 use std::{
     collections::HashSet,
     time::{Duration, Instant},
@@ -27,8 +27,7 @@ const FIRST_RETRY: Duration = Duration::from_millis(250);
 const LAST_RETRY: Duration = Duration::from_secs(5);
 
 /// Starts a connection to `target`'s program; tests connect elsewhere.
-pub(crate) type Connect<'a> =
-    dyn FnMut(&Target, Option<Cursor>, Vec<ClientMessage>) -> Result<Link> + 'a;
+pub(crate) type Connect<'a> = dyn FnMut(&Target, Option<Cursor>) -> Result<Link> + 'a;
 
 /// The connector the app uses: the program's endpoint by the id its pane
 /// reported, a socket in this user's private directory or a named pipe, or
@@ -39,9 +38,8 @@ pub(crate) fn connect(
     target: &Target,
     program: &super::Program,
     since: Option<Cursor>,
-    resend: Vec<ClientMessage>,
 ) -> Result<Link> {
-    Link::start(dial(target, program)?, since, resend)
+    Link::start(dial(target, program)?, since)
 }
 
 /// How [`connect`] reaches `target`, before anything is started.
@@ -367,21 +365,32 @@ impl ChatPane {
     /// either way, so a command sent while reconnecting goes out with the
     /// next connection.
     pub(crate) fn send(&mut self, command: Command) -> Result<()> {
-        let message = self.session.submit(command)?;
+        self.session.submit(command)?;
+        self.dispatch();
+        Ok(())
+    }
+
+    /// Queue success only transfers ownership to the writer. Its receipt
+    /// decides whether a retry consumed a write attempt.
+    fn dispatch(&mut self) {
         let Phase::Linked(link) = &self.phase else {
-            return Ok(());
+            return;
         };
-        match link.send(message) {
-            Err(Error::NotAttached) | Ok(()) => Ok(()),
-            Err(error) => Err(error),
+        if link.stopped() {
+            return;
+        }
+        for message in self.session.resend() {
+            if let Err(error) = link.send(message) {
+                link.stop(error);
+                break;
+            }
         }
     }
 
     fn start(&mut self, now: Instant, connect: &mut Connect<'_>) {
         self.generation += 1;
         self.session.begin();
-        let resend = self.session.resend();
-        match connect(&self.target, self.session.since(), resend) {
+        match connect(&self.target, self.session.since()) {
             Ok(link) => self.phase = Phase::Linked(link),
             Err(error) => self.fail(&error, now),
         }
@@ -436,10 +445,19 @@ impl ChatPane {
                     live = self.session.live();
                 }
                 Err(error) => {
-                    end = Some(error);
+                    // Do not reconnect until the old writer reports its
+                    // final outcome. Stopping never waits on the UI thread.
+                    if polled.end.is_some() {
+                        end = Some(error);
+                    } else {
+                        link.stop(error);
+                    }
                     break;
                 }
             }
+        }
+        for outcome in polled.writes {
+            changed |= self.session.delivered(outcome);
         }
         if live {
             self.failures = 0;
@@ -448,6 +466,7 @@ impl ChatPane {
             self.fail(&error, now);
             changed = true;
         }
+        self.dispatch();
         if changed {
             self.sync_view();
         }

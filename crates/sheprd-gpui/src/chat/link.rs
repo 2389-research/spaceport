@@ -1,3 +1,5 @@
+// ABOUTME: Runs bounded chat socket workers without blocking the UI thread.
+// ABOUTME: Reports completed or uncertain writes before exposing connection loss.
 //! One connection to a chat program. A reader thread connects, starts a
 //! writer thread, and reads; the window only ever polls and queues, through
 //! bounded channels, so no socket I/O or thread join reaches the UI thread.
@@ -11,10 +13,12 @@
 
 use super::{Error, MAX_EVENTS, MAX_PENDING, Result};
 use sheprd_chat_protocol::{
-    ClientKind, ClientMessage, Cursor, REVISION, ServerMessage, VERSION, read_frame, write_frame,
+    ClientKind, ClientMessage, CommandId, Cursor, REVISION, ServerMessage, VERSION, read_frame,
+    write_frame,
 };
 use sheprd_client::private_endpoint::Connection;
 use std::{
+    cell::Cell,
     io::{BufReader, BufWriter, Read, Write},
     path::PathBuf,
     process::{Child, Command, Stdio},
@@ -33,13 +37,73 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(2);
 /// Commands queued for the writer: room for every command a session may
 /// have waiting, resent on a new connection, and as many more.
 const MAX_COMMANDS: usize = 2 * MAX_PENDING;
+/// A stalled platform write must not retain the reader or block reconnect.
+const DRAIN_TIMEOUT: Duration = Duration::from_millis(100);
 
 /// What one poll of a link found.
 #[derive(Debug, Default)]
 pub(crate) struct Polled {
     pub(crate) messages: Vec<ServerMessage>,
+    pub(crate) writes: Vec<WriteOutcome>,
     /// Why the connection ended, once every message before it was taken.
     pub(crate) end: Option<Error>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum WriteOutcome {
+    Written(CommandId),
+    Uncertain(CommandId),
+}
+
+#[derive(Default)]
+enum Writing {
+    #[default]
+    Idle,
+    Command(CommandId),
+    Stopped,
+}
+
+#[derive(Default)]
+struct WriterProgress {
+    state: Mutex<Writing>,
+}
+
+enum Progress {
+    Begin(CommandId),
+    Complete(WriteOutcome),
+    Stop,
+}
+
+impl WriterProgress {
+    /// Fence receipt publication against timeout without holding I/O locks.
+    fn transition(&self, event: Progress, written: &SyncSender<WriteOutcome>) -> bool {
+        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        match (&*state, event) {
+            (Writing::Idle, Progress::Begin(id)) => {
+                *state = Writing::Command(id);
+                true
+            }
+            (Writing::Command(id), Progress::Complete(outcome))
+                if *id
+                    == match outcome {
+                        WriteOutcome::Written(id) | WriteOutcome::Uncertain(id) => id,
+                    } =>
+            {
+                let sent = written.try_send(outcome).is_ok();
+                *state = Writing::Idle;
+                sent
+            }
+            (_, Progress::Stop) => {
+                let sent = match *state {
+                    Writing::Command(id) => written.try_send(WriteOutcome::Uncertain(id)).is_ok(),
+                    Writing::Idle | Writing::Stopped => true,
+                };
+                *state = Writing::Stopped;
+                sent
+            }
+            _ => false,
+        }
+    }
 }
 
 /// How a link reaches its program.
@@ -124,15 +188,22 @@ fn open(dial: Dial) -> std::io::Result<Parts> {
 pub(crate) struct Link {
     commands: SyncSender<ClientMessage>,
     events: Receiver<ServerMessage>,
+    writes: Receiver<WriteOutcome>,
     end: Arc<Mutex<Option<Error>>>,
     socket: Arc<Socket>,
+    state: Cell<State>,
 }
 
-/// The connection's closer, kept so dropping the link closes it at once: the
-/// threads end on their own, and nothing joins them.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum State {
+    Active,
+    Draining,
+}
+
+/// Dropping the link closes its transport without joining on the UI thread.
 #[derive(Default)]
 struct Socket {
-    closed: AtomicBool,
+    closed: Arc<AtomicBool>,
     closer: Mutex<Option<Closer>>,
 }
 
@@ -164,28 +235,21 @@ impl Socket {
 
 impl Link {
     /// Starts connecting to the program `dial` reaches, resuming after
-    /// `since`. `resend` goes out right after the greeting: commands an
-    /// earlier connection may not have delivered, which the program runs once.
-    pub(crate) fn start(
-        dial: impl Into<Dial>,
-        since: Option<Cursor>,
-        resend: impl IntoIterator<Item = ClientMessage>,
-    ) -> Result<Self> {
+    /// `since`. Commands are queued only after the session validates its epoch.
+    pub(crate) fn start(dial: impl Into<Dial>, since: Option<Cursor>) -> Result<Self> {
         let dial = dial.into();
         let (commands, queued) = mpsc::sync_channel(MAX_COMMANDS);
-        for message in resend {
-            commands.try_send(message).map_err(|_| Error::Busy)?;
-        }
         let (sender, events) = mpsc::sync_channel(MAX_EVENTS);
+        let (written, writes) = mpsc::sync_channel(MAX_COMMANDS);
         let end = Arc::new(Mutex::new(None));
         let socket = Arc::new(Socket::default());
         let (thread_end, thread_socket) = (end.clone(), socket.clone());
         thread::Builder::new()
             .name("herdr-gui-chat".into())
             .spawn(move || {
-                let error = run(dial, since, queued, &sender, &thread_socket);
+                let error = run(dial, since, queued, &sender, written, &thread_socket);
                 if let Ok(mut slot) = thread_end.lock() {
-                    *slot = Some(error);
+                    slot.get_or_insert(error);
                 }
                 // The sender drops after the reason is stored, so a window
                 // that sees the channel close always finds it.
@@ -195,13 +259,18 @@ impl Link {
         Ok(Self {
             commands,
             events,
+            writes,
             end,
             socket,
+            state: Cell::new(State::Active),
         })
     }
 
     /// Queues `message` for the writer without waiting.
     pub(crate) fn send(&self, message: ClientMessage) -> Result<()> {
+        if self.socket.closed.load(Ordering::SeqCst) {
+            return Err(Error::NotAttached);
+        }
         self.commands
             .try_send(message)
             .map_err(|error| match error {
@@ -210,13 +279,27 @@ impl Link {
             })
     }
 
+    pub(crate) fn stopped(&self) -> bool {
+        self.socket.closed.load(Ordering::SeqCst)
+    }
+
+    /// Stops both workers. Their outcomes drain before the final error appears.
+    pub(crate) fn stop(&self, error: Error) {
+        self.state.set(State::Draining);
+        if let Ok(mut end) = self.end.lock() {
+            end.get_or_insert(error);
+        }
+        self.socket.close();
+    }
+
     /// Takes at most `budget` messages, and the reason the connection ended
     /// once none are left before it.
     pub(crate) fn poll(&self, budget: usize) -> Polled {
         let mut polled = Polled::default();
         while polled.messages.len() < budget {
             match self.events.try_recv() {
-                Ok(message) => polled.messages.push(message),
+                Ok(message) if self.state.get() == State::Active => polled.messages.push(message),
+                Ok(_) => {}
                 Err(TryRecvError::Empty) => break,
                 Err(TryRecvError::Disconnected) => {
                     let end = self.end.try_lock().ok().and_then(|mut end| end.take());
@@ -224,6 +307,11 @@ impl Link {
                     break;
                 }
             }
+        }
+        // A final end means the reader joined or fenced its writer. No
+        // receipt can arrive after this drain, even if shutdown raced a write.
+        while let Ok(outcome) = self.writes.try_recv() {
+            polled.writes.push(outcome);
         }
         polled
     }
@@ -242,6 +330,7 @@ fn run(
     since: Option<Cursor>,
     queued: Receiver<ClientMessage>,
     events: &SyncSender<ServerMessage>,
+    written: SyncSender<WriteOutcome>,
     socket: &Socket,
 ) -> Error {
     let parts = open(dial).and_then(|(reader, writer, closer)| {
@@ -259,13 +348,31 @@ fn run(
         since,
         version: VERSION,
     };
-    if let Err(error) = thread::Builder::new()
+    let stopped = socket.closed.clone();
+    let progress = Arc::new(WriterProgress::default());
+    let writer_progress = progress.clone();
+    let writer_written = written.clone();
+    let (finished, completion) = mpsc::sync_channel(1);
+    let writer = match thread::Builder::new()
         .name("herdr-gui-chat-writer".into())
-        .spawn(move || write(writer, &writer_closer, hello, &queued))
-    {
-        closer.close();
-        return Error::Spawn(error);
-    }
+        .spawn(move || {
+            write(
+                writer,
+                &writer_closer,
+                hello,
+                &queued,
+                &writer_written,
+                &stopped,
+                &writer_progress,
+            );
+            let _ = finished.try_send(());
+        }) {
+        Ok(writer) => writer,
+        Err(error) => {
+            closer.close();
+            return Error::Spawn(error);
+        }
+    };
     let mut reader = BufReader::new(reader);
     let end = loop {
         match read_frame::<_, ServerMessage>(&mut reader) {
@@ -278,9 +385,30 @@ fn run(
             Err(error) => break Error::Read(error),
         }
     };
+    socket.close();
     closer.close();
+    // The dedicated reader waits at most DRAIN_TIMEOUT. A platform write
+    // that cannot be interrupted remains detached, fenced against replay.
+    drop(drain_writer(writer, &completion, &progress, &written));
     closer.reap();
     end
+}
+
+fn drain_writer(
+    writer: thread::JoinHandle<()>,
+    completion: &Receiver<()>,
+    progress: &WriterProgress,
+    written: &SyncSender<WriteOutcome>,
+) -> Option<thread::JoinHandle<()>> {
+    if completion.recv_timeout(DRAIN_TIMEOUT).is_ok() {
+        let _ = writer.join();
+        None
+    } else {
+        // Receipt publication and this uncertainty notice share one lock.
+        // A late completion cannot race past the final connection end.
+        progress.transition(Progress::Stop, written);
+        Some(writer)
+    }
 }
 
 /// The writer thread: the greeting, then each queued command in order,
@@ -290,14 +418,58 @@ fn write(
     closer: &Closer,
     hello: ClientMessage,
     queued: &Receiver<ClientMessage>,
+    written: &SyncSender<WriteOutcome>,
+    stopped: &AtomicBool,
+    progress: &WriterProgress,
+) {
+    write_frames(writer, hello, queued, written, stopped, progress);
+    closer.close();
+}
+
+fn write_frames(
+    writer: impl Write,
+    hello: ClientMessage,
+    queued: &Receiver<ClientMessage>,
+    written: &SyncSender<WriteOutcome>,
+    stopped: &AtomicBool,
+    progress: &WriterProgress,
 ) {
     let mut writer = BufWriter::new(writer);
     if write_frame(&mut writer, &hello).is_ok() {
-        while let Ok(message) = queued.recv() {
-            if write_frame(&mut writer, &message).is_err() {
+        while !stopped.load(Ordering::SeqCst) {
+            let message = match queued.recv_timeout(Duration::from_millis(20)) {
+                Ok(message) => message,
+                Err(mpsc::RecvTimeoutError::Timeout) => continue,
+                Err(mpsc::RecvTimeoutError::Disconnected) => break,
+            };
+            if stopped.load(Ordering::SeqCst) {
+                break;
+            }
+            if let ClientMessage::Command { id, .. } = &message
+                && !progress.transition(Progress::Begin(*id), written)
+            {
+                break;
+            }
+            let result = write_frame(&mut writer, &message);
+            if let ClientMessage::Command { id, .. } = message {
+                let outcome = if result.is_ok() {
+                    WriteOutcome::Written(id)
+                } else {
+                    WriteOutcome::Uncertain(id)
+                };
+                // At most MAX_PENDING commands wait for acknowledgement.
+                // The larger receipt queue cannot fill before UI polling.
+                if !progress.transition(Progress::Complete(outcome), written) {
+                    break;
+                }
+            }
+            if result.is_err() {
                 break;
             }
         }
     }
-    closer.close();
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests;

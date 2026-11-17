@@ -1,3 +1,5 @@
+// ABOUTME: Verifies chat feature settings gate attachment and discovery.
+// ABOUTME: Keeps disabled chats from launching helpers or offering actions.
 //! ACP chats ship on, and a person can turn them off: off, nothing attaches,
 //! nothing is offered or looked for, and a start is refused.
 
@@ -21,7 +23,7 @@ fn off_no_chat_attaches_and_none_starts(cx: &mut TestAppContext) {
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.poll_chats_with(
-                &mut |_, _, _| {
+                &mut |_, _| {
                     dialled += 1;
                     Err(Error::Closed)
                 },
