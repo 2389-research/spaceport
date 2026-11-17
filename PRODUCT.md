@@ -64,6 +64,8 @@ capability.
 - Icon: the sculpted nebula rocket, `design/spaceport-icon/rocket-nebula.png`
   (decisions D62 and D63). Use its exact bytes or derivatives of them.
 - Credits: an independent fork of Sheprd (Fabien Penso); Apache-2.0.
+- Speak warmly of Sheprd (Doctor Biz, 2026-11-17): say plainly that it is
+  awesome and serves a different audience. Never frame Spaceport as better.
 
 ## Evidence on Hand
 

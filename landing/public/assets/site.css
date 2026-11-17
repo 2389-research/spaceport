@@ -159,6 +159,8 @@ h1 { font-family: var(--title); font-weight: 400; font-size: clamp(2.2rem, 10.4v
 .ledger li { padding: 0.65rem 0; border-top: 1px solid rgb(29 24 48 / 0.28); }
 .fine { margin-top: 1.6rem; font-style: italic; color: var(--on-paper-2); }
 .page > .fine { max-width: 75ch; }
+.page > .praise { margin-top: 2.2rem; max-width: 46ch; font-size: clamp(1.25rem, 1.9vw, 1.6rem); line-height: 1.35; }
+.praise strong { font-family: var(--label); font-weight: 700; font-size: 1.25em; letter-spacing: 0.04em; text-transform: uppercase; color: var(--red); }
 
 .install { margin-top: 2.2rem; display: grid; grid-template-columns: 1fr; gap: 2.5rem; align-items: start; }
 .install ol { counter-reset: step; border-top: 3px solid var(--ink); }
