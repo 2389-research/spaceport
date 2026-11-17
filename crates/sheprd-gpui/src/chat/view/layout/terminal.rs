@@ -1,15 +1,20 @@
+// ABOUTME: Renders chat rows and their layout-specific progress marks.
+// ABOUTME: Colors tool markers from the shared derived tool state.
 //! The chat as Claude Code draws its own screen: the terminal's font
 //! throughout, each prompt on a shaded line after `›`, the agent's words
 //! and tool calls after `⏺` colored by state, how a turn ended after `✻`,
 //! and the session's settings in a status line under the prompt box.
 
-use super::{super::Hues, ChatLayout, ComposerParts, Look, Row, Side, summary_row};
+use super::{
+    super::{Hues, entries::ToolState},
+    ChatLayout, ComposerParts, Look, Row, Side, summary_row,
+};
 use crate::{
     config::{corners, mix},
     fonts::StyledFont,
 };
 use gpui::{prelude::*, *};
-use sheprd_chat_protocol::{EntryKind, NoticeLevel, ToolStatus};
+use sheprd_chat_protocol::{EntryKind, NoticeLevel};
 
 pub(super) struct Terminal;
 
@@ -37,14 +42,9 @@ impl ChatLayout for Terminal {
         let id = row.entry.id.0;
         let (mark, color) = match (&row.entry.kind, side) {
             (_, Side::User) => ("\u{203a}", theme.muted),
-            (EntryKind::Tool(tool), _) => (
+            (EntryKind::Tool(_), _) => (
                 "\u{23fa}",
-                match tool.status {
-                    ToolStatus::Pending => theme.muted,
-                    ToolStatus::InProgress => hues.yellow,
-                    ToolStatus::Completed => hues.green,
-                    ToolStatus::Failed => hues.red,
-                },
+                row.tool.unwrap_or(ToolState::Stopped).color(theme),
             ),
             (EntryKind::Notice { level, .. }, _) => (
                 "\u{23fa}",

@@ -1,3 +1,5 @@
+// ABOUTME: Renders chat cards and derives their visible tool state.
+// ABOUTME: Uses transcript liveness across cards, rows, and nested steps.
 //! What one transcript entry shows: a message, a thought, a tool call, a
 //! picture, a notice, or how a turn ended. The chat's layout decides the
 //! row it sits in.
@@ -21,7 +23,7 @@ use super::{
 use crate::{SheprdWindow, config::corners, fonts::StyledFont, i18n::fl, notifications::safe_text};
 use gpui::{prelude::*, *};
 use sheprd_chat_protocol::{
-    ActivityState, Entry, EntryKind, NoticeLevel, Tool, ToolKind, ToolStatus,
+    ActivityState, Entry, EntryKind, NoticeLevel, Tool, ToolKind, ToolStatus, Transcript,
 };
 
 mod questions;
@@ -57,6 +59,16 @@ pub(super) enum ToolState {
 }
 
 impl ToolState {
+    pub(in crate::chat::view) fn color(self, theme: &crate::config::Theme) -> u32 {
+        let hues = Hues::of(theme);
+        match self {
+            Self::Running => hues.yellow,
+            Self::Done => hues.green,
+            Self::Failed => hues.red,
+            Self::Pending | Self::Stopped => theme.muted,
+        }
+    }
+
     /// The word the card shows.
     fn label(self) -> String {
         match self {
@@ -71,8 +83,16 @@ impl ToolState {
 
 /// Where a tool call's card says it stands: what it started when it
 /// started something, which can outlive the call, else the call.
-fn tool_state(activity: Option<ActivityState>, status: ToolStatus) -> ToolState {
-    match (activity, status) {
+fn tool_state(transcript: &Transcript, tool: &Tool) -> ToolState {
+    let live = transcript.tool_live(tool);
+    match (
+        transcript
+            .activity(&tool.call_id)
+            .map(|activity| activity.state),
+        tool.status,
+    ) {
+        (Some(ActivityState::Running), _) if !live => ToolState::Stopped,
+        (None, ToolStatus::Pending | ToolStatus::InProgress) if !live => ToolState::Stopped,
         (Some(ActivityState::Running), _) | (None, ToolStatus::InProgress) => ToolState::Running,
         (Some(ActivityState::Finished), _) | (None, ToolStatus::Completed) => ToolState::Done,
         (Some(ActivityState::Failed), _) | (None, ToolStatus::Failed) => ToolState::Failed,
@@ -247,12 +267,7 @@ impl SheprdWindow {
             current,
             expanded: chat.expanded.contains(&entry.id),
             tool: match &entry.kind {
-                EntryKind::Tool(tool) => Some(tool_state(
-                    transcript
-                        .activity(&tool.call_id)
-                        .map(|activity| activity.state),
-                    tool.status,
-                )),
+                EntryKind::Tool(tool) => Some(tool_state(transcript, tool)),
                 _ => None,
             },
             content,
@@ -314,16 +329,12 @@ impl SheprdWindow {
         let theme = &self.theme;
         let hues = Hues::of(theme);
         let chat = self.chats.pane(pane_id);
-        let activity = chat.and_then(|chat| chat.session.transcript().activity(&tool.call_id));
         // What a call started outlives it: a background shell runs on after
         // its call is done, and its card says so until it ends.
-        let status = tool_state(activity.map(|activity| activity.state), tool.status);
-        let color = match status {
-            ToolState::Running => hues.yellow,
-            ToolState::Done => hues.green,
-            ToolState::Failed => hues.red,
-            ToolState::Pending | ToolState::Stopped => theme.muted,
-        };
+        let status = chat.map_or(ToolState::Stopped, |chat| {
+            tool_state(chat.session.transcript(), tool)
+        });
+        let color = status.color(theme);
         let steps = chat.map_or(&[][..], |chat| chat.prepared.steps(&tool.call_id));
         // An open call lists the locations and output the selection document
         // holds, each by its own cell, rather than deriving them again.
