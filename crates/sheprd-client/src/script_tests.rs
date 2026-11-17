@@ -1,9 +1,13 @@
+// ABOUTME: Groups bounded script execution and cleanup tests.
+// ABOUTME: Shares local process fixtures across script behavior tests.
 use super::*;
 use crate::ssh;
 use std::io::Cursor;
 
 #[path = "script_tests/command.rs"]
 mod command;
+#[path = "script_tests/descendants.rs"]
+mod descendants;
 #[path = "script_tests/dropped.rs"]
 mod dropped;
 

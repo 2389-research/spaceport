@@ -216,10 +216,15 @@ pub(crate) fn run(options: Options) -> anyhow::Result<()> {
             }
             session.start();
             for input in receiver {
+                let expected = matches!(
+                    &input,
+                    Input::Shutdown | Input::AgentExited { code: Some(0), .. }
+                );
                 if session.handle(input) == Flow::Exit {
-                    break;
+                    return expected;
                 }
             }
+            false
         })?;
 
     // Headless, the session ends when the agent does; otherwise when the view quits.
@@ -230,10 +235,13 @@ pub(crate) fn run(options: Options) -> anyhow::Result<()> {
         let _ = inputs.send(Input::Shutdown);
         result
     };
-    let _ = session_thread.join();
+    let expected = session_thread.join().unwrap_or(false);
     agent_process.stop();
     if let Some(reporter) = reporter {
         reporter.close();
+    }
+    if options.headless && !expected {
+        return Err(crate::Error::AgentEnded.into());
     }
     result
 }
