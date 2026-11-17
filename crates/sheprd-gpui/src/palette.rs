@@ -629,7 +629,7 @@ impl SheprdWindow {
                 Source {
                     endpoint: endpoint.id.clone(),
                     generation: endpoint.generation,
-                    enabled: endpoint.enabled && live.status.is_connected(),
+                    enabled: endpoint.enabled() && live.status.is_connected(),
                     snapshot: live.snapshot.clone(),
                 }
             })

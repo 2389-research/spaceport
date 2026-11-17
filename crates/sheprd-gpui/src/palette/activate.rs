@@ -189,7 +189,7 @@ impl SheprdWindow {
         let index = self
             .endpoints
             .iter()
-            .position(|e| e.id == endpoint && e.enabled)
+            .position(|e| e.id == endpoint && e.enabled())
             .ok_or(Error::HostUnavailable)?;
         let selected = index == self.selected_endpoint;
         let live = self.live_of(index);

@@ -123,7 +123,7 @@ impl SheprdWindow {
     fn overview_inputs(&self, now: SystemTime, cx: &App) -> inputs::Inputs {
         let hosts = self
             .hosts()
-            .map(|(_, endpoint, live)| (endpoint.enabled, live));
+            .map(|(_, endpoint, live)| (endpoint.enabled(), live));
         let revisions = (
             Marks::of(cx).map_or(0, Marks::revision),
             crate::notification_mutes::Mutes::of(cx)
@@ -183,7 +183,7 @@ impl SheprdWindow {
             if let Some(snapshot) = state
                 .snapshot
                 .as_deref()
-                .filter(|_| endpoint.enabled && state.status.is_connected())
+                .filter(|_| endpoint.enabled() && state.status.is_connected())
             {
                 self.overview
                     .closed
@@ -288,7 +288,7 @@ impl SheprdWindow {
         } = &agent.row.open;
         let current = self.hosts().any(|(_, host, live)| {
             host.id == *endpoint
-                && host.enabled
+                && host.enabled()
                 && live.status.is_connected()
                 && live
                     .snapshot

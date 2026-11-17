@@ -219,7 +219,7 @@ impl SheprdWindow {
         if self
             .endpoints
             .iter()
-            .any(|endpoint| endpoint.id == id && endpoint.enabled && endpoint.serving())
+            .any(|endpoint| endpoint.id == id && endpoint.enabled() && endpoint.serving())
         {
             // One handoff attempt: activation failure may fall back to Local,
             // but must neither overwrite the preference nor loop on every tick.
@@ -298,14 +298,13 @@ impl SheprdWindow {
                 )
             };
             let changed =
-                endpoint.enabled != device.enabled || entry_changed(&endpoint, &device.target);
+                endpoint.enabled() != device.enabled || entry_changed(&endpoint, &device.target);
             if changed {
-                endpoint.stop();
-                endpoint.attempts = 0;
-                endpoint.connection.target = device.target.clone();
-                endpoint.enabled = device.enabled;
-                endpoint.detached = false;
-                endpoint.retry_at = Instant::now();
+                endpoint.enter(super::Transition::Retarget {
+                    target: device.target.clone(),
+                    enabled: device.enabled,
+                });
+                endpoint.sync_live();
             }
             endpoint.label = device.label;
             endpoint.saved = Some(device.target);
@@ -323,7 +322,7 @@ impl SheprdWindow {
         self.device_filter.reconcile(
             self.endpoints
                 .iter()
-                .filter(|endpoint| endpoint.enabled)
+                .filter(|endpoint| endpoint.enabled())
                 .map(|endpoint| endpoint.id.as_str()),
         );
         // A tab torn off another window may belong to a host just listed.
