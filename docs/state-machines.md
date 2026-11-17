@@ -447,6 +447,7 @@ Opening and Herdr activity-report owners remain unchanged.
 - All-target/all-feature Clippy, quick checks, and independent provider review passed.
 
 Live provider and cross-platform execution remain separate checks.
+
 ## Status notice ownership — z1tp
 
 [`notice.rs`](../crates/sheprd-gpui/src/notice.rs) stores an optional Notice with text, cause, and deadline.

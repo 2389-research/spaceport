@@ -115,7 +115,7 @@ fn a_ready_hub_does_not_prove_a_restored_chats_runtime(cx: &mut gpui::TestAppCon
         );
         core_terminals::set_terminals_for_test(cx, vec![current]);
         view.update(cx, |view, cx| {
-            view.flash = None;
+            view.clear_flash(false);
             assert!(view.core_pane_command(Command::SplitRight, window, cx));
             assert_eq!(
                 view.flash.as_ref().map(|(flash, _)| flash.text.to_string()),
