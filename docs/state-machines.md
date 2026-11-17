@@ -26,14 +26,19 @@ Success, placement refusal, and errors therefore cannot strand the FIFO.
 The worker retains its original backend and performs blocking work off the UI thread.
 A disconnected receiver has an uncertain outcome and never requeues its request.
 A stale Core request is refused before submission.
+Splits retain their saved tab's Core identity, even while the hub is absent.
+Unscoped splits require fresh catalog ownership and a matching retained chat target.
+Unknown or conflicting targets return a typed refusal before enqueueing.
+Worker creation failures use the typed completion path and preserve FIFO draining.
 Core terminals remain runtime-owned when a view disappears.
 
 ### Verification
 
 - [Queue integration tests](../crates/sheprd-gpui/src/core_terminals/tests/spawn_queue.rs) observe framed requests and post-placement draining.
 - [Owner tests](../crates/sheprd-gpui/src/core_terminals/spawning/tests.rs) cover bounds, Core mismatch, unavailable cleanup, and uncertain completion.
-- `cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport core_terminals::`: 114 passed, eight opt-in tests ignored.
-- Seven chat Core tests and applicable quick checks passed.
+- Clean `cargo test --locked -p sheprd-gpui --bin spaceport core_terminals::`: 118 passed, eight opt-in tests ignored.
+- Clean chat checks passed 495 tests, including keyboard target-identity regressions.
+- Default and integration-feature Clippy, quick checks, and independent follow-up review passed.
 
 Native GUI and isolated real-runtime spawning remain separate integration checks.
 
