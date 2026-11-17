@@ -385,7 +385,7 @@ impl SheprdWindow {
         }
         let existing = composer.read(cx).text().to_owned();
         if mode == ActionMode::Send
-            && (!existing.trim().is_empty() || !pane.attachments.is_empty() || pane.uploading > 0)
+            && (!existing.trim().is_empty() || !pane.attachments.is_empty() || pane.uploading() > 0)
         {
             pane.error = Some(fl!("chat-form-busy"));
             cx.notify();
