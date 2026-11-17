@@ -40,3 +40,33 @@ Cleanup remains best effort under the existing transfer API and application life
 - Three regression tests failed before the conversion.
 
 Live SSH cleanup and native window teardown remain separate integration checks.
+
+## Herdr activity reporting — dre7
+
+[`herdr/activity.rs`](../crates/sheprd-acp/src/herdr/activity.rs) owns `ActivityReport`.
+Its states are Unreported, QueuedInitial, Queued, Reporting, Retry, and Acknowledged.
+Only `ActivityReport::transition(Event)` mutates that bounded mailbox lifecycle.
+
+| Event | Transition or effect |
+| --- | --- |
+| Queue | Keep the latest activity; preserve one newer value during an in-flight report |
+| Begin | Move queued or retry activity into Reporting for the single worker |
+| Complete | Keep newer queued work; otherwise acknowledge success or retain Retry on failure |
+
+The worker performs socket I/O outside the mailbox lock.
+A failed report waits on the existing Condvar retry interval.
+Acknowledgement includes the existing authority check and reclaim sequence.
+A newer activity supersedes the older value, whether its in-flight report succeeds or fails.
+An attempted report may have reached Herdr despite a failed reply.
+The attempted-state projection therefore preserves announcement and withdrawal behavior.
+Closing wakes the worker, skips stale retries, and retains the prior handling of already queued reports.
+
+### Verification
+
+- [Worker tests](../crates/sheprd-acp/src/herdr/tests/activity.rs) use an isolated socket peer for failed submission, authority checks, supersession, and shutdown.
+- [Portable owner tests](../crates/sheprd-acp/src/herdr/tests/activity_state.rs) cover acknowledgement and latest-value retention.
+- Two retry regressions failed before the conversion.
+- `cargo test --locked -p sheprd-acp`: 411 unit, one branding, and four process tests passed.
+- Scoped Clippy, formatting, size, sorting, and whitespace checks passed.
+
+Live-Herdr and other-platform execution remain separate integration checks.
