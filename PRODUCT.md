@@ -35,6 +35,10 @@ command line. Herdr's capabilities are Herdr's. Do not present them as
 Spaceport's own (confirmed 2026-11-17: "let's not make herdr claims our
 claims"). Credit Herdr as the runtime Spaceport connects to.
 
+The fork's motive (Doctor Biz, 2026-11-17): simplify the app and focus it on
+running agents without supervision. State this as the aim, not as a finished
+capability.
+
 ## Operating Context
 
 - macOS 14.2 or later on Apple silicon for the preview.
