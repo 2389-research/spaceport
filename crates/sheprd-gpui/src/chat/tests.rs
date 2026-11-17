@@ -24,6 +24,8 @@ mod code;
 mod composer;
 mod controls;
 mod core_panes;
+#[cfg(unix)]
+mod core_spawn_identity;
 mod delivery;
 mod delivery_ui;
 mod discovery;
