@@ -36,7 +36,7 @@ fn submitting_the_form_connects_to_core_before_adding(cx: &mut gpui::TestAppCont
 
             // A Core that cannot be joined returns the form with the reason.
             let deadline = Instant::now() + Duration::from_secs(5);
-            while matches!(view.core_terminals.hub.state(), HubState::Connecting(_)) {
+            while matches!(view.core_terminals.hub.state(), HubState::Connecting { .. }) {
                 assert!(Instant::now() < deadline, "Core join did not finish");
                 view.core_terminals.hub.poll();
                 std::thread::yield_now();

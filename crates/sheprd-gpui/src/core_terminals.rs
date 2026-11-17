@@ -548,7 +548,7 @@ impl SheprdWindow {
                 }
                 self.core_terminals.views.clear();
             }
-            if let State::Unavailable(error) = self.core_terminals.hub.state()
+            if let State::Unavailable { error, .. } = self.core_terminals.hub.state()
                 && matches!(
                     self.core_terminals
                         .spawning

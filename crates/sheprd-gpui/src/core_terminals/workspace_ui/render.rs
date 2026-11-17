@@ -141,11 +141,13 @@ impl SheprdWindow {
             }
             Access::Missing => {
                 let state = self.core_terminals.hub.state();
-                let joinable = matches!(state, HubState::Idle | HubState::Unavailable(_));
+                let joinable = matches!(state, HubState::Idle | HubState::Unavailable { .. });
                 let message = match state {
                     HubState::Idle => fl!("core-workspace-connect"),
-                    HubState::Connecting(_) | HubState::Ready(_) => fl!("core-workspace-loading"),
-                    HubState::Unavailable(error) => fl!(
+                    HubState::Connecting { .. } | HubState::Ready(_) => {
+                        fl!("core-workspace-loading")
+                    }
+                    HubState::Unavailable { error, .. } => fl!(
                         "core-workspace-join-error",
                         reason = bounded(&error.to_string())
                     ),
