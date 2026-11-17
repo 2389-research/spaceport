@@ -50,7 +50,7 @@ fn selected_core_group_joins_only_its_existing_runtime(cx: &mut gpui::TestAppCon
 
 fn settle(view: &mut crate::SheprdWindow) {
     let deadline = Instant::now() + Duration::from_secs(5);
-    while matches!(view.core_terminals.hub.state(), State::Connecting(_)) {
+    while matches!(view.core_terminals.hub.state(), State::Connecting { .. }) {
         assert!(Instant::now() < deadline, "Core join did not finish");
         view.core_terminals.hub.poll();
         std::thread::yield_now();

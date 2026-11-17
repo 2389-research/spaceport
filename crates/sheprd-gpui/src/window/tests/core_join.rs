@@ -25,11 +25,13 @@ fn plain_local_window_joins_existing_core_without_starting_it(cx: &mut gpui::Tes
             view.core_terminals.hub.poll();
             match view.core_terminals.hub.state() {
                 State::Idle => "idle",
-                State::Connecting(_) => "connecting",
-                State::Unavailable(error) if matches!(error.as_ref(), Error::NotInstalled) => {
+                State::Connecting { .. } => "connecting",
+                State::Unavailable { error, .. }
+                    if matches!(error.as_ref(), Error::NotInstalled) =>
+                {
                     "joined"
                 }
-                State::Unavailable(_) => "started",
+                State::Unavailable { .. } => "started",
                 State::Ready(_) => "ready",
             }
         });
