@@ -442,3 +442,28 @@ Opening and Herdr activity-report owners remain unchanged.
 - All-target/all-feature Clippy, quick checks, and independent provider review passed.
 
 Live provider and cross-platform execution remain separate checks.
+## Status notice ownership — z1tp
+
+[`notice.rs`](../crates/sheprd-gpui/src/notice.rs) stores an optional Notice with text, cause, and deadline.
+`Notices::transition` owns Show, Clear, Take, Restore, and Expire.
+Operation causes expire after ten seconds; Connection causes persist until recovery or clear.
+Connection reasons reject transient replacement and remain authoritative while disconnected.
+The endpoint retry owner reads only connection-caused diagnostics.
+Held input keeps the original cause, deadline, and revision.
+Clear or a newer Show prevents an older held notice from returning.
+Reads hide expired mailbox copies; window ticks retire them and repaint.
+[`window/flash.rs`](../crates/sheprd-gpui/src/window/flash.rs) owns flash clearing and fade cleanup.
+Endpoint reset clears active and already fading flashes through that owner.
+CLI text and schemas, wire formats, and saved files remain unchanged.
+
+### Verification
+
+- [Owner tests](../crates/sheprd-gpui/src/notice/tests.rs) cover deadlines, persistent reasons, and held restoration.
+- [Window tests](../crates/sheprd-gpui/src/window/status_bar_tests/notices.rs) cover local and live expiry.
+- Late-refusal and fading-flash regressions failed on the baseline and passed after conversion.
+- Clean default checks passed 4,090 unit/headless tests and 45 integration tests.
+- Integration-feature checks passed 4,123 unit/headless tests and 56 integration tests.
+- Scoped Clippy, quick checks, and independent source review passed.
+
+The expiry owner tests have no captured preconversion failing run; that TDD evidence gap remains explicit.
+Native UI, platform execution, and the all-features Sparkle build remain separate checks.
