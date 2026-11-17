@@ -67,6 +67,7 @@ mod terminal_input;
 mod timeline;
 mod tool_glance;
 mod tool_indent;
+mod tool_liveness;
 mod typography;
 mod uploads;
 mod user_messages;

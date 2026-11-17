@@ -1,3 +1,5 @@
+// ABOUTME: Checks chat behavior against synthetic transcript fixtures.
+// ABOUTME: Keeps lifecycle and rendering expectations explicit at the test boundary.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
@@ -16,6 +18,7 @@ mod product_identity;
 mod removed_phone;
 mod replica;
 mod revisions;
+mod tool_liveness;
 mod wire;
 
 fn text(id: u64, kind: fn(String) -> EntryKind, value: &str) -> Entry {

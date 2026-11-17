@@ -1,10 +1,12 @@
+// ABOUTME: Renders nested sub-agent steps inside their parent card.
+// ABOUTME: Uses the same tool state as the other chat renderers.
 //! A sub-agent's own steps, listed in its call's card when it is open: one
 //! quiet line each, its state's mark and its title.
 
-use super::{Hues, tool_header};
+use super::{ToolState, tool_header, tool_state};
 use crate::{SheprdWindow, chat::chats::ChatPane, fonts::StyledFont, i18n::fl};
 use gpui::{prelude::*, *};
-use sheprd_chat_protocol::{EntryId, EntryKind, ToolStatus};
+use sheprd_chat_protocol::{EntryId, EntryKind};
 
 /// `12 steps`, beside a sub-agent's state.
 pub(super) fn steps_label(count: usize) -> String {
@@ -19,7 +21,6 @@ impl SheprdWindow {
         steps: &[EntryId],
     ) -> Div {
         let theme = &self.theme;
-        let hues = Hues::of(theme);
         let transcript = chat.session.transcript();
         let text = self.chat_tool_text();
         div()
@@ -35,12 +36,15 @@ impl SheprdWindow {
                 let EntryKind::Tool(tool) = &transcript.entry(*id)?.kind else {
                     return None;
                 };
-                let (mark, color) = match tool.status {
-                    ToolStatus::Pending => ("\u{25cb}", theme.muted),
-                    ToolStatus::InProgress => ("\u{25cf}", hues.yellow),
-                    ToolStatus::Completed => ("\u{2713}", hues.green),
-                    ToolStatus::Failed => ("\u{2717}", hues.red),
+                let state = tool_state(transcript, tool);
+                let mark = match state {
+                    ToolState::Pending => "\u{25cb}",
+                    ToolState::Running => "\u{25cf}",
+                    ToolState::Done => "\u{2713}",
+                    ToolState::Failed => "\u{2717}",
+                    ToolState::Stopped => "\u{25a0}",
                 };
+                let color = state.color(theme);
                 let id = *id;
                 Some(
                     div()

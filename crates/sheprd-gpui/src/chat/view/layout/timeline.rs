@@ -1,3 +1,5 @@
+// ABOUTME: Renders chat rows and their layout-specific progress marks.
+// ABOUTME: Colors tool markers from the shared derived tool state.
 //! Entries on a timeline: a gutter down the left marks each entry, with an
 //! avatar where the speaker changes and a dot colored by state for the
 //! agent's thoughts, tool calls, and notices. The line through the gutter
@@ -5,13 +7,13 @@
 //! shade off the background with no border, its settings along the foot.
 
 use super::{
-    super::{Hues, agent_icon},
+    super::{Hues, agent_icon, entries::ToolState},
     ChatLayout, ComposerParts, Look, Row, Side, side, summary_row,
 };
 use crate::i18n::fl;
 use crate::{config::corners, notifications::safe_text};
 use gpui::{prelude::*, *};
-use sheprd_chat_protocol::{Entry, EntryKind, NoticeLevel, ToolStatus};
+use sheprd_chat_protocol::{Entry, EntryKind, NoticeLevel};
 
 /// Width of the timeline's gutter, and the size of an avatar in it.
 const GUTTER: f32 = 22.;
@@ -40,7 +42,7 @@ impl ChatLayout for Timeline {
                     .h(px(SPACING))
                     .when(row.previous.is_some(), |segment| segment.bg(line)),
             )
-            .child(mark(row.entry, speaker, row.agent, look))
+            .child(mark(row.entry, speaker, row.agent, row.tool, look))
             .child(
                 div()
                     .flex_1()
@@ -114,7 +116,13 @@ impl ChatLayout for Timeline {
 
 /// The gutter's mark for an entry: an avatar where the speaker changes,
 /// else a dot colored by the entry's state.
-fn mark(entry: &Entry, speaker: bool, agent: &str, look: &Look<'_>) -> Div {
+fn mark(
+    entry: &Entry,
+    speaker: bool,
+    agent: &str,
+    tool: Option<ToolState>,
+    look: &Look<'_>,
+) -> Div {
     let theme = look.theme;
     let hues = Hues::of(theme);
     if speaker {
@@ -142,12 +150,13 @@ fn mark(entry: &Entry, speaker: bool, agent: &str, look: &Look<'_>) -> Div {
             );
     }
     let (color, filled) = match &entry.kind {
-        EntryKind::Tool(tool) => match tool.status {
-            ToolStatus::Pending => (theme.muted, false),
-            ToolStatus::InProgress => (hues.yellow, false),
-            ToolStatus::Completed => (hues.green, true),
-            ToolStatus::Failed => (hues.red, true),
-        },
+        EntryKind::Tool(_) => {
+            let state = tool.unwrap_or(ToolState::Stopped);
+            (
+                state.color(theme),
+                matches!(state, ToolState::Done | ToolState::Failed),
+            )
+        }
         EntryKind::Notice { level, .. } => match level {
             NoticeLevel::Info => (theme.subtext(), false),
             NoticeLevel::Warning => (hues.yellow, true),
