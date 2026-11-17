@@ -41,6 +41,56 @@ Cleanup remains best effort under the existing transfer API and application life
 
 Live SSH cleanup and native window teardown remain separate integration checks.
 
+## Agent session opening — ha8y
+
+Codex and Pi each own opening state beneath their existing bridge.
+The bridge translates effects into existing harness messages and ACP replies.
+Turn ownership and setting-command state stay in their existing owners.
+
+| Provider | Owner | Stored states | Transition function |
+| --- | --- | --- | --- |
+| Codex | [`codex/bridge/opening.rs`](../crates/sheprd-acp/src/codex/bridge/opening.rs) | Handshake: Waiting, Ready, Failed. Models: NotAsked, Waiting, Ready. Opening: None, Asked, Thread, Open. | `opening::State::transition(Event)` |
+| Pi | [`pi/bridge/opening.rs`](../crates/sheprd-acp/src/pi/bridge/opening.rs) | Handshake: Waiting, Ready, Failed. Opening: None, Asked, Open. | `opening::State::transition(Event)` |
+
+### Codex transitions
+
+- `Ask` retains the ACP request until initialization completes.
+- A second pending opening fails without replacing the first request.
+- Successful initialization requests models once and starts or resumes the requested thread.
+- Failed initialization persists and answers both pending and later opening requests.
+- A valid thread waits for model discovery before becoming Open.
+- Failed model discovery preserves the existing optional-model behavior.
+- Thread failure or an empty thread identity fails the pending opening.
+- A completed opening permits another opening.
+- Pending and refused replacements retain the active session identity.
+- Only a validated successful replacement changes prompt, cancellation, and notification routing.
+
+### Pi transitions
+
+- State and model discovery may finish in either order.
+- A discovery failure persists and answers pending and later opening requests.
+- Later discovery success cannot replace a recorded failure.
+- Both successful discovery results permit resolving the pending ACP opening.
+- The requested loaded identity takes precedence over the discovered identity.
+- An empty identity fails instead of creating an Open session.
+- A second pending request cannot replace the first opening or its loaded identity.
+- Later openings preserve current model and thinking settings.
+
+### Verification
+
+The tests exercise real bridge inputs and emitted harness/ACP messages with synthetic protocol data.
+The existing helper checks also run isolated executable processes.
+Live provider sessions remain a separate integration check.
+
+- [Codex opening tests](../crates/sheprd-acp/src/codex/bridge/tests/opening.rs).
+- [Codex reopening tests](../crates/sheprd-acp/src/codex/bridge/tests/reopening.rs).
+- [Pi opening tests](../crates/sheprd-acp/src/pi/bridge/tests/opening.rs).
+- `cargo test --locked -p sheprd-acp bridge::tests::opening`.
+- `cargo test --locked -p sheprd-acp --all-features`.
+
+The original regression run failed six cases before the conversion.
+Sequential opening and retained-setting regressions guard behavior preserved during the conversion.
+
 ## Settings persistence — y0p7
 
 [`persistence/lifecycle.rs`](../crates/sheprd-gpui/src/settings_window/persistence/lifecycle.rs) owns active writes, drain goals, and pending work.
