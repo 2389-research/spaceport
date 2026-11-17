@@ -1,3 +1,5 @@
+// ABOUTME: Tests Codex protocol translation with session and harness messages.
+// ABOUTME: Shares fixtures for opening, prompts, and event projections.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use serde_json::{Value, json};
@@ -7,6 +9,7 @@ use crate::harness::tests::{file_name, file_uri};
 
 mod background;
 mod branding;
+mod opening;
 mod turn_ended;
 
 const THREAD: &str = "01a160d5-4de7-7262-b413-0ce5180918ce";
