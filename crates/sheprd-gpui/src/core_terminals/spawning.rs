@@ -28,7 +28,7 @@ pub(super) enum Spawning {
 }
 
 pub(super) enum Event<'a> {
-    Queue(Purpose, Spawn, Option<String>),
+    Queue(Purpose, Box<Spawn>, Option<String>),
     Start(&'a CoreBackend, &'a Infos),
     Poll,
     Unavailable,
@@ -40,7 +40,10 @@ pub(super) enum Outcome {
     Full,
     Stale,
     Cleared,
-    Finished(Purpose, Result<TerminalInfo, sheprd_core_client::Error>),
+    Finished(
+        Purpose,
+        Box<Result<TerminalInfo, sheprd_core_client::Error>>,
+    ),
 }
 
 impl Spawning {
@@ -51,7 +54,7 @@ impl Spawning {
                 let request = Request {
                     expected_core: core_id,
                     purpose,
-                    spawn,
+                    spawn: *spawn,
                 };
                 match self {
                     Self::Idle => *self = Self::Queued(VecDeque::from([request])),
@@ -141,7 +144,7 @@ impl Spawning {
                 if !queued.is_empty() {
                     *self = Self::Queued(queued);
                 }
-                Outcome::Finished(purpose, outcome)
+                Outcome::Finished(purpose, Box::new(outcome))
             }
             Event::Unavailable => {
                 let cleared = match self {

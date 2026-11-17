@@ -15,12 +15,12 @@ fn a_full_queue_refuses_only_the_new_request() {
     let mut spawning = Spawning::default();
     for _ in 0..CAPACITY {
         assert!(matches!(
-            spawning.transition(Event::Queue(purpose(), Spawn::default(), None)),
+            spawning.transition(Event::Queue(purpose(), Box::default(), None)),
             Outcome::Accepted
         ));
     }
     assert!(matches!(
-        spawning.transition(Event::Queue(purpose(), Spawn::default(), None)),
+        spawning.transition(Event::Queue(purpose(), Box::default(), None)),
         Outcome::Full
     ));
     assert!(matches!(&spawning, Spawning::Queued(queued) if queued.len() == CAPACITY));
@@ -42,7 +42,7 @@ fn queued_work_cannot_move_to_another_core() {
     let mut spawning = Spawning::default();
     spawning.transition(Event::Queue(
         purpose(),
-        Spawn::default(),
+        Box::default(),
         Some("core-a".into()),
     ));
     assert!(matches!(
@@ -58,9 +58,9 @@ fn connection_failure_discards_waiting_work_but_consumes_the_running_request_onc
     let (backend, peer) = crate::core_terminals::tests::scripted_core::connect("core-a");
     let mut spawning = Spawning::default();
     let infos = Infos::default();
-    spawning.transition(Event::Queue(purpose(), Spawn::default(), None));
+    spawning.transition(Event::Queue(purpose(), Box::default(), None));
     spawning.transition(Event::Start(&backend, &infos));
-    spawning.transition(Event::Queue(purpose(), Spawn::default(), None));
+    spawning.transition(Event::Queue(purpose(), Box::default(), None));
     assert!(matches!(
         spawning.transition(Event::Unavailable),
         Outcome::Cleared
@@ -70,7 +70,7 @@ fn connection_failure_discards_waiting_work_but_consumes_the_running_request_onc
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
     loop {
         match spawning.transition(Event::Poll) {
-            Outcome::Finished(_, Err(_)) => break,
+            Outcome::Finished(_, outcome) if outcome.is_err() => break,
             Outcome::None => {}
             _ => panic!("lost connection must finish with an error"),
         }

@@ -496,7 +496,7 @@ impl SheprdWindow {
         let queued = self
             .core_terminals
             .spawning
-            .transition(spawning::Event::Queue(purpose, spawn, core_id));
+            .transition(spawning::Event::Queue(purpose, Box::new(spawn), core_id));
         if !matches!(queued, spawning::Outcome::Accepted) {
             return false;
         }
@@ -651,7 +651,7 @@ impl SheprdWindow {
         else {
             return;
         };
-        let info = match outcome {
+        let info = match *outcome {
             // Known at once, so a chat it labels attaches without waiting
             // for the next list.
             Ok(info) => self.core_terminals.infos.insert(info),
