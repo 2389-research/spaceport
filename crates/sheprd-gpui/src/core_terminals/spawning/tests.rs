@@ -46,7 +46,7 @@ fn queued_work_cannot_move_to_another_core() {
         Some("core-a".into()),
     ));
     assert!(matches!(
-        spawning.transition(Event::Start(&backend, &Infos::default())),
+        spawning.transition(Event::Start(&backend, &Infos::default(), spawn_worker)),
         Outcome::Stale
     ));
     assert!(matches!(spawning, Spawning::Idle));
@@ -59,7 +59,7 @@ fn connection_failure_discards_waiting_work_but_consumes_the_running_request_onc
     let mut spawning = Spawning::default();
     let infos = Infos::default();
     spawning.transition(Event::Queue(purpose(), Box::default(), None));
-    spawning.transition(Event::Start(&backend, &infos));
+    spawning.transition(Event::Start(&backend, &infos, spawn_worker));
     spawning.transition(Event::Queue(purpose(), Box::default(), None));
     assert!(matches!(
         spawning.transition(Event::Unavailable),
@@ -80,8 +80,36 @@ fn connection_failure_discards_waiting_work_but_consumes_the_running_request_onc
     assert!(matches!(spawning, Spawning::Idle));
     assert!(matches!(spawning.transition(Event::Poll), Outcome::None));
     assert!(matches!(
-        spawning.transition(Event::Start(&backend, &infos)),
+        spawning.transition(Event::Start(&backend, &infos, spawn_worker)),
         Outcome::None
     ));
     assert!(matches!(spawning, Spawning::Idle));
+}
+
+#[cfg(unix)]
+#[test]
+fn a_worker_launch_error_preserves_its_typed_io_source_until_completion() {
+    fn fail(_: CoreBackend, _: Spawn, _: mpsc::SyncSender<Completion>) -> std::io::Result<()> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            "fixture launch refusal",
+        ))
+    }
+    let (backend, _peer) = crate::core_terminals::tests::scripted_core::connect("core-a");
+    let mut spawning = Spawning::default();
+    spawning.transition(Event::Queue(purpose(), Box::default(), None));
+    spawning.transition(Event::Start(&backend, &Infos::default(), fail));
+    let Outcome::Finished(_, outcome) = spawning.transition(Event::Poll) else {
+        panic!("failed launch must finish through the normal completion path");
+    };
+    let error = outcome.unwrap_err();
+    assert!(
+        matches!(&error, super::super::Error::Worker(source) if source.kind() == std::io::ErrorKind::PermissionDenied)
+    );
+    assert_eq!(
+        std::error::Error::source(&error).unwrap().to_string(),
+        "fixture launch refusal"
+    );
+    assert!(matches!(spawning, Spawning::Idle));
+    assert!(matches!(spawning.transition(Event::Poll), Outcome::None));
 }
