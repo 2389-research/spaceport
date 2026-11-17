@@ -1,3 +1,5 @@
+// ABOUTME: Supplies private Core protocol fixtures and test module wiring.
+// ABOUTME: Shares socket pairs, framed peers, and isolated runtime test support.
 //! Shared fixtures: a scripted core on the other end of a socket pair.
 
 mod backend;
@@ -10,7 +12,7 @@ mod file_read;
 mod frame;
 mod hello;
 mod labels;
-mod live;
+pub(crate) mod live;
 mod machine;
 mod machine_manage;
 mod observation;

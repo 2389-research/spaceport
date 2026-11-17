@@ -17,7 +17,7 @@ fn newer_same_endpoint_navigation_cannot_replay_a_pending_toast(cx: &mut gpui::T
             .with_snapshot(endpoint.live.snapshot.as_deref())
             .preview()]);
     view.update(cx, |view, cx| {
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.push(endpoint);
         view.selected_endpoint = 1;
         view.options = ConnectOptions::default();
@@ -141,7 +141,7 @@ fn toast_handoff_retains_busy_validation_and_revalidates_before_queueing(
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
             view.endpoints.truncate(1);
-            view.endpoints[0].detached = true;
+            view.endpoints[0].detach_for_test();
             view.endpoints.push(endpoint);
             view.options = ConnectOptions::default();
             if already_active {
@@ -252,7 +252,7 @@ fn accepted_toast_survives_expiry_but_not_invalidation(cx: &mut gpui::TestAppCon
         view.update(cx, |view, cx| {
             view.selected_endpoint = 0;
             view.endpoints.truncate(1);
-            view.endpoints[0].detached = true;
+            view.endpoints[0].detach_for_test();
             view.reset_selected(cx);
             view.endpoints.push(endpoint);
             view.tick_toasts(false, Instant::now(), cx);
@@ -370,7 +370,7 @@ fn toast_handoff_defers_a_contended_source_without_activating_destination(
             .preview()]);
     let held = source_inbox.lock().unwrap();
     view.update(cx, |view, cx| {
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.extend([source, target]);
         view.selected_endpoint = 1;
         view.reset_selected(cx);

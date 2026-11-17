@@ -1,3 +1,5 @@
+// ABOUTME: Owns the framed Core connection and bounded call lifecycle.
+// ABOUTME: Routes answers and streams while fencing loss and abandoned calls.
 //! One framed connection to a core. A worker thread owns the socket: it
 //! writes queued frames in bounded batches, reads with a short timeout so a
 //! partial frame waits for its rest, and routes what it decodes. Calls on
@@ -86,12 +88,53 @@ struct RefusalData {
     hint: Option<String>,
 }
 
-type PendingCall = (Method, bool, Sender<Reply>);
+struct WaitingCall {
+    method: Method,
+    resize_notifications: bool,
+    waiter: Sender<Reply>,
+}
+
+enum Call {
+    Registered(WaitingCall),
+    Sent(WaitingCall),
+    Answered,
+    Abandoned,
+}
+
+enum Delivery {
+    Answered,
+    Abandoned,
+    Unheard(Reply),
+}
+
+enum CallEvent<'a> {
+    Register {
+        id: u64,
+        waiting: WaitingCall,
+        outcome: &'a mut Result<()>,
+    },
+    Sent(u64),
+    CancelUnsent(u64),
+    Finish {
+        id: u64,
+        method: Method,
+        answer: &'a Receiver<Reply>,
+        received: std::result::Result<Reply, RecvTimeoutError>,
+        outcome: &'a mut Result<Reply>,
+    },
+    Deliver {
+        id: u64,
+        result: std::result::Result<Value, Refusal>,
+        channel: Option<u32>,
+        outcome: &'a mut Delivery,
+    },
+    Lost,
+}
 
 #[derive(Default)]
 struct Shared {
     lost: AtomicBool,
-    pending: Mutex<HashMap<u64, PendingCall>>,
+    pending: Mutex<HashMap<u64, Call>>,
     routes: Mutex<HashMap<u32, Arc<Route>>>,
 }
 
@@ -100,12 +143,186 @@ fn locked<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 }
 
 impl Shared {
+    fn register(
+        &self,
+        id: u64,
+        method: Method,
+        resize_notifications: bool,
+    ) -> Result<Receiver<Reply>> {
+        let (waiter, answer) = crossbeam_channel::bounded(1);
+        let mut outcome = Err(Error::Lost);
+        self.transition(CallEvent::Register {
+            id,
+            waiting: WaitingCall {
+                method,
+                resize_notifications,
+                waiter,
+            },
+            outcome: &mut outcome,
+        });
+        outcome.map(|()| answer)
+    }
+
+    fn sent(&self, id: u64) {
+        self.transition(CallEvent::Sent(id));
+    }
+
+    fn cancel_unsent(&self, id: u64) {
+        self.transition(CallEvent::CancelUnsent(id));
+    }
+
+    fn wait(
+        &self,
+        id: u64,
+        method: Method,
+        answer: &Receiver<Reply>,
+        timeout: Duration,
+    ) -> Result<Reply> {
+        let received = answer.recv_timeout(timeout);
+        self.finish(id, method, answer, received)
+    }
+
+    fn finish(
+        &self,
+        id: u64,
+        method: Method,
+        answer: &Receiver<Reply>,
+        received: std::result::Result<Reply, RecvTimeoutError>,
+    ) -> Result<Reply> {
+        let mut outcome = Err(Error::Lost);
+        self.transition(CallEvent::Finish {
+            id,
+            method,
+            answer,
+            received,
+            outcome: &mut outcome,
+        });
+        outcome
+    }
+
+    fn deliver(
+        &self,
+        id: u64,
+        result: std::result::Result<Value, Refusal>,
+        channel: Option<u32>,
+    ) -> Delivery {
+        let mut outcome = Delivery::Abandoned;
+        self.transition(CallEvent::Deliver {
+            id,
+            result,
+            channel,
+            outcome: &mut outcome,
+        });
+        outcome
+    }
+
     /// Fails every waiting call and ends every stream.
     fn lose(&self) {
-        self.lost.store(true, Ordering::Release);
-        locked(&self.pending).clear();
-        for (_, route) in locked(&self.routes).drain() {
-            route.end(End::Lost);
+        self.transition(CallEvent::Lost);
+    }
+
+    /// Owns every call-state write and the registration/loss fence.
+    fn transition(&self, event: CallEvent<'_>) {
+        let mut pending = locked(&self.pending);
+        match event {
+            CallEvent::Register {
+                id,
+                waiting,
+                outcome,
+            } => {
+                // Tombstones count too: late answers cannot grow memory without bound.
+                *outcome = if self.lost.load(Ordering::Acquire) {
+                    Err(Error::Lost)
+                } else if pending.len() >= MAX_IN_FLIGHT {
+                    Err(Error::Busy)
+                } else {
+                    pending.insert(id, Call::Registered(waiting));
+                    Ok(())
+                };
+            }
+            CallEvent::Sent(id) => {
+                if let Some(call) = pending.remove(&id) {
+                    pending.insert(
+                        id,
+                        match call {
+                            Call::Registered(waiting) => Call::Sent(waiting),
+                            call => call,
+                        },
+                    );
+                }
+            }
+            CallEvent::CancelUnsent(id) => {
+                pending.remove(&id);
+            }
+            CallEvent::Finish {
+                id,
+                method,
+                answer,
+                received,
+                outcome,
+            } => {
+                let call = pending.remove(&id);
+                *outcome = match received {
+                    Ok(reply) => Ok(reply),
+                    Err(RecvTimeoutError::Timeout) => match call {
+                        // Delivery won after recv_timeout expired. Claim it before
+                        // abandoning, so a successful send cannot leak a route.
+                        Some(Call::Answered) => answer.try_recv().map_err(|_| Error::Lost),
+                        Some(Call::Registered(_) | Call::Sent(_)) => {
+                            pending.insert(id, Call::Abandoned);
+                            Err(Error::Timeout(method))
+                        }
+                        _ if self.lost.load(Ordering::Acquire) => Err(Error::Lost),
+                        _ => Err(Error::Timeout(method)),
+                    },
+                    Err(RecvTimeoutError::Disconnected) => Err(Error::Lost),
+                };
+            }
+            CallEvent::Deliver {
+                id,
+                result,
+                channel,
+                outcome,
+            } => {
+                *outcome = match pending.remove(&id) {
+                    Some(Call::Registered(waiting) | Call::Sent(waiting)) => {
+                        // Install the route before notifying its reader. Stream
+                        // bytes following the answer then have an inbox already.
+                        let route = channel.map(|channel| {
+                            let notifications = waiting.method == Method::TerminalAttach
+                                && waiting.resize_notifications
+                                && result
+                                    .as_ref()
+                                    .ok()
+                                    .and_then(|value| value.get("resize_notifications"))
+                                    == Some(&Value::Bool(true));
+                            let route = Arc::new(Route::new(notifications));
+                            locked(&self.routes).insert(channel, Arc::clone(&route));
+                            (channel, route)
+                        });
+                        match waiting.waiter.try_send(Reply { result, route }) {
+                            Ok(()) => {
+                                pending.insert(id, Call::Answered);
+                                Delivery::Answered
+                            }
+                            Err(unheard) => Delivery::Unheard(unheard.into_inner()),
+                        }
+                    }
+                    Some(Call::Answered) => {
+                        pending.insert(id, Call::Answered);
+                        Delivery::Answered
+                    }
+                    Some(Call::Abandoned) | None => Delivery::Abandoned,
+                };
+            }
+            CallEvent::Lost => {
+                self.lost.store(true, Ordering::Release);
+                pending.clear();
+                drop(pending);
+                for (_, route) in locked(&self.routes).drain() {
+                    route.end(End::Lost);
+                }
+            }
         }
     }
 }
@@ -242,10 +459,10 @@ impl Core {
     /// Every terminal now, and the events after it.
     pub fn subscribe(&self) -> Result<Subscription> {
         let reply = self.call(Method::EventsSubscribe, &json!({}))?;
+        let stream = self.stream(Method::EventsSubscribe, reply.route);
         let subscribed: Subscribed = parse(Method::EventsSubscribe, reply.result)?;
-        let stream = self.stream(Method::EventsSubscribe, reply.route)?;
         Ok(Subscription::new(
-            stream,
+            stream?,
             subscribed.seq,
             subscribed.terminals,
         ))
@@ -262,10 +479,10 @@ impl Core {
         let mut params = attach.clone();
         params.resize_notifications = requested;
         let reply = self.call_with_resize(Method::TerminalAttach, &params, requested)?;
+        let stream = self.stream(Method::TerminalAttach, reply.route);
         let attached: wire::Attached = parse(Method::TerminalAttach, reply.result)?;
-        let stream = self.stream(Method::TerminalAttach, reply.route)?;
         let confirmed = requested && attached.resize_notifications;
-        Ok(Attachment::new(stream, attached.terminal, confirmed))
+        Ok(Attachment::new(stream?, attached.terminal, confirmed))
     }
 
     pub fn run(&self, run: &wire::Run<'_>) -> Result<Terminal> {
@@ -364,6 +581,16 @@ impl Core {
         params: &impl Serialize,
         resize_notifications: bool,
     ) -> Result<Answer> {
+        self.call_with_timeout(method, params, resize_notifications, CALL_TIMEOUT)
+    }
+
+    fn call_with_timeout(
+        &self,
+        method: Method,
+        params: &impl Serialize,
+        resize_notifications: bool,
+        timeout: Duration,
+    ) -> Result<Answer> {
         if self.is_lost() {
             return Err(Error::Lost);
         }
@@ -371,38 +598,26 @@ impl Core {
             return Err(Error::Unsupported(method));
         }
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
-        let (reply, answer) = crossbeam_channel::bounded(1);
-        {
-            let mut pending = locked(&self.shared.pending);
-            if pending.len() >= MAX_IN_FLIGHT {
-                return Err(Error::Busy);
-            }
-            pending.insert(id, (method, resize_notifications, reply));
-        }
+        let answer = self.shared.register(id, method, resize_notifications)?;
         let message =
             json!({"jsonrpc": "2.0", "id": id, "method": method.as_str(), "params": params});
         let sent = serde_json::to_vec(&message)
             .map_err(Error::from)
             .and_then(|payload| self.link.send(0, Kind::Data, &payload));
         if let Err(error) = sent {
-            locked(&self.shared.pending).remove(&id);
+            self.shared.cancel_unsent(id);
             return Err(error);
         }
-        match answer.recv_timeout(CALL_TIMEOUT) {
-            Ok(reply) => Ok(reply),
-            Err(RecvTimeoutError::Timeout) => {
-                locked(&self.shared.pending).remove(&id);
-                Err(Error::Timeout(method))
-            }
-            Err(RecvTimeoutError::Disconnected) => Err(Error::Lost),
-        }
-        .and_then(|reply| {
-            let result = reply.result.map_err(|refusal| refusal.into_error(method))?;
-            Ok(Answer {
-                result,
-                route: reply.route,
+        self.shared.sent(id);
+        self.shared
+            .wait(id, method, &answer, timeout)
+            .and_then(|reply| {
+                let result = reply.result.map_err(|refusal| refusal.into_error(method))?;
+                Ok(Answer {
+                    result,
+                    route: reply.route,
+                })
             })
-        })
     }
 }
 
@@ -512,7 +727,7 @@ impl<S: Read + Write> Worker<S> {
         Ok(true)
     }
 
-    fn dispatch(&self, frame: Frame) -> Result<()> {
+    fn dispatch(&mut self, frame: Frame) -> Result<()> {
         match (frame.channel, frame.kind) {
             (0, Kind::Data) => self.answer(&frame.payload),
             (0, _) => Ok(()),
@@ -539,14 +754,10 @@ impl<S: Read + Write> Worker<S> {
         }
     }
 
-    fn answer(&self, payload: &[u8]) -> Result<()> {
+    fn answer(&mut self, payload: &[u8]) -> Result<()> {
         let message: Value = serde_json::from_slice(payload)?;
         // Notifications arrive on subscription channels in framed mode.
         let Some(id) = message.get("id").and_then(Value::as_u64) else {
-            return Ok(());
-        };
-        let Some((method, requested_resize, waiter)) = locked(&self.shared.pending).remove(&id)
-        else {
             return Ok(());
         };
         let result = match message.get("error") {
@@ -556,30 +767,29 @@ impl<S: Read + Write> Worker<S> {
             })),
             None => Ok(message.get("result").cloned().unwrap_or(Value::Null)),
         };
-        // The route exists before the caller hears back, so stream bytes
-        // that follow the answer are never dropped.
-        let route = result
+        let channel = result
             .as_ref()
             .ok()
             .and_then(|result| result.get("channel")?.as_u64())
             .and_then(|channel| u32::try_from(channel).ok())
-            .map(|channel| {
-                let notifications = method == Method::TerminalAttach
-                    && requested_resize
-                    && result
-                        .as_ref()
-                        .ok()
-                        .and_then(|value| value.get("resize_notifications"))
-                        == Some(&Value::Bool(true));
-                let route = Arc::new(Route::new(notifications));
-                locked(&self.shared.routes).insert(channel, Arc::clone(&route));
-                (channel, route)
-            });
-        if let Err(unheard) = waiter.try_send(Reply { result, route }) {
-            // The caller gave up; its stream has no reader.
-            if let Some((channel, _)) = unheard.into_inner().route {
+            .filter(|channel| *channel != 0);
+        let delivery = self.shared.deliver(id, result, channel);
+        let close = match delivery {
+            Delivery::Answered => None,
+            Delivery::Unheard(reply) => reply.route.map(|(channel, _)| {
                 locked(&self.shared.routes).remove(&channel);
+                channel
+            }),
+            Delivery::Abandoned => {
+                channel.filter(|channel| !locked(&self.shared.routes).contains_key(channel))
             }
+        };
+        if let Some(channel) = close {
+            // The worker owns this write. A full outbound queue cannot prevent
+            // cleanup, and a write failure loses the connection normally.
+            self.stream
+                .write_all(&crate::frame::encode(channel, Kind::Close, &[])?)?;
+            self.stream.flush()?;
         }
         Ok(())
     }
@@ -602,3 +812,7 @@ fn connect_stream(path: &std::path::Path) -> io::Result<sheprd_client::Stream> {
     stream.set_write_timeout(Some(WRITE_TIMEOUT))?;
     Ok(stream)
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests;

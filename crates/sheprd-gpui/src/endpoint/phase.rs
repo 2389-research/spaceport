@@ -1,8 +1,9 @@
-//! Where an endpoint's link stands, derived in one place from the fields its
-//! lifecycle is kept in, and the words commands and the device picker use.
+// ABOUTME: Projects the stored endpoint link into stable command and picker words.
+// ABOUTME: Keeps public phase selectors unchanged across lifecycle transitions.
 // i18n: migrated
-use super::Endpoint;
-use crate::{LiveState, i18n::fl};
+use super::link::Failure;
+use super::{Endpoint, Link};
+use crate::i18n::fl;
 use sheprd_client::VersionMismatch;
 
 /// Where an endpoint's link stands.
@@ -48,37 +49,26 @@ impl Phase {
 }
 
 impl Endpoint {
-    /// Where the link stands by the endpoint's own copy of its state.
+    /// The stored lifecycle, independent of a window's older worker projection.
     pub(crate) fn phase(&self) -> Phase {
-        self.phase_with(&self.live)
-    }
-
-    /// Where the link stands when `live` is the endpoint's current state:
-    /// the window's copy for the selected endpoint, see
-    /// [`crate::SheprdWindow::live_of`].
-    pub(crate) fn phase_with(&self, live: &LiveState) -> Phase {
-        if !self.enabled {
-            Phase::Disabled
-        } else if self.detached {
-            Phase::Detached
-        } else if let Some(mismatch) = &self.version_mismatch {
-            // A refused handshake is an outage too, but says what fixes it.
-            match mismatch {
-                VersionMismatch::DaemonOutdated { .. } => Phase::DaemonOutdated,
-                VersionMismatch::ClientOutdated { .. } => Phase::ClientOutdated,
-            }
-        } else if self.herdr_missing {
-            // Retries keep failing the same way until Herdr is installed.
-            Phase::HerdrMissing
-        } else if self.outage.is_some() {
-            // Before `live`: a stopped handle can precede its disconnect state.
-            Phase::Reconnecting
-        } else if live.status.is_connected() {
-            Phase::Online
-        } else if live.error.is_some() {
-            Phase::Reconnecting
-        } else {
-            Phase::Connecting
+        let why = match &self.link {
+            Link::Disabled => return Phase::Disabled,
+            Link::Detached { .. } => return Phase::Detached,
+            Link::Up { .. } => return Phase::Online,
+            Link::Waiting { why, .. } | Link::Dialing { why, .. } => why,
+        };
+        match why {
+            Some(Failure::Version {
+                mismatch: VersionMismatch::DaemonOutdated { .. },
+                ..
+            }) => Phase::DaemonOutdated,
+            Some(Failure::Version {
+                mismatch: VersionMismatch::ClientOutdated { .. },
+                ..
+            }) => Phase::ClientOutdated,
+            Some(Failure::Missing { .. }) => Phase::HerdrMissing,
+            Some(Failure::Transport { .. }) => Phase::Reconnecting,
+            None => Phase::Connecting,
         }
     }
 
@@ -96,13 +86,16 @@ impl Endpoint {
     /// [`Phase::Online`], which a link still waiting for its first snapshot
     /// already is.
     pub(super) fn serving(&self) -> bool {
-        self.connection.handle.is_some()
+        self.connection
+            .handle
+            .as_ref()
+            .is_some_and(|handle| !handle.is_disconnected())
             && self.live.status.is_connected()
             && self.live.snapshot.is_some()
     }
 
     /// Whether the endpoint wants a connection and has no transport.
     pub(super) fn may_dial(&self) -> bool {
-        self.enabled && !self.detached && self.connection.handle.is_none()
+        matches!(self.link, Link::Waiting { .. })
     }
 }

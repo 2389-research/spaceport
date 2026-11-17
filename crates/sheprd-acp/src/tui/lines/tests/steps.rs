@@ -1,3 +1,5 @@
+// ABOUTME: Checks chat behavior against synthetic transcript fixtures.
+// ABOUTME: Keeps lifecycle and rendering expectations explicit at the test boundary.
 //! A sub-agent's own steps are drawn by Sheprd under its call; the
 //! terminal shows the call alone.
 
@@ -21,6 +23,6 @@ fn call(title: &str, parent: Option<&str>) -> Entry {
 
 #[test]
 fn a_sub_agents_step_draws_no_line() {
-    assert!(entry(&call("Read a.rs", Some("task")), 40).is_empty());
-    assert!(!entry(&call("Read a.rs", None), 40).is_empty());
+    assert!(entry(&call("Read a.rs", Some("task")), 40, true).is_empty());
+    assert!(!entry(&call("Read a.rs", None), 40, true).is_empty());
 }

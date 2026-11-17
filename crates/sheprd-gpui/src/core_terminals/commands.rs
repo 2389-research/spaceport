@@ -1,3 +1,5 @@
+// ABOUTME: Routes focused Core pane commands to native terminal operations.
+// ABOUTME: Keeps split requests bounded and preserves pane navigation.
 //! The window's pane commands, run on a herdr-core tab's panes while one
 //! holds the keyboard: split, move focus, resize, zoom, and close. The same
 //! shortcuts work on Herdr panes, so a herdr-core tab handles them here
@@ -53,14 +55,16 @@ impl SheprdWindow {
                     Command::SplitRight => Axis::Row,
                     _ => Axis::Column,
                 };
-                self.start_core_program(
+                if !self.start_core_program(
                     Purpose::Split {
                         tab,
                         at: terminal,
                         axis,
                     },
                     sheprd_backend::Spawn::default(),
-                );
+                ) {
+                    self.show_flash(Flash::warning(fl!("error-connection-busy")), cx);
+                }
             }
             Command::FocusLeft | Command::FocusRight | Command::FocusUp | Command::FocusDown => {
                 let Some(next) =

@@ -135,7 +135,7 @@ fn select(
         Err(response) => return response,
     };
     let (id, label) = (endpoint.id.clone(), endpoint.label.clone());
-    if !endpoint.enabled {
+    if !endpoint.enabled() {
         return Response::error(
             ErrorCode::InvalidRequest,
             format!("Host {label} is turned off; turn it on in the sidebar first"),

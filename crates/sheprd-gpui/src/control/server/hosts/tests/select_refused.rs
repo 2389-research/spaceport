@@ -16,7 +16,7 @@ fn stuck_on_local(view: &mut SheprdWindow) {
         },
         false,
     );
-    devbox.enabled = true;
+    devbox.set_enabled_for_test(true);
     view.endpoints.push(devbox);
     view.selected_endpoint = 0;
     view.endpoints[0].live.status = ConnectionStatus::Connected;
