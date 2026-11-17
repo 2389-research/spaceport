@@ -8,7 +8,9 @@ use std::{collections::VecDeque, sync::mpsc};
 
 /// Waiting requests, separate from the one already submitted to Core.
 const CAPACITY: usize = 64;
-type Started = mpsc::Receiver<Result<TerminalInfo, sheprd_core_client::Error>>;
+type Completion = Result<TerminalInfo, super::Error>;
+type Started = mpsc::Receiver<Completion>;
+type SpawnWorker = fn(CoreBackend, Spawn, mpsc::SyncSender<Completion>) -> std::io::Result<()>;
 pub(super) struct Request {
     expected_core: Option<String>,
     purpose: Purpose,
@@ -29,7 +31,7 @@ pub(super) enum Spawning {
 
 pub(super) enum Event<'a> {
     Queue(Purpose, Box<Spawn>, Option<String>),
-    Start(&'a CoreBackend, &'a Infos),
+    Start(&'a CoreBackend, &'a Infos, SpawnWorker),
     Poll,
     Unavailable,
 }
@@ -40,10 +42,7 @@ pub(super) enum Outcome {
     Full,
     Stale,
     Cleared,
-    Finished(
-        Purpose,
-        Box<Result<TerminalInfo, sheprd_core_client::Error>>,
-    ),
+    Finished(Purpose, Box<Completion>),
 }
 
 impl Spawning {
@@ -67,7 +66,7 @@ impl Spawning {
                 }
                 Outcome::Accepted
             }
-            Event::Start(backend, infos) => {
+            Event::Start(backend, infos, launch) => {
                 let Self::Queued(queued) = self else {
                     return Outcome::None;
                 };
@@ -101,29 +100,21 @@ impl Spawning {
                 }
                 let backend = backend.clone();
                 let (send, started) = mpsc::sync_channel(1);
-                let worker = std::thread::Builder::new()
-                    .name("herdr-core-spawn".into())
-                    .spawn(move || {
-                        let _ = send.send(backend.spawn(&spawn));
-                    });
-                match worker {
-                    Ok(_) => {
-                        let queued = match std::mem::take(self) {
-                            Self::Queued(queued) => queued,
-                            _ => VecDeque::new(),
-                        };
-                        *self = Self::Running {
-                            purpose,
-                            started,
-                            queued,
-                        };
-                        Outcome::None
-                    }
-                    Err(error) => {
-                        tracing::warn!(%error, "Could not start a herdr-core spawn worker");
-                        Outcome::None
-                    }
+                if let Err(error) = launch(backend, spawn, send.clone()) {
+                    tracing::warn!(%error, "Could not start a herdr-core spawn worker");
+                    // No worker exists; this new one-slot mailbox is empty.
+                    let _ = send.send(Err(super::Error::Worker(error)));
                 }
+                let queued = match std::mem::take(self) {
+                    Self::Queued(queued) => queued,
+                    _ => VecDeque::new(),
+                };
+                *self = Self::Running {
+                    purpose,
+                    started,
+                    queued,
+                };
+                Outcome::None
             }
             Event::Poll => {
                 let Self::Running { started, .. } = self else {
@@ -133,7 +124,9 @@ impl Spawning {
                     Ok(outcome) => outcome,
                     Err(mpsc::TryRecvError::Empty) => return Outcome::None,
                     // Submission may have happened. Never put this request back in the queue.
-                    Err(mpsc::TryRecvError::Disconnected) => Err(sheprd_core_client::Error::Lost),
+                    Err(mpsc::TryRecvError::Disconnected) => {
+                        Err(super::Error::Core(sheprd_core_client::Error::Lost))
+                    }
                 };
                 let Self::Running {
                     purpose, queued, ..
@@ -163,6 +156,20 @@ impl Spawning {
             }
         }
     }
+}
+
+/// Launches blocking Core work away from the UI thread.
+pub(super) fn spawn_worker(
+    backend: CoreBackend,
+    spawn: Spawn,
+    send: mpsc::SyncSender<Completion>,
+) -> std::io::Result<()> {
+    std::thread::Builder::new()
+        .name("herdr-core-spawn".into())
+        .spawn(move || {
+            let _ = send.send(backend.spawn(&spawn).map_err(super::Error::from));
+        })
+        .map(drop)
 }
 
 #[cfg(test)]
