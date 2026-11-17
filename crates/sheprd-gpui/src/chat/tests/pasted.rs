@@ -30,7 +30,7 @@ fn pane_state(
 ) -> (usize, Vec<PathBuf>) {
     view.read_with(cx, |view, _| {
         let pane = view.chats.panes().next().unwrap();
-        (pane.uploading, pane.attachments.clone())
+        (pane.uploading(), pane.attachments.clone())
     })
 }
 

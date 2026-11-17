@@ -89,15 +89,15 @@ impl SheprdWindow {
                     this.browse_chat_files(&pane_id, window, cx);
                 }))
         };
-        let copying = (chat.uploading > 0).then(|| {
+        let copying = (chat.uploading() > 0).then(|| {
             // On this machine only a pasted picture is ever pending.
             let label = match &chat.target.route {
                 super::super::Route::Ssh(host) => {
                     let host = safe_text(host, 80);
-                    fl!("chat-copying-files", count = chat.uploading, host = host)
+                    fl!("chat-copying-files", count = chat.uploading(), host = host)
                 }
                 super::super::Route::Local => {
-                    fl!("chat-preparing-pictures", count = chat.uploading)
+                    fl!("chat-preparing-pictures", count = chat.uploading())
                 }
             };
             div()
