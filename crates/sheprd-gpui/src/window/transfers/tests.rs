@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used)]
 
-use super::{FileTransfer, SheprdWindow, transfer_progress};
+use super::{Event, FileTransfer, SheprdWindow, Transfer, transfer_progress};
 use crate::{connection::ConnectionBridge, terminal::InputTarget};
 use crate::{sidebar::layout_tests::fixture_window, state::ConnectionStatus};
 use gpui::{
@@ -26,6 +26,7 @@ mod completion;
 mod en_xa;
 mod fence;
 mod progress;
+mod readiness;
 mod taskbar;
 
 const HOST: &str = "upload-test.invalid";
@@ -332,8 +333,8 @@ fn popup(view: &mut SheprdWindow, id: &str) {
     }));
 }
 
-fn pending(view: &SheprdWindow, target: InputTarget) -> FileTransfer {
-    FileTransfer {
+fn pending(view: &SheprdWindow, target: InputTarget) -> Transfer {
+    Transfer {
         fence: view.input_fence().unwrap(),
         host: HOST.into(),
         target,

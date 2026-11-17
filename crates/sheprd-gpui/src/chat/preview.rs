@@ -398,7 +398,9 @@ fn install(
     view.live.snapshot = Some(Arc::new(snapshot));
     view.live.status = crate::state::ConnectionStatus::Connected;
     view.live.local_daemon_peer = true;
-    view.live.activation = None;
+    view.live
+        .activation
+        .transition(crate::state::activation::Transition::Reset(None));
     view.live.supports_surface = true;
     view.endpoints[0].live = view.live.clone();
     let widget = format!(

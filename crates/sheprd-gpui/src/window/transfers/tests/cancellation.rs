@@ -26,8 +26,8 @@ fn captured_target_fences_cancel_and_reset_cancels_immediately(cx: &mut TestAppC
             } else {
                 InputTarget::Pane("w1:p1".into())
             };
-            view.file_transfer = Some(pending(view, target));
-            assert!(view.file_transfer_current(view.file_transfer.as_ref().unwrap()));
+            view.transition_file_transfer(Event::Start(pending(view, target)), cx);
+            assert!(view.file_transfer_current(view.file_transfer.active().unwrap()));
             match case {
                 0 => view.selection_epoch += 1,
                 1 => view.endpoints[0].generation += 1,
@@ -52,7 +52,7 @@ fn captured_target_fences_cancel_and_reset_cancels_immediately(cx: &mut TestAppC
                     }
                 }
                 11 => {
-                    let cancelled = view.file_transfer.as_ref().unwrap().cancelled.clone();
+                    let cancelled = view.file_transfer.active().unwrap().cancelled.clone();
                     view.detach_endpoint(cx);
                     assert!(
                         cancelled.load(Ordering::Acquire),
@@ -62,7 +62,7 @@ fn captured_target_fences_cancel_and_reset_cancels_immediately(cx: &mut TestAppC
                 _ => unreachable!(),
             }
             view.poll_file_transfer(cx);
-            assert!(view.file_transfer.as_ref().unwrap().shown.2, "case {case}");
+            assert!(view.file_transfer.active().unwrap().shown.2, "case {case}");
         }
     });
 }
@@ -86,7 +86,7 @@ fn dropping_entity_cancels_but_detached_completion_still_cleans(cx: &mut TestApp
             },
             cx,
         );
-        view.file_transfer.as_ref().unwrap().cancelled.clone()
+        view.file_transfer.active().unwrap().cancelled.clone()
     });
     fixture.update(cx, |fixture, _| {
         fixture.view = None;

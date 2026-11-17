@@ -1,3 +1,5 @@
+// ABOUTME: Previews explicit theme choices across Settings and app windows.
+// ABOUTME: Persists captured choices without clearing newer theme intents.
 //! Search-only samples and explicit app-wide theme intents. Disk work stays off the UI thread.
 // i18n: migrated
 use super::SettingsWindow;
@@ -268,8 +270,12 @@ impl SettingsWindow {
     fn theme_operation(
         &self,
         intent: &ThemeIntent,
-    ) -> impl FnOnce(Option<herdr_settings::Settings>) -> crate::Result<()> + Send + 'static + use<>
-    {
+    ) -> impl FnOnce(
+        Option<herdr_settings::Settings>,
+    ) -> crate::Result<Option<super::persistence::SharedWrite>>
+    + Send
+    + 'static
+    + use<> {
         let choice = intent.choice.clone();
         let config = self.config.clone();
         let shared = self.shared.clone().or_else(|| intent.shared.clone());
@@ -282,16 +288,17 @@ impl SettingsWindow {
             };
             #[cfg(test)]
             if let Some(io) = io {
-                return (io.write)(choice.name, shared);
+                return (io.write)(choice.name, shared).map(|_| None);
             }
             match choice.scope {
-                Scope::App => config.save_theme(&choice.name),
+                Scope::App => config.save_theme(&choice.name).map(|_| None),
                 // Every resolved Herdr intent carries a snapshot; a load here
                 // only reports the real failure if one never resolved.
-                Scope::Herdr => shared
-                    .map_or_else(herdr_settings::Settings::load, Ok)?
-                    .save(Edit::Theme(choice.name))
-                    .map(|_| ()),
+                Scope::Herdr => super::persistence::SharedWrite::save(
+                    shared.map_or_else(herdr_settings::Settings::load, Ok)?,
+                    Edit::Theme(choice.name),
+                )
+                .map(Some),
             }
         }
     }
@@ -302,7 +309,8 @@ impl SettingsWindow {
         impl FnOnce(Option<herdr_settings::Settings>) -> crate::Result<()> + Send + 'static + use<>,
     > {
         let intent = self.theme_intent.take()?;
-        if self.theme_saving {
+        if matches!(self.persistence.kind(), Some(super::Kind::Theme(revision)) if *revision == intent.revision)
+        {
             return None;
         }
         let validate = self.theme_loader(intent.choice.clone());
@@ -312,7 +320,7 @@ impl SettingsWindow {
                 Some(_) => None,
                 None => validate()?.1,
             };
-            write(shared.or(resolved))
+            write(shared.or(resolved)).map(|_| ())
         })
     }
 
@@ -359,7 +367,7 @@ impl SettingsWindow {
     }
 
     pub(super) fn accept_theme_choice(&mut self, choice: Choice, cx: &mut Context<Self>) {
-        if self.quitting || self.closing.is_some() {
+        if self.persistence.quitting() || self.persistence.closing().is_some() {
             return;
         }
         if !choice.scope.editable() {
@@ -401,11 +409,11 @@ impl SettingsWindow {
     }
 
     pub(super) fn drive_theme_intent(&mut self, cx: &mut Context<Self>) {
-        if self.quitting {
+        if self.persistence.quitting() {
             return;
         }
         if self.theme_load_failed {
-            self.flushing = false;
+            self.persistence.stop_flush();
             return;
         }
         let light = crate::app::light_appearance(cx);
@@ -434,7 +442,7 @@ impl SettingsWindow {
                 let result = work.await;
                 retained.update(cx, |this, cx| {
                     this.theme_loading = false;
-                    if this.quitting {
+                    if this.persistence.quitting() {
                         return;
                     }
                     if let Some(current) = &mut this.theme_intent
@@ -456,8 +464,7 @@ impl SettingsWindow {
                             }
                             Err(error) => {
                                 this.theme_load_failed = true;
-                                this.closing = None;
-                                this.flushing = false;
+                                this.persistence.abort_drain();
                                 this.error = Some(fl!(
                                     "settings-theme-error-load",
                                     error = error.localize()
@@ -513,7 +520,7 @@ impl SettingsWindow {
                 self.broadcast_theme(cx);
             }
         }
-        if (self.closing.is_none() && !self.flushing) || self.busy() || self.theme_saving {
+        if (self.persistence.closing().is_none() && !self.persistence.flushing()) || self.busy() {
             return;
         }
         let Some(intent) = self.theme_intent.as_ref() else {
@@ -522,13 +529,25 @@ impl SettingsWindow {
         let operation = self.theme_operation(intent);
         let operation = move || operation(None);
         let shared = intent.choice.scope == Scope::Herdr;
-        self.theme_saving = true;
+        let revision = intent.revision;
         #[cfg(test)]
         if let Some(io) = self.theme_io.clone() {
-            self.save_with(operation, move || (io.load)(), shared, cx);
+            self.save_kind_with_snapshot(
+                operation,
+                move || (io.load)(),
+                shared,
+                super::Kind::Theme(revision),
+                cx,
+            );
             return;
         }
-        self.save_with(operation, self.loader(cx), shared, cx);
+        self.save_kind_with_snapshot(
+            operation,
+            self.loader(cx),
+            shared,
+            super::Kind::Theme(revision),
+            cx,
+        );
     }
 
     pub(super) fn broadcast_theme(&mut self, cx: &mut Context<Self>) {
@@ -580,7 +599,7 @@ impl SettingsWindow {
                 || self.themes.running.is_some()
                 || self.theme_loading
                 || self.theme_waiting
-                || self.saving,
+                || self.persistence.saving(),
         )
     }
 
@@ -717,7 +736,7 @@ impl SettingsWindow {
     /// drafting it; `None` puts the real appearance back at once.
     pub(super) fn hover_theme(&mut self, index: Option<usize>, cx: &mut Context<Self>) {
         let choice = index
-            .filter(|_| !self.quitting && self.closing.is_none())
+            .filter(|_| !self.persistence.quitting() && self.persistence.closing().is_none())
             .and_then(|index| self.themes.filtered.get(index).cloned());
         if self.themes.hovered == choice {
             return;
@@ -788,7 +807,10 @@ impl SettingsWindow {
     }
 
     pub(super) fn select_settings_theme(&mut self, index: usize, cx: &mut Context<Self>) {
-        if self.quitting || self.closing.is_some() || index >= self.themes.filtered.len() {
+        if self.persistence.quitting()
+            || self.persistence.closing().is_some()
+            || index >= self.themes.filtered.len()
+        {
             return;
         }
         self.themes.selected = Some(index);

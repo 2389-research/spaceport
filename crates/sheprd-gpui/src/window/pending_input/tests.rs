@@ -149,7 +149,7 @@ fn a_key_held_after_a_remote_copy_does_not_overtake_its_paths(cx: &mut TestAppCo
         hold_drop(view, &["/herdr-held/a.txt", "/herdr-held/b.txt"], cx);
         view.send(crate::menu::enter_key(), cx);
         frame_returns(view, cx);
-        assert!(view.file_transfer.is_some(), "the copy started");
+        assert!(view.file_transfer.active().is_some(), "the copy started");
         assert_eq!(
             view.local_error
                 .as_deref()
@@ -157,7 +157,7 @@ fn a_key_held_after_a_remote_copy_does_not_overtake_its_paths(cx: &mut TestAppCo
                 .as_deref(),
             Some(COPYING)
         );
-        view.file_transfer.as_ref().unwrap().cancel();
+        view.cancel_file_transfer(cx);
     });
     sentinel_is_next(&mut peer);
     cx.run_until_parked();
@@ -367,7 +367,7 @@ fn an_older_error_does_not_take_the_discard_note(cx: &mut TestAppContext) {
         connect(&peer, view, cx);
         let running = vec![PathBuf::from("/herdr-held/running.txt")];
         view.start_file_transfer(InputTarget::Pane(PANE.into()), running, cx);
-        assert!(view.file_transfer.is_some(), "a copy is running");
+        assert!(view.file_transfer.active().is_some(), "a copy is running");
         size_by_another(view);
         hold_drop(view, &["/herdr-held/a.txt", "/herdr-held/b.txt"], cx);
         view.send(crate::menu::enter_key(), cx);
@@ -380,7 +380,7 @@ fn an_older_error_does_not_take_the_discard_note(cx: &mut TestAppContext) {
                 .as_deref(),
             Some("Files not pasted: another copy is running (1 held input discarded)")
         );
-        view.file_transfer.as_ref().unwrap().cancel();
+        view.cancel_file_transfer(cx);
     });
     sentinel_is_next(&mut peer);
     cx.run_until_parked();

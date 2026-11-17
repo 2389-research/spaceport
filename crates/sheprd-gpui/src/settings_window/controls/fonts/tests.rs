@@ -1,4 +1,7 @@
+// ABOUTME: Verifies Settings font controls and draft sizes.
+// ABOUTME: Exercises UI state and persistence with isolated fixtures.
 use super::*;
+use crate::settings_window::Kind;
 use core::prelude::v1::test;
 use std::sync::{Arc, Mutex};
 
@@ -136,7 +139,7 @@ fn plus_clicks_coalesce_while_busy_and_write_once_afterwards(cx: &mut TestAppCon
             }),
             load: loaded,
         });
-        view.saving = true;
+        view.persistence.begin_save(Kind::Ordinary);
         FontFace::Sidebar.size(&view.config)
     });
     for _ in 0..2 {
@@ -150,7 +153,7 @@ fn plus_clicks_coalesce_while_busy_and_write_once_afterwards(cx: &mut TestAppCon
             vec![(FontFace::Sidebar, before + 2.)]
         );
         assert_eq!(view.controls.active_face, FontFace::Sidebar);
-        view.saving = false;
+        view.persistence.finish_save();
         view.sync_controls(cx);
     });
     cx.run_until_parked();
@@ -188,7 +191,7 @@ fn picker_search_keyboard_refresh_and_dismissal_are_local(cx: &mut TestAppContex
         assert_eq!(view.controls.search.read(cx).text(), "fAmIlY 47");
         assert_eq!(view.controls.selected, 1);
         // Browsing remains possible while another root save is pending.
-        view.saving = true;
+        view.persistence.begin_save(Kind::Ordinary);
     });
     cx.simulate_keystrokes("enter");
     view.read_with(cx, |view, _| assert!(view.controls.picker.is_some()));
@@ -210,7 +213,7 @@ fn picker_search_keyboard_refresh_and_dismissal_are_local(cx: &mut TestAppContex
             view.open_control_font_picker(FontTarget::All, window, cx);
             view.select_section(Section::General, window, cx);
             assert!(view.controls.picker.is_none());
-            view.saving = false;
+            view.persistence.finish_save();
         })
     });
 }
@@ -220,7 +223,7 @@ fn selected_row_specimen_uses_face_and_effective_pending_size(cx: &mut TestAppCo
     let (view, cx) = cx.add_window_view(fixture);
     cx.simulate_resize(size(px(960.), px(780.)));
     view.update(cx, |view, cx| {
-        view.saving = true;
+        view.persistence.begin_save(Kind::Ordinary);
         cx.notify();
     });
     for ((face, _), selector) in FACES.into_iter().zip(FIELDS) {
@@ -243,7 +246,7 @@ fn selected_row_specimen_uses_face_and_effective_pending_size(cx: &mut TestAppCo
     }
     view.update(cx, |view, _| {
         view.controls.pending_sizes.clear();
-        view.saving = false;
+        view.persistence.finish_save();
     });
     assert_eq!(family_label(".SystemUIFont"), "System font");
 }

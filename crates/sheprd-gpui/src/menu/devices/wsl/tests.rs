@@ -57,7 +57,7 @@ fn saved_distributions_become_wsl_devices_after_ssh_hosts(cx: &mut TestAppContex
         assert_eq!(ids[2..], ["wsl:Ubuntu", "wsl:Debian"]);
         let ubuntu = &view.endpoints[2];
         assert_eq!(ubuntu.label, "Ubuntu");
-        assert!(ubuntu.enabled);
+        assert!(ubuntu.enabled());
         assert_eq!(
             ubuntu.connection.target,
             ConnectTarget::Wsl {

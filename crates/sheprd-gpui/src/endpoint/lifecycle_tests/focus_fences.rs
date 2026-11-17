@@ -149,7 +149,9 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                 view.selected_endpoint = 1;
                 view.options = ConnectOptions::default();
                 view.reset_selected(cx);
-                view.activation_deadline = None;
+                view.live
+                    .activation
+                    .transition(crate::state::activation::Transition::Reset(None));
                 view.config.confirm_close_tab = confirm_close;
                 view.config.confirm_close_pane = confirm_close;
                 assert!(view.input_ready());
@@ -207,7 +209,7 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                     assert!(view.menu.page.is_none());
                 }
                 assert!(!view.input_ready(), "{method} must fence immediately");
-                assert!(view.activation_deadline.is_some());
+                assert!(view.live.activation.deadline().is_some());
                 view.send(
                     ClientPaneInputEvent::TextCommit("must not reach old pane".into()),
                     cx,
@@ -275,7 +277,7 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
             }
             project_until(view, cx, "fresh frame", |view| {
                 view.live.snapshot.as_ref().map(|s| s.revision) == Some(next.revision)
-                    && view.live.activation.is_some()
+                    && view.live.activation != crate::state::activation::Fence::Open
             });
             assert!(!view.input_ready());
             {
@@ -293,11 +295,7 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                 });
             }
             project_until(view, cx, "ack ahead of the frame", |view| {
-                view.live
-                    .activation
-                    .as_ref()
-                    .and_then(|activation| activation.revision)
-                    == Some(next.revision + 1)
+                view.live.activation.revision() == Some(next.revision + 1)
             });
             assert!(
                 !view.input_ready(),
@@ -317,7 +315,7 @@ fn every_focus_changing_command_fences_immediate_input_until_ack_and_surface(
                 view.live.surface.as_ref().map(|s| s.projection_revision) == Some(next.revision)
             });
             assert!(view.input_ready());
-            assert!(view.activation_deadline.is_none());
+            assert!(view.live.activation.deadline().is_none());
             view.send(ClientPaneInputEvent::TextCommit("new pane only".into()), cx);
         });
         let ClientMessage::ClientShellPaneInput { pane_id, .. } = server.receive() else {

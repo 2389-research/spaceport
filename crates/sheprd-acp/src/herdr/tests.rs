@@ -2,6 +2,8 @@
 
 use super::*;
 
+mod activity;
+mod activity_state;
 mod claims;
 mod naming;
 mod titles;

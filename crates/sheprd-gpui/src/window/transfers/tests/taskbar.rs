@@ -15,7 +15,7 @@ fn taskbar_follows_the_copy_until_it_is_cancelled(cx: &mut TestAppContext) {
             transfer.total.clone(),
             transfer.cancelled.clone(),
         );
-        view.file_transfer = Some(transfer);
+        view.transition_file_transfer(Event::Start(transfer), cx);
         view.poll_file_transfer(cx);
         // The size is not known yet.
         assert_eq!(view.taskbar_progress(), Some(Progress::Busy));

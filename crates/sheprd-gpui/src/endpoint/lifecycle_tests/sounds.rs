@@ -61,7 +61,7 @@ fn inactive_endpoint_semantic_sound_reaches_worker_once(cx: &mut gpui::TestAppCo
     let (sound, played) = crate::sound::Service::recording();
     view.update(cx, |view, _| {
         view.sound = sound.into();
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.push(remote);
         assert_eq!(view.selected_endpoint, 0);
     });

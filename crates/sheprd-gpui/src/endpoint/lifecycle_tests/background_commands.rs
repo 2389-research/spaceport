@@ -11,7 +11,7 @@ fn endpoint_request(server: &mut Server) -> serde_json::Value {
 
 /// Answers an activation the way Herdr does. The worker keeps one request in
 /// flight, so nothing queued behind the activation goes out until then.
-fn acknowledge_activation(server: &mut Server, request: &serde_json::Value) {
+pub(super) fn acknowledge_activation(server: &mut Server, request: &serde_json::Value) {
     let id = request["id"].as_str().unwrap();
     let response = serde_json::json!({"id": id, "result": {
         "type": "client_shell_surface_set", "active": true,
@@ -55,7 +55,7 @@ fn switching_devices_holds_commands_until_the_new_surface_is_activated(
     let source_inbox = source.connection.inbox.clone();
     let target_handle = target.connection.handle.clone().unwrap();
     view.update(cx, |view, cx| {
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.extend([source, target]);
         view.selected_endpoint = 1;
         view.options = ConnectOptions::default();

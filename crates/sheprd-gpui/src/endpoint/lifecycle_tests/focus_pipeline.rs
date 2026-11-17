@@ -78,7 +78,7 @@ fn navigate_with_early_activation(
             view.live.snapshot.as_ref().unwrap().revision == next.revision
         });
         // The worker holds the activation until focus is answered.
-        assert!(view.live.activation.as_ref().unwrap().revision.is_none());
+        assert!(view.live.activation.revision().is_none());
         assert!(!view.input_ready());
     });
     let body = if focus_ok {
@@ -89,10 +89,7 @@ fn navigate_with_early_activation(
     reply(&mut server, &focus, body);
     view.update(cx, |view, cx| {
         project_until(view, cx, "activation acknowledged", |view| {
-            view.live
-                .activation
-                .as_ref()
-                .is_some_and(|activation| activation.revision == Some(next.revision))
+            view.live.activation.revision() == Some(next.revision)
         });
     });
     (view, cx, server)

@@ -1,3 +1,5 @@
+// ABOUTME: Implements Settings grid interactions.
+// ABOUTME: Connects native controls to Settings state and persistence.
 //! Virtual row geometry and bounded, single-flight thumbnail preparation.
 use super::*;
 use crate::direction::Logical;
@@ -102,7 +104,7 @@ impl SettingsWindow {
     }
 
     fn load_grid_palettes(&mut self, cx: &mut Context<Self>) {
-        if self.quitting || self.themes.grid.running {
+        if self.persistence.quitting() || self.themes.grid.running {
             return;
         }
         let grid = &mut self.themes.grid;

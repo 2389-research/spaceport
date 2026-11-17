@@ -40,7 +40,7 @@ impl SheprdWindow {
             .enumerate()
             .filter(|(index, endpoint)| {
                 let live = self.live_of(*index);
-                endpoint.enabled
+                endpoint.enabled()
                     && (live.status.is_connected() || !endpoint.connection.target.is_remote())
             })
             .filter_map(|(_, endpoint)| host(&endpoint.connection.target))
@@ -54,7 +54,7 @@ impl SheprdWindow {
         let endpoints = &self.endpoints;
         let mut changed = self.port_forwards.retain_hosts(|target| {
             endpoints.iter().any(|endpoint| {
-                endpoint.enabled
+                endpoint.enabled()
                     && endpoint
                         .saved_ssh()
                         .is_some_and(|(saved, _)| saved == target)

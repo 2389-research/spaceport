@@ -48,7 +48,7 @@ impl SheprdWindow {
             now,
         };
         for (index, endpoint) in self.endpoints.iter().enumerate() {
-            let Some(host) = Host::of(&endpoint.connection.target).filter(|_| endpoint.enabled)
+            let Some(host) = Host::of(&endpoint.connection.target).filter(|_| endpoint.enabled())
             else {
                 continue;
             };

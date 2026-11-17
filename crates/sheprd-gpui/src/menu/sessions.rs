@@ -191,7 +191,7 @@ impl SheprdWindow {
             Some(DeviceScan::Failed(error)) => (vec![fallback()], Some(error.clone())),
             // A disabled device is never dialled, so it must not claim to be
             // waiting for an answer that is not coming.
-            None if !endpoint.enabled => (vec![fallback()], Some(fl!("sessions-menu-disabled"))),
+            None if !endpoint.enabled() => (vec![fallback()], Some(fl!("sessions-menu-disabled"))),
             None => (vec![fallback()], Some(fl!("sessions-menu-checking"))),
         };
         for (name, detail, online, checked) in rows {
@@ -205,7 +205,7 @@ impl SheprdWindow {
                     detail: detail.into(),
                     online,
                     checked,
-                    enabled: endpoint.enabled,
+                    enabled: endpoint.enabled(),
                 },
             });
         }
@@ -491,7 +491,7 @@ impl SheprdWindow {
                 if !self
                     .endpoints
                     .iter()
-                    .any(|endpoint| endpoint.id == id && endpoint.enabled)
+                    .any(|endpoint| endpoint.id == id && endpoint.enabled())
                 {
                     return;
                 }

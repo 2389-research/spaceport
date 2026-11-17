@@ -59,7 +59,7 @@ fn a_refused_handshake_is_announced_once_and_copies_the_command(cx: &mut gpui::T
             view.announce_version_mismatch(window, cx);
             assert_eq!(view.menu.page, None);
             let selected = view.selected_endpoint;
-            view.endpoints[selected].version_mismatch = Some(outdated(Some("0.8.2")));
+            view.endpoints[selected].set_version_mismatch_for_test(Some(outdated(Some("0.8.2"))));
             view.announce_version_mismatch(window, cx);
             assert_eq!(view.menu.page, Some(Page::VersionMismatch));
             assert_eq!(
@@ -92,9 +92,9 @@ fn a_refused_handshake_is_announced_once_and_copies_the_command(cx: &mut gpui::T
             assert_eq!(view.menu.page, None);
             // An accepted handshake rearms it for a later refusal.
             let selected = view.selected_endpoint;
-            view.endpoints[selected].version_mismatch = None;
+            view.endpoints[selected].set_version_mismatch_for_test(None);
             view.announce_version_mismatch(window, cx);
-            view.endpoints[selected].version_mismatch = Some(outdated(None));
+            view.endpoints[selected].set_version_mismatch_for_test(Some(outdated(None)));
             view.announce_version_mismatch(window, cx);
             assert_eq!(view.menu.page, Some(Page::VersionMismatch));
         });
@@ -109,9 +109,11 @@ fn a_newer_daemon_reports_the_mismatch_without_an_unavailable_update_action(
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             let selected = view.selected_endpoint;
-            view.endpoints[selected].version_mismatch = Some(VersionMismatch::ClientOutdated {
-                server_version: Some("2.0.0".into()),
-            });
+            view.endpoints[selected].set_version_mismatch_for_test(Some(
+                VersionMismatch::ClientOutdated {
+                    server_version: Some("2.0.0".into()),
+                },
+            ));
             view.announce_version_mismatch(window, cx);
         });
         full_draw(window, cx).clear(cx);

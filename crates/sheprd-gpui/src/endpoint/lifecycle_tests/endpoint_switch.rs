@@ -23,7 +23,7 @@ fn saved_selection_waits_for_snapshot_without_overwriting_preference(
         for _ in 0..10 {
             view.restore_selection(cx);
             assert_eq!(view.selected_endpoint, 0);
-            assert!(view.activation_deadline.is_none());
+            assert!(view.live.activation.deadline().is_none());
         }
         view.endpoints[1].live = ready;
         view.restore_selection(cx);
@@ -93,7 +93,7 @@ fn deferred_release_is_generation_fenced_and_local_can_escape(cx: &mut gpui::Tes
         view.update(cx, |view, cx| {
             view.pending_releases.clear();
             view.endpoints.truncate(1);
-            view.endpoints[0].detached = true;
+            view.endpoints[0].detach_for_test();
             view.endpoints.extend([source, target]);
             view.selected_endpoint = 1;
             view.reset_selected(cx);
@@ -105,7 +105,7 @@ fn deferred_release_is_generation_fenced_and_local_can_escape(cx: &mut gpui::Tes
             match change {
                 "retire" => {
                     view.endpoints[1].stop();
-                    view.endpoints[1].detached = true;
+                    view.endpoints[1].detach_for_test();
                     assert!(!Arc::ptr_eq(&inbox, &view.endpoints[1].connection.inbox));
                     assert!(handle.is_disconnected());
                 }
@@ -126,7 +126,7 @@ fn deferred_release_is_generation_fenced_and_local_can_escape(cx: &mut gpui::Tes
                 project_until(view, cx, "stale source retired", |_| {
                     handle.is_disconnected()
                 });
-                view.endpoints[1].detached = true;
+                view.endpoints[1].detach_for_test();
             }
         });
         wait_until(|| drained.load(Ordering::Acquire));
@@ -174,7 +174,7 @@ fn retiring_release_source_unblocks_destination_without_waiting_for_timeout(
         let source_handle = source.connection.handle.clone().unwrap();
         view.update(cx, |view, cx| {
             view.endpoints.truncate(1);
-            view.endpoints[0].detached = true;
+            view.endpoints[0].detach_for_test();
             view.endpoints.extend([source, target]);
             view.selected_endpoint = 1;
             view.reset_selected(cx);
@@ -207,7 +207,7 @@ fn retiring_release_source_unblocks_destination_without_waiting_for_timeout(
                 _ => {}
             }
             for endpoint in &mut view.endpoints {
-                endpoint.retry_at = Instant::now() + Duration::from_secs(120);
+                endpoint.set_retry_at_for_test(Instant::now() + Duration::from_secs(120));
             }
         });
         if change == "disconnect" {
@@ -224,7 +224,7 @@ fn retiring_release_source_unblocks_destination_without_waiting_for_timeout(
             assert!(view.pending_releases.is_empty(), "{change}");
             assert_eq!(view.endpoints[view.selected_endpoint].id, "ssh:target");
             assert!(view.endpoints[view.selected_endpoint].initial_surface);
-            assert!(view.activation_deadline.unwrap() > Instant::now());
+            assert!(view.live.activation.deadline().unwrap() > Instant::now());
         });
         assert!(matches!(
             target_server.receive(),

@@ -1,3 +1,5 @@
+// ABOUTME: Implements Settings navigation interactions.
+// ABOUTME: Connects native controls to Settings state and persistence.
 //! The section list and the footer: grouped sections under a search box, and
 //! the save status line.
 // i18n: migrated
@@ -164,7 +166,7 @@ impl SettingsWindow {
         let pending = self.pending_drafts();
         if let Some(error) = &self.error {
             error.clone()
-        } else if self.loading {
+        } else if self.persistence.loading() {
             fl!("settings-loading")
         } else if let Some(status) = &self.status {
             status.clone()

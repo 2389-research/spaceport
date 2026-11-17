@@ -66,8 +66,8 @@ fn connected_mouse_focused_pane_preserves_drag_target_and_immediate_text(
                 ));
                 assert!(view.terminal_mouse.is_none());
                 assert!(view.input_ready());
-                assert!(view.live.activation.is_none());
-                assert!(view.activation_deadline.is_none());
+                assert!(view.live.activation == crate::state::activation::Fence::Open);
+                assert!(view.live.activation.deadline().is_none());
                 view.send(ClientPaneInputEvent::TextCommit("immediate".into()), cx);
             });
         });
@@ -111,7 +111,7 @@ fn connected_mouse_inactive_pane_receives_first_click_before_focus_fence(
                 cx
             ));
             assert!(view.input_ready());
-            assert!(view.live.activation.is_none());
+            assert!(view.live.activation == crate::state::activation::Fence::Open);
             assert!(view.mouse_focus_pending());
             view.send(
                 ClientPaneInputEvent::TextCommit("must not reach old pane during press".into()),
@@ -127,8 +127,8 @@ fn connected_mouse_inactive_pane_receives_first_click_before_focus_fence(
             ));
             assert!(!view.input_ready());
             assert!(!view.mouse_focus_pending());
-            assert!(view.live.activation.is_some());
-            assert!(view.activation_deadline.is_some());
+            assert!(view.live.activation != crate::state::activation::Fence::Open);
+            assert!(view.live.activation.deadline().is_some());
             view.send(
                 ClientPaneInputEvent::TextCommit("must stay fenced".into()),
                 cx,
@@ -255,8 +255,8 @@ fn connected_mouse_popup_uses_popup_relative_pixel_coordinates_and_blocks_covere
                 cx
             ));
             assert!(view.input_ready());
-            assert!(view.live.activation.is_none());
-            assert!(view.activation_deadline.is_none());
+            assert!(view.live.activation == crate::state::activation::Fence::Open);
+            assert!(view.live.activation.deadline().is_none());
             view.send(ClientPaneInputEvent::TextCommit("popup text".into()), cx);
         });
     });

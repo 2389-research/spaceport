@@ -297,8 +297,8 @@ fn connected_mouse_deactivation_releases_last_sent_position_once_without_focusin
                     },
                     cx
                 ));
-                assert!(view.live.activation.is_none());
-                assert!(view.activation_deadline.is_none());
+                assert!(view.live.activation == crate::state::activation::Fence::Open);
+                assert!(view.live.activation.deadline().is_none());
                 view.active = true;
                 view.send(
                     ClientPaneInputEvent::TextCommit("after cancellation".into()),
@@ -380,8 +380,8 @@ fn connected_mouse_hover_is_separate_from_capture_and_obeys_input_guards(
             view.terminal_mouse_hover(&event, cx);
             view.menu.reset();
             assert!(view.terminal_mouse.is_none());
-            assert!(view.live.activation.is_none());
-            assert!(view.activation_deadline.is_none());
+            assert!(view.live.activation == crate::state::activation::Fence::Open);
+            assert!(view.live.activation.deadline().is_none());
             view.send(
                 ClientPaneInputEvent::TextCommit("hover does not focus".into()),
                 cx,

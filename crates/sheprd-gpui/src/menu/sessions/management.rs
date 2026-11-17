@@ -52,7 +52,7 @@ impl SheprdWindow {
             Row::Device { id, .. } => self
                 .endpoints
                 .iter()
-                .find(|e| e.id == *id && e.enabled)
+                .find(|e| e.id == *id && e.enabled())
                 .and_then(|e| e.connection.target.remote_host())
                 .filter(|host| host_unavailable(host).is_none())
                 .map(|host| Target::Device {
@@ -77,7 +77,7 @@ impl SheprdWindow {
             Target::Device { id, host } => {
                 let Some(endpoint) = self.endpoints.iter().find(|e| {
                     e.id == *id
-                        && e.enabled
+                        && e.enabled()
                         && e.connection.target.remote_host().as_ref() == Some(host)
                 }) else {
                     return Some(fl!("sessions-menu-enable-device"));

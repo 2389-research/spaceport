@@ -333,7 +333,7 @@ pub fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                 let navigations = view.read(cx).navigations.clone();
                 // A command sent while a focus change is fenced is dropped,
                 // as a user's would be, so each step waits for the fence.
-                let fenced = view.read(cx).activation_deadline.is_some();
+                let fenced = view.read(cx).live.activation.fenced();
                 let ready = view.read(cx).navigation_ready();
                 let (live, local_error, options, last_queued_options, bounds) = {
                     let view = view.read(cx);

@@ -33,10 +33,10 @@ fn progress_above_four_gib_and_real_cancel_click_are_isolated(cx: &mut TestAppCo
         transfer
             .total
             .store(8 * 1024 * 1024 * 1024, Ordering::Relaxed);
-        view.file_transfer = Some(transfer);
+        view.transition_file_transfer(Event::Start(transfer), cx);
         view.poll_file_transfer(cx);
         assert_eq!(
-            view.file_transfer.as_ref().unwrap().shown,
+            view.file_transfer.active().unwrap().shown,
             (4_294_967_296, 8_589_934_592, false)
         );
         cancelled
@@ -53,7 +53,7 @@ fn progress_above_four_gib_and_real_cancel_click_are_isolated(cx: &mut TestAppCo
     assert!(cancelled.load(Ordering::Acquire));
     fixture.read_with(cx, |fixture, _| assert_eq!(fixture.fallthrough, 0));
     view.read_with(cx, |view, _| {
-        assert!(view.file_transfer.as_ref().unwrap().shown.2);
+        assert!(view.file_transfer.active().unwrap().shown.2);
         assert!(view.terminal_mouse.is_none());
         assert!(view.local_error.is_none());
     });

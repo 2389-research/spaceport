@@ -1,3 +1,5 @@
+// ABOUTME: Implements Settings language interactions.
+// ABOUTME: Connects native controls to Settings state and persistence.
 //! General > Language: the `language` setting, offered as System and every
 //! language with messages, each named in itself so a reader finds their own
 //! whatever the windows show.
@@ -65,7 +67,7 @@ impl SettingsWindow {
             FIELD.selector(),
             current,
             false,
-            !self.quitting && self.closing.is_none(),
+            !self.persistence.quitting() && self.persistence.closing().is_none(),
             self.dropdown.as_ref().filter(|open| open.field == FIELD),
             move |window, cx| {
                 let options = options.clone();

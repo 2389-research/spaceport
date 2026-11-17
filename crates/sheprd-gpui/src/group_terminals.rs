@@ -427,9 +427,7 @@ impl SheprdWindow {
             self.browser.terminals.parked.push(parked);
         }
         self.live = self.endpoints[self.selected_endpoint].live.clone();
-        if let Some(transfer) = &self.file_transfer {
-            transfer.cancel();
-        }
+        self.cancel_file_transfer(cx);
         for image in &self.pending_images {
             image.cancel();
         }
@@ -443,7 +441,6 @@ impl SheprdWindow {
         self.discard_composition(cx);
         self.wheel = Default::default();
         self.sent_focus = None;
-        self.activation_deadline = None;
         self.pending_navigation = None;
     }
 

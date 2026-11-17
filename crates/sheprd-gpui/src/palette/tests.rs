@@ -157,7 +157,10 @@ fn clear_pane_is_offered_and_sent_only_when_the_daemon_advertises_it(cx: &mut Te
                     .as_deref()
                     .is_some_and(|error| error.contains("newer Herdr"))
             );
-            assert!(view.activation_deadline.is_none(), "nothing was sent");
+            assert!(
+                view.live.activation.deadline().is_none(),
+                "nothing was sent"
+            );
         })
     });
 }
@@ -171,7 +174,7 @@ fn go_to_rejects_a_disabled_or_missing_host_and_keeps_the_palette_open(cx: &mut 
             let boot = view.live.snapshot.as_ref().unwrap().boot_id.clone();
             for endpoint in ["missing-host", crate::endpoint::LOCAL] {
                 if endpoint == crate::endpoint::LOCAL {
-                    view.endpoints[0].enabled = false;
+                    view.endpoints[0].set_enabled_for_test(false);
                 }
                 view.activate_palette(
                     Action::Go {

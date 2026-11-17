@@ -7,6 +7,7 @@ use std::sync::{Condvar, Mutex};
 
 #[cfg(unix)]
 mod backend_for;
+mod start_intent;
 mod target;
 
 fn opted_in_hub(join: Join) -> Hub {
@@ -19,7 +20,7 @@ fn opted_in_hub(join: Join) -> Hub {
 /// Waits up to a few seconds for the hub's attempt to settle.
 fn settle(hub: &mut Hub) {
     let deadline = Instant::now() + Duration::from_secs(5);
-    while matches!(hub.state(), State::Connecting(_)) {
+    while matches!(hub.state(), State::Connecting { .. }) {
         assert!(Instant::now() < deadline, "the attempt never finished");
         hub.poll();
         std::thread::yield_now();
@@ -61,7 +62,7 @@ fn a_start_asked_for_during_a_join_runs_when_the_join_fails() {
     );
     assert!(matches!(
         hub.state(),
-        State::Unavailable(error) if matches!(**error, Error::NotInstalled)
+        State::Unavailable { error, .. } if matches!(**error, Error::NotInstalled)
     ));
 }
 

@@ -1,3 +1,5 @@
+// ABOUTME: Checks native Settings fonts interactions.
+// ABOUTME: Verifies the desktop behavior against explicit test resources.
 //! Native font section checks: inline role rows, picker, and size editing.
 #[cfg(feature = "integration-test")]
 use super::super::themes;
@@ -324,7 +326,7 @@ pub(super) async fn verify_fonts(
         ensure!(
             view.native_font_editor(cx).is_none()
                 && view.focus.is_focused(window)
-                && !view.saving
+                && !view.persistence.saving()
                 && view.native_font_sizes_idle()
                 && [
                     view.config.terminal.size,
