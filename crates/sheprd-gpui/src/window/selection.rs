@@ -320,12 +320,10 @@ impl SheprdWindow {
         };
         match result {
             Ok((inbox, request)) => self.await_selection_read(inbox, request),
-            Err(error) => {
-                self.local_error = Some(fl!(
-                    "window-find-selection-not-copied",
-                    error = error.localize()
-                ))
-            }
+            Err(error) => self.notices.show(
+                crate::notice::Cause::Input,
+                fl!("window-find-selection-not-copied", error = error.localize()),
+            ),
         }
         true
     }
@@ -388,10 +386,13 @@ impl SheprdWindow {
             }
             Err(error) => {
                 drop(state);
-                self.local_error = Some(fl!(
-                    "window-find-selection-scroll-failed",
-                    error = error.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!(
+                        "window-find-selection-scroll-failed",
+                        error = error.localize()
+                    ),
+                );
                 self.selection_follow.pointer = None;
                 cx.notify();
             }
@@ -465,23 +466,27 @@ impl SheprdWindow {
                 }
             }
             Ok(ScrollbackResponse::PaneSelection(_)) => {
-                self.local_error = Some(fl!(
-                    "window-find-selection-not-copied",
-                    error = crate::Error::SelectionSize.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!(
+                        "window-find-selection-not-copied",
+                        error = crate::Error::SelectionSize.localize()
+                    ),
+                );
             }
             Ok(_) => {
-                self.local_error = Some(fl!(
-                    "window-find-selection-not-copied",
-                    error = sheprd_client::Error::ResponseType.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!(
+                        "window-find-selection-not-copied",
+                        error = sheprd_client::Error::ResponseType.localize()
+                    ),
+                );
             }
-            Err(error) => {
-                self.local_error = Some(fl!(
-                    "window-find-selection-not-copied",
-                    error = error.localize()
-                ))
-            }
+            Err(error) => self.notices.show(
+                crate::notice::Cause::Input,
+                fl!("window-find-selection-not-copied", error = error.localize()),
+            ),
         }
         cx.notify();
     }
@@ -501,10 +506,10 @@ impl SheprdWindow {
                 true
             }
             Err(error) => {
-                self.local_error = Some(fl!(
-                    "window-find-selection-not-copied",
-                    error = error.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-find-selection-not-copied", error = error.localize()),
+                );
                 false
             }
         }

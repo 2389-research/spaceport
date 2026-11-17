@@ -123,7 +123,7 @@ fn daemon_clipboard_writes_reach_the_pasteboard_and_report(cx: &mut gpui::TestAp
     );
     view.update(cx, |view, cx| {
         view.config.clipboard_toast.enabled = false;
-        view.flash = None;
+        view.clear_flash(false);
         assert!(view.apply_clipboard_writes(vec!["quiet".into()], cx));
         assert!(view.flash.is_none(), "a disabled toast stays silent");
         assert!(!view.apply_clipboard_writes(Vec::new(), cx));
@@ -482,7 +482,7 @@ fn timeout_and_return_to_local_do_not_wait_for_remote_release(cx: &mut gpui::Tes
         assert_eq!(view.selected_endpoint, 0);
         assert!(!current(view));
         assert!(view.pending_releases.is_empty());
-        assert!(view.local_error.as_ref().unwrap().contains("timed out"));
+        assert!(view.notices.text().unwrap().contains("timed out"));
         let _ = view.select_endpoint("ssh:remote", cx);
         let remote = view.endpoints[view.selected_endpoint]
             .connection

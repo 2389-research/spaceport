@@ -108,7 +108,8 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
         response: serde_json::json!({"error": payload}),
     });
     assert!(state.tab_rename.as_ref().unwrap().result.is_none());
-    assert_eq!(state.error.take().as_deref(), Some("Invalid label"));
+    assert_eq!(state.notices.text(), Some("Invalid label"));
+    state.notices.clear();
     state.apply(ClientEvent::Response {
         request_id: "rename".into(),
         response: serde_json::json!({"error": payload}),
@@ -157,7 +158,7 @@ fn rename_failures_stay_typed_and_shared_across_mailbox_clones() {
             .as_ref(),
         crate::Error::Client(sheprd_client::Error::CommandBoot)
     ));
-    assert!(state.error.is_none());
+    assert!(state.notices.is_none());
     state.apply(ClientEvent::CommandRejected {
         request_id: Some("rename".into()),
         reason: std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied").into(),

@@ -248,12 +248,12 @@ impl SheprdWindow {
                         crate::log_window::set_appearance(&this.config, &this.theme, cx);
                         this.wheel = Default::default();
                         this.last_queued_options = None;
-                        this.local_error = None;
+                        this.notices.clear();
                     }
                     Err(error) => {
                         tracing::warn!(%error, "Could not load GUI config; keeping current settings");
                         let message = fl!("menu-settings-load-failed", error = error.to_string());
-                        this.local_error = Some(message);
+                        this.notices.show(crate::notice::Cause::Configuration, message);
                     }
                 }
                 cx.notify();

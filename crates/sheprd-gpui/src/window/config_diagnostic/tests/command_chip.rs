@@ -73,7 +73,7 @@ fn clicking_the_command_or_its_icon_copies_it_and_keeps_the_card(cx: &mut TestAp
         cx.update(|_, cx| {
             cx.write_to_clipboard(gpui::ClipboardItem::new_string("before".into()));
         });
-        view.update(cx, |view, _| view.flash = None);
+        view.update(cx, |view, _| view.clear_flash(false));
         let bounds = cx.debug_bounds(control).unwrap();
         cx.simulate_click(bounds.center(), Default::default());
         draw(cx);

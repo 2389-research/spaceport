@@ -69,9 +69,9 @@ fn an_idle_window_leaves_a_frame_another_client_sized(cx: &mut gpui::TestAppCont
         ] {
             view.resize_at(at);
             assert!(
-                view.local_error.is_none(),
+                view.notices.is_none(),
                 "an idle window does not re-claim the frame: {:?}",
-                view.local_error
+                view.notices
             );
         }
     });
@@ -91,9 +91,9 @@ fn a_window_whose_input_is_old_leaves_a_frame_another_client_sized(cx: &mut gpui
         ] {
             view.resize_at(at);
             assert!(
-                view.local_error.is_none(),
+                view.notices.is_none(),
                 "input {REASSERT_AFTER_INPUT:?} old no longer re-claims the frame: {:?}",
-                view.local_error
+                view.notices
             );
         }
     });
@@ -107,12 +107,12 @@ fn an_idle_window_still_sends_its_own_new_size(cx: &mut gpui::TestAppContext) {
         view.options.surface_size.cols += 1;
         view.resize_at(start);
         assert!(
-            view.local_error.is_none(),
+            view.notices.is_none(),
             "a new size still settles before a send"
         );
         view.resize_at(start + RESIZE_SETTLE);
         assert!(
-            view.local_error.is_some(),
+            view.notices.is_some(),
             "an idle window still sends a size of its own once settled"
         );
     });
@@ -142,7 +142,7 @@ fn reclaims(view: &mut SheprdWindow) -> bool {
     let now = Instant::now();
     view.resize_at(now);
     view.resize_at(now + RESIZE_REASSERT + RESIZE_SETTLE);
-    view.local_error.is_some()
+    view.notices.is_some()
 }
 
 #[gpui::test]
@@ -192,9 +192,9 @@ fn a_paste_on_a_frame_another_client_sized_is_use(cx: &mut gpui::TestAppContext)
         cx.write_to_clipboard(gpui::ClipboardItem::new_string("x".into()));
         view.paste(cx);
         assert!(
-            view.local_error.is_none(),
+            view.notices.is_none(),
             "a paste waits for a ready frame instead of being sent: {:?}",
-            view.local_error
+            view.notices
         );
         assert!(view.last_input.is_some(), "a paste is use");
         assert!(reclaims(view), "the paste re-claims the frame");

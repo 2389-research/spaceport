@@ -211,8 +211,8 @@ fn a_removal_pulses_the_host_header_until_the_device_leaves(cx: &mut TestAppCont
             );
             assert!(view.menu.removing_devices.is_empty());
             assert_eq!(
-                view.local_error
-                    .as_deref()
+                view.notices
+                    .text()
                     .map(|error| error.replace(['\u{2068}', '\u{2069}'], "")),
                 Some(format!(
                     "Remove m5max-ms: {}",

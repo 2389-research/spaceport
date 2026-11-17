@@ -13,7 +13,7 @@ fn a_theme_following_the_system_shows_its_light_side(cx: &mut TestAppContext) {
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         assert_eq!(Some(view.theme.clone()), Theme::builtin("Catppuccin Latte"));
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
     });
 
     // A result for a theme changed while it loaded is dropped.

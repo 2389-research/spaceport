@@ -72,7 +72,7 @@ fn new_window_adds_one_client_of_the_same_target_without_disturbing_the_first(
     // The originating window keeps its own selection and error state.
     view.read_with(cx, |view, _| {
         assert_eq!(view.selected_endpoint, 0);
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
     });
 }
 

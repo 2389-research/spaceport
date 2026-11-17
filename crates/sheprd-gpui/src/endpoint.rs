@@ -483,6 +483,7 @@ impl SheprdWindow {
             image.cancel();
         }
         self.clear_pending_input();
+        self.clear_flash(false);
         self.menu.reset();
         self.selection_epoch += 1;
         self.discard_composition(cx);
@@ -501,8 +502,7 @@ impl SheprdWindow {
         self.selection = None;
         self.terminal_mouse = None;
         self.pressed_terminal_link = None;
-        self.flash = None;
-        self.local_error = None;
+        self.notices.clear();
         self.last_queued_options = None;
         self.sent_focus = None;
         self.wheel = WheelAccumulator::default();
@@ -532,10 +532,10 @@ impl SheprdWindow {
         self.leave_core_group(cx);
         self.catalog.choose(id);
         if let Some(error) = self.catalog.poll_write() {
-            self.local_error = Some(fl!(
-                "endpoint-save-selection-failed",
-                error = error.localize()
-            ));
+            self.notices.show(
+                crate::notice::Cause::Configuration,
+                fl!("endpoint-save-selection-failed", error = error.localize()),
+            );
             cx.notify();
         }
         Ok(())
@@ -578,10 +578,10 @@ impl SheprdWindow {
         self.reconnect(cx);
         // After the reconnect: resetting the connection clears the error slot.
         if let Some(error) = self.catalog.poll_write() {
-            self.local_error = Some(fl!(
-                "endpoint-save-selection-failed",
-                error = error.localize()
-            ));
+            self.notices.show(
+                crate::notice::Cause::Configuration,
+                fl!("endpoint-save-selection-failed", error = error.localize()),
+            );
         }
         cx.notify();
     }
@@ -631,10 +631,10 @@ impl SheprdWindow {
         self.leave_core_group(cx);
         // After the reconnect: resetting the connection clears the error slot.
         if let Some(error) = self.catalog.poll_write() {
-            self.local_error = Some(fl!(
-                "endpoint-save-selection-failed",
-                error = error.localize()
-            ));
+            self.notices.show(
+                crate::notice::Cause::Configuration,
+                fl!("endpoint-save-selection-failed", error = error.localize()),
+            );
         }
         cx.notify();
     }
@@ -658,7 +658,8 @@ impl SheprdWindow {
             && !self.endpoints[self.selected_endpoint].live.supports_surface
         {
             let error = Error::SurfaceSwitchingUnsupported;
-            self.local_error = Some(error.localize());
+            self.notices
+                .show(crate::notice::Cause::Activation, error.localize());
             cx.notify();
             return Err(error);
         }

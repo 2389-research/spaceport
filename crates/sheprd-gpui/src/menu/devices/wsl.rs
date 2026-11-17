@@ -425,11 +425,14 @@ impl SheprdWindow {
                     // i18n: data
                     crate::storage_warning::warn_storage_failure("Remove WSL device", &error);
                     this.menu.removing_devices.remove(&id);
-                    this.local_error = Some(fl!(
-                        "devices-wsl-remove-failed",
-                        distro = distro.as_str(),
-                        error = error.to_string(),
-                    ));
+                    this.notices.show(
+                        crate::notice::Cause::Command,
+                        fl!(
+                            "devices-wsl-remove-failed",
+                            distro = distro.as_str(),
+                            error = error.to_string(),
+                        ),
+                    );
                     cx.notify();
                 }
             });

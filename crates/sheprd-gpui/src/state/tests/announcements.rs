@@ -27,7 +27,7 @@ fn dismissed_announcement_stays_hidden_until_the_daemon_drops_it() {
     // the request, must not bring the card back.
     state.apply(ClientEvent::Snapshot(snapshot()));
     assert!(state.product_announcement().is_none());
-    assert!(state.error.is_none());
+    assert!(state.notices.is_none());
 
     let mut dropped = (*snapshot()).clone();
     dropped.product_announcement = None;
@@ -55,7 +55,7 @@ fn rejected_dismissal_shows_the_announcement_again() {
         response: serde_json::json!({"error": {"code": "x", "message": "y"}}),
     });
     assert!(state.product_announcement().is_none());
-    state.error = None;
+    state.notices.clear();
     state.apply(ClientEvent::Response {
         request_id: "dismiss-1".into(),
         response: serde_json::json!({"error": {
@@ -65,7 +65,7 @@ fn rejected_dismissal_shows_the_announcement_again() {
     });
     assert!(state.product_announcement().is_some());
     // The card coming back is the feedback; the status line stays quiet.
-    assert!(state.error.is_none());
+    assert!(state.notices.is_none());
 
     let mut state = dismissed("dismiss-2");
     state.apply(ClientEvent::CommandRejected {

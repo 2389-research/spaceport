@@ -133,7 +133,10 @@ impl SheprdWindow {
     ) -> Delivery {
         // A menu opened during the gap owns input, as it does for a paste.
         if self.menu.page.is_some() {
-            self.local_error = Some(fl!("window-input-files-menu"));
+            self.notices.show(
+                crate::notice::Cause::Transfer,
+                fl!("window-input-files-menu"),
+            );
             cx.notify();
             return Delivery::Refused;
         }
@@ -144,7 +147,10 @@ impl SheprdWindow {
         if let Some(target) = target {
             self.paste_files(target, paths, cx)
         } else {
-            self.local_error = Some(fl!("window-input-files-nowhere"));
+            self.notices.show(
+                crate::notice::Cause::Transfer,
+                fl!("window-input-files-nowhere"),
+            );
             cx.notify();
             Delivery::Refused
         }
@@ -237,7 +243,10 @@ impl SheprdWindow {
                 Some(delivery)
             }
             Err(error) => {
-                self.local_error = Some(fl!("window-input-files-failed", error = error.localize()));
+                self.notices.show(
+                    crate::notice::Cause::Transfer,
+                    fl!("window-input-files-failed", error = error.localize()),
+                );
                 cx.notify();
                 None
             }

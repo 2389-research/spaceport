@@ -124,7 +124,7 @@ fn pane_moves_offer_destinations_and_settle_once(cx: &mut TestAppContext) {
             v.move_pane(Destination::NewWorkspace, window, cx);
             assert_eq!(v.menu.pane.as_ref().unwrap().moving, Some(7));
             // Another move's late failure reaches the window, not this menu.
-            v.local_error = None;
+            v.notices.clear();
             v.finish_pane_move(
                 6,
                 Err(pane_move::Error::Unchanged(pane_move::Unchanged::SameTab)),
@@ -132,10 +132,7 @@ fn pane_moves_offer_destinations_and_settle_once(cx: &mut TestAppContext) {
                 cx,
             );
             assert_eq!(v.menu.pane.as_ref().unwrap().moving, Some(7));
-            assert_eq!(
-                v.local_error.as_deref(),
-                Some("The pane is already in that tab.")
-            );
+            assert_eq!(v.notices.text(), Some("The pane is already in that tab."));
             v.finish_pane_move(
                 7,
                 Err(pane_move::Error::Unchanged(pane_move::Unchanged::ZoomedTab)),
@@ -150,9 +147,9 @@ fn pane_moves_offer_destinations_and_settle_once(cx: &mut TestAppContext) {
             v.finish_pane_move(8, Ok(()), window, cx);
             assert!(v.menu.page.is_none());
             // A success after the menu closed changes nothing visible.
-            v.local_error = None;
+            v.notices.clear();
             v.finish_pane_move(9, Ok(()), window, cx);
-            assert!(v.local_error.is_none());
+            assert!(v.notices.is_none());
         })
     });
 }

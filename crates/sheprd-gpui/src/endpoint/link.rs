@@ -183,7 +183,11 @@ impl Endpoint {
                 // can refine that outage after its delayed inbox update arrives.
                 let reason = self.outage().map(|reason| {
                     if self.connection.handle.is_none() && !self.live.status.is_connected() {
-                        self.live.error.clone().unwrap_or_else(|| reason.into())
+                        self.live
+                            .notices
+                            .connection_reason()
+                            .map(str::to_owned)
+                            .unwrap_or_else(|| reason.into())
                     } else {
                         reason.into()
                     }
@@ -205,7 +209,7 @@ impl Endpoint {
                     match why {
                         Failure::Transport { .. }
                             if reason.is_none()
-                                && self.live.error.is_none()
+                                && self.live.notices.connection_reason().is_none()
                                 && !needs_user(&self.live) =>
                         {
                             None
@@ -216,7 +220,8 @@ impl Endpoint {
                         }),
                         why => Some(why.with_reason(reason)),
                     }
-                } else if self.live.error.is_some() || needs_user(&self.live) {
+                } else if self.live.notices.connection_reason().is_some() || needs_user(&self.live)
+                {
                     Some(Failure::Transport {
                         reason,
                         needs_user: needs_user(&self.live),
@@ -269,8 +274,9 @@ impl Endpoint {
                 };
                 let reason = Some(
                     self.live
-                        .error
-                        .clone()
+                        .notices
+                        .connection_reason()
+                        .map(str::to_owned)
                         .unwrap_or_else(|| fl!("endpoint-connection-lost")),
                 );
                 let why = Some(match why {

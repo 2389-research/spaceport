@@ -72,7 +72,7 @@ fn text_paste_survives_a_settled_navigation(cx: &mut gpui::TestAppContext) {
             events: vec![ClientPaneInputEvent::TextCommit("sentinel".into())],
         }
     );
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -123,7 +123,7 @@ fn connected_image_paste_captures_pane_before_immediate_text_and_enter(
         );
     }
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -156,7 +156,7 @@ fn connected_image_paste_popup_never_reaches_underlying_pane(cx: &mut gpui::Test
         }
     );
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -196,7 +196,7 @@ fn connected_image_paste_image_only_preserves_text(cx: &mut gpui::TestAppContext
         }
         view.read_with(cx, |view, _| {
             assert!(view.pending_images.is_empty());
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
         });
     }
 }
@@ -241,7 +241,7 @@ fn connected_image_paste_local_bridges_clipboard_image_but_not_paths(
         }
     );
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -279,7 +279,7 @@ fn connected_image_paste_missing_path_falls_back_in_reserved_order(cx: &mut gpui
         );
     }
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -353,9 +353,7 @@ fn connected_image_paste_cancels_stale_preparation_without_blocking_fifo(
                 "{change}, cancel_before_prepare={cancel_before_prepare}"
             );
             wait_image_finished(&view, cx);
-            view.read_with(cx, |view, _| {
-                assert!(view.local_error.is_none(), "{change}")
-            });
+            view.read_with(cx, |view, _| assert!(view.notices.is_none(), "{change}"));
         }
     }
 }
@@ -374,8 +372,8 @@ fn connected_image_paste_busy_guard_releases_after_completion(cx: &mut gpui::Tes
             assert!(view.paste_terminal_clipboard(clipboard_image(&[byte]), false, cx));
             assert!(view.paste_terminal_clipboard(clipboard_image(&[99]), false, cx));
             assert_eq!(
-                view.local_error
-                    .as_deref()
+                view.notices
+                    .text()
                     .map(crate::i18n::leak_tests::unmarked)
                     .as_deref(),
                 Some(
@@ -435,7 +433,7 @@ fn connected_image_paste_reconnect_cancels_old_task_and_keeps_single_preparation
         assert_eq!(view.pending_images.len(), 1);
         prepare_remote_image(view, replacement, cx);
         assert!(view.paste_terminal_clipboard(clipboard_image(&[2]), false, cx));
-        assert!(view.local_error.is_some());
+        assert!(view.notices.is_some());
         view.send(
             ClientPaneInputEvent::TextCommit("replacement sentinel".into()),
             cx,

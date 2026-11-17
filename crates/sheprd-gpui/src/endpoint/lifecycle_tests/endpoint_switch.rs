@@ -68,10 +68,16 @@ fn another_endpoint_changing_keeps_the_selected_window_state(cx: &mut gpui::Test
             view.poll_endpoints(cx);
             assert_eq!(view.live.drag_request.as_deref(), Some("gpui-pending"));
 
-            view.endpoints[1].connection.inbox.lock().unwrap().error = Some("news".into());
+            view.endpoints[1]
+                .connection
+                .inbox
+                .lock()
+                .unwrap()
+                .notices
+                .show(crate::notice::Cause::Daemon, "news".into());
             view.endpoints[1].connection.inbox.lock().unwrap().dirty = true;
             view.poll_endpoints(cx);
-            assert_eq!(view.live.error.as_deref(), Some("news"));
+            assert_eq!(view.live.notices.text(), Some("news"));
         });
     });
 }

@@ -126,8 +126,8 @@ fn a_key_held_after_a_refused_drop_is_not_sent(cx: &mut TestAppContext) {
             crate::window::file_drop::Error::Control
         );
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(expected.as_str())
@@ -151,8 +151,8 @@ fn a_key_held_after_a_remote_copy_does_not_overtake_its_paths(cx: &mut TestAppCo
         frame_returns(view, cx);
         assert!(view.file_transfer.active().is_some(), "the copy started");
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(COPYING)
@@ -163,8 +163,8 @@ fn a_key_held_after_a_remote_copy_does_not_overtake_its_paths(cx: &mut TestAppCo
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(COPYING)
@@ -191,8 +191,8 @@ fn a_held_key_that_cannot_be_sent_reports_the_input_discarded_after_it(cx: &mut 
         frame_returns(view, cx);
         let expected = format!("Input not sent: {error} (2 held inputs discarded)");
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(expected.as_str())
@@ -229,8 +229,8 @@ fn a_key_held_after_a_paste_that_cannot_be_sent_is_not_sent(cx: &mut TestAppCont
         };
         let expected = format!("{kind} not sent: {error} (1 held input discarded)");
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(expected.as_str())
@@ -256,8 +256,8 @@ fn a_key_held_after_a_paste_refused_by_an_open_menu_is_not_sent(cx: &mut TestApp
         view.menu.page = Some(Page::About);
         frame_returns(view, cx);
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some("Paste not sent: a menu is open (1 held input discarded)")
@@ -278,11 +278,11 @@ fn a_key_held_after_a_refused_fifth_paste_is_not_sent(cx: &mut TestAppContext) {
         for _ in 0..4 {
             view.paste(cx);
         }
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
         view.paste(cx);
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(STOPPED)
@@ -303,8 +303,8 @@ fn a_key_held_after_a_refused_fifth_paste_is_not_sent(cx: &mut TestAppContext) {
     view.read_with(cx, |view, _| {
         let expected = format!("{STOPPED} (1 held input discarded)");
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(expected.as_str())
@@ -327,8 +327,8 @@ fn a_full_hold_queue_refuses_a_key(cx: &mut TestAppContext) {
         }
         assert!(!view.send(text("a"), cx));
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some(STOPPED)
@@ -345,11 +345,12 @@ fn an_older_error_survives_a_held_paste_that_is_sent(cx: &mut TestAppContext) {
         cx.write_to_clipboard(ClipboardItem::new_string("pasted".into()));
         sized_by_another(&peer, view, cx);
         view.paste(cx);
-        view.local_error = Some("older".into());
+        view.notices
+            .show(crate::notice::Cause::Input, "older".into());
         frame_returns(view, cx);
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some("older")
@@ -371,11 +372,12 @@ fn an_older_error_does_not_take_the_discard_note(cx: &mut TestAppContext) {
         size_by_another(view);
         hold_drop(view, &["/herdr-held/a.txt", "/herdr-held/b.txt"], cx);
         view.send(crate::menu::enter_key(), cx);
-        view.local_error = Some("older".into());
+        view.notices
+            .show(crate::notice::Cause::Input, "older".into());
         frame_returns(view, cx);
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some("Files not pasted: another copy is running (1 held input discarded)")
@@ -408,7 +410,7 @@ fn a_paste_made_once_the_frame_returns_arrives_after_the_held_keys(cx: &mut Test
     assert_eq!(next_pane_input(&mut peer), typed(text("a")));
     assert_eq!(next_pane_input(&mut peer), typed(paste("/tmp/live.txt")));
     sentinel_is_next(&mut peer);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -463,11 +465,11 @@ fn a_remote_image_drop_the_bridge_refuses_still_takes_focus(cx: &mut TestAppCont
         view.update(cx, |view, cx| {
             connect(&peer, view, cx);
             live_drop(view, &[image], window, cx);
-            view.local_error = None;
+            view.notices.clear();
             assert!(live_drop(view, &[image], window, cx));
             let error = view
-                .local_error
-                .as_deref()
+                .notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .unwrap_or_default();
             assert!(error.starts_with("Image not sent: "), "{error:?}");

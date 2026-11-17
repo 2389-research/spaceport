@@ -133,10 +133,10 @@ impl SheprdWindow {
                 // next poll or paint retries them once the worker drains. A
                 // status error would outlive the retry that already fixed it.
                 Err(sheprd_client::Error::Full) => {}
-                Err(error) => {
-                    self.local_error =
-                        Some(fl!("window-input-resize-failed", error = error.localize()))
-                }
+                Err(error) => self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-input-resize-failed", error = error.localize()),
+                ),
             }
         }
     }

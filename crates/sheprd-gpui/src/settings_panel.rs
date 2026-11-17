@@ -132,10 +132,13 @@ impl SheprdWindow {
                     Ok(loaded) => loaded,
                     Err(error) => {
                         tracing::warn!(%error, "Could not reload the theme");
-                        this.local_error = Some(fl!(
-                            "settings-panel-reload-theme-failed",
-                            error = error.localize()
-                        ));
+                        this.notices.show(
+                            crate::notice::Cause::Configuration,
+                            fl!(
+                                "settings-panel-reload-theme-failed",
+                                error = error.localize()
+                            ),
+                        );
                         cx.notify();
                         return;
                     }

@@ -218,7 +218,7 @@ fn empty_wrongly_typed_and_oversized_values_send_nothing(cx: &mut TestAppContext
             for data in [None, Some(value("")), Some(ActionData::NumericValue(42.))] {
                 view.insert_accessible_text(&target, data.as_ref(), window, cx);
             }
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
             view.insert_accessible_text(
                 &target,
                 Some(&value(&"x".repeat(MAX_FRAME_SIZE + 1))),
@@ -226,8 +226,8 @@ fn empty_wrongly_typed_and_oversized_values_send_nothing(cx: &mut TestAppContext
                 cx,
             );
             assert_eq!(
-                view.local_error
-                    .as_deref()
+                view.notices
+                    .text()
                     .map(crate::i18n::leak_tests::unmarked)
                     .as_deref(),
                 Some("Accessibility input not sent: frame exceeds limit")

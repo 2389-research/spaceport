@@ -138,8 +138,8 @@ fn an_unchanged_url_activates_at_the_release_revision(cx: &mut gpui::TestAppCont
     assert!(cx.opened_url().is_none());
     view.read_with(cx, |view, _| {
         assert_eq!(
-            view.local_error
-                .as_deref()
+            view.notices
+                .text()
                 .map(crate::i18n::leak_tests::unmarked)
                 .as_deref(),
             Some("Link handler failed: handler failed")

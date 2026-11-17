@@ -76,7 +76,7 @@ fn connected_image_paste_key_down_ctrl_v_and_cmd_v(cx: &mut gpui::TestAppContext
                     "remote={remote}, key={key}, image={image}"
                 );
                 wait_image_finished(&view, cx);
-                view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+                view.read_with(cx, |view, _| assert!(view.notices.is_none()));
             }
         }
     }
@@ -96,7 +96,7 @@ fn connected_image_paste_native_text_reservations_preserve_fifo(cx: &mut gpui::T
             view.paste_native_clipboard(false, None, cx);
         }
         assert_eq!(view.pending_images.len(), 2);
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
         view.send(ClientPaneInputEvent::TextCommit("sentinel".into()), cx);
     });
     cx.run_until_parked();
@@ -114,7 +114,7 @@ fn connected_image_paste_native_text_reservations_preserve_fifo(cx: &mut gpui::T
         );
     }
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -153,7 +153,7 @@ fn connected_image_paste_native_text_during_blocked_image_and_second_image_busy(
             view.paste_native_clipboard(false, None, cx);
         }
         assert_eq!(view.pending_images.len(), 3);
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
         cx.write_to_clipboard(clipboard_image(&[99]));
         view.paste_native_clipboard(false, None, cx);
         assert_eq!(view.pending_images.len(), 4);
@@ -162,9 +162,7 @@ fn connected_image_paste_native_text_during_blocked_image_and_second_image_busy(
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
         assert_eq!(
-            view.local_error
-                .as_deref()
-                .map(crate::i18n::leak_tests::unmarked),
+            view.notices.text().map(crate::i18n::leak_tests::unmarked),
             Some(format!(
                 "Paste not sent: {}",
                 sheprd_client::Error::Clipboard(sheprd_client::clipboard::Error::Busy)
@@ -239,9 +237,7 @@ fn connected_image_paste_native_preparations_stay_bounded_across_reset(
             view.paste_native_clipboard(false, None, cx);
             assert_eq!(view.pending_images.len(), 4);
             assert_eq!(
-                view.local_error
-                    .as_deref()
-                    .map(crate::i18n::leak_tests::unmarked),
+                view.notices.text().map(crate::i18n::leak_tests::unmarked),
                 Some(format!(
                     "Paste not sent: {}",
                     sheprd_client::Error::Clipboard(sheprd_client::clipboard::Error::Busy)
@@ -321,13 +317,11 @@ fn connected_image_paste_queued_upload_remains_cancellable_after_preparation(
                 !view.pending_images.is_empty(),
                 "publication must retain cancellation"
             );
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
             // No preparation is running now, but the unsent frame still occupies the guard.
             assert!(view.paste_terminal_clipboard(clipboard_image(&[99]), false, cx));
             assert_eq!(
-                view.local_error
-                    .as_deref()
-                    .map(crate::i18n::leak_tests::unmarked),
+                view.notices.text().map(crate::i18n::leak_tests::unmarked),
                 Some(format!(
                     "Image not sent: {}",
                     sheprd_client::Error::Clipboard(sheprd_client::clipboard::Error::Busy)
@@ -418,7 +412,7 @@ fn connected_image_paste_snapshot_surface_gap_preserves_existing_target(
                     "missing cells must not cancel an existing pane"
                 );
             }
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
         });
         server.respond(&first);
         let ClientMessage::ClientShellEndpointRequest { request, .. } = server.receive() else {
@@ -446,6 +440,6 @@ fn connected_image_paste_snapshot_surface_gap_preserves_existing_target(
             "snapshot removed pane={removed}"
         );
         wait_image_finished(&view, cx);
-        view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+        view.read_with(cx, |view, _| assert!(view.notices.is_none()));
     }
 }

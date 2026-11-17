@@ -41,7 +41,7 @@ fn catalog_retarget_forgets_the_previous_targets_failure(cx: &mut gpui::TestAppC
             assert_eq!(endpoint.phase(), Phase::Connecting, "{failure}");
             assert_eq!(endpoint.outage(), None, "{failure}");
             assert!(!endpoint.herdr_missing(), "{failure}");
-            assert!(endpoint.live.error.is_none(), "{failure}");
+            assert!(endpoint.live.notices.is_none(), "{failure}");
             assert!(!Arc::ptr_eq(&old_inbox, &endpoint.connection.inbox));
         }
     });

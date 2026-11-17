@@ -165,7 +165,10 @@ impl SheprdWindow {
             && let Err(error) =
                 ConnectionBridge::send_input(handle, &target.boot, &target.input, event)
         {
-            self.local_error = Some(fl!("window-input-failed", error = error.localize()));
+            self.notices.show(
+                crate::notice::Cause::Input,
+                fl!("window-input-failed", error = error.localize()),
+            );
             cx.notify();
             return false;
         }
@@ -243,7 +246,7 @@ impl SheprdWindow {
         } else {
             return None;
         };
-        self.local_error = Some(reason);
+        self.notices.show(crate::notice::Cause::Input, reason);
         cx.notify();
         Some(Delivery::Refused)
     }
@@ -302,7 +305,7 @@ impl SheprdWindow {
             || (!matches!(held, Held::Event(_))
                 && self.pending_input.actions() >= MAX_PENDING_ACTIONS);
         if full {
-            self.local_error = Some(stopped());
+            self.notices.show(crate::notice::Cause::Input, stopped());
             cx.notify();
             // A refused paste or drop ends the batch where it was made.
             let marked = matches!(self.pending_input.events.back(), Some(Held::Refused));
@@ -387,7 +390,10 @@ impl SheprdWindow {
         match self.pending_input.target.clone().filter(|_| unchanged) {
             Some(target) => self.deliver_held(&target, held, cx),
             None => {
-                self.local_error = Some(fl!("window-input-focus-changed"));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-input-focus-changed"),
+                );
                 cx.notify();
             }
         }
@@ -406,13 +412,13 @@ impl SheprdWindow {
                     image_only,
                     fallback,
                 } => {
-                    let shown = self.local_error.take();
+                    let shown = self.notices.take();
                     let delivery = self.replay_paste(image_only, fallback, cx);
                     self.keep_shown_error(shown, delivery, held.len());
                     delivery
                 }
                 Held::Drop { at, paths } => {
-                    let shown = self.local_error.take();
+                    let shown = self.notices.take();
                     let delivery = self.deliver_held_drop(at, &paths, cx);
                     self.keep_shown_error(shown, delivery, held.len());
                     delivery
@@ -427,7 +433,7 @@ impl SheprdWindow {
                         .filter(|held| !matches!(held, Held::Refused))
                         .count();
                     if discarded > 0 {
-                        self.local_error = Some(stopped());
+                        self.notices.show(crate::notice::Cause::Input, stopped());
                         self.discard_held(Delivery::Refused, discarded, cx);
                     }
                     Delivery::Queued
@@ -507,10 +513,15 @@ impl SheprdWindow {
     /// Put back the error shown before a held paste or drop that set none of
     /// its own, unless the discard note for the `remaining` input after it is
     /// about to be shown: the note never follows an older, unrelated error.
-    fn keep_shown_error(&mut self, shown: Option<String>, delivery: Delivery, remaining: usize) {
+    fn keep_shown_error(
+        &mut self,
+        shown: crate::notice::HeldNotice,
+        delivery: Delivery,
+        remaining: usize,
+    ) {
         let delivered = matches!(delivery, Delivery::Queued | Delivery::Preparing);
-        if self.local_error.is_none() && (delivered || remaining == 0) {
-            self.local_error = shown;
+        if self.notices.is_none() && (delivered || remaining == 0) {
+            self.notices.restore(shown);
         }
     }
 
@@ -532,7 +543,10 @@ impl SheprdWindow {
             None => crate::Error::NotConnected.localize(),
         };
         // Display text only: the error's cause is not propagated further.
-        self.local_error = Some(fl!("window-input-failed", error = error));
+        self.notices.show(
+            crate::notice::Cause::Input,
+            fl!("window-input-failed", error = error),
+        );
         cx.notify();
         Delivery::Refused
     }
@@ -546,15 +560,15 @@ impl SheprdWindow {
         let reason = match delivery {
             Delivery::Copying => fl!("window-input-still-copying"),
             Delivery::Queued | Delivery::Preparing | Delivery::Refused => self
-                .local_error
-                .take()
+                .notices
+                .text()
+                .map(str::to_owned)
                 .unwrap_or_else(|| fl!("window-input-refused")),
         };
-        self.local_error = Some(fl!(
-            "window-input-discarded",
-            reason = reason,
-            count = remaining
-        ));
+        self.notices.show(
+            crate::notice::Cause::Input,
+            fl!("window-input-discarded", reason = reason, count = remaining),
+        );
         cx.notify();
     }
 

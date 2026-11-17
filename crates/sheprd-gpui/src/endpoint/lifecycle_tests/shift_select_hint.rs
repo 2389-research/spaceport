@@ -156,7 +156,7 @@ fn a_local_selection_in_a_pane_without_mouse_reporting_never_hints(cx: &mut gpui
                 assert!(!drag(view, MouseButton::Left, modifiers, 9.5, window, cx));
                 assert!(!hinted(view), "{modifiers:?}: {:?}", view.flash);
             }
-            view.flash = None;
+            view.clear_flash(false);
             reporting(view, true);
             assert!(drag(
                 view,
@@ -186,7 +186,7 @@ fn a_shift_selection_over_a_mouse_reporting_pane_retires_the_hint(cx: &mut gpui:
             assert!(!drag(view, MouseButton::Left, SHIFT, 9.5, window, cx));
             assert!(view.terminal_mouse.is_none());
             assert!(!hinted(view), "{:?}", view.flash);
-            view.flash = None;
+            view.clear_flash(false);
             assert!(drag(
                 view,
                 MouseButton::Left,

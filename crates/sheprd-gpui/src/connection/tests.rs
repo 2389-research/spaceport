@@ -377,13 +377,13 @@ fn synchronous_startup_failure_survives_mailbox_and_focus_updates() {
     bridge.reconnect(options, true, true);
     let failed = bridge.take_update().unwrap();
     assert_eq!(failed.status, ConnectionStatus::Disconnected);
-    assert!(failed.error.is_some());
+    assert!(failed.notices.is_some());
     assert!(bridge.handle.is_none());
     assert!(bridge.take_update().is_none());
     bridge.inbox.lock().unwrap().set_outer_focus(false);
     let next = bridge.take_update().unwrap();
     assert_eq!(next.status, failed.status);
-    assert_eq!(next.error, failed.error);
+    assert_eq!(next.notices, failed.notices);
 }
 
 #[test]
@@ -394,7 +394,7 @@ fn event_reader_startup_failure_is_authoritative() {
     });
     let state = bridge.take_update().unwrap();
     assert_eq!(state.status, ConnectionStatus::Disconnected);
-    assert_eq!(state.error.as_deref(), Some("reader startup failed"));
+    assert_eq!(state.notices.text(), Some("reader startup failed"));
     assert!(bridge.handle.is_none());
     bridge.inbox.lock().unwrap().set_outer_focus(true);
     assert_eq!(
@@ -423,7 +423,7 @@ fn detach_and_reconnect_fence_old_inboxes() {
     assert_eq!(detached.status, ConnectionStatus::Detached);
     assert!(!detached.missing_installation);
     assert!(!detached.local_daemon_peer);
-    assert!(detached.error.is_none());
+    assert!(detached.notices.is_none());
     assert!(detached.dialog_response.is_none());
     assert!(detached.snapshot.is_none() && detached.surface.is_none());
     let old = bridge.inbox.clone();
@@ -438,7 +438,7 @@ fn detach_and_reconnect_fence_old_inboxes() {
     let failed = bridge.take_update().unwrap();
     assert_eq!(failed.status, ConnectionStatus::Disconnected);
     assert!(!failed.local_daemon_peer);
-    assert_ne!(failed.error.as_deref(), Some("detached connection"));
+    assert_ne!(failed.notices.text(), Some("detached connection"));
     assert!(!Arc::ptr_eq(&old, &bridge.inbox));
 }
 

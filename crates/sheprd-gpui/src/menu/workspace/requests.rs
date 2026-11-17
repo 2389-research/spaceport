@@ -206,7 +206,7 @@ impl SheprdWindow {
         })();
         match result {
             Ok(submission) => {
-                self.local_error = None;
+                self.notices.clear();
                 if submission.focus_changed() {
                     self.fence_focus_change(None);
                 }

@@ -88,3 +88,5 @@ fn a_new_window_starts_with_the_configured_status_bar(cx: &mut TestAppContext) {
         assert_eq!(status_bar(cx).is_some(), !configured);
     }
 }
+
+mod notices;

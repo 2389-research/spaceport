@@ -4,10 +4,12 @@ use super::*;
 fn rejected_dialog_command_preserves_connection_diagnostic() {
     let mut state = LiveState {
         status: ConnectionStatus::Disconnected,
-        error: Some("socket closed".into()),
         dialog_response: Some(("create".into(), None)),
         ..LiveState::default()
     };
+    state
+        .notices
+        .show(crate::notice::Cause::Connection, "socket closed".into());
     state.apply(ClientEvent::CommandRejected {
         request_id: Some("create".into()),
         reason: sheprd_client::Error::Disconnected,
@@ -86,7 +88,7 @@ fn daemon_loader_stops_on_success_or_failure() {
         ssh: None,
     });
     assert_eq!(state.status, ConnectionStatus::Disconnected);
-    assert_eq!(state.error.as_deref(), Some("startup failed"));
+    assert_eq!(state.notices.text(), Some("startup failed"));
 }
 
 #[test]
@@ -111,7 +113,7 @@ fn connection_status_and_error_priority_follow_lifecycle() {
         "\u{2068}Disconnected\u{2069}: \u{2068}socket closed\u{2069}"
     );
     state.status = ConnectionStatus::Detached;
-    state.error = None;
+    state.notices.clear();
     assert!(!state.status.is_connected());
     assert_eq!(
         state.status_text(Some("old input error")),
@@ -121,5 +123,22 @@ fn connection_status_and_error_priority_follow_lifecycle() {
     assert_eq!(
         ConnectionStatus::AwaitingSnapshot.to_string(),
         "Connected; waiting for snapshot"
+    );
+}
+
+#[test]
+fn late_untracked_refusal_preserves_disconnection_reason() {
+    let mut state = LiveState::default();
+    state.apply(ClientEvent::Disconnected {
+        reason: "socket closed".into(),
+        ssh: None,
+    });
+    state.apply(ClientEvent::CommandRejected {
+        request_id: None,
+        reason: sheprd_client::Error::Disconnected,
+    });
+    assert_eq!(
+        state.status_text(None),
+        "\u{2068}Disconnected\u{2069}: \u{2068}socket closed\u{2069}"
     );
 }

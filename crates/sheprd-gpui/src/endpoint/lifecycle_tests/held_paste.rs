@@ -104,7 +104,7 @@ fn a_paste_in_a_gap_arrives_between_the_keys_typed_around_it(cx: &mut gpui::Test
         assert_eq!(server.receive(), pane_input("w1:p1", expected));
     }
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -131,7 +131,7 @@ fn copied_files_pasted_in_a_gap_arrive_as_paths(cx: &mut gpui::TestAppContext) {
         assert_eq!(server.receive(), pane_input("w1:p1", expected));
     }
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -149,7 +149,7 @@ fn a_paste_held_in_a_gap_is_not_sent_when_focus_moves(cx: &mut gpui::TestAppCont
     assert_eq!(server.receive(), pane_input("w1:p2", text("sentinel")));
     view.read_with(cx, |view, _| {
         assert_eq!(
-            view.local_error.as_deref(),
+            view.notices.text(),
             Some("Input not sent: focus changed before it arrived")
         );
     });
@@ -184,12 +184,12 @@ fn a_fifth_held_paste_is_refused_and_the_first_four_arrive(cx: &mut gpui::TestAp
         for _ in 0..4 {
             view.paste(cx);
         }
-        assert!(view.local_error.is_none());
+        assert!(view.notices.is_none());
         view.paste(cx);
         // The four pastes, and the mark where the fifth was refused.
         assert_eq!(view.pending_input.len(), 5);
-        assert_eq!(view.local_error.as_deref(), Some(STOPPED));
-        view.local_error = None;
+        assert_eq!(view.notices.text(), Some(STOPPED));
+        view.notices.clear();
         close_gap(view, cx, frame);
         view.send(text("sentinel"), cx);
     });
@@ -204,7 +204,7 @@ fn a_fifth_held_paste_is_refused_and_the_first_four_arrive(cx: &mut gpui::TestAp
         assert_eq!(server.receive(), pane_input("w1:p1", expected));
     }
     wait_image_finished(&view, cx);
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 /// Drop a file with the unfocused pane `w1:p2` under the pointer, or where it
@@ -242,7 +242,7 @@ fn a_drop_in_a_gap_reaches_the_pane_it_was_dropped_on(cx: &mut gpui::TestAppCont
         pane_input("w1:p2", paste("/tmp/held\\ drop.txt"))
     );
     assert_eq!(server.receive(), pane_input("w1:p1", text("sentinel")));
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 /// A snapshot/surface gap clears the frame, so the drop keeps its point and
@@ -265,7 +265,7 @@ fn a_drop_without_a_frame_reaches_the_pane_under_its_point(cx: &mut gpui::TestAp
         pane_input("w1:p2", paste("/tmp/held\\ drop.txt"))
     );
     assert_eq!(server.receive(), pane_input("w1:p1", text("sentinel")));
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -284,7 +284,7 @@ fn a_drop_whose_point_lands_on_nothing_is_reported(cx: &mut gpui::TestAppContext
     assert_eq!(server.receive(), pane_input("w1:p1", text("sentinel")));
     view.read_with(cx, |view, _| {
         assert_eq!(
-            view.local_error.as_deref(),
+            view.notices.text(),
             Some("Files not pasted: nothing under the drop point")
         );
     });

@@ -536,7 +536,10 @@ impl SheprdWindow {
         match activation {
             Activation::Handled => {}
             Activation::HandlerFailed(error) => {
-                self.local_error = Some(fl!("window-input-link-failed", error = error.localize()));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-input-link-failed", error = error.localize()),
+                );
                 cx.notify();
             }
             Activation::Declined(url) => {

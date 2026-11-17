@@ -197,7 +197,7 @@ fn external_drop_dispatches_with_submit_position_and_empty_payload_is_inert(
     });
     fixture.read_with(cx, |fixture, cx| {
         assert_eq!(fixture.submitted_at, Some(submitted));
-        assert!(fixture.view.read(cx).local_error.is_none());
+        assert!(fixture.view.read(cx).notices.is_none());
     });
     assert_eq!(
         cx.update(|_, cx| cx.read_from_clipboard().and_then(|item| item.text())),

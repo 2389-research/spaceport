@@ -83,7 +83,7 @@ impl SheprdWindow {
 
     /// Asks the selected daemon to reread its config file.
     pub(crate) fn reload_daemon_config(&mut self) {
-        self.local_error = self.endpoints[self.selected_endpoint]
+        let error = self.endpoints[self.selected_endpoint]
             .reload_config()
             .err()
             .map(|error| {
@@ -92,6 +92,12 @@ impl SheprdWindow {
                     error = error.to_string()
                 )
             });
+        match error {
+            Some(error) => self
+                .notices
+                .show(crate::notice::Cause::Configuration, error),
+            None => self.notices.clear(),
+        }
     }
 
     pub(super) fn menu_items(&self) -> Vec<Item> {

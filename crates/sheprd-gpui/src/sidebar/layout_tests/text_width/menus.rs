@@ -136,7 +136,7 @@ pub(super) fn check_rename_dialog(
             );
             assert!(view.marked.is_empty());
             view.command(crate::controls::Command::Workspace, window, cx);
-            assert!(view.local_error.is_none());
+            assert!(view.notices.is_none());
         });
         full_draw(window, cx).clear(cx);
         view.update(cx, |view, cx| {

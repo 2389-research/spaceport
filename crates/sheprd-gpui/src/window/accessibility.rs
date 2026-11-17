@@ -104,10 +104,13 @@ impl SheprdWindow {
         // Bound the extra allocation before entering the semantic input queue;
         // the client also checks the size of the complete encoded message.
         if text.len() > MAX_FRAME_SIZE {
-            self.local_error = Some(fl!(
-                "window-input-accessibility-failed",
-                error = sheprd_client::protocol::Error::FrameLimit.localize()
-            ));
+            self.notices.show(
+                crate::notice::Cause::Input,
+                fl!(
+                    "window-input-accessibility-failed",
+                    error = sheprd_client::protocol::Error::FrameLimit.localize()
+                ),
+            );
             cx.notify();
             return;
         }

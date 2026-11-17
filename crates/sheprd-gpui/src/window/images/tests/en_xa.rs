@@ -16,7 +16,7 @@ fn a_discarded_preparation_says_so_in_messages() {
                 view.report_preparation_error(kind, &Error::ImageDecodeLimit, cx);
                 let (_, notice) = view.endpoints[0].toasts.entries.back().unwrap();
                 let body = notice.body.as_deref().unwrap();
-                let status = view.local_error.as_deref().unwrap();
+                let status = view.notices.text().unwrap();
                 for text in [notice.title.as_str(), body, status] {
                     assert!(is_marked(text), "not a message: {text}");
                 }

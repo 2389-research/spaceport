@@ -431,10 +431,10 @@ impl SheprdWindow {
                 });
             }
             Err(error) => {
-                self.local_error = Some(fl!(
-                    "sidebar-workspace-move-not-sent",
-                    error = error.to_string()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Command,
+                    fl!("sidebar-workspace-move-not-sent", error = error.to_string()),
+                );
             }
         }
         true

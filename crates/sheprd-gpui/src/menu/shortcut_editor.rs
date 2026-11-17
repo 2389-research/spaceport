@@ -183,10 +183,10 @@ impl SheprdWindow {
                             editor.saving = false;
                             editor.error = Some(error.to_string());
                         } else {
-                            this.local_error = Some(fl!(
-                                "shortcut-editor-save-failed",
-                                error = error.to_string()
-                            ));
+                            this.notices.show(
+                                crate::notice::Cause::Configuration,
+                                fl!("shortcut-editor-save-failed", error = error.to_string()),
+                            );
                         }
                     }
                 }

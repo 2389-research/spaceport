@@ -202,7 +202,8 @@ impl SheprdWindow {
                 self.pane_error(error, cx);
             }
             Err(error) => {
-                self.local_error = Some(error.to_string());
+                self.notices
+                    .show(crate::notice::Cause::Command, error.to_string());
                 cx.notify();
             }
         }

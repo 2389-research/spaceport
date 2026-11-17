@@ -34,7 +34,7 @@ fn the_same_refusal_twice_in_a_row_says_why_both_times(cx: &mut TestAppContext) 
             assert_eq!(answer, refused, "attempt {attempt}");
             assert_eq!(view.selected_endpoint, 0);
             // The status bar shows the refusal as before.
-            assert_eq!(view.local_error.as_deref(), Some(UNSUPPORTED));
+            assert_eq!(view.notices.text(), Some(UNSUPPORTED));
         }
     });
 }

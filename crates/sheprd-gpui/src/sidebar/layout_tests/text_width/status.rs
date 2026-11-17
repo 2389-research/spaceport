@@ -8,7 +8,10 @@ pub(super) fn check_status_bar(
     // Exercise the real status bar without starting a daemon connection.
     view.update(cx, |view, cx| {
         view.marked = "composition ".repeat(100);
-        view.local_error = Some("long connection error ".repeat(100));
+        view.notices.show(
+            crate::notice::Cause::Command,
+            "long connection error ".repeat(100),
+        );
         cx.notify();
     });
     for width in [480., 800.] {

@@ -128,10 +128,13 @@ impl SheprdWindow {
                     .mouse_event(ClientMouseKind::Up(button), Modifiers::default()),
             )
         {
-            self.local_error = Some(fl!(
-                "window-input-mouse-release-failed",
-                error = error.localize()
-            ));
+            self.notices.show(
+                crate::notice::Cause::Input,
+                fl!(
+                    "window-input-mouse-release-failed",
+                    error = error.localize()
+                ),
+            );
             cx.notify();
         }
     }
@@ -182,7 +185,10 @@ impl SheprdWindow {
         ) {
             Ok(()) => true,
             Err(error) => {
-                self.local_error = Some(fl!("window-input-mouse-failed", error = error.localize()));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-input-mouse-failed", error = error.localize()),
+                );
                 cx.notify();
                 false
             }
@@ -663,8 +669,10 @@ impl SheprdWindow {
             }
             Err(error) => {
                 drop(state);
-                self.local_error =
-                    Some(fl!("window-input-scroll-failed", error = error.localize()));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-input-scroll-failed", error = error.localize()),
+                );
                 cx.notify();
             }
         }
@@ -907,10 +915,10 @@ impl SheprdWindow {
             Err(error) => {
                 drop(state);
                 self.split_drag = None;
-                self.local_error = Some(fl!(
-                    "window-input-pane-resize-failed",
-                    error = error.localize()
-                ));
+                self.notices.show(
+                    crate::notice::Cause::Input,
+                    fl!("window-input-pane-resize-failed", error = error.localize()),
+                );
                 cx.notify();
             }
         }

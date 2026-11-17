@@ -113,7 +113,7 @@ fn tab_moves_offer_workspaces_and_settle_once(cx: &mut TestAppContext) {
             v.move_tab(Destination::NewWorkspace, window, cx);
             assert_eq!(v.menu.tab.as_ref().unwrap().moving, Some(7));
             // Another move's late failure reaches the window, not this menu.
-            v.local_error = None;
+            v.notices.clear();
             v.finish_tab_move(
                 6,
                 Err(pane_move::Error::Unchanged(pane_move::Unchanged::SameTab)),
@@ -121,10 +121,7 @@ fn tab_moves_offer_workspaces_and_settle_once(cx: &mut TestAppContext) {
                 cx,
             );
             assert_eq!(v.menu.tab.as_ref().unwrap().moving, Some(7));
-            assert_eq!(
-                v.local_error.as_deref(),
-                Some("The pane is already in that tab.")
-            );
+            assert_eq!(v.notices.text(), Some("The pane is already in that tab."));
             v.finish_tab_move(
                 7,
                 Err(pane_move::Error::Unchanged(pane_move::Unchanged::ZoomedTab)),
@@ -139,9 +136,9 @@ fn tab_moves_offer_workspaces_and_settle_once(cx: &mut TestAppContext) {
             v.finish_tab_move(8, Ok(pane_move::TabMoved::default()), window, cx);
             assert!(v.menu.page.is_none());
             // A success after the menu closed changes nothing visible.
-            v.local_error = None;
+            v.notices.clear();
             v.finish_tab_move(9, Ok(pane_move::TabMoved::default()), window, cx);
-            assert!(v.local_error.is_none());
+            assert!(v.notices.is_none());
             // A move that lost the tab's name closes the menu and says so.
             v.open_tab_menu("inactive", None, Point::default(), window, cx);
             v.menu.tab.as_mut().unwrap().moving = Some(10);
@@ -154,8 +151,8 @@ fn tab_moves_offer_workspaces_and_settle_once(cx: &mut TestAppContext) {
             v.finish_tab_move(10, Ok(moved), window, cx);
             assert!(v.menu.tab.is_none());
             assert!(
-                v.local_error
-                    .as_deref()
+                v.notices
+                    .text()
                     .unwrap()
                     .starts_with("Moved the tab, but could not keep its name")
             );

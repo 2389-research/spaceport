@@ -76,7 +76,8 @@ impl SheprdWindow {
         cx: &mut Context<Self>,
     ) {
         let error = error.localize();
-        self.local_error = Some(kind.not_sent(error.clone()));
+        self.notices
+            .show(crate::notice::Cause::Input, kind.not_sent(error.clone()));
         self.local_transfer_notice(
             &fl!("window-input-prepared-discarded", kind = kind.selector()),
             fl!("window-input-prepared-discarded-body", error = error),
@@ -373,8 +374,10 @@ impl SheprdWindow {
                     .iter()
                     .any(|image| image.kind == PreparationKind::Image && image.preparing))
         {
-            self.local_error =
-                Some(kind.not_sent(sheprd_client::clipboard::Error::Busy.localize()));
+            self.notices.show(
+                crate::notice::Cause::Input,
+                kind.not_sent(sheprd_client::clipboard::Error::Busy.localize()),
+            );
             cx.notify();
             return Delivery::Refused;
         }
@@ -392,7 +395,8 @@ impl SheprdWindow {
         } {
             Ok(upload) => upload,
             Err(error) => {
-                self.local_error = Some(kind.not_sent(error.localize()));
+                self.notices
+                    .show(crate::notice::Cause::Input, kind.not_sent(error.localize()));
                 cx.notify();
                 return Delivery::Refused;
             }

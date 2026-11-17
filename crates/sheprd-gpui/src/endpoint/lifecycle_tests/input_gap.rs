@@ -111,7 +111,7 @@ fn input_typed_during_snapshot_surface_gap_reaches_pane_once_in_order(
     ] {
         assert_eq!(server.receive(), pane_input("w1:p1", expected));
     }
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -121,7 +121,7 @@ fn input_held_across_gap_is_discarded_when_focus_moves(cx: &mut gpui::TestAppCon
         server.receive(),
         pane_input("w1:p2", ClientPaneInputEvent::TextCommit("sentinel".into()))
     );
-    view.read_with(cx, |view, _| assert!(view.local_error.is_some()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_some()));
 }
 
 #[gpui::test]
@@ -151,7 +151,7 @@ fn input_during_metadata_gap_names_the_visible_pane_until_popup_frame_commits(
         }
     );
     // The daemon silently drops blocked pane input; it is never replayed to the popup.
-    view.read_with(cx, |view, _| assert!(view.local_error.is_none()));
+    view.read_with(cx, |view, _| assert!(view.notices.is_none()));
 }
 
 #[gpui::test]
@@ -178,7 +178,7 @@ fn input_held_across_gap_is_bounded_and_dropped_on_reset(cx: &mut gpui::TestAppC
             view.send(ClientPaneInputEvent::TextCommit("x".into()), cx);
         }
         assert_eq!(view.pending_input.len(), 256);
-        assert!(view.local_error.is_some());
+        assert!(view.notices.is_some());
         view.reset_selected(cx);
         assert_eq!(view.pending_input.len(), 0);
     });

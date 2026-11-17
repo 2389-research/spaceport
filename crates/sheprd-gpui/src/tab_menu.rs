@@ -426,7 +426,8 @@ impl SheprdWindow {
                 // The panes all moved, so the menu closes either way; a lost
                 // name is reported on the window rather than in a closed menu.
                 if let Some(warning) = moved.warning {
-                    self.local_error = Some(warning.to_string());
+                    self.notices
+                        .show(crate::notice::Cause::Command, warning.to_string());
                     cx.notify();
                 }
             }
@@ -437,7 +438,8 @@ impl SheprdWindow {
                 self.tab_error(error, cx);
             }
             Err(error) => {
-                self.local_error = Some(error.to_string());
+                self.notices
+                    .show(crate::notice::Cause::Command, error.to_string());
                 cx.notify();
             }
         }

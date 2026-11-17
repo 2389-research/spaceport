@@ -38,7 +38,7 @@ fn surface_before_snapshot_is_not_retained_or_replayed() {
     assert!(state.snapshot.is_none());
     assert!(state.surface.is_none());
     assert_eq!(state.status, ConnectionStatus::Disconnected);
-    assert_eq!(state.error.as_deref(), Some("closed"));
+    assert_eq!(state.notices.text(), Some("closed"));
 }
 
 #[test]
@@ -57,7 +57,7 @@ fn different_boot_and_disconnect_cannot_retain_old_cells() {
     });
     assert!(state.snapshot.is_none() && state.surface.is_none());
     assert!(!state.status.is_connected());
-    assert_eq!(state.error.as_deref(), Some("closed"));
+    assert_eq!(state.notices.text(), Some("closed"));
 }
 
 #[test]
@@ -81,7 +81,9 @@ fn only_a_new_surface_spares_the_chrome() {
             s.snapshot = s.snapshot.as_deref().cloned().map(Arc::new);
         }),
         ("status", |s| s.status = ConnectionStatus::Disconnected),
-        ("error", |s| s.error = Some("lost".into())),
+        ("error", |s| {
+            s.notices.show(crate::notice::Cause::Daemon, "lost".into())
+        }),
         ("notification lost", |s| s.notifications_lost = true),
         ("sound", |s| s.reload_sound = true),
         ("clipboard write", |s| {

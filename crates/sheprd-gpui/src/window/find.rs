@@ -297,7 +297,10 @@ impl SheprdWindow {
             Method::PaneScroll,
             serde_json::json!({"pane_id": bar.search.pane_id(), "offset_from_bottom": offset}),
         ) {
-            self.local_error = Some(fl!("window-find-scroll-failed", error = error.localize()));
+            self.notices.show(
+                crate::notice::Cause::Input,
+                fl!("window-find-scroll-failed", error = error.localize()),
+            );
             cx.notify();
         }
     }

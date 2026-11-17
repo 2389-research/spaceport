@@ -11,7 +11,10 @@ fn disabled_core_keeps_missing_herdr_guidance_in_the_status_bar() {
         let expected = view.update(cx, |view, cx| {
             view.live.status = crate::state::ConnectionStatus::Disconnected;
             view.live.missing_installation = true;
-            view.live.error = Some("private Herdr fixture is missing".into());
+            view.live.notices.show(
+                crate::notice::Cause::Connection,
+                "private Herdr fixture is missing".into(),
+            );
             cx.notify();
             view.live.status_text(None)
         });

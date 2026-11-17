@@ -16,9 +16,7 @@ fn clipboard_failures_report_a_discarded_paste(cx: &mut gpui::TestAppContext) {
             view.endpoints[0].toasts.entries.clear();
             view.report_preparation_error(PreparationKind::Input, &error, cx);
             assert_eq!(
-                view.local_error
-                    .as_deref()
-                    .map(crate::i18n::leak_tests::unmarked),
+                view.notices.text().map(crate::i18n::leak_tests::unmarked),
                 Some(format!("Paste not sent: {error}"))
             );
             let (_, notice) = view.endpoints[0].toasts.entries.back().unwrap();
