@@ -209,7 +209,7 @@ pub(crate) fn agent_rows(
     since: &Since,
     mutes: Option<&Mutes>,
 ) -> Vec<Row> {
-    if !endpoint.enabled || !live.status.is_connected() {
+    if !endpoint.enabled() || !live.status.is_connected() {
         return Vec::new();
     }
     let Some(snapshot) = live.snapshot.as_deref() else {

@@ -54,7 +54,7 @@ impl SheprdWindow {
         let index = self
             .endpoints
             .iter()
-            .position(|endpoint| endpoint.id == crate::endpoint::LOCAL && endpoint.enabled)
+            .position(|endpoint| endpoint.id == crate::endpoint::LOCAL && endpoint.enabled())
             .ok_or(Error::HostUnavailable)?;
         let endpoint = &self.endpoints[index];
         // An explicitly supplied SSH launch target may occupy endpoint zero.

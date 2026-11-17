@@ -120,7 +120,7 @@ pub(crate) async fn verify_native(
                 .find_map(|window| window.downcast::<SettingsWindow>())
         });
         if let Some(settings) = settings
-            && settings.update(cx, |view, _, _| !view.loading)?
+            && settings.update(cx, |view, _, _| !view.persistence.loading())?
         {
             break settings;
         }
@@ -141,7 +141,7 @@ pub(crate) async fn verify_native(
     };
     settings.update(cx, |view, window, _| -> Result<()> {
         ensure!(
-            view.error.is_none() && !view.saving && view.focus.is_focused(window),
+            view.error.is_none() && !view.persistence.saving() && view.focus.is_focused(window),
             "Settings load/focus mismatch: {:?}",
             view.error
         );
@@ -241,7 +241,10 @@ pub(crate) async fn verify_native(
                     );
                     bottom = Some(bounds.bottom());
                 }
-                ensure!(!view.saving, "navigation started a settings write");
+                ensure!(
+                    !view.persistence.saving(),
+                    "navigation started a settings write"
+                );
                 Ok(())
             })??;
             if section == Section::Fonts {

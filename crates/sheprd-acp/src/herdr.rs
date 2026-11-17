@@ -1,3 +1,5 @@
+// ABOUTME: Reports pane activity and chat discovery metadata to Herdr.
+// ABOUTME: Keeps socket work and retry waits on the reporter thread.
 //! Tells Herdr what the pane's agent is doing, how Sheprd can reach it,
 //! and the prompt it was last sent, which titles the pane and names its tab.
 //!
@@ -5,6 +7,7 @@
 //! keeps only the latest activity and prompt, so a slow daemon never holds up
 //! the chat.
 
+mod activity;
 mod naming;
 
 use std::{
@@ -18,13 +21,14 @@ use std::{
 use serde_json::{Value, json};
 
 use crate::{Error, Result, session::Activity};
+use activity::{ActivityReport, Event};
 
 /// The report source, so Herdr can tell these reports from its own detection.
 const SOURCE: &str = "herdr-acp";
 /// The agent label Herdr records for the pane.
 const AGENT: &str = "acp";
 const TIMEOUT: Duration = Duration::from_secs(2);
-/// How long a failed announcement waits before it is sent again.
+/// How long a failed activity, announcement or title waits before retrying.
 const RETRY: Duration = Duration::from_secs(2);
 /// How many times a prompt's title and tab name are sent before giving up.
 const TITLE_ATTEMPTS: u32 = 5;
@@ -52,7 +56,7 @@ impl Target {
 
 #[derive(Default)]
 struct Mailbox {
-    activity: Option<Activity>,
+    activity: ActivityReport,
     closing: bool,
     prompt: Option<String>,
 }
@@ -63,7 +67,10 @@ pub(crate) struct Report(Arc<(Mutex<Mailbox>, Condvar)>);
 impl Report {
     pub(crate) fn report(&self, activity: Activity) {
         let (lock, wake) = &*self.0;
-        lock.lock().unwrap_or_else(PoisonError::into_inner).activity = Some(activity);
+        lock.lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .activity
+            .transition(Event::Queue(activity));
         wake.notify_one();
     }
 
@@ -118,10 +125,8 @@ fn run(
     mailbox: &(Mutex<Mailbox>, Condvar),
 ) {
     let mut seq = Sequence::default();
-    // Whether the agent was reported, so closing withdraws it, and whether
-    // the token reached Herdr: until it has, the native view cannot find
-    // the chat, so a failed announcement is sent again after `RETRY`.
-    let mut reported = false;
+    // Until the token reaches Herdr, the native view cannot find the chat.
+    // A failed announcement is sent again after `RETRY`.
     let mut announced = false;
     // The tab label this chat gave last, so a label the user typed since
     // is left alone, and closing puts the agent's name back.
@@ -130,11 +135,13 @@ fn run(
     // tried again after `RETRY` up to `TITLE_ATTEMPTS` times.
     let mut title: Option<(String, u32)> = None;
     loop {
-        let (activity, prompt, closing) = {
+        let (activity, prompt, closing, reported) = {
             let (lock, wake) = mailbox;
             let mut state = lock.lock().unwrap_or_else(PoisonError::into_inner);
-            while state.activity.is_none() && state.prompt.is_none() && !state.closing {
-                if reported && (!announced || title.is_some()) {
+            while !state.activity.is_queued() && state.prompt.is_none() && !state.closing {
+                if state.activity.needs_retry()
+                    || (state.activity.was_attempted() && (!announced || title.is_some()))
+                {
                     let (next, waited) = wake
                         .wait_timeout(state, RETRY)
                         .unwrap_or_else(PoisonError::into_inner);
@@ -146,7 +153,18 @@ fn run(
                     state = wake.wait(state).unwrap_or_else(PoisonError::into_inner);
                 }
             }
-            (state.activity.take(), state.prompt.take(), state.closing)
+            // Closing withdraws the source; it need not retry stale activity.
+            let activity = if !state.closing || state.activity.is_queued() {
+                state.activity.transition(Event::Begin)
+            } else {
+                None
+            };
+            (
+                activity,
+                state.prompt.take(),
+                state.closing,
+                state.activity.was_attempted(),
+            )
         };
         if let Some(activity) = activity {
             let state = match activity {
@@ -154,8 +172,13 @@ fn run(
                 Activity::Working => "working",
                 Activity::Blocked => "blocked",
             };
-            let _ = report_state(target, state, &mut seq);
-            reported = true;
+            let acknowledged = report_state(target, state, &mut seq).is_ok();
+            mailbox
+                .0
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .activity
+                .transition(Event::Complete { acknowledged });
         }
         if reported && !announced && !closing {
             let mut tokens = serde_json::Map::new();

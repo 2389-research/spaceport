@@ -9,7 +9,7 @@ fn retry(view: &mut SheprdWindow, cx: &mut Context<SheprdWindow>) {
         view.endpoints[0].connection.handle.is_none()
     });
     let generation = view.endpoints[0].generation;
-    view.endpoints[0].retry_at = Instant::now();
+    view.endpoints[0].set_retry_at_for_test(Instant::now());
     view.poll_endpoints(cx);
     assert!(view.endpoints[0].generation > generation);
     assert_eq!(view.selected_generation, view.endpoints[0].generation);

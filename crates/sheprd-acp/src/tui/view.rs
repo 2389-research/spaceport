@@ -1,3 +1,5 @@
+// ABOUTME: Applies attach messages to the terminal chat view.
+// ABOUTME: Caches wrapped entries while tracking lifecycle-dependent tool marks.
 //! The in-pane view's state: the transcript it mirrors, the composer, and
 //! what keys do. Pure, so it can be tested without a terminal.
 
@@ -129,7 +131,7 @@ impl Composer {
 pub(crate) struct View {
     /// Files dragged in, which the next prompt carries.
     pub attachments: Vec<Attachment>,
-    cache: HashMap<EntryId, Vec<Line<'static>>>,
+    cache: HashMap<EntryId, (bool, Vec<Line<'static>>)>,
     cache_width: usize,
     /// Which option of the oldest permission request is selected.
     pub choice: usize,
@@ -217,11 +219,21 @@ impl View {
             ));
         }
         for entry in &self.replica.transcript().entries {
-            let lines = self
+            let live = match &entry.kind {
+                sheprd_chat_protocol::EntryKind::Tool(tool) => {
+                    self.replica.transcript().tool_live(tool)
+                }
+                _ => false,
+            };
+            let cached = self
                 .cache
                 .entry(entry.id)
-                .or_insert_with(|| lines::entry(entry, width));
-            out.extend(lines.iter().cloned());
+                .or_insert_with(|| (live, lines::entry(entry, width, live)));
+            // Lifecycle updates need not replace the tool entry itself.
+            if cached.0 != live {
+                *cached = (live, lines::entry(entry, width, live));
+            }
+            out.extend(cached.1.iter().cloned());
         }
         out
     }

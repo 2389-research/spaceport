@@ -12,7 +12,7 @@ fn dialog_response_survives_initial_surface_activation(cx: &mut gpui::TestAppCon
         state.dirty = true;
     }
     view.update(cx, |view, cx| {
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.push(endpoint);
         view.selected_endpoint = 1;
         view.reset_selected(cx);

@@ -175,11 +175,11 @@ fn forwards_end_with_their_host(cx: &mut TestAppContext) {
     view.update(cx, |view, cx| {
         view.update_port_forwards(cx);
         assert_eq!(view.port_forwards.for_host("penso@box").count(), 1);
-        view.endpoints[1].enabled = false;
+        view.endpoints[1].set_enabled_for_test(false);
         view.update_port_forwards(cx);
         assert_eq!(view.port_forwards.for_host("penso@box").count(), 0);
 
-        view.endpoints[1].enabled = true;
+        view.endpoints[1].set_enabled_for_test(true);
         view.port_forwards
             .fixture("penso@box", 3000, crate::port_forward::State::Starting);
         view.endpoints.truncate(1);

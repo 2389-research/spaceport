@@ -18,6 +18,7 @@ use std::{
 
 mod atomic_projection;
 mod background_commands;
+mod catalog_link;
 mod close_pane;
 mod close_sequence;
 mod core_reconnect_overlay;
@@ -41,6 +42,7 @@ mod input_gap;
 mod input_settings;
 mod keyboard;
 mod link_clicks;
+mod link_stability;
 mod mouse_cell_motion;
 mod mouse_fence;
 mod mouse_frame_gap;

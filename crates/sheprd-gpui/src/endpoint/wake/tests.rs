@@ -55,9 +55,9 @@ fn waking_redials_dropped_endpoints_now_and_leaves_detached_ones(cx: &mut gpui::
         let later = now + Duration::from_secs(30);
         for endpoint in &mut view.endpoints {
             endpoint.connection.handle = None;
-            endpoint.retry_at = later;
+            endpoint.set_retry_at_for_test(later);
         }
-        view.endpoints[2].detached = true;
+        view.endpoints[2].detach_for_test();
         let wall = SystemTime::now();
         view.wake = WakeClock::new(now, wall, NetworkChanges::default());
 
@@ -70,7 +70,7 @@ fn waking_redials_dropped_endpoints_now_and_leaves_detached_ones(cx: &mut gpui::
         for endpoint in &mut view.endpoints {
             endpoint.poll(quiet);
         }
-        assert!(view.endpoints.iter().all(|e| e.retry_at == later));
+        assert!(view.endpoints.iter().all(|e| e.retry_at() == later));
 
         let woke = now + Duration::from_secs(2);
         assert!(view.recover_connections(
@@ -79,13 +79,13 @@ fn waking_redials_dropped_endpoints_now_and_leaves_detached_ones(cx: &mut gpui::
             NetworkChanges::default()
         ));
         // Each endpoint recovers in its own poll, after taking its update.
-        assert_eq!(view.endpoints[1].retry_at, later);
+        assert_eq!(view.endpoints[1].retry_at(), later);
         for endpoint in &mut view.endpoints {
             endpoint.poll(woke);
         }
-        assert_eq!(view.endpoints[1].retry_at, woke);
+        assert_eq!(view.endpoints[1].retry_at(), woke);
         // A detached endpoint is never dialled by the poll loop, whatever its time.
-        assert!(view.endpoints[2].detached);
+        assert!(view.endpoints[2].detached());
     });
 }
 

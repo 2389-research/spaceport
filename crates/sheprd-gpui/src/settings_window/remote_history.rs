@@ -1,3 +1,5 @@
+// ABOUTME: Implements Settings remote history interactions.
+// ABOUTME: Connects native controls to Settings state and persistence.
 //! Herdr's pane history switch on each connected SSH host. Every host's
 //! daemon reads its own config, so each switch reads and writes that host's
 //! file over SSH on a background worker, independently of local saves.
@@ -250,7 +252,7 @@ impl SettingsWindow {
                     .finish(&job.target, job.generation, result)
                 {
                     if let Some(status) = status
-                        && !this.saving
+                        && !this.persistence.saving()
                     {
                         this.status = Some(status);
                     }

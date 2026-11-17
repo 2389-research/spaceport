@@ -27,7 +27,7 @@ fn recovering_starts_the_backoff_over_and_keeps_a_live_link() {
     // Earned across dark wakes, each too short to count as a stable connection.
     endpoint.attempts = 8;
     let later = Instant::now() + Duration::from_secs(30);
-    endpoint.retry_at = later;
+    endpoint.set_retry_at_for_test(later);
 
     assert!(endpoint.recover(Trigger::Sleep, Instant::now()));
 
@@ -41,7 +41,7 @@ fn recovering_starts_the_backoff_over_and_keeps_a_live_link() {
             .as_ref()
             .is_some_and(|handle| !handle.is_disconnected())
     );
-    assert_eq!(endpoint.retry_at, later);
+    assert_eq!(endpoint.retry_at(), later);
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn recovering_redials_a_remote_attempt_still_dialing_but_not_a_local_one() {
         assert_eq!(handle.is_disconnected(), redialed);
         assert_eq!(endpoint.connection.handle.is_none(), redialed);
         if redialed {
-            assert_eq!(endpoint.retry_at, now);
+            assert_eq!(endpoint.retry_at(), now);
         }
     }
     std::fs::remove_file(path).unwrap();
@@ -85,11 +85,11 @@ fn recovering_dials_a_dropped_endpoint_at_once() {
     let mut endpoint = Endpoint::new("ssh:test".into(), "test".into(), ssh(), true);
     endpoint.attempts = 8;
     let now = Instant::now();
-    endpoint.retry_at = now + Duration::from_secs(30);
+    endpoint.set_retry_at_for_test(now + Duration::from_secs(30));
 
     assert!(endpoint.recover(Trigger::NetworkRestored, now));
 
-    assert_eq!(endpoint.retry_at, now);
+    assert_eq!(endpoint.retry_at(), now);
     assert_eq!(endpoint.attempts, 0);
 }
 
@@ -106,13 +106,13 @@ fn recovering_keeps_a_link_whose_connection_is_not_yet_polled() {
     assert_eq!(endpoint.connection.reports_connected(), Some(true));
     let handle = endpoint.connection.handle.clone().unwrap();
     let later = Instant::now() + Duration::from_secs(30);
-    endpoint.retry_at = later;
+    endpoint.set_retry_at_for_test(later);
 
     assert!(endpoint.recover(Trigger::Sleep, Instant::now()));
 
     assert!(!handle.is_disconnected());
     assert!(endpoint.connection.handle.is_some());
-    assert_eq!(endpoint.retry_at, later);
+    assert_eq!(endpoint.retry_at(), later);
     endpoint.poll(Instant::now());
     assert!(endpoint.live.status.is_connected());
 }
@@ -183,9 +183,9 @@ fn a_path_change_keeps_a_dial_and_its_backoff() {
 
     let mut dropped = Endpoint::new("ssh:test".into(), "test".into(), ssh(), true);
     let later = Instant::now() + Duration::from_secs(30);
-    dropped.retry_at = later;
+    dropped.set_retry_at_for_test(later);
     assert!(dropped.recover(Trigger::PathChanged, Instant::now()));
-    assert_eq!(dropped.retry_at, later);
+    assert_eq!(dropped.retry_at(), later);
 }
 
 /// A host that refused for a reason only the user can fix keeps its long
@@ -193,11 +193,20 @@ fn a_path_change_keeps_a_dial_and_its_backoff() {
 #[test]
 fn recovering_leaves_a_host_that_needs_the_user_on_its_wait() {
     let mut endpoint = Endpoint::new("ssh:test".into(), "test".into(), ssh(), true);
-    endpoint.live.ssh_failure = Some(SshFailure::Auth);
+    endpoint
+        .connection
+        .inbox
+        .lock()
+        .unwrap()
+        .apply(ClientEvent::Disconnected {
+            reason: "authentication refused".into(),
+            ssh: Some(SshFailure::Auth),
+        });
+    endpoint.poll(Instant::now());
     let later = Instant::now() + MAX_RETRY_DELAY;
-    endpoint.retry_at = later;
+    endpoint.set_retry_at_for_test(later);
 
     assert!(endpoint.recover(Trigger::Sleep, Instant::now()));
 
-    assert_eq!(endpoint.retry_at, later);
+    assert_eq!(endpoint.retry_at(), later);
 }
