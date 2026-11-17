@@ -46,9 +46,17 @@ pub(crate) fn set_document_stale_for_test(cx: &mut App) {
     observation::set_document_stale_for_test(cx);
 }
 
+#[cfg(all(test, unix))]
+pub(crate) fn set_terminals_for_test(cx: &mut App, terminals: Vec<TerminalInfo>) {
+    observation::set_terminals_for_test(cx, terminals);
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests;
+
+#[cfg(all(test, unix))]
+pub(crate) use tests::scripted_core::connect as connect_backend_for_test;
 
 pub(crate) use error::Error;
 pub(crate) use hub::{Hub, Mismatch, Start, State};
@@ -203,7 +211,7 @@ pub(crate) fn set_machine_catalog_pending_for_test(cx: &mut App) {
 use crate::{
     SheprdWindow,
     browser::{CoreGroupKey, Location, Scope, Store, TabId},
-    i18n::fl,
+    i18n::{Localize, fl},
     window::Flash,
 };
 use gpui::{prelude::*, *};
@@ -478,31 +486,77 @@ impl SheprdWindow {
             }
         }
         self.dismiss_menu(window, cx);
-        if !self.start_core_program(Purpose::Tab { scope, workspace }, Spawn::default()) {
-            self.show_flash(Flash::warning(fl!("error-connection-busy")), cx);
+        if let Err(error) =
+            self.start_core_program(Purpose::Tab { scope, workspace }, Spawn::default(), cx)
+        {
+            self.show_flash(Flash::warning(error.localize()), cx);
         }
     }
 
     /// Starts `spawn` in herdr-core for `purpose`, once the hub connects.
-    pub(crate) fn start_core_program(&mut self, purpose: Purpose, spawn: Spawn) -> bool {
+    pub(crate) fn start_core_program(
+        &mut self,
+        purpose: Purpose,
+        spawn: Spawn,
+        cx: &App,
+    ) -> crate::Result<()> {
         if !self.core_enabled() {
-            return false;
+            return Err(crate::Error::StaleWorkspace);
         }
-        let core_id = self
+        let mut core_id = self
             .core_terminals
             .hub
             .backend()
             .map(|backend| backend.core().hello().core.id.clone());
+        if let Purpose::Split { tab, at, .. } = &purpose {
+            let Some(tab) = cx.try_global::<Store>().and_then(|store| store.get(*tab)) else {
+                return Err(crate::Error::StaleWorkspace);
+            };
+            if matches!(tab.scope, Scope::Core(_)) {
+                core_id = tab
+                    .scope
+                    .core_group(&tab.workspace_id)
+                    .map(|key| key.hub_core_id().to_owned());
+            }
+            let Some(expected) = core_id.as_deref() else {
+                return Err(crate::Error::StaleWorkspace);
+            };
+            if self
+                .core_terminals
+                .hub
+                .backend()
+                .is_some_and(|backend| backend.core().hello().core.id.as_str() != expected)
+            {
+                return Err(crate::Error::StaleWorkspace);
+            }
+            if !matches!(tab.scope, Scope::Core(_)) {
+                // A ready hub alone cannot identify an unscoped restored terminal or chat.
+                let current =
+                    cx.try_global::<observation::Observation>()
+                        .is_some_and(|observation| {
+                            let projection = observation.projection();
+                            projection.observes(expected, at.as_str())
+                                && projection
+                                    .terminals()
+                                    .iter()
+                                    .find(|info| &info.id == at)
+                                    .is_some_and(|info| self.core_chat_matches_terminal(info))
+                        });
+                if !current {
+                    return Err(crate::Error::StaleWorkspace);
+                }
+            }
+        }
         let queued = self
             .core_terminals
             .spawning
             .transition(spawning::Event::Queue(purpose, Box::new(spawn), core_id));
         if !matches!(queued, spawning::Outcome::Accepted) {
-            return false;
+            return Err(crate::Error::ConnectionBusy);
         }
         self.core_terminals.hub.connect(Start::IfMissing);
         self.start_core_shell();
-        true
+        Ok(())
     }
 
     /// Submits the oldest queued request once the hub is ready.
@@ -512,9 +566,11 @@ impl SheprdWindow {
             return false;
         };
         matches!(
-            terminals
-                .spawning
-                .transition(spawning::Event::Start(backend, &terminals.infos)),
+            terminals.spawning.transition(spawning::Event::Start(
+                backend,
+                &terminals.infos,
+                spawning::spawn_worker
+            )),
             spawning::Outcome::Stale
         )
     }
