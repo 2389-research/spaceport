@@ -99,9 +99,9 @@ fn same_key(left: &Target, right: &Target) -> bool {
 /// Reconciles `targets`, counting the connections started.
 fn reconcile(chats: &mut Chats, listener: &Program, targets: Vec<Target>, started: &mut usize) {
     let path = listener.path.clone();
-    chats.reconcile(targets, Instant::now(), &mut |_, since, resend| {
+    chats.reconcile(targets, Instant::now(), &mut |_, since| {
         *started += 1;
-        Link::start(path.clone(), since, resend)
+        Link::start(path.clone(), since)
     });
 }
 

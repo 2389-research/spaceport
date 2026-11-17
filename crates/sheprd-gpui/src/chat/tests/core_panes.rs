@@ -1,3 +1,5 @@
+// ABOUTME: Exercises chat targets owned by isolated herdr-core pane fixtures.
+// ABOUTME: Checks mirror visibility, pane focus, and CLI targeting.
 //! Chats in herdr-core panes, attached in a headless window: a mirror tab
 //! shows none, a click moves the pane in use without a Herdr connection,
 //! and the CLI's default pane is the herdr-core chat holding the keyboard.
@@ -74,9 +76,7 @@ pub(super) fn attached(
         cx.update(|window, cx| {
             view.update(cx, |view, cx| {
                 view.poll_chats_with(
-                    &mut |_, since, resend| {
-                        crate::chat::link::Link::start(path.clone(), since, resend)
-                    },
+                    &mut |_, since| crate::chat::link::Link::start(path.clone(), since),
                     window,
                     cx,
                 );

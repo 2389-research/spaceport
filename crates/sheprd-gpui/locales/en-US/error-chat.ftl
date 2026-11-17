@@ -7,6 +7,8 @@ error-chat-busy = too many chat commands are waiting for an answer
 error-chat-bye = the chat program left: { $reason }
 error-chat-closed = the chat program closed the connection
 error-chat-connect = could not reach the chat program
+error-chat-delivery-unconfirmed = The chat command was not acknowledged. It may have run. Check the conversation before trying again.
+error-chat-session-changed = The conversation changed before the chat command was acknowledged. Check the conversation before trying again.
 # $name is the variable's name as the config writes it.
 error-chat-environment-name = `{ $name }` cannot be a chat environment variable
 # $count is the most variables, and $bytes the most bytes, they may hold.

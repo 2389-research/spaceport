@@ -1,3 +1,5 @@
+// ABOUTME: Checks helper discovery for observed agent conversations.
+// ABOUTME: Refuses missing helpers without launching personal agent processes.
 //! An existing agent on this machine is observed by the `herdr-acp` the
 //! app located, not a path guessed beside the executable.
 
@@ -29,7 +31,7 @@ fn an_unlocated_observer_program_is_retried_not_permanent() {
         (Program::Looking, StartError::ProgramUnknown),
         (Program::Missing, StartError::ProgramMissing),
     ] {
-        let Err(error) = chats::connect(&observed(), &program, None, Vec::new()) else {
+        let Err(error) = chats::connect(&observed(), &program, None) else {
             panic!("no program to observe with");
         };
         assert!(
