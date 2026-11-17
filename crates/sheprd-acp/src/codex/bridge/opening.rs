@@ -13,15 +13,20 @@ enum Handshake {
     // keep-sorted end
 }
 
+/// Pending openings retain the active identity until a validated success replaces it.
 #[derive(Debug, Default)]
 enum Opening {
     // keep-sorted start
-    Asked(Request),
+    Asked {
+        active: Option<String>,
+        request: Request,
+    },
     #[default]
     None,
     Open(String),
     Thread {
         acp: wire::RequestId,
+        active: Option<String>,
         result: Option<Value>,
     },
     // keep-sorted end
@@ -78,7 +83,8 @@ impl State {
     pub(super) fn session(&self) -> Option<&str> {
         match &self.opening {
             Opening::Open(id) => Some(id),
-            _ => None,
+            Opening::Asked { active, .. } | Opening::Thread { active, .. } => active.as_deref(),
+            Opening::None => None,
         }
     }
 
@@ -93,7 +99,10 @@ impl State {
                         "A session is already opening.".to_owned(),
                     )];
                 }
-                self.opening = Opening::Asked(request);
+                self.opening = Opening::Asked {
+                    active: self.session().map(str::to_owned),
+                    request,
+                };
             }
             Event::Initialize(Ok(_)) => {
                 self.handshake = Handshake::Ready;
@@ -111,7 +120,7 @@ impl State {
                 if !matches!(self.opening, Opening::Thread { .. }) {
                     return effects;
                 }
-                let Opening::Thread { acp, .. } = std::mem::take(&mut self.opening) else {
+                let Opening::Thread { acp, active, .. } = std::mem::take(&mut self.opening) else {
                     return effects;
                 };
                 match result {
@@ -123,30 +132,38 @@ impl State {
                     {
                         self.opening = Opening::Thread {
                             acp,
+                            active,
                             result: Some(thread),
                         };
                     }
                     Ok(_) => {
+                        self.opening = active.map_or(Opening::None, Opening::Open);
                         return vec![Effect::Failed(
                             acp,
                             "Codex returned no thread id.".to_owned(),
                         )];
                     }
-                    Err(message) => return vec![Effect::Failed(acp, message.message.to_string())],
+                    Err(message) => {
+                        self.opening = active.map_or(Opening::None, Opening::Open);
+                        return vec![Effect::Failed(acp, message.message.to_string())];
+                    }
                 }
             }
         }
-        if matches!(self.opening, Opening::Asked(_)) {
+        if matches!(self.opening, Opening::Asked { .. }) {
             match &self.handshake {
                 Handshake::Waiting => return effects,
                 Handshake::Failed(message) => {
-                    let Opening::Asked(request) = std::mem::take(&mut self.opening) else {
+                    let Opening::Asked { active, request } = std::mem::take(&mut self.opening)
+                    else {
                         return effects;
                     };
+                    self.opening = active.map_or(Opening::None, Opening::Open);
                     effects.push(Effect::Failed(request.acp, message.clone()));
                 }
                 Handshake::Ready => {
-                    let Opening::Asked(request) = std::mem::take(&mut self.opening) else {
+                    let Opening::Asked { active, request } = std::mem::take(&mut self.opening)
+                    else {
                         return effects;
                     };
                     if matches!(self.models, Models::NotAsked) {
@@ -155,6 +172,7 @@ impl State {
                     }
                     self.opening = Opening::Thread {
                         acp: request.acp.clone(),
+                        active,
                         result: None,
                     };
                     effects.push(Effect::Thread(request));
@@ -165,6 +183,7 @@ impl State {
             Opening::Thread {
                 acp,
                 result: Some(thread),
+                ..
             },
             Models::Ready(models),
         ) = (&self.opening, &self.models)

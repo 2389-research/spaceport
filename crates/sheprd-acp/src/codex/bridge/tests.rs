@@ -10,6 +10,7 @@ use crate::harness::tests::{file_name, file_uri};
 mod background;
 mod branding;
 mod opening;
+mod reopening;
 mod turn_ended;
 
 const THREAD: &str = "01a160d5-4de7-7262-b413-0ce5180918ce";
