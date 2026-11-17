@@ -192,3 +192,38 @@ External writes remain conflicts, including changes after reconciliation reads.
 - Default and integration-feature Clippy, formatting, size, sorting, i18n, and whitespace checks passed.
 
 Native controls and cross-platform execution remain separate checks.
+
+## Chat tool liveness — ed3g
+
+[`Transcript::tool_live`](../crates/sheprd-chat-protocol/src/model.rs) owns the shared liveness projection.
+The stored enums remain Status, ToolStatus, and ActivityState.
+`Transcript::apply` remains their shared transition function; no wire state was added.
+The projection is pure and never rewrites a tool's reported result.
+
+| Observed state | Liveness |
+| --- | --- |
+| Failed or exited session | Stopped |
+| Direct running activity | Live across turn boundaries |
+| Direct ended activity | Stopped |
+| Completed or failed ordinary tool | Stopped |
+| Unfinished child with a known parent activity | Follow that parent's activity |
+| Unfinished ordinary tool in the current working turn | Live |
+| Idle session, older turn, or unknown current membership | Stopped |
+
+GPUI cards, Terminal and Timeline markers, expanded child steps, and the working list use that projection.
+A private ToolState maps it to consistent labels and colors.
+The TUI line cache tracks liveness alongside wrapped content.
+Status-only updates and turn boundaries therefore refresh cached progress marks.
+Completed children do not become live merely because their parent still runs.
+
+### Verification
+
+- [Protocol tests](../crates/sheprd-chat-protocol/src/tests/tool_liveness.rs) cover session, turn, and parent-activity ownership.
+- [TUI tests](../crates/sheprd-acp/src/tui/view/tests/tool_liveness.rs) reduce actual attach messages through the line cache.
+- [Paint tests](../crates/sheprd-gpui/src/chat/tests/tool_liveness.rs) inspect the actual Timeline marker.
+- Two TUI regressions, a marker regression, and a parent-activity regression failed before their corrections.
+- Clean-member checks passed 71 protocol, 406 ACP unit, five process/branding, and 482 chat tests.
+- Scoped all-target Clippy and repository quick checks passed.
+- [Native evidence](evidence/tool-liveness.md) includes 24 private before/after preview windows in light/dark and wide/narrow layouts.
+
+Live-provider event delivery remains a separate integration check.
