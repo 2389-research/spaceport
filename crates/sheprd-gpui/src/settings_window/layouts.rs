@@ -1,3 +1,5 @@
+// ABOUTME: Previews layout choices and persists captured layout intents.
+// ABOUTME: Fences reloads so later choices survive an earlier write.
 //! Live layout choice, committed through Settings' serial save path on close.
 // i18n: migrated
 use super::SettingsWindow;
@@ -50,7 +52,10 @@ pub(super) struct LayoutIo {
 
 impl SettingsWindow {
     pub(super) fn accept_layout_choice(&mut self, mode: LayoutMode, cx: &mut Context<Self>) {
-        if self.quitting || self.closing.is_some() || self.config.layout.mode == mode {
+        if self.persistence.quitting()
+            || self.persistence.closing().is_some()
+            || self.config.layout.mode == mode
+        {
             return;
         }
         self.layout_intent = Some(mode);
@@ -101,12 +106,26 @@ impl SettingsWindow {
             return;
         };
         let operation = self.layout_operation(mode);
-        self.layout_saving = true;
-        #[cfg(test)]
-        if let Some(io) = self.layout_io.clone() {
-            self.save_with(operation, move || (io.load)(), false, cx);
+        if self.busy() {
             return;
         }
-        self.save_with(operation, self.loader(cx), false, cx);
+        #[cfg(test)]
+        if let Some(io) = self.layout_io.clone() {
+            self.save_kind(
+                operation,
+                move || (io.load)(),
+                false,
+                super::Kind::Layout(mode),
+                cx,
+            );
+            return;
+        }
+        self.save_kind(
+            operation,
+            self.loader(cx),
+            false,
+            super::Kind::Layout(mode),
+            cx,
+        );
     }
 }

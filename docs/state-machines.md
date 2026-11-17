@@ -8,6 +8,35 @@ Keep wire and saved representations separate from these private states.
 The [implementation plan](plans/2026-11-17-explicit-state-machines.md) lists all 15 conversions and their dependencies.
 The [earlier SIFT progress](sift-audit-2026-11-13-progress.md) records preceding conversions.
 
+## Core terminal spawning — 1w6g
+
+[`core_terminals/spawning.rs`](../crates/sheprd-gpui/src/core_terminals/spawning.rs) owns `Spawning`.
+Its states are Idle, Queued(FIFO), and Running(purpose, receiver, FIFO).
+Only `Spawning::transition(Event)` mutates the state or queue.
+
+| Event | Transition or effect |
+| --- | --- |
+| Queue | Retain the complete request and captured Core identity; refuse the newest when 64 requests wait |
+| Start | Remove the oldest request; validate its Core and purpose; submit one worker |
+| Poll | Consume a completed or disconnected worker once; preserve its waiting successors |
+| Unavailable | Clear waiting requests while retaining an already submitted worker |
+
+Completion placement always attempts to start the next request.
+Success, placement refusal, and errors therefore cannot strand the FIFO.
+The worker retains its original backend and performs blocking work off the UI thread.
+A disconnected receiver has an uncertain outcome and never requeues its request.
+A stale Core request is refused before submission.
+Core terminals remain runtime-owned when a view disappears.
+
+### Verification
+
+- [Queue integration tests](../crates/sheprd-gpui/src/core_terminals/tests/spawn_queue.rs) observe framed requests and post-placement draining.
+- [Owner tests](../crates/sheprd-gpui/src/core_terminals/spawning/tests.rs) cover bounds, Core mismatch, unavailable cleanup, and uncertain completion.
+- `cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport core_terminals::`: 114 passed, eight opt-in tests ignored.
+- Seven chat Core tests and applicable quick checks passed.
+
+Native GUI and isolated real-runtime spawning remain separate integration checks.
+
 ## Chat file work — xtjm
 
 [`chat/files.rs`](../crates/sheprd-gpui/src/chat/files.rs) owns each pane's unfinished file operations.
@@ -120,3 +149,46 @@ Live provider sessions remain a separate integration check.
 
 The original regression run failed six cases before the conversion.
 Sequential opening and retained-setting regressions guard behavior preserved during the conversion.
+
+## Settings persistence — y0p7
+
+[`persistence/lifecycle.rs`](../crates/sheprd-gpui/src/settings_window/persistence/lifecycle.rs) owns active writes, drain goals, and pending work.
+`Lifecycle::transition(Event)` is the only writer of those fields.
+Active `Save` states are Idle, Loading, and Running(Kind).
+Running kinds capture Ordinary, Theme(revision), Layout(mode), or Sidebar(intent).
+The orthogonal `Goal` states are Editing, Flushing, Closing(window), and Quitting.
+
+| Events | Transition or effect |
+| --- | --- |
+| BeginLoad / FinishLoad | Idle to Loading and back; resume accepted work |
+| BeginSave / FinishSave | Capture the exact running intent, then return it for reconciliation |
+| Queue / Next / TakePending | Accept at most 64 waiting ordinary edits; drain FIFO or transfer ownership to shutdown |
+| Flush / StopFlush | Enter or leave automatic draft draining |
+| Close / TakeClose | Drain accepted work before removing the captured window |
+| Quit | Preserve the running kind while transferring pending writes to shutdown |
+| QueueSidebar / TakeSidebar | Keep the committed sidebar intent separate from later previews |
+| AdvanceShared | Promote matching queued snapshots through an exact owned successful write |
+| AbortDrain | Stop a failed theme resolution without dropping an accepted sidebar commit |
+| SaveFailed | Stop automatic draft draining and preserve live drafts for explicit retry |
+
+Theme and layout completion clear only the captured intent.
+A newer draft therefore survives an earlier save or quit.
+Queue saturation refuses the newest request with a localized error.
+A later queued success cannot erase that failure notice.
+The managed-skill action retains its existing refusal while busy.
+
+[`persistence/operation.rs`](../crates/sheprd-gpui/src/settings_window/persistence/operation.rs) retains typed shared edits until dispatch.
+A successful guarded write carries its exact before and after snapshots.
+Reconciliation must match that after snapshot before promoting requests with the matching before snapshot.
+Normal and quit drains use the same promotion rule.
+External writes remain conflicts, including changes after reconciliation reads.
+
+### Verification
+
+- [Save intent tests](../crates/sheprd-gpui/src/settings_window/tests/save_intents.rs) cover theme, layout, sidebar, queue, and shutdown races.
+- [Real-file queue tests](../crates/sheprd-gpui/src/settings_window/tests/shared_save_queue.rs) cover owned write chains and external conflicts.
+- `cargo test --locked -p sheprd-gpui --bin spaceport settings_window::`: 241 passed.
+- `cargo test --locked -p sheprd-gpui --bin spaceport herdr_settings::`: 48 passed.
+- Default and integration-feature Clippy, formatting, size, sorting, i18n, and whitespace checks passed.
+
+Native controls and cross-platform execution remain separate checks.

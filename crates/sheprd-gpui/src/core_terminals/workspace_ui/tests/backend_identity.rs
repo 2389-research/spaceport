@@ -144,12 +144,16 @@ fn a_new_terminal_in_a_group_needs_the_live_matching_core(cx: &mut gpui::TestApp
             view.update(cx, |view, cx| {
                 hold(view, held, &mut peers);
                 view.core_terminals.workspace_ui.selected_group = Some(key.clone());
-                view.core_terminals.starting = None;
-                view.core_terminals.wanted = None;
+                view.core_terminals
+                    .spawning
+                    .transition(crate::core_terminals::spawning::Event::Unavailable);
                 view.flash = None;
                 view.new_core_terminal(window, cx);
                 let terminals = &view.core_terminals;
-                if terminals.starting.is_some() || terminals.wanted.is_some() {
+                if !matches!(
+                    terminals.spawning,
+                    crate::core_terminals::spawning::Spawning::Idle
+                ) {
                     "started".to_owned()
                 } else {
                     flash(view).unwrap()
