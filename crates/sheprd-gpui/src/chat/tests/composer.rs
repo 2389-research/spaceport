@@ -105,10 +105,8 @@ fn a_prompt_waits_for_its_files_to_finish_copying(cx: &mut TestAppContext) {
     let (view, _peer, cx) = open(cx, ConnectTarget::Local);
     let program = Program::new();
     let mut stream = attach_with(&view, &program, idle(), cx);
-    view.update(cx, |view, _| {
-        if let Some(pane) = view.chats.panes_mut().next() {
-            pane.uploading = 1;
-        }
+    let operation = view.update(cx, |view, _| {
+        view.chats.panes_mut().next().unwrap().begin_files(1)
     });
     cx.simulate_input("look at this");
     cx.simulate_keystrokes("enter");
@@ -121,7 +119,7 @@ fn a_prompt_waits_for_its_files_to_finish_copying(cx: &mut TestAppContext) {
     assert!(error.is_some(), "the send is held while files copy");
     view.update(cx, |view, _| {
         if let Some(pane) = view.chats.panes_mut().next() {
-            pane.uploading = 0;
+            assert!(pane.finish_files(&operation));
         }
     });
     cx.simulate_keystrokes("enter");

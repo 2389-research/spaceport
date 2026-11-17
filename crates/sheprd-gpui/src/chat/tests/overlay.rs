@@ -231,7 +231,7 @@ fn a_read_only_overlay_blocks_keys_paste_and_file_drops_until_switched_back(
         let pane = view.chats.pane_mut("w1:p1").unwrap();
         assert!(pane.session.resend().is_empty());
         assert!(pane.attachments.is_empty());
-        assert_eq!(pane.uploading, 0);
+        assert_eq!(pane.uploading(), 0);
     });
 
     let target = view.read_with(cx, |view, _| {
