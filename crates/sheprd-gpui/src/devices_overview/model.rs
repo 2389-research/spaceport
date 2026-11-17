@@ -68,7 +68,7 @@ impl Tally {
 /// while it cannot be reached. The tick and the sidebar's headers need only
 /// this, not a whole [`Device`].
 pub(crate) fn online_tally(endpoint: &Endpoint, live: &LiveState) -> Option<Tally> {
-    if !endpoint.enabled || !live.status.is_connected() {
+    if !endpoint.enabled() || !live.status.is_connected() {
         return None;
     }
     let snapshot = live.snapshot.as_deref()?;
@@ -140,7 +140,7 @@ pub(crate) struct Device {
 
 impl Device {
     pub(crate) fn new(index: usize, endpoint: &Endpoint, live: &LiveState) -> Self {
-        let link = Link::from(endpoint.phase_with(live));
+        let link = Link::from(endpoint.phase());
         // A device out of reach shows no agents rather than stale ones.
         let snapshot = live.snapshot.as_deref().filter(|_| link == Link::Online);
         let agents = snapshot.map_or(&[][..], |snapshot| &snapshot.agents[..]);

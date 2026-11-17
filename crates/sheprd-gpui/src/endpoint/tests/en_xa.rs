@@ -7,12 +7,12 @@ fn a_device_state_is_a_message_under_en_xa_and_english_for_commands() {
     let mut endpoint = Endpoint::new(LOCAL.into(), "Local".into(), ConnectTarget::Local, true);
     i18n::show(&Pseudo::Accented.locale());
     let mut shown = vec![endpoint.status_label()];
-    endpoint.version_mismatch = Some(VersionMismatch::DaemonOutdated {
+    endpoint.set_version_mismatch_for_test(Some(VersionMismatch::DaemonOutdated {
         server_version: None,
-    });
+    }));
     shown.push(endpoint.status_label());
     let command = endpoint.status();
-    endpoint.enabled = false;
+    endpoint.set_enabled_for_test(false);
     shown.push(endpoint.status_label());
     i18n::show(&Locale::FALLBACK);
     for line in shown {

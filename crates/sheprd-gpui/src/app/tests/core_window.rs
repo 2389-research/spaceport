@@ -67,7 +67,7 @@ fn additional_core_window_keeps_exact_group_without_legacy_endpoint(cx: &mut gpu
         let joined = second
             .update(cx, |view, _, _| {
                 view.core_terminals.hub.poll();
-                matches!(view.core_terminals.hub.state(), State::Unavailable(error) if matches!(error.as_ref(), Error::NotInstalled))
+                matches!(view.core_terminals.hub.state(), State::Unavailable { error, .. } if matches!(error.as_ref(), Error::NotInstalled))
             })
             .unwrap();
         if joined {

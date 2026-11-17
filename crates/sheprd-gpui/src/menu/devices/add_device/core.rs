@@ -239,7 +239,7 @@ impl SheprdWindow {
             let request = request.clone();
             match self.core_terminals.hub.state() {
                 core_terminals::State::Ready(_) => self.start_core_device(request, window, cx),
-                core_terminals::State::Unavailable(error) => {
+                core_terminals::State::Unavailable { error, .. } => {
                     if let Some(form) = &mut self.menu.device_setup {
                         form.step = Step::Form;
                         form.error = Some(fl!(
@@ -256,7 +256,7 @@ impl SheprdWindow {
                     }
                     cx.notify();
                 }
-                core_terminals::State::Connecting(_) => {}
+                core_terminals::State::Connecting { .. } => {}
             }
             return;
         }

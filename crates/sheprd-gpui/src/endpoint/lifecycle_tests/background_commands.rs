@@ -55,7 +55,7 @@ fn switching_devices_holds_commands_until_the_new_surface_is_activated(
     let source_inbox = source.connection.inbox.clone();
     let target_handle = target.connection.handle.clone().unwrap();
     view.update(cx, |view, cx| {
-        view.endpoints[0].detached = true;
+        view.endpoints[0].detach_for_test();
         view.endpoints.extend([source, target]);
         view.selected_endpoint = 1;
         view.options = ConnectOptions::default();

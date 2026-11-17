@@ -66,7 +66,7 @@ impl SheprdWindow {
         id: u64,
     ) -> Poll<Option<crate::navigation::OwnedNavigationTarget>> {
         let endpoint = &self.endpoints[index];
-        if !endpoint.enabled || endpoint.connection.handle.is_none() {
+        if !endpoint.enabled() || endpoint.connection.handle.is_none() {
             return Poll::Ready(None);
         }
         let Some((_, notice)) = endpoint

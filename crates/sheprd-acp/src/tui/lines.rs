@@ -1,3 +1,5 @@
+// ABOUTME: Renders transcript entries as styled terminal lines.
+// ABOUTME: Accepts shared tool liveness when painting progress marks.
 //! Transcript entries as wrapped, styled terminal lines.
 
 use ratatui::{
@@ -94,7 +96,7 @@ fn prefixed(
 }
 
 /// The lines for one entry, followed by a blank separator line.
-pub(crate) fn entry(entry: &Entry, width: usize) -> Vec<Line<'static>> {
+pub(crate) fn entry(entry: &Entry, width: usize, live: bool) -> Vec<Line<'static>> {
     // A sub-agent's own steps show under its call in Sheprd; here the call
     // alone stands for them.
     if let EntryKind::Tool(tool) = &entry.kind
@@ -136,7 +138,7 @@ pub(crate) fn entry(entry: &Entry, width: usize) -> Vec<Line<'static>> {
                 Style::default().fg(color),
             ));
         }
-        EntryKind::Tool(tool) => tool_lines(&mut lines, tool, width),
+        EntryKind::Tool(tool) => tool_lines(&mut lines, tool, width, live),
         EntryKind::Turn(summary) => {
             let text = summary.describe();
             let rule = width.saturating_sub(text.chars().count() + 4) / 2;
@@ -192,8 +194,9 @@ fn agent_text(lines: &mut Vec<Line<'static>>, text: &str, width: usize) {
     }
 }
 
-fn tool_lines(lines: &mut Vec<Line<'static>>, tool: &Tool, width: usize) {
+fn tool_lines(lines: &mut Vec<Line<'static>>, tool: &Tool, width: usize, live: bool) {
     let (mark, color) = match tool.status {
+        ToolStatus::Pending | ToolStatus::InProgress if !live => ("■", Color::DarkGray),
         ToolStatus::Pending => ("○", Color::DarkGray),
         ToolStatus::InProgress => ("◐", Color::Yellow),
         ToolStatus::Completed => ("✓", Color::Green),

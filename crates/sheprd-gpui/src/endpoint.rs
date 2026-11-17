@@ -23,6 +23,7 @@ mod error;
 pub(crate) mod fence;
 mod follow;
 mod history;
+mod link;
 mod order;
 pub(crate) mod origin;
 mod phase;
@@ -32,6 +33,7 @@ mod wake;
 pub(super) use catalog::Catalog;
 pub use error::Error;
 pub(crate) use history::Step;
+use link::{Link, Transition};
 pub(crate) use phase::Phase;
 pub(super) use wake::WakeClock;
 pub(crate) use wake::watch_network;
@@ -146,7 +148,7 @@ pub(super) struct Endpoint {
     pub id: String,
     pub label: String,
     pub connection: ConnectionBridge,
-    pub enabled: bool,
+    link: Link,
     /// The target the saved entry named when this endpoint was last reconciled
     /// against it. Its own session may have been picked in the sessions list
     /// since, so a catalog change can only be told from such a pick by
@@ -163,23 +165,10 @@ pub(super) struct Endpoint {
     pub(crate) toasts: crate::notifications::Toasts,
     /// Derived from `live.snapshot`; refreshed by `sync_live` whenever `live` changes.
     pub(crate) config_diagnostic: crate::config_diagnostic::ConfigDiagnostic,
-    /// The last refused handshake's update advice. Unlike `live`, it survives
-    /// the retries that reset the bridge, until a handshake is accepted.
-    pub(crate) version_mismatch: Option<VersionMismatch>,
-    /// Whether this computer's Herdr could not be found to start. Like
-    /// `version_mismatch`, it outlives the retries that reset the bridge,
-    /// until a connection succeeds.
-    herdr_missing: bool,
-    retry_at: Instant,
     attempts: u32,
     /// A sleep or network change this endpoint has not yet recovered from;
     /// see [`Self::recover`].
     recovery: Option<wake::Trigger>,
-    online_since: Option<Instant>,
-    /// Why the last connection ended, from the drop until a replacement has a
-    /// snapshot. Each retry replaces `live`, so the outage outlives it here.
-    outage: Option<String>,
-    detached: bool,
     initial_surface: bool,
     /// A `server.reload_config` waiting for this connection's surface; see
     /// [`Self::reload_config`]. It outlives a reconnection, since a dropped
@@ -207,14 +196,17 @@ impl Endpoint {
         connection: &mut ConnectionBridge,
         live: &mut LiveState,
     ) {
-        std::mem::swap(&mut self.connection, connection);
-        std::mem::swap(&mut self.live, live);
+        self.enter(Transition::Trade(connection, live));
         self.sync_live();
-        self.initial_surface = true;
     }
 
     /// Refreshes state derived from `live` after it is replaced.
     pub(crate) fn sync_live(&mut self) {
+        self.enter(Transition::Observe(Instant::now()));
+        self.sync_live_projection();
+    }
+
+    fn sync_live_projection(&mut self) {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         if let Some(warning) = self.live.local_peer_warning.take() {
             self.toasts.receive([warning.notice(Instant::now())]);
@@ -237,7 +229,7 @@ impl Endpoint {
             id,
             label,
             connection: ConnectionBridge::new(target),
-            enabled,
+            link: Link::initial(enabled),
             saved: None,
             collapsed: false,
             collapsed_repos: HashSet::new(),
@@ -247,14 +239,8 @@ impl Endpoint {
             generation: 0,
             toasts: Default::default(),
             config_diagnostic: Default::default(),
-            version_mismatch: None,
-            herdr_missing: false,
-            retry_at: Instant::now(),
             attempts: 0,
             recovery: None,
-            online_since: None,
-            outage: None,
-            detached: false,
             initial_surface: false,
             config_reload_pending: false,
             focus_requested: false,
@@ -263,35 +249,8 @@ impl Endpoint {
         }
     }
 
-    /// Keeps a test fixture's endpoint from dialing its made-up target, whose
-    /// failure would otherwise drop the window back to Local at a moment that
-    /// depends on the machine's speed.
-    #[cfg(test)]
-    pub(crate) fn never_connect(&mut self) {
-        self.retry_at = Instant::now() + Duration::from_secs(3600);
-    }
-
-    /// Stands in for a drop whose reason `poll` has already recorded.
-    #[cfg(test)]
-    pub(crate) fn lose_connection_for_test(&mut self, reason: &str) {
-        self.outage = Some(reason.into());
-    }
-
-    /// Stands in for a drop because this computer has no Herdr to start.
-    #[cfg(test)]
-    pub(crate) fn lose_herdr_for_test(&mut self, reason: &str) {
-        self.lose_connection_for_test(reason);
-        self.herdr_missing = true;
-    }
-
     fn stop(&mut self) {
-        self.toasts.entries.clear();
-        self.connection.detach(false);
-        self.initial_surface = false;
-        self.focus_requested = false;
-        self.online_since = None;
-        self.generation += 1;
-        self.live = self.connection.take_update().unwrap_or_default();
+        self.enter(Transition::Stop);
         self.sync_live();
     }
 
@@ -317,28 +276,17 @@ impl Endpoint {
     /// endpoint keeps its identity, label, and sidebar state; nothing the old
     /// connection produced survives it.
     fn retarget(&mut self, target: ConnectTarget) {
-        self.stop();
-        self.outage = None;
-        self.connection = ConnectionBridge::new(target);
-        self.detached = false;
-        self.attempts = 0;
-        self.version_mismatch = None;
-        self.herdr_missing = false;
-        // The replacement transport has produced no state of its own yet.
-        self.live = LiveState::default();
+        self.enter(Transition::Retarget {
+            target,
+            enabled: self.enabled(),
+        });
         self.sync_live();
     }
 
     fn connect(&mut self, options: ConnectOptions, active: bool) {
-        self.stop();
-        self.detached = false;
-        self.initial_surface = active;
-        self.attempts = self.attempts.saturating_add(1);
-        self.connection.reconnect(options, false, active);
-        self.live = self.connection.take_update().unwrap_or_default();
+        self.enter(Transition::Connect { options, active });
         self.sync_live();
         self.toasts.receive(self.live.notifications.drain(..));
-        self.retry_at = Instant::now() + self.retry_delay();
     }
 
     fn poll(&mut self, now: Instant) -> Redraw {
@@ -361,39 +309,17 @@ impl Endpoint {
                 self.toasts.entries.clear();
             }
             self.toasts.receive(state.notifications.drain(..));
-            if state.version_mismatch.is_some() {
-                self.version_mismatch = state.version_mismatch.clone();
-            } else if state.status.is_connected() {
-                self.version_mismatch = None;
-            }
-            // A refused handshake reached a running Herdr, so it is installed,
-            // only at another version: the update advice replaces this.
-            if state.missing_installation {
-                self.herdr_missing = true;
-            } else if state.status.is_connected() || state.version_mismatch.is_some() {
-                self.herdr_missing = false;
-            }
-            // The worker stops the handle before its disconnect state reaches
-            // the inbox, so a drop already seen learns its reason here.
-            if self.connection.handle.is_none()
-                && self.outage.is_some()
-                && !state.status.is_connected()
-            {
-                if let Some(error) = &state.error {
-                    self.outage = Some(error.clone());
-                }
-                if needs_user(&state) && !needs_user(&self.live) {
-                    self.retry_at = self.retry_at.max(now + MAX_RETRY_DELAY);
-                }
-            }
             self.last_seen.observe(
                 (self.live.snapshot.as_deref(), self.live.surface.as_ref()),
                 (state.snapshot.as_deref(), state.surface.as_ref()),
                 crate::palette::unix_now(),
             );
             self.observe_focus(&state, now);
-            self.live = state;
-            self.sync_live();
+            self.enter(Transition::Update {
+                state: &mut state,
+                now,
+            });
+            self.sync_live_projection();
         }
         if self
             .connection
@@ -401,21 +327,7 @@ impl Endpoint {
             .as_ref()
             .is_some_and(ClientHandle::is_disconnected)
         {
-            self.connection.handle = None;
-            // A host that refused for a reason only the user can fix is not
-            // redialled every few seconds meanwhile.
-            let delay = if self.waits_for_user() {
-                MAX_RETRY_DELAY
-            } else {
-                self.retry_delay()
-            };
-            self.retry_at = now + delay;
-            self.outage = Some(
-                self.live
-                    .error
-                    .clone()
-                    .unwrap_or_else(|| fl!("endpoint-connection-lost")),
-            );
+            self.enter(Transition::Lost(now));
             changed = Redraw::Window;
         }
         if let Some(trigger) = self.recovery
@@ -423,15 +335,7 @@ impl Endpoint {
         {
             self.recovery = None;
         }
-        if self.serving() {
-            self.outage = None;
-            let since = self.online_since.get_or_insert(now);
-            if now.duration_since(*since) >= STABLE_CONNECTION_PERIOD {
-                self.attempts = 0;
-            }
-        } else {
-            self.online_since = None;
-        }
+        self.enter(Transition::Observe(now));
         changed
     }
 
@@ -464,44 +368,21 @@ impl Endpoint {
                 None => return false,
                 Some(true) => {}
                 Some(false) => {
-                    if let Some(handle) = self.connection.handle.take() {
-                        handle.disconnect();
-                    }
+                    self.enter(Transition::Stop);
                 }
             }
         }
         if thorough {
-            self.attempts = 0;
+            self.enter(Transition::ResetAttempts);
         }
         match &self.connection.handle {
             Some(handle) => handle.check_liveness(),
             None if thorough && !self.waits_for_user() => {
-                self.retry_at = self.retry_at.min(now);
+                self.enter(Transition::RetryAt(self.retry_at().min(now)));
             }
             None => {}
         }
         true
-    }
-
-    /// Whether the last failure is one only the user can fix, such as a
-    /// refused SSH login or no Herdr installed here, so retries wait longest.
-    fn waits_for_user(&self) -> bool {
-        self.herdr_missing || needs_user(&self.live)
-    }
-
-    /// Whether this computer's Herdr could not be found, until a connection
-    /// succeeds.
-    pub(crate) fn herdr_missing(&self) -> bool {
-        self.herdr_missing
-    }
-
-    /// Why the endpoint is reconnecting, while it is.
-    pub(crate) fn outage(&self) -> Option<&str> {
-        self.outage.as_deref()
-    }
-
-    fn retry_delay(&self) -> Duration {
-        Duration::from_millis(500u64 << self.attempts.min(8)).min(MAX_RETRY_DELAY)
     }
 }
 
@@ -557,24 +438,19 @@ impl SheprdWindow {
 
     pub(super) fn reconnect(&mut self, cx: &mut Context<Self>) {
         let index = self.selected_endpoint;
-        if !self.endpoints[index].enabled {
+        if !self.endpoints[index].enabled() {
             return;
         }
         self.version_notice_shown = false;
-        self.endpoints[index].attempts = 0;
+        self.endpoints[index].enter(Transition::ResetAttempts);
         self.endpoints[index].connect(self.options, index == 0);
         self.reset_selected(cx);
     }
 
     pub(super) fn detach_endpoint(&mut self, cx: &mut Context<Self>) {
         let endpoint = &mut self.endpoints[self.selected_endpoint];
-        endpoint.stop();
-        endpoint.outage = None;
-        endpoint.detached = true;
-        endpoint.live.status = ConnectionStatus::Detached;
-        if let Ok(mut state) = endpoint.connection.inbox.lock() {
-            *state = endpoint.live.clone();
-        }
+        endpoint.enter(Transition::Detach);
+        endpoint.sync_live_projection();
         self.reset_selected(cx);
     }
 
@@ -618,7 +494,7 @@ impl SheprdWindow {
         // Another connection's picture is not this one's, so a detach or a
         // retarget starts from an empty terminal area. A reconnect after a drop
         // keeps the last picture, dimmed, until the new connection's arrives.
-        if endpoint.outage.is_none() {
+        if endpoint.outage().is_none() {
             self.presentation.clear();
         }
         self.selection = None;
@@ -629,7 +505,7 @@ impl SheprdWindow {
         self.last_queued_options = None;
         self.sent_focus = None;
         self.wheel = WheelAccumulator::default();
-        self.activation_deadline = (self.selected_endpoint != 0 && !endpoint.detached)
+        self.activation_deadline = (self.selected_endpoint != 0 && !endpoint.detached())
             .then(|| Instant::now() + ACTIVATION_TIMEOUT);
         self.pending_navigation = None;
         self.pending_toast = None;
@@ -712,7 +588,7 @@ impl SheprdWindow {
         let Some(index) = self
             .endpoints
             .iter()
-            .position(|endpoint| endpoint.id == id && endpoint.enabled)
+            .position(|endpoint| endpoint.id == id && endpoint.enabled())
         else {
             return;
         };
@@ -754,7 +630,11 @@ impl SheprdWindow {
     }
 
     fn switch_endpoint(&mut self, id: &str, cx: &mut Context<Self>) -> Result<(), Error> {
-        let Some(index) = self.endpoints.iter().position(|e| e.id == id && e.enabled) else {
+        let Some(index) = self
+            .endpoints
+            .iter()
+            .position(|e| e.id == id && e.enabled())
+        else {
             return Err(Error::NoHost { id: id.to_owned() });
         };
         if index == self.selected_endpoint {
@@ -790,7 +670,7 @@ impl SheprdWindow {
         // The picture kept for an outage is the previous endpoint's.
         self.presentation.clear();
         self.activation_deadline =
-            (!self.endpoints[index].detached).then(|| Instant::now() + ACTIVATION_TIMEOUT);
+            (!self.endpoints[index].detached()).then(|| Instant::now() + ACTIVATION_TIMEOUT);
         cx.notify();
         Ok(())
     }
@@ -803,7 +683,7 @@ impl SheprdWindow {
             && (endpoint.connection.handle.is_none() || endpoint.live.snapshot.is_none())
         {
             endpoint.stop();
-            endpoint.retry_at = Instant::now();
+            endpoint.enter(Transition::RetryAt(Instant::now()));
             return;
         }
         if endpoint.initial_surface

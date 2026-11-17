@@ -268,7 +268,7 @@ impl SheprdWindow {
         let work = crate::caffeine::Work::of(
             self.endpoints
                 .iter()
-                .filter(|endpoint| endpoint.enabled)
+                .filter(|endpoint| endpoint.enabled())
                 .map(|endpoint| {
                     endpoint
                         .live

@@ -1,3 +1,5 @@
+// ABOUTME: Opens and owns bounded SSH tunnels for remote port links.
+// ABOUTME: Fences results by attempt and cancels exact owned children.
 //! SSH tunnels that make a remote server reachable from a browser tab here
 //! at `127.0.0.1`. One `ssh -N -L` child per remote port, started when its
 //! port is clicked and kept while the port is still listed, so reopening the
@@ -248,130 +250,257 @@ pub(super) fn pick(
     }
 }
 
-/// This window's tunnels, and the ones still opening.
+/// One port's lifecycle. A retry keeps the existing tunnel until it succeeds.
+#[derive(Default)]
+enum State {
+    // keep-sorted start
+    #[default]
+    Idle,
+    Open(Tunnel),
+    Opening(Attempt),
+    Reopening {
+        attempt: Attempt,
+        tunnel: Tunnel,
+    },
+    // keep-sorted end
+}
+
+impl State {
+    fn tunnel(&self) -> Option<&Tunnel> {
+        match self {
+            Self::Open(tunnel) | Self::Reopening { tunnel, .. } => Some(tunnel),
+            Self::Idle | Self::Opening(_) => None,
+        }
+    }
+
+    fn attempt(&self) -> Option<&Attempt> {
+        match self {
+            Self::Opening(attempt) | Self::Reopening { attempt, .. } => Some(attempt),
+            Self::Idle | Self::Open(_) => None,
+        }
+    }
+
+    fn count(&self) -> usize {
+        usize::from(self.tunnel().is_some()) + usize::from(self.attempt().is_some())
+    }
+}
+
+#[derive(Default)]
+struct Entry {
+    state: State,
+    /// Port history survives closing, but is not an active tunnel.
+    used: Option<u16>,
+}
+
+enum Event<'a> {
+    // keep-sorted start
+    Begin,
+    Close,
+    Fail(&'a Attempt),
+    Finish(&'a Attempt, Tunnel),
+    Forget,
+    #[cfg(all(test, unix))]
+    Insert(Tunnel),
+    Prune,
+    // keep-sorted end
+}
+
+#[derive(Default)]
+struct Outcome {
+    accepted: bool,
+    local: Option<u16>,
+}
+
+/// This window's tunnel lifecycles and remembered local ports.
 #[derive(Default)]
 pub(crate) struct Tunnels {
-    open: HashMap<Key, Tunnel>,
-    opening: HashMap<Key, Attempt>,
-    /// The local port each remote port was last forwarded to.
-    used: HashMap<Key, u16>,
+    entries: HashMap<Key, Entry>,
 }
 
 impl Tunnels {
-    /// The local port of a live tunnel to `key`; a dead one is dropped.
-    pub(crate) fn local(&mut self, key: &Key) -> Option<u16> {
-        let tunnel = self.open.get(key)?;
-        if tunnel.alive() {
-            return Some(tunnel.local);
+    /// The sole owner of lifecycle and port-history writes.
+    fn transition(&mut self, key: &Key, event: Event<'_>) -> Outcome {
+        if matches!(event, Event::Begin)
+            && (self
+                .entries
+                .values()
+                .map(|entry| entry.state.count())
+                .sum::<usize>()
+                >= TUNNEL_LIMIT
+                || self.attempt(key).is_some())
+        {
+            return Outcome::default();
         }
-        self.open.remove(key);
-        None
+        let mut entry = self.entries.remove(key).unwrap_or_default();
+        let mut outcome = Outcome::default();
+        match event {
+            Event::Begin => {
+                outcome.accepted = true;
+                outcome.local = entry.used.or_else(|| {
+                    NonZeroU16::new(key.port)
+                        .map(sheprd_client::preferred_local_port)
+                        .filter(|port| {
+                            !self.entries.values().any(|entry| entry.used == Some(*port))
+                        })
+                });
+                let attempt = Attempt::default();
+                entry.state = match entry.state {
+                    State::Open(tunnel) => State::Reopening { tunnel, attempt },
+                    _ => State::Opening(attempt),
+                };
+            }
+            Event::Finish(attempt, tunnel) => {
+                if entry
+                    .state
+                    .attempt()
+                    .is_some_and(|current| Arc::ptr_eq(&current.0, &attempt.0))
+                {
+                    let local = tunnel.local;
+                    // A page left on an old address must not acquire another server.
+                    self.entries.retain(|_, other| {
+                        if other.used == Some(local) {
+                            other.used = None;
+                        }
+                        other.state.count() != 0 || other.used.is_some()
+                    });
+                    entry.used = Some(local);
+                    entry.state = State::Open(tunnel);
+                    outcome = Outcome {
+                        accepted: true,
+                        local: Some(local),
+                    };
+                }
+            }
+            Event::Fail(attempt) => {
+                if entry
+                    .state
+                    .attempt()
+                    .is_some_and(|current| Arc::ptr_eq(&current.0, &attempt.0))
+                {
+                    outcome.accepted = true;
+                    entry.state = match entry.state {
+                        State::Reopening { tunnel, .. } => State::Open(tunnel),
+                        _ => State::Idle,
+                    };
+                }
+            }
+            Event::Close | Event::Forget => {
+                outcome.accepted = entry.state.count() != 0;
+                if let Some(attempt) = entry.state.attempt() {
+                    attempt.cancel();
+                }
+                entry.state = State::Idle;
+                if matches!(event, Event::Forget) {
+                    entry.used = None;
+                }
+            }
+            Event::Prune => {
+                entry.state = match entry.state {
+                    State::Open(tunnel) if !tunnel.alive() => State::Idle,
+                    State::Reopening { tunnel, attempt } if !tunnel.alive() => {
+                        State::Opening(attempt)
+                    }
+                    state => state,
+                };
+                outcome.local = entry.state.tunnel().map(|tunnel| tunnel.local);
+            }
+            #[cfg(all(test, unix))]
+            Event::Insert(tunnel) => entry.state = State::Open(tunnel),
+        }
+        if entry.state.count() != 0 || entry.used.is_some() {
+            self.entries.insert(key.clone(), entry);
+        }
+        outcome
     }
 
-    /// The local port of a live tunnel to `key`, leaving a dead one for
-    /// [`Tunnels::local`] or [`Tunnels::retain`] to drop. Only the control
-    /// server, which is Unix-only, reads it.
+    /// The local port of a live tunnel to `key`; a dead one is dropped.
+    pub(crate) fn local(&mut self, key: &Key) -> Option<u16> {
+        self.transition(key, Event::Prune).local
+    }
+
+    /// The local port of a live tunnel, without changing its lifecycle.
     pub(crate) fn live(&self, key: &Key) -> Option<u16> {
-        self.open
-            .get(key)
+        self.entries
+            .get(key)?
+            .state
+            .tunnel()
             .filter(|tunnel| tunnel.alive())
             .map(|tunnel| tunnel.local)
     }
 
-    /// Marks `key` as opening and returns the local port to prefer, or None
-    /// when it is opening already or too many tunnels are. That is the local
-    /// port `key` was last forwarded to, else the server's own number as the
-    /// host menu's Forward port picks it, unless another remote port last
-    /// used that one, whose page may still be open on it.
+    /// Starts an attempt and returns its preferred local port. A retry may
+    /// keep an existing open tunnel. Active tunnels and attempts share a bound.
     pub(crate) fn begin(&mut self, key: &Key) -> Option<Option<u16>> {
-        if self.open.len() + self.opening.len() >= TUNNEL_LIMIT || self.opening.contains_key(key) {
-            return None;
-        }
-        self.opening.insert(key.clone(), Attempt::default());
-        let preferred = self.used.get(key).copied().or_else(|| {
-            NonZeroU16::new(key.port)
-                .map(sheprd_client::preferred_local_port)
-                .filter(|port| !self.used.values().any(|used| used == port))
-        });
-        Some(preferred)
+        let outcome = self.transition(key, Event::Begin);
+        outcome.accepted.then_some(outcome.local)
     }
 
     /// The handle on the attempt [`Tunnels::begin`] started for `key`.
     pub(crate) fn attempt(&self, key: &Key) -> Option<Attempt> {
-        self.opening.get(key).cloned()
+        self.entries.get(key)?.state.attempt().cloned()
     }
 
-    /// Records a finished attempt. A tunnel nobody wants any more, because
-    /// its port closed while it was opening, is dropped and None returned.
-    pub(crate) fn finish(&mut self, key: Key, tunnel: Tunnel) -> Option<u16> {
-        self.opening.remove(&key)?;
-        let local = tunnel.local;
-        // A local port belongs to one remote port at a time, so a page left
-        // open on another remote port's old address is never handed this one.
-        self.used.retain(|_, used| *used != local);
-        self.used.insert(key.clone(), local);
-        self.open.insert(key, tunnel);
-        Some(local)
+    /// Accepts only the current attempt's result. Stale tunnels are dropped.
+    pub(crate) fn finish(&mut self, key: Key, attempt: &Attempt, tunnel: Tunnel) -> Option<u16> {
+        self.transition(&key, Event::Finish(attempt, tunnel)).local
     }
 
-    /// Whether a live tunnel to `key` is open. Dead ones are dropped on the
-    /// next [`Tunnels::retain`], so this may lag a just-exited child briefly.
+    /// Whether a tunnel is open. Dead children are pruned on the next scan.
     pub(crate) fn is_open(&self, key: &Key) -> bool {
-        self.open.contains_key(key)
+        self.entries
+            .get(key)
+            .is_some_and(|entry| entry.state.tunnel().is_some())
     }
 
-    /// Closes the tunnel to `key` by the user's choice: its child is killed
-    /// and reaped, and one still opening is forgotten so its result is
-    /// dropped. The remembered local port is kept so reopening prefers it.
-    /// Returns whether there was anything to close.
+    /// Cancels a port's activity while keeping its remembered local port.
     pub(crate) fn close(&mut self, key: &Key) -> bool {
-        let open = self.open.remove(key).is_some();
-        let opening = self.opening.remove(key).inspect(Attempt::cancel).is_some();
-        open || opening
+        self.transition(key, Event::Close).accepted
     }
 
-    /// Records a failed attempt. Returns whether anyone still wanted it: not
-    /// when the user closed the port meanwhile, which needs no complaint.
-    pub(crate) fn fail(&mut self, key: &Key) -> bool {
-        self.opening.remove(key).is_some()
+    /// Reports a failure only while that exact attempt is still wanted.
+    pub(crate) fn fail(&mut self, key: &Key, attempt: &Attempt) -> bool {
+        self.transition(key, Event::Fail(attempt)).accepted
     }
 
-    /// Closes every tunnel whose remote port `listening` no longer lists or
-    /// whose child has exited, and cancels those still opening, so their
-    /// result is dropped too. Returns whether an open tunnel went away.
+    /// Drops unlisted ports and dead tunnels. Returns whether an open tunnel
+    /// went away, so callers redraw the close button only when needed.
     pub(crate) fn retain(&mut self, mut listening: impl FnMut(&Key) -> bool) -> bool {
-        let before = self.open.len();
-        self.open
-            .retain(|key, tunnel| tunnel.alive() && listening(key));
-        self.opening.retain(|key, attempt| {
-            let keep = listening(key);
-            if !keep {
-                attempt.cancel();
-            }
-            keep
-        });
-        self.used.retain(|key, _| listening(key));
-        self.open.len() != before
+        let before = self.open_count();
+        let keys: Vec<_> = self.entries.keys().cloned().collect();
+        for key in keys {
+            let event = if listening(&key) {
+                Event::Prune
+            } else {
+                Event::Forget
+            };
+            self.transition(&key, event);
+        }
+        self.open_count() != before
     }
 
-    /// Kills every tunnel's SSH child at once, those still connecting too,
-    /// and forgets them so a result arriving later is dropped. Reaping
-    /// happens on threads of their own, so this never waits.
+    /// Cancels every attempt and drops tunnels without waiting for children.
     pub(crate) fn close_all(&mut self) {
-        self.opening.values().for_each(Attempt::cancel);
-        self.open.clear();
-        self.opening.clear();
-        self.used.clear();
+        let keys: Vec<_> = self.entries.keys().cloned().collect();
+        for key in keys {
+            self.transition(&key, Event::Forget);
+        }
+    }
+
+    fn open_count(&self) -> usize {
+        self.entries
+            .values()
+            .filter(|entry| entry.state.tunnel().is_some())
+            .count()
     }
 
     #[cfg(all(test, unix))]
     pub(crate) fn insert(&mut self, key: Key, tunnel: Tunnel) {
-        self.open.insert(key, tunnel);
+        self.transition(&key, Event::Insert(tunnel));
     }
 
     #[cfg(all(test, unix))]
     pub(crate) fn len(&self) -> usize {
-        self.open.len()
+        self.open_count()
     }
 }
 

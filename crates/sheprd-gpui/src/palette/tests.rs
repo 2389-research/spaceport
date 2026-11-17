@@ -171,7 +171,7 @@ fn go_to_rejects_a_disabled_or_missing_host_and_keeps_the_palette_open(cx: &mut 
             let boot = view.live.snapshot.as_ref().unwrap().boot_id.clone();
             for endpoint in ["missing-host", crate::endpoint::LOCAL] {
                 if endpoint == crate::endpoint::LOCAL {
-                    view.endpoints[0].enabled = false;
+                    view.endpoints[0].set_enabled_for_test(false);
                 }
                 view.activate_palette(
                     Action::Go {

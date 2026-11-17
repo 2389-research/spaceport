@@ -623,7 +623,7 @@ impl SheprdWindow {
             }
             // Agent rows come after every host: the panel interleaves them.
             // Only a host the panel lists can make the view a filtered one.
-            if self.config.show_agents && endpoint.enabled {
+            if self.config.show_agents && endpoint.enabled() {
                 filtered |= snapshot.agent_view_label.is_some();
             }
         }

@@ -1,3 +1,5 @@
+// ABOUTME: Checks chat behavior against synthetic transcript fixtures.
+// ABOUTME: Keeps lifecycle and rendering expectations explicit at the test boundary.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use crossterm::event::KeyEventState;
@@ -11,6 +13,7 @@ use super::*;
 
 mod attachments;
 mod follow;
+mod tool_liveness;
 
 fn key(code: KeyCode, modifiers: KeyModifiers) -> KeyEvent {
     KeyEvent {

@@ -1,3 +1,5 @@
+// ABOUTME: Implements Settings preferences interactions.
+// ABOUTME: Connects native controls to Settings state and persistence.
 //! Typed preference saves and switches, and the Integrations page.
 // i18n: migrated
 use super::*;
@@ -89,8 +91,7 @@ impl SettingsWindow {
             )
     }
 
-    /// A switch that saves `edit` when clicked; saves refuse to overlap, so a
-    /// click during a write does nothing.
+    /// Saves the typed edit in order, including clicks during another write.
     pub(in crate::settings_window) fn preference_toggle(
         &self,
         id: impl Into<SharedString>,
@@ -161,15 +162,19 @@ mod tests {
             });
             let count = edits.lock().unwrap().len();
             view.update(cx, |view, cx| {
-                view.saving = true;
+                view.save_with(
+                    || Ok(()),
+                    crate::settings_window::tests::skill_load,
+                    false,
+                    cx,
+                );
                 cx.notify();
             });
             cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
             let point = cx.debug_bounds(selector).unwrap().center();
             cx.simulate_click(point, Default::default());
             cx.run_until_parked();
-            assert_eq!(edits.lock().unwrap().len(), count);
-            view.update(cx, |view, _| view.saving = false);
+            assert_eq!(edits.lock().unwrap().len(), count + 1);
         }
     }
 }

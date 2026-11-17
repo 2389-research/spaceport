@@ -1,3 +1,5 @@
+// ABOUTME: Keeps live sidebar drafts and their touched preference keys.
+// ABOUTME: Serializes committed drafts without replacing newer previews.
 //! Live sidebar spacing, selection and host colours: previews reach every main
 //! window at once, and commits write through Settings' serial save path.
 // i18n: migrated
@@ -230,7 +232,7 @@ impl SettingsWindow {
 
     /// Live, unsaved: updates the draft global and every SheprdWindow.
     pub(super) fn preview_sidebar(&mut self, mut intent: SidebarIntent, cx: &mut Context<Self>) {
-        if self.quitting || self.closing.is_some() {
+        if self.persistence.quitting() || self.persistence.closing().is_some() {
             return;
         }
         // A key stays touched for the draft's life, even dragged back.
@@ -252,7 +254,7 @@ impl SettingsWindow {
     #[cfg(all(feature = "integration-test", target_os = "macos"))]
     pub(super) fn discard_sidebar_draft(&mut self, cx: &mut Context<Self>) {
         self.sidebar_intent = None;
-        self.sidebar_queued = false;
+        self.persistence.queue_sidebar(None);
         clear_sidebar_draft(cx);
         cx.default_global::<SidebarDraft>().intent = None;
         SidebarIntent::of(&self.loaded_config).apply(&mut self.config);
@@ -262,11 +264,11 @@ impl SettingsWindow {
     /// Live and queued for save: preview, then write every changed key
     /// through one serial save.
     pub(super) fn commit_sidebar(&mut self, intent: SidebarIntent, cx: &mut Context<Self>) {
-        if self.quitting || self.closing.is_some() {
+        if self.persistence.quitting() || self.persistence.closing().is_some() {
             return;
         }
         self.preview_sidebar(intent, cx);
-        self.sidebar_queued = true;
+        self.persistence.queue_sidebar(self.sidebar_intent.clone());
         self.save_sidebar_draft(cx);
     }
 
@@ -316,29 +318,49 @@ impl SettingsWindow {
     /// completion resumes a queued draft through `finish_close`.
     pub(super) fn save_sidebar_draft(&mut self, cx: &mut Context<Self>) {
         let Some(intent) = self.sidebar_intent.clone() else {
-            self.sidebar_queued = false;
+            self.persistence.queue_sidebar(None);
             return;
         };
         if self.busy() {
             return;
         }
-        self.sidebar_queued = false;
+        self.persistence.queue_sidebar(None);
+        self.save_sidebar_intent(intent, cx);
+    }
+
+    pub(super) fn save_queued_sidebar(&mut self, cx: &mut Context<Self>) {
+        if let Some(intent) = self.persistence.take_sidebar() {
+            self.save_sidebar_intent(intent, cx);
+        }
+    }
+
+    fn save_sidebar_intent(&mut self, intent: SidebarIntent, cx: &mut Context<Self>) {
         if diff_preferences(&self.loaded_config, &intent).is_empty() {
             // Back where the file already is: nothing to write.
-            self.sidebar_intent = None;
-            clear_sidebar_draft(cx);
+            self.finish_sidebar_save(Some(intent), true, cx);
             self.finish_close(cx);
             cx.notify();
             return;
         }
         let operation = self.sidebar_operation(&intent);
-        self.sidebar_saving = Some(intent);
         #[cfg(test)]
         if let Some(io) = self.controls.preference_io.clone() {
-            self.save_with(operation, move || (io.load)(), false, cx);
+            self.save_kind(
+                operation,
+                move || (io.load)(),
+                false,
+                super::Kind::Sidebar(intent),
+                cx,
+            );
             return;
         }
-        self.save_native(operation, cx);
+        self.save_kind(
+            operation,
+            self.loader(cx),
+            false,
+            super::Kind::Sidebar(intent),
+            cx,
+        );
     }
 
     /// Called by the save completion with the intent that save wrote. A newer
@@ -355,8 +377,8 @@ impl SettingsWindow {
         if !ok {
             return false;
         }
-        // A newer draft stays live; only a commit (which sets
-        // `sidebar_queued`) writes it, never a preview mid-drag.
+        // A newer draft stays live. Only its captured commit writes it;
+        // a preview made after that commit must remain unwritten.
         if self.sidebar_intent.as_ref() == Some(&saved) {
             self.sidebar_intent = None;
             clear_sidebar_draft(cx);
@@ -374,7 +396,8 @@ impl SettingsWindow {
         &mut self,
     ) -> Option<impl FnOnce() -> crate::Result<()> + Send + 'static + use<>> {
         let intent = self.sidebar_intent.take()?;
-        if self.sidebar_saving.as_ref() == Some(&intent) {
+        if matches!(self.persistence.kind(), Some(super::Kind::Sidebar(saved)) if saved == &intent)
+        {
             return None;
         }
         Some(self.sidebar_write(touched_preferences(&intent)))
@@ -440,7 +463,7 @@ impl SettingsWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.quitting || self.closing.is_some() {
+        if self.persistence.quitting() || self.persistence.closing().is_some() {
             return;
         }
         if !self.finish_hex_edit(true, cx) {
