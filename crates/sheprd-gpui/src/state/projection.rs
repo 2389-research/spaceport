@@ -78,6 +78,24 @@ impl LiveState {
         self.pending_snapshot.as_ref().or(self.snapshot.as_ref())
     }
 
+    /// What the sound policy reads of this endpoint for one poll: the
+    /// connection's two cancellation tokens, whether it is connected, the
+    /// queue it drains, and the newest metadata the caller resolved, since
+    /// [`Self::latest_snapshot`] borrows `&self`.
+    pub(crate) fn sound_live<'a>(
+        &'a mut self,
+        snapshot: Option<&'a ClientShellSnapshot>,
+    ) -> sheprd_sound::Live<'a> {
+        sheprd_sound::Live {
+            cancel: &self.sound_cancel,
+            connection_cancel: &self.sound_connection_cancel,
+            connected: self.status.is_connected(),
+            reload: &mut self.reload_sound,
+            events: &mut self.sound_events,
+            snapshot,
+        }
+    }
+
     pub(crate) fn invalidate_surface(&mut self) {
         self.surface = None;
         if let Some(snapshot) = self.pending_snapshot.take() {

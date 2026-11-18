@@ -19,7 +19,7 @@ fn a_saved_volume_reaches_the_shared_sound_worker_at_once(cx: &mut TestAppContex
     let source = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (view, cx) = cx.add_window_view(move |_, cx| SettingsWindow::new(weak.clone(), cx));
-    let (sound, volumes) = crate::sound::Service::recording_volume();
+    let (sound, volumes) = sheprd_sound::Service::recording_volume();
     let sound = std::rc::Rc::new(sound);
     let edits = Arc::new(Mutex::new(Vec::new()));
     let captured = edits.clone();

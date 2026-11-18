@@ -1,18 +1,13 @@
-//! The app's one sound worker: it plays the notification sounds Herdr's
-//! settings name, on this window's endpoint's terms.
+//! The one sound worker: it plays what the policy asks for, off the UI thread.
+//!
 //! Playback adapted from Herdr; see SOUND-NOTICE.md.
-// i18n: migrated
-mod error;
-mod playback;
-#[cfg(test)]
-mod tests;
 
-pub(crate) use error::Error;
-
-use sheprd_client::protocol::SemanticNotification;
-use sheprd_sound::{Live, MAX_PENDING, Policy, Settings};
+use crate::config::Settings;
+use crate::{Live, MAX_PENDING, Policy, Result, playback};
+use sheprd_protocol::{SemanticNotification, SemanticNotificationSound};
 use std::{
     collections::VecDeque,
+    path::{Path, PathBuf},
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, AtomicU8, Ordering},
@@ -26,11 +21,6 @@ use std::{
 /// that share a daemon all hand the same event to the one worker.
 const REPEAT_WINDOW: Duration = Duration::from_secs(2);
 
-/// Whether this process plays no sound at all, as `HERDR_DISABLE_SOUND` asks.
-pub(crate) fn muted() -> bool {
-    playback::muted()
-}
-
 enum PlaybackRequest {
     Notification {
         boot: Option<String>,
@@ -38,7 +28,7 @@ enum PlaybackRequest {
     },
     Preview,
     /// One sound now, from the file Herdr's settings name for it.
-    Play(sheprd_client::protocol::SemanticNotificationSound),
+    Play(SemanticNotificationSound),
 }
 
 /// Notifications the worker recently accepted, compared as complete values.
@@ -76,7 +66,7 @@ struct Job {
 }
 
 #[derive(Default)]
-pub(crate) struct Service {
+pub struct Service {
     sender: Option<mpsc::SyncSender<Job>>,
     settings: Arc<Mutex<Option<Arc<Settings>>>>,
     reload: Arc<AtomicBool>,
@@ -86,25 +76,25 @@ pub(crate) struct Service {
 }
 
 impl Service {
-    pub(crate) fn reload(&self) {
+    /// Reads `path`, the settings file, again on the worker's next tick.
+    pub fn reload(&self) {
         self.reload.store(true, Ordering::Release);
     }
 
     /// Plays every later sound, previews included, at `percent` of its own
     /// level; 0 plays nothing. Values above 100 play at full level.
-    pub(crate) fn set_volume(&self, percent: u8) {
+    pub fn set_volume(&self, percent: u8) {
         self.volume.store(percent, Ordering::Relaxed);
     }
 
-    pub(crate) fn new() -> Self {
+    /// The worker reading `path` on its first tick and on every reload, and
+    /// playing every sound at `volume` percent until a caller sets one.
+    pub fn new(path: PathBuf, volume: u8) -> Self {
         // Test/native fixtures must never touch personal configuration or audio.
-        if cfg!(test) || playback::muted() {
+        if cfg!(any(test, feature = "test-support")) || playback::muted() {
             return Self::default();
         }
-        // Resolved once, at construction: a window must not change what the
-        // worker reads when its process environment changes later.
-        let path = crate::config::view_settings_path(sheprd_client::local_var);
-        Self::start(move || Settings::load(&path), playback::play)
+        Self::start(move || Settings::load(&path), playback::play, volume)
     }
 
     /// Starts the worker with an injectable playback backend, called serially and
@@ -115,19 +105,20 @@ impl Service {
     /// or device objects cross this boundary. Return typed errors with their
     /// sources intact: the worker logs failures without replaying or stopping.
     fn start(
-        mut load: impl FnMut() -> sheprd_sound::Result<Settings> + Send + 'static,
+        mut load: impl FnMut() -> Result<Settings> + Send + 'static,
         mut play: impl FnMut(
-            sheprd_client::protocol::SemanticNotificationSound,
-            Option<&std::path::Path>,
+            SemanticNotificationSound,
+            Option<&Path>,
             u8,
             &[&AtomicBool],
             &AtomicBool,
-        ) -> crate::Result<()>
+        ) -> Result<()>
         + Send
         + 'static,
+        volume: u8,
     ) -> Self {
         let mut service = Self::default();
-        service.set_volume(crate::config::SoundConfig::default().volume);
+        service.set_volume(volume);
         let (sender, receiver) = mpsc::sync_channel::<Job>(8);
         let settings = service.settings.clone();
         let volume = service.volume.clone();
@@ -177,9 +168,7 @@ impl Service {
                             };
                             (sound, current.path_for(sound))
                         }
-                        PlaybackRequest::Preview => {
-                            (sheprd_client::protocol::SemanticNotificationSound::Done, None)
-                        }
+                        PlaybackRequest::Preview => (SemanticNotificationSound::Done, None),
                         PlaybackRequest::Play(sound) => (sound, current.path_for(sound)),
                     };
                     if let Err(error) = play(
@@ -201,7 +190,7 @@ impl Service {
     }
 
     /// Explicit local test, independent of endpoint state and notification settings.
-    pub(crate) fn preview(&self) {
+    pub fn preview(&self) {
         self.request(PlaybackRequest::Preview);
     }
 
@@ -209,7 +198,7 @@ impl Service {
     /// or the built-in one, whatever the notification settings say. Muted
     /// like every sound when `HERDR_DISABLE_SOUND` is set. False when the
     /// worker is not running or already has sounds queued.
-    pub(crate) fn play(&self, sound: sheprd_client::protocol::SemanticNotificationSound) -> bool {
+    pub fn play(&self, sound: SemanticNotificationSound) -> bool {
         self.request(PlaybackRequest::Play(sound))
     }
 
@@ -226,11 +215,9 @@ impl Service {
         })
     }
 
-    #[cfg(test)]
-    pub(crate) fn recording() -> (
-        Self,
-        mpsc::Receiver<sheprd_client::protocol::SemanticNotificationSound>,
-    ) {
+    /// A worker whose playback a test reads from a channel.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn recording() -> (Self, mpsc::Receiver<SemanticNotificationSound>) {
         let (sender, receiver) = mpsc::sync_channel(8);
         let service = Self::start(
             || Ok(Settings::default()),
@@ -238,6 +225,7 @@ impl Service {
                 let _ = sender.try_send(sound);
                 Ok(())
             },
+            crate::MAX_VOLUME,
         );
         service.publish_settings();
         (service, receiver)
@@ -245,16 +233,17 @@ impl Service {
 
     /// The settings the worker loads on its first tick, so a test does not wait
     /// for the worker's own timer before it can hand it a notification.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     fn publish_settings(&self) {
         if let Ok(mut value) = self.settings.lock() {
             *value = Some(Arc::new(Settings::default()));
         }
     }
 
-    /// A worker that reports the volume each sound would play at.
-    #[cfg(test)]
-    pub(crate) fn recording_volume() -> (Self, mpsc::Receiver<u8>) {
+    /// A worker that reports the volume each sound would play at, started at
+    /// the full level because the default volume is the app's to choose.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn recording_volume() -> (Self, mpsc::Receiver<u8>) {
         let (sender, receiver) = mpsc::sync_channel(8);
         let service = Self::start(
             || Ok(Settings::default()),
@@ -262,6 +251,7 @@ impl Service {
                 let _ = sender.try_send(volume);
                 Ok(())
             },
+            crate::MAX_VOLUME,
         );
         service.publish_settings();
         (service, receiver)
@@ -270,7 +260,7 @@ impl Service {
     /// Plays what `live`'s notifications ask for, as the policy delays and
     /// validates them. Notifications `silenced` says the user muted, on
     /// arrival or while they wait, never play.
-    pub(crate) fn poll(
+    pub fn poll(
         &self,
         policy: &mut Policy,
         live: Live<'_>,
@@ -318,3 +308,7 @@ impl Drop for Service {
         self.stop.store(true, Ordering::Release);
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests;

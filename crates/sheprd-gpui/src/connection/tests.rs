@@ -3,6 +3,7 @@ use super::*;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer_warning;
 mod retired_answers;
+mod sounds;
 
 fn bridge() -> ConnectionBridge {
     ConnectionBridge::new(ConnectTarget::Socket("/unused-connection-test.sock".into()))

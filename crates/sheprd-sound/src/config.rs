@@ -60,7 +60,7 @@ enum AgentSetting {
 
 #[derive(Deserialize)]
 #[serde(default)]
-pub struct SoundConfig {
+pub(crate) struct SoundConfig {
     #[serde(deserialize_with = "sheprd_lenient::or_true")]
     enabled: bool,
     #[serde(deserialize_with = "sheprd_lenient::or_default")]
@@ -87,7 +87,7 @@ impl Default for SoundConfig {
 
 impl SoundConfig {
     /// Whether Herdr's settings let `agent`'s notifications play at all.
-    pub fn allows(&self, agent: Option<&str>) -> bool {
+    pub(crate) fn allows(&self, agent: Option<&str>) -> bool {
         if !self.enabled {
             return false;
         }
@@ -140,8 +140,8 @@ impl SoundConfig {
 
 /// Herdr's sound settings, its toast delay, and the directory its sound paths
 /// are relative to.
-pub struct Settings {
-    pub sound: SoundConfig,
+pub(crate) struct Settings {
+    pub(crate) sound: SoundConfig,
     delay: u64,
     root: PathBuf,
 }
@@ -159,7 +159,7 @@ impl Default for Settings {
 impl Settings {
     /// The settings in `path`, which is Herdr's `config.toml`; a missing file
     /// keeps every default.
-    pub fn load(path: &Path) -> Result<Self> {
+    pub(crate) fn load(path: &Path) -> Result<Self> {
         Self::load_path(path)
     }
 
@@ -193,13 +193,13 @@ impl Settings {
     }
 
     /// How long Herdr waits before it sounds a notification, in seconds.
-    pub fn ui_delay(&self) -> u64 {
+    pub(crate) fn ui_delay(&self) -> u64 {
         self.delay
     }
 
     /// The file Herdr's settings name for `sound`, relative to the settings
     /// file, and `None` when they name none.
-    pub fn path_for(&self, sound: Sound) -> Option<PathBuf> {
+    pub(crate) fn path_for(&self, sound: Sound) -> Option<PathBuf> {
         let path = match sound {
             Sound::Done => self.sound.done_path.as_ref(),
             Sound::Request => self.sound.request_path.as_ref(),

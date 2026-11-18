@@ -1,21 +1,6 @@
 use super::*;
-
-fn send(service: &Service, boot: Option<&str>, event: SemanticNotification, queued: Instant) {
-    service
-        .sender
-        .as_ref()
-        .unwrap()
-        .send(Job {
-            request: PlaybackRequest::Notification {
-                boot: boot.map(str::to_owned),
-                event,
-            },
-            cancel: Arc::new(AtomicBool::new(false)),
-            connection_cancel: Arc::new(AtomicBool::new(false)),
-            queued,
-        })
-        .unwrap();
-}
+use crate::tests::event;
+use sheprd_protocol::{SemanticNotificationKind as Kind, SemanticNotificationSound as Sound};
 
 #[test]
 fn recent_accepts_one_copy_per_boot_and_event_within_the_window() {

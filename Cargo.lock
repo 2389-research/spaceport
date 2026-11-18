@@ -6575,6 +6575,8 @@ dependencies = [
 name = "sheprd-sound"
 version = "0.1.0"
 dependencies = [
+ "rodio",
+ "rustix",
  "serde",
  "serde_json",
  "sheprd-lenient",
@@ -6582,6 +6584,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
+ "tracing",
 ]
 
 [[package]]

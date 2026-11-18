@@ -67,8 +67,9 @@ pub struct SoundConfig {
 }
 
 impl SoundConfig {
-    /// The loudest volume; a percentage above it is refused.
-    pub const MAX_VOLUME: u8 = 100;
+    /// The loudest volume; a percentage above it is refused. The sound crate
+    /// clamps every sound to the same level, so the constant is defined there.
+    pub const MAX_VOLUME: u8 = sheprd_sound::MAX_VOLUME;
 }
 
 impl Default for SoundConfig {

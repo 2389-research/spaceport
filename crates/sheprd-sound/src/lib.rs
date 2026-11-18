@@ -1,11 +1,17 @@
-//! Local TUI sound settings and endpoint-scoped semantic notification policy.
+//! Local TUI sound settings, the endpoint-scoped semantic notification policy,
+//! and the worker that plays what it asks for.
+//!
+//! Policy and playback adapted from Herdr; see SOUND-NOTICE.md.
 
 mod config;
 mod error;
+mod playback;
 mod policy;
+mod service;
 #[cfg(test)]
 mod tests;
 
-pub use config::{Settings, SoundConfig};
 pub use error::{Error, Result};
+pub use playback::{MAX_VOLUME, muted};
 pub use policy::{Live, MAX_PENDING, Policy};
+pub use service::Service;

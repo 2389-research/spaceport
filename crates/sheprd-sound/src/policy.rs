@@ -119,7 +119,7 @@ impl Policy {
 
     /// Forgets the notifications still waiting whose workspace or tab the
     /// user has muted since they arrived.
-    pub fn forget(&mut self, silenced: impl Fn(&SemanticNotification) -> bool) {
+    pub(crate) fn forget(&mut self, silenced: impl Fn(&SemanticNotification) -> bool) {
         self.incoming.retain(|(_, event)| !silenced(event));
         self.pending.retain(|pending| !silenced(&pending.event));
     }

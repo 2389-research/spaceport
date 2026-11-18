@@ -1,7 +1,7 @@
 # Herdr Sound Attribution
 
-The notification timing/validation policy in `src/sound.rs`, local sound settings
-in `src/sound/config.rs`, and custom-sound fallback in `src/sound/playback.rs`
+The notification timing/validation policy in `src/policy.rs`, local sound settings
+in `src/config.rs`, and custom-sound fallback in `src/playback.rs`
 are adapted from Herdr (https://github.com/herdrdev/herdr), revision
 `8ac9542757292f7a8d42a2d532bc6a8a33c7ffce`:
 
