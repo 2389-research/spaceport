@@ -7,7 +7,10 @@ use std::{
     io::{BufRead, BufReader},
     path::Path,
     process::{Child, ChildStdin, ChildStdout, ExitStatus, Stdio},
-    sync::{Arc, Mutex, PoisonError},
+    sync::{
+        Arc, Mutex, PoisonError,
+        atomic::{AtomicBool, Ordering},
+    },
     thread,
     time::Duration,
 };
@@ -31,6 +34,9 @@ pub(crate) struct Spawned {
 #[derive(Clone)]
 pub(crate) struct AgentProcess {
     child: Arc<Mutex<Child>>,
+    /// Set once the agent has been reaped, after which its pid may already
+    /// belong to another process, and its process group to another group.
+    reaped: Arc<AtomicBool>,
     stderr: Arc<Mutex<VecDeque<String>>>,
 }
 
@@ -79,6 +85,7 @@ pub(crate) fn spawn(
         output,
         process: AgentProcess {
             child: Arc::new(Mutex::new(child)),
+            reaped: Arc::new(AtomicBool::new(false)),
             stderr,
         },
     })
@@ -93,9 +100,23 @@ impl AgentProcess {
     pub(crate) fn wait(&self) -> std::io::Result<ExitStatus> {
         loop {
             if let Some(status) = self.lock().try_wait()? {
+                self.reaped.store(true, Ordering::SeqCst);
                 return Ok(status);
             }
             thread::sleep(POLL);
+        }
+    }
+
+    /// Whether the agent has exited, reaping it if it has.
+    fn gone(&self) -> bool {
+        match self.lock().try_wait() {
+            Ok(Some(_)) => {
+                self.reaped.store(true, Ordering::SeqCst);
+                true
+            }
+            Ok(None) => false,
+            // A child this handle can no longer wait for has already gone.
+            Err(_) => true,
         }
     }
 
@@ -113,7 +134,13 @@ impl AgentProcess {
     /// after a grace period. The agent exiting is not enough: a tool it
     /// started may ignore the request, so the wait lasts until the whole
     /// group is gone.
+    ///
+    /// Once the waiter thread has reaped the agent its pid may have gone to
+    /// another process, so nothing here may signal that pid or its group.
     pub(crate) fn stop(&self) {
+        if self.reaped.load(Ordering::SeqCst) {
+            return;
+        }
         #[cfg(unix)]
         {
             use rustix::process::{Signal, kill_process_group, test_kill_process_group};
@@ -126,7 +153,7 @@ impl AgentProcess {
             }
             let deadline = std::time::Instant::now() + GRACE;
             while std::time::Instant::now() < deadline {
-                let agent_gone = matches!(self.lock().try_wait(), Ok(Some(_)) | Err(_));
+                let agent_gone = self.gone();
                 let group_gone = group.is_none_or(|group| test_kill_process_group(group).is_err());
                 if agent_gone && group_gone {
                     return;
@@ -140,6 +167,7 @@ impl AgentProcess {
         let mut child = self.lock();
         let _ = child.kill();
         let _ = child.wait();
+        self.reaped.store(true, Ordering::SeqCst);
     }
 }
 

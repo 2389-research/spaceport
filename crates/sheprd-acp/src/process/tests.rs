@@ -54,6 +54,33 @@ fn stopping_ends_a_tool_that_ignores_term_after_the_agent_exits() {
     );
 }
 
+/// The waiter thread reaps the agent as soon as it exits, and the OS may then
+/// give its pid to someone else. Stopping that handle must signal nothing: the
+/// pid is not the agent's any more, and its process group is not either.
+#[test]
+fn stopping_after_the_agent_was_reaped_signals_nothing() {
+    let dir = tempfile::tempdir().unwrap();
+    let spawned = spawn(
+        &OsString::from("/bin/sh"),
+        &[OsString::from("-c"), OsString::from("exec sleep 30")],
+        &[],
+        dir.path(),
+    )
+    .unwrap();
+    let pid = spawned.process.lock().id();
+    let agent = rustix::process::Pid::from_raw(i32::try_from(pid).unwrap()).unwrap();
+    // What the waiter thread leaves behind when it reaps the agent.
+    spawned.process.reaped.store(true, Ordering::SeqCst);
+    spawned.process.stop();
+    assert!(
+        rustix::process::test_kill_process(agent).is_ok(),
+        "a reaped handle signalled the pid it used to own"
+    );
+    // The agent stop skipped, before the handle's pid can be reused.
+    let _ = spawned.process.lock().kill();
+    let _ = spawned.process.wait();
+}
+
 #[cfg(unix)]
 #[test]
 fn the_agent_gets_the_environment_it_was_started_with() {
