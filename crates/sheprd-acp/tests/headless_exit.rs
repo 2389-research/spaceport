@@ -6,7 +6,11 @@
 #[allow(dead_code, clippy::disallowed_methods, clippy::expect_used)]
 mod sandbox;
 
-use std::process::Child;
+use std::{
+    process::Child,
+    thread,
+    time::{Duration, Instant},
+};
 
 struct Helper(Child);
 
@@ -14,6 +18,21 @@ impl Drop for Helper {
     fn drop(&mut self) {
         let _ = self.0.kill();
         let _ = self.0.wait();
+    }
+}
+
+/// The helper's exit, with a failure-only bound: a helper that never observes
+/// its agent fails the test instead of holding the suite.
+impl Helper {
+    fn wait(&mut self) -> std::process::ExitStatus {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if let Some(status) = self.0.try_wait().unwrap() {
+                return status;
+            }
+            assert!(Instant::now() < deadline, "headless helper did not exit");
+            thread::sleep(Duration::from_millis(10));
+        }
     }
 }
 
@@ -26,7 +45,7 @@ fn run(code: u8) -> (std::process::ExitStatus, String) {
     #[cfg(windows)]
     command.args(["cmd.exe", "/D", "/S", "/C", &format!("exit /b {code}")]);
     let mut helper = Helper(command.spawn().unwrap());
-    let status = helper.0.wait().unwrap();
+    let status = helper.wait();
     let log = std::fs::read_to_string(sandbox.dir.join("helper.log")).unwrap();
     (status, log)
 }

@@ -19,19 +19,35 @@ fn stopping_ends_a_tool_that_ignores_term_after_the_agent_exits() {
     )
     .unwrap();
     let mut output = BufReader::new(spawned.output);
-    let mut reported = String::new();
-    assert!(
-        output.read_line(&mut reported).unwrap() > 0,
-        "the tool never started"
-    );
+    let (started, started_rx) = std::sync::mpsc::channel();
+    let (ended, ended_rx) = std::sync::mpsc::channel();
+    let reader = thread::spawn(move || {
+        let mut reported = String::new();
+        let line = output
+            .read_line(&mut reported)
+            .ok()
+            .filter(|read| *read > 0)
+            .map(|_| reported);
+        if started.send(line).is_err() {
+            return;
+        }
+        let mut rest = Vec::new();
+        let _ = ended.send(output.read_to_end(&mut rest).is_ok());
+    });
+    // The pipe's end is the signal; the timeout only bounds a failing run.
+    let bound = Duration::from_secs(10);
+    let reported = started_rx
+        .recv_timeout(bound)
+        .expect("the tool never started")
+        .expect("the tool never reported itself");
     let tool = rustix::process::Pid::from_raw(reported.trim().parse().unwrap()).unwrap();
 
     spawned.process.stop();
 
-    // `stop` reaps the agent, so the tool holds the pipe's last writer:
-    // end of file is the tool's exit, which needs no deadline to observe.
-    let mut rest = Vec::new();
-    output.read_to_end(&mut rest).unwrap();
+    ended_rx
+        .recv_timeout(bound)
+        .expect("the tool outlived its chat");
+    reader.join().unwrap();
     assert!(
         rustix::process::test_kill_process(tool).is_err(),
         "the tool outlived its chat"
