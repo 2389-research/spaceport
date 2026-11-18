@@ -452,9 +452,11 @@ impl LiveState {
         self.dirty = true;
     }
 
-    pub fn status_text(&self, local_error: Option<&str>) -> String {
+    /// The bar's text as it reads at `now`: a caller that already holds an
+    /// instant passes it so nothing here reads a second one.
+    pub fn status_text(&self, local_error: Option<&str>, now: std::time::Instant) -> String {
         let error = if self.status.is_connected() {
-            local_error.or(self.notices.text())
+            local_error.or(self.notices.text_at(now))
         } else {
             self.notices.connection_reason()
         };
