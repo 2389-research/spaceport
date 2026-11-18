@@ -18,6 +18,20 @@ chronological. A lesson that covered several independent traps was split into
 one entry per trap under its recorded date; no entry, clause or reference was
 dropped, and no date was changed.
 
+## 2026-11-18 — The security-report route is approved and enabled
+
+- **RULE**: Report a suspected vulnerability through Spaceport's own private
+  advisory form, which `SECURITY.md` and the issue chooser name. The 2026-11-10
+  entry's "still needs an owner-approved Spaceport route" clause is resolved.
+- **SYMPTOM**: The 2026-11-10 entry still reads as if no approved route exists,
+  so work that defers shipping on one repeats a resolved blocker.
+- **CAUSE**: The owner approved enabling GitHub private vulnerability reporting
+  for `2389-research/spaceport`; the setting was enabled and freshly read back
+  as `enabled: true`, and the issue chooser and policy use that form.
+- **REFERENCES**: `docs/spaceport/notes/branding-audit-followups.md`,
+  `docs/audits/AUDIT_REPORT_2026-11-12.md`, `SECURITY.md`,
+  `.github/ISSUE_TEMPLATE/config.yml`
+
 ## 2026-11-16 — Terminal `skip` is not a continuation marker
 
 - **RULE**: Use `terminal::selection::graphemes` and its shared continuation
