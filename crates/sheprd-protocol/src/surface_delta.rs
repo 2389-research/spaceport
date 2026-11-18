@@ -139,6 +139,9 @@ impl SurfaceDelta {
 
     /// Rebuilds the complete next surface from the retained `base`. The result
     /// still needs the ordinary [`FrameData::validate`] before it is accepted.
+    /// The delta must come from [`decode`], which is what checks that a span
+    /// lies inside its grid: applying the same spans here does not repeat that
+    /// check, so an unchecked delta could slice outside the grid.
     pub fn reconstruct(self, base: &PaneSurfaceFrame) -> Result<PaneSurfaceFrame> {
         let mut surface = self.surface;
         let (width, height) = (base.frame.width, base.frame.height);

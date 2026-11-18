@@ -4,12 +4,12 @@
 
 Spaceport is an independent desktop fork of
 [Sheprd](https://github.com/sheprd-labs/sheprd). It is under development. A signed,
-notarized [macOS arm64 preview](https://github.com/2389-research/spaceport/releases/tag/v20261112.1)
+notarized [macOS arm64 preview](https://github.com/2389-research/spaceport/releases/tag/v20261117.1)
 is available for macOS 14.2 or later. The [Spaceport specification](docs/spaceport/START_HERE.md)
 defines the product and ownership rules. The [task plan](docs/spaceport/plan/tasks.json),
 [capability matrix](docs/spaceport/plan/capabilities.json), and
 [acceptance record](docs/spaceport/plan/acceptance.json) show what has been
-checked and what remains open. The [feature reachability snapshot](docs/spaceport/evidence/removal-reachability-54cb41c2.md)
+checked and what remains open. The [feature reachability snapshot](docs/spaceport/evidence/removal-reachability-50b9063be.md)
 maps retained and excluded source routes at a named revision.
 
 The target app keeps native terminals, rich chats, workspaces, customization,

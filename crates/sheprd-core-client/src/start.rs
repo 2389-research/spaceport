@@ -2,9 +2,11 @@
 
 use crate::{Error, Result};
 use std::{
-    io::Read,
+    io::{self, Read},
     path::Path,
+    process::ChildStderr,
     process::{Command, Stdio},
+    sync::mpsc,
     time::{Duration, Instant},
 };
 
@@ -50,9 +52,83 @@ pub fn start(binary: &Path, configure: impl FnOnce(&mut Command), timeout: Durat
     if status.success() {
         return Ok(());
     }
-    let mut stderr = String::new();
-    if let Some(pipe) = child.stderr.take() {
-        let _ = pipe.take(MAX_STDERR).read_to_string(&mut stderr);
-    }
+    let stderr = child
+        .stderr
+        .take()
+        .map(|pipe| drain_stderr(pipe, deadline))
+        .unwrap_or_default();
     Err(Error::StartFailed { status, stderr })
+}
+
+/// What a failed start wrote to stderr, read until EOF or `deadline`. A core
+/// the start command started keeps the pipe open after that command exits, so
+/// only the deadline ends the drain.
+///
+/// The reader also stops at the deadline: it polls the pipe with what is left
+/// of the deadline before each read, so a descendant holding the write end
+/// open cannot keep the thread and its descriptor alive after `start` has
+/// returned.
+fn drain_stderr(pipe: ChildStderr, deadline: Instant) -> String {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let mut pipe = pipe;
+        let mut buffer = [0; 1024];
+        let mut served = 0u64;
+        loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                break;
+            }
+            #[cfg(unix)]
+            if poll_readable(&pipe, remaining).is_err() {
+                break;
+            }
+            #[cfg(not(unix))]
+            let _ = remaining;
+            match pipe.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(read) => {
+                    served += read as u64;
+                    if served >= MAX_STDERR || tx.send(buffer[..read].to_vec()).is_err() {
+                        break;
+                    }
+                }
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
+                Err(error)
+                    if error.kind() == io::ErrorKind::WouldBlock
+                        || error.kind() == io::ErrorKind::TimedOut =>
+                {
+                    break;
+                }
+                Err(_) => break,
+            }
+        }
+    });
+    let mut kept = Vec::new();
+    while let Ok(chunk) = rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+        kept.extend_from_slice(&chunk);
+    }
+    String::from_utf8_lossy(&kept).into_owned()
+}
+
+/// Waits until `pipe` is readable or `remaining` has passed. Errors on a pipe
+/// that cannot be polled; the read then still ends at the caller's deadline
+/// because the values it keeps are bounded by the channel timeout.
+#[cfg(unix)]
+fn poll_readable(pipe: impl rustix::fd::AsFd, remaining: Duration) -> io::Result<()> {
+    use rustix::event::{PollFd, PollFlags};
+    let fd = pipe.as_fd();
+    let mut fds = [PollFd::new(&fd, PollFlags::IN)];
+    let timeout = rustix::time::Timespec::try_from(remaining).unwrap_or(rustix::time::Timespec {
+        tv_sec: i64::MAX,
+        tv_nsec: 0,
+    });
+    let count = rustix::event::poll(&mut fds, Some(&timeout))?;
+    if count == 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "stderr drain deadline",
+        ));
+    }
+    Ok(())
 }

@@ -9,6 +9,9 @@ use crate::{Error, Result};
 /// The largest frame either side writes or reads, in bytes.
 pub const MAX_FRAME_SIZE: usize = 16 * 1024 * 1024;
 
+/// The bytes to write, length prefix first. `message` is serialized before the
+/// length is compared with [`MAX_FRAME_SIZE`], so an oversized frame is
+/// buffered once before it is refused rather than bounded while it is written.
 pub fn encode_frame<M: Serialize>(message: &M) -> Result<Vec<u8>> {
     let mut bytes = vec![0; 4];
     serde_json::to_writer(&mut bytes, message)?;

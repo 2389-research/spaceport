@@ -30,10 +30,10 @@ Pushing `vYYYYMMDD.COUNTER` as `harperreed` to `2389-research/spaceport` builds 
 optimized app, signs and notarizes it, and publishes a GitHub **prerelease** with
 the DMG and `SHA256SUMS`. Manual runs on main accept an exact commit SHA and an
 explicit version; they upload workflow artifacts without publishing a release.
-The [20261112.1 prerelease](https://github.com/2389-research/spaceport/releases/tag/v20261112.1)
+The [20261117.1 prerelease](https://github.com/2389-research/spaceport/releases/tag/v20261117.1)
 completed this route with Sparkle enabled.
-Its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261112.1-signed.md)
-covers the public DMG, signed feed and old feed URL redirect.
+Its [qualification record](../../docs/spaceport/evidence/t12-macos-preview-20261117.1-signed.md)
+covers the public DMG and signed feed; the old feed URL redirect was not rerun.
 Both routes require the selected commit to belong to main and have a complete,
 successful main CI run. D66 temporarily pauses Spaceport Windows CI until
 Kata `h8g5` fixes native performance; macOS/Linux checks remain mandatory,
