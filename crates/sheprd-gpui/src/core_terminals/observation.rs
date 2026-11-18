@@ -268,7 +268,7 @@ type MachineMailbox = Arc<Mutex<Option<Result<MachineList, Error>>>>;
 type RemoteMailbox = Arc<Mutex<Option<(RemoteRequest, Result<VersionedDocument, Error>)>>>;
 
 /// The remote document read the machine reader owes, and the wake that tells
-/// it so: that reader sleeps until its next 2 s machine refresh or a request,
+/// it so: that reader waits until its next 2 s machine refresh or a request,
 /// and a request that arrived in between must not wait for the refresh.
 struct RemoteRequests {
     latest: Arc<Mutex<Option<RemoteRequest>>>,
