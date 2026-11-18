@@ -1,0 +1,27 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "sheprd-sound"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde.workspace           = true
+sheprd-lenient.workspace  = true
+sheprd-protocol.workspace = true
+thiserror.workspace       = true
+toml.workspace            = true
+
+[features]
+# `Policy::waiting`, `Service::recording`/`recording_volume`, and the device
+# suppression in `Service::new`, for the app's headless tests.
+test-support = []
+
+[dev-dependencies]
+# The policy tests read the protocol's own endpoint snapshot fixture.
+serde_json.workspace = true
+tempfile.workspace   = true

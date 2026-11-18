@@ -1,11 +1,19 @@
-use crate::{Error, Result, config::view_settings_path as config_path};
+//! Herdr's `[ui.sound]` and toast delay, from the `config.toml` it writes.
+//!
+//! The file is read leniently ([`sheprd_lenient`]) and bounded: this crate
+//! never owns it, and Herdr may write values this build cannot read.
+
+use crate::{Error, Result};
 use serde::Deserialize;
-use sheprd_client::protocol::SemanticNotificationSound as Sound;
+use sheprd_protocol::SemanticNotificationSound as Sound;
 use std::{
     collections::HashMap,
     io::Read,
     path::{Path, PathBuf},
 };
+
+/// A settings file no larger than this is read; Herdr's is far smaller.
+const MAX_FILE_BYTES: usize = 1_048_576;
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
@@ -52,7 +60,7 @@ enum AgentSetting {
 
 #[derive(Deserialize)]
 #[serde(default)]
-pub(super) struct SoundConfig {
+pub struct SoundConfig {
     #[serde(deserialize_with = "sheprd_lenient::or_true")]
     enabled: bool,
     #[serde(deserialize_with = "sheprd_lenient::or_default")]
@@ -78,7 +86,8 @@ impl Default for SoundConfig {
 }
 
 impl SoundConfig {
-    pub(super) fn allows(&self, agent: Option<&str>) -> bool {
+    /// Whether Herdr's settings let `agent`'s notifications play at all.
+    pub fn allows(&self, agent: Option<&str>) -> bool {
         if !self.enabled {
             return false;
         }
@@ -129,7 +138,9 @@ impl SoundConfig {
     }
 }
 
-pub(super) struct Settings {
+/// Herdr's sound settings, its toast delay, and the directory its sound paths
+/// are relative to.
+pub struct Settings {
     pub sound: SoundConfig,
     delay: u64,
     root: PathBuf,
@@ -146,10 +157,13 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn load() -> Result<Self> {
-        Self::load_path(&config_path(sheprd_client::local_var))
+    /// The settings in `path`, which is Herdr's `config.toml`; a missing file
+    /// keeps every default.
+    pub fn load(path: &Path) -> Result<Self> {
+        Self::load_path(path)
     }
 
+    /// The settings in `path`, bounded and read leniently.
     fn load_path(path: &Path) -> Result<Self> {
         let file = match std::fs::File::open(path) {
             Ok(file) => file,
@@ -159,15 +173,16 @@ impl Settings {
             Err(error) => return Err(Error::from(error).at_path(path)),
         };
         let mut text = String::new();
-        file.take(1_048_577)
+        file.take(MAX_FILE_BYTES as u64 + 1)
             .read_to_string(&mut text)
             .map_err(|error| Error::from(error).at_path(path))?;
-        if text.len() > 1_048_576 {
-            return Err(Error::Sound(crate::sound::Error::ConfigSize).at_path(path));
+        if text.len() > MAX_FILE_BYTES {
+            return Err(Error::ConfigSize.at_path(path));
         }
         Self::parse(&text, path).map_err(|error| error.at_path(path))
     }
 
+    /// The settings `text` holds, with `path` as the file they came from.
     fn parse(text: &str, path: &Path) -> Result<Self> {
         let document: Document = toml::from_str(text)?;
         Ok(Self {
@@ -177,10 +192,13 @@ impl Settings {
         })
     }
 
+    /// How long Herdr waits before it sounds a notification, in seconds.
     pub fn ui_delay(&self) -> u64 {
         self.delay
     }
 
+    /// The file Herdr's settings name for `sound`, relative to the settings
+    /// file, and `None` when they name none.
     pub fn path_for(&self, sound: Sound) -> Option<PathBuf> {
         let path = match sound {
             Sound::Done => self.sound.done_path.as_ref(),

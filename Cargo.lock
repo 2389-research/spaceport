@@ -6484,6 +6484,7 @@ dependencies = [
  "sheprd-lenient",
  "sheprd-osc52",
  "sheprd-remote",
+ "sheprd-sound",
  "sheprd-usage",
  "sheprd-words",
  "skrifa 0.49.0",
@@ -6568,6 +6569,19 @@ dependencies = [
  "serde_json",
  "sheprd-client",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "sheprd-sound"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sheprd-lenient",
+ "sheprd-protocol",
+ "tempfile",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
 ]
 
 [[package]]

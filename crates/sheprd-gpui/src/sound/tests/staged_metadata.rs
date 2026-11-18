@@ -43,12 +43,13 @@ fn staged_agent_status_validates_delayed_sounds_once() {
         let mut policy = Policy::default();
         let mut sounds = 0;
         for at in [now, now + Duration::from_secs(1)] {
-            policy.poll(&mut state, Some(1), false, at, |_| sounds += 1);
+            poll_policy(&mut policy, &mut state, Some(1), false, at, |_| sounds += 1);
         }
         assert_eq!(sounds, 1, "{kind:?}");
         state.apply(ClientEvent::Surface(surface(&staged)));
         assert!(Arc::ptr_eq(state.snapshot.as_ref().unwrap(), &staged));
-        policy.poll(
+        poll_policy(
+            &mut policy,
             &mut state,
             Some(1),
             false,

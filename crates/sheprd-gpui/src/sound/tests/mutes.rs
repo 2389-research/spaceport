@@ -20,13 +20,13 @@ fn a_muted_place_plays_nothing_and_unmuting_does_not_replay_it() {
     let mut policy = Policy::default();
     let now = Instant::now();
     state.sound_events.push_back((now, event(Kind::Custom)));
-    service.poll(&mut policy, &mut state, false, now, |_| true);
+    poll(&service, &mut policy, &mut state, false, now, |_| true);
     assert!(played.try_recv().is_err());
     assert!(state.sound_events.is_empty());
-    service.poll(&mut policy, &mut state, false, now, |_| false);
+    poll(&service, &mut policy, &mut state, false, now, |_| false);
     assert!(played.try_recv().is_err(), "nothing replays after unmuting");
     state.sound_events.push_back((now, event(Kind::Custom)));
-    service.poll(&mut policy, &mut state, false, now, |_| false);
+    poll(&service, &mut policy, &mut state, false, now, |_| false);
     assert!(played.try_recv().is_ok());
 }
 
@@ -39,12 +39,12 @@ fn muting_while_a_sound_waits_out_its_delay_drops_it() {
     state
         .sound_events
         .push_back((now, event(Kind::NeedsAttention)));
-    service.poll(&mut policy, &mut state, false, now, |_| false);
-    assert_eq!(policy.pending.len(), 1, "waiting for the delay");
+    poll(&service, &mut policy, &mut state, false, now, |_| false);
+    assert_eq!(policy.waiting(), 1, "waiting for the delay");
     let later = now + Duration::from_secs(2);
-    service.poll(&mut policy, &mut state, false, later, |_| true);
-    assert!(policy.pending.is_empty());
-    service.poll(&mut policy, &mut state, false, later, |_| false);
+    poll(&service, &mut policy, &mut state, false, later, |_| true);
+    assert_eq!(policy.waiting(), 0, "dropped while it waited");
+    poll(&service, &mut policy, &mut state, false, later, |_| false);
     assert!(played.try_recv().is_err());
 }
 
@@ -60,7 +60,7 @@ fn only_the_muted_place_is_silent() {
     other.pane_id = None;
     state.sound_events.push_back((now, event(Kind::Custom)));
     state.sound_events.push_back((now, other));
-    service.poll(&mut policy, &mut state, false, now, |event| {
+    poll(&service, &mut policy, &mut state, false, now, |event| {
         event.workspace_id.as_deref() == Some("workspace")
     });
     let job = played.try_recv().unwrap();

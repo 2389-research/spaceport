@@ -31,6 +31,14 @@ fn spaceport_view_settings_ignore_upstream_config_override() {
     );
 }
 
+#[test]
+fn view_settings_without_a_config_home_fall_back_to_the_temp_directory() {
+    assert_eq!(
+        view_settings_path(|_| None),
+        env::temp_dir().join("spaceport/view.toml")
+    );
+}
+
 #[cfg(windows)]
 #[test]
 fn windows_view_settings_use_spaceport_roaming_layout() {
