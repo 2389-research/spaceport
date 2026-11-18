@@ -130,6 +130,7 @@ fn partial_permission_uses_target_provenance_and_latest_focused_snapshot() {
             claimed: AtomicBool::new(false),
             cancelled: Arc::new(AtomicBool::new(false)),
             finished: Arc::new(AtomicBool::new(false)),
+            finish: Arc::default(),
             reserved_at: Instant::now(),
             waker: queue::channel(1).unwrap().0.waker(),
         }),

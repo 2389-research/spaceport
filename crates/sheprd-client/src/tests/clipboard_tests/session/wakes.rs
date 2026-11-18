@@ -191,6 +191,7 @@ fn a_reservation_expiring_behind_an_inbound_frame_waits_for_the_frame() {
         claimed: AtomicBool::new(false),
         cancelled: Arc::new(AtomicBool::new(false)),
         finished: Arc::new(AtomicBool::new(false)),
+        finish: Arc::default(),
         reserved_at,
         waker: client.handle.inner.commands.waker(),
     });

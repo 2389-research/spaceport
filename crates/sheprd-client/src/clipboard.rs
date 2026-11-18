@@ -5,11 +5,15 @@ pub use error::Error;
 
 use crate::{Result, frame::ImageWriter, limits::COMMAND_TIMEOUT, protocol::*, queue::Waker};
 use crossbeam_channel::{Receiver, Sender};
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+#[cfg(any(test, feature = "test-support"))]
+use std::sync::{Condvar, Mutex, PoisonError};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Instant,
 };
-use std::time::Instant;
 
 /// A FIFO slot reserved before starting asynchronous clipboard/file work.
 /// Drop to skip the slot. Call `complete` on a background executor, never the UI.
@@ -33,11 +37,39 @@ impl Drop for WakeOnDrop {
     }
 }
 
+/// A latch a lifecycle test blocks on until the worker's image slot is gone.
+/// Test-only: the app polls [`ClipboardImageCancellation::is_finished`] from the
+/// UI thread and must never wait on a slot.
+#[cfg(any(test, feature = "test-support"))]
+#[derive(Default)]
+pub(crate) struct Finish {
+    done: Mutex<bool>,
+    woke: Condvar,
+}
+
+#[cfg(any(test, feature = "test-support"))]
+impl Finish {
+    /// Marks the slot gone and wakes every waiter.
+    fn finish(&self) {
+        *self.done.lock().unwrap_or_else(PoisonError::into_inner) = true;
+        self.woke.notify_all();
+    }
+
+    fn wait(&self) {
+        let mut done = self.done.lock().unwrap_or_else(PoisonError::into_inner);
+        while !*done {
+            done = self.woke.wait(done).unwrap_or_else(PoisonError::into_inner);
+        }
+    }
+}
+
 /// Cancels only this upload. Keeping this handle does not retain the image lease.
 #[derive(Clone)]
 pub struct ClipboardImageCancellation {
     pub(crate) cancelled: Arc<AtomicBool>,
     pub(crate) finished: Arc<AtomicBool>,
+    #[cfg(any(test, feature = "test-support"))]
+    pub(crate) finish: Arc<Finish>,
     pub(crate) waker: Waker,
 }
 
@@ -55,6 +87,13 @@ impl ClipboardImageCancellation {
     pub fn is_finished(&self) -> bool {
         self.finished.load(Ordering::Acquire)
     }
+
+    /// Blocks until the worker's slot is gone. Lifecycle tests only: the app
+    /// polls [`Self::is_finished`] from the UI thread and must never wait here.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn wait_finished(&self) {
+        self.finish.wait();
+    }
 }
 
 impl ClipboardImageUpload {
@@ -62,6 +101,8 @@ impl ClipboardImageUpload {
         ClipboardImageCancellation {
             cancelled: self.lease.cancelled.clone(),
             finished: self.lease.finished.clone(),
+            #[cfg(any(test, feature = "test-support"))]
+            finish: self.lease.finish.clone(),
             waker: self.lease.waker.clone(),
         }
     }
@@ -137,6 +178,9 @@ pub(crate) struct ImageLease {
     pub(crate) claimed: AtomicBool,
     pub(crate) cancelled: Arc<AtomicBool>,
     pub(crate) finished: Arc<AtomicBool>,
+    /// Set when the worker's slot goes; see [`Finish`].
+    #[cfg(any(test, feature = "test-support"))]
+    pub(crate) finish: Arc<Finish>,
     pub(crate) reserved_at: Instant,
     /// Publication and cancellation reach the worker outside its queue.
     pub(crate) waker: Waker,
@@ -160,6 +204,10 @@ impl Drop for ImageLease {
         if self.claimed.load(Ordering::Acquire) {
             self.busy.store(false, Ordering::Release);
         }
+        // A connection torn down after its slot went must not leave a waiting
+        // test parked on a latch nothing else would set.
+        #[cfg(any(test, feature = "test-support"))]
+        self.finish.finish();
     }
 }
 
@@ -185,5 +233,7 @@ impl Drop for ImageSlot {
     fn drop(&mut self) {
         self.lease.cancelled.store(true, Ordering::Release);
         self.lease.finished.store(true, Ordering::Release);
+        #[cfg(any(test, feature = "test-support"))]
+        self.lease.finish.finish();
     }
 }

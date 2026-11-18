@@ -118,6 +118,8 @@ impl ClientHandle {
             claimed: AtomicBool::new(false),
             cancelled: Arc::new(AtomicBool::new(false)),
             finished: Arc::new(AtomicBool::new(false)),
+            #[cfg(any(test, feature = "test-support"))]
+            finish: Arc::default(),
             reserved_at: std::time::Instant::now(),
             waker: self.inner.commands.waker(),
         });
