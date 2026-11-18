@@ -47,7 +47,7 @@ Every command accepts:
 | 1 | Refused or failed |
 | 2 | Invalid arguments, or an address or file that cannot be shown |
 | 3 | Spaceport is not running |
-| 4 | Nothing yet: no notes, no event, no pull request, condition not met |
+| 4 | Nothing yet: no notes, no events, no chat panes, no ports, no usage, no log, a key not set, or the wait not met |
 | 5 | The window, workspace, tab, host, or file is not there |
 | 6 | A dialog is open in the window, or the app is busy |
 | 7 | The app did not answer in time |
@@ -107,7 +107,7 @@ Legacy windows keep their existing launch target.
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
 | `chat [status]` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
 | `chat show\|hide\|toggle [--pane ID]` | Show the native chat view over your pane (or ID, else the focused one), or its terminal |
-| `chat new AGENT [--pane ID]` | Open a tab running a `sheprd-acp` chat with a built-in agent (`claude`, `codex`, `copilot`, `gemini`, `opencode`, `pi`) in the workspace and folder of your pane (or ID). On an SSH host the tab runs that host's `sheprd-acp` (see [Chats on SSH hosts](#chats-on-ssh-hosts)). With no Herdr pane to go by, as when called from a Herdr 2 pane, a Herdr 2 tab in the active group splits its pane in use with the chat instead (see [Chats in Herdr 2 panes](rich-chat.md#chats-in-herdr-2-panes)); its pane id in `chat` is `core:` and the terminal's. Exits 8 when `sheprd-acp` is missing here, the host cannot be reached, or the agent is not installed on it (`sheprd-acp agents` lists those that are) |
+| `chat new AGENT [--pane ID]` | Open a tab running a `sheprd-acp` chat with a built-in agent (`claude`, `codex`, `copilot`, `gemini`, `opencode`, `pi`) in the workspace and folder of your pane (or ID). On an SSH host the tab runs that host's `sheprd-acp` (see [Chats on SSH hosts](#chats-on-ssh-hosts)). With no Herdr pane to go by, as when called from a Herdr 2 pane, a Herdr 2 tab in the active group splits its pane in use with the chat instead (see [Chats in Herdr 2 panes](rich-chat.md#chats-in-herdr-2-panes)); its pane id in `chat` is `core:` and the terminal's. Exits 8 when `sheprd-acp` is missing here or the agent is not installed on it (`sheprd-acp agents` lists those that are), and 1 when the host cannot be reached |
 
 ### Hosts
 
@@ -150,6 +150,7 @@ not take it either.
 | `sound [list]`, `sound play [done\|request]`, `bell` | Sounds play at `sound.volume` percent (`config set sound.volume 30`) |
 | `integrations [list]` | What Herdr offers the selected host |
 | `integrations install-skill` | Install the agent skill (no app needed) |
+| `skill` | Print the agent skill `integrations install-skill` installs (no app needed) |
 | `logs [--lines N] [--path]` | The app's log (no app needed) |
 | `diagnostics bundle PATH` | A redacted report for a bug, with the newest crash reports (no app needed) |
 
@@ -169,6 +170,10 @@ worktree notes changing; and host status changes. Each event has a sequence
 number; pass back the `INSTANCE:SEQ` cursor a call prints with `--after` to
 get only newer events. A cursor from an earlier run of the app gets every
 event the new run has kept, so a restart never hides events.
+
+| Command | What it does |
+| --- | --- |
+| `wait window\|online\|tab-closed ID [--timeout SECONDS]` | Block until the app has a window, the selected host comes online, or app tab `ID` closes: 60 seconds unless `--timeout` says otherwise, and at most 600. Exits 4 when the time runs out |
 
 ```sh
 spaceport events --follow --kind tab_closed
@@ -218,7 +223,7 @@ The request is `{"method": "link", "caller", "op": {"url"}}`.
 One JSON request line, one JSON response line, then the socket closes. A
 request is `{"method", "caller", "op"}`, where `caller` carries the pane,
 workspace, daemon socket, and window, and `op` is tagged with `"op"`.
-`status` reports the protocol version, currently 36. Requests and responses
+`status` reports the protocol version, currently 37. Requests and responses
 are bounded to 256 KiB. A request that waits says for how long (at most 600
 seconds), and the app answers at most a
 few requests at a time.
