@@ -187,6 +187,15 @@ impl Watch {
         }
     }
 
+    /// The worker's next answer, waiting at most `wait` for one.
+    pub(crate) fn update(&self, wait: Duration) -> Result<Option<Update>> {
+        match self.updates.recv_timeout(wait) {
+            Ok(update) => Ok(Some(update)),
+            Err(mpsc::RecvTimeoutError::Timeout) => Ok(None),
+            Err(mpsc::RecvTimeoutError::Disconnected) => Err(Error::Stopped.into()),
+        }
+    }
+
     /// A watch with no worker: the test plays the worker's part.
     #[cfg(test)]
     pub(crate) fn fake() -> (Self, mpsc::SyncSender<Update>, mpsc::Receiver<Command>) {

@@ -38,15 +38,18 @@ impl SheprdWindow {
     }
 
     pub(super) fn render_status_bar(&self, cx: &mut Context<Self>) -> Stateful<Div> {
+        // One instant for the whole bar: a notice's deadline is compared with
+        // the moment this frame is drawn, never a second reading mid-render.
+        let now = std::time::Instant::now();
         let status = if self.core_enabled() && self.live.missing_installation {
             Some(core_fallback_status(
                 self.core_terminals.hub.backend().is_some(),
             ))
         } else {
             (!matches!(self.live.status, ConnectionStatus::Connected)
-                || self.notices.is_some()
-                || self.live.notices.is_some())
-            .then(|| self.live.status_text(self.notices.text()))
+                || self.notices.is_some_at(now)
+                || self.live.notices.is_some_at(now))
+            .then(|| self.live.status_text(self.notices.text_at(now), now))
         };
         let items = self.config.status_bar;
         let height = px(self.status_bar_height());

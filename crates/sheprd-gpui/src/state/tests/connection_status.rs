@@ -1,4 +1,5 @@
 use super::*;
+use std::time::Instant;
 
 #[test]
 fn rejected_dialog_command_preserves_connection_diagnostic() {
@@ -15,7 +16,7 @@ fn rejected_dialog_command_preserves_connection_diagnostic() {
         reason: sheprd_client::Error::Disconnected,
     });
     assert_eq!(
-        state.status_text(None),
+        state.status_text(None, Instant::now()),
         "\u{2068}Disconnected\u{2069}: \u{2068}socket closed\u{2069}"
     );
     assert!(matches!(&state.dialog_response, Some((_, Some(Err(_))))));
@@ -44,7 +45,7 @@ fn untracked_daemon_errors_remain_visible_as_readable_messages() {
             response: serde_json::json!({"error": payload}),
         });
         assert_eq!(
-            state.status_text(None),
+            state.status_text(None, Instant::now()),
             format!("\u{2068}Connected\u{2069}: \u{2068}{expected}\u{2069}")
         );
     }
@@ -76,7 +77,7 @@ fn daemon_loader_stops_on_success_or_failure() {
     assert_eq!(state.status, ConnectionStatus::StartingDaemon);
     assert!(!state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("old input error")),
+        state.status_text(Some("old input error"), Instant::now()),
         "Starting Herdr server..."
     );
     state.apply(ClientEvent::Snapshot(snapshot()));
@@ -96,11 +97,14 @@ fn connection_status_and_error_priority_follow_lifecycle() {
     let mut state = LiveState::default();
     assert_eq!(state.status, ConnectionStatus::Connecting);
     assert!(!state.status.is_connected());
-    assert_eq!(state.status_text(Some("old input error")), "Connecting...");
+    assert_eq!(
+        state.status_text(Some("old input error"), Instant::now()),
+        "Connecting..."
+    );
     state.apply(ClientEvent::Snapshot(snapshot()));
     assert!(state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("input error")),
+        state.status_text(Some("input error"), Instant::now()),
         "\u{2068}Connected\u{2069}: \u{2068}input error\u{2069}"
     );
     state.apply(ClientEvent::Disconnected {
@@ -109,14 +113,14 @@ fn connection_status_and_error_priority_follow_lifecycle() {
     });
     assert!(!state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("old input error")),
+        state.status_text(Some("old input error"), Instant::now()),
         "\u{2068}Disconnected\u{2069}: \u{2068}socket closed\u{2069}"
     );
     state.status = ConnectionStatus::Detached;
     state.notices.clear();
     assert!(!state.status.is_connected());
     assert_eq!(
-        state.status_text(Some("old input error")),
+        state.status_text(Some("old input error"), Instant::now()),
         "Detached (daemon still running)"
     );
     assert!(ConnectionStatus::AwaitingSnapshot.is_connected());
@@ -138,7 +142,7 @@ fn late_untracked_refusal_preserves_disconnection_reason() {
         reason: sheprd_client::Error::Disconnected,
     });
     assert_eq!(
-        state.status_text(None),
+        state.status_text(None, Instant::now()),
         "\u{2068}Disconnected\u{2069}: \u{2068}socket closed\u{2069}"
     );
 }
