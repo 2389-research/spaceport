@@ -61,22 +61,13 @@ fn reselection_keeps_its_budget_across_an_old_inactive_receipt(cx: &mut gpui::Te
             "type": "client_shell_surface_set", "active": false, "projection_revision": snapshot().revision,
         }})).unwrap(),
     }, MAX_GRAPHICS_FRAME_SIZE).unwrap();
-    let deadline = Instant::now() + Duration::from_secs(3);
-    loop {
-        let activated = view.update(cx, |view, cx| {
+    view.update(cx, |view, cx| {
+        poll_until(view, cx, |view, cx| {
             view.poll_endpoints(cx);
             assert_eq!(view.endpoints[view.selected_endpoint].id, "ssh:target");
             view.endpoints[2].initial_surface
         });
-        if activated {
-            break;
-        }
-        assert!(
-            Instant::now() < deadline,
-            "source release never unblocked activation"
-        );
-        std::thread::sleep(Duration::from_millis(1));
-    }
+    });
     assert!(matches!(
         target_server.receive(),
         ClientMessage::ClientShellResize { .. }

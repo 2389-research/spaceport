@@ -99,9 +99,8 @@ fn activation_recovers(cx: &mut gpui::TestAppContext, initial: bool) {
             }
         }
     });
-    let deadline = Instant::now() + Duration::from_secs(3);
-    loop {
-        let ready = view.update(cx, |view, cx| {
+    view.update(cx, |view, cx| {
+        poll_until(view, cx, |view, cx| {
             view.poll_endpoints(cx);
             assert_eq!(
                 view.endpoints[view.selected_endpoint].id,
@@ -109,12 +108,7 @@ fn activation_recovers(cx: &mut gpui::TestAppContext, initial: bool) {
             );
             view.input_ready()
         });
-        if ready {
-            break;
-        }
-        assert!(Instant::now() < deadline, "activation never recovered");
-        std::thread::sleep(Duration::from_millis(1));
-    }
+    });
     let mut server = peer.join().unwrap();
     view.update(cx, |view, cx| {
         view.poll_endpoints(cx);
