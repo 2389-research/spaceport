@@ -5,7 +5,7 @@ use crate::Error;
 
 /// A start command that fails after writing to stderr, leaving a child that
 /// keeps the pipe open, as a core answering `server start` would.
-const FAILING_START: &str = "\
+const FAILING_START: &str = "#!/bin/sh
 [ \"$1 $2 $3\" = 'server start --json' ] || exit 9
 /bin/sleep 30 &
 printf %s \"$!\" > \"$0.pid\"
