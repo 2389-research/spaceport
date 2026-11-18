@@ -76,6 +76,7 @@ pub use event::ClientEvent;
 pub use forward::{ForwardEvent, PortForward, preferred_local_port};
 pub use handle::{Client, ClientHandle};
 pub use host_theme::HostTheme;
+pub use limits::wait;
 pub use local_network::{LocalNetworkAccess, local_network_access};
 pub use method::Method;
 pub use options::ConnectOptions;
