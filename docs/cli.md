@@ -26,7 +26,12 @@ window.
 ```sh
 spaceport --help              # every command
 spaceport COMMAND --help      # one command
+spaceport --build-info        # the executable's build identity
 ```
+
+`spaceport --build-info` prints the executable's build identity without
+starting the GUI, and `spaceport --socket CLIENT_SOCKET` starts it attached
+only to that existing daemon, discovering and starting no other.
 
 ## Options and output
 
@@ -55,7 +60,7 @@ unknown option, not `status` asked for JSON.
 | 2 | Invalid arguments, or an address or file that cannot be shown |
 | 3 | Spaceport is not running |
 | 4 | Nothing yet: no notes, no events, no chat panes, no ports, no usage, no log, a key not set, or the wait not met |
-| 5 | The window, workspace, tab, host, or file is not there |
+| 5 | The window, workspace, tab, host, file, or `run` command name is not there |
 | 6 | A dialog is open in the window, or the app is busy |
 | 7 | The app did not answer in time |
 | 8 | Not available on this platform or in this version of the app |
@@ -79,14 +84,14 @@ Changing this preference never stops Core or its terminals.
 | `window [list]` | Windows with their IDs, size, selected legacy workspace or exact Core presentation group, and hosts; stale Core group data is marked |
 | `window new` | Another window on the exact Core group or legacy launch target of the window selected by `--window`, the caller's host, or the frontmost/default target |
 | `window focus ID` | Bring a window forward |
-| `window fullscreen [on\|off\|toggle]` | |
-| `window size [WIDTHxHEIGHT]` | Print or set the window's size; windows cannot be moved |
+| `window fullscreen [on\|off\|toggle]` | `show` and `hide` work as `on` and `off` |
+| `window size [WIDTHxHEIGHT]` | Print or set the window's size, WIDTH 200-16384 and HEIGHT 150-16384; windows cannot be moved |
 | `window detach\|reconnect` | Detach from, or reconnect to, the selected host |
-| `ui sidebar\|statusbar [on\|off\|toggle]` | For this window and session |
-| `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session |
+| `ui sidebar\|statusbar [on\|off\|toggle]` | For this window and session; `status-bar` is the same verb, and `show`/`hide` are `on`/`off` |
+| `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session; POINTS is 8-48, and `larger`/`smaller` are `+`/`-` |
 | `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage. Exits 8 when the activity bar is off (`[sidebar] activity_bar = false`), when that section is turned off in settings, or for `automations` while Core is off |
 | `run check-for-updates` | Open Sparkle’s native update check in an installed macOS preview; unsupported builds refuse it |
-| `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it |
+| `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it; an unknown name exits 5 |
 | `commands` | The names `run` accepts (no app needed) |
 
 When a Core presentation group is selected, `window list` reports its exact
@@ -103,16 +108,16 @@ Legacy windows keep their existing launch target.
 | --- | --- |
 | `tab [list]` | Current Devices and Core terminal tabs with IDs; retired page and specialized tabs are omitted |
 | `tab focus\|close ID` | |
-| `devices` | The Devices overview |
+| `devices [open]` | The Devices overview |
 
 ### Worktrees and agents
 
 | Command | What it does |
 | --- | --- |
 | `notes [list]` | Every worktree note |
-| `notes get\|clear`, `notes set TEXT` | The note on your checkout (its repository and branch) |
+| `notes get\|clear`, `notes set TEXT` | The note on your checkout (its repository and branch): one line of at most 500 characters, refused over 16 KiB. `list` and `get` exit 4 when there is none |
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
-| `chat [status]` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
+| `chat [status]`, `chat list` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
 | `chat show\|hide\|toggle [--pane ID]` | Show the native chat view over your pane (or ID, else the focused one), or its terminal |
 | `chat new AGENT [--pane ID]` | Open a tab running a `sheprd-acp` chat with a built-in agent (`claude`, `codex`, `copilot`, `gemini`, `opencode`, `pi`) in the workspace and folder of your pane (or ID). On an SSH host the tab runs that host's `sheprd-acp` (see [Chats on SSH hosts](#chats-on-ssh-hosts)). With no Herdr pane to go by, as when called from a Herdr 2 pane, a Herdr 2 tab in the active group splits its pane in use with the chat instead (see [Chats in Herdr 2 panes](rich-chat.md#chats-in-herdr-2-panes)); its pane id in `chat` is `core:` and the terminal's. Exits 8 when `sheprd-acp` is missing here or the agent is not installed on it (`sheprd-acp agents` lists those that are), and 1 when the host cannot be reached |
 
@@ -146,7 +151,7 @@ not take it either.
 | Command | What it does |
 | --- | --- |
 | `config [path]` | The Spaceport settings files, including the private `view.toml` path (no app needed) |
-| `config get\|set\|unset KEY [VALUE]` | Read or change `spaceport/config.local.toml`, keeping its comments. A value that would not load, or an unknown key, is refused and nothing is written; most changes apply at once; `herdr_core_enabled` requires restart (no app needed) |
+| `config get\|set\|unset KEY [VALUE]` | Read a key's effective value (your override, else the default), or change `spaceport/config.local.toml`, keeping its comments. A value that would not load, or an unknown key, is refused and nothing is written; most changes apply at once; `herdr_core_enabled` requires restart (no app needed) |
 | `config check` | Report settings that do not load and unknown keys, and, when the app runs, configured fonts that are not installed; exits 1 if there are any. Without a running app it says the fonts were not checked |
 | `config reload` | Reread Spaceport's settings files |
 | `theme [list]`, `theme set NAME` | The app theme, or `light:NAME,dark:NAME` to follow the system appearance. A device's terminal theme is `config set devices.ID.theme NAME`, with the ID from `host list` minus its `ssh:` prefix. `list` needs no app; `set` saves the setting whether or not the app runs |
