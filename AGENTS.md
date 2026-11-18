@@ -239,12 +239,17 @@ and `publish` passes its `RELEASE_NOTES.md` to `gh release create --notes-file`.
 
 ## Verification
 
-Prefer the existing `just` recipes. Before handoff, a requested commit, or a
+Prefer the existing `just` recipes; `just` with no arguments lists them all,
+and [`docs/just-operations.md`](docs/just-operations.md) explains each one.
+Before handoff, a requested commit, or a
 push, run relevant quick checks expected to finish in under 10 seconds each,
 including compilation time. Keep the overall local validation pass short;
 defer longer tests, full workspace gates (`just ci`), cross-platform lints,
 and release builds to CI jobs. Run longer checks locally only when explicitly
-requested or needed to investigate a specific failure. Report what ran and
+requested or needed to investigate a specific failure. When an operation is
+repeated or complex enough that a second agent could not perfectly
+reconstruct it, codify it as a recipe in the justfile instead of leaving the
+steps in a conversation. Report what ran and
 what was deferred to CI.
 
 - For linking, startup, or packaging changes, rely on CI build and CLI smoke checks; use `just test-build` locally when requested or needed to investigate a failure.

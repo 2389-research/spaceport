@@ -176,6 +176,9 @@ jobs:
         run: |
           python3 scripts/test_check_sorted.py
           python3 scripts/check-sorted.py
+      - name: Check codified-operations documentation
+        if: matrix.features == 'default'
+        run: python3 scripts/check-just-operations.py
       - name: Check Fluent messages
         if: matrix.features == 'default'
         env:
