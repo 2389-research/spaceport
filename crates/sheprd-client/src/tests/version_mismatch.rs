@@ -89,7 +89,7 @@ fn missing_required_capabilities_mean_the_daemon_is_outdated() {
             }),
             "{error}"
         );
-        assert!(error.to_string().contains("Herdr server 0.8.2"), "{error}");
+        assert!(error.to_string().contains("(version 0.8.2)"), "{error}");
     }
 }
 
@@ -168,10 +168,7 @@ fn connection_reports_the_mismatch_before_disconnecting() {
     let ClientEvent::Disconnected { reason, .. } = event(&client) else {
         panic!("expected disconnect")
     };
-    assert!(
-        reason.contains("predates the endpoint protocol"),
-        "{reason}"
-    );
+    assert!(reason.contains("is older than this app needs"), "{reason}");
     drop(daemon.join().unwrap());
 }
 

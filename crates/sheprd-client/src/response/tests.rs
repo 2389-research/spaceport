@@ -89,7 +89,10 @@ fn messages_and_codes_are_bounded() {
 #[test]
 fn a_refusal_without_text_still_displays() {
     let silent = result(&json!({"error": {}})).unwrap_err();
-    assert_eq!(silent.to_string(), "Invalid daemon error");
+    assert_eq!(
+        silent.to_string(),
+        "The daemon refused the request without saying why."
+    );
     let spoken = result(&json!({"error": "busy"})).unwrap_err();
     assert_eq!(spoken.to_string(), "busy");
 }

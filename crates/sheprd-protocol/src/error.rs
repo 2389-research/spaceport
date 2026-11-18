@@ -4,61 +4,61 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("protocol I/O failed: {0}")]
+    #[error("Could not talk to the daemon: {0}")]
     Io(#[from] io::Error),
-    #[error("frame encoding failed: {0}")]
+    #[error("A message could not be written for the daemon: {0}")]
     Encode(#[from] bincode::error::EncodeError),
-    #[error("frame decoding failed: {0}")]
+    #[error("A message from the daemon could not be read: {0}")]
     Decode(#[from] bincode::error::DecodeError),
-    #[error("frame exceeds limit")]
+    #[error("A message from the daemon is larger than this app accepts.")]
     FrameLimit,
-    #[error("empty frame")]
+    #[error("The daemon sent an empty message.")]
     EmptyFrame,
-    #[error("clipboard image must contain 1 byte through 16 MiB")]
+    #[error("A clipboard image must hold 1 byte through 16 MiB.")]
     ClipboardImageSize,
-    #[error("unsupported clipboard image extension")]
+    #[error("A clipboard image is in a format this app cannot read.")]
     ClipboardImageExtension,
-    #[error("clipboard image target must contain 1 through 1024 bytes")]
+    #[error("A clipboard image's target must hold 1 through 1024 bytes.")]
     ClipboardImageTarget,
-    #[error("trailing frame bytes")]
+    #[error("The daemon sent extra bytes after a message.")]
     TrailingBytes,
-    #[error("cell count does not match frame dimensions")]
+    #[error("A pane screen arrived with the wrong number of cells for its size.")]
     CellCount,
-    #[error("invalid hyperlink index")]
+    #[error("A pane screen named a link it does not carry.")]
     HyperlinkIndex,
-    #[error("cursor outside frame")]
+    #[error("A pane screen put the cursor outside the screen.")]
     CursorBounds,
-    #[error("surface patch identity mismatch")]
+    #[error("A pane screen update named a pane or revision it does not match.")]
     PatchIdentity,
-    #[error("surface patch row outside frame")]
+    #[error("A pane screen update named a row the screen does not have.")]
     PatchRowBounds,
-    #[error("surface patch changed pane geometry")]
+    #[error("A pane screen update tried to change the pane's size.")]
     PatchGeometry,
-    #[error("patch cursor outside frame")]
+    #[error("A pane screen update put the cursor outside the screen.")]
     PatchCursorBounds,
-    #[error("surface encoding exceeds the frame limit")]
+    #[error("An encoded pane screen is larger than a message may be.")]
     EncodingLimit,
-    #[error("invalid surface encoding payload: {0}")]
+    #[error("An encoded pane screen could not be decoded: {0}")]
     EncodingPayload(#[from] base64::DecodeError),
-    #[error("invalid surface encoding JSON: {0}")]
+    #[error("An encoded pane screen's JSON could not be read: {0}")]
     EncodingJson(#[from] serde_json::Error),
-    #[error("surface scroll has an invalid scroll count")]
+    #[error("A pane screen scroll asked for an impossible number of lines.")]
     ScrollCount,
-    #[error("surface scroll is truncated")]
+    #[error("A pane screen scroll ended early.")]
     ScrollTruncated,
-    #[error("surface scroll does not carry a pane patch")]
+    #[error("A pane screen scroll came without the screen lines it moves.")]
     ScrollPayload,
-    #[error("surface scroll region is outside the frame or overlaps another")]
+    #[error("A pane screen scroll named rows the screen does not have.")]
     ScrollBounds,
-    #[error("surface update does not match its baseline")]
+    #[error("A pane screen update does not match the screen it belongs to.")]
     SurfaceBaseline,
-    #[error("surface delta grid exceeds its limits")]
+    #[error("A pane screen update is larger than the size limits this app accepts.")]
     DeltaGridLimit,
-    #[error("surface delta metadata carries cells")]
+    #[error("A pane screen update carried cells where its metadata belongs.")]
     DeltaMetadataCells,
-    #[error("surface delta span is outside its grid, unsorted, or over budget")]
+    #[error("A pane screen update named cells outside the screen, out of order, or too many.")]
     DeltaSpan,
-    #[error("surface delta popup update does not match its popup")]
+    #[error("A pane popup update does not match the popup it belongs to.")]
     DeltaPopup,
 }
 

@@ -39,7 +39,10 @@ fn client_schema_presentation_remains_redacted() -> anyhow::Result<()> {
         .err()
         .ok_or_else(|| anyhow::anyhow!("expected schema error"))?;
     let error = Error::from(sheprd_client::Error::CatalogSchema(source));
-    assert_eq!(error.to_string(), "invalid endpoint catalog schema");
+    assert_eq!(
+        error.to_string(),
+        "The saved host list cannot be read; update Spaceport, or remove it to start over."
+    );
     assert!(
         error
             .source()

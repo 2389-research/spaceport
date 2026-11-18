@@ -2,7 +2,7 @@
 # uses to drive the running app. $path is the socket or named pipe; $error
 # is the system's own words.
 
-error-control-message-size = Control request or response exceeds { $limit } bytes
+error-control-message-size = The request or the answer is larger than { $limit } bytes.
 error-control-no-response = Spaceport closed the control connection without answering
 error-control-pipe-foreign = { $path } is held by something other than this user's Spaceport, so it is not used
 error-control-socket-in-use = Another Spaceport already serves { $path }

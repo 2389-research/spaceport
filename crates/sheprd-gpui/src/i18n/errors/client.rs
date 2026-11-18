@@ -22,7 +22,7 @@ use super::Localize;
 use crate::i18n::fl;
 use sheprd_client::{Error, MIN_HERDR_VERSION, protocol::endpoint::ENDPOINT_PROTOCOL_GENERATION};
 
-/// Who has to update when a daemon's endpoint generation is refused: this
+/// Who has to update when a daemon's protocol version is refused: this
 /// app for a newer generation, the daemon otherwise. A Fluent selector key.
 fn fix(generation: u32) -> &'static str {
     if generation > ENDPOINT_PROTOCOL_GENERATION {

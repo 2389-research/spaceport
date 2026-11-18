@@ -5,7 +5,7 @@ use crate::i18n::fl;
 use gpui::{Element, IntoElement, Modifiers, accesskit};
 
 const MISSING: &str =
-    "client I/O failed: Could not start herdr server: No such file or directory (os error 2)";
+    "Could not talk to the daemon: Herdr is not installed: No such file or directory (os error 2)";
 
 #[gpui::test]
 fn a_missing_herdr_shows_the_install_card_not_the_reconnecting_card(cx: &mut gpui::TestAppContext) {

@@ -230,7 +230,7 @@ fn empty_wrongly_typed_and_oversized_values_send_nothing(cx: &mut TestAppContext
                     .text()
                     .map(crate::i18n::leak_tests::unmarked)
                     .as_deref(),
-                Some("Accessibility input not sent: frame exceeds limit")
+                Some("Accessibility input not sent: A message from the daemon is larger than this app accepts.")
             );
         })
     });

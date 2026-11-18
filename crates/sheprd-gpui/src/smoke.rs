@@ -849,7 +849,7 @@ mod tests {
             error.downcast_ref::<sheprd_client::Error>(),
             Some(sheprd_client::Error::EmptySurface)
         ));
-        assert!(format!("{error:#}").contains("surface dimensions must be nonzero"));
+        assert!(format!("{error:#}").contains("screen was asked for with no rows or columns"));
         Ok(())
     }
 

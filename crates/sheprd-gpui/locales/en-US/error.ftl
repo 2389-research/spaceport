@@ -55,7 +55,7 @@ error-malformed-link = This link's address is not valid, so it opens nothing.
 error-missing-home = HOME is not set
 # XDG_STATE_HOME and HOME are environment variables.
 error-missing-state-root = neither XDG_STATE_HOME nor HOME is set
-error-no-snapshot = No current daemon snapshot.
+error-no-snapshot = The daemon's current session data is not loaded; reconnect.
 error-no-tab = No tab selected.
 error-not-connected = Not connected to a daemon.
 error-page-stack = The window has no view to place a page beneath
@@ -68,7 +68,7 @@ error-preferences-path = preferences path has no parent
 error-relative-config-root = XDG_CONFIG_HOME must be an absolute path
 error-remote-agent-tools = Could not install the agent tools on the SSH host: { $error }
 # $method is the daemon request that failed, such as workspace.create.
-error-request = { $method }: { $error }
+error-request = Could not send { $method } to the daemon: { $error }
 error-screenshot-image = The page's picture could not be turned into a PNG
 error-screenshot-write = Could not write the screenshot to { $path }: { $error }
 error-selection-offscreen = The selection reaches rows the pane no longer shows.

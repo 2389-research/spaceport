@@ -349,7 +349,7 @@ fn rename_response_is_correlated_and_survives_surface_invalidation(cx: &mut Test
             view.poll_tab_rename(window, cx);
             assert_eq!(
                 view.menu.tab.as_ref().unwrap().error.as_deref(),
-                Some("method not advertised by endpoint")
+                Some("This Herdr daemon does not offer that request; run `herdr update` and reconnect.")
             );
             assert!(view.menu.tab.as_ref().unwrap().pending.is_none());
             view.menu.tab.as_mut().unwrap().pending = Some("rename-error".into());

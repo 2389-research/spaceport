@@ -207,12 +207,9 @@ fn stale_boot_and_unsupported_commands_never_reach_socket() {
             data: snapshot.to_string(),
         },
     );
+    let message = worker.join().unwrap().unwrap_err().to_string();
     assert!(
-        worker
-            .join()
-            .unwrap()
-            .unwrap_err()
-            .to_string()
-            .contains("boot changed")
+        message.contains("The daemon's session changed"),
+        "{message}"
     );
 }

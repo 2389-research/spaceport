@@ -45,7 +45,7 @@ fn geometry_and_frame_reader_limits() {
             .check_timeout()
             .unwrap_err()
             .to_string()
-            .contains("timed out")
+            .contains("The daemon started a message and never finished it")
     );
 }
 
