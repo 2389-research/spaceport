@@ -87,7 +87,7 @@ fn the_agent_gets_the_environment_it_was_started_with() {
 fn stopping_after_the_agent_exited_still_cleans_up_a_surviving_tool() {
     let dir = tempfile::tempdir().unwrap();
     let fifo = dir.path().join("tool.fifo");
-    let made = std::process::Command::new("mkfifo").arg(&fifo).status().unwrap();
+    let made = sheprd_client::new_command("mkfifo").arg(&fifo).status().unwrap();
     assert!(made.success(), "mkfifo failed");
     let script = format!(
         "trap '' TERM; sleep 30 > {fifo} & exec true",
