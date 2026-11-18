@@ -111,13 +111,13 @@ fn daemon_clipboard_payloads_are_decoded_bounded_and_dropped_when_invalid() {
     );
     // A pane that spams OSC 52 cannot grow the mailbox without bound, and
     // only the newest writes survive: the seeded "hello" is evicted first.
-    for index in 0..crate::osc52::MAX_PENDING * 2 {
+    for index in 0..sheprd_osc52::MAX_PENDING * 2 {
         state.apply(ClientEvent::Message(ServerMessage::Clipboard {
             data: "eA==".into(),
         }));
         assert_eq!(
             state.clipboard_writes.len(),
-            (index + 2).min(crate::osc52::MAX_PENDING)
+            (index + 2).min(sheprd_osc52::MAX_PENDING)
         );
     }
     assert!(state.clipboard_writes.iter().all(|text| text == "x"));

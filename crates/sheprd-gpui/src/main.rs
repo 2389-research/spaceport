@@ -73,7 +73,6 @@ mod network_quality;
 mod notice;
 mod notification_mutes;
 mod notifications;
-mod osc52;
 mod overview;
 mod palette;
 mod pane_menu;

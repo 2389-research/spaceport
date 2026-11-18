@@ -683,8 +683,8 @@ impl LiveState {
             ClientEvent::Message(ServerMessage::Clipboard { data }) => {
                 // OSC 52 bytes from a pane, base64-encoded by the daemon. Only
                 // bounded UTF-8 text is written; anything else is dropped.
-                if let Some(text) = crate::osc52::decode(&data) {
-                    while self.clipboard_writes.len() >= crate::osc52::MAX_PENDING {
+                if let Some(text) = sheprd_osc52::decode(&data) {
+                    while self.clipboard_writes.len() >= sheprd_osc52::MAX_PENDING {
                         self.clipboard_writes.pop_front();
                     }
                     self.clipboard_writes.push_back(text);

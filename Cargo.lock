@@ -6481,6 +6481,7 @@ dependencies = [
  "sheprd-core-client",
  "sheprd-diagnostics",
  "sheprd-i18n",
+ "sheprd-osc52",
  "sheprd-remote",
  "sheprd-usage",
  "skrifa 0.49.0",
@@ -6533,6 +6534,10 @@ dependencies = [
  "windows-sys 0.61.2",
  "winresource",
 ]
+
+[[package]]
+name = "sheprd-osc52"
+version = "0.1.0"
 
 [[package]]
 name = "sheprd-protocol"
