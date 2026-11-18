@@ -1,14 +1,14 @@
 # Splitting `crates/sheprd-gpui`
 
-`crates/sheprd-gpui` is ~310k lines over 1894 files and links the app's heaviest
-dependencies (rodio, mermaid-rs-renderer, ratex-*, image, nucleo-matcher,
-syntect) for every change, whether or not it touches them. This note records the
+`crates/sheprd-gpui` is ~313k lines over 1911 files and links the app's heaviest
+dependencies (mermaid-rs-renderer, ratex-*, image, nucleo-matcher, syntect) for
+every change, whether or not it touches them. This note records the
 extractions so far, the pattern they proved, and the dependency analysis for the
 next ones. Update it as each step lands.
 
 ## What moved
 
-Four modules have left the app, each one a pure function of its inputs with no
+Five modules have left the app, each one a pure function of its inputs with no
 `gpui` types:
 
 | Crate | From | Dependencies | Files importing it |
@@ -16,6 +16,7 @@ Four modules have left the app, each one a pure function of its inputs with no
 | `crates/sheprd-ago` | `crates/sheprd-gpui/src/ago.rs` | none | 1 (`palette/render.rs`) |
 | `crates/sheprd-lenient` | `crates/sheprd-gpui/src/lenient.rs` | `serde`, `toml` | 4 settings files |
 | `crates/sheprd-osc52` | `crates/sheprd-gpui/src/osc52.rs` | none | 2 (`state.rs` and its tests) |
+| `crates/sheprd-sound` | `crates/sheprd-gpui/src/sound/` | `rodio`, `serde`, `sheprd-lenient`, `sheprd-protocol`, `thiserror`, `toml`, `tracing` | 17 |
 | `crates/sheprd-words` | `crates/sheprd-gpui/src/words.rs` | `unicode-segmentation` | 2 (`multiline_input.rs`, `text_editing/keys.rs`) |
 
 ### `sheprd-ago`
@@ -82,6 +83,33 @@ falls back to its own default: a property of a deserializer, not of the app.
 It has no messages and no error type: a value it cannot read falls back, and
 malformed TOML fails with `toml`'s own error in the caller.
 
+### `sheprd-sound`
+
+The first extraction that took a dependency out of the app rather than just
+lines: `rodio` and the audio stack below it (`cpal`, CoreAudio, `symphonia`)
+left `sheprd-gpui`'s build graph for good.
+
+| Before | After |
+| --- | --- |
+| `crates/sheprd-gpui/src/sound.rs`, 455 lines | `crates/sheprd-sound/src/service.rs` (the worker) and `src/policy.rs` (`Policy`, `Live`, `MAX_PENDING`) |
+| `src/sound/config.rs`, 196 lines | `src/config.rs`: `Settings::load(path)`, no path policy of its own |
+| `src/sound/playback.rs`, 159 lines | `src/playback.rs`: `MAX_VOLUME`, `muted`, and rodio playback |
+| `src/sound/error.rs`, 47 lines | `src/error.rs`: the crate's own `thiserror` `Error`, with `Io`, `Path` and `Toml` added for settings |
+| 1,170 test lines | 29 crate tests alongside the code they drive; 3 tests that exercise the seam from the app side stay in `connection/tests/sounds.rs` and `state/tests/sounds.rs` |
+
+Three couplings had to invert first, each one parameter or struct:
+
+- `Policy::poll` took `&mut LiveState`, which is the app's. It now takes
+  `sheprd_sound::Live`: the two cancellation tokens, whether the daemon is
+  connected, the reload flag, the queue it drains, and the newest snapshot. The
+  app builds it in one place, `LiveState::sound_live`.
+- `Settings::load` resolved its own path through `config::view_settings_path`,
+  which is the app's policy. It takes the file now; `Service::new(path, volume)`
+  gets both from `app::shared_sound`, resolved once at construction.
+- `Service` held `Arc<Mutex<Option<Arc<Settings>>>>` and the app called
+  `ui_delay`, `path_for` and `allows` on it. Those became `pub(crate)`, and the
+  app only calls the worker.
+
 ## The pattern
 
 1. **Pick by footprint, not by size.** For each candidate module count what it
@@ -121,16 +149,11 @@ Cheap, dependency-free moves first; the blocked ones carry real work.
 | --- | --- | --- | --- |
 | `reorder` | 170 / 0 | 4 | inline tests must move to `tests.rs`; std only |
 | `truncate` | 105 / 86 | 5 | `one_line` calls `notifications::safe_text`, which is `sheprd_client::text::safe_text`, so the crate would depend on `sheprd-client` |
-| `sound` | 848 / 1170 | 16 | the `rodio` win, but `Policy::poll(&mut LiveState)` (4 fields), `config::view_settings_path`, `config::SoundConfig`, `lenient`, and the root `Error::Sound` variant all have to move or invert first |
 
 `reorder` was the next cheap one and did not land in this wave: both extractions
 above compile `sheprd-gpui`, and the local disk floor (3 GiB free) stopped
 further builds before a third one. It needs no design work when disk allows it —
 `reorder.rs` is std-only and its inline tests move to `src/tests.rs`.
-
-`sound` also has no GPUI use, and it is the extraction that would actually drop a
-dependency (`rodio`) from `sheprd-gpui`. It is not a thin slice: `Policy::poll`
-takes `&mut LiveState`, and `Settings` loads through `sheprd-lenient`.
 
 `chat`, `browser` and `sidebar` are the app's three large features and each is a
 program of its own; none can move before the state and text they read have
@@ -144,12 +167,13 @@ homes. Counted today, production lines first:
 
 Order that falls out of the counts: `browser` before `sidebar` (53 against 263
 importers), and `chat` only after `browser` and the shared paint/settings types
-(`terminal_painter`, `config`, `notifications`) are below it. Moving `sound`
-first removes `rodio` and proves the port pattern those features need.
+(`terminal_painter`, `config`, `notifications`) are below it. `sound` proved the
+pattern a feature needs: a value type for what the crate reads, and a parameter
+for what the app owns.
 
 ## What this does not do
 
 No behaviour changes, no new dependencies, no file reshuffles beyond the module
-that moved, and no change to another crate. `sheprd-gpui` still links `rodio`,
-`mermaid-rs-renderer`, `ratex-*`, `image` and `syntect` until `sound` and `chat`
-move; those are the commits that shrink the build.
+that moved, and no change to another crate. `sheprd-gpui` still links
+`mermaid-rs-renderer`, `ratex-*`, `image` and `syntect` until `chat` moves; that
+is the commit that shrinks the build next.

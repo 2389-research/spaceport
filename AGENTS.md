@@ -61,6 +61,7 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-lenient` | Reads Herdr's `config.toml` leniently: a value this build cannot read (a variant added since, a key whose type changed) falls back to its own default instead of failing the whole file, while malformed TOML still fails; no GPUI |
 | `crates/sheprd-launcher` | Windows-only windowed launcher that starts `spaceport.exe` without a console window; std plus `MessageBoxW` for start failures |
 | `crates/sheprd-osc52` | The daemon's forwarded OSC 52 clipboard payloads: bounded base64 text decoding, and the mailbox bound; no GPUI |
+| `crates/sheprd-sound` | The notification-sound policy and the worker that plays it: Herdr's `[ui.sound]` and toast delay read leniently, when a notification sounds, and rodio playback of a bounded custom or bundled MP3; the app owns the settings path, the volume setting and every message; no GPUI |
 | `crates/sheprd-words` | Word boundaries (UAX #29) for the single-line text fields, so Option-Left, Option-Right, Option-Backspace, and Option-Delete move and delete by word; no GPUI or messages |
 | `crates/embed-resource` | No-op stand-in for GPUI's `embed-resource` build dependency, patched in so GPUI embeds no Windows manifest beside `crates/sheprd-gpui/windows.manifest`; not a production crate |
 | `crates/test-support/sandbox.rs` | Shared isolated process setup for opt-in integration tests; not a production crate |
