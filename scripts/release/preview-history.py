@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 # ABOUTME: Refuse hosted preview versions already present in this workflow's history.
 # ABOUTME: Read bounded complete GitHub history before build or signing credentials exist.
+import importlib.util
 import json
 import os
+from pathlib import Path
 import re
 import subprocess
 import sys
 
-VERSION = r'[1-9][0-9]{7}\.[1-9][0-9]*'
-TITLE = re.compile(r'macOS preview v?(\S+) at ([0-9a-f]{40})')
+SPEC = importlib.util.spec_from_file_location('release_common', Path(__file__).with_name('_release_common.py'))
+common = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(common)
+
+TITLE = re.compile(rf'macOS preview v?(\S+) at ({common.COMMIT})')
 MAX_RUNS = 1000
 PER_PAGE = 100
 
@@ -16,7 +21,7 @@ PER_PAGE = 100
 def check(version, sha, run_id, attempt, read_page):
     if attempt != '1':
         raise ValueError('Workflow rerun refused; inspect receipts and select a new preview version')
-    if not re.fullmatch(VERSION, version) or not re.fullmatch(r'[0-9a-f]{40}', sha) or not run_id.isdecimal():
+    if not common.is_version(version) or not common.is_commit(sha) or not run_id.isdecimal():
         raise ValueError('Invalid preview version, commit or run ID')
     current = int(run_id)
     seen = set()
@@ -44,9 +49,9 @@ def check(version, sha, run_id, attempt, read_page):
                 # evaluated. Their push tag still reserves the version.
                 tag, source = run.get('head_branch', ''), run.get('head_sha', '')
                 if (run.get('event') != 'push' or not isinstance(tag, str)
-                        or not re.fullmatch(rf'v{VERSION}', tag)
+                        or not re.fullmatch(rf'v{common.VERSION}', tag)
                         or not isinstance(source, str)
-                        or not re.fullmatch(r'[0-9a-f]{40}', source)):
+                        or not common.is_commit(source)):
                     raise ValueError('Workflow history has an unrecognized record')
                 requested = (tag[1:], source)
             else:
@@ -54,7 +59,7 @@ def check(version, sha, run_id, attempt, read_page):
             seen.add(identity)
             # Invalid version tags can trigger a run, but neither request validation
             # nor the signer accepts them. They cannot reserve a valid version.
-            if not re.fullmatch(VERSION, requested[0]):
+            if not common.is_version(requested[0]):
                 if identity == current:
                     raise ValueError('Current workflow title does not match the selected preview')
                 continue
