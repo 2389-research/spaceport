@@ -118,6 +118,15 @@ pub(crate) fn initialized() -> Result<Value, wire::Error> {
     )
 }
 
+/// A harness's own id with its first character upper case, as the label ACP
+/// shows for a reasoning level.
+pub(crate) fn capitalized(text: &str) -> String {
+    let mut chars = text.chars();
+    chars.next().map_or_else(String::new, |first| {
+        first.to_uppercase().chain(chars).collect()
+    })
+}
+
 /// A select setting, for a model or a reasoning level.
 pub(crate) fn select(
     id: &str,

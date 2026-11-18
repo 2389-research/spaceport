@@ -244,7 +244,7 @@ impl Bridge {
                 level,
                 LEVELS
                     .iter()
-                    .map(|level| ((*level).to_owned(), capitalized(level), None)),
+                    .map(|level| ((*level).to_owned(), out::capitalized(level), None)),
             ));
         }
         options
@@ -619,13 +619,6 @@ fn model_id(model: Option<&Value>) -> Option<String> {
     let provider = model.get("provider")?.as_str()?;
     let id = model.get("id")?.as_str()?;
     Some(format!("{provider}/{id}"))
-}
-
-fn capitalized(text: &str) -> String {
-    let mut chars = text.chars();
-    chars.next().map_or_else(String::new, |first| {
-        first.to_uppercase().chain(chars).collect()
-    })
 }
 
 #[cfg(test)]

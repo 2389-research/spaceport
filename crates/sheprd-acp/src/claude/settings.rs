@@ -126,7 +126,7 @@ impl Settings {
             let auto = (DEFAULT_EFFORT.to_owned(), "Auto".to_owned(), None);
             let levels = efforts
                 .iter()
-                .map(|level| (level.clone(), capitalized(level), None));
+                .map(|level| (level.clone(), out::capitalized(level), None));
             options.push(out::select(
                 EFFORT,
                 "Effort",
@@ -227,11 +227,4 @@ fn named(name: String, description: Option<&str>, resolved: Option<&str>) -> Str
 
 fn known_mode(mode: &str) -> bool {
     MODES.iter().any(|(id, ..)| *id == mode)
-}
-
-fn capitalized(text: &str) -> String {
-    let mut chars = text.chars();
-    chars.next().map_or_else(String::new, |first| {
-        first.to_uppercase().chain(chars).collect()
-    })
 }

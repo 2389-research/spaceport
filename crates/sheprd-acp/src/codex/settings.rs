@@ -144,7 +144,7 @@ impl Settings {
                 model
                     .efforts
                     .iter()
-                    .map(|level| (level.clone(), capitalized(level), None)),
+                    .map(|level| (level.clone(), out::capitalized(level), None)),
             ));
         }
         options
@@ -234,11 +234,4 @@ impl Settings {
         }
         fields
     }
-}
-
-fn capitalized(text: &str) -> String {
-    let mut chars = text.chars();
-    chars.next().map_or_else(String::new, |first| {
-        first.to_uppercase().chain(chars).collect()
-    })
 }
