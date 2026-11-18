@@ -73,7 +73,6 @@ fn the_agent_gets_the_environment_it_was_started_with() {
     assert_eq!(seen, "1");
 }
 
-
 /// The waiter thread reaps the agent as soon as it exits, but a tool the
 /// agent started may keep the group alive. Stopping the handle after that
 /// still cleans the group up: the group id was captured at spawn, so the
@@ -87,7 +86,10 @@ fn the_agent_gets_the_environment_it_was_started_with() {
 fn stopping_after_the_agent_exited_still_cleans_up_a_surviving_tool() {
     let dir = tempfile::tempdir().unwrap();
     let fifo = dir.path().join("tool.fifo");
-    let made = sheprd_client::new_command("mkfifo").arg(&fifo).status().unwrap();
+    let made = sheprd_client::new_command("mkfifo")
+        .arg(&fifo)
+        .status()
+        .unwrap();
     assert!(made.success(), "mkfifo failed");
     let script = format!(
         "trap '' TERM; sleep 30 > {fifo} & exec true",
