@@ -1,6 +1,6 @@
 ---
 name: spaceport
-description: "Use Spaceport client commands for native chat, files, notes, settings, and window state inside Herdr. The browser commands have been removed; share a URL or file path for the user to open."
+description: "Use Spaceport client commands for native chat, notes, settings, and window state inside Herdr. The browser commands have been removed; share a URL or file path for the user to open."
 ---
 <!-- spaceport-managed-skill v1: Spaceport keeps this file up to date. Edit a copy under another name to keep your changes. -->
 
@@ -23,7 +23,7 @@ for what only Spaceport shows or keeps.
 | Silence this worktree's notifications | `spaceport worktree mute` |
 | Silence a whole host's notifications | `spaceport host mute studio` |
 | Show the Automations section while Core has no job feed | `spaceport ui panel automations` |
-| Open a dev server in a tab, forwarded when you run on an SSH host | `spaceport ports open 3000` |
+| Open a dev server in your system browser, forwarding a remote port to this machine first | `spaceport ports open 3000` |
 | See the processes under a pane, with CPU and memory | `spaceport processes` |
 | Start a chat with another agent in a new tab, shown as a native chat view | `spaceport chat new claude`, then `spaceport chat` for its status |
 | Render existing Linux Codex/Claude conversations in their current panes | `spaceport config set chat.render_existing true` (needs `features.acp_chats`, on by default); `chat status --json` reports the session and input mode |
