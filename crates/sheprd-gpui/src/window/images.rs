@@ -208,6 +208,24 @@ impl SheprdWindow {
             .retain(|image| image.preparing || !image.cancellation.is_finished());
     }
 
+    /// Whether a paste is still preparing on this thread's executor, which only
+    /// a pump advances. The lifecycle tests ask before blocking on a slot.
+    #[cfg(all(test, unix))]
+    pub(crate) fn pending_images_are_preparing(&self) -> bool {
+        self.pending_images.iter().any(|image| image.preparing)
+    }
+
+    /// The cancellation handles of the pastes the socket worker has not
+    /// finished, which end on its thread without an inbox update.
+    #[cfg(all(test, unix))]
+    pub(crate) fn pending_upload_handles(&self) -> Vec<ClipboardImageCancellation> {
+        self.pending_images
+            .iter()
+            .filter(|image| !image.preparing && !image.cancellation.is_finished())
+            .map(|image| image.cancellation.clone())
+            .collect()
+    }
+
     /// Whether `item` held something to paste. Only the Unix socket lifecycle
     /// tests ask; the app pastes through `paste_item`.
     #[cfg(all(test, unix))]
