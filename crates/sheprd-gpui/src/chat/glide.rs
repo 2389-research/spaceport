@@ -18,10 +18,14 @@
 //! Whether a scroll left the end is only decided after layout, in
 //! [`Glide::watch`]: a row redrawn by a chunk counts no height until it is
 //! laid out, so before layout a tall reply makes any place look like the
-//! end, and a reader scrolling up would be pulled back down.
+//! end, and a reader scrolling up would be pulled back down. A scroll
+//! toward the end is the other way about: the list clamps it to an end that
+//! leaves out a reply not yet laid out, so [`Glide::wheel_scrolled`] judges
+//! it where the scroll left the list, and a flick that reached that end
+//! follows even though output landed below it before the layout.
 
 use crate::motion;
-use gpui::{ListOffset, ListState, canvas, prelude::*, px};
+use gpui::{ListOffset, ListState, ScrollDelta, canvas, prelude::*, px};
 use std::{cell::Cell, ops::Range, rc::Rc, time::Instant};
 
 /// How long the spring takes to settle, roughly: a few new lines arrive in
@@ -39,6 +43,54 @@ const MIN_STEP: f32 = 0.5;
 /// a long burst of output does not take seconds to scroll past.
 const MAX_BEHIND: f32 = 0.5;
 
+/// What the user's last scroll did, while the next layout has still to say
+/// where it left the list.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum Scroll {
+    /// Nothing waits on the layout: no scroll since it, or one toward the
+    /// end that could not have left it.
+    #[default]
+    Nothing,
+    /// A scroll away from the end, or one only the layout can judge, as a
+    /// reply redrawn since has no height until it is laid out.
+    Away,
+    /// A scroll toward the end that reached it as the list stood when the
+    /// scroll arrived: output landing before the layout does not undo it.
+    ToEnd,
+}
+
+impl Scroll {
+    /// What a wheel or trackpad scroll of `delta` means for following, with
+    /// the list `left` pixels above its end as the scroll left it, or
+    /// nothing for one that did not move the list's top at all.
+    fn of(delta: ScrollDelta, left: f32) -> Option<Self> {
+        let delta = match delta {
+            ScrollDelta::Pixels(delta) => f32::from(delta.y),
+            ScrollDelta::Lines(delta) => delta.y,
+        };
+        if delta == 0. {
+            return None;
+        }
+        Some(match (delta < 0., left <= AT_END) {
+            (false, _) => Self::Away,
+            (true, true) => Self::ToEnd,
+            (true, false) => Self::Nothing,
+        })
+    }
+
+    /// What this state becomes after a wheel or trackpad scroll of `delta`,
+    /// `left` pixels above the end as it left the list, `before` being what
+    /// waited as the list reported this scroll, if it did: a scroll that asks
+    /// for no judgment leaves a scroll the layout has still to judge in place,
+    /// as the list's report says only that one happened.
+    fn after(self, delta: ScrollDelta, left: f32, before: Option<Self>) -> Self {
+        match Self::of(delta, left) {
+            Some(Self::Nothing) | None => before.unwrap_or(self),
+            Some(scroll) => scroll,
+        }
+    }
+}
+
 /// Whether the list's top moved to another row, or to or from a row's start.
 fn crossed(before: ListOffset, after: ListOffset) -> bool {
     before.item_ix != after.item_ix
@@ -52,7 +104,11 @@ pub(crate) struct Glide {
     /// Set by the list when the user scrolls it, by wheel or trackpad. Only
     /// the user's scrolling decides following: the list moving its own top,
     /// as it does when the end comes up short, must not stop it.
-    scrolled: Rc<Cell<bool>>,
+    scrolled: Rc<Cell<Scroll>>,
+    /// What waited as the list reported the wheel it is taking, if it did: the
+    /// report says only that a scroll happened, not which way, so the wheel
+    /// that caused it reads this and judges in its place.
+    before: Rc<Cell<Option<Scroll>>>,
     last_step: Option<Instant>,
     /// The spring's speed, in pixels a second.
     speed: f32,
@@ -70,14 +126,22 @@ pub(crate) struct Glide {
 impl Glide {
     /// Follows `list`'s end, watching it for the user's scrolling.
     pub(crate) fn new(list: &ListState) -> Self {
-        let scrolled = Rc::new(Cell::new(false));
+        let scrolled = Rc::new(Cell::new(Scroll::Nothing));
+        let before = Rc::new(Cell::new(None));
         list.set_scroll_handler({
             let scrolled = scrolled.clone();
-            move |_, _, _| scrolled.set(true)
+            let before = before.clone();
+            // Which way it went is the view's to say: the list reports the
+            // scroll without its delta, after clamping it.
+            move |_, _, _| {
+                before.set(Some(scrolled.get()));
+                scrolled.set(Scroll::Away);
+            }
         });
         Self {
             following: Rc::new(Cell::new(true)),
             scrolled,
+            before,
             last_step: None,
             speed: 0.,
             away: Rc::default(),
@@ -90,7 +154,7 @@ impl Glide {
     /// user asked to go there.
     pub(crate) fn reset(&mut self, list: &ListState) {
         self.following.set(true);
-        self.scrolled.set(false);
+        self.scrolled.set(Scroll::Nothing);
         self.last_step = None;
         self.speed = 0.;
         list.scroll_to(ListOffset {
@@ -100,14 +164,29 @@ impl Glide {
     }
 
     /// A keyboard or test scroll stops following unless it ends at the end.
-    /// Wheel and trackpad events tell the list directly.
+    /// Wheel and trackpad events say which way they went instead, through
+    /// [`Self::wheel_scrolled`].
     pub(crate) fn user_scrolled(&self) {
-        self.scrolled.set(true);
+        self.scrolled.set(Scroll::Away);
+    }
+
+    /// A wheel or trackpad scroll of `delta`, after `list` took it: one
+    /// toward the end follows again if it reached the end there, though a
+    /// chunk landing before the next layout leaves the list above it, and
+    /// one that stopped short of the end leaves following as it was, keeping
+    /// a scroll the layout has still to judge, so a reversal before that
+    /// layout cannot undo it. One away from the end is the layout's to
+    /// judge, as a reply redrawn since then has no height until it is laid
+    /// out, which would make the place look like the end.
+    pub(crate) fn wheel_scrolled(&self, list: &ListState, delta: ScrollDelta) {
+        let before = self.before.take();
+        self.scrolled
+            .set(self.scrolled.get().after(delta, behind(list), before));
     }
 
     /// Whether the user left the list, or is leaving it, above its end.
     pub(crate) fn stopped(&self) -> bool {
-        self.scrolled.get() || !self.following.get()
+        leaving(&self.scrolled, &self.following)
     }
 
     /// Where the last layout left the list's top.
@@ -151,7 +230,7 @@ impl Glide {
                 if !held {
                     settle(&following, &scrolled, left);
                 }
-                let stopped = held || scrolled.get() || !following.get();
+                let stopped = held || leaving(&scrolled, &following);
                 let now = motion::now();
                 let mut button = away.get();
                 button.set(stopped && left > AT_END, now, false);
@@ -183,7 +262,7 @@ impl Glide {
     /// off all the way there, and says whether to draw another frame.
     pub(crate) fn tick(&mut self, list: &ListState, now: Instant, smooth: bool) -> bool {
         // The user's scroll stands until this frame's layout judges it.
-        if self.scrolled.get() {
+        if self.scrolled.get() != Scroll::Nothing {
             self.last_step = None;
             self.speed = 0.;
             return false;
@@ -248,10 +327,17 @@ impl Glide {
 
 /// Settles a user's scroll, `remaining` pixels from the end as laid out: it
 /// leaves the list following only at its end.
-fn settle(following: &Cell<bool>, scrolled: &Cell<bool>, remaining: f32) {
-    if scrolled.take() {
-        following.set(remaining <= AT_END);
+fn settle(following: &Cell<bool>, scrolled: &Cell<Scroll>, remaining: f32) {
+    match scrolled.take() {
+        Scroll::Nothing => {}
+        Scroll::ToEnd => following.set(true),
+        Scroll::Away => following.set(remaining <= AT_END),
     }
+}
+
+/// Whether the user left the list, or is leaving it, above its end.
+fn leaving(scrolled: &Cell<Scroll>, following: &Cell<bool>) -> bool {
+    scrolled.get() == Scroll::Away || !following.get()
 }
 
 /// How far `list`'s top is above its end, in pixels, as of its last layout.
