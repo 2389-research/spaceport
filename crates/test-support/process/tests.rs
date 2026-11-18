@@ -23,7 +23,7 @@ fn reports_running_as_alive_and_zombie_and_reaped_as_dead() {
     // POSIX waitid with WNOWAIT: block until the child is exited, then leave
     // it unreaped, so the next check observes the zombie `is_dead` reads.
     // No poll guesses when the exit becomes visible.
-    let pid = pid.try_into().expect("pid fits pid_t");
+    // pid_t is u32 on some targets, i32 on others; the call takes it as-is.
     let mut info: libc::siginfo_t = unsafe { std::mem::zeroed() };
     let result =
         unsafe { libc::waitid(libc::P_PID, pid, &mut info, libc::WNOWAIT | libc::WEXITED) };
