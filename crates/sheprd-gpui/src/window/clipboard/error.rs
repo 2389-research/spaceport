@@ -7,7 +7,7 @@ use std::io;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     // keep-sorted start
-    #[error("A clipboard read is already in progress. Try pasting again shortly.")]
+    #[error("A clipboard read is in progress. Try pasting again shortly.")]
     Busy,
     #[error("The paste was cancelled because its destination changed. Try pasting again.")]
     Cancelled,

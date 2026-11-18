@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: checkpoint published; newer-main integration locally verified for draft update.
+Status: sound extraction integration locally verified for draft update.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
@@ -9,6 +9,44 @@ It does not authorize merging the draft into main or releasing it.
 Published checkpoint: `150eed475c4097c63dff86edf8e2b215c64a1d02`.
 Draft: [PR 125](https://github.com/2389-research/spaceport/pull/125).
 The remote branch and draft head were read back and match that commit.
+The next verified draft head is `e8acf1aa6262f91d3610d5b97b5bb5a928b0ffa7`.
+It includes main `099e380ff` and the combined-source checks recorded below.
+
+## Sound extraction integration
+
+Main advanced again to `4feee1830b1daffa2ea42792478cddd042d348da` during validation.
+PR 124 moves sound policy and playback into `sheprd-sound`, with lenient decoding in `sheprd-lenient`.
+The draft branch incorporates that 63-path delta.
+It does not change main itself.
+
+Resolved two test conflicts while preserving the fork's guards.
+Connection tests retain both the extracted sound cases and worker-panic cases.
+The Settings sound-volume test keeps its private fixture and uses the extracted recording service.
+Review found five retained service tests missing after extraction.
+Restored their queue, preview, cancellation, worker-error, and expiry assertions in the sound crate.
+Replaced the reload test's polling sleep with a controlled loader completion channel.
+Independent review confirmed both corrections preserve the original contracts.
+
+The broader localization test exposed a pre-existing clipboard-busy wording mismatch.
+Aligned Rust Display with its existing English catalog, without changing the typed error or visible localized text.
+The equality regression failed first, then all 53 localization cases passed.
+
+The sound integration passes 643 distinct focused GPUI cases, with one opt-in case ignored.
+Its scopes cover connection, endpoint, state, volume, localization, app settings, and Herdr settings.
+The sound crate passes 34 tests, including the five restored cases.
+The lenient crate passes its one test.
+Both offscreen Metal pixel cases pass again.
+Canonical host and Windows GNU lint pass both feature configurations again.
+Formatting, size, sorting, operations, localization, and specification validators pass.
+The specification gate still explicitly skips JSON Schema validation.
+The earlier client and Core tests qualify their unchanged source components.
+
+Logs use `/tmp/spaceport-9s44-sound-integration-*.log` and `sound-restored-tests.log`.
+The focused test summary is `/tmp/spaceport-9s44-sound-integration-test-summary.json`.
+Native sound-device behavior, desktop interaction, release timing, and hosted platform checks remain unqualified.
+
+Requested landing-order coordination with Clint while these moving conflicts keep PR CI from starting.
+The workflow permits manual dispatch only on main; this work does not bypass that policy.
 
 ## Newer-main integration
 

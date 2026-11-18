@@ -215,7 +215,7 @@ pub enum Error {
         source: io::Error,
     },
     #[error(transparent)]
-    Sound(#[from] crate::sound::Error),
+    Sound(#[from] sheprd_sound::Error),
     #[error(transparent)]
     SshHosts(#[from] crate::config::ssh_hosts::Error),
     #[error("The original target changed or no longer exists. Cancel and try again.")]

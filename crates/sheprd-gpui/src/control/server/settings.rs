@@ -66,7 +66,7 @@ pub(super) fn serve(
 
 fn play(caller: &crate::control::protocol::Caller, sound: Sound, cx: &mut App) -> Response {
     in_window(caller, cx, |view, _, _| {
-        if crate::sound::muted() {
+        if sheprd_sound::muted() {
             return Response::error(
                 ErrorCode::Unsupported,
                 "Spaceport plays no sounds: HERDR_DISABLE_SOUND is set in its environment",

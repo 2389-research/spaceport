@@ -21,7 +21,7 @@ HELPERS = ("sheprd-acp.exe",)
 EXECUTABLES = ("spaceport.exe", "spaceport-launcher.exe", *HELPERS)
 LICENSES = ("LICENSE", "NOTICE", "assets/icons/LICENSE-octicons",
             "crates/sheprd-protocol/LICENSE-APACHE", "crates/sheprd-protocol/NOTICE.md",
-            "crates/sheprd-gpui/SOUND-NOTICE.md")
+            "crates/sheprd-sound/SOUND-NOTICE.md")
 # Zip cannot store dates before 1980; a fixed stamp keeps entries independent
 # of checkout and build times.
 TIMESTAMP = (1980, 1, 1, 0, 0, 0)

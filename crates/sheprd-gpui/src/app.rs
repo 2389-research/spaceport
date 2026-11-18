@@ -191,15 +191,19 @@ fn open_window_placed(
 /// The app's one sound worker. Each window holds its own connection and the
 /// daemon sends every notification to each of them, so a worker per window
 /// played one notification once per open window.
-struct SharedSound(std::rc::Rc<crate::sound::Service>);
+struct SharedSound(std::rc::Rc<sheprd_sound::Service>);
 
 impl Global for SharedSound {}
 
-fn shared_sound(cx: &mut App) -> std::rc::Rc<crate::sound::Service> {
+fn shared_sound(cx: &mut App) -> std::rc::Rc<sheprd_sound::Service> {
     if let Some(shared) = cx.try_global::<SharedSound>() {
         return shared.0.clone();
     }
-    let sound = std::rc::Rc::new(crate::sound::Service::new());
+    // Resolved once: a window must not change what the worker reads later.
+    let sound = std::rc::Rc::new(sheprd_sound::Service::new(
+        crate::config::view_settings_path(sheprd_client::local_var),
+        crate::config::SoundConfig::default().volume,
+    ));
     cx.set_global(SharedSound(sound.clone()));
     sound
 }

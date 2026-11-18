@@ -5,6 +5,7 @@ use super::*;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer_warning;
 mod retired_answers;
+mod sounds;
 mod worker_panic;
 
 fn bridge() -> ConnectionBridge {
@@ -286,7 +287,7 @@ fn notifications_move_once_are_bounded_and_fenced_by_replacement() {
     assert_eq!(update.notifications.len(), PENDING_LIMIT);
     assert_eq!(update.notifications[0].title, "92");
     assert_eq!(update.notifications[7].title, "99");
-    assert_eq!(update.sound_events.len(), crate::sound::MAX_PENDING);
+    assert_eq!(update.sound_events.len(), sheprd_sound::MAX_PENDING);
     assert_eq!(update.sound_events[0].1.title, "68");
     assert_eq!(update.sound_events[31].1.title, "99");
     assert!(bridge.take_update().is_none());

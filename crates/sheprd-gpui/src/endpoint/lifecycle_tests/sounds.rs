@@ -3,7 +3,7 @@ use super::*;
 #[gpui::test]
 fn qa_play_sound_dispatches_without_daemon_or_pane(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    let (sound, played) = crate::sound::Service::recording();
+    let (sound, played) = sheprd_sound::Service::recording();
     view.update(cx, |view, _| {
         view.sound = sound.into();
         for endpoint in &mut view.endpoints {
@@ -58,7 +58,7 @@ fn inactive_endpoint_semantic_sound_reaches_worker_once(cx: &mut gpui::TestAppCo
     });
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (remote, mut server) = connected_endpoint("ssh:sound");
-    let (sound, played) = crate::sound::Service::recording();
+    let (sound, played) = sheprd_sound::Service::recording();
     view.update(cx, |view, _| {
         view.sound = sound.into();
         view.endpoints[0].detach_for_test();

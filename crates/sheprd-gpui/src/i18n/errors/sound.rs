@@ -2,7 +2,8 @@
 //! and the system's text stays as it is.
 
 use super::Localize;
-use crate::{i18n::fl, sound::Error};
+use crate::i18n::fl;
+use sheprd_sound::Error;
 
 impl Localize for Error {
     fn localize(&self) -> String {
@@ -17,8 +18,15 @@ impl Localize for Error {
                 error = source.to_string()
             ),
             Self::FileSize => fl!("error-sound-file-size"),
+            Self::Io(error) => error.to_string(),
+            Self::Path { path, source } => fl!(
+                "error-path",
+                path = path.display().to_string(),
+                error = source.localize()
+            ),
             Self::Stream(error) => fl!("error-sound-stream", error = error.to_string()),
             Self::Timeout => fl!("error-sound-timeout"),
+            Self::Toml(error) => error.to_string(),
         }
     }
 }

@@ -122,9 +122,13 @@ impl SheprdWindow {
                     None => mutes.silenced_offline(&endpoint.id),
                 })
                 .unwrap_or_default();
+            // `latest_snapshot` borrows `&self`, so resolve it before the
+            // `&mut` borrows; the clone is the one `Service::poll` already made.
+            let snapshot = endpoint.live.latest_snapshot().cloned();
+            let live = endpoint.live.sound_live(snapshot.as_deref());
             self.sound.poll(
                 &mut endpoint.sounds,
-                &mut endpoint.live,
+                live,
                 index == self.selected_endpoint && self.active,
                 Instant::now(),
                 |event| {

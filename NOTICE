@@ -29,7 +29,7 @@ palette projection, bounded parsing, conflict-aware atomic persistence, and
 GPUI indicator rendering. No upstream NOTICE file was present at that revision.
 
 The notification policy and bundled audio assets adapted or copied from Herdr
-are attributed in crates/sheprd-gpui/SOUND-NOTICE.md (Apache-2.0).
+are attributed in crates/sheprd-sound/SOUND-NOTICE.md (Apache-2.0).
 Specifically, assets/sounds/done.mp3 and assets/sounds/request.mp3 are unmodified
 copies from https://github.com/herdrdev/herdr at revision
 8ac9542757292f7a8d42a2d532bc6a8a33c7ffce. The sound configuration, notification

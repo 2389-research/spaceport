@@ -1,4 +1,5 @@
 use super::*;
+use sheprd_protocol::SemanticNotificationSound as Sound;
 
 #[test]
 fn play_sends_the_named_sound_whatever_the_notification_settings() {
