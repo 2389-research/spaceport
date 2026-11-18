@@ -334,10 +334,13 @@ mod runner {
             fed?;
             let written = drained?;
             if !status.success() {
-                return Err(Error::ScriptExit {
-                    status,
-                    stderr: diagnostic(&stderr.unwrap_or_default()),
-                });
+                // An unreadable tail is still a diagnostic: say so rather than
+                // reporting a silent exit as if stderr had been empty.
+                let stderr = match stderr {
+                    Ok(tail) => diagnostic(&tail),
+                    Err(_) => "(stderr unreadable)".to_owned(),
+                };
+                return Err(Error::ScriptExit { status, stderr });
             }
             Ok(written)
         })

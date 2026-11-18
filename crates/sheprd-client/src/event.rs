@@ -1,5 +1,6 @@
 //! What a connection reports to its owner, and the bounded, cancellable
-//! delivery that never blocks the worker on a slow consumer.
+//! delivery that waits in 10 ms slices so a stop is honored promptly; the
+//! worker stalls while the event queue stays full.
 
 use crate::{
     Error, Result, VersionMismatch,
@@ -45,6 +46,9 @@ pub enum ClientEvent {
     },
 }
 
+/// Queues `event`, retrying in 10 ms slices until the receiver accepts it or
+/// `stop` is set. The worker thread is blocked for as long as the queue stays
+/// full, so only cancellation ends the wait.
 pub(crate) fn deliver(
     tx: &Sender<ClientEvent>,
     mut event: ClientEvent,
