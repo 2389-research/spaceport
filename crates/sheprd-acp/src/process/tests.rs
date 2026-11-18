@@ -1,18 +1,16 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use super::*;
+use std::io::{BufRead, BufReader, Read};
 
 /// The agent exits at once on TERM, but leaves a tool behind that ignores
 /// it; stopping the chat must still end the tool.
 #[test]
 fn stopping_ends_a_tool_that_ignores_term_after_the_agent_exits() {
     let dir = tempfile::tempdir().unwrap();
-    let pid_file = dir.path().join("tool.pid");
-    let script = format!(
-        "(trap '' TERM; echo $$ > {path}; exec sleep 30) & \
-         while [ ! -s {path} ]; do sleep 0.01; done; exec sleep 30",
-        path = pid_file.display()
-    );
+    // The tool installs its TERM trap before it reports itself on the
+    // inherited stdout, so the pid arrives only once it is ignoring TERM.
+    let script = "(trap '' TERM; echo $$; exec sleep 30) & exec sleep 30";
     let spawned = spawn(
         &OsString::from("/bin/sh"),
         &[OsString::from("-c"), OsString::from(script)],
@@ -20,35 +18,29 @@ fn stopping_ends_a_tool_that_ignores_term_after_the_agent_exits() {
         dir.path(),
     )
     .unwrap();
-    let deadline = std::time::Instant::now() + Duration::from_secs(5);
-    let tool = loop {
-        if let Ok(text) = std::fs::read_to_string(&pid_file)
-            && let Ok(pid) = text.trim().parse::<i32>()
-        {
-            break rustix::process::Pid::from_raw(pid).unwrap();
-        }
-        assert!(
-            std::time::Instant::now() < deadline,
-            "the tool never started"
-        );
-        thread::sleep(POLL);
-    };
+    let mut output = BufReader::new(spawned.output);
+    let mut reported = String::new();
+    assert!(
+        output.read_line(&mut reported).unwrap() > 0,
+        "the tool never started"
+    );
+    let tool = rustix::process::Pid::from_raw(reported.trim().parse().unwrap()).unwrap();
+
     spawned.process.stop();
-    let deadline = std::time::Instant::now() + Duration::from_secs(5);
-    while rustix::process::test_kill_process(tool).is_ok() {
-        assert!(
-            std::time::Instant::now() < deadline,
-            "the tool outlived its chat"
-        );
-        thread::sleep(POLL);
-    }
+
+    // `stop` reaps the agent, so the tool holds the pipe's last writer:
+    // end of file is the tool's exit, which needs no deadline to observe.
+    let mut rest = Vec::new();
+    output.read_to_end(&mut rest).unwrap();
+    assert!(
+        rustix::process::test_kill_process(tool).is_err(),
+        "the tool outlived its chat"
+    );
 }
 
 #[cfg(unix)]
 #[test]
 fn the_agent_gets_the_environment_it_was_started_with() {
-    use std::io::Read as _;
-
     let dir = tempfile::tempdir().unwrap();
     let mut spawned = spawn(
         &OsString::from("/bin/sh"),
