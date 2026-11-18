@@ -214,7 +214,7 @@ fn excerpt(text: &str, range: Range<usize>) -> (String, Range<usize>) {
     let Some((start, _)) = before.grapheme_indices(true).nth_back(EXCERPT_LEAD - 1) else {
         return (text.to_owned(), range);
     };
-    let ellipsis = crate::truncate::ELLIPSIS;
+    let ellipsis = sheprd_truncate::ELLIPSIS;
     let moved = |offset: usize| offset - start + ellipsis.len_utf8();
     (
         format!("{ellipsis}{}", &text[start..]),

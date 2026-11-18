@@ -103,7 +103,7 @@ pub(crate) fn scope(endpoint: &crate::endpoint::Endpoint) -> Scope {
 
 /// Page titles run long; a tab shows the start of one.
 pub(super) fn tab_label(title: &str) -> SharedString {
-    crate::truncate::tab_title(title).into()
+    sheprd_truncate::tab_title(title).into()
 }
 
 pub(super) fn store(cx: &App) -> Option<&Store> {

@@ -40,6 +40,7 @@ sheprd-remote.workspace         = true
 sheprd-reorder.workspace         = true
 sheprd-sound.workspace          = true
 sheprd-usage.workspace          = true
+sheprd-truncate.workspace       = true
 sheprd-words.workspace          = true
 image                          = { features = ["bmp", "tiff"], workspace = true }
 keepawake.workspace            = true

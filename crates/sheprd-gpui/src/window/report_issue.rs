@@ -289,7 +289,7 @@ pub(super) fn report_issue_url(
         serializer.append_pair("install_method", method);
     }
     if let Some(log) = logs {
-        serializer.append_pair("logs", &crate::truncate::ellipsize(log.trim(), LOGS_LIMIT));
+        serializer.append_pair("logs", &sheprd_truncate::ellipsize(log.trim(), LOGS_LIMIT));
     }
     format!(
         "{}/issues/new?{}",

@@ -104,7 +104,6 @@ mod text_editing;
 mod theme_picker;
 mod titlebar;
 mod toggles;
-mod truncate;
 mod updates;
 mod usage;
 mod window;
