@@ -59,6 +59,33 @@ pub(crate) fn assert_localized<E: Localize + Display>(errors: &[E]) {
     }
 }
 
+/// The wire's own names for what crosses the connection: a surface is a pane's
+/// screen, a frame one message, a boot one run of the daemon, an endpoint the
+/// connection to a host, a bridge the SSH connection, a codec how a screen is
+/// encoded. A notice is read by a person, so the message says what happened
+/// instead; the typed variant and the log keep the wire's word. See
+/// `docs/notes-error-jargon.md`.
+const WIRE_WORDS: [&str; 7] = [
+    "boot",
+    "bridge",
+    "codec",
+    "endpoint",
+    "frame",
+    "herdr server",
+    "surface",
+];
+
+/// No message in `errors` says one of those words to the person reading it.
+pub(crate) fn assert_no_wire_words<E: Localize + Display>(errors: &[E]) {
+    crate::i18n::show(&Locale::FALLBACK);
+    for error in errors {
+        let shown = error.localize().to_lowercase();
+        for word in WIRE_WORDS {
+            assert!(!shown.contains(word), "{word} in {error}: {shown}");
+        }
+    }
+}
+
 /// Errors whose text is the system's or a parser's, shown as it is in
 /// every language.
 pub(crate) fn assert_verbatim<E: Localize + Display>(errors: &[E]) {

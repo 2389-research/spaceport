@@ -121,6 +121,7 @@ fn every_own_variant_has_a_message() {
     #[cfg(target_os = "macos")]
     errors.push(Error::PageStack);
     assert_localized(&errors);
+    assert_no_wire_words(&errors);
 }
 
 /// A message holding another error shows that error's own message.

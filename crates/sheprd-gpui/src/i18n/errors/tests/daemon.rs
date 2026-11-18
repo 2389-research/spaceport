@@ -16,12 +16,19 @@ fn exit_status() -> ExitStatus {
 
 #[test]
 fn every_daemon_variant_has_a_message() {
-    assert_localized(&[
+    let errors = every_daemon_error();
+    assert_localized(&errors);
+    assert_no_wire_words(&errors);
+}
+
+/// Every variant of the daemon's error, for the checks above.
+fn every_daemon_error() -> Vec<Error> {
+    vec![
         Error::Cancelled,
         Error::Exited(exit_status()),
         Error::Spawn {
             source: std::io::Error::other("no such file"),
         },
         Error::Timeout(PathBuf::from("/tmp/herdr.sock")),
-    ]);
+    ]
 }
