@@ -2,8 +2,10 @@
 //! deterministic API. It never writes to the PTY, opens links, or touches the
 //! clipboard; herdr-core answers terminal queries itself.
 
+#[cfg(test)]
+use crate::cells;
 use crate::{
-    MAX_SCROLLBACK_CELLS, MAX_SCROLLBACK_LINES, Size, cells,
+    MAX_SCROLLBACK_CELLS, MAX_SCROLLBACK_LINES, Size,
     damage::{Damage, Tracker},
     listener::Listener,
     modes::Modes,
@@ -15,7 +17,9 @@ use alacritty_terminal::{
     term::{Config, Osc52, TermMode},
     vte::ansi::{CursorShape, CursorStyle, Processor, Timeout},
 };
-use sheprd_protocol::{ClientPaneInputEvent, FrameData};
+use sheprd_protocol::ClientPaneInputEvent;
+#[cfg(test)]
+use sheprd_protocol::FrameData;
 use std::{fmt, time::Duration};
 
 /// Something the program did that is not on screen. Taking events coalesces
@@ -190,7 +194,10 @@ impl Emulator {
 
     /// The visible viewport, scrolled as [`Self::scroll`] left it. It does not
     /// reset damage: [`Damage::Full`] carries the frame later rows patch.
-    pub fn frame(&self) -> FrameData {
+    ///
+    /// Test only: the app paints what [`Self::take_damage`] returns.
+    #[cfg(test)]
+    pub(crate) fn frame(&self) -> FrameData {
         cells::frame(&self.term, &mut Vec::new())
     }
 
@@ -209,7 +216,10 @@ impl Emulator {
         crate::input::encode(input, &self.modes())
     }
 
-    pub fn title(&self) -> Option<&str> {
+    /// The title the program set. Test only: the app reads the title from
+    /// [`Event::Title`] in [`Self::take_events`].
+    #[cfg(test)]
+    pub(crate) fn title(&self) -> Option<&str> {
         self.title.as_deref()
     }
 

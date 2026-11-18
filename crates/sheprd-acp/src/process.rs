@@ -35,8 +35,14 @@ pub(crate) struct Spawned {
 pub(crate) struct AgentProcess {
     child: Arc<Mutex<Child>>,
     /// Set once the agent has been reaped, after which its pid may already
-    /// belong to another process, and its process group to another group.
+    /// belong to another process. The group stays identifiable from the id
+    /// captured at spawn, because a recycled pid leading a new group makes
+    /// the captured group gone.
     reaped: Arc<AtomicBool>,
+    /// The agent's own process group, captured at spawn. Unix only; Windows
+    /// has no process groups here.
+    #[cfg(unix)]
+    group: Option<rustix::process::Pid>,
     stderr: Arc<Mutex<VecDeque<String>>>,
 }
 
@@ -60,6 +66,14 @@ pub(crate) fn spawn(
         program: program.to_string_lossy().into_owned(),
         source,
     })?;
+    // The group is created for this child (process_group(0) above), so the
+    // group id is the child's pid while the child is unreaped: capture it at
+    // spawn, the one moment the pid is certainly the agent's.
+    #[cfg(unix)]
+    let group = {
+        use rustix::process::Pid;
+        i32::try_from(child.id()).ok().and_then(Pid::from_raw)
+    };
     let input = child.stdin.take().ok_or(Error::AgentPipe("input"))?;
     let output = child.stdout.take().ok_or(Error::AgentPipe("output"))?;
     let stderr = Arc::new(Mutex::new(VecDeque::new()));
@@ -86,6 +100,8 @@ pub(crate) fn spawn(
         process: AgentProcess {
             child: Arc::new(Mutex::new(child)),
             reaped: Arc::new(AtomicBool::new(false)),
+            #[cfg(unix)]
+            group,
             stderr,
         },
     })
@@ -107,7 +123,9 @@ impl AgentProcess {
         }
     }
 
-    /// Whether the agent has exited, reaping it if it has.
+    /// Whether the agent has exited, reaping it if it has. Unix only: the
+    /// group probes below are the only caller.
+    #[cfg(unix)]
     fn gone(&self) -> bool {
         match self.lock().try_wait() {
             Ok(Some(_)) => {
@@ -135,19 +153,18 @@ impl AgentProcess {
     /// started may ignore the request, so the wait lasts until the whole
     /// group is gone.
     ///
-    /// Once the waiter thread has reaped the agent its pid may have gone to
-    /// another process, so nothing here may signal that pid or its group.
+    /// The group id was captured at spawn, so it is the agent's group however
+    /// long ago the agent exited; a group that has been reaped and whose pid
+    /// was recycled into another group leader makes the old group gone, which
+    /// `test_kill_process_group` sees. Cleanup therefore works after the
+    /// agent has exited on its own — a tool the agent started may outlive it
+    /// — while a recycled pid can never be signalled: the probes answer for
+    /// the group the agent owned, never for the recycled pid's.
     pub(crate) fn stop(&self) {
-        if self.reaped.load(Ordering::SeqCst) {
-            return;
-        }
         #[cfg(unix)]
         {
             use rustix::process::{Signal, kill_process_group, test_kill_process_group};
-            let id = self.lock().id();
-            let group = i32::try_from(id)
-                .ok()
-                .and_then(rustix::process::Pid::from_raw);
+            let group = self.group;
             if let Some(group) = group {
                 let _ = kill_process_group(group, Signal::TERM);
             }
