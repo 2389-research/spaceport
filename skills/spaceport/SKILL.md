@@ -1,6 +1,6 @@
 ---
 name: spaceport
-description: "Use Spaceport client commands for native chat, files, notes, settings, and window state inside Herdr. The browser commands have been removed; share a URL or file path for the user to open."
+description: "Use Spaceport client commands for native chat, notes, settings, and window state inside Herdr. The browser commands have been removed; share a URL or file path for the user to open."
 ---
 <!-- spaceport-managed-skill v1: Spaceport keeps this file up to date. Edit a copy under another name to keep your changes. -->
 
@@ -23,7 +23,7 @@ for what only Spaceport shows or keeps.
 | Silence this worktree's notifications | `spaceport worktree mute` |
 | Silence a whole host's notifications | `spaceport host mute studio` |
 | Show the Automations section while Core has no job feed | `spaceport ui panel automations` |
-| Open a dev server in a tab, forwarded when you run on an SSH host | `spaceport ports open 3000` |
+| Open a dev server in your system browser, forwarding a remote port to this machine first | `spaceport ports open 3000` |
 | See the processes under a pane, with CPU and memory | `spaceport processes` |
 | Start a chat with another agent in a new tab, shown as a native chat view | `spaceport chat new claude`, then `spaceport chat` for its status |
 | Render existing Linux Codex/Claude conversations in their current panes | `spaceport config set chat.render_existing true` (needs `features.acp_chats`, on by default); `chat status --json` reports the session and input mode |
@@ -34,10 +34,16 @@ for what only Spaceport shows or keeps.
 | Check for a Spaceport preview update (installed macOS preview only) | `spaceport run check-for-updates` |
 | Check whether the app runs, and which windows and hosts it has | `spaceport status` |
 
-Add `--json` to any command for machine-readable output; errors then come
-back as `{"error": {"code", "message"}}`. Exit statuses are the ones in the
-table above. A command acts in the window that shows your workspace; it
-exits 5 rather than act in another session's window.
+Add `--json` after the command word for machine-readable output; errors then
+come back as `{"error": {"code", "message"}}`. `spaceport events --follow`
+writes one JSON object per line instead of one document. A command acts in
+the window that shows your workspace; it exits 5 rather than act in another
+session's window.
+
+Exit statuses: 0 done, 1 refused or failed, 2 invalid arguments, 3 Spaceport
+is not running, 4 nothing yet, 5 not found, 6 busy, 7 timed out, 8 unavailable
+on this platform or in this version of the app. `spaceport COMMAND --help`
+spells each one out.
 
 Run `spaceport --help` to list every command, and `spaceport COMMAND --help`
 for one.

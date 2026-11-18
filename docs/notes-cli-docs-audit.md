@@ -36,7 +36,7 @@ rg -n 'pub const (REFUSED|USAGE|NOT_RUNNING|NOTHING|NOT_FOUND|BUSY|TIMEOUT|UNSUP
 - Bounded-request claims (256 KiB, 600 s, "a few at a time") are true.
 - No test ties `docs/cli.md` or `skills/spaceport/SKILL.md` to the source:
   `rg -n 'cli\.md|docs/cli' crates/ --include=*.rs` returns nothing. Drift in
-  these two files is therefore unchecked by CI today.
+  these two files is therefore unchecked by CI today. (fixed in 9304c117b)
 
 ## Findings
 
@@ -130,44 +130,55 @@ Do these in order; each is one commit-sized change, and the docs-only ones
 must keep `just check-file-size` and `just check-sorted` green (both files are
 short, so this is a wording exercise, not a split).
 
-1. **P1 F03** `docs/cli.md:221`: 36 → 37.
+Status: every item below is done and annotated with the commit that did it.
+`docs/notes-cli-docs-fixes.md` records items 1-4 and the structural test;
+`docs/notes-cli-docs-fixes-2.md` records items 5-12.
+
+1. **P1 F03** `docs/cli.md:221`: 36 → 37. (fixed in 372dc39cb)
 2. **P1 F01/F02** `docs/cli.md`: add `skill` and `wait` to the command tables
    (`skill` belongs in "Settings and services" next to
    `integrations install-skill`; `wait window|online|tab-closed ID
    [--timeout SECONDS]` belongs in "Events"), naming the default 60 s and the
-   600 s cap.
+   600 s cap. (fixed in 372dc39cb)
 3. **P1 F04** rewrite the exit-4 row in `docs/cli.md:50` and the same line in
    `control/client/help.rs:10`, then regenerate
    `control/client/tests/family_help.txt` (snapshot, `family_help.rs:61-69`).
    Drop "no pull request"; cover no notes / no event / wait unmet / no ports /
-   no usage / no chat panes / no log yet / key not set.
+   no usage / no chat panes / no log yet / key not set. (fixed in 372dc39cb)
 4. **P1 F05** fix "the host cannot be reached" in `docs/cli.md:110` **and**
    `cli/control/chat.rs:4` so both say exit 1 for an unreachable host and keep
-   exit 8 for missing `sheprd-acp`/agent/ACP-off.
+   exit 8 for missing `sheprd-acp`/agent/ACP-off. (fixed in 372dc39cb)
 5. **P1 F06** `docs/cli.md:166-168`: drop "notes kept for a pane" and say the
-   note event is a worktree note change.
+   note event is a worktree note change. (fixed in eb70b5fe8)
 6. **P1 F07** `docs/cli.md:35-36` and `skills/spaceport/SKILL.md:37-38`: say
    one JSON document per answer and one JSON object per line for
-   `events --follow`, and that `--json` follows the command word.
+   `events --follow`, and that `--json` follows the command word. (fixed in
+   eb70b5fe8)
 7. **P1 F11** `skills/spaceport/SKILL.md:38`: replace "the table above" with
-   the codes themselves or a pointer to `spaceport COMMAND --help`.
+   the codes themselves or a pointer to `spaceport COMMAND --help`. (fixed in
+   eb70b5fe8)
 8. **P2 F08** fix `COMMANDS_USAGE` (`cli/control/plain.rs:75-76`) to stop
    promising shortcuts, or add shortcuts to `commands` output (the doc at
-   `docs/cli.md:83` is already right; the help text is wrong).
+   `docs/cli.md:83` is already right; the help text is wrong). (fixed in
+   a2ef7b2d7)
 9. **P2 F14/F15/F16/F20** fill in the missing behavior notes in the existing
    table rows (`config check` fonts, `theme`/`font` app requirement and
-   `light:/dark:`, `logs` bounds and exit 4, `ui panel` refusals).
-10. **P2 F09/F10** tighten the two protocol/option paragraphs.
+   `light:/dark:`, `logs` bounds and exit 4, `ui panel` refusals). (fixed in
+   f9e56880b)
+10. **P2 F09/F10** tighten the two protocol/option paragraphs. (fixed in
+    eb70b5fe8 for F09's `--window` sentence and 6a447e140 for F10's request
+    shape)
 11. **P2 F12/F13** fix the two skill prose claims ("in a tab", "files").
+    (fixed in c378b7db8)
 12. **P3** F17-F24: ranges, aliases, `config get` wording, `--build-info`/
-    `--socket`, `run` unknown-name exit.
+    `--socket`, `run` unknown-name exit. (fixed in 788ec28ec)
 13. **Structural** (recommended, and the reason this drift keeps happening):
     add a test beside `family_help.rs` that asserts (a) every
     `cli::control::FAMILIES` name appears in `docs/cli.md`, (b) the documented
     protocol version equals `PROTOCOL_VERSION`, and (c) every
     `spaceport …` command line in `skills/spaceport/SKILL.md` parses through
     `cli::control::parse`. That converts F01/F02/F03/F21 from review findings
-    into CI failures.
+    into CI failures. (fixed in 9304c117b)
 
 ## Appendix A: command surface as documented (`docs/cli.md`)
 

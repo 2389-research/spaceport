@@ -244,7 +244,7 @@ spaceport run COMMAND
 
 === commands ===
 spaceport commands
-    The commands `run` accepts, with their shortcuts.
+    The commands `run` accepts, with their labels.
 
 === logs ===
 spaceport logs [--lines N] [--path]

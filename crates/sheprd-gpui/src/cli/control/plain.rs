@@ -73,7 +73,7 @@ pub(super) fn run(args: &mut Args) -> Result<ControlCommand, CliError> {
 }
 
 pub(super) const COMMANDS_USAGE: &str =
-    "spaceport commands\n    The commands `run` accepts, with their shortcuts.";
+    "spaceport commands\n    The commands `run` accepts, with their labels.";
 
 pub(super) fn commands(_: &mut Args) -> Result<ControlCommand, CliError> {
     Ok(ControlCommand::Commands)
