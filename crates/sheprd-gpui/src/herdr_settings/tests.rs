@@ -1,3 +1,5 @@
+// ABOUTME: Shares real-file runtime settings fixtures and topic tests.
+// ABOUTME: Keeps Unix-only persistence coverage gated once at each module.
 use super::*;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
@@ -13,7 +15,6 @@ mod permissions;
 mod reading;
 mod save_safety;
 // Saving is Unix-only; Windows refuses every shared edit.
-#[cfg(unix)]
 #[cfg(unix)]
 mod symlinks;
 mod theme_palettes;

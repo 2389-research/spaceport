@@ -4,7 +4,7 @@
 //! The Store keeps app tabs; caller targets still select their workspace.
 mod arrive;
 
-use super::{Watches, main_windows, not_found, socket, valid_caller};
+use super::{Watches, not_found, session_window, socket, valid_caller};
 use crate::{
     SheprdWindow,
     browser::{Location, Store, Tab, TabId},
@@ -30,7 +30,7 @@ pub(super) fn serve(
         return;
     }
     match call.op {
-        TabOp::List {} => incoming.respond(list(cx)),
+        TabOp::List {} => incoming.respond(list_for(&caller, cx)),
         TabOp::Focus { id } => incoming.respond(focus(&caller, id, cx)),
         TabOp::Close { id } => incoming.respond(close(&caller, id, cx)),
         TabOp::Devices => arrive::devices(&caller, incoming, watches, cx),
@@ -76,13 +76,27 @@ fn info(tab: &Tab) -> Option<TabInfo> {
     })
 }
 
-fn list(cx: &App) -> Response {
+fn list_for(caller: &Caller, cx: &mut App) -> Response {
+    let handle = match session_window(caller, cx) {
+        Ok(handle) => handle,
+        Err(response) => return response,
+    };
+    list_in(caller, handle, cx)
+}
+
+#[cfg(test)]
+fn list(cx: &mut App) -> Response {
+    list_for(&Caller::default(), cx)
+}
+
+fn list_in(caller: &Caller, handle: WindowHandle<SheprdWindow>, cx: &App) -> Response {
     let tabs = cx
         .try_global::<Store>()
         .map(|store| {
             store
                 .tabs()
                 .filter(|tab| !tab.requires_core() || crate::core_feature::enabled(cx))
+                .filter(|tab| showing_in(caller, handle, tab, cx).is_some())
                 .filter_map(info)
                 .collect()
         })
@@ -119,55 +133,88 @@ fn busy() -> Response {
     )
 }
 
-/// The windows a request may act in: the one `--window` names, else all,
-/// frontmost first.
-fn windows(caller: &Caller, cx: &App) -> Vec<WindowHandle<SheprdWindow>> {
-    let mut windows = main_windows(cx);
-    if let Some(id) = caller.window {
-        windows.retain(|handle| handle.window_id().as_u64() == id);
-    }
-    windows
-}
-
 struct Showing {
     window: WindowHandle<SheprdWindow>,
     endpoint: Option<usize>,
 }
 
-/// A window listing the workspace `tab` belongs to, and the endpoint there.
-fn showing(caller: &Caller, tab: &Tab, cx: &App) -> Option<Showing> {
-    windows(caller, cx).into_iter().find_map(|handle| {
-        if let Some(key) = tab.core_group() {
-            let available = handle
-                .read_with(cx, |view, cx| view.core_group_available(&key, cx))
-                .ok()?;
-            return available.then_some(Showing {
+/// Checks membership in one resolved window and the caller's exact session.
+fn showing_in(
+    caller: &Caller,
+    handle: WindowHandle<SheprdWindow>,
+    tab: &Tab,
+    cx: &App,
+) -> Option<Showing> {
+    if caller
+        .workspace_id
+        .as_ref()
+        .is_some_and(|workspace| workspace != &tab.workspace_id)
+    {
+        return None;
+    }
+    handle
+        .read_with(cx, |view, cx| {
+            let key = (tab.scope.clone(), tab.workspace_id.clone());
+            if view
+                .browser
+                .hidden
+                .hides(&key, &crate::browser::Pick::Page(tab.id))
+            {
+                return None;
+            }
+            if let Some(key) = tab.core_group() {
+                if caller.workspace_id.is_some() || caller.daemon_socket.is_some() {
+                    return None;
+                }
+                return view.core_group_available(&key, cx).then_some(Showing {
+                    window: handle,
+                    endpoint: None,
+                });
+            }
+            let index = view.endpoint_showing(&tab.scope, &tab.workspace_id)?;
+            let caller_endpoint = if caller.workspace_id.is_some() || caller.daemon_socket.is_some()
+            {
+                let target = super::target(caller);
+                target
+                    .strictness()
+                    .iter()
+                    .find_map(|strict| view.control_target(&target, *strict))?
+                    .0
+            } else {
+                view.selected_endpoint
+            };
+            if index != caller_endpoint {
+                return None;
+            }
+            Some(Showing {
                 window: handle,
-                endpoint: None,
-            });
-        }
-        let index = handle
-            .read_with(cx, |view, _| {
-                view.endpoint_showing(&tab.scope, &tab.workspace_id)
+                endpoint: Some(index),
             })
-            .ok()
-            .flatten()?;
-        Some(Showing {
-            window: handle,
-            endpoint: Some(index),
         })
-    })
+        .ok()
+        .flatten()
+}
+
+fn showing(caller: &Caller, tab: &Tab, cx: &mut App) -> Result<Showing, Response> {
+    let handle = session_window(caller, cx)?;
+    showing_in(caller, handle, tab, cx)
+        .ok_or_else(|| not_found(format!("The selected session does not show tab {}", tab.id)))
+}
+
+/// Validates an existing tab before starting a closure wait.
+pub(super) fn wait_target(
+    caller: &Caller,
+    id: u64,
+    cx: &mut App,
+) -> Result<WindowHandle<SheprdWindow>, Response> {
+    let tab = find(id, cx)?;
+    Ok(showing(caller, &tab, cx)?.window)
 }
 
 /// Switches a window to `tab`'s workspace and shows the tab there. Shown
 /// against its workspace, the tab is in front once the switch lands.
 fn reveal(caller: &Caller, tab: &Tab, cx: &mut App) -> Result<(), Response> {
-    let Some(showing) = showing(caller, tab, cx) else {
-        return Err(not_found(format!(
-            "No Spaceport window shows workspace {}, which tab {} belongs to",
-            tab.workspace_id, tab.id
-        )));
-    };
+    let showing = showing(caller, tab, cx)?;
     showing
         .window
         .update(cx, |view, window, cx| {
@@ -204,32 +251,27 @@ fn focus(caller: &Caller, id: u64, cx: &mut App) -> Response {
     }
 }
 
-/// Closes a tab in the window showing its workspace, which moves its group
-/// to another tab; with no such window, in the store, which every window
-/// follows.
+/// Closes only a tab available in the resolved caller window and session.
 fn close(caller: &Caller, id: u64, cx: &mut App) -> Response {
     let tab = match find(id, cx) {
         Ok(tab) => tab,
         Err(response) => return response,
     };
-    match showing(caller, &tab, cx) {
-        Some(showing) => {
-            let closed = showing.window.update(cx, |view, window, cx| {
-                close_in_window(view, &tab, window, cx)
-            });
-            if !matches!(closed, Ok(true)) {
-                return not_found(format!("No Spaceport window shows tab {id}"));
-            }
+    let showing = match showing(caller, &tab, cx) {
+        Ok(showing) => showing,
+        Err(response) => return response,
+    };
+    let closed = showing.window.update(cx, |view, window, cx| {
+        if view.menu.page.is_some() {
+            return Err(busy());
         }
-        // A named window must be the one showing the tab: a stale or wrong
-        // `--window` never closes a tab elsewhere.
-        None => {
-            if let Some(window) = caller.window {
-                return not_found(format!("Window {window} does not show tab {id}"));
-            }
-        }
+        Ok(close_in_window(view, &tab, window, cx))
+    });
+    match closed {
+        Ok(Ok(true)) => {}
+        Ok(Err(response)) => return response,
+        _ => return not_found(format!("No Spaceport window shows tab {id}")),
     }
-    Store::update(cx, |store| store.close(tab.id));
     Response::done(format!("Closed tab {id} ({})", tab.title))
 }
 

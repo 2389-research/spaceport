@@ -319,11 +319,11 @@ error MissingArgument { command: "notes set", what: "TEXT" }: notes set requires
 $ notes set waiting on review
 json=false window=none {"method":"work","op":{"op":"set_note","text":"waiting on review"}}
 $ notes set "waiting on review" --json
-json=true window=none {"method":"work","op":{"op":"set_note","text":"waiting on review"}}
+json=false window=none {"method":"work","op":{"op":"set_note","text":"waiting on review --json"}}
 $ notes set ""
 json=false window=none {"method":"work","op":{"op":"set_note","text":""}}
 $ notes set -- --json
-error MissingArgument { command: "notes set", what: "TEXT" }: notes set requires TEXT
+json=false window=none {"method":"work","op":{"op":"set_note","text":"--json"}}
 $ notes clear extra
 error Unexpected { command: "notes", argument: "extra" }: notes: unexpected extra
 $ notes list extra

@@ -23,7 +23,7 @@ mod tests;
 impl SettingsWindow {
     pub(in crate::settings_window) fn open_chat_env_settings(&mut self, cx: &mut Context<Self>) {
         if self.chat_env.input.is_none() {
-            self.chat_env.input = Some(cx.new(SearchInput::new));
+            self.chat_env.input = Some(cx.new(crate::settings_window::ui::text_input));
         }
         self.sync_chat_env_field(cx);
     }
@@ -123,5 +123,14 @@ impl SettingsWindow {
                     }),
                 ),
         )
+    }
+}
+
+impl ChatEnvSettings {
+    pub(in crate::settings_window) fn composing(&self, window: &Window, cx: &App) -> bool {
+        self.input.as_ref().is_some_and(|input| {
+            let input = input.read(cx);
+            input.focus.is_focused(window) && input.is_composing()
+        })
     }
 }

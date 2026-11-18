@@ -259,8 +259,9 @@ what was deferred to CI.
   runs workspace tests with default and all features, including headless UI and
   CLI tests, split like `checks` into parallel `default` and `all` legs. The
   `windows-native` job runs `live_gui` (the `test-gui` and `test-sidebar`
-  equivalents) against a pinned `herdr.exe`, and the release-mode performance
-  budget, on both Windows runners, except the live-daemon test on
+  equivalents) against a pinned `herdr.exe` on both Windows runners.
+  Only the unchanged release-mode performance budget remains gated by
+  `WINDOWS_ENABLED` until Kata h8g5 is fixed. The live-daemon test skips
   ARM64, where the emulated daemon ignores Enter; the optimized Windows build
   and its installer run in `windows-package` when their inputs change. Keep the `cfg(unix)`/`cfg(windows)`
   split honest and say plainly what a platform cannot do instead of stubbing

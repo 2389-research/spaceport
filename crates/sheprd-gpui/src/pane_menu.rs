@@ -1,3 +1,5 @@
+// ABOUTME: Owns exact pane actions, rename correlation, and popup lifecycle.
+// ABOUTME: Keeps active pane targets and process monitors separate from departure paint.
 // i18n: migrated
 use crate::direction::Logical;
 use crate::i18n::fl;
@@ -10,10 +12,16 @@ use serde_json::{Value, json};
 use sheprd_client::{Method, protocol::ClientShellSnapshot};
 
 mod moves;
+mod paint;
 mod processes;
+mod render;
+pub(crate) use paint::Paint;
 
 #[cfg(test)]
 pub(crate) mod tests;
+
+#[cfg(test)]
+pub(crate) use tests::departure::fixture as departure_fixture;
 
 #[derive(Clone)]
 struct Target {
@@ -591,7 +599,7 @@ impl SheprdWindow {
         ) {
             if key == "escape" && self.menu.page == Some(Page::PaneProcesses) {
                 self.dismiss_menu(window, cx);
-            } else if !self.pane_processes_key(key, cx) {
+            } else if !self.pane_processes_key(event, cx) {
                 return;
             }
             cx.stop_propagation();
@@ -647,113 +655,5 @@ impl SheprdWindow {
             }
             _ => {}
         }
-    }
-
-    pub(super) fn render_pane_menu(&self, cx: &mut Context<Self>) -> Div {
-        let Some(pane) = &self.menu.pane else {
-            return div();
-        };
-        match self.menu.page {
-            Some(Page::PaneProcesses) => return self.render_pane_processes(pane, cx),
-            Some(Page::KillProcesses) => return self.render_kill_processes(pane, cx),
-            _ => {}
-        }
-        let mut body = div().flex().flex_col();
-        if pane.moving.is_some() {
-            body = self.render_pane_move_pending();
-        } else if self.menu.page == Some(Page::Pane) {
-            for (index, action) in pane.actions().into_iter().enumerate() {
-                body = body.child(
-                    div()
-                        .id(("pane-menu-action", index))
-                        .debug_selector(move || format!("pane-menu-{index}"))
-                        .min_h(px(self.config.ui.line_height() + 12.))
-                        .px(px(8.))
-                        .row()
-                        .items_center()
-                        .cursor_pointer()
-                        .when(pane.selected == Some(index), |row| {
-                            row.bg(rgb(self.theme.active))
-                        })
-                        .hover(|row| row.bg(rgb(self.theme.active)))
-                        .child(
-                            // One line: the panel widens to fit it, and a
-                            // window too narrow for that ends it with "…".
-                            div()
-                                .debug_selector(move || format!("pane-menu-label-{index}"))
-                                .min_w_0()
-                                .truncate()
-                                .child(action.label(&pane.target)),
-                        )
-                        .on_hover(cx.listener(move |this, hovered, _, cx| {
-                            if *hovered && let Some(pane) = &mut this.menu.pane {
-                                pane.selected = Some(index);
-                                cx.notify();
-                            }
-                        }))
-                        .on_click(cx.listener(move |this, _, window, cx| {
-                            this.activate_pane_menu(action, window, cx)
-                        })),
-                );
-            }
-        } else {
-            body =
-                body.p(px(8.))
-                    .gap(px(12.))
-                    .child(
-                        div()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("pane-menu-rename-title")),
-                    )
-                    .child(
-                        div()
-                            .text_color(rgb(self.theme.subtext()))
-                            .child(fl!("pane-menu-rename-hint")),
-                    )
-                    .when_some(pane.input.clone(), |body, input| {
-                        if pane.pending.is_some() {
-                            body.child(div().child(input.read(cx).text().to_owned()))
-                        } else {
-                            body.child(input)
-                        }
-                    })
-                    .child(
-                        div()
-                            .row()
-                            .justify_end()
-                            .gap(px(8.))
-                            .child(
-                                div()
-                                    .id("pane-rename-cancel")
-                                    .p(px(6.))
-                                    .cursor_pointer()
-                                    .child(fl!("pane-menu-cancel"))
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.dismiss_menu(window, cx)
-                                    })),
-                            )
-                            .child(
-                                div()
-                                    .id("pane-rename-submit")
-                                    .p(px(6.))
-                                    .rounded(px(crate::config::corners::CONTROL))
-                                    .bg(rgb(self.theme.active))
-                                    .cursor_pointer()
-                                    .child(if pane.pending.is_some() {
-                                        fl!("pane-menu-renaming")
-                                    } else {
-                                        fl!("pane-menu-rename-submit")
-                                    })
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.submit_pane_rename(window, cx)
-                                    })),
-                            ),
-                    );
-        }
-        body.when_some(pane.error.clone(), |body, error| {
-            // No width of its own, so the labels set the panel's width and
-            // the message wraps inside it.
-            body.child(div().w_0().min_w_full().p(px(8.)).child(error))
-        })
     }
 }

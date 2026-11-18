@@ -1,12 +1,15 @@
+// ABOUTME: Resolves configured sidebar tokens from borrowed indexed metadata.
+// ABOUTME: Keeps missing values, status rules, and shared text styles consistent.
 //! Resolve sidebar tokens, omitting missing values and empty rows.
 
 use super::{
+    IndexedSnapshot,
     agents::{agent_names, agent_place, state_label, status_key, status_text},
     segment_budgets,
 };
 use crate::config::{AgentLayout, AgentToken, Rows, SpaceLayout, SpaceToken, TokenStyle};
 use gpui::SharedString;
-use sheprd_client::protocol::{AgentStatus, ClientShellAgent, ClientShellSnapshot};
+use sheprd_client::protocol::{AgentStatus, ClientShellAgent};
 use std::collections::HashMap;
 use unicode_width::UnicodeWidthStr;
 
@@ -95,7 +98,7 @@ fn resolve_rows<T>(
 pub(super) fn agent_rows(
     layout: &AgentLayout,
     agent: &ClientShellAgent,
-    snapshot: &ClientShellSnapshot,
+    snapshot: &IndexedSnapshot<'_>,
     machine: Option<&str>,
 ) -> Option<Vec<Vec<ResolvedToken>>> {
     let (workspace, tab) = agent_place(agent, snapshot)?;
@@ -105,9 +108,7 @@ pub(super) fn agent_rows(
         .and_then(sheprd_client::text::caption)
         .or_else(|| {
             snapshot
-                .panes
-                .iter()
-                .find(|pane| pane.pane_id == agent.pane_id)
+                .pane(&agent.pane_id)
                 .and_then(|pane| pane.label.as_deref())
         });
     let status = match agent.agent_status {

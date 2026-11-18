@@ -2,7 +2,8 @@
 // ABOUTME: Keeps typed preferences independent of runtime process ownership.
 //! GUI settings. Spaceport owns its managed defaults, local overrides and
 //! private view settings. `spaceport/config.local.toml` holds persistent user
-//! overrides; no local reader uses Herdr's own config file.
+//! overrides. View readers use only Spaceport files; runtime history uses
+//! a separate adapter for Herdr's config.
 // i18n: migrated
 use crate::{
     Result,
@@ -263,7 +264,7 @@ impl Default for Config {
             edge_rail: false,
             favorite_themes: Vec::new(),
             features: Features::default(),
-            focus_follows_mouse: true,
+            focus_follows_mouse: false,
             herdr_2_terminals: false,
             herdr_core_enabled: false,
             icon_font_missing: false,
@@ -650,7 +651,7 @@ impl Config {
         // keep-sorted start
         config.confirm_close_pane = settings.confirm_close_pane.unwrap_or(true);
         config.confirm_close_tab = settings.confirm_close_tab.unwrap_or(true);
-        config.focus_follows_mouse = settings.focus_follows_mouse.unwrap_or(true);
+        config.focus_follows_mouse = settings.focus_follows_mouse.unwrap_or(false);
         config.show_agents = settings.show_agents.unwrap_or(true);
         config.show_agents_header = settings.show_agents_header.unwrap_or(true);
         config.show_device_icons = settings.show_device_icons.unwrap_or(true);

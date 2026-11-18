@@ -54,6 +54,7 @@ impl Page {
             Self::Keybinds => fl!("menu-page-keyboard-shortcuts"),
             Self::KillProcesses => fl!("menu-page-end-processes"),
             Self::Menu => fl!("menu-page-menu"),
+            Self::Messages => fl!("commands-messages"),
             Self::MovePane => fl!("menu-page-move-pane"),
             Self::MoveTab => fl!("menu-page-move-tab"),
             Self::OpenLink => fl!("menu-page-open-link"),

@@ -1,3 +1,5 @@
+// ABOUTME: Paints the compact sidebar rail from workspace and indexed agent rows.
+// ABOUTME: Preserves host grouping, navigation, and status accessibility.
 //! The collapsed sidebar's compact rail, as Herdr's default
 //! `ui.sidebar_collapsed_mode = "compact"` draws it: per host a small header
 //! box, then a status mark per workspace and per agent. The header box stays
@@ -378,7 +380,7 @@ impl SheprdWindow {
             }
             let selected = index == self.selected_endpoint;
             let live = self.live_of(index);
-            let Some(snapshot) = live.snapshot.as_deref() else {
+            let Some(snapshot) = live.indexed_snapshot() else {
                 continue;
             };
             let endpoint_id = &endpoint.id;
@@ -387,7 +389,7 @@ impl SheprdWindow {
             let key = format!("rail-agent-{endpoint_id}-{id}");
             let navigate_endpoint = endpoint_id.clone();
             let focused = selected && agent.focused;
-            let place = agent_place(agent, snapshot);
+            let place = agent_place(agent, &snapshot);
             let place = place.map(|(workspace, tab)| match tab {
                 Some(tab) => format!("{workspace} / {tab}"),
                 None => workspace.to_owned(),

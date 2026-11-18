@@ -1,3 +1,5 @@
+// ABOUTME: Checks endpoint negotiation and rejection before the first coherent screen.
+// ABOUTME: Exercises the real worker without discovering a personal daemon.
 use super::*;
 
 #[test]
@@ -66,7 +68,7 @@ fn malformed_handshake_and_patch_fail_closed() {
             .unwrap()
             .unwrap_err()
             .to_string()
-            .contains("patch before baseline")
+            .contains("screen update before the initial screen")
     );
 }
 

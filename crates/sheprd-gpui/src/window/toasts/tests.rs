@@ -5,6 +5,7 @@ use crate::{
 use gpui::{TestAppContext, px, size};
 use std::time::Instant;
 
+mod announcements;
 mod badge;
 mod described;
 mod leaving;

@@ -1,3 +1,5 @@
+// ABOUTME: Checks session edit validation and exact target ownership with isolated fixtures.
+// ABOUTME: Keeps confirmation and cancellation tests separate from accepted mutations.
 use super::{Edit, Target};
 use crate::sidebar::layout_tests::{fixture_window, full_draw};
 use crate::{
@@ -7,6 +9,8 @@ use crate::{
 };
 use gpui::{TestAppContext, point, px, size};
 use sheprd_client::{ConnectTarget, LocalSession, SessionState};
+
+mod departure;
 
 #[gpui::test]
 fn create_form_owns_text_validates_and_returns_focus(cx: &mut TestAppContext) {

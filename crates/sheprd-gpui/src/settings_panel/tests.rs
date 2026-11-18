@@ -26,6 +26,7 @@ fn followed_theme_updates_startup_cache_without_persisting_session_font_size(
     });
     cx.run_until_parked();
     view.read_with(cx, |view, cx| {
+        let expected = expected.styled_for(&view.config);
         assert_eq!(view.theme, expected);
         assert_eq!(cx.global::<crate::app::InitialAppearance>().theme, expected);
     });
@@ -40,6 +41,7 @@ fn followed_theme_updates_startup_cache_without_persisting_session_font_size(
         view.config.terminal.size = 28.;
         view.settings.shared = Some(shared);
         view.apply_shared_theme(cx);
+        let expected = expected.styled_for(&view.config);
         let appearance = cx.global::<crate::app::InitialAppearance>();
         assert_eq!(appearance.theme, expected);
         assert_eq!(appearance.config.terminal.size, saved_size);

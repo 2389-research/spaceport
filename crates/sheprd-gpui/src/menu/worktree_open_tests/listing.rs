@@ -55,7 +55,7 @@ fn open_worktree_listing_is_correlated_atomic_bounded_and_fallible(cx: &mut Test
         );
         assert_eq!(
             menu.error.as_deref(),
-            Some("method not advertised by endpoint")
+            Some(crate::i18n::fl!("error-client-unsupported-method").as_str())
         );
         pending(&mut menu, cx);
         menu.apply_worktree_list_response(

@@ -8,7 +8,7 @@ use crate::{
     config::{TabLayoutMode, preferences::Preference},
     herdr_settings::{Edit, TabBarPosition},
     i18n::fl,
-    settings_window::remote_history::HostState,
+    settings_window::host_history::{HostState, Target},
 };
 use gpui::{prelude::*, *};
 
@@ -19,7 +19,6 @@ impl SettingsWindow {
         let shared = self.shared.as_ref();
         let position = shared.map(|shared| shared.tab_bar_position);
         let hide = shared.is_some_and(|shared| shared.hide_tab_bar_when_single_tab);
-        let history = shared.is_some_and(|shared| shared.pane_history);
         let layouts: Vec<_> = TabLayoutMode::ALL
             .iter()
             .map(|&mode| (mode, mode.label()))
@@ -65,7 +64,7 @@ impl SettingsWindow {
             .child(ui::section(
                 theme,
                 &fl!("settings-tabs-section-tab-bar"),
-                Some(ui::Source::Herdr),
+                Some(ui::Source::View),
             ))
             .child(
                 self.gate_shared(ui::row(theme, &catalog::TABS_POSITION))
@@ -135,53 +134,76 @@ impl SettingsWindow {
                 &fl!("settings-tabs-section-session-restore"),
                 None,
             ))
-            .child(
-                self.gate_shared(
-                    ui::row(theme, &catalog::TABS_PANE_HISTORY).tag(ui::Source::Herdr),
-                )
-                .switch(
-                    ui::toggle(theme, "tabs-pane-history-toggle", history, ready).when(
-                        ready,
-                        |toggle| {
-                            toggle.on_click(cx.listener(move |this, _, _, cx| {
-                                this.save_shared(Edit::PaneHistory(!history), cx)
-                            }))
-                        },
-                    ),
-                ),
-            );
-        for (index, host) in self.remote_history.hosts().iter().enumerate() {
-            let (checked, settled) = match &host.state {
-                HostState::Ready(history) => (history.enabled, true),
-                HostState::Saving(history) => (history.enabled, false),
-                HostState::Loading | HostState::Failed(_) => (false, false),
-            };
-            let enabled = open && settled;
-            let target = host.target.clone();
-            let note = match &host.state {
-                HostState::Loading => fl!("settings-tabs-host-loading"),
-                HostState::Saving(_) => fl!("settings-tabs-host-saving"),
-                HostState::Failed(error) => {
-                    fl!("settings-tabs-host-failed", error = error.to_string())
-                }
-                HostState::Ready(_) => fl!("settings-tabs-host-ready"),
-            };
+            .child(self.history_row(
+                ui::row(theme, &catalog::TABS_PANE_HISTORY).tag(ui::Source::Herdr),
+                Target::Local,
+                "tabs-pane-history-toggle".into(),
+                cx,
+            ));
+        for (index, host) in self
+            .host_history
+            .hosts()
+            .iter()
+            .filter(|host| matches!(host.target, Target::Ssh(_)))
+            .enumerate()
+        {
             let id = format!("tabs-pane-history-host-{index}");
-            page = page.child(
-                ui::data_row(theme, id.clone(), host.label.clone())
-                    .description(note)
-                    .switch(
-                        ui::toggle(theme, format!("{id}-toggle"), checked, enabled).when(
-                            enabled,
-                            |toggle| {
-                                toggle.on_click(cx.listener(move |this, _, _, cx| {
-                                    this.save_remote_history(&target, !checked, cx);
-                                }))
-                            },
-                        ),
-                    ),
-            );
+            page = page.child(self.history_row(
+                ui::data_row(theme, id.clone(), host.label.clone()).tag(ui::Source::Herdr),
+                host.target.clone(),
+                format!("{id}-toggle").into(),
+                cx,
+            ));
         }
         page
+    }
+
+    fn history_row(
+        &self,
+        row: ui::Row,
+        target: Target,
+        id: SharedString,
+        cx: &Context<Self>,
+    ) -> ui::Row {
+        let state = self
+            .host_history
+            .hosts()
+            .iter()
+            .find(|host| host.target == target)
+            .map(|host| &host.state);
+        let (checked, settled) = match state {
+            Some(HostState::Ready(history)) => (history.enabled(), true),
+            Some(HostState::Saving(history)) => (history.enabled(), false),
+            _ => (false, false),
+        };
+        if target == Target::Local && !cfg!(unix) {
+            return row
+                .disabled(fl!("settings-tabs-runtime-history-read-only"))
+                .switch(ui::toggle(&self.theme, id, checked, false));
+        }
+        let note = match state {
+            Some(HostState::Saving(_)) => fl!("settings-tabs-host-saving"),
+            Some(HostState::Failed(error)) => {
+                fl!("settings-tabs-host-failed", error = error.to_string())
+            }
+            Some(HostState::Ready(_)) => fl!("settings-tabs-host-ready"),
+            _ => fl!("settings-tabs-host-loading"),
+        };
+        let enabled =
+            settled && !self.persistence.quitting() && self.persistence.closing().is_none();
+        let row = if target == Target::Local {
+            if settled { row } else { row.disabled(note) }
+        } else {
+            row.description(note)
+        };
+        row.switch(
+            ui::toggle(&self.theme, id, checked, enabled).when(enabled, |toggle| {
+                toggle.on_click(
+                    cx.listener(move |this, _, _, cx| {
+                        this.save_host_history(&target, !checked, cx)
+                    }),
+                )
+            }),
+        )
     }
 }

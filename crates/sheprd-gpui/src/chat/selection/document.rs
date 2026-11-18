@@ -1,3 +1,5 @@
+// ABOUTME: Projects prepared chat bodies into one ordered readable text document.
+// ABOUTME: Shares visible entry projections with selection and accessibility consumers.
 //! A cached readable projection of prepared bodies, in transcript order.
 
 use super::{Caret, Cell, Key, Position, Region};
@@ -109,13 +111,19 @@ impl Segment {
     }
 }
 
-pub(super) struct EntryText {
+pub(in crate::chat) struct EntryText {
     pub(super) id: EntryId,
     pub(super) revision: u64,
     pub(super) version: u64,
     expanded: bool,
     pub(super) segments: Vec<Segment>,
     positions: HashMap<Position, usize>,
+}
+
+impl EntryText {
+    pub(in crate::chat) fn texts(&self) -> impl Iterator<Item = &str> {
+        self.segments.iter().map(Segment::text)
+    }
 }
 
 /// A segment's place in transcript order: its entry's index, then its own
@@ -137,6 +145,10 @@ pub(crate) struct Document {
 }
 
 impl Document {
+    pub(in crate::chat) fn entry(&self, id: EntryId) -> Option<Rc<EntryText>> {
+        self.entries.get(*self.positions.get(&id)?).cloned()
+    }
+
     pub(crate) fn key(&self, entry: EntryId, region: Region, cell: Cell) -> Option<Key> {
         let projection = self.entries.get(*self.positions.get(&entry)?)?;
         let position = Position { region, cell };

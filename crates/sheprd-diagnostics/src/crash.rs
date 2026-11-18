@@ -34,15 +34,15 @@ const TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S%.3f %:z";
 const FLUSH: Duration = Duration::from_secs(2);
 
 /// Where reports go: the log file's directory.
-pub fn dir() -> Option<PathBuf> {
-    Some(crate::log_file()?.parent()?.to_owned())
+pub fn dir(state: &Path) -> Option<PathBuf> {
+    Some(crate::log_file(state).parent()?.to_owned())
 }
 
 /// Call once, after [`crate::init`]. The default hook still runs after ours,
 /// so a terminal still sees the panic. Reports name `version` as the build
 /// that crashed.
-pub fn install(version: &'static str) {
-    let Some(dir) = dir() else {
+pub fn install(version: &'static str, state: Option<&Path>) {
+    let Some(dir) = state.and_then(dir) else {
         return;
     };
     #[cfg(windows)]

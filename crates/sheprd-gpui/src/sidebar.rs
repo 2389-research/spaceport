@@ -1,3 +1,5 @@
+// ABOUTME: Builds sidebar layouts from authoritative workspace and agent snapshots.
+// ABOUTME: Shares indexed metadata and prepared rows without owning runtime processes.
 //! The sidebar: spaces and agents, the rows that show them, and the hover
 //! menu a resting pointer opens.
 // i18n: migrated
@@ -21,6 +23,7 @@ mod reorder;
 mod row;
 mod search;
 pub(crate) mod slide;
+mod snapshot_index;
 mod sticky;
 mod tag_groups;
 mod tokens;
@@ -58,6 +61,7 @@ pub(crate) use order::step as sidebar_step;
 #[cfg(any(test, feature = "integration-test"))]
 pub(crate) use metrics::LABEL_WIDTH;
 
+pub(crate) use snapshot_index::{IndexedSnapshot, SnapshotIndexCache};
 pub(crate) use view::cached as cached_view;
 
 use agents::agents_sort;

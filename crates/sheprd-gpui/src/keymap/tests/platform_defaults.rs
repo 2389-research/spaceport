@@ -13,16 +13,11 @@ fn function_keys_can_be_configured_without_taking_ordinary_typing() {
 }
 
 #[test]
-fn platform_defaults_are_complete_unique_and_leave_edit_keys_available() {
+fn platform_defaults_are_unique_and_leave_edit_keys_available() {
     let keymap = with(&[]).unwrap();
     let mut seen = HashMap::new();
     for info in COMMANDS {
-        // A platform can append aliases for normalized backend keystrokes.
-        assert!(
-            info.default_shortcuts().len() >= info.base_shortcuts().len(),
-            "{}",
-            info.name
-        );
+        // The catalog tests cover intentional platform differences, including unbound keys.
         for shortcut in info.default_shortcuts() {
             let key = keystroke(shortcut);
             assert!(
@@ -61,7 +56,7 @@ fn linux_shortcuts_preserve_terminal_keys_and_shifted_actions() {
         (Command::IncreaseFontSize, "ctrl-shift-="),
         (Command::DecreaseFontSize, "ctrl-shift--"),
         (Command::ResetFontSize, "ctrl-shift-0"),
-        (Command::ToggleFullScreen, "f11"),
+        (Command::ToggleFullScreen, "ctrl-b f11"),
     ] {
         assert_eq!(keymap.primary(command), key);
     }
@@ -90,7 +85,7 @@ fn linux_shortcuts_preserve_terminal_keys_and_shifted_actions() {
             "{key}"
         );
     }
-    assert!(keymap.triggers(Command::Keybinds, &keystroke("ctrl-shift-/->?"), false));
+    assert_eq!(keymap.chord(&keystroke("?")), Some(Command::Keybinds));
     let configured = with(&[("new_tab", one("cmd-t"))]).unwrap();
     assert_eq!(configured.primary(Command::Tab), "cmd-t");
     assert!(!configured.triggers(Command::Tab, &keystroke("ctrl-shift-t"), false));
@@ -108,7 +103,7 @@ fn windows_shortcuts_preserve_terminal_and_system_keys() {
         (Command::CopyMode, "ctrl-alt-shift-c"),
         (Command::ResetFontSize, "ctrl-0"),
         (Command::Quit, "ctrl-shift-q"),
-        (Command::ToggleFullScreen, "f11"),
+        (Command::ToggleFullScreen, "ctrl-b f11"),
     ] {
         assert_eq!(keymap.primary(command), key);
     }

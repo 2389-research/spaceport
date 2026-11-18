@@ -1,8 +1,11 @@
-//! The Herdr daemon's `[keys]` table, read so the GUI answers the same
-//! shortcuts, prefix chords included, as the TUI. Herdr owns that file and
-//! reports its own mistakes, so anything this client cannot express (an
+// ABOUTME: Parses private view prefix chords and compatible Herdr action names.
+// ABOUTME: Maps supported bindings to client commands without importing runtime preferences.
+//! Spaceport's `[keys]` table in its private `view.toml` uses Herdr's shortcut
+//! grammar, including prefix chords. Anything this client cannot express (an
 //! unparseable entry, a `hyper` modifier, an action with no GUI command) is
 //! skipped rather than turned into a GUI config error.
+//! Spaceport also accepts its own focus-region and full-screen command names.
+//! Their Ctrl-platform defaults use prefix chords, leaving pane function keys available.
 //!
 //! `open_worktree` acts on the focused workspace by opening its menu dialog;
 //! when it has no such row, a flash says why.
@@ -31,6 +34,8 @@ const MAX_PROFILE_BYTES: usize = 64 * 1024;
 #[derive(Clone, Copy)]
 enum Target {
     Command(Command),
+    /// A Spaceport-only action whose unconfigured default yields to custom commands.
+    Spaceport(Command),
     /// An action expanded over the digits 1-9, each of which it binds
     /// selecting that item, as `[keys.indexed]` does too.
     Indexed(Indexed),
@@ -65,9 +70,25 @@ impl Indexed {
     }
 }
 
-/// Daemon actions with a GUI equivalent, each with Herdr's default binding.
-/// The module documentation lists the actions missing here, and why.
+/// Supported private-view actions with Herdr or explicit Spaceport defaults.
+/// The module documentation distinguishes the Spaceport chrome commands.
 const ACTIONS: &[(&str, Target, &str)] = &[
+    // These three are Spaceport private-view actions, rather than Herdr TUI defaults.
+    (
+        "focus_next_region",
+        Target::Spaceport(Command::FocusNextRegion),
+        "prefix+f6",
+    ),
+    (
+        "focus_previous_region",
+        Target::Spaceport(Command::FocusPreviousRegion),
+        "prefix+shift+f6",
+    ),
+    (
+        "toggle_full_screen",
+        Target::Spaceport(Command::ToggleFullScreen),
+        "prefix+f11",
+    ),
     ("detach", Target::Command(Command::Detach), "prefix+q"),
     ("help", Target::Command(Command::Keybinds), "prefix+?"),
     ("settings", Target::Command(Command::Settings), "prefix+s"),
@@ -92,6 +113,11 @@ const ACTIONS: &[(&str, Target, &str)] = &[
         "rename_workspace",
         Target::Command(Command::RenameWorkspace),
         "prefix+shift+w",
+    ),
+    (
+        "close_workspace",
+        Target::Command(Command::CloseWorkspace),
+        "prefix+shift+d",
     ),
     (
         "reload_config",
@@ -253,8 +279,8 @@ pub(crate) enum Trigger {
     Prefixed(Keystroke),
 }
 
-/// The daemon's bindings for GUI commands: those its file sets first, in
-/// table order, then Herdr's defaults for the rest. Herdr rejects a default
+/// The view's bindings for GUI commands: configured entries first, in
+/// table order, then supported defaults for the rest. Herdr rejects a default
 /// that collides with a binding the user wrote, and the keymap keeps the
 /// first binding for a keystroke, so the same one wins here.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -263,6 +289,8 @@ pub(crate) struct DaemonKeys {
     /// prefix mode; the first is the one shown in chord labels.
     pub(super) prefixes: Vec<Keystroke>,
     pub(super) bindings: Vec<(Command, Trigger)>,
+    /// Only omitted Spaceport defaults yield their prefix chords to daemon custom commands.
+    pub(super) spaceport_defaults: Vec<Command>,
     /// `navigate_workspace_up` and `_down`: the keys that move the workspace
     /// picker's selection, besides its own arrows.
     pub(super) navigate_up: Vec<Keystroke>,
@@ -270,7 +298,7 @@ pub(crate) struct DaemonKeys {
 }
 
 impl Default for DaemonKeys {
-    /// Herdr's defaults, which also apply when it has no config file.
+    /// Herdr's defaults and Spaceport's explicit chrome prefix routes.
     fn default() -> Self {
         Self::from_table(None)
     }
@@ -300,8 +328,12 @@ impl DaemonKeys {
     }
 
     /// Reads the daemon config's `[keys]` table; each action it leaves out,
-    /// or gives a value of the wrong type, keeps Herdr's default.
+    /// or gives a value of the wrong type, keeps its supported default.
     pub(crate) fn from_table(keys: Option<&toml::Table>) -> Self {
+        Self::from_table_for_platform(keys, crate::controls::CTRL_SHORTCUTS)
+    }
+
+    fn from_table_for_platform(keys: Option<&toml::Table>, ctrl_shortcuts: bool) -> Self {
         let prefixes = prefixes(keys);
         let legacy = |indexed: Indexed| {
             keys.and_then(|keys| keys.get("indexed")?.get(indexed.legacy_key())?.as_str())
@@ -310,7 +342,13 @@ impl DaemonKeys {
         };
         let mut configured = Vec::new();
         let mut defaults = Vec::new();
+        let mut spaceport_defaults = Vec::new();
         for &(name, target, default) in ACTIONS {
+            let default = if matches!(target, Target::Spaceport(_)) && !ctrl_shortcuts {
+                ""
+            } else {
+                default
+            };
             let value = keys.and_then(|keys| {
                 keys.get(name)
                     // Herdr still accepts zoom's old name.
@@ -321,9 +359,10 @@ impl DaemonKeys {
             // displaces the default unless the action is also set itself.
             let legacy = match target {
                 Target::Indexed(indexed) => legacy(indexed),
-                Target::Command(_) => None,
+                Target::Command(_) | Target::Spaceport(_) => None,
             };
-            let (list, entries) = if written.is_none() && legacy.is_none() {
+            let is_default = written.is_none() && legacy.is_none();
+            let (list, entries) = if is_default {
                 (&mut defaults, vec![default.to_owned()])
             } else {
                 let mut entries: Vec<String> = written
@@ -338,10 +377,13 @@ impl DaemonKeys {
             for entry in &entries {
                 for (digit, trigger) in triggers(entry) {
                     let command = match (target, digit) {
-                        (Target::Command(command), _) => command,
+                        (Target::Command(command) | Target::Spaceport(command), _) => command,
                         (Target::Indexed(indexed), Some(digit)) => indexed.command(digit),
                         (Target::Indexed(_), None) => continue,
                     };
+                    if is_default && matches!(target, Target::Spaceport(_)) {
+                        spaceport_defaults.push(command);
+                    }
                     list.push((command, trigger));
                 }
             }
@@ -362,6 +404,7 @@ impl DaemonKeys {
         Self {
             prefixes,
             bindings: configured,
+            spaceport_defaults,
             navigate_up: navigate("navigate_workspace_up", "up"),
             navigate_down: navigate("navigate_workspace_down", "down"),
         }

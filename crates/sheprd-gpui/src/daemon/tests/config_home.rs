@@ -1,3 +1,5 @@
+// ABOUTME: Keeps a started Herdr server under the socket's resolved config root.
+// ABOUTME: Tests environment pinning and stale sockets with isolated local fixtures.
 use super::*;
 use std::ffi::OsStr;
 
@@ -63,7 +65,7 @@ fn a_stale_socket_is_replaced_by_a_daemon_at_the_polled_path() {
             // As `herdr server` does: replace the stale file and listen.
             std::fs::remove_file(&path).unwrap();
             listener = Some(UnixListener::bind(&path).unwrap());
-            Command::new("/usr/bin/true")
+            Ok(Command::new("/usr/bin/true"))
         },
         true,
     )

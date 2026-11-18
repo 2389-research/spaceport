@@ -1,3 +1,5 @@
+// ABOUTME: Places prepared agents under their matching workspace in sidebar order.
+// ABOUTME: Keeps focused-row reveal geometry independent from metadata ordering.
 //! Agents listed under the workspace they run in, for
 //! `agents_placement = "nested"`: the same rows as the agents section, a
 //! step further in than their workspace, named by the agent alone since the
@@ -5,10 +7,9 @@
 
 use crate::{
     SheprdWindow,
-    sidebar::{agents::sorted_agents, cell::RowContext},
+    sidebar::{IndexedSnapshot, cell::RowContext},
 };
 use gpui::{prelude::*, *};
-use sheprd_client::protocol::ClientShellSnapshot;
 use std::{cell::RefCell, rc::Rc};
 
 /// A row's key and the bounds it was painted at.
@@ -58,7 +59,7 @@ impl SheprdWindow {
     pub(in crate::sidebar) fn nested_agent_rows(
         &self,
         index: usize,
-        snapshot: &ClientShellSnapshot,
+        snapshot: &IndexedSnapshot<'_>,
         workspace_id: &str,
         (row_cx, indent): (&RowContext, f32),
         cx: &mut Context<Self>,
@@ -71,10 +72,7 @@ impl SheprdWindow {
         let selected = index == self.selected_endpoint;
         let mut focused = None;
         let mut rows = Vec::new();
-        for agent in sorted_agents(snapshot, self.agent_sort)
-            .into_iter()
-            .filter(|agent| agent.workspace_id == workspace_id)
-        {
+        for agent in snapshot.workspace_agents(workspace_id, self.agent_sort) {
             let Some(lines) = self.configured_agent_lines(agent, snapshot, None) else {
                 continue;
             };

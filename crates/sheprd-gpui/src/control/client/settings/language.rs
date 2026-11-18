@@ -1,3 +1,5 @@
+// ABOUTME: Reads and changes language preferences through the control CLI.
+// ABOUTME: Reports installed language choices in a named JSON collection.
 //! `language`: the locale the windows show, the languages there are, and
 //! the `language` setting, which is a file edit made here.
 use super::{Context, Output, not_running, settings, unexpected};
@@ -33,7 +35,9 @@ fn status(context: &Context) -> crate::Result<Output> {
         Ok(Reply::Language(info)) => (info, true),
         Ok(reply) => return Err(unexpected(Response::Settings { reply })),
         // What it would show: the setting, resolved as the app resolves it.
-        Err(error) if not_running(&error) => (local(&Config::check_files()?.language), false),
+        Err(error) if not_running(&error) && context.window.is_none() => {
+            (local(&Config::check_files()?.language), false)
+        }
         Err(error) => return Err(error),
     };
     Output::data(
@@ -108,5 +112,5 @@ fn list() -> crate::Result<Output> {
             })
         })
         .collect();
-    Output::data(text, &languages)
+    Output::data(text, &json!({ "languages": languages }))
 }

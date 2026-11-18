@@ -2,10 +2,11 @@ use super::*;
 use crate::config::preferences::Preference;
 
 #[test]
-fn focus_follows_mouse_defaults_on_and_is_editable_from_settings_and_cli() -> anyhow::Result<()> {
-    assert!(Config::default().focus_follows_mouse);
-    assert!(Config::parse("")?.focus_follows_mouse);
-    assert!(Config::parse(DEFAULT_CONFIG)?.focus_follows_mouse);
+fn focus_follows_mouse_defaults_off_and_is_editable_from_settings_and_cli() -> anyhow::Result<()> {
+    assert!(!Config::default().focus_follows_mouse);
+    assert!(!Config::parse("")?.focus_follows_mouse);
+    assert!(!Config::parse(DEFAULT_CONFIG)?.focus_follows_mouse);
+    assert!(Config::parse("focus_follows_mouse = true")?.focus_follows_mouse);
     assert!(!Config::parse("focus_follows_mouse = false")?.focus_follows_mouse);
     assert!(Config::parse("focus_follows_mouse = 'true'").is_err());
     let temp = TempDirectory::new()?;

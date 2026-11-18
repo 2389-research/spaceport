@@ -1,3 +1,5 @@
+// ABOUTME: Resolves catalog, prefix, and custom shortcut ownership from validated settings.
+// ABOUTME: Shares shortcut labels and typed matching across native controls and dispatch.
 //! The keystrokes bound to each catalog command: the defaults in
 //! `controls::COMMANDS`, then the daemon config's `[keys]` table (prefix
 //! chords included), with the GUI config file's `[keybindings]` table layered
@@ -111,12 +113,28 @@ struct Shortcut {
     /// As shown to the user: a GPUI keystroke, or the prefix and the key
     /// typed after it, separated by a space.
     label: String,
-    /// The key that completes a prefix chord. `None` binds `label` directly
-    /// through GPUI's keymap.
+    /// The key that completes a prefix chord. `None` makes `label` a direct shortcut.
     chord: Option<Keystroke>,
-    /// A catalog default that neither config file assigned. A daemon custom
-    /// command bound to the same keystroke takes it over.
-    catalog_default: bool,
+    origin: Origin,
+}
+
+/// Unconfigured Spaceport defaults yield; explicit bindings and Herdr defaults keep their keys.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Origin {
+    // keep-sorted start
+    Catalog,
+    Owned,
+    Spaceport,
+    // keep-sorted end
+}
+
+/// A matched direct shortcut retains whether configuration owns its key.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Direct {
+    // keep-sorted start
+    Catalog(Command),
+    Configured(Command),
+    // keep-sorted end
 }
 
 impl Shortcut {
@@ -124,7 +142,7 @@ impl Shortcut {
         Self {
             label: label.into(),
             chord: None,
-            catalog_default: false,
+            origin: Origin::Owned,
         }
     }
 }
@@ -271,7 +289,11 @@ impl Keymap {
                             keystroke.unparse(HOST_OS)
                         ),
                         chord: Some(keystroke.clone()),
-                        catalog_default: false,
+                        origin: if keys.spaceport_defaults.contains(command) {
+                            Origin::Spaceport
+                        } else {
+                            Origin::Owned
+                        },
                     }
                 }
             };
@@ -291,7 +313,7 @@ impl Keymap {
                             .is_ok_and(|parsed| !taken.contains(&identity(&parsed)))
                     })
                     .map(|&shortcut| Shortcut {
-                        catalog_default: true,
+                        origin: Origin::Catalog,
                         ..Shortcut::direct(shortcut)
                     })
                     .chain(from_daemon)
@@ -332,9 +354,14 @@ impl Keymap {
         self.shortcuts(command).next().unwrap_or("")
     }
 
-    /// Each keystroke GPUI binds directly, with the command it runs, in
+    /// Each direct catalog shortcut, with the command it runs, in
     /// catalog order. Prefix chords are not among them; see `chord`.
     pub fn bindings(&self) -> impl Iterator<Item = (Command, &str)> {
+        self.direct_shortcuts()
+            .map(|(command, shortcut)| (command, shortcut.label.as_str()))
+    }
+
+    fn direct_shortcuts(&self) -> impl Iterator<Item = (Command, &Shortcut)> {
         COMMANDS
             .iter()
             .zip(&self.shortcuts)
@@ -342,7 +369,7 @@ impl Keymap {
                 shortcuts
                     .iter()
                     .filter(|shortcut| shortcut.chord.is_none())
-                    .map(move |shortcut| (info.command, shortcut.label.as_str()))
+                    .map(move |shortcut| (info.command, shortcut))
             })
     }
 
@@ -361,18 +388,56 @@ impl Keymap {
     }
     /// The command a chord runs when `typed` follows the prefix.
     pub(crate) fn chord(&self, typed: &Keystroke) -> Option<Command> {
+        self.chord_shortcut(typed).map(|(command, _)| command)
+    }
+
+    pub(crate) fn owns_chord(&self, typed: &Keystroke) -> bool {
+        self.chord_shortcut(typed)
+            .is_some_and(|(_, shortcut)| shortcut.origin == Origin::Owned)
+    }
+
+    fn chord_shortcut(&self, typed: &Keystroke) -> Option<(Command, &Shortcut)> {
         COMMANDS
             .iter()
             .zip(&self.shortcuts)
-            .find(|(_, shortcuts)| {
-                shortcuts.iter().any(|shortcut| {
-                    shortcut
-                        .chord
-                        .as_ref()
-                        .is_some_and(|chord| typed_matches(typed, chord))
-                })
+            .find_map(|(info, shortcuts)| {
+                shortcuts
+                    .iter()
+                    .find(|shortcut| {
+                        shortcut
+                            .chord
+                            .as_ref()
+                            .is_some_and(|chord| typed_matches(typed, chord))
+                    })
+                    .map(|shortcut| (info.command, shortcut))
             })
-            .map(|(info, _)| info.command)
+    }
+
+    /// The catalog command bound directly to this key, before custom-command precedence.
+    pub(crate) fn direct(
+        &self,
+        typed: &Keystroke,
+        map: impl Fn(Keystroke) -> KeybindingKeystroke,
+    ) -> Option<Direct> {
+        let mut mapped = None;
+        for (command, shortcut) in self.direct_shortcuts() {
+            let Ok(bound) = parse_keystroke(&shortcut.label) else {
+                continue;
+            };
+            let direct = if shortcut.origin == Origin::Catalog {
+                Direct::Catalog(command)
+            } else {
+                Direct::Configured(command)
+            };
+            // A binding naming the delivered symbol keeps precedence over a layout alias.
+            if typed_matches(typed, &bound) {
+                return Some(direct);
+            }
+            if mapped.is_none() && typed.should_match(&map(bound)) {
+                mapped = Some(direct);
+            }
+        }
+        mapped
     }
 
     /// Whether `typed`, alone or after the prefix as `prefixed` says, is one

@@ -1,3 +1,5 @@
+// ABOUTME: Paints native windows from prepared and bounded presentation state.
+// ABOUTME: Mounts the shared raw shortcut scope around window content.
 //! Painting the window from prepared state. Render reads bounded caches and
 //! the latest projection only: it never queries the daemon, touches disk, or
 //! starts a process.
@@ -8,7 +10,6 @@ use crate::{
     Minimize, PlaySound, RunCommand, ZoomWindow,
     actions::{RingBellPreview, ShowToastPreview},
     browser::Shown,
-    config::ClipboardToastPosition,
     fonts::StyledFont,
     terminal::*,
     terminal_painter::{self, Ground, ImageTarget, PlacedImages},
@@ -19,14 +20,14 @@ use sheprd_client::ConnectOptions;
 impl SheprdWindow {
     /// Config warnings, then the daemon's announcement, stacked over the
     /// top-right of the terminal area below the tab strip, whose buttons stay
-    /// reachable. A menu page owns the window's attention, and zen mode keeps
-    /// the window clear; they wait behind either.
+    /// reachable. Operation failures remain visible when the status bar is hidden.
     fn render_notices(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
-        if !self.notices_allowed() {
-            return None;
+        let mut cards = Vec::new();
+        if self.notices_allowed() {
+            cards.extend(self.config_diagnostic_cards(cx));
+            cards.extend(self.announcement_card(cx));
         }
-        let mut cards = self.config_diagnostic_cards(cx);
-        cards.extend(self.announcement_card(cx));
+        cards.extend(self.operation_warning_card(cx));
         if cards.is_empty() {
             return None;
         }
@@ -78,19 +79,22 @@ impl SheprdWindow {
     /// Whether [`Self::render_notices`] draws a card, so the keyboard can
     /// reach the cards as a region of their own.
     pub(super) fn notices_shown(&self) -> bool {
-        self.notices_allowed()
-            && (self.gui_config_diagnostic.visible().is_some()
-                || self.icon_font_notice.visible().is_some()
-                || self
-                    .endpoints
-                    .get(self.selected_endpoint)
-                    .is_some_and(|endpoint| endpoint.config_diagnostic.visible().is_some())
-                || self.live.product_announcement().is_some())
+        (self.menu.page.is_none() && !self.endpoints.is_empty() && self.reconnecting())
+            || self.operation_warning_shown()
+            || self.notices_allowed()
+                && (self.gui_config_diagnostic.visible().is_some()
+                    || self.icon_font_notice.visible().is_some()
+                    || self
+                        .endpoints
+                        .get(self.selected_endpoint)
+                        .is_some_and(|endpoint| endpoint.config_diagnostic.visible().is_some())
+                    || self.live.product_announcement().is_some())
     }
 }
 
 impl Render for SheprdWindow {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.resume_hidden_feedback();
         self.restore_menu_focus(window, cx);
         self.leave_vanished_region(window, cx);
         self.sync_backdrop(window, cx);
@@ -228,7 +232,8 @@ impl Render for SheprdWindow {
             let signal = self.surface_signal.clone();
             window.on_next_frame(move |_, cx| signal.update(cx, |_, cx| cx.notify()));
         }
-        let regions = self.terminal_regions(surface.as_ref(), &highlights, slide, &look, cx);
+        let (regions, main_images) =
+            self.terminal_regions(window_frame.as_ref(), &highlights, slide, &look, cx);
         // Without regions the canvas paints the whole grid, images included.
         let whole = regions.is_empty();
         // The IME composition paints inline at the input cursor; a menu's
@@ -500,7 +505,7 @@ impl Render for SheprdWindow {
                                             );
                                         };
                                         paint(window, cx);
-                                    } else {
+                                    } else if !main_images {
                                         // Regions place no images, so nothing
                                         // else releases the ones that went away.
                                         painter.borrow_mut().release_idle_images(window);
@@ -569,58 +574,6 @@ impl Render for SheprdWindow {
                     .children(self.render_reconnecting(cx))
                     .when_some(find_bar, |terminal, bar| terminal.child(bar))
                     .when_some(copy_badge, |terminal, badge| terminal.child(badge))
-                    // Direct feedback for the user's own gesture, not a daemon notice:
-                    // it sits over the cells it copied and needs no dismissing.
-                    .when_some(self.flash_shown(), |terminal, (flash, shown)| {
-                        use ClipboardToastPosition::*;
-                        let position = self.config.clipboard_toast.position;
-                        // It comes in from the edge it sits by and goes back to it.
-                        let edge = px(12. - (1. - shown) * super::flash::SLIDE);
-                        terminal.child(
-                            div()
-                                .absolute()
-                                .opacity(shown)
-                                .map(|row| match position {
-                                    TopLeft | TopCenter | TopRight => row.top(edge),
-                                    BottomLeft | BottomCenter | BottomRight => row.bottom(edge),
-                                })
-                                .map(|row| match position {
-                                    TopLeft | BottomLeft => row.justify_start(),
-                                    TopCenter | BottomCenter => row.justify_center(),
-                                    TopRight | BottomRight => row.justify_end(),
-                                })
-                                // The flash spans the cells, so centering centers on
-                                // them and a corner is the corner of the grid.
-                                .left_0()
-                                .right_0()
-                                .px(px(12.))
-                                .flex()
-                                .overflow_hidden()
-                                .child(
-                                    div()
-                                        .debug_selector(|| "flash".into())
-                                        .min_w_0()
-                                        .flex()
-                                        .items_center()
-                                        .gap(px(8.))
-                                        .px(px(12.))
-                                        .py(px(6.))
-                                        .rounded(px(crate::config::corners::CONTROL))
-                                        .border_1()
-                                        .border_color(rgb(flash.accent(&self.theme)))
-                                        .bg(rgb(self.theme.surface))
-                                        .text_color(rgb(self.theme.foreground))
-                                        .child(
-                                            div()
-                                                .size(px(6.))
-                                                .flex_none()
-                                                .rounded_full()
-                                                .bg(rgb(flash.accent(&self.theme))),
-                                        )
-                                        .child(div().truncate().child(flash.text.clone())),
-                                ),
-                        )
-                    })
             });
         // A focus handle belongs to one element: the terminal when drawn,
         // otherwise the group in use.
@@ -709,7 +662,15 @@ impl Render for SheprdWindow {
         // Zen mode keeps toasts and menus: they carry errors and what the
         // user asked for, not chrome.
         let zen = self.zen_layout();
-        let root = div()
+        let root = Self::shortcut_scope(cx)
+            // This target owns transitional keys without taking mouse focus.
+            .child(
+                div()
+                    .id("chrome-entry-focus")
+                    .absolute()
+                    .size(px(0.))
+                    .track_focus(&self.chrome_entry_focus),
+            )
             .capture_key_down(cx.listener(Self::application_menu_shortcut))
             .capture_key_down(cx.listener(Self::chrome_focus_key))
             .on_modifiers_changed(cx.listener(Self::double_shift_modifiers))
@@ -835,6 +796,7 @@ impl Render for SheprdWindow {
                             .min_h_0()
                             .relative()
                             .child(content)
+                            .children(self.render_flash(cx))
                             .children(self.render_notices(cx))
                             .children(self.zen_status_bar(cx)),
                     ),

@@ -1,3 +1,5 @@
+// ABOUTME: Parses bounded runtime Markdown into safe display lines and links.
+// ABOUTME: Shares active and static rendering without carrying interaction into departure.
 //! Daemon release notes and product announcements, prepared for display.
 //!
 //! Both arrive from the daemon as Markdown-flavored text, which is untrusted:
@@ -412,11 +414,22 @@ fn valid_url(url: &str) -> Option<&str> {
 
 /// Draws prepared lines. Each link opens in the browser only when clicked.
 pub(crate) fn render(id: &'static str, lines: &[Line], theme: &Theme, mono: &FontConfig) -> Div {
+    render_mode(id, lines, theme, mono, true)
+}
+
+/// Static popup copies keep link styling without registering link actions.
+pub(crate) fn render_mode(
+    id: &'static str,
+    lines: &[Line],
+    theme: &Theme,
+    mono: &FontConfig,
+    active: bool,
+) -> Div {
     div().flex().flex_col().gap(px(2.)).min_w_0().children(
         lines
             .iter()
             .enumerate()
-            .map(|(index, line)| self::line(id, index, line, theme, mono)),
+            .map(|(index, line)| line_mode(id, index, line, theme, mono, active)),
     )
 }
 
@@ -428,10 +441,21 @@ pub(crate) fn line(
     theme: &Theme,
     mono: &FontConfig,
 ) -> Div {
+    line_mode(id, index, line, theme, mono, true)
+}
+
+fn line_mode(
+    id: &'static str,
+    index: usize,
+    line: &Line,
+    theme: &Theme,
+    mono: &FontConfig,
+    active: bool,
+) -> Div {
     let accent = theme.ink(theme.palette[4]);
     let content = match line.kind {
         Kind::Heading | Kind::Code | Kind::Table => line.text.clone().into_any_element(),
-        _ => rich(id, index, line, theme, accent),
+        _ => rich(id, index, line, theme, accent, active),
     };
     line_with(id, index, line, theme, mono, content)
 }
@@ -490,10 +514,17 @@ pub(crate) fn line_with(
     }
 }
 
-fn rich(id: &'static str, index: usize, line: &Line, theme: &Theme, accent: u32) -> AnyElement {
+fn rich(
+    id: &'static str,
+    index: usize,
+    line: &Line,
+    theme: &Theme,
+    accent: u32,
+    active: bool,
+) -> AnyElement {
     let text =
         StyledText::new(line.text.clone()).with_highlights(line_highlights(line, theme, accent));
-    if line.links.is_empty() {
+    if line.links.is_empty() || !active {
         return text.into_any_element();
     }
     let urls: Vec<String> = line.links.iter().map(|item| item.url.clone()).collect();

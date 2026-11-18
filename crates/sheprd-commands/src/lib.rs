@@ -1,3 +1,5 @@
+// ABOUTME: Exposes the shared typed catalog and snapshot-backed daemon requests.
+// ABOUTME: Leaves window state and explicit confirmations with the desktop application.
 //! The command catalog: every command the app offers in menus, the palette,
 //! and key bindings, its name and default shortcuts per platform, and the
 //! daemon request a command becomes against a snapshot. No GPUI; the app
@@ -174,6 +176,7 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
             (Method::TabFocus, json!({"tab_id": target.tab_id}))
         }
         Command::NewWindow
+        | Command::CloseWorkspace
         | Command::OpenWorktree
         | Command::WorktreeNotes
         | Command::EditWorktreeNote
@@ -203,6 +206,7 @@ pub fn request(command: Command, snapshot: &ClientShellSnapshot) -> Option<(Meth
         | Command::Reconnect
         | Command::Quit
         | Command::Logs
+        | Command::Messages
         | Command::CheckForUpdates
         | Command::About
         | Command::OpenNotificationTarget

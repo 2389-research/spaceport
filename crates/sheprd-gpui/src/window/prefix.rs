@@ -1,3 +1,5 @@
+// ABOUTME: Routes raw shortcut events while retaining repeat and release semantics.
+// ABOUTME: Keeps catalog, prefix, custom command, and resize routing in one window owner.
 //! Herdr's prefix chords, as the TUI types them: the prefix arms the window,
 //! and the next keystroke runs its chord's command or, when nothing is bound
 //! to it, is swallowed. Typing the prefix twice sends it on to the focused
@@ -11,7 +13,10 @@
 
 use super::SheprdWindow;
 use crate::controls::Command;
-use gpui::{Context, Keystroke, Subscription, Window};
+use gpui::{
+    Context, Div, InteractiveElement as _, KeyDownEvent, KeyUpEvent, KeybindingKeystroke,
+    Keystroke, Window, div,
+};
 use sheprd_client::protocol::ClientShellCommandAction;
 
 mod shifted_keys;
@@ -22,110 +27,289 @@ pub(super) use shifted_keys::current_layout;
 
 /// What a keystroke is bound to here.
 enum Bound {
-    Prefix,
-    /// Only after the prefix.
-    Chord(Command),
+    // keep-sorted start
+    Command(Command),
     Custom(String, ClientShellCommandAction),
+    Prefix,
+    // keep-sorted end
+}
+
+/// The held tail of a shortcut stays with its original action until release.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum HeldShortcut {
+    // keep-sorted start
+    Consume(KeyOwner),
+    PassThrough,
+    Repeat(Command, KeyOwner),
+    // keep-sorted end
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum KeyOwner {
+    // keep-sorted start
+    Direct,
+    Modal,
+    // keep-sorted end
+}
+
+impl HeldShortcut {
+    fn yields_to_text(self) -> bool {
+        matches!(
+            self,
+            Self::Consume(KeyOwner::Direct) | Self::Repeat(_, KeyOwner::Direct)
+        )
+    }
+}
+
+fn repeatable(command: Command) -> bool {
+    matches!(
+        command,
+        Command::IncreaseFontSize
+            | Command::DecreaseFontSize
+            | Command::FindNext
+            | Command::FindPrevious
+            | Command::CycleWindows
+            | Command::PreviousWorkspace
+            | Command::NextWorkspace
+            | Command::WorkspaceNumber(_)
+            | Command::NextTab
+            | Command::PreviousTab
+            | Command::TabNumber(_)
+            | Command::FocusLeft
+            | Command::FocusRight
+            | Command::FocusUp
+            | Command::FocusDown
+            | Command::NextPane
+            | Command::PreviousPane
+            | Command::LastPane
+            | Command::PreviousAgent
+            | Command::NextAgent
+            | Command::AgentNumber(_)
+            | Command::FocusNextRegion
+            | Command::FocusPreviousRegion
+            | Command::ResizeLeft
+            | Command::ResizeRight
+            | Command::ResizeUp
+            | Command::ResizeDown
+    )
 }
 
 impl SheprdWindow {
-    /// GPUI calls interceptors before any binding or key handler sees the
-    /// keystroke, so an armed prefix claims the next key wherever focus is.
-    /// Interceptors are app-wide; each window answers only for itself.
-    pub(crate) fn intercept_prefix(window: &Window, cx: &mut Context<Self>) -> Subscription {
-        let own = window.window_handle().window_id();
-        let view = cx.weak_entity();
-        cx.intercept_keystrokes(move |event, window, cx| {
-            if window.window_handle().window_id() != own {
-                return;
-            }
-            let _ = view.update(cx, |this, cx| {
-                if !matches!(
-                    event.keystroke.key.as_str(),
-                    "shift" | "shiftleft" | "shiftright"
-                ) {
-                    this.shift_taps.cancel();
-                }
-                // Everything matched here sees the function key's name, and
-                // a shifted key's restored Shift: the prefix, its chords,
-                // custom commands, and resize mode. GPUI's own bindings
-                // still see the key as GPUI named it.
-                let named = super::function_keys::named(&event.keystroke, this.key_press);
-                let keystroke = named.as_ref().unwrap_or(&event.keystroke);
-                let restored = shifted_keys::restore(keystroke, this.key_press, this.key_layout);
-                let typed = Typed::new(keystroke, restored);
-                this.prefix_keystroke(&typed, window, cx);
-            });
-        })
+    /// The window's keyboard boundary, also usable without its terminal canvas.
+    pub(crate) fn shortcut_scope(cx: &mut Context<Self>) -> Div {
+        div()
+            .key_context("SpaceportWindow")
+            .capture_key_down(cx.listener(Self::shortcut_key_down))
+            .capture_key_up(cx.listener(Self::shortcut_key_up))
     }
 
-    fn prefix_keystroke(&mut self, typed: &Typed<'_>, window: &mut Window, cx: &mut Context<Self>) {
-        if self.resize_mode {
-            self.resize_keystroke(typed, window, cx);
+    /// Main-window catalog bindings are labels; this capture retains the raw repeat flag.
+    pub(crate) fn shortcut_key_down(
+        &mut self,
+        event: &KeyDownEvent,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !matches!(
+            event.keystroke.key.as_str(),
+            "shift" | "shiftleft" | "shiftright"
+        ) {
+            self.shift_taps.cancel();
+        }
+        let named = super::function_keys::named(&event.keystroke, self.key_press);
+        let keystroke = named.as_ref().unwrap_or(&event.keystroke);
+        let restored = shifted_keys::restore(keystroke, self.key_press, self.key_layout);
+        let typed = Typed::new(keystroke, restored);
+        let key = typed.held_key();
+        let previous = self.shortcut_keys.get(key).copied();
+        if !event.is_held {
+            self.shortcut_keys.remove(key);
+        }
+        // A consumed modal trigger must not end its mode on the held tail.
+        if event.is_held
+            && (self.prefix_armed
+                || matches!(previous, Some(HeldShortcut::Consume(KeyOwner::Modal))))
+        {
+            cx.stop_propagation();
+            window.prevent_default();
             return;
         }
+        if self.resize_mode && self.resize_keystroke(&typed, window, cx) {
+            if !self.resize_mode {
+                self.shortcut_keys
+                    .insert(key.to_owned(), HeldShortcut::Consume(KeyOwner::Modal));
+            }
+            return;
+        }
+        if event.is_held
+            && let Some(held) = previous
+        {
+            if event.prefer_character_input && held.yields_to_text() {
+                return;
+            }
+            match held {
+                HeldShortcut::PassThrough => return,
+                HeldShortcut::Repeat(command, _) => self.command(command, window, cx),
+                HeldShortcut::Consume(_) => {}
+            }
+            cx.stop_propagation();
+            window.prevent_default();
+            return;
+        }
+        let held = self.shortcut_keystroke(
+            &typed,
+            event.is_held,
+            event.prefer_character_input,
+            window,
+            cx,
+        );
+        if let Some(held) = held {
+            self.shortcut_keys.insert(key.to_owned(), held);
+            if !matches!(held, HeldShortcut::PassThrough) {
+                cx.stop_propagation();
+                window.prevent_default();
+            }
+        }
+    }
+
+    pub(crate) fn shortcut_key_up(
+        &mut self,
+        event: &KeyUpEvent,
+        _: &mut Window,
+        _: &mut Context<Self>,
+    ) {
+        let named = super::function_keys::named(&event.keystroke, self.key_press);
+        let keystroke = named.as_ref().unwrap_or(&event.keystroke);
+        let restored = shifted_keys::restore(keystroke, self.key_press, self.key_layout);
+        self.shortcut_keys
+            .remove(Typed::new(keystroke, restored).held_key());
+    }
+
+    fn shortcut_keystroke(
+        &mut self,
+        typed: &Typed<'_>,
+        is_held: bool,
+        preferred_text: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Option<HeldShortcut> {
         // Every binding is tried on the key as GPUI named it before any is
         // tried on the restored key, so a binding on the symbol itself, such
         // as a custom command on `prefix+!`, still wins over one on
         // `prefix+shift+1`, and over a prefix on the restored key.
         let armed = self.prefix_armed;
+        let map = |bound| {
+            KeybindingKeystroke::new_with_mapper(bound, false, cx.keyboard_mapper().as_ref())
+        };
         let bound = if armed {
-            typed.find(|keystroke| self.bound(keystroke, true))
+            typed.find(|keystroke| self.bound(keystroke, true, preferred_text, map))
         } else {
             // Without the prefix, a key GPUI's bindings or a pane key hold
             // as GPUI named it is theirs; restoring its Shift must not take
             // it from them for the prefix or a custom command.
             let held = |keystroke: &Keystroke| self.keymap().holds_directly(keystroke);
-            typed.find_unheld(|keystroke| self.bound(keystroke, false), held)
+            typed.find_unheld(
+                |keystroke| self.bound(keystroke, false, preferred_text, map),
+                held,
+            )
         };
         if !armed {
             match bound {
                 Some(Bound::Prefix) => {
-                    self.prefix_armed = true;
-                    cx.stop_propagation();
+                    if !is_held {
+                        self.prefix_armed = true;
+                    }
                     cx.notify();
+                    return Some(HeldShortcut::Consume(KeyOwner::Modal));
                 }
                 Some(Bound::Custom(id, action)) => {
-                    cx.stop_propagation();
-                    self.invoke_custom_command(&id, action, cx);
+                    if !is_held {
+                        self.invoke_custom_command(&id, action, cx);
+                    }
+                    return Some(HeldShortcut::Consume(KeyOwner::Direct));
                 }
-                Some(Bound::Chord(_)) | None => {}
+                Some(Bound::Command(command)) => {
+                    if !is_held || repeatable(command) {
+                        self.command(command, window, cx);
+                    }
+                    return Some(if repeatable(command) {
+                        HeldShortcut::Repeat(command, KeyOwner::Direct)
+                    } else {
+                        HeldShortcut::Consume(KeyOwner::Direct)
+                    });
+                }
+                None => {}
             }
-            return;
+            return None;
         }
         self.prefix_armed = false;
         cx.notify();
         let Some(bound) = bound else {
-            cx.stop_propagation();
-            return;
+            return Some(HeldShortcut::Consume(KeyOwner::Modal));
         };
         // Typed twice, the prefix goes on as ordinary input.
         if matches!(bound, Bound::Prefix) {
-            return;
+            return Some(HeldShortcut::PassThrough);
         }
-        cx.stop_propagation();
         // Commands wait while a menu page holds input, so the chord ends it
         // first. Run directly rather than through focus, which the menu held.
         if self.menu.page.is_some() {
             self.dismiss_menu(window, cx);
         }
         match bound {
-            Bound::Chord(command) => self.command(command, window, cx),
-            Bound::Custom(id, action) => self.invoke_custom_command(&id, action, cx),
-            Bound::Prefix => {}
+            Bound::Command(command) => {
+                self.command(command, window, cx);
+                Some(if repeatable(command) {
+                    HeldShortcut::Repeat(command, KeyOwner::Modal)
+                } else {
+                    HeldShortcut::Consume(KeyOwner::Modal)
+                })
+            }
+            Bound::Custom(id, action) => {
+                self.invoke_custom_command(&id, action, cx);
+                Some(HeldShortcut::Consume(KeyOwner::Modal))
+            }
+            Bound::Prefix => Some(HeldShortcut::PassThrough),
         }
     }
 
     /// What `keystroke` is bound to: the prefix, then, after the prefix, the
     /// keymap's chord, then a custom command. Without the prefix, a custom
     /// command runs only while no menu page holds input.
-    fn bound(&self, keystroke: &Keystroke, armed: bool) -> Option<Bound> {
+    fn bound(
+        &self,
+        keystroke: &Keystroke,
+        armed: bool,
+        preferred_text: bool,
+        map: impl Fn(Keystroke) -> KeybindingKeystroke,
+    ) -> Option<Bound> {
         let keymap = self.keymap();
         if keymap.is_prefix(keystroke) {
             return Some(Bound::Prefix);
         }
+        // Explicit prefix and resize modes own their input; direct shortcuts yield to IME/AltGr text.
+        if !armed && preferred_text {
+            return None;
+        }
         if armed && let Some(command) = keymap.chord(keystroke) {
-            return Some(Bound::Chord(command));
+            if !keymap.owns_chord(keystroke)
+                && let Some((id, action)) = self.custom_command(keystroke, true)
+            {
+                return Some(Bound::Custom(id, action));
+            }
+            return Some(Bound::Command(command));
+        }
+        if !armed && let Some(direct) = keymap.direct(keystroke, map) {
+            let command = match direct {
+                crate::keymap::Direct::Configured(command) => return Some(Bound::Command(command)),
+                crate::keymap::Direct::Catalog(command) => command,
+            };
+            if self.menu.page.is_none()
+                && let Some((id, action)) = self.custom_command(keystroke, false)
+            {
+                return Some(Bound::Custom(id, action));
+            }
+            return Some(Bound::Command(command));
         }
         if !armed && self.menu.page.is_some() {
             return None;
@@ -156,17 +340,23 @@ impl SheprdWindow {
     /// Escape, Enter, or the mode's own shortcut ends it, and anything else
     /// is swallowed. Platform shortcuts such as quitting still work, and a
     /// menu, which takes keys of its own, ends the mode.
-    fn resize_keystroke(&mut self, typed: &Typed<'_>, window: &mut Window, cx: &mut Context<Self>) {
+    fn resize_keystroke(
+        &mut self,
+        typed: &Typed<'_>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
         let keystroke = typed.keystroke();
         if self.menu.page.is_some() {
             self.resize_mode = false;
             cx.notify();
-            return;
+            return false;
         }
         if keystroke.modifiers.platform {
-            return;
+            return false;
         }
         cx.stop_propagation();
+        window.prevent_default();
         let keymap = self.keymap();
         if matches!(keystroke.key.as_str(), "escape" | "enter")
             || typed.matches(|keystroke| {
@@ -176,20 +366,21 @@ impl SheprdWindow {
         {
             self.resize_mode = false;
             cx.notify();
-            return;
+            return true;
         }
         let modifiers = keystroke.modifiers;
         if modifiers.control || modifiers.alt || modifiers.function {
-            return;
+            return true;
         }
         let command = match keystroke.key.as_str() {
             "h" | "left" => Command::ResizeLeft,
             "j" | "down" => Command::ResizeDown,
             "k" | "up" => Command::ResizeUp,
             "l" | "right" => Command::ResizeRight,
-            _ => return,
+            _ => return true,
         };
         self.command(command, window, cx);
+        true
     }
 
     /// Leaving the window abandons a half-typed chord, as the TUI's prefix
@@ -197,12 +388,14 @@ impl SheprdWindow {
     pub(super) fn disarm_prefix(&mut self) {
         self.prefix_armed = false;
         self.resize_mode = false;
+        self.shortcut_keys.clear();
     }
 }
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
+    mod platform_mapping;
     use crate::{
         keymap::{DaemonKeys, Keymap},
         state::ConnectionStatus,
@@ -224,7 +417,7 @@ mod tests {
     #[gpui::test]
     fn the_prefix_runs_chords_and_swallows_other_keys(cx: &mut TestAppContext) {
         let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-        let table: toml::Table = "prefix = ['cmd+j', 'cmd+u']\ntoggle_sidebar = 'prefix+cmd+b'"
+        let table: toml::Table = "prefix = ['cmd+j', 'cmd+u']\ntoggle_sidebar = 'prefix+cmd+z'"
             .parse()
             .unwrap();
         view.update(cx, |view, _| {
@@ -244,26 +437,26 @@ mod tests {
         });
         assert!(!press("cmd-y", cx));
         assert!(
-            !press("cmd-b", cx),
+            !press("cmd-z", cx),
             "the chord's key alone is not a binding"
         );
         assert_eq!(state(cx), (false, true));
 
         assert!(press("cmd-j", cx));
         assert_eq!(state(cx), (true, true));
-        assert!(press("cmd-b", cx));
+        assert!(press("cmd-z", cx));
         assert_eq!(state(cx), (false, false), "the chord ran");
 
         // Any configured prefix arms the same chords.
         assert!(press("cmd-u", cx));
         assert_eq!(state(cx), (true, false));
-        assert!(press("cmd-b", cx));
+        assert!(press("cmd-z", cx));
         assert_eq!(state(cx), (false, true), "the second prefix ran the chord");
         assert!(press("cmd-j", cx));
         assert!(!press("cmd-u", cx), "another prefix passes through too");
         assert_eq!(state(cx), (false, true));
         assert!(press("cmd-u", cx));
-        assert!(press("cmd-b", cx));
+        assert!(press("cmd-z", cx));
         assert_eq!(state(cx), (false, false));
 
         // An unbound key after the prefix goes nowhere, as in the TUI.
@@ -281,7 +474,7 @@ mod tests {
         assert!(press("escape", cx));
         assert_eq!(state(cx), (false, false));
         assert!(press("cmd-j", cx));
-        assert!(press("cmd-b", cx));
+        assert!(press("cmd-z", cx));
         assert_eq!(state(cx), (false, true));
 
         // From a menu's focused text field, the chord closes the menu and runs.
@@ -301,7 +494,7 @@ mod tests {
         assert!(search_focused(cx));
         assert!(press("cmd-j", cx));
         assert!(search_focused(cx), "the prefix alone leaves the menu open");
-        assert!(press("cmd-b", cx));
+        assert!(press("cmd-z", cx));
         assert_eq!(state(cx), (false, false));
         view.read_with(cx, |view, _| assert!(view.menu.page.is_none()));
 

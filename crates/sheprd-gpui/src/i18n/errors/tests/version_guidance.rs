@@ -59,10 +59,10 @@ fn older_or_equal_runtime_keeps_the_herdr_update_command() {
             let shown = error.localize().replace(ISOLATION, "");
             assert_eq!(shown, error.to_string());
             assert!(
-                shown.contains("run `herdr update` and reconnect"),
+                shown.contains("Run `herdr update`, then choose Terminal → Reconnect."),
                 "{shown}"
             );
-            assert!(!shown.contains("update Spaceport"), "{shown}");
+            assert!(!shown.contains("Update Spaceport"), "{shown}");
         }
     }
 }

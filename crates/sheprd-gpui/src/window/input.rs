@@ -1,3 +1,5 @@
+// ABOUTME: Sends semantic terminal input through the current pane or popup target.
+// ABOUTME: Preserves clipboard, geometry, and key-release behavior across projection gaps.
 //! Semantic input on its way to a pane or popup: keystrokes, paste, and wheel
 //! deltas. Nothing here synthesizes terminal keys for an operation that has an
 //! endpoint API method, and nothing is sent while a menu page holds input.
@@ -116,15 +118,13 @@ impl SheprdWindow {
     }
 
     /// Whether wheel scrolling may draw panes between rows. Off in settings,
-    /// it never does. Images paint with the whole grid, which never slides,
-    /// a dragged thumb places the content exactly where the pointer put it,
-    /// and a popup stays on its rows.
+    /// it never does. A dragged thumb places content exactly at the pointer,
+    /// and a popup stays on its rows. SmoothScroll checks image overlap for
+    /// the pane receiving the gesture and each frame it retains.
     pub(crate) fn slides_allowed(&self) -> bool {
         self.config.smooth_scroll
             && self.scrollbar_drag.is_none()
-            && (self.live.surface.as_ref()).is_none_or(|surface| {
-                surface.graphics.placements.is_empty() && surface.popup.is_none()
-            })
+            && (self.live.surface.as_ref()).is_none_or(|surface| surface.popup.is_none())
     }
 
     /// The terminal's cell size as last measured, for every conversion
@@ -246,6 +246,7 @@ impl SheprdWindow {
             .steps(&target, event, self.cell_width, cell_height, notch_lines);
         // Scrollback follows the OS's motion exactly; anything else, such as an
         // application reading the wheel, gets whole steps as they accumulate.
+        let was_sliding = self.presentation.scroll.offset().is_some();
         let smooth = match &target.target {
             InputTarget::Pane(id) if self.slides_allowed() => self
                 .presentation
@@ -274,8 +275,9 @@ impl SheprdWindow {
             self.presentation.scroll.clear();
             cx.notify();
         }
-        if smooth.is_some() {
+        if smooth.is_some() || (was_sliding && self.presentation.scroll.offset().is_none()) {
             // The drawing moves with every delta, before any surface lands.
+            // Cancellation also snaps painting to the reset input geometry.
             self.redraw_terminal(cx);
         }
     }

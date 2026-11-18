@@ -1,3 +1,5 @@
+// ABOUTME: Resolves Settings palettes when OS appearance preferences change.
+// ABOUTME: Preserves selected themes and fences stale asynchronous loads.
 //! Themes that follow the system appearance, written as Ghostty's
 //! `light:NAME,dark:NAME`: which side the grid edits, turning following on
 //! and off, and showing the side the current appearance calls for.
@@ -154,11 +156,25 @@ impl SettingsWindow {
     /// Re-resolves a following theme, or a draft of one, when the system
     /// changes appearance. Theme files load on the background executor.
     pub(in crate::settings_window) fn follow_system_appearance(&mut self, cx: &mut Context<Self>) {
+        self.refresh_appearance(false, cx);
+    }
+
+    pub(crate) fn refresh_system_contrast(&mut self, cx: &mut Context<Self>) {
+        self.refresh_appearance(true, cx);
+        self.drive_theme_intent(cx);
+        self.sync_appearance(cx);
+        self.publish_appearance(cx);
+    }
+
+    fn refresh_appearance(&mut self, contrast_changed: bool, cx: &mut Context<Self>) {
         let light = crate::app::light_appearance(cx);
-        if let Some(intent) = &self.theme_intent {
+        if let Some(intent) = &self.theme_intent
+            && (intent.choice.scope == Scope::App || !contrast_changed)
+        {
             if intent.choice.scope != Scope::App
-                || !ThemeName::follows_system(&intent.choice.name)
-                || self.theme_light == light
+                || (!contrast_changed
+                    && (!ThemeName::follows_system(&intent.choice.name)
+                        || self.theme_light == light))
             {
                 return;
             }
@@ -172,7 +188,7 @@ impl SettingsWindow {
             }
             return;
         }
-        if !ThemeName::follows_system(&self.config.theme) {
+        if !contrast_changed && !ThemeName::follows_system(&self.config.theme) {
             return;
         }
         if let Some(theme) = self.prepared_app_theme(&self.config.theme, light) {
@@ -183,7 +199,7 @@ impl SettingsWindow {
         config.contrast = Contrast::Standard;
         let load = cx
             .background_executor()
-            .spawn(async move { config.theme(light).map(|theme| (config.theme, theme)) });
+            .spawn(async move { config.raw_theme(light).map(|theme| (config.theme, theme)) });
         cx.spawn(async move |this, cx| {
             let result = load.await;
             let _ = this.update(cx, |this, cx| {
@@ -207,7 +223,10 @@ impl SettingsWindow {
                 }
                 if value != this.config.theme
                     || light != crate::app::light_appearance(cx)
-                    || this.theme_intent.is_some()
+                    || this
+                        .theme_intent
+                        .as_ref()
+                        .is_some_and(|intent| intent.choice.scope == Scope::App)
                 {
                     return;
                 }

@@ -6,6 +6,7 @@ mod add_device;
 mod clock;
 mod core_flag;
 mod en_xa;
+mod feedback;
 mod history;
 mod model;
 mod narrow_layout;

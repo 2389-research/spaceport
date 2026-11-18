@@ -1,3 +1,5 @@
+// ABOUTME: Pins multiline editing keys against real field state and native input.
+// ABOUTME: Restores each case through the field's shared draft boundary.
 //! Every key the composer takes, pinned row by row: against
 //! `key_table_single.txt` on the one-line text the single-line fields are
 //! pinned with, and against `key_table_lines.txt` on three lines.
@@ -60,12 +62,8 @@ fn place(
 ) {
     cx.write_to_clipboard(gpui::ClipboardItem::new_string(CLIPBOARD.into()));
     input.update(cx, |input, cx| {
-        input.edit = Editing {
-            text: text.into(),
-            anchor,
-            cursor,
-            marked: None,
-        };
+        input.set_text_at(text, cursor, cx);
+        input.edit.anchor = anchor;
         input.killed.clear();
         input.goal_x = None;
         cx.notify();

@@ -1,7 +1,10 @@
+// ABOUTME: Exercises shortcut draft validation, exact save ownership, and native control callbacks.
+// ABOUTME: Keeps file writes injected while checking active and departing editor behavior.
 use super::*;
 use crate::controls::{COMMANDS, Command};
 use gpui::{Modifiers, TestAppContext, size};
 
+mod departure;
 mod en_xa;
 mod focus;
 

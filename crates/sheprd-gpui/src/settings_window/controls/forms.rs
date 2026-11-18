@@ -1,3 +1,5 @@
+// ABOUTME: Renders Settings form sections and labelled switch rows.
+// ABOUTME: Shares keyboard focus and activation with other Settings controls.
 //! Form pieces used by chat environment and appearance controls: a titled
 //! block under the shared section heading and a labelled switch row.
 // i18n: migrated
@@ -39,28 +41,32 @@ impl SettingsWindow {
             } else {
                 Toggled::False
             });
-        crate::accessibility::disabled(row, !enabled)
-            .row()
-            .items_center()
-            .justify_between()
-            .gap(px(12.))
-            .min_h(px(ui::ROW_HEIGHT))
-            .py(px(6.))
-            .border_b_1()
-            .border_color(rgb(self.theme.active))
-            .when(enabled, |row| row.cursor_pointer())
-            .when(!enabled, |row| row.opacity(0.5))
-            .child(
-                div()
-                    .min_w_0()
-                    .text_size(px(12.))
-                    .font_weight(FontWeight::MEDIUM)
-                    .child(label),
-            )
-            .child(
-                crate::toggles::switch(&self.theme, 20., checked)
-                    .id(ElementId::Name(toggle.clone().into()))
-                    .debug_selector(move || toggle.clone()),
-            )
+        ui::focusable(
+            &self.theme,
+            crate::accessibility::disabled(row, !enabled),
+            enabled,
+        )
+        .row()
+        .items_center()
+        .justify_between()
+        .gap(px(12.))
+        .min_h(px(ui::ROW_HEIGHT))
+        .py(px(6.))
+        .border_b_1()
+        .border_color(rgb(self.theme.active))
+        .when(enabled, |row| row.cursor_pointer())
+        .when(!enabled, |row| row.opacity(0.5))
+        .child(
+            div()
+                .min_w_0()
+                .text_size(rems(0.75))
+                .font_weight(FontWeight::MEDIUM)
+                .child(label),
+        )
+        .child(
+            crate::toggles::switch(&self.theme, 20., checked)
+                .id(ElementId::Name(toggle.clone().into()))
+                .debug_selector(move || toggle.clone()),
+        )
     }
 }

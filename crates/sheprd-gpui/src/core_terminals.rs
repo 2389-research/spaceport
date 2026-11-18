@@ -31,6 +31,7 @@ mod view;
 mod worker;
 pub(crate) mod workspace_document;
 mod workspace_ui;
+pub(crate) use workspace_ui::WorkspacePaint;
 
 #[cfg(test)]
 pub(crate) fn set_document_for_test_as(
@@ -57,6 +58,15 @@ mod tests;
 
 #[cfg(all(test, unix))]
 pub(crate) use tests::scripted_core::connect as connect_backend_for_test;
+
+/// A terminal acknowledged by Core and placed in its native tab.
+#[derive(Debug)]
+pub(crate) struct Created {
+    pub(crate) tab: TabId,
+    pub(crate) terminal: TerminalId,
+}
+pub(crate) type Receipt = std::sync::mpsc::Receiver<Result<Created, Error>>;
+type Reporter = std::sync::mpsc::SyncSender<Result<Created, Error>>;
 
 pub(crate) use error::Error;
 pub(crate) use hub::{Hub, Mismatch, Start, State};
@@ -498,8 +508,8 @@ impl SheprdWindow {
         &mut self,
         purpose: Purpose,
         spawn: Spawn,
-        cx: &App,
-    ) -> crate::Result<()> {
+        cx: &mut App,
+    ) -> crate::Result<Receipt> {
         if !self.core_enabled() {
             return Err(crate::Error::StaleWorkspace);
         }
@@ -547,16 +557,28 @@ impl SheprdWindow {
                 }
             }
         }
+        let reserved = if matches!(purpose, Purpose::Tab { .. }) {
+            Some(Store::update(cx, Store::reserve)?)
+        } else {
+            None
+        };
+        let (report, receipt) = std::sync::mpsc::sync_channel(1);
         let queued = self
             .core_terminals
             .spawning
-            .transition(spawning::Event::Queue(purpose, Box::new(spawn), core_id));
+            .transition(spawning::Event::Queue(
+                purpose,
+                Box::new(spawn),
+                core_id,
+                reserved,
+                Some(report),
+            ));
         if !matches!(queued, spawning::Outcome::Accepted) {
             return Err(crate::Error::ConnectionBusy);
         }
         self.core_terminals.hub.connect(Start::IfMissing);
         self.start_core_shell();
-        Ok(())
+        Ok(receipt)
     }
 
     /// Submits the oldest queued request once the hub is ready.
@@ -700,7 +722,7 @@ impl SheprdWindow {
     }
 
     fn finish_started_core_terminal(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let spawning::Outcome::Finished(purpose, outcome) = self
+        let spawning::Outcome::Finished(purpose, outcome, reserved, report) = self
             .core_terminals
             .spawning
             .transition(spawning::Event::Poll)
@@ -717,27 +739,53 @@ impl SheprdWindow {
                     Flash::warning(fl!("core-terminals-start-failed", reason = reason)),
                     cx,
                 );
+                if let Some(report) = report {
+                    let _ = report.try_send(Err(error));
+                }
                 return;
             }
         };
-        match purpose {
+        let terminal = info.id.clone();
+        let placed = match purpose {
             Purpose::Tab { scope, workspace } => {
+                let terminal = info.id.clone();
                 let location = Location::CoreTerminal {
                     panes: Panes::single(info.id),
                     observe: false,
                 };
-                let Some(id) = Store::update(cx, |store| {
-                    store.open(scope, &workspace, Some(location), None)
+                let Some(id) = reserved.and_then(|reserved| {
+                    Store::update(cx, |store| {
+                        store.place_reserved(reserved, scope, workspace, location)
+                    })
                 }) else {
-                    self.show_flash(Flash::warning(fl!("core-terminals-too-many-tabs")), cx);
+                    self.show_flash(
+                        Flash::warning(fl!(
+                            "core-terminals-created-without-view",
+                            terminal = terminal.as_str()
+                        )),
+                        cx,
+                    );
+                    if let Some(report) = report {
+                        let _ = report.try_send(Err(Error::ViewMissing(terminal)));
+                    }
                     return;
                 };
                 self.sync_core_views(cx);
                 self.show_browser_tab(id, window, cx);
+                Some(id)
             }
-            Purpose::Split { tab, at, axis } => {
-                self.place_split(tab, &at, axis, info.id, window, cx)
-            }
+            Purpose::Split { tab, at, axis } => self
+                .place_split(tab, &at, axis, info.id, window, cx)
+                .then_some(tab),
+        };
+        if let Some(report) = report {
+            let outcome = placed
+                .map(|tab| Created {
+                    tab,
+                    terminal: terminal.clone(),
+                })
+                .ok_or(Error::ViewMissing(terminal));
+            let _ = report.try_send(outcome);
         }
         cx.notify();
     }

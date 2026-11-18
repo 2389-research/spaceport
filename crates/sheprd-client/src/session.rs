@@ -768,6 +768,9 @@ impl Session {
                 }
             }
             ServerMessage::ServerShutdown { reason } => {
+                emit(ClientEvent::Message(ServerMessage::ServerShutdown {
+                    reason: reason.clone(),
+                }))?;
                 return Err(Error::ServerShutdown(
                     reason.unwrap_or_else(|| "server shutdown".into()),
                 ));

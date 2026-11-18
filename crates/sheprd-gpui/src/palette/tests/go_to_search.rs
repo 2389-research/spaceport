@@ -1,10 +1,17 @@
+// ABOUTME: Exercises Go To search fields and shared safe agent captions.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::*;
 
 #[test]
 fn go_to_finds_agents_by_kind_name_and_status_and_tabs_by_label() {
     let snapshot = go_to_fixture();
     let mut entries = Vec::new();
-    go_to_entries(crate::endpoint::LOCAL, None, &snapshot, &mut entries);
+    go_to_entries(
+        crate::endpoint::LOCAL,
+        None,
+        &crate::sidebar::IndexedSnapshot::new(&snapshot),
+        &mut entries,
+    );
     let found = |query: &str| {
         search::rank(
             &entries,
@@ -40,7 +47,12 @@ fn go_to_finds_agents_by_the_titles_and_label_the_sidebar_shows() {
     snapshot.agents[0].terminal_title_stripped = Some("doorbuster product swap".into());
     snapshot.panes[0].label = Some("nightly triage".into());
     let mut entries = Vec::new();
-    go_to_entries(crate::endpoint::LOCAL, None, &snapshot, &mut entries);
+    go_to_entries(
+        crate::endpoint::LOCAL,
+        None,
+        &crate::sidebar::IndexedSnapshot::new(&snapshot),
+        &mut entries,
+    );
     let found = |query: &str| {
         search::rank(
             &entries,
@@ -67,7 +79,12 @@ fn go_to_titles_agents_with_the_pane_name_the_sidebar_shows() {
         snapshot.panes[0].label = label.map(str::to_owned);
         snapshot.agents[0].title = title.map(str::to_owned);
         let mut entries = Vec::new();
-        go_to_entries(crate::endpoint::LOCAL, None, &snapshot, &mut entries);
+        go_to_entries(
+            crate::endpoint::LOCAL,
+            None,
+            &crate::sidebar::IndexedSnapshot::new(&snapshot),
+            &mut entries,
+        );
         let agent_pane = Identity::Go(
             crate::endpoint::LOCAL.into(),
             NavigationTarget::Pane("w1:p1".into()),

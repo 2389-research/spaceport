@@ -1,3 +1,5 @@
+// ABOUTME: Pairs presented terminal frames with their existing image assets.
+// ABOUTME: Fences retained pictures and fractional history across projection changes.
 //! Which frame the terminal area paints, across the gap between projections.
 //!
 //! The daemon projects one surface per client, for the focused pane tree alone,
@@ -51,12 +53,24 @@ pub(crate) struct Presentation {
 }
 
 impl Presentation {
+    /// The already presented frame and its paired assets, without advancing presentation.
+    #[cfg(all(target_os = "macos", feature = "integration-test"))]
+    pub(crate) fn profile_presented(&self) -> Option<(&PaneSurfaceFrame, &SurfaceImages)> {
+        Some((self.presented.as_deref()?, self.images.as_ref()))
+    }
+
     /// The frame to paint now, recorded as what the window shows: the ready
     /// surface when the client has one, and otherwise the frame last presented
     /// for as long as it can still stand for this window's content.
     pub(crate) fn frame(&mut self, live: &LiveState) -> Option<Arc<PaneSurfaceFrame>> {
         match live.surface.clone().filter(|_| live.surface_ready()) {
             Some(ready) => {
+                if !Arc::ptr_eq(&self.images, &live.surface_images)
+                    && let Some(shown) = &self.presented
+                {
+                    self.scroll
+                        .retain_images(shown, &self.images, &live.surface_images);
+                }
                 if let Some(shown) = self.presented.as_ref().filter(|s| !Arc::ptr_eq(s, &ready)) {
                     self.scroll.observe(shown, &ready);
                 }

@@ -1,11 +1,35 @@
+// ABOUTME: Shares host forward rows and the port dialog with inert departure paint.
+// ABOUTME: Keeps exact tunnel ownership in the window's existing forward manager.
 //! Forwarding a saved device's ports from its menu: the dialog that names a
 //! port, and the host menu's list of forwards with their actions. The forwards
 //! themselves live in [`crate::port_forward`].
-use super::HostMenu;
+use super::*;
 use crate::i18n::fl;
 use crate::{SheprdWindow, menu::Page};
-use gpui::{prelude::*, *};
 use std::num::NonZeroU16;
+
+pub(super) struct Row {
+    remote_port: NonZeroU16,
+    status: String,
+    ended: Option<String>,
+    open: bool,
+}
+
+pub(super) struct Paint {
+    label: String,
+    input: Option<crate::search_input::Paint>,
+    error: Option<String>,
+}
+
+impl Paint {
+    pub(super) fn new(host: &HostMenu, cx: &App) -> Self {
+        Self {
+            label: host.label.clone(),
+            input: host.input.as_ref().map(|input| input.read(cx).paint()),
+            error: host.error.clone(),
+        }
+    }
+}
 
 impl SheprdWindow {
     /// Starts the forward and returns to the host's menu, which shows it
@@ -77,18 +101,40 @@ impl SheprdWindow {
         }
     }
 
+    pub(super) fn host_forward_rows(&self, host: &HostMenu) -> Vec<Row> {
+        use crate::port_forward::State;
+        host.ssh_target()
+            .into_iter()
+            .flat_map(|target| self.port_forwards.for_host(target))
+            .map(|forward| {
+                let (status, ended) = match forward.state() {
+                    State::Starting => (fl!("host-menu-forward-connecting"), None),
+                    State::Listening { local_port } => (format!("→ 127.0.0.1:{local_port}"), None),
+                    State::Ended(reason) => (fl!("host-menu-forward-ended"), Some(reason.clone())),
+                };
+                Row {
+                    remote_port: forward.remote_port(),
+                    status,
+                    ended,
+                    open: forward.url().is_some(),
+                }
+            })
+            .collect()
+    }
+
     /// The host's forwarded ports, each with its state and the actions it
     /// allows. Nothing at all when there are none.
-    pub(super) fn render_forwards(&self, host: &HostMenu, cx: &mut Context<Self>) -> Div {
-        use crate::port_forward::State;
+    pub(super) fn render_forwards(
+        &self,
+        rows: &[Row],
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
         let theme = &self.theme;
         let small = px(self.config.ui.size * 0.85);
         let mut section = div().debug_selector(|| "host-forwards".into());
         let mut any = false;
-        let Some(target) = host.ssh_target() else {
-            return section;
-        };
-        for forward in self.port_forwards.for_host(target) {
+        for forward in rows {
             if !any {
                 section = section
                     .mt(px(4.))
@@ -105,13 +151,10 @@ impl SheprdWindow {
                     );
                 any = true;
             }
-            let remote_port = forward.remote_port();
+            let remote_port = forward.remote_port;
             let port = remote_port.get();
-            let (status, ended) = match forward.state() {
-                State::Starting => (fl!("host-menu-forward-connecting"), None),
-                State::Listening { local_port } => (format!("→ 127.0.0.1:{local_port}"), None),
-                State::Ended(reason) => (fl!("host-menu-forward-ended"), Some(reason.clone())),
-            };
+            let ended = forward.ended.clone();
+            let status = forward.status.clone();
             let button = |id: &'static str, label: String| {
                 div()
                     .id((id, usize::from(port)))
@@ -120,8 +163,11 @@ impl SheprdWindow {
                     .px(px(6.))
                     .py(px(2.))
                     .rounded(px(crate::config::corners::CONTROL))
-                    .cursor_pointer()
-                    .hover(|button| button.bg(rgb(theme.active)))
+                    .when(active, |button| {
+                        button
+                            .cursor_pointer()
+                            .hover(|button| button.bg(rgb(theme.active)))
+                    })
                     .child(label)
             };
             let row = div()
@@ -148,12 +194,15 @@ impl SheprdWindow {
                                 .child(status),
                         ),
                 )
-                .when(forward.url().is_some(), |row| {
+                .when(forward.open, |row| {
                     row.child(
-                        button("host-forward-open", fl!("host-menu-forward-open")).on_click(
-                            cx.listener(move |this, _, window, cx| {
-                                this.open_forward(remote_port, window, cx)
-                            }),
+                        button("host-forward-open", fl!("host-menu-forward-open")).when(
+                            active,
+                            |button| {
+                                button.on_click(cx.listener(move |this, _, window, cx| {
+                                    this.open_forward(remote_port, window, cx)
+                                }))
+                            },
                         ),
                     )
                 })
@@ -166,9 +215,11 @@ impl SheprdWindow {
                             fl!("host-menu-forward-stop")
                         },
                     )
-                    .on_click(
-                        cx.listener(move |this, _, _, cx| this.stop_forward(remote_port, cx)),
-                    ),
+                    .when(active, |button| {
+                        button.on_click(
+                            cx.listener(move |this, _, _, cx| this.stop_forward(remote_port, cx)),
+                        )
+                    }),
                 );
             section = section.child(row).when_some(ended, |section, reason| {
                 section.child(
@@ -186,7 +237,12 @@ impl SheprdWindow {
 
     /// A centered modal like Rename: the remote port in the body, Forward in
     /// the footer.
-    pub(super) fn render_forward_port(&self, host: &HostMenu, cx: &mut Context<Self>) -> Div {
+    pub(super) fn render_forward_port(
+        &self,
+        paint: &Paint,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
         let theme = &self.theme;
         let header = div()
             .debug_selector(|| "forward-port-header".into())
@@ -208,13 +264,19 @@ impl SheprdWindow {
             .child(
                 div()
                     .id("forward-port-close")
+                    .debug_selector(|| "forward-port-close".into())
                     .px_2()
                     .py_1()
-                    .cursor_pointer()
                     .rounded(px(crate::config::corners::CONTROL))
-                    .hover(|s| s.bg(rgb(theme.active)))
+                    .when(active, |button| {
+                        button.cursor_pointer().hover(|s| s.bg(rgb(theme.active)))
+                    })
                     .child(fl!("host-menu-forward-close"))
-                    .on_click(cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx))),
+                    .when(active, |button| {
+                        button.on_click(
+                            cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)),
+                        )
+                    }),
             );
         let body = div()
             .debug_selector(|| "forward-port".into())
@@ -223,20 +285,28 @@ impl SheprdWindow {
             .flex()
             .flex_col()
             .gap(px(12.))
-            .child(
-                div()
-                    .text_color(rgb(theme.muted))
-                    .child(fl!("host-menu-forward-intro", device = host.label.as_str())),
-            )
+            .child(div().text_color(rgb(theme.muted)).child(fl!(
+                "host-menu-forward-intro",
+                device = paint.label.as_str()
+            )))
             .child(
                 div()
                     .flex()
                     .flex_col()
                     .gap(px(6.))
                     .child(fl!("host-menu-forward-remote-port"))
-                    .when_some(host.input.clone(), |field, input| field.child(input)),
+                    .when_some(paint.input.as_ref(), |field, input| {
+                        if active {
+                            field.when_some(
+                                self.menu.host.as_ref().and_then(|host| host.input.clone()),
+                                |field, input| field.child(input),
+                            )
+                        } else {
+                            field.child(input.render())
+                        }
+                    }),
             )
-            .when_some(host.error.clone(), |body, error| {
+            .when_some(paint.error.clone(), |body, error| {
                 body.child(
                     div()
                         .debug_selector(|| "forward-port-error".into())
@@ -258,12 +328,17 @@ impl SheprdWindow {
                     .p(px(8.))
                     .rounded(px(crate::config::corners::CONTROL))
                     .bg(rgb(theme.active))
-                    .cursor_pointer()
-                    .hover(|s| s.bg(rgb(theme.active).blend(rgba((theme.foreground << 8) | 0x20))))
+                    .when(active, |button| {
+                        button.cursor_pointer().hover(|s| {
+                            s.bg(rgb(theme.active).blend(rgba((theme.foreground << 8) | 0x20)))
+                        })
+                    })
                     .child(fl!("host-menu-forward-submit"))
-                    .on_click(
-                        cx.listener(|this, _, window, cx| this.submit_forward_port(window, cx)),
-                    ),
+                    .when(active, |button| {
+                        button.on_click(
+                            cx.listener(|this, _, window, cx| this.submit_forward_port(window, cx)),
+                        )
+                    }),
             );
         div()
             .flex()

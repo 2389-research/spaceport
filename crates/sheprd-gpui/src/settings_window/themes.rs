@@ -55,6 +55,11 @@ pub(crate) fn theme_pending(cx: &App) -> bool {
         .is_some_and(|draft| draft.active)
 }
 
+pub(crate) fn theme_appearance_pending(cx: &App) -> bool {
+    cx.try_global::<ThemeDraft>()
+        .is_some_and(|draft| draft.active && draft.appearance.is_some())
+}
+
 pub(crate) fn apply_theme_draft(config: &mut Config, theme: &mut Theme, cx: &App) {
     if !theme_pending(cx) {
         return;
@@ -150,7 +155,7 @@ pub(super) struct ThemeBrowser {
 impl ThemeBrowser {
     pub(super) fn new(cx: &mut Context<SettingsWindow>) -> Self {
         let search = cx.new(|cx| {
-            let mut input = SearchInput::new(cx);
+            let mut input = super::ui::text_input(cx);
             input.set_placeholder_with(|| fl!("settings-theme-search-placeholder"), cx);
             input
         });
@@ -361,7 +366,7 @@ impl SettingsWindow {
                 (Scope::App, Some(shared)) if ThemeName::follows_herdr(&config.theme, light) => {
                     Ok((shared.theme(light)?, None))
                 }
-                _ => Ok((config.theme(light)?, None)),
+                _ => Ok((config.raw_theme(light)?, None)),
             }
         }
     }

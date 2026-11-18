@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(unix)]
+mod ownership;
+
 #[test]
 fn state_follows_which_files_exist_and_whether_they_match() {
     assert_eq!(State::of(None, None), State::Fresh);
@@ -53,6 +56,7 @@ fn replace_writes_through_a_link_and_keeps_the_file_private() {
     let dir = tempfile::tempdir().unwrap();
     let target = dir.path().join("real.toml");
     fs::write(&target, "old").unwrap();
+    fs::set_permissions(&target, fs::Permissions::from_mode(0o600)).unwrap();
     let path = dir.path().join("config.toml");
     std::os::unix::fs::symlink(&target, &path).unwrap();
     replace(&path, "new").unwrap();
@@ -60,4 +64,32 @@ fn replace_writes_through_a_link_and_keeps_the_file_private() {
     assert_eq!(fs::read_to_string(&target).unwrap(), "new");
     let mode = fs::metadata(&target).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode, 0o600);
+}
+
+#[cfg(unix)]
+#[test]
+fn replace_preserves_permissions_of_files_and_symlink_targets() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    for linked in [false, true] {
+        let target = dir.path().join(format!("target-{linked}.toml"));
+        fs::write(&target, "old").unwrap();
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+        let path = if linked {
+            let link = dir.path().join("config.local.toml");
+            std::os::unix::fs::symlink(&target, &link).unwrap();
+            link
+        } else {
+            target.clone()
+        };
+        replace(&path, "new").unwrap();
+        assert_eq!(fs::read_to_string(&target).unwrap(), "new");
+        assert_eq!(
+            fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
+        if linked {
+            assert_eq!(fs::read_link(&path).unwrap(), target);
+        }
+    }
 }

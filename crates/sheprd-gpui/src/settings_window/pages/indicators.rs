@@ -1,3 +1,5 @@
+// ABOUTME: Renders named indicator choices with shared keyboard focus and activation.
+// ABOUTME: Keeps card previews and persistence tied to the chosen indicator set.
 //! Indicators: the set agent status is drawn with, as cards to click, and the
 //! edge rail. Each card's preview is the sidebar's own marks, so a mark that
 //! moves there moves here too.
@@ -64,6 +66,7 @@ impl SettingsWindow {
                     // Search scrolls to the cards by these bounds.
                     .child(crate::settings_window::search::track_bounds(
                         catalog::INDICATORS_SETS.id.into(),
+                        px(0.),
                     ))
                     .row()
                     .flex_wrap()
@@ -89,9 +92,17 @@ impl SettingsWindow {
         let on = self.config.status_icons == set;
         let font = &self.config.sidebar;
         let (name, description) = set_messages(set);
+        let id: SharedString = format!("indicator-set-{}", set.as_str()).into();
         div()
             .id(("indicator-set", set as usize))
+            .role(Role::RadioButton)
+            .aria_label(i18n::message(name, &[]))
+            .aria_toggled(if on { Toggled::True } else { Toggled::False })
+            .key_context(ui::row_context(id.clone()))
+            .map(|card| ui::focusable(theme, card, true))
             .debug_selector(move || format!("indicator-set-{}", set.as_str()))
+            .relative()
+            .child(super::super::search::track_focus_bounds(id, px(1.)))
             .w(px(CARD_WIDTH))
             .flex()
             .flex_col()
@@ -133,7 +144,7 @@ impl SettingsWindow {
                             .child(status_indicator(status, font, indicators))
                             .child(
                                 div()
-                                    .text_size(px(9.5))
+                                    .text_size(rems(0.59375))
                                     .text_color(rgb(theme.muted))
                                     .child(i18n::message(message, &[])),
                             )
@@ -141,7 +152,7 @@ impl SettingsWindow {
             )
             .child(
                 div()
-                    .text_size(px(11.5))
+                    .text_size(rems(0.71875))
                     .text_color(rgb(theme.subtext()))
                     .child(i18n::message(description, &[])),
             )

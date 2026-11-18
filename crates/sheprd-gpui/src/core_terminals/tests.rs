@@ -13,3 +13,4 @@ mod selection;
 mod spawn_identity;
 mod spawn_queue;
 mod worker;
+pub(crate) use worker::recording_link;

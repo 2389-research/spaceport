@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 //! The section list resizes by its right edge, like every side panel.
 use super::*;
 use gpui::{Modifiers, MouseButton, point, px, size};
@@ -7,7 +9,7 @@ fn the_section_list_resizes_by_its_edge(cx: &mut TestAppContext) {
     let main = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| main.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (view, cx) = cx.add_window_view(|window, cx| {
-        let view = SettingsWindow::new(weak, cx);
+        let view = fixture_new(weak, cx);
         window.focus(&view.focus, cx);
         view
     });

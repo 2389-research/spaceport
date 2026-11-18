@@ -1,0 +1,166 @@
+<!-- ABOUTME: Qualifies fractional image scrolling without extra encoded asset retention. -->
+<!-- ABOUTME: Records actual regressions, image ownership, and remaining native verification. -->
+
+# Image-pane scrolling
+
+This is the remaining image-bearing pane slice of `gfde`.
+The earlier change already allows image-free panes beside stationary images to scroll smoothly.
+The image-bearing pane now uses the same fractional rows as its cells.
+
+## Contract
+
+Use the same device-pixel offset and historical source bands for cells and images.
+Keep stationary image fragments outside the scrolling pane fixed.
+Clip moving fragments to both their source band and the stationary pane viewport.
+Preserve below-text and above-text ordering and equal-z placement order.
+Prepare one main image epoch before either image pass.
+Do not retain textures in cached terminal scenes.
+
+Keep historical frames as metadata only, under their existing four-frame bound.
+Resolve their image keys through the presented picture's existing asset collection.
+Before replacing that collection, compare image serials for the retained scrolling placements.
+If a needed asset disappears, appears, or changes identity, cancel the fractional gesture.
+The authoritative whole-row picture then paints normally.
+This avoids additional encoded image leases or larger byte, texture, placement, or decode limits.
+Preserve stale-picture fencing and cancellation redraw behavior.
+
+## Regression baseline
+
+Two actual-window tests use a valid raw image through the existing asynchronous decoder and atlas upload.
+Both fail because the image-bearing pane returns `None` instead of submitting its fractional row request.
+The log is `/tmp/spaceport-9s44-image-pane-red.log`.
+The first test follows the image's shifted geometry and decoded pixels.
+The second checks historical edge painting and release when the existing encoded asset disappears.
+These are headless window/renderer tests; they do not qualify native raster output.
+
+## Verification to finish
+
+- [x] Observe the expected runtime failures before changing production code.
+- [x] Pass fractional geometry and historical edge regressions.
+- [x] Cover stable identities, replacement, missing assets, and cross-pane fragments.
+- [x] Pass default-feature image, scroll, presentation, and endpoint cancellation consumers.
+- [x] Obtain independent ownership and rendering review.
+- [x] Run quick validators and applicable host/Windows cross checks.
+- [ ] Qualify actual native image scrolling and release timing.
+
+The native Settings readiness question remains pending.
+No native fixture launched during this slice.
+
+## Rendering correction
+
+The first implementation passed both decoded-image scenarios after a fixture correction.
+The fixture must move the actual decorated cell row when it changes the scroll offset.
+Its first green attempt omitted that movement and correctly produced no fractional history.
+That failed attempt remains `/tmp/spaceport-9s44-image-pane-first-green.log`.
+The corrected two-test pass is `/tmp/spaceport-9s44-image-pane-green.log`.
+
+Independent review then found an image mapping problem in thin bands.
+Pinned GPUI rounds cropped image bounds to whole atlas pixels.
+Passing a thin destination fragment as the mapping rectangle changes the sampled source coordinates.
+A real paint-call regression observed a five-pixel mapping instead of the original twenty pixels.
+Its contrasting two-row decoded texture and actual atlas upload passed before that assertion failed.
+The valid red is `/tmp/spaceport-9s44-image-band-mapping-red.log`.
+
+Image regions now carry a separate source grid and destination mask.
+The painter preserves the original image mapping and clips through `Window::with_content_mask`.
+Both mask corners use GPUI's device-pixel snapping.
+Adjacent fragments share an edge instead of expanding into overlapping masks.
+The probe records actual paint-call mapping and the effective content mask.
+It does not expose native raster pixels or final GPU UV tiles.
+
+The final source review found no remaining material production issue.
+The reverse-direction helper initially expected an upward row request.
+That test-only expectation now follows the wheel direction.
+The failed intermediate fourteen-case run is `/tmp/spaceport-9s44-image-bands-green.log`.
+The final fourteen-case image pass is `/tmp/spaceport-9s44-image-bands-final.log`.
+
+## Default-feature consumers
+
+All commands ran the actual current unit executable with `--test-threads=1`.
+The following scopes overlap and must not be added together.
+
+| Scope | Passed | Failed | Ignored |
+| --- | ---: | ---: | ---: |
+| `smooth_scroll` | 20 | 0 | 0 |
+| `terminal_painter` | 50 | 0 | 0 |
+| `window::regions` | 20 | 0 | 0 |
+| `presentation::tests` | 6 | 0 | 0 |
+| `endpoint::lifecycle_tests::image_scroll` | 3 | 0 | 0 |
+| `endpoint::lifecycle_tests::wheel` | 2 | 0 | 0 |
+
+Logs use `/tmp/spaceport-9s44-image-consumer-<scope>.log`, with colons replaced by underscores.
+The image cases include both historical directions and asset removal without additional encoded leases.
+They also cover replacement under an unchanged surface pointer.
+Crossed transparent images retain equal-z order and nonoverlapping masks at four display scales.
+The cancellation consumer now uses an image pane without scroll metrics.
+Images themselves no longer force that fallback.
+The test still proves notification precedes automatic redraw and sends no whole-row input.
+
+The integration-feature region suite passes all twenty-one cases.
+This includes the actual sliding-cell source-band consumer and device-pixel geometry checks.
+The log is `/tmp/spaceport-9s44-image-feature-regions.log`.
+The first canonical host lint failed on one test's literal boolean comparison.
+That assertion now uses `assert!` with the same condition and diagnostic.
+Both canonical host lint legs pass with warnings denied.
+They cover workspace/all-target checks with all features and without default features.
+The log is `/tmp/spaceport-9s44-image-bands-host-lint-green.log`.
+The existing external `block` future-incompatibility notice remains unchanged.
+Both canonical Windows GNU lint legs also pass with warnings denied.
+They cover workspace/all-target checks with all features and without default features.
+The log is `/tmp/spaceport-9s44-image-bands-windows-lint.log`.
+This proves cross-compilation, not native Windows execution.
+Formatting, file-size, sorted-region, and diff checks pass.
+
+Kata remains at thirty closed children and twenty-three open children after a fresh parent read.
+The `gfde` finding and umbrella remain open for required remaining qualification.
+No commit, push, PR, native launch, release, or issue closure occurred during this slice.
+
+## Offscreen Metal raster qualification
+
+Two macOS opt-in tests now render the actual compositor through GPUI's supported offscreen Metal backend.
+They use `HeadlessAppContext`, `current_headless_renderer`, and real screenshot pixels.
+The no-op text system draws only blank terminal cells; these tests make no native glyph claim.
+No AppKit application, desktop window, daemon, or user clipboard is involved.
+The tests require the existing `integration-test` feature and explicit `--ignored` selection.
+
+Use the shared Cargo lock and target prefix from the handoff, then run:
+
+```sh
+cargo test --locked -p sheprd-gpui --features integration-test \
+  --bin spaceport metal_pixels -- --ignored --test-threads=1
+```
+
+The first case compares a thin historical image fragment with its original sampled pixel.
+The fragment must preserve the red row of a contrasting two-row image.
+It also samples inside the translated image but below the stationary pane to prove actual clipping.
+The second case compares crossed transparent fragments against an original single-pass alpha reference.
+Both sides of the snapped boundary must match that reference.
+Additional pixels prove that only the inside fragment moves.
+
+Initial compilation exposed two private test helpers and one redundant path qualification.
+The corrected fixture uses public `NoopTextSystem` and the supported renderer factory.
+No GPUI dependency or upstream source was changed.
+Its first two pixel checks passed in `/tmp/spaceport-9s44-metal-image-raster-public-api.log`.
+
+Independent review found two insufficient assertions.
+The original black sample lay outside the image, and equal boundary colors could both be double-blended.
+Those checks now use the clipped pane exterior and the original single-pass reference.
+
+The earlier cropped-mapping implementation was restored temporarily for the regression baseline.
+The actual Metal result was `[170, 0, 77, 255]` where the original pixel was `[247, 0, 0, 255]`.
+The transparent-boundary control still passed.
+The valid runtime red is `/tmp/spaceport-9s44-metal-cropped-mapping-red.log`.
+The intended source-grid mapping was restored immediately and matched its saved SHA256 exactly.
+Both strengthened tests then passed in `/tmp/spaceport-9s44-metal-image-raster-final.log`.
+The temporary baseline's unused-field warning disappeared after restoration.
+The pre-existing linker compact-unwind and external `block` notices remain unchanged.
+
+Independent review confirmed both assertion findings resolved and found the context cleanup sound.
+Canonical host lint passes both feature configurations after the new tests.
+The log is `/tmp/spaceport-9s44-metal-image-host-lint.log`.
+Formatting, file-size, sorted-region, and diff checks pass.
+The two Metal cases are macOS-only; the preceding Windows GNU checks cover the unchanged production path.
+
+This establishes offscreen Metal image raster correctness for the tested fragments.
+It does not establish AppKit input, actual foreground presentation, native glyph behavior, or interactive timing.
+The original native keyboard readiness question remains pending, and its fixture has not launched.

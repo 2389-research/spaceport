@@ -1,5 +1,7 @@
+// ABOUTME: Renders private view themes and app theme overrides.
+// ABOUTME: Keeps previews tied to the current theme draft.
 //! Theme: appearance mode, the library to browse, the card grid whose hover
-//! previews the theme in the real Herdr windows, then the window backdrop and
+//! previews the theme in the Spaceport windows, then the window backdrop and
 //! terminal padding.
 // i18n: migrated
 use super::{SettingsWindow, catalog, on_value, ui};
@@ -176,7 +178,7 @@ impl SettingsWindow {
             .into_iter()
             .all(|light| ThemeName::follows_herdr(&self.config.theme, light));
         ui::row(&self.theme, &catalog::THEME_FOLLOW)
-            .tag(ui::Source::Herdr)
+            .tag(ui::Source::View)
             .switch(
                 ui::toggle(&self.theme, "theme-follow-toggle", following, true).on_click(
                     cx.listener(move |this, _, _, cx| {

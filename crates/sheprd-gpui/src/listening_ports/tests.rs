@@ -15,6 +15,8 @@ mod en_xa;
 mod forward_reuse;
 #[cfg(unix)]
 mod repeated_scans;
+#[cfg(unix)]
+pub(super) mod scan_cost;
 mod shell_errors;
 mod ssh_links;
 mod status_bar;
@@ -197,7 +199,7 @@ fn only_a_different_scan_changes_what_is_shown() {
     assert!(!reading.apply(Err(
         super::Error::Scan(Box::new(sheprd_usage::shell::Error::Unreachable.into())).into()
     )));
-    assert_eq!(reading.ports, found);
+    assert_eq!(*reading.ports, found);
     let error = reading.error.clone().unwrap();
     assert!(
         error.starts_with("Could not read listening ports"),
@@ -211,6 +213,7 @@ fn only_a_different_scan_changes_what_is_shown() {
 #[test]
 fn seeded_hosts_are_looked_up_by_workspace_and_forgotten_when_dropped() {
     let mut ports = ListeningPorts::default();
+    let mut scans = Default::default();
     let daemon = remote("default");
     let host = daemon.host().clone();
     ports.seed(host.clone(), parse("L 1 *:3000 node\nE 1 w1\n").unwrap());
@@ -227,7 +230,7 @@ fn seeded_hosts_are_looked_up_by_workspace_and_forgotten_when_dropped() {
             .is_none()
     );
     // A host still wanted keeps its reading; no worker is started for it.
-    assert!(!ports.poll([host.clone(), host.clone()]));
+    assert!(!ports.poll_shared([host.clone(), host.clone()], &mut scans));
     assert_eq!(
         ports
             .get(&daemon, "w1")
@@ -235,42 +238,18 @@ fn seeded_hosts_are_looked_up_by_workspace_and_forgotten_when_dropped() {
         1
     );
     assert!(
-        ports.poll(std::iter::empty()),
+        ports.poll_shared(std::iter::empty(), &mut scans),
         "dropping shown ports is a change"
     );
     assert!(ports.get(&daemon, "w1").is_none());
-    assert!(!ports.poll(std::iter::empty()));
+    assert!(!ports.poll_shared(std::iter::empty(), &mut scans));
 }
 
-/// The real step against this machine's own tools: a socket this test holds
-/// is listed with this process's id.
+/// Query only the env-cleared child that owns this fixture's actual socket.
 #[cfg(unix)]
 #[test]
-fn this_machine_lists_a_socket_this_process_holds() {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
-    let number = listener.local_addr().unwrap().port();
-    let mut shell = super::local_shell().unwrap();
-    let output = shell
-        .run(super::scan::COMMAND, super::STEP_TIMEOUT)
-        .unwrap();
-    if output.stdout.lines().any(|line| line == "N") {
-        // Neither ss nor lsof here; parse must say so rather than show nothing.
-        assert!(matches!(
-            parse(&output.stdout),
-            Err(Error::ListeningPorts(super::Error::Tool))
-        ));
-        return;
-    }
-    let expected = format!("L {} 127.0.0.1:{number} ", std::process::id());
-    assert!(
-        output
-            .stdout
-            .lines()
-            .any(|line| line.starts_with(&expected)),
-        "{expected:?} missing from {:?}",
-        output.stdout
-    );
-    parse(&output.stdout).unwrap();
+fn native_flags_and_listener_preserve_the_owned_child_socket_with_spaces() {
+    scan_cost::owned_environment_and_listener();
 }
 
 #[test]

@@ -1,3 +1,5 @@
+// ABOUTME: Renders agent settings and their existing inline choice menus.
+// ABOUTME: Keeps option changes on the conversation's normal command path.
 //! The session's settings along the composer's foot: a button per setting worth
 //! having at hand (model, thinking level, mode), the menu each opens, the
 //! rest behind one more button, and how full the context window is.
@@ -480,6 +482,10 @@ impl SheprdWindow {
             let pane = pane_id.clone();
             buttons.push(
                 self.chat_header_button("chat-more-settings".into())
+                    .map(|button| {
+                        super::accessibility::button(theme, fl!("chat-agent-settings"), button)
+                    })
+                    .key_context("ChatAgentSettings")
                     .child(
                         svg()
                             .path("icons/settings.svg")

@@ -1,3 +1,5 @@
+// ABOUTME: Edits bounded dialog drafts with native selection and composition support.
+// ABOUTME: Shares field drawing with passive departure content without retaining input ownership.
 // i18n: migrated
 use gpui::{prelude::*, *};
 use std::ops::Range;
@@ -157,12 +159,42 @@ impl DialogInput {
 }
 
 impl SheprdWindow {
-    pub(super) fn render_dialog_input(&self, cx: &mut Context<Self>) -> Stateful<Div> {
-        let entity = cx.entity();
-        let focus = self.menu.focus.clone();
+    fn dialog_input_frame(&self) -> Stateful<Div> {
         div()
             .id("dialog-input")
             .debug_selector(|| "dialog-input".into())
+            .w_full()
+            .h(px(self.config.ui.line_height() + 10.))
+            .px(px(6.))
+            .py(px(5.))
+            .rounded(px(crate::config::corners::CONTROL))
+            .bg(rgb(self.theme.active))
+            .overflow_hidden()
+    }
+
+    /// Draws the captured draft without an entity, focus, or native input handler.
+    pub(crate) fn render_dialog_input_paint(&self, input: &DialogInput) -> Stateful<Div> {
+        let text: SharedString = input.text.clone().into();
+        let font = self.config.ui.clone();
+        let color = rgb(self.theme.foreground);
+        let scroll = input.scroll;
+        self.dialog_input_frame().child(
+            canvas(
+                move |_, window, _| shape(text.clone(), &font, color, window),
+                move |bounds, line, window, cx| {
+                    window.with_content_mask(Some(ContentMask { bounds }), |window| {
+                        draw_line(&line, bounds, scroll, window, cx);
+                    });
+                },
+            )
+            .size_full(),
+        )
+    }
+
+    pub(super) fn render_dialog_input(&self, cx: &mut Context<Self>) -> Stateful<Div> {
+        let entity = cx.entity();
+        let focus = self.menu.focus.clone();
+        self.dialog_input_frame()
             .role(Role::TextInput)
             .aria_value(
                 self.menu
@@ -178,13 +210,6 @@ impl SheprdWindow {
                     .and_then(|input| input.label.clone()),
                 |field, label| field.aria_label(label),
             )
-            .w_full()
-            .h(px(self.config.ui.line_height() + 10.))
-            .px(px(6.))
-            .py(px(5.))
-            .rounded(px(crate::config::corners::CONTROL))
-            .bg(rgb(self.theme.active))
-            .overflow_hidden()
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(|this, event: &MouseDownEvent, window, cx| {
@@ -216,19 +241,11 @@ impl SheprdWindow {
                             let Some(input) = this.menu.input.as_mut() else {
                                 return;
                             };
-                            let run = TextRun {
-                                len: input.text.len(),
-                                font: this.config.ui.font(),
-                                color: rgb(this.theme.foreground).into(),
-                                background_color: None,
-                                underline: None,
-                                strikethrough: None,
-                            };
-                            let line = window.text_system().shape_line(
+                            let line = shape(
                                 input.text.clone().into(),
-                                px(this.config.ui.size),
-                                &[run],
-                                None,
+                                &this.config.ui,
+                                rgb(this.theme.foreground),
+                                window,
                             );
                             let carets = Carets::new(&input.text, &line);
                             let caret = carets.x(input.cursor);
@@ -258,14 +275,7 @@ impl SheprdWindow {
                                         ));
                                     }
                                 }
-                                let _ = line.paint(
-                                    origin,
-                                    bounds.size.height,
-                                    TextAlign::Left,
-                                    None,
-                                    window,
-                                    cx,
-                                );
+                                draw_line(&line, bounds, input.scroll, window, cx);
                                 if focused {
                                     window.paint_quad(fill(
                                         Bounds::new(
@@ -298,6 +308,42 @@ impl SheprdWindow {
                 .size_full(),
             )
     }
+}
+
+fn shape(
+    text: SharedString,
+    font: &crate::config::FontConfig,
+    color: Rgba,
+    window: &Window,
+) -> ShapedLine {
+    let run = TextRun {
+        len: text.len(),
+        font: font.font(),
+        color: color.into(),
+        background_color: None,
+        underline: None,
+        strikethrough: None,
+    };
+    window
+        .text_system()
+        .shape_line(text, px(font.size), &[run], None)
+}
+
+fn draw_line(
+    line: &ShapedLine,
+    bounds: Bounds<Pixels>,
+    scroll: Pixels,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    let _ = line.paint(
+        bounds.origin - point(scroll, px(0.)),
+        bounds.size.height,
+        TextAlign::Left,
+        None,
+        window,
+        cx,
+    );
 }
 
 #[cfg(test)]

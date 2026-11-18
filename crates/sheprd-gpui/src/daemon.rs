@@ -1,3 +1,5 @@
+// ABOUTME: Connects to Herdr and starts an installed local daemon when permitted.
+// ABOUTME: Checks endpoint trust while keeping daemon lifetime independent of the UI.
 #![forbid(unsafe_code)]
 // i18n: migrated
 
@@ -37,8 +39,27 @@ pub(super) fn is_missing_installation(error: &io::Error) -> bool {
         .is_some_and(|source| source.is::<MissingInstallation>())
 }
 
+/// Whether this connection owns starting a missing local daemon.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Start {
+    WhenMissing,
+    Never,
+}
+
+pub(crate) fn may_start(target: &ConnectTarget) -> bool {
+    matches!(
+        target,
+        ConnectTarget::Local
+            | ConnectTarget::Session {
+                development: false,
+                ..
+            }
+    )
+}
+
 pub fn connect(
     target: &ConnectTarget,
+    start: Start,
     stop: &AtomicBool,
     on_start: impl FnOnce(),
 ) -> io::Result<(Stream, LocalPeer)> {
@@ -51,23 +72,16 @@ pub fn connect(
         Duration::from_secs(20),
         || {
             on_start();
-            let mut command = sheprd_client::new_command(executable());
+            let mut command = sheprd_client::new_command(executable()?);
             if let ConnectTarget::Session { name, .. } = target {
                 command.args(["--session", name]);
             }
             command.arg("server");
             crate::login_env::apply(&mut command);
             pin_config_home(&mut command, sheprd_client::local_var("XDG_CONFIG_HOME"));
-            command
+            Ok(command)
         },
-        matches!(
-            target,
-            ConnectTarget::Local
-                | ConnectTarget::Session {
-                    development: false,
-                    ..
-                }
-        ),
+        start == Start::WhenMissing && may_start(target),
     )?;
     let local = local_peer(&stream, target, &socket);
     Ok((stream, local))
@@ -88,7 +102,7 @@ fn pin_config_home(command: &mut Command, root: Option<std::ffi::OsString>) {
 /// name the extension itself.
 const NAME: &str = if cfg!(windows) { "herdr.exe" } else { "herdr" };
 
-pub(crate) fn executable() -> PathBuf {
+pub(crate) fn executable() -> io::Result<PathBuf> {
     // Finder launches have a minimal PATH, which often omits Homebrew and Cargo.
     let path = env::var_os("PATH").unwrap_or_default();
     let candidates = env::split_paths(&path)
@@ -110,10 +124,20 @@ pub(crate) fn executable() -> PathBuf {
                 .iter()
                 .map(|dir| Path::new(dir).join(NAME)),
         );
+    installed_executable(candidates)
+}
+
+fn installed_executable(candidates: impl IntoIterator<Item = PathBuf>) -> io::Result<PathBuf> {
     candidates
         .into_iter()
+        .filter(|path| path.is_absolute())
         .find(|path| path.is_file())
-        .unwrap_or_else(|| NAME.into())
+        .ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                MissingInstallation(io::Error::from(io::ErrorKind::NotFound)),
+            )
+        })
 }
 
 /// Trust the user's standard local endpoint, not an upgrade-sensitive executable.
@@ -258,10 +282,10 @@ fn connect_or_start(
     socket: &Path,
     stop: &AtomicBool,
     timeout: Duration,
-    command: impl FnOnce() -> Command,
+    command: impl FnOnce() -> io::Result<Command>,
     auto_start: bool,
 ) -> io::Result<Stream> {
-    match Stream::connect(socket) {
+    match dial(socket) {
         Ok(stream) => return Ok(stream),
         Err(error)
             if auto_start
@@ -274,7 +298,7 @@ fn connect_or_start(
     if stop.load(Ordering::Acquire) {
         return Err(io::Error::new(io::ErrorKind::Interrupted, Error::Cancelled));
     }
-    let mut command = command();
+    let mut command = command()?;
     // Login-shell initialization can outlast a detach or reconnect.
     if stop.load(Ordering::Acquire) {
         return Err(io::Error::new(io::ErrorKind::Interrupted, Error::Cancelled));
@@ -303,7 +327,7 @@ fn connect_or_start(
         if stop.load(Ordering::Acquire) {
             return Err(io::Error::new(io::ErrorKind::Interrupted, Error::Cancelled));
         }
-        match Stream::connect(socket) {
+        match dial(socket) {
             Ok(stream) => return Ok(stream),
             Err(error)
                 if matches!(
@@ -325,7 +349,23 @@ fn connect_or_start(
     }
 }
 
+#[cfg(unix)]
+fn dial(socket: &Path) -> io::Result<Stream> {
+    Stream::connect(socket)
+}
+
+#[cfg(windows)]
+fn dial(socket: &Path) -> io::Result<Stream> {
+    // Herdr's GenericNamespaced mapping prefixes the lossy socket path.
+    // Keep that address while checking ownership before sending any bytes.
+    Stream::connect_owned(format!(r"\\.\pipe\{}", socket.to_string_lossy()))
+}
+
 // The fixtures bind real sockets and launch POSIX helper executables.
 #[cfg(all(test, unix))]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests;
+
+#[cfg(all(test, windows))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod windows_tests;

@@ -17,6 +17,7 @@ impl Localize for Error {
                 fl!("error-agent-context", operation = *operation)
             }
             Self::Backdrop(error) => error.localize(),
+            Self::Browser(error) => error.localize(),
             Self::BundleExists { path: file } => fl!("error-bundle-exists", path = path(file)),
             Self::BundleWrite { path: file, source } => fl!(
                 "error-bundle-write",
@@ -111,7 +112,6 @@ impl Localize for Error {
                 fl!("error-path", path = path(file), error = source.localize())
             }
             Self::PortForward(error) => error.localize(),
-            Self::PreferencesPath => fl!("error-preferences-path"),
             Self::Processes(error) => error.localize(),
             Self::RelativeConfigRoot => fl!("error-relative-config-root"),
             Self::Remote(error) => error.localize(),

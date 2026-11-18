@@ -1,3 +1,5 @@
+// ABOUTME: Renders keyboard and pointer controls for the main window backdrop.
+// ABOUTME: Saves captured backdrop edits through the Settings persistence owner.
 //! Settings > Theme > Window backdrop: Solid, Translucent, or Picture,
 //! each with only its own controls below. Settings and dialogs stay opaque
 //! whatever is chosen.
@@ -16,6 +18,12 @@ use crate::{
 mod ruler;
 
 pub(in crate::settings_window) use ruler::Ruler;
+#[cfg(test)]
+#[derive(Clone)]
+pub(in crate::settings_window) struct BackdropIo {
+    pub write: std::sync::Arc<dyn Fn(Vec<Edit>) -> crate::Result<()> + Send + Sync>,
+    pub load: std::sync::Arc<dyn Fn() -> crate::Result<super::super::Loaded> + Send + Sync>,
+}
 #[cfg(test)]
 pub(in crate::settings_window) use ruler::{fraction, opacity_at};
 
@@ -222,7 +230,21 @@ impl SettingsWindow {
         let selector = mode.selector();
         div()
             .id(selector)
+            .role(Role::RadioButton)
+            .aria_label(mode.name())
+            .aria_toggled(if selected {
+                Toggled::True
+            } else {
+                Toggled::False
+            })
+            .key_context(ui::row_context(selector.into()))
+            .map(|tile| ui::focusable(theme, tile, true))
             .debug_selector(move || selector.into())
+            .relative()
+            .child(super::super::search::track_focus_bounds(
+                selector.into(),
+                px(2.),
+            ))
             .flex_1()
             .min_w(px(132.))
             .flex()
@@ -335,6 +357,11 @@ impl SettingsWindow {
 
     fn save_backdrop(&mut self, edits: Vec<Edit>, cx: &mut Context<Self>) {
         if edits.is_empty() {
+            return;
+        }
+        #[cfg(test)]
+        if let Some(io) = self.controls.backdrop_io.clone() {
+            self.save_with(move || (io.write)(edits), move || (io.load)(), false, cx);
             return;
         }
         self.save_native(

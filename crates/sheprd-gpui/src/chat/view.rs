@@ -1,9 +1,12 @@
+// ABOUTME: Renders native chat overlays with their transcript, controls, and input ownership.
+// ABOUTME: Keeps presentation tied to prepared conversation state and exact pane targets.
 //! The chat view over a pane: a header, the entries on a timeline, what
 //! waits on the user, the composer, and a rail with the plan and the files
 //! the turn changed. Everything is drawn from the session and the bodies
 //! prepared when entries changed; nothing here reads a socket. Program text
 //! is untrusted and only ever drawn as text.
 
+mod accessibility;
 mod composer;
 mod copy;
 mod disclosure;
@@ -227,6 +230,7 @@ impl SheprdWindow {
             .child(
                 div()
                     .id(SharedString::from(format!("chat-switch-{pane_id}")))
+                    .map(|button| accessibility::button(theme, fl!("chat-show-chat"), button))
                     .debug_selector(|| "chat-switch".into())
                     .occlude()
                     .flex()
@@ -294,6 +298,14 @@ impl SheprdWindow {
         div()
             .id(SharedString::from(format!("chat-{pane_id}")))
             .debug_selector(|| "chat-view".into())
+            .role(Role::Region)
+            .aria_label(crate::notifications::safe_text(chat.session.agent(), 80))
+            .tab_group()
+            .when(chat.input() != ChatInput::ReadOnly, |view| {
+                view.when_some(chat.text_focus.as_ref(), |view, focus| {
+                    view.track_focus(focus)
+                })
+            })
             .when_some(
                 chat.read_only_focus
                     .as_ref()
@@ -414,9 +426,6 @@ impl SheprdWindow {
                                     .flex_col()
                                     .flex_1()
                                     .min_h_0()
-                                    .when_some(chat.text_focus.as_ref(), |view, focus| {
-                                        view.track_focus(focus)
-                                    })
                                     .child(entries)
                                     .children(self.render_chat_pinned(chat, cx))
                                     .children(self.render_chat_jump(chat, cx)),
@@ -564,6 +573,13 @@ impl SheprdWindow {
         let layout = {
             let current = self.config.chat.layout;
             button("chat-layout")
+                .map(|button| {
+                    accessibility::button(
+                        theme,
+                        fl!("chat-change-layout", layout = current.label()),
+                        button,
+                    )
+                })
                 .text_color(rgb(theme.subtext()))
                 .child(current.label())
                 .on_click(cx.listener(move |this, _: &ClickEvent, _, cx| {
@@ -575,6 +591,7 @@ impl SheprdWindow {
         let terminal = {
             let pane_id = pane_id.clone();
             button("chat-terminal")
+                .map(|button| accessibility::button(theme, fl!("chat-show-terminal"), button))
                 .child(
                     svg()
                         .path("icons/terminal.svg")

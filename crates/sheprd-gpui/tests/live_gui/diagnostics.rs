@@ -3,7 +3,7 @@
 use super::*;
 
 pub(super) fn assert_startup_capture(root: &Path) {
-    let path = root.join("state/spaceport/logs/spaceport.jsonl");
+    let path = sheprd_diagnostics::log_file(&app_state_path(&root.join("state")));
     let text = match fs::read_to_string(&path) {
         Ok(text) => text,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),

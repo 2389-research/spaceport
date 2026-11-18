@@ -1,5 +1,7 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 use super::*;
-use crate::settings_window::remote_history::HostState;
+use crate::settings_window::host_history::{History, HostState, Target};
 
 #[gpui::test]
 fn connected_ssh_hosts_get_their_own_pane_history_rows(cx: &mut TestAppContext) {
@@ -8,10 +10,10 @@ fn connected_ssh_hosts_get_their_own_pane_history_rows(cx: &mut TestAppContext) 
     cx.simulate_resize(size(px(680.), px(2200.)));
     let long = "a-very-long-ssh-host-label.with.many.domain.parts.example.internal";
     view.update(cx, |view, cx| {
-        let jobs = view.remote_history.sync(
+        let jobs = view.host_history.sync(
             [
-                (long.to_owned(), "ready".to_owned()),
-                ("loading".to_owned(), "loading".to_owned()),
+                (long.to_owned(), Target::Ssh("ready".to_owned())),
+                ("loading".to_owned(), Target::Ssh("loading".to_owned())),
             ],
             false,
         );
@@ -20,10 +22,14 @@ fn connected_ssh_hosts_get_their_own_pane_history_rows(cx: &mut TestAppContext) 
             "[experimental]\npane_history = true\n".into(),
         ))
         .unwrap();
-        assert!(
-            view.remote_history
-                .finish(&ready.target, ready.generation, Ok(history))
-        );
+        assert!(view.host_history.finish(
+            &ready.target,
+            ready.generation,
+            Ok(History::Ssh {
+                target: "ready".into(),
+                history
+            })
+        ));
         cx.notify();
     });
     cx.update(|window, cx| crate::sidebar::layout_tests::full_draw(window, cx).clear(cx));
@@ -40,8 +46,8 @@ fn connected_ssh_hosts_get_their_own_pane_history_rows(cx: &mut TestAppContext) 
     let loading = cx.debug_bounds("tabs-pane-history-host-1-toggle").unwrap();
     cx.simulate_click(loading.center(), Default::default());
     view.read_with(cx, |view, _| {
-        let hosts = view.remote_history.hosts();
+        let hosts = view.host_history.hosts();
         assert!(matches!(hosts[1].state, HostState::Loading));
-        assert!(matches!(&hosts[0].state, HostState::Ready(history) if history.enabled));
+        assert!(matches!(&hosts[0].state, HostState::Ready(history) if history.enabled()));
     });
 }

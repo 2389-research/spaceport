@@ -1,3 +1,5 @@
+// ABOUTME: Checks bounded health probes and transport deadline classifications.
+// ABOUTME: Preserves complete-message progress without accepting stale connection state.
 use super::*;
 
 #[test]
@@ -64,10 +66,10 @@ fn session_negotiates_remote_health_without_extending_snapshot_deadline() {
                 )
                 .unwrap();
             assert!(session.health.as_ref().is_none_or(|h| h.ping.is_none()));
-            assert_eq!(
-                session.check_timeouts().unwrap_err().to_string(),
-                "handshake/snapshot timed out"
-            );
+            assert!(matches!(
+                session.check_timeouts(),
+                Err(Error::HandshakeTimeout)
+            ));
         }
     }
 }

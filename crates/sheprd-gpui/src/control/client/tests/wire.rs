@@ -1,3 +1,5 @@
+// ABOUTME: Records real parser output through the control request builders.
+// ABOUTME: Checks operation arguments and exact window targeting against the wire fixture.
 //! What each command of the families that are one protocol operation puts
 //! on the wire: the command line goes through the real parser and the real
 //! client function, and the request the client would send is recorded
@@ -253,6 +255,7 @@ fn outcome(args: &[&str]) -> String {
         Err(error) => return format!("error {error:?}: {error}"),
     };
     let context = Context {
+        origin: origin::Origin::Shell,
         transport: record,
         ..Context::new(invocation.json, invocation.window)
     };

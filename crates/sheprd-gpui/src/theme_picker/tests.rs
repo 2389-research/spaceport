@@ -4,7 +4,9 @@
 use super::*;
 use core::prelude::v1::test;
 
+pub(crate) mod departure;
 mod en_xa;
+mod system_contrast;
 
 #[gpui::test]
 fn saving_blocks_cancel_replacement_and_reload_until_reconciled(cx: &mut TestAppContext) {
@@ -168,11 +170,11 @@ fn searched_picker_reopens_on_nonfirst_configured_theme(cx: &mut TestAppContext)
     cx.run_until_parked();
     cx.simulate_keystrokes("escape");
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_theme_picker(window, cx)));
-    // Drain the programmatic clear's Changed event and discovery completion.
+    // Drain discovery completion before checking the new input.
     cx.run_until_parked();
     view.read_with(cx, |view, cx| {
         let picker = view.menu.themes.as_ref().unwrap();
-        assert!(picker.search.read(cx).text().is_empty());
+        assert!(picker.search().unwrap().read(cx).text().is_empty());
         assert!(picker.query.is_empty());
         assert!(picker.selected > 0);
         assert_eq!(picker.filtered[picker.selected], "Nord");

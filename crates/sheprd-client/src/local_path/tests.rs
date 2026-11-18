@@ -4,7 +4,6 @@ use super::*;
 
 #[cfg(target_os = "macos")]
 mod macos;
-mod state_directory;
 
 fn fallback() -> Vec<PathBuf> {
     std::env::split_paths(&local_path()).collect()

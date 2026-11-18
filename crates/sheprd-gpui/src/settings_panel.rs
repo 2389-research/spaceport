@@ -1,4 +1,6 @@
-//! Herdr's shared settings as this window loaded them, read off the UI thread.
+// ABOUTME: Loads private Spaceport view settings away from the UI thread.
+// ABOUTME: Applies prepared themes, sounds, and sidebar preferences to this window.
+//! Private view settings shared across Spaceport windows.
 // i18n: migrated
 use crate::{
     SheprdWindow,
@@ -55,7 +57,7 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    /// Follows the daemon's `ui.agent_panel_sort` on every load, so a config
+    /// Follows the view file's `ui.agent_panel_sort` on every load, so a config
     /// reload changes the order too, unless the user toggled the panel.
     pub(crate) fn apply_shared_agent_sort(&mut self) {
         if !self.agent_sort_modified
@@ -102,6 +104,17 @@ impl SheprdWindow {
         }
     }
 
+    pub(super) fn defer_theme_reload(cx: &mut Context<Self>) {
+        let view = cx.weak_entity();
+        cx.defer(move |cx| {
+            let _ = view.update(cx, |view, cx| {
+                view.apply_shared_theme(cx);
+                view.reload_theme(cx);
+                cx.notify();
+            });
+        });
+    }
+
     /// Reads the configured theme again, for the system appearance. Theme
     /// files are read on the background executor; a result is dropped when
     /// the theme or appearance changed while it loaded. Returns `false`
@@ -110,7 +123,7 @@ impl SheprdWindow {
         if self.menu.page == Some(crate::menu::Page::Themes)
             || self.theme_save_in_flight()
             // Settings applies its own draft to every window.
-            || crate::settings_window::theme_pending(cx)
+            || crate::settings_window::theme_appearance_pending(cx)
         {
             return false;
         }
@@ -118,7 +131,7 @@ impl SheprdWindow {
         let config = self.config.clone();
         let load = cx
             .background_executor()
-            .spawn(async move { config.theme(light).map(|theme| (config, theme)) });
+            .spawn(async move { config.raw_theme(light).map(|theme| (config, theme)) });
         cx.spawn(async move |this, cx| {
             let result = load.await;
             let _ = this.update(cx, |this, cx| {
@@ -148,11 +161,11 @@ impl SheprdWindow {
                     || light != crate::app::light_appearance(cx)
                     || this.menu.page == Some(crate::menu::Page::Themes)
                     || this.theme_save_in_flight()
-                    || crate::settings_window::theme_pending(cx)
+                    || crate::settings_window::theme_appearance_pending(cx)
                 {
                     return;
                 }
-                this.theme = theme;
+                this.theme = theme.styled_for(&this.config);
                 if let Some(mut appearance) =
                     cx.try_global::<crate::app::InitialAppearance>().cloned()
                     && appearance.config.theme == this.config.theme

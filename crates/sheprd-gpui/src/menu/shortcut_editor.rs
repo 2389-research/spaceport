@@ -1,3 +1,5 @@
+// ABOUTME: Edits shortcut overrides while keeping accepted saves tied to their original field.
+// ABOUTME: Shares editor display with departure paint without retaining input or actions.
 //! Editing GUI overrides from the shortcut reference. The field uses GPUI's
 //! key notation, so aliases are editable without capturing desktop shortcuts.
 // i18n: migrated
@@ -10,11 +12,18 @@ use crate::{
     keymap::{Binding, DaemonKeys, Keymap},
     search_input::SearchInput,
 };
-use gpui::{Context, Div, Entity, FontWeight, KeyDownEvent, Window, div, prelude::*, px, rgb};
+use gpui::{App, Context, Div, Entity, FontWeight, KeyDownEvent, Window, div, prelude::*, px, rgb};
 
 pub(super) struct Editor {
     info: &'static CommandInfo,
     input: Entity<SearchInput>,
+    saving: bool,
+    error: Option<String>,
+}
+
+pub(super) struct Paint {
+    info: &'static CommandInfo,
+    input: crate::search_input::Paint,
     saving: bool,
     error: Option<String>,
 }
@@ -197,8 +206,31 @@ impl SheprdWindow {
         cx.notify();
     }
 
-    pub(super) fn render_shortcut_editor(&self, cx: &mut Context<Self>) -> Option<Div> {
+    pub(super) fn shortcut_editor_paint(&self, cx: &App) -> Option<Paint> {
         let editor = self.menu.shortcut_editor.as_ref()?;
+        Some(Paint {
+            info: editor.info,
+            input: editor.input.read(cx).paint(),
+            saving: editor.saving,
+            error: editor.error.clone(),
+        })
+    }
+
+    pub(super) fn render_shortcut_editor(
+        &self,
+        editor: &Paint,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let input = if active {
+            self.menu
+                .shortcut_editor
+                .as_ref()
+                .map(|editor| editor.input.clone().into_any_element())
+        } else {
+            None
+        }
+        .unwrap_or_else(|| editor.input.render().into_any_element());
         let theme = &self.theme;
         let buttons = [
             ("shortcut-save", fl!("shortcut-editor-save"), Edit::Save),
@@ -218,7 +250,7 @@ impl SheprdWindow {
                 .py(px(4.))
                 .rounded(px(crate::config::corners::CONTROL))
                 .bg(rgb(theme.active))
-                .when(!editor.saving, |button| {
+                .when(active && !editor.saving, |button| {
                     button
                         .cursor_pointer()
                         .on_click(cx.listener(move |this, _, window, cx| {
@@ -227,7 +259,7 @@ impl SheprdWindow {
                 })
                 .child(label)
         });
-        let panel = div()
+        div()
             .debug_selector(|| "shortcut-editor".into())
             .flex_none()
             .py(px(8.))
@@ -237,7 +269,7 @@ impl SheprdWindow {
                 "shortcut-editor-title",
                 command = crate::i18n::command(editor.info)
             )))
-            .child(editor.input.clone())
+            .child(input)
             .child(
                 div()
                     .text_color(rgb(theme.muted))
@@ -266,19 +298,20 @@ impl SheprdWindow {
                     .child(
                         div()
                             .id("shortcut-cancel")
+                            .debug_selector(|| "shortcut-cancel".into())
                             .px(px(8.))
                             .py(px(4.))
-                            .cursor_pointer()
                             .child(fl!("shortcut-editor-cancel"))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                this.cancel_shortcut_edit(window, cx)
-                            })),
+                            .when(active, |button| {
+                                button.cursor_pointer().on_click(cx.listener(
+                                    |this, _, window, cx| this.cancel_shortcut_edit(window, cx),
+                                ))
+                            }),
                     )
                     .when(editor.saving, |row| {
                         row.child(fl!("shortcut-editor-saving"))
                     }),
-            );
-        Some(panel)
+            )
     }
 }
 

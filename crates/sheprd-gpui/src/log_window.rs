@@ -1,3 +1,5 @@
+// ABOUTME: Presents bounded diagnostic records and prepared app appearance.
+// ABOUTME: Keeps theme and record loading off the UI thread.
 // i18n: migrated
 use crate::{
     config::{Config, FontConfig, Theme},
@@ -54,6 +56,47 @@ pub(super) fn set_appearance(config: &Config, theme: &Theme, cx: &mut App) {
         config: config.clone(),
         theme: theme.clone(),
     });
+}
+
+/// Logs can outlive every main window, so their existing appearance remains an owner.
+pub(super) fn refresh_system_contrast(cx: &mut App) {
+    let Some(appearance) = cx.try_global::<Appearance>().cloned() else {
+        return;
+    };
+    let config = appearance.config.clone();
+    let light = crate::app::light_appearance(cx);
+    let load = cx
+        .background_executor()
+        .spawn(async move { config.raw_theme(light) });
+    cx.spawn(async move |cx| {
+        let result = load.await;
+        cx.update(|cx| {
+            let raw = match result {
+                Ok(theme) => theme,
+                Err(error) => {
+                    tracing::warn!(%error, "Could not refresh log contrast");
+                    return;
+                }
+            };
+            let Some(current) = cx.try_global::<Appearance>().cloned() else {
+                return;
+            };
+            if current.config.theme != appearance.config.theme || current.theme != appearance.theme
+            {
+                return;
+            }
+            let theme = raw.styled_for(&current.config);
+            if let Some(mut initial) = cx.try_global::<crate::app::InitialAppearance>().cloned()
+                && initial.config.theme == current.config.theme
+                && initial.theme == appearance.theme
+            {
+                initial.theme = theme.clone();
+                cx.set_global(initial);
+            }
+            set_appearance(&current.config, &theme, cx);
+        });
+    })
+    .detach();
 }
 
 fn palette_color(theme: &Theme, index: usize) -> Rgba {

@@ -1,3 +1,5 @@
+// ABOUTME: Classifies runtime compatibility failures without guessing which side needs an update.
+// ABOUTME: Shares bounded version labels and plain-English diagnostic guidance.
 //! Which side of a refused handshake must be updated, so the owner can tell
 //! the user what to do instead of reporting a protocol error.
 
@@ -41,21 +43,29 @@ pub(crate) fn label(version: &str) -> Option<String> {
     (!label.is_empty()).then_some(label)
 }
 
-/// " (version X)" for a known version, so text reads well without one.
-pub(crate) fn version_note(version: Option<&str>) -> String {
-    version
-        .map(|version| format!(" (version {version})"))
-        .unwrap_or_default()
-}
-
 /// What a refused generation asks the user to update. Only a newer one is
 /// this app's to fix; an older or equal one lacks what this app requires.
-pub(crate) fn generation_advice(generation: u32) -> String {
+fn update_requirement(generation: u32) -> String {
     if generation > ENDPOINT_PROTOCOL_GENERATION {
-        format!("update {}", crate::APP_NAME)
+        format!("needs a newer app. Update {}.", crate::APP_NAME)
     } else {
-        "run `herdr update` and reconnect".into()
+        "needs an update. Run `herdr update`, then choose Terminal → Reconnect.".into()
     }
+}
+
+pub(crate) fn bridge_message(generation: u32, version: Option<&str>) -> String {
+    let subject = version.map_or_else(
+        || "This device's Herdr version".to_owned(),
+        |version| format!("Herdr {version} on this device"),
+    );
+    format!("{subject} {}", update_requirement(generation))
+}
+
+pub(crate) fn generation_message(generation: u32, version: &str) -> String {
+    format!(
+        "Herdr {version} {} Connection formats: Herdr {generation}, app {ENDPOINT_PROTOCOL_GENERATION}.",
+        update_requirement(generation)
+    )
 }
 
 impl Error {

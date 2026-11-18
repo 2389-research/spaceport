@@ -1,6 +1,8 @@
 use super::*;
 use std::{ffi::OsStr, path::PathBuf};
 
+mod crash_cleanup;
+
 const WAIT: Duration = Duration::from_secs(10);
 
 fn port(port: u16) -> NonZeroU16 {

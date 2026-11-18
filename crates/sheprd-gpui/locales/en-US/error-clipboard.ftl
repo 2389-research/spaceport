@@ -1,5 +1,7 @@
 # Why the clipboard could not be read for a paste.
 
+error-clipboard-busy = A clipboard read is in progress. Try pasting again shortly.
+error-clipboard-cancelled = The paste was cancelled because its destination changed. Try pasting again.
 error-clipboard-changed = The clipboard changed while reading. Try pasting again.
 error-clipboard-encoding = Clipboard text is not valid UTF-8.
 error-clipboard-process = Could not read the clipboard; on Linux, install wl-clipboard for Wayland or xclip for X11.

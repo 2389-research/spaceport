@@ -1,3 +1,5 @@
+// ABOUTME: Opens Settings option lists with scoped keyboard and focus ownership.
+// ABOUTME: Returns focus to the trigger without taking focus from another control.
 //! Dropdown: a button that opens a floating option list beneath itself. The
 //! list renders inside the button's subtree via `deferred(anchored(..))`, so
 //! no bounds are passed around and it paints above the page.
@@ -22,6 +24,7 @@ pub(in crate::settings_window) struct Dropdown {
     pub options: Vec<SharedString>,
     pub selected: usize,
     focus: FocusHandle,
+    previous_focus: Option<FocusHandle>,
 }
 
 impl Dropdown {
@@ -32,6 +35,7 @@ impl Dropdown {
         window: &mut Window,
         cx: &mut App,
     ) -> Self {
+        let previous_focus = window.focused(cx);
         let focus = cx.focus_handle();
         window.focus(&focus, cx);
         Self {
@@ -39,11 +43,16 @@ impl Dropdown {
             options,
             selected,
             focus,
+            previous_focus,
         }
     }
 
     pub(in crate::settings_window) fn focus(&self) -> &FocusHandle {
         &self.focus
+    }
+
+    pub(in crate::settings_window) fn previous_focus(&self) -> Option<&FocusHandle> {
+        self.previous_focus.as_ref()
     }
 
     /// Up/Down/Enter/Escape. Returns `Some(index)` on Enter, `Some(usize::MAX)`
@@ -101,6 +110,10 @@ pub(in crate::settings_window) fn dropdown(
     };
     div()
         .id(id)
+        .role(Role::Button)
+        .aria_label(label.clone())
+        .aria_expanded(open.is_some())
+        .map(|button| super::focusable(theme, button, enabled))
         .debug_selector(move || id.to_string())
         .relative()
         .row()
@@ -138,13 +151,24 @@ pub(in crate::settings_window) fn dropdown(
         .child(label_el)
         .child(div().text_color(rgb(theme.subtext())).child("⌄"))
         .children(open.map(|open| {
+            let previous_focus = open.previous_focus.clone();
+            let list_focus = open.focus.clone();
             deferred(
                 anchored()
                     .snap_to_window_with_margin(px(8.))
                     .child(crate::motion::pop_in(
-                        popover_list(theme, open, on_pick, move |window, cx| {
-                            dismiss_list(window, cx)
-                        }),
+                        popover_list(
+                            theme,
+                            open,
+                            move |index, window, cx| {
+                                let restore = list_focus.is_focused(window);
+                                on_pick(index, window, cx);
+                                if restore && let Some(previous) = &previous_focus {
+                                    window.focus(previous, cx);
+                                }
+                            },
+                            move |window, cx| dismiss_list(window, cx),
+                        ),
                         SharedString::from(format!("{id}-list")),
                     )),
             )

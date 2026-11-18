@@ -1,12 +1,20 @@
-//! The agent's process: started in its own process group on Unix so that
-//! stopping it also stops what it started, such as `npx`'s Node child.
+// ABOUTME: Starts ACP agents with owned process trees and drained standard error.
+// ABOUTME: Stops Unix process groups or Windows jobs without blocking wait cancellation.
+//! The agent's process and descendants, including an npm shim's Node child.
+
+#[cfg(windows)]
+mod windows;
+#[cfg(unix)]
+use std::process::Child;
+#[cfg(windows)]
+use windows::Child;
 
 use std::{
     collections::VecDeque,
     ffi::OsString,
     io::{BufRead, BufReader},
     path::Path,
-    process::{Child, ChildStdin, ChildStdout, ExitStatus, Stdio},
+    process::{ChildStdin, ChildStdout, ExitStatus, Stdio},
     sync::{Arc, Mutex, PoisonError},
     thread,
     time::Duration,
@@ -50,7 +58,11 @@ pub(crate) fn spawn(
         .stderr(Stdio::piped());
     #[cfg(unix)]
     std::os::unix::process::CommandExt::process_group(&mut command, 0);
-    let mut child = command.spawn().map_err(|source| Error::AgentSpawn {
+    #[cfg(unix)]
+    let child = command.spawn();
+    #[cfg(windows)]
+    let child = windows::spawn(command);
+    let mut child = child.map_err(|source| Error::AgentSpawn {
         program: program.to_string_lossy().into_owned(),
         source,
     })?;
@@ -109,10 +121,8 @@ impl AgentProcess {
             .collect()
     }
 
-    /// Asks the agent's process group to end, then kills what is left of it
-    /// after a grace period. The agent exiting is not enough: a tool it
-    /// started may ignore the request, so the wait lasts until the whole
-    /// group is gone.
+    /// Ends the owned process tree, including descendants of an exited shim.
+    /// Unix groups receive TERM before KILL; Windows jobs terminate together.
     pub(crate) fn stop(&self) {
         #[cfg(unix)]
         {
@@ -143,6 +153,9 @@ impl AgentProcess {
     }
 }
 
-// Process groups are a Unix notion; Windows has no test here.
 #[cfg(all(test, unix))]
 mod tests;
+
+#[cfg(all(test, windows))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod windows_tests;

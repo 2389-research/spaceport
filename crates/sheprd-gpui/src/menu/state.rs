@@ -1,3 +1,5 @@
+// ABOUTME: Owns each active popup's target, input, and outstanding work.
+// ABOUTME: Releases disposable page owners while preserving accepted operation state.
 //! State one window's menu owns: which page is open, what it targets, and the
 //! daemon answers still outstanding. Every modal action is fenced by the
 //! selection epoch and connection generation it was started under, so a reply
@@ -41,6 +43,8 @@ pub(crate) struct MenuState {
     pub(crate) application_bar: crate::menus::in_window::Geometry,
     /// How the open popup, or the dimming a closed dialog left, moves.
     pub(crate) appear: super::appear::Appear,
+    /// The shared scroll owner for popup shells without a family-specific owner.
+    pub(super) shell_scroll: ScrollHandle,
     /// Written by the menu's layout, read by native interaction checks.
     #[cfg(any(windows, test, feature = "integration-test"))]
     pub(crate) cover: std::rc::Rc<std::cell::Cell<Cover>>,
@@ -48,7 +52,9 @@ pub(crate) struct MenuState {
     pub(super) wsl_setup: Option<super::devices::WslSetup>,
     /// The saved distribution the removal confirmation names.
     pub(super) wsl_remove: Option<String>,
+    pub(super) wsl_remove_scroll: ScrollHandle,
     pub(super) session_edit: Option<super::sessions::Edit>,
+    pub(super) session_edit_scroll: ScrollHandle,
     /// The device whose sessions the picker shows under it, by endpoint id so
     /// a catalog change cannot unfold another one.
     pub(crate) unfolded_device: Option<String>,
@@ -73,14 +79,15 @@ pub(crate) struct MenuState {
     /// on the frame it first appears, GPUI drops a scroll request unapplied.
     pub(super) devices_reveal: std::cell::Cell<Option<usize>>,
     pub(crate) usage_scroll: ScrollHandle,
-    // Selection epoch and connection generation fence captured modal actions.
-    pub(super) endpoint_target: (u64, u64),
+    // Client ownership and runtime authorization share one captured origin.
+    pub(super) origin: Option<super::origin::Origin>,
     pub anchor: Point<Pixels>,
     /// Ignore repeated right presses until the opening gesture is released.
     pub(crate) opening_right_click: bool,
     pub focus: FocusHandle,
     pub(super) selected: Option<usize>,
     pub(super) workspace_selected: Option<WorkspaceMenuAction>,
+    pub(super) workspace_scroll: ScrollHandle,
     pub(super) target: Option<WorkspaceTarget>,
     pub input: Option<DialogInput>,
     pub(crate) error: Option<String>,
@@ -92,6 +99,8 @@ pub(crate) struct MenuState {
     pub(super) suggested_name: Option<String>,
     pub(super) worktree_open: Option<super::worktree_open::Picker>,
     pub(super) keybinds_scroll: ScrollHandle,
+    pub(crate) messages_scroll: ScrollHandle,
+    pub(super) release_notes_scroll: ScrollHandle,
     pub(crate) keybinds_search: Option<Entity<crate::search_input::SearchInput>>,
     pub(super) shortcut_editor: Option<super::shortcut_editor::Editor>,
     pub(super) _keybinds_subscription: Option<Subscription>,
@@ -102,6 +111,7 @@ pub(crate) struct MenuState {
     /// What the last closed palette leaves for Resume Palette.
     pub(crate) palette_resume: Option<crate::palette::Resume>,
     pub(crate) close: Option<crate::close_modal::CloseConfirmation>,
+    pub(crate) close_targets_scroll: ScrollHandle,
     pub(crate) tab: Option<crate::tab_menu::TabMenu>,
     pub(crate) group: Option<crate::group_menu::GroupMenu>,
     pub(crate) host: Option<super::devices::HostMenu>,
@@ -135,12 +145,15 @@ impl MenuState {
             application: None,
             application_bar: Default::default(),
             appear: Default::default(),
+            shell_scroll: ScrollHandle::new(),
             #[cfg(any(windows, test, feature = "integration-test"))]
             cover: Default::default(),
             device_setup: None,
             wsl_setup: None,
             wsl_remove: None,
+            wsl_remove_scroll: ScrollHandle::new(),
             session_edit: None,
+            session_edit_scroll: ScrollHandle::new(),
             unfolded_device: None,
             unfolded_height: Default::default(),
             unfolded_rows: Default::default(),
@@ -151,12 +164,13 @@ impl MenuState {
             devices_scroll: ScrollHandle::new(),
             devices_reveal: std::cell::Cell::new(None),
             usage_scroll: ScrollHandle::new(),
-            endpoint_target: (0, 0),
+            origin: None,
             anchor: Point::default(),
             opening_right_click: false,
             focus: cx.focus_handle(),
             selected: None,
             workspace_selected: None,
+            workspace_scroll: ScrollHandle::new(),
             target: None,
             input: None,
             error: None,
@@ -164,6 +178,8 @@ impl MenuState {
             suggested_name: None,
             worktree_open: None,
             keybinds_scroll: ScrollHandle::new(),
+            messages_scroll: ScrollHandle::new(),
+            release_notes_scroll: ScrollHandle::new(),
             keybinds_search: None,
             shortcut_editor: None,
             _keybinds_subscription: None,
@@ -172,6 +188,7 @@ impl MenuState {
             palette_resume: None,
             palette_preview: true,
             close: None,
+            close_targets_scroll: ScrollHandle::default(),
             removing_devices: Default::default(),
             version_notice: None,
             tab: None,
@@ -183,18 +200,27 @@ impl MenuState {
 
     pub fn reset(&mut self) {
         self.application = None;
+        self.shell_scroll.set_offset(Point::default());
         #[cfg(any(windows, test, feature = "integration-test"))]
         self.cover.set(Cover::Unknown);
         self.device_setup = None;
         self.wsl_setup = None;
         self.wsl_remove = None;
         self.session_edit = None;
+        self.session_edit_scroll.set_offset(Point::default());
         self.unfolded_device = None;
         self.folding = None;
         self.open_link = None;
         self.devices_scroll.set_offset(Point::default());
         self.devices_reveal.set(None);
         self.usage_scroll.set_offset(Point::default());
+        self.messages_scroll.set_offset(Point::default());
+        self.workspace_scroll.set_offset(Point::default());
+        self.wsl_remove_scroll.set_offset(Point::default());
+        self.release_notes_scroll.set_offset(Point::default());
+        if let Some(picker) = &mut self.themes {
+            picker.release_input();
+        }
         self.opening_right_click = false;
         self.tab = None;
         self.group = None;
@@ -219,6 +245,7 @@ impl MenuState {
         self.suggested_name = None;
         self.worktree_open = None;
         self.close = None;
+        self.close_targets_scroll.set_offset(Point::default());
     }
 }
 

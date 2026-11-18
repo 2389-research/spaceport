@@ -100,7 +100,7 @@ impl SettingsWindow {
             .px(px(10.))
             .pt(px(10.))
             .pb(px(4.))
-            .text_size(px(10.))
+            .text_size(rems(0.625))
             .text_color(rgb(self.theme.subtext()))
             .child(group.label().to_uppercase())
     }
@@ -113,8 +113,14 @@ impl SettingsWindow {
     ) -> Stateful<Div> {
         let theme = &self.theme;
         let selected = self.section == section;
+        let id: SharedString = section.selector().into();
+        let mut context = KeyContext::default();
+        context.set("settings-section", id.clone());
         div()
+            .key_context(context)
+            .child(search::track_focus_bounds(id, px(0.)))
             .id(("settings-section", index))
+            .map(|row| ui::focusable(theme, row, true))
             .role(Role::Tab)
             .aria_label(section.label())
             .aria_selected(selected)
@@ -189,7 +195,7 @@ impl SettingsWindow {
             .gap(px(12.))
             .border_t_1()
             .border_color(rgb(self.theme.active))
-            .text_size(px(11.))
+            .text_size(rems(0.6875))
             .when(!pending.is_empty() && self.error.is_none(), |footer| {
                 footer.child(
                     div()

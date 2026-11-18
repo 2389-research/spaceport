@@ -31,6 +31,8 @@ pub(in crate::settings_window) const FACES: [(FontFace, &str); 4] = [
 
 pub(super) struct Controls {
     #[cfg(test)]
+    pub(in crate::settings_window) backdrop_io: Option<backdrop::BackdropIo>,
+    #[cfg(test)]
     pub(in crate::settings_window) preference_io: Option<preferences::PreferenceIo>,
     search: Entity<SearchInput>,
     integration_search: Entity<SearchInput>,
@@ -55,7 +57,7 @@ pub(super) struct Controls {
 
 impl Controls {
     pub(super) fn new(cx: &mut Context<SettingsWindow>) -> Self {
-        let search = cx.new(SearchInput::new);
+        let search = cx.new(super::ui::text_input);
         search.update(cx, |input, cx| {
             input.set_placeholder_with(|| crate::i18n::fl!("settings-fonts-search-placeholder"), cx)
         });
@@ -65,7 +67,7 @@ impl Controls {
             this.controls.scroll.scroll_to_item(0, ScrollStrategy::Top);
             cx.notify();
         });
-        let integration_search = cx.new(SearchInput::new);
+        let integration_search = cx.new(super::ui::text_input);
         integration_search.update(cx, |input, cx| {
             input.set_placeholder_with(
                 || crate::i18n::fl!("settings-integrations-search-placeholder"),
@@ -77,6 +79,8 @@ impl Controls {
             cx.notify();
         });
         Self {
+            #[cfg(test)]
+            backdrop_io: None,
             #[cfg(test)]
             preference_io: None,
             integration_search,
@@ -252,28 +256,32 @@ impl SettingsWindow {
     ) -> Stateful<Div> {
         // A choice is a button or one of several options, and its label may
         // be any element, so its role and name are the caller's to set.
-        crate::accessibility::disabled(div().id(id.into()), !enabled)
-            .px(px(14.))
-            .py(px(10.))
-            .min_w_0()
-            .rounded(px(corners::CONTROL))
-            .border_1()
-            .border_color(if selected {
-                crate::menu::accent(&self.theme)
-            } else {
-                rgb(self.theme.active)
-            })
-            .bg(rgb(if selected {
-                self.theme.active
-            } else {
-                self.theme.background
-            }))
-            .when(enabled, |item| {
-                item.cursor_pointer()
-                    .hover(|style| style.bg(rgb(self.theme.active)))
-            })
-            .when(!enabled, |item| item.opacity(0.5))
-            .child(label)
+        super::ui::focusable(
+            &self.theme,
+            crate::accessibility::disabled(div().id(id.into()), !enabled),
+            enabled,
+        )
+        .px(px(14.))
+        .py(px(10.))
+        .min_w_0()
+        .rounded(px(corners::CONTROL))
+        .border_1()
+        .border_color(if selected {
+            crate::menu::accent(&self.theme)
+        } else {
+            rgb(self.theme.active)
+        })
+        .bg(rgb(if selected {
+            self.theme.active
+        } else {
+            self.theme.background
+        }))
+        .when(enabled, |item| {
+            item.cursor_pointer()
+                .hover(|style| style.bg(rgb(self.theme.active)))
+        })
+        .when(!enabled, |item| item.opacity(0.5))
+        .child(label)
     }
 
     /// Whether Herdr's shared settings can be edited at all. Busy is not part
@@ -302,3 +310,29 @@ impl SettingsWindow {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests;
+
+impl SettingsWindow {
+    pub(in crate::settings_window) fn font_picker_shown(&self) -> bool {
+        self.section == Section::Fonts && self.controls.picker.is_some()
+    }
+
+    pub(in crate::settings_window) fn settings_input_composing(
+        &self,
+        window: &Window,
+        cx: &App,
+    ) -> bool {
+        [
+            &self.nav_search,
+            &self.controls.search,
+            &self.controls.integration_search,
+            &self.themes.search,
+        ]
+        .into_iter()
+        .chain(self.number_edit.as_ref().map(|edit| &edit.input))
+        .chain(self.hex_edit.as_ref().map(|edit| &edit.input))
+        .any(|input| {
+            let input = input.read(cx);
+            input.focus.is_focused(window) && input.is_composing()
+        }) || self.chat_env.composing(window, cx)
+    }
+}

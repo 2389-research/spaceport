@@ -1,3 +1,5 @@
+// ABOUTME: Owns bounded local forwards for saved SSH hosts.
+// ABOUTME: Keeps each private master within its application's lifetime.
 //! Local forwards of a saved SSH host's listening ports. A worker thread owns
 //! one `ssh -N` master per forward, private to that forward, and asks it for
 //! the local listener with `ssh -O forward -L`. That request succeeds only once
@@ -13,7 +15,7 @@ use std::num::NonZeroU16;
 use std::{
     net::{Ipv4Addr, TcpListener},
     path::Path,
-    process::{Child, Command, Stdio},
+    process::{Command, Stdio},
     sync::{Arc, Mutex, MutexGuard, PoisonError, mpsc},
     thread,
     time::{Duration, Instant},
@@ -57,7 +59,7 @@ const LISTENING_POLL: Duration = Duration::from_millis(250);
 #[derive(Default)]
 struct Slot {
     stopped: bool,
-    child: Option<Child>,
+    child: Option<ssh::owned_process::OwnedChild>,
 }
 
 #[cfg(unix)]
@@ -132,14 +134,14 @@ impl PortForward {
         matches!(master(&self.slot), Master::Running)
     }
 
-    /// Kills the master without waiting for it; the worker reaps it. Safe on
+    /// Stops the master without waiting for it; the worker reaps it. Safe on
     /// the UI thread and while quitting, when the worker may never run again.
     pub fn stop(&self) {
         let mut slot = lock(&self.slot);
         slot.stopped = true;
         if let Some(child) = &mut slot.child {
             // A child the worker already reaped is not signalled again.
-            let _ = child.kill();
+            child.stop();
         }
     }
 }
@@ -208,12 +210,12 @@ fn run(
     let dir = ControlDir::create("herdr-fwd").map_err(Error::ForwardControl)?;
     let socket = dir.socket();
     // Stderr can carry banners or secrets; nothing reads it.
-    let child = master_command(&socket)
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(Error::ForwardSpawn)?;
+    let child = ssh::owned_process::OwnedChild::spawn(
+        master_command(&socket),
+        Some(dir.path()),
+        Stdio::null(),
+    )
+    .map_err(Error::ForwardSpawn)?;
     // A stop that came while spawning is seen by the first check below.
     lock(slot).child = Some(child);
     let ended = supervise(
@@ -225,9 +227,8 @@ fn run(
         events,
     );
     let child = lock(slot).child.take();
-    if let Some(mut child) = child {
-        let _ = child.kill();
-        let _ = child.wait();
+    if let Some(child) = child {
+        child.finish();
     }
     if let Some(error) = ended {
         let _ = events.try_send(ForwardEvent::Ended(error));
@@ -355,6 +356,8 @@ fn master_command(target: &str, socket: &Path) -> Command {
             "ControlMaster=yes",
             "-o",
             "ControlPersist=no",
+            "-o",
+            "ForkAfterAuthentication=no",
             "-o",
         ])
         .arg(control_path(socket))

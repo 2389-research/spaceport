@@ -1,3 +1,5 @@
+// ABOUTME: Exposes the bounded Herdr client and its transport-independent contracts.
+// ABOUTME: Keeps runtime discovery and worker lifecycle outside the UI layer.
 //! A local/SSH/WSL gen1 client. All transport I/O runs on a dedicated worker.
 //! No reconnect/replay: commands carry the boot ID of the snapshot they act on.
 //! Drain `Client::events` on a GUI background task, never block the UI thread.
@@ -28,6 +30,7 @@ mod method;
 mod options;
 pub mod private_endpoint;
 mod process;
+pub mod process_output;
 mod queue;
 mod remote_host;
 pub mod response;
@@ -67,7 +70,9 @@ pub use catalog::{
 pub use clipboard::{ClipboardImageCancellation, ClipboardImageUpload};
 pub use compat::{MIN_HERDR_VERSION, VersionMismatch};
 pub use connect::{connect, connect_with_connector, connect_with_surface_active};
-pub use discovery::{ConnectTarget, local_var, session_socket, set_login_config_home};
+pub use discovery::{
+    ConnectTarget, herdr_config_path, local_var, session_socket, set_login_config_home,
+};
 pub use environment::set_command_environment;
 /// Error returned when queueing commands; also available as the crate's `Error`.
 pub use error::Error as SendError;

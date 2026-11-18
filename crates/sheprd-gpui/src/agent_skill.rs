@@ -11,6 +11,8 @@ use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
+mod offer;
+
 const SKILL: &str = include_str!("../../../skills/spaceport/SKILL.md");
 /// Marks a skill file this app manages.
 const MARKER: &str = "<!-- spaceport-managed-skill v1";

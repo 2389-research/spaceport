@@ -1,3 +1,5 @@
+// ABOUTME: Paints each device tree from cached metadata and indexed agent order.
+// ABOUTME: Preserves filtering, configured rows, and focused-agent reveal.
 //! The Devices layout's tree: under each device's header, that device's
 //! agents rather than its workspaces, narrowed by a search field above the
 //! list. The headers are the spaces list's own, so folding, menus, and the
@@ -55,8 +57,7 @@ impl SheprdWindow {
         let selected = index == self.selected_endpoint;
         let live = self.live_of(index);
         let Some(snapshot) = live
-            .snapshot
-            .as_deref()
+            .indexed_snapshot()
             .filter(|_| live.status.is_connected())
         else {
             return (list, 0, None);
@@ -80,18 +81,18 @@ impl SheprdWindow {
         };
         let mut count = 0;
         let mut focused = None;
-        for agent in sorted_agents(snapshot, self.agent_sort) {
+        for agent in sorted_agents(&snapshot, self.agent_sort) {
             // Configured `[sidebar_layout.agents]` rows apply here as in the
             // agents panel, gap included.
-            let Some(lines) = self.configured_agent_lines(agent, snapshot, row_cx.host) else {
+            let Some(lines) = self.configured_agent_lines(agent, &snapshot, row_cx.host) else {
                 continue;
             };
             if selected && agent.focused {
                 focused = Some(count);
             }
             let gap = self.agent_row_gap(count);
-            list =
-                list.child(self.agent_cell(index, agent, snapshot, &row_cx, lines, gap, false, cx));
+            list = list
+                .child(self.agent_cell(index, agent, &snapshot, &row_cx, lines, gap, false, cx));
             count += 1;
         }
         if count == 0 {

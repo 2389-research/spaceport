@@ -14,6 +14,8 @@ pub enum Error {
     },
     #[error(transparent)]
     Backdrop(#[from] crate::backdrop::Error),
+    #[error(transparent)]
+    Browser(#[from] crate::browser::Error),
     #[error("{} already exists; choose a new file name", path.display())]
     BundleExists { path: PathBuf },
     #[error("Could not write {}: {source}", path.display())]
@@ -171,8 +173,6 @@ pub enum Error {
     },
     #[error(transparent)]
     PortForward(#[from] crate::port_forward::Error),
-    #[error("preferences path has no parent")]
-    PreferencesPath,
     #[error(transparent)]
     Processes(#[from] crate::processes::Error),
     #[error("XDG_CONFIG_HOME must be an absolute path")]

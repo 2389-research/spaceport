@@ -26,8 +26,10 @@ const MODEL_WIDTH: f32 = 160.;
 impl SheprdWindow {
     pub(super) fn expire_status_notices(&mut self, now: std::time::Instant) -> bool {
         let changed = self.notices.expire(now) | self.live.notices.expire(now);
-        for endpoint in &mut self.endpoints {
-            endpoint.live.notices.expire(now);
+        for (index, endpoint) in self.endpoints.iter_mut().enumerate() {
+            if index != self.selected_endpoint || !self.live.notices.is_paused() {
+                endpoint.live.notices.expire(now);
+            }
         }
         changed
     }
@@ -56,6 +58,9 @@ impl SheprdWindow {
             .id("connection-status")
             .debug_selector(|| "connection-status".into())
             .role(Role::Status)
+            .a11y_synthetic_children(|builder| {
+                builder.parent_node().set_live(accesskit::Live::Polite);
+            })
             .aria_label(fl!("status-bar-label"))
             .relative()
             .row()

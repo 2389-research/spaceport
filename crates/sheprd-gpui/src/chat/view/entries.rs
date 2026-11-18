@@ -246,6 +246,24 @@ impl SheprdWindow {
         let Some(entry) = entries.get(index) else {
             return div().into_any_element();
         };
+        let name = match &entry.kind {
+            EntryKind::User { .. } => fl!("chat-you"),
+            EntryKind::Tool(tool) => format!(
+                "{}: {}",
+                tool_kind(tool.kind),
+                tool_state(chat.session.transcript(), tool).label()
+            ),
+            EntryKind::Thought { .. } => fl!("chat-working-thinking"),
+            EntryKind::Turn(_) => fl!("chat-turn-summary"),
+            EntryKind::Notice { text, .. } => safe_text(text, 400),
+            _ => safe_text(chat.session.agent(), 80),
+        };
+        let content = div().min_w_0().child(super::accessibility::entry(
+            entry.id,
+            name,
+            chat.prepared.text(),
+            content,
+        ));
         let near = |index: Option<usize>| {
             index
                 .and_then(|index| entries.get(index))

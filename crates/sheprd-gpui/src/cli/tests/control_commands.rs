@@ -1,3 +1,5 @@
+// ABOUTME: Checks control commands and shared options through launch parsing.
+// ABOUTME: Verifies typed operations, targeting, and argument errors.
 use super::*;
 use control::{
     AppOp, ConfigCommand, ControlCommand, FontSize, HostOp, Invocation, Size, Switch, TabOp, UiOp,
@@ -35,8 +37,8 @@ fn global_options_apply_anywhere_after_the_command() {
 }
 
 #[test]
-fn help_wins_over_every_other_argument() {
-    for args in [&["ui", "--help"][..], &["notes", "set", "x", "-h"]] {
+fn help_wins_before_free_text() {
+    for args in [&["ui", "--help"][..], &["notes", "set", "-h"]] {
         assert!(
             matches!(command(args), ControlCommand::Help(Some(_))),
             "{args:?}"

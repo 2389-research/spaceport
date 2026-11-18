@@ -1,3 +1,5 @@
+// ABOUTME: Renders named font family buttons and shared numeric size controls.
+// ABOUTME: Opens the Settings-owned family chooser for each configured font role.
 //! Fonts: one family and size per face, then a live specimen of the face in use.
 // i18n: migrated
 use super::{SettingsWindow, catalog, ui};
@@ -128,6 +130,11 @@ impl SettingsWindow {
     /// The family as a dropdown-styled button that opens the font picker.
     fn family_button(&self, face: FontFace, cx: &mut Context<Self>) -> Stateful<Div> {
         self.font_button(format!("fonts-{}-family", face.name()), "")
+            .aria_label(fl!(
+                "settings-fonts-family-action",
+                role = face_entry(face).title(),
+                family = family_label(&face_font(&self.config, face).family)
+            ))
             .w(px(220.))
             .justify_between()
             .gap(px(6.))

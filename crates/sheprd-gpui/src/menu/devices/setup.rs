@@ -1,11 +1,13 @@
+// ABOUTME: Applies saved-device edits through the independently installed Herdr CLI.
+// ABOUTME: Bounds CLI output and keeps each catalog mutation under one claim.
 //! Edits to the saved device catalog, delegated to the installed Herdr CLI:
 //! removing and renaming a saved device, and the label a device is saved with.
 use super::Error;
 use crate::Result;
 use sheprd_client::Destination;
+use sheprd_client::process_output::{Capture, Retain, capture};
 use std::{
-    io::Read,
-    process::{Command, ExitStatus, Stdio},
+    process::{Child, Command, ExitStatus, Stdio},
     sync::Mutex,
     time::{Duration, Instant},
 };
@@ -14,6 +16,17 @@ use std::{
 const STDERR_LIMIT: u64 = 8 * 1024;
 /// `machine remove` and `machine rename` edit one local file.
 const REMOVE_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// Owns only the short-lived CLI child. Every caller runs off the UI thread.
+struct CliChild(Child);
+
+impl Drop for CliChild {
+    fn drop(&mut self) {
+        if self.0.kill().is_ok() {
+            let _ = self.0.wait();
+        }
+    }
+}
 
 /// Hosts whose saved profile some window of this process is removing, so two
 /// windows, or two clicks, cannot remove the same host at once.
@@ -74,7 +87,7 @@ pub(super) fn claim_saved(target: &str, session: &str) -> Result<Claim> {
 /// local catalog; it never connects, so the host's own Herdr keeps running.
 /// Blocks on a process: call it from the background executor.
 pub(super) fn remove(id: &str) -> Result<()> {
-    remove_with(crate::daemon::executable().as_os_str(), id)
+    remove_with(crate::daemon::executable()?.as_os_str(), id)
 }
 
 fn remove_with(executable: &std::ffi::OsStr, id: &str) -> Result<()> {
@@ -96,7 +109,7 @@ fn remove_with(executable: &std::ffi::OsStr, id: &str) -> Result<()> {
 /// Rename a saved device with `herdr machine rename`, which edits only the
 /// local catalog. Blocks on a process: call it from the background executor.
 pub(super) fn rename(id: &str, label: &str) -> Result<()> {
-    rename_with(crate::daemon::executable().as_os_str(), id, label)
+    rename_with(crate::daemon::executable()?.as_os_str(), id, label)
 }
 
 fn rename_with(executable: &std::ffi::OsStr, id: &str, label: &str) -> Result<()> {
@@ -214,51 +227,53 @@ fn run_bounded_untraced(
 ) -> Result<(ExitStatus, Vec<u8>, Vec<u8>)> {
     let mut command = sheprd_client::new_command(executable);
     cli_environment(&mut command);
-    let mut child = command
-        .args(args)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
-    let drain = |pipe: Option<Box<dyn Read + Send>>| {
-        std::thread::Builder::new()
-            .name("herdr-device-cli".into())
-            .spawn(move || {
-                let mut output = Vec::new();
-                if let Some(mut pipe) = pipe {
-                    let _ = (&mut pipe).take(limit).read_to_end(&mut output);
-                    let _ = std::io::copy(&mut pipe, &mut std::io::sink());
-                }
-                output
-            })
-    };
-    let stdout = drain(
+    let mut child = CliChild(
+        command
+            .args(args)
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?,
+    );
+    let stdout = capture(
         child
+            .0
             .stdout
             .take()
-            .map(|pipe| Box::new(pipe) as Box<dyn Read + Send>),
+            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::BrokenPipe))?,
+        Retain::Prefix(limit),
     )?;
-    let stderr = drain(
+    let stderr = capture(
         child
+            .0
             .stderr
             .take()
-            .map(|pipe| Box::new(pipe) as Box<dyn Read + Send>),
+            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::BrokenPipe))?,
+        Retain::Tail(limit),
     )?;
     let deadline = Instant::now() + timeout;
     let status = loop {
-        if let Some(status) = child.try_wait()? {
+        if let Some(status) = child.0.try_wait()? {
             break status;
         }
         if Instant::now() >= deadline {
-            let _ = child.kill();
-            let _ = child.wait();
             return Err(Error::SetupTimeout.into());
         }
         std::thread::sleep(Duration::from_millis(50));
     };
-    let stdout = stdout.join().unwrap_or_default();
-    let stderr = stderr.join().unwrap_or_default();
+    let stdout = finish_output(stdout, deadline)?;
+    let stderr = finish_output(stderr, deadline)?;
     Ok((status, stdout, stderr))
+}
+
+fn finish_output(reader: Capture, deadline: Instant) -> Result<Vec<u8>> {
+    match reader.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+        Ok(output) => Ok(output?),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => Err(Error::SetupTimeout.into()),
+        Err(error @ std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+            Err(std::io::Error::new(std::io::ErrorKind::BrokenPipe, error).into())
+        }
+    }
 }
 
 /// The CLI ends with its most specific error; earlier lines are progress.

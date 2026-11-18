@@ -1,8 +1,10 @@
+// ABOUTME: Builds palette destinations from indexed workspace, tab, pane, and agent data.
+// ABOUTME: Preserves exact destination validation and shared safe agent captions.
 //! Go To rows: every workspace, tab, pane, and agent on each connected host,
 //! the checkouts the user keeps notes on, and the check that a chosen
 //! destination still exists.
 
-use super::{Action, Entry, Error, Source, frecency, projects};
+use super::{Action, Entry, Error, Source, frecency};
 use crate::{NavigationTarget, Result, i18n::fl};
 use gpui::SharedString;
 use sheprd_client::protocol::{AgentStatus, ClientShellSnapshot};
@@ -66,9 +68,10 @@ pub(super) fn status_badge(status: AgentStatus) -> String {
 pub(super) fn go_to_entries(
     endpoint: &str,
     host: Option<&str>,
-    snapshot: &ClientShellSnapshot,
+    indexed: &crate::sidebar::IndexedSnapshot<'_>,
     entries: &mut Vec<Entry>,
 ) {
+    let snapshot = indexed.snapshot();
     let go = |target| Action::Go {
         endpoint: endpoint.to_owned(),
         boot: snapshot.boot_id.clone(),
@@ -79,7 +82,7 @@ pub(super) fn go_to_entries(
             host,
             Some(&*format!("#{}", workspace.number)),
             workspace.branch.as_deref(),
-            projects::launch_root(snapshot, &workspace.workspace_id),
+            indexed.launch_root(&workspace.workspace_id),
         ]
         .into_iter()
         .flatten()
@@ -95,19 +98,16 @@ pub(super) fn go_to_entries(
             None,
         );
         // Its launch path and branch outlive the daemon's workspace ID.
-        entry.frecency = projects::launch_root(snapshot, &workspace.workspace_id).map(|root| {
-            frecency::Key::Workspace {
-                endpoint: endpoint.to_owned(),
-                root: root.to_owned(),
-                branch: workspace.branch.clone(),
-            }
-        });
+        entry.frecency =
+            indexed
+                .launch_root(&workspace.workspace_id)
+                .map(|root| frecency::Key::Workspace {
+                    endpoint: endpoint.to_owned(),
+                    root: root.to_owned(),
+                    branch: workspace.branch.clone(),
+                });
         entries.push(entry);
-        let tabs: Vec<_> = snapshot
-            .tabs
-            .iter()
-            .filter(|tab| tab.workspace_id == workspace.workspace_id)
-            .collect();
+        let tabs = indexed.tabs(&workspace.workspace_id);
         for tab in &tabs {
             // As in the sidebar, a tab only earns its place when there is a choice.
             let tab_row = (tabs.len() > 1 || tab.custom_label).then(|| {
@@ -136,18 +136,13 @@ pub(super) fn go_to_entries(
             let parent = Some(tab_row.unwrap_or(workspace_row));
             let tab_id = &tab.tab_id;
             let tab = tab_row.map(|_| tab.label.as_str());
-            let panes = snapshot.panes.iter().filter(|pane| {
-                pane.workspace_id == workspace.workspace_id && pane.tab_id == *tab_id
-            });
+            let panes = indexed.panes(&workspace.workspace_id, tab_id);
             for pane in panes {
-                let agent = snapshot
-                    .agents
-                    .iter()
-                    .find(|agent| agent.pane_id == pane.pane_id);
+                let agent = indexed.agent(&pane.pane_id);
                 let name = match agent {
                     Some(agent) => {
                         let name = crate::sidebar::agent_name(agent);
-                        match crate::sidebar::pane_name(agent, snapshot, name) {
+                        match crate::sidebar::pane_name(agent, indexed, name) {
                             Some(pane) => format!("{name} · {pane}"),
                             None => name.to_owned(),
                         }

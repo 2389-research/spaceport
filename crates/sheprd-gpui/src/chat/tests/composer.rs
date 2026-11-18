@@ -10,7 +10,7 @@ use gpui::{ClipboardItem, TestAppContext};
 use sheprd_chat_protocol::Command;
 use sheprd_client::ConnectTarget;
 
-fn idle() -> ServerMessage {
+pub(super) fn idle() -> ServerMessage {
     let mut transcript = Transcript::new("Claude");
     transcript.status = Status::Idle;
     transcript.entries = vec![agent(1, "Hi.")];
@@ -20,7 +20,7 @@ fn idle() -> ServerMessage {
     }
 }
 
-fn prompt_text(stream: &mut Peer) -> String {
+pub(super) fn prompt_text(stream: &mut Peer) -> String {
     match read(stream) {
         Some(ClientMessage::Command {
             command: Command::Prompt { text, .. },

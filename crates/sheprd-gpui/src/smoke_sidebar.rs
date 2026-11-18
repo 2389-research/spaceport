@@ -439,7 +439,11 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                                 .map_err(|_| anyhow!("unexpected root"))?;
                             let state = view.read(cx);
                             if state.menu.page != Some(menu::Page::Menu) {
-                                bail!("native footer click did not reopen menu");
+                                bail!(
+                                    "native footer click did not reopen menu: page={:?}, cover={:?}",
+                                    state.menu.page,
+                                    state.menu.cover.get()
+                                );
                             }
                             let menu::Cover::Panel(panel) = state.menu.cover.get() else {
                                 bail!("reopened native menu has no painted panel bounds");

@@ -1,4 +1,8 @@
+// ABOUTME: Owns captured tab actions, rename correlation, and workspace moves.
+// ABOUTME: Keeps popup effects fenced to the original legacy connection and tab.
 // i18n: migrated
+mod paint;
+mod render;
 use crate::i18n::fl;
 use crate::{
     SheprdWindow,
@@ -10,6 +14,7 @@ use crate::{
     search_input::SearchInput,
 };
 use gpui::{prelude::*, *};
+pub(crate) use paint::Paint;
 use serde_json::{Value, json};
 use sheprd_client::{Method, protocol::ClientShellSnapshot};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -589,180 +594,5 @@ impl SheprdWindow {
             }
             _ => {}
         }
-    }
-
-    fn render_tab_move_pending(&self) -> Div {
-        div().flex().flex_col().child(
-            div()
-                .debug_selector(|| "tab-move-pending".into())
-                .p(px(8.))
-                .text_color(rgb(self.theme.muted))
-                .child(fl!("tab-menu-moving")),
-        )
-    }
-
-    /// Fills the menu's `panel` with the workspace picker. The heading and
-    /// rows are the panel's own children, which its scroll handle addresses by
-    /// index, so a row the keyboard selects in a long list scrolls into view.
-    pub(crate) fn render_tab_move_picker(
-        &self,
-        panel: Stateful<Div>,
-        cx: &mut Context<Self>,
-    ) -> Stateful<Div> {
-        let Some(tab) = &self.menu.tab else {
-            return panel;
-        };
-        if tab.moving.is_some() {
-            return panel.child(self.render_tab_move_pending());
-        }
-        let mut body = panel.track_scroll(&tab.scroll).flex().flex_col().child(
-            div()
-                .flex_none()
-                .px(px(8.))
-                .py(px(4.))
-                .text_color(rgb(self.theme.muted))
-                .child(fl!("tab-menu-move-heading")),
-        );
-        for (index, choice) in tab.target.choices.iter().enumerate() {
-            let destination = choice.destination.clone();
-            let place = choice.place.clone();
-            body = body.child(
-                div()
-                    .id(("tab-move-destination", index))
-                    .flex_none()
-                    .debug_selector(move || format!("tab-move-{index}"))
-                    .min_h(px(self.config.ui.line_height() + 12.))
-                    .px(px(8.))
-                    .flex()
-                    .items_center()
-                    .overflow_hidden()
-                    .cursor_pointer()
-                    .when(tab.selected == Some(index), |row| {
-                        row.bg(rgb(self.theme.active))
-                    })
-                    .hover(|row| row.bg(rgb(self.theme.active)))
-                    .on_hover(cx.listener(move |this, hovered, _, cx| {
-                        if *hovered && let Some(tab) = &mut this.menu.tab {
-                            tab.selected = Some(index);
-                            cx.notify();
-                        }
-                    }))
-                    .child(
-                        div()
-                            .debug_selector(move || format!("tab-move-place-{index}"))
-                            .min_w(px(0.))
-                            .truncate()
-                            .child(place),
-                    )
-                    .on_click(cx.listener(move |this, event: &ClickEvent, window, cx| {
-                        // The picker replaces the menu under the pointer, and
-                        // snapping it into the window can shift its rows, so
-                        // a double-click's second click would otherwise pick
-                        // whatever row it lands on.
-                        if event.click_count() > 1 {
-                            return;
-                        }
-                        this.move_tab(destination.clone(), window, cx)
-                    })),
-            );
-        }
-        body.when_some(tab.error.clone(), |body, error| {
-            body.child(div().flex_none().p(px(8.)).child(error))
-        })
-    }
-
-    pub(super) fn render_tab_menu(&self, cx: &mut Context<Self>) -> Div {
-        let Some(tab) = &self.menu.tab else {
-            return div();
-        };
-        let theme = &self.theme;
-        let mut body = div().flex().flex_col();
-        if tab.moving.is_some() {
-            body = self.render_tab_move_pending();
-        } else if self.menu.page == Some(Page::Tab) {
-            for (index, action) in tab.actions().into_iter().enumerate() {
-                body = body.child(
-                    div()
-                        .id(("tab-menu-action", index))
-                        .debug_selector(move || format!("tab-menu-{index}"))
-                        .min_h(px(self.config.ui.line_height() + 12.))
-                        .px(px(8.))
-                        .flex()
-                        .items_center()
-                        .cursor_pointer()
-                        .when(tab.selected == Some(index), |row| row.bg(rgb(theme.active)))
-                        .hover(|row| row.bg(rgb(theme.active)))
-                        .child(
-                            div()
-                                .debug_selector(move || format!("tab-menu-label-{index}"))
-                                .min_w_0()
-                                .truncate()
-                                .child(action.label()),
-                        )
-                        .on_hover(cx.listener(move |this, hovered, _, cx| {
-                            if *hovered && let Some(tab) = &mut this.menu.tab {
-                                tab.selected = Some(index);
-                                cx.notify();
-                            }
-                        }))
-                        .on_click(cx.listener(move |this, _, window, cx| {
-                            this.activate_tab_menu(action, window, cx)
-                        })),
-                );
-            }
-        } else {
-            body =
-                body.p(px(8.))
-                    .gap(px(12.))
-                    .child(
-                        div()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("tab-menu-rename-title")),
-                    )
-                    .when_some(tab.input.clone(), |body, input| {
-                        if tab.pending.is_some() {
-                            body.child(div().child(input.read(cx).text().to_owned()))
-                        } else {
-                            body.child(input)
-                        }
-                    })
-                    .child(
-                        div()
-                            .flex()
-                            .justify_end()
-                            .gap(px(8.))
-                            .child(
-                                div()
-                                    .id("tab-rename-cancel")
-                                    .p(px(6.))
-                                    .cursor_pointer()
-                                    .child(fl!("tab-menu-cancel"))
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.dismiss_menu(window, cx)
-                                    })),
-                            )
-                            .child(
-                                div()
-                                    .id("tab-rename-submit")
-                                    .p(px(6.))
-                                    .rounded(px(crate::config::corners::CONTROL))
-                                    .bg(rgb(theme.active))
-                                    .cursor_pointer()
-                                    .child(if tab.pending.is_some() {
-                                        fl!("tab-menu-renaming")
-                                    } else {
-                                        fl!("tab-menu-rename-submit")
-                                    })
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.submit_tab_rename(window, cx)
-                                    })),
-                            ),
-                    );
-        }
-        body.when_some(tab.error.clone(), |body, error| {
-            // No width of its own, so the labels set the panel's width and
-            // the message wraps inside it.
-            body.child(div().w_0().min_w_full().p(px(8.)).child(error))
-        })
     }
 }

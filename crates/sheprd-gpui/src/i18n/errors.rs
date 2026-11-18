@@ -10,6 +10,7 @@
 // i18n: migrated
 
 mod backdrop;
+mod browser;
 mod caffeine;
 mod chat;
 mod chat_protocol;

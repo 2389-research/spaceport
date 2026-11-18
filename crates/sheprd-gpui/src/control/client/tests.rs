@@ -1,3 +1,5 @@
+// ABOUTME: Collects CLI response formatting and transport contract tests.
+// ABOUTME: Keeps output, help and failure identities verifiable without native startup.
 #![allow(clippy::unwrap_used)]
 use super::*;
 
@@ -5,7 +7,9 @@ mod chat_lines;
 mod core_catalog;
 mod documented_commands;
 mod family_help;
+mod json_contracts;
 mod tab_help;
+mod transport;
 mod wire;
 
 #[test]

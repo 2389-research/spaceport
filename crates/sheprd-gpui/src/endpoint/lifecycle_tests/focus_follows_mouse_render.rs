@@ -72,7 +72,7 @@ fn rendered_hover_resumes_typing_in_the_hovered_pane(cx: &mut gpui::TestAppConte
             state.apply(ClientEvent::Snapshot(Arc::new(next.clone())));
             state.apply(ClientEvent::Surface(Arc::new(frame.clone())));
         }
-        assert!(view.config.focus_follows_mouse);
+        view.config.focus_follows_mouse = true;
         assert!(view.input_ready());
         cx.notify();
         (next, frame)

@@ -1,3 +1,5 @@
+// ABOUTME: Serves bounded local control requests over private sockets and named pipes.
+// ABOUTME: Reserves quick request capacity while tracking waiting callers and cancellation.
 //! The channel behind `herdr-gpui <command>`: a Unix socket, or a named
 //! pipe on Windows. A worker accepts connections and serves each on a
 //! thread of its own, up to a bound: it reads one bounded request, hands it
@@ -33,8 +35,10 @@ const ANSWER_TIMEOUT: Duration = Duration::from_secs(10);
 /// Requests waiting for the UI. Each connection holds one, so this bounds
 /// how many callers are answered `busy` rather than queued.
 const QUEUE: usize = 4;
-/// Connections served at once, waiting ones included.
-const CONNECTIONS: usize = 8;
+/// Long waits cannot consume the slots reserved for quick requests.
+const WAITING_CONNECTIONS: usize = 8;
+/// Connections served at once, including reads and long waits.
+const CONNECTIONS: usize = WAITING_CONNECTIONS + 8;
 
 /// Where this user's app listens, given its state directory.
 pub fn address(state: &Path) -> crate::Result<PathBuf> {
@@ -60,6 +64,15 @@ fn windows_pipe_name(sid: &str, isolated: Option<&Path>) -> PathBuf {
         name.push_str(&format!("-{hash:016x}"));
     }
     PathBuf::from(name)
+}
+
+/// Installed previews retain their ordinary pipe. Development builds always scope it.
+#[cfg(any(windows, test))]
+fn windows_state_scope(state: &Path, explicit: bool) -> Option<&Path> {
+    let preview = state
+        .file_name()
+        .is_some_and(|name| name == sheprd_client::local_path::PREVIEW_STATE_NAMESPACE);
+    (explicit || !preview).then_some(state)
 }
 
 /// How long the UI may take to answer `request`: one that waits for the
@@ -114,8 +127,19 @@ impl Incoming {
 }
 
 pub struct Server {
+    cleanup: Cleanup,
     path: PathBuf,
     requests: Receiver<Event>,
+}
+
+/// A server's cleanup work, run off the UI thread when the app quits.
+#[derive(Clone)]
+pub struct Cleanup(transport::Cleanup);
+
+impl Cleanup {
+    pub fn release(self) {
+        transport::release(&self.0);
+    }
 }
 
 impl Server {
@@ -123,6 +147,7 @@ impl Server {
     /// not start.
     pub fn bind(path: &Path) -> crate::Result<Self> {
         let listener = transport::Listener::bind(path)?;
+        let cleanup = Cleanup(listener.cleanup());
         let (sender, requests) = mpsc::sync_channel(QUEUE);
         // The worker blocks in accept for the life of the process. Nothing
         // joins it: the UI must never wait on it, and exit reclaims it.
@@ -130,6 +155,7 @@ impl Server {
             .name("control-socket".into())
             .spawn(move || {
                 let open = Arc::new(AtomicUsize::new(0));
+                let waiting = Arc::new(AtomicUsize::new(0));
                 loop {
                     let mut stream = match listener.accept() {
                         Ok(stream) => stream,
@@ -150,11 +176,11 @@ impl Server {
                         refuse(&stream);
                         continue;
                     }
-                    let (queue, done) = (sender.clone(), open.clone());
+                    let (queue, done, waiting) = (sender.clone(), open.clone(), waiting.clone());
                     let spawned = thread::Builder::new()
                         .name("control-connection".into())
                         .spawn(move || {
-                            serve(&stream, &queue);
+                            serve(&stream, &queue, &waiting);
                             done.fetch_sub(1, Ordering::AcqRel);
                         });
                     if let Err(error) = spawned {
@@ -164,6 +190,7 @@ impl Server {
                 }
             })?;
         Ok(Self {
+            cleanup,
             path: path.to_owned(),
             requests,
         })
@@ -171,6 +198,10 @@ impl Server {
 
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    pub fn cleanup(&self) -> Cleanup {
+        self.cleanup.clone()
     }
 
     /// Requests that arrived since the last call.
@@ -186,11 +217,6 @@ impl Server {
             Event::Request(incoming) => Some(incoming),
         }
     }
-}
-
-/// Cleans up after the server at `path` when the app quits.
-pub fn release(path: &Path) {
-    transport::release(path);
 }
 
 /// Reads one line of at most `MAX_MESSAGE` bytes, without its newline.
@@ -257,7 +283,7 @@ fn refuse(stream: &Connection) {
 }
 
 /// Serves one request on a connection whose timeouts are already set.
-fn serve(stream: &Connection, queue: &SyncSender<Event>) {
+fn serve(stream: &Connection, queue: &SyncSender<Event>, waiting: &AtomicUsize) {
     let request = read_line(stream).and_then(|line| Ok(serde_json::from_slice::<Request>(&line)?));
     let response = match request {
         Ok(request) => {
@@ -265,7 +291,20 @@ fn serve(stream: &Connection, queue: &SyncSender<Event>) {
                 tracing::debug!(%error, "Control disconnect monitoring failed");
                 return;
             }
-            answer(request, queue, stream)
+            let parks = request.wait_seconds() > 0;
+            if parks && waiting.fetch_add(1, Ordering::AcqRel) >= WAITING_CONNECTIONS {
+                waiting.fetch_sub(1, Ordering::AcqRel);
+                finish_response(
+                    stream,
+                    Response::error(ErrorCode::Busy, "Too many requests are waiting"),
+                );
+                return;
+            }
+            let response = answer(request, queue, stream);
+            if parks {
+                waiting.fetch_sub(1, Ordering::AcqRel);
+            }
+            response
         }
         Err(error) => Response::error(ErrorCode::InvalidRequest, error.to_string()),
     };
@@ -307,7 +346,20 @@ pub fn call(path: &Path, request: &Request) -> crate::Result<Response> {
     if line.is_empty() {
         return Err(crate::Error::NoResponse);
     }
-    Ok(serde_json::from_slice(&line)?)
+    let response: serde_json::Value = serde_json::from_slice(&line)?;
+    if response.get("status").and_then(serde_json::Value::as_str) == Some("status")
+        && let Some(protocol) = response.get("protocol").and_then(serde_json::Value::as_u64)
+        && protocol != u64::from(crate::protocol::PROTOCOL_VERSION)
+    {
+        return Err(crate::Error::Rejected {
+            code: ErrorCode::Unsupported,
+            message: format!(
+                "Spaceport speaks control protocol {protocol}, but this command line speaks {}; update the older of the two",
+                crate::protocol::PROTOCOL_VERSION
+            ),
+        });
+    }
+    Ok(serde_json::from_value(response)?)
 }
 
 #[cfg(any(test, feature = "test-support"))]

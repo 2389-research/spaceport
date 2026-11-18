@@ -7,6 +7,7 @@ use objc2_app_kit::{NSPasteboard, NSPasteboardItem, NSPasteboardWriting};
 use objc2_foundation::{NSArray, NSData, NSString, NSURL};
 use std::path::{Path, PathBuf};
 
+mod text_mode;
 mod timing;
 
 /// One pasteboard item per entry, each holding `(type, string or bytes)` pairs.
@@ -62,8 +63,11 @@ fn a_finder_file_copy_reads_its_full_path_not_its_name() {
             ("public.utf8-plain-text", name.as_bytes().to_vec()),
             ("public.png", vec![9, 8, 7]),
         ]]);
-        assert_eq!(paths(read_pasteboard(&pasteboard, false).unwrap()), [path]);
-        let image = read_pasteboard(&pasteboard, true).unwrap();
+        assert_eq!(
+            paths(read_pasteboard(&pasteboard, Mode::Normal).unwrap()),
+            [path]
+        );
+        let image = read_pasteboard(&pasteboard, Mode::Image).unwrap();
         assert!(matches!(image.as_ref().map(ClipboardItem::entries),
             Some([ClipboardEntry::Image(image)]) if image.bytes == [9, 8, 7]));
         pasteboard.clearContents();
@@ -94,7 +98,7 @@ fn several_files_keep_their_order_and_reference_urls_resolve() {
             &[("public.file-url", reference.into_bytes())],
         ]);
         assert_eq!(
-            paths(read_pasteboard(&pasteboard, false).unwrap()),
+            paths(read_pasteboard(&pasteboard, Mode::Normal).unwrap()),
             [first, second]
         );
         pasteboard.clearContents();
@@ -108,7 +112,7 @@ fn text_copies_without_file_urls_still_paste_their_text() {
             ("public.utf8-plain-text", b"plain text".to_vec()),
             ("public.url", b"https://example.com/".to_vec()),
         ]]);
-        let item = read_pasteboard(&pasteboard, false).unwrap();
+        let item = read_pasteboard(&pasteboard, Mode::Normal).unwrap();
         assert!(matches!(item.as_ref().map(ClipboardItem::entries),
             Some([ClipboardEntry::String(text)]) if text.text() == "plain text"));
         pasteboard.clearContents();
@@ -150,7 +154,7 @@ fn unresolved_urls_never_hide_files_past_the_bound() {
                 .collect();
         let items: Vec<&[(&str, Vec<u8>)]> = types.iter().map(Vec::as_slice).collect();
         let pasteboard = pasteboard(&items);
-        let read = paths(read_pasteboard(&pasteboard, false).unwrap());
+        let read = paths(read_pasteboard(&pasteboard, Mode::Normal).unwrap());
         assert_eq!(read, files);
         assert!(matches!(
             quote_paths(&read),

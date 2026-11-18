@@ -1,3 +1,5 @@
+// ABOUTME: Exercises safe pane captions and rename-versus-title precedence.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::*;
 
 mod transport;
@@ -17,7 +19,7 @@ fn pane(id: &str, label: Option<&str>) -> ClientShellPane {
 
 /// The pane name an agent called "grok" shows.
 fn named(snapshot: &ClientShellSnapshot) -> Option<String> {
-    pane_name(&snapshot.agents[0], snapshot, "grok")
+    pane_name(&snapshot.agents[0], &IndexedSnapshot::new(snapshot), "grok")
 }
 
 /// Rename's label, then the title an unnamed pane already carries.

@@ -1,3 +1,5 @@
+// ABOUTME: Previews and saves a captured device's terminal theme through its host menu.
+// ABOUTME: Drops active input and read tasks while keeping only departure paint data.
 //! Picking a saved device's terminal theme from its menu. Hovering a row
 //! previews it on the terminal while that device is the one shown; Enter or a
 //! click saves `[devices.<id>] theme`, and "Same as app" removes it.
@@ -11,6 +13,10 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 
+mod paint;
+mod render;
+pub(in crate::menu) use paint::Paint;
+
 /// The row that removes the device's own theme.
 const SAME_AS_APP: &str = "host-menu-theme-same-as-app";
 
@@ -20,6 +26,11 @@ pub(super) enum Row {
     App,
     Named(String),
 }
+
+#[cfg(test)]
+mod tests;
+#[cfg(test)]
+pub(in crate::menu) use tests::fixture as departure_fixture;
 
 pub(crate) struct DeviceThemePicker {
     search: Entity<SearchInput>,
@@ -379,47 +390,6 @@ impl SheprdWindow {
         let Some(picker) = &host.theme else {
             return div();
         };
-        let theme = &self.theme;
-        let font = &self.config.ui;
-        let shown = self
-            .endpoints
-            .get(self.selected_endpoint)
-            .is_some_and(|endpoint| endpoint.id == host.id);
-        let header = div()
-            .flex_none()
-            .p(px(16.))
-            .border_b_1()
-            .border_color(rgb(theme.active))
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap(px(12.))
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .truncate()
-                            .text_size(px(font.size * 1.35))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("host-menu-theme-title", device = host.label.as_str())),
-                    )
-                    .child(
-                        div()
-                            .id("device-theme-close")
-                            .debug_selector(|| "device-theme-close".into())
-                            .px_2()
-                            .py_1()
-                            .cursor_pointer()
-                            .rounded(px(crate::config::corners::CONTROL))
-                            .hover(|s| s.bg(rgb(theme.active)))
-                            .child(fl!("host-menu-theme-close"))
-                            .on_click(
-                                cx.listener(|this, _, window, cx| this.dismiss_menu(window, cx)),
-                            ),
-                    ),
-            )
-            .child(div().pt(px(12.)).child(picker.search.clone()));
         let current = current_row(
             self.device_theme_value(&host.id),
             crate::app::light_appearance(cx),
@@ -435,41 +405,13 @@ impl SheprdWindow {
                 range
                     .map(|index| {
                         let row = picker.filtered[index].clone();
-                        let label = match &row {
-                            Row::App => crate::i18n::message(SAME_AS_APP, &[]),
-                            Row::Named(name) => name.clone(),
-                        };
-                        div()
-                            .id(index)
-                            .debug_selector(move || format!("device-theme-row-{index}"))
-                            .w_full()
-                            .h(px(this.config.ui.line_height() + 20.))
-                            .px(px(16.))
-                            .flex()
-                            .items_center()
-                            .gap(px(8.))
-                            .cursor_pointer()
-                            .when(index == picker.selected, |row| {
-                                row.bg(rgb(this.theme.active))
-                            })
-                            .hover(|s| s.bg(rgb(this.theme.active)))
-                            .child(div().flex_1().min_w_0().truncate().child(label))
-                            .when(row == current, |row| {
-                                row.child(
-                                    div()
-                                        .text_color(rgb(this.theme.muted))
-                                        .child(fl!("host-menu-theme-current")),
-                                )
-                            })
-                            .on_hover(cx.listener(move |this, hovered, _, cx| {
-                                if *hovered && let Some(picker) = this.device_theme_picker_mut() {
-                                    picker.selected = index;
-                                    this.preview_device_theme(cx);
-                                }
-                            }))
-                            .on_click(cx.listener(move |this, _, window, cx| {
-                                this.choose_device_theme(row.clone(), window, cx)
-                            }))
+                        let choice = paint::choice(&row, index, picker.selected, &current);
+                        this.device_theme_choice(
+                            &choice,
+                            Some(row),
+                            px(this.config.ui.line_height() + 20.),
+                            cx,
+                        )
                     })
                     .collect()
             }),
@@ -477,31 +419,13 @@ impl SheprdWindow {
         .track_scroll(&picker.scroll)
         .flex_1()
         .min_h_0();
-        let status = if let Some(error) = &picker.error {
-            error.clone()
-        } else if shown {
-            fl!("host-menu-theme-hover-hint")
-        } else {
-            fl!("host-menu-theme-select-hint")
-        };
-        div()
-            .debug_selector(|| "device-theme".into())
-            .flex()
-            .flex_col()
-            .size_full()
-            .min_h_0()
-            .child(header)
-            .child(list)
-            .child(
-                div()
-                    .debug_selector(|| "device-theme-status".into())
-                    .flex_none()
-                    .px(px(16.))
-                    .py(px(10.))
-                    .border_t_1()
-                    .border_color(rgb(theme.active))
-                    .text_color(rgb(theme.muted))
-                    .child(status),
-            )
+        self.device_theme_content(
+            &host.label,
+            picker.search.clone().into_any_element(),
+            list.into_any_element(),
+            paint::status(self, host, picker),
+            true,
+            cx,
+        )
     }
 }

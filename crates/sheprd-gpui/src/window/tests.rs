@@ -23,11 +23,14 @@ mod en_xa_input;
 mod en_xa_notices;
 mod follow_focus;
 mod herdr_missing;
+mod herdr_stopped;
 mod legacy_terminal_fallback;
 mod padding;
+mod reconnect_keyboard;
 mod removed_remote_browser;
 mod report_issue;
 mod rtl;
+mod shortcut_repeat;
 mod sound_volume;
 
 fn main_windows(cx: &mut gpui::App) -> Vec<gpui::WindowHandle<SheprdWindow>> {

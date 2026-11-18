@@ -7,13 +7,13 @@ use gpui::Context;
 
 impl SheprdWindow {
     /// Listening ports are scanned on the connected hosts.
-    pub(super) fn update_listening_ports(&mut self) -> bool {
+    pub(super) fn update_listening_ports(&mut self, cx: &mut Context<Self>) -> bool {
         if !self.config.show_listening_ports {
             self.tunnels.close_all();
-            return self.listening_ports.poll(Vec::new());
+            return self.listening_ports.poll(Vec::new(), cx);
         }
         let hosts = self.watched_hosts();
-        let changed = self.listening_ports.poll(hosts);
+        let changed = self.listening_ports.poll(hosts, cx);
         // A tunnel lives as long as its remote port is listed at the address
         // it dials and its SSH child runs; either ending removes its close
         // button.

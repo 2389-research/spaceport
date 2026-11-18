@@ -1,8 +1,13 @@
+// ABOUTME: Paints terminal cells, decorations, and images from prepared frame data.
+// ABOUTME: Reuses font-dependent glyph shapes while applying current colours during paint.
 mod area;
 mod decorations;
 mod glyphs;
 mod graphics;
 mod grid;
+mod image_paint;
+#[cfg(test)]
+pub(crate) mod image_probe;
 mod images;
 
 use self::area::whole;
@@ -16,17 +21,15 @@ pub(crate) use self::graphics::CellSeparator;
 use self::graphics::Graphic;
 pub(crate) use self::grid::Ground;
 use self::grid::{background_extent, grid_corners, grid_rect, last_row_has_separator};
-use self::images::{ImageCache, ImageGeometry, below_text};
-pub(crate) use self::images::{ImageTarget, PlacedImages};
+pub(crate) use self::image_paint::ImageBatch;
+use self::images::{ImageCache, below_text};
+pub(crate) use self::images::{ImageRegion, ImageTarget, PlacedImages};
 pub(crate) use self::images::{fit_bgra, texture};
 use crate::config::Theme;
 use crate::terminal::*;
 use gpui::*;
 use sheprd_client::protocol::{CellData, FrameData, PaneSurfacePane, SurfaceRect};
-use std::{
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 use unicode_width::UnicodeWidthStr;
 
 /// The selection tints the cells it covers instead of replacing their colors:
@@ -292,10 +295,10 @@ fn byte_index(text: &str, utf16: usize) -> usize {
 
 impl TerminalPainter {
     pub fn set_appearance(&mut self, font_size: f32, cell_height: f32, theme: Theme) {
-        if self.font_size != font_size || self.cell_height != cell_height || self.theme != theme {
+        self.theme = theme;
+        if self.font_size != font_size || self.cell_height != cell_height {
             self.font_size = font_size;
             self.cell_height = cell_height;
-            self.theme = theme;
             self.glyphs.clear();
             self.cell_width = None;
         }
@@ -466,6 +469,7 @@ impl TerminalPainter {
         let started = Instant::now();
         let mut paint_errors = 0_u64;
         self.configure(font);
+        self.glyphs.begin_paint();
         let cached = true;
         #[cfg(feature = "integration-test")]
         let cached = cached && !self.uncached;
@@ -522,6 +526,8 @@ impl TerminalPainter {
         // second layer above the text.
         if draws(Layer::Backgrounds) {
             window.paint_layer(Bounds::new(origin, background), |window| {
+                #[cfg(test)]
+                image_probe::cells(Layer::Backgrounds, images, grid, window);
                 // Backgrounds precede all glyphs, including wide graphemes' skip cells.
                 let width = usize::from(frame.width);
                 for range in cell_ranges(frame, area) {
@@ -603,6 +609,8 @@ impl TerminalPainter {
                     }
                 }
                 if text_with_backgrounds {
+                    #[cfg(test)]
+                    image_probe::cells(Layer::Text, images, grid, window);
                     paint_errors += self.paint_text(
                         frame,
                         area,
@@ -622,6 +630,8 @@ impl TerminalPainter {
         if !text_with_backgrounds && draws(Layer::Text) {
             paint_errors += self.paint_images(&below, window);
             window.paint_layer(grid, |window| {
+                #[cfg(test)]
+                image_probe::cells(Layer::Text, images, grid, window);
                 paint_errors += self.paint_text(
                     frame,
                     area,
@@ -639,6 +649,8 @@ impl TerminalPainter {
         }
         if draws(Layer::Decorations) {
             window.paint_layer(grid, |window| {
+                #[cfg(test)]
+                image_probe::cells(Layer::Decorations, images, grid, window);
                 // Box and block graphics are quads, so they share this layer to stay
                 // above the backgrounds. Decorations cover the grid, including spaces
                 // and wide-glyph continuation cells.
@@ -788,29 +800,6 @@ impl TerminalPainter {
         }
     }
 
-    /// Paints images in order, returning how many failed.
-    fn paint_images(
-        &mut self,
-        placed: &[(i32, ImageGeometry, Arc<RenderImage>)],
-        window: &mut Window,
-    ) -> u64 {
-        let mut failed = 0;
-        for (_z, geometry, texture) in placed {
-            let painted = window.paint_image(
-                geometry.visible,
-                geometry.image,
-                Corners::default(),
-                texture.clone(),
-                0,
-                false,
-            );
-            failed += u64::from(painted.is_err());
-            #[cfg(test)]
-            self.painted_images.push((*_z, geometry.visible));
-        }
-        failed
-    }
-
     /// Shapes and paints every visible glyph `area` covers, returning failures.
     #[allow(clippy::too_many_arguments)]
     fn paint_text(
@@ -886,8 +875,8 @@ impl TerminalPainter {
                         counts.shapes += 1;
                     }
                     let line = self.shape(font, style, &cell.symbol, window);
-                    if cached && self.glyphs.has_room() {
-                        self.glyphs.insert(style, &cell.symbol, line)
+                    if cached && let Some(slot) = self.glyphs.room() {
+                        self.glyphs.insert(slot, style, &cell.symbol, line)
                     } else {
                         newly_shaped = line;
                         &newly_shaped

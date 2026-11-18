@@ -2,6 +2,7 @@
 // ABOUTME: Consumes each submitted request once, including uncertain worker outcomes.
 
 use super::{Purpose, infos::Infos, purpose_matches_core};
+use crate::browser::Reservation;
 use sheprd_backend::{Spawn, TerminalInfo};
 use sheprd_core_client::CoreBackend;
 use std::{collections::VecDeque, sync::mpsc};
@@ -15,6 +16,9 @@ pub(super) struct Request {
     expected_core: Option<String>,
     purpose: Purpose,
     spawn: Spawn,
+    /// Tab admission owns capacity until placement; split requests need no tab slot.
+    reserved: Option<Reservation>,
+    report: Option<super::Reporter>,
 }
 
 #[derive(Default)]
@@ -26,11 +30,19 @@ pub(super) enum Spawning {
         purpose: Purpose,
         started: Started,
         queued: VecDeque<Request>,
+        reserved: Option<Reservation>,
+        report: Option<super::Reporter>,
     },
 }
 
 pub(super) enum Event<'a> {
-    Queue(Purpose, Box<Spawn>, Option<String>),
+    Queue(
+        Purpose,
+        Box<Spawn>,
+        Option<String>,
+        Option<Reservation>,
+        Option<super::Reporter>,
+    ),
     Start(&'a CoreBackend, &'a Infos, SpawnWorker),
     Poll,
     Unavailable,
@@ -42,18 +54,25 @@ pub(super) enum Outcome {
     Full,
     Stale,
     Cleared,
-    Finished(Purpose, Box<Completion>),
+    Finished(
+        Purpose,
+        Box<Completion>,
+        Option<Reservation>,
+        Option<super::Reporter>,
+    ),
 }
 
 impl Spawning {
     /// The only writer of the spawn lifecycle, including queued requests.
     pub(super) fn transition(&mut self, event: Event<'_>) -> Outcome {
         match event {
-            Event::Queue(purpose, spawn, core_id) => {
+            Event::Queue(purpose, spawn, core_id, reserved, report) => {
                 let request = Request {
                     expected_core: core_id,
                     purpose,
                     spawn: *spawn,
+                    reserved,
+                    report,
                 };
                 match self {
                     Self::Idle => *self = Self::Queued(VecDeque::from([request])),
@@ -74,6 +93,8 @@ impl Spawning {
                     purpose,
                     mut spawn,
                     expected_core,
+                    reserved,
+                    report,
                 }) = queued.pop_front()
                 else {
                     *self = Self::Idle;
@@ -113,6 +134,8 @@ impl Spawning {
                     purpose,
                     started,
                     queued,
+                    reserved,
+                    report,
                 };
                 Outcome::None
             }
@@ -129,7 +152,11 @@ impl Spawning {
                     }
                 };
                 let Self::Running {
-                    purpose, queued, ..
+                    purpose,
+                    queued,
+                    reserved,
+                    report,
+                    ..
                 } = std::mem::take(self)
                 else {
                     return Outcome::None;
@@ -137,7 +164,7 @@ impl Spawning {
                 if !queued.is_empty() {
                     *self = Self::Queued(queued);
                 }
-                Outcome::Finished(purpose, Box::new(outcome))
+                Outcome::Finished(purpose, Box::new(outcome), reserved, report)
             }
             Event::Unavailable => {
                 let cleared = match self {
@@ -146,6 +173,7 @@ impl Spawning {
                         *self = Self::Idle;
                         true
                     }
+                    // Submitted work can still succeed; retain its slot until completion or drop.
                     Self::Running { queued, .. } => !std::mem::take(queued).is_empty(),
                 };
                 if cleared {

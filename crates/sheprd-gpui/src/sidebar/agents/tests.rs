@@ -1,6 +1,12 @@
+// ABOUTME: Exercises agent ordering, status labels, and shared indicator colors.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::{Indicators, sorted_agents, state_label};
 use crate::config::StatusIcons;
+use crate::sidebar::IndexedSnapshot;
 use sheprd_client::protocol::AgentStatus;
+
+mod dots;
+mod lookup_budget;
 
 /// Herdr's settings supply the status colors; its indicator style is the
 /// terminal client's, so the chosen set is drawn whatever it says.
@@ -116,7 +122,7 @@ fn ordered(
     snapshot: &sheprd_client::protocol::ClientShellSnapshot,
     sort: crate::preferences::AgentSort,
 ) -> Vec<&str> {
-    sorted_agents(snapshot, sort)
+    sorted_agents(&IndexedSnapshot::new(snapshot), sort)
         .into_iter()
         .map(|agent| agent.pane_id.as_str())
         .collect()

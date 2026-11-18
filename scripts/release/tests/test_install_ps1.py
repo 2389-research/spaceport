@@ -1,4 +1,6 @@
-"""site/install.ps1: its Start menu shortcut and taskbar identity."""
+"""ABOUTME: Checks the inherited PowerShell installer's own shortcut identity.
+ABOUTME: Keeps upstream installation behavior separate from the Spaceport package.
+"""
 from pathlib import Path
 import os
 import re
@@ -14,7 +16,7 @@ ISS = ROOT / "scripts/release/sheprd.iss"
 
 
 def app_id():
-    return re.search(r'#define AppUserModelID "([^"]+)"', ISS.read_text())[1]
+    return "so.pen.herdr-gpui"
 
 
 def snippet():
@@ -40,11 +42,9 @@ def installed_filename(variable):
 
 
 class InstallScriptTests(unittest.TestCase):
-    def test_shortcut_and_installer_keep_packaging_user_model_id(self):
+    def test_inherited_shortcut_keeps_its_own_user_model_id(self):
         install = INSTALL.read_text(encoding="utf-8")
         self.assertIn(f"[HerdrShortcut]::SetAppUserModelId($shortcut, '{app_id()}')", install)
-        iss = ISS.read_text(encoding="utf-8")
-        self.assertIn(f'#define AppUserModelID "{app_id()}"\n', iss)
 
     @unittest.skipUnless(sys.platform == "win32" and shutil.which("powershell.exe"), "needs Windows PowerShell")
     def test_snippet_writes_the_id_windows_reads_back(self):

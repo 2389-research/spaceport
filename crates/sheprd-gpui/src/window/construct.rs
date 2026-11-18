@@ -37,6 +37,7 @@ impl SheprdWindow {
             }
             launch => launch,
         };
+        let chrome_entry_focus = cx.focus_handle();
         let focus = cx.focus_handle();
         window.focus(&focus, cx);
         let weak = cx.weak_entity();
@@ -114,7 +115,6 @@ impl SheprdWindow {
         let device_tags_changed = Self::observe_device_tags(cx);
         let worktree_notes = Self::observe_worktree_notes(window, cx);
         let notification_mutes = Self::observe_notification_mutes(cx);
-        let prefix_interceptor = Self::intercept_prefix(window, cx);
         let activation = cx.observe_window_activation(window, |this, window, cx| {
             this.active = window.is_window_active();
             if this.active {
@@ -153,7 +153,6 @@ impl SheprdWindow {
             _host_theme: host_theme,
             _notification_mutes: notification_mutes,
             _poll: poll,
-            _prefix_interceptor: prefix_interceptor,
             _sidebar_invalidation: sidebar_invalidation,
             _terminal_focus: terminal_focus,
             _window_closed: window_closed,
@@ -170,6 +169,7 @@ impl SheprdWindow {
             catalog,
             cell_width: 9.,
             chats: Default::default(),
+            chrome_entry_focus,
             chrome_region: None,
             config,
             config_load: None,
@@ -249,6 +249,7 @@ impl SheprdWindow {
             sessions_anchor: Default::default(),
             settings: Default::default(),
             shift_taps: Default::default(),
+            shortcut_keys: Default::default(),
             sidebar_drag: None,
             sidebar_folded: Default::default(),
             sidebar_modified: false,
@@ -315,12 +316,12 @@ impl SheprdWindow {
         }
         Self::poll_on_frame(cx.entity().downgrade(), window);
         this.sidebar_preferences = if let Some(key) = core_key.as_ref() {
-            Some(preferences::Preferences::for_core(key.hub_core_id()))
+            Some(preferences::Preferences::for_core(key.hub_core_id(), cx))
         } else {
             this.endpoints
                 .first()
                 .and_then(|endpoint| endpoint.connection.target.socket_path().ok())
-                .map(|path| preferences::Preferences::new(&path))
+                .map(|path| preferences::Preferences::new(&path, cx))
         };
         if core_key.is_none() {
             this.reconnect(cx);

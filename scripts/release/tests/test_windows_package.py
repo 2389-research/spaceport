@@ -1,4 +1,8 @@
-"""Run: python3 -m unittest discover -s scripts/release/tests -v"""
+"""ABOUTME: Exercises Windows package inputs and installer smoke contracts.
+ABOUTME: Uses a mock compiler while keeping native installation checks in CI.
+
+Run: python3 -m unittest discover -s scripts/release/tests -v
+"""
 import importlib.util
 import os
 from pathlib import Path
@@ -89,6 +93,8 @@ class InstallerTests(unittest.TestCase):
         arguments = INSTALLER.iscc_arguments(VERSION, "aarch64-pc-windows-msvc", "src", "out")
         self.assertIn("/DArchitecture=arm64", arguments)
         self.assertIn("/DSourceDir=src", arguments)
+        identity = (SCRIPT.parents[2] / "crates/sheprd-gpui/development-app-id").read_text().strip()
+        self.assertIn(f"/DAppUserModelID={identity}", arguments)
         self.assertEqual(Path(arguments[-1]), INSTALLER.SCRIPT)
         self.assertTrue(INSTALLER.SCRIPT.is_file())
         for version, target in [("20260920.03", TARGET), ("v20260920.3", TARGET),
@@ -96,10 +102,21 @@ class InstallerTests(unittest.TestCase):
             with self.subTest(version=version, target=target), self.assertRaises(ValueError):
                 INSTALLER.iscc_arguments(version, target, "src", "out")
 
+    def test_compiler_reads_and_validates_the_current_runtime_identity(self):
+        identity = self.work / "development-app-id"
+        with mock.patch.object(INSTALLER, "APP_USER_MODEL_ID_FILE", identity):
+            for invalid in ("", "spaceport\n/DInjected=yes", "bad identity", "a" * 129):
+                identity.write_text(invalid)
+                with self.subTest(identity=invalid), self.assertRaises(ValueError):
+                    INSTALLER.iscc_arguments(VERSION, TARGET, "src", "out")
+            identity.write_text("spaceport.fixture\n")
+            self.assertIn("/DAppUserModelID=spaceport.fixture",
+                          INSTALLER.iscc_arguments(VERSION, TARGET, "src", "out"))
+
     def test_uninstall_entry_check(self):
-        self.assertEqual(INSTALLER.app_id(), "{7FA70894-4FC0-4923-BDCB-B05F7475610A}")
-        app = Path("C:/Users/runner/Sheprd")
-        listed = {"DisplayName": "Sheprd", "UninstallString": f'"{app / "unins000.exe"}"'}
+        self.assertEqual(INSTALLER.app_id(), "{E3008A35-FD63-4B85-A416-3FC47E25A820}")
+        app = Path("C:/Users/runner/Spaceport")
+        listed = {"DisplayName": "Spaceport", "UninstallString": f'"{app / "unins000.exe"}"'}
         with mock.patch.object(INSTALLER, "uninstall_entry", return_value=listed):
             INSTALLER.check_uninstall_entry(app)
         hidden = [None, {**listed, "DisplayName": "Herdr"}, {**listed, "SystemComponent": 1},
@@ -108,6 +125,17 @@ class InstallerTests(unittest.TestCase):
             with self.subTest(entry=entry), mock.patch.object(INSTALLER, "uninstall_entry", return_value=entry), \
                     self.assertRaises(ValueError):
                 INSTALLER.check_uninstall_entry(app)
+
+    def test_smoke_refuses_existing_app_state_before_running_an_installer(self):
+        for existing in ("installation", "startup", "notification"):
+            with self.subTest(existing=existing), \
+                    mock.patch.object(INSTALLER, "uninstall_entry", return_value={} if existing == "installation" else None), \
+                    mock.patch.object(INSTALLER, "startup_entries", return_value=["owned"] if existing == "startup" else []), \
+                    mock.patch.object(INSTALLER, "notification_identity_exists", return_value=existing == "notification"), \
+                    mock.patch.object(INSTALLER.subprocess, "run") as run, \
+                    self.assertRaisesRegex(ValueError, "clean CI account"):
+                INSTALLER.smoke(self.work / "setup.exe")
+            run.assert_not_called()
 
     def test_every_language_defines_the_installers_messages(self):
         script = INSTALLER.SCRIPT.read_text()

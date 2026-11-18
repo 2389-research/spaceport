@@ -1,3 +1,5 @@
+// ABOUTME: Resolves terminal palettes and derives application chrome colors.
+// ABOUTME: Keeps raw palette loading separate from accessibility styling.
 //! Terminal and chrome colors: built-in palettes, Ghostty theme files, and
 //! where they are found.
 use super::Error;
@@ -192,6 +194,11 @@ impl Config {
             .map(|theme| self.styled(theme))
     }
 
+    /// Raw colors for palette caches and drafts, before OS or config styling.
+    pub(crate) fn raw_theme(&self, light: bool) -> Result<Theme> {
+        resolve(&self.theme, light, theme_directories)
+    }
+
     /// Resolves every side, so a pair is refused before it is saved rather
     /// than when the system next changes appearance.
     pub(crate) fn validate_theme(&self) -> Result<()> {
@@ -358,7 +365,7 @@ impl Default for Theme {
                 (8 + (n - 232) * 10) * 0x010101
             };
         }
-        Self {
+        let mut theme = Self {
             background: 0x101419,
             foreground: 0xd8dee9,
             cursor: 0xd8dee9,
@@ -371,7 +378,9 @@ impl Default for Theme {
             palette,
             contrast: Contrast::Standard,
             system_accent: None,
-        }
+        };
+        theme.muted = theme.text_ink(theme.muted);
+        theme
     }
 }
 
@@ -484,7 +493,7 @@ impl Theme {
     /// Dimmed foreground for rows that are not the current one: upstream's
     /// subtext sits between its text and its muted overlay.
     pub fn subtext(&self) -> u32 {
-        self.ink(mix(self.background, self.foreground, 78))
+        self.text_ink(mix(self.background, self.foreground, 78))
     }
 
     /// A configured `dim = true` token: the color faded toward the panel.
@@ -520,15 +529,19 @@ impl Theme {
     /// the surface, and a selected row, keeping its hue. Never for terminal
     /// cells, whose colors belong to the program that wrote them.
     pub fn ink(&self, color: u32) -> u32 {
-        crate::contrast::ink_on_chrome(
-            color,
-            [self.background, self.surface, self.active],
-            self.contrast.mark_ratio(),
-        )
+        self.ink_at_ratio(color, self.contrast.mark_ratio())
     }
 
-    /// The theme as `config` shows it: its contrast, raised while a Windows
-    /// contrast theme is on, and the system accent when `accent = "system"`.
+    fn text_ink(&self, color: u32) -> u32 {
+        self.ink_at_ratio(color, 4.5)
+    }
+
+    fn ink_at_ratio(&self, color: u32, ratio: f32) -> u32 {
+        crate::contrast::ink_on_chrome(color, [self.background, self.surface, self.active], ratio)
+    }
+
+    /// The theme as `config` shows it: its contrast, raised by OS preferences,
+    /// and the system accent when `accent = "system"`.
     /// Every theme the app paints goes through this, whatever loaded it, so
     /// a shared Herdr theme or a Settings draft looks as a configured one.
     pub(crate) fn styled_for(self, config: &Config) -> Self {
@@ -536,19 +549,15 @@ impl Theme {
             .with_accent(config.accent.color())
     }
 
-    /// High contrast parts selected rows further from the surface and raises
-    /// dim labels to text contrast. Standard leaves the theme as drawn.
-    /// Applying the level the theme already has changes nothing, so a theme
-    /// styled once and styled again is not raised twice.
+    /// Secondary text always reaches text contrast. High contrast also parts
+    /// selected rows further from the surface.
+    /// Repeated styling preserves adjusted rows and compliant text colors.
     pub fn with_contrast(mut self, contrast: Contrast) -> Self {
-        if self.contrast == contrast {
-            return self;
+        if self.contrast != contrast && contrast == Contrast::High {
+            self.active = mix(self.active, self.foreground, 12);
         }
         self.contrast = contrast;
-        if contrast == Contrast::High {
-            self.active = mix(self.active, self.foreground, 12);
-            self.muted = self.ink(self.muted);
-        }
+        self.muted = self.text_ink(self.muted);
         self
     }
 
@@ -556,7 +565,7 @@ impl Theme {
         let blend = |percent| mix(self.background, self.foreground, percent);
         self.surface = blend(5);
         self.active = blend(12);
-        self.muted = blend(55);
+        self.muted = self.text_ink(blend(55));
     }
 
     pub(crate) fn builtin(name: &str) -> Option<Self> {

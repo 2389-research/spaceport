@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 use super::*;
 use crate::settings_window::{controls::preferences::PreferenceIo, inputs::NumberField};
 use std::{
@@ -18,7 +20,8 @@ fn a_saved_volume_reaches_the_shared_sound_worker_at_once(cx: &mut TestAppContex
     // The main window must outlive the fixture, as a real one does.
     let source = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
-    let (view, cx) = cx.add_window_view(move |_, cx| SettingsWindow::new(weak.clone(), cx));
+    let (view, cx) = cx
+        .add_window_view(move |_, cx| crate::settings_window::tests::fixture_new(weak.clone(), cx));
     let (sound, volumes) = crate::sound::Service::recording_volume();
     let sound = std::rc::Rc::new(sound);
     let edits = Arc::new(Mutex::new(Vec::new()));
@@ -72,7 +75,8 @@ fn a_saved_volume_reaches_the_shared_sound_worker_at_once(cx: &mut TestAppContex
 fn a_volume_drag_shows_its_value_before_release_and_writes_once(cx: &mut TestAppContext) {
     let source = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
-    let (view, cx) = cx.add_window_view(move |_, cx| SettingsWindow::new(weak.clone(), cx));
+    let (view, cx) = cx
+        .add_window_view(move |_, cx| crate::settings_window::tests::fixture_new(weak.clone(), cx));
     let edits = Arc::new(Mutex::new(Vec::new()));
     let captured = edits.clone();
     // The reload reflects the written volume, as the file would.
@@ -152,7 +156,8 @@ fn a_volume_drag_shows_its_value_before_release_and_writes_once(cx: &mut TestApp
 fn a_volume_drag_abandoned_by_leaving_the_page_shows_the_saved_value(cx: &mut TestAppContext) {
     let source = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
-    let (view, cx) = cx.add_window_view(move |_, cx| SettingsWindow::new(weak.clone(), cx));
+    let (view, cx) = cx
+        .add_window_view(move |_, cx| crate::settings_window::tests::fixture_new(weak.clone(), cx));
     let edits = Arc::new(Mutex::new(Vec::new()));
     let captured = edits.clone();
     view.update(cx, |view, cx| {

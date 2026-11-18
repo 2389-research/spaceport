@@ -1,3 +1,5 @@
+// ABOUTME: Acquires bounded Windows clipboard formats on a dedicated worker.
+// ABOUTME: Retains the native read lease until even a timed-out worker exits.
 //! The Windows clipboard, read on a thread of its own. An owner that renders
 //! its data on request answers inside `GetClipboardData`, and one that never
 //! answers would stall whoever asked, so the caller waits for the reader only
@@ -21,10 +23,8 @@ const DEADLINE: Duration = Duration::from_secs(3);
 /// Set while a reader thread runs, including one its caller stopped waiting for.
 static READING: AtomicBool = AtomicBool::new(false);
 
-pub(super) fn read(image_only: bool) -> Result<Option<ClipboardItem>> {
-    bounded(&READING, DEADLINE, move |deadline| {
-        read_now(image_only, deadline)
-    })
+pub(super) fn read(mode: Mode) -> Result<Option<ClipboardItem>> {
+    bounded(&READING, DEADLINE, move |deadline| read_now(mode, deadline))
 }
 
 /// Run `read` on its own thread and wait for it until `timeout` passes. While
@@ -57,17 +57,17 @@ fn bounded<T: Send + 'static>(
         .map_err(|_| Error::Timeout)?
 }
 
-fn read_now(image_only: bool, deadline: Instant) -> Result<Option<ClipboardItem>> {
+fn read_now(mode: Mode, deadline: Instant) -> Result<Option<ClipboardItem>> {
     use gpui::{ClipboardEntry, ExternalPaths};
 
     let revision = raw::seq_num();
     let clipboard = open(deadline)?;
-    let files = if image_only { None } else { files()? };
+    let files = if mode == Mode::Normal { files()? } else { None };
     let result = match files {
         Some(paths) => Ok(Some(ClipboardItem {
             entries: vec![ClipboardEntry::ExternalPaths(ExternalPaths(paths.into()))],
         })),
-        None => read_with(image_only, |format, limit| {
+        None => read_with(mode, |format, limit| {
             if Instant::now() >= deadline {
                 return Err(Error::Timeout.into());
             }

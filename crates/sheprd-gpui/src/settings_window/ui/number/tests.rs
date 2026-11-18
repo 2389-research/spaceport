@@ -1,5 +1,9 @@
+// ABOUTME: Exercises bounded Settings number entry, sliders, and steppers.
+// ABOUTME: Shares exact numeric callbacks across pointer and keyboard tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
+
+mod keyboard;
 use crate::config::Theme;
 use core::prelude::v1::test;
 use std::{

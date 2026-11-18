@@ -183,7 +183,10 @@ impl SheprdWindow {
                 self.poll_devices_overview(cx);
                 self.show_browser_tab(id, window, cx);
             }
-            None => self.show_flash(Flash::warning(fl!("browser-too-many-tabs")), cx),
+            None => self.show_flash(
+                Flash::warning(super::open_error(cx, fl!("browser-too-many-tabs"))),
+                cx,
+            ),
         }
     }
 

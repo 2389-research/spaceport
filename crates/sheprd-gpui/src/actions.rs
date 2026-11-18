@@ -1,3 +1,5 @@
+// ABOUTME: Registers native actions and shortcut labels from the resolved command catalog.
+// ABOUTME: Leaves main-window raw keyboard routing with its repeat-aware owner.
 //! GPUI actions the app registers and the keystrokes bound to them. Every
 //! shortcut comes from the config's resolved `Keymap`, so the palette, the
 //! menu bar, and the keymap cannot drift apart. The macOS Hide and Minimize
@@ -128,7 +130,14 @@ pub(crate) fn bind_keys(cx: &mut App) {
             } else {
                 Box::new(RunCommand { command })
             };
-            KeyBinding::load(keystroke, action, None, false, None, cx)
+            // Main windows route raw events so shortcuts retain their repeat flag.
+            // Other windows retain these bindings, and menus retain their labels.
+            let context = Some(std::rc::Rc::new(gpui::KeyBindingContextPredicate::Not(
+                Box::new(gpui::KeyBindingContextPredicate::Identifier(
+                    "SpaceportWindow".into(),
+                )),
+            )));
+            KeyBinding::load(keystroke, action, context, false, None, cx)
                 .inspect_err(|error| tracing::warn!(%error, keystroke, "skipped a shortcut"))
                 .ok()
         })

@@ -1,11 +1,14 @@
 // ABOUTME: Renders prepared Core machine and remote grouping facts in the device picker.
 // ABOUTME: Keeps Core-specific catalog controls hidden until the app has opted in.
 //! Core-owned machine facts in the existing device picker.
-//! Rows are read only while the legacy device actions await migration.
+//! Group facts remain read only; connected machine rows select the active document.
 
 use crate::{SheprdWindow, core_terminals, i18n::fl};
 use gpui::{prelude::*, *};
 use std::fmt::{self, Display};
+
+mod paint;
+pub(super) use paint::CatalogPaint;
 
 const MAX_DISPLAY_MACHINES: usize = 50;
 const MAX_DISPLAY_CHARS: usize = 160;
@@ -52,18 +55,32 @@ pub(super) fn unavailable_reason(error: Option<&impl Display>) -> String {
 }
 
 impl SheprdWindow {
+    pub(super) fn core_machine_catalog_paint(&self, cx: &App) -> Option<CatalogPaint> {
+        self.prepare_core_catalog(cx).map(|(paint, _)| paint)
+    }
+
     pub(super) fn render_core_machine_catalog(
         &self,
         cx: &mut Context<Self>,
     ) -> Option<Stateful<Div>> {
-        if !self.core_enabled() {
-            return None;
-        }
-        let machines = core_terminals::machine_catalog(cx);
-        let error = core_terminals::machine_catalog_error(cx);
-        if !core_terminals::machine_catalog_started(cx) {
-            return None;
-        }
+        let (paint, actions) = self.prepare_core_catalog(cx)?;
+        Some(self.core_catalog_content(&paint, Some(actions), cx))
+    }
+
+    pub(super) fn render_core_machine_catalog_paint(
+        &self,
+        paint: &CatalogPaint,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
+        self.core_catalog_content(paint, None, cx)
+    }
+
+    fn core_catalog_content(
+        &self,
+        paint: &CatalogPaint,
+        actions: Option<Vec<String>>,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
         let theme = &self.theme;
         let mut section = div()
             .id("core-machines")
@@ -79,165 +96,135 @@ impl SheprdWindow {
                     .text_color(rgb(theme.muted))
                     .child(fl!("core-terminals-machine-heading")),
             );
-        if let Some(machines) = machines {
-            let selected = core_terminals::selected_remote_machine(cx);
-            if machines.is_empty() {
-                section = section.child(
-                    div()
-                        .px(px(8.))
-                        .text_color(rgb(theme.muted))
-                        .child(fl!("core-terminals-machine-empty")),
-                );
-            }
-            for (index, machine) in machines.iter().take(MAX_DISPLAY_MACHINES).enumerate() {
-                let id = SharedString::from(format!("core-machine-{index}"));
-                let machine_id = machine.machine.id.clone();
-                let expanded = selected.as_deref() == Some(machine_id.as_str());
-                let connected = machine.state == "connected";
-                section = section.child(
-                    div()
-                        .id(id.clone())
-                        .debug_selector(move || id.to_string())
-                        .px(px(8.))
-                        .py(px(4.))
-                        .flex()
-                        .flex_col()
-                        .min_w_0()
-                        .when(expanded, |row| row.bg(rgb(theme.active)))
-                        .when(connected, |row| {
-                            row.role(Role::Button)
-                                .aria_label(short(&machine.machine.name))
-                                .cursor_pointer()
-                                .on_click(cx.listener(move |_, _, _, cx| {
-                                    cx.stop_propagation();
-                                    core_terminals::select_remote_machine(cx, &machine_id);
-                                    cx.notify();
-                                }))
-                        })
-                        .child(
-                            div()
-                                .min_w_0()
-                                .truncate()
-                                .child(short(&machine.machine.name)),
-                        )
-                        .child(
-                            div()
-                                .min_w_0()
-                                .truncate()
-                                .text_size(px(self.config.ui.size * 0.85))
-                                .text_color(rgb(theme.muted))
-                                .child(format!(
-                                    "{} · {}",
-                                    short(&machine.machine.target),
-                                    short(&machine.state)
-                                )),
-                        ),
-                );
-                if expanded {
-                    let mut groups = div()
-                        .id("core-remote-groups")
-                        .debug_selector(|| "core-remote-groups".into())
-                        .flex()
-                        .flex_col()
-                        .gap(px(3.))
-                        .pl(px(16.))
-                        .pr(px(8.))
-                        .text_color(rgb(theme.muted))
-                        .child(fl!("core-terminals-machine-groups"));
-                    match core_terminals::remote_document_status(cx, &machine.machine.id) {
-                        Some(core_terminals::RemoteDocumentView::Ready(workspaces)) => {
-                            if workspaces.is_empty() {
-                                groups = groups.child(fl!("core-terminals-machine-groups-empty"));
-                            }
-                            for (group_index, group) in workspaces.iter().take(20).enumerate() {
-                                let selector = format!("core-remote-group-{group_index}");
-                                groups = groups.child(
-                                    div()
-                                        .id(SharedString::from(selector.clone()))
-                                        .debug_selector(move || selector.clone())
-                                        .min_w_0()
-                                        .truncate()
-                                        .child(short(&group.label)),
-                                );
-                            }
-                            let remaining = workspaces.len().saturating_sub(20);
-                            if remaining > 0 {
-                                groups = groups.child(
-                                    div()
-                                        .id("core-remote-groups-more")
-                                        .debug_selector(|| "core-remote-groups-more".into())
-                                        .child(fl!(
-                                            "core-terminals-machine-groups-more",
-                                            count = remaining
-                                        )),
-                                );
-                            }
-                        }
-                        Some(core_terminals::RemoteDocumentView::Stale) => {
-                            groups = groups.child(
+        let mut actions = actions.unwrap_or_default().into_iter();
+        match &paint.body {
+            paint::Body::Machines { rows, more } => {
+                if rows.is_empty() {
+                    section = section.child(
+                        div()
+                            .px(px(8.))
+                            .text_color(rgb(theme.muted))
+                            .child(fl!("core-terminals-machine-empty")),
+                    );
+                }
+                for (index, machine) in rows.iter().enumerate() {
+                    let action = actions.next().filter(|_| machine.connected);
+                    let id = SharedString::from(format!("core-machine-{index}"));
+                    section = section.child(
+                        div()
+                            .id(id.clone())
+                            .debug_selector(move || id.to_string())
+                            .px(px(8.))
+                            .py(px(4.))
+                            .flex()
+                            .flex_col()
+                            .min_w_0()
+                            .when(machine.expanded, |row| row.bg(rgb(theme.active)))
+                            .when_some(action, |row, machine_id| {
+                                row.role(Role::Button)
+                                    .aria_label(machine.label.clone())
+                                    .cursor_pointer()
+                                    .on_click(cx.listener(move |_, _, _, cx| {
+                                        cx.stop_propagation();
+                                        core_terminals::select_remote_machine(cx, &machine_id);
+                                        cx.notify();
+                                    }))
+                            })
+                            .child(div().min_w_0().truncate().child(machine.label.clone()))
+                            .child(
                                 div()
-                                    .id("core-remote-groups-stale")
-                                    .debug_selector(|| "core-remote-groups-stale".into())
-                                    .child(fl!("core-terminals-machine-groups-stale")),
-                            );
-                        }
-                        Some(core_terminals::RemoteDocumentView::Failed(error)) => {
-                            groups = groups.child(
-                                div()
-                                    .id("core-remote-groups-error")
-                                    .debug_selector(|| "core-remote-groups-error".into())
-                                    .child(fl!(
-                                        "core-terminals-machine-groups-error",
-                                        reason = short(error)
-                                    )),
-                            );
-                        }
-                        Some(core_terminals::RemoteDocumentView::Loading) | None => {
-                            groups = groups.child(
-                                div()
-                                    .id("core-remote-groups-loading")
-                                    .debug_selector(|| "core-remote-groups-loading".into())
-                                    .child(fl!("core-terminals-machine-groups-loading")),
-                            );
-                        }
+                                    .min_w_0()
+                                    .truncate()
+                                    .text_size(px(self.config.ui.size * 0.85))
+                                    .text_color(rgb(theme.muted))
+                                    .child(machine.detail.clone()),
+                            ),
+                    );
+                    if let Some(groups) = &machine.groups {
+                        section = section.child(self.core_catalog_groups(groups));
                     }
-                    section = section.child(groups);
+                }
+                if let Some(more) = more {
+                    section = section.child(
+                        div()
+                            .id("core-machines-more")
+                            .debug_selector(|| "core-machines-more".into())
+                            .px(px(8.))
+                            .text_color(rgb(theme.muted))
+                            .child(more.clone()),
+                    );
                 }
             }
-            if machines.len() > MAX_DISPLAY_MACHINES {
+            paint::Body::Unavailable { reason, stale } => {
                 section = section.child(
                     div()
-                        .id("core-machines-more")
-                        .debug_selector(|| "core-machines-more".into())
+                        .id("core-machines-unavailable")
+                        .debug_selector(|| "core-machines-unavailable".into())
                         .px(px(8.))
                         .text_color(rgb(theme.muted))
-                        .child(fl!(
-                            "core-terminals-machine-more",
-                            count = machines.len() - MAX_DISPLAY_MACHINES
-                        )),
+                        .child(reason.clone()),
                 );
+                if *stale {
+                    section = section.child(
+                        div()
+                            .id("core-remote-groups-stale")
+                            .debug_selector(|| "core-remote-groups-stale".into())
+                            .px(px(8.))
+                            .text_color(rgb(theme.muted))
+                            .child(fl!("core-terminals-machine-groups-stale")),
+                    );
+                }
             }
-        } else {
-            let reason = unavailable_reason(error);
-            section = section.child(
-                div()
-                    .id("core-machines-unavailable")
-                    .debug_selector(|| "core-machines-unavailable".into())
-                    .px(px(8.))
-                    .text_color(rgb(theme.muted))
-                    .child(fl!("core-terminals-machine-unavailable", reason = reason)),
-            );
-            if core_terminals::selected_remote_machine(cx).is_some() {
-                section = section.child(
+        }
+        section
+    }
+
+    fn core_catalog_groups(&self, paint: &paint::Groups) -> Stateful<Div> {
+        let mut groups = div()
+            .id("core-remote-groups")
+            .debug_selector(|| "core-remote-groups".into())
+            .flex()
+            .flex_col()
+            .gap(px(3.))
+            .pl(px(16.))
+            .pr(px(8.))
+            .text_color(rgb(self.theme.muted))
+            .child(fl!("core-terminals-machine-groups"));
+        match paint {
+            paint::Groups::Ready { labels, more } => {
+                if labels.is_empty() {
+                    groups = groups.child(fl!("core-terminals-machine-groups-empty"));
+                }
+                for (index, label) in labels.iter().enumerate() {
+                    let selector = format!("core-remote-group-{index}");
+                    groups = groups.child(
+                        div()
+                            .id(SharedString::from(selector.clone()))
+                            .debug_selector(move || selector.clone())
+                            .min_w_0()
+                            .truncate()
+                            .child(label.clone()),
+                    );
+                }
+                if let Some(more) = more {
+                    groups = groups.child(
+                        div()
+                            .id("core-remote-groups-more")
+                            .debug_selector(|| "core-remote-groups-more".into())
+                            .child(more.clone()),
+                    );
+                }
+            }
+            paint::Groups::Message { selector, text } => {
+                let selector = *selector;
+                groups = groups.child(
                     div()
-                        .id("core-remote-groups-stale")
-                        .debug_selector(|| "core-remote-groups-stale".into())
-                        .px(px(8.))
-                        .text_color(rgb(theme.muted))
-                        .child(fl!("core-terminals-machine-groups-stale")),
+                        .id(selector)
+                        .debug_selector(move || selector.into())
+                        .child(text.clone()),
                 );
             }
         }
-        Some(section)
+        groups
     }
 }

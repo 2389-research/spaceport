@@ -37,6 +37,7 @@ pub(crate) enum Page {
     /// Confirming the processes chosen there should end.
     KillProcesses,
     Menu,
+    Messages,
     /// Where the pane menu's pane can move: new places, then other tabs.
     MovePane,
     /// Where the tab menu's tab can move: a new workspace, then other workspaces.
@@ -80,6 +81,7 @@ pub(crate) enum WorkspaceAction {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum WorkspaceMenuAction {
     Dialog(WorkspaceAction),
+    CloseWorkspace,
     /// Fold or unfold the worktree group this workspace heads. Applied at once:
     /// it changes only the sidebar's own view, never the daemon's state.
     Collapse,
@@ -144,6 +146,7 @@ impl WorkspaceMenuAction {
                 "icons/plus.svg"
             }
             Self::Collapse => "icons/chevron-up.svg",
+            Self::CloseWorkspace => "icons/x.svg",
             Self::Expand => "icons/chevron-down.svg",
             Self::Mute => crate::icons::MUTED,
             Self::Unmute => "icons/bell.svg",

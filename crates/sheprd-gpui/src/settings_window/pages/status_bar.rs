@@ -134,7 +134,7 @@ impl SettingsWindow {
             .child(
                 self.control_note(fl!("settings-status-bar-note"))
                     .mt(px(10.))
-                    .text_size(px(11.)),
+                    .text_size(rems(0.6875)),
             )
     }
 

@@ -1,5 +1,5 @@
 //! Reads a running window through UI Automation, the interface Narrator and
-//! NVDA use, and checks what it names and where F6 and Tab take the keyboard.
+//! NVDA use, and checks where prefix region commands and Tab take the keyboard.
 //! Requires an active Windows desktop and an explicitly selected daemon
 //! executable (`HERDR_TEST_BINARY`), like the live GUI test.
 #![cfg(windows)]
@@ -46,7 +46,7 @@ fn read(script: &Path, process: u32, keys: &str) -> String {
 
 #[test]
 #[ignore = "requires an active Windows desktop and HERDR_TEST_BINARY; launches a native GUI and isolated daemon"]
-fn ui_automation_names_the_chrome_and_f6_reaches_it() {
+fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
     let binary = daemon_binary();
     let mut running = Running {
         sandbox: Sandbox::new(),
@@ -115,7 +115,11 @@ fn ui_automation_names_the_chrome_and_f6_reaches_it() {
     // Back and Forward have no history to go to yet.
     assert!(tree.contains("Button 'Back' [disabled]"), "{tree}");
 
-    let focus = read(&script, process, "{F6}|{TAB}|{F6}|{F6}|+{TAB}|{ESC}|+{F6}");
+    let focus = read(
+        &script,
+        process,
+        "^b{F6}|{TAB}|^b{F6}|^b{F6}|+{TAB}|{ESC}|^b+{F6}",
+    );
     eprintln!("{focus}");
     let moves: Vec<&str> = focus
         .lines()
@@ -136,7 +140,7 @@ fn ui_automation_names_the_chrome_and_f6_reaches_it() {
         "{focus}"
     );
     assert_ne!(moves[4], moves[3], "{focus}");
-    // Escape and the terminal; Shift-F6 goes back to the last region.
+    // Escape and the terminal; Prefix, Shift-F6 goes back to the last region.
     assert!(moves[5].starts_with("Document 'Terminal'"), "{focus}");
     assert!(!moves[6].starts_with("Document"), "{focus}");
 }

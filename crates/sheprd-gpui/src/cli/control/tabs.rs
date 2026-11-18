@@ -1,3 +1,5 @@
+// ABOUTME: Parses native tab actions and the Devices control command.
+// ABOUTME: Documents retained tab kinds without advertising removed page views.
 //! `tab` and `devices`.
 use super::{Args, CliError, ControlCommand, TabOp, unknown};
 
@@ -7,7 +9,7 @@ fn id(args: &mut Args) -> Result<u64, CliError> {
         .map_err(|_| CliError::InvalidValue("ID"))
 }
 
-pub(super) const TAB_USAGE: &str = "spaceport tab [list]\n    The app's own tabs: pages, Devices, Core terminals.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nspaceport tab focus|close ID\n    Show a tab, switching to its workspace, or close it.";
+pub(super) const TAB_USAGE: &str = "spaceport tab [list]\n    The app's own tabs: Devices and Core terminals.\n    Terminal tabs belong to Herdr: use `herdr tab`.\nspaceport tab focus|close ID\n    Show a tab, switching to its workspace, or close it.";
 
 pub(super) fn tab(args: &mut Args) -> Result<TabOp, CliError> {
     let Some(verb) = args.verb() else {

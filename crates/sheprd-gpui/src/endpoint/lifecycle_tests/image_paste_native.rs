@@ -1,3 +1,5 @@
+// ABOUTME: Verifies image paste ordering and bounded preparation through real peers.
+// ABOUTME: Keeps reset cancellation distinct from clipboard and upload admission limits.
 use super::*;
 
 #[gpui::test]
@@ -238,10 +240,7 @@ fn connected_image_paste_native_preparations_stay_bounded_across_reset(
             assert_eq!(view.pending_images.len(), 4);
             assert_eq!(
                 view.notices.text().map(crate::i18n::leak_tests::unmarked),
-                Some(format!(
-                    "Paste not sent: {}",
-                    sheprd_client::Error::Clipboard(sheprd_client::clipboard::Error::Busy)
-                ))
+                Some(crate::window::clipboard::Error::Busy.localize())
             );
             view.endpoints[1]
                 .connection

@@ -12,6 +12,8 @@
 //! rows. A linked worktree only moves among its own siblings: the group is
 //! decided by its repository, not by where it is dropped.
 
+mod keyboard;
+
 use crate::i18n::fl;
 use crate::{
     SheprdWindow,

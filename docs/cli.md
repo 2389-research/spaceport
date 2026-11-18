@@ -11,10 +11,14 @@ client knows or draws: its windows, its own tabs (Devices and Core
 terminals), the activity bar's sections, worktree notes, forwarded
 ports, and its settings.
 
-Commands reach the app over a socket of its own,
-`$XDG_STATE_HOME/spaceport/control.sock` (default `~/.local/state/spaceport/`), which
-only your user can open; on Windows, over a named pipe (see
-[Windows](#windows)). An agent on an SSH host has no path to this socket.
+Commands reach the app over a private socket in its selected state directory.
+Installed previews use `$XDG_STATE_HOME/spaceport/control.sock`, under `~/.local/state/` by default.
+Development builds use `spaceport-development-PROFILE`, with a stable worktree suffix for linked checkouts.
+The compiled build identity selects that directory for both the app and its CLI.
+Use the CLI executable from the build whose app you want to control.
+Existing preview state stays in place; development stores start separately without copying it.
+Windows uses a named pipe (see [Windows](#windows)).
+An agent on an SSH host has no path to this socket.
 A few commands work from files alone and
 need no running app; they say so below.
 
@@ -35,35 +39,59 @@ only to that existing daemon, discovering and starting no other.
 
 ## Options and output
 
-Every command accepts, after its command word:
+Every control command accepts `--json`.
+Commands that target the app also accept `--window`:
 
 - `--json`: print one JSON document instead of text. Errors become
   `{"error": {"code", "message"}}` on standard output. `events --follow`
   is the one stream: it writes one JSON object per line, each with its
-  `cursor`, so a follower can resume after any event. `--help` and `skill`
-  print text whatever the options say.
+  `cursor`, so a follower can resume after any event. With `--json`, help and
+  `skill` return objects containing `usage` and `skill`, respectively.
 - `--window ID`: act in that window (IDs come from `window list`). By default
   a command acts in the window showing the caller's workspace
   (`HERDR_WORKSPACE_ID`, which Herdr sets in every pane). When no window shows
   it, as for a session the app does not show, the command exits 5 rather than
   act on another session's window. Outside Herdr, it acts in the frontmost
-  window. A command this process answers from files alone, marked "no app
-  needed" below, accepts the ID and ignores it, so it never refuses one.
+  window. Local-only commands reject the ID, as listed below.
 
 Both options follow the command word: `spaceport --json status` is an
 unknown option, not `status` asked for JSON.
+
+Place options before free text in `notes set`, `config set`, `theme set`, and
+`font set`. Once text starts, later words such as `--json` and `-h` stay literal.
+Use `--` before text that starts with an option: `spaceport notes set -- --help`.
+For other commands, `--` also ends option parsing; remaining arguments stay literal.
+
+Local-only commands reject `--window` with exit 2 rather than ignore it.
+These include help, skill, completion scripts, logs, diagnostics, process lists,
+command catalogs, local settings reads/writes, and local language/theme/sound catalogs.
+`config check` can target a window for its installed-font check.
+An explicit window disables offline local fallbacks in hybrid commands.
+
 
 | Exit | Meaning |
 | --- | --- |
 | 0 | Done |
 | 1 | Refused or failed |
 | 2 | Invalid arguments, or an address or file that cannot be shown |
-| 3 | Spaceport is not running |
+| 3 | Spaceport is not running, or the control connection closed without an answer |
 | 4 | Nothing yet: no notes, no events, no chat panes, no ports, no usage, no log, a key not set, or the wait not met |
 | 5 | The window, workspace, tab, host, file, or `run` command name is not there |
 | 6 | A dialog is open in the window, or the app is busy |
 | 7 | The app did not answer in time |
 | 8 | Not available on this platform or in this version of the app |
+
+JSON errors preserve the server's exact code, including `workspace_not_found`,
+`no_window`, `not_found`, `invalid_request`, and `failed`. Exit statuses remain
+coarser categories. Collection results use named objects such as `{"tabs": []}`,
+`{"windows": []}`, `{"hosts": []}`, `{"fonts": []}`, and `{"languages": []}`.
+Empty lists exit 4. Help with `--json` returns a `usage` string; `skill --json`
+returns a `skill` string. Completion JSON returns `shell` and `script`.
+
+An incompatible response or control protocol version exits 8. Transport read
+and write timeouts exit 7. A lost response does not prove that a mutation failed.
+Inspect the app's state before retrying a mutation; commands never retry it automatically.
+
 
 ## Commands
 
@@ -79,6 +107,10 @@ Changing this preference never stops Core or its terminals.
 
 | Command | What it does |
 | --- | --- |
+| `help [COMMAND]` | Top-level help, or one command family's usage; also available through `--help` |
+| `skill` | Print the agent skill; `--json` returns its text under `skill` |
+| `completions bash\|fish\|zsh` | Generate a script for command families and shared options; source it in that shell |
+| `wait window\|online\|tab-closed ID [--timeout SECONDS]` | Wait for an observed condition; exit 4 if the condition remains unmet |
 | `status` | Whether the app runs, its version and control protocol, windows and hosts, plus the observed Core machine catalog's state, epoch and count |
 | `app focus\|hide\|quit` | Bring the app forward, hide it, or quit it (Herdr keeps running) |
 | `window [list]` | Windows with their IDs, size, selected legacy workspace or exact Core presentation group, and hosts; stale Core group data is marked |
@@ -91,6 +123,8 @@ Changing this preference never stops Core or its terminals.
 | `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session; POINTS is 8-48, and `larger`/`smaller` are `+`/`-` |
 | `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage. Exits 8 when the activity bar is off (`[sidebar] activity_bar = false`), when that section is turned off in settings, or for `automations` while Core is off |
 | `run check-for-updates` | Open Sparkle’s native update check in an installed macOS preview; unsupported builds refuse it |
+| `run close_workspace` | Open the native Herdr TUI workspace-close confirmation for the caller's exact workspace. It lists affected workspaces and panes; exit 0 means the dialog opened, not that processes ended. Core groups are unsupported |
+| `run messages` | Open this window's recent warning history. It stays in memory and clears when its window closes |
 | `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it; an unknown name exits 5 |
 | `commands` | The names `run` accepts (no app needed) |
 
@@ -101,6 +135,15 @@ rows still describe the legacy endpoint catalog. `window new` joins the
 selected Core hub and group when its current observation still confirms that
 exact target. It refuses a stale selection before asking for a new window.
 Legacy windows keep their existing launch target.
+
+Core terminals set `HC_TERMINAL_ID` and `HC_TERMINAL_SOCKET`.
+Spaceport recognizes either marker and clears inherited legacy caller qualifiers.
+From a Core pane, `status`, `window list`, event polls and the global notes list
+remain available without a window target. App-window controls require an explicit
+`--window ID`; otherwise they exit 5 instead of choosing the frontmost window.
+Legacy workspace notes, workspace mutes, process/port queries, chat creation,
+and chat views without an explicit pane currently lack qualified Core targets. They exit 8 rather than use a legacy session.
+The guard does not start or query a Core runtime.
 
 ### The app's own tabs
 
@@ -119,7 +162,7 @@ Legacy windows keep their existing launch target.
 | `worktree [status]`, `worktree mute\|unmute` | Whether your worktree's notifications are muted; silence them or let them through again |
 | `chat [status]`, `chat list` | The `sheprd-acp` chat panes of the window's host, this machine or an SSH host: agent, status, model, context window use, and whether the chat view or the terminal shows |
 | `chat show\|hide\|toggle [--pane ID]` | Show the native chat view over your pane (or ID, else the focused one), or its terminal |
-| `chat new AGENT [--pane ID]` | Open a tab running a `sheprd-acp` chat with a built-in agent (`claude`, `codex`, `copilot`, `gemini`, `opencode`, `pi`) in the workspace and folder of your pane (or ID). On an SSH host the tab runs that host's `sheprd-acp` (see [Chats on SSH hosts](#chats-on-ssh-hosts)). With no Herdr pane to go by, as when called from a Herdr 2 pane, a Herdr 2 tab in the active group splits its pane in use with the chat instead (see [Chats in Herdr 2 panes](rich-chat.md#chats-in-herdr-2-panes)); its pane id in `chat` is `core:` and the terminal's. Exits 8 when `sheprd-acp` is missing here or the agent is not installed on it (`sheprd-acp agents` lists those that are), and 1 when the host cannot be reached |
+| `chat new AGENT [--pane ID]` | Open a tab running a `sheprd-acp` chat with a built-in agent (`claude`, `codex`, `copilot`, `gemini`, `opencode`, `pi`) in the workspace and folder of your pane (or ID). On an SSH host the tab runs that host's `sheprd-acp` (see [Chats on SSH hosts](#chats-on-ssh-hosts)). Outside a daemon pane, a selected Herdr 2 tab in the active group splits its pane in use with the chat instead (see [Chats in Herdr 2 panes](rich-chat.md#chats-in-herdr-2-panes)); its pane id in `chat` is `core:` and the terminal's. Exits 8 when `sheprd-acp` is missing here, the route is unsupported, or the agent is not installed on it (`sheprd-acp agents` lists those that are), and 1 when the host cannot be reached |
 
 ### Hosts
 
@@ -167,8 +210,9 @@ not take it either.
 | `diagnostics bundle PATH` | A redacted report for a bug, with the newest crash reports (no app needed) |
 
 
-Focus-on-hover between split terminal panes is on by default. Disable it with
-`spaceport config set focus_follows_mouse false`.
+Focus-on-hover between split terminal panes is off by default. Enable it with
+`spaceport config set focus_follows_mouse true`.
+Enabling it changes Herdr's shared focused pane, including where other clients type.
 The change applies live; `config get focus_follows_mouse` reads it back.
 
 An unnamed tab shows its number. To show its agent's terminal title instead,
@@ -193,14 +237,31 @@ spaceport wait tab-closed 12 --timeout 600
 spaceport wait window            # also waits for the app to start
 ```
 
+`tab list`, `tab focus`, and `tab close` use one selected window.
+Within Herdr, they also require the caller's workspace and daemon to match.
+Hidden tabs and tabs whose workspace no selected window lists are unavailable.
+If several windows match the caller's session, select one with `--window`.
+These target failures exit 5 without changing another session.
+If the caller's daemon path cannot fit the protocol's UTF-8 qualifier, the
+command refuses before connecting. The private control socket itself keeps
+its native OS path bytes.
+
+`wait tab-closed ID` requires an existing, available tab when the wait starts.
+An unknown ID or a target outside the selected session exits 5.
+Absence alone does not prove closure. Disabled Core tabs retain exit 8.
+`wait online` also validates its session before waiting. Both waits stay with
+their selected window and refuse if that target becomes unavailable.
+
+
 ## What stays in the app
 
 Commands never bypass a confirmation. Spaceport no longer offers repository
 worktree scripts in the workspace menu or control CLI.
 
-The development build still has an inherited Herdr 1 startup path; removing it
-is an open Spaceport task. The Core path may start only a separately installed,
-trusted Core when needed. Spaceport packages do not bundle or upgrade Core.
+Spaceport may start a separately installed, trusted local Herdr 1 when needed.
+Enabled Core routes may likewise start a separately installed, trusted Core.
+An explicit socket remains attach-only.
+Spaceport packages do not bundle, install, migrate, or upgrade either runtime.
 The removed `update` command is rejected before app startup.
 
 Adding an SSH or local network device has no command: the Add Device dialog
@@ -236,19 +297,35 @@ One JSON request line, one JSON response line, then the socket closes. Every
 request but `status` is `{"method", "caller", "op"}`, where `caller` carries
 the pane, workspace, daemon socket, and window, and `op` is tagged with
 `"op"`. `status` carries those caller fields beside `"method": "status"`
-instead, with no `op`. It reports the protocol version, currently 37.
-Requests and responses are bounded to 256 KiB. A request that waits says for
-how long (at most 600 seconds), and the app answers at most a few requests at
-a time.
+instead, with no `op`.
+`chat new` waits up to 30 seconds for acknowledged creation. Core also waits
+for native pane placement. Success returns `created`, `agent`, `window_id`,
+`tab`, and `pane_id`. ACP attachment and agent readiness may still be pending.
+The tagged `tab` uses `{"runtime":"herdr","tab_id":"w1:t9"}` for Herdr.
+Core uses `{"runtime":"core","tab_id":9,"terminal_id":"t9"}`.
+Use the returned `pane_id` for `chat show --pane ID --window WINDOW_ID`.
+Herdr tab IDs belong to the daemon. Core tab IDs belong to Spaceport.
+Use each ID only with its owning runtime's commands.
+If the wait expires or its answer is lost, inspect state before retrying.
+Creation may have succeeded. Spaceport never replays that request.
+The wait consumes one of the bounded waiting slots described above.
+
+`status` reports the protocol version, currently 38. Requests and responses
+are bounded to 256 KiB. A request that waits says for how long (at most 600
+seconds). The server admits at most eight waiting requests and eight additional
+connections for quick requests or bounded request reads. Further waiting requests
+exit 6 even when quick capacity remains. The UI request queue holds four requests;
+a full queue also exits 6. Parked waits keep their connection but do not consume
+the quick connection allowance. Disconnecting a caller releases its wait slot.
 
 ### Windows
 
 On Windows the same lines travel over a named pipe,
 `\\.\pipe\spaceport-control-SID`, where `SID` is your Windows user's
-security identifier. When `XDG_STATE_HOME` is set, a hash of the state
-directory is appended, so a test or side-by-side install gets a pipe of its
-own; without it, every shell of yours reaches the same app whatever `HOME` it
-has. Pipe names are shared by all users of the machine, so:
+security identifier. Development builds append a hash of their selected state directory.
+An explicit `XDG_STATE_HOME` also adds that hash for installed previews.
+Ordinary installed previews retain the SID-only pipe, independent of the shell's `HOME`.
+Pipe names are shared by all users of the machine, so:
 
 - The app creates the pipe owned by you, with a DACL that grants only your
   SID and inherits nothing, so no other user can connect or add an instance.
@@ -286,7 +363,7 @@ Starting a chat there (`chat new`, or the workspace menu) runs the host's own
 then the remote `PATH`. Install it on the host with:
 
 ```sh
-cargo install --locked --git https://github.com/2389-research/spaceport sheprd-acp --root ~/.herdr
+cargo install --locked --git https://github.com/2389-research/spaceport sheprd-acp --root ~/.local
 ```
 
 The workspace menu offers only the agents whose own ACP command is installed

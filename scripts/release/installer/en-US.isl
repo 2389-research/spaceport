@@ -1,10 +1,9 @@
+; ABOUTME: Supplies Spaceport's Windows installer text.
+; ABOUTME: Extends Inno Setup's own English messages without external registrations.
 ; The installer's own English text, on top of Inno Setup's compiler:Default.isl.
 ; A translation is a copy of this file named for the app's language tag
 ; (installer/fr.isl), listed in sheprd.iss's [Languages] after the
-; matching compiler:Languages\*.isl (docs/i18n.md). %1 is the argument the
-; script passes; keep every name, and keep "herdr-gpui" and file paths as
-; they are.
+; matching compiler:Languages\*.isl (docs/i18n.md). Keep every message name.
 
 [CustomMessages]
-AddToPath=Add sheprd to PATH, for terminals and agents
-; The folder context menu's command; %1 is the app's name.
+AddToPath=Add spaceport to PATH, for terminals and agents

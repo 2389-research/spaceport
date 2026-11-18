@@ -310,7 +310,7 @@ impl SheprdWindow {
                 });
             state.invalidate_surface();
             state.dirty = true;
-            self.live = state.clone();
+            self.live.apply_window_update(state.clone());
         }
     }
 
@@ -360,6 +360,24 @@ impl SheprdWindow {
             return;
         }
         match command {
+            Command::Detach | Command::Reconnect
+                if self.endpoints.get(self.selected_endpoint).is_none() =>
+            {
+                self.show_flash(Flash::warning(fl!("window-notices-needs-herdr-tui")), cx);
+                return;
+            }
+            Command::CloseWorkspace => {
+                let opened = self
+                    .live
+                    .snapshot
+                    .as_ref()
+                    .and_then(|snapshot| snapshot.focused_workspace_id.clone())
+                    .is_some_and(|id| self.open_workspace_close(&id, window, cx));
+                if !opened {
+                    self.show_flash(Flash::warning(fl!("close-modal-workspace-unavailable")), cx);
+                }
+                return;
+            }
             Command::OpenNotificationTarget => {
                 if let Some((endpoint, id)) = self.endpoints.iter().find_map(|e| {
                     e.toasts
@@ -375,6 +393,10 @@ impl SheprdWindow {
             }
             Command::Logs => {
                 log_window::open(cx);
+                return;
+            }
+            Command::Messages => {
+                self.open_messages(window, cx);
                 return;
             }
             Command::NewWindow => {
@@ -526,7 +548,11 @@ impl SheprdWindow {
                 );
                 return;
             }
-            Command::ToggleSidebar => self.toggle_sidebar(),
+            Command::ToggleSidebar => {
+                self.toggle_sidebar();
+                cx.notify();
+                return;
+            }
             Command::FocusNextRegion => return self.cycle_region(true, window, cx),
             Command::FocusPreviousRegion => return self.cycle_region(false, window, cx),
             // Window chrome only, so it runs while the daemon is still away.
@@ -668,9 +694,11 @@ impl SheprdWindow {
             }
             _ => {}
         }
-        if self.live.activation.fenced()
-            || !self.endpoints[self.selected_endpoint].surface_requested()
-        {
+        let Some(endpoint) = self.endpoints.get(self.selected_endpoint) else {
+            self.show_flash(Flash::warning(fl!("window-notices-needs-herdr-tui")), cx);
+            return;
+        };
+        if self.live.activation.fenced() || !endpoint.surface_requested() {
             return;
         }
         if let Some(snapshot) = &self.live.snapshot
@@ -778,69 +806,6 @@ impl SheprdWindow {
             self.menu.page = Some(crate::menu::Page::AgentSkill);
             cx.notify();
         }
-    }
-
-    pub(crate) fn render_agent_skill_offer(&self, cx: &mut Context<Self>) -> gpui::Div {
-        use gpui::{prelude::*, *};
-        let theme = &self.theme;
-        let button = |id: &'static str, label: String, primary: bool| {
-            div()
-                .id(id)
-                .debug_selector(move || id.into())
-                .p(px(8.))
-                .rounded(px(crate::config::corners::CONTROL))
-                .when(primary, |button| button.bg(rgb(theme.active)))
-                .when(!primary, |button| button.hover(|s| s.bg(rgb(theme.active))))
-                .cursor_pointer()
-                .child(label)
-        };
-        div()
-            .debug_selector(|| "agent-skill-offer".into())
-            .child(
-                div()
-                    .p(px(8.))
-                    .child(fl!("window-notices-skill-offer-title")),
-            )
-            .child(
-                div()
-                    .p(px(8.))
-                    .child(fl!("window-notices-skill-offer-body")),
-            )
-            .child(
-                div()
-                    .p(px(8.))
-                    .text_color(rgb(theme.muted))
-                    .child(fl!("window-notices-skill-offer-detail")),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_wrap()
-                    .gap(px(8.))
-                    .p(px(8.))
-                    .child(
-                        button(
-                            "agent-skill-install",
-                            fl!("window-notices-skill-offer-install"),
-                            true,
-                        )
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            cx.stop_propagation();
-                            this.install_browser_skill(window, cx);
-                        })),
-                    )
-                    .child(
-                        button(
-                            "agent-skill-decline",
-                            fl!("window-notices-skill-offer-decline"),
-                            false,
-                        )
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            cx.stop_propagation();
-                            this.dismiss_menu(window, cx);
-                        })),
-                    ),
-            )
     }
 }
 

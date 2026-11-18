@@ -1,5 +1,6 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
+mod targets;
 
 #[test]
 fn readers_get_what_came_after_their_sequence_number() {

@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 //! The `en-XA` leak test (`crate::i18n::leak_tests`) for every Settings
 //! page: each draws only translated messages, around the section list and
 //! footer, except for data such as theme and font names.
@@ -13,7 +15,7 @@ fn check_page(section: Section, data: fn(&SettingsWindow, &App) -> Vec<String>) 
         let weak = cx.update(|cx| main.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
         recorder.take();
         let (view, cx) = cx.add_window_view(|window, cx| {
-            let mut view = SettingsWindow::new(weak, cx);
+            let mut view = fixture_new(weak, cx);
             view.section = section;
             window.focus(&view.focus, cx);
             view
@@ -36,7 +38,7 @@ fn general_data(_: &SettingsWindow, _: &App) -> Vec<String> {
 
 /// Tabs & panes: each SSH host's name above its scrollback switch.
 fn tabs_data(view: &SettingsWindow, _: &App) -> Vec<String> {
-    view.remote_history
+    view.host_history
         .hosts()
         .iter()
         .map(|host| host.label.clone())

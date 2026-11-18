@@ -1,3 +1,5 @@
+// ABOUTME: Builds bounded rich blocks from Markdown while preserving source semantics.
+// ABOUTME: Normalizes math candidates and leaves ordinary source ready for the final parser.
 use super::{Block, Fence, Inline, Kind, MathMode, Style, formula, math_input::Normalized};
 use crate::chat::visual::{Source, VisualId, Visuals};
 use pulldown_cmark::{Alignment, CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
@@ -23,19 +25,25 @@ pub(in crate::chat) fn parse(text: &str, visuals: &mut Visuals) -> Option<Vec<Bl
     if text.split_whitespace().take(MAX_WORDS + 1).count() > MAX_WORDS {
         return None;
     }
-    let display = super::math_input::protect_display(&normalize_math(text));
+    let display = text
+        .contains(['$', '\\'])
+        .then(|| super::math_input::protect_display(&normalize_math(text)));
+    let empty_sources = HashMap::new();
+    let (markdown, sources) = display.as_ref().map_or((text, &empty_sources), |display| {
+        (display.markdown.as_str(), &display.sources)
+    });
     let options = Options::ENABLE_TABLES
         | Options::ENABLE_MATH
         | Options::ENABLE_STRIKETHROUGH
         | Options::ENABLE_TASKLISTS;
-    let events: Vec<_> = Parser::new_ext(&display.markdown, options)
+    let events: Vec<_> = Parser::new_ext(markdown, options)
         .into_offset_iter()
         .take(MAX_EVENTS + 1)
         .collect();
     if events.len() > MAX_EVENTS {
         return None;
     }
-    let mut builder = Builder::new(&display.markdown, &display.sources, visuals);
+    let mut builder = Builder::new(markdown, sources, visuals);
     for (event, range) in events {
         builder.event(event, range)?;
     }

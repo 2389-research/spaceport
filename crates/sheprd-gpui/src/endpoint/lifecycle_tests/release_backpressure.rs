@@ -1,11 +1,12 @@
-//! A release that cannot be queued is backpressure, not a dead transport.
+// ABOUTME: Keeps a background release pending while its real command queue is full.
+// ABOUTME: Uses a gated Unix transport to separate backpressure from disconnects.
 use super::*;
 
 #[test]
 fn a_full_queue_keeps_a_background_release_deferred_until_it_drains() {
     let (endpoint, _server) = connected_endpoint("ssh:release-backpressure");
     // Nothing drains the queue until the gate opens and the worker connects.
-    let (stream, _peer) = sheprd_client::Stream::pair().unwrap();
+    let (stream, _peer) = Stream::pair().unwrap();
     let (open, gate) = std::sync::mpsc::channel::<()>();
     let client = sheprd_client::connect_with_connector(
         endpoint.connection.target.clone(),

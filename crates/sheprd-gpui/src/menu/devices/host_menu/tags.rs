@@ -1,7 +1,9 @@
+// ABOUTME: Applies device grouping while keeping departing choices inert.
+// ABOUTME: Captures only visible tag rows and disposable field paint.
 //! Grouping a device from its menu. Move to picks the section it lists under;
 //! Also tagged adds the tags it carries besides. A new name in the field
 //! makes a new group. Both save through the local `device_tags` preference.
-use super::HostMenu;
+use super::*;
 use crate::{
     SheprdWindow,
     device_tags::{self, DeviceTags},
@@ -10,7 +12,6 @@ use crate::{
     search_input::SearchInput,
 };
 use device_tags::normalized;
-use gpui::{prelude::*, *};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Mode {
@@ -18,18 +19,38 @@ pub(super) enum Mode {
     AlsoTagged,
 }
 
+#[cfg(test)]
+mod tests;
+
 pub(crate) struct TagPicker {
     mode: Mode,
     /// The tags to offer; Move to adds No group after them.
     rows: Vec<String>,
     selected: Option<usize>,
     input: Entity<SearchInput>,
+    /// The uniform list's snapped extent; the shell remains the only scroller.
+    layout: std::rc::Rc<std::cell::Cell<Bounds<Pixels>>>,
 }
 
 impl TagPicker {
     fn count(&self) -> usize {
         self.rows.len() + usize::from(self.mode == Mode::MoveTo)
     }
+}
+
+pub(super) struct Choice {
+    index: usize,
+    label: String,
+    ticked: bool,
+    selected: bool,
+}
+
+pub(super) struct Paint {
+    title: String,
+    rows: Vec<Choice>,
+    before: Pixels,
+    after: Pixels,
+    input: crate::search_input::Paint,
 }
 
 impl SheprdWindow {
@@ -53,6 +74,7 @@ impl SheprdWindow {
             rows: device_tags::offered(&self.device_tags),
             selected: None,
             input,
+            layout: Default::default(),
         });
         self.menu.page = Some(Page::DeviceTags);
         cx.notify();
@@ -151,18 +173,76 @@ impl SheprdWindow {
         }
     }
 
-    pub(super) fn render_device_tags(&self, host: &HostMenu, cx: &mut Context<Self>) -> Div {
-        let Some(picker) = &host.tags else {
-            return div();
-        };
-        let theme = &self.theme;
-        let font = &self.config.ui;
+    pub(super) fn device_tags_paint(
+        &self,
+        host: &HostMenu,
+        frozen: bool,
+        cx: &App,
+    ) -> Option<Paint> {
+        let picker = host.tags.as_ref()?;
         let title = match picker.mode {
             Mode::MoveTo => fl!("device-tags-move-title", device = host.label.as_str()),
             Mode::AlsoTagged => fl!("device-tags-also-title", device = host.label.as_str()),
         };
         let section = self.device_tags.section(&host.id, None);
-        let row = |index: usize, label: String, ticked: bool, cx: &mut Context<Self>| {
+        let count = picker.count();
+        let bounds = picker.layout.get();
+        let height = if count > 0 && bounds.size.height > px(0.) {
+            bounds.size.height / count as f32
+        } else {
+            px(self.config.ui.line_height() + 12.)
+        };
+        let (start, end) = if frozen && bounds.size.height > px(0.) {
+            let viewport = host.scroll.bounds();
+            let start = ((viewport.top() - bounds.top()) / height).floor().max(0.) as usize;
+            let end = ((viewport.bottom() - bounds.top()) / height).ceil().max(0.) as usize;
+            (start.min(count), end.min(count))
+        } else {
+            (0, count)
+        };
+        // Spacers use the actual snapped extents, not a fractional font-height product.
+        let before = height * start as f32;
+        let after = height * (count - end) as f32;
+        Some(Paint {
+            title,
+            rows: (start..end)
+                .map(|index| {
+                    let (label, ticked) = match picker.rows.get(index) {
+                        Some(tag) => (
+                            tag.clone(),
+                            match picker.mode {
+                                Mode::MoveTo => {
+                                    section.is_some_and(|own| device_tags::same(own, tag))
+                                }
+                                Mode::AlsoTagged => self.device_tags.has(&host.id, tag),
+                            },
+                        ),
+                        None => (fl!("device-tags-remove-section"), section.is_none()),
+                    };
+                    Choice {
+                        index,
+                        label,
+                        ticked,
+                        selected: picker.selected == Some(index),
+                    }
+                })
+                .collect(),
+            before,
+            after,
+            input: picker.input.read(cx).paint(),
+        })
+    }
+
+    pub(super) fn render_device_tags(
+        &self,
+        paint: &Paint,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = &self.theme;
+        let font = &self.config.ui;
+        let row = |choice: &Choice, cx: &mut Context<Self>| {
+            let index = choice.index;
             div()
                 .id(("device-tags-row", index))
                 .debug_selector(move || format!("device-tags-row-{index}"))
@@ -171,34 +251,45 @@ impl SheprdWindow {
                 .flex()
                 .items_center()
                 .gap(px(8.))
-                .cursor_pointer()
-                .when(picker.selected == Some(index), |row| {
-                    row.bg(rgb(theme.active))
+                .when(active, |row| row.cursor_pointer())
+                .when(choice.selected, |row| row.bg(rgb(theme.active)))
+                .when(active, |row| row.hover(|row| row.bg(rgb(theme.active))))
+                .child(crate::toggles::checkbox(
+                    theme,
+                    font.size + 2.,
+                    choice.ticked,
+                ))
+                .child(div().min_w_0().truncate().child(choice.label.clone()))
+                .when(active, |row| {
+                    row.on_click(cx.listener(move |this, _, window, cx| {
+                        this.choose_device_tag(index, window, cx);
+                    }))
                 })
-                .hover(|row| row.bg(rgb(theme.active)))
-                .child(crate::toggles::checkbox(theme, font.size + 2., ticked))
-                .child(div().min_w_0().truncate().child(label))
-                .on_click(cx.listener(move |this, _, window, cx| {
-                    this.choose_device_tag(index, window, cx);
-                }))
         };
-        let mut list = div().flex().flex_col();
-        for (index, tag) in picker.rows.iter().enumerate() {
-            let ticked = match picker.mode {
-                Mode::MoveTo => section.is_some_and(|own| device_tags::same(own, tag)),
-                Mode::AlsoTagged => self.device_tags.has(&host.id, tag),
-            };
-            list = list.child(row(index, tag.clone(), ticked, cx));
-        }
-        if picker.mode == Mode::MoveTo {
-            let index = picker.rows.len();
-            list = list.child(row(
-                index,
-                fl!("device-tags-remove-section"),
-                section.is_none(),
-                cx,
-            ));
-        }
+        let list = div()
+            .debug_selector(|| "device-tags-list".into())
+            .flex()
+            .flex_col()
+            .when(paint.before > px(0.), |list| {
+                list.child(div().flex_none().h(paint.before))
+            })
+            .children(paint.rows.iter().map(|choice| row(choice, cx)))
+            .when(paint.after > px(0.), |list| {
+                list.child(div().flex_none().h(paint.after))
+            })
+            .when(active, |list| {
+                list.when_some(
+                    self.menu.host.as_ref().and_then(|host| host.tags.as_ref()),
+                    |list, picker| {
+                        let layout = picker.layout.clone();
+                        list.child(
+                            canvas(move |bounds, _, _| layout.set(bounds), |_, _, _, _| {})
+                                .absolute()
+                                .inset_0(),
+                        )
+                    },
+                )
+            });
         div()
             .debug_selector(|| "device-tags".into())
             .flex()
@@ -207,11 +298,29 @@ impl SheprdWindow {
             .p(px(8.))
             .child(
                 div()
+                    .debug_selector(|| "device-tags-title".into())
                     .font_weight(FontWeight::SEMIBOLD)
                     .truncate()
-                    .child(title),
+                    .child(paint.title.clone()),
             )
             .child(list)
-            .child(picker.input.clone())
+            .when(active, |body| {
+                body.when_some(
+                    self.menu
+                        .host
+                        .as_ref()
+                        .and_then(|host| host.tags.as_ref())
+                        .map(|picker| picker.input.clone()),
+                    |body, input| body.child(input),
+                )
+            })
+            .when(!active, |body| {
+                body.child(
+                    paint
+                        .input
+                        .render()
+                        .debug_selector(|| "device-tags-field-paint".into()),
+                )
+            })
     }
 }

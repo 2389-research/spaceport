@@ -1,8 +1,11 @@
+// ABOUTME: Verifies connection mailboxes and generation isolation.
+// ABOUTME: Keeps startup, retirement, and terminal failures observable to polling.
 use super::*;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod local_peer_warning;
 mod retired_answers;
+mod worker_panic;
 
 fn bridge() -> ConnectionBridge {
     ConnectionBridge::new(ConnectTarget::Socket("/unused-connection-test.sock".into()))
@@ -374,7 +377,7 @@ fn synchronous_startup_failure_survives_mailbox_and_focus_updates() {
     let mut bridge = bridge();
     let mut options = ConnectOptions::default();
     options.surface_size.cols = 0;
-    bridge.reconnect(options, true, true);
+    bridge.reconnect(options, true, true, crate::daemon::Start::Never);
     let failed = bridge.take_update().unwrap();
     assert_eq!(failed.status, ConnectionStatus::Disconnected);
     assert!(failed.notices.is_some());
@@ -389,9 +392,12 @@ fn synchronous_startup_failure_survives_mailbox_and_focus_updates() {
 #[test]
 fn event_reader_startup_failure_is_authoritative() {
     let mut bridge = bridge();
-    bridge.start(ConnectOptions::default(), true, |_| {
-        Err(std::io::Error::other("reader startup failed"))
-    });
+    bridge.start(
+        ConnectOptions::default(),
+        true,
+        crate::daemon::Start::Never,
+        |_| Err(std::io::Error::other("reader startup failed")),
+    );
     let state = bridge.take_update().unwrap();
     assert_eq!(state.status, ConnectionStatus::Disconnected);
     assert_eq!(state.notices.text(), Some("reader startup failed"));
@@ -430,7 +436,7 @@ fn detach_and_reconnect_fence_old_inboxes() {
     old.lock().unwrap().local_daemon_peer = true;
     let mut options = ConnectOptions::default();
     options.surface_size.cols = 0;
-    bridge.reconnect(options, false, true);
+    bridge.reconnect(options, false, true, crate::daemon::Start::Never);
     old.lock().unwrap().apply(ClientEvent::Disconnected {
         reason: "detached connection".into(),
         ssh: None,

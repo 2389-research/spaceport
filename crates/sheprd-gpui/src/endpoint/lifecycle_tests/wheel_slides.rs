@@ -1,3 +1,5 @@
+// ABOUTME: Checks fractional wheel input and whole-row fallback through the endpoint.
+// ABOUTME: Shares a graphics placement fixture for image overlap routing tests.
 use super::*;
 use gpui::{ScrollDelta, ScrollEvent, TouchPhase};
 use sheprd_client::protocol::{
@@ -6,9 +8,8 @@ use sheprd_client::protocol::{
 };
 
 /// A quarter row's trackpad delta follows the OS at once while the pane can
-/// slide, but accumulates into whole lines while an image is on screen,
-/// since images never slide, or with smooth scrolling off: each delta must
-/// not become a line of its own.
+/// slide, including image-bearing panes. With smooth scrolling off, deltas
+/// accumulate into whole lines instead of becoming a line of their own.
 #[gpui::test]
 fn wheel_deltas_accumulate_into_lines_while_panes_cannot_slide(cx: &mut gpui::TestAppContext) {
     let (fixture, cx) = cx.add_window_view(|window, cx| {
@@ -52,14 +53,13 @@ fn wheel_deltas_accumulate_into_lines_while_panes_cannot_slide(cx: &mut gpui::Te
         };
         let sentinel = events == [ClientPaneInputEvent::TextCommit("sentinel".into())];
         assert_eq!(
-            sentinel,
-            images || !smooth,
+            sentinel, !smooth,
             "images={images} smooth={smooth}: {events:?}"
         );
     }
 }
 
-fn placement() -> SurfaceGraphicsPlacement {
+pub(super) fn placement() -> SurfaceGraphicsPlacement {
     SurfaceGraphicsPlacement {
         asset: SurfaceGraphicsAssetKey {
             source: SurfaceGraphicsSource::Terminal {
@@ -75,8 +75,8 @@ fn placement() -> SurfaceGraphicsPlacement {
             data_fingerprint: 1,
         },
         logical_placement_id: 1,
-        x: 0,
-        y: 0,
+        x: 2,
+        y: 3,
         cols: 1,
         rows: 1,
         source_x: 0,

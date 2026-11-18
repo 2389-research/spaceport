@@ -1,3 +1,5 @@
+// ABOUTME: Renders chat permission requests, queued prompts, and completions.
+// ABOUTME: Keeps permission answers tied to a deliberate first click.
 //! What sits between the entries and the composer: permission requests,
 //! queued prompts, and slash-command completions.
 
@@ -6,6 +8,7 @@ use crate::i18n::fl;
 use crate::{SheprdWindow, config::corners, notifications::safe_text};
 use gpui::{prelude::*, *};
 use sheprd_chat_protocol::{Command, PermissionKind, assist};
+use std::hash::{Hash, Hasher};
 
 /// Queued prompts in view at once; the list scrolls past them.
 const QUEUE_ROWS: f32 = 3.5;
@@ -17,7 +20,7 @@ impl SheprdWindow {
         &self,
         chat: &ChatPane,
         cx: &mut Context<Self>,
-    ) -> Vec<Div> {
+    ) -> Vec<Stateful<Div>> {
         let theme = &self.theme;
         let hues = Hues::of(theme);
         chat.session
@@ -36,13 +39,32 @@ impl SheprdWindow {
                             _ => theme.foreground,
                         };
                         let pane_id = chat.target.pane_id.clone();
+                        let target = chat.target.clone();
+                        let cursor = chat.session.since();
+                        let mut identity = std::hash::DefaultHasher::new();
+                        (
+                            &target,
+                            cursor.map(|cursor| cursor.epoch),
+                            chat.generation(),
+                            permission.id,
+                            index,
+                        )
+                            .hash(&mut identity);
                         let command = Command::Answer {
                             option: option.id.clone(),
                             permission: permission.id,
                         };
                         div()
-                            .id(("chat-answer", permission.id.0 * 64 + index as u64))
+                            .id(("chat-answer", identity.finish()))
+                            .map(|button| {
+                                super::accessibility::button(
+                                    theme,
+                                    safe_text(&option.name, 60),
+                                    button,
+                                )
+                            })
                             .debug_selector(move || format!("chat-answer-{index}"))
+                            .key_context("ChatPermissionAnswer")
                             .flex_none()
                             .px(px(10.))
                             .py(px(3.))
@@ -54,12 +76,34 @@ impl SheprdWindow {
                             .hover(|button| button.bg(rgb(theme.active)))
                             .child(safe_text(&option.name, 60))
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                            .on_click(cx.listener(move |this, _: &ClickEvent, _, cx| {
+                            .on_click(cx.listener(move |this, event: &ClickEvent, _, cx| {
                                 cx.stop_propagation();
+                                if event.click_count() != 1 {
+                                    return;
+                                }
+                                if !this.chats.pane(&pane_id).is_some_and(|pane| {
+                                    crate::chat::files::is_current(
+                                        &pane.target,
+                                        pane.session.since(),
+                                        &target,
+                                        cursor,
+                                    )
+                                }) {
+                                    return;
+                                }
                                 this.chat_send(&pane_id, command.clone(), cx);
                             }))
                     });
                 div()
+                    .id(SharedString::from(format!(
+                        "chat-permission-{}",
+                        permission.id.0
+                    )))
+                    .role(Role::Group)
+                    .aria_label(safe_text(&permission.title, 400))
+                    .a11y_synthetic_children(|builder| {
+                        builder.parent_node().set_live(accesskit::Live::Polite);
+                    })
                     .debug_selector(|| "chat-permission".into())
                     .flex_none()
                     .flex()
@@ -125,6 +169,13 @@ impl SheprdWindow {
                     .child(
                         div()
                             .id(("chat-unqueue", index))
+                            .map(|button| {
+                                super::accessibility::button(
+                                    theme,
+                                    fl!("chat-withdraw-prompt"),
+                                    button,
+                                )
+                            })
                             .debug_selector(move || format!("chat-unqueue-{index}"))
                             .flex_none()
                             .size(px(18.))

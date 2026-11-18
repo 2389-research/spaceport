@@ -1,3 +1,5 @@
+// ABOUTME: Checks saved connection parsing and storage error provenance.
+// ABOUTME: Preserves typed sources while excluding sensitive schema fields from display.
 #![allow(clippy::unwrap_used)]
 use super::*;
 
@@ -19,12 +21,12 @@ fn storage_errors_retain_operation_paths_sources_and_redacted_display() {
         (
             &catalog,
             load_path(&catalog).unwrap_err(),
-            "invalid endpoint catalog schema",
+            "The saved connections file could not be read.",
         ),
         (
             &selection,
             read_selection(&selection).err().unwrap(),
-            "invalid endpoint selection schema",
+            "The saved connection choice could not be read.",
         ),
     ] {
         let Error::Storage {
@@ -94,7 +96,10 @@ fn schema_errors_keep_sources_but_redact_display() {
     let bytes = br#"{"version":1,"secret-field":true}"#;
     let error = parse(bytes).unwrap_err();
     assert!(matches!(error, Error::CatalogSchema(_)));
-    assert_eq!(error.to_string(), "invalid endpoint catalog schema");
+    assert_eq!(
+        error.to_string(),
+        "The saved connections file could not be read."
+    );
     assert_eq!(error.kind(), io::ErrorKind::InvalidData);
     let source = error
         .source()
@@ -105,7 +110,10 @@ fn schema_errors_keep_sources_but_redact_display() {
 
     let source = serde_json::from_slice::<Selection>(bytes).err().unwrap();
     let error = Error::SelectionSchema(source);
-    assert_eq!(error.to_string(), "invalid endpoint selection schema");
+    assert_eq!(
+        error.to_string(),
+        "The saved connection choice could not be read."
+    );
     assert!(error.source().unwrap().is::<serde_json::Error>());
     assert!(matches!(
         parse(&vec![b' '; 65537]),

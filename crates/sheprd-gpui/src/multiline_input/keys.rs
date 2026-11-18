@@ -1,3 +1,5 @@
+// ABOUTME: Routes multiline editing shortcuts through shared text-editing commands.
+// ABOUTME: Cancels pending clipboard input when caret movement changes its destination.
 //! Key handling for the multi-line prompt field: the arrows move the caret
 //! between visual rows, and every other key is read from the table the
 //! fields share (`crate::text_editing::edit_command`).
@@ -74,6 +76,7 @@ impl MultilineInput {
         let local = (goal - origin).clamp(0., row.width());
         let byte = line.carets.index_at(px(local + row.start_x));
         let offset = line.range.start + byte.clamp(row.start, row.end);
+        self.cancel_paste(cx);
         self.edit.select_to(offset, extend);
         self.reveal_caret = true;
         cx.notify();
@@ -127,8 +130,14 @@ impl MultilineInput {
 
     fn apply(&mut self, command: EditCommand, window: &mut Window, cx: &mut Context<Self>) {
         match command {
-            EditCommand::Move { to, extend } => self.edit.select_to(to, extend),
-            EditCommand::SelectAll => self.edit.select(0..self.edit.text.len()),
+            EditCommand::Move { to, extend } => {
+                self.cancel_paste(cx);
+                self.edit.select_to(to, extend);
+            }
+            EditCommand::SelectAll => {
+                self.cancel_paste(cx);
+                self.edit.select(0..self.edit.text.len());
+            }
             EditCommand::Delete(range) => {
                 self.edit.select(range);
                 self.replace_text_in_range(None, "", window, cx);
@@ -158,9 +167,22 @@ impl MultilineInput {
                 }
             }
             EditCommand::Paste => {
-                if let Some(text) = cx.read_from_clipboard().and_then(|item| item.text()) {
-                    self.replace_text_in_range(None, &text, window, cx);
-                }
+                #[cfg(test)]
+                let item = cx.read_from_clipboard();
+                self.paste_from(
+                    move || {
+                        #[cfg(test)]
+                        {
+                            Ok(item)
+                        }
+                        #[cfg(not(test))]
+                        {
+                            crate::window::clipboard::read(crate::window::clipboard::Mode::Text)
+                        }
+                    },
+                    window,
+                    cx,
+                );
             }
         }
     }

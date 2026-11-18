@@ -209,6 +209,7 @@ impl SheprdWindow {
             let Some(snapshot) = &live.snapshot else {
                 continue;
             };
+            let indexed = nested_agents.then(|| live.indexed_snapshot()).flatten();
             let silenced = crate::notification_mutes::Mutes::silenced_in(cx, endpoint, snapshot);
             let collapsed_repos = &endpoint.collapsed_repos;
             let entries = visible_workspace_entries(&snapshot.workspaces, collapsed_repos);
@@ -514,7 +515,12 @@ impl SheprdWindow {
                         muted,
                         row_cx.host,
                     );
-                    self.workspace_item(row, name, selected && workspace.focused, folds, cx)
+                    self.workspace_reorder_keys(
+                        self.workspace_item(row, name, selected && workspace.focused, folds, cx),
+                        &endpoint_id,
+                        &id,
+                        cx,
+                    )
                 })
                 .when(multi, |row| {
                     row.debug_selector(|| format!("workspace-{endpoint_id}-{id}"))
@@ -566,10 +572,10 @@ impl SheprdWindow {
                 })
                 .when(carried, |row| row.cursor_grabbing());
                 let indent = layout.child_indent() * if indented { 2. } else { 1. };
-                let agent_rows = if nested_agents {
+                let agent_rows = if let Some(indexed) = indexed.as_ref() {
                     let (rows, focused) = self.nested_agent_rows(
                         endpoint_index,
-                        snapshot,
+                        indexed,
                         &workspace.workspace_id,
                         (&row_cx, indent),
                         cx,

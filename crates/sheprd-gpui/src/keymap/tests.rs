@@ -30,6 +30,7 @@ fn no_keys() -> DaemonKeys {
     DaemonKeys {
         prefixes: vec![keystroke("ctrl-b")],
         bindings: Vec::new(),
+        spaceport_defaults: Vec::new(),
         navigate_up: Vec::new(),
         navigate_down: Vec::new(),
     }
@@ -41,6 +42,14 @@ fn with(entries: &[(&str, Binding)]) -> Result<Keymap> {
 
 fn list(keymap: &Keymap, command: Command) -> Vec<&str> {
     keymap.shortcuts(command).collect()
+}
+
+fn catalog_bindings(command: Command) -> &'static [&'static str] {
+    COMMANDS
+        .iter()
+        .find(|info| info.command == command)
+        .unwrap()
+        .default_shortcuts()
 }
 
 #[test]
@@ -253,14 +262,20 @@ fn daemon_keystrokes_move_from_gui_defaults_but_not_from_gui_config() {
         list(&keymap, Command::Tab),
         [default("cmd-t"), "alt-1", "ctrl-a c"]
     );
-    assert_eq!(list(&keymap, Command::TabNumber(1)), [default("cmd-1")]);
+    assert_eq!(
+        list(&keymap, Command::TabNumber(1)),
+        catalog_bindings(Command::TabNumber(1))
+    );
     assert_eq!(list(&keymap, Command::CloseTab), [default("cmd-shift-w")]);
     assert_eq!(list(&keymap, Command::ClosePane), [default("cmd-w")]);
     assert_eq!(list(&keymap, Command::About), ["cmd-e"]);
-    assert_eq!(list(&keymap, Command::NextTab), [default("cmd-shift-]")]);
+    assert_eq!(
+        list(&keymap, Command::NextTab),
+        catalog_bindings(Command::NextTab)
+    );
     assert_eq!(
         list(&keymap, Command::PreviousTab),
-        [default("cmd-shift-[")]
+        catalog_bindings(Command::PreviousTab)
     );
     let keys: Vec<_> = keymap.bindings().map(|(_, keystroke)| keystroke).collect();
     let unique: HashSet<_> = keys.iter().collect();
@@ -431,7 +446,10 @@ fn every_prefix_arms_and_the_first_labels_chords() {
         [default("cmd-t").to_owned(), format!("{first} c")]
     );
     assert_eq!(keymap.chord(&keystroke("ctrl-s")), None);
-    assert_eq!(list(&keymap, Command::NextTab), [default("cmd-shift-]")]);
+    assert_eq!(
+        list(&keymap, Command::NextTab),
+        catalog_bindings(Command::NextTab)
+    );
 
     // A prefix the GUI config claims is dropped, and the next one labels
     // chords.

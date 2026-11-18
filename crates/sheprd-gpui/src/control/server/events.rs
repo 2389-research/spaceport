@@ -1,8 +1,10 @@
+// ABOUTME: Reports bounded application events and waits for observed conditions.
+// ABOUTME: Validates wait targets and pins each session observation to its initial window.
 //! `events` and `wait`. Events are found by comparing, every tick, what the
 //! app shows with what it showed the tick before, so no feature has to
 //! report them: windows, the app's tabs, worktree notes, and
 //! host status. The log is bounded; a slow reader misses the oldest.
-use super::{Watches, main_windows, socket, window_for};
+use super::{Check, Watches, main_windows, session_window, socket, tabs, target};
 use crate::{
     browser::Store,
     control::protocol::{
@@ -178,21 +180,76 @@ pub(super) fn record(cx: &mut App) {
     *cx.global_mut::<Log>() = log;
 }
 
-fn condition_holds(
+/// Validates the initial target and pins the observation to its window.
+fn condition_check(
     condition: Condition,
-    caller: &crate::control::protocol::Caller,
+    mut caller: crate::control::protocol::Caller,
     cx: &mut App,
-) -> bool {
+) -> Result<Check, Response> {
+    let waited = || Response::Events {
+        reply: Reply::Waited { met: true },
+    };
     match condition {
-        Condition::Window => !main_windows(cx).is_empty(),
-        Condition::TabClosed { id } => cx
-            .try_global::<Store>()
-            .is_none_or(|store| store.get(id.into()).is_none()),
-        Condition::Online => window_for(caller, cx).is_ok_and(|handle| {
-            handle
-                .read_with(cx, |view, _| view.live.status.is_connected())
-                .unwrap_or(false)
-        }),
+        Condition::Window => Ok(Box::new(move |cx| {
+            (!main_windows(cx).is_empty()).then(waited)
+        })),
+        Condition::TabClosed { id } => {
+            let handle = tabs::wait_target(&caller, id, cx)?;
+            caller.window = Some(handle.window_id().as_u64());
+            Ok(Box::new(move |cx| {
+                if cx
+                    .try_global::<Store>()
+                    .is_none_or(|store| store.get(id.into()).is_none())
+                {
+                    return Some(waited());
+                }
+                tabs::wait_target(&caller, id, cx).err()
+            }))
+        }
+        Condition::Online => {
+            let handle = session_window(&caller, cx)?;
+            let (endpoint_id, connection_target) = handle
+                .read_with(cx, |view, _| {
+                    let index = if caller.workspace_id.is_some() || caller.daemon_socket.is_some() {
+                        let target = target(&caller);
+                        target
+                            .strictness()
+                            .iter()
+                            .find_map(|strict| view.control_target(&target, *strict))?
+                            .0
+                    } else {
+                        view.selected_endpoint
+                    };
+                    let endpoint = view.endpoints.get(index)?;
+                    Some((endpoint.id.clone(), endpoint.connection.target.clone()))
+                })
+                .ok()
+                .flatten()
+                .ok_or_else(|| super::not_found("The observed session is unavailable"))?;
+            Ok(Box::new(move |cx| {
+                handle
+                    .read_with(cx, |view, _| {
+                        let Some((_, _, live)) = view.hosts().find(|(_, endpoint, _)| {
+                            endpoint.id == endpoint_id
+                                && endpoint.connection.target == connection_target
+                        }) else {
+                            return Some(super::not_found("The observed session is unavailable"));
+                        };
+                        if let Some(workspace) = &caller.workspace_id
+                            && live.snapshot.as_ref().is_some_and(|snapshot| {
+                                !snapshot
+                                    .workspaces
+                                    .iter()
+                                    .any(|row| &row.workspace_id == workspace)
+                            })
+                        {
+                            return Some(super::not_found("The observed workspace is unavailable"));
+                        }
+                        live.status.is_connected().then(waited)
+                    })
+                    .unwrap_or_else(|_| Some(super::not_found("The observed window closed")))
+            }))
+        }
     }
 }
 
@@ -240,15 +297,14 @@ pub(super) fn serve(
             condition,
             wait_seconds,
         } => {
-            let caller = call.caller;
+            let check = match condition_check(condition, call.caller, cx) {
+                Ok(check) => check,
+                Err(response) => return incoming.respond(response),
+            };
             watches.add(
                 incoming,
                 Duration::from_secs(wait_seconds),
-                move |cx| {
-                    condition_holds(condition, &caller, cx).then_some(Response::Events {
-                        reply: Reply::Waited { met: true },
-                    })
-                },
+                check,
                 Response::Events {
                     reply: Reply::Waited { met: false },
                 },

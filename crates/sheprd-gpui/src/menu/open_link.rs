@@ -1,3 +1,5 @@
+// ABOUTME: Confirms untrusted external schemes before the OS opens their addresses.
+// ABOUTME: Paints captured outgoing questions without retaining confirmation actions.
 //! Asks before opening a terminal hyperlink whose scheme is not one that
 //! opens directly. Terminal output is untrusted, and such an address starts
 //! whatever application registered its scheme, so the user sees the whole
@@ -29,7 +31,7 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let url = self.menu.open_link.take();
+        let url = self.menu.open_link.clone();
         self.dismiss_menu(window, cx);
         if let Some(url) = url {
             cx.open_url(url.as_str());
@@ -37,10 +39,19 @@ impl SheprdWindow {
     }
 
     pub(in crate::menu) fn render_open_link(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
         let Some(url) = &self.menu.open_link else {
             return div();
         };
+        self.render_link_question(url, true, cx)
+    }
+
+    pub(in crate::menu) fn render_link_question(
+        &self,
+        url: &ExternalUrl,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = &self.theme;
         let button = |id: &'static str, label: String, primary: bool| {
             div()
                 .id(id)
@@ -48,8 +59,11 @@ impl SheprdWindow {
                 .p(px(8.))
                 .rounded(px(crate::config::corners::CONTROL))
                 .when(primary, |button| button.bg(rgb(theme.active)))
-                .when(!primary, |button| button.hover(|s| s.bg(rgb(theme.active))))
-                .cursor_pointer()
+                .when(active, |button| {
+                    button
+                        .cursor_pointer()
+                        .when(!primary, |button| button.hover(|s| s.bg(rgb(theme.active))))
+                })
                 .child(label)
         };
         div()
@@ -85,19 +99,23 @@ impl SheprdWindow {
                     .flex_wrap()
                     .gap(px(8.))
                     .p(px(8.))
-                    .child(
-                        button("open-link-yes", fl!("open-link-yes"), true).on_click(cx.listener(
-                            |this, _, window, cx| {
+                    .child(button("open-link-yes", fl!("open-link-yes"), true).when(
+                        active,
+                        |button| {
+                            button.on_click(cx.listener(|this, _, window, cx| {
                                 cx.stop_propagation();
                                 this.confirm_open_link(window, cx);
-                            },
-                        )),
-                    )
-                    .child(button("open-link-no", fl!("open-link-no"), false).on_click(
-                        cx.listener(|this, _, window, cx| {
-                            cx.stop_propagation();
-                            this.dismiss_menu(window, cx);
-                        }),
+                            }))
+                        },
+                    ))
+                    .child(button("open-link-no", fl!("open-link-no"), false).when(
+                        active,
+                        |button| {
+                            button.on_click(cx.listener(|this, _, window, cx| {
+                                cx.stop_propagation();
+                                this.dismiss_menu(window, cx);
+                            }))
+                        },
                     )),
             )
     }

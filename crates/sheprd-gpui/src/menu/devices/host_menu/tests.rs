@@ -2,12 +2,18 @@ use super::{Action, HostMenu, SSH_ACTIONS, Saved};
 use crate::{config::KeybindingSource, menu::Page, sidebar::layout_tests::fixture_window};
 use gpui::{Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px, size};
 
+mod departure;
 mod device_theme;
 mod en_xa;
 mod forwards;
+mod fresh_confirmation;
 mod menu_width;
 mod mute;
+mod paint_controls;
 mod tags;
+
+pub(in crate::menu) use departure::fixture as departure_fixture;
+pub(in crate::menu) use departure::long_tags_fixture;
 // Endpoint IDs carry the `ssh:` prefix; the profile ID is the rest.
 const HOST: &str = "ssh:0123456789abcdef0123456789abcdef";
 const HOST_HEADER: &str = "host-ssh:0123456789abcdef0123456789abcdef";

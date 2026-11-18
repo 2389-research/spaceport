@@ -1,3 +1,5 @@
+// ABOUTME: Checks bounded frame reads, geometry, and partial-frame deadlines.
+// ABOUTME: Keeps malformed terminal data from entering the session model.
 use super::*;
 
 #[test]
@@ -40,13 +42,10 @@ fn geometry_and_frame_reader_limits() {
     // The deadline is checked by the worker on every pass, not by the read.
     let mut reader = FrameReader::with_timeout(Duration::ZERO);
     reader.started = Some(Instant::now());
-    assert!(
-        reader
-            .check_timeout()
-            .unwrap_err()
-            .to_string()
-            .contains("timed out")
-    );
+    assert!(matches!(
+        reader.check_timeout(),
+        Err(Error::PartialFrameTimeout)
+    ));
 }
 
 #[test]

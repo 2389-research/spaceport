@@ -32,11 +32,22 @@ chat-needs-input = Needs input
 chat-watching = { $count } watching
 chat-reconnecting = Reconnecting…
 chat-show-chat = Chat
+chat-show-terminal = Show terminal
+chat-change-layout = Change chat layout: { $layout }
+chat-toggle-rail = Show or hide the plan and changed files
+chat-details = Show or hide details
+chat-agent-settings = Agent settings
+chat-attach-files = Attach files
+chat-remove-attachment = Remove attachment: { $name }
+chat-send-message = Send message
+chat-stop-turn = Stop the current turn
+chat-withdraw-prompt = Withdraw queued prompt
 chat-jump-to-end = Scroll to the latest message
 chat-jump-waiting = New output below
 chat-pinned-prompt = Go to this prompt
 
 # The composer.
+chat-composer-label = Message the agent
 chat-composer-placeholder = Message the agent — / for commands, Shift-Enter for a new line
 chat-composer-closed = The agent cannot take prompts
 chat-read-only-hint = Continue this conversation in its terminal.
@@ -72,6 +83,7 @@ chat-input-expand = Expand input
 
 # Who said what, and what the agent is doing.
 chat-you = You
+chat-turn-summary = Turn summary
 chat-delivered = Delivered
 chat-typing = typing…
 chat-queued = Queued

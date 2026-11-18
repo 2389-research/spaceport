@@ -1,8 +1,6 @@
-use super::{
-    CommandInfo,
-    catalog::{linux, macos},
-};
+use super::{CommandInfo, catalog::macos};
 
+mod linux;
 mod windows;
 
 /// Linux and Windows leave the platform key (Super, Win) to the desktop, so

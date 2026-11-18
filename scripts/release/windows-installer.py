@@ -48,6 +48,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/release/sheprd.iss"
+APP_USER_MODEL_ID_FILE = ROOT / "crates/sheprd-gpui/development-app-id"
 SIGN_SCRIPT = ROOT / "scripts/release/windows-sign-file.ps1"
 # ISCC replaces $q with a quote and $f with the quoted file to sign. Quotes
 # inside the argument itself would not survive Windows command-line parsing.
@@ -60,8 +61,7 @@ INNO_VERSION = "6.7.3"
 INNO_URL = ("https://github.com/jrsoftware/issrc/releases/download/"
             f"is-{INNO_VERSION.replace('.', '_')}/innosetup-{INNO_VERSION}.exe")
 INNO_SHA256 = "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
-# This unqualified installer registers none of these: Spaceport's installer
-# identity is still pending, and the inherited schemes belong to other apps.
+# The installer registers none of these schemes. Other apps retain their handlers.
 LINK_SCHEMES = ("spaceport", "sheprd", "herdr-gpui")
 
 
@@ -98,7 +98,7 @@ def iscc_arguments(version, target, source, output_dir, sign=False):
     signing = [f"/S{SIGN_TOOL[0]}={SIGN_TOOL[1]}", f"/DSignTool={SIGN_TOOL[0]}"] if sign else []
     return ["/Q", f"/DVersion={version}", f"/DTarget={target}",
             f"/DArchitecture={ARCHITECTURES[target]}", f"/DSourceDir={source}",
-            f"/DOutputDir={output_dir}", *signing, str(SCRIPT)]
+            f"/DOutputDir={output_dir}", f"/DAppUserModelID={app_user_model_id()}", *signing, str(SCRIPT)]
 
 
 def build(version, target, archive, output_dir, iscc, sign=False):
@@ -167,7 +167,7 @@ def check_uninstall_entry(app):
         raise ValueError("Installer wrote no Uninstall entry")
     # Settings hides entries without a name, system components, and updates
     # of another entry.
-    if entry.get("DisplayName") != "Sheprd" or entry.get("SystemComponent") or entry.get("ParentKeyName"):
+    if entry.get("DisplayName") != "Spaceport" or entry.get("SystemComponent") or entry.get("ParentKeyName"):
         raise ValueError(f"Settings would not list the Uninstall entry: {entry}")
     if Path(entry.get("UninstallString", "").strip('"')) != app / "unins000.exe":
         raise ValueError(f"Uninstall entry does not run the uninstaller: {entry}")
@@ -203,7 +203,7 @@ def verify_link_handlers(before, after):
 # switch, name the app; the installer creates neither and removes both.
 STARTUP_KEYS = (r"Software\Microsoft\Windows\CurrentVersion\Run",
                 r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run")
-STARTUP_NAME = "Herdr UI"
+STARTUP_NAME = "Spaceport"
 
 
 def startup_entries():
@@ -238,11 +238,6 @@ def check_startup_preserved(launcher):
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, name) as key:
             if winreg.QueryValueEx(key, STARTUP_NAME) != value:
                 raise ValueError("Upgrade changed the saved startup command or disabled state")
-            try:
-                winreg.QueryValueEx(key, "Sheprd")
-            except FileNotFoundError:
-                continue
-            raise ValueError("Upgrade created a second startup identity")
 
 
 def check_signed(paths):
@@ -253,11 +248,30 @@ def check_signed(paths):
 
 
 def app_user_model_id():
-    """The AppUserModelID the installer gives its shortcuts."""
-    match = re.search(r'^#define AppUserModelID "([^"]+)"$', SCRIPT.read_text(), re.M)
-    if not match:
-        raise ValueError(f"{SCRIPT.name} defines no AppUserModelID")
-    return match.group(1)
+    """Read the same development identity that the Windows app compiles."""
+    identity = APP_USER_MODEL_ID_FILE.read_text().strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", identity):
+        raise ValueError(f"Invalid AppUserModelID in {APP_USER_MODEL_ID_FILE}")
+    return identity
+
+
+def notification_identity_exists():
+    """Whether this app's first-use notification identity remains registered."""
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                            rf"Software\Classes\AppUserModelId\{app_user_model_id()}"):
+            return True
+    except FileNotFoundError:
+        return False
+
+
+def enable_notification_identity():
+    """Seed the app-owned first-use key so native uninstall must remove it."""
+    import winreg
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER,
+                          rf"Software\Classes\AppUserModelId\{app_user_model_id()}") as key:
+        winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, "Spaceport")
 
 
 def shell_identity(app):
@@ -267,7 +281,7 @@ def shell_identity(app):
         "$ErrorActionPreference = 'Stop';"
         "(Get-Item -LiteralPath $env:HERDR_SMOKE_APP).VersionInfo.FileDescription;"
         "$programs = [Environment]::GetFolderPath('Programs');"
-        "$link = (New-Object -ComObject Shell.Application).Namespace($programs).ParseName('Sheprd.lnk');"
+        "$link = (New-Object -ComObject Shell.Application).Namespace($programs).ParseName('Spaceport.lnk');"
         "$link.ExtendedProperty('System.AppUserModel.ID');"
         "$link.GetLink.Path"
     )
@@ -278,12 +292,14 @@ def shell_identity(app):
 
 
 def smoke(installer, signed=False):
+    if uninstall_entry() is not None or startup_entries() or notification_identity_exists():
+        raise ValueError("Installer smoke requires a clean CI account without Spaceport installation state")
     handlers = link_handlers()
     with tempfile.TemporaryDirectory(prefix="herdr-installer-smoke-") as temp:
         # Runners report %TEMP% as an 8.3 short path (C:\Users\RUNNER~1\...),
         # while the shell answers with long ones; resolving first keeps every
         # path the checks compare in one spelling.
-        app = Path(temp).resolve() / "Herdr UI"
+        app = Path(temp).resolve() / "Spaceport"
         subprocess.run([str(installer), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-",
                         "/TASKS=addtopath", f"/DIR={app}", f"/LOG={Path(temp) / 'setup.log'}"],
                        check=True, timeout=600)
@@ -292,11 +308,14 @@ def smoke(installer, signed=False):
         # uninstall entry never point into the deleted scratch directory.
         try:
             check_installation(app, installer if signed else None, handlers)
-            legacy_launcher = app / "herdr-gpui-launcher.exe"
-            enable_startup(legacy_launcher)
+            launcher = app / "spaceport-launcher.exe"
+            enable_startup(launcher)
+            enable_notification_identity()
             check_reinstall(installer, app, env)
             verify_link_handlers(handlers, link_handlers())
-            check_startup_preserved(legacy_launcher)
+            check_startup_preserved(launcher)
+            if not notification_identity_exists():
+                raise ValueError("Reinstall removed the app's notification identity")
         finally:
             uninstall(app, env, handlers)
 
@@ -318,7 +337,7 @@ def check_installation(app, signed_installer, handlers):
     if not info.startswith("worktree="):
         raise ValueError(f"Installed spaceport.exe printed no build info:\n{info}")
     identity = shell_identity(exe)
-    if identity != ("Sheprd", app_user_model_id(), str(launcher)):
+    if identity != ("Spaceport", app_user_model_id(), str(launcher)):
         raise ValueError(f"Installed app or shortcut has the wrong identity: {identity}")
     if signed_installer is not None:
         check_signed([signed_installer.resolve(), *(app / name for name in packaged_executables()),
@@ -358,15 +377,15 @@ def uninstall(app, env, handlers):
                    check=True, timeout=600, env=env)
     # The uninstaller hands off to a copy of itself and returns early.
     entry = str(app).lower()
-    shortcut = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/Sheprd.lnk"
+    shortcut = Path(os.environ["APPDATA"]) / "Microsoft/Windows/Start Menu/Programs/Spaceport.lnk"
     deadline = time.monotonic() + 120
     while (app.exists() or shortcut.exists() or entry in user_path_entries()
            or uninstall_entry() is not None
-           or startup_entries()):
+           or startup_entries() or notification_identity_exists()):
         if time.monotonic() > deadline:
             raise ValueError("Uninstaller left the app directory, its shortcut, its PATH entry, "
                              "its Uninstall entry, "
-                             "or its startup entry behind")
+                             "its startup entry, or its notification identity behind")
         time.sleep(1)
     verify_link_handlers(handlers, link_handlers())
 

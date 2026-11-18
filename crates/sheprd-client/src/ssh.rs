@@ -1,3 +1,5 @@
+// ABOUTME: Discovers remote Herdr endpoints and owns their SSH bridge streams.
+// ABOUTME: Bounds probe output and keeps trust, cancellation, and transport failures explicit.
 //! POSIX discovery/stdio bridge adapted from upstream remote/attach.rs.
 //! No installers, daemon restarts, or SSH config edits.
 //! The remote host is POSIX or Windows. On Unix the `ssh` child's standard
@@ -9,6 +11,7 @@
 //! with WSL distributions, which run the same scripts through `wsl.exe`. A host
 //! that cannot run `/bin/sh`, such as Windows OpenSSH, is retried through
 //! PowerShell; see `powershell`.
+use crate::process_output::{Capture, PipeHandle, Retain, capture};
 use crate::{Result, catalog::validate_target, limits::POLL, session_socket, transport::Stream};
 #[cfg(unix)]
 use std::os::fd::OwnedFd;
@@ -28,6 +31,7 @@ pub use error::Error;
 pub use failure::SshFailure;
 pub(crate) use unverified::HostKeys;
 pub use unverified::{MAX_UNVERIFIED_HOSTS, set_unverified_hosts};
+pub mod owned_process;
 mod powershell;
 
 const READY: &[u8] = b"herdr-remote-output-ready:1\n";
@@ -259,19 +263,10 @@ fn run_with_stderr(
     );
     let stdout = child.0.stdout.take().ok_or(Error::Closed)?;
     let stderr = match child.0.stderr.take() {
-        Some(stderr) => Some(failure::drain(stderr)?),
+        Some(stderr) => Some(capture(stderr, Retain::Tail(failure::STDERR_TAIL as u64))?),
         None => None,
     };
-    // The pipe reaches EOF once the child exits or the guard kills it.
-    let reader = std::thread::Builder::new()
-        .name("herdr-ssh-command".into())
-        .spawn(move || {
-            let mut output = Vec::new();
-            stdout
-                .take(PROBE_OUTPUT_LIMIT + 1)
-                .read_to_end(&mut output)
-                .map(|_| output)
-        })?;
+    let reader = start_output(stdout)?;
     let deadline = Instant::now() + timeout;
     let status = loop {
         if let Some(status) = child.0.try_wait()? {
@@ -285,19 +280,48 @@ fn run_with_stderr(
         }
         std::thread::sleep(Duration::from_millis(25));
     };
-    let output = reader.join().map_err(|_| Error::Closed)??;
+    let output = finish_output(reader, deadline, &cancelled)?;
     if output.len() as u64 > PROBE_OUTPUT_LIMIT {
         return Err(Error::OutputLimit.into());
     }
-    // The pipe closes once the child exits, so this waits only for the drain.
-    let stderr = stderr
-        .and_then(|stderr| stderr.recv_timeout(Duration::from_secs(2)).ok())
-        .unwrap_or_default();
+    // Another process can retain a writer after this child exits.
+    let stderr = match stderr {
+        Some(stderr) => finish_output(stderr, deadline, &cancelled)?,
+        None => Vec::new(),
+    };
     Ok((status, output, stderr))
 }
 
-/// Agent forwarding and connection sharing follow the user's SSH config, as
-/// upstream's client does. `ForwardAgent yes` lets the remote bridge register
+fn start_output(stdout: impl Into<PipeHandle>) -> io::Result<Capture> {
+    capture(stdout, Retain::Limited(PROBE_OUTPUT_LIMIT + 1))
+}
+
+fn finish_output(
+    reader: Capture,
+    deadline: Instant,
+    cancelled: impl Fn() -> bool,
+) -> Result<Vec<u8>> {
+    loop {
+        if cancelled() {
+            return Err(Error::Cancelled.into());
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        match reader.recv_timeout(remaining.min(Duration::from_millis(25))) {
+            Ok(output) => return Ok(output?),
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(Error::Closed.into());
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) if Instant::now() >= deadline => {
+                return Err(Error::Timeout.into());
+            }
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+        }
+    }
+}
+
+/// Agent forwarding follows SSH config for verified hosts; unverified hosts
+/// disable it. Connection sharing follows SSH config. `ForwardAgent yes` lets
+/// the remote bridge register
 /// the forwarded agent with the daemon, so remote panes keep a working
 /// `SSH_AUTH_SOCK` across reconnects. A configured `ControlPath` lets a master
 /// the user authenticated interactively (MFA, passwords) carry these
@@ -387,6 +411,8 @@ pub fn forward_command(
         "-N",
         "-o",
         "ControlPath=none",
+        "-o",
+        "ForkAfterAuthentication=no",
         "-o",
         "PermitLocalCommand=yes",
         "-o",

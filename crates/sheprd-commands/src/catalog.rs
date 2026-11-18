@@ -1,3 +1,5 @@
+// ABOUTME: Declares each app command, public name, label, and default shortcut once.
+// ABOUTME: Generates typed command variants and the discoverable catalog from that table.
 //! The one declaration of every catalog command. Each row of the table at
 //! the end of this file names a command once, and `catalog!` writes the
 //! [`Command`] enum, [`COMMANDS`], and the macOS and Linux default shortcuts
@@ -113,6 +115,7 @@ catalog! {
     OpenNotificationTarget, "open_notification_target", "commands-open-notification-target",
         mac: ["cmd-alt-n"], linux: ["ctrl-alt-shift-u"];
     Logs, "logs", "commands-logs", mac: [], linux: [];
+    Messages, "messages", "commands-messages", mac: [], linux: [];
     NewWindow, "new_window", "commands-new-window", mac: ["cmd-alt-shift-n"], linux: ["ctrl-alt-n"];
     Workspace, "new_workspace", "commands-new-workspace",
         mac: ["cmd-shift-n"], linux: ["ctrl-alt-shift-n"];
@@ -131,9 +134,9 @@ catalog! {
     SplitRight, "split_right", "commands-split-right", mac: ["cmd-d"], linux: ["ctrl-shift-d"];
     SplitDown, "split_down", "commands-split-down",
         mac: ["cmd-shift-d"], linux: ["ctrl-alt-shift-d"];
-    NextTab, "next_tab", "commands-next-tab", mac: ["cmd-shift-]"], linux: ["ctrl-pagedown"];
+    NextTab, "next_tab", "commands-next-tab", mac: ["cmd-shift-]"], linux: [];
     PreviousTab, "previous_tab", "commands-previous-tab",
-        mac: ["cmd-shift-["], linux: ["ctrl-pageup"];
+        mac: ["cmd-shift-["], linux: [];
     MoveTabPrevious, "move_tab_previous", "commands-move-tab-previous", mac: [], linux: [];
     MoveTabNext, "move_tab_next", "commands-move-tab-next", mac: [], linux: [];
     RenameTab, "rename_tab", "commands-rename-tab", mac: [], linux: [];
@@ -175,6 +178,7 @@ catalog! {
     EditScrollback, "edit_scrollback", "commands-edit-scrollback", mac: [], linux: [];
     ClosePane, "close_pane", "commands-close-pane", mac: ["cmd-w"], linux: ["ctrl-shift-w"];
     CloseTab, "close_tab", "commands-close-tab", mac: ["cmd-shift-w"], linux: ["ctrl-alt-shift-w"];
+    CloseWorkspace, "close_workspace", "commands-close-workspace", mac: [], linux: [];
     /// Reopens the focused workspace's most recently closed tab.
     // Ctrl-Shift-T is New Tab here, so its partner gains Alt.
     ReopenClosedTab, "reopen_closed_tab", "commands-reopen-closed-tab",
@@ -190,12 +194,11 @@ catalog! {
         mac: ["cmd-alt-b"], linux: ["ctrl-alt-b"];
     /// Moves keyboard focus to the next of the terminal, the title bar, the
     /// sidebar, and the status bar, where Tab moves between controls.
-    // F6 alone is Windows' region key; on a Mac it stays the app's.
-    // Windows' own key for moving between a window's regions.
+    // Ctrl platforms use explicit prefix chords so pane programs keep bare F6.
     FocusNextRegion, "focus_next_region", "commands-focus-next-region",
-        mac: ["cmd-f6"], linux: ["f6"];
+        mac: ["cmd-f6"], linux: [];
     FocusPreviousRegion, "focus_previous_region", "commands-focus-previous-region",
-        mac: ["cmd-shift-f6"], linux: ["shift-f6"];
+        mac: ["cmd-shift-f6"], linux: [];
     /// Hides the window's chrome and every group but the one in use.
     ToggleZenMode, "toggle_zen_mode", "commands-toggle-zen-mode",
         mac: ["ctrl-cmd-z"], linux: ["ctrl-alt-z"];
@@ -233,7 +236,7 @@ catalog! {
         mac: [], linux: [];
     SplitEditor, "split_editor", "commands-split-editor", mac: ["cmd-\\"], linux: ["ctrl-shift-\\"];
     ToggleFullScreen, "toggle_full_screen", "commands-toggle-full-screen",
-        mac: ["ctrl-cmd-f"], linux: ["f11"];
+        mac: ["ctrl-cmd-f"], linux: [];
     CycleWindows, "cycle_windows", "commands-cycle-windows",
         mac: ["cmd-`"], linux: ["ctrl-shift-`"];
     /// Closes the window it runs in, leaving the daemon and its terminals.

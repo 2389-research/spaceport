@@ -1,8 +1,13 @@
+// ABOUTME: Shares tab fixtures and registers focused Store contract tests.
+// ABOUTME: Checks persistence, recovery, identity allocation, and runtime admission ownership.
 #![allow(clippy::unwrap_used)]
 use super::*;
 
 mod core_groups;
 mod labels;
+mod recovery;
+mod recovery_ui;
+mod reservations;
 mod retired_code_view;
 mod retired_px0;
 mod retired_review;

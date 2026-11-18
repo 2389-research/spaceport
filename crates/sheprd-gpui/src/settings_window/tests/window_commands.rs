@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 use super::*;
 
 /// Commands on the window itself reach the Settings window too, rather than
@@ -7,7 +9,7 @@ fn settings_runs_window_commands(cx: &mut TestAppContext) {
     let source = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (_, cx) = cx.add_window_view(|window, cx| {
-        let view = SettingsWindow::new(weak, cx);
+        let view = fixture_new(weak, cx);
         window.focus(&view.focus, cx);
         view
     });

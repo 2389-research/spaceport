@@ -1,3 +1,5 @@
+// ABOUTME: Answers local control commands from source catalogs and app files.
+// ABOUTME: Returns named JSON collections without requiring an app connection.
 //! Commands this process answers from the app's files and its own code,
 //! whether or not Sheprd runs.
 mod diagnostics;
@@ -20,5 +22,5 @@ pub(super) fn commands() -> crate::Result<Output> {
         .map(|info| format!("{:<28}{}", info.name, crate::i18n::command_english(info)))
         .collect::<Vec<_>>()
         .join("\n");
-    Output::data(text, &commands)
+    Output::data(text, &serde_json::json!({ "commands": commands }))
 }

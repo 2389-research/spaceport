@@ -37,8 +37,8 @@ menus-toggle-full-screen = Toggle Full Screen
 menus-toggle-zen-mode = Toggle Zen Mode
 
 menus-terminal = Terminal
-menus-split-vertically-right = Split Vertically (Right)
-menus-split-horizontally-down = Split Horizontally (Down)
+menus-split-vertically-right = Split Right
+menus-split-horizontally-down = Split Down
 menus-next-tab = Next Tab
 menus-previous-tab = Previous Tab
 menus-back = Back

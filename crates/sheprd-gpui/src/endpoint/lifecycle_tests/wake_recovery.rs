@@ -1,3 +1,5 @@
+// ABOUTME: Exercises connection recovery against isolated sockets and native pipes.
+// ABOUTME: Covers cancellation, contended inboxes, and retry preservation without executing SSH.
 use super::*;
 use crate::endpoint::wake::Trigger;
 
@@ -53,7 +55,7 @@ fn recovering_redials_a_remote_attempt_still_dialing_but_not_a_local_one() {
         SERIAL.fetch_add(1, Ordering::Relaxed)
     ));
     // Never accepted: the attempt stays dialing, as one over a dead path does.
-    let _listener = UnixListener::bind(&path).unwrap();
+    let _listener = Listener::bind(&path).unwrap();
     for (target, redialed) in [(ConnectTarget::Socket(path.clone()), false), (ssh(), true)] {
         let mut endpoint = Endpoint::new(
             "test".into(),
@@ -77,7 +79,10 @@ fn recovering_redials_a_remote_attempt_still_dialing_but_not_a_local_one() {
             assert_eq!(endpoint.retry_at(), now);
         }
     }
+    #[cfg(unix)]
     std::fs::remove_file(path).unwrap();
+    #[cfg(windows)]
+    assert!(!path.exists(), "a named pipe must not create a socket file");
 }
 
 #[test]
@@ -117,7 +122,7 @@ fn recovering_keeps_a_link_whose_connection_is_not_yet_polled() {
     assert!(endpoint.live.status.is_connected());
 }
 
-fn dialing_ssh_endpoint() -> (Endpoint, PathBuf, UnixListener) {
+fn dialing_ssh_endpoint() -> (Endpoint, PathBuf, Listener) {
     static SERIAL: AtomicU64 = AtomicU64::new(0);
     let path = std::env::temp_dir().join(format!(
         "hg-wake-dial-{}-{}.sock",
@@ -125,7 +130,7 @@ fn dialing_ssh_endpoint() -> (Endpoint, PathBuf, UnixListener) {
         SERIAL.fetch_add(1, Ordering::Relaxed)
     ));
     // Never accepted: the attempt stays dialing.
-    let listener = UnixListener::bind(&path).unwrap();
+    let listener = Listener::bind(&path).unwrap();
     let mut endpoint = Endpoint::new(
         "ssh:test".into(),
         "test".into(),
@@ -162,7 +167,10 @@ fn recovering_waits_while_the_worker_report_cannot_be_read() {
     });
     assert!(handle.is_disconnected());
     assert_eq!(endpoint.recovery, None);
+    #[cfg(unix)]
     std::fs::remove_file(path).unwrap();
+    #[cfg(windows)]
+    assert!(!path.exists(), "a named pipe must not create a socket file");
 }
 
 /// A path change also comes for changes no connection minds, such as a VPN
@@ -179,7 +187,10 @@ fn a_path_change_keeps_a_dial_and_its_backoff() {
     assert!(!handle.is_disconnected());
     assert!(endpoint.connection.handle.is_some());
     assert_eq!(endpoint.attempts, 8);
+    #[cfg(unix)]
     std::fs::remove_file(path).unwrap();
+    #[cfg(windows)]
+    assert!(!path.exists(), "a named pipe must not create a socket file");
 
     let mut dropped = Endpoint::new("ssh:test".into(), "test".into(), ssh(), true);
     let later = Instant::now() + Duration::from_secs(30);

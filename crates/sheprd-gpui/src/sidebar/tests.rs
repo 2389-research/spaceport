@@ -1,7 +1,9 @@
+// ABOUTME: Exercises shared sidebar status, hierarchy, and row-label fixtures.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 #![allow(clippy::unwrap_used)]
 
 use super::{
-    STATUS_DOT_UNKNOWN, STATUS_WIDTH, agent_name,
+    IndexedSnapshot, STATUS_DOT_UNKNOWN, STATUS_WIDTH, agent_name,
     agents::{
         Indicators, PANE_CAPTION_LIMIT, agent_labels, agent_place, pane_name, status_indicator,
         status_style,

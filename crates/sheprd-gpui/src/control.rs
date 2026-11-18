@@ -1,3 +1,5 @@
+// ABOUTME: Defines the private local control surface shared by the CLI and app.
+// ABOUTME: Preserves qualified targets and bounded request contracts across platforms.
 //! Lets processes on this machine, such as an agent in a Herdr pane, drive
 //! the parts of the app Herdr cannot: open the app's own tabs, and read or change
 //! state only this client keeps. Herdr itself has no way to reach a client,
@@ -9,6 +11,7 @@ mod client;
 mod server;
 
 use crate::SheprdWindow;
+pub(crate) use client::help::usage as command_usage;
 #[cfg(windows)]
 pub(crate) use client::send_focus;
 pub(crate) use client::{run, send_link, status as exit_status};

@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 pub(crate) mod branding;
 pub(crate) mod core_opt_in;
 mod fonts;
+mod keyboard;
 mod themes;
 use fonts::verify_fonts;
 use themes::verify_themes;
@@ -148,6 +149,12 @@ pub(crate) async fn verify_native(
         Ok(())
     })??;
     let source_actions = source.update(cx, |view, _, _| view.input_probe.actions)?;
+
+    // This additional matrix needs an explicitly selected foreground window.
+    // Ordinary sidebar qualification retains its original resource contract.
+    if std::env::var_os("HERDR_TEST_SETTINGS_KEYBOARD").is_some() {
+        keyboard::verify(settings, source, cx).await?;
+    }
 
     for expected in [size(px(680.), px(560.)), size(px(960.), px(780.))] {
         settings.update(cx, |_, window, _| window.resize(expected))?;

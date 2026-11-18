@@ -1,7 +1,11 @@
 use super::*;
 
 mod detach;
+mod linux_symbols;
 mod literal_plus;
+mod platform_chrome;
+mod spaceport_precedence;
+mod workspace_close;
 mod worktree;
 
 fn keys(text: &str) -> DaemonKeys {

@@ -1,3 +1,5 @@
+// ABOUTME: Renders bounded multiline chat prompts with native composition and selection.
+// ABOUTME: Shares editing, wrapping, and accessible feedback across composer views.
 //! The prompt field for long-form text: a multi-line, wrapping,
 //! native-IME-aware input. The text wraps at the field's width and the
 //! field grows with it, up to [`MAX_VISIBLE`] rows, past which it scrolls
@@ -6,6 +8,7 @@
 //! what sits around it.
 
 use std::ops::Range;
+use std::sync::Arc;
 
 use gpui::{
     Bounds, ContentMask, Context, CursorStyle, FocusHandle, MouseButton, Pixels, Point, Role,
@@ -25,6 +28,8 @@ use crate::{
 
 mod handler;
 mod keys;
+mod limits;
+mod paste;
 
 pub struct MultilineInput {
     pub focus: FocusHandle,
@@ -37,13 +42,17 @@ pub struct MultilineInput {
     /// name it, as when a caption beside the field does.
     label: Option<SharedString>,
     edit: Editing,
+    error: Option<SharedString>,
+    pending_paste: Option<paste::Pending>,
+    revision: u64,
     font: FontConfig,
     theme: Theme,
     /// The width the last paint wrapped at, for sizing the next frame.
     wrap_width: Option<Pixels>,
     /// What the last paint shaped: one entry per logical line, for clicks,
     /// the input method, and scrolling.
-    lines: Option<Vec<LineShape>>,
+    lines: Option<Arc<Vec<LineShape>>>,
+    layout_key: Option<LayoutKey>,
     bounds: Option<Bounds<Pixels>>,
     scroll: Pixels,
     /// Edits and caret moves reveal the caret; wheel scrolling must not.
@@ -65,6 +74,11 @@ const MAX_VISIBLE: usize = 8;
 /// The wrapping width assumed before the first paint reports the real one.
 const FALLBACK_WRAP_WIDTH: f32 = 640.;
 
+#[cfg(test)]
+thread_local! {
+    static SHAPING_PASSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 /// Observer of `Changed`, for owners that want to react to edits. The chat
 /// reads the field live; nothing subscribes to this yet.
 pub struct Changed;
@@ -78,6 +92,15 @@ struct LineShape {
     carets: Carets,
     /// One entry per visual row, in painting order.
     rows: Vec<RowShape>,
+}
+
+#[derive(PartialEq)]
+struct LayoutKey {
+    color: u32,
+    font: gpui::Font,
+    marked: Option<Range<usize>>,
+    size: f32,
+    width: Pixels,
 }
 
 impl LineShape {
@@ -220,6 +243,8 @@ fn shape_lines(
     wrap_width: Pixels,
     window: &Window,
 ) -> Option<Vec<LineShape>> {
+    #[cfg(test)]
+    SHAPING_PASSES.set(SHAPING_PASSES.get() + 1);
     if text.is_empty() {
         return Some(Vec::new());
     }
@@ -264,35 +289,6 @@ fn shape_lines(
     Some(lines)
 }
 
-/// How many visual rows the text wraps to at `wrap_width`, for sizing the
-/// canvas before its laid-out bounds come back.
-fn visual_rows(text: &str, font_size: f32, wrap_width: Pixels, window: &Window) -> usize {
-    if text.is_empty() {
-        return 1;
-    }
-    let run = TextRun {
-        len: text.len(),
-        font: window.text_style().font(),
-        color: rgb(0xffffff).into(),
-        background_color: None,
-        underline: None,
-        strikethrough: None,
-    };
-    match window.text_system().shape_text(
-        text.into(),
-        px(font_size),
-        &[run],
-        Some(wrap_width),
-        None,
-    ) {
-        Ok(lines) => lines
-            .iter()
-            .map(|line| line.wrap_boundaries().len() + 1)
-            .sum(),
-        Err(_) => 1,
-    }
-}
-
 /// The whole visual rows of shaped text, and their y offsets from the top.
 fn rows_total(lines: &[LineShape]) -> usize {
     lines.iter().map(|line| line.rows.len()).sum()
@@ -320,10 +316,14 @@ impl MultilineInput {
             }),
             label: None,
             edit: Editing::default(),
+            error: None,
+            pending_paste: None,
+            revision: 0,
             font: Config::default().ui,
             theme: Theme::default(),
             wrap_width: None,
             lines: None,
+            layout_key: None,
             bounds: None,
             scroll: px(0.),
             reveal_caret: true,
@@ -341,6 +341,9 @@ impl MultilineInput {
     /// `text` with `cursor` at its byte offset, for restoring a draft. The
     /// text keeps its newlines; the cursor snaps to a grapheme boundary.
     pub(crate) fn set_text_at(&mut self, text: &str, cursor: usize, cx: &mut Context<Self>) {
+        if !self.permits_replacement(0..self.edit.text.len(), text, cx) {
+            return;
+        }
         let text = normalize(text, Newlines::Keep);
         let mut cursor = cursor.min(text.len());
         while !text.is_char_boundary(cursor) {
@@ -359,6 +362,7 @@ impl MultilineInput {
     }
 
     pub fn clear(&mut self, cx: &mut Context<Self>) {
+        self.error = None;
         let changed = !self.edit.text.is_empty();
         self.edit = Editing::default();
         self.scroll = px(0.);
@@ -369,6 +373,14 @@ impl MultilineInput {
 
     pub fn is_composing(&self) -> bool {
         self.edit.marked.is_some()
+    }
+
+    pub(crate) fn set_label(&mut self, label: impl Into<SharedString>, cx: &mut Context<Self>) {
+        let label = label.into();
+        if self.label.as_ref() != Some(&label) {
+            self.label = Some(label);
+            cx.notify();
+        }
     }
 
     /// Shows what `placeholder` formats now, laid out again only when its
@@ -419,12 +431,45 @@ impl MultilineInput {
     }
 
     fn did_edit(&mut self, changed: bool, cx: &mut Context<Self>) {
+        self.error = None;
+        self.revision = self.revision.wrapping_add(1);
+        self.cancel_paste(cx);
         self.goal_x = None;
         self.reveal_caret = true;
         if changed {
+            self.layout_key = None;
             cx.emit(Changed);
         }
         cx.notify();
+    }
+
+    fn prepare_lines(&mut self, width: Pixels, window: &Window) -> Arc<Vec<LineShape>> {
+        let key = LayoutKey {
+            color: self.theme.foreground,
+            font: window.text_style().font(),
+            marked: self.edit.marked.clone(),
+            size: self.font.size,
+            width,
+        };
+        if self.layout_key.as_ref() == Some(&key)
+            && let Some(lines) = &self.lines
+        {
+            return lines.clone();
+        }
+        let lines = Arc::new(
+            shape_lines(
+                &self.edit.text,
+                key.color,
+                key.marked.clone(),
+                key.size,
+                width,
+                window,
+            )
+            .unwrap_or_default(),
+        );
+        self.layout_key = Some(key);
+        self.lines = Some(lines.clone());
+        lines
     }
 
     /// The completion to draw after the text, dimmed.
@@ -445,7 +490,7 @@ impl MultilineInput {
         let content_y = (position.y - bounds.top() + self.scroll).max(px(0.));
         let row = (content_y.to_f64() / f64::from(line_height_f)) as usize;
         let mut acc = 0usize;
-        for line in lines {
+        for line in lines.iter() {
             let rows = line.rows.len();
             if row < acc + rows {
                 let row = &line.rows[row - acc];
@@ -486,6 +531,7 @@ impl MultilineInput {
         }
         self.goal_x = None;
         let offset = self.index_for_point(event.position).unwrap_or(0);
+        self.cancel_paste(cx);
         match event.click_count {
             0 | 1 => self.edit.select_to(offset, event.modifiers.shift),
             2 => {
@@ -510,6 +556,7 @@ impl MultilineInput {
             && !self.is_composing()
             && let Some(offset) = self.index_for_point(event.position)
         {
+            self.cancel_paste(cx);
             self.edit.select_to(offset, true);
             self.reveal_caret = true;
             cx.stop_propagation();
@@ -544,11 +591,8 @@ impl Render for MultilineInput {
                 ..Default::default()
             }),
             |window| {
-                visual_rows(
-                    &self.edit.text,
-                    font_size,
-                    self.wrap_width.unwrap_or(px(FALLBACK_WRAP_WIDTH)),
-                    window,
+                rows_total(
+                    &self.prepare_lines(self.wrap_width.unwrap_or(px(FALLBACK_WRAP_WIDTH)), window),
                 )
             },
         );
@@ -559,6 +603,9 @@ impl Render for MultilineInput {
             .role(Role::TextInput)
             .aria_value(SharedString::from(self.edit.text.clone()))
             .when_some(self.label.clone(), |field, label| field.aria_label(label))
+            .when_some(self.error.clone(), |field, error| {
+                field.aria_description(error)
+            })
             .when(!self.placeholder.is_empty(), |field| {
                 field.aria_placeholder(SharedString::from(self.placeholder.clone()))
             })
@@ -615,6 +662,14 @@ impl Render for MultilineInput {
                 .w_full()
                 .h(height),
             )
+            .children(self.error.clone().map(|error| {
+                div()
+                    .debug_selector(|| "chat-field-error".into())
+                    .text_color(rgb(self.theme.foreground))
+                    .bg(rgb(self.theme.active))
+                    .p(px(6.))
+                    .child(error)
+            }))
     }
 }
 
@@ -634,15 +689,7 @@ fn paint_field(
     let rtl = is_rtl();
     let focused = input.focus.is_focused(window);
 
-    let shape = shape_lines(
-        &input.edit.text,
-        input.theme.foreground,
-        input.edit.marked.clone(),
-        font_size,
-        bounds.size.width,
-        window,
-    )
-    .unwrap_or_default();
+    let shape = input.prepare_lines(bounds.size.width, window);
 
     // A new width changes the measured height on the next frame. Notify
     // only when it changes, so a settled field does not keep redrawing.
@@ -667,7 +714,8 @@ fn paint_field(
         if y < current {
             input.scroll = px(y);
         } else if y + line_height_f > current + visible {
-            input.scroll = px(y + line_height_f - visible);
+            // A rounded viewport can be shorter than one line by a fraction of a pixel.
+            input.scroll = px((y + line_height_f - visible).min(y));
         }
     }
     input.scroll = px(f32::from(input.scroll).clamp(0., max_scroll));
@@ -690,7 +738,7 @@ fn paint_field(
         let selection = input.edit.selection();
         if focused && selection.start != selection.end {
             let mut y = bounds.top() - scroll;
-            for line in &shape {
+            for line in shape.iter() {
                 if selection.end > line.range.start && selection.start < line.range.end {
                     let start = selection.start.max(line.range.start);
                     let end = selection.end.min(line.range.end);
@@ -754,7 +802,7 @@ fn paint_field(
             }
         } else {
             let mut y = bounds.top() - scroll;
-            for line in &shape {
+            for line in shape.iter() {
                 let _ = line.wrapped.paint(
                     point(bounds.left(), y),
                     line_height,
@@ -824,7 +872,6 @@ fn paint_field(
     });
 
     input.bounds = Some(bounds);
-    input.lines = Some(shape);
 }
 
 #[cfg(test)]

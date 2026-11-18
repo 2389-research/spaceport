@@ -208,7 +208,8 @@ fn shared_selection_preserves_native_override_and_follow_uses_prepared_colors(
                     .as_ref()
                     .unwrap()
                     .theme(view.theme_light)
-                    .unwrap();
+                    .unwrap()
+                    .styled_for(&view.config);
                 assert_eq!(view.theme, expected);
                 assert_eq!(view.theme.primary(), 0x123456);
                 assert_eq!(source.read(cx).unwrap().theme, expected);

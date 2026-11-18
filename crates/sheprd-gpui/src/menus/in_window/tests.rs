@@ -1,3 +1,5 @@
+// ABOUTME: Provides actual-window fixtures for custom application-menu behavior.
+// ABOUTME: Shares drawing and focus setup across navigation and departure topics.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::sidebar::layout_tests::{fixture_window, full_draw};
@@ -20,9 +22,11 @@ fn draw(cx: &mut VisualTestContext) {
 #[cfg(any(target_os = "linux", windows))]
 mod bar;
 mod config_change;
+mod departure;
 #[cfg(any(target_os = "linux", windows))]
 mod dragging;
 mod navigation;
+mod repeat;
 #[cfg(any(target_os = "linux", windows))]
 mod resizing;
 #[cfg(any(target_os = "linux", windows))]

@@ -1,10 +1,12 @@
+// ABOUTME: Paints agent rows using one shared snapshot index per source identity.
+// ABOUTME: Preserves navigation, status, safe captions, and accessible row names.
 //! The agents list: every listed host's agents in the panel's one order, so a
 //! blocked agent on one host can sit above an idle one on another.
 
 use crate::{
     NavigationTarget, SheprdWindow,
     sidebar::{
-        Indicators, agent_name,
+        IndexedSnapshot, Indicators, agent_name,
         agents::{agent_place, pane_name, state_label, status_text},
         cell::{AgentRow, Cell, RowContext, RowData, layout_for},
         layout::SidebarLook,
@@ -12,7 +14,7 @@ use crate::{
     },
 };
 use gpui::{prelude::*, *};
-use sheprd_client::protocol::{ClientShellAgent, ClientShellSnapshot};
+use sheprd_client::protocol::ClientShellAgent;
 
 impl SheprdWindow {
     /// Appends a row for each agent `panel_agents` lists, in that order, and
@@ -37,7 +39,7 @@ impl SheprdWindow {
             };
             let selected = index == self.selected_endpoint;
             let live = self.live_of(index);
-            let Some(snapshot) = live.snapshot.as_deref() else {
+            let Some(snapshot) = live.indexed_snapshot() else {
                 continue;
             };
             let row_cx = RowContext {
@@ -65,8 +67,8 @@ impl SheprdWindow {
             }
             let gap = self.agent_row_gap(count);
             count += 1;
-            list =
-                list.child(self.agent_cell(index, agent, snapshot, &row_cx, lines, gap, false, cx));
+            list = list
+                .child(self.agent_cell(index, agent, &snapshot, &row_cx, lines, gap, false, cx));
         }
         (list, count, focused)
     }
@@ -92,8 +94,8 @@ impl SheprdWindow {
         agent: &ClientShellAgent,
     ) -> Option<Vec<Vec<tokens::ResolvedToken>>> {
         let endpoint = self.endpoints.get(index)?;
-        let snapshot = self.live_of(index).snapshot.as_deref()?;
-        self.configured_agent_lines(agent, snapshot, self.agent_host(endpoint))
+        let snapshot = self.live_of(index).indexed_snapshot()?;
+        self.configured_agent_lines(agent, &snapshot, self.agent_host(endpoint))
     }
 
     /// The lines a configured agent row shows, empty for Herdr's own row, or
@@ -101,7 +103,7 @@ impl SheprdWindow {
     pub(super) fn configured_agent_lines(
         &self,
         agent: &ClientShellAgent,
-        snapshot: &ClientShellSnapshot,
+        snapshot: &IndexedSnapshot<'_>,
         host: Option<&str>,
     ) -> Option<Vec<Vec<tokens::ResolvedToken>>> {
         if !self.custom_agent_rows() {
@@ -129,7 +131,7 @@ impl SheprdWindow {
         &self,
         index: usize,
         agent: &ClientShellAgent,
-        snapshot: &ClientShellSnapshot,
+        snapshot: &IndexedSnapshot<'_>,
         row_cx: &RowContext,
         lines: Vec<Vec<tokens::ResolvedToken>>,
         gap: f32,

@@ -1,4 +1,8 @@
+// ABOUTME: Edits single-line picker searches with native IME and selection support.
+// ABOUTME: Exposes plain paint data when a closing picker releases its field.
 //! A single-line, native-IME-aware input for searchable pickers.
+mod paint;
+pub(crate) use paint::Paint;
 use std::ops::Range;
 
 use gpui::{
@@ -466,20 +470,7 @@ impl Render for SearchInput {
                     }),
                 }
             })
-            .w_full()
-            .when(self.framed, |field| {
-                field
-                    .px_2()
-                    .py_1()
-                    .rounded(px(crate::config::corners::CONTROL))
-                    .border_1()
-                    .border_color(rgb(self.theme.active))
-                    .bg(rgb(self.theme.background))
-            })
-            .text_color(rgb(self.theme.foreground))
-            .text_font(&self.font)
-            .text_size(px(self.font.size))
-            .line_height(height)
+            .map(|field| paint::frame(field, &self.font, &self.theme, self.framed))
             .track_focus(&self.focus)
             .cursor(CursorStyle::IBeam)
             .on_key_down(cx.listener(Self::key_down))

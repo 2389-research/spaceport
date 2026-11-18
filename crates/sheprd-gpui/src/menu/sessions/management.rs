@@ -1,8 +1,14 @@
+// ABOUTME: Captures exact session targets before picker mutations run.
+// ABOUTME: Applies confirmed edits without following a changed device row.
 //! Picker forms capture device identity and host, never a mutable row ordinal.
 use super::*;
 use crate::i18n::fl;
 use crate::search_input::SearchInput;
 use sheprd_client::RemoteHost;
+
+mod paint;
+mod render;
+pub(in crate::menu) use paint::EditPaint;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(in crate::menu) enum Target {
@@ -177,6 +183,7 @@ impl SheprdWindow {
 
     fn cancel_session_edit(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.menu.session_edit = None;
+        self.menu.session_edit_scroll.set_offset(Point::default());
         self.menu.error = None;
         window.focus(&self.menu.focus, cx);
         cx.notify();
@@ -265,9 +272,10 @@ impl SheprdWindow {
                 }
                 let background = cx.background_executor().spawn(async move {
                     match target {
-                        Target::Local => {
-                            sheprd_client::delete_local_session(&crate::daemon::executable(), &name)
-                        }
+                        Target::Local => sheprd_client::delete_local_session(
+                            &crate::daemon::executable()?,
+                            &name,
+                        ),
                         Target::Device { host, .. } => host.delete_session(&name),
                     }
                 });
@@ -331,124 +339,6 @@ impl SheprdWindow {
             "escape" => self.cancel_session_edit(window, cx),
             _ => {}
         }
-    }
-
-    pub(in crate::menu) fn render_session_edit(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
-        let mut view = div()
-            .debug_selector(|| "session-modal".into())
-            .flex()
-            .flex_col()
-            .gap(px(12.))
-            .p(px(12.));
-        match &self.menu.session_edit {
-            Some(Edit::Create { input, target }) => {
-                let destination = match target {
-                    Target::Local => fl!("sessions-menu-this-machine"),
-                    Target::Device {
-                        host: RemoteHost::Ssh(target),
-                        ..
-                    } => target.clone(),
-                    Target::Device {
-                        host: RemoteHost::Wsl(distro),
-                        ..
-                    } => fl!("sessions-menu-wsl", distribution = distro.as_str()),
-                };
-                view = view
-                    .child(
-                        div()
-                            .text_size(px(self.config.ui.size * 1.35))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("sessions-menu-add-title")),
-                    )
-                    .child(
-                        div()
-                            .text_color(rgb(theme.muted))
-                            .child(fl!("sessions-menu-on", destination = destination)),
-                    )
-                    .child(input.clone())
-                    .child(
-                        div()
-                            .text_color(rgb(theme.subtext()))
-                            .child(fl!("sessions-menu-add-note")),
-                    );
-            }
-            Some(Edit::Delete { row, .. }) => {
-                let name = match row {
-                    Row::Local(name) | Row::Device { session: name, .. } => name.as_str(),
-                    Row::Add(_) => "",
-                };
-                view = view
-                    .child(
-                        div()
-                            .text_size(px(self.config.ui.size * 1.35))
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .child(fl!("sessions-menu-delete-title")),
-                    )
-                    .child(div().min_w_0().truncate().child(name.to_owned()))
-                    .child(
-                        div()
-                            .text_color(rgb(theme.subtext()))
-                            .child(fl!("sessions-menu-delete-note")),
-                    );
-            }
-            None => return view,
-        }
-        if let Some(error) = &self.menu.error {
-            view = view.child(
-                div()
-                    .text_color(colors::danger(&self.theme))
-                    .child(error.clone()),
-            );
-        }
-        view.child(
-            div()
-                .flex()
-                .justify_end()
-                .gap(px(8.))
-                .child(
-                    div()
-                        .id("session-edit-cancel")
-                        .debug_selector(|| "session-edit-cancel".into())
-                        .px(px(12.))
-                        .py(px(6.))
-                        .rounded(px(crate::config::corners::CONTROL))
-                        .border_1()
-                        .border_color(rgb(theme.active))
-                        .hover(|s| s.bg(rgb(theme.active)))
-                        .cursor_pointer()
-                        .child(fl!("sessions-menu-cancel"))
-                        .on_click(
-                            cx.listener(|this, _, window, cx| this.cancel_session_edit(window, cx)),
-                        ),
-                )
-                .child(
-                    div()
-                        .id("session-edit-submit")
-                        .debug_selector(|| "session-edit-submit".into())
-                        .px(px(12.))
-                        .py(px(6.))
-                        .rounded(px(crate::config::corners::CONTROL))
-                        .border_1()
-                        .border_color(rgb(theme.active))
-                        .bg(rgb(theme.active))
-                        .when(
-                            matches!(self.menu.session_edit, Some(Edit::Delete { .. })),
-                            |s| s.text_color(colors::danger(theme)),
-                        )
-                        .cursor_pointer()
-                        .child(
-                            if matches!(self.menu.session_edit, Some(Edit::Create { .. })) {
-                                fl!("sessions-menu-create-and-connect")
-                            } else {
-                                fl!("sessions-menu-delete-permanently")
-                            },
-                        )
-                        .on_click(
-                            cx.listener(|this, _, window, cx| this.submit_session_edit(window, cx)),
-                        ),
-                ),
-        )
     }
 }
 

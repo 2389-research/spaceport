@@ -1,3 +1,5 @@
+// ABOUTME: Exercises Settings behavior with isolated runtime-history readers.
+// ABOUTME: Keeps preference tests away from personal runtime configuration.
 use super::*;
 use crate::config::ThemeName;
 
@@ -14,7 +16,7 @@ fn each_mode_segment_is_a_state_the_user_can_choose(cx: &mut TestAppContext) {
     let source = cx.add_window(crate::sidebar::layout_tests::fixture_window);
     let weak = cx.update(|cx| source.update(cx, |_, _, cx| cx.weak_entity()).unwrap());
     let (view, cx) = cx.add_window_view(|window, cx| {
-        let mut view = SettingsWindow::new(weak, cx);
+        let mut view = fixture_new(weak, cx);
         view.theme_io = Some(recording_themes(Default::default(), false));
         view.initialize_theme_browser(window, cx);
         view

@@ -1,6 +1,8 @@
-//! A local endpoint whose Herdr cannot be found waits the longest retry delay,
-//! says so to commands, and forgets it once a connection succeeds.
+// ABOUTME: Verifies missing local Herdr guidance and explicit retry ownership.
+// ABOUTME: Keeps installation failure visible until a replacement connection succeeds.
 use super::*;
+
+mod recovery;
 
 const MISSING: &str =
     "client I/O failed: Could not start herdr server: No such file or directory (os error 2)";
@@ -110,4 +112,23 @@ fn a_version_refusal_replaces_a_missing_herdr() {
     });
     assert!(!endpoint.herdr_missing(), "an outdated Herdr is installed");
     assert_eq!(endpoint.status(), "Herdr update needed");
+}
+
+#[test]
+fn a_missing_herdr_requires_an_explicit_retry() {
+    let (mut endpoint, _server) = connected_endpoint(LOCAL);
+    lose_herdr(&mut endpoint);
+    endpoint.connection.handle.as_ref().unwrap().disconnect();
+    wait_until(|| {
+        endpoint.poll(Instant::now());
+        endpoint.herdr_missing() && endpoint.connection.retry_ready()
+    });
+    assert!(!endpoint.may_dial(), "installation needs user action");
+    endpoint.set_retry_at_for_test(Instant::now());
+    assert!(
+        !endpoint.may_dial(),
+        "elapsed backoff must not launch again"
+    );
+    endpoint.connect(ConnectOptions::default(), false);
+    assert!(matches!(endpoint.link, Link::Dialing { .. }));
 }

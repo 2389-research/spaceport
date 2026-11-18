@@ -17,9 +17,11 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod accessibility;
 mod activity;
 mod attachments;
 mod chats;
+mod clipboard;
 mod code;
 mod composer;
 mod controls;
@@ -49,6 +51,7 @@ mod observer_program;
 mod opencode;
 mod overlay;
 mod pasted;
+mod permission_clicks;
 mod pinned;
 mod prepared;
 mod questions;

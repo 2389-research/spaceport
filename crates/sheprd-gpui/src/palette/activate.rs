@@ -54,7 +54,11 @@ impl SheprdWindow {
                 Frecency::update(cx, |history| history.visit(key, frecency::now()));
             }
         };
-        if !self.menu_target_current() {
+        let current = match &action {
+            Action::Configured(..) => self.menu_target_current(),
+            _ => self.menu_current(),
+        };
+        if !current {
             if let Some(palette) = &mut self.menu.palette {
                 palette.error = Some(crate::i18n::fl!("palette-go-to-connection-changed"));
             }

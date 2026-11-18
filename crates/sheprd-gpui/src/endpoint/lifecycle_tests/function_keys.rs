@@ -1,3 +1,5 @@
+// ABOUTME: Exercises function-key normalization through the window shortcut scope.
+// ABOUTME: Preserves prefix pass-through and terminal release identities.
 use super::*;
 
 /// F20 as `hidutil` delivers it: no name, and no character.
@@ -52,7 +54,7 @@ fn f20_window(
     });
     let view = fixture.update(cx, |fixture, _| fixture.0.clone());
     let (endpoint, server) = connected_endpoint("function-keys");
-    cx.update(|_, cx| {
+    cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             prepare_mouse(view, endpoint, cx);
             view.live.activation = crate::state::activation::Fence::for_test(
@@ -73,6 +75,8 @@ fn f20_window(
             .unwrap();
             view.key_press = f20;
         });
+        window.focus(&view.read(cx).focus.clone(), cx);
+        window.draw(cx).clear(cx);
     });
     (view, server, cx)
 }
@@ -93,9 +97,8 @@ fn an_unnamed_function_key_is_the_prefix_and_its_second_press_reaches_the_pane(
     assert!(view.read_with(cx, |view, _| view.prefix_armed));
     assert!(!press(cx), "the second press goes on to the focused pane");
     assert!(!view.read_with(cx, |view, _| view.prefix_armed));
-    // The fixture keeps the window out of the render tree, so the pane's key
-    // handler, which GPUI calls next for the press it let through, is called
-    // here; the first press never reaches it.
+    // The fixture mounts shortcuts without the terminal canvas.
+    // Deliver the forwarded event to the pane's semantic input handler.
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             let event = gpui::KeyDownEvent {

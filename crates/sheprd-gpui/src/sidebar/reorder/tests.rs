@@ -44,7 +44,7 @@ fn remote(id: &str) -> crate::endpoint::Endpoint {
 }
 
 /// `a` heads a group whose child `a2` sits after `b` in daemon order.
-fn list() -> Vec<ClientShellWorkspace> {
+pub(in crate::sidebar::reorder) fn list() -> Vec<ClientShellWorkspace> {
     vec![
         workspace("a", Some(("repo-a", false))),
         workspace("a1", Some(("repo-a", true))),

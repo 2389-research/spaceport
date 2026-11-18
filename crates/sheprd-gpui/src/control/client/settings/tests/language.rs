@@ -1,3 +1,5 @@
+// ABOUTME: Checks language command text and structured locale metadata.
+// ABOUTME: Keeps named language collections aligned with available catalogs.
 #![allow(clippy::unwrap_used)]
 use super::super::language::{local, text};
 use sheprd_i18n::{Language, Pseudo};
@@ -41,7 +43,7 @@ fn list_names_each_language_in_itself() {
         &crate::control::client::Context::new(true, None),
     )
     .unwrap();
-    let json = &output.json;
+    let json = &output.json["languages"];
     assert!(
         output.text.starts_with("en-US   ltr  English\n"),
         "{}",

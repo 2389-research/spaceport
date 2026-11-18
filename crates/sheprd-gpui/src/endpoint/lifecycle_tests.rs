@@ -1,20 +1,22 @@
-//! Exercise GUI lifecycle transitions through real, isolated client transports.
+// ABOUTME: Exercises GUI lifecycles through isolated sockets and native Windows pipes.
+// ABOUTME: Shares endpoint handshakes while keeping platform input fixtures explicit.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::controls::Command;
 use gpui::{
-    AppContext, ClipboardItem, Image, ImageFormat, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, point, px, size,
+    AppContext, InteractiveElement as _, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent,
+    point, px, size,
 };
+#[cfg(unix)]
+use gpui::{ClipboardItem, Image, ImageFormat};
 use sheprd_client::{
     ClientEvent, Method, SavedHost,
     protocol::{endpoint::*, *},
 };
-use std::{
-    os::unix::net::{UnixListener, UnixStream},
-    path::PathBuf,
-    sync::atomic::AtomicU64,
-};
+use std::{path::PathBuf, sync::atomic::AtomicU64};
+
+mod transport;
+use transport::{Listener, Stream};
 
 mod activation_backpressure;
 mod atomic_projection;
@@ -24,23 +26,32 @@ mod close_pane;
 mod close_sequence;
 mod core_reconnect_overlay;
 mod core_terminal_hosts;
+#[cfg(unix)]
 mod dead_keys;
 mod endpoint_switch;
+#[cfg(unix)]
 mod file_paste;
 mod focus_fences;
 mod focus_follows_mouse;
 mod focus_follows_mouse_render;
 mod focus_pipeline;
+#[cfg(unix)]
 mod function_keys;
 mod group_navigation_choices;
 mod group_page_move;
+#[cfg(unix)]
 mod held_paste;
 mod herdr_missing;
+mod herdr_stopped;
 mod horizontal_wheel;
+#[cfg(unix)]
 mod image_paste;
+#[cfg(unix)]
 mod image_paste_native;
+mod image_scroll;
 mod input_gap;
 mod input_settings;
+#[cfg(unix)]
 mod keyboard;
 mod link_clicks;
 mod link_stability;
@@ -53,6 +64,7 @@ mod notice_fence;
 mod popup_projection;
 mod prompts;
 mod reconnect_backoff;
+#[cfg(unix)]
 mod release_backpressure;
 mod remote_drop;
 mod resize_claim_fence;
@@ -61,31 +73,36 @@ mod retry_dialog_fencing;
 mod scrollbar_drag;
 mod selection_activation_budget;
 mod shift_select_hint;
+#[cfg(unix)]
 mod shifted_keys;
 mod smooth_scroll_off;
 mod sounds;
 mod split_drag;
 mod split_equalize;
 mod staged_release;
+#[cfg(unix)]
 mod temporary_drop;
 mod toast_handoff;
 mod toast_navigation;
 mod wake_recovery;
 mod wheel_slides;
 mod window_notices;
+mod workspace_close;
 mod workspace_menu_navigation;
 
 struct Server {
-    stream: UnixStream,
+    stream: Stream,
     path: PathBuf,
 }
 
-// Keep the tested entity out of the render tree: a terminal canvas would enqueue
-// unrelated native resize requests while these tests advance the lifecycle.
+// Mount the production keyboard scope without the terminal canvas.
+// Lifecycle tests control their own resize acknowledgements.
 struct Fixture(gpui::Entity<SheprdWindow>);
 impl gpui::Render for Fixture {
-    fn render(&mut self, _: &mut gpui::Window, _: &mut Context<Self>) -> impl gpui::IntoElement {
-        gpui::div()
+    fn render(&mut self, _: &mut gpui::Window, cx: &mut Context<Self>) -> impl gpui::IntoElement {
+        self.0.update(cx, |view, cx| {
+            SheprdWindow::shortcut_scope(cx).track_focus(&view.focus)
+        })
     }
 }
 
@@ -150,18 +167,14 @@ fn surface(snapshot: &ClientShellSnapshot) -> Arc<PaneSurfaceFrame> {
     })
 }
 
-/// How many wakes a wait tolerates without its state arriving. The bound is the
-/// event reader's own progress, never a clock: a reader that keeps delivering
-/// and never satisfies the wait is a broken expectation worth naming.
+/// Catch a stream of updates that never satisfies the expected state.
+/// The separate deadline also bounds a reader that cannot make progress.
 const WAKES_PER_WAIT: usize = 10_000;
 
-/// Block until a connection's event reader has applied an update or ended.
-///
-/// The state these tests wait for arrives on the reader's own thread, not on
-/// gpui's executor, so the reader's progress is the only thing to block on: a
-/// clock deadline here would be a guess a loaded runner breaks. A reader that
-/// stops without ending hangs the wait, which is deliberate.
-fn await_reader() {
+/// Wait for a reader update, then recheck the condition under the caller's bound.
+/// Worker flags may change while a fixture holds the inbox and blocks that reader.
+fn await_reader(until: Instant, what: &str) {
+    assert!(Instant::now() < until, "{what}");
     crate::connection::applied::wait();
 }
 
@@ -179,6 +192,7 @@ fn project_until(
     what: &str,
     ready: impl Fn(&SheprdWindow) -> bool,
 ) {
+    let until = Instant::now() + crate::connection::applied::WAIT_TIMEOUT;
     let mut wakes = 0;
     loop {
         view.poll_endpoints(cx);
@@ -187,7 +201,7 @@ fn project_until(
         }
         wakes += 1;
         assert!(wakes < WAKES_PER_WAIT, "{what} was never projected");
-        await_reader();
+        await_reader(until, what);
     }
 }
 
@@ -198,6 +212,7 @@ fn poll_until(
     cx: &mut Context<SheprdWindow>,
     mut poll: impl FnMut(&mut SheprdWindow, &mut Context<SheprdWindow>) -> bool,
 ) {
+    let until = Instant::now() + crate::connection::applied::WAIT_TIMEOUT;
     let mut wakes = 0;
     loop {
         if poll(view, cx) {
@@ -205,16 +220,17 @@ fn poll_until(
         }
         wakes += 1;
         assert!(wakes < WAKES_PER_WAIT, "the window never reached the wait");
-        await_reader();
+        await_reader(until, "the window never reached the wait");
     }
 }
 
 fn wait_until(mut ready: impl FnMut() -> bool) {
+    let until = Instant::now() + crate::connection::applied::WAIT_TIMEOUT;
     let mut wakes = 0;
     while !ready() {
         wakes += 1;
         assert!(wakes < WAKES_PER_WAIT, "the client worker never settled");
-        await_reader();
+        await_reader(until, "the client worker never settled");
     }
 }
 
@@ -229,29 +245,45 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         std::process::id(),
         SERIAL.fetch_add(1, Ordering::Relaxed)
     ));
-    let listener = UnixListener::bind(&path).unwrap();
     let mut endpoint = Endpoint::new(
         id.into(),
         id.into(),
         ConnectTarget::Socket(path.clone()),
         true,
     );
-    endpoint.connect(ConnectOptions::default(), true);
-    // The worker dials this socket; a plain blocking accept is coordination,
-    // not a wait on time.
-    let mut server = Server {
-        stream: listener.accept().unwrap().0,
-        path,
+    let mut server = start_endpoint(&mut endpoint);
+    send_welcome(&mut server, server_version);
+    wait_until(|| {
+        endpoint.poll(Instant::now());
+        endpoint.connection.handle.is_some() && endpoint.live.snapshot.is_some()
+    });
+    assert!(endpoint.live.supports_surface);
+    let frame = surface(endpoint.live.snapshot.as_ref().unwrap());
+    endpoint
+        .connection
+        .inbox
+        .lock()
+        .unwrap()
+        .apply(ClientEvent::Surface(frame));
+    endpoint.poll(Instant::now());
+    (endpoint, server)
+}
+
+fn start_endpoint(endpoint: &mut Endpoint) -> Server {
+    let ConnectTarget::Socket(path) = &endpoint.connection.target else {
+        panic!("a lifecycle fixture must use its private transport");
     };
-    server.stream.set_nonblocking(false).unwrap();
-    server
-        .stream
-        .set_read_timeout(Some(Duration::from_secs(3)))
-        .unwrap();
-    server
-        .stream
-        .set_write_timeout(Some(Duration::from_secs(3)))
-        .unwrap();
+    let path = path.clone();
+    let listener = Listener::bind(&path).unwrap();
+    endpoint.connect(ConnectOptions::default(), true);
+    // Accept coordinates with the exact worker, without polling a clock.
+    Server {
+        stream: listener.accept().unwrap(),
+        path,
+    }
+}
+
+fn send_welcome(server: &mut Server, server_version: Option<&str>) {
     assert!(matches!(
         server.receive(),
         ClientMessage::EndpointControl { .. }
@@ -271,6 +303,7 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         [
             Method::ClientShellSurfaceSet,
             Method::WorkspaceCreate,
+            Method::WorkspaceClose,
             Method::TabCreate,
             Method::PaneSplit,
             Method::LayoutSetSplitRatio,
@@ -312,20 +345,6 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         )
         .unwrap();
     }
-    wait_until(|| {
-        endpoint.poll(Instant::now());
-        endpoint.connection.handle.is_some() && endpoint.live.snapshot.is_some()
-    });
-    assert!(endpoint.live.supports_surface);
-    let frame = surface(endpoint.live.snapshot.as_ref().unwrap());
-    endpoint
-        .connection
-        .inbox
-        .lock()
-        .unwrap()
-        .apply(ClientEvent::Surface(frame));
-    endpoint.poll(Instant::now());
-    (endpoint, server)
 }
 
 fn prepare_mouse(view: &mut SheprdWindow, endpoint: Endpoint, cx: &mut Context<SheprdWindow>) {
@@ -399,10 +418,12 @@ fn mouse_event(kind: ClientMouseKind, column: u16, row: u16) -> ClientPaneInputE
     }
 }
 
+#[cfg(unix)]
 fn clipboard_image(bytes: &[u8]) -> ClipboardItem {
     ClipboardItem::new_image(&Image::from_bytes(ImageFormat::Png, bytes.to_vec()))
 }
 
+#[cfg(unix)]
 fn prepare_remote_image(
     view: &mut SheprdWindow,
     mut endpoint: Endpoint,
@@ -417,6 +438,7 @@ fn prepare_remote_image(
     assert!(view.accepts_remote_images());
 }
 
+#[cfg(unix)]
 fn image_popup(view: &mut SheprdWindow, id: &str) {
     let surface = Arc::make_mut(view.live.surface.as_mut().unwrap());
     surface.popup = Some(Box::new(ClientShellPopupSurface {
@@ -432,6 +454,7 @@ fn image_popup(view: &mut SheprdWindow, id: &str) {
     }));
 }
 
+#[cfg(unix)]
 fn wait_image_finished(view: &gpui::Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
     // GPUI tasks publish the frame and the socket worker finishes its FIFO
     // slot: the executor is this thread's to run, and the slot ends on a thread

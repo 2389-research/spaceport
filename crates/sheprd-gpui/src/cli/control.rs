@@ -1,3 +1,5 @@
+//! ABOUTME: Defines control commands and parses their shared CLI options.
+//! ABOUTME: Keeps command parsing independent of GPUI startup.
 //! `spaceport <command> ...`: commands answered by the running app, or by
 //! this process from the app's own files, without starting GPUI. Herdr's own
 //! CLI already drives workspaces, tabs, panes, agents, and notifications;
@@ -13,6 +15,7 @@ mod work;
 use super::CliError;
 pub(crate) use super::args::Args;
 pub use crate::control::{Cursor, EventKind, FontSize, Size, Sound, Switch};
+pub use plain::Shell;
 pub use settings::{
     CaffeineCommand, ConfigCommand, IntegrationsCommand, KeybindsCommand, LanguageCommand,
     SoundCommand, ThemeCommand,
@@ -43,6 +46,7 @@ pub struct Invocation {
 pub enum ControlCommand {
     /// Usage for every command, or for one family.
     Help(Option<&'static str>),
+    Completions(Shell),
     Status,
     Skill,
     App(AppOp),
@@ -94,6 +98,31 @@ pub enum ControlCommand {
     Integrations(IntegrationsCommand),
 }
 
+impl ControlCommand {
+    fn accepts_window(&self) -> bool {
+        !matches!(
+            self,
+            Self::Help(_)
+                | Self::Completions(_)
+                | Self::Skill
+                | Self::Commands
+                | Self::Processes { .. }
+                | Self::Logs { .. }
+                | Self::Diagnostics { .. }
+                | Self::Config(
+                    ConfigCommand::Path
+                        | ConfigCommand::Get(_)
+                        | ConfigCommand::Set { .. }
+                        | ConfigCommand::Unset(_)
+                )
+                | Self::Theme(ThemeCommand::List)
+                | Self::Language(LanguageCommand::List | LanguageCommand::Set(_))
+                | Self::Sound(SoundCommand::List)
+                | Self::Integrations(IntegrationsCommand::InstallSkill)
+        )
+    }
+}
+
 /// One word that starts a control command.
 pub(crate) struct Family {
     pub(crate) name: &'static str,
@@ -120,6 +149,18 @@ pub(crate) const FAMILIES: &[Family] = &[
         summary: "Print the agent skill describing these commands",
         usage: plain::SKILL_USAGE,
         parse: plain::skill,
+    },
+    Family {
+        name: "help",
+        summary: "Show command help and shared options",
+        usage: plain::HELP_USAGE,
+        parse: plain::help,
+    },
+    Family {
+        name: "completions",
+        summary: "Generate shell completion scripts",
+        usage: plain::COMPLETIONS_USAGE,
+        parse: plain::completions,
     },
     Family {
         name: "app",
@@ -288,11 +329,16 @@ pub(crate) const FAMILIES: &[Family] = &[
 /// Whether `args` are a control command asking for JSON, whose errors,
 /// usage errors included, are then printed as JSON.
 pub fn wants_json(args: &[OsString]) -> bool {
-    args.first().is_some_and(is_family)
-        && args
-            .iter()
-            .take_while(|arg| *arg != "--")
-            .any(|arg| arg == "--json")
+    if args
+        .first()
+        .is_some_and(|arg| arg == "--help" || arg == "-h" || arg == "--json")
+    {
+        return args.iter().any(|arg| arg == "--json");
+    }
+    FAMILIES
+        .iter()
+        .find(|family| args.first().is_some_and(|arg| arg == family.name))
+        .is_some_and(|family| Args::new(args.iter().skip(1).cloned(), family.name).flag("--json"))
 }
 
 pub fn is_family(word: &OsString) -> bool {
@@ -325,7 +371,7 @@ fn unknown(family: &'static str, verb: OsString) -> CliError {
 }
 
 /// Parses everything after the family word. `--json`, `--window ID`, and
-/// `--help` may appear anywhere.
+/// `--help` may appear anywhere before free text or an explicit `--`.
 pub fn parse(
     family: OsString,
     rest: impl Iterator<Item = OsString>,
@@ -335,18 +381,24 @@ pub fn parse(
         .find(|entry| family == entry.name)
         .ok_or(CliError::UnknownOption(family))?;
     let mut args = Args::new(rest, family.name);
+    let json = args.flag("--json");
     if args.wants_help() {
+        if args.flag("--window") {
+            return Err(CliError::WindowNotSupported);
+        }
         return Ok(Invocation {
             command: ControlCommand::Help(Some(family.name)),
-            json: false,
+            json,
             window: None,
         });
     }
-    let json = args.flag("--json");
     let window = args.number("--window", 0..=u64::MAX)?;
     args.set_window(window);
     let command = (family.parse)(&mut args)?;
     args.finish()?;
+    if args.window().is_some() && !command.accepts_window() {
+        return Err(CliError::WindowNotSupported);
+    }
     Ok(Invocation {
         command,
         json,

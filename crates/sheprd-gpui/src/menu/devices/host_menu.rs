@@ -1,3 +1,5 @@
+// ABOUTME: Owns saved-host popup actions and their exact daemon targets.
+// ABOUTME: Releases disposable fields while accepted workers finish independently.
 // i18n: migrated
 //! The sidebar host header's context menu. Saved SSH devices
 //! have this one; a WSL
@@ -15,6 +17,9 @@ use crate::{
 use actions::{Action, LOCAL_ACTIONS, SSH_ACTIONS};
 use gpui::{prelude::*, *};
 use sheprd_client::ConnectTarget;
+
+#[cfg(feature = "integration-test")]
+mod native_checks;
 
 /// The saved entry the menu acts on.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,6 +47,8 @@ pub(crate) struct HostMenu {
     theme: Option<theme::DeviceThemePicker>,
     /// The tag picker, while it is the page shown.
     tags: Option<tags::TagPicker>,
+    /// The shell's position; departure retains only its numeric offset.
+    scroll: ScrollHandle,
 }
 
 impl HostMenu {
@@ -150,6 +157,7 @@ impl SheprdWindow {
             error: None,
             theme: None,
             tags: None,
+            scroll: ScrollHandle::new(),
         };
         if !self.open_menu(window, cx) {
             tracing::info!(
@@ -303,21 +311,21 @@ impl SheprdWindow {
     /// catalog drops the device, its sidebar header pulses the way a worktree
     /// row does while it is removed; a failure is reported in the status bar.
     fn confirm_remove_device(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(host) = self.menu.host.take() else {
+        let Some(host) = &self.menu.host else {
             tracing::warn!(
                 category = "device_remove",
                 "Remove confirmed without a host menu"
             );
             return;
         };
-        let HostMenu {
-            id,
-            saved,
-            label,
-            target,
-            session,
-            ..
-        } = host;
+        // Dismissal captures the confirmation before reset releases its owners.
+        let (id, saved, label, target, session) = (
+            host.id.clone(),
+            host.saved.clone(),
+            host.label.clone(),
+            host.target.clone(),
+            host.session.clone(),
+        );
         tracing::info!(category = "device_remove", id, "Removing device");
         let background = cx.background_executor().spawn(async move {
             match saved {
@@ -434,7 +442,9 @@ impl SheprdWindow {
                 self.submit_forward_port(window, cx)
             }
             "enter" if self.menu.page == Some(Page::RemoveDevice) => {
-                self.confirm_remove_device(window, cx)
+                if !event.is_held {
+                    self.confirm_remove_device(window, cx)
+                }
             }
             key @ ("up" | "down") if self.menu.page == Some(Page::Host) => {
                 let count = host.actions().len();
@@ -455,197 +465,6 @@ impl SheprdWindow {
             }
             _ => {}
         }
-    }
-
-    pub(in crate::menu) fn render_host_menu(&self, cx: &mut Context<Self>) -> Div {
-        let Some(host) = &self.menu.host else {
-            return div();
-        };
-        let theme = &self.theme;
-        let mut body = div().flex().flex_col();
-        if self.menu.page == Some(Page::Host) {
-            // Name the device first, so the destructive row below cannot be
-            // mistaken for acting on another host.
-            body = body.child(
-                // No width of its own, so a long name or target ends with
-                // "…" instead of widening the menu past its actions.
-                div()
-                    .debug_selector(|| "host-menu-header".into())
-                    .w_0()
-                    .min_w_full()
-                    .px(px(8.))
-                    .pt(px(4.))
-                    .pb(px(8.))
-                    .mb(px(4.))
-                    .border_b_1()
-                    .border_color(rgb(theme.active))
-                    .child(
-                        div()
-                            .font_weight(FontWeight::SEMIBOLD)
-                            .truncate()
-                            .child(host.label.clone()),
-                    )
-                    .when(!host.target.is_empty(), |header| {
-                        header.child(
-                            div()
-                                .text_size(px(self.config.ui.size * 0.85))
-                                .text_color(rgb(theme.muted))
-                                .truncate()
-                                // The device's target and session.
-                                .child(format!("{} · {}", host.target, host.session)), // i18n: data
-                        )
-                    }),
-            );
-            let server_keys = self.config.keybinding_source(&host.id) == KeybindingSource::Server;
-            let device_theme = self.device_theme_value(&host.id).map(str::to_owned);
-            let muted =
-                crate::notification_mutes::Mutes::of(cx).is_some_and(|mutes| mutes.host(&host.id));
-            for (index, &(action, message)) in host.actions().iter().enumerate() {
-                let label = crate::i18n::message(message, &[]);
-                let toggle = match action {
-                    Action::Mute => Some(muted),
-                    Action::ServerKeybindings => Some(server_keys),
-                    _ => None,
-                };
-                body = body.child(
-                    div()
-                        .id(("host-menu-action", index))
-                        .debug_selector(move || format!("host-menu-{index}"))
-                        .min_h(px(self.config.ui.line_height() + 12.))
-                        .px(px(8.))
-                        .flex()
-                        .items_center()
-                        .gap(px(8.))
-                        .cursor_pointer()
-                        .when_some(toggle, |row, checked| {
-                            row.child(crate::toggles::checkbox(
-                                theme,
-                                self.config.ui.size + 2.,
-                                checked,
-                            ))
-                        })
-                        .when(action == Action::Remove, |row| {
-                            row.text_color(crate::menu::danger(theme))
-                        })
-                        .when(host.selected == Some(index), |row| {
-                            row.bg(rgb(theme.active))
-                        })
-                        .hover(|row| row.bg(rgb(theme.active)))
-                        .child(
-                            div()
-                                .debug_selector(move || format!("host-menu-label-{index}"))
-                                .min_w_0()
-                                .truncate()
-                                .child(label),
-                        )
-                        .when_some(
-                            device_theme.clone().filter(|_| action == Action::Theme),
-                            |row, name| {
-                                row.child(
-                                    div()
-                                        .debug_selector(|| "host-menu-theme".into())
-                                        .ml_auto()
-                                        .min_w_0()
-                                        .truncate()
-                                        .text_color(rgb(theme.muted))
-                                        .child(name),
-                                )
-                            },
-                        )
-                        .on_hover(cx.listener(move |this, hovered, _, cx| {
-                            if *hovered && let Some(host) = &mut this.menu.host {
-                                host.selected = Some(index);
-                                cx.notify();
-                            }
-                        }))
-                        .on_click(cx.listener(move |this, _, window, cx| {
-                            this.activate_host_menu(action, window, cx)
-                        })),
-                );
-                // Opting in never silently changes nothing: say why the
-                // device is still on local keys.
-                if let Some(error) = (action == Action::ServerKeybindings)
-                    .then(|| self.server_keybindings_error(&host.id))
-                    .flatten()
-                {
-                    body = body.child(
-                        // No width of its own, so the labels set the menu's
-                        // width and the message wraps inside it.
-                        div()
-                            .debug_selector(|| "host-menu-keybindings-error".into())
-                            .w_0()
-                            .min_w_full()
-                            .px(px(8.))
-                            .pb(px(4.))
-                            .text_size(px(self.config.ui.size * 0.85))
-                            .text_color(rgb(theme.muted))
-                            .child(fl!(
-                                "host-menu-local-keybindings",
-                                error = error.to_string()
-                            )),
-                    );
-                }
-            }
-            return body.child(self.render_forwards(host, cx));
-        }
-        if self.menu.page == Some(Page::RenameDevice) {
-            return self.render_rename_device(host, cx);
-        }
-        if self.menu.page == Some(Page::ForwardPort) {
-            return self.render_forward_port(host, cx);
-        }
-        if self.menu.page == Some(Page::DeviceTheme) {
-            return self.render_device_theme(host, cx);
-        }
-        if self.menu.page == Some(Page::DeviceTags) {
-            return self.render_device_tags(host, cx);
-        }
-        body = body
-            .debug_selector(|| "remove-device".into())
-            .p(px(8.))
-            .gap(px(12.))
-            .child(
-                div()
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(fl!("host-menu-remove-title")),
-            )
-            .child(
-                div()
-                    .text_color(rgb(theme.subtext()))
-                    .child(removal_note(host)),
-            )
-            .child(
-                div()
-                    .flex()
-                    .justify_end()
-                    .gap(px(8.))
-                    .child(
-                        div()
-                            .id("remove-device-cancel")
-                            .p(px(6.))
-                            .cursor_pointer()
-                            .child(fl!("host-menu-cancel"))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                tracing::info!(category = "device_remove", "Remove cancelled");
-                                this.dismiss_menu(window, cx)
-                            })),
-                    )
-                    .child(
-                        div()
-                            .id("remove-device-submit")
-                            .debug_selector(|| "remove-device-submit".into())
-                            .p(px(6.))
-                            .rounded(px(crate::config::corners::CONTROL))
-                            .bg(rgb(theme.active))
-                            .text_color(crate::menu::danger(theme))
-                            .cursor_pointer()
-                            .child(fl!("host-menu-remove-submit"))
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                this.confirm_remove_device(window, cx)
-                            })),
-                    ),
-            );
-        body
     }
 }
 
@@ -674,9 +493,19 @@ fn removal_note(host: &HostMenu) -> String {
 
 mod actions;
 mod forwards;
+mod paint;
 mod rename;
+mod render;
 mod tags;
 mod theme;
+pub(in crate::menu) use paint::Paint;
+#[cfg(test)]
+pub(in crate::menu) use tests::departure_fixture;
+#[cfg(test)]
+pub(in crate::menu) use tests::long_tags_fixture;
+pub(in crate::menu) use theme::Paint as DeviceThemePaint;
+#[cfg(test)]
+pub(in crate::menu) use theme::departure_fixture as device_theme_departure_fixture;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]

@@ -20,6 +20,7 @@ features. This branch still contains some of those paths; a build is not proof
 that the fork meets the specification.
 
 Spaceport permits **separately installed Herdr 1 and Herdr Core** runtimes.
+Herdr 1 must be version **0.9.0 or later**.
 Herdr Core is experimental and disabled by default, including existing installs.
 Enable it in **Settings → General → Experimental → Enable Herdr Core**, then restart Spaceport.
 Turning it off also takes effect after restart. Existing Core terminals keep running.
@@ -28,9 +29,15 @@ Existing Herdr 1 startup may remain to preserve the desktop UX. Each session
 keeps its owning runtime; Spaceport does not install, update or migrate either
 runtime. Tailscale is external. Core routes use Core's machine connections and
 Spaceport presentation documents; Herdr 1 may use its native workspace model.
+See [Using Herdr with Spaceport](docs/herdr-client.md) for SSH authentication,
+shutdown behavior, and shared release-note dismissal.
 Native rich chat needs a verified host-side adapter
 route; remote parity, forwarding, file transfer, native platform behavior, and
 production release identity still have [open gates](docs/spaceport/plan/gaps.json).
+
+In Settings, use Tab and Shift+Tab to move between enabled controls.
+Use Enter or Space to activate buttons and choices; Escape closes a dropdown or font picker.
+The opacity slider accepts arrow keys, Home, and End.
 
 ## Work on the fork
 

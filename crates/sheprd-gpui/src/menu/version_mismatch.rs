@@ -1,3 +1,5 @@
+// ABOUTME: Explains refused runtime handshakes without running update commands.
+// ABOUTME: Shares active notices and inert departure content from captured data.
 //! The notice that a daemon refused this app's handshake and which side must
 //! be updated. The update command is shown and copied, never run: updating a
 //! daemon may stop its sessions, so the user decides when.
@@ -126,10 +128,19 @@ impl SheprdWindow {
     }
 
     pub(super) fn render_version_mismatch(&self, cx: &mut Context<Self>) -> Div {
-        let theme = &self.theme;
         let Some(notice) = &self.menu.version_notice else {
             return div();
         };
+        self.render_version_notice(notice, true, cx)
+    }
+
+    pub(in crate::menu) fn render_version_notice(
+        &self,
+        notice: &Notice,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        let theme = &self.theme;
         let button = |id: &'static str, label: String, primary: bool| {
             div()
                 .id(id)
@@ -137,8 +148,11 @@ impl SheprdWindow {
                 .p(px(8.))
                 .rounded(px(crate::config::corners::CONTROL))
                 .when(primary, |button| button.bg(rgb(theme.active)))
-                .when(!primary, |button| button.hover(|s| s.bg(rgb(theme.active))))
-                .cursor_pointer()
+                .when(active, |button| {
+                    button
+                        .cursor_pointer()
+                        .when(!primary, |button| button.hover(|s| s.bg(rgb(theme.active))))
+                })
                 .child(label)
         };
         let daemon = matches!(notice.mismatch, VersionMismatch::DaemonOutdated { .. });
@@ -182,12 +196,12 @@ impl SheprdWindow {
                                 fl!("version-mismatch-copy"),
                                 true,
                             )
-                            .on_click(cx.listener(
-                                |this, _, window, cx| {
+                            .when(active, |button| {
+                                button.on_click(cx.listener(|this, _, window, cx| {
                                     cx.stop_propagation();
                                     this.act_on_version_mismatch(window, cx);
-                                },
-                            )),
+                                }))
+                            }),
                         )
                     })
                     .child(
@@ -196,10 +210,12 @@ impl SheprdWindow {
                             fl!("version-mismatch-dismiss"),
                             false,
                         )
-                        .on_click(cx.listener(|this, _, window, cx| {
-                            cx.stop_propagation();
-                            this.dismiss_menu(window, cx);
-                        })),
+                        .when(active, |button| {
+                            button.on_click(cx.listener(|this, _, window, cx| {
+                                cx.stop_propagation();
+                                this.dismiss_menu(window, cx);
+                            }))
+                        }),
                     ),
             )
     }

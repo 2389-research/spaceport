@@ -174,6 +174,14 @@ by their agent bridge. Multi-question, multi-select and free-text prompts are
 not universally supported. Attached CLI sessions answer live questions in their
 original terminal input; the historical question cards below are read-only.
 
+In a native chat, use Tab and Shift+Tab to reach controls, including permission answers.
+Press Enter or Space to activate the focused control.
+Plain Tab still completes a matching slash command in the composer.
+Composition keeps its keys in the original editor.
+Escape closes the agent settings menu and returns focus to the composer.
+The transcript exposes message, tool, and plan text to assistive technology.
+Native screen-reader qualification remains pending; see the [accessibility evidence](evidence/review-chat-accessibility.md).
+
 A closed `herdr-ui` fence can render native cards, metrics, choices, toggles,
 sliders, inputs, tables, bar charts and prompt actions. See the
 [catalog](../crates/sheprd-gpui/src/chat/widgets/README.md) and

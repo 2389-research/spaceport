@@ -1,5 +1,7 @@
+// ABOUTME: Routes keyboard focus through the window chrome and terminal.
+// ABOUTME: Gives each active region visible, contrast-adjusted focus stops.
 //! Keyboard focus in the window's chrome. Tab belongs to the terminal, so the
-//! chrome is reached a region at a time: Focus Next Region (F6) moves from the
+//! chrome is reached a region at a time: Focus Next Region moves from the
 //! terminal to the title bar, the sidebar, the notice cards while any show,
 //! the status bar, and back. Inside a
 //! region Tab and Shift-Tab move between its controls, Enter or Space uses
@@ -16,7 +18,7 @@ use gpui::{prelude::*, *};
 pub(crate) enum Region {
     TitleBar,
     Sidebar,
-    /// The config and announcement cards over the terminal's top right.
+    /// The connection, config, and announcement cards over the terminal.
     Notices,
     StatusBar,
 }
@@ -103,15 +105,23 @@ impl SheprdWindow {
             return;
         }
         // The region's controls become tab stops in the frame this change
-        // draws, so the first of them is focused after it.
+        // draws. Own keys at the scope until those controls can focus.
+        window.focus(&self.chrome_entry_focus, cx);
         let view = cx.entity().downgrade();
         window.on_next_frame(move |window, _| {
             window.on_next_frame(move |window, cx| {
+                let Some(view) = view.upgrade() else {
+                    return;
+                };
+                let state = view.read(cx);
+                if state.chrome_region != next || !state.chrome_entry_focus.is_focused(window) {
+                    return;
+                }
                 window.blur(cx);
                 window.focus_next(cx);
                 if window.focused(cx).is_none() {
                     // Nothing in the region could take focus.
-                    let _ = view.update(cx, |this, cx| {
+                    view.update(cx, |this, cx| {
                         this.chrome_region = None;
                         window.focus(&this.focus, cx);
                     });
@@ -137,6 +147,13 @@ impl SheprdWindow {
         let modifiers = event.keystroke.modifiers;
         let plain = modifiers == Modifiers::default();
         let shift = modifiers == Modifiers::shift();
+        if self.chrome_entry_focus.is_focused(window)
+            && matches!(event.keystroke.key.as_str(), "tab" | "up" | "down")
+            && (plain || shift)
+        {
+            cx.stop_propagation();
+            return;
+        }
         match event.keystroke.key.as_str() {
             "tab" if plain => window.focus_next(cx),
             "tab" if shift => window.focus_prev(cx),
@@ -159,16 +176,7 @@ impl SheprdWindow {
         if self.chrome_region != Some(region) {
             return control;
         }
-        let ring = rgb(self.theme.primary());
-        control.tab_index(0).focus_visible(move |style| {
-            style.shadow(vec![BoxShadow {
-                color: ring.into(),
-                offset: point(px(0.), px(0.)),
-                blur_radius: px(0.),
-                spread_radius: px(2.),
-                inset: true,
-            }])
-        })
+        crate::accessibility::focusable(control, self.theme.ink(self.theme.primary()))
     }
 }
 
@@ -176,6 +184,9 @@ impl SheprdWindow {
 mod tests {
     use super::{Region, step};
     use crate::sidebar::layout_tests::{fixture_window, full_draw};
+
+    mod pending_entry;
+    mod ring;
 
     #[gpui::test]
     fn clicking_back_into_the_terminal_leaves_the_region(cx: &mut gpui::TestAppContext) {

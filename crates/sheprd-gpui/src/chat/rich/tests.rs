@@ -1,3 +1,5 @@
+// ABOUTME: Verifies bounded Markdown, math, code, and table preparation.
+// ABOUTME: Checks actual rich-parser contracts separately from native layout.
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 use super::*;
 use crate::chat::visual::{Error, Visuals};
@@ -5,6 +7,7 @@ use crate::chat::visual::{Error, Visuals};
 mod code;
 mod display_math;
 mod prose;
+mod streaming_work;
 
 #[test]
 fn inline_and_display_math_keep_their_place_and_identity_while_streaming() {

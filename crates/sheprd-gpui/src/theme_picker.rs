@@ -1,3 +1,5 @@
+// ABOUTME: Previews and commits theme choices without replacing newer UI intents.
+// ABOUTME: Refreshes preview palettes when OS contrast preferences change.
 // i18n: migrated
 use crate::{
     SheprdWindow,
@@ -8,8 +10,15 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 
+mod input;
+mod paint;
+mod render;
+use input::Input;
+use paint::Content;
+pub(crate) use paint::Paint;
+
 pub(super) struct ThemePicker {
-    pub search: Entity<SearchInput>,
+    input: Option<Input>,
     names: Vec<String>,
     pub(super) filtered: Vec<String>,
     /// How many rows of `filtered` are starred themes, which lead the list.
@@ -36,7 +45,7 @@ pub(super) struct ThemePicker {
     // dropping a GPUI task. Only its completion may release the slot.
     in_flight: Option<(u64, u64)>,
     window: AnyWindowHandle,
-    _subscription: Subscription,
+    status_scroll: ScrollHandle,
 }
 
 impl ThemePicker {
@@ -75,27 +84,10 @@ impl SheprdWindow {
         self.config_load = None;
         self.menu.page = Some(Page::Themes);
         let mut picker = if let Some(picker) = self.menu.themes.take() {
-            picker.search.update(cx, |input, cx| input.clear(cx));
             picker
         } else {
-            let search = cx.new(SearchInput::new);
-            search.update(cx, |input, cx| {
-                input.set_placeholder_with(|| fl!("theme-picker-search"), cx)
-            });
-            let subscription = cx.subscribe(
-                &search,
-                |this, search, _: &crate::search_input::Changed, cx| {
-                    if let Some(picker) = &mut this.menu.themes {
-                        if picker.accepting || picker.query == search.read(cx).text() {
-                            return;
-                        }
-                        picker.filter(search.read(cx).text(), &this.config.favorite_themes);
-                    }
-                    this.preview_picker_selection(cx);
-                },
-            );
             ThemePicker {
-                search,
+                input: None,
                 names: Vec::new(),
                 filtered: Vec::new(),
                 favorites: 0,
@@ -116,7 +108,7 @@ impl SheprdWindow {
                 saving: false,
                 in_flight: None,
                 window: window.window_handle(),
-                _subscription: subscription,
+                status_scroll: ScrollHandle::new(),
             }
         };
         picker.session += 1;
@@ -142,10 +134,13 @@ impl SheprdWindow {
             .iter()
             .position(|name| name == current)
             .unwrap_or(0);
-        picker.search.update(cx, |input, cx| {
+        let input = Input::new(cx);
+        input.search.update(cx, |input, cx| {
             input.set_appearance(self.config.ui.clone(), self.theme.clone(), cx);
             window.focus(&input.focus, cx);
         });
+        picker.input = Some(input);
+        picker.status_scroll.set_offset(Point::default());
         self.menu.themes = Some(picker);
         self.discover_picker_themes(cx);
         cx.notify();
@@ -197,7 +192,11 @@ impl SheprdWindow {
                 }
                 let selected = picker.filtered.get(picker.selected).cloned();
                 picker.names = names;
-                picker.filter(picker.search.read(cx).text(), &self.config.favorite_themes);
+                let Some(search) = picker.search() else {
+                    return;
+                };
+                let query = search.read(cx).text().to_owned();
+                picker.filter(&query, &self.config.favorite_themes);
                 if let Some(index) = picker
                     .filtered
                     .iter()
@@ -222,20 +221,81 @@ impl SheprdWindow {
             .is_some_and(|picker| picker.saving)
     }
 
+    /// Refreshes the active preview and its cancel target from raw palettes.
+    pub(super) fn refresh_picker_contrast(&mut self, cx: &mut Context<Self>) -> bool {
+        if self.menu.page != Some(Page::Themes) {
+            return false;
+        }
+        let Some(picker) = &mut self.menu.themes else {
+            return false;
+        };
+        if picker.baseline.is_none() {
+            return false;
+        }
+        let session = picker.session;
+        // A committed disk write keeps its token until its result is reconciled.
+        if !picker.saving {
+            picker.request += 1;
+            picker.loaded = None;
+        }
+        let config = self.config.clone();
+        let light = crate::app::light_appearance(cx);
+        let task = cx
+            .background_executor()
+            .spawn(async move { config.raw_theme(light).map(|theme| (config.theme, theme)) });
+        cx.spawn(async move |this, cx| {
+            let result = task.await;
+            let _ = this.update(cx, |this, cx| {
+                let (name, raw) = match result {
+                    Ok(loaded) => loaded,
+                    Err(error) => {
+                        tracing::warn!(%error, "Could not refresh preview contrast");
+                        return;
+                    }
+                };
+                let Some(picker) = &mut this.menu.themes else {
+                    return;
+                };
+                if picker.session != session
+                    || picker.baseline.is_none()
+                    || this.config.theme != name
+                {
+                    return;
+                }
+                let theme = raw.styled_for(&this.config);
+                picker.baseline = Some(theme.clone());
+                if picker.desired.is_none() {
+                    this.theme = theme;
+                    picker.set_search_appearance(&this.config.ui, &this.theme, cx);
+                    crate::log_window::set_appearance(&this.config, &this.theme, cx);
+                }
+                cx.notify();
+            });
+        })
+        .detach();
+        self.drive_picker_load(cx);
+        true
+    }
+
     pub(super) fn cancel_theme_preview(&mut self, cx: &mut Context<Self>) -> bool {
         // Starting the disk write is the commit boundary. Its result must be
         // reconciled before another modal, cancellation, or reload can proceed.
         if self.theme_save_in_flight() {
             return false;
         }
+        let mut refresh = false;
         if let Some(picker) = &mut self.menu.themes {
             if let Some(theme) = picker.baseline.take() {
+                refresh = theme.contrast != self.config.contrast.or_system();
                 self.theme = theme;
                 crate::log_window::set_appearance(&self.config, &self.theme, cx);
             }
             picker.session += 1;
             picker.desired = None;
             picker.accepting = false;
+        }
+        if refresh {
+            Self::defer_theme_reload(cx);
         }
         true
     }
@@ -270,9 +330,7 @@ impl SheprdWindow {
                 self.theme = theme.clone();
             }
         }
-        picker.search.update(cx, |input, cx| {
-            input.set_appearance(self.config.ui.clone(), self.theme.clone(), cx)
-        });
+        picker.set_search_appearance(&self.config.ui, &self.theme, cx);
         crate::log_window::set_appearance(&self.config, &self.theme, cx);
         self.drive_picker_load(cx);
         cx.notify();
@@ -327,7 +385,7 @@ impl SheprdWindow {
             if saving {
                 config.save_theme(&config.theme).map(|()| theme)
             } else {
-                config.theme(light)
+                config.raw_theme(light)
             }
         });
         cx.spawn(async move |this, cx| {
@@ -363,11 +421,14 @@ impl SheprdWindow {
         }
         match result {
             Ok(theme) => {
-                self.theme = theme;
+                let refresh = saving && theme.contrast != self.config.contrast.or_system();
+                self.theme = if saving {
+                    theme
+                } else {
+                    theme.styled_for(&self.config)
+                };
                 picker.loaded = picker.desired.clone();
-                picker.search.update(cx, |input, cx| {
-                    input.set_appearance(self.config.ui.clone(), self.theme.clone(), cx)
-                });
+                picker.set_search_appearance(&self.config.ui, &self.theme, cx);
                 if saving {
                     if let Some(name) = &picker.desired {
                         self.config.theme = ThemeName::with_side(
@@ -379,6 +440,9 @@ impl SheprdWindow {
                     crate::log_window::set_appearance(&self.config, &self.theme, cx);
                     picker.baseline = None;
                     self.dismiss_menu(window, cx);
+                    if refresh {
+                        Self::defer_theme_reload(cx);
+                    }
                 } else {
                     crate::log_window::set_appearance(&self.config, &self.theme, cx);
                     self.drive_picker_load(cx);
@@ -402,7 +466,10 @@ impl SheprdWindow {
             return;
         };
         // Unhandled text must reach the native input system, including IME commands.
-        if picker.search.read(cx).is_composing() {
+        if picker
+            .search()
+            .is_none_or(|search| search.read(cx).is_composing())
+        {
             return;
         }
         match event.keystroke.key.as_str() {
@@ -445,6 +512,17 @@ impl SheprdWindow {
         let Some(picker) = &self.menu.themes else {
             return div();
         };
+        if picker.search().is_none() {
+            return div();
+        }
+        self.render_theme_picker_content(Content::Live(picker), cx)
+    }
+
+    pub(crate) fn render_theme_picker_paint(&self, paint: &Paint, cx: &mut Context<Self>) -> Div {
+        self.render_theme_picker_content(Content::Frozen(paint), cx)
+    }
+
+    fn render_theme_picker_content(&self, picker: Content<'_>, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
         let font = &self.config.ui;
         div()
@@ -476,23 +554,26 @@ impl SheprdWindow {
                                     .debug_selector(|| "theme-close".into())
                                     .px_2()
                                     .py_1()
-                                    .cursor_pointer()
                                     .rounded(px(crate::config::corners::CONTROL))
-                                    .hover(|s| s.bg(rgb(theme.active)))
                                     .child(fl!("theme-picker-close"))
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.dismiss_menu(window, cx)
-                                    })),
+                                    .when(picker.active(), |button| {
+                                        button
+                                            .cursor_pointer()
+                                            .hover(|s| s.bg(rgb(theme.active)))
+                                            .on_click(cx.listener(|this, _, window, cx| {
+                                                this.dismiss_menu(window, cx)
+                                            }))
+                                    }),
                             ),
                     )
-                    .child(div().pt(px(12.)).child(picker.search.clone()))
+                    .child(div().pt(px(12.)).children(picker.input()))
                     .child(div().pt(px(8.)).text_color(rgb(theme.muted)).child(fl!(
                         "theme-picker-count",
-                        shown = picker.filtered.len(),
-                        total = picker.names.len()
+                        shown = picker.count(),
+                        total = picker.total()
                     ))),
             )
-            .when(picker.filtered.is_empty(), |panel| {
+            .when(picker.count() == 0, |panel| {
                 panel.child(
                     div()
                         .debug_selector(|| "theme-empty".into())
@@ -502,92 +583,49 @@ impl SheprdWindow {
                         .child(fl!("theme-picker-empty")),
                 )
             })
-            .when(!picker.filtered.is_empty(), |panel| {
-                panel.child(
-                    uniform_list(
+            .when(picker.count() != 0, |panel| {
+                let rows = match picker {
+                    Content::Live(live) => uniform_list(
                         "theme-results",
-                        picker.filtered.len(),
+                        live.filtered.len(),
                         cx.processor(|this, range: std::ops::Range<usize>, _, cx| {
                             let Some(picker) = &this.menu.themes else {
                                 return Vec::new();
                             };
                             range
-                                .map(|index| {
-                                    let name = picker.filtered[index].clone();
-                                    let selected = index == picker.selected;
-                                    let current = name
-                                        == ThemeName::side(
-                                            &this.config.theme,
-                                            crate::app::light_appearance(cx),
-                                        );
-                                    let favorite = index < picker.favorites;
-                                    // A rule closes the starred group when
-                                    // other themes follow it.
-                                    let last_favorite = index + 1 == picker.favorites
-                                        && picker.favorites < picker.filtered.len();
-                                    div()
-                                        .id(index)
-                                        .debug_selector(move || format!("theme-row-{index}"))
-                                        // As in the palette, the fill is the row.
-                                        .w_full()
-                                        .h(px(this.config.ui.line_height() + 20.))
-                                        .px(px(16.))
-                                        .flex()
-                                        .items_center()
-                                        .gap(px(8.))
-                                        .cursor_pointer()
-                                        .when(selected, |row| row.bg(rgb(this.theme.active)))
-                                        // Dimmed text colour, so the rule
-                                        // still shows on a selected row.
-                                        .when(last_favorite, |row| {
-                                            row.border_b_1()
-                                                .border_color(rgba((this.theme.muted << 8) | 0x80))
-                                        })
-                                        .hover(|s| s.bg(rgb(this.theme.active)))
-                                        .child(
-                                            div()
-                                                .debug_selector(|| format!("theme-name-{name}"))
-                                                .flex_1()
-                                                .min_w_0()
-                                                .truncate()
-                                                .child(name.clone()),
-                                        )
-                                        .when(current, |row| {
-                                            row.child(
-                                                div()
-                                                    .text_color(rgb(this.theme.muted))
-                                                    .child(fl!("theme-picker-current")),
-                                            )
-                                        })
-                                        // The outline shows on the row under
-                                        // the pointer or keys; a star stays.
-                                        .when(favorite || selected, |row| {
-                                            row.child(
-                                                this.favorite_star(index, &name, favorite, cx),
-                                            )
-                                        })
-                                        .on_hover(cx.listener(move |this, hovered, _, cx| {
-                                            if *hovered {
-                                                if let Some(picker) = &mut this.menu.themes {
-                                                    if picker.accepting {
-                                                        return;
-                                                    }
-                                                    picker.selected = index;
-                                                }
-                                                this.preview_picker_selection(cx);
-                                            }
-                                        }))
-                                        .on_click(cx.listener(move |this, _, _, cx| {
-                                            this.apply_picker_theme(&name, cx)
-                                        }))
+                                .filter_map(|index| {
+                                    let row = this.theme_picker_row_data(picker, index, cx)?;
+                                    Some(this.theme_picker_row(
+                                        &row,
+                                        px(this.config.ui.line_height() + 20.),
+                                        true,
+                                        cx,
+                                    ))
                                 })
                                 .collect()
                         }),
                     )
-                    .track_scroll(&picker.scroll)
+                    .track_scroll(&live.scroll)
                     .flex_1()
-                    .min_h_0(),
-                )
+                    .min_h_0()
+                    .into_any_element(),
+                    Content::Frozen(paint) => div()
+                        .id("theme-results")
+                        .flex_1()
+                        .min_h_0()
+                        .relative()
+                        .overflow_hidden()
+                        .children(paint.rows.iter().enumerate().map(|(slot, row)| {
+                            div()
+                                .absolute()
+                                .top(paint.offset + paint.row_height * slot as f32)
+                                .left_0()
+                                .right_0()
+                                .child(self.theme_picker_row(row, paint.row_height, false, cx))
+                        }))
+                        .into_any_element(),
+                };
+                panel.child(rows)
             })
             .child(
                 div()
@@ -595,23 +633,26 @@ impl SheprdWindow {
                     .debug_selector(|| "theme-status".into())
                     .flex_none()
                     .h(px(font.line_height() * 3. + 20.))
-                    .overflow_y_scroll()
+                    .when(picker.active(), |status| {
+                        status.overflow_y_scroll().map(|status| match picker {
+                            Content::Live(live) => status.track_scroll(&live.status_scroll),
+                            Content::Frozen(_) => status,
+                        })
+                    })
+                    .when(!picker.active(), |status| status.overflow_hidden())
                     .px(px(16.))
                     .py(px(10.))
                     .border_t_1()
                     .border_color(rgb(theme.active))
                     .text_color(rgb(theme.muted))
-                    .child(if picker.saving {
-                        fl!("theme-picker-saving")
-                    } else if let Some(error) =
-                        picker.error.as_ref().or(picker.favorites_error.as_ref())
-                    {
-                        error.clone()
-                    } else if picker.accepting {
-                        fl!("theme-picker-loading")
-                    } else {
-                        fl!("theme-picker-hint")
-                    }),
+                    .child(
+                        div()
+                            .mt(match picker {
+                                Content::Live(_) => px(0.),
+                                Content::Frozen(paint) => paint.status_offset,
+                            })
+                            .child(picker.status()),
+                    ),
             )
     }
 }
@@ -619,4 +660,4 @@ impl SheprdWindow {
 mod favorites;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

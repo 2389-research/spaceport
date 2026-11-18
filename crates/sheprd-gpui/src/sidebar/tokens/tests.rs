@@ -1,3 +1,5 @@
+// ABOUTME: Exercises configured sidebar token resolution and omission rules.
+// ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::*;
 use crate::config::SidebarLayout;
 use crate::sidebar::layout_tests;
@@ -39,7 +41,13 @@ fn agent_tokens_resolve_state_pane_titles_and_custom_values() {
     let layout = agent_layout(
         r#"rows = [["state_text", "pane"], ["terminal_title", "terminal_title_stripped"], ["$usage_ctx_ok", "$missing"], ["$missing"]]"#,
     );
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(
         texts(&rows),
         [
@@ -51,20 +59,38 @@ fn agent_tokens_resolve_state_pane_titles_and_custom_values() {
     // Labels are untrusted display text: controls and bidi overrides go.
     snapshot.agents[0].state_labels =
         vec![("blocked".into(), "\u{1b}[31mneeds\u{202e} you\n".into())];
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(
         rows[0][0].kind,
         TokenKind::Text("[31mneeds you".into(), TextRole::Status)
     );
     // Without a label the wire status names the state; idle covers unknown.
     snapshot.agents[0].state_labels.clear();
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(
         rows[0][0].kind,
         TokenKind::Text("blocked".into(), TextRole::Status)
     );
     snapshot.agents[0].agent_status = AgentStatus::Unknown;
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(
         rows[0][0].kind,
         TokenKind::Text("idle".into(), TextRole::Status)
@@ -76,7 +102,13 @@ fn agent_tokens_resolve_state_pane_titles_and_custom_values() {
         "focused": false, "right_click_passthrough": false
     }]))
     .unwrap();
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(
         rows[0][1].kind,
         TokenKind::Text("shell".into(), TextRole::Secondary)
@@ -92,7 +124,13 @@ fn rules_style_hide_and_replace_rows_per_agent() {
 [rows_by_agent]
 claude = [[{ token = "$pct", rules = [{ gt = 90, hide = true }, { gt = 80, fg = "#ff0000" }] }, { token = "workspace", rules = [{ contains = "herdr", hide = true }] }]]"##,
     );
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(
         rows,
         [vec![ResolvedToken {
@@ -106,11 +144,25 @@ claude = [[{ token = "$pct", rules = [{ gt = 90, hide = true }, { gt = 80, fg = 
     );
     snapshot.agents[0].tokens[0].1 = "95".into();
     assert_eq!(
-        texts(&agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap()),
+        texts(
+            &agent_rows(
+                &layout,
+                &snapshot.agents[0],
+                &IndexedSnapshot::new(&snapshot),
+                None
+            )
+            .unwrap()
+        ),
         [vec!["<icon>"]]
     );
     snapshot.agents[0].agent = Some("codex".into());
-    let rows = agent_rows(&layout, &snapshot.agents[0], &snapshot, None).unwrap();
+    let rows = agent_rows(
+        &layout,
+        &snapshot.agents[0],
+        &IndexedSnapshot::new(&snapshot),
+        None,
+    )
+    .unwrap();
     assert_eq!(
         rows[0][0].style,
         TokenStyle {

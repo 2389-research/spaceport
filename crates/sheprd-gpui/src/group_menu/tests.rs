@@ -1,3 +1,5 @@
+// ABOUTME: Exercises group menus against real window state and isolated terminal peers.
+// ABOUTME: Shares geometry, tab, and action helpers across focused regression topics.
 #![allow(clippy::unwrap_used)]
 use super::*;
 use crate::{
@@ -253,6 +255,7 @@ mod browser_page;
 mod chat;
 mod close_others;
 mod closed_elsewhere;
+mod departure;
 mod en_xa;
 mod new_tabs;
 mod removed_orchestrator;

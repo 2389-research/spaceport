@@ -21,7 +21,16 @@ pub(super) struct Operation {
     cancelled: Arc<AtomicBool>,
     count: usize,
     cursor: Option<Cursor>,
+    kind: Kind,
     target: Target,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Kind {
+    // keep-sorted start
+    Prepare,
+    Upload,
+    // keep-sorted end
 }
 
 impl Operation {
@@ -68,14 +77,35 @@ impl FileWork {
         cursor: Option<Cursor>,
         count: usize,
     ) -> Operation {
+        self.begin_kind(target, cursor, count, Kind::Prepare)
+    }
+
+    fn begin_kind(
+        &mut self,
+        target: &Target,
+        cursor: Option<Cursor>,
+        count: usize,
+        kind: Kind,
+    ) -> Operation {
         let operation = Operation {
             cancelled: Arc::new(AtomicBool::new(false)),
             count,
             cursor,
+            kind,
             target: target.clone(),
         };
         self.transition(Event::Begin(operation.clone()));
         operation
+    }
+
+    fn copying(&self, target: &Target, cursor: Option<Cursor>) -> bool {
+        match &self.state {
+            State::Idle => false,
+            State::Pending(operations) => operations.iter().any(|operation| {
+                operation.kind == Kind::Upload
+                    && is_current(target, cursor, &operation.target, operation.cursor)
+            }),
+        }
     }
 
     pub(super) fn pending(&self, target: &Target, cursor: Option<Cursor>) -> usize {
@@ -193,7 +223,7 @@ impl SheprdWindow {
         &mut self,
         pane_id: &str,
         host: String,
-        paths: Vec<PathBuf>,
+        mut paths: Vec<PathBuf>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -203,7 +233,28 @@ impl SheprdWindow {
         if paths.is_empty() {
             return;
         }
-        let operation = pane.begin_files(paths.len());
+        if pane.file_work.copying(&pane.target, pane.session.since()) {
+            pane.error = Some(fl!("chat-files-copying"));
+            self.redraw_terminal(cx);
+            cx.notify();
+            return;
+        }
+        let available = MAX_ATTACHMENTS.saturating_sub(pane.attachments.len());
+        if paths.len() > available {
+            pane.error = Some(fl!("chat-files-too-many", count = MAX_ATTACHMENTS));
+            paths.truncate(available);
+        }
+        if paths.is_empty() {
+            self.redraw_terminal(cx);
+            cx.notify();
+            return;
+        }
+        let operation = pane.file_work.begin_kind(
+            &pane.target,
+            pane.session.since(),
+            paths.len(),
+            Kind::Upload,
+        );
         let cancelled = operation.cancelled();
         let executor = cx.background_executor().clone();
         let worker_host = host.clone();
@@ -254,6 +305,14 @@ impl SheprdWindow {
         }
         match uploaded {
             Ok(remote) => {
+                // Reject the whole batch if capacity changed, so the caller
+                // cleans every copy instead of leaking a discarded suffix.
+                if remote.len() > MAX_ATTACHMENTS.saturating_sub(pane.attachments.len()) {
+                    pane.error = Some(fl!("chat-files-too-many", count = MAX_ATTACHMENTS));
+                    self.redraw_terminal(cx);
+                    cx.notify();
+                    return false;
+                }
                 self.add_chat_files(
                     pane_id,
                     remote.iter().map(PathBuf::from).collect(),

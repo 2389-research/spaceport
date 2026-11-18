@@ -17,6 +17,8 @@ pub(crate) enum Phase {
     ClientOutdated,
     /// This computer has no Herdr to start.
     HerdrMissing,
+    /// This computer's Herdr explicitly stopped. Only the user may restart it.
+    HerdrStopped,
     Reconnecting,
     Connecting,
     Online,
@@ -31,6 +33,7 @@ impl Phase {
             Self::DaemonOutdated => "daemon-outdated",
             Self::ClientOutdated => "client-outdated",
             Self::HerdrMissing => "herdr-missing",
+            Self::HerdrStopped => "herdr-stopped",
             Self::Reconnecting => "reconnecting",
             Self::Connecting => "connecting",
             Self::Online => "online",
@@ -43,6 +46,7 @@ impl Phase {
             Self::DaemonOutdated => "Herdr update needed", // i18n: data
             Self::ClientOutdated => "app update needed",   // i18n: data
             Self::HerdrMissing => "Herdr not installed",   // i18n: data
+            Self::HerdrStopped => "Herdr stopped",         // i18n: data
             phase => phase.as_str(),
         }
     }
@@ -67,6 +71,7 @@ impl Endpoint {
                 ..
             }) => Phase::ClientOutdated,
             Some(Failure::Missing { .. }) => Phase::HerdrMissing,
+            Some(Failure::Stopped { .. }) => Phase::HerdrStopped,
             Some(Failure::Transport { .. }) => Phase::Reconnecting,
             None => Phase::Connecting,
         }
@@ -85,7 +90,7 @@ impl Endpoint {
     /// Whether a live transport has delivered a snapshot. Narrower than
     /// [`Phase::Online`], which a link still waiting for its first snapshot
     /// already is.
-    pub(super) fn serving(&self) -> bool {
+    pub(crate) fn serving(&self) -> bool {
         self.connection
             .handle
             .as_ref()
@@ -97,5 +102,8 @@ impl Endpoint {
     /// Whether the endpoint wants a connection and has no transport.
     pub(super) fn may_dial(&self) -> bool {
         matches!(self.link, Link::Waiting { .. })
+            && !self.herdr_stopped()
+            && !self.herdr_missing()
+            && self.connection.retry_ready()
     }
 }

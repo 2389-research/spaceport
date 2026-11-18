@@ -1,3 +1,5 @@
+// ABOUTME: Checks cancellation of private control connections and late responses.
+// ABOUTME: Verifies that disconnected callers release their waiting allowance.
 use super::*;
 
 #[test]
@@ -5,8 +7,10 @@ fn disconnected_receivers_cancel_without_waiting_for_the_deadline() {
     let (_address, server, client) = pair();
     let (sender, events) = mpsc::sync_channel::<Event>(QUEUE);
     let (finished, done) = mpsc::channel();
+    let waiting = Arc::new(AtomicUsize::new(0));
+    let count = waiting.clone();
     let worker = thread::spawn(move || {
-        serve(&server, &sender);
+        serve(&server, &sender, &count);
         finished.send(()).unwrap();
     });
     write_line(&client, &waiting_events(600)).unwrap();
@@ -15,6 +19,7 @@ fn disconnected_receivers_cancel_without_waiting_for_the_deadline() {
     drop(client);
     done.recv_timeout(Duration::from_secs(5)).unwrap();
     worker.join().unwrap();
+    assert_eq!(waiting.load(Ordering::Acquire), 0);
     assert!(!incoming.is_live());
     let response = Response::Done {
         message: "late".into(),

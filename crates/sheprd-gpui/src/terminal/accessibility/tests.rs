@@ -2,6 +2,8 @@ use super::*;
 use crate::terminal::HIDDEN;
 use sheprd_client::protocol::{CellData, PaneSurfacePane, SurfaceRect};
 
+mod caret;
+
 const CELL_WIDTH: f32 = 10.;
 const CELL_HEIGHT: f32 = 20.;
 

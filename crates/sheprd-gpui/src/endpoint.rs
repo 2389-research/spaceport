@@ -776,7 +776,7 @@ impl SheprdWindow {
 }
 
 // The fixtures drive the real client over bound Unix sockets and POSIX processes.
-#[cfg(all(test, unix))]
+#[cfg(test)]
 mod lifecycle_tests;
 
 #[cfg(test)]

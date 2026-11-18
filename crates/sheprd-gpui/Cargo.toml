@@ -20,6 +20,7 @@ base64.workspace               = true
 chrono.workspace               = true
 config_loader.workspace        = true
 flate2.workspace               = true
+futures-channel.workspace      = true
 getrandom.workspace            = true
 gpui.workspace                 = true
 # Unlike gpui 0.2.2, the platform crate enables nothing by default: without
@@ -86,8 +87,13 @@ sheprd-usage = { features = ["test-support"], workspace = true }
 socket2.workspace = true
 test-case.workspace = true
 
+[target.'cfg(windows)'.dev-dependencies]
+interprocess.workspace = true
+
 [target.'cfg(unix)'.dev-dependencies]
 libc.workspace = true
+futures-lite.workspace = true
+zbus = { features = ["async-io", "p2p"], workspace = true }
 
 [features]
 default = []
@@ -121,6 +127,7 @@ raw-window-handle.workspace = true
 windows = { features = [
   "Data_Xml_Dom",
   "UI_Notifications",
+  "UI_ViewManagement",
   "Win32_Graphics_Gdi",
   "Win32_UI_Shell_Common",
   "Win32_UI_WindowsAndMessaging",
@@ -145,6 +152,7 @@ fontdb.workspace       = true
 futures-lite.workspace = true
 nix.workspace          = true
 oo7.workspace          = true
+zbus = { features = ["async-io"], workspace = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 sparkle-updater = { optional = true, workspace = true }
@@ -169,6 +177,10 @@ required-features = ["integration-test"]
 
 [[test]]
 name              = "performance_gui"
+required-features = ["integration-test"]
+
+[[test]]
+name              = "working_profile"
 required-features = ["integration-test"]
 
 [[example]]

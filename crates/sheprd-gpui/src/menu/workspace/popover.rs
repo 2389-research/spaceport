@@ -1,8 +1,11 @@
+// ABOUTME: Renders native workspace actions with shared localized labels.
+// ABOUTME: Keeps menu target, keyboard selection, and accessibility semantics aligned.
 //! The workspace popover: a header naming the workspace, with the toggle
 //! that mutes its notifications, a fixed grid of large action tiles, plain
 //! rows for the rarer actions.
 
 // i18n: migrated
+use super::{PopoverPaint, paint::ItemPaint};
 use crate::i18n::fl;
 use crate::{
     SheprdWindow, i18n,
@@ -17,6 +20,7 @@ pub(crate) struct Label(&'static str);
 
 impl Label {
     // keep-sorted start
+    pub(crate) const CLOSE_WORKSPACE: Self = Self::new("worktree-popover-close-workspace");
     pub(crate) const COLLAPSE_GROUP: Self = Self::new("worktree-popover-collapse-group");
     pub(crate) const EXPAND_GROUP: Self = Self::new("worktree-popover-expand-group");
     pub(crate) const MUTE: Self = Self::new("worktree-popover-mute");
@@ -166,13 +170,25 @@ impl SheprdWindow {
     /// short and few, and GPUI caches each shaped line, so measuring them as
     /// the popover draws costs no more than drawing them.
     pub(in crate::menu) fn workspace_popover_width(&self, window: &Window, room: Pixels) -> Pixels {
+        self.workspace_popover_paint()
+            .map_or(px(WIDTH).min(room), |paint| {
+                self.workspace_popover_paint_width(&paint, window, room)
+            })
+    }
+
+    pub(in crate::menu) fn workspace_popover_paint_width(
+        &self,
+        paint: &PopoverPaint,
+        window: &Window,
+        room: Pixels,
+    ) -> Pixels {
         let size = px((self.config.ui.size - 1.).max(8.));
         let font = self.config.ui.font();
-        let (tiles, _) = layout(&self.workspace_items());
-        let widest = tiles
+        let widest = paint
+            .tiles
             .iter()
             .map(|tile| {
-                let caption = tile.caption();
+                let caption = tile.caption.clone();
                 let mut run = window.text_style().to_run(caption.len());
                 run.font = font.clone();
                 window
@@ -189,11 +205,31 @@ impl SheprdWindow {
     }
 
     pub(in crate::menu) fn render_workspace_popover(&self, cx: &mut Context<Self>) -> Div {
+        self.workspace_popover_paint().map_or_else(div, |paint| {
+            self.workspace_popover_content(&paint, true, cx)
+        })
+    }
+
+    pub(in crate::menu) fn render_workspace_popover_paint(
+        &self,
+        paint: &PopoverPaint,
+        cx: &mut Context<Self>,
+    ) -> Div {
+        self.workspace_popover_content(paint, false, cx)
+            .relative()
+            .top(paint.offset)
+    }
+
+    fn workspace_popover_content(
+        &self,
+        paint: &PopoverPaint,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Div {
         let theme = &self.theme;
         let font = &self.config.ui;
-        let items = self.workspace_items();
         let mut panel = div().flex().flex_col();
-        if let Some(target) = &self.menu.target {
+        {
             let names = div()
                 .flex_1()
                 .min_w_0()
@@ -204,24 +240,18 @@ impl SheprdWindow {
                         // full name shows when the sidebar row cuts it off.
                         .whitespace_normal()
                         .font_weight(FontWeight::SEMIBOLD)
-                        .child(crate::sidebar::label_text(&target.label)),
+                        .child(crate::sidebar::label_text(&paint.label)),
                 )
-                .when_some(
-                    target
-                        .branch
-                        .as_deref()
-                        .filter(|branch| !branch.trim().is_empty()),
-                    |names, branch| {
-                        names.child(
-                            div()
-                                .debug_selector(|| "workspace-menu-branch".into())
-                                .truncate()
-                                .text_color(rgb(theme.muted))
-                                .text_size(px(font.size * 0.9))
-                                .child(crate::sidebar::label_text(branch)),
-                        )
-                    },
-                );
+                .when_some(paint.branch.as_deref(), |names, branch| {
+                    names.child(
+                        div()
+                            .debug_selector(|| "workspace-menu-branch".into())
+                            .truncate()
+                            .text_color(rgb(theme.muted))
+                            .text_size(px(font.size * 0.9))
+                            .child(crate::sidebar::label_text(branch)),
+                    )
+                });
             panel = panel.child(
                 div()
                     .debug_selector(|| "workspace-menu-header".into())
@@ -234,35 +264,35 @@ impl SheprdWindow {
                     .items_start()
                     .gap(px(8.))
                     .child(names)
-                    .children(
-                        items
-                            .iter()
-                            .find(|(action, _)| action.in_header())
-                            .map(|&(action, label)| self.render_workspace_mute(action, label, cx)),
-                    ),
+                    .children(paint.mute.as_ref().map(|item| {
+                        if active {
+                            self.render_workspace_mute(item.action, item.label, cx)
+                        } else {
+                            self.workspace_mute(item, false, cx)
+                        }
+                    })),
             );
         }
-        let (tiles, rest) = layout(&items);
         let mut grid = div()
             .debug_selector(|| "workspace-menu-tiles".into())
             .flex()
             .flex_col()
             .gap(px(6.))
             .p(px(2.));
-        for row in tiles.chunks(COLUMNS) {
+        for row in paint.tiles.chunks(COLUMNS) {
             grid = grid.child(
-                div()
-                    .flex()
-                    .gap(px(6.))
-                    .children(row.iter().map(|tile| self.render_workspace_tile(*tile, cx))),
+                div().flex().gap(px(6.)).children(
+                    row.iter()
+                        .map(|tile| self.render_workspace_tile(tile, active, cx)),
+                ),
             );
         }
         panel = panel.child(grid);
-        if !rest.is_empty() {
+        if !paint.rows.is_empty() {
             panel = panel.child(div().h(px(6.)));
         }
-        for (action, label) in rest {
-            panel = panel.child(self.render_workspace_row(action, label, cx));
+        for item in &paint.rows {
+            panel = panel.child(self.render_workspace_row(item, active, cx));
         }
         panel
     }
@@ -278,9 +308,31 @@ impl SheprdWindow {
         label: Label,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
+        self.workspace_mute(
+            &ItemPaint::new(
+                Tile {
+                    action,
+                    label,
+                    enabled: true,
+                },
+                self.menu.workspace_selected,
+            ),
+            true,
+            cx,
+        )
+    }
+
+    fn workspace_mute(
+        &self,
+        item: &ItemPaint,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
+        let action = item.action;
+        let label = item.label;
         let theme = &self.theme;
         let muted = action == WorkspaceMenuAction::Unmute;
-        let selected = Some(action) == self.menu.workspace_selected;
+        let selected = item.selected;
         let ink = if muted {
             accent(theme)
         } else {
@@ -291,9 +343,12 @@ impl SheprdWindow {
         div()
             .id(label.id())
             .debug_selector(move || format!("workspace-menu-{}", label.english()))
-            .role(Role::Button)
-            .aria_label(label.text())
-            .when(selected, |toggle| toggle.aria_active_descendant())
+            .when(active, |toggle| {
+                toggle
+                    .role(Role::Button)
+                    .aria_label(item.text.clone())
+                    .when(selected, |toggle| toggle.aria_active_descendant())
+            })
             .flex_none()
             .h(px(line))
             .flex()
@@ -310,8 +365,6 @@ impl SheprdWindow {
             })
             .text_color(ink)
             .text_size(px((self.config.ui.size - 2.).max(8.)))
-            .cursor_pointer()
-            .on_hover(Self::workspace_hover(action, cx))
             .when_some(action.icon(), |toggle, icon| {
                 toggle.child(
                     svg()
@@ -327,10 +380,15 @@ impl SheprdWindow {
             } else {
                 fl!("worktree-popover-mute-button")
             })
-            .on_click(cx.listener(move |this, _, window, cx| {
-                cx.stop_propagation();
-                this.activate_workspace_menu(action, window, cx);
-            }))
+            .when(active, |toggle| {
+                toggle
+                    .cursor_pointer()
+                    .on_hover(Self::workspace_hover(action, cx))
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        cx.stop_propagation();
+                        this.activate_workspace_menu(action, window, cx);
+                    }))
+            })
     }
 
     /// Hover selects, as the arrow keys do, so both highlight the same item.
@@ -348,92 +406,105 @@ impl SheprdWindow {
         })
     }
 
-    fn render_workspace_tile(&self, tile: Tile, cx: &mut Context<Self>) -> Stateful<Div> {
+    fn render_workspace_tile(
+        &self,
+        tile: &ItemPaint,
+        active: bool,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
         let theme = &self.theme;
         let label = tile.label;
-        let selected = tile.enabled && self.menu.workspace_selected == Some(tile.action);
+        let selected = tile.selected;
         let ink = rgb(theme.foreground);
         let resting = rgb(theme.surface).blend(rgba((theme.foreground << 8) | 0x0f));
-        crate::accessibility::disabled(
-            div()
-                .id(label.id())
-                .role(Role::MenuItem)
-                .aria_label(label.spoken())
-                .when(selected, |tile| tile.aria_active_descendant()),
-            !tile.enabled,
-        )
-        .debug_selector(move || format!("workspace-menu-{}", label.english()))
-        .flex_1()
-        .min_w_0()
-        .min_h(px(64.))
-        .px(px(4.))
-        .py(px(10.))
-        .flex()
-        .flex_col()
-        .items_center()
-        .justify_center()
-        .gap(px(6.))
-        .rounded(px(crate::config::corners::CONTROL))
-        .bg(if selected { rgb(theme.active) } else { resting })
-        .text_color(ink)
-        .text_size(px((self.config.ui.size - 1.).max(8.)))
-        .when_some(tile.action.icon(), |tile_div, icon| {
-            tile_div.child(
-                svg()
-                    .path(icon)
-                    .size(px(20.))
-                    .flex_none()
-                    .text_color(ink)
-                    .debug_selector(move || format!("workspace-menu-icon-{}", label.english())),
+        div()
+            .id(label.id())
+            .when(active, |element| {
+                crate::accessibility::disabled(
+                    element
+                        .role(Role::MenuItem)
+                        .aria_label(tile.spoken.clone())
+                        .when(selected, |tile| tile.aria_active_descendant()),
+                    !tile.enabled,
+                )
+            })
+            .debug_selector(move || format!("workspace-menu-{}", label.english()))
+            .flex_1()
+            .min_w_0()
+            .min_h(px(64.))
+            .px(px(4.))
+            .py(px(10.))
+            .flex()
+            .flex_col()
+            .items_center()
+            .justify_center()
+            .gap(px(6.))
+            .rounded(px(crate::config::corners::CONTROL))
+            .bg(if selected { rgb(theme.active) } else { resting })
+            .text_color(ink)
+            .text_size(px((self.config.ui.size - 1.).max(8.)))
+            .when_some(tile.action.icon(), |tile_div, icon| {
+                tile_div.child(
+                    svg()
+                        .path(icon)
+                        .size(px(20.))
+                        .flex_none()
+                        .text_color(ink)
+                        .debug_selector(move || format!("workspace-menu-icon-{}", label.english())),
+                )
+            })
+            .child(
+                div()
+                    .debug_selector(move || format!("workspace-menu-label-{}", label.english()))
+                    .max_w_full()
+                    .truncate()
+                    .child(tile.caption.clone()),
             )
-        })
-        .child(
-            div()
-                .debug_selector(move || format!("workspace-menu-label-{}", label.english()))
-                .max_w_full()
-                .truncate()
-                .child(tile.caption()),
-        )
-        .map(|tile_div| {
-            if !tile.enabled {
-                return tile_div.opacity(0.4);
-            }
-            let action = tile.action;
-            tile_div
-                .cursor_pointer()
-                .on_hover(Self::workspace_hover(action, cx))
-                .on_click(cx.listener(move |this, _, window, cx| {
-                    cx.stop_propagation();
-                    this.activate_workspace_menu(action, window, cx);
-                }))
-        })
+            .map(|tile_div| {
+                if !tile.enabled {
+                    return tile_div.opacity(0.4);
+                }
+                if !active {
+                    return tile_div;
+                }
+                let action = tile.action;
+                tile_div
+                    .cursor_pointer()
+                    .on_hover(Self::workspace_hover(action, cx))
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        cx.stop_propagation();
+                        this.activate_workspace_menu(action, window, cx);
+                    }))
+            })
     }
 
     /// A rarer action, as a plain row under the tiles.
     fn render_workspace_row(
         &self,
-        action: WorkspaceMenuAction,
-        label: Label,
+        item: &ItemPaint,
+        active: bool,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
         let theme = &self.theme;
-        let selected = Some(action) == self.menu.workspace_selected;
+        let action = item.action;
+        let label = item.label;
+        let selected = item.selected;
         div()
             .id(label.id())
             .debug_selector(move || format!("workspace-menu-{}", label.english()))
-            .role(Role::MenuItem)
-            .aria_label(label.spoken())
-            .when(selected, |row| row.aria_active_descendant())
+            .when(active, |row| {
+                row.role(Role::MenuItem)
+                    .aria_label(item.spoken.clone())
+                    .when(selected, |row| row.aria_active_descendant())
+            })
             .mx(px(2.))
             .min_h(px(self.config.ui.line_height() + 12.))
             .px(px(ROW_INSET))
             .flex()
             .items_center()
             .gap(px(ROW_GAP))
-            .cursor_pointer()
             .rounded(px(crate::config::corners::CONTROL))
             .when(selected, |row| row.bg(rgb(theme.active)))
-            .on_hover(Self::workspace_hover(action, cx))
             .child(leading_icon(
                 action,
                 label,
@@ -449,11 +520,15 @@ impl SheprdWindow {
                     .min_w_0()
                     .truncate()
                     .debug_selector(move || format!("workspace-menu-label-{}", label.english()))
-                    .child(label.text()),
+                    .child(item.text.clone()),
             )
-            .on_click(cx.listener(move |this, _, window, cx| {
-                cx.stop_propagation();
-                this.activate_workspace_menu(action, window, cx);
-            }))
+            .when(active, |row| {
+                row.cursor_pointer()
+                    .on_hover(Self::workspace_hover(action, cx))
+                    .on_click(cx.listener(move |this, _, window, cx| {
+                        cx.stop_propagation();
+                        this.activate_workspace_menu(action, window, cx);
+                    }))
+            })
     }
 }

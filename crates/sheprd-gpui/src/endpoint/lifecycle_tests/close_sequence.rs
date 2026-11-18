@@ -29,6 +29,8 @@ fn close_sequence_waits_for_the_previous_closes_ack_and_surface(cx: &mut gpui::T
                     window,
                     cx,
                 );
+                assert_eq!(view.menu.page, Some(crate::menu::Page::ConfirmClose));
+                view.send_close(window, cx);
                 assert!(view.menu.page.is_none());
                 assert!(!view.input_ready());
             });

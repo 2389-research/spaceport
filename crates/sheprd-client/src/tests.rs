@@ -1,3 +1,5 @@
+// ABOUTME: Shares isolated protocol peers and fixtures across client tests.
+// ABOUTME: Verifies worker ordering, framing, cancellation, and terminal delivery.
 use super::*;
 #[cfg(unix)]
 use crate::transport::Listener;
@@ -46,6 +48,7 @@ mod session_state;
 mod surface_encoding;
 mod surfaces;
 mod version_mismatch;
+mod worker_panic;
 const SNAPSHOT: &str =
     include_str!("../../sheprd-protocol/tests/fixtures/endpoint-snapshot-v1.json");
 const WELCOME: &str = include_str!("../../sheprd-protocol/tests/fixtures/endpoint-welcome-v1.json");

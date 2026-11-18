@@ -1,3 +1,5 @@
+// ABOUTME: Exercises terminal link actions with real files and native path templates.
+// ABOUTME: Checks hover, confirmation, and activation through headless window events.
 //! Every kind of terminal link, one case each, under each user action: rest,
 //! hover, hover with the link modifier held, and a click with it held. The
 //! cases follow the table of link behavior in the pull request that added
@@ -5,9 +7,7 @@
 //!
 //! They run headless: what is drawn is read from the painter's decorations
 //! and the window's hover state, and what a click opens from the test
-//! platform. Most cases write Unix paths and run only on Unix; the cases
-//! whose text is the same on every platform run everywhere.
-#![cfg_attr(not(unix), allow(dead_code))]
+//! platform. File cases use real native paths and platform-correct file URLs.
 
 use super::*;
 use crate::{menu::Page, terminal_painter::decoration_spans};
@@ -136,6 +136,14 @@ impl Sandbox {
 
     pub(super) fn fill(&self, template: &str) -> String {
         template
+            .replace(
+                "{localhost_url}",
+                &self.work_url.replacen("file://", "file://localhost", 1),
+            )
+            .replace(
+                "{work_uri_path}",
+                self.work_url.strip_prefix("file://").unwrap(),
+            )
             .replace("{work_url}", &self.work_url)
             .replace("{work}", self.work.to_str().unwrap())
             .replace("{tilde}", &self.tilde)
@@ -413,50 +421,50 @@ fn check(
 }
 
 // OSC 8 hyperlink to a file.
-#[cfg_attr(unix, test_case(Text::Osc8("{work_url}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "file address, local host, existing file"))]
-#[cfg_attr(unix, test_case(Text::Osc8("file://localhost{work}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "file address, localhost, existing file"))]
-#[cfg_attr(unix, test_case(Text::Osc8("{work_url}/src"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src") ; "file address, local host, existing folder"))]
+#[test_case(Text::Osc8("{work_url}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "file address, local host, existing file")]
+#[test_case(Text::Osc8("{localhost_url}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "file address, localhost, existing file")]
+#[test_case(Text::Osc8("{work_url}/src"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src") ; "file address, local host, existing folder")]
 #[test_case(Text::Osc8("{work_url}/src/missing.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("src/missing.rs") ; "file address, local host, missing file")]
 #[test_case(Text::Osc8("file://other-host/src/sample.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::Says(crate::Error::LinkOnAnotherHost { host: "other-host".into() }) ; "file address, another host")]
-#[cfg_attr(unix, test_case(Text::Osc8("{work}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare absolute path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Osc8("{tilde}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare home path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Osc8("./src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare dot path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Osc8("../work/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare parent path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Osc8("src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare relative path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Osc8("{work}/src/missing.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("src/missing.rs") ; "bare absolute path, missing file"))]
-#[cfg_attr(unix, test_case(Text::Osc8("./no/such/file.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("./no/such/file.rs") ; "bare dot path, missing file"))]
+#[test_case(Text::Osc8("{work}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare absolute path, existing file")]
+#[test_case(Text::Osc8("{tilde}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare home path, existing file")]
+#[test_case(Text::Osc8("./src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare dot path, existing file")]
+#[test_case(Text::Osc8("../work/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare parent path, existing file")]
+#[test_case(Text::Osc8("src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare relative path, existing file")]
+#[test_case(Text::Osc8("{work}/src/missing.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("src/missing.rs") ; "bare absolute path, missing file")]
+#[test_case(Text::Osc8("./no/such/file.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("./no/such/file.rs") ; "bare dot path, missing file")]
 // OSC 8 hyperlink to a URL.
-#[cfg_attr(unix, test_case(Text::Osc8("https://example.com/something/"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("https://example.com/something/") ; "https address"))]
-#[cfg_attr(unix, test_case(Text::Osc8("http://example.com/something/"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("http://example.com/something/") ; "http address"))]
-#[cfg_attr(unix, test_case(Text::Osc8("mailto:name@example.com"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("mailto:name@example.com") ; "mailto address"))]
-#[cfg_attr(unix, test_case(Text::Osc8("vscode://file{work}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Asks("vscode://file{work}/src/sample.rs") ; "vscode address requires confirmation"))]
-#[cfg_attr(unix, test_case(Text::Osc8("ssh://example.com"), DASHES, DASHES, SOLID_AND_HAND, Click::Asks("ssh://example.com") ; "another scheme"))]
+#[test_case(Text::Osc8("https://example.com/something/"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("https://example.com/something/") ; "https address")]
+#[test_case(Text::Osc8("http://example.com/something/"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("http://example.com/something/") ; "http address")]
+#[test_case(Text::Osc8("mailto:name@example.com"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("mailto:name@example.com") ; "mailto address")]
+#[test_case(Text::Osc8("vscode://file{work_uri_path}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Asks("vscode://file{work_uri_path}/src/sample.rs") ; "vscode address requires confirmation")]
+#[test_case(Text::Osc8("ssh://example.com"), DASHES, DASHES, SOLID_AND_HAND, Click::Asks("ssh://example.com") ; "another scheme")]
 #[test_case(Text::Osc8("https://"), DASHES, DASHES, DASHES_AND_HAND, Click::Says(crate::Error::MalformedLink) ; "address that is not well formed")]
 // Plain text that may be a file path.
-#[cfg_attr(unix, test_case(Text::Plain("{work}/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "absolute path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("{tilde}/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "home path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("./src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "dot path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("../work/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "parent path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "relative path, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("{work}/src/sample.rs:3"), NONE, NONE, SOLID_AND_HAND, Click::OpensAt("src/sample.rs", 3) ; "path with line, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("{work}/src/sample.rs:3:5"), NONE, NONE, SOLID_AND_HAND, Click::OpensAt("src/sample.rs", 3) ; "path with line and column, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("{work}/src"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src") ; "absolute path, existing folder"))]
-#[cfg_attr(unix, test_case(Text::Plain("{work}/src/missing.rs"), NONE, NONE, NONE, Click::Nothing ; "absolute path, missing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("./no/such/file.rs"), NONE, NONE, NONE, Click::Nothing ; "dot path, missing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("Cargo.toml:1"), NONE, NONE, SOLID_AND_HAND, Click::OpensAt("Cargo.toml", 1) ; "bare file name with line, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("Cargo.toml"), NONE, NONE, SOLID_AND_HAND, Click::Opens("Cargo.toml") ; "bare file name with an extension, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("crates"), NONE, NONE, SOLID_AND_HAND, Click::Opens("crates") ; "bare word that names an existing folder"))]
-#[cfg_attr(unix, test_case(Text::Plain("no-such-file.txt"), NONE, NONE, NONE, Click::Nothing ; "bare word that names nothing"))]
-#[cfg_attr(unix, test_case(Text::Plain("{work_url}/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "file address, existing file"))]
-#[cfg_attr(unix, test_case(Text::Plain("{work_url}/src/missing.rs"), NONE, NONE, NONE, Click::Nothing ; "file address, missing file"))]
+#[test_case(Text::Plain("{work}/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "absolute path, existing file")]
+#[test_case(Text::Plain("{tilde}/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "home path, existing file")]
+#[test_case(Text::Plain("./src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "dot path, existing file")]
+#[test_case(Text::Plain("../work/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "parent path, existing file")]
+#[test_case(Text::Plain("src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "relative path, existing file")]
+#[test_case(Text::Plain("{work}/src/sample.rs:3"), NONE, NONE, SOLID_AND_HAND, Click::OpensAt("src/sample.rs", 3) ; "path with line, existing file")]
+#[test_case(Text::Plain("{work}/src/sample.rs:3:5"), NONE, NONE, SOLID_AND_HAND, Click::OpensAt("src/sample.rs", 3) ; "path with line and column, existing file")]
+#[test_case(Text::Plain("{work}/src"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src") ; "absolute path, existing folder")]
+#[test_case(Text::Plain("{work}/src/missing.rs"), NONE, NONE, NONE, Click::Nothing ; "absolute path, missing file")]
+#[test_case(Text::Plain("./no/such/file.rs"), NONE, NONE, NONE, Click::Nothing ; "dot path, missing file")]
+#[test_case(Text::Plain("Cargo.toml:1"), NONE, NONE, SOLID_AND_HAND, Click::OpensAt("Cargo.toml", 1) ; "bare file name with line, existing file")]
+#[test_case(Text::Plain("Cargo.toml"), NONE, NONE, SOLID_AND_HAND, Click::Opens("Cargo.toml") ; "bare file name with an extension, existing file")]
+#[test_case(Text::Plain("crates"), NONE, NONE, SOLID_AND_HAND, Click::Opens("crates") ; "bare word that names an existing folder")]
+#[test_case(Text::Plain("no-such-file.txt"), NONE, NONE, NONE, Click::Nothing ; "bare word that names nothing")]
+#[test_case(Text::Plain("{work_url}/src/sample.rs"), NONE, NONE, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "file address, existing file")]
+#[test_case(Text::Plain("{work_url}/src/missing.rs"), NONE, NONE, NONE, Click::Nothing ; "file address, missing file")]
 // Plain text that may be a URL.
-#[cfg_attr(unix, test_case(Text::Plain("https://example.com/something/"), NONE, NONE, SOLID_AND_HAND, Click::Address("https://example.com/something/") ; "https address"))]
-#[cfg_attr(unix, test_case(Text::Plain("http://example.com/something/"), NONE, NONE, SOLID_AND_HAND, Click::Address("http://example.com/something/") ; "http address"))]
-#[cfg_attr(unix, test_case(Text::Wrapped, NONE, NONE, SOLID_AND_HAND, Click::Address(WRAPPED) ; "https address that wraps onto more rows"))]
-#[cfg_attr(unix, test_case(Text::Plain("mailto:name@example.com"), NONE, NONE, SOLID_AND_HAND, Click::Address("mailto:name@example.com") ; "mailto address"))]
-#[cfg_attr(unix, test_case(Text::Plain("vscode://file{work}/src/sample.rs"), NONE, NONE, NONE, Click::Nothing ; "vscode text stays plain"))]
-#[cfg_attr(unix, test_case(Text::Plain("ssh://example.com"), NONE, NONE, NONE, Click::Nothing ; "another scheme"))]
-#[cfg_attr(unix, test_case(Text::Plain("example.com/something/"), NONE, NONE, NONE, Click::Nothing ; "address with no scheme"))]
+#[test_case(Text::Plain("https://example.com/something/"), NONE, NONE, SOLID_AND_HAND, Click::Address("https://example.com/something/") ; "https address")]
+#[test_case(Text::Plain("http://example.com/something/"), NONE, NONE, SOLID_AND_HAND, Click::Address("http://example.com/something/") ; "http address")]
+#[test_case(Text::Wrapped, NONE, NONE, SOLID_AND_HAND, Click::Address(WRAPPED) ; "https address that wraps onto more rows")]
+#[test_case(Text::Plain("mailto:name@example.com"), NONE, NONE, SOLID_AND_HAND, Click::Address("mailto:name@example.com") ; "mailto address")]
+#[test_case(Text::Plain("vscode://file{work_uri_path}/src/sample.rs"), NONE, NONE, NONE, Click::Nothing ; "vscode text stays plain")]
+#[test_case(Text::Plain("ssh://example.com"), NONE, NONE, NONE, Click::Nothing ; "another scheme")]
+#[test_case(Text::Plain("example.com/something/"), NONE, NONE, NONE, Click::Nothing ; "address with no scheme")]
 fn link(text: Text, rest: Look, hover: Look, cmd_hover: Look, cmd_click: Click) {
     in_app(|cx| check(&text, rest, hover, cmd_hover, &cmd_click, cx));
 }

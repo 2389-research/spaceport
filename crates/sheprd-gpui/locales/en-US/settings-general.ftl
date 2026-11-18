@@ -11,7 +11,7 @@ settings-general-section-startup = Startup
 ## Rows.
 
 settings-general-herdr-core = Enable Herdr Core
-settings-general-herdr-core-description = Adds Core terminals and groups. Requires restart.
+settings-general-herdr-core-description = Herdr Core is a separate experimental runtime from Herdr TUI. Changes require restarting Spaceport. Turning this off hides Core tabs while their terminals keep running. Enable it and restart to show them again.
 settings-general-herdr-core-restart = Restart Spaceport to apply this change.
 
 # The language picker's first choice. $language is the name, in itself, of

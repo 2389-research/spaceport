@@ -1,3 +1,5 @@
+// ABOUTME: Renders notification delivery, toast, and sound preferences.
+// ABOUTME: Separates private view defaults from app overrides.
 //! Notifications: delivery, in-app toasts, and sound.
 // i18n: migrated
 use super::{
@@ -37,7 +39,7 @@ impl SettingsWindow {
             .child(ui::section(
                 theme,
                 &fl!("settings-notifications-section-delivery"),
-                Some(ui::Source::Herdr),
+                Some(ui::Source::View),
             ))
             .child(
                 self.gate_shared(ui::row(theme, &catalog::NOTIF_DELIVERY))
@@ -111,7 +113,7 @@ impl SettingsWindow {
             .child(
                 self.gate_shared(
                     ui::row(theme, &catalog::NOTIF_SOUND)
-                        .tag(ui::Source::Herdr)
+                        .tag(ui::Source::View)
                         // Without a main window the row adds how to preview.
                         .when(!source_alive, |row| {
                             row.description(fl!(

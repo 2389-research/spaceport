@@ -1,3 +1,5 @@
+// ABOUTME: Parses bounded listener ownership and exact daemon socket metadata.
+// ABOUTME: Embeds the host shell scan while keeping link targets and port bounds explicit.
 //! The step a host's shell runs to list TCP listeners, and the text it prints.
 //!
 //! Herdr exports `HERDR_WORKSPACE_ID` into every pane it starts, and a server
@@ -32,44 +34,7 @@ const MAX_SOCKET: usize = 1024;
 /// only when missing: appending on every scan grows `PATH` without bound and
 /// slows every command lookup (issue #754).
 // i18n: data
-pub(crate) const COMMAND: &str = r#"for herdr_dir in /usr/sbin /sbin; do
-    case ":$PATH:" in
-        *":$herdr_dir:"*) ;;
-        *) PATH="$PATH:$herdr_dir" ;;
-    esac
-done
-if command -v ss >/dev/null 2>&1; then
-    herdr_ports=$(ss -ltnp 2>/dev/null | awk '{
-        rest = $0
-        while (match(rest, /\("[^"]*",pid=[0-9]+/)) {
-            entry = substr(rest, RSTART + 2, RLENGTH - 2)
-            rest = substr(rest, RSTART + RLENGTH)
-            split(entry, part, "\",pid=")
-            print "L", part[2], $4, part[1]
-        }
-    }')
-elif command -v lsof >/dev/null 2>&1; then
-    herdr_ports=$(lsof -nP -iTCP -sTCP:LISTEN -Fpcn 2>/dev/null | awk '
-        /^p/ { pid = substr($0, 2) }
-        /^c/ { name = substr($0, 2) }
-        /^n/ { print "L", pid, substr($0, 2), name }')
-else
-    herdr_ports=N
-fi
-printf '%s\n' "$herdr_ports"
-for herdr_pid in $(printf '%s\n' "$herdr_ports" | awk '$1 == "L" { print $2 }' | sort -un | head -n 128); do
-    if [ -r "/proc/$herdr_pid/environ" ]; then
-        herdr_env=$(tr '\0' '\n' < "/proc/$herdr_pid/environ")
-    else
-        herdr_env=$(ps -E -ww -o command= -p "$herdr_pid" 2>/dev/null | tr ' ' '\n')
-    fi
-    herdr_workspace=$(printf '%s\n' "$herdr_env" | sed -n 's/^HERDR_WORKSPACE_ID=//p' | head -n 1)
-    herdr_socket=$(printf '%s\n' "$herdr_env" | sed -n 's/^HERDR_SOCKET_PATH=//p' | head -n 1)
-    if [ -n "$herdr_workspace" ]; then
-        printf 'E %s %s %s\n' "$herdr_pid" "$herdr_workspace" "$herdr_socket"
-    fi
-done
-true"#;
+pub(crate) const COMMAND: &str = include_str!("scan/command.sh");
 
 /// The address a socket listens on, which decides how it can be reached.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

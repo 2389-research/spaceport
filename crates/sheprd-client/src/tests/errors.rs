@@ -1,3 +1,5 @@
+// ABOUTME: Checks typed client errors, retained sources, and readable diagnostics.
+// ABOUTME: Preserves cancellation and retry categories independently of display wording.
 use super::*;
 
 #[test]
@@ -111,13 +113,16 @@ fn connect_options_equality_and_send_error_display() {
     ] {
         assert_ne!(options, changed);
     }
-    assert_eq!(SendError::Full.to_string(), "client command queue is full");
+    assert_eq!(
+        SendError::Full.to_string(),
+        "Too many commands are waiting. Let them finish before trying again."
+    );
     assert_eq!(
         SendError::Disconnected.to_string(),
-        "client is disconnected"
+        "Spaceport is disconnected from Herdr."
     );
     assert_eq!(
         Error::MissingBootId.to_string(),
-        "invalid client command: snapshot boot ID required"
+        "The connection is not ready for this command. Wait for it to connect."
     );
 }

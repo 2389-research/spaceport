@@ -103,14 +103,15 @@ fn check(context: &Context) -> crate::Result<Output> {
         }
         // No app, or no window to ask: the files alone were checked.
         Err(error)
-            if not_running(&error)
-                || matches!(
-                    error,
-                    crate::Error::Control(crate::control::Error::Rejected {
-                        code: ErrorCode::NoWindow,
-                        ..
-                    })
-                ) =>
+            if context.window.is_none()
+                && (not_running(&error)
+                    || matches!(
+                        error,
+                        crate::Error::Control(crate::control::Error::Rejected {
+                            code: ErrorCode::NoWindow,
+                            ..
+                        })
+                    )) =>
         {
             false
         }

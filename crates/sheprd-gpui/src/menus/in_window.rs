@@ -1,10 +1,14 @@
+// ABOUTME: Routes custom application menus through their captured action tree and original focus.
+// ABOUTME: Separates departure paint from live actions, scroll ownership, and activation keys.
 //! Linux and Windows presentation of the same menu tree installed in macOS's menu bar.
 //! The shared popup state isolates terminal input; actions are dispatched only
 //! after restoring the focus from before the menu opened.
 
 #[cfg(all(feature = "integration-test", target_os = "linux"))]
 pub(crate) mod native;
+mod paint;
 mod render;
+pub(crate) use paint::Paint;
 
 use crate::{SheprdWindow, menu::Page};
 use gpui::*;
@@ -121,7 +125,9 @@ impl SheprdWindow {
             && event.keystroke.key == "f10"
             && event.keystroke.modifiers == Modifiers::default()
         {
-            self.open_application_menu(Some(0), window, cx);
+            if !event.is_held {
+                self.open_application_menu(Some(0), window, cx);
+            }
             cx.stop_propagation();
             window.prevent_default();
         }
@@ -172,10 +178,11 @@ impl SheprdWindow {
     /// Closes the open popup, which keeps its own copy of the menus, once a
     /// config change rebuilds the bar so it cannot offer items that left.
     pub(crate) fn close_stale_application_menu(&mut self, cx: &mut Context<Self>) {
-        if self.menu.application.take().is_none() {
+        let Some(paint) = self.invalidated_application_menu_paint(cx) else {
             return;
-        }
-        self.menu.page = None;
+        };
+        self.keep_application_menu_paint(paint);
+        self.menu.reset();
         cx.notify();
     }
 
@@ -257,6 +264,14 @@ impl SheprdWindow {
         let Some(menu) = &mut self.menu.application else {
             return;
         };
+        if event.is_held
+            && matches!(
+                event.keystroke.key.as_str(),
+                "enter" | "space" | "escape" | "f10"
+            )
+        {
+            return;
+        }
         match event.keystroke.key.as_str() {
             "escape" | "f10" => self.dismiss_menu(window, cx),
             key @ ("up" | "down" | "home" | "end") => {

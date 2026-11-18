@@ -59,7 +59,15 @@ pub(super) fn check_theme_picker(view: &Entity<SheprdWindow>, cx: &mut gpui::Vis
     let search = cx.update(|window, cx| {
         view.update(cx, |view, cx| view.open_theme_picker(window, cx));
         full_draw(window, cx).clear(cx);
-        let search = view.read(cx).menu.themes.as_ref().unwrap().search.clone();
+        let search = view
+            .read(cx)
+            .menu
+            .themes
+            .as_ref()
+            .unwrap()
+            .search()
+            .unwrap()
+            .clone();
         assert!(search.read(cx).focus.is_focused(window));
         cx.write_to_clipboard(gpui::ClipboardItem::new_string("catppuccin mocha".into()));
         search
@@ -106,11 +114,22 @@ pub(super) fn check_theme_picker(view: &Entity<SheprdWindow>, cx: &mut gpui::Vis
     cx.simulate_keystrokes("down enter");
     cx.update(|_, cx| assert!(view.read(cx).menu.page == Some(crate::menu::Page::Themes)));
     cx.simulate_keystrokes("escape");
-    cx.update(|window, cx| {
+    let search = cx.update(|window, cx| {
         assert!(view.read(cx).focus.is_focused(window));
         view.update(cx, |view, cx| view.open_theme_picker(window, cx));
         full_draw(window, cx).clear(cx);
-        assert!(search.read(cx).text().is_empty());
+        let reopened = view
+            .read(cx)
+            .menu
+            .themes
+            .as_ref()
+            .unwrap()
+            .search()
+            .unwrap()
+            .clone();
+        assert_ne!(search.entity_id(), reopened.entity_id());
+        assert!(reopened.read(cx).text().is_empty());
+        reopened
     });
     cx.update(|window, cx| {
         search.update(cx, |search, cx| {

@@ -1,3 +1,5 @@
+// ABOUTME: Formats native tab targets and their CLI operations.
+// ABOUTME: Keeps empty tab lists and collection envelopes consistent for scripts.
 //! `tab` and `devices`.
 
 use super::{Context, Output, unexpected};
@@ -29,10 +31,11 @@ pub(super) fn list(context: &Context) -> crate::Result<Output> {
         Response::Tab {
             reply: Reply::Tabs { tabs },
         } => {
+            let json = serde_json::json!({ "tabs": tabs });
             if tabs.is_empty() {
-                return Output::data("No app tabs are open", &tabs);
+                return Ok(Output::data("No app tabs are open", &json)?.nothing());
             }
-            Output::data(describe(&tabs), &tabs)
+            Output::data(describe(&tabs), &json)
         }
         response => Err(unexpected(response)),
     }

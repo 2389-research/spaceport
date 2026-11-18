@@ -1,3 +1,5 @@
+// ABOUTME: Runs exact pane moves against their captured runtime and destination.
+// ABOUTME: Preserves move completion and cancellation independently of popup paint.
 //! The pane menu's moves: to a new tab, a new workspace, or another tab
 //! through the move picker. Each move runs the `herdr` CLI on a background
 //! worker (see `crate::pane_move`); the menu stays open saying so until
@@ -13,6 +15,7 @@ use crate::{
 };
 use gpui::{prelude::*, *};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+mod render;
 
 /// Tells one pane move's result from another's, so a late answer never
 /// settles a menu reopened since.
@@ -220,81 +223,5 @@ impl SheprdWindow {
         if let Some(choice) = pane.target.destinations().get(index) {
             self.move_pane(choice.destination.clone(), window, cx);
         }
-    }
-
-    pub(super) fn render_pane_move_pending(&self) -> Div {
-        div().flex().flex_col().child(
-            div()
-                .debug_selector(|| "pane-move-pending".into())
-                .p(px(8.))
-                .text_color(rgb(self.theme.muted))
-                .child(fl!("pane-menu-moving")),
-        )
-    }
-
-    /// Fills the menu's `panel` with the picker. The heading and rows are the
-    /// panel's own children, which its scroll handle addresses by index, so
-    /// a row the keyboard selects in a long list scrolls into view.
-    pub(crate) fn render_move_picker(
-        &self,
-        panel: Stateful<Div>,
-        cx: &mut Context<Self>,
-    ) -> Stateful<Div> {
-        let Some(pane) = &self.menu.pane else {
-            return panel;
-        };
-        if pane.moving.is_some() {
-            return panel.child(self.render_pane_move_pending());
-        }
-        let mut body = panel.track_scroll(&pane.scroll).flex().flex_col().child(
-            div()
-                .flex_none()
-                .px(px(8.))
-                .py(px(4.))
-                .text_color(rgb(self.theme.muted))
-                .child(fl!("pane-menu-move-heading")),
-        );
-        let row = |index: usize| {
-            div()
-                .id(("pane-move-destination", index))
-                .flex_none()
-                .debug_selector(move || format!("pane-move-{index}"))
-                .min_h(px(self.config.ui.line_height() + 12.))
-                .px(px(8.))
-                .row()
-                .items_center()
-                .overflow_hidden()
-                .cursor_pointer()
-                .when(pane.selected == Some(index), |row| {
-                    row.bg(rgb(self.theme.active))
-                })
-                .hover(|row| row.bg(rgb(self.theme.active)))
-                .on_hover(cx.listener(move |this, hovered, _, cx| {
-                    if *hovered && let Some(pane) = &mut this.menu.pane {
-                        pane.selected = Some(index);
-                        cx.notify();
-                    }
-                }))
-        };
-        for (index, choice) in pane.target.destinations().into_iter().enumerate() {
-            let destination = choice.destination;
-            body = body.child(
-                row(index)
-                    .child(destination_label(index, choice.workspace, choice.place))
-                    .on_click(cx.listener(move |this, event: &ClickEvent, window, cx| {
-                        // The picker replaces the menu under the pointer, and
-                        // snapping it into the window can shift its rows, so
-                        // a double-click's second click would otherwise pick
-                        // whatever row it lands on.
-                        if event.click_count() > 1 {
-                            return;
-                        }
-                        this.move_pane(destination.clone(), window, cx)
-                    })),
-            );
-        }
-        body.when_some(pane.error.clone(), |body, error| {
-            body.child(div().flex_none().p(px(8.)).child(error))
-        })
     }
 }

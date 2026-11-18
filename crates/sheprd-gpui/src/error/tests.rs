@@ -1,3 +1,5 @@
+// ABOUTME: Checks application error context and retained typed source chains.
+// ABOUTME: Keeps sensitive schema details out of user-facing error text.
 use super::*;
 use std::{error::Error as _, path::Path};
 
@@ -35,11 +37,20 @@ fn io_context_retains_source_kind_and_cleanup_failure() {
 
 #[test]
 fn client_schema_presentation_remains_redacted() -> anyhow::Result<()> {
-    let source = serde_json::from_str::<Vec<String>>("{}")
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Catalog {}
+
+    let source = serde_json::from_str::<Catalog>(r#"{"private_fixture_field": 1}"#)
         .err()
         .ok_or_else(|| anyhow::anyhow!("expected schema error"))?;
+    assert!(source.to_string().contains("private_fixture_field"));
     let error = Error::from(sheprd_client::Error::CatalogSchema(source));
-    assert_eq!(error.to_string(), "invalid endpoint catalog schema");
+    assert_eq!(
+        error.to_string(),
+        "The saved connections file could not be read."
+    );
+    assert!(!error.to_string().contains("private_fixture_field"));
     assert!(
         error
             .source()

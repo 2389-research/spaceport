@@ -174,9 +174,9 @@ rows! {
             |c| !c.features.enabled(Feature::AcpChats);
     }
     FocusFollowsMouse {
-        Preference::FocusFollowsMouse(false) =>
-            "focus_follows_mouse = false\n", Root("focus_follows_mouse = false\n"),
-            |c| !c.focus_follows_mouse;
+        Preference::FocusFollowsMouse(true) =>
+            "focus_follows_mouse = true\n", Root("focus_follows_mouse = true\n"),
+            |c| c.focus_follows_mouse;
     }
     Herdr2Terminals {
         Preference::Herdr2Terminals(true) =>

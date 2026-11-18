@@ -114,7 +114,7 @@ fn closed(error: &io::Error) -> bool {
 }
 
 /// Bytes already buffered on a pipe, or `None` once the peer closed it, for
-/// callers that hold a synchronous pipe of their own (the app's control pipe).
+/// callers that own a synchronous control pipe or child-output pipe.
 /// Reading an idle synchronous pipe would block with no deadline, and
 /// `PIPE_NOWAIT` reports "no data yet" as a disconnect, so peeking first is the
 /// only bounded way to read one; no safe wrapper exposes it.

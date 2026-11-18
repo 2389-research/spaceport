@@ -1,0 +1,177 @@
+# Clipboard reads and async destination ownership
+
+Verified on 2026-11-17 in `review-squad-fixes`.
+The reader checkpoint below is historical; later async verification follows it.
+The implementation, independent review, and scoped local gates are complete.
+The complete `d378` finding remains open for native and platform qualification.
+Doctor Biz requested a stopping point before MultilineInput and Core changes.
+
+## Implemented boundary
+
+The native reader now accepts one `Mode`: `Normal`, `Text`, or `Image`.
+Text probes skip copied files and never acquire images when text is absent.
+Normal paste retains file, text, then image priority.
+Image paste retains image-only acquisition.
+The existing Gen1 background preparation caller now selects the typed mode.
+The macOS helper accepts the matching `normal`, `text`, and `image` arguments.
+Linux and Windows use the same mode at acquisition boundaries.
+No dependency was added.
+
+The shared reader retains its existing text and image byte bounds.
+Those bounds remain 2 MiB for text and 128 MiB for image input.
+The macOS helper retains its deadline, bounded output, and exact-child cleanup.
+Windows retains its native worker lease until the worker exits, including after caller timeout.
+Linux retains its whole-acquisition deadline and selection policy.
+
+## Regression evidence
+
+Three new tests failed at runtime before the fix.
+The generic text probe incorrectly returned image content.
+A real private AppKit board incorrectly returned a copied file instead of its published text.
+An image-only private board incorrectly returned an image for a text probe.
+Red log: `/tmp/spaceport-qnz9/d378-native-mode-red.log`.
+
+The focused reader group then passed all 33 tests.
+Green summary: `/tmp/spaceport-qnz9/d378-reader-green.log`.
+Full output: `/tmp/spaceport-qnz9/d378-reader/0.log`.
+Build output: `/tmp/spaceport-qnz9/d378-reader-build.log`.
+
+The group includes actual private named AppKit pasteboards and isolated helper processes.
+It also covers output bounds, deadlines, malformed helper responses, and exact-child cleanup.
+These checks never read the general or personal clipboard.
+The native fixture emits AppKit sandbox-extension diagnostics; no test failed.
+Linux helper-policy tests on macOS do not qualify a live Linux desktop.
+Windows native behavior was not run for this checkpoint.
+
+The exact check script is `/tmp/spaceport-qnz9/check-clipboard-reader.sh`.
+It builds the GPUI test binary with:
+
+```sh
+cargo test -p sheprd-gpui --bin spaceport --no-run --message-format=json --locked
+```
+
+It runs that artifact with the filter `window::clipboard::`.
+The throwaway runner reuses `crates/test-support/sandbox.rs` for private process state.
+The runner owns and reaps only its exact child, with a bounded wait.
+
+Every Cargo command uses `/usr/bin/lockf -k /tmp/spaceport-qnz9/cargo.lock`.
+The environment sets `CARGO_INCREMENTAL=0` and `RUSTUP_TOOLCHAIN=1.99.0`.
+`CARGO_TARGET_DIR` points to the sibling `upstream-fixes/target` directory.
+
+## Reader checkpoint remaining work (historical)
+
+At this checkpoint, chat and MultilineInput still used synchronous App clipboard reads.
+Core paste and its plain-CtrlV probe also used synchronous App clipboard reads.
+Async clipboard routing and prepared Core input slots had not been implemented.
+The checkpoint did not qualify async cancellation, focus fences, ordering, or releases.
+The complete approved contract and exact resume point live in `/tmp/spaceport-qnz9/d378-plan.md`.
+
+## Checkpoint verification and review
+
+Fresh-eyes review covered format priority, byte limits, helper ownership, and the existing Gen1 caller.
+That direct review found no material reader findings.
+Independent review of the completed async change remains required after implementation.
+
+`cargo fmt --check --all` passed under the shared Cargo lock.
+`git diff --check` passed.
+`just check-file-size check-sorted` passed, including all ten sort-checker tests.
+Structure log: `/tmp/spaceport-qnz9/d378-structure.log`.
+
+The shared GPUI Clippy gate failed with ten test-only unwrap diagnostics in sibling scopes.
+The files were `close_modal/sequence/tests.rs` and `notice/tests/history.rs`.
+No clipboard diagnostic appeared in that run.
+Root received the exact errors; this checkpoint does not claim the gate passed.
+Command: `cargo clippy -p sheprd-gpui --bin spaceport --tests --locked -- -D warnings`.
+Log: `/tmp/spaceport-qnz9/d378-reader-clippy.log`, exit 101.
+
+Completed upload evidence is separate: [bounded SSH uploads](review-chat-uploads.md).
+
+## Approved behavior on resume
+
+Composer edits and IME must remain immediate; changing them must cancel a pending paste.
+Owner submit, history, and completion actions must visibly refuse during preparation.
+Core must reserve bounded FIFO input before the read and continue draining output.
+Plain CtrlV must preserve fallback and release ordering when text is absent.
+Read permits must remain held until the native worker actually exits.
+Use existing private native fixtures for further end-to-end checks.
+
+Root's reviewed composer bounds and shaping cache remain separate completed work.
+The async clipboard issue stays open until implementation, focused tests, and independent review finish.
+Native keyboard, visual, and release performance checks remain pending.
+
+## Async routing implementation
+
+Chat, standalone multiline fields, and Core now acquire clipboard data outside the UI context.
+Production readers never call GPUI's synchronous App clipboard API.
+The test-only in-memory clipboard remains separate from native acquisition fixtures.
+One per-App budget permits at most four active read tasks across native paste routes.
+Each permit stays inside its acquisition closure until that closure exits.
+Windows additionally retains its existing single native-reader lease after caller timeout.
+
+Composer tickets capture field revision, selection, and exact entity ownership.
+Native edits, IME, selection movement, resets, and published blur events cancel the ticket.
+Chat adds exact Target and cursor-epoch checks before applying text or attachments.
+Ordinary sequence advancement preserves the ticket.
+Send, history, and completion refuse immediately during preparation and never submit later.
+Accepted replacement still passes the existing 256 KiB UTF-8 prompt limit.
+
+Core reserves one bounded command slot before reading.
+Its worker keeps draining terminal output while that slot waits.
+Empty plain-CtrlV probes preserve the original key at that slot.
+Conditional releases preserve both early-release and late-release ordering.
+Consumed paste presses produce no terminal release.
+
+Independent root review found that the first cancellation fence flushed unrelated accepted input.
+The earlier plan had incorrectly requested dropping following input on cancellation.
+That policy conflicted with the repository's cancellation invariant.
+The correction gives each clipboard slot its own cancellation flag.
+Cancelling a read skips that slot and preserves ordinary input, resize, and focus commands.
+The deterministic real-worker regression first lost both queued `before` and `after` input.
+Red log: `/tmp/spaceport-qnz9/d378-input-preservation-red.log`.
+
+Pinned GPUI publishes blur subscriptions after drawing an active window's focus transition.
+Its internal focus generation has no public getter.
+The focus-return fixture activates its private TestWindow and draws the transition before returning focus.
+That corrected test passes in `/tmp/spaceport-qnz9/d378-active-focus.log`.
+This does not prove an away-and-back focus change that GPUI never publishes between frames.
+
+## Corrected verification and review
+
+The corrected Core worker scope passes all ten tests.
+It covers queued input on both sides of a cancelled slot, output drain, capacity, and shutdown.
+Log: `/tmp/spaceport-qnz9/d378-input-preservation-green.log`.
+The Core view tests additionally exercise visible read errors and conditional key releases.
+The framed chat tests exercise Send refusal, epoch replacement, target replacement, and sequence advancement.
+
+Root independently reviewed the corrected slot, capacity, field, chat, and release ownership paths.
+That review approved the correction with no further material findings.
+The corrected expanded consumers pass with no failures or ignored tests:
+
+- Native reader and admission: 34 tests.
+- Multiline editing, prompt limits, and paste: 19 tests.
+- Core worker lifecycle, backpressure, and preparation: 10 tests.
+- Core view completion, errors, and releases: three tests.
+- Core paste shortcut classification: three tests.
+- Chat reducers, framed conversations, composer routing, and attachments: 531 tests.
+- Existing Gen1 image preparation: ten tests.
+
+Summary: `/tmp/spaceport-qnz9/d378-corrected-consumers.log`.
+Individual scope logs live in `/tmp/spaceport-qnz9/d378-corrected-consumers/`.
+The earlier expanded run passed every scope except its inactive focus-return fixture.
+Those older results do not qualify the corrected worker source.
+
+Current file-size, sorted-region, localization, and diff checks pass.
+Localization validates 2162 messages in 114 files.
+Log: `/tmp/spaceport-qnz9/d378-corrected-structure.log`.
+The earlier whole-worktree format run found in-flight edits owned by other tasks.
+Clipboard-owned files were formatted with the pinned Rust formatter.
+The final aggregate formatting check passes.
+Whole GPUI host and Windows GNU all-target, all-feature Clippy pass with `-D warnings`.
+Logs: `/tmp/spaceport-qnz9/2njz-host-clippy-source-stable.log` and `2njz-windows-clippy-source-stable.log` in the same directory.
+These gates include the corrected worker and later chat accessibility changes.
+The later complete chat scope passes 544 tests in `/tmp/spaceport-qnz9/2njz-nested-final-chat.log`.
+Earlier Settings lint results predate the worker cancellation correction and remain historical.
+
+No full workspace CI run, native Windows execution, or Linux desktop acquisition is claimed.
+Native keyboard, visual, accessibility, and release performance qualification remain pending.
+No personal clipboard, production daemon, commit, push, or Kata write was used for this work.

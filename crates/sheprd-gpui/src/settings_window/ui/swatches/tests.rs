@@ -1,5 +1,9 @@
+// ABOUTME: Exercises named host colour choices and typed colour input.
+// ABOUTME: Shares colour callbacks across pointer and keyboard tests.
 #![allow(clippy::unwrap_used)]
 use super::*;
+
+mod keyboard;
 use crate::config::{Config, Theme};
 use core::prelude::v1::test;
 use std::{cell::RefCell, rc::Rc};

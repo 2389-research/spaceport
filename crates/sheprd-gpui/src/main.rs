@@ -103,6 +103,10 @@ mod tab_menu;
 mod taskbar;
 mod terminal;
 mod terminal_painter;
+#[cfg(test)]
+#[path = "../../test-support/sandbox.rs"]
+#[allow(dead_code, clippy::unwrap_used, clippy::expect_used)]
+mod test_sandbox;
 mod text_editing;
 mod theme_picker;
 mod titlebar;
@@ -131,6 +135,8 @@ mod test_executable;
 #[allow(unsafe_code)]
 #[path = "../../test-support/process.rs"]
 mod test_process;
+#[cfg(all(target_os = "macos", feature = "integration-test"))]
+mod working_profile;
 
 pub use error::{Error, Result};
 

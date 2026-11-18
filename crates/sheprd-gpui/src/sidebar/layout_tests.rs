@@ -555,10 +555,12 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
     };
     let hosts = vec![cx.entity_id(), sidebar_view.entity_id()];
     let mark_layer = cx.new(|cx| crate::mark_layer::MarkLayer::new(window, hosts, cx));
+    let chrome_entry_focus = cx.focus_handle();
     let focus = cx.focus_handle();
     let terminal_focus = SheprdWindow::leave_region_with_terminal(&focus, window, cx);
     SheprdWindow {
         _terminal_focus: terminal_focus,
+        chrome_entry_focus,
         chrome_region: None,
         chats: Default::default(),
         sound: Default::default(),
@@ -732,7 +734,7 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         resize_mode: false,
         server_keys: None,
         shift_taps: Default::default(),
-        _prefix_interceptor: SheprdWindow::intercept_prefix(window, cx),
+        shortcut_keys: Default::default(),
     }
 }
 

@@ -126,7 +126,7 @@ impl SettingsWindow {
                 .flex()
                 .justify_center()
                 .cursor_pointer()
-                .text_size(px(11.))
+                .text_size(rems(0.6875))
                 .text_color(rgb(color))
                 .hover(move |style| style.text_color(rgb(hover)))
                 .on_click(cx.listener(move |this, _, _, cx| {
@@ -149,15 +149,33 @@ impl SettingsWindow {
                     .rounded(px(corners::SMALL))
                     .bg(accent)
                     .text_color(rgb(theme.text_on(on_accent)))
-                    .text_size(px(11.))
+                    .text_size(rems(0.6875))
                     .font_weight(FontWeight::SEMIBOLD)
                     .child(fl!("settings-theme-backdrop-percent", percent = percent)),
             );
         let recorded = self.controls.ruler.track.clone();
         let track = div()
             .id("settings-backdrop-ruler")
+            .role(Role::Slider)
+            .aria_label(fl!("settings-theme-backdrop-opacity"))
+            .aria_numeric_value(f64::from(percent))
+            .aria_min_numeric_value(f64::from(MIN_PERCENT))
+            .aria_max_numeric_value(f64::from(MAX_PERCENT))
+            .aria_numeric_value_step(1.)
+            .key_context(ui::row_context("settings-backdrop-ruler".into()))
+            .map(|track| {
+                ui::focusable(
+                    theme,
+                    crate::accessibility::disabled(track, self.busy()),
+                    !self.busy(),
+                )
+            })
             .debug_selector(|| "settings-backdrop-ruler".into())
             .relative()
+            .child(super::super::super::search::track_focus_bounds(
+                "settings-backdrop-ruler".into(),
+                px(0.),
+            ))
             .h(px(TRACK))
             .flex()
             .items_center()
@@ -206,7 +224,22 @@ impl SettingsWindow {
             .on_mouse_up_out(
                 MouseButton::Left,
                 cx.listener(|this, _, _, cx| this.release_opacity(cx)),
-            );
+            )
+            .on_key_down(cx.listener(move |this, event: &KeyDownEvent, window, cx| {
+                if event.keystroke.modifiers != Modifiers::default() {
+                    return;
+                }
+                let next = match event.keystroke.key.as_str() {
+                    "left" | "down" => percent - 1,
+                    "right" | "up" => percent + 1,
+                    "home" => MIN_PERCENT,
+                    "end" => MAX_PERCENT,
+                    _ => return,
+                };
+                cx.stop_propagation();
+                window.prevent_default();
+                this.set_opacity(next.clamp(MIN_PERCENT, MAX_PERCENT) as f32 / 100., cx);
+            }));
         div()
             .flex()
             .flex_col()

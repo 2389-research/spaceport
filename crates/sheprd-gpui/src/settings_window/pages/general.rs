@@ -107,7 +107,7 @@ impl SettingsWindow {
                     || {
                         div()
                             .debug_selector(|| "general-herdr-core-restart".into())
-                            .text_size(px(11.))
+                            .text_size(rems(0.6875))
                             .text_color(rgb(theme.subtext()))
                             .child(fl!("settings-general-herdr-core-restart"))
                     },
@@ -180,7 +180,7 @@ impl SettingsWindow {
             ))
             .child(
                 self.gate_shared(
-                    ui::row(theme, &catalog::GENERAL_COPY_ON_SELECT).tag(ui::Source::Herdr),
+                    ui::row(theme, &catalog::GENERAL_COPY_ON_SELECT).tag(ui::Source::View),
                 )
                 .switch(
                     ui::toggle(theme, "general-copy-on-select-toggle", copy, ready).when(

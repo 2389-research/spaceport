@@ -7,10 +7,14 @@
 mod sandbox;
 
 use std::{
-    process::Child,
+    process::{Child, Command},
     thread,
     time::{Duration, Instant},
 };
+
+#[cfg(unix)]
+#[path = "headless_exit/path_lookup.rs"]
+mod path_lookup;
 
 struct Helper(Child);
 
@@ -44,6 +48,13 @@ fn run(code: u8) -> (std::process::ExitStatus, String) {
     command.args(["/bin/sh", "-c", &format!("read request; exit {code}")]);
     #[cfg(windows)]
     command.args(["cmd.exe", "/D", "/S", "/C", &format!("exit /b {code}")]);
+    run_command(&sandbox, command)
+}
+
+fn run_command(
+    sandbox: &sandbox::Sandbox,
+    mut command: Command,
+) -> (std::process::ExitStatus, String) {
     let mut helper = Helper(command.spawn().unwrap());
     let status = helper.wait();
     let log = std::fs::read_to_string(sandbox.dir.join("helper.log")).unwrap();

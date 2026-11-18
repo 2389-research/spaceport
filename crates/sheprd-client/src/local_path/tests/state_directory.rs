@@ -33,7 +33,7 @@ fn empty_variables_are_ignored_and_missing_roots_disable_storage() {
 
 #[cfg(windows)]
 #[core::prelude::v1::test]
-fn windows_home_state_uses_spaceport_location() {
+fn windows_state_uses_the_desktop_location_despite_a_shell_home() {
     assert_eq!(
         directory(&[
             ("XDG_STATE_HOME", ""),
@@ -41,7 +41,7 @@ fn windows_home_state_uses_spaceport_location() {
             ("LOCALAPPDATA", "local"),
             ("USERPROFILE", "profile"),
         ]),
-        Some(PathBuf::from("home").join(".local/state/spaceport"))
+        Some(PathBuf::from("local").join("spaceport"))
     );
 }
 
