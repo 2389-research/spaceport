@@ -204,4 +204,7 @@ click is judged part of the approved experience.
   capsule; it changed nothing.
 - `git log`/`git diff` reads for the commits named above, plus the source greps
   behind the family table.
-- Package and diff checks are recorded when the note is committed.
+- From `docs/spaceport/`: `python3 tools/spec.py check` passed schema validation
+  and all 301 local file links, and `python3 tools/test_spec.py` passed 22/22.
+- `git diff --check` passed. No code, app, daemon or package check applies to a
+  docs-only note.
