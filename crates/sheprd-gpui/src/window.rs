@@ -289,7 +289,7 @@ pub(crate) struct SheprdWindow {
     pub(crate) sidebar_visible: bool,
     pub(crate) sidebar_width: Option<f32>,
     /// Shared by every window; see `app::shared_sound`.
-    pub(crate) sound: std::rc::Rc<crate::sound::Service>,
+    pub(crate) sound: std::rc::Rc<sheprd_sound::Service>,
     /// The resize cursor of the pane border under the pointer, if any.
     pub(crate) split_cursor: Option<CursorStyle>,
     pub(crate) split_drag: Option<mouse::SplitDrag>,

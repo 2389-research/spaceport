@@ -1,7 +1,7 @@
 //! The window's share of the app's one sound worker.
 
 use super::SheprdWindow;
-use crate::sound::Service;
+use sheprd_sound::Service;
 use std::rc::Rc;
 
 impl SheprdWindow {

@@ -659,7 +659,7 @@ impl LiveState {
                 if !self.status.is_connected() {
                     return;
                 }
-                if self.sound_events.len() == crate::sound::MAX_PENDING {
+                if self.sound_events.len() == sheprd_sound::MAX_PENDING {
                     self.sound_events.pop_front();
                 }
                 let received = std::time::Instant::now();

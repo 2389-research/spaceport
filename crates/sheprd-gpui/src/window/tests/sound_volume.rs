@@ -7,7 +7,7 @@ use std::time::Duration;
 #[gpui::test]
 fn window_ticks_leave_a_newer_volume_alone(cx: &mut gpui::TestAppContext) {
     let (view, cx) = cx.add_window_view(fixture_window);
-    let (sound, volumes) = crate::sound::Service::recording_volume();
+    let (sound, volumes) = sheprd_sound::Service::recording_volume();
     let sound = std::rc::Rc::new(sound);
     view.update(cx, |view, _| {
         view.config.sound.volume = 30;

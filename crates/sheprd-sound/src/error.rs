@@ -1,6 +1,9 @@
 //! Why a notification sound did not play or its settings did not load.
 
-use std::{io, path::PathBuf};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -20,28 +23,30 @@ pub enum Error {
     },
     #[error("Sound must be a regular file of at most 16 MiB")]
     FileSize,
+    #[error("{0}")]
+    Io(#[from] io::Error),
+    #[error("{}: {source}", path.display())]
+    Path {
+        path: PathBuf,
+        #[source]
+        source: Box<Error>,
+    },
     #[error("Audio output failed: {0}")]
     Stream(#[from] rodio::cpal::StreamError),
     #[error("Audio playback timed out")]
     Timeout,
+    #[error("{0}")]
+    Toml(#[from] toml::de::Error),
 }
 
-// The audio library's failures convert straight into the crate's error, so
-// playback keeps using `?` on them.
-impl From<rodio::decoder::DecoderError> for crate::Error {
-    fn from(error: rodio::decoder::DecoderError) -> Self {
-        Self::Sound(error.into())
+impl Error {
+    /// This failure, as one concerning `path`.
+    pub(crate) fn at_path(self, path: &Path) -> Self {
+        Self::Path {
+            path: path.to_owned(),
+            source: Box::new(self),
+        }
     }
 }
 
-impl From<rodio::DeviceSinkError> for crate::Error {
-    fn from(error: rodio::DeviceSinkError) -> Self {
-        Self::Sound(error.into())
-    }
-}
-
-impl From<rodio::cpal::StreamError> for crate::Error {
-    fn from(error: rodio::cpal::StreamError) -> Self {
-        Self::Sound(error.into())
-    }
-}
+pub type Result<T, E = Error> = std::result::Result<T, E>;

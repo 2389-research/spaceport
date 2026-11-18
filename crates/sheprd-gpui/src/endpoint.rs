@@ -185,7 +185,7 @@ pub(super) struct Endpoint {
     focus_requested: bool,
     /// When the window last stopped showing this host.
     left_at: Option<Instant>,
-    sounds: crate::sound::Policy,
+    sounds: sheprd_sound::Policy,
 }
 
 impl Endpoint {

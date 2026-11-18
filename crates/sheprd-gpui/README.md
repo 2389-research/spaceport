@@ -1200,7 +1200,7 @@ Legacy `Notify`, terminal BEL, and terminal escape sequences never play Herdr
 sounds; BEL can play the system alert through `[bell]`.
 
 Built-in Done and Request MP3s are the upstream Herdr sounds, attributed in
-[SOUND-NOTICE.md](SOUND-NOTICE.md). Rodio 0.22 uses CPAL native output and
+[SOUND-NOTICE.md](../sheprd-sound/SOUND-NOTICE.md). Rodio 0.22 uses CPAL native output and
 Symphonia MP3 decoding, with no external players or temporary audio files.
 Custom sounds must be MP3 regular files of at most 16 MiB; unreadable, oversized,
 or undecodable files fall back to the built-in sound. Other codecs are not enabled.

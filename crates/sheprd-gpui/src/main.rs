@@ -57,7 +57,6 @@ mod jump_list;
 mod keymap;
 #[cfg(windows)]
 mod launch_at_login;
-mod lenient;
 mod link;
 mod links;
 mod listening_ports;
@@ -94,7 +93,6 @@ mod settings_panel;
 mod settings_window;
 mod sidebar;
 mod smooth_scroll;
-mod sound;
 mod state;
 mod state_file;
 mod storage_warning;
