@@ -244,17 +244,9 @@ fn run_bounded_untraced(
             .take()
             .map(|pipe| Box::new(pipe) as Box<dyn Read + Send>),
     )?;
-    let deadline = Instant::now() + timeout;
-    let status = loop {
-        if let Some(status) = child.try_wait()? {
-            break status;
-        }
-        if Instant::now() >= deadline {
-            let _ = child.kill();
-            let _ = child.wait();
-            return Err(Error::SetupTimeout.into());
-        }
-        std::thread::sleep(Duration::from_millis(50));
+    let status = match sheprd_client::wait::exit(&mut child, Instant::now() + timeout, || false)? {
+        sheprd_client::wait::Exit::Exited(status) => status,
+        sheprd_client::wait::Exit::Stopped(_) => return Err(Error::SetupTimeout.into()),
     };
     let stdout = stdout.join().unwrap_or_default();
     let stderr = stderr.join().unwrap_or_default();
