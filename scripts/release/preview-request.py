@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 # ABOUTME: Validate a manual or tag-triggered macOS preview against current Git refs.
 # ABOUTME: Emit trusted version and commit outputs before building or exposing credentials.
+import importlib.util
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 
-VERSION = r'[1-9][0-9]{7}\.[1-9][0-9]*'
+SPEC = importlib.util.spec_from_file_location('release_common', Path(__file__).with_name('_release_common.py'))
+common = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(common)
 
 
 def validate(env, repo):
@@ -15,7 +18,7 @@ def validate(env, repo):
         raise ValueError('Workflow rerun refused; inspect receipts and select a new preview version')
     event, ref, sha = (env.get(key, '') for key in ('GITHUB_EVENT_NAME', 'GITHUB_REF', 'GITHUB_SHA'))
     tag = ''
-    if event == 'push' and re.fullmatch(rf'refs/tags/v{VERSION}', ref):
+    if event == 'push' and re.fullmatch(rf'refs/tags/v{common.VERSION}', ref):
         tag = ref.removeprefix('refs/tags/')
         version = tag[1:]
     elif event == 'workflow_dispatch' and ref == 'refs/heads/main':
@@ -24,7 +27,7 @@ def validate(env, repo):
             raise ValueError('Manual preview SHA must match the selected main commit')
     else:
         raise ValueError('Expected a version tag push or manual main preview')
-    if not re.fullmatch(VERSION, version) or not re.fullmatch(r'[0-9a-f]{40}', sha):
+    if not common.is_version(version) or not common.is_commit(sha):
         raise ValueError('Invalid preview version or commit')
 
     def git(*args):

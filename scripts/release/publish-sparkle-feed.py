@@ -8,10 +8,12 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
-import re
 import subprocess
 import tempfile
 
+COMMON = importlib.util.spec_from_file_location("release_common", Path(__file__).with_name("_release_common.py"))
+common = importlib.util.module_from_spec(COMMON)
+COMMON.loader.exec_module(common)
 SPEC = importlib.util.spec_from_file_location("sparkle_feed", Path(__file__).with_name("sparkle-feed.py"))
 feed = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(feed)
@@ -19,19 +21,15 @@ REPO = "2389-research/spaceport"
 MARKER = "macos-preview-feed"
 
 
-def gh(*args):
-    return subprocess.check_output(["gh", *args], stderr=subprocess.PIPE, timeout=120)
-
-
 def publish(source, expected_sha):
-    if not re.fullmatch(r"[0-9a-f]{40}", expected_sha):
+    if not common.is_commit(expected_sha):
         raise ValueError("Full expected source SHA required")
     config = json.loads(feed.CONFIG.read_text())
     data = feed.read_feed(source)
     item = feed.parse(data, config)
     if source.name != "appcast.xml":
         raise ValueError("Feed must be named appcast.xml")
-    history = gh("api", "--paginate", "--slurp", f"repos/{REPO}/releases?per_page=100")
+    history = common.gh("api", "--paginate", "--slurp", f"repos/{REPO}/releases?per_page=100")
     if len(history) > 8 * 1024 * 1024:
         raise ValueError("Published release history exceeds size bound")
     pages = json.loads(history)
@@ -44,7 +42,7 @@ def publish(source, expected_sha):
     if version_release is None or not version_release["prerelease"]:
         raise ValueError("Referenced preview release is not published")
     # A moved version tag cannot redirect a pre-signed feed to different source.
-    tag_sha = gh("api", f"repos/{REPO}/commits/v{item['version']}", "--jq", ".sha").decode().strip()
+    tag_sha = common.gh("api", f"repos/{REPO}/commits/v{item['version']}", "--jq", ".sha").decode().strip()
     if tag_sha != expected_sha:
         raise ValueError("Published version tag does not match expected source")
     with tempfile.TemporaryDirectory(prefix="spaceport-publish-feed-") as temporary:
@@ -55,8 +53,8 @@ def publish(source, expected_sha):
             if len(feeds) != 1 or not 0 < feeds[0]["size"] <= feed.MAX_FEED:
                 raise ValueError("Missing or oversized existing preview feed asset")
             # An existing marker with a lost asset is an incident, not bootstrap.
-            gh("release", "download", MARKER, "--repo", REPO, "--pattern", "appcast.xml",
-               "--dir", str(root))
+            common.gh("release", "download", MARKER, "--repo", REPO, "--pattern", "appcast.xml",
+                      "--dir", str(root))
             previous = feed.read_feed(root / "appcast.xml")
         feed.publication_version(data, previous, config,
                                  [release["tag_name"] for release in releases])
@@ -65,8 +63,8 @@ def publish(source, expected_sha):
         if (len(assets) != 1 or assets[0]["browser_download_url"] != item["url"]
                 or assets[0]["size"] != item["length"]):
             raise ValueError("Published archive asset mismatch")
-        gh("release", "download", "v" + item["version"], "--repo", REPO,
-           "--pattern", archive.name, "--dir", str(root))
+        common.gh("release", "download", "v" + item["version"], "--repo", REPO,
+                  "--pattern", archive.name, "--dir", str(root))
         feed.verify_archive(item, archive, config["public_key"])
         with archive.open("rb") as opened:
             digest = hashlib.file_digest(opened, "sha256").hexdigest()
@@ -77,17 +75,17 @@ def publish(source, expected_sha):
             notes.write_text("Signed update metadata for Spaceport macOS previews. "
                              "Install the current version from its dated release.\n")
             # The fixed tag is created once. It is never moved or overwritten.
-            gh("release", "create", MARKER, str(source.resolve()), "--repo", REPO,
-               "--target", expected_sha, "--prerelease", "--title", "macOS preview update feed",
-               "--notes-file", str(notes))
+            common.gh("release", "create", MARKER, str(source.resolve()), "--repo", REPO,
+                      "--target", expected_sha, "--prerelease", "--title", "macOS preview update feed",
+                      "--notes-file", str(notes))
         else:
             # GitHub replaces assets using delete/upload, so a brief unavailable
             # feed is possible. Signature verification makes that fail closed.
-            gh("release", "upload", MARKER, str(source.resolve()), "--repo", REPO, "--clobber")
+            common.gh("release", "upload", MARKER, str(source.resolve()), "--repo", REPO, "--clobber")
         verified = root / "published"
         verified.mkdir()
-        gh("release", "download", MARKER, "--repo", REPO, "--pattern", "appcast.xml",
-           "--dir", str(verified))
+        common.gh("release", "download", MARKER, "--repo", REPO, "--pattern", "appcast.xml",
+                  "--dir", str(verified))
         if feed.read_feed(verified / "appcast.xml") != data:
             raise ValueError("Published feed bytes do not match the signed artifact")
     print(f"Published signed macOS preview feed for {item['version']}")

@@ -489,6 +489,16 @@ waits for approval, approve it and confirm the platform jobs execute, then push
 another contributor commit and check approval is required again. Offline tests
 cover job eligibility and credential declarations, not GitHub's approval service.
 
+## Shared release helpers
+
+`_release_common.py` holds the rules more than one release script applies:
+the calendar-version and full-commit patterns behind `is_version` and
+`is_commit`, and `gh`, which captures stderr and bounds each GitHub CLI call
+by timeout. Scripts load it by file path, as they already load each other,
+because their dashed names are not importable modules. Add a helper there only
+when a second script needs the same rule; each script keeps its own refusal
+messages, size bounds and timeouts.
+
 ## Local Validation
 
 ```sh
