@@ -2,7 +2,8 @@
 # Keep the required PR gate running while skipping native jobs for non-code edits.
 # Documentation-only images are excluded by name so any new asset is treated
 # as a build input until proven otherwise.
-# The website workflow only publishes site/, which no build or test reads; the
+# `.github/workflows/pages.yml` only tests and publishes `landing/`, which no
+# build or test here reads, so a landing-only change skips the native jobs; the
 # zizmor job still audits it on every run.
 #
 # Prints `code=` for the native jobs, and `windows_package=` for the optimized
@@ -46,7 +47,6 @@ code=$(changed \
   ':(exclude)**/*.md' \
   ':(exclude)assets/social-preview-*' \
   ':(exclude)assets/icons/sheprd-icon-badge.*' \
-  ':(exclude).github/workflows/site.yml' \
   ':(exclude).github/workflows/pages.yml')
 windows_package=$(changed \
   scripts/release/package-windows.py scripts/release/windows-installer.py \
