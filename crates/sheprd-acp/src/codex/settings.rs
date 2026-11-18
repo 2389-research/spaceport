@@ -7,11 +7,6 @@ use serde_json::{Value, json};
 
 use crate::harness::out;
 
-pub(super) const MODEL: &str = "model";
-pub(super) const EFFORT: &str = "effort";
-/// Models kept from `model/list`, so a long list cannot grow the session.
-const MAX_MODELS: usize = 64;
-
 /// Codex's approval presets, as its own terminal view offers them.
 const MODES: [(&str, &str, &str); 3] = [
     (
@@ -78,7 +73,7 @@ impl Settings {
                     id: text("id")?,
                 })
             })
-            .take(MAX_MODELS)
+            .take(out::MAX_MODELS)
             .collect();
         let started = thread.get("model").and_then(Value::as_str);
         // The thread's model when Codex offers it; else the one it marks the
@@ -122,7 +117,7 @@ impl Settings {
         let mut options = Vec::with_capacity(2);
         if let Some(model) = &self.model {
             options.push(out::select(
-                MODEL,
+                out::MODEL,
                 "Model",
                 wire::SessionConfigOptionCategory::Model,
                 model,
@@ -137,7 +132,7 @@ impl Settings {
         }
         if let (Some(effort), Some(model)) = (&self.effort, self.current()) {
             options.push(out::select(
-                EFFORT,
+                out::EFFORT,
                 "Reasoning",
                 wire::SessionConfigOptionCategory::ThoughtLevel,
                 effort,
@@ -159,12 +154,12 @@ impl Settings {
     /// Picks `value` for `setting`; `false` when it is not one offered.
     pub(super) fn set(&mut self, setting: &str, value: &str) -> bool {
         match setting {
-            MODEL if self.models.iter().any(|model| model.id == value) => {
+            out::MODEL if self.models.iter().any(|model| model.id == value) => {
                 self.model = Some(value.to_owned());
                 self.keep_effort();
                 true
             }
-            EFFORT
+            out::EFFORT
                 if self
                     .current()
                     .is_some_and(|model| model.efforts.iter().any(|known| known == value)) =>

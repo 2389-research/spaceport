@@ -6,14 +6,10 @@ use serde_json::Value;
 
 use crate::harness::out;
 
-pub(super) const MODEL: &str = "model";
-pub(super) const EFFORT: &str = "effort";
 /// The effort choice that leaves the level to the model.
 const DEFAULT_EFFORT: &str = "default";
 /// What Claude calls its stand-in for whichever model it recommends.
 const DEFAULT_MODEL: &str = "Default";
-/// Models kept from the handshake, so a long list cannot grow the session.
-const MAX_MODELS: usize = 64;
 
 /// Claude Code's permission modes, in the order they cycle.
 const MODES: [(&str, &str, &str); 4] = [
@@ -73,7 +69,7 @@ impl Settings {
                     value: text("value")?,
                 })
             })
-            .take(MAX_MODELS)
+            .take(out::MAX_MODELS)
             .collect::<Vec<_>>();
         let model = models
             .first()
@@ -108,7 +104,7 @@ impl Settings {
         let mut options = Vec::with_capacity(2);
         if !self.models.is_empty() {
             options.push(out::select(
-                MODEL,
+                out::MODEL,
                 "Model",
                 wire::SessionConfigOptionCategory::Model,
                 &self.model,
@@ -128,7 +124,7 @@ impl Settings {
                 .iter()
                 .map(|level| (level.clone(), out::capitalized(level), None));
             options.push(out::select(
-                EFFORT,
+                out::EFFORT,
                 "Effort",
                 wire::SessionConfigOptionCategory::ThoughtLevel,
                 &self.effort,

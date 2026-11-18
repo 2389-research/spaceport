@@ -12,6 +12,16 @@ use crate::{
 /// What a prompt is refused with while another turn runs.
 pub(crate) const BUSY: &str = "A turn is already running.";
 
+/// The setting id a harness gives its reasoning level.
+pub(crate) const EFFORT: &str = "effort";
+/// Models kept from a harness's own list, so a long list cannot grow the
+/// session.
+pub(crate) const MAX_MODELS: usize = 64;
+/// The setting id a harness gives its model.
+pub(crate) const MODEL: &str = "model";
+/// The setting id pi gives its reasoning level.
+pub(crate) const THINKING: &str = "thinking";
+
 /// A `session/update` for `session`.
 pub(crate) fn update(session: &str, update: wire::SessionUpdate) -> Out {
     let notification = wire::SessionNotification::new(session.to_owned(), update);
