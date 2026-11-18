@@ -809,9 +809,6 @@ impl SheprdWindow {
             pane.error = Some(fl!("chat-prompt-too-long"));
             return;
         }
-        if !text.trim().is_empty() {
-            pane.history.push(&text, pane.session.transcript());
-        }
         let attachments = pane
             .attachments
             .iter()
@@ -819,8 +816,16 @@ impl SheprdWindow {
                 path: path.to_string_lossy().into_owned(),
             })
             .collect();
-        match pane.send(Command::Prompt { text, attachments }) {
+        match pane.send(Command::Prompt {
+            text: text.clone(),
+            attachments,
+        }) {
             Ok(()) => {
+                // Only a prompt that reached the link is one this window
+                // sent: one it could not send stays in the composer alone.
+                if !text.trim().is_empty() {
+                    pane.history.push(&text, pane.session.transcript());
+                }
                 pane.error = None;
                 pane.attachments.clear();
                 // The reply to a new prompt lands below what the reader
