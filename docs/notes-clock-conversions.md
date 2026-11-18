@@ -317,3 +317,22 @@ The reader now retries `Interrupted` and breaks only on true EOF or a real
 read error. The 30 s `EXIT_RECHECK` bound stays as the design's guard for an
 exit no pipe close reports (an inherited write end). 12 consecutive local runs
 of the failing test pass.
+
+## Second CI failure on the same test: the wait bound was the real defect
+
+The EINTR fix was necessary but not sufficient:
+`a_forward_is_alive_only_while_its_master_runs` kept failing on all three
+Linux legs (macOS passed every run). Diagnosis effort ruled out the reaping
+race (std caches a reaped status on the shared `Child`; verified with a
+two-thread probe) and a foreign reaper (reproduced `Err(ECHILD)` with a raw
+`waitpid` reaper, but nothing in the test reaps outside the shared child). The
+remaining difference is that the 30 s `EXIT_RECHECK` bound made the wake the
+only timely path to the report: if the close is not reported on a runner, the
+worker sits out 30 s while the test's own `WAIT` is 10 s.
+
+The listening loop now re-reads the master on a 250 ms bound
+(`LISTENING_POLL`, the pre-change value) with the pipe close as the fast path
+wake. That restores the audit's rule that the caller keeps its own bound next
+to any shared wait helper, and it is robust to whichever mechanism lost the
+notification on the runner: the worker re-reads within 250 ms regardless.
+5 consecutive local runs pass; the platform legs remain CI's to prove.

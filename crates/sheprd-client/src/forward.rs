@@ -49,12 +49,12 @@ const READY_TIMEOUT: Duration = Duration::from_secs(30);
 const FORWARD_TIMEOUT: Duration = Duration::from_secs(10);
 #[cfg(unix)]
 const STARTING_POLL: Duration = Duration::from_millis(50);
-/// How often a listening forward re-reads its master when the master's own end
-/// was never reported. Its standard output closing is the report, so this is
-/// reached only through a pipe a descendant of the master inherited and kept
-/// open.
+/// The bound on how long a listening forward waits without re-reading its
+/// master. The master's standard output closing is the fast path; this bounds
+/// the wait when no close is reported, such as a pipe a descendant of the
+/// master inherited and kept open.
 #[cfg(unix)]
-const EXIT_RECHECK: Duration = Duration::from_secs(30);
+const LISTENING_POLL: Duration = Duration::from_millis(250);
 
 /// The master, shared so its owner can kill it at once while the worker
 /// alone waits for it. Neither side holds the lock across a blocking call.
@@ -341,10 +341,11 @@ fn supervise(
             Master::Stopped => return None,
             Master::Ended(error) => return Some(error),
         }
-        // Nothing here re-reads the master on a timer: its standard output
-        // closing wakes this thread the moment it exits. The bound only covers
-        // an exit no pipe close reported.
-        let _ = woken.recv_timeout(EXIT_RECHECK);
+        // The master's standard output closing wakes this thread the moment it
+        // exits; the wait is also bounded so a close no wake reported (a pipe
+        // a descendant inherited, a lost notification) still ends the forward
+        // inside the caller's own horizon rather than a 30 s one.
+        let _ = woken.recv_timeout(LISTENING_POLL);
     }
 }
 
