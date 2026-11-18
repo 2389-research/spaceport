@@ -34,10 +34,16 @@ for what only Spaceport shows or keeps.
 | Check for a Spaceport preview update (installed macOS preview only) | `spaceport run check-for-updates` |
 | Check whether the app runs, and which windows and hosts it has | `spaceport status` |
 
-Add `--json` to any command for machine-readable output; errors then come
-back as `{"error": {"code", "message"}}`. Exit statuses are the ones in the
-table above. A command acts in the window that shows your workspace; it
-exits 5 rather than act in another session's window.
+Add `--json` after the command word for machine-readable output; errors then
+come back as `{"error": {"code", "message"}}`. `spaceport events --follow`
+writes one JSON object per line instead of one document. A command acts in
+the window that shows your workspace; it exits 5 rather than act in another
+session's window.
+
+Exit statuses: 0 done, 1 refused or failed, 2 invalid arguments, 3 Spaceport
+is not running, 4 nothing yet, 5 not found, 6 busy, 7 timed out, 8 unavailable
+on this platform or in this version of the app. `spaceport COMMAND --help`
+spells each one out.
 
 Run `spaceport --help` to list every command, and `spaceport COMMAND --help`
 for one.

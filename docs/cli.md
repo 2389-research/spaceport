@@ -30,16 +30,23 @@ spaceport COMMAND --help      # one command
 
 ## Options and output
 
-Every command accepts:
+Every command accepts, after its command word:
 
 - `--json`: print one JSON document instead of text. Errors become
-  `{"error": {"code", "message"}}` on standard output.
+  `{"error": {"code", "message"}}` on standard output. `events --follow`
+  is the one stream: it writes one JSON object per line, each with its
+  `cursor`, so a follower can resume after any event. `--help` and `skill`
+  print text whatever the options say.
 - `--window ID`: act in that window (IDs come from `window list`). By default
   a command acts in the window showing the caller's workspace
   (`HERDR_WORKSPACE_ID`, which Herdr sets in every pane). When no window shows
   it, as for a session the app does not show, the command exits 5 rather than
   act on another session's window. Outside Herdr, it acts in the frontmost
-  window.
+  window. A command this process answers from files alone, marked "no app
+  needed" below, accepts the ID and ignores it, so it never refuses one.
+
+Both options follow the command word: `spaceport --json status` is an
+unknown option, not `status` asked for JSON.
 
 | Exit | Meaning |
 | --- | --- |
@@ -165,8 +172,8 @@ run `spaceport config set tab_labels.agent_title true`.
 ### Events
 
 `events` prints what happened in the app: windows opening, closing, and
-gaining focus; the app's tabs opening and closing; notes kept for a pane;
-worktree notes changing; and host status changes. Each event has a sequence
+gaining focus; the app's tabs opening and closing; a worktree note changing;
+and a host's connection status changing. Each event has a sequence
 number; pass back the `INSTANCE:SEQ` cursor a call prints with `--after` to
 get only newer events. A cursor from an earlier run of the app gets every
 event the new run has kept, so a restart never hides events.
