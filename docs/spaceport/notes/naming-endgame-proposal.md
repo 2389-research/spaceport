@@ -10,10 +10,13 @@ chains still accept the older `herdr-` generation as a fallback.
 
 This note is a proposal, not a rename. Nothing here changes source, packaging,
 evidence or hosting. Doctor Biz asked for a staged plan because the dual-name
-debt fails silently: if `spaceport` stops shipping `herdr-acp` beside itself
-while a user's installation, SSH host or older bundle still only has that
-name, chat start degrades to a generic "not found" instead of saying which
-generation is missing. Also, a repository-wide rename now would collide with
+debt fails silently: `bundled::locate_in` accepts either generation, so a host
+that only has `herdr-acp` works today, while the error that appears when
+neither name resolves names one generation only
+(`crates/sheprd-gpui/src/chat/start.rs:58`). Removing the fallback would turn
+every `herdr-acp`-only installation, SSH host or older bundle into that
+message, and nothing in the current code says which name was found. Also, a
+repository-wide rename now would collide with
 open feature PRs, the deletions in T04/T10, and already-installed previews.
 
 Rules this proposal keeps: `docs/spaceport/AGENTS.md` ("new product branding is
@@ -154,7 +157,7 @@ visible diagnostic when only the legacy name resolves.
   `log_targets`' `sheprd_` prefix and every crate path remain misspelled for the
   life of the fork; the internal/external split is permanently inconsistent.
 
-### B. Staged crate renames after the deletions and T12 gates (recommended)
+### B. Staged crate renames after the deletions and before T12 qualification (recommended)
 
 Take A's user-visible work, then rename surviving crates in coherent units once
 the dependency graph stops changing.
