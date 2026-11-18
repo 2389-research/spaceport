@@ -139,9 +139,11 @@ The same loop — `try_wait()` (or an equivalent existence check) under a
 and `sheprd-acp/src/process.rs:93-101`. Each pays 5–50 ms of avoidable latency
 per wait and repeats the same three deadline checks in its own words.
 
-One helper — `wait::exit(child, deadline, cancelled)`, a waiter thread plus
-`recv_timeout` — covers `menu/devices/setup.rs`, `sheprd-client/src/sessions.rs`
-and `core-client/src/start.rs` outright, gives `daemon.rs` a two-line
+One helper — `wait::exit(child, deadline, cancelled)`, a waiter thread that owns
+the child and kills and reaps it when the deadline passes or cancellation
+arrives, with the caller blocking on `recv_timeout` for the answer — covers
+`menu/devices/setup.rs`, `sheprd-client/src/sessions.rs` and
+`core-client/src/start.rs` outright, gives `daemon.rs` a two-line
 `recv_timeout`, and leaves the sites with a second in-loop condition
 (`tunnel.rs`, the clipboards after EOF, `acp/process.rs`'s mutexed child,
 `ssh/mux/shared.rs`'s socket check) with one place for their deadline
@@ -171,7 +173,7 @@ anomalies:
 
 1. **One wait helper** replacing the eleven copies of the deadline loop
    (`sheprd-client/src/limits.rs`, `M`). Removes 5–50 ms of latency per wait and
-   puts the deadline arithmetic in one place, with no behavior change.
+   puts the deadline arithmetic, the kill and the reap in one place.
 2. **`core_terminals/observation.rs:610-633`** to a channel with
    `recv_timeout`, and the 2 s machine re-read to a timer (`M`). Deletes a
    100 ms spin that runs for the life of the session.
