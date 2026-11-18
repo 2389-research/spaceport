@@ -13,6 +13,7 @@ python tools/spec.py check --write-report
 python tools/test_spec.py
 python tools/spec.py ready
 python tools/spec.py context T00
+python tools/spec.py scenarios --next
 ```
 
 The context command emits a task-specific packet with the applicable requirements, source revisions, open gaps, planned acceptance scenarios and hashes of all authored inputs. Its default ceiling is 65,536 UTF-8 bytes. It refuses overflow rather than silently dropping instructions. This is a byte limit, not a token estimate. A deliberately reviewed larger budget can be passed with `--max-bytes`.
@@ -30,6 +31,16 @@ The application repository runs `just check-spec` in `just ci`, and CI runs the 
 `plan/acceptance.json` holds scenario outcomes separately from task progress. Initially every scenario is `not_run`. Each `passed` or `failed` entry requires evidence. `plan/gaps.json` records the substantive resolution and evidence before its status can become `resolved`.
 
 These tools check structural consistency and that each evidence reference names a file in the package, **not the authenticity or sufficiency of a human's or agent's evidence**. Reviewers must inspect commands, exact code revisions, output and native runtime behavior independently. A forged evidence path or manually edited status is not verification.
+
+## Acceptance scenarios
+
+`plan/acceptance.json` records what was run, so its outcome counts are what an agent should drive up. `python tools/spec.py scenarios` prints those counts and then every scenario under the task whose `acceptance` list names it, with its requirement references. A scenario claimed by several tasks is listed once under the first owner and marked `also` the rest.
+
+- `--status STATUS` keeps one or more statuses; repeat the flag or comma-separate them. `--next` keeps only `not_run` scenarios whose owning task is not `blocked` and whose prerequisites are all `done` or `in_progress`, and names the first one to pick up.
+- Evidence references that are not files in the package are counted at the top, listed with their owning task, and marked on the scenario line.
+- `--strict` exits nonzero while any scenario is `not_run`. It is opt-in; the repository gate above does not pass it.
+
+Like `check`, this is navigation and presence checking only: it repeats recorded statuses and paths, and never shows that a cited command ran.
 
 ## Reproducibility
 

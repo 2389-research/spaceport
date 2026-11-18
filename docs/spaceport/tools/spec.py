@@ -31,6 +31,9 @@ READ_ORDER = [
     'docs/SOURCES.md', 'docs/VALIDATION.md', 'BOOTSTRAP_PROMPT.md',
 ]
 REQ_RE = re.compile(r'^### (SP-\d{3}) — (.+)$', re.MULTILINE)
+TASK_STATUSES = ('not_started', 'in_progress', 'blocked', 'done')
+SCENARIO_STATUSES = ('not_run', 'passed', 'failed', 'blocked')
+STARTED_STATUSES = {'done', 'in_progress'}
 
 
 def reject_constant(value: str) -> None:
@@ -62,12 +65,20 @@ def text(root: Path, relative: str) -> str:
     return resolved.read_text(encoding='utf-8')
 
 
-def validate_evidence(root: Path, item: dict[str, Any]) -> None:
+def broken_evidence(root: Path, item: dict[str, Any]) -> list[str]:
     """Evidence names a file in the package; presence only, not sufficiency."""
+    broken: list[str] = []
     for relative in item.get('evidence', []):
         resolved = (root / relative).resolve()
         if not resolved.is_relative_to(root.resolve()) or not resolved.is_file():
-            raise ValueError(f"{item['id']}: evidence is not a file in the specification: {relative}")
+            broken.append(relative)
+    return broken
+
+
+def validate_evidence(root: Path, item: dict[str, Any]) -> None:
+    broken = broken_evidence(root, item)
+    if broken:
+        raise ValueError(f"{item['id']}: evidence is not a file in the specification: {broken[0]}")
 
 
 def index(items: list[dict[str, Any]], kind: str) -> dict[str, dict[str, Any]]:
@@ -246,7 +257,7 @@ def validate(root: Path, require_schema: bool = True) -> dict[str, Any]:
         for field, pool in [('requirements','requirements'), ('acceptance','acceptance'),
                             ('sources','sources'), ('gaps','gaps'), ('must_close_gaps','gaps')]:
             refs(task[field], r[pool], task['id'])
-        if task['status'] not in {'not_started','in_progress','blocked','done'}:
+        if task['status'] not in TASK_STATUSES:
             raise ValueError(f"Invalid task status: {task['id']}")
         validate_task_completion(task, r['gaps'])
         validate_evidence(root, task)
@@ -261,7 +272,7 @@ def validate(root: Path, require_schema: bool = True) -> dict[str, Any]:
     covered: set[str] = set()
     for scenario in r['acceptance'].values():
         refs(scenario['requirements'], r['requirements'], scenario['id'])
-        if scenario['status'] not in {'not_run','passed','failed','blocked'}:
+        if scenario['status'] not in SCENARIO_STATUSES:
             raise ValueError(f"Invalid acceptance status: {scenario['id']}")
         if scenario['status'] in {'passed','failed'} and not scenario['evidence']:
             raise ValueError(f"Executed scenario lacks evidence: {scenario['id']}")
@@ -348,6 +359,112 @@ def ready(root: Path) -> list[dict[str, Any]]:
             and all(tasks[d]['status']=='done' for d in t['depends_on'])]
 
 
+def scenario_owners(tasks: dict[str, dict[str, Any]]) -> dict[str, list[str]]:
+    """A scenario is often claimed by more than one task; owners keep plan order.
+
+    The first owner is where the scenario is listed, so a shared scenario is not
+    repeated under every task that runs it.
+    """
+    owners: dict[str, list[str]] = {}
+    for task in tasks.values():
+        for scenario in task['acceptance']:
+            owners.setdefault(scenario, []).append(task['id'])
+    return owners
+
+
+def runnable_tasks(tasks: dict[str, dict[str, Any]]) -> set[str]:
+    """A task can be exercised now when it is not blocked and every prerequisite has started.
+
+    Started means done or in_progress: an in-progress prerequisite is already
+    being worked, so its dependents' scenarios are worth running against it. A
+    blocked task stays out even when its prerequisites have started; it records
+    a gap that the scenario run cannot settle.
+    """
+    return {task['id'] for task in tasks.values()
+            if task['status'] != 'blocked'
+            and all(tasks[d]['status'] in STARTED_STATUSES for d in task['depends_on'])}
+
+
+def scenario_view(root: Path) -> dict[str, Any]:
+    """Acceptance counts, task grouping, evidence problems and runnable tasks."""
+    r = registries(root)
+    broken: dict[str, list[str]] = {}
+    for key, scenario in r['acceptance'].items():
+        if missing := broken_evidence(root, scenario):
+            broken[key] = missing
+    counts = {status: sum(1 for s in r['acceptance'].values() if s['status'] == status)
+              for status in SCENARIO_STATUSES}
+    owners = scenario_owners(r['tasks'])
+    runnable = runnable_tasks(r['tasks'])
+    groups = [{'task': task,
+               'scenarios': [r['acceptance'][a] for a in task['acceptance'] if owners[a][0] == task['id']],
+               'runnable': task['id'] in runnable}
+              for task in r['tasks'].values() if task['acceptance']]
+    return {'counts': counts, 'total': len(r['acceptance']), 'broken': broken, 'owners': owners,
+            'runnable': sum(group['runnable'] for group in groups), 'groups': groups,
+            'unassigned': [s for key, s in r['acceptance'].items() if key not in owners]}
+
+
+def parse_statuses(values: list[str] | None) -> set[str] | None:
+    """`--status` accepts repeated or comma-separated statuses; no value means all."""
+    if not values:
+        return None
+    chosen = {piece.strip() for value in values for piece in value.split(',') if piece.strip()}
+    unknown = chosen - set(SCENARIO_STATUSES)
+    if unknown:
+        raise ValueError(f'Unknown scenario status {sorted(unknown)}; choose from {", ".join(SCENARIO_STATUSES)}')
+    if not chosen:
+        raise ValueError(f'--status named no scenario status; choose from {", ".join(SCENARIO_STATUSES)}')
+    return chosen
+
+
+def scenario_report(view: dict[str, Any], statuses: set[str] | None = None,
+                    next_only: bool = False) -> str:
+    """Print recorded statuses only; a scenario line is never a claim that a command ran."""
+    counts = view['counts']
+    lines = [f"Acceptance scenarios: {view['total']} in plan/acceptance.json",
+             '  ' + ' · '.join(f'{status} {counts[status]}' for status in SCENARIO_STATUSES),
+             f"Runnable tasks: {view['runnable']} of {len(view['groups'])}",
+             f"Evidence references that are not files here: {sum(len(v) for v in view['broken'].values())}"]
+    for key, missing in view['broken'].items():
+        lines.append(f"  {key} ({', '.join(view['owners'].get(key, ['unassigned']))}): {', '.join(missing)}")
+
+    def line(scenario: dict[str, Any]) -> str:
+        text = f"  {scenario['id']}  {scenario['status']:<8} {scenario['title']}  ({', '.join(scenario['requirements'])})"
+        others = view['owners'].get(scenario['id'], [])[1:]
+        if others:
+            text += f"  [also {', '.join(others)}]"
+        if scenario['id'] in view['broken']:
+            text += f"  [evidence not a file: {', '.join(view['broken'][scenario['id']])}]"
+        return text
+
+    selected: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+    for group in view['groups']:
+        scenarios = [s for s in group['scenarios'] if statuses is None or s['status'] in statuses]
+        if next_only:
+            scenarios = [s for s in scenarios if s['status'] == 'not_run'] if group['runnable'] else []
+        if scenarios:
+            selected.append((group, scenarios))
+    unassigned = [s for s in view['unassigned']
+                  if (statuses is None or s['status'] in statuses) and not next_only]
+    if next_only and selected:
+        first = selected[0][1][0]
+        lines += ['', f"Next runnable scenario: {first['id']} — {first['title']} ({selected[0][0]['task']['id']})"]
+    for group, scenarios in selected:
+        task = group['task']
+        marker = ', runnable' if group['runnable'] else ''
+        lines += ['', f"{task['id']} — {task['title']} [{task['status']}{marker}]"]
+        lines += [line(scenario) for scenario in scenarios]
+    if unassigned:
+        lines += ['', 'No task acceptance list names these:']
+        lines += [line(scenario) for scenario in unassigned]
+    if not selected and not unassigned:
+        exhausted = next_only and (statuses is None or 'not_run' in statuses)
+        lines += ['', 'No runnable not_run scenario remains.' if exhausted
+                  else 'No scenario matches the requested filter.']
+    return '\n'.join(lines) + '\n'
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,default=ROOT)
@@ -357,6 +474,13 @@ def main() -> int:
     check.add_argument('--skip-schema',action='store_true',help='Explicitly report schema validation not run')
     sub.add_parser('render',help='Regenerate decision/task views and combined reading copy')
     sub.add_parser('ready',help='List dependency-ready, not-started tasks')
+    scenarios = sub.add_parser('scenarios',help='Show recorded acceptance outcomes by status and owning task')
+    scenarios.add_argument('--status',action='append',metavar='STATUS',
+                           help=f'Only show these scenario statuses; repeat or comma-separate: {", ".join(SCENARIO_STATUSES)}')
+    scenarios.add_argument('--next',action='store_true',
+                           help='Only show not_run scenarios whose task is not blocked and whose prerequisites are done or in_progress')
+    scenarios.add_argument('--strict',action='store_true',
+                           help='Exit nonzero while any scenario is not_run')
     packet = sub.add_parser('context',help='Emit one bounded, hash-bearing task packet')
     packet.add_argument('task_id')
     packet.add_argument('--max-bytes',type=int,default=65536)
@@ -368,6 +492,12 @@ def main() -> int:
             print('Rendered generated specification views.')
         elif args.command=='ready':
             print(json.dumps([{'id':t['id'],'title':t['title'],'gaps':t['gaps']} for t in ready(root)],indent=2))
+        elif args.command=='scenarios':
+            view = scenario_view(root)
+            print(scenario_report(view,parse_statuses(args.status),args.next),end='')
+            if args.strict and view['counts']['not_run']:
+                print(f"Acceptance gate: {view['counts']['not_run']} scenarios are not_run",file=sys.stderr)
+                return 1
         elif args.command=='context':
             if args.max_bytes <= 0:
                 raise ValueError('--max-bytes must be positive')
