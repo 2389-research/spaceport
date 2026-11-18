@@ -32,7 +32,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T02 — Adapt the verified Core capability boundary
 
-Status: **blocked** · Prerequisites: T00
+Status: **in_progress** · Prerequisites: T00
 
 Typed Core calls/streams/capabilities with explicit runtime targets and no new remote manager; existing Herdr 1 routes remain allowed under D58.
 
@@ -42,7 +42,7 @@ Acceptance: A02, A03, A04, A05, A53
 
 Gates to investigate: G-MACHINE
 
-Gates this task must close: G-MACHINE
+Gates this task must close: none; record findings without claiming full parity
 
 ## T03 — Build one authoritative view projection
 
@@ -88,7 +88,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T06 — Preserve native chat under the ownership contract
 
-Status: **blocked** · Prerequisites: T03, T05
+Status: **in_progress** · Prerequisites: T03, T05
 
 Keep renderer/host adapter where valid; remove desktop-owned conversion/resume/config; prove route or record blocked parity.
 
@@ -98,11 +98,11 @@ Acceptance: A14, A15, A16, A17, A54, A55
 
 Gates to investigate: G-CHAT
 
-Gates this task must close: G-CHAT
+Gates this task must close: none; record findings without claiming full parity
 
 ## T07 — Adapt hosts, transfers and service access
 
-Status: **blocked** · Prerequisites: T02, T03
+Status: **in_progress** · Prerequisites: T02, T03
 
 Preserve host/file/service UX through separately verified Herdr 1 or Core routes; no public rebinding or new transport workaround. Core-specific gaps remain until verified or explicitly rescoped with evidence.
 
@@ -112,7 +112,7 @@ Acceptance: A04, A05, A25, A26, A27, A28
 
 Gates to investigate: G-PORT, G-FILE, G-MACHINE
 
-Gates this task must close: G-PORT, G-FILE, G-MACHINE
+Gates this task must close: none; record findings without claiming full parity
 
 ## T08 — Preserve activity and attention without collectors
 
@@ -168,7 +168,7 @@ Acceptance: A33, A34, A38, A39, A40, A46, A48, A49, A50, A51, A52
 
 Gates to investigate: G-CHAT, G-PORT, G-FILE, G-OBS, G-PLATFORM
 
-Gates this task must close: G-CHAT, G-PORT, G-FILE, G-OBS, G-PLATFORM
+Gates this task must close: G-OBS, G-PLATFORM
 
 ## T12 — Complete release identity and verified updates
 

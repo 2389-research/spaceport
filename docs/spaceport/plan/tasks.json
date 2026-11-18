@@ -142,7 +142,7 @@
         "docs/06-security-and-resources.md"
       ],
       "deliverable": "Typed Core calls/streams/capabilities with explicit runtime targets and no new remote manager; existing Herdr 1 routes remain allowed under D58.",
-      "status": "blocked",
+      "status": "in_progress",
       "evidence": [
         "evidence/t02-core-boundary.md",
         "evidence/t02-live-core.log",
@@ -160,9 +160,7 @@
         "evidence/t02-refusal-hint.md",
         "evidence/t02-core-add-ui.md"
       ],
-      "must_close_gaps": [
-        "G-MACHINE"
-      ]
+      "must_close_gaps": []
     },
     {
       "id": "T03",
@@ -463,7 +461,7 @@
         "docs/02-agent-interface.md"
       ],
       "deliverable": "Keep renderer/host adapter where valid; remove desktop-owned conversion/resume/config; prove route or record blocked parity.",
-      "status": "blocked",
+      "status": "in_progress",
       "evidence": [
         "evidence/external-core-dependencies.md",
         "evidence/t06-local-adapter-route.md",
@@ -472,9 +470,7 @@
         "evidence/t06-adapter-detach-process.md",
         "evidence/t06-core-duplex-route-audit.md"
       ],
-      "must_close_gaps": [
-        "G-CHAT"
-      ]
+      "must_close_gaps": []
     },
     {
       "id": "T07",
@@ -512,7 +508,7 @@
         "docs/06-security-and-resources.md"
       ],
       "deliverable": "Preserve host/file/service UX through separately verified Herdr 1 or Core routes; no public rebinding or new transport workaround. Core-specific gaps remain until verified or explicitly rescoped with evidence.",
-      "status": "blocked",
+      "status": "in_progress",
       "evidence": [
         "evidence/external-core-dependencies.md",
         "evidence/t07-file-route.md",
@@ -520,11 +516,7 @@
         "evidence/t02-machine-identity-gap.md",
         "evidence/t04-browser-dependency.md"
       ],
-      "must_close_gaps": [
-        "G-PORT",
-        "G-FILE",
-        "G-MACHINE"
-      ]
+      "must_close_gaps": []
     },
     {
       "id": "T08",
@@ -745,9 +737,6 @@
         "evidence/t11-native-routing-without-unlock.md"
       ],
       "must_close_gaps": [
-        "G-CHAT",
-        "G-PORT",
-        "G-FILE",
         "G-OBS",
         "G-PLATFORM"
       ]
@@ -811,7 +800,9 @@
         "evidence/t12-macos-preview-20261110.4-signed.md",
         "evidence/t12-macos-preview-20261110.5-signed.md",
         "evidence/t12-sparkle-preview.md",
-        "evidence/t12-macos-preview-20261112.1-signed.md"
+        "evidence/t12-macos-preview-20261112.1-signed.md",
+        "evidence/t12-macos-preview-20261113.1-signed.md",
+        "evidence/t12-macos-preview-20261117.1-signed.md"
       ],
       "must_close_gaps": [
         "G-RELEASE",

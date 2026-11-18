@@ -993,6 +993,7 @@ It does not resurrect the phone server, add a custom tunnel manager, expose loop
 | D68 | **Use a nebula flying saucer icon** — Replace the rocket with a flying saucer inspired by the 🛸 emoji. Keep the nebula background, sculpted style and distinct berry development rim. Use design/spaceport-icon/ufo-nebula.png as the shared master for app, platform, installer and social artwork. Preserve the earlier rocket exploration and legal provenance. This supersedes D62 and D63's rocket subject; it does not change bundle identities, signing, update trust or release authorization. | active |
 | D69 | **Keep Herdr Core behind a disabled-by-default app setting** — Keep Herdr Core available only through explicit opt-in. Add the saved herdr_core_enabled setting, default false for new and existing installs. Show Enable Herdr Core under Settings > General > Experimental with Adds Core terminals and groups. Requires restart. Freeze the effective value for each app session across all windows; saving either value requires restarting Spaceport before runtime behavior changes. While disabled, hide Core UI, prevent Core connections and startup, and refuse Core-only CLI actions explicitly. Preserve saved Core preferences, groups and terminal references, and never stop Core or its terminals. Keep regular Herdr available. This qualifies Core reachability under D58 without removing retained Core support or changing runtime ownership. | active |
 | D70 | **Offer a link to install Herdr when Local has no Herdr** — When the Local endpoint cannot start because no herdr executable is found, show a Herdr isn't installed card in place of the reconnecting card, with an Install Herdr button that only opens Herdr's TUI page, https://herdr.dev/tui/ and a Try again button. Retry quietly at the maximum retry delay and clear the card on the next successful connection. Report the state as herdr-missing in spaceport status and host listings. Spaceport never downloads, installs or updates Herdr or runs an installer; the user installs it. Starting an already installed local Herdr when needed stays as D58 allows. This restores the install offer removed for T04 on 2026-11-08, whose reason (a Core-only runtime) D58 and D69 superseded, and is a narrow exception to D58's no-restore clause. | active |
+| D71 | **Core route gaps gate Core graduation, not the fork** — The gaps G-CHAT, G-MACHINE, G-PORT and G-FILE describe Herdr Core routes that Herdr does not offer yet. D69 keeps Core behind a disabled-by-default setting, so these gaps no longer gate the Spaceport fork tasks. Remove them from must_close_gaps on T02, T06, T07 and T11. Keep them open in gaps.json and listed in each task's gaps, with their required evidence and forbidden workarounds unchanged. They now gate one later step: enabling Herdr Core by default. Kata rnbn tracks that step. Where Herdr 1 has a route for the same retained behavior, its acceptance scenario must still pass on that route for the fork. A Core leg runs only with Core enabled and is recorded as Core evidence. G-LINK, G-OBS, G-RELEASE and G-PLATFORM are unchanged. This decision invents no Core capability and does not authorize a Spaceport-owned substitute. | active |
 
 
 ---
@@ -1033,7 +1034,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T02 — Adapt the verified Core capability boundary
 
-Status: **blocked** · Prerequisites: T00
+Status: **in_progress** · Prerequisites: T00
 
 Typed Core calls/streams/capabilities with explicit runtime targets and no new remote manager; existing Herdr 1 routes remain allowed under D58.
 
@@ -1043,7 +1044,7 @@ Acceptance: A02, A03, A04, A05, A53
 
 Gates to investigate: G-MACHINE
 
-Gates this task must close: G-MACHINE
+Gates this task must close: none; record findings without claiming full parity
 
 ## T03 — Build one authoritative view projection
 
@@ -1089,7 +1090,7 @@ Gates this task must close: none; record findings without claiming full parity
 
 ## T06 — Preserve native chat under the ownership contract
 
-Status: **blocked** · Prerequisites: T03, T05
+Status: **in_progress** · Prerequisites: T03, T05
 
 Keep renderer/host adapter where valid; remove desktop-owned conversion/resume/config; prove route or record blocked parity.
 
@@ -1099,11 +1100,11 @@ Acceptance: A14, A15, A16, A17, A54, A55
 
 Gates to investigate: G-CHAT
 
-Gates this task must close: G-CHAT
+Gates this task must close: none; record findings without claiming full parity
 
 ## T07 — Adapt hosts, transfers and service access
 
-Status: **blocked** · Prerequisites: T02, T03
+Status: **in_progress** · Prerequisites: T02, T03
 
 Preserve host/file/service UX through separately verified Herdr 1 or Core routes; no public rebinding or new transport workaround. Core-specific gaps remain until verified or explicitly rescoped with evidence.
 
@@ -1113,7 +1114,7 @@ Acceptance: A04, A05, A25, A26, A27, A28
 
 Gates to investigate: G-PORT, G-FILE, G-MACHINE
 
-Gates this task must close: G-PORT, G-FILE, G-MACHINE
+Gates this task must close: none; record findings without claiming full parity
 
 ## T08 — Preserve activity and attention without collectors
 
@@ -1169,7 +1170,7 @@ Acceptance: A33, A34, A38, A39, A40, A46, A48, A49, A50, A51, A52
 
 Gates to investigate: G-CHAT, G-PORT, G-FILE, G-OBS, G-PLATFORM
 
-Gates this task must close: G-CHAT, G-PORT, G-FILE, G-OBS, G-PLATFORM
+Gates this task must close: G-OBS, G-PLATFORM
 
 ## T12 — Complete release identity and verified updates
 
