@@ -27,7 +27,7 @@ use std::{
     path::Path,
     process::Stdio,
     sync::atomic::{AtomicU64, Ordering},
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant},
 };
 use windows_sys::Win32::{
     Foundation::INVALID_HANDLE_VALUE,
@@ -182,11 +182,11 @@ enum Direction {
 /// would make that open fail rather than share the pipe.
 fn private_pipe(direction: Direction, overlapped_peer: bool) -> io::Result<(OwnedHandle, File)> {
     static NEXT: AtomicU64 = AtomicU64::new(0);
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| elapsed.subsec_nanos());
+    // The process ID and this counter already make the name unique to this run,
+    // so no clock is read for it: a clock jump cannot reach the name, and
+    // `FILE_FLAG_FIRST_PIPE_INSTANCE` below refuses one an earlier run left.
     let name = format!(
-        r"\\.\pipe\herdr-client-{}-{}-{nanos}",
+        r"\\.\pipe\herdr-client-{}-{}",
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)
     );
