@@ -12,9 +12,10 @@ pub const LIFT_DISTANCE: f32 = 4.;
 /// How long a dropped preview waits for the daemon's new order before the
 /// list falls back to the order it last received.
 pub const SETTLE_TIMEOUT: Duration = Duration::from_secs(2);
-/// How long an item takes to slide to its previewed place. Tests settle at
-/// once: they check where rows go, and a frame clock would only add waits.
-pub const SLIDE: Duration = if cfg!(test) {
+/// How long an item takes to slide to its previewed place. A test build that
+/// enables this crate's `test-support` feature settles at once: its harness
+/// checks where rows go, and a frame clock would only add waits.
+pub const SLIDE: Duration = if cfg!(feature = "test-support") {
     Duration::ZERO
 } else {
     Duration::from_millis(150)
