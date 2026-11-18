@@ -1,9 +1,9 @@
 // ABOUTME: Prevents implicit Core connections and fallback while Core is disabled.
 // ABOUTME: Uses a private connector that fails the test if any worker reaches it.
 use super::*;
-use std::time::Instant;
 use crate::core_terminals::{Error, Start, State};
 use sheprd_client::ConnectTarget;
+use std::time::Instant;
 
 #[test]
 fn disabled_core_keeps_missing_herdr_guidance_in_the_status_bar() {
