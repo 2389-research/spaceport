@@ -1,17 +1,19 @@
-//! How long ago something happened, in the largest whole unit: "just now",
-//! "5 min ago", "yesterday", "3 days ago" from seconds elapsed.
+//! The words for [`sheprd_ago::Elapsed`]: "just now", "5 min ago",
+//! "yesterday", "3 days ago". The crate below the app names the unit and its
+//! count, and the app writes them, as every crate below the app leaves its
+//! messages to the app (docs/i18n.md).
 // i18n: migrated
 
 use crate::i18n::{self, FluentValue};
+use sheprd_ago::Elapsed;
 
-/// The message and its count for `seconds` elapsed. A clock that moved
-/// back reads as now rather than in the future, so callers saturate.
-fn message(seconds: u64) -> (&'static str, Option<u64>) {
-    match seconds {
-        0..60 => ("ago-now", None),
-        60..3600 => ("ago-minutes", Some(seconds / 60)),
-        3600..86_400 => ("ago-hours", Some(seconds / 3600)),
-        _ => ("ago-days", Some(seconds / 86_400)),
+/// The message and its count for `elapsed`.
+fn message(elapsed: Elapsed) -> (&'static str, Option<u64>) {
+    match elapsed {
+        Elapsed::Now => ("ago-now", None),
+        Elapsed::Minutes(count) => ("ago-minutes", Some(count)),
+        Elapsed::Hours(count) => ("ago-hours", Some(count)),
+        Elapsed::Days(count) => ("ago-days", Some(count)),
     }
 }
 
@@ -24,7 +26,7 @@ fn args(count: Option<u64>) -> Vec<(&'static str, FluentValue<'static>)> {
 
 /// `seconds` ago in the current locale.
 pub(crate) fn text(seconds: u64) -> String {
-    let (id, count) = message(seconds);
+    let (id, count) = message(sheprd_ago::elapsed(seconds));
     i18n::message(id, &args(count))
 }
 

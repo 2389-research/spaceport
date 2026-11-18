@@ -15,7 +15,7 @@ fn reads_in_the_largest_whole_unit() {
         (3 * 86_400, ("ago-days", Some(3))),
         (21 * 86_400, ("ago-days", Some(21))),
     ] {
-        assert_eq!(message(seconds), expected, "{seconds}");
+        assert_eq!(message(sheprd_ago::elapsed(seconds)), expected, "{seconds}");
     }
 }
 

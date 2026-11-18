@@ -6326,6 +6326,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "sheprd-ago"
+version = "0.1.0"
+
+[[package]]
 name = "sheprd-backend"
 version = "0.1.0"
 dependencies = [
@@ -6468,6 +6472,7 @@ dependencies = [
  "serde_ignored",
  "serde_json",
  "sha2 0.11.1",
+ "sheprd-ago",
  "sheprd-backend",
  "sheprd-chat-protocol",
  "sheprd-client",

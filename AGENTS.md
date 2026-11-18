@@ -57,6 +57,7 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-remote` | Existing bounded Herdr host scripts, agent-session validation/arguments and pane/process snapshot readers retained by chat and pane movement; no migration, provisioning, dispatch, credential store or GPUI |
 | `crates/sheprd-diagnostics` | The app's log file and crash reports: the bounded capture of the crates the app names, the writer thread and rotation, the reader the log window tails, the panic hook, and Windows minidumps; no GPUI |
 | `crates/sheprd-i18n` | The languages the app shows (`docs/i18n.md`): `Locale`, `Direction`, the `language` setting and its negotiation with an `en-US` fallback, the Fluent catalog, and the `en-XA`/`en-XB` pseudo-locales; no GPUI (the app embeds `crates/sheprd-gpui/locales`, keeps the current locale, and checks `fl!`) |
+| `crates/sheprd-ago` | How long ago something happened, in the largest whole unit ("3 min ago", "yesterday") from seconds elapsed; it names the unit and its count and the app writes the words; no GPUI or messages |
 | `crates/sheprd-launcher` | Windows-only windowed launcher that starts `spaceport.exe` without a console window; std plus `MessageBoxW` for start failures |
 | `crates/embed-resource` | No-op stand-in for GPUI's `embed-resource` build dependency, patched in so GPUI embeds no Windows manifest beside `crates/sheprd-gpui/windows.manifest`; not a production crate |
 | `crates/test-support/sandbox.rs` | Shared isolated process setup for opt-in integration tests; not a production crate |
