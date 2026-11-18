@@ -302,6 +302,7 @@ fn taller_reply(
     cx: &mut VisualTestContext,
 ) {
     send(stream, &change(append(40, text), cursor(1, seq)));
+    let tail = text.trim().to_owned();
     wait_until(|| {
         poll(view, program, cx);
         view.read_with(cx, |view, _| {
@@ -312,10 +313,66 @@ fn taller_reply(
                 .session
                 .transcript()
                 .entries;
-            matches!(&entries[39].kind, EntryKind::Agent { text } if text.len() > 100)
+            matches!(&entries[39].kind, EntryKind::Agent { text } if text.ends_with(tail.as_str()))
         })
     });
     redraw(view, cx);
+}
+
+#[gpui::test]
+fn a_flick_to_the_end_follows_though_a_chunk_landed_with_it(cx: &mut TestAppContext) {
+    let (view, _peer, cx) = open(cx, ConnectTarget::Local);
+    let program = Program::new();
+    let mut stream = opened(&view, &program, cx);
+    let reply = "\n\nAnother paragraph of the reply as it streams in.".repeat(6);
+    taller_reply(&view, &program, &mut stream, 1, &reply, cx);
+    assert!(behind(&view, cx) <= 1., "following the reply");
+
+    // A chunk lands and the reader flicks back down to the end before the
+    // next layout: the reply counts no height yet, so the list clamps the
+    // flick to an end above it.
+    view.update(cx, |view, _| {
+        view.chats.pane_mut("w1:p1").unwrap().remeasure(EntryId(40));
+    });
+    wheel(-600., cx);
+    redraw(&view, cx);
+    assert!(
+        !view.read_with(cx, |view, _| view
+            .chats
+            .pane("w1:p1")
+            .unwrap()
+            .glide
+            .stopped()),
+        "the flick reached the end as the list stood then"
+    );
+    settle(&view, cx);
+    assert!(behind(&view, cx) <= 1., "back at the end");
+    assert!(!away(&view, cx), "no button at the end");
+
+    // So what arrives next shows without the reader touching it again.
+    let more = "\n\nAnd the paragraph after it.".repeat(6);
+    taller_reply(&view, &program, &mut stream, 2, &more, cx);
+    settle(&view, cx);
+    assert!(behind(&view, cx) <= 1., "following again");
+    assert!(!away(&view, cx), "and no button");
+}
+
+#[gpui::test]
+fn a_flick_down_while_a_reply_glides_keeps_following(cx: &mut TestAppContext) {
+    let (view, _peer, cx) = gliding(cx);
+    let program = Program::new();
+    let start = grow_last(&view, &program, cx);
+    assert!(start > 20., "the new lines wait below: {start}");
+    // A trackpad keeps sending events after the flick: one toward the end,
+    // short of it because the glide has not caught up, is no reason to stop.
+    wheel(-20., cx);
+    redraw(&view, cx);
+    assert!(
+        !away(&view, cx),
+        "no button over a list on its way to the end"
+    );
+    settle(&view, cx);
+    assert!(behind(&view, cx) <= 1., "the glide reaches the end");
 }
 
 #[gpui::test]

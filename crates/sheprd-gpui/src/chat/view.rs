@@ -290,6 +290,7 @@ impl SheprdWindow {
         let release_pane = pane_id.clone();
         let release_out_pane = pane_id.clone();
         let drop_pane = pane_id.clone();
+        let scroll_pane = pane_id.clone();
         div()
             .id(SharedString::from(format!("chat-{pane_id}")))
             .debug_selector(|| "chat-view".into())
@@ -346,7 +347,14 @@ impl SheprdWindow {
             )
             .on_mouse_down(MouseButton::Right, |_, _, cx| cx.stop_propagation())
             .on_mouse_down(MouseButton::Middle, |_, _, cx| cx.stop_propagation())
-            .on_scroll(|_, _, cx| cx.stop_propagation())
+            .on_scroll(cx.listener(move |this, event: &ScrollEvent, _, cx| {
+                // After the list took it, so the glide judges a wheel toward
+                // the end where that scroll left the list.
+                if let Some(pane) = this.chats.pane_mut(&scroll_pane) {
+                    pane.glide.wheel_scrolled(&pane.list, event.delta);
+                }
+                cx.stop_propagation();
+            }))
             .on_mouse_move(cx.listener(move |this, event: &MouseMoveEvent, _, cx| {
                 this.move_chat_text(&move_pane, event, cx);
             }))

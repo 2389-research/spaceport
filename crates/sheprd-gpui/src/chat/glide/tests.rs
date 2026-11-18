@@ -49,16 +49,72 @@ fn scrolling_up_stops_following_until_back_at_the_end() {
     let now = Instant::now();
     let step = glide.step(0., 100., 600., now).unwrap();
     // The user scrolled up.
-    glide.scrolled.set(true);
+    glide.user_scrolled();
     settle(&glide.following, &glide.scrolled, 130. - step);
     assert_eq!(glide.step(step - 30., 100., 600., now), None);
     // New output does not pull the list down while the user reads.
     assert_eq!(glide.step(step - 30., 400., 600., now), None);
     // The user scrolled back to the end: it follows again.
-    glide.scrolled.set(true);
+    glide.scrolled.set(Scroll::ToEnd);
     settle(&glide.following, &glide.scrolled, 0.);
     assert_eq!(glide.step(400., 400., 600., now), None);
     assert!(glide.step(400., 450., 600., now).is_some());
+}
+
+#[test]
+fn a_scroll_toward_the_end_is_judged_where_it_left_the_list() {
+    let down = ScrollDelta::Pixels(gpui::point(px(0.), px(-120.)));
+    let up = ScrollDelta::Pixels(gpui::point(px(0.), px(120.)));
+    // Lines carry the same sign as pixels, scaled.
+    let lines = ScrollDelta::Lines(gpui::point(0., 3.));
+    assert_eq!(Scroll::of(down, 0.), Some(Scroll::ToEnd), "reached the end");
+    assert_eq!(
+        Scroll::of(down, 600.),
+        Some(Scroll::Nothing),
+        "stopped short"
+    );
+    assert_eq!(Scroll::of(up, 0.), Some(Scroll::Away));
+    assert_eq!(Scroll::of(up, 600.), Some(Scroll::Away));
+    assert_eq!(Scroll::of(lines, 0.), Some(Scroll::Away));
+    // Across the list, the top does not move, so the following it has holds.
+    assert_eq!(
+        Scroll::of(ScrollDelta::Pixels(gpui::point(px(40.), px(0.))), 0.),
+        None
+    );
+}
+
+#[test]
+fn a_scroll_toward_the_end_follows_though_output_landed_before_the_layout() {
+    let mut glide = glide();
+    glide.following.set(false);
+    glide.scrolled.set(Scroll::ToEnd);
+    // The reply grew after the flick reached the end as it stood then, which
+    // leaves the list well above the end the layout reports.
+    settle(&glide.following, &glide.scrolled, 240.);
+    assert!(glide.following.get());
+    assert!(glide.step(100., 340., 600., Instant::now()).is_some());
+}
+
+#[test]
+fn a_scroll_that_stopped_short_of_the_end_leaves_following_as_it_was() {
+    let following = glide();
+    following.scrolled.set(Scroll::Nothing);
+    settle(&following.following, &following.scrolled, 240.);
+    assert!(
+        following.following.get(),
+        "a reader heading toward the end keeps following"
+    );
+
+    let reading = glide();
+    reading.following.set(false);
+    reading.scrolled.set(Scroll::Nothing);
+    settle(&reading.following, &reading.scrolled, 600.);
+    assert!(!reading.following.get(), "and one who left stays away");
+    assert_eq!(
+        reading.scrolled.get(),
+        Scroll::Nothing,
+        "nothing waits on the layout"
+    );
 }
 
 #[test]
