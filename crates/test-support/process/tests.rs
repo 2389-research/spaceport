@@ -1,38 +1,33 @@
 use super::*;
-use std::{
-    io::Read as _,
-    process::{Child, Command, Stdio},
-};
+use std::process::{Child, Command};
 
 #[cfg(target_os = "linux")]
 #[path = "tests/linux.rs"]
 mod linux;
 
-/// A child whose end of a pipe closes when it exits, reaped or not.
 fn sleep() -> Child {
-    Command::new("/bin/sleep")
-        .arg("60")
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap()
+    Command::new("/bin/sleep").arg("60").spawn().unwrap()
 }
 
 #[test]
 fn reports_running_as_alive_and_zombie_and_reaped_as_dead() {
     let mut child = sleep();
     let pid = child.id();
-    let mut exited = child.stdout.take().unwrap();
     let running = is_dead(pid);
 
     child.kill().unwrap();
     assert!(!running.unwrap());
-    // `sleep` writes nothing, so this blocks until the child's end of the pipe
-    // closes at its exit: the zombie the next check reads.
-    assert_eq!(
-        exited.read(&mut [0u8; 1]).unwrap(),
-        0,
-        "killed child did not exit"
-    );
+    // Blocks until the child is exited and then leaves it unreaped, so the
+    // next check observes the zombie `is_dead` reads, and no poll guesses
+    // when the exit becomes visible.
+    // POSIX waitid with WNOWAIT: block until the child is exited, then leave
+    // it unreaped, so the next check observes the zombie `is_dead` reads.
+    // No poll guesses when the exit becomes visible.
+    let pid = pid.try_into().expect("pid fits pid_t");
+    let mut info: libc::siginfo_t = unsafe { std::mem::zeroed() };
+    let result =
+        unsafe { libc::waitid(libc::P_PID, pid, &mut info, libc::WNOWAIT | libc::WEXITED) };
+    assert_eq!(result, 0, "killed child did not exit");
     assert!(is_dead(pid).unwrap());
 
     child.wait().unwrap();
