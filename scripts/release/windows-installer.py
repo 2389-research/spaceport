@@ -46,6 +46,10 @@ import time
 import urllib.request
 import zipfile
 
+SPEC = importlib.util.spec_from_file_location("release_common", Path(__file__).with_name("_release_common.py"))
+common = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(common)
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/release/sheprd.iss"
 SIGN_SCRIPT = ROOT / "scripts/release/windows-sign-file.ps1"
@@ -91,7 +95,7 @@ def install_iscc(destination):
 
 def iscc_arguments(version, target, source, output_dir, sign=False):
     """The compiler's command line after ISCC itself."""
-    if not re.fullmatch(r"[1-9][0-9]{7}\.[1-9][0-9]*", version):
+    if not common.is_version(version):
         raise ValueError("Version must be YYYYMMDD.COUNTER (no v prefix, counter from 1, no leading zeros)")
     if target not in ARCHITECTURES:
         raise ValueError("Unsupported Windows target")

@@ -2,17 +2,22 @@
 # ABOUTME: Select a published ancestor as the macOS preview changelog boundary.
 # ABOUTME: Use the recorded fork baseline before the first published release.
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 import re
 import subprocess
 import sys
 
-TAG = re.compile(r'v[1-9][0-9]{7}\.[1-9][0-9]*')
+SPEC = importlib.util.spec_from_file_location('release_common', Path(__file__).with_name('_release_common.py'))
+common = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(common)
+
+TAG = re.compile(rf'v{common.VERSION}')
 
 
 def select_base(repo, baseline, tags):
-    if not re.fullmatch(r'[0-9a-f]{40}', baseline):
+    if not common.is_commit(baseline):
         raise ValueError('Invalid fork baseline SHA')
 
     def git(*args):
@@ -41,8 +46,8 @@ def main():
     argparse.ArgumentParser(description='Select the published ancestor for Spaceport preview notes.').parse_args()
     repo = Path(__file__).resolve().parents[2]
     baseline = json.loads((repo / 'docs/spaceport/evidence/t00-dependencies.json').read_text())['source_revision']
-    raw = subprocess.check_output(['gh', 'api', '--paginate', '--slurp',
-                                   'repos/2389-research/spaceport/releases?per_page=100'], timeout=60)
+    raw = common.gh('api', '--paginate', '--slurp',
+                    'repos/2389-research/spaceport/releases?per_page=100', timeout=60)
     if len(raw) > 8 * 1024 * 1024:
         raise ValueError('Published release history is oversized')
     pages = json.loads(raw)

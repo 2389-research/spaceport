@@ -6,6 +6,7 @@ ABOUTME: Bind feed entries to immutable preview artifacts and the public trust k
 import argparse
 import base64
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,10 @@ import re
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
+
+SPEC = importlib.util.spec_from_file_location("release_common", Path(__file__).with_name("_release_common.py"))
+common = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(common)
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "scripts/release/sparkle.json"
@@ -24,7 +29,7 @@ ET.register_namespace("sparkle", NS)
 
 
 def version_tuple(version):
-    if not re.fullmatch(r"[1-9][0-9]{7}\.[1-9][0-9]*", version):
+    if not common.is_version(version):
         raise ValueError("Version must be YYYYMMDD.COUNTER without leading zeros")
     return tuple(map(int, version.split(".")))
 
@@ -156,7 +161,7 @@ def verify_archive(item, archive, public_key):
 def publication_version(data, previous, config, published_tags):
     version = parse(data, config)["version"]
     versions = [version_tuple(tag[1:]) for tag in published_tags
-                if re.fullmatch(r"v[1-9][0-9]{7}\.[1-9][0-9]*", tag)]
+                if re.fullmatch(rf"v{common.VERSION}", tag)]
     if not versions or max(versions) != version_tuple(version):
         raise ValueError("Feed must reference the newest published preview")
     if previous is not None:
