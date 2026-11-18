@@ -28,6 +28,20 @@ ignore = [
     # Field and variant order is part of protocol compatibility, so this is not
     # a swappable dependency. Revisit if an actual vulnerability is filed.
     { id = "RUSTSEC-2025-0141", reason = "bincode 2 is the daemon wire format; unmaintained, not vulnerable" },
+    # chrono is unmaintained (chronotope/chrono#1768); no patched release and
+    # all versions are affected. Its uses here are display, diagnostic and
+    # record timestamps: Local::now()/Utc for log and crash filenames, the
+    # overview presets' weekday arithmetic, and RFC3339 parsing of daemon record
+    # and stored preference timestamps
+    # (crates/sheprd-acp/src/mirror/transcript/activities.rs:105-108,
+    # crates/sheprd-gpui/src/preferences.rs:337). Parsing there is memory safe,
+    # and its result is only reduced to Unix milliseconds or compared for the
+    # latest visit, so this entry tracks an unmaintained parser rather than an
+    # exploitable defect.
+    # jiff is the destination if the workspace migrates; until that is a
+    # deliberate cross-crate change (three crates call chrono today), this
+    # entry tracks the debt the same way the bincode entry does.
+    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained; display, diagnostic and record timestamps only, jiff migration tracked separately" },
 ]
 
 # GHSA-38c5-483c-4qqp / CVE-2026-42199: integer overflow in grid's
