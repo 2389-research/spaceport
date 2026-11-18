@@ -51,7 +51,8 @@ fn a_local_failure_stays_visible_beside_a_connection_failure(cx: &mut TestAppCon
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     assert!(cx.debug_bounds("connection-status").is_some());
     view.read_with(cx, |view, _| {
-        let status = view.live.status_text(view.notices.text());
+        let now = std::time::Instant::now();
+        let status = view.live.status_text(view.notices.text_at(now), now);
         assert!(status.contains("Connection closed"));
         assert!(!status.contains("Could not open that tab"));
     });

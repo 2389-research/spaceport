@@ -1,4 +1,5 @@
 use super::*;
+use std::time::Instant;
 
 #[test]
 fn worktree_failure_stays_in_dialog_after_snapshots_and_successful_retry() {
@@ -16,7 +17,7 @@ fn worktree_failure_stays_in_dialog_after_snapshots_and_successful_retry() {
         response: response.clone(),
     });
     state.apply(ClientEvent::Snapshot(snapshot()));
-    assert_eq!(state.status_text(None), "Connected");
+    assert_eq!(state.status_text(None, Instant::now()), "Connected");
     assert!(matches!(&state.dialog_response,
         Some((id, Some(Ok(value)))) if id == "create" && value == &response));
 
@@ -26,7 +27,7 @@ fn worktree_failure_stays_in_dialog_after_snapshots_and_successful_retry() {
         response: serde_json::json!({"result": {}}),
     });
     state.dialog_response = None;
-    assert_eq!(state.status_text(None), "Connected");
+    assert_eq!(state.status_text(None, Instant::now()), "Connected");
 }
 
 #[test]

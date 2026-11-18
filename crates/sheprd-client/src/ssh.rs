@@ -268,17 +268,14 @@ fn run_with_stderr(
     };
     let reader = start_output(stdout)?;
     let deadline = Instant::now() + timeout;
-    let status = loop {
-        if let Some(status) = child.0.try_wait()? {
-            break status;
-        }
-        if cancelled() {
+    let status = match crate::wait::exit(&mut child.0, deadline, &cancelled)? {
+        crate::wait::Exit::Exited(status) => status,
+        crate::wait::Exit::Stopped(crate::wait::Stop::Cancelled) => {
             return Err(Error::Cancelled.into());
         }
-        if Instant::now() >= deadline {
+        crate::wait::Exit::Stopped(crate::wait::Stop::TimedOut) => {
             return Err(Error::Timeout.into());
         }
-        std::thread::sleep(Duration::from_millis(25));
     };
     let output = finish_output(reader, deadline, &cancelled)?;
     if output.len() as u64 > PROBE_OUTPUT_LIMIT {

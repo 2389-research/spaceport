@@ -3,6 +3,7 @@
 use super::*;
 use crate::core_terminals::{Error, Start, State};
 use sheprd_client::ConnectTarget;
+use std::time::Instant;
 
 #[test]
 fn disabled_core_keeps_missing_herdr_guidance_in_the_status_bar() {
@@ -16,7 +17,7 @@ fn disabled_core_keeps_missing_herdr_guidance_in_the_status_bar() {
                 "private Herdr fixture is missing".into(),
             );
             cx.notify();
-            view.live.status_text(None)
+            view.live.status_text(None, Instant::now())
         });
         crate::i18n::leak_tests::draw(cx);
         let shown = recorder.take();

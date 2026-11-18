@@ -7,6 +7,7 @@ use sheprd_core_client::wire::{Doc, Machine, MachineList, MachineView};
 
 #[cfg(unix)]
 mod live;
+mod machine_reader;
 mod remote_document;
 
 fn terminal(id: &str) -> TerminalInfo {

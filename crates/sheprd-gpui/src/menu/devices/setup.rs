@@ -252,14 +252,9 @@ fn run_bounded_untraced(
         Retain::Tail(limit),
     )?;
     let deadline = Instant::now() + timeout;
-    let status = loop {
-        if let Some(status) = child.0.try_wait()? {
-            break status;
-        }
-        if Instant::now() >= deadline {
-            return Err(Error::SetupTimeout.into());
-        }
-        std::thread::sleep(Duration::from_millis(50));
+    let status = match sheprd_client::wait::exit(&mut child.0, deadline, || false)? {
+        sheprd_client::wait::Exit::Exited(status) => status,
+        sheprd_client::wait::Exit::Stopped(_) => return Err(Error::SetupTimeout.into()),
     };
     let stdout = finish_output(stdout, deadline)?;
     let stderr = finish_output(stderr, deadline)?;

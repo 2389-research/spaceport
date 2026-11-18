@@ -103,7 +103,7 @@ impl SheprdWindow {
         if !self.operation_warning_shown() {
             self.notices.pause(false, now);
             self.live.notices.pause(false, now);
-        } else if self.notices.is_some() {
+        } else if self.notices.is_some_at(now) {
             self.live.notices.pause(false, now);
         }
     }
@@ -116,7 +116,8 @@ impl SheprdWindow {
         self.menu.page.is_none()
             && (!self.status_bar_visible
                 || self.zen_active()
-                || (!self.live.status.is_connected() && self.notices.is_some()))
+                || (!self.live.status.is_connected()
+                    && self.notices.is_some_at(std::time::Instant::now())))
             && self.operation_warning().is_some()
     }
 
@@ -134,7 +135,7 @@ impl SheprdWindow {
                 .aria_label(text.clone())
                 .on_hover(cx.listener(|this, hovered, _, cx| {
                     let now = std::time::Instant::now();
-                    let local = this.notices.is_some();
+                    let local = this.notices.is_some_at(now);
                     this.notices.pause(*hovered && local, now);
                     this.live.notices.pause(*hovered && !local, now);
                     cx.notify();

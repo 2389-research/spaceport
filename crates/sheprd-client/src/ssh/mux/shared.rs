@@ -103,10 +103,7 @@ impl Drop for Process {
         };
         // Callers may hold the registry lock, so the wait is never here.
         let reap = move || {
-            let deadline = Instant::now() + STOP_GRACE;
-            while matches!(child.try_wait(), Ok(None)) && Instant::now() < deadline {
-                thread::sleep(POLL);
-            }
+            let _ = crate::wait::exit(&mut child, Instant::now() + STOP_GRACE, || false);
             let _ = child.kill();
             let _ = child.wait();
             drop(dir);

@@ -104,20 +104,12 @@ pub(crate) fn delete_command(mut command: std::process::Command, timeout: Durati
         .stdout(Stdio::null())
         .stderr(Stdio::null());
     let mut child = command.spawn()?;
-    let started = Instant::now();
-    let result = loop {
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                break if status.success() {
-                    Ok(())
-                } else {
-                    Err(Error::DeleteFailed(status).into())
-                };
-            }
-            Err(error) => break Err(crate::Error::Io(error)),
-            Ok(None) if started.elapsed() >= timeout => break Err(Error::DeleteTimeout.into()),
-            Ok(None) => std::thread::sleep(Duration::from_millis(20)),
-        }
+    let result = match crate::wait::exit(&mut child, Instant::now() + timeout, || false) {
+        Ok(crate::wait::Exit::Exited(status)) if status.success() => Ok(()),
+        Ok(crate::wait::Exit::Exited(status)) => Err(Error::DeleteFailed(status).into()),
+        // The wait killed and reaped a CLI that missed its deadline.
+        Ok(crate::wait::Exit::Stopped(_)) => Err(Error::DeleteTimeout.into()),
+        Err(error) => Err(crate::Error::Io(error)),
     };
     // Only this exact CLI/SSH child is ours to kill and reap, never the daemon.
     let _ = child.kill();

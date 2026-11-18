@@ -123,7 +123,10 @@ impl Notices {
         self.text_at(Instant::now())
     }
 
-    fn text_at(&self, now: Instant) -> Option<&str> {
+    /// The current notice as it reads at `now`: a caller that already holds an
+    /// instant, such as the frame it is drawing, passes it rather than letting
+    /// a second clock read decide.
+    pub(crate) fn text_at(&self, now: Instant) -> Option<&str> {
         self.current
             .as_ref()
             .filter(|notice| notice.active(self.paused.unwrap_or(now)))
@@ -167,6 +170,10 @@ impl Notices {
         }
     }
 
+    pub(crate) fn is_some_at(&self, now: Instant) -> bool {
+        self.text_at(now).is_some()
+    }
+
     pub(crate) fn connection_reason(&self) -> Option<&str> {
         self.current
             .as_ref()
@@ -174,9 +181,13 @@ impl Notices {
             .map(|notice| notice.text.as_ref())
     }
 
+    /// Only harnesses ask "any notice at all": the app reads
+    /// [`Self::is_some_at`] at the instant it draws.
+    #[cfg(any(test, feature = "integration-test"))]
     pub(crate) fn is_some(&self) -> bool {
         self.text().is_some()
     }
+
     pub(crate) fn is_none(&self) -> bool {
         self.text().is_none()
     }

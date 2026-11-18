@@ -50,6 +50,7 @@ const READY_TIMEOUT: Duration = Duration::from_secs(30);
 const FORWARD_TIMEOUT: Duration = Duration::from_secs(10);
 #[cfg(unix)]
 const STARTING_POLL: Duration = Duration::from_millis(50);
+/// Bounds master-state detection while retaining exact owned-child cleanup.
 #[cfg(unix)]
 const LISTENING_POLL: Duration = Duration::from_millis(250);
 

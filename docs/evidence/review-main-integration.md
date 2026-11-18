@@ -1,10 +1,54 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: locally verified checkpoint, authorized for a public draft PR.
+Status: checkpoint published; newer-main integration locally verified for draft update.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
-It does not authorize merging or releasing it.
+It does not authorize merging the draft into main or releasing it.
+
+Published checkpoint: `150eed475c4097c63dff86edf8e2b215c64a1d02`.
+Draft: [PR 125](https://github.com/2389-research/spaceport/pull/125).
+The remote branch and draft head were read back and match that commit.
+
+## Newer-main integration
+
+The topic branch is incorporating main `099e380ff90d72a63c32dc19868ae89c81c32c74`.
+This updates the draft branch; it does not merge the draft into main.
+Resolved the two textual conflicts in the forward and Devices setup code.
+The combined tree passes its focused tests, final lint, and pixel checks.
+
+Devices setup keeps its `CliChild` owner and one deadline for process exit and both captured outputs.
+It uses main's shared `wait::exit` helper with the owned child's inner handle.
+
+The forward retains `OwnedChild`, null stdout, and the 250-millisecond master-state poll.
+Independent lifecycle review approved this bounded exception to main's EOF optimization.
+The detached EOF reader can remain blocked while an inherited writer stays open.
+Reusing the existing capture reader would add idle polls every 25 milliseconds.
+A new event-waker API would expand this integration beyond its ownership fix.
+The forward keeps four monitor wakeups per second and up to 250 milliseconds of exit-detection delay.
+This resolution makes no forward performance-improvement claim.
+
+The remaining shared waits, process watch, metadata wakes, and render-time notice changes remain included.
+Independent review found two missed notice API adaptations in the combined tree.
+Updated the status-text test caller and three production warning callers to use explicit timestamps.
+The test compile first failed with E0061, then passed with its caller corrected.
+Production warning callers use `is_some_at`; all-feature tests alone could hide their missing-method regression.
+Independent review approved the corrected callers and found no further material lifecycle issue.
+
+The combined source passes 416 client tests and 78 Core tests.
+Four client and fourteen Core opt-in tests remain ignored.
+Sixteen focused GPUI scopes pass 466 distinct tests, with three opt-in tests ignored.
+The count removes duplicate test names across overlapping scope filters.
+No test failed in these final focused runs.
+Logs: `/tmp/spaceport-9s44-new-main-client-core.log` and `new-main-verified-SCOPE.log`.
+The scope summary is `/tmp/spaceport-9s44-new-main-test-results.json`.
+Static validators and the specification gate also pass against the combined source.
+Canonical `just lint` and `just lint-windows` pass both feature configurations again.
+The no-default-feature checks include the production app target and qualify the corrected notice callers.
+Both opt-in offscreen Metal pixel cases also pass against the combined tree.
+Logs: `/tmp/spaceport-9s44-new-main-{host-lint,windows-lint,metal-pixels}.log`.
+These current results supersede the older checkpoint-only qualification for the combined source.
+The existing debug-test linker and dependency future-compatibility notices persist.
 
 ## Source and destination
 
@@ -93,7 +137,7 @@ The contended-reader case separately rejects retries before that projection comp
 All three corrections affect test code only.
 Independent review approved them against the production callers.
 
-## Verification
+## Published checkpoint verification
 
 Passed `just format-check check-file-size check-sorted check-just-operations check-i18n check-spec`.
 Passed `git diff --check` and `git diff --cached --check`.
@@ -155,14 +199,13 @@ Those earlier results do not prove this combined checkout passed.
 Prepare a concrete handoff for the overlapping work with Clint.
 Reconcile PR 123's additional protocol copy with the local error guidance.
 See [the bounded comparison](review-pr123-overlap.md).
-Commit and publish the reviewed checkpoint under Doctor Biz's recorded approval.
-Then reconcile the newer main delta and rerun its affected checks before merging.
-Preserve the tested checkpoint while resolving its lifecycle and notice overlaps.
+Commit the reviewed topic-branch integration and update draft PR 125 under Doctor Biz's recorded approval.
+Keep the draft unmerged while its hosted and native gates remain open.
 The exact overlap list is `/tmp/spaceport-9s44-handoff-new-main-overlaps.txt`.
 An isolated preflight found two textual conflicts among those 24 paths.
 They affect `sheprd-client/src/forward.rs` and the Devices setup implementation.
 Its inputs and proposed merges remain under `/tmp/spaceport-9s44-new-main-preflight`.
-No preflight result has changed this verified checkpoint.
+The completed topic integration implements the reviewed resolutions described above.
 The full workspace test suite, hosted platform jobs, application build and CLI smoke remain deferred to CI.
 
 Kata remains 31 closed children and 22 open children at this checkpoint.

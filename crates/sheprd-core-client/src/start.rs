@@ -37,18 +37,12 @@ pub fn start(binary: &Path, configure: impl FnOnce(&mut Command), timeout: Durat
     };
     let mut child = command.spawn().map_err(start_error)?;
     let deadline = Instant::now() + timeout;
-    let status = loop {
-        if let Some(status) = child.try_wait().map_err(start_error)? {
-            break status;
-        }
-        if Instant::now() >= deadline {
+    let status =
+        match sheprd_client::wait::exit(&mut child, deadline, || false).map_err(start_error)? {
+            sheprd_client::wait::Exit::Exited(status) => status,
             // Only the start command dies here; a core it started keeps running.
-            let _ = child.kill();
-            let _ = child.wait();
-            return Err(Error::StartTimeout(timeout));
-        }
-        std::thread::sleep(Duration::from_millis(25));
-    };
+            sheprd_client::wait::Exit::Stopped(_) => return Err(Error::StartTimeout(timeout)),
+        };
     if status.success() {
         return Ok(());
     }

@@ -16,6 +16,7 @@ use std::{
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
+        mpsc,
     },
     time::{Duration, Instant},
 };
@@ -265,7 +266,22 @@ fn sort_machines(mut catalog: MachineList) -> MachineList {
 type Mailbox = Arc<Mutex<Option<Projection>>>;
 type MachineMailbox = Arc<Mutex<Option<Result<MachineList, Error>>>>;
 type RemoteMailbox = Arc<Mutex<Option<(RemoteRequest, Result<VersionedDocument, Error>)>>>;
-type RemoteRequests = Arc<Mutex<Option<RemoteRequest>>>;
+
+/// The remote document read the machine reader owes, and the wake that tells
+/// it so: that reader waits until its next 2 s machine refresh or a request,
+/// and a request that arrived in between must not wait for the refresh.
+struct RemoteRequests {
+    latest: Arc<Mutex<Option<RemoteRequest>>>,
+    wake: mpsc::SyncSender<()>,
+}
+
+impl RemoteRequests {
+    fn replace(&self, request: RemoteRequest) {
+        replace_latest(&self.latest, request);
+        // A full channel already holds a wake the reader has not taken yet.
+        let _ = self.wake.try_send(());
+    }
+}
 
 #[derive(Clone, Default, PartialEq, Eq)]
 struct RemoteSelection {
@@ -603,18 +619,27 @@ fn watch(
     projection.initial(epoch, terminals, document);
     publish(mailbox, projection);
     let machine_results: MachineMailbox = Arc::new(Mutex::new(None));
-    let remote_requests: RemoteRequests = Arc::new(Mutex::new(None));
+    let (wake, woken) = mpsc::sync_channel::<()>(1);
+    let remote_requests = RemoteRequests {
+        latest: Arc::new(Mutex::new(None)),
+        wake,
+    };
     let remote_results: RemoteMailbox = Arc::new(Mutex::new(None));
     let read_backend = backend.clone();
     let read_stop = Arc::clone(stop);
     let read_results = Arc::clone(&machine_results);
-    let read_requests = Arc::clone(&remote_requests);
+    let read_requests = Arc::clone(&remote_requests.latest);
     let read_remote_results = Arc::clone(&remote_results);
     if let Err(error) = std::thread::Builder::new()
         .name("herdr-core-machines".into())
         .spawn(move || {
             let mut next_machine_read = Instant::now();
-            while !read_stop.load(Ordering::Acquire) {
+            loop {
+                if read_stop.load(Ordering::Acquire) {
+                    break;
+                }
+                // The machine list is re-read on a 2 s timer; a remote document
+                // request wakes this reader sooner, so neither waits on the other.
                 if Instant::now() >= next_machine_read {
                     let result = read_backend
                         .core()
@@ -630,7 +655,13 @@ fn watch(
                     );
                     replace_latest(&read_remote_results, (request, result));
                 }
-                std::thread::sleep(Duration::from_millis(100));
+                let refresh = next_machine_read.saturating_duration_since(Instant::now());
+                match woken.recv_timeout(refresh) {
+                    // A request is waiting: the next pass reads it.
+                    Ok(()) | Err(mpsc::RecvTimeoutError::Timeout) => {}
+                    // The observer dropped its requests: nothing is left to read.
+                    Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                }
             }
         })
     {
@@ -649,7 +680,7 @@ fn watch(
                 projection.machines.as_deref(),
             );
             if let Some(request) = request {
-                replace_latest(&remote_requests, request);
+                remote_requests.replace(request);
             }
             projection.revision += 1;
             publish(mailbox, projection);
@@ -661,7 +692,7 @@ fn watch(
                 .iter()
                 .any(|notice| notice.machine.is_some() && notice.name == NAME);
         if let Some(request) = projection.remote.invalidate(epoch, &batch) {
-            replace_latest(&remote_requests, request);
+            remote_requests.replace(request);
         }
         let document =
             needs_document(&batch).then(|| parse_document(backend.core().doc_get(NAME, None)));
@@ -678,7 +709,7 @@ fn watch(
                 .remote
                 .catalog(epoch, projection.machines.as_deref())
             {
-                replace_latest(&remote_requests, request);
+                remote_requests.replace(request);
             }
             publish(mailbox, projection);
         }
