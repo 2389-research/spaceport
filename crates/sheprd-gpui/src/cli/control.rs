@@ -249,7 +249,7 @@ pub(crate) const FAMILIES: &[Family] = &[
     },
     Family {
         name: "wait",
-        summary: "Wait for a window or a tab to close",
+        summary: "Wait for a window, a host to come online, or a tab to close",
         usage: work::WAIT_USAGE,
         parse: work::wait,
     },

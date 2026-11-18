@@ -23,7 +23,7 @@ spaceport COMMAND ... [--json] [--window ID]
   sound         List or play notification sounds
   bell          Ring the terminal bell
   events        What happened in the app, as a stream
-  wait          Wait for a window or a tab to close
+  wait          Wait for a window, a host to come online, or a tab to close
   run           Run any app command by name, as the command palette does
   commands      List the commands `run` accepts
   logs          Print or locate the app's log
@@ -37,7 +37,8 @@ acting in that window (IDs come from `window list`). By default a command
 acts in the window showing the caller's workspace (HERDR_WORKSPACE_ID), and
 exits 5 when no window shows it; outside Herdr, in the frontmost window.
 Exit status: 0 done, 1 refused, 2 invalid arguments, 3 Spaceport not running,
-4 nothing yet (no event), 5 not found, 6 busy (a dialog is open),
+4 nothing yet (no notes, no events, no chat panes, no ports, no usage, no log,
+a key not set, or the wait not met), 5 not found, 6 busy (a dialog is open),
 7 timed out, 8 unsupported on this platform or by this app version.
 
 === status ===
@@ -104,7 +105,8 @@ spaceport chat new AGENT [--pane ID]
     active group splits its pane in use with the chat instead. The chat view
     attaches once the program starts.
     Exits 8 when ACP chats are off in Settings, sheprd-acp is missing here,
-    the host cannot be reached, or the agent is not installed there.
+    or the agent is not installed there. Exits 1 when the host cannot be
+    reached.
 
 === notes ===
 spaceport notes [list]
