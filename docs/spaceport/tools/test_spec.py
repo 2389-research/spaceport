@@ -173,7 +173,8 @@ class SpecificationToolsTests(unittest.TestCase):
         passed={'id':'A02','title':'Two','status':'passed','requirements':['SP-002']}
         return {'counts':{'not_run':1,'passed':1,'failed':0,'blocked':0},'total':2,
                 'broken':{'A02':['evidence/gone.md']},'owners':{'A01':['T01'],'A02':['T01','T02']},
-                'runnable':1 if runnable else 0,
+                'listed':{'A01':'T01','A02':'T01'},
+                'runnable':1 if runnable else 0,'tasks':1,
                 'groups':[{'task':task,'scenarios':[pending,passed],'runnable':runnable}],
                 'unassigned':[]}
 
@@ -209,6 +210,18 @@ class SpecificationToolsTests(unittest.TestCase):
         self.assertIn('No scenario matches the requested filter.',
                       spec.scenario_report(self.scenario_report_view(),{'passed'},next_only=True))
 
+    def test_next_lists_every_scenario_a_runnable_task_can_run(self):
+        tasks=spec.registries(spec.ROOT)['tasks']
+        acceptance=spec.registries(spec.ROOT)['acceptance']
+        owners=spec.scenario_owners(tasks)
+        runnable=spec.runnable_tasks(tasks)
+        wanted={key for key,scenario in acceptance.items()
+                if scenario['status']=='not_run'
+                and any(owner in runnable for owner in owners[key])}
+        report=spec.scenario_report(spec.scenario_view(spec.ROOT,next_only=True),next_only=True)
+        for key in wanted:
+            self.assertIn(key,report)
+
     def test_scenario_status_parsing(self):
         self.assertIsNone(spec.parse_statuses(None))
         self.assertEqual(spec.parse_statuses(['passed,blocked']),{'passed','blocked'})
@@ -229,6 +242,17 @@ class SpecificationToolsTests(unittest.TestCase):
         plain=subprocess.run([sys.executable,str(spec.ROOT/'tools/spec.py'),'scenarios'],
                              capture_output=True,text=True,check=False)
         self.assertEqual(plain.returncode,0)
+
+    def test_strict_follows_the_filter_it_reports(self):
+        def scenarios(*args):
+            return subprocess.run([sys.executable,str(spec.ROOT/'tools/spec.py'),'scenarios',*args],
+                                  capture_output=True,text=True,check=False)
+        passed=scenarios('--status','passed','--strict')
+        self.assertEqual(passed.returncode,0)
+        self.assertNotIn('Acceptance gate',passed.stderr)
+        remaining=sum(s['status']=='not_run' for s in spec.registries(spec.ROOT)['acceptance'].values())
+        pending=scenarios('--status','not_run','--strict')
+        self.assertEqual(pending.returncode,1 if remaining else 0)
 
 
 if __name__=='__main__':

@@ -362,8 +362,8 @@ def ready(root: Path) -> list[dict[str, Any]]:
 def scenario_owners(tasks: dict[str, dict[str, Any]]) -> dict[str, list[str]]:
     """A scenario is often claimed by more than one task; owners keep plan order.
 
-    The first owner is where the scenario is listed, so a shared scenario is not
-    repeated under every task that runs it.
+    The first owner is where the scenario is listed by default, so a shared
+    scenario is not repeated under every task that runs it.
     """
     owners: dict[str, list[str]] = {}
     for task in tasks.values():
@@ -385,8 +385,13 @@ def runnable_tasks(tasks: dict[str, dict[str, Any]]) -> set[str]:
             and all(tasks[d]['status'] in STARTED_STATUSES for d in task['depends_on'])}
 
 
-def scenario_view(root: Path) -> dict[str, Any]:
-    """Acceptance counts, task grouping, evidence problems and runnable tasks."""
+def scenario_view(root: Path, next_only: bool = False) -> dict[str, Any]:
+    """Acceptance counts, task grouping, evidence problems and runnable tasks.
+
+    A shared scenario is listed once: under its first owner, or with `--next`
+    under the first owner that can run it, so a blocked task does not hide work
+    an independent task's run needs.
+    """
     r = registries(root)
     broken: dict[str, list[str]] = {}
     for key, scenario in r['acceptance'].items():
@@ -396,12 +401,21 @@ def scenario_view(root: Path) -> dict[str, Any]:
               for status in SCENARIO_STATUSES}
     owners = scenario_owners(r['tasks'])
     runnable = runnable_tasks(r['tasks'])
+
+    def listed_under(scenario: str) -> str:
+        names = owners[scenario]
+        if next_only:
+            return next((name for name in names if name in runnable), names[0])
+        return names[0]
+
+    listed = {key: listed_under(key) for key in owners}
     groups = [{'task': task,
-               'scenarios': [r['acceptance'][a] for a in task['acceptance'] if owners[a][0] == task['id']],
+               'scenarios': [r['acceptance'][a] for a in task['acceptance'] if listed[a] == task['id']],
                'runnable': task['id'] in runnable}
               for task in r['tasks'].values() if task['acceptance']]
     return {'counts': counts, 'total': len(r['acceptance']), 'broken': broken, 'owners': owners,
-            'runnable': sum(group['runnable'] for group in groups), 'groups': groups,
+            'listed': listed,
+            'runnable': len(runnable), 'tasks': len(r['tasks']), 'groups': groups,
             'unassigned': [s for key, s in r['acceptance'].items() if key not in owners]}
 
 
@@ -418,33 +432,50 @@ def parse_statuses(values: list[str] | None) -> set[str] | None:
     return chosen
 
 
+def selected_groups(view: dict[str, Any], statuses: set[str] | None = None,
+                    next_only: bool = False) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
+    """The task groups and scenarios a report with this filter lists, in order."""
+    chosen: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+    for group in view['groups']:
+        scenarios = [s for s in group['scenarios'] if statuses is None or s['status'] in statuses]
+        if next_only:
+            scenarios = [s for s in scenarios if s['status'] == 'not_run'] if group['runnable'] else []
+        if scenarios:
+            chosen.append((group, scenarios))
+    return chosen
+
+
+def selected_scenarios(view: dict[str, Any], statuses: set[str] | None = None,
+                       next_only: bool = False) -> list[dict[str, Any]]:
+    """Every scenario a report with this filter lists, in report order."""
+    chosen = [s for _, scenarios in selected_groups(view, statuses, next_only) for s in scenarios]
+    if not next_only:
+        chosen += [s for s in view['unassigned'] if statuses is None or s['status'] in statuses]
+    return chosen
+
+
 def scenario_report(view: dict[str, Any], statuses: set[str] | None = None,
                     next_only: bool = False) -> str:
     """Print recorded statuses only; a scenario line is never a claim that a command ran."""
     counts = view['counts']
     lines = [f"Acceptance scenarios: {view['total']} in plan/acceptance.json",
              '  ' + ' · '.join(f'{status} {counts[status]}' for status in SCENARIO_STATUSES),
-             f"Runnable tasks: {view['runnable']} of {len(view['groups'])}",
+             f"Runnable tasks: {view['runnable']} of {view['tasks']}",
              f"Evidence references that are not files here: {sum(len(v) for v in view['broken'].values())}"]
     for key, missing in view['broken'].items():
         lines.append(f"  {key} ({', '.join(view['owners'].get(key, ['unassigned']))}): {', '.join(missing)}")
 
     def line(scenario: dict[str, Any]) -> str:
         text = f"  {scenario['id']}  {scenario['status']:<8} {scenario['title']}  ({', '.join(scenario['requirements'])})"
-        others = view['owners'].get(scenario['id'], [])[1:]
+        listed = view['listed'].get(scenario['id'])
+        others = [name for name in view['owners'].get(scenario['id'], []) if name != listed]
         if others:
             text += f"  [also {', '.join(others)}]"
         if scenario['id'] in view['broken']:
             text += f"  [evidence not a file: {', '.join(view['broken'][scenario['id']])}]"
         return text
 
-    selected: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
-    for group in view['groups']:
-        scenarios = [s for s in group['scenarios'] if statuses is None or s['status'] in statuses]
-        if next_only:
-            scenarios = [s for s in scenarios if s['status'] == 'not_run'] if group['runnable'] else []
-        if scenarios:
-            selected.append((group, scenarios))
+    selected = selected_groups(view, statuses, next_only)
     unassigned = [s for s in view['unassigned']
                   if (statuses is None or s['status'] in statuses) and not next_only]
     if next_only and selected:
@@ -480,7 +511,7 @@ def main() -> int:
     scenarios.add_argument('--next',action='store_true',
                            help='Only show not_run scenarios whose task is not blocked and whose prerequisites are done or in_progress')
     scenarios.add_argument('--strict',action='store_true',
-                           help='Exit nonzero while any scenario is not_run')
+                           help='Exit nonzero while any scenario the report lists is not_run')
     packet = sub.add_parser('context',help='Emit one bounded, hash-bearing task packet')
     packet.add_argument('task_id')
     packet.add_argument('--max-bytes',type=int,default=65536)
@@ -493,10 +524,12 @@ def main() -> int:
         elif args.command=='ready':
             print(json.dumps([{'id':t['id'],'title':t['title'],'gaps':t['gaps']} for t in ready(root)],indent=2))
         elif args.command=='scenarios':
-            view = scenario_view(root)
-            print(scenario_report(view,parse_statuses(args.status),args.next),end='')
-            if args.strict and view['counts']['not_run']:
-                print(f"Acceptance gate: {view['counts']['not_run']} scenarios are not_run",file=sys.stderr)
+            statuses = parse_statuses(args.status)
+            view = scenario_view(root,args.next)
+            print(scenario_report(view,statuses,args.next),end='')
+            pending = [s for s in selected_scenarios(view,statuses,args.next) if s['status']=='not_run']
+            if args.strict and pending:
+                print(f"Acceptance gate: {len(pending)} scenarios are not_run",file=sys.stderr)
                 return 1
         elif args.command=='context':
             if args.max_bytes <= 0:

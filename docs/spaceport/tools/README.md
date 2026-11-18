@@ -36,9 +36,9 @@ These tools check structural consistency and that each evidence reference names 
 
 `plan/acceptance.json` records what was run, so its outcome counts are what an agent should drive up. `python tools/spec.py scenarios` prints those counts and then every scenario under the task whose `acceptance` list names it, with its requirement references. A scenario claimed by several tasks is listed once under the first owner and marked `also` the rest.
 
-- `--status STATUS` keeps one or more statuses; repeat the flag or comma-separate them. `--next` keeps only `not_run` scenarios whose owning task is not `blocked` and whose prerequisites are all `done` or `in_progress`, and names the first one to pick up.
+- `--status STATUS` keeps one or more statuses; repeat the flag or comma-separate them. `--next` keeps only `not_run` scenarios whose owning task is not `blocked` and whose prerequisites are all `done` or `in_progress`, and names the first one to pick up. A scenario several tasks claim is listed under the first owner that can run it, so a blocked first owner does not hide it.
 - Evidence references that are not files in the package are counted at the top, listed with their owning task, and marked on the scenario line.
-- `--strict` exits nonzero while any scenario is `not_run`. It is opt-in; the repository gate above does not pass it.
+- `--strict` exits nonzero while any scenario the report lists is `not_run`. It is opt-in; the repository gate above does not pass it. With no `--status` or `--next`, that is the whole register.
 
 Like `check`, this is navigation and presence checking only: it repeats recorded statuses and paths, and never shows that a cited command ran.
 
