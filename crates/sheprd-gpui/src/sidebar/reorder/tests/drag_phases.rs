@@ -4,7 +4,6 @@
 
 use super::*;
 use crate::{
-    reorder::{LIFT_DELAY, SETTLE_TIMEOUT},
     sidebar::layout_tests::{fixture_window, full_draw, snapshot},
     state::ConnectionStatus,
     window::MockPeer,
@@ -12,6 +11,7 @@ use crate::{
 use gpui::{
     Bounds, Entity, Modifiers, MouseButton, TestAppContext, VisualTestContext, point, px, size,
 };
+use sheprd_reorder::{LIFT_DELAY, SETTLE_TIMEOUT};
 use std::sync::Arc;
 
 const FIRST: &str = "row-herdr";

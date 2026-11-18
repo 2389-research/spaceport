@@ -6484,6 +6484,7 @@ dependencies = [
  "sheprd-lenient",
  "sheprd-osc52",
  "sheprd-remote",
+ "sheprd-reorder",
  "sheprd-sound",
  "sheprd-usage",
  "sheprd-words",
@@ -6570,6 +6571,10 @@ dependencies = [
  "sheprd-client",
  "thiserror 2.0.21",
 ]
+
+[[package]]
+name = "sheprd-reorder"
+version = "0.1.0"
 
 [[package]]
 name = "sheprd-sound"

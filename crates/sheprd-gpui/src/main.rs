@@ -84,7 +84,6 @@ mod processes;
 #[cfg(any(windows, test))]
 mod progress;
 mod release_notes;
-mod reorder;
 mod restart_manager;
 mod scrollback;
 mod search_input;

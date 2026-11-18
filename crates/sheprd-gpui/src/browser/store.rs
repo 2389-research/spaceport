@@ -4,9 +4,10 @@
 //! Windows share tab references; the selected runtime owns their terminals.
 use super::Location;
 use crate::i18n::fl;
-use crate::{reorder::Beside, state_file};
+use crate::state_file;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
+use sheprd_reorder::Beside;
 use std::path::PathBuf;
 use uuid::Uuid;
 

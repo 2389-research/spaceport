@@ -24,7 +24,7 @@ fn holding_a_workspace_row_lifts_it_and_a_release_picks_the_gap(cx: &mut gpui::T
     let first_column = cx.debug_bounds("column-herdr").unwrap();
     cx.simulate_mouse_down(first.center(), MouseButton::Left, Modifiers::default());
     cx.simulate_mouse_up(first.center(), MouseButton::Left, Modifiers::default());
-    cx.executor().advance_clock(crate::reorder::LIFT_DELAY * 2);
+    cx.executor().advance_clock(sheprd_reorder::LIFT_DELAY * 2);
     cx.run_until_parked();
     view.read_with(cx, |view, _| assert!(view.workspace_drag.is_none()));
 
@@ -33,7 +33,7 @@ fn holding_a_workspace_row_lifts_it_and_a_release_picks_the_gap(cx: &mut gpui::T
     view.read_with(cx, |view, _| {
         assert!(!view.workspace_drag.as_ref().unwrap().lifted())
     });
-    cx.executor().advance_clock(crate::reorder::LIFT_DELAY);
+    cx.executor().advance_clock(sheprd_reorder::LIFT_DELAY);
     cx.run_until_parked();
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     view.read_with(cx, |view, _| {
@@ -139,7 +139,7 @@ fn check_row_drag(style: crate::config::LayoutMode, row_gap: u16, cx: &mut gpui:
     let first = cx.debug_bounds("row-herdr").unwrap();
     let second = cx.debug_bounds(passed).unwrap();
     cx.simulate_mouse_down(first.center(), MouseButton::Left, Modifiers::default());
-    cx.executor().advance_clock(crate::reorder::LIFT_DELAY);
+    cx.executor().advance_clock(sheprd_reorder::LIFT_DELAY);
     cx.run_until_parked();
     let below = point(first.center().x, second.bottom() - px(2.));
     for _ in 0..2 {

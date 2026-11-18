@@ -12,16 +12,14 @@
 //! rows. A linked worktree only moves among its own siblings: the group is
 //! decided by its repository, not by where it is dropped.
 
+use crate::SheprdWindow;
 use crate::i18n::fl;
-use crate::{
-    SheprdWindow,
-    reorder::{LIFT_DELAY, LIFT_DISTANCE, SETTLE_TIMEOUT, SLIDE, Slide, slot_for},
-};
 use gpui::{Context, Pixels, Point, Task};
 use sheprd_client::{
     protocol::ClientShellWorkspace,
     workspaces::{WorkspaceMoveBlockParams, WorkspaceMoveParams, WorkspaceReorder},
 };
+use sheprd_reorder::{LIFT_DELAY, LIFT_DISTANCE, SETTLE_TIMEOUT, SLIDE, Slide, slot_for};
 use std::{cell::RefCell, collections::HashMap, time::Instant};
 
 use super::workspaces::{grouped_keys, workspace_entries};

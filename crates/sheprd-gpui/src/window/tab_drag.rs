@@ -17,10 +17,12 @@ use crate::i18n::{Localize, fl};
 use crate::{
     browser::{GroupId, Pick, Store},
     motion,
-    reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, SETTLE_TIMEOUT, SLIDE, Slide, preview, slot_for},
 };
 use gpui::{Bounds, Context, Pixels, Point, ScrollHandle, Size, Task, Window, px};
 use sheprd_client::{Method, protocol::ClientShellSnapshot};
+use sheprd_reorder::{
+    Beside, LIFT_DELAY, LIFT_DISTANCE, SETTLE_TIMEOUT, SLIDE, Slide, preview, slot_for,
+};
 use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
