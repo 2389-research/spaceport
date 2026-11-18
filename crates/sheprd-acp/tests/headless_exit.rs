@@ -21,6 +21,21 @@ impl Drop for Helper {
     }
 }
 
+/// The helper's exit, with a failure-only bound: a helper that never observes
+/// its agent fails the test instead of holding the suite.
+impl Helper {
+    fn wait(&mut self) -> std::process::ExitStatus {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if let Some(status) = self.0.try_wait().unwrap() {
+                return status;
+            }
+            assert!(Instant::now() < deadline, "headless helper did not exit");
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+}
+
 fn run(code: u8) -> (std::process::ExitStatus, String) {
     let sandbox = sandbox::Sandbox::new();
     let mut command = sandbox.command(env!("CARGO_BIN_EXE_sheprd-acp"), "helper.log");
@@ -30,14 +45,7 @@ fn run(code: u8) -> (std::process::ExitStatus, String) {
     #[cfg(windows)]
     command.args(["cmd.exe", "/D", "/S", "/C", &format!("exit /b {code}")]);
     let mut helper = Helper(command.spawn().unwrap());
-    let deadline = Instant::now() + Duration::from_secs(5);
-    let status = loop {
-        if let Some(status) = helper.0.try_wait().unwrap() {
-            break status;
-        }
-        assert!(Instant::now() < deadline, "headless helper did not exit");
-        thread::sleep(Duration::from_millis(10));
-    };
+    let status = helper.wait();
     let log = std::fs::read_to_string(sandbox.dir.join("helper.log")).unwrap();
     (status, log)
 }

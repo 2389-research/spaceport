@@ -1,7 +1,5 @@
 use super::*;
 use std::process::{Child, Command};
-use std::thread;
-use std::time::{Duration, Instant};
 
 #[cfg(target_os = "linux")]
 #[path = "tests/linux.rs"]
@@ -19,11 +17,18 @@ fn reports_running_as_alive_and_zombie_and_reaped_as_dead() {
 
     child.kill().unwrap();
     assert!(!running.unwrap());
-    let deadline = Instant::now() + Duration::from_secs(2);
-    while !is_dead(pid).unwrap() {
-        assert!(Instant::now() < deadline, "killed child did not exit");
-        thread::sleep(Duration::from_millis(10));
-    }
+    // Blocks until the child is exited and then leaves it unreaped, so the
+    // next check observes the zombie `is_dead` reads, and no poll guesses
+    // when the exit becomes visible.
+    // POSIX waitid with WNOWAIT: block until the child is exited, then leave
+    // it unreaped, so the next check observes the zombie `is_dead` reads.
+    // No poll guesses when the exit becomes visible.
+    // pid_t is u32 on some targets, i32 on others; the call takes it as-is.
+    let mut info: libc::siginfo_t = unsafe { std::mem::zeroed() };
+    let result =
+        unsafe { libc::waitid(libc::P_PID, pid, &mut info, libc::WNOWAIT | libc::WEXITED) };
+    assert_eq!(result, 0, "killed child did not exit");
+    assert!(is_dead(pid).unwrap());
 
     child.wait().unwrap();
     assert!(is_dead(pid).unwrap());
