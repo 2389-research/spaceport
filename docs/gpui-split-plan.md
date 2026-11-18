@@ -14,7 +14,7 @@ next ones. Update it as each step lands.
 | --- | --- |
 | `crates/sheprd-gpui/src/ago.rs`, 32 lines | `crates/sheprd-ago/src/lib.rs`: `Elapsed` and `elapsed(seconds)` |
 | its unit table in `src/ago/tests.rs` | `crates/sheprd-ago/src/tests.rs` |
-| its message table and `text()` | stay in `crates/sheprd-gpui/src/ago.rs`, 35 lines |
+| its message table and `text()` | stay in `crates/sheprd-gpui/src/ago.rs`, 34 lines |
 
 `ago` was picked over `sound`, `app_badge` and `about` because it is the only
 one of the four with no `gpui` types and a single importer:
