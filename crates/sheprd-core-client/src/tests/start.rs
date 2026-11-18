@@ -13,16 +13,15 @@ printf 'boom' >&2
 exit 1
 ";
 
-/// The child the fixture left holding stderr, recorded so the test can end it.
+/// The child the fixture left holding stderr. The fixture writes the pid file
+/// before it writes stderr and exits, and the start's drain reads stderr, so
+/// by the time `start` returns the file is there to read.
 fn holder_pid(binary: &std::path::Path) -> i32 {
-    let path = binary.with_extension("pid");
-    let mut pid = String::new();
-    let deadline = Instant::now() + Duration::from_secs(5);
-    while pid.is_empty() {
-        assert!(Instant::now() < deadline, "the fixture recorded no child");
-        pid = std::fs::read_to_string(&path).unwrap_or_default();
-    }
-    pid.parse().unwrap()
+    std::fs::read_to_string(binary.with_extension("pid"))
+        .unwrap_or_else(|error| panic!("the fixture recorded no child: {error}"))
+        .trim()
+        .parse()
+        .unwrap()
 }
 
 fn end_holder(pid: i32) {
