@@ -43,7 +43,14 @@ where
     };
     for (label, hours) in [("overview-preset-hour", 1), ("overview-preset-hours", 3)] {
         let time = now.clone() + Duration::hours(hours);
-        push(label, clock(&time), &time);
+        // A preset whose hour has already passed midnight names its day:
+        // the label counts hours, so a bare clock would not say which one.
+        let when = if time.date_naive() == now.date_naive() {
+            clock(&time)
+        } else {
+            weekday_time(&time)
+        };
+        push(label, when, &time);
     }
     if let Some(evening) =
         at(now, EVENING_HOUR).filter(|evening| evening.timestamp() - now.timestamp() > 3600)
