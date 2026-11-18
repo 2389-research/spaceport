@@ -823,6 +823,12 @@ impl SheprdWindow {
             Ok(()) => {
                 pane.error = None;
                 pane.attachments.clear();
+                // The reply to a new prompt lands below what the reader
+                // left: the list goes back to its end and follows, and a
+                // selection lets go of it.
+                pane.selection.clear();
+                pane.text_drag = Default::default();
+                pane.glide.reset(&pane.list);
                 input.update(cx, |input, cx| input.clear(cx));
             }
             Err(error) => pane.error = Some(error.localize()),
