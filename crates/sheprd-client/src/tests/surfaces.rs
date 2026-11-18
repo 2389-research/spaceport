@@ -29,7 +29,7 @@ fn full_popup_surface_is_delivered_and_invalid_cells_fail_closed() {
             .unwrap()
             .unwrap_err()
             .to_string()
-            .contains("cell count")
+            .contains("wrong number of cells")
     );
 }
 
@@ -98,7 +98,7 @@ fn boot_change_in_partial_frame_prevents_queued_input() {
             .unwrap()
             .unwrap_err()
             .to_string()
-            .contains("boot changed")
+            .contains("session changed, or its screen data went backwards")
     );
     let mut byte = [0];
     assert_eq!(server.read(&mut byte).unwrap(), 0);

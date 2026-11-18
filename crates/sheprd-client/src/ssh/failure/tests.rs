@@ -248,7 +248,7 @@ fn a_refused_bridge_reports_its_class_through_the_error() {
     assert!(
         error
             .to_string()
-            .starts_with("SSH bridge closed: authentication failed")
+            .starts_with("The SSH connection closed: authentication failed")
     );
     let source = std::error::Error::source(&error).unwrap();
     assert_eq!(source.downcast_ref::<SshFailure>(), Some(&SshFailure::Auth));

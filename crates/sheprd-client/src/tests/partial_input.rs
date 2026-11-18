@@ -513,7 +513,7 @@ mod socket {
         // neither path may write it or replay it on another connection.
         let _ = client.handle.send_input("boot-v1", "w1:p1", [wheel()]);
         assert!(
-            matches!(event(&client), ClientEvent::Disconnected { reason, .. } if reason.contains("cell count"))
+            matches!(event(&client), ClientEvent::Disconnected { reason, .. } if reason.contains("wrong number of cells"))
         );
         assert!(
             client

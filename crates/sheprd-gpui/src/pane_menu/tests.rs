@@ -517,7 +517,7 @@ fn pane_rename_correlates_responses_and_preserves_other_dialogs(cx: &mut TestApp
                             .as_ref()
                             .unwrap()
                             .contains(if outcome == "rejected" {
-                                "method not advertised"
+                                "does not offer that request"
                             } else {
                                 "Invalid label"
                             })

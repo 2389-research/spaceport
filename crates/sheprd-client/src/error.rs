@@ -31,74 +31,78 @@ pub enum Error {
         #[source]
         source: Box<Error>,
     },
-    #[error("client I/O failed: {0}")]
+    #[error("Could not talk to the daemon: {0}")]
     Io(#[from] io::Error),
     #[error("{0}")]
     Protocol(#[from] sheprd_protocol::Error),
-    #[error("invalid endpoint JSON: {0}")]
+    #[error("The daemon's answer was not valid JSON: {0}")]
     Json(#[from] serde_json::Error),
     // Schema details may contain secret-bearing unknown field names. Keep the
     // source for diagnostics, but never include it in presentation text.
-    #[error("invalid endpoint catalog schema")]
+    #[error("The saved host list cannot be read; update Spaceport, or remove it to start over.")]
     CatalogSchema(#[source] serde_json::Error),
-    #[error("invalid endpoint selection schema")]
+    #[error("The saved host selection cannot be read; remove it so Spaceport can write a new one.")]
     SelectionSchema(#[source] serde_json::Error),
-    #[error("client command queue is full")]
+    #[error("Too many commands are waiting for the daemon; try again.")]
     Full,
-    #[error("client is disconnected")]
+    #[error("The app is not connected to the daemon.")]
     Disconnected,
     #[error(transparent)]
     Clipboard(#[from] crate::clipboard::Error),
-    #[error("terminal input write timed out; reconnect required")]
+    #[error("The daemon did not take the terminal input in time; reconnect.")]
     InputWriteTimeout,
-    #[error("invalid client command: snapshot boot ID required")]
+    #[error("That command needs the daemon's session first; reconnect and try again.")]
     MissingBootId,
-    #[error("command does not match a ready snapshot boot")]
+    #[error("The daemon's session changed before the command could run; reconnect and try again.")]
     CommandBoot,
-    #[error("method not advertised by endpoint")]
+    #[error("This Herdr daemon does not offer that request; run `herdr update` and reconnect.")]
     UnsupportedMethod,
-    #[error("surface interest capabilities not advertised by endpoint")]
+    #[error(
+        "This Herdr daemon cannot send pane screens the way this app asks; run `herdr update` and reconnect."
+    )]
     UnsupportedSurfaceInterest,
-    #[error("surface dimensions must be nonzero")]
+    #[error("A pane screen was asked for with no rows or columns; nothing was sent.")]
     EmptySurface,
-    #[error("surface geometry exceeds endpoint limits")]
+    #[error("The pane's screen is larger than the daemon allows; make the pane or window smaller.")]
     GeometryLimit,
-    #[error("invalid session name")]
+    #[error("That is not a valid session name.")]
     InvalidSession,
-    #[error("remote endpoints have no local socket path")]
+    #[error("A host reached over SSH has no local socket to connect to.")]
     NoLocalSocket,
-    #[error("client stopped")]
+    #[error("The connection was stopped.")]
     Cancelled,
-    #[error("event receiver dropped")]
+    #[error("The connection's events stopped.")]
     EventReceiverDropped,
-    #[error("socket closed")]
+    #[error("The daemon closed the connection.")]
     SocketClosed,
-    #[error("partial frame timed out")]
+    #[error("The daemon started a message and never finished it; reconnect.")]
     PartialFrameTimeout,
-    #[error("invalid frame prefix")]
+    #[error("The daemon sent a message this app cannot read (bad message prefix); reconnect.")]
     FramePrefix,
-    #[error("invalid frame length")]
+    #[error("The daemon sent a message this app cannot read (bad message length); reconnect.")]
     FrameLength,
-    #[error("endpoint health check timed out")]
+    #[error("The host did not answer its health check in time; check the network and reconnect.")]
     HealthTimeout,
-    #[error("handshake/snapshot timed out")]
+    #[error("The host did not finish connecting in time; check the network and reconnect.")]
     HandshakeTimeout,
-    #[error("endpoint request timed out; not replayed")]
+    #[error("The daemon did not answer in time; the request was not sent again.")]
     RequestTimeout,
-    #[error("expected stable endpoint welcome")]
+    #[error("The host did not greet this app as expected; run `herdr update` and reconnect.")]
     ExpectedWelcome,
     /// The daemon answered the endpoint hello with a pre-endpoint welcome.
-    #[error("this Herdr server predates the endpoint protocol; run `herdr update` and reconnect")]
+    #[error(
+        "This host's Herdr daemon is older than this app needs; run `herdr update` and reconnect."
+    )]
     LegacyDaemon,
     /// A local daemon closed after the hello without any welcome, as every
     /// release before the endpoint protocol does.
     #[error(
-        "Herdr server closed the connection without answering; it is likely older than {}, which this app requires. Run `herdr update` and reconnect",
+        "The host's Herdr daemon closed the connection without answering; it is likely older than {}, which this app requires. Run `herdr update` and reconnect",
         crate::compat::MIN_HERDR_VERSION
     )]
     ClosedBeforeWelcome,
     #[error(
-        "Herdr server {server_version} speaks endpoint generation {generation}, this app speaks {ours}; {advice}",
+        "This app and the host's Herdr daemon (version {server_version}) speak different protocol versions ({ours} here, {generation} there); {advice}",
         ours = sheprd_protocol::endpoint::ENDPOINT_PROTOCOL_GENERATION,
         advice = crate::compat::generation_advice(*.generation)
     )]
@@ -106,39 +110,45 @@ pub enum Error {
         generation: u32,
         server_version: String,
     },
-    #[error("expected endpoint.welcome.v1")]
+    #[error(
+        "The host's Herdr daemon sent a greeting this app cannot read; run `herdr update` and reconnect."
+    )]
     WelcomeKind,
-    #[error("{code}: {message}")]
+    #[error("The host's Herdr daemon refused the connection ({code}): {message}")]
     WelcomeRejected { code: String, message: String },
-    #[error("incompatible endpoint generation/codecs")]
+    #[error(
+        "This app and the host's Herdr daemon cannot agree on a protocol; run `herdr update` and reconnect."
+    )]
     IncompatibleCodecs,
     #[error(
-        "Herdr server {server_version} lacks safe surface interest support; run `herdr update` and reconnect"
+        "The Herdr daemon on this host (version {server_version}) cannot send pane screens the way this app asks; run `herdr update` and reconnect"
     )]
     MissingSurfaceInterest { server_version: String },
     #[error(
-        "Herdr server {server_version} on this SSH host lacks the health_check capability; run `herdr update` there and reconnect"
+        "The Herdr daemon on this SSH host (version {server_version}) has no health check this app can use; run `herdr update` there and reconnect"
     )]
     MissingHealthCheck { server_version: String },
-    #[error("endpoint boot changed or snapshot revision regressed; reconnect required")]
+    #[error("The daemon's session changed, or its screen data went backwards; reconnect.")]
     SnapshotIdentity,
-    #[error("surface before snapshot")]
+    #[error("A pane screen arrived before the daemon's session data; reconnect.")]
     SurfaceBeforeSnapshot,
-    #[error("invalid surface identity/revision")]
+    #[error("A pane screen arrived for the wrong pane or an out-of-date revision; reconnect.")]
     SurfaceIdentity,
-    #[error("patch before baseline")]
+    #[error("A pane screen update arrived before the full screen it belongs to; reconnect.")]
     PatchBeforeBaseline,
-    #[error("encoded surface before baseline")]
+    #[error("An encoded pane screen arrived before the full screen it belongs to; reconnect.")]
     EncodedSurfaceBeforeBaseline,
-    #[error("surface encoding was not advertised by endpoint")]
+    #[error(
+        "This Herdr daemon did not offer the screen encoding this app asked for; run `herdr update` and reconnect."
+    )]
     SurfaceEncodingNotNegotiated,
-    #[error("response boot mismatch")]
+    #[error("The daemon's session changed while the request was in flight; try again.")]
     ResponseBoot,
-    #[error("response limit exceeded")]
+    #[error("The daemon's answer was larger than this app accepts.")]
     ResponseLimit,
-    #[error("unsolicited response")]
+    #[error("The daemon answered a request this app never sent; reconnect.")]
     UnsolicitedResponse,
-    #[error("response ID mismatch")]
+    #[error("The daemon's answer did not match the request; reconnect.")]
     ResponseId,
     #[error("{0}")]
     ServerShutdown(String),
@@ -154,7 +164,7 @@ pub enum Error {
     /// as unable to serve this client. Fields describe the first one;
     /// `version` is bounded text.
     #[error(
-        "Herdr{} on this host cannot serve this app; {}",
+        "The Herdr daemon{} on this host cannot serve this app; {}",
         crate::compat::version_note(.version.as_deref()),
         crate::compat::generation_advice(.generation.unwrap_or(0))
     )]
@@ -162,11 +172,11 @@ pub enum Error {
         generation: Option<u32>,
         version: Option<String>,
     },
-    #[error("remote command failed ({0})")]
+    #[error("The command on the host failed ({0}).")]
     RemoteCommand(std::process::ExitStatus),
-    #[error("remote command returned unexpected output")]
+    #[error("The command on the host printed something this app did not expect.")]
     RemoteOutput,
-    #[error("SSH file transfer requires a Linux or macOS client")]
+    #[error("SSH file transfer needs this app running on Linux or macOS.")]
     UploadUnsupported,
     #[error("SSH file transfer accepts at most 256 paths")]
     UploadPathLimit,
@@ -174,7 +184,7 @@ pub enum Error {
     UploadName,
     #[error("file transfer source is not a regular file")]
     UploadNotFile,
-    #[error("file transfer total size exceeds u64")]
+    #[error("The files are too large to transfer at once.")]
     UploadSizeOverflow,
     #[error("file transfer source changed length")]
     UploadSourceChanged,
@@ -184,7 +194,7 @@ pub enum Error {
     UploadTimeout,
     #[error("invalid or excessive SSH file transfer response")]
     UploadResponse,
-    #[error("cleanup requires unchanged absolute paths returned by upload_files")]
+    #[error("Cleaning up the files left on the host needs the paths the upload returned.")]
     UploadCleanupPath,
     #[error("SSH file transfer failed; check host trust, authentication, and remote storage")]
     UploadExit { status: std::process::ExitStatus },
@@ -196,7 +206,7 @@ pub enum Error {
         source: Box<Error>,
         cleanup: Box<Error>,
     },
-    #[error("host scripts require a Linux or macOS client")]
+    #[error("Host scripts need this app running on Linux or macOS.")]
     ScriptUnsupported,
     #[error("could not start host script")]
     ScriptSpawn(#[source] io::Error),
@@ -222,54 +232,60 @@ pub enum Error {
         status: std::process::ExitStatus,
         stderr: String,
     },
-    #[error("could not start SSH for the port forward")]
+    #[error("Could not start SSH for the port forward.")]
     ForwardSpawn(#[source] io::Error),
-    #[error("no local port is free to forward to")]
+    #[error("No local port is free to forward to.")]
     ForwardLocalPort(#[source] io::Error),
-    #[error("could not create the port forward's private control directory")]
+    #[error("Could not prepare the port forward's private folder.")]
     ForwardControl(#[source] io::Error),
-    #[error("SSH did not connect in time; check host trust and authentication")]
+    #[error("SSH did not connect in time; check host trust and authentication.")]
     ForwardTimeout,
-    #[error("SSH could not listen on a local port ({0})")]
+    #[error("SSH could not listen on a local port ({0}).")]
     ForwardRefused(std::process::ExitStatus),
     /// Stderr is discarded, as for every SSH child: it can carry banners or secrets.
-    #[error("SSH port forward ended ({0}); check host trust, authentication, and the network")]
+    #[error("The SSH port forward ended ({0}); check host trust, authentication, and the network.")]
     ForwardExit(std::process::ExitStatus),
-    #[error("endpoint selection is not a regular file")]
+    #[error(
+        "The saved host selection is not a regular file; remove it so Spaceport can write a new one."
+    )]
     SelectionNotFile,
-    #[error("endpoint selection exceeds storage limit")]
+    #[error("The saved host selection is larger than Spaceport stores; remove it to start over.")]
     SelectionLimit,
-    #[error("unsupported endpoint selection version")]
+    #[error("The saved host selection is in a format this app does not know; update Spaceport.")]
     SelectionVersion,
-    #[error("selected endpoint is absent or disabled")]
+    #[error("The selected host is not there, or it is turned off; pick another host.")]
     SelectionUnavailable,
-    #[error("invalid storage path")]
+    #[error("Spaceport's saved data has a path it cannot use.")]
     StoragePath,
-    #[error("storage destination is not a regular file")]
+    #[error("Spaceport's saved data is not a regular file.")]
     StorageDestinationNotFile,
-    #[error("endpoint catalog is not a regular file")]
+    #[error(
+        "The saved host list is not a regular file; remove it so Spaceport can write a new one."
+    )]
     CatalogNotFile,
-    #[error("endpoint catalog exceeds storage limit")]
+    #[error("The saved host list is larger than Spaceport stores; remove a host.")]
     CatalogLimit,
-    #[error("unsupported catalog version or too many profiles")]
+    #[error(
+        "The saved host list is in a format this app does not know, or it lists too many hosts; update Spaceport or remove a host."
+    )]
     CatalogVersionOrCount,
-    #[error("invalid or duplicate endpoint profile id")]
+    #[error("A saved host has an ID this app cannot use, or two hosts share one; remove one.")]
     ProfileId,
-    #[error("invalid endpoint label")]
+    #[error("A saved host's label cannot be used.")]
     ProfileLabel,
     /// An endpoint answered a request with an error. The message is the
     /// daemon's own display text, empty when it sent none; act on `code`,
     /// never on the message.
-    #[error("{}", if .message.is_empty() { "Invalid daemon error" } else { .message.as_str() })]
+    #[error("{}", if .message.is_empty() { "The daemon refused the request without saying why." } else { .message.as_str() })]
     Endpoint {
         code: crate::response::EndpointErrorCode,
         message: String,
     },
-    #[error("invalid endpoint response")]
+    #[error("The daemon's answer is not one this app can read.")]
     ResponseSchema(#[source] serde_json::Error),
-    #[error("endpoint response carried neither a result nor an error")]
+    #[error("The daemon's answer carried neither a result nor a reason.")]
     ResponseMissingResult,
-    #[error("endpoint answered with a result of another method")]
+    #[error("The daemon answered a different request than the one sent.")]
     ResponseType,
 }
 

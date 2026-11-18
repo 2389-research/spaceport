@@ -19,12 +19,12 @@ fn storage_errors_retain_operation_paths_sources_and_redacted_display() {
         (
             &catalog,
             load_path(&catalog).unwrap_err(),
-            "invalid endpoint catalog schema",
+            "The saved host list cannot be read; update Spaceport, or remove it to start over.",
         ),
         (
             &selection,
             read_selection(&selection).err().unwrap(),
-            "invalid endpoint selection schema",
+            "The saved host selection cannot be read; remove it so Spaceport can write a new one.",
         ),
     ] {
         let Error::Storage {
@@ -83,7 +83,7 @@ fn storage_errors_retain_operation_paths_sources_and_redacted_display() {
     );
     assert_eq!(
         error.to_string(),
-        "storage destination is not a regular file"
+        "Spaceport's saved data is not a regular file."
     );
     fs::remove_dir_all(root).unwrap();
 }
@@ -94,7 +94,10 @@ fn schema_errors_keep_sources_but_redact_display() {
     let bytes = br#"{"version":1,"secret-field":true}"#;
     let error = parse(bytes).unwrap_err();
     assert!(matches!(error, Error::CatalogSchema(_)));
-    assert_eq!(error.to_string(), "invalid endpoint catalog schema");
+    assert_eq!(
+        error.to_string(),
+        "The saved host list cannot be read; update Spaceport, or remove it to start over."
+    );
     assert_eq!(error.kind(), io::ErrorKind::InvalidData);
     let source = error
         .source()
@@ -105,7 +108,10 @@ fn schema_errors_keep_sources_but_redact_display() {
 
     let source = serde_json::from_slice::<Selection>(bytes).err().unwrap();
     let error = Error::SelectionSchema(source);
-    assert_eq!(error.to_string(), "invalid endpoint selection schema");
+    assert_eq!(
+        error.to_string(),
+        "The saved host selection cannot be read; remove it so Spaceport can write a new one."
+    );
     assert!(error.source().unwrap().is::<serde_json::Error>());
     assert!(matches!(
         parse(&vec![b' '; 65537]),

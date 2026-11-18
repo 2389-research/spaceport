@@ -36,7 +36,7 @@ fn untracked_daemon_errors_remain_visible_as_readable_messages() {
         (serde_json::json!({"code": "unsupported"}), "unsupported"),
         (
             serde_json::json!({"unexpected": true}),
-            "Invalid daemon error",
+            "The daemon refused the request without saying why.",
         ),
     ] {
         state.apply(ClientEvent::Response {

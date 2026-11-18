@@ -44,7 +44,7 @@ fn an_outdated_remote_install_is_named_instead_of_a_closed_bridge() {
     ));
     assert_eq!(
         error.to_string(),
-        "Herdr (version 0.8.0) on this host cannot serve this app; run `herdr update` and reconnect"
+        "The Herdr daemon (version 0.8.0) on this host cannot serve this app; run `herdr update` and reconnect"
     );
     assert_eq!(
         error.version_mismatch(),

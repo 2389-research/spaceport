@@ -66,7 +66,7 @@ fn malformed_handshake_and_patch_fail_closed() {
             .unwrap()
             .unwrap_err()
             .to_string()
-            .contains("patch before baseline")
+            .contains("A pane screen update arrived before the full screen it belongs to")
     );
 }
 

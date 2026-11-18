@@ -182,7 +182,10 @@ fn other_errors_are_reported_and_cleared_by_the_next_edit() {
     search.set_query("xy");
     assert!(search.error().is_none());
     search.send_failed(&sheprd_client::Error::Full);
-    assert_eq!(search.error(), Some("client command queue is full"));
+    assert_eq!(
+        search.error(),
+        Some("Too many commands are waiting for the daemon; try again.")
+    );
     assert!(search.next_request(&shown).is_none());
 }
 

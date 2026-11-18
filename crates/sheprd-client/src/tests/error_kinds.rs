@@ -21,7 +21,7 @@ fn ssh_errors_keep_kind_and_text() {
         (
             ssh::Error::Closed.into(),
             UnexpectedEof,
-            "SSH bridge closed; check host trust, authentication, and remote Herdr installation",
+            "The SSH connection closed; check host trust, authentication, and remote Herdr installation.",
         ),
         (
             ssh::Error::InvalidTarget.into(),
@@ -55,7 +55,10 @@ fn ssh_errors_keep_kind_and_text() {
     ] {
         let error = Error::from(ssh::Error::Refused(failure));
         assert_eq!(error.kind(), kind, "{error:?}");
-        assert_eq!(error.to_string(), format!("SSH bridge closed: {failure}"));
+        assert_eq!(
+            error.to_string(),
+            format!("The SSH connection closed: {failure}")
+        );
     }
 }
 

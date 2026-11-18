@@ -8,14 +8,16 @@ pub enum Error {
     // keep-sorted start
     #[error("SSH connection cancelled")]
     Cancelled,
-    #[error("SSH bridge closed; check host trust, authentication, and remote Herdr installation")]
+    #[error(
+        "The SSH connection closed; check host trust, authentication, and remote Herdr installation."
+    )]
     Closed,
     #[error("invalid SSH target (options, controls, and passwords are forbidden)")]
     InvalidTarget,
     #[error("SSH startup output exceeds limit")]
     OutputLimit,
-    /// `ssh` closed the bridge before it was ready, for the reason classified.
-    #[error("SSH bridge closed: {0}")]
+    /// `ssh` closed the connection before it was ready, for the reason classified.
+    #[error("The SSH connection closed: {0}")]
     Refused(#[source] SshFailure),
     #[error("SSH discovery timed out")]
     Timeout,

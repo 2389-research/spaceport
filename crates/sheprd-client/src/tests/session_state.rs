@@ -16,7 +16,7 @@ fn session_response_slot_correlates_chunks_and_clears_only_on_completion() {
             .handle_message(chunk("one", true, b"{}"), no_event)
             .unwrap_err()
             .to_string(),
-        "unsolicited response"
+        "The daemon answered a request this app never sent; reconnect."
     );
     session.pending = Some(Pending {
         id: "one".into(),
@@ -33,7 +33,7 @@ fn session_response_slot_correlates_chunks_and_clears_only_on_completion() {
             .handle_message(chunk("other", true, b"null}"), no_event)
             .unwrap_err()
             .to_string(),
-        "unsolicited response"
+        "The daemon answered a request this app never sent; reconnect."
     );
     assert_eq!(session.pending.as_ref().unwrap().bytes, partial);
     let mut events = Vec::new();
@@ -53,7 +53,7 @@ fn session_response_slot_correlates_chunks_and_clears_only_on_completion() {
             .handle_message(chunk("one", true, b"{}"), no_event)
             .unwrap_err()
             .to_string(),
-        "unsolicited response"
+        "The daemon answered a request this app never sent; reconnect."
     );
 }
 
@@ -86,7 +86,10 @@ fn session_response_limit_counts_previous_chunks_and_allows_exact_limit() {
             },
         );
         if overflow {
-            assert_eq!(result.unwrap_err().to_string(), "response limit exceeded");
+            assert_eq!(
+                result.unwrap_err().to_string(),
+                "The daemon's answer was larger than this app accepts."
+            );
             assert!(events.is_empty());
             assert_eq!(
                 session.pending.unwrap().bytes.len(),
@@ -106,7 +109,7 @@ fn session_deadlines_and_snapshot_revision_fence() {
     session.started = Instant::now() - TIMEOUT - POLL;
     assert_eq!(
         session.check_timeouts().unwrap_err().to_string(),
-        "handshake/snapshot timed out"
+        "The host did not finish connecting in time; check the network and reconnect."
     );
     session
         .handle_message(
@@ -130,7 +133,7 @@ fn session_deadlines_and_snapshot_revision_fence() {
     });
     assert_eq!(
         session.check_timeouts().unwrap_err().to_string(),
-        "endpoint request timed out; not replayed"
+        "The daemon did not answer in time; the request was not sent again."
     );
 
     let mut snapshot: Value = serde_json::from_str(SNAPSHOT).unwrap();
@@ -144,7 +147,7 @@ fn session_deadlines_and_snapshot_revision_fence() {
             |_| panic!("regressed snapshot must not be published"),
         )
         .unwrap_err();
-    assert!(error.to_string().contains("snapshot revision regressed"));
+    assert!(error.to_string().contains("screen data went backwards"));
     assert_eq!(session.snapshot.unwrap().revision, 7);
 }
 
@@ -174,9 +177,9 @@ fn response_boot_id_correlation_and_assembly_limits() {
         let error = worker.join().unwrap().unwrap_err().to_string();
         assert!(
             error.contains(match case {
-                "boot" => "boot mismatch",
-                "id" => "ID mismatch",
-                _ => "limit exceeded",
+                "boot" => "session changed while the request was in flight",
+                "id" => "did not match the request",
+                _ => "larger than this app accepts",
             }),
             "{error}"
         );

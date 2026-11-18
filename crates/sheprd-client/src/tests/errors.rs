@@ -111,13 +111,16 @@ fn connect_options_equality_and_send_error_display() {
     ] {
         assert_ne!(options, changed);
     }
-    assert_eq!(SendError::Full.to_string(), "client command queue is full");
+    assert_eq!(
+        SendError::Full.to_string(),
+        "Too many commands are waiting for the daemon; try again."
+    );
     assert_eq!(
         SendError::Disconnected.to_string(),
-        "client is disconnected"
+        "The app is not connected to the daemon."
     );
     assert_eq!(
         Error::MissingBootId.to_string(),
-        "invalid client command: snapshot boot ID required"
+        "That command needs the daemon's session first; reconnect and try again."
     );
 }

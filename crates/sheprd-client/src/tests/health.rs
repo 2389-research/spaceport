@@ -66,7 +66,7 @@ fn session_negotiates_remote_health_without_extending_snapshot_deadline() {
             assert!(session.health.as_ref().is_none_or(|h| h.ping.is_none()));
             assert_eq!(
                 session.check_timeouts().unwrap_err().to_string(),
-                "handshake/snapshot timed out"
+                "The host did not finish connecting in time; check the network and reconnect."
             );
         }
     }
