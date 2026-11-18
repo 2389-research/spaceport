@@ -77,7 +77,7 @@ excluded route in any family except the link activation:
 
 | Family | Live at HEAD | Boundary that shows it |
 | --- | --- | --- |
-| RM-IDE | no | no `px0`/`code_view`/`code_search`/`open_in_editor` production route; `crates/sheprd-gpui/src/browser/code/tests.rs` |
+| RM-IDE | no | no `px0`/`code_view`/`code_search`/`open_in_editor` production route; `scripts/release/tests/test_px0_source_absence.py` |
 | RM-GIT | no | `sheprd-vcs`, `gix`, `git2` absent; `crates/sheprd-gpui/src/menu/git_read_removal_tests.rs` |
 | RM-GITHUB | no | crate and `octocrab` absent; `config/tests/removed_github.rs`, `Error::RemovedGitHub` (`crates/sheprd-gpui/src/config.rs:589`) |
 | RM-DISPATCH | no | orchestrator crate absent; `group_menu` and `cli` refusal tests |
@@ -100,6 +100,13 @@ Two corrections to the register's own picture:
   removed, so it understates how much of T04 has landed.
 - A34 (`Customization/accessibility`) has no evidence list at all, so T04 still
   owes its retained-customization leg whatever happens to G-LINK.
+
+Three small residuals sit outside the gap and can ride with any cleanup slice:
+`crates/sheprd-gpui/src/browser/code/tests.rs` (56 lines) has no `mod code;`
+declaration, so its inherited `with_token` tests never compile or run;
+`icons/azure-devops.svg` is still embedded with no remaining user
+(`crates/sheprd-gpui/src/icons.rs:234`); and the `worktree`/`notes` CLI rows a
+2026-11-17 scan flagged are retained notification features, not Git workflows.
 
 Conclusion: a *further* split is not what T04 needs. Independent families are
 already separable and mostly merged; what is left is one decision and one small
