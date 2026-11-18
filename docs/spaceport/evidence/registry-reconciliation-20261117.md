@@ -59,9 +59,10 @@ concern chat attachments, not general transfer (G-FILE).
 
 ## Findings
 
-- Previews `v20261113.1` and `v20261117.1` are published, but this package
-  has no evidence record for either. The last record is
-  `t12-macos-preview-20261112.1-signed.md`.
+- Previews `v20261113.1` and `v20261117.1` were published with no evidence
+  record. Both public images were verified in this pass; see
+  `t12-macos-preview-20261113.1-signed.md` and
+  `t12-macos-preview-20261117.1-signed.md`.
 - Decision D69 puts Herdr Core behind a disabled-by-default setting. The
   gaps G-CHAT, G-MACHINE, G-PORT and G-FILE describe Core routes. After this
   pass, decision D71 removed them from the completion gates of T02, T06, T07
@@ -80,7 +81,6 @@ concern chat attachments, not general transfer (G-FILE).
 
 ## Next executable steps
 
-1. Record `v20261113.1` and `v20261117.1` in evidence files.
-2. Run the scenarios that need no Core contract and no unlocked desktop,
+1. Run the scenarios that need no Core contract and no unlocked desktop,
    starting with A29 to A32 on current main.
-3. Run the Herdr 1 legs of the scenarios that D71 keeps in the fork's scope.
+2. Run the Herdr 1 legs of the scenarios that D71 keeps in the fork's scope.
