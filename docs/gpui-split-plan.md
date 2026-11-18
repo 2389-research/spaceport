@@ -3,10 +3,21 @@
 `crates/sheprd-gpui` is ~310k lines over 1894 files and links the app's heaviest
 dependencies (rodio, mermaid-rs-renderer, ratex-*, image, nucleo-matcher,
 syntect) for every change, whether or not it touches them. This note records the
-first extraction, the pattern it proved, and the dependency analysis for the
+extractions so far, the pattern they proved, and the dependency analysis for the
 next ones. Update it as each step lands.
 
 ## What moved
+
+Three modules have left the app, each one a pure function of its inputs with no
+`gpui` types:
+
+| Crate | From | Dependencies | Files importing it |
+| --- | --- | --- | --- |
+| `crates/sheprd-ago` | `crates/sheprd-gpui/src/ago.rs` | none | 1 (`palette/render.rs`) |
+| `crates/sheprd-osc52` | `crates/sheprd-gpui/src/osc52.rs` | none | 2 (`state.rs` and its tests) |
+| `crates/sheprd-words` | `crates/sheprd-gpui/src/words.rs` | `unicode-segmentation` | 2 (`multiline_input.rs`, `text_editing/keys.rs`) |
+
+### `sheprd-ago`
 
 `crates/sheprd-ago` is a new workspace member with **no dependencies at all**:
 
@@ -26,6 +37,8 @@ one of the four with no `gpui` types and a single importer:
 | `about` | 258 | 4 | 3 |
 | `app_badge` | 302 | 25 | 3 |
 
+### `sheprd-osc52`
+
 `crates/sheprd-osc52` is the second, also with **no dependencies at all**. The
 module file also held its tests; they moved out of the production file, and the
 app keeps only the call site:
@@ -40,6 +53,8 @@ app keeps only the call site:
 It has no messages and no error type of its own: `decode` returns `None` for a
 payload it will not write, and the app logs the drop.
 
+### `sheprd-words`
+
 `crates/sheprd-words` depends only on `unicode-segmentation`, and its tests were
 already in `src/words/tests.rs`, so they moved as they were:
 
@@ -50,11 +65,6 @@ already in `src/words/tests.rs`, so they moved as they were:
 | `src/multiline_input.rs` (double-click selection) and `src/text_editing/keys.rs` (word movement) | both call `sheprd_words::` |
 
 It carries no messages either: the fields that use it own their own text.
-
-`sound` also has no GPUI use, and it is the extraction that would actually drop a
-dependency (`rodio`) from `sheprd-gpui`. It is not a thin slice: `Policy::poll`
-takes `&mut LiveState`, and `Settings` loads through `crate::config` and
-`crate::lenient`. See the next-extraction table.
 
 ## The pattern
 
@@ -97,6 +107,16 @@ Cheap, dependency-free moves first; the blocked ones carry real work.
 | `lenient` | 107 / 0 | 4 | `serde`/`toml` only; four settings files import it |
 | `truncate` | 105 / 86 | 5 | `one_line` calls `notifications::safe_text`, which is `sheprd_client::text::safe_text`, so the crate would depend on `sheprd-client` |
 | `sound` | 848 / 1170 | 16 | the `rodio` win, but `Policy::poll(&mut LiveState)` (4 fields), `config::view_settings_path`, `config::SoundConfig`, `lenient`, and the root `Error::Sound` variant all have to move or invert first |
+
+`reorder` was the next cheap one and did not land in this wave: both extractions
+above compile `sheprd-gpui`, and the local disk floor (3 GiB free) stopped
+further builds before a third one. It needs no design work when disk allows it —
+`reorder.rs` is std-only and its inline tests move to `src/tests.rs`.
+
+`sound` also has no GPUI use, and it is the extraction that would actually drop a
+dependency (`rodio`) from `sheprd-gpui`. It is not a thin slice: `Policy::poll`
+takes `&mut LiveState`, and `Settings` loads through `crate::config` and
+`crate::lenient`.
 
 `chat`, `browser` and `sidebar` are the app's three large features and each is a
 program of its own; none can move before the state and text they read have
