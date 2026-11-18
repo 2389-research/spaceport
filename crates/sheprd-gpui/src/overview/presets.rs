@@ -34,7 +34,7 @@ where
 {
     let clock = |time: &DateTime<Tz>| time.format("%H:%M").to_string();
     let mut presets = Vec::new();
-    let mut push = |label, when: String, time: DateTime<Tz>| {
+    let mut push = |label, when: String, time: &DateTime<Tz>| {
         presets.push(Preset {
             label,
             when,
@@ -43,16 +43,23 @@ where
     };
     for (label, hours) in [("overview-preset-hour", 1), ("overview-preset-hours", 3)] {
         let time = now.clone() + Duration::hours(hours);
-        push(label, clock(&time), time);
+        // A preset whose hour has already passed midnight names its day:
+        // the label counts hours, so a bare clock would not say which one.
+        let when = if time.date_naive() == now.date_naive() {
+            clock(&time)
+        } else {
+            weekday_time(&time)
+        };
+        push(label, when, &time);
     }
     if let Some(evening) =
         at(now, EVENING_HOUR).filter(|evening| evening.timestamp() - now.timestamp() > 3600)
     {
-        push("overview-preset-evening", clock(&evening), evening);
+        push("overview-preset-evening", clock(&evening), &evening);
     }
     let tomorrow = at(&(now.clone() + Duration::days(1)), MORNING_HOUR);
-    if let Some(tomorrow) = tomorrow.clone() {
-        push("overview-preset-tomorrow", clock(&tomorrow), tomorrow);
+    if let Some(tomorrow) = &tomorrow {
+        push("overview-preset-tomorrow", clock(tomorrow), tomorrow);
     }
     let to_monday = (7 - now.weekday().num_days_from_monday()) % 7;
     let to_monday = if to_monday == 0 { 7 } else { to_monday };
@@ -60,8 +67,8 @@ where
         &(now.clone() + Duration::days(i64::from(to_monday))),
         MORNING_HOUR,
     );
-    if let Some(monday) = monday.filter(|monday| Some(monday) != tomorrow.as_ref()) {
-        push("overview-preset-next-week", weekday_time(&monday), monday);
+    if let Some(monday) = &monday.filter(|monday| Some(monday) != tomorrow.as_ref()) {
+        push("overview-preset-next-week", weekday_time(monday), monday);
     }
     presets
 }

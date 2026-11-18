@@ -59,6 +59,22 @@ fn this_evening_needs_an_hour_and_next_week_must_not_be_tomorrow() {
 }
 
 #[test]
+fn a_preset_past_midnight_names_its_day() {
+    // Wednesday 14 October 2026, 23:30: an hour and three hours both end
+    // on Thursday, which the bare clock alone would not say.
+    let now = local(2026, 10, 14, 23, 30);
+    assert_eq!(
+        labels(&now),
+        [
+            ("overview-preset-hour", "Thu 00:30".to_owned()),
+            ("overview-preset-hours", "Thu 02:30".to_owned()),
+            ("overview-preset-tomorrow", "09:00".to_owned()),
+            ("overview-preset-next-week", "Mon 09:00".to_owned()),
+        ]
+    );
+}
+
+#[test]
 fn times_read_in_their_largest_unit() {
     let elapsed = |since, now| plain(elapsed(since, now));
     assert_eq!(elapsed(at(100), at(130)), "now");

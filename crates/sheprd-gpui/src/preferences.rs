@@ -131,7 +131,6 @@ pub struct Chrome {
     /// The sort the user picked with the panel toggle, like upstream's
     /// `agent_panel_sort` preference. `None` follows the daemon's config.
     pub agent_sort: Option<AgentSort>,
-    /// The notes panel's width, once dragged; `None` is its default.
     /// The device IDs in the order the user dragged them into.
     pub device_order: Vec<String>,
 }
