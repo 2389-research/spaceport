@@ -13,6 +13,83 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 
+/// Test builds only: what a test blocks on while a `ConnectionBridge`'s event
+/// reader applies an update. The app polls its mailbox every frame and never
+/// waits on it, so nothing in a production build observes this channel; the
+/// lifecycle tests block here rather than poll on a clock, because a bounded
+/// clock wait is a timing guess that a loaded runner breaks. One channel and
+/// one count per test thread, so every connection a test starts wakes the same
+/// wait, and a wake a test did not need costs it one extra poll.
+///
+/// Gated on `cfg(test)` rather than `any(test, feature = "integration-test")`:
+/// this crate is a bin, so its own unit tests compile every module with
+/// `cfg(test)`, and no integration target uses these waits. Gating on the
+/// feature would compile the module into the plain bin under `--all-features`,
+/// where `count`, `wait` and `wait_for` have no caller.
+#[cfg(test)]
+pub(crate) mod applied {
+    use std::{
+        cell::RefCell,
+        sync::{
+            Arc,
+            atomic::{AtomicU64, Ordering},
+            mpsc::{Receiver, Sender, channel},
+        },
+    };
+
+    thread_local! {
+        static WAKES: (Sender<()>, RefCell<Receiver<()>>, Arc<AtomicU64>) = {
+            let (sender, receiver) = channel();
+            (sender, RefCell::new(receiver), Arc::default())
+        };
+    }
+
+    /// The reader of one connection, cloned onto its thread.
+    pub(crate) struct Wake {
+        sender: Sender<()>,
+        applied: Arc<AtomicU64>,
+    }
+
+    impl Wake {
+        /// Records that an update reached the inbox, or that the reader ended.
+        pub(crate) fn notify(&self) {
+            self.applied.fetch_add(1, Ordering::Release);
+            let _ = self.sender.send(());
+        }
+    }
+
+    pub(crate) fn wake() -> Wake {
+        WAKES.with(|(sender, _, applied)| Wake {
+            sender: sender.clone(),
+            applied: applied.clone(),
+        })
+    }
+
+    /// How many updates the readers of this test have applied so far.
+    pub(crate) fn count() -> u64 {
+        WAKES.with(|(_, _, applied)| applied.load(Ordering::Acquire))
+    }
+
+    /// Blocks until a reader has applied an update or has ended.
+    ///
+    /// A reader that stops without ending hangs the waiting test instead of
+    /// failing it on a clock: a regression should stop the suite loudly, and
+    /// the CI job's own timeout bounds it.
+    pub(crate) fn wait() {
+        WAKES.with(|(_, receiver, _)| {
+            let _ = receiver.borrow().recv();
+        });
+    }
+
+    /// Blocks until [`count`] reaches `applied`, as a test that knows how many
+    /// updates it is waiting for waits on.
+    pub(crate) fn wait_for(applied: u64) {
+        while count() < applied {
+            wait();
+        }
+    }
+}
+
 pub(crate) struct ConnectionBridge {
     pub target: ConnectTarget,
     pub handle: Option<ClientHandle>,
@@ -180,6 +257,11 @@ impl ConnectionBridge {
         spawn: impl FnOnce(Box<dyn FnOnce() + Send>) -> std::io::Result<()>,
     ) {
         self.drained = Arc::new(AtomicBool::new(false));
+        // Every update and the reader's own end wakes a waiting test.
+        #[cfg(test)]
+        let wake = applied::wake();
+        #[cfg(test)]
+        let reader_wake = applied::wake();
         let target = self.target.clone();
         let startup_inbox = self.inbox.clone();
         let result =
@@ -267,8 +349,14 @@ impl ConnectionBridge {
                                 None => state.dirty = true,
                             }
                         }
+                        // After the guard is gone, so a woken waiter always
+                        // finds the update in the inbox.
+                        #[cfg(test)]
+                        reader_wake.notify();
                     }
                     drained.store(true, Ordering::Release);
+                    #[cfg(test)]
+                    reader_wake.notify();
                     tracing::debug!("Connection bridge event reader drained");
                 }))
                 .map_err(crate::Error::from)
@@ -288,6 +376,10 @@ impl ConnectionBridge {
                     ssh: None,
                 });
             }
+            // A startup failure ends the wait too, once its state is in place:
+            // no reader exists to wake anyone later.
+            #[cfg(test)]
+            wake.notify();
         }
     }
 
