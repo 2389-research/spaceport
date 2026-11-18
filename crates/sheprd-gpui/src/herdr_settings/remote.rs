@@ -46,7 +46,7 @@ impl std::fmt::Debug for RemotePaneHistory {
 #[derive(Default, Deserialize)]
 #[serde(default)]
 struct Parsed {
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     experimental: Experimental,
 }
 

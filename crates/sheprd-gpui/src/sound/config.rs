@@ -10,16 +10,16 @@ use std::{
 #[derive(Default, Deserialize)]
 #[serde(default)]
 struct Document {
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     ui: Ui,
 }
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
 struct Ui {
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     sound: SoundConfig,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     toast: Toast,
 }
 
@@ -32,7 +32,7 @@ struct Toast {
 }
 
 fn delay<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<u64, D::Error> {
-    Ok(crate::lenient::value(deserializer)?
+    Ok(sheprd_lenient::value(deserializer)?
         .filter(|delay: &u64| *delay <= 3600)
         .unwrap_or(1))
 }
@@ -53,15 +53,15 @@ enum AgentSetting {
 #[derive(Deserialize)]
 #[serde(default)]
 pub(super) struct SoundConfig {
-    #[serde(deserialize_with = "crate::lenient::or_true")]
+    #[serde(deserialize_with = "sheprd_lenient::or_true")]
     enabled: bool,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     path: Option<PathBuf>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     done_path: Option<PathBuf>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     request_path: Option<PathBuf>,
-    #[serde(deserialize_with = "crate::lenient::entries")]
+    #[serde(deserialize_with = "sheprd_lenient::entries")]
     agents: HashMap<String, AgentSetting>,
 }
 

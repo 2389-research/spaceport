@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-ago", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-osc52", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-terminal", "crates/sheprd-usage", "crates/sheprd-words"]
+members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-ago", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-lenient", "crates/sheprd-osc52", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-terminal", "crates/sheprd-usage", "crates/sheprd-words"]
 resolver = "2"
 
 [workspace.package]
@@ -75,6 +75,7 @@ sheprd-control-protocol = { path = "crates/sheprd-control-protocol" }
 sheprd-core-client    = { path = "crates/sheprd-core-client" }
 sheprd-diagnostics    = { path = "crates/sheprd-diagnostics" }
 sheprd-i18n           = { path = "crates/sheprd-i18n" }
+sheprd-lenient        = { path = "crates/sheprd-lenient" }
 sheprd-osc52          = { path = "crates/sheprd-osc52" }
 sheprd-protocol       = { path = "crates/sheprd-protocol" }
 sheprd-remote         = { default-features = false, path = "crates/sheprd-remote" }

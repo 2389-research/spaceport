@@ -225,7 +225,7 @@ impl<'de> Deserialize<'de> for RightClickPassthrough {
 #[derive(Deserialize)]
 #[serde(default)]
 struct Sound {
-    #[serde(deserialize_with = "crate::lenient::or_true")]
+    #[serde(deserialize_with = "sheprd_lenient::or_true")]
     enabled: bool,
 }
 
@@ -283,66 +283,66 @@ pub(crate) struct Settings {
 #[derive(Default, Deserialize)]
 #[serde(default)]
 struct Parsed {
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     theme: palette::ThemeConfig,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     ui: Ui,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     experimental: Experimental,
 }
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
 struct Experimental {
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     pane_history: bool,
 }
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
 struct Ui {
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     agent_panel_sort: crate::preferences::AgentSort,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     sound: Sound,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     toast: RawToast,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     accent: Option<String>,
     // Herdr defaults this one on, unlike the derived `false`.
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     copy_on_select: Option<bool>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     tab_bar_position: TabBarPosition,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     hide_tab_bar_when_single_tab: bool,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     sidebar_collapsed_mode: SidebarCollapsedMode,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     sidebar_start_collapsed: bool,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     prompt_new_tab_name: Option<bool>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     prompt_new_workspace_name: Option<bool>,
     // Zero, negative, and oversized counts keep Herdr's default.
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     mouse_scroll_lines: Option<NonZeroU16>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     right_click_passthrough_modifier: RightClickPassthrough,
 }
 
 #[derive(Default, Deserialize)]
 #[serde(default)]
 struct RawToast {
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     delivery: Option<ToastDelivery>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     enabled: Option<bool>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     delay_seconds: Option<u64>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     herdr: HerdrToast,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     clipboard: ClipboardToast,
 }
 
@@ -354,7 +354,7 @@ struct HerdrToast {
 }
 
 fn bottom_right<'de, D: Deserializer<'de>>(deserializer: D) -> Result<ToastPosition, D::Error> {
-    Ok(crate::lenient::value(deserializer)?.unwrap_or(ToastPosition::BottomRight))
+    Ok(sheprd_lenient::value(deserializer)?.unwrap_or(ToastPosition::BottomRight))
 }
 
 impl Default for HerdrToast {
@@ -368,9 +368,9 @@ impl Default for HerdrToast {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub(crate) struct ClipboardToast {
-    #[serde(deserialize_with = "crate::lenient::or_true")]
+    #[serde(deserialize_with = "sheprd_lenient::or_true")]
     pub enabled: bool,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     pub position: ClipboardPosition,
 }
 

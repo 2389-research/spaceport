@@ -8,12 +8,13 @@ next ones. Update it as each step lands.
 
 ## What moved
 
-Three modules have left the app, each one a pure function of its inputs with no
+Four modules have left the app, each one a pure function of its inputs with no
 `gpui` types:
 
 | Crate | From | Dependencies | Files importing it |
 | --- | --- | --- | --- |
 | `crates/sheprd-ago` | `crates/sheprd-gpui/src/ago.rs` | none | 1 (`palette/render.rs`) |
+| `crates/sheprd-lenient` | `crates/sheprd-gpui/src/lenient.rs` | `serde`, `toml` | 4 settings files |
 | `crates/sheprd-osc52` | `crates/sheprd-gpui/src/osc52.rs` | none | 2 (`state.rs` and its tests) |
 | `crates/sheprd-words` | `crates/sheprd-gpui/src/words.rs` | `unicode-segmentation` | 2 (`multiline_input.rs`, `text_editing/keys.rs`) |
 
@@ -66,6 +67,21 @@ already in `src/words/tests.rs`, so they moved as they were:
 
 It carries no messages either: the fields that use it own their own text.
 
+### `sheprd-lenient`
+
+`crates/sheprd-lenient` depends only on `serde` and `toml`. Herdr writes
+`config.toml` and this app does not own it, so every value the build cannot read
+falls back to its own default: a property of a deserializer, not of the app.
+
+| Before | After |
+| --- | --- |
+| `crates/sheprd-gpui/src/lenient.rs`, 107 lines | `crates/sheprd-lenient/src/lib.rs`, 51 lines: `value`, `or_default`, `or_true`, `entries` |
+| its inline test | `crates/sheprd-lenient/src/tests.rs`, 56 lines |
+| 44 `crate::lenient::` paths in four settings files | the same paths naming `sheprd_lenient` |
+
+It has no messages and no error type: a value it cannot read falls back, and
+malformed TOML fails with `toml`'s own error in the caller.
+
 ## The pattern
 
 1. **Pick by footprint, not by size.** For each candidate module count what it
@@ -104,7 +120,6 @@ Cheap, dependency-free moves first; the blocked ones carry real work.
 | Module | production / test lines | importers | blockers |
 | --- | --- | --- | --- |
 | `reorder` | 170 / 0 | 4 | inline tests must move to `tests.rs`; std only |
-| `lenient` | 107 / 0 | 4 | `serde`/`toml` only; four settings files import it |
 | `truncate` | 105 / 86 | 5 | `one_line` calls `notifications::safe_text`, which is `sheprd_client::text::safe_text`, so the crate would depend on `sheprd-client` |
 | `sound` | 848 / 1170 | 16 | the `rodio` win, but `Policy::poll(&mut LiveState)` (4 fields), `config::view_settings_path`, `config::SoundConfig`, `lenient`, and the root `Error::Sound` variant all have to move or invert first |
 
@@ -115,8 +130,7 @@ further builds before a third one. It needs no design work when disk allows it â
 
 `sound` also has no GPUI use, and it is the extraction that would actually drop a
 dependency (`rodio`) from `sheprd-gpui`. It is not a thin slice: `Policy::poll`
-takes `&mut LiveState`, and `Settings` loads through `crate::config` and
-`crate::lenient`.
+takes `&mut LiveState`, and `Settings` loads through `sheprd-lenient`.
 
 `chat`, `browser` and `sidebar` are the app's three large features and each is a
 program of its own; none can move before the state and text they read have

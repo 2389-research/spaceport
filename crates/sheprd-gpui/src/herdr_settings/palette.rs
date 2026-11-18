@@ -30,15 +30,15 @@ pub(super) fn canonical(name: &str) -> Option<&'static str> {
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default)]
 pub(super) struct ThemeConfig {
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     pub name: Option<String>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     auto_switch: bool,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     dark_name: Option<String>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     light_name: Option<String>,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     custom: Custom,
 }
 
@@ -47,9 +47,9 @@ pub(super) struct ThemeConfig {
 struct Custom {
     #[serde(flatten)]
     common: Overrides,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     light: Overrides,
-    #[serde(deserialize_with = "crate::lenient::or_default")]
+    #[serde(deserialize_with = "sheprd_lenient::or_default")]
     dark: Overrides,
 }
 
@@ -61,7 +61,7 @@ macro_rules! overrides {
         #[serde(default)]
         struct Overrides {
             $(
-                #[serde(deserialize_with = "crate::lenient::or_default")]
+                #[serde(deserialize_with = "sheprd_lenient::or_default")]
                 $name: Option<String>,
             )+
         }

@@ -6481,6 +6481,7 @@ dependencies = [
  "sheprd-core-client",
  "sheprd-diagnostics",
  "sheprd-i18n",
+ "sheprd-lenient",
  "sheprd-osc52",
  "sheprd-remote",
  "sheprd-usage",
@@ -6534,6 +6535,14 @@ dependencies = [
  "thiserror 2.0.21",
  "windows-sys 0.61.2",
  "winresource",
+]
+
+[[package]]
+name = "sheprd-lenient"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "toml 1.1.6+spec-1.1.0",
 ]
 
 [[package]]

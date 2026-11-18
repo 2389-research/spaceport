@@ -57,7 +57,6 @@ mod jump_list;
 mod keymap;
 #[cfg(windows)]
 mod launch_at_login;
-mod lenient;
 mod link;
 mod links;
 mod listening_ports;
