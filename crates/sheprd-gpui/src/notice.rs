@@ -106,9 +106,13 @@ impl Notices {
             .map(|notice| notice.text.as_str())
     }
 
+    /// Only harnesses ask "any notice at all": the app reads
+    /// [`Self::is_some_at`] at the instant it draws.
+    #[cfg(any(test, feature = "integration-test"))]
     pub(crate) fn is_some(&self) -> bool {
         self.text().is_some()
     }
+
     pub(crate) fn is_none(&self) -> bool {
         self.text().is_none()
     }
