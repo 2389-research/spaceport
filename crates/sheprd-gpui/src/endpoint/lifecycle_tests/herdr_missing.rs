@@ -3,7 +3,7 @@
 use super::*;
 
 const MISSING: &str =
-    "client I/O failed: Could not start herdr server: No such file or directory (os error 2)";
+    "Could not talk to the daemon: Herdr is not installed: No such file or directory (os error 2)";
 
 /// Stands in for the connector finding no `herdr` to start: the bridge marks
 /// the inbox before the worker reports the failure and stops.

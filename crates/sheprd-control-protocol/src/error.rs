@@ -11,7 +11,7 @@ pub enum Error {
     Io(#[from] io::Error),
     #[error("{0}")]
     Json(#[from] serde_json::Error),
-    #[error("Control request or response exceeds {limit} bytes")]
+    #[error("The request or the answer is larger than {limit} bytes.")]
     MessageSize { limit: usize },
     #[error("Spaceport closed the control connection without answering")]
     NoResponse,
