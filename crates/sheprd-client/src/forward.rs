@@ -11,6 +11,7 @@ use crate::{Error, Result, catalog::validate_target, ssh};
 use std::num::NonZeroU16;
 #[cfg(unix)]
 use std::{
+    io::Read as _,
     net::{Ipv4Addr, TcpListener},
     path::Path,
     process::{Child, Command, Stdio},
@@ -48,8 +49,12 @@ const READY_TIMEOUT: Duration = Duration::from_secs(30);
 const FORWARD_TIMEOUT: Duration = Duration::from_secs(10);
 #[cfg(unix)]
 const STARTING_POLL: Duration = Duration::from_millis(50);
+/// How often a listening forward re-reads its master when the master's own end
+/// was never reported. Its standard output closing is the report, so this is
+/// reached only through a pipe a descendant of the master inherited and kept
+/// open.
 #[cfg(unix)]
-const LISTENING_POLL: Duration = Duration::from_millis(250);
+const EXIT_RECHECK: Duration = Duration::from_secs(30);
 
 /// The master, shared so its owner can kill it at once while the worker
 /// alone waits for it. Neither side holds the lock across a blocking call.
@@ -208,14 +213,29 @@ fn run(
     let dir = ControlDir::create("herdr-fwd").map_err(Error::ForwardControl)?;
     let socket = dir.socket();
     // Stderr can carry banners or secrets; nothing reads it.
-    let child = master_command(&socket)
+    let mut child = master_command(&socket)
         .stdin(Stdio::null())
-        .stdout(Stdio::null())
+        // Piped only to hear the master end: closing it is the one notification
+        // a child process gives this one. Nothing reads what it writes.
+        .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()
         .map_err(Error::ForwardSpawn)?;
+    let output = child.stdout.take();
     // A stop that came while spawning is seen by the first check below.
     lock(slot).child = Some(child);
+    let (wake, woken) = mpsc::channel();
+    if let Some(mut output) = output {
+        let wake = wake.clone();
+        thread::Builder::new()
+            .name("herdr-forward-exit".into())
+            .spawn(move || {
+                let mut scratch = [0; 64];
+                while matches!(output.read(&mut scratch), Ok(read) if read > 0) {}
+                let _ = wake.send(());
+            })
+            .map_err(Error::ForwardSpawn)?;
+    }
     let ended = supervise(
         slot,
         remote_port,
@@ -223,7 +243,11 @@ fn run(
         &socket,
         forward_command,
         events,
+        &woken,
     );
+    // Held until the wait is over, so a closed pipe is the only wake it can
+    // have and a disconnect never has to stand for one.
+    drop(wake);
     let child = lock(slot).child.take();
     if let Some(mut child) = child {
         let _ = child.kill();
@@ -245,6 +269,7 @@ fn supervise(
     socket: &Path,
     forward_command: impl Fn(&Path, u16) -> Command,
     events: &mpsc::SyncSender<ForwardEvent>,
+    woken: &mpsc::Receiver<()>,
 ) -> Option<Error> {
     // The master opens its control socket only once it has authenticated.
     let deadline = Instant::now() + ready_timeout;
@@ -301,10 +326,14 @@ fn supervise(
     }
     loop {
         match master(slot) {
-            Master::Running => thread::sleep(LISTENING_POLL),
+            Master::Running => {}
             Master::Stopped => return None,
             Master::Ended(error) => return Some(error),
         }
+        // Nothing here re-reads the master on a timer: its standard output
+        // closing wakes this thread the moment it exits. The bound only covers
+        // an exit no pipe close reported.
+        let _ = woken.recv_timeout(EXIT_RECHECK);
     }
 }
 
