@@ -39,8 +39,13 @@ fn a_dropped_remote_stays_selected_with_its_last_picture_dimmed(cx: &mut gpui::T
     });
     server.stream.shutdown(std::net::Shutdown::Both).unwrap();
     view.update(cx, |view, cx| {
-        project_until(view, cx, "the drop", |view| {
-            view.endpoints[1].connection.handle.is_none()
+        // Wait for the disconnect state, not only the stopped handle: the poll
+        // that lands it takes the endpoint's state for the window's, which would
+        // discard the expired budget this test is about. A stopped handle is
+        // seen one poll before its state arrives when the inbox is busy.
+        project_until(view, cx, "the drop's disconnect state", |view| {
+            let endpoint = &view.endpoints[1];
+            endpoint.connection.handle.is_none() && !endpoint.live.status.is_connected()
         });
         // An expired activation budget is renewed while there is no snapshot.
         view.live
@@ -53,7 +58,13 @@ fn a_dropped_remote_stays_selected_with_its_last_picture_dimmed(cx: &mut gpui::T
             view.selected_endpoint, 1,
             "a drop must not fall back to Local"
         );
-        assert!(view.live.activation.deadline().unwrap() > Instant::now());
+        assert!(
+            view.live
+                .activation
+                .deadline()
+                .is_some_and(|deadline| deadline > Instant::now()),
+            "a drop must renew the expired activation budget"
+        );
         assert!(view.presentation.stale());
         assert!(view.presentation.picture(&view.live).is_some());
 
