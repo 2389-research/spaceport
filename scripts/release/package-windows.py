@@ -9,11 +9,15 @@ console window from Explorer or the Start menu, and sheprd-acp.exe, which the ap
 starts chats with.
 """
 import argparse
+import importlib.util
 from pathlib import Path
-import re
 import sys
 import tempfile
 import zipfile
+
+SPEC = importlib.util.spec_from_file_location("release_common", Path(__file__).with_name("_release_common.py"))
+common = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(common)
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGETS = ("x86_64-pc-windows-msvc", "aarch64-pc-windows-msvc")
@@ -35,7 +39,7 @@ def add(archive, name, data):
 
 
 def package(version, target, binary, launcher, output_dir, notices):
-    if not re.fullmatch(r"[1-9][0-9]{7}\.[1-9][0-9]*", version):
+    if not common.is_version(version):
         raise ValueError("Version must be YYYYMMDD.COUNTER (no v prefix, counter from 1, no leading zeros)")
     if target not in TARGETS:
         raise ValueError("Unsupported Windows target")

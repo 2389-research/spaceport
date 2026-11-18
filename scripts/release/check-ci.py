@@ -3,11 +3,17 @@
 ABOUTME: Select the repository and trusted CI actor explicitly for fork releases.
 """
 import argparse
+import importlib.util
 import json
 import os
+from pathlib import Path
 import re
 import subprocess
 import sys
+
+SPEC = importlib.util.spec_from_file_location("release_common", Path(__file__).with_name("_release_common.py"))
+common = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(common)
 
 REPO = "2389-research/spaceport"
 ACTOR = "harperreed"
@@ -90,7 +96,7 @@ def main():
     parser.add_argument("--repo", default=REPO, help="GitHub owner/repository whose CI must pass")
     parser.add_argument("--actor", default=ACTOR, help="GitHub login required for both CI actors")
     args = parser.parse_args()
-    if not re.fullmatch(r"[0-9a-f]{40}", args.sha):
+    if not common.is_commit(args.sha):
         parser.error("sha must be a full lowercase commit SHA")
     if (not re.fullmatch(rf"{LOGIN}/[A-Za-z0-9_.-]+", args.repo)
             or args.repo.split("/")[-1] in (".", "..")):
