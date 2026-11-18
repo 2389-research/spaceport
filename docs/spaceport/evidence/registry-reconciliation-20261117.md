@@ -1,7 +1,8 @@
 # Registry reconciliation, 2026-11-17
 
 This note maps the pull requests merged since the last registry update to the
-acceptance scenarios they touch. It changes no task, scenario or gap status.
+acceptance scenarios they touch. The mapping itself changes no task, scenario
+or gap status; decision D71, taken afterwards, is recorded under Findings.
 
 ## Inputs
 
@@ -62,9 +63,11 @@ concern chat attachments, not general transfer (G-FILE).
   has no evidence record for either. The last record is
   `t12-macos-preview-20261112.1-signed.md`.
 - Decision D69 puts Herdr Core behind a disabled-by-default setting. The
-  gaps G-CHAT, G-MACHINE, G-PORT and G-FILE describe Core routes and still
-  gate their tasks. Whether they stay mandatory for the epic is an open
-  product decision. G-LINK also applies to Herdr 1.
+  gaps G-CHAT, G-MACHINE, G-PORT and G-FILE describe Core routes. After this
+  pass, decision D71 removed them from the completion gates of T02, T06, T07
+  and T11. They stay open and now gate enabling Core by default (Kata
+  `rnbn`). T02, T06 and T07 moved from `blocked` to `in_progress` for that
+  reason alone; no scenario result changed.
 - Kata `rs4c` (build, lint and test gates) was closed on 2026-11-10 without a
   comment or an evidence pointer.
 - Kata `r69x` names the nebula rocket artwork, which D68 replaced.
@@ -80,4 +83,4 @@ concern chat attachments, not general transfer (G-FILE).
 1. Record `v20261113.1` and `v20261117.1` in evidence files.
 2. Run the scenarios that need no Core contract and no unlocked desktop,
    starting with A29 to A32 on current main.
-3. Get the D69 scope decision, then update `plan/gaps.json` to match it.
+3. Run the Herdr 1 legs of the scenarios that D71 keeps in the fork's scope.
