@@ -55,6 +55,7 @@ fn expired_preparation_skips_retained_permit_but_not_published_data() {
             claimed: AtomicBool::new(true),
             cancelled: Arc::new(AtomicBool::new(false)),
             finished: Arc::new(AtomicBool::new(false)),
+            finish: Arc::default(),
             reserved_at: Instant::now() - COMMAND_TIMEOUT,
             waker: client.handle.inner.commands.waker(),
         });

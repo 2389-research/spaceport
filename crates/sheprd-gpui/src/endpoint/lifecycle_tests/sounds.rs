@@ -65,6 +65,9 @@ fn inactive_endpoint_semantic_sound_reaches_worker_once(cx: &mut gpui::TestAppCo
         view.endpoints.push(remote);
         assert_eq!(view.selected_endpoint, 0);
     });
+    // Three messages are on their way to the reader; one poll hands what they
+    // carried to the sound service, whose own worker plays it.
+    let applied = crate::connection::applied::count();
     for message in [
         ServerMessage::Notify {
             kind: NotifyKind::Sound,
@@ -87,16 +90,10 @@ fn inactive_endpoint_semantic_sound_reaches_worker_once(cx: &mut gpui::TestAppCo
         write_message(&mut server.stream, &message, MAX_FRAME_SIZE).unwrap();
     }
     view.update(cx, |view, cx| {
-        wait_until(|| {
-            view.poll_endpoints(cx);
-            match played.try_recv() {
-                Ok(sound) => {
-                    assert_eq!(sound, SemanticNotificationSound::Request);
-                    true
-                }
-                Err(_) => false,
-            }
-        });
+        crate::connection::applied::wait_for(applied + 3);
+        view.poll_endpoints(cx);
+        let sound = played.recv().unwrap();
+        assert_eq!(sound, SemanticNotificationSound::Request);
         assert!(view.endpoints[1].live.sound_events.is_empty());
         // Subsequent coalesced updates cannot redeliver the moved event.
         view.endpoints[1]

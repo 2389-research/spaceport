@@ -367,16 +367,24 @@ impl Service {
         mpsc::Receiver<sheprd_client::protocol::SemanticNotificationSound>,
     ) {
         let (sender, receiver) = mpsc::sync_channel(8);
-        (
-            Self::start(
-                || Ok(Settings::default()),
-                move |sound, _, _, _, _| {
-                    let _ = sender.try_send(sound);
-                    Ok(())
-                },
-            ),
-            receiver,
-        )
+        let service = Self::start(
+            || Ok(Settings::default()),
+            move |sound, _, _, _, _| {
+                let _ = sender.try_send(sound);
+                Ok(())
+            },
+        );
+        service.publish_settings();
+        (service, receiver)
+    }
+
+    /// The settings the worker loads on its first tick, so a test does not wait
+    /// for the worker's own timer before it can hand it a notification.
+    #[cfg(test)]
+    fn publish_settings(&self) {
+        if let Ok(mut value) = self.settings.lock() {
+            *value = Some(Arc::new(Settings::default()));
+        }
     }
 
     /// A worker that reports the volume each sound would play at.
@@ -390,6 +398,7 @@ impl Service {
                 Ok(())
             },
         );
+        service.publish_settings();
         (service, receiver)
     }
 

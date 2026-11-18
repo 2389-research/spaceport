@@ -146,15 +146,13 @@ fn bell_and_window_title_follow_the_selected_endpoint(cx: &mut gpui::TestAppCont
     send(&mut local_server, ServerMessage::TerminalBell { count: 1 });
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
-            let deadline = Instant::now() + Duration::from_secs(3);
-            let ring = loop {
+            let mut ring = None;
+            poll_until(view, cx, |view, cx| {
                 view.poll_endpoints(cx);
-                if let Some(ring) = view.bell.take(ring_both, false, Instant::now()) {
-                    break ring;
-                }
-                assert!(Instant::now() < deadline, "the local bell never rang");
-                std::thread::sleep(Duration::from_millis(1));
-            };
+                ring = view.bell.take(ring_both, false, Instant::now());
+                ring.is_some()
+            });
+            let ring = ring.unwrap();
             assert!(ring.attention && ring.sound);
 
             // Switching endpoints takes that endpoint's title with it.

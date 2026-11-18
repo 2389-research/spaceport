@@ -149,6 +149,21 @@ fn surface(snapshot: &ClientShellSnapshot) -> Arc<PaneSurfaceFrame> {
     })
 }
 
+/// How many wakes a wait tolerates without its state arriving. The bound is the
+/// event reader's own progress, never a clock: a reader that keeps delivering
+/// and never satisfies the wait is a broken expectation worth naming.
+const WAKES_PER_WAIT: usize = 10_000;
+
+/// Block until a connection's event reader has applied an update or ended.
+///
+/// The state these tests wait for arrives on the reader's own thread, not on
+/// gpui's executor, so the reader's progress is the only thing to block on: a
+/// clock deadline here would be a guess a loaded runner breaks. A reader that
+/// stops without ending hangs the wait, which is deliberate.
+fn await_reader() {
+    crate::connection::applied::wait();
+}
+
 /// Poll until the inbox has been projected into `live`, then return.
 ///
 /// `ConnectionBridge::take_update` reads the inbox under `try_lock` so the UI
@@ -163,25 +178,42 @@ fn project_until(
     what: &str,
     ready: impl Fn(&SheprdWindow) -> bool,
 ) {
-    let deadline = Instant::now() + Duration::from_secs(3);
+    let mut wakes = 0;
     loop {
         view.poll_endpoints(cx);
         if ready(view) {
             return;
         }
-        assert!(Instant::now() < deadline, "{what} was never projected");
-        std::thread::sleep(Duration::from_millis(1));
+        wakes += 1;
+        assert!(wakes < WAKES_PER_WAIT, "{what} was never projected");
+        await_reader();
+    }
+}
+
+/// `project_until` for a wait whose poll reads what a poll returns, such as the
+/// bell it takes or the context it needs, rather than a projected field.
+fn poll_until(
+    view: &mut SheprdWindow,
+    cx: &mut Context<SheprdWindow>,
+    mut poll: impl FnMut(&mut SheprdWindow, &mut Context<SheprdWindow>) -> bool,
+) {
+    let mut wakes = 0;
+    loop {
+        if poll(view, cx) {
+            return;
+        }
+        wakes += 1;
+        assert!(wakes < WAKES_PER_WAIT, "the window never reached the wait");
+        await_reader();
     }
 }
 
 fn wait_until(mut ready: impl FnMut() -> bool) {
-    let deadline = Instant::now() + Duration::from_secs(3);
+    let mut wakes = 0;
     while !ready() {
-        assert!(
-            Instant::now() < deadline,
-            "client worker did not finish in time"
-        );
-        std::thread::sleep(Duration::from_millis(1));
+        wakes += 1;
+        assert!(wakes < WAKES_PER_WAIT, "the client worker never settled");
+        await_reader();
     }
 }
 
@@ -197,7 +229,6 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         SERIAL.fetch_add(1, Ordering::Relaxed)
     ));
     let listener = UnixListener::bind(&path).unwrap();
-    listener.set_nonblocking(true).unwrap();
     let mut endpoint = Endpoint::new(
         id.into(),
         id.into(),
@@ -205,13 +236,10 @@ fn connected_endpoint_reporting(id: &str, server_version: Option<&str>) -> (Endp
         true,
     );
     endpoint.connect(ConnectOptions::default(), true);
-    let mut accepted = None;
-    wait_until(|| {
-        accepted = listener.accept().ok();
-        accepted.is_some()
-    });
+    // The worker dials this socket; a plain blocking accept is coordination,
+    // not a wait on time.
     let mut server = Server {
-        stream: accepted.unwrap().0,
+        stream: listener.accept().unwrap().0,
         path,
     };
     server.stream.set_nonblocking(false).unwrap();
@@ -404,11 +432,29 @@ fn image_popup(view: &mut SheprdWindow, id: &str) {
 }
 
 fn wait_image_finished(view: &gpui::Entity<SheprdWindow>, cx: &mut gpui::VisualTestContext) {
-    // GPUI tasks publish the frame; only the socket worker can finish its FIFO slot.
-    wait_until(|| {
-        view.update(cx, |view, _| {
+    // GPUI tasks publish the frame and the socket worker finishes its FIFO
+    // slot: the executor is this thread's to run, and the slot ends on a thread
+    // that delivers no inbox update, so neither may wait on the other.
+    loop {
+        // Every preparation step only this thread can run.
+        let (waiting, preparing) = view.update(cx, |view, _| {
             view.cancel_stale_image();
-            view.pending_images.is_empty()
-        })
-    });
+            (
+                view.pending_upload_handles(),
+                view.pending_images_are_preparing(),
+            )
+        });
+        if waiting.is_empty() && !preparing {
+            return;
+        }
+        if preparing {
+            cx.run_until_parked();
+            continue;
+        }
+        // What is left was handed to the socket worker, which ends its slot
+        // without an inbox update; block on the slot itself.
+        for handle in waiting {
+            handle.wait_finished();
+        }
+    }
 }
