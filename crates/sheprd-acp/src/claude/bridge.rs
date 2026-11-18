@@ -212,20 +212,17 @@ impl Bridge {
     }
 
     fn set_option(&mut self, id: wire::RequestId, params: Value) -> Vec<Out> {
-        let request = serde_json::from_value::<wire::SetSessionConfigOptionRequest>(params);
-        let (Ok(request), Handshake::Ready(settings)) = (request, &self.handshake) else {
+        let (Some((setting, value)), Handshake::Ready(settings)) =
+            (out::chosen(params), &self.handshake)
+        else {
             return vec![reply(id, Err(wire::Error::invalid_params()))];
         };
-        let wire::SessionConfigOptionValue::ValueId { value } = request.value else {
-            return vec![reply(id, Err(wire::Error::invalid_params()))];
-        };
-        let value = value.0.to_string();
-        match request.config_id.0.as_ref() {
-            settings::MODEL if settings.has_model(&value) => vec![self.control(
+        match setting.as_str() {
+            out::MODEL if settings.has_model(&value) => vec![self.control(
                 json!({"subtype": "set_model", "model": value}),
                 Control::Model { acp: id, value },
             )],
-            settings::EFFORT if settings.takes_effort(&value) => vec![self.control(
+            out::EFFORT if settings.takes_effort(&value) => vec![self.control(
                 json!({
                     "subtype": "apply_flag_settings",
                     "settings": {"effortLevel": settings::effort_setting(&value)},

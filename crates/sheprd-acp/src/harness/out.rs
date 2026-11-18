@@ -12,6 +12,16 @@ use crate::{
 /// What a prompt is refused with while another turn runs.
 pub(crate) const BUSY: &str = "A turn is already running.";
 
+/// The setting id a harness gives its reasoning level.
+pub(crate) const EFFORT: &str = "effort";
+/// Models kept from a harness's own list, so a long list cannot grow the
+/// session.
+pub(crate) const MAX_MODELS: usize = 64;
+/// The setting id a harness gives its model.
+pub(crate) const MODEL: &str = "model";
+/// The setting id pi gives its reasoning level.
+pub(crate) const THINKING: &str = "thinking";
+
 /// A `session/update` for `session`.
 pub(crate) fn update(session: &str, update: wire::SessionUpdate) -> Out {
     let notification = wire::SessionNotification::new(session.to_owned(), update);
@@ -116,6 +126,15 @@ pub(crate) fn initialized() -> Result<Value, wire::Error> {
     to_value(
         &wire::InitializeResponse::new(acp::ProtocolVersion::V1).agent_capabilities(capabilities),
     )
+}
+
+/// A harness's own id with its first character upper case, as the label ACP
+/// shows for a reasoning level.
+pub(crate) fn capitalized(text: &str) -> String {
+    let mut chars = text.chars();
+    chars.next().map_or_else(String::new, |first| {
+        first.to_uppercase().chain(chars).collect()
+    })
 }
 
 /// A select setting, for a model or a reasoning level.

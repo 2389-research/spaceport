@@ -19,8 +19,7 @@ clipboard, or opens hyperlinks.
   alternate screen, clears, scrolling the view) or `Damage::Rows` with whole
   changed rows as `PaneSurfacePatchRow` plus the cursor. Rows only index
   hyperlinks the last full frame listed; a new link makes the take full.
-- `frame()` is the viewport at any time; it does not reset damage.
-- `modes()`, `title()`, `take_events()` (one coalesced title change and a
+- `modes()`, `take_events()` (one coalesced title change and a
   bell count), `scroll()` and `scroll_metrics()`.
 - `encode(&ClientPaneInputEvent)` (or `input::encode` with `Modes`) turns the
   app's semantic input into PTY bytes: xterm keys, the kitty keyboard

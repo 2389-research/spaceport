@@ -7,7 +7,10 @@ use std::{
     io::{BufRead, BufReader},
     path::Path,
     process::{Child, ChildStdin, ChildStdout, ExitStatus, Stdio},
-    sync::{Arc, Mutex, PoisonError},
+    sync::{
+        Arc, Mutex, PoisonError,
+        atomic::{AtomicBool, Ordering},
+    },
     thread,
     time::Duration,
 };
@@ -31,6 +34,15 @@ pub(crate) struct Spawned {
 #[derive(Clone)]
 pub(crate) struct AgentProcess {
     child: Arc<Mutex<Child>>,
+    /// Set once the agent has been reaped, after which its pid may already
+    /// belong to another process. The group stays identifiable from the id
+    /// captured at spawn, because a recycled pid leading a new group makes
+    /// the captured group gone.
+    reaped: Arc<AtomicBool>,
+    /// The agent's own process group, captured at spawn. Unix only; Windows
+    /// has no process groups here.
+    #[cfg(unix)]
+    group: Option<rustix::process::Pid>,
     stderr: Arc<Mutex<VecDeque<String>>>,
 }
 
@@ -54,6 +66,14 @@ pub(crate) fn spawn(
         program: program.to_string_lossy().into_owned(),
         source,
     })?;
+    // The group is created for this child (process_group(0) above), so the
+    // group id is the child's pid while the child is unreaped: capture it at
+    // spawn, the one moment the pid is certainly the agent's.
+    #[cfg(unix)]
+    let group = {
+        use rustix::process::Pid;
+        i32::try_from(child.id()).ok().and_then(Pid::from_raw)
+    };
     let input = child.stdin.take().ok_or(Error::AgentPipe("input"))?;
     let output = child.stdout.take().ok_or(Error::AgentPipe("output"))?;
     let stderr = Arc::new(Mutex::new(VecDeque::new()));
@@ -79,6 +99,9 @@ pub(crate) fn spawn(
         output,
         process: AgentProcess {
             child: Arc::new(Mutex::new(child)),
+            reaped: Arc::new(AtomicBool::new(false)),
+            #[cfg(unix)]
+            group,
             stderr,
         },
     })
@@ -93,9 +116,25 @@ impl AgentProcess {
     pub(crate) fn wait(&self) -> std::io::Result<ExitStatus> {
         loop {
             if let Some(status) = self.lock().try_wait()? {
+                self.reaped.store(true, Ordering::SeqCst);
                 return Ok(status);
             }
             thread::sleep(POLL);
+        }
+    }
+
+    /// Whether the agent has exited, reaping it if it has. Unix only: the
+    /// group probes below are the only caller.
+    #[cfg(unix)]
+    fn gone(&self) -> bool {
+        match self.lock().try_wait() {
+            Ok(Some(_)) => {
+                self.reaped.store(true, Ordering::SeqCst);
+                true
+            }
+            Ok(None) => false,
+            // A child this handle can no longer wait for has already gone.
+            Err(_) => true,
         }
     }
 
@@ -113,20 +152,25 @@ impl AgentProcess {
     /// after a grace period. The agent exiting is not enough: a tool it
     /// started may ignore the request, so the wait lasts until the whole
     /// group is gone.
+    ///
+    /// The group id was captured at spawn, so it is the agent's group however
+    /// long ago the agent exited; a group that has been reaped and whose pid
+    /// was recycled into another group leader makes the old group gone, which
+    /// `test_kill_process_group` sees. Cleanup therefore works after the
+    /// agent has exited on its own — a tool the agent started may outlive it
+    /// — while a recycled pid can never be signalled: the probes answer for
+    /// the group the agent owned, never for the recycled pid's.
     pub(crate) fn stop(&self) {
         #[cfg(unix)]
         {
             use rustix::process::{Signal, kill_process_group, test_kill_process_group};
-            let id = self.lock().id();
-            let group = i32::try_from(id)
-                .ok()
-                .and_then(rustix::process::Pid::from_raw);
+            let group = self.group;
             if let Some(group) = group {
                 let _ = kill_process_group(group, Signal::TERM);
             }
             let deadline = std::time::Instant::now() + GRACE;
             while std::time::Instant::now() < deadline {
-                let agent_gone = matches!(self.lock().try_wait(), Ok(Some(_)) | Err(_));
+                let agent_gone = self.gone();
                 let group_gone = group.is_none_or(|group| test_kill_process_group(group).is_err());
                 if agent_gone && group_gone {
                     return;
@@ -140,6 +184,7 @@ impl AgentProcess {
         let mut child = self.lock();
         let _ = child.kill();
         let _ = child.wait();
+        self.reaped.store(true, Ordering::SeqCst);
     }
 }
 

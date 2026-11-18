@@ -3,7 +3,7 @@
 use acp::v1 as wire;
 use serde_json::Value;
 
-use super::{MAX_MODELS, model_id};
+use super::model_id;
 use crate::harness::out;
 
 type Models = Vec<(String, String, bool)>;
@@ -128,7 +128,7 @@ impl State {
                                     .map_or_else(|| id.clone(), str::to_owned);
                                 Some((id, name, model.get("reasoning") == Some(&Value::Bool(true))))
                             })
-                            .take(MAX_MODELS)
+                            .take(out::MAX_MODELS)
                             .collect(),
                     );
                 }
