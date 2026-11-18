@@ -84,6 +84,24 @@ fn a_scroll_toward_the_end_is_judged_where_it_left_the_list() {
 }
 
 #[test]
+fn a_reversal_that_stops_short_keeps_the_pending_away() {
+    let up = ScrollDelta::Pixels(gpui::point(px(0.), px(120.)));
+    let down = ScrollDelta::Pixels(gpui::point(px(0.), px(-40.)));
+    let away = Scroll::Nothing.after(up, 300., None);
+    assert_eq!(away, Scroll::Away);
+    assert_eq!(
+        away.after(down, 200., Some(away)),
+        Scroll::Away,
+        "the layout still judges the up-scroll"
+    );
+    assert_eq!(
+        Scroll::Nothing.after(down, 200., Some(Scroll::Nothing)),
+        Scroll::Nothing,
+        "a scroll that stopped short waits on nothing"
+    );
+}
+
+#[test]
 fn a_scroll_toward_the_end_follows_though_output_landed_before_the_layout() {
     let mut glide = glide();
     glide.following.set(false);

@@ -77,6 +77,18 @@ impl Scroll {
             (true, false) => Self::Nothing,
         })
     }
+
+    /// What this state becomes after a wheel or trackpad scroll of `delta`,
+    /// `left` pixels above the end as it left the list, `before` being what
+    /// waited as the list reported this scroll, if it did: a scroll that asks
+    /// for no judgment leaves a scroll the layout has still to judge in place,
+    /// as the list's report says only that one happened.
+    fn after(self, delta: ScrollDelta, left: f32, before: Option<Self>) -> Self {
+        match Self::of(delta, left) {
+            Some(Self::Nothing) | None => before.unwrap_or(self),
+            Some(scroll) => scroll,
+        }
+    }
 }
 
 /// Whether the list's top moved to another row, or to or from a row's start.
@@ -93,6 +105,10 @@ pub(crate) struct Glide {
     /// the user's scrolling decides following: the list moving its own top,
     /// as it does when the end comes up short, must not stop it.
     scrolled: Rc<Cell<Scroll>>,
+    /// What waited as the list reported the wheel it is taking, if it did: the
+    /// report says only that a scroll happened, not which way, so the wheel
+    /// that caused it reads this and judges in its place.
+    before: Rc<Cell<Option<Scroll>>>,
     last_step: Option<Instant>,
     /// The spring's speed, in pixels a second.
     speed: f32,
@@ -111,15 +127,21 @@ impl Glide {
     /// Follows `list`'s end, watching it for the user's scrolling.
     pub(crate) fn new(list: &ListState) -> Self {
         let scrolled = Rc::new(Cell::new(Scroll::Nothing));
+        let before = Rc::new(Cell::new(None));
         list.set_scroll_handler({
             let scrolled = scrolled.clone();
+            let before = before.clone();
             // Which way it went is the view's to say: the list reports the
             // scroll without its delta, after clamping it.
-            move |_, _, _| scrolled.set(Scroll::Away)
+            move |_, _, _| {
+                before.set(Some(scrolled.get()));
+                scrolled.set(Scroll::Away);
+            }
         });
         Self {
             following: Rc::new(Cell::new(true)),
             scrolled,
+            before,
             last_step: None,
             speed: 0.,
             away: Rc::default(),
@@ -151,14 +173,15 @@ impl Glide {
     /// A wheel or trackpad scroll of `delta`, after `list` took it: one
     /// toward the end follows again if it reached the end there, though a
     /// chunk landing before the next layout leaves the list above it, and
-    /// one that stopped short of the end leaves following as it was. One
-    /// away from the end is the layout's to judge, as a reply redrawn since
-    /// then has no height until it is laid out, which would make the place
-    /// look like the end.
+    /// one that stopped short of the end leaves following as it was, keeping
+    /// a scroll the layout has still to judge, so a reversal before that
+    /// layout cannot undo it. One away from the end is the layout's to
+    /// judge, as a reply redrawn since then has no height until it is laid
+    /// out, which would make the place look like the end.
     pub(crate) fn wheel_scrolled(&self, list: &ListState, delta: ScrollDelta) {
-        if let Some(scroll) = Scroll::of(delta, behind(list)) {
-            self.scrolled.set(scroll);
-        }
+        let before = self.before.take();
+        self.scrolled
+            .set(self.scrolled.get().after(delta, behind(list), before));
     }
 
     /// Whether the user left the list, or is leaving it, above its end.
