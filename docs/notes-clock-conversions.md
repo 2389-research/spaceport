@@ -2,7 +2,8 @@
 
 Worktree: `/Users/clint/code/spaceport/.worktrees/clock-conversions`
 Base: `c2b368721` (merge of #109 on main)
-Commits: ten small ones, `325083164..9270e256e`, none pushed.
+Commits: small, one per site plus the notes, all on top of `c2b368721`; none
+pushed and none staged.
 Files changed outside `crates/sheprd-client`: `crates/sheprd-core-client/src/start.rs`
 (the shared wait), `crates/sheprd-gpui/src/{menu/devices/setup.rs, processes.rs,
 control/client/local/processes.rs, core_terminals/observation.rs, notice.rs,
@@ -258,7 +259,7 @@ cargo fmt --all -- --check                             clean
 bash scripts/check-file-size.sh                        all files within 1000 lines
 python3 scripts/check-sorted.py                        all keep-sorted regions sorted
 python3 scripts/release/check-commit-messages.py range origin/main..HEAD
-                                                       ok, 10 commits
+                                                       ok, every commit subject
 git diff --check                                       clean
 ```
 
