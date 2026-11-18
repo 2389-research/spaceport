@@ -189,8 +189,7 @@ impl SheprdWindow {
                 // An offline or folded host has no rows to carry the mark.
                 let text = muted_word(
                     Some(text.clone()),
-                    crate::notification_mutes::Mutes::any(cx)
-                        .is_some_and(|mutes| mutes.host(&endpoint.id)),
+                    mutes.is_some_and(|mutes| mutes.host(&endpoint.id)),
                 )
                 .unwrap_or(text);
                 let box_id = endpoint_id.clone();
