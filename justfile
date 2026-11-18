@@ -275,3 +275,37 @@ release-check:
     actionlint .github/workflows/*.yml
     zizmor .github/
     git diff --check
+
+# The gpui bin's unit/integration tests, filtered: the common focused loop.
+# Repetitions for flake-hunting: just test-gpui endpoint:: 10
+test-gpui filter="package = spaceport" repetitions="1":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bin="$(cargo test --locked -p sheprd-gpui --bin spaceport --no-run 2>/dev/null | grep -m1 -oE '/[^ ]*deps/spaceport-[0-9a-f]+' || true)"
+    if [ -z "$bin" ]; then echo "no test binary; build failed" >&2; exit 1; fi
+    for i in $(seq 1 {{repetitions}}); do
+        if [ {{repetitions}} -gt 1 ]; then echo "--- run $i/{{repetitions}} ---"; fi
+        "$bin" --quiet {{filter}}
+    done
+
+# The small-crate suites workers touch most, in one command.
+test-protocol:
+    cargo test --locked -p sheprd-protocol -p sheprd-chat-protocol -p sheprd-client -p sheprd-core-client -p sheprd-control-protocol
+
+# The release-scripts suite the way CI runs it (cwd matters: repo root).
+test-release-scripts:
+    PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/release/tests
+
+# The specification package's own checks (cwd matters: docs/spaceport).
+check-spec-tools:
+    cd docs/spaceport && python3 tools/test_spec.py && python3 tools/spec.py check --skip-schema
+
+# The deterministic endpoint lifecycle loop, loaded: flake-hunting harness.
+stress-gpui filter="endpoint::" repetitions="10" cores="10":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    sysproc="$(sysctl -n hw.ncpu 2>/dev/null || nproc)"
+    cores="{{cores}}"; [ "$cores" -le "$sysproc" ] || cores="$sysproc"
+    for i in $(seq "$cores"); do yes > /dev/null & done
+    trap 'kill %1 2>/dev/null; wait 2>/dev/null' EXIT
+    {{just_executable()}} test-gpui "{{filter}}" {{repetitions}}
