@@ -2,6 +2,8 @@
 //! and the worker that plays what it asks for.
 //!
 //! Policy and playback adapted from Herdr; see SOUND-NOTICE.md.
+// Tests start real processes; production code builds them with `new_command`.
+#![cfg_attr(test, allow(clippy::disallowed_methods))]
 
 mod config;
 mod error;

@@ -35,8 +35,8 @@ fn live(status: AgentStatus) -> LiveState {
     snapshot.agents[0].agent_status = status;
     snapshot.focused_tab_id = Some("tab".into());
     snapshot.focused_workspace_id = Some("workspace".into());
+    // A committed snapshot is a connected endpoint.
     let mut live = LiveState::default();
-    live.status = ConnectionStatus::Connected;
     live.apply(ClientEvent::Snapshot(Arc::new(snapshot)));
     live
 }
