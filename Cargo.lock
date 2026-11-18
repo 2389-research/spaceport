@@ -6481,8 +6481,10 @@ dependencies = [
  "sheprd-core-client",
  "sheprd-diagnostics",
  "sheprd-i18n",
+ "sheprd-osc52",
  "sheprd-remote",
  "sheprd-usage",
+ "sheprd-words",
  "skrifa 0.49.0",
  "socket2",
  "sparkle-updater",
@@ -6535,6 +6537,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "sheprd-osc52"
+version = "0.1.0"
+
+[[package]]
 name = "sheprd-protocol"
 version = "0.1.0"
 dependencies = [
@@ -6576,6 +6582,13 @@ dependencies = [
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
  "uuid",
+]
+
+[[package]]
+name = "sheprd-words"
+version = "0.1.0"
+dependencies = [
+ "unicode-segmentation",
 ]
 
 [[package]]

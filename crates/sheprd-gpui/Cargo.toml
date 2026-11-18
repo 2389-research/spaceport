@@ -34,8 +34,10 @@ sheprd-control-protocol.workspace = true
 sheprd-core-client.workspace    = true
 sheprd-diagnostics.workspace    = true
 sheprd-i18n.workspace           = true
+sheprd-osc52.workspace          = true
 sheprd-remote.workspace         = true
 sheprd-usage.workspace          = true
+sheprd-words.workspace          = true
 image                          = { features = ["bmp", "tiff"], workspace = true }
 keepawake.workspace            = true
 mermaid-rs-renderer.workspace  = true

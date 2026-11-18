@@ -1,0 +1,10 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "sheprd-osc52"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true

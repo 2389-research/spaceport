@@ -11,12 +11,12 @@
 
 /// The largest decoded write this client will put on the pasteboard, matching
 /// the bound applied to clipboard *reads*.
-pub(crate) const MAX_TEXT_BYTES: usize = 2 * 1024 * 1024;
+pub const MAX_TEXT_BYTES: usize = 2 * 1024 * 1024;
 
 /// How many decoded writes may wait for the UI thread. Every write replaces
 /// the whole clipboard, so only the tail can still matter; the bound keeps a
 /// spamming pane from growing the mailbox.
-pub(crate) const MAX_PENDING: usize = 8;
+pub const MAX_PENDING: usize = 8;
 
 /// Decodes one `ServerMessage::Clipboard` payload.
 ///
@@ -24,7 +24,7 @@ pub(crate) const MAX_PENDING: usize = 8;
 /// and either alphabet is accepted, but any other character, data after
 /// padding, a non-canonical tail, invalid UTF-8, or a decoded payload past
 /// [`MAX_TEXT_BYTES`] is rejected.
-pub(crate) fn decode(data: &str) -> Option<String> {
+pub fn decode(data: &str) -> Option<String> {
     let bytes = decode_base64(data)?;
     if bytes.len() > MAX_TEXT_BYTES {
         return None;
@@ -80,43 +80,4 @@ fn decode_base64(data: &str) -> Option<Vec<u8>> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn decodes_padded_unpadded_and_multibyte_payloads() {
-        assert_eq!(decode("dGVzdA==").as_deref(), Some("test"));
-        assert_eq!(decode("dGVzdA").as_deref(), Some("test"));
-        assert_eq!(decode("aGVsbG8gd29ybGQ=").as_deref(), Some("hello world"));
-        assert_eq!(decode("5Lmf5LiN").as_deref(), Some("\u{4e5f}\u{4e0d}"));
-        // An empty payload is a deliberate clipboard clear, not an error.
-        assert_eq!(decode("").as_deref(), Some(""));
-    }
-
-    #[test]
-    fn rejects_malformed_and_noncanonical_payloads() {
-        for data in [
-            "dGVzdA=",   // wrong padding for the symbol count
-            "dGVzdA===", // more padding than a quantum allows
-            "dGVzd!",    // outside the alphabet
-            "dGVzdA==x", // data after padding
-            "=",         // no symbols at all
-            "A",         // a lone symbol carries no byte
-            "AB",        // a two-symbol quantum with non-zero trailing bits
-        ] {
-            assert_eq!(decode(data), None, "{data}");
-        }
-    }
-
-    #[test]
-    fn rejects_non_utf8_and_oversized_payloads() {
-        // 0xff is a byte, not valid UTF-8 text.
-        assert_eq!(decode("/w=="), None);
-        // Four symbols carry three bytes, so this is the largest payload that
-        // still fits the limit; one more quantum spills past it.
-        let allowed = "AAAA".repeat(MAX_TEXT_BYTES / 3);
-        assert!(decode(&allowed).is_some());
-        let too_long = format!("{allowed}AAAA");
-        assert_eq!(decode(&too_long), None);
-    }
-}
+mod tests;

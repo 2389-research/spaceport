@@ -21,7 +21,6 @@ use crate::{
     fonts::StyledFont,
     input::ViewInputHandler,
     text_editing::{Editing, Newlines, normalize},
-    words,
 };
 
 mod handler;
@@ -490,8 +489,8 @@ impl MultilineInput {
         match event.click_count {
             0 | 1 => self.edit.select_to(offset, event.modifiers.shift),
             2 => {
-                let start = words::previous_start(&self.edit.text, offset);
-                let end = words::next_end(&self.edit.text, offset);
+                let start = sheprd_words::previous_start(&self.edit.text, offset);
+                let end = sheprd_words::next_end(&self.edit.text, offset);
                 self.edit.anchor = start;
                 self.edit.cursor = end;
             }
