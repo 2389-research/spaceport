@@ -263,6 +263,16 @@ what was deferred to CI.
   and `just lint-windows` are available for local investigation when needed.
 - Documentation-only changes need command/path/link review and `git diff --check`; do not claim a code test run that did not happen.
 - Add deterministic tests for invariants: ordering, cancellation, fragmentation, revision fencing, error paths, geometry, and cleanup. Prefer explicit coordination and bounded waits over timing guesses.
+- Never wait on the wall clock in a test. Mock the clock and complete on a
+  signal instead: a blocking join on a worker thread, a channel receive, or an
+  executor the test advances is explicit coordination, not timing.
+- Reject sleeps and deadline polling loops, and count-bounded yield spins, which
+  are the same flake in a costume. A socket read/write timeout that only bounds
+  a failing run is acceptable, and a retry or activation timestamp an assertion
+  compares as a domain value is not a wait.
+- In production prefer monotonic time (`Instant`, `motion::now()`) over the wall
+  clock, as the motion rule above already requires; justify any `SystemTime` use
+  by an actual user-facing need, such as a displayed timestamp.
 - Test pure session/CLI/geometry logic without a socket or window where possible. Exercise public behavior with mock peers and headless GPUI tests where integration matters.
 - Keep test bodies out of production files, which only declare `#[cfg(test)] mod tests;`.
   Put tests for a new feature in a new topic file under the module's `tests/` directory
