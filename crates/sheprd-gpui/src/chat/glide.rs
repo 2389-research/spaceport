@@ -155,6 +155,9 @@ impl Glide {
     pub(crate) fn reset(&mut self, list: &ListState) {
         self.following.set(true);
         self.scrolled.set(Scroll::Nothing);
+        // The wheel that stashed a scroll to judge never got this layout, so
+        // nothing stands for the next wheel to read.
+        self.before.set(None);
         self.last_step = None;
         self.speed = 0.;
         list.scroll_to(ListOffset {

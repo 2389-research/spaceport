@@ -146,6 +146,19 @@ fn the_list_moving_its_own_top_keeps_following() {
 }
 
 #[test]
+fn resetting_following_leaves_no_scroll_for_the_next_wheel_to_read() {
+    let list = ListState::new(0, gpui::ListAlignment::Top, px(0.));
+    let mut glide = Glide::new(&list);
+    // A wheel the list reported, whose layout never came.
+    glide.scrolled.set(Scroll::Away);
+    glide.before.set(Some(Scroll::ToEnd));
+    glide.reset(&list);
+    assert_eq!(glide.scrolled.get(), Scroll::Nothing);
+    assert_eq!(glide.before.get(), None, "nothing waited on that layout");
+    assert!(glide.following.get());
+}
+
+#[test]
 fn at_the_end_nothing_moves() {
     let mut glide = glide();
     assert_eq!(glide.step(100., 100., 600., Instant::now()), None);
