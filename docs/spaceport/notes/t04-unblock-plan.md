@@ -120,10 +120,17 @@ slice.
 1. **Owner decision on the link contract** (options below). Nothing in stages 2–4
    is safe to write before it, because the decision fixes what the retained-link
    tests must assert.
-2. **The link slice** (next section). One crate pair, no wire or runtime change.
+2. **The link slice** (next section), with the two dead remnants removed in the
+   same change: `crates/sheprd-gpui/src/browser/code/tests.rs`, which no
+   `mod code;` declares, and the `azure-devops.svg` icon
+   (`crates/sheprd-gpui/src/icons.rs:234`). One crate pair, no wire or runtime
+   change. Under A it also calls the read-only route from `window/links.rs` and
+   keeps the wrapped-link tests.
 3. **Acceptance legs.** A30's negative plugin-activation check plus retained
-   wrapped-URL/file/chat interaction, then A28, A29, A33 and A34 runs; the native
-   legs need macOS, Windows and Linux, and A34 needs its own evidence list first.
+   wrapped-URL/file/chat interaction — under B including the two right-edge
+   cases pinned in `crates/sheprd-gpui/src/terminal/links/tests/wrapped.rs` —
+   then A28, A29, A33 and A34 runs; the native legs need macOS, Windows and
+   Linux, and A34 needs its own evidence list first.
 4. **Register update.** T04 status, G-LINK status and any new decision ID. D71 is
    the working precedent for narrowing a gap's scope by decision rather than by
    editing prose; today D71 explicitly leaves G-LINK "unchanged".
@@ -163,18 +170,25 @@ check-i18n`, and the new Python guard.
 **A — Wait for a read-only link route from the runtime.** The gap's own wording:
 a bounded, typed link target and span for an exact terminal identity, revision
 and viewport cell, with stale and no-link results and no handler execution, from
-Herdr 1 and later Core. That is a runtime change outside this repository. Cost:
-T04 and T10 stay blocked, the release build keeps the last plugin-executable
-path, and only stage 0 is mergeable meanwhile.
+Herdr 1 and later Core. That is a runtime change outside this repository. It is
+not only a runtime change: the cut above must also ask that route for the cell
+under the press and open the typed target it returns, keeping the wrapped-link
+cases in `crates/sheprd-gpui/src/terminal/links/tests/wrapped.rs`, so A adds a
+client slice as well as waiting on the runtime. Cost: T04 and T10 stay blocked,
+the release build keeps the last plugin-executable path, and only stage 0 is
+mergeable meanwhile.
 
 **B — Remove activation and accept single-row links (explicit scope change).**
-What a user loses: a plain-text web address that soft-wraps onto the next row
-stops being clickable, because the only reader of that URL is the activation
-reply. What stays: OSC 8 hyperlinks, wrapped ones included, still open once on
-one click; single-row plain addresses, files with their disk check, `mailto:`,
-the unknown-scheme confirmation, and rich-chat links are untouched. B also needs
-one sub-choice: keep `pane.link.resolve` (the hover underline would then show a
-span a click cannot open) or remove both routes and keep
+What a user loses: a plain-text web address that soft-wraps onto the next row,
+a web address that fills its row, and a single-row address that ends exactly at
+the right edge stop being clickable, because the only reader of those URLs is
+the activation reply (`crates/sheprd-gpui/src/terminal/links.rs:368` leaves a
+run that may continue off screen or onto the next row unread). What stays: OSC 8
+hyperlinks, wrapped ones included, still open once on one click; single-row
+plain addresses that end before the right edge, files with their disk check,
+`mailto:`, the unknown-scheme confirmation, and rich-chat links are untouched.
+B also needs one sub-choice: keep `pane.link.resolve` (the hover underline would
+still show a span a click cannot open) or remove both routes and keep
 `terminal/links.rs`'s row-local detector alone. This needs a new decision ID —
 D71 kept G-LINK in scope — and it restates A33 to record the narrower retained
 behaviour instead of claiming full retention.
