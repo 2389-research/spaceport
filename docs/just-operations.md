@@ -20,6 +20,7 @@ recipe rather than a note.
 | `just check-sorted` | `keep-sorted` marker regions |
 | `just check-i18n` | Fluent catalog: messages valid and used |
 | `just check-spec` | the `docs/spaceport` package's validator + tool tests |
+| `just check-just-operations` | every recipe is documented in this guide (self-enforcing) |
 | `just check-artwork` | generated icon sources match their inputs |
 | `just check-commits` | conventional-commit subjects over `origin/main..HEAD` |
 | `just ci` | all of the static checks, lint, and tests — the pre-push gate |
@@ -43,12 +44,14 @@ recipe rather than a note.
 | `just test-gui binary` | real native window tests; needs an active desktop |
 | `just test-sidebar` / `just test-sidebar-routing` | native font/routing suites |
 | `just test-perf budget` | release-mode performance budget |
+| `just stress-linux iterations cpus filter` | the Linux stress loop for endpoint tests (CI-adjacent; see the recipe) |
 
 ## Building and running
 
 | Recipe | What it does |
 | --- | --- |
-| `just run *args` | launch the bundle (macOS reads identity/privacy from it); non-macOS runs cargo |
+| `just run args` | launch the bundle (macOS reads identity/privacy from it); non-macOS runs cargo |
+| `just default` | list every recipe (what bare `just` prints) |
 | `just run-debug *args` | debug-profile equivalent |
 | `just build-release` / `just test-build` | release build, then smoke the built CLI |
 | `just bundle profile features` | produce the app bundle |

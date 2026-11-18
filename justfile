@@ -204,7 +204,13 @@ sort:
 check-spec:
     scripts/check-spec.sh
 
-ci: format-check check-file-size check-sorted check-i18n check-spec check-artwork lint test
+ci: format-check check-file-size check-sorted check-just-operations check-i18n check-spec check-artwork lint test
+
+# Fail when a justfile recipe is missing from docs/just-operations.md, or the
+# guide names a recipe the justfile does not define.
+check-just-operations:
+    python3 scripts/test_check_just_operations.py
+    python3 scripts/check-just-operations.py
 
 # Tools are listed in scripts/setup-ci.sh; Docker for lint-linux is only checked.
 # Install the tools local CI-equivalent runs need, on macOS or Ubuntu.
