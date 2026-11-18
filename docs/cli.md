@@ -84,7 +84,7 @@ Changing this preference never stops Core or its terminals.
 | `window detach\|reconnect` | Detach from, or reconnect to, the selected host |
 | `ui sidebar\|statusbar [on\|off\|toggle]` | For this window and session |
 | `ui font-size +\|-\|reset\|POINTS` | The terminal font size for this session |
-| `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage |
+| `ui panel workspaces\|overview\|automations\|usage` | Show an activity bar section: Workspaces with the sidebar expanded, Overview of what needs you on every host, an unavailable job and run feed, or every host's plan usage. Exits 8 when the activity bar is off (`[sidebar] activity_bar = false`), when that section is turned off in settings, or for `automations` while Core is off |
 | `run check-for-updates` | Open Sparkle’s native update check in an installed macOS preview; unsupported builds refuse it |
 | `run COMMAND` | Any app command by its `[keybindings]` name, as the palette runs it |
 | `commands` | The names `run` accepts (no app needed) |
@@ -147,10 +147,10 @@ not take it either.
 | --- | --- |
 | `config [path]` | The Spaceport settings files, including the private `view.toml` path (no app needed) |
 | `config get\|set\|unset KEY [VALUE]` | Read or change `spaceport/config.local.toml`, keeping its comments. A value that would not load, or an unknown key, is refused and nothing is written; most changes apply at once; `herdr_core_enabled` requires restart (no app needed) |
-| `config check` | Report invalid settings, exit 1 if any |
+| `config check` | Report settings that do not load and unknown keys, and, when the app runs, configured fonts that are not installed; exits 1 if there are any. Without a running app it says the fonts were not checked |
 | `config reload` | Reread Spaceport's settings files |
-| `theme [list]`, `theme set NAME` | The app theme. A device's terminal theme is `config set devices.ID.theme NAME`, with the ID from `host list` minus its `ssh:` prefix |
-| `font [list]`, `font set NAME`, `font reset` | |
+| `theme [list]`, `theme set NAME` | The app theme, or `light:NAME,dark:NAME` to follow the system appearance. A device's terminal theme is `config set devices.ID.theme NAME`, with the ID from `host list` minus its `ssh:` prefix. `list` needs no app; `set` saves the setting whether or not the app runs |
+| `font [list]`, `font set NAME`, `font reset` | The terminal font of every face, or back to the default. Needs the running app, which knows the installed fonts |
 | `language [status]`, `language list`, `language set system\|TAG` | The language set and the locale Spaceport shows, the languages there are, each with its name in itself as Settings > General lists it, or save the `language` setting (a BCP 47 tag; `en-XA` and `en-XB` are pseudo-locales). Only `status` asks the app, and without it reports what it would show |
 | `keybinds [list]`, `keybinds check` | Shortcuts and reachable non-plugin custom Herdr commands |
 | `caffeine [status]`, `caffeine on\|off\|toggle [--for 30m]` | Keep the machine awake |
@@ -158,7 +158,7 @@ not take it either.
 | `integrations [list]` | What Herdr offers the selected host |
 | `integrations install-skill` | Install the agent skill (no app needed) |
 | `skill` | Print the agent skill `integrations install-skill` installs (no app needed) |
-| `logs [--lines N] [--path]` | The app's log (no app needed) |
+| `logs [--lines N] [--path]` | The app's log, or the path of its file: 100 records by default, at most 5000. Exits 4 when there is no log yet (no app needed) |
 | `diagnostics bundle PATH` | A redacted report for a bug, with the newest crash reports (no app needed) |
 
 
