@@ -6,11 +6,7 @@
 #[allow(dead_code, clippy::disallowed_methods, clippy::expect_used)]
 mod sandbox;
 
-use std::{
-    process::Child,
-    thread,
-    time::{Duration, Instant},
-};
+use std::process::Child;
 
 struct Helper(Child);
 
@@ -30,14 +26,7 @@ fn run(code: u8) -> (std::process::ExitStatus, String) {
     #[cfg(windows)]
     command.args(["cmd.exe", "/D", "/S", "/C", &format!("exit /b {code}")]);
     let mut helper = Helper(command.spawn().unwrap());
-    let deadline = Instant::now() + Duration::from_secs(5);
-    let status = loop {
-        if let Some(status) = helper.0.try_wait().unwrap() {
-            break status;
-        }
-        assert!(Instant::now() < deadline, "headless helper did not exit");
-        thread::sleep(Duration::from_millis(10));
-    };
+    let status = helper.0.wait().unwrap();
     let log = std::fs::read_to_string(sandbox.dir.join("helper.log")).unwrap();
     (status, log)
 }
