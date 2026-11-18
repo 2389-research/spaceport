@@ -64,14 +64,14 @@ takes `&mut LiveState`, and `Settings` loads through `crate::config` and
 
 ## Next extractions
 
-Cheap, dependency-free moves first; the bordered ones carry real blockers.
+Cheap, dependency-free moves first; the blocked ones carry real work.
 
 | Module | production / test lines | importers | blockers |
 | --- | --- | --- | --- |
 | `words` | 35 / 41 | 2 | none: `unicode-segmentation` only |
 | `osc52` | 122 / 0 | 2 | none: own base64 decoder, no dependencies |
 | `reorder` | 170 / 0 | 4 | inline tests must move to `tests.rs`; std only |
-| `lenient` | 107 / 0 | 4 | `serde`/`toml` only; five settings files import it |
+| `lenient` | 107 / 0 | 4 | `serde`/`toml` only; four settings files import it |
 | `truncate` | 105 / 86 | 5 | `one_line` calls `notifications::safe_text`, which is `sheprd_client::text::safe_text`, so the crate would depend on `sheprd-client` |
 | `sound` | 848 / 1170 | 16 | the `rodio` win, but `Policy::poll(&mut LiveState)` (4 fields), `config::view_settings_path`, `config::SoundConfig`, `lenient`, and the root `Error::Sound` variant all have to move or invert first |
 
