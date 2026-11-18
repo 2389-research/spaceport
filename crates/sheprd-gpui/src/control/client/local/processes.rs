@@ -17,7 +17,6 @@ use std::{
 /// How long to wait for a listing whose CPU is measured: the third sample
 /// is, well under a second after the first once the CLI has answered.
 const WAIT: Duration = Duration::from_secs(7);
-const POLL: Duration = Duration::from_millis(100);
 
 #[derive(Debug, PartialEq, Serialize)]
 pub(super) struct Process {
@@ -117,16 +116,10 @@ fn sample(watch: &Watch, wait: Duration) -> crate::Result<Listing> {
     let until = Instant::now() + wait;
     let mut latest = None;
     loop {
-        while let Some(update) = watch.try_update()? {
-            if let Update::Listing(listing) = update {
-                let listing = listing?;
-                if measured(&listing) {
-                    return Ok(listing);
-                }
-                latest = Some(listing);
-            }
-        }
-        if Instant::now() >= until {
+        // The worker's answer is the wake: nothing is re-read on a timer, so a
+        // measured sample ends the wait the moment it arrives.
+        let remaining = until.saturating_duration_since(Instant::now());
+        let Some(update) = watch.update(remaining)? else {
             return latest.ok_or_else(|| {
                 crate::control::Error::Rejected {
                     code: ErrorCode::Timeout,
@@ -134,8 +127,14 @@ fn sample(watch: &Watch, wait: Duration) -> crate::Result<Listing> {
                 }
                 .into()
             });
+        };
+        if let Update::Listing(listing) = update {
+            let listing = listing?;
+            if measured(&listing) {
+                return Ok(listing);
+            }
+            latest = Some(listing);
         }
-        std::thread::sleep(POLL);
     }
 }
 
