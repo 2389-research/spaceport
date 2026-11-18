@@ -9,7 +9,7 @@ Source: Herdr 0.9.1, commit
 [`856b64b9bfd41b9d3d82e2375ed5b4bf941fda28`](https://github.com/herdrdev/herdr/commit/856b64b9bfd41b9d3d82e2375ed5b4bf941fda28).
 Sources: `src/protocol/{wire,endpoint}.rs`, `src/input/model.rs`,
 `src/api/schema/common.rs`, `src/config/model.rs`, and
-`tests/fixtures/endpoint-{hello,welcome,snapshot}-v1.json`.
+`tests/fixtures/endpoint-{agent-view,hello,snapshot,welcome}-v1.json`.
 No upstream NOTICE file was present.
 
 Modifications: removed crossterm, ratatui, server/config conversion methods,
