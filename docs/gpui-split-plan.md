@@ -40,6 +40,17 @@ app keeps only the call site:
 It has no messages and no error type of its own: `decode` returns `None` for a
 payload it will not write, and the app logs the drop.
 
+`crates/sheprd-words` depends only on `unicode-segmentation`, and its tests were
+already in `src/words/tests.rs`, so they moved as they were:
+
+| Before | After |
+| --- | --- |
+| `crates/sheprd-gpui/src/words.rs`, 35 lines | `crates/sheprd-words/src/lib.rs`: `previous_start(text, offset)` and `next_end(text, offset)` |
+| `crates/sheprd-gpui/src/words/tests.rs`, 41 lines | `crates/sheprd-words/src/tests.rs` |
+| `src/multiline_input.rs` (double-click selection) and `src/text_editing/keys.rs` (word movement) | both call `sheprd_words::` |
+
+It carries no messages either: the fields that use it own their own text.
+
 `sound` also has no GPUI use, and it is the extraction that would actually drop a
 dependency (`rodio`) from `sheprd-gpui`. It is not a thin slice: `Policy::poll`
 takes `&mut LiveState`, and `Settings` loads through `crate::config` and
@@ -82,7 +93,6 @@ Cheap, dependency-free moves first; the blocked ones carry real work.
 
 | Module | production / test lines | importers | blockers |
 | --- | --- | --- | --- |
-| `words` | 35 / 41 | 2 | none: `unicode-segmentation` only |
 | `reorder` | 170 / 0 | 4 | inline tests must move to `tests.rs`; std only |
 | `lenient` | 107 / 0 | 4 | `serde`/`toml` only; four settings files import it |
 | `truncate` | 105 / 86 | 5 | `one_line` calls `notifications::safe_text`, which is `sheprd_client::text::safe_text`, so the crate would depend on `sheprd-client` |

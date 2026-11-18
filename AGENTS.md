@@ -60,6 +60,7 @@ Closing or detaching the GUI must leave the daemons and their terminals running.
 | `crates/sheprd-ago` | How long ago something happened, in the largest whole unit ("3 min ago", "yesterday") from seconds elapsed; it names the unit and its count and the app writes the words; no GPUI or messages |
 | `crates/sheprd-launcher` | Windows-only windowed launcher that starts `spaceport.exe` without a console window; std plus `MessageBoxW` for start failures |
 | `crates/sheprd-osc52` | The daemon's forwarded OSC 52 clipboard payloads: bounded base64 text decoding, and the mailbox bound; no GPUI |
+| `crates/sheprd-words` | Word boundaries (UAX #29) for the single-line text fields, so Option-Left, Option-Right, Option-Backspace, and Option-Delete move and delete by word; no GPUI or messages |
 | `crates/embed-resource` | No-op stand-in for GPUI's `embed-resource` build dependency, patched in so GPUI embeds no Windows manifest beside `crates/sheprd-gpui/windows.manifest`; not a production crate |
 | `crates/test-support/sandbox.rs` | Shared isolated process setup for opt-in integration tests; not a production crate |
 | `crates/test-support/pe.rs` | Windows executable (PE) reader for tests that check subsystem and resources; not a production crate |

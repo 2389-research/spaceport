@@ -112,7 +112,6 @@ mod updates;
 mod usage;
 mod window;
 mod window_state;
-mod words;
 mod worker_stop;
 mod worktree;
 mod worktree_banner;

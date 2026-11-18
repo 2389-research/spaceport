@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-ago", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-osc52", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-terminal", "crates/sheprd-usage"]
+members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-ago", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-osc52", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-terminal", "crates/sheprd-usage", "crates/sheprd-words"]
 resolver = "2"
 
 [workspace.package]
@@ -80,6 +80,7 @@ sheprd-protocol       = { path = "crates/sheprd-protocol" }
 sheprd-remote         = { default-features = false, path = "crates/sheprd-remote" }
 sheprd-terminal       = { path = "crates/sheprd-terminal" }
 sheprd-usage          = { path = "crates/sheprd-usage" }
+sheprd-words          = { path = "crates/sheprd-words" }
 interprocess         = "2.4.2"
 # Local interface addresses, so Bonjour discovery skips this machine; the
 # version mdns-sd already uses.

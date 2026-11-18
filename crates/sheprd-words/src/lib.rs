@@ -13,7 +13,7 @@ fn is_word(segment: &str) -> bool {
 }
 
 /// The start of the word before byte `offset` of `text`.
-pub(crate) fn previous_start(text: &str, offset: usize) -> usize {
+pub fn previous_start(text: &str, offset: usize) -> usize {
     text[..offset]
         .split_word_bound_indices()
         .rev()
@@ -22,7 +22,7 @@ pub(crate) fn previous_start(text: &str, offset: usize) -> usize {
 }
 
 /// The end of the word after byte `offset` of `text`.
-pub(crate) fn next_end(text: &str, offset: usize) -> usize {
+pub fn next_end(text: &str, offset: usize) -> usize {
     text[offset..]
         .split_word_bound_indices()
         .find(|(_, segment)| is_word(segment))

@@ -9,7 +9,7 @@ use std::ops::Range;
 use gpui::Modifiers;
 
 use super::Editing;
-use crate::{controls::CTRL_SHORTCUTS, words};
+use crate::controls::CTRL_SHORTCUTS;
 
 /// The desktops' modifier conventions.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -259,8 +259,8 @@ fn word_command(key: &str, shift: bool, edit: &Editing, keys: &Keys) -> Option<E
     let word = |from| match (backward, keys.words_hidden) {
         (true, true) => 0,
         (false, true) => edit.text.len(),
-        (true, false) => words::previous_start(&edit.text, from),
-        (false, false) => words::next_end(&edit.text, from),
+        (true, false) => sheprd_words::previous_start(&edit.text, from),
+        (false, false) => sheprd_words::next_end(&edit.text, from),
     };
     match key {
         // With a selection, a plain word arrow starts from its edge.
