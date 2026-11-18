@@ -301,3 +301,19 @@ native window — none of this is a rendering change.
 - `just ci` and the full GPUI suite, as above.
 - Nothing in this batch needs native QA: no rendering, layout, or glyph changes;
   the status-bar change is which instant a comparison uses, not what is drawn.
+
+## CI failure found after the notes: the forward wake's reader exited early
+
+`forward::tests::a_forward_is_alive_only_while_its_master_runs` failed on
+`ubuntu-24.04-arm` ("no event from the forward"). The exit-reader thread's loop
+(`while matches!(read, Ok(n) if n > 0)`) treated any `Err` as EOF, including
+`Interrupted`. On Linux a signal can interrupt the blocking pipe read; the
+reader then sent the single wake while the master still ran, the listening
+loop's first `recv_timeout` consumed it, and the real exit had no reader left:
+the worker sat out the 30 s re-check bound while the test's 10 s `WAIT`
+expired. macOS restarts interrupted pipe reads, so the macOS CI legs passed.
+
+The reader now retries `Interrupted` and breaks only on true EOF or a real
+read error. The 30 s `EXIT_RECHECK` bound stays as the design's guard for an
+exit no pipe close reports (an inherited write end). 12 consecutive local runs
+of the failing test pass.

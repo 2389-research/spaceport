@@ -231,7 +231,18 @@ fn run(
             .name("herdr-forward-exit".into())
             .spawn(move || {
                 let mut scratch = [0; 64];
-                while matches!(output.read(&mut scratch), Ok(read) if read > 0) {}
+                // Reads until true EOF. A signal-interrupted read is retried,
+                // not treated as the end: a wake sent early would be consumed
+                // while the master still runs, and the real exit would then
+                // have no reader left to report it.
+                loop {
+                    match output.read(&mut scratch) {
+                        Ok(0) => break,
+                        Ok(_) => {}
+                        Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
+                        Err(_) => break,
+                    }
+                }
                 let _ = wake.send(());
             })
             .map_err(Error::ForwardSpawn)?;
