@@ -57,18 +57,20 @@ fn malformed_dibs_are_skipped_not_misread() {
 fn a_reader_that_never_returns_times_out_and_blocks_the_next() {
     static BUSY: AtomicBool = AtomicBool::new(false);
     let (release, wait) = channel::<()>();
-    let (done, finished) = channel();
-    let start = Instant::now();
-    let result: Result<()> = bounded(&BUSY, Duration::from_millis(50), move |_| {
-        let _ = wait.recv();
-        let _ = done.send(());
-        Ok(())
+    let (started, running) = channel::<()>();
+    // This caller waits for its reader, so the value it is answered with can
+    // only arrive after the reader cleared the slot: joining it is the
+    // slot-free signal, with no flag to poll.
+    let first = thread::spawn(move || {
+        bounded(&BUSY, Duration::from_secs(5), move |_| {
+            let _ = started.send(());
+            let _ = wait.recv();
+            Ok(())
+        })
     });
-    assert!(matches!(
-        result,
-        Err(crate::Error::Clipboard(Error::Timeout))
-    ));
-    assert!(start.elapsed() < Duration::from_secs(5));
+    // Wait for the reader itself: `bounded` marks the slot busy before it
+    // spawns, so the refusal below is about a reader that is really running.
+    running.recv_timeout(Duration::from_secs(5)).unwrap();
     // The stuck reader still holds its slot: no second thread starts.
     let refused: Result<()> = bounded(&BUSY, Duration::from_secs(5), |_| {
         panic!("a second reader must not start")
@@ -78,16 +80,25 @@ fn a_reader_that_never_returns_times_out_and_blocks_the_next() {
         Err(crate::Error::Clipboard(Error::Timeout))
     ));
     release.send(()).unwrap();
-    finished.recv_timeout(Duration::from_secs(5)).unwrap();
+    first.join().unwrap().unwrap();
     // Once it returns, the slot is free again.
-    for _ in 0..500 {
-        if !BUSY.load(Ordering::Acquire) {
-            break;
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
     let value = bounded(&BUSY, Duration::from_secs(5), |_| Ok(7)).unwrap();
     assert_eq!(value, 7);
+
+    // A reader that never returns times out its caller, which stops waiting
+    // while the reader keeps the slot until it returns.
+    let (stuck, wait) = channel::<()>();
+    let start = Instant::now();
+    let result: Result<()> = bounded(&BUSY, Duration::from_millis(50), move |_| {
+        let _ = wait.recv();
+        Ok(())
+    });
+    assert!(matches!(
+        result,
+        Err(crate::Error::Clipboard(Error::Timeout))
+    ));
+    assert!(start.elapsed() < Duration::from_secs(5));
+    stuck.send(()).unwrap();
 }
 
 #[test]
