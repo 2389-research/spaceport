@@ -151,7 +151,11 @@ fn a_full_command_queue_is_retried_without_a_status_error(cx: &mut gpui::TestApp
             .as_ref()
             .map(|snapshot| snapshot.boot_id.clone())
             .unwrap_or_else(|| panic!("the test window has a snapshot"));
-        while client.handle.set_focus(&boot, true).is_ok() {}
+        let mut backlog = 0;
+        while client.handle.set_focus(&boot, true).is_ok() {
+            backlog += 1;
+        }
+        assert!(backlog > 0, "the fixture must fill the real queue");
         assert!(matches!(
             client.handle.set_focus(&boot, true),
             Err(sheprd_client::Error::Full)
@@ -175,16 +179,23 @@ fn a_full_command_queue_is_retried_without_a_status_error(cx: &mut gpui::TestApp
         );
 
         // The worker connects and drains the backlog (no welcome yet, so it
-        // rejects each command); the next resize then goes out.
+        // rejects each command); the next resize then goes out. Each drained
+        // command is one rejection event, so the queue is empty once the last
+        // one arrives and the retry needs no second look.
         open.send(())
             .unwrap_or_else(|error| panic!("the connector is gone: {error}"));
-        let deadline = Instant::now() + Duration::from_secs(5);
-        while view.last_queued_options != Some(view.options) {
-            assert!(Instant::now() < deadline, "the resize was never retried");
-            while client.events.try_recv().is_ok() {}
-            std::thread::sleep(Duration::from_millis(1));
-            view.resize_at(start + super::lifecycle::RESIZE_SETTLE);
+        for _ in 0..backlog {
+            client
+                .events
+                .recv_timeout(Duration::from_secs(5))
+                .unwrap_or_else(|error| panic!("the backlog was never drained: {error}"));
         }
+        view.resize_at(start + super::lifecycle::RESIZE_SETTLE);
+        assert_eq!(
+            view.last_queued_options,
+            Some(view.options),
+            "the retried resize is queued once the worker has room"
+        );
         assert!(
             view.notices.is_none(),
             "a retried resize leaves no status error: {:?}",

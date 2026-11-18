@@ -126,6 +126,11 @@ impl Release {
                         });
                     self.phase = ReleasePhase::Sent(request);
                 }
+                // A full queue proves neither request entered the ordered queue,
+                // which is transient backpressure rather than a dead transport:
+                // the release keeps its destination fenced and retries next poll,
+                // exactly as an active barrier does.
+                Err(sheprd_client::Error::Full) => {}
                 Err(_) => {
                     handle.disconnect();
                     self.phase = ReleasePhase::Disconnecting;
