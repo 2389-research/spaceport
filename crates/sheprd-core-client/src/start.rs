@@ -2,9 +2,10 @@
 
 use crate::{Error, Result};
 use std::{
-    io::Read,
+    io::{self, Read},
     path::Path,
     process::{Command, Stdio},
+    sync::mpsc,
     time::{Duration, Instant},
 };
 
@@ -50,9 +51,38 @@ pub fn start(binary: &Path, configure: impl FnOnce(&mut Command), timeout: Durat
     if status.success() {
         return Ok(());
     }
-    let mut stderr = String::new();
-    if let Some(pipe) = child.stderr.take() {
-        let _ = pipe.take(MAX_STDERR).read_to_string(&mut stderr);
-    }
+    let stderr = child
+        .stderr
+        .take()
+        .map(|pipe| drain_stderr(pipe, deadline))
+        .unwrap_or_default();
     Err(Error::StartFailed { status, stderr })
+}
+
+/// What a failed start wrote to stderr, read until EOF or `deadline`. A core
+/// the start command started keeps the pipe open after that command exits, so
+/// only the deadline ends the drain.
+fn drain_stderr(pipe: impl Read + Send + 'static, deadline: Instant) -> String {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let mut pipe = pipe.take(MAX_STDERR);
+        let mut buffer = [0; 1024];
+        loop {
+            match pipe.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(read) => {
+                    if tx.send(buffer[..read].to_vec()).is_err() {
+                        break;
+                    }
+                }
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
+                Err(_) => break,
+            }
+        }
+    });
+    let mut kept = Vec::new();
+    while let Ok(chunk) = rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+        kept.extend_from_slice(&chunk);
+    }
+    String::from_utf8_lossy(&kept).into_owned()
 }

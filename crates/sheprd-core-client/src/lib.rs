@@ -18,6 +18,10 @@ pub mod wire;
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests;
 
+#[cfg(all(test, unix))]
+#[path = "../../test-support/executable.rs"]
+mod test_executable;
+
 pub use backend::{CoreBackend, CoreBatch, CoreChanges, CoreTerminal, DocumentInvalidation};
 pub use connection::{Core, MAX_PUT_BYTES};
 pub use endpoint::Endpoint;

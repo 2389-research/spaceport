@@ -18,6 +18,8 @@ mod machine_manage;
 mod observation;
 mod put;
 mod resize;
+#[cfg(unix)]
+mod start;
 
 use crate::frame::{Decoder, Frame, Kind, encode};
 use serde_json::{Value, json};
