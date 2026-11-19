@@ -613,4 +613,10 @@ All four host and Windows GNU lint configurations pass.
 The tiny receipt addition also passes focused host and Windows target lint.
 The existing caught sandbox-unwind probe prints its expected panic under `--nocapture` and passes.
 Logs use `/tmp/spaceport-9s44-copy-pipe-final-{client,lint,static}.log` and `/tmp/spaceport-9s44-output-receipt-{host,windows}-lint.log`.
-Hosted Linux ARM confirmation remains pending.
+Source `363a4480d` passes [the complete CI run](https://github.com/2389-research/spaceport/actions/runs/44478003624).
+All 18 executed jobs pass; one unconfigured target is skipped.
+The separate supply-chain run also passes.
+Linux ARM all-feature CI executes the moved integration target: three cases pass and the parent invokes its private child.
+Both native Windows jobs pass, including all four x64 UIA scenarios without ignored cases.
+Logs use `/tmp/spaceport-9s44-copy-pipe-{linux-arm-all,native-x64}.log`.
+Mac foreground checks, speech, and the release working-session profile remain pending.
