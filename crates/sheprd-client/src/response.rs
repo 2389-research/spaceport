@@ -47,8 +47,6 @@ macro_rules! endpoint_error_codes {
 endpoint_error_codes! {
     // keep-sorted start
     PaneNotFound => "pane_not_found",
-    /// A plugin's link handler claimed a click and then failed.
-    PluginLinkFailed => "plugin_link_failed",
     QueryTooLarge => "query_too_large",
     /// The pane's content changed after the request's revision was read.
     StaleContent => "stale_content",

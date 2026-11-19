@@ -93,7 +93,6 @@ impl SheprdWindow {
         modifiers.shift
             || (crate::keymap::secondary(&modifiers)
                 && (self.terminal_link_at(position).is_some()
-                    || self.daemon_link_at(position).is_some()
                     || self
                         .terminal_link_press(position, modifiers)
                         .is_some_and(|press| self.verified_press(&press))))
@@ -110,7 +109,6 @@ impl SheprdWindow {
     ) -> bool {
         crate::keymap::secondary(&modifiers)
             && (self.terminal_link_at(position).is_some()
-                || self.daemon_link_at(position).is_some()
                 || self.terminal_hyperlink_at(position)
                 || (self.hovered_local_link().is_some() && self.local_link_at(position).is_some()))
     }

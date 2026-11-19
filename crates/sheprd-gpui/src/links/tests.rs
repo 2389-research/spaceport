@@ -114,6 +114,7 @@ fn a_cell_goes_stale_when_its_pane_changes_scrolls_or_is_covered() {
     assert!(!target.current(&other_boot));
     assert!(target.same_content(&cell(&surface(4, 3), 9, 6).unwrap()));
     assert!(!target.same_content(&cell(&surface(6, 3), 5, 3).unwrap()));
+    assert!(!target.same_content(&cell(&surface(4, 2), 5, 3).unwrap()));
 }
 
 #[test]
@@ -164,75 +165,10 @@ fn untrusted_resolutions_that_leave_the_pane_or_miss_the_cell_are_no_link() {
 }
 
 #[test]
-fn a_handled_click_opens_nothing_and_a_declined_one_opens_only_web_addresses() {
-    let activated = |result: Value| Ok(json!({"id": "gpui-2", "result": result}));
-    let declined = |response| match Activation::from(response) {
-        Activation::Declined(url) => Some(url.map(String::from)),
-        _ => None,
-    };
-    assert!(matches!(
-        Activation::from(activated(
-            json!({"type": "pane_link_activated", "url": "https://x.example/", "handled": true})
-        )),
-        Activation::Handled
-    ));
-    assert_eq!(
-        declined(activated(
-            json!({"type": "pane_link_activated", "url": "https://wrapped.example/a/b", "handled": false})
-        )),
-        Some(Some("https://wrapped.example/a/b".into()))
-    );
-    // A destination this client must never open leaves the click to the
-    // local reading of the row, which opens nothing without one.
-    for url in [
-        "file:///etc/passwd",
-        "javascript:alert(1)",
-        "x-man-page://ls",
-    ] {
-        assert_eq!(
-            declined(activated(
-                json!({"type": "pane_link_activated", "url": url, "handled": false})
-            )),
-            Some(None),
-            "{url}"
-        );
-    }
-    // A request that never ran a handler is declined too.
-    for failed in [
-        activated(json!({"type": "pane_link_activated", "handled": false})),
-        activated(json!({"type": "something_else"})),
-        Ok(json!({"id": "gpui-2", "error": {"code": "stale_content", "message": "moved"}})),
-        Err(crate::Error::NotConnected),
-    ] {
-        assert_eq!(declined(failed), Some(None));
-    }
-}
-
-/// A plugin handler that claimed the click and failed has spent it: the
-/// daemon's reason is reported, and nothing opens in its place.
-#[test]
-fn a_failed_plugin_handler_spends_the_click() {
-    let failed = Activation::from(Ok(json!({"id": "gpui-2", "error": {
-        "code": "plugin_link_failed", "message": "handler exited with status 1",
-    }})));
-    let Activation::HandlerFailed(error) = failed else {
-        panic!("a failed handler was read as {failed:?}");
-    };
-    assert!(matches!(
-        error,
-        crate::Error::Client(sheprd_client::Error::Endpoint {
-            code: EndpointErrorCode::PluginLinkFailed,
-            ..
-        })
-    ));
-    assert_eq!(error.to_string(), "handler exited with status 1");
-}
-
-#[test]
-fn link_methods_are_advertised_separately() {
+fn link_resolve_is_advertised_on_its_own() {
     let methods = ["pane.link.resolve".to_string()];
-    assert!(LinkRequest::Resolve.advertised_in(&methods));
-    assert!(!LinkRequest::Activate.advertised_in(&methods));
+    assert!(Method::PaneLinkResolve.advertised_in(&methods));
+    assert!(!Method::PaneLinkResolve.advertised_in(&["pane.link.activate".to_string()]));
 }
 
 #[test]
@@ -248,7 +184,7 @@ fn the_mailbox_keeps_its_answers_and_passes_everything_else_on() {
         response: json!({"id": "gpui-9", "error": {"code": "x", "message": "y"}}),
     };
     assert!(inbox.apply(other).is_some());
-    assert!(inbox.take(LinkRequest::Resolve, "gpui-1").is_none());
+    assert!(inbox.take("gpui-1").is_none());
     // A stale-content error is the hover's own business, not the window's.
     let stale = ClientEvent::Response {
         request_id: "gpui-1".into(),
@@ -256,20 +192,18 @@ fn the_mailbox_keeps_its_answers_and_passes_everything_else_on() {
     };
     assert!(inbox.apply(stale).is_none());
     // Another request's id does not claim the answer or free the slot.
-    assert!(inbox.take(LinkRequest::Resolve, "gpui-2").is_none());
-    assert!(inbox.take(LinkRequest::Activate, "gpui-1").is_none());
-    assert!(inbox.take(LinkRequest::Resolve, "gpui-1").unwrap().is_ok());
+    assert!(inbox.take("gpui-2").is_none());
+    assert!(inbox.take("gpui-1").unwrap().is_ok());
     assert!(inbox.resolving.is_none());
 }
 
 #[test]
 fn rejection_and_disconnection_answer_the_pending_request() {
     let mut inbox = LinkInbox {
-        activating: Some(Pending {
+        resolving: Some(Pending {
             id: "gpui-3".into(),
             result: None,
         }),
-        ..Default::default()
     };
     let rejected = ClientEvent::CommandRejected {
         request_id: Some("gpui-3".into()),
@@ -277,7 +211,7 @@ fn rejection_and_disconnection_answer_the_pending_request() {
     };
     assert!(inbox.apply(rejected).is_none());
     assert!(matches!(
-        inbox.take(LinkRequest::Activate, "gpui-3"),
+        inbox.take("gpui-3"),
         Some(Err(crate::Error::Client(
             sheprd_client::Error::UnsupportedMethod
         )))
@@ -292,7 +226,7 @@ fn rejection_and_disconnection_answer_the_pending_request() {
     };
     assert!(inbox.apply(disconnected).is_some());
     assert!(matches!(
-        inbox.take(LinkRequest::Resolve, "gpui-4"),
+        inbox.take("gpui-4"),
         Some(Err(crate::Error::NotConnected))
     ));
 }
@@ -324,51 +258,5 @@ fn link_answers_read_each_response_envelope() {
             ("control", "0"),
             ("long", "0"),
         ],
-    );
-    assert_outcomes(
-        "link activation",
-        outcomes(
-            json!({"type": "pane_link_activated", "handled": true}),
-            |response| match Activation::from(Ok(response.clone())) {
-                Activation::Handled => "handled".into(),
-                Activation::HandlerFailed(error) => format!("failed {error}"),
-                Activation::Declined(_) => "declined".into(),
-            },
-        ),
-        [
-            ("absent", "handled"),
-            ("null", "handled"),
-            ("object", "declined"),
-            ("no_message", "declined"),
-            ("no_code", "declined"),
-            ("string", "declined"),
-            ("no_result", "declined"),
-            ("wrong_type", "declined"),
-            ("control", "declined"),
-            ("long", "declined"),
-        ],
-    );
-    let mut plugin = crate::response_envelope_tests::envelopes(json!({}));
-    for (_, response) in &mut plugin {
-        if response["error"].is_object() && response["error"]["code"].is_string() {
-            response["error"]["code"] = json!("plugin_link_failed");
-        }
-    }
-    let failures: Vec<_> = plugin
-        .into_iter()
-        .filter_map(|(case, response)| match Activation::from(Ok(response)) {
-            Activation::HandlerFailed(error) => Some((case, error.to_string())),
-            _ => None,
-        })
-        .collect();
-    assert_eq!(
-        failures,
-        [
-            ("object", "no".to_owned()),
-            ("no_message", "plugin_link_failed".into()),
-            ("control", "bad[31mnews".into()),
-            ("long", "x".repeat(1024)),
-        ],
-        "failed link handler"
     );
 }

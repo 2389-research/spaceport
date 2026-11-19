@@ -70,6 +70,12 @@ const SOLID_AND_HAND: Look = Look {
     line: Line::Solid,
     hand: true,
 };
+/// A span the daemon resolved: underlined, and no click, because this
+/// client reads no target for it.
+const SOLID: Look = Look {
+    line: Line::Solid,
+    hand: false,
+};
 
 /// What a click with the link modifier held does. Files open in the
 /// system's application, which the test platform records.
@@ -285,30 +291,29 @@ fn in_app(test: impl Fn(&mut gpui::TestAppContext)) {
 }
 
 /// Answers the daemon's next request about the wrapped address: the cells
-/// it covers, or that no handler claimed a click on it.
-fn daemon_answers(peer: &mut MockPeer, view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) {
+/// it covers. A click is never among the requests it can answer.
+fn daemon_resolves(peer: &mut MockPeer, view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) {
     let request = peer.request();
-    let result = match request["method"].as_str() {
-        Some("pane.link.resolve") => {
-            let last = u16::try_from(WRAPPED.len()).unwrap() - 1;
-            let regions = (0..=last / WIDTH)
-                .map(|row| {
-                    let end = if row == last / WIDTH {
-                        last % WIDTH
-                    } else {
-                        WIDTH - 1
-                    };
-                    json!({"row": row, "start_col": 0, "end_col": end})
-                })
-                .collect::<Vec<_>>();
-            json!({"type": "pane_link_resolved", "regions": regions})
-        }
-        Some("pane.link.activate") => {
-            json!({"type": "pane_link_activated", "url": WRAPPED, "handled": false})
-        }
-        method => panic!("unexpected request {method:?}"),
-    };
-    answer(peer, view, cx, &request, result);
+    let method = request["method"].as_str();
+    assert_eq!(method, Some("pane.link.resolve"), "{request}");
+    let last = u16::try_from(WRAPPED.len()).unwrap() - 1;
+    let regions = (0..=last / WIDTH)
+        .map(|row| {
+            let end = if row == last / WIDTH {
+                last % WIDTH
+            } else {
+                WIDTH - 1
+            };
+            json!({"row": row, "start_col": 0, "end_col": end})
+        })
+        .collect::<Vec<_>>();
+    answer(
+        peer,
+        view,
+        cx,
+        &request,
+        json!({"type": "pane_link_resolved", "regions": regions}),
+    );
     cx.run_until_parked();
 }
 
@@ -348,7 +353,7 @@ fn check(
     let sandbox = Sandbox::new();
     let daemon = matches!(text, Text::Wrapped);
     let mut peer = if daemon {
-        MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"])
+        MockPeer::advertising(&["pane.link.resolve"])
     } else {
         MockPeer::new()
     };
@@ -378,7 +383,7 @@ fn check(
     cx.run_until_parked();
     if daemon {
         resolve_after_delay(cx);
-        daemon_answers(&mut peer, &view, cx);
+        daemon_resolves(&mut peer, &view, cx);
         view.read_with(cx, |view, _| {
             let rows = view.hovered_daemon_link().unwrap().frame_rows().count();
             assert_eq!(
@@ -392,9 +397,6 @@ fn check(
 
     cx.simulate_click(link, held);
     cx.run_until_parked();
-    if daemon {
-        daemon_answers(&mut peer, &view, cx);
-    }
     let outcome = view.read_with(cx, |view, _| Outcome {
         opened: None,
         message: view.flash.as_ref().map(|(flash, _)| flash.text.to_string()),
@@ -452,7 +454,7 @@ fn check(
 // Plain text that may be a URL.
 #[cfg_attr(unix, test_case(Text::Plain("https://example.com/something/"), NONE, NONE, SOLID_AND_HAND, Click::Address("https://example.com/something/") ; "https address"))]
 #[cfg_attr(unix, test_case(Text::Plain("http://example.com/something/"), NONE, NONE, SOLID_AND_HAND, Click::Address("http://example.com/something/") ; "http address"))]
-#[cfg_attr(unix, test_case(Text::Wrapped, NONE, NONE, SOLID_AND_HAND, Click::Address(WRAPPED) ; "https address that wraps onto more rows"))]
+#[cfg_attr(unix, test_case(Text::Wrapped, NONE, NONE, SOLID, Click::Nothing ; "https address that wraps onto more rows"))]
 #[cfg_attr(unix, test_case(Text::Plain("mailto:name@example.com"), NONE, NONE, SOLID_AND_HAND, Click::Address("mailto:name@example.com") ; "mailto address"))]
 #[cfg_attr(unix, test_case(Text::Plain("vscode://file{work}/src/sample.rs"), NONE, NONE, NONE, Click::Nothing ; "vscode text stays plain"))]
 #[cfg_attr(unix, test_case(Text::Plain("ssh://example.com"), NONE, NONE, NONE, Click::Nothing ; "another scheme"))]

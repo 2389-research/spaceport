@@ -78,7 +78,7 @@ fn wrapped(content_revision: u64) -> Arc<PaneSurfaceFrame> {
 
 fn window<'a>(
     peer: &MockPeer,
-    supported: bool,
+    resolves: bool,
     cx: &'a mut gpui::TestAppContext,
 ) -> (Entity<SheprdWindow>, &'a mut VisualTestContext) {
     let handle = peer.client.handle.clone();
@@ -87,8 +87,7 @@ fn window<'a>(
         view.live.snapshot = Some(Arc::new(snapshot()));
         view.live.surface = Some(wrapped(2));
         view.live.status = ConnectionStatus::Connected;
-        view.live.supports_link_resolve = supported;
-        view.live.supports_link_activate = supported;
+        view.live.supports_link_resolve = resolves;
         view.endpoints[view.selected_endpoint].connection.handle = Some(handle);
         view
     });
@@ -147,11 +146,14 @@ fn resolve_after_delay(cx: &mut VisualTestContext) {
     cx.run_until_parked();
 }
 
+/// The daemon underlines the rows a wrapped address continues onto, and
+/// nothing more: this client has no reading of the whole address, so the
+/// pointer offers no click there and no request leaves for one.
 #[gpui::test]
-fn a_wrapped_link_is_resolved_underlined_and_activated_by_the_daemon(
+fn a_wrapped_link_is_resolved_and_underlined_without_a_click_leaving(
     cx: &mut gpui::TestAppContext,
 ) {
-    let mut peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
+    let mut peer = MockPeer::advertising(&["pane.link.resolve"]);
     let (view, cx) = window(&peer, true, cx);
     let continuation = at(&view, cx, 2, 1);
     view.read_with(cx, |view, _| {
@@ -188,42 +190,23 @@ fn a_wrapped_link_is_resolved_underlined_and_activated_by_the_daemon(
             link.frame_rows().collect::<Vec<_>>(),
             vec![(0, 0..20), (1, 0..12)]
         );
-        assert!(view.terminal_link_hovered(continuation, crate::keymap::secondary_key()));
-        assert!(view.link_modifier_held(continuation, crate::keymap::secondary_key()));
+        // The whole link is underlined, and a click would open nothing.
+        assert!(!view.terminal_link_hovered(continuation, crate::keymap::secondary_key()));
+        assert!(!view.link_modifier_held(continuation, crate::keymap::secondary_key()));
+        assert!(
+            view.terminal_link_press(continuation, crate::keymap::secondary_key())
+                .is_none()
+        );
     });
 
-    // Moving along the link asks nothing new. A click goes to the daemon;
-    // a plugin handler that claims it leaves nothing to open here.
+    // Moving along the link asks nothing new, and a click sends nothing.
     let first_row = at(&view, cx, 5, 0);
     cx.simulate_mouse_move(first_row, None, crate::keymap::secondary_key());
     resolve_after_delay(cx);
     cx.simulate_click(continuation, crate::keymap::secondary_key());
-    let request = peer.request();
-    assert_eq!(request["method"], "pane.link.activate");
-    assert_eq!(request["params"]["viewport_row"], 1);
-    assert_eq!(request["params"]["col"], 2);
-    answer(
-        &mut peer,
-        &view,
-        cx,
-        &request,
-        json!({"type": "pane_link_activated", "url": URL, "handled": true}),
-    );
+    cx.run_until_parked();
     assert!(cx.opened_url().is_none());
-
-    // When nothing claims it, the whole wrapped address opens here.
-    cx.simulate_click(continuation, crate::keymap::secondary_key());
-    let request = peer.request();
-    assert_eq!(request["method"], "pane.link.activate");
-    assert!(cx.opened_url().is_none());
-    answer(
-        &mut peer,
-        &view,
-        cx,
-        &request,
-        json!({"type": "pane_link_activated", "url": URL, "handled": false}),
-    );
-    assert_eq!(cx.opened_url().as_deref(), Some(URL));
+    view.read_with(cx, |view, _| assert!(view.links.resolving.is_none()));
 
     // New pane content hides the old answer and asks again, for the
     // content now shown.
@@ -281,8 +264,8 @@ fn a_daemon_without_link_methods_keeps_the_local_detector(cx: &mut gpui::TestApp
 }
 
 #[gpui::test]
-fn a_replaced_connection_retires_link_requests_unanswered(cx: &mut gpui::TestAppContext) {
-    let mut peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
+fn a_replaced_connection_retires_a_link_resolve_unanswered(cx: &mut gpui::TestAppContext) {
+    let mut peer = MockPeer::advertising(&["pane.link.resolve"]);
     let (view, cx) = window(&peer, true, cx);
     let continuation = at(&view, cx, 2, 1);
     cx.simulate_mouse_move(continuation, None, crate::keymap::secondary_key());
@@ -291,19 +274,11 @@ fn a_replaced_connection_retires_link_requests_unanswered(cx: &mut gpui::TestApp
     view.update(cx, |view, _| {
         assert!(view.links.resolving.is_some());
         view.endpoints[view.selected_endpoint].connection.links = Arc::default();
-        view.links.activating = Some(InFlight {
-            id: "old".into(),
-            inbox: Arc::default(),
-            context: PendingActivation {
-                fallback: WebUrl::try_from(URL).ok().map(Fallback::Web),
-            },
-        });
     });
     cx.update(|window, cx| view.update(cx, |view, cx| view.poll_links(window, cx)));
     view.read_with(cx, |view, _| {
-        assert!(view.links.activating.is_none());
+        assert!(view.links.resolving.is_none());
         assert!(view.hovered_daemon_link().is_none());
     });
-    // The daemon may have run a handler for the old click, so nothing opens.
     assert!(cx.opened_url().is_none());
 }
