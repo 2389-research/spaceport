@@ -1,4 +1,6 @@
 //! Which cells, and which layer of them, a paint covers.
+//!
+//! gpui-free: a future `sheprd-cells` crate takes this file as it stands.
 
 use super::Highlight;
 use sheprd_client::protocol::FrameData;

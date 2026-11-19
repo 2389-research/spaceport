@@ -1,5 +1,8 @@
 //! Lines a cell draws across its width: the SGR underline and strikethrough,
 //! and the dashed underline that marks an explicit hyperlink at rest.
+//!
+//! gpui-free: a future `sheprd-cells` crate takes this file as it stands.
+
 use crate::terminal::{STRIKETHROUGH, UNDERLINE};
 use sheprd_client::protocol::{CellData, FrameData};
 
