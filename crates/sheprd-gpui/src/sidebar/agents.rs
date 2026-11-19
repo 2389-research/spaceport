@@ -19,7 +19,7 @@ use crate::{
 use gpui::{prelude::*, *};
 use sheprd_client::protocol::{AgentStatus, ClientShellAgent};
 
-#[cfg(all(windows, feature = "integration-test"))]
+#[cfg(any(test, all(windows, feature = "integration-test")))]
 mod native_shapes;
 #[cfg(all(windows, feature = "integration-test"))]
 pub(crate) use native_shapes::verify_status_shapes;

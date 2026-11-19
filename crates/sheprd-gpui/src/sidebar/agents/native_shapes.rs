@@ -58,7 +58,7 @@ pub(crate) fn verify_status_shapes(light: bool, cx: &mut App) -> Result<()> {
                     })
                 },
             )?;
-            let pixels = handle.update(cx, |_, window, cx| {
+            let pixels = AnyWindowHandle::from(handle).update(cx, |_, window, cx| {
                 window.refresh();
                 window.draw(cx).clear(cx);
                 window.render_to_image()
@@ -98,3 +98,6 @@ pub(crate) fn verify_status_shapes(light: bool, cx: &mut App) -> Result<()> {
     eprintln!("STATUS SHAPES native PASS: monochrome default and doubled markers");
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

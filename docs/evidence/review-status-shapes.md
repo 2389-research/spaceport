@@ -35,3 +35,22 @@ Format, file size, sorted regions, operations, localization, and diff checks pas
 Independent review confirms that readback receives only the owned rendered scene, not desktop pixels.
 The parent requires a native completion receipt and already retains the private child's complete log.
 Logs use `/tmp/spaceport-9s44-native-shapes-{lint,static}.log` and the corresponding `final-windows-lint` and `final-static` logs.
+
+## Native fixture redraw correction
+
+Source `fa0cbb74a` fails both Windows native jobs during marker drawing.
+The typed window update holds the marker view borrowed while drawing borrows that view again.
+The native error names `native_shapes::Mark` as already being updated.
+Drawing now uses `AnyWindowHandle`, matching the existing native confirmation fixture.
+The typed handle remains available for owned-window removal before readback errors propagate.
+
+A headless regression invokes the actual qualifier and reproduces the same borrow panic before the fix.
+It then requires the expected unavailable-renderer error and the original open-window count for both backgrounds.
+This checks redraw and cleanup; it supplies no native pixel evidence.
+The red log is `/tmp/spaceport-9s44-native-shapes-borrow-red.log`.
+The corrected agent-marker scope passes nine tests with no failures or ignored tests.
+Both host and Windows GNU lint configurations pass after the correction.
+Format, file size, sorting, operations, localization, and diff checks pass.
+Independent review confirms the borrow correction and owned-window cleanup.
+The final logs use `/tmp/spaceport-9s44-native-shapes-borrow-{green,lint,static}.log`.
+Native status-shape qualification remains pending.
