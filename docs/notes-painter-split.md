@@ -80,6 +80,7 @@ itself out of scope until a non-GPUI consumer appears.
 | `cargo test -p sheprd-gpui --bin spaceport -- find::` | 25 passed, 0 failed |
 | `cargo test -p sheprd-gpui --bin spaceport -- copy_mode::` | 24 passed, 0 failed |
 | `cargo fmt --all -- --check` | passed |
+| `cargo clippy -p sheprd-gpui --all-targets` | passed, no warning from the crate |
 | `just check-file-size` | passed; the largest file in the module is `frame.rs` at 397 lines |
 | `just check-sorted` | passed |
 | `just check-commits` | passed |
@@ -88,8 +89,8 @@ itself out of scope until a non-GPUI consumer appears.
 
 ## Deferred
 
-- Clippy is left to CI's `checks` and `windows` legs: the move adds no code for
-  it to newly reject, and the focused local pass is kept short by repo policy.
+- The `windows` and `checks` CI legs still lint every target and feature; the
+  local clippy pass above is the default-feature set.
 - No native QA: no pixel, layout, or input path changed, so a screenshot would
   show the same window.
 - Extracting `sheprd-cells` itself, which the design rejects until a consumer
