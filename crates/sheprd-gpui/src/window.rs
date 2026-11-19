@@ -35,6 +35,7 @@ mod links;
 mod monitors;
 pub(crate) use links::PressedLink;
 mod mouse;
+mod navigate;
 mod pending_input;
 pub(crate) mod prefix;
 mod reconnecting;

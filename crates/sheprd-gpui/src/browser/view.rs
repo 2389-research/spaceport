@@ -15,9 +15,7 @@ use crate::{i18n::fl, window::Flash};
 use gpui::{prelude::*, *};
 use std::collections::{HashMap, HashSet};
 
-mod agent_tab;
 mod render;
-mod requests;
 
 /// One window's browser state. How each workspace's view is split, and what
 /// each group shows, is the window's own choice, like its focused workspace;
