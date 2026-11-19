@@ -121,7 +121,7 @@ pub(crate) enum PageOpened {
 }
 
 impl Browser {
-    pub(crate) fn browser_key(&self, hosts: &BrowserHosts<'_>) -> Option<(Scope, String)> {
+    pub(super) fn browser_key(&self, hosts: &BrowserHosts<'_>) -> Option<(Scope, String)> {
         if hosts.core_group.is_some() {
             return None;
         }
@@ -131,7 +131,7 @@ impl Browser {
 
     /// The group drawn in this window, which may belong to Core instead of
     /// the legacy endpoint that still supplies the transitional shell.
-    pub(crate) fn layout_key(&self, hosts: &BrowserHosts<'_>) -> Option<(Scope, String)> {
+    pub(super) fn layout_key(&self, hosts: &BrowserHosts<'_>) -> Option<(Scope, String)> {
         hosts
             .core_group
             .map(CoreGroupKey::parts)
@@ -139,7 +139,7 @@ impl Browser {
     }
 
     /// The focused workspace's browser tabs, in the order they opened.
-    pub(crate) fn browser_tab_ids(&self, hosts: &BrowserHosts<'_>) -> Vec<TabId> {
+    pub(super) fn browser_tab_ids(&self, hosts: &BrowserHosts<'_>) -> Vec<TabId> {
         let (Some((scope, workspace)), Some(store)) = (hosts.workspace.as_ref(), hosts.tabs) else {
             return Vec::new();
         };

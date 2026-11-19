@@ -48,7 +48,7 @@ fn stepped<'a>(tabs: &'a [Pick], current: Option<&Pick>, command: Command) -> Op
 
 impl Browser {
     /// The daemon's focused tab, when it belongs to the focused workspace.
-    pub(crate) fn focused_herdr_tab<'a>(&self, hosts: &BrowserHosts<'a>) -> Option<&'a str> {
+    pub(super) fn focused_herdr_tab<'a>(&self, hosts: &BrowserHosts<'a>) -> Option<&'a str> {
         let snapshot = hosts.snapshot?;
         let tab = snapshot.focused_tab_id.as_deref()?;
         snapshot
@@ -85,7 +85,7 @@ impl Browser {
 
     /// The focused workspace's groups, creating its first one. Render calls
     /// this before drawing so every group it draws has an ID.
-    pub(crate) fn ensure_layout<'a>(
+    pub(super) fn ensure_layout<'a>(
         &'a mut self,
         hosts: &BrowserHosts<'_>,
     ) -> Option<&'a mut Layout> {
@@ -95,7 +95,7 @@ impl Browser {
 
     /// The focused workspace's groups, left to right. Without a workspace
     /// the window still draws one group, for the terminal area.
-    pub(crate) fn group_slots(&self, hosts: &BrowserHosts<'_>) -> Vec<Slot> {
+    pub(super) fn group_slots(&self, hosts: &BrowserHosts<'_>) -> Vec<Slot> {
         match self.layout(hosts) {
             Some(layout) => layout.slots().collect(),
             None => vec![Slot {
@@ -105,17 +105,17 @@ impl Browser {
         }
     }
 
-    pub(crate) fn is_split(&self, hosts: &BrowserHosts<'_>) -> bool {
+    pub(super) fn is_split(&self, hosts: &BrowserHosts<'_>) -> bool {
         self.layout(hosts).is_some_and(|layout| layout.len() > 1)
     }
 
-    pub(crate) fn active_group(&self, hosts: &BrowserHosts<'_>) -> Option<GroupId> {
+    pub(super) fn active_group(&self, hosts: &BrowserHosts<'_>) -> Option<GroupId> {
         self.layout(hosts).map(Layout::active)
     }
 
     /// The share of the row `group` takes as drawn now: its settled share,
     /// bent while a group beside it opens or folds.
-    pub(crate) fn group_share(&self, group: GroupId, hosts: &BrowserHosts<'_>) -> f32 {
+    pub(super) fn group_share(&self, group: GroupId, hosts: &BrowserHosts<'_>) -> f32 {
         let Some(layout) = self.layout(hosts) else {
             return 1.;
         };
@@ -128,23 +128,23 @@ impl Browser {
     }
 
     /// How far `group` has opened from its split, or `None` once open.
-    pub(crate) fn group_opened(&self, group: GroupId, hosts: &BrowserHosts<'_>) -> Option<f32> {
+    pub(super) fn group_opened(&self, group: GroupId, hosts: &BrowserHosts<'_>) -> Option<f32> {
         self.group_motion.opened(group, hosts.now)
     }
 
     /// The closed groups still folding away.
-    pub(crate) fn folding_groups(&self, hosts: &BrowserHosts<'_>) -> Vec<super::Fold> {
+    pub(super) fn folding_groups(&self, hosts: &BrowserHosts<'_>) -> Vec<super::Fold> {
         self.group_motion.folding(hosts.now)
     }
 
     /// Whether a group is still opening or folding, so the window draws
     /// another frame.
-    pub(crate) fn groups_moving(&mut self, hosts: &BrowserHosts<'_>) -> bool {
+    pub(super) fn groups_moving(&mut self, hosts: &BrowserHosts<'_>) -> bool {
         self.group_motion.animating(hosts.now)
     }
 
     /// The tab `group` picked, the focused one when it follows the terminal.
-    pub(crate) fn group_pick(&self, group: GroupId, hosts: &BrowserHosts<'_>) -> Option<Pick> {
+    pub(super) fn group_pick(&self, group: GroupId, hosts: &BrowserHosts<'_>) -> Option<Pick> {
         let focused = hosts
             .core_group
             .is_none()
@@ -155,7 +155,7 @@ impl Browser {
 
     /// Whether `group`'s strip lists `pick`; see [`Layout::lists`]. A tab
     /// this window hides is listed only while the group shows it.
-    pub(crate) fn group_lists(
+    pub(super) fn group_lists(
         &self,
         group: GroupId,
         pick: &Pick,
@@ -210,7 +210,7 @@ impl Browser {
     }
 
     /// Every tab of the focused workspace, hidden ones included.
-    pub(crate) fn open_workspace_tabs(&self, hosts: &BrowserHosts<'_>) -> Vec<Pick> {
+    pub(super) fn open_workspace_tabs(&self, hosts: &BrowserHosts<'_>) -> Vec<Pick> {
         if hosts.workspace.is_none() {
             return Vec::new();
         }
@@ -235,7 +235,7 @@ impl Browser {
     }
 
     /// The tabs `group`'s strip lists, in strip order.
-    pub(crate) fn group_tabs(&self, group: GroupId, hosts: &BrowserHosts<'_>) -> Vec<Pick> {
+    pub(super) fn group_tabs(&self, group: GroupId, hosts: &BrowserHosts<'_>) -> Vec<Pick> {
         self.workspace_tabs(hosts)
             .into_iter()
             .filter(|pick| self.group_lists(group, pick, hosts))
@@ -244,18 +244,18 @@ impl Browser {
 
     /// The next Herdr tab the daemon focuses goes to `group`: its "+" asked
     /// for it.
-    pub(crate) fn expect_new_tab_in(&mut self, group: GroupId, hosts: &BrowserHosts<'_>) {
+    pub(super) fn expect_new_tab_in(&mut self, group: GroupId, hosts: &BrowserHosts<'_>) {
         self.new_tab_group = self.browser_key(hosts).map(|key| (key, group));
     }
 
     #[cfg(test)]
-    pub(crate) fn expected_new_tab_group(&self) -> Option<GroupId> {
+    pub(super) fn expected_new_tab_group(&self) -> Option<GroupId> {
         self.new_tab_group.as_ref().map(|(_, group)| *group)
     }
 
     /// The focused workspace's browser tabs and the labels their strips
     /// show, in strip order.
-    pub(crate) fn browser_tab_labels(&self, hosts: &BrowserHosts<'_>) -> Vec<(Pick, SharedString)> {
+    pub(super) fn browser_tab_labels(&self, hosts: &BrowserHosts<'_>) -> Vec<(Pick, SharedString)> {
         let (Some((scope, workspace)), Some(store)) = (hosts.workspace.as_ref(), hosts.tabs) else {
             return Vec::new();
         };
@@ -267,7 +267,7 @@ impl Browser {
     }
 
     /// Moves the divider after the `divider`th group; see [`Layout::drag`].
-    pub(crate) fn drag_divider(
+    pub(super) fn drag_divider(
         &mut self,
         divider: usize,
         offset: f32,

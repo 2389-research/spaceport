@@ -51,7 +51,7 @@ impl Browser {
     /// Brings `group`'s chosen tab, at `index` in its strip, into view when
     /// the choice changes or while the tab grows in. Whether the strip needs
     /// another frame to do it.
-    pub(crate) fn reveal_tab(
+    pub(super) fn reveal_tab(
         &mut self,
         group: GroupId,
         pick: &Pick,
@@ -99,7 +99,7 @@ impl Browser {
 
     /// Narrows and fades `tab` while it grows into the strip; a whole tab
     /// is left as it is.
-    pub(crate) fn grow_tab<E: Styled>(
+    pub(super) fn grow_tab<E: Styled>(
         &self,
         tab: E,
         group: GroupId,

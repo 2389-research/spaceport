@@ -13,31 +13,31 @@ use std::time::Instant;
 
 /// What one window offers the browser for a single call. The app owns the
 /// window and the store; the browser only reads them.
-pub(crate) struct BrowserHosts<'a> {
+pub(super) struct BrowserHosts<'a> {
     /// Whether this build shows herdr-core features: tabs that need it are
     /// left out of strips when false.
-    pub(crate) core_enabled: bool,
+    pub(super) core_enabled: bool,
     /// The herdr-core group this window shows, or none for a legacy workspace.
-    pub(crate) core_group: Option<&'a CoreGroupKey>,
+    pub(super) core_group: Option<&'a CoreGroupKey>,
     /// Every endpoint this window knows, in `SheprdWindow.endpoints` order.
-    pub(crate) endpoints: &'a [Endpoint],
+    pub(super) endpoints: &'a [Endpoint],
     /// Which of `endpoints` this window shows,
     /// `SheprdWindow.selected_endpoint`.
-    pub(crate) selected_endpoint: usize,
+    pub(super) selected_endpoint: usize,
     /// `motion::now()`, read once per call so every animation in it agrees.
-    pub(crate) now: Instant,
+    pub(super) now: Instant,
     /// The newest metadata of the shown endpoint, or none before it connects.
-    pub(crate) snapshot: Option<&'a ClientShellSnapshot>,
+    pub(super) snapshot: Option<&'a ClientShellSnapshot>,
     /// The narrowest a tab draws in the layout in use, `TabLayout::min_width`,
     /// which a growing tab starts from.
-    pub(crate) tab_min_width: f32,
+    pub(super) tab_min_width: f32,
     /// The window's tab store, read for a caller with a window context; none
     /// without one, and none while no store is installed.
-    pub(crate) tabs: Option<&'a Store>,
+    pub(super) tabs: Option<&'a Store>,
     /// The workspace this window shows browser tabs for, or none: no workspace
     /// is focused, a herdr-core group is shown instead, or the caller had no
     /// window context.
-    pub(crate) workspace: Option<(Scope, String)>,
+    pub(super) workspace: Option<(Scope, String)>,
 }
 
 impl SheprdWindow {

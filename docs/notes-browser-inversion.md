@@ -185,8 +185,11 @@ plus two the census missed:
    `focused_herdr_tab`, `expect_new_tab_in` and `drag_divider` are called
    without an `App` (`view.group_pick(group)` in the strip, `self.ensure_layout()`
    in `group_terminals`) and their signatures may not change (§3.3). So the two
-   `cx`-derived fields are `Option`s that degrade to "nothing is shown", which
-   is the answer those methods would give anyway: the tab store comes from
+   `cx`-derived fields are `Option`s that degrade to "nothing is shown". The
+   safety guarantee is not that the degraded answer equals the real one (with
+   a live `App` these methods would return real tabs); it is that no wrapper
+   ever passes a `None`-carrying hosts into a method whose body reads
+   `hosts.tabs` or `hosts.workspace`: the tab store comes from
    `store(cx)`, itself an `Option`, and the workspace from
    `active_browser_key(cx)`, which returns `None` with no workspace or no
    available core group. `active_browser_key` stays an `impl SheprdWindow`
