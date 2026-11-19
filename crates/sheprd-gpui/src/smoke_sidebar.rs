@@ -9,7 +9,8 @@ use super::*;
 /// cannot show this: the test text system reports no installed families and
 /// gives every glyph the same fixed advance.
 fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
-    let detected = crate::config::symbol_fallbacks(cx.text_system().all_font_names());
+    use sheprd_settings;
+let detected = sheprd_settings::symbol_fallbacks(cx.text_system().all_font_names());
     if detected.is_empty() {
         // An installed icon font is an external resource, like a daemon binary.
         return Ok("symbol cascade skipped (no Nerd Font installed)");

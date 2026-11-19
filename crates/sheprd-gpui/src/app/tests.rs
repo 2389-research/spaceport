@@ -142,10 +142,13 @@ fn first_window_frame_uses_startup_layout(cx: &mut gpui::TestAppContext) {
         let (view, cx) = cx.add_window_view(|window, cx| {
             let mut appearance = InitialAppearance::load(
                 || {
-                    Ok(Config {
-                        theme: "Nord".into(),
-                        ..Default::default()
-                    })
+                    Ok((
+                        Config {
+                            theme: "Nord".into(),
+                            ..Default::default()
+                        },
+                        Keymap::default(),
+                    ))
                 },
                 false,
             );
