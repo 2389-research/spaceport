@@ -8,6 +8,14 @@ use crate::{
 use gpui::App;
 use sheprd_client::protocol::ClientShellSnapshot;
 use std::collections::{BTreeSet, HashSet};
+use std::sync::TryLockError;
+
+pub(super) enum Inspection {
+    // keep-sorted start
+    Busy,
+    Current,
+    // keep-sorted end
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Batch {
@@ -115,7 +123,13 @@ impl Batch {
             .count()
     }
 
-    pub(super) fn validate_owner(&self, view: &SheprdWindow, cx: &App) -> Result<()> {
+    /// An empty `items` slice checks ownership while an earlier close settles.
+    pub(super) fn validate(
+        &self,
+        view: &SheprdWindow,
+        items: &[Item],
+        cx: &App,
+    ) -> Result<Inspection> {
         if view.active_browser_key(cx).as_ref() != Some(&self.owner)
             || self.connection
                 != (
@@ -127,6 +141,13 @@ impl Batch {
         {
             return Err(Error::StaleConnection);
         }
+        for item in items {
+            if let Item::View(tab) = item
+                && cx.try_global::<Store>().and_then(|store| store.get(tab.id)) != Some(tab)
+            {
+                return Err(Error::StaleCloseTarget);
+            }
+        }
         let Some(boot) = self.items.iter().find_map(|item| match item {
             Item::Herdr { close, .. } => match &close.target {
                 Target::Herdr(target) => Some(&target.boot),
@@ -134,7 +155,7 @@ impl Batch {
             },
             Item::View(_) => None,
         }) else {
-            return Ok(());
+            return Ok(Inspection::Current);
         };
         if !view.live.status.is_connected() || view.selected_core_group().is_some() {
             return Err(Error::NotConnected);
@@ -148,48 +169,27 @@ impl Batch {
         {
             return Err(Error::StaleCloseTarget);
         }
-        let inbox = view.endpoints[view.selected_endpoint]
+        Self::validate_snapshot(
+            items,
+            view.live.latest_snapshot().ok_or(Error::NotConnected)?,
+        )?;
+        let inbox = match view.endpoints[view.selected_endpoint]
             .connection
             .inbox
             .try_lock()
-            .map_err(|_| Error::ConnectionNotReady)?;
+        {
+            Ok(inbox) => inbox,
+            Err(TryLockError::WouldBlock) => return Ok(Inspection::Busy),
+            Err(TryLockError::Poisoned(_)) => return Err(Error::ConnectionNotReady),
+        };
         if !inbox.status.is_connected() {
             return Err(Error::NotConnected);
         }
         if &inbox.latest_snapshot().ok_or(Error::NotConnected)?.boot_id != boot {
             return Err(Error::StaleCloseTarget);
         }
-        Ok(())
-    }
-
-    pub(super) fn validate(&self, view: &SheprdWindow, items: &[Item], cx: &App) -> Result<()> {
-        self.validate_owner(view, cx)?;
-        for item in items {
-            if let Item::View(tab) = item
-                && cx.try_global::<Store>().and_then(|store| store.get(tab.id)) != Some(tab)
-            {
-                return Err(Error::StaleCloseTarget);
-            }
-        }
-        if items.iter().all(|item| matches!(item, Item::View(_))) {
-            return Ok(());
-        }
-        if !view.live.status.is_connected() || view.selected_core_group().is_some() {
-            return Err(Error::NotConnected);
-        }
-        Self::validate_snapshot(
-            items,
-            view.live.latest_snapshot().ok_or(Error::NotConnected)?,
-        )?;
-        let inbox = view.endpoints[view.selected_endpoint]
-            .connection
-            .inbox
-            .try_lock()
-            .map_err(|_| Error::ConnectionNotReady)?;
-        if !inbox.status.is_connected() {
-            return Err(Error::NotConnected);
-        }
-        Self::validate_snapshot(items, inbox.latest_snapshot().ok_or(Error::NotConnected)?)
+        Self::validate_snapshot(items, inbox.latest_snapshot().ok_or(Error::NotConnected)?)?;
+        Ok(Inspection::Current)
     }
 
     fn validate_snapshot(items: &[Item], snapshot: &ClientShellSnapshot) -> Result<()> {

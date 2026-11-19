@@ -171,3 +171,40 @@ The new x64 native job passes seven cases, including live Herdr, local controls,
 The ARM native job passes six cases and retains its documented live-daemon exclusion.
 Both skip the symbol cascade because no Nerd Font is installed; performance remains separately gated.
 These jobs do not qualify foreground Settings input, accessibility, or release working-session profiling.
+
+## Close batch contention
+
+The same run ends with fourteen passing checks, eight failures, and one skipped target.
+The failures include the aggregate gate, all four Windows snapshots, both macOS notice fixtures, and one Linux close sequence.
+Both Linux all-feature jobs and ARM default pass; x64 default fails the close sequence.
+
+The accepted batch treated a busy inbox mutex as failed ownership and discarded the remaining closes.
+The reader legitimately holds that mutex while publishing an event.
+This is a production race, confirmed by independent source review.
+New held-lock regressions fail before the repair with `busy inspection must wait`.
+An initial fixture response omitted its correlation ID; that setup failure did not prove the regression.
+
+Batch inspection now distinguishes `WouldBlock` from invalid ownership and a poisoned mutex.
+A busy inspection preserves the phase and its original five-second deadline.
+Every resumed inspection checks owner, connection generation, boot, status, and pending metadata before another effect.
+Initial confirmation still refuses busy inspection; queue refusal and poisoned state still stop the batch.
+An already-sent close remains sent and cannot replay.
+The four regressions pass for Sent, Settling, and Ready phases.
+They exercise actual queued requests, recovery, unchanged deadlines, ownership changes, and poisoned locks.
+Logs use `/tmp/spaceport-9s44-close-contention-{red,green}.log`.
+The combined close-modal, endpoint lifecycle, status-bar, and transfer scope passes 235 cases with none ignored.
+`just lint` and `just lint-windows` pass both feature configurations with warnings denied.
+Formatting, file size, sorted regions, operations, localization, and specification-package checks pass.
+The specification check still reports JSON Schema validation as not run.
+Independent review approves the actual ownership checks, deadline behavior, and test evidence.
+Hosted qualification remains pending on the repaired source.
+
+## Isolated warning fixture state
+
+Both macOS workspace legs fail the warning-pause reset case with a permanent connection warning.
+The peer fixture starts a private failed connection, retires its inbox, and then installs explicit peer state.
+It previously retained the startup attempt's last diagnostic in the window projection.
+The fixture now initializes that projection from an empty `LiveState` before populating the peer state.
+Production notice priority and expiry remain unchanged.
+The original case passes locally before this repair; its startup timing did not reproduce on this Mac.
+Fresh hosted execution remains necessary to qualify the observed CI failure.

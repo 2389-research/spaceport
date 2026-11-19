@@ -242,6 +242,12 @@ Those earlier results do not prove this combined checkout passed.
 
 ## Remaining work
 
+Source `5f788861a` completed hosted CI with fourteen passing checks, eight failures, and one skipped target.
+Both Windows native jobs, both macOS release builds, the installer, and three Linux workspace jobs passed.
+The remaining failures exposed shortcut checkout conversion, accepted-batch contention, and isolated peer-state leakage.
+The repairs pass 235 focused checks and both canonical lint configurations locally.
+See [the CI qualification record](review-ci-qualification.md#close-batch-contention) for exact limits and remaining hosted qualification.
+
 Await the updated hosted platform checks on draft PR 125.
 Keep the concrete PR handoff and dashboard current for Clint and CI.
 PR 123's additional protocol copy is reconciled with the local safety guidance.

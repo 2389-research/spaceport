@@ -3,7 +3,7 @@
 use crate::{
     SheprdWindow,
     browser::{CoreGroupKey, Pick, Store, TabId},
-    close_modal::batch::Batch,
+    close_modal::batch::{Batch, Inspection},
     core_terminals,
     menu::Page,
     sidebar::layout_tests::fixture_core_window,
@@ -72,7 +72,10 @@ fn core_only_batch_captures_and_validates_its_view_without_a_legacy_connection(
     let (view, tab, cx) = core_window(cx);
     view.update(cx, |view, cx| {
         let batch = Batch::capture(view, vec![Pick::Page(tab)], cx).unwrap();
-        batch.validate(view, &batch.items, cx).unwrap();
+        assert!(matches!(
+            batch.validate(view, &batch.items, cx),
+            Ok(Inspection::Current)
+        ));
         assert_eq!(batch.view_count(), 1);
         assert_eq!(batch.pane_count(), 0);
         view.selection_epoch += 1;

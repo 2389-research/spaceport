@@ -3,7 +3,7 @@
 
 use super::{
     CloseConfirmation, Target,
-    batch::{Batch, Item},
+    batch::{Batch, Inspection, Item},
 };
 use crate::{
     SheprdWindow,
@@ -77,13 +77,17 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let result = batch.validate(self, &batch.items, cx).and_then(|()| {
-            if batch.items.iter().any(|item| item.tab().is_some()) && !self.input_ready() {
-                Err(crate::Error::ConnectionNotReady)
-            } else {
-                Ok(())
-            }
-        });
+        let result = batch
+            .validate(self, &batch.items, cx)
+            .and_then(|inspection| {
+                if matches!(inspection, Inspection::Busy)
+                    || (batch.items.iter().any(|item| item.tab().is_some()) && !self.input_ready())
+                {
+                    Err(crate::Error::ConnectionNotReady)
+                } else {
+                    Ok(())
+                }
+            });
         if let Err(error) = result {
             if let Some(close) = &mut self.menu.close {
                 close.error = Some(error.localize());
@@ -129,6 +133,28 @@ impl SheprdWindow {
             return;
         };
         loop {
+            let items = if matches!(run.phase, Phase::Ready(_)) {
+                &run.batch.items[run.next..]
+            } else {
+                &[][..]
+            };
+            match run.batch.validate(self, items, cx) {
+                Ok(Inspection::Current) => {}
+                Ok(Inspection::Busy) => {
+                    let since = match run.phase {
+                        Phase::Ready(at) | Phase::Sent(at) | Phase::Settling(at) => at,
+                    };
+                    if now.saturating_duration_since(since) < ANSWER_TIMEOUT {
+                        break;
+                    }
+                    self.stopped_close_batch(&run, crate::Error::ConnectionNotReady.localize());
+                    return;
+                }
+                Err(error) => {
+                    self.stopped_close_batch(&run, error.localize());
+                    return;
+                }
+            }
             if let Phase::Settling(since) = run.phase {
                 if self.input_ready()
                     || run.batch.items[run.next..]
@@ -136,24 +162,17 @@ impl SheprdWindow {
                         .all(|item| item.tab().is_none())
                 {
                     run.phase = Phase::Ready(now);
+                    continue;
                 } else if now.saturating_duration_since(since) >= ANSWER_TIMEOUT {
                     self.stopped_close_batch(&run, fl!("close-modal-batch-surface-timeout"));
                     return;
                 } else {
-                    if let Err(error) = run.batch.validate_owner(self, cx) {
-                        self.stopped_close_batch(&run, error.localize());
-                        return;
-                    }
                     break;
                 }
             }
             let Some(item) = run.batch.items.get(run.next).cloned() else {
                 return;
             };
-            if let Err(error) = run.batch.validate_owner(self, cx) {
-                self.stopped_close_batch(&run, error.localize());
-                return;
-            }
             if let Phase::Sent(sent) = run.phase {
                 let Some(tab) = item.tab() else {
                     return;
@@ -178,10 +197,6 @@ impl SheprdWindow {
             // Removing a tab from the snapshot does not acknowledge its
             // close's surface barrier. An immediate close would fail its
             // readiness check and leave an error dialog instead of waiting.
-            if let Err(error) = run.batch.validate(self, &run.batch.items[run.next..], cx) {
-                self.stopped_close_batch(&run, error.localize());
-                return;
-            }
             if item.tab().is_some() && !self.input_ready() {
                 if let Phase::Ready(since) = run.phase
                     && now.saturating_duration_since(since) >= ANSWER_TIMEOUT

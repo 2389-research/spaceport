@@ -5,6 +5,8 @@ use super::*;
 use gpui::{AppContext as _, Entity, IntoElement, Render};
 use std::sync::Arc;
 
+mod inbox_contention;
+
 struct Fixture(Entity<SheprdWindow>);
 impl Render for Fixture {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
