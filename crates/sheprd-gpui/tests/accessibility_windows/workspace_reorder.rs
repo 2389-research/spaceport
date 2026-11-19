@@ -126,6 +126,15 @@ fn native_workspace_arrows_change_daemon_order_and_preserve_terminal_ids() {
     };
     let terminals = terminal_ids(&before);
     assert!(!terminals.is_empty());
+    // Chrome rows become keyboard stops only after native region entry.
+    let focus = running.read("^b{F6}|^b{F6}");
+    assert!(
+        focus
+            .lines()
+            .last()
+            .is_some_and(|line| line.contains("TabItem 'Workspaces")),
+        "native region entry did not reach the sidebar: {focus}"
+    );
     for (key, expected) in [("%{DOWN}", moved), ("%{UP}", original)] {
         press(&mut running, key);
         let after = snapshot(&observer, Some(&before.boot_id), |snapshot| {

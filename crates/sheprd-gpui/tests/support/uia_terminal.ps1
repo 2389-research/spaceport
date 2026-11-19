@@ -62,6 +62,7 @@ if ($Action -eq 'Resize') {
     if ([DateTime]::UtcNow -ge $deadline) { throw 'The private right split has no presented native caret line' }
     Start-Sleep -Milliseconds 25
   } while ($true)
+  [Console]::WriteLine("TERMINAL_RESIZE_STAGE presented_right=true left=$($rectangles[0].Left)")
   function Press-Resize([string]$key) {
     Require-Terminal
     Require-Released
@@ -72,7 +73,8 @@ if ($Action -eq 'Resize') {
   function Marker-Bounds {
     Require-Terminal
     $range = $pattern.DocumentRange
-    if (($range.GetText(16384) -split '\r?\n') -cnotcontains 'SP_RESIZE_7') { return $null }
+    $script:resizeOutputSeen = ($range.GetText(16384) -split '\r?\n') -ccontains 'SP_RESIZE_7'
+    if (-not $script:resizeOutputSeen) { return $null }
     $marker = $range.FindText('SP_RESIZE_7', $false, $false)
     if ($null -eq $marker) { return $null }
     $marker.ExpandToEnclosingUnit([System.Windows.Automation.Text.TextUnit]::Line)
@@ -93,22 +95,30 @@ if ($Action -eq 'Resize') {
     }
     return $rect
   }
-  function Wait-Resize($accept) {
+  function Wait-Resize([string]$stage, $accept) {
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    $script:resizeOutputSeen = $false
+    $last = 'none'
     do {
       $rect = Marker-Bounds
-      if ($null -ne $rect -and (& $accept $rect)) { return $rect }
-      if ([DateTime]::UtcNow -ge $deadline) { throw 'Native resize geometry did not reach its expected boundary' }
+      if ($null -ne $rect) { $last = "left=$($rect.Left),width=$($rect.Width)" }
+      if ($null -ne $rect -and (& $accept $rect)) {
+        [Console]::WriteLine("TERMINAL_RESIZE_STAGE stage=$stage output=true $last")
+        return $rect
+      }
+      if ([DateTime]::UtcNow -ge $deadline) {
+        throw "Native resize geometry did not reach its expected boundary: stage=$stage output=$script:resizeOutputSeen $last"
+      }
       Start-Sleep -Milliseconds 25
     } while ($true)
   }
   Press-Resize 'echo SP_RESIZE_7{ENTER}'
-  $before = Wait-Resize { param($rect) $true }
+  $before = Wait-Resize 'authored_output' { param($rect) $true }
   Press-Resize '^br'
   Press-Resize '{LEFT}'
-  $changed = Wait-Resize { param($rect) $rect.Left -lt $before.Left - 1 }
+  $changed = Wait-Resize 'left' { param($rect) $rect.Left -lt $before.Left - 1 }
   Press-Resize '{RIGHT}'
-  $restored = Wait-Resize { param($rect) [Math]::Abs($rect.Left - $before.Left) -le 1 }
+  $restored = Wait-Resize 'right' { param($rect) [Math]::Abs($rect.Left - $before.Left) -le 1 }
   Press-Resize '{ESC}'
   Require-Released
   Require-Terminal

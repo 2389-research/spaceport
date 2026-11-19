@@ -268,3 +268,24 @@ Logs use `/tmp/spaceport-9s44-settings-scale-*.log`.
 Actual Windows execution and inspection of both PNGs remain pending.
 Row containment alone does not establish glyph readability or text clipping.
 Kata `q72g` remains open.
+
+## First keyboard qualifier result on `021fd38a8`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44595959691/job/135814538707) passes eight GUI cases.
+Its UIA suite passes twenty existing cases and fails the two new keyboard qualifiers.
+The ARM native job passes; its existing policy excludes this UIA suite.
+This checkpoint is not green.
+
+Workspace reorder stops before key delivery because the row is not keyboard focusable.
+The existing chrome contract enables those stops only inside the sidebar keyboard region.
+The corrected scenario enters that region with two native prefix-F6 commands first.
+It requires actual Workspaces focus before targeting the named row.
+The original focusability and ownership guards remain unchanged.
+
+Pane resize reaches its geometry wait but returns a generic boundary timeout.
+The existing receipt cannot distinguish missing authored output from unchanged left or right geometry.
+The next helper records fixed stage names, an authored-output boolean, and the last rectangle coordinates.
+It records no terminal text and changes no key, geometry assertion, or deadline.
+This diagnoses the failure; it does not claim a resize fix.
+Independent review confirms both narrow changes without material findings.
+Both corrected native scenarios still need execution.
