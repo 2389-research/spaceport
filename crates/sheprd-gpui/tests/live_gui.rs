@@ -33,6 +33,10 @@ mod chat_start;
 #[path = "live_gui/diagnostics.rs"]
 mod diagnostics;
 
+#[cfg(windows)]
+#[path = "live_gui/pipe_readiness.rs"]
+mod pipe_readiness;
+
 #[path = "live_gui/preview_branding.rs"]
 mod preview_branding;
 

@@ -646,3 +646,39 @@ Independent source review finds no material framing, ownership, or scope issue.
 Both Windows GNU lint configurations pass.
 Logs: `/tmp/spaceport-9s44-ssh-self-child-windows-lint.log` and `ssh-self-child-minimal-windows-lint.log` under the same prefix.
 Actual Windows execution remains pending; this Mac cannot run those platform-specific cases.
+
+## Native startup and refusal consumers on `b5a55f455`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44638908188/job/135964929274) fails before UI Automation starts.
+The initial GUI connection reports Windows error 231 after 178 milliseconds.
+Seven other GUI cases pass; the ARM native job passes its configured cases.
+The image cleanup rename and producer are not exercised by this run.
+
+The shared Windows readiness probe opens and drops a real client connection.
+Locked interprocess 2.4.7 documents that this can leave a dead connection awaiting server acceptance.
+That interference is proven by the library contract; its sole responsibility for error 231 remains unproven.
+The fixture now uses [non-consuming availability inspection](https://learn.microsoft.com/windows/win32/api/namedpipeapi/nf-namedpipeapi-waitnamedpipew).
+The outer deadline, child-liveness check, and 20-millisecond polling interval remain unchanged.
+Production connection behavior remains unchanged.
+The dependency's connector already waits for busy instances; it is not a single-attempt connector.
+
+Two Windows regressions use a real owned pipe and require no desktop or daemon.
+Repeated readiness checks must leave its first instance available for the real client's byte exchange.
+A missing pipe must remain unavailable.
+Their Windows execution and old-probe baseline remain unrun on this Mac.
+Cross-compilation does not establish that the startup failure is resolved.
+Independent review finds no material unsafe-call, ownership, deadline, or dependency issue.
+Both canonical Windows GNU lint configurations pass after the readiness change.
+Log: `/tmp/spaceport-9s44-pipe-readiness-windows-lints.log`.
+
+The [Linux all-feature job](https://github.com/2389-research/spaceport/actions/runs/44638908188/job/135964929602) also exposes two missed refusal-copy consumers.
+Default Windows and both Linux architectures report the same two failures.
+The handlers return the corrected message; the tests still expect the old wording.
+Both tests now compare against the typed cause's localized message.
+They still require the failure code, repeated refusal, unchanged selection, and matching status notice.
+The host-control and localized-error scopes pass all 75 cases, with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- control::server::hosts::tests:: i18n::errors::tests::`.
+Log: `/tmp/spaceport-9s44-host-refusal-consumers-green.log`.
+The existing debug-link unwind and external `block` notices remain unchanged.
+Final GPUI all-target/all-feature Windows GNU lint also passes after correcting those consumers.
+Log: `/tmp/spaceport-9s44-readiness-hosts-final-windows-lint.log`.

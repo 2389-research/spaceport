@@ -1,4 +1,7 @@
+// ABOUTME: Checks host selection, refusal details, and usage responses.
+// ABOUTME: Requires control replies to preserve the window's localized refusal.
 use super::*;
+use crate::i18n::Localize as _;
 
 #[gpui::test]
 fn a_host_is_selected_by_id_or_label_and_a_refusal_says_why(cx: &mut TestAppContext) {
@@ -35,7 +38,7 @@ fn a_host_is_selected_by_id_or_label_and_a_refusal_says_why(cx: &mut TestAppCont
                 failed,
                 Response::error(
                     ErrorCode::Failed,
-                    "Current endpoint does not support surface switching"
+                    crate::endpoint::Error::SurfaceSwitchingUnsupported.localize()
                 )
             );
             // Any other refusal has no words of the window's to pass on.

@@ -423,3 +423,27 @@ The same native job also passes revised Ctrl-F6 region navigation and held Ctrl-
 Herdr text/caret/change events, workspace reorder, pane resize/restoration, and stable daemon identities pass again.
 Core text/caret/observing panes, audible announcements, Core resize, and selected-tab backdrop contrast remain pending.
 Kata `q72g` stays open; these images do not qualify those separate requirements.
+
+## Real Core Windows qualification plan
+
+The [official versioned manifest](https://releases.herdr.dev/core/0.1.21/manifest.json) publishes generation 1, version 0.1.21, for Windows x64.
+Root reads that manifest directly; no binary is downloaded or executed during this investigation.
+Its archive digest is `a8984634c35b58ba82d0aec078d5a5e6004da01d5a25b3daf822ab5e31c7312b`.
+The [pinned installer](https://github.com/herdrdev/herdr-core/blob/v0.1.21/distribution/install.ps1) requires the adjacent `conpty/` directory.
+Use private archive staging rather than the installer, which changes user installation state.
+This remains a plan; no native Core qualification follows from release availability.
+
+- [ ] Stage the pinned, hash-verified archive only on the isolated x64 CI runner.
+- [ ] Select it explicitly through `HERDR_CORE_TEST_BINARY`; retain the archive's ConPTY files.
+- [ ] Reuse the cleared sandbox with a unique `HC_SESSION`, explicit `HC_SOCKET`, and private state paths.
+- [ ] Own the exact `serve` child; stop only its private Core and reap that child during cleanup.
+- [ ] Enable Core in the private prelaunch configuration and use the real `run new_core_terminal` route.
+- [ ] Create three actual panes and read their exact IDs through the app and Core separately.
+- [ ] Exercise native split, held-close, cancel-first consent, and captured-target preservation.
+- [ ] Verify Core text, change events, caret lines, resize/restoration, and observe-only behavior through native UI Automation.
+- [ ] Select the focused Core document by PID, HWND, ancestry, and bounds; split panes share the name Terminal.
+- [ ] Keep strict pipe-owner validation; a runtime mismatch is a blocker, not permission to relax the gate.
+- [ ] Review lifecycle and input cleanup independently before running the fixture.
+
+Windows Ctrl-Shift-W does not establish macOS AppKit Cmd-W routing.
+Audible screen-reader output and selected-tab backdrop contrast remain separate native gates.
