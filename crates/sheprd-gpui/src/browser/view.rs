@@ -5,8 +5,9 @@
 #[cfg(test)]
 use super::Location;
 use super::{
-    Scope, Store, TabId, WebUrl,
+    CoreGroupKey, Scope, Store, TabId, WebUrl,
     groups::{GroupId, GroupIds, Layout, Pick, SavedLayout},
+    hosts::BrowserHosts,
 };
 use crate::SheprdWindow;
 #[cfg(test)]
@@ -119,21 +120,53 @@ pub(crate) enum PageOpened {
     Unreachable,
 }
 
-impl SheprdWindow {
-    pub(crate) fn browser_key(&self) -> Option<(Scope, String)> {
-        if self.selected_core_group().is_some() {
+impl Browser {
+    pub(super) fn browser_key(&self, hosts: &BrowserHosts<'_>) -> Option<(Scope, String)> {
+        if hosts.core_group.is_some() {
             return None;
         }
-        let workspace = self.live.snapshot.as_ref()?.focused_workspace_id.clone()?;
-        Some((scope(&self.endpoints[self.selected_endpoint]), workspace))
+        let workspace = hosts.snapshot?.focused_workspace_id.clone()?;
+        Some((scope(&hosts.endpoints[hosts.selected_endpoint]), workspace))
     }
 
     /// The group drawn in this window, which may belong to Core instead of
     /// the legacy endpoint that still supplies the transitional shell.
-    pub(crate) fn layout_key(&self) -> Option<(Scope, String)> {
-        self.selected_core_group()
-            .map(super::CoreGroupKey::parts)
-            .or_else(|| self.browser_key())
+    pub(super) fn layout_key(&self, hosts: &BrowserHosts<'_>) -> Option<(Scope, String)> {
+        hosts
+            .core_group
+            .map(CoreGroupKey::parts)
+            .or_else(|| self.browser_key(hosts))
+    }
+
+    /// The focused workspace's browser tabs, in the order they opened.
+    pub(super) fn browser_tab_ids(&self, hosts: &BrowserHosts<'_>) -> Vec<TabId> {
+        let (Some((scope, workspace)), Some(store)) = (hosts.workspace.as_ref(), hosts.tabs) else {
+            return Vec::new();
+        };
+        store
+            .in_workspace(scope, workspace)
+            .filter(|tab| hosts.core_enabled || !tab.requires_core())
+            .map(|tab| tab.id)
+            .collect()
+    }
+
+    pub(super) fn forget_browser_tabs(&mut self, mut gone: impl FnMut(TabId) -> bool) {
+        for layout in self.layouts.values_mut() {
+            let closed: Vec<Pick> = layout
+                .tabs()
+                .filter(|pick| matches!(pick, Pick::Page(id) if gone(*id)))
+                .cloned()
+                .collect();
+            for pick in closed {
+                self.emptied.extend(layout.forget(&pick));
+            }
+        }
+    }
+}
+
+impl SheprdWindow {
+    pub(crate) fn browser_key(&self) -> Option<(Scope, String)> {
+        self.browser.browser_key(&self.browser_hosts(None))
     }
 
     pub(crate) fn active_browser_key(&self, cx: &App) -> Option<(Scope, String)> {
@@ -144,30 +177,14 @@ impl SheprdWindow {
     }
 
     /// The focused workspace's browser tabs, in the order they opened.
+    #[cfg(test)]
     pub(crate) fn browser_tab_ids(&self, cx: &App) -> Vec<TabId> {
-        let (Some((scope, workspace)), Some(store)) = (self.active_browser_key(cx), store(cx))
-        else {
-            return Vec::new();
-        };
-        store
-            .in_workspace(&scope, &workspace)
-            .filter(|tab| self.core_enabled() || !tab.requires_core())
-            .map(|tab| tab.id)
-            .collect()
+        self.browser.browser_tab_ids(&self.browser_hosts(Some(cx)))
     }
 
-    pub(super) fn forget_browser_tabs(&mut self, mut gone: impl FnMut(TabId) -> bool) {
-        let browser = &mut self.browser;
-        for layout in browser.layouts.values_mut() {
-            let closed: Vec<Pick> = layout
-                .tabs()
-                .filter(|pick| matches!(pick, Pick::Page(id) if gone(*id)))
-                .cloned()
-                .collect();
-            for pick in closed {
-                browser.emptied.extend(layout.forget(&pick));
-            }
-        }
+    pub(super) fn forget_browser_tabs(&mut self, gone: impl FnMut(TabId) -> bool) {
+        let (browser, _) = self.browser_parts(None);
+        browser.forget_browser_tabs(gone);
     }
 
     /// Opens native content in the focused workspace for shared layout tests.
