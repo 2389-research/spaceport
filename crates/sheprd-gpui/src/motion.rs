@@ -30,6 +30,14 @@ pub(crate) const REORDER: Duration = if cfg!(test) {
     sheprd_reorder::SLIDE
 };
 
+pub(crate) fn slide_duration(length: Duration) -> Duration {
+    if crate::accessibility::policy::reduce_motion() {
+        Duration::ZERO
+    } else {
+        length
+    }
+}
+
 /// How far a motion that began at `since` has come at `now`, eased out, or
 /// `None` once it is done.
 pub(crate) fn progress(since: Instant, now: Instant, length: Duration) -> Option<f32> {

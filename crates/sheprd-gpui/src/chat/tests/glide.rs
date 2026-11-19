@@ -10,6 +10,9 @@ use crate::{SheprdWindow, window::MockPeer};
 use gpui::{Entity, TestAppContext, VisualTestContext};
 use sheprd_client::ConnectTarget;
 
+#[path = "glide/reduced_motion.rs"]
+mod reduced_motion;
+
 /// How far the list's top is from its end, in pixels.
 fn behind(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> f32 {
     view.read_with(cx, |view, _| {

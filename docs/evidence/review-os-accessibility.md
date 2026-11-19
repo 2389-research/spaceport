@@ -96,7 +96,7 @@ The native probe compares their actual values without changing OS preferences.
 Microsoft documents [AnimationsEnabled](https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings.animationsenabled?view=winrt-28000)
 and [HighContrast](https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.accessibilitysettings.highcontrast?view=winrt-28000).
 The pinned `windows` 0.62.2 bindings expose safe getters.
-Windows runtime qualification remains pending.
+At the original checkpoint, Windows runtime qualification remained pending.
 Cross-compilation is not native Windows evidence.
 
 The [Settings portal specification](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Settings.html)
@@ -109,3 +109,44 @@ The initial Linux lookup is asynchronous and can leave the first frame at normal
 
 Native screenshot ratios, keyboard checks, and performance checks remain pending.
 No OS preference, personal configuration, runtime, or daemon was changed by these checks.
+
+## Reorder extraction follow-up
+
+The later reorder extraction left three manual slide consumers outside the reduced-motion policy.
+Workspace, device, and tab slides passed their fixed duration directly to the shared geometry crate.
+Unit tests settled those slides immediately, hiding the normal-build regression.
+Opted-in chat glide also kept smoothing new output and active motion after the policy changed.
+
+One client-side duration helper now applies reduced motion before all three slide consumers.
+Each consumer reuses that duration for retargeting, position, and frame-request decisions.
+The shared geometry crate retains its normal 150-millisecond duration.
+Chat uses its existing immediate-follow branch under reduced motion.
+Pending user scrolls and selected text retain their existing precedence.
+
+Three actual regressions fail before the correction.
+The real-duration slide remains at 8.75 instead of 10.
+New chat output remains 142 pixels behind the end.
+Enabling reduced motion leaves an active chat glide unfinished.
+The corrected motion, reorder, chat-glide, and working-mark scopes pass 70 cases, with none ignored.
+The separate normal-consumer timing test also passes.
+Independent review finds no remaining material issue in these consumers.
+
+Published source `46738c99c` already passes the native Windows getter test on x64 and ARM.
+It also passes the actual AppKit getter test on macOS.
+The Linux job passes the real portal-wire, policy, transition, and working-mark tests.
+Verified [Windows x64](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241319),
+[Windows ARM](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241301),
+[macOS](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241330),
+and [Linux](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241351) logs.
+Those results qualify the unchanged OS readers and earlier consumers, not the new local corrections.
+The Linux desktop-backend limitation above remains explicit.
+
+Logs: `/tmp/spaceport-9s44-reduced-motion-consumers-{red,green}.log` and `reduced-motion-normal-consumer.log`.
+Short names share the `/tmp/spaceport-9s44-` prefix.
+Kata `krqj` remains open while the correction awaits publication and final verification.
+Canonical host and Windows GNU lint pass both feature configurations.
+The Windows GNU checks pass again after adding the timeout diagnostic.
+Formatting, size, sorting, operations, localization, specification, and diff validators pass.
+The specification gate explicitly skips JSON Schema validation.
+Logs use `/tmp/spaceport-9s44-reduced-motion-{host-lint,windows-lint,final-static}.log`.
+The diagnostic cross-check log is `/tmp/spaceport-9s44-uia-diagnostic-windows-lint.log`.

@@ -37,3 +37,4 @@ fn a_toggle_opens_closes_and_starts_still() {
 }
 
 mod reduced_motion;
+mod reorder;

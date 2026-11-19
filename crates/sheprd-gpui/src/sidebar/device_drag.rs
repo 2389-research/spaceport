@@ -231,9 +231,10 @@ impl SheprdWindow {
                     to: 0.,
                     start: now,
                 });
-                *slide = slide.toward(previewed[unit], now, REORDER);
-                plan.sliding |= slide.progress(now, REORDER) < 1.;
-                slide.at(now, REORDER)
+                let duration = crate::motion::slide_duration(REORDER);
+                *slide = slide.toward(previewed[unit], now, duration);
+                plan.sliding |= slide.progress(now, duration) < 1.;
+                slide.at(now, duration)
             };
             plan.shifts.insert(index, (px(shift), unit == dragged));
             plan.drop.rows.push((unit, row, px(shift)));

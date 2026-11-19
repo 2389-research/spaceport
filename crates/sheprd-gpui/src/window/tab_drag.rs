@@ -248,8 +248,9 @@ impl TabDrag {
             to: 0.,
             start: now,
         });
-        *slide = slide.toward(to, now, REORDER);
-        (slide.at(now, REORDER), slide.progress(now, REORDER) < 1.)
+        let duration = motion::slide_duration(REORDER);
+        *slide = slide.toward(to, now, duration);
+        (slide.at(now, duration), slide.progress(now, duration) < 1.)
     }
 
     /// Scrolls `scroll` toward whichever end the pointer is carried near, by

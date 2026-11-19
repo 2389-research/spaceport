@@ -73,8 +73,9 @@ impl WorkspaceDrag {
             to: 0.,
             start: now,
         });
-        *slide = slide.toward(to, now, REORDER);
-        (slide.at(now, REORDER), slide.progress(now, REORDER) < 1.)
+        let duration = crate::motion::slide_duration(REORDER);
+        *slide = slide.toward(to, now, duration);
+        (slide.at(now, duration), slide.progress(now, duration) < 1.)
     }
 
     /// Records a carried row at the pointer, so it slides from there once
