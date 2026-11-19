@@ -1,8 +1,8 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `64970ccce` passes full CI and native popup Quit qualification.
-Kata `9s44` has 47 closed children and six open children.
+Status: `1ad093a96` qualifies native clipboard scenarios; a separate terminal qualifier correction remains pending.
+Kata `9s44` has 48 closed children and five open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
@@ -22,7 +22,7 @@ See [the reorder integration evidence](review-reorder-integration.md) for the cu
 
 ## Native checkpoint and P2 corrections
 
-The latest source `940749d29` passes full CI with eighteen successful jobs and one unconfigured skip.
+Source `940749d29` passes full CI with eighteen successful jobs and one unconfigured skip.
 Both native Windows jobs and supply-chain checks pass.
 Native Settings keys, private saved preferences, and inspected focus images satisfy `d0n2`, now closed.
 The two native clipboard-owner safety cases pass, including guardian cleanup after deliberate parent failure.
@@ -39,7 +39,15 @@ Both Windows native jobs and supply-chain checks pass.
 Doctor Biz approved accepting Clint's separate read-only PR review on November 19.
 The review targets current head `47fd690d6`, including the contracts Clint named.
 It permits PR findings or a review document, with no edits, merge, push, or rebase.
-The preceding P2 source `64970ccce` is fully qualified; the new clipboard scenarios remain in CI.
+The preceding P2 source `64970ccce` is fully qualified; the clipboard scenarios were still in CI at that point.
+
+Both complete native clipboard application cases now pass on `1ad093a96`.
+Their original-scope audit accepts completion; Kata `d378` is closed with event 9797.
+That x64 native job has eighteen passing UIA cases and one separate terminal rectangle-fixture failure.
+The managed API returns Rect objects and permits empty rectangles for a collapsed range.
+The corrected qualifier checks the caret separately from its enclosing visible line geometry.
+Current Linux work also removes four GNOME-conflicting defaults and moves Resume Palette to Ctrl-Shift-R.
+Its original native Linux/Windows qualification remains open under `3wd4`.
 
 ## Sound extraction integration
 

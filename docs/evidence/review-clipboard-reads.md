@@ -308,3 +308,25 @@ A headless test exercises the real prompt-error producer, typed acquisition-erro
 Corrected actual native execution remains pending; `d378` stays open.
 The corrected full consumer scope passes thirty-three tests, with none ignored.
 Independent correction review finds no material issue in the read-only observation or retained native checks.
+
+## Completed original scope on `1ad093a96`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44560521338/job/135688647754) passes both complete application scenarios.
+Chat passes at `2026-11-19T16:06:17.1168932Z`; the standalone field passes at `16:06:20.6302003Z`.
+Each passes native Unicode/CRLF, exact 262144-byte acceptance, multibyte 262145-byte prompt rejection, and 2097153-byte acquisition rejection.
+Each preserves the draft on refusal, cancels typing and blur before release, rejects stale insertion, and recovers a fresh reader.
+Native owner, independent hold expiry, callback-failure release, and guardian cleanup checks also pass.
+Sanitized receipts remain in `/tmp/spaceport-9s44-clipboard-native-1ad-receipts.json`.
+
+The full native job has eighteen passing UIA cases and one separate terminal-caret qualifier failure, with none ignored.
+Its eight GUI cases pass; the overall job remains failed.
+That unrelated fixture failure does not negate these completed clipboard cases.
+
+The fresh original issue covers background acquisition, pre-replacement caps, and reusable composer shaping.
+Current source routes chat, standalone, and Core acquisition through bounded background workers.
+Core uses the same native Mode::Text acquisition now exercised by the standalone fixture.
+Its separate view and worker tests cover reservations, FIFO input, output draining, cancellation, errors, and retained accepted input.
+The current thirty-three consumer cases include actual shaping-count and invalidation checks.
+Independent source and original-scope audit finds no missing requirement blocking `d378` closure.
+A live Core clipboard session and a working-session release profile are not original prerequisites.
+Native shared-reader evidence and Core contract evidence remain distinct.
