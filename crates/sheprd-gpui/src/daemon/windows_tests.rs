@@ -50,7 +50,7 @@ fn daemon_pipe_preserves_path_mapping_and_allows_current_owner() {
     let sid = sheprd_client::private_endpoint::user_sid().unwrap();
     for sddl in [
         format!("O:{sid}D:P(A;;GRGW;;;{sid})"),
-        "D:P(A;;GA;;;SY)(A;;GA;;;OW)".into(),
+        format!("O:{sid}D:P(A;;GA;;;SY)(A;;GA;;;OW)"),
     ] {
         let (socket, listener) = listener(&sddl);
         let mut client = dial(&socket, true).unwrap();

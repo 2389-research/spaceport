@@ -1,7 +1,11 @@
 // ABOUTME: Serves byte-mode lifecycle peers on native named pipes.
 // ABOUTME: Uses nonblocking handles and bounded peeks without pipe-drop flush waits.
 use super::TIMEOUT;
-use interprocess::os::windows::named_pipe::{PipeListener, PipeListenerOptions, pipe_mode};
+use interprocess::os::windows::{
+    ToWtf16 as _,
+    named_pipe::{PipeListener, PipeListenerOptions, pipe_mode},
+    security_descriptor::SecurityDescriptor,
+};
 use std::{
     fs::File,
     io::{self, Read, Write},
@@ -18,11 +22,17 @@ impl Listener {
     pub(super) fn bind(path: &Path) -> io::Result<Self> {
         // Match Herdr's daemon path mapping, rather than the control socket's name.
         let address = format!(r"\\.\pipe\{}", path.to_string_lossy());
+        let sid = sheprd_client::private_endpoint::user_sid()?;
+        // TokenOwner may name a group; the connector requires this user's SID.
+        let sddl = format!("O:{sid}D:P(A;;GA;;;{sid})");
+        let descriptor =
+            SecurityDescriptor::deserialize(&sddl.to_wtf_16().map_err(io::Error::other)?)?;
         Ok(Self(
             PipeListenerOptions::new()
                 .path(address)
                 .accept_remote(false)
                 .nonblocking(true)
+                .security_descriptor(Some(descriptor))
                 .create_duplex::<pipe_mode::Bytes>()?,
         ))
     }

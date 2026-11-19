@@ -224,32 +224,27 @@ impl SettingsWindow {
             (true, false) => Library::Ghostty,
             (false, _) => Library::Herdr,
         };
-        ui::row(&self.theme, &catalog::THEME_SOURCE)
-            // Where Herdr's themes cannot be saved the row says so instead.
-            .when(!Scope::Herdr.editable(), |row| {
-                row.description(fl!("settings-theme-library-read-only"))
-            })
-            .control(ui::segmented(
-                &self.theme,
-                "theme-source-control",
-                &[
-                    (Library::All, fl!("settings-theme-library-all")),
-                    (Library::Ghostty, fl!("settings-theme-library-ghostty")),
-                    (Library::Herdr, fl!("settings-theme-library-herdr")),
-                ],
-                Some(selected),
-                true,
-                on_value(cx, |this, library, window, cx| {
-                    let focus = this.themes.search.read(cx).focus.clone();
-                    window.focus(&focus, cx);
-                    let (ghostty, herdr) = match library {
-                        Library::All => (true, true),
-                        Library::Ghostty => (true, false),
-                        Library::Herdr => (false, true),
-                    };
-                    this.set_theme_sources(ghostty, herdr, cx);
-                }),
-            ))
+        ui::row(&self.theme, &catalog::THEME_SOURCE).control(ui::segmented(
+            &self.theme,
+            "theme-source-control",
+            &[
+                (Library::All, fl!("settings-theme-library-all")),
+                (Library::Ghostty, fl!("settings-theme-library-ghostty")),
+                (Library::Herdr, fl!("settings-theme-library-herdr")),
+            ],
+            Some(selected),
+            true,
+            on_value(cx, |this, library, window, cx| {
+                let focus = this.themes.search.read(cx).focus.clone();
+                window.focus(&focus, cx);
+                let (ghostty, herdr) = match library {
+                    Library::All => (true, true),
+                    Library::Ghostty => (true, false),
+                    Library::Herdr => (false, true),
+                };
+                this.set_theme_sources(ghostty, herdr, cx);
+            }),
+        ))
     }
 
     /// A button that opens the saved theme when it is a file.

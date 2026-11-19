@@ -371,6 +371,14 @@ impl Store {
         }
     }
 
+    #[cfg(test)]
+    pub(super) fn finish_writes(mut self) {
+        let Some(writer) = self.writer.take() else {
+            panic!("the persistence fixture requires a writer");
+        };
+        writer.finish();
+    }
+
     fn saved(&self) -> Saved {
         Saved {
             tabs: self.tabs.clone(),

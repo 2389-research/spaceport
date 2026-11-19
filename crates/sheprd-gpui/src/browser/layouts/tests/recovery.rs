@@ -25,16 +25,12 @@ fn recovery_keeps_rejected_ids_after_a_layout_only_save_and_restart() {
         )
         .unwrap();
     assert_eq!(u64::from(opened), 301);
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-    loop {
-        let file: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(&tabs).unwrap()).unwrap();
-        if file["next"] == 302 {
-            break;
-        }
-        assert!(std::time::Instant::now() < deadline);
-        std::thread::yield_now();
-    }
+    store.finish_writes();
+    let file: serde_json::Value = serde_json::from_slice(&std::fs::read(&tabs).unwrap()).unwrap();
+    assert_eq!(file["next"], 302);
+    let restored = crate::browser::Store::load_from(Some(tabs));
+    assert!(restored.get(opened).is_some());
+    restored.finish_writes();
 }
 
 #[test]

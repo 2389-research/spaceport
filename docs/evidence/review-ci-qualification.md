@@ -208,3 +208,52 @@ The fixture now initializes that projection from an empty `LiveState` before pop
 Production notice priority and expiry remain unchanged.
 The original case passes locally before this repair; its startup timing did not reproduce on this Mac.
 Fresh hosted execution remains necessary to qualify the observed CI failure.
+
+## Windows workspace repair
+
+Source `620a31af7992f5020cf33ef5042132d6647f13fc` completes with seventeen passing checks, five failures, and one skipped target.
+All macOS and Linux workspace jobs pass, along with native Windows GUI, release builds, and the installer.
+The failures are four Windows workspace jobs and their aggregate gate.
+The CodeRabbit success is a draft skip, rather than a review.
+
+Windows x64 default reaches 4,144 passing GPUI cases, 132 failures, and six private fixture entries ignored directly.
+Of those failures, 124 stop at the same lifecycle pipe handshake.
+The positive owner-rights pipe fixture also reports permission denied.
+The lifecycle listener used a default descriptor; the owner-rights fixture omitted its owner field.
+[Windows obtains a default object owner from TokenOwner](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-token_owner), which can differ from TokenUser.
+A default-owner mismatch fits these failures; the runner's actual default owner SID was not captured.
+Both fixtures now declare the current user's owner SID explicitly.
+The existing owner-rights DACL, denied-write case, identification-only access, and strict production owner comparison remain unchanged.
+
+Two CLI golden snapshots differ only by CRLF conversion in the captured Windows assertions.
+Narrow LF attributes now preserve their exact bytes under an actual `core.autocrlf=true` checkout.
+The strict snapshot assertions and command output remain unchanged.
+
+Windows OSC 8 drive paths were parsed as one-letter URI schemes before file classification.
+The classifier now recognizes bounded native drive targets first, preserving both separator forms.
+Hierarchical `x://` and opaque one-letter schemes still use external-scheme confirmation.
+Rich-text links reuse this classifier and retain network/device refusal and location parsing.
+Existing file resolution, remote checks, document safety, background I/O, and selection fences remain unchanged.
+The missing-file fixture now preserves the original path suffix when constructing its expected diagnostic.
+Windows-only regressions cover drive forms, bounds, controls, unknown schemes, locations, and network/device refusal.
+They await actual native execution; the original Windows file-click failures provide the failing runtime baseline.
+
+Settings selected a read-only source description on Windows after constructing the catalog row.
+Search therefore indexed different text from the rendered row.
+The catalog now selects that same message through the existing edit-capability predicate.
+The row consumes its catalog description without an override.
+The Windows read-only behavior and rendered copy remain unchanged.
+
+The recovery fixture's next-only poll could accept the reservation snapshot before the actual tab was written.
+It now joins the fixture writer, checks the saved counter, reloads the Store, and checks the opened identity.
+It also joins the reload's idle writer before temporary-directory cleanup.
+This strengthens real persistence assertions without changing production storage or increasing a timeout.
+The original Windows timeout's scheduling or write-failure cause remains unproven.
+
+The combined local recovery, Settings, terminal/window link, and CLI scope passes 167 cases with none ignored.
+Independent reviews approve the security boundaries, shared catalog, and test-writer ownership.
+Canonical `just lint` and `just lint-windows` pass both feature configurations with warnings denied.
+The Windows-only regressions compile in those checks; they do not execute on this Mac.
+Formatting, file size, sorted regions, operations, localization, specification-package, and diff checks pass.
+The specification check still reports JSON Schema validation as not run.
+Native Windows qualification remains pending on the repaired source.

@@ -184,9 +184,7 @@ impl Sandbox {
             Click::NotFound(path) => Outcome {
                 message: Some(
                     crate::Error::LinkedFileMissing {
-                        path: path
-                            .split('/')
-                            .fold(self.work.clone(), |path, part| path.join(part)),
+                        path: self.work.join(path),
                     }
                     .to_string(),
                 ),
