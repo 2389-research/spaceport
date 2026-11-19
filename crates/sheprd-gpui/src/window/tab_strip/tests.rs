@@ -394,8 +394,8 @@ fn target(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext) -> Option<(us
     view.read_with(cx, |view, _| {
         let target = view.tab_drag.as_ref()?.target()?;
         let beside = match &target.beside {
-            crate::reorder::Beside::Before(Pick::Herdr(id)) => format!("before {id}"),
-            crate::reorder::Beside::After(Pick::Herdr(id)) => format!("after {id}"),
+            sheprd_reorder::Beside::Before(Pick::Herdr(id)) => format!("before {id}"),
+            sheprd_reorder::Beside::After(Pick::Herdr(id)) => format!("after {id}"),
             other => format!("{other:?}"),
         };
         Some((target.slot, beside))
@@ -412,7 +412,7 @@ fn holding_a_tab_lifts_it_bigger_and_a_release_picks_the_gap(cx: &mut TestAppCon
     // A quick click stays a click.
     cx.simulate_mouse_down(a.center(), MouseButton::Left, Modifiers::default());
     cx.simulate_mouse_up(a.center(), MouseButton::Left, Modifiers::default());
-    cx.executor().advance_clock(crate::reorder::LIFT_DELAY * 2);
+    cx.executor().advance_clock(sheprd_reorder::LIFT_DELAY * 2);
     cx.run_until_parked();
     view.read_with(cx, |view, _| assert!(view.tab_drag.is_none()));
 
@@ -421,7 +421,7 @@ fn holding_a_tab_lifts_it_bigger_and_a_release_picks_the_gap(cx: &mut TestAppCon
     view.read_with(cx, |view, _| {
         assert!(!view.tab_drag.as_ref().unwrap().floating())
     });
-    cx.executor().advance_clock(crate::reorder::LIFT_DELAY);
+    cx.executor().advance_clock(sheprd_reorder::LIFT_DELAY);
     cx.run_until_parked();
     draw(cx);
     view.read_with(cx, |view, _| {

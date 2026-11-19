@@ -1,3 +1,5 @@
+// ABOUTME: Reorders and moves tabs while preserving captured targets and preview ownership.
+// ABOUTME: Keeps normal slide timing in native binaries and deterministic settling in unit tests.
 //! Reordering tabs by dragging them along their strip, as workspace rows are
 //! dragged in the sidebar, and moving one to another editor group by
 //! dropping it there. Holding a press on a tab, or moving it a few
@@ -16,11 +18,11 @@ use super::SheprdWindow;
 use crate::i18n::{Localize, fl};
 use crate::{
     browser::{GroupId, Pick, Store},
-    motion,
-    reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, SETTLE_TIMEOUT, SLIDE, Slide, preview, slot_for},
+    motion::{self, REORDER},
 };
 use gpui::{Bounds, Context, Pixels, Point, ScrollHandle, Size, Task, Window, px};
 use sheprd_client::{Method, protocol::ClientShellSnapshot};
+use sheprd_reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, SETTLE_TIMEOUT, Slide, preview, slot_for};
 use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
@@ -246,8 +248,8 @@ impl TabDrag {
             to: 0.,
             start: now,
         });
-        *slide = slide.toward(to, now, SLIDE);
-        (slide.at(now, SLIDE), slide.progress(now, SLIDE) < 1.)
+        *slide = slide.toward(to, now, REORDER);
+        (slide.at(now, REORDER), slide.progress(now, REORDER) < 1.)
     }
 
     /// Scrolls `scroll` toward whichever end the pointer is carried near, by

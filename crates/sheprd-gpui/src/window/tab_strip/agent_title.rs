@@ -37,8 +37,8 @@ pub(super) fn title(snapshot: &ClientShellSnapshot, tab: &ClientShellTab) -> Opt
     let title = first_agent(snapshot, tab)?
         .terminal_title_stripped
         .as_deref()?;
-    let line = crate::truncate::one_line(title, TITLE_BOUND);
-    (!line.is_empty()).then(|| crate::truncate::tab_title(&line))
+    let line = sheprd_truncate::one_line(title, TITLE_BOUND);
+    (!line.is_empty()).then(|| sheprd_truncate::tab_title(&line))
 }
 
 /// The first of `tab`'s agents in `agent_order`, the daemon's layout order.

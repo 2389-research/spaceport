@@ -1,3 +1,5 @@
+// ABOUTME: Reorders workspace rows while preserving captured keyboard and pointer intent.
+// ABOUTME: Uses shared geometry with presentation timing owned by the window motion policy.
 //! Reordering workspaces by dragging their rows. Holding a press on a row, or
 //! moving it a few pixels, lifts the row; the rows around it shift as if it
 //! had already been dropped under the pointer, so the gap they open is where
@@ -14,16 +16,15 @@
 
 mod keyboard;
 
+use crate::SheprdWindow;
 use crate::i18n::fl;
-use crate::{
-    SheprdWindow,
-    reorder::{LIFT_DELAY, LIFT_DISTANCE, SETTLE_TIMEOUT, SLIDE, Slide, slot_for},
-};
+use crate::motion::REORDER;
 use gpui::{Context, Pixels, Point, Task};
 use sheprd_client::{
     protocol::ClientShellWorkspace,
     workspaces::{WorkspaceMoveBlockParams, WorkspaceMoveParams, WorkspaceReorder},
 };
+use sheprd_reorder::{LIFT_DELAY, LIFT_DISTANCE, SETTLE_TIMEOUT, Slide, slot_for};
 use std::{cell::RefCell, collections::HashMap, time::Instant};
 
 use super::workspaces::{grouped_keys, workspace_entries};
@@ -72,8 +73,8 @@ impl WorkspaceDrag {
             to: 0.,
             start: now,
         });
-        *slide = slide.toward(to, now, SLIDE);
-        (slide.at(now, SLIDE), slide.progress(now, SLIDE) < 1.)
+        *slide = slide.toward(to, now, REORDER);
+        (slide.at(now, REORDER), slide.progress(now, REORDER) < 1.)
     }
 
     /// Records a carried row at the pointer, so it slides from there once

@@ -110,6 +110,15 @@ Three couplings had to invert first, each one parameter or struct:
   `ui_delay`, `path_for` and `allows` on it. Those became `pub(crate)`, and the
   app only calls the worker.
 
+`crates/sheprd-truncate` depends on `unicode-segmentation`, `unicode-width` and
+`sheprd-client`:
+
+| Before | After |
+| --- | --- |
+| `crates/sheprd-gpui/src/truncate.rs`, 105 lines | `crates/sheprd-truncate/src/lib.rs`, 105 lines: `cut`, `cut_chars`, `cut_width`, `one_line`, `ellipsize`, `tab_title`, `ELLIPSIS` |
+| `crates/sheprd-gpui/src/truncate/tests.rs`, 86 lines | `crates/sheprd-truncate/src/tests.rs`, moved unchanged |
+| 6 `crate::truncate::` paths in five files | the same paths naming `sheprd_truncate`; `one_line` calls `sheprd_client::text::safe_text`, which it had reached through `crate::notifications` |
+
 ## The pattern
 
 1. **Pick by footprint, not by size.** For each candidate module count what it
@@ -147,8 +156,7 @@ Cheap, dependency-free moves first; the blocked ones carry real work.
 
 | Module | production / test lines | importers | blockers |
 | --- | --- | --- | --- |
-| `reorder` | 170 / 0 | 4 | inline tests must move to `tests.rs`; std only |
-| `truncate` | 105 / 86 | 5 | `one_line` calls `notifications::safe_text`, which is `sheprd_client::text::safe_text`, so the crate would depend on `sheprd-client` |
+| `sound` | 848 / 1170 | 16 | the `rodio` win, but `Policy::poll(&mut LiveState)` (4 fields), `config::view_settings_path`, `config::SoundConfig`, `lenient`, and the root `Error::Sound` variant all have to move or invert first |
 
 `reorder` was the next cheap one and did not land in this wave: both extractions
 above compile `sheprd-gpui`, and the local disk floor (3 GiB free) stopped

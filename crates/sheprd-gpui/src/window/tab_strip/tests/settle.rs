@@ -3,7 +3,8 @@
 //! Nothing else ends the preview, and a press that never lifts stays a click.
 use {
     super::*,
-    crate::{browser::Pick, reorder::SETTLE_TIMEOUT, window::MockPeer},
+    crate::{browser::Pick, window::MockPeer},
+    sheprd_reorder::SETTLE_TIMEOUT,
 };
 
 /// Four tabs over a daemon that moves tabs, with `a` dropped before `c`, so
@@ -170,7 +171,7 @@ fn a_release_is_a_click_only_before_the_tab_lifts(cx: &mut TestAppContext) {
     assert!(!taken);
 
     cx.simulate_mouse_down(c.center(), MouseButton::Left, Modifiers::default());
-    cx.executor().advance_clock(crate::reorder::LIFT_DELAY);
+    cx.executor().advance_clock(sheprd_reorder::LIFT_DELAY);
     cx.run_until_parked();
     draw(cx);
     assert!(cx.debug_bounds("lifted-tab-c").is_some());

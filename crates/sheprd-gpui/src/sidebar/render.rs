@@ -21,6 +21,7 @@ use crate::direction::Logical;
 use crate::i18n::fl;
 use crate::{Command, NavigationTarget, SheprdWindow, config::AgentsPlacement, fonts::StyledFont};
 use gpui::{prelude::*, *};
+use sheprd_reorder::preview;
 
 mod agent_rows;
 mod device_tree;
@@ -243,7 +244,7 @@ impl SheprdWindow {
                 let slot = drag
                     .and_then(|drag| drag.target())
                     .map_or(plan.dragged(), |target| target.slot);
-                crate::reorder::preview(&heights, plan.dragged(), slot)
+                preview(&heights, plan.dragged(), slot)
             });
             // A child closes the group when no child follows it.
             let closes: Vec<bool> = (0..entries.len())

@@ -9,7 +9,8 @@
 //! them where the user put it, and lists it first until then.
 
 use super::{Endpoint, LOCAL};
-use crate::{SheprdWindow, reorder::Beside};
+use crate::SheprdWindow;
+use sheprd_reorder::Beside;
 
 /// Where `id` sorts under the user's `order`: its place there, or after
 /// every arranged device, so a stable sort keeps the catalog's own order

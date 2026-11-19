@@ -1,8 +1,9 @@
 //! Move Tab Left and Right for browser tabs. This client orders them itself,
 //! after the workspace's Herdr tabs, so the daemon's `tab.move` cannot.
 use super::{Pick, Store, TabId};
-use crate::{SheprdWindow, controls::Command, reorder::Beside};
+use crate::{SheprdWindow, controls::Command};
 use gpui::Context;
+use sheprd_reorder::Beside;
 
 /// Where Move Tab Left or Right puts `page` among `pages`, the browser tabs
 /// of its strip in order: beside its neighbour, or past the other end when

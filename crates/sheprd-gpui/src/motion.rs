@@ -23,6 +23,13 @@ pub(crate) const ENTER: Duration = Duration::from_millis(180);
 /// How long something takes to shrink out; leaving is a little quicker.
 pub(crate) const LEAVE: Duration = Duration::from_millis(150);
 
+/// Headless unit tests settle reorders; normal and native test binaries animate.
+pub(crate) const REORDER: Duration = if cfg!(test) {
+    Duration::ZERO
+} else {
+    sheprd_reorder::SLIDE
+};
+
 /// How far a motion that began at `since` has come at `now`, eased out, or
 /// `None` once it is done.
 pub(crate) fn progress(since: Instant, now: Instant, length: Duration) -> Option<f32> {

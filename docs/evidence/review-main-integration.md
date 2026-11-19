@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: CI repairs and newer-main integration locally verified for draft update.
+Status: reorder extraction and platform fixture integration locally verified for draft update.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
@@ -16,6 +16,8 @@ Its first complete CI run failed; see [the qualification repairs](review-ci-qual
 Main subsequently advanced to `57d6ea140722a613ce17beb9ec6d942e5d4c504f`.
 The topic branch incorporates that main alongside the CI repairs.
 See [the newer integration evidence](review-jargon-main-integration.md).
+Main then advanced to `44c5325e8b902f70d90f26d19d9188ae87c49d78` through PR 121.
+See [the reorder integration evidence](review-reorder-integration.md) for the current combined candidate.
 
 ## Sound extraction integration
 
@@ -247,7 +249,7 @@ See [the completed reconciliation](review-jargon-main-integration.md).
 Keep the draft unmerged while its hosted and native gates remain open.
 The full workspace test suite, hosted platform jobs, application build and CLI smoke remain deferred to CI.
 
-Kata remains 31 closed children and 22 open children at this checkpoint.
+Kata now has 32 closed children and 21 open children after native Windows agent-tree qualification.
 The umbrella remains open.
 Native Settings readiness is pending Doctor Biz's answer.
 Native Windows, native accessibility, and interactive release profiling remain pending.

@@ -38,8 +38,10 @@ sheprd-i18n.workspace           = true
 sheprd-lenient.workspace        = true
 sheprd-osc52.workspace          = true
 sheprd-remote.workspace         = true
+sheprd-reorder.workspace         = true
 sheprd-sound.workspace          = true
 sheprd-usage.workspace          = true
+sheprd-truncate.workspace       = true
 sheprd-words.workspace          = true
 image                          = { features = ["bmp", "tiff"], workspace = true }
 keepawake.workspace            = true
