@@ -5,7 +5,7 @@
 # its control type, name, and the patterns or states that matter here. With
 # -Keys, it then brings the window forward, sends each key ("|"-separated,
 # SendKeys syntax), and prints the element that has keyboard focus after it.
-param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '', [string]$GroupActionsFor = '', [switch]$ExpectExit)
+param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '', [string]$GroupActionsFor = '', [string]$FocusWorkspace = '', [switch]$ExpectExit)
 [Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
@@ -106,6 +106,23 @@ if ($Keys) {
   [HerdrUia]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
   [HerdrUia]::SetForegroundWindow($handle) | Out-Null
   Start-Sleep -Milliseconds 500
+  if ($FocusWorkspace) {
+    if ([HerdrUia]::GetForegroundWindow() -ne $handle) { throw 'The private window is not foreground' }
+    $root = $automation::FromHandle($handle)
+    if ($root.Current.ProcessId -ne $ProcessId) { throw 'The native root belongs to another process' }
+    $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $FocusWorkspace)
+    $type = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::ListItem)
+    $rows = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.AndCondition]::new($name, $type))
+    if ($rows.Count -ne 1) { throw 'Expected one named workspace in the private window' }
+    $row = $rows[0]
+    if ($row.Current.IsOffscreen -or -not $row.Current.IsEnabled -or -not $row.Current.IsKeyboardFocusable) { throw 'The private workspace cannot receive visible keyboard focus' }
+    $row.SetFocus()
+    $deadline = [DateTime]::UtcNow.AddSeconds(3)
+    while (-not $row.Current.HasKeyboardFocus) {
+      if ([DateTime]::UtcNow -ge $deadline) { throw 'The private workspace did not receive keyboard focus' }
+      Start-Sleep -Milliseconds 10
+    }
+  }
   foreach ($key in $Keys.Split('|')) {
     $focused = $automation::FocusedElement
     if ([HerdrUia]::GetForegroundWindow() -ne $handle -or
@@ -117,13 +134,30 @@ if ($Keys) {
          $focused.Current.Name -cne $ExpectedButton)) {
       throw "The focused control is not the expected private button '$ExpectedButton'"
     }
+    if ($FocusWorkspace) {
+      if ($focused.Current.ControlType -ne [System.Windows.Automation.ControlType]::ListItem -or $focused.Current.Name -cne $FocusWorkspace) { throw 'The named workspace lost native keyboard focus' }
+      foreach ($modifier in @(0x10, 0x11, 0x12, 0x5B, 0x5C)) {
+        if (([HerdrUia]::GetAsyncKeyState($modifier) -band 0x8000) -ne 0) { throw 'A modifier is already held before workspace input' }
+      }
+    }
     [System.Windows.Forms.SendKeys]::SendWait($key)
+    if ($FocusWorkspace) {
+      foreach ($modifier in @(0x10, 0x11, 0x12, 0x5B, 0x5C)) {
+        if (([HerdrUia]::GetAsyncKeyState($modifier) -band 0x8000) -ne 0) { throw 'Workspace input left a modifier held' }
+      }
+    }
     if ($ExpectExit) {
       # The owned app may already be gone; never inspect another app's new focus.
       [Console]::WriteLine('UIA_KEY expected_exit=true sent=true')
       break
     }
     Start-Sleep -Milliseconds 400
-    "focus after $key -> $(Describe $automation::FocusedElement)"
+    $focused = $automation::FocusedElement
+    if ($focused.Current.ProcessId -ne $ProcessId) { throw 'Native keyboard focus left the private process' }
+    if ($FocusWorkspace) {
+      if ([HerdrUia]::GetForegroundWindow() -ne $handle -or -not [System.Windows.Automation.Automation]::Compare($focused, $row)) { throw 'Native keyboard focus left the named private workspace' }
+      [Console]::WriteLine('WORKSPACE_KEY focused=true released=true sent=true')
+    }
+    "focus after $key -> $(Describe $focused)"
   }
 }

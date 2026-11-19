@@ -451,6 +451,8 @@ mod settings;
 mod terminal;
 #[path = "accessibility_windows/workspace_close.rs"]
 mod workspace_close;
+#[path = "accessibility_windows/workspace_reorder.rs"]
+mod workspace_reorder;
 // keep-sorted end
 
 #[test]

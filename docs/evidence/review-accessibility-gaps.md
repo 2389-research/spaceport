@@ -190,3 +190,32 @@ This qualifies Herdr text, caret semantics, line geometry, and the changed-outpu
 It does not prove audible speech, Core text providers, or exact collapsed-caret rectangles.
 The remaining native matrix above keeps `q72g` open.
 The job has eighteen passing UIA cases and one Settings observation failure; it is not green.
+
+## Native workspace reorder candidate
+
+The Windows suite now includes `native_workspace_arrows_change_daemon_order_and_preserve_terminal_ids`.
+It creates two named workspaces through the private app's existing dialogs.
+A separate real connection observes snapshots with surface interest disabled.
+It sends no observer-side mutations or terminal input.
+The helper focuses one unique, visible, enabled workspace row in the owned foreground window.
+It sends one Alt+Down press, then one Alt+Up press.
+Each direction must produce the expected complete workspace-ID order in the daemon snapshot.
+Both directions must preserve the daemon boot and every observed terminal ID.
+The native row order must also follow the daemon order.
+
+[UIA SetFocus](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.automationelement.setfocus) alone does not prove foreground ownership.
+The helper separately requires the exact owned HWND and actual row focus before sending input.
+It checks released modifiers before and after each workspace key.
+Independent review found an unsafe fresh global focus read after input.
+The correction captures focus once and checks its PID before describing that captured element.
+Workspace receipts additionally require the original HWND and exact row identity after input.
+Expected app exit still bypasses any post-exit focus query.
+The focused review confirms the correction without further material findings.
+
+The targeted Windows all-feature native-harness lint and all four canonical lint configurations pass.
+Formatting, size, sorting, operations, localization, commit, and diff checks pass.
+Logs use `/tmp/spaceport-9s44-workspace-keys-*.log`.
+Actual PowerShell execution and native reorder qualification remain pending Windows CI.
+No Mac fixture launched, and no personal daemon or clipboard was inspected.
+This candidate does not qualify pane resizing, Core access, or audible screen-reader output.
+Kata `q72g` remains open.

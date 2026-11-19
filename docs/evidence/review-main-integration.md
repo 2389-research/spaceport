@@ -70,7 +70,9 @@ The fresh-eyes review finds no material issue in the fourteen-path integration d
 The known debug-link unwind and external `block` notices remain unchanged.
 Streaming source matches published `dd3495336`; its prior semantic and release receipts remain applicable.
 Logs use `/tmp/spaceport-9s44-painter-integration-{tests,metal,lint,static}.log`.
-Current combined-source hosted CI remains pending until this merge is published.
+Published merge `a1f85f1ea` is conflict-free and matches the remote topic branch.
+Its [CI run](https://github.com/2389-research/spaceport/actions/runs/44592189535) and supply-chain run are live.
+Their terminal results remain pending; this is not a current-head CI success claim.
 This merges main into the draft branch; it does not merge the draft into main.
 
 ## Sound extraction integration
