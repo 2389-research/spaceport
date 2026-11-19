@@ -193,3 +193,24 @@ Both host and Windows GNU lint configurations and the static checks pass.
 Independent review finds no material ownership, keyboard, measurement, or original-scope gap.
 Actual Windows keyboard execution, persisted-value receipts, and both native PNG inspections remain pending.
 Kata `d0n2` remains open.
+
+## First native result on `7607bde87`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44537828031/job/135608225364) passes all eight GUI cases.
+Its UIA scope passes twelve cases and fails the Settings observer's log read.
+The failure occurs after `SETTINGS_RING_READY focused` at `2026-11-19T14:05:02.4599080Z`.
+Windows rejects `File.ReadAllText` because its default sharing mode excludes the GUI's open writer.
+This is a harness sharing failure, before the unfocused comparison and later control checks.
+
+The observer now uses `FileStream` with `FileShare.ReadWrite`.
+It handles short reads and reads at most one MiB plus one sentinel byte.
+It rejects overflow and disposes the stream in `finally`.
+It preserves keyboard guards, measurement rules, and deadlines.
+Independent review finds no material issue in that correction.
+Focused Windows harness lint and the diff check pass; corrected native execution remains pending.
+
+The focused PNG was decoded, framing/hash-checked, and inspected.
+It shows the authored Smooth scrolling row and its native switch.
+It has 7748 bytes and SHA-256 `bd0ecd512c828f5abca3c1c1a6868cade4b5ea219bf54275a820621a16877e5d`.
+The partial image and manifest remain in `/tmp/spaceport-9s44-settings-native-760/`.
+One focused image does not prove the comparison; `d0n2` stays open.

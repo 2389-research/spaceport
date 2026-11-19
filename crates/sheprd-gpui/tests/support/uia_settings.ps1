@@ -79,8 +79,20 @@ function Wait-Ring([string]$marker) {
   do {
     Require-SettingsFocus
     $file = Join-Path $PSScriptRoot 'gui.log'
-    if ((Get-Item $file).Length -gt 1048576) { throw 'Private Settings log exceeds bound' }
-    $text = [System.IO.File]::ReadAllText($file)
+    # The GUI keeps its inherited writer open; permit that writer while reading a bounded snapshot.
+    $stream = [System.IO.File]::Open($file, [System.IO.FileMode]::Open,
+      [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+    try {
+      $bytes = [byte[]]::new(1048577)
+      $length = 0
+      while ($length -lt $bytes.Length) {
+        $read = $stream.Read($bytes, $length, $bytes.Length - $length)
+        if ($read -eq 0) { break }
+        $length += $read
+      }
+      if ($length -gt 1048576) { throw 'Private Settings log exceeds bound' }
+      $text = [System.Text.Encoding]::UTF8.GetString($bytes, 0, $length)
+    } finally { $stream.Dispose() }
     if ($text.Contains('SETTINGS_RING_ERROR ')) { throw 'The owned Settings ring observer failed' }
     if ($text.Contains($marker)) { return }
     if ([DateTime]::UtcNow -ge $deadline) { throw "Missing native Settings marker '$marker'" }

@@ -316,6 +316,9 @@ Independent review confirms direction against the actual render order and finds 
 The focused Windows native harness lint, static checks, and diff check pass.
 Logs: `/tmp/spaceport-9s44-native-traversal-windows-lint.log` and `native-traversal-static.log` under the same prefix.
 Earlier complete chat qualification on `99e318867` and `5c696d3c8` remains recorded separately.
+The shorter route passes natively on `7607bde87` at `2026-11-19T14:03:33.1593775Z`.
+Its [x64 job](https://github.com/2389-research/spaceport/actions/runs/44537828031/job/135608225364) later fails the separate Settings log-sharing check.
+The UIA scope records twelve passing cases, one failure, and none ignored.
 
 ## Native qualification still pending
 
