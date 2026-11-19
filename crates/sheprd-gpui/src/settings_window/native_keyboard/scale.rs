@@ -31,11 +31,20 @@ pub(super) async fn verify(handle: WindowHandle<SettingsWindow>, cx: &mut AsyncA
         handle.update(cx, |_, window, _| window.resize(expected))?;
         eprintln!("SETTINGS_SCALE_STAGE resize {name} expected={expected:?}");
         let mut polls = 0;
+        let mut keyboard_requested = false;
         let captured = loop {
             if let Some(captured) = capture(handle, true, cx)?
                 && captured.viewport == expected
             {
                 break captured;
+            }
+            if !keyboard_requested
+                && handle.update(cx, |_, window, _| {
+                    window.viewport_size() == expected && !window.last_input_was_keyboard()
+                })?
+            {
+                eprintln!("SETTINGS_SCALE_KEYBOARD {name}");
+                keyboard_requested = true;
             }
             if matches!(polls, 0 | 60 | 300) {
                 eprintln!("SETTINGS_SCALE_WAIT {name} {}", capture_status(handle, cx)?);

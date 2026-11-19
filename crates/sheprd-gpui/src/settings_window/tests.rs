@@ -26,6 +26,7 @@ mod load_save;
 mod mixed_follow;
 mod navigation_groups;
 mod navigation_resize;
+mod navigation_scale;
 mod navigation_scroll;
 mod page_messages;
 mod pages_behaviour;

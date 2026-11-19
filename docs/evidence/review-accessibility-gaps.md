@@ -123,7 +123,7 @@ Kata `q72g` remains open for these specific checks:
 | Core Terminal node | Inspect actual text, caret, bounds, and observing panes with accessibility active. |
 | Herdr caret and announcements | Query caret/text ranges and observe changed output announced by a screen reader. |
 | Settings font scaling | Inspect enlarged glyphs and clipping, including a narrow window. |
-| Keyboard reorder and resize | Workspace reorder passes on `679cd74b8`; both terminal kinds still need native resize qualification. |
+| Keyboard reorder and resize | Workspace reorder and Herdr resize pass on `4194cb1ab`; Core resize remains pending. |
 | Selected-tab focus contrast | Inspect focused tabs on actual fills, including applicable translucent or image backdrops. |
 | Close-button roles | Native names, Button roles, cancellation, and confirmation pass on `64970ccce`; see below. |
 
@@ -351,3 +351,44 @@ They contain only viewport dimensions and private fixture state flags.
 No image limit, native guard, encoder, or deadline changes with those diagnostics.
 Windows GNU GPUI all-target/all-feature Clippy passes with warnings denied.
 Actual enlarged-glyph inspection remains pending.
+
+## Resize qualification and scaling diagnosis on `4194cb1ab`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44614263920/job/135878875152) passes eight GUI cases and twenty-two UIA cases.
+The only UIA failure is enlarged Settings capture.
+Herdr resize passes both arrows, changed and restored text bounds, and stable pane IDs.
+Its native pass is recorded at `2026-11-19T21:12:26.6955235Z`.
+Workspace reorder passes again.
+This qualifies the Herdr keyboard divider alternative; Core resizing remains pending.
+
+The Settings observer reaches the focused row and captures the 1100×780 viewport.
+Its PNG is 127,468 bytes, below the unchanged 192 KiB cap.
+Encoding finishes about 1.03 seconds after its entry marker.
+The narrow viewport reaches 680×780 with the window active and the same row focused.
+Its diagnostic then reports `keyboard=false`, which keeps the existing capture guard closed.
+No timeout or encoder adjustment is needed to address that observed condition.
+The next private fixture requests one native Tab/Shift-Tab round trip after the resized viewport loses keyboard modality.
+Its controller checks the exact HWND and row before and after the keys.
+The application still waits for its ordinary keyboard-focus capture guard.
+
+The [actual wide capture](review-squad/settings-scale/ui-24-before-wide-1100.png) was decoded and inspected.
+It preserves its native 1100×780 dimensions and original PNG bytes.
+SHA256: `de8f33d6c5d67ea0ca86746b859769d2e9a5073e2302bc2691a868667e27089b`.
+The General text scales, but the fixed navigation width clips several section labels.
+That native finding adds a scoped layout correction before qualification can finish.
+The default width now follows measured section labels and the configured font.
+Dragged widths stay chosen, and narrow deliberate choices use ellipsis.
+The existing panel-space cap and reset behavior remain.
+
+A real-layout regression first fails because Indicators needs 144px but its text column has only 112px.
+The correction passes at 1100px and 680px, retains a chosen 300px width, and resets to 184px at the normal font.
+The existing thirty-two navigation, font, pseudo-locale, RTL, and keyboard cases also pass.
+The initial combined run caught the new test's incorrect exact grip-edge assertion.
+The final test checks the stored width exactly and the existing one-pixel inset border convention.
+Logs use `/tmp/spaceport-9s44-settings-navigation-scale-{red,first-green,green}.log`.
+`just lint lint-windows` passes all four workspace/all-target feature and platform configurations.
+Format, file-size, sorting, operations, i18n, commit-subject, and diff checks pass.
+Independent review finds no material width-policy, focus-handoff, role, or guard issue.
+The private handoff and corrected layout still need execution on Windows.
+Fresh native captures of the corrected layout remain pending.
+Kata `q72g` remains open for the rest of its matrix.

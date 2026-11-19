@@ -76,6 +76,7 @@ function Tab-To([string]$name, $type, [string]$key = '{TAB}') {
 
 function Wait-Ring([string]$marker) {
   $deadline = [DateTime]::UtcNow.AddSeconds(10)
+  $scaleKeyboard = @{}
   do {
     Require-SettingsFocus
     $file = Join-Path $PSScriptRoot 'gui.log'
@@ -95,6 +96,19 @@ function Wait-Ring([string]$marker) {
     } finally { $stream.Dispose() }
     if ($text.Contains('SETTINGS_RING_ERROR ')) { throw 'The owned Settings ring observer failed' }
     if ($text.Contains('SETTINGS_SCALE_ERROR ')) { throw 'The owned Settings scale observer failed' }
+    if ($Action -eq 'Scale') {
+      foreach ($name in @('wide', 'narrow')) {
+        if (-not $scaleKeyboard.ContainsKey($name) -and $text.Contains("SETTINGS_SCALE_KEYBOARD $name")) {
+          $target = Named-Control $root 'Smooth scrolling' ([System.Windows.Automation.ControlType]::Button)
+          if (-not (Same-Focus $target)) { throw 'Resize lost the exact native Settings row' }
+          Press '{TAB}'
+          Press '+{TAB}'
+          if (-not (Same-Focus $target)) { throw 'Native resize keys did not restore the same Settings row' }
+          $scaleKeyboard[$name] = $true
+          [Console]::WriteLine("SETTINGS_SCALE_FOCUS_NATIVE $name")
+        }
+      }
+    }
     if ($text.Contains($marker)) { return }
     if ([DateTime]::UtcNow -ge $deadline) { throw "Missing native Settings marker '$marker'" }
     Start-Sleep -Milliseconds 25

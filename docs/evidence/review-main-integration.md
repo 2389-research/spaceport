@@ -468,3 +468,11 @@ The Unix-only shared helper expects the Windows-console lint at its import, besi
 No production lint rule changes.
 Quick format, size, sorting, operations, i18n, subject, and diff checks pass.
 The native result on this source is recorded in [accessibility evidence](review-accessibility-gaps.md#native-result-after-settings-extraction-on-63a885b15).
+
+On `4194cb1ab`, the [Linux ARM all-feature job](https://github.com/2389-research/spaceport/actions/runs/44614263920/job/135878875345) passes.
+Its seven headless cases pass with none ignored in 2.10 seconds.
+All four Linux jobs pass on that source.
+The same source also qualifies actual Herdr keyboard resizing; see [the native result](review-accessibility-gaps.md#resize-qualification-and-scaling-diagnosis-on-4194cb1ab).
+Enlarged Settings captures expose a keyboard-modality wait and clipped navigation labels.
+The scoped corrections preserve native guards, configured font size, and chosen navigation widths.
+Fresh native qualification remains required before closing the accessibility finding.
