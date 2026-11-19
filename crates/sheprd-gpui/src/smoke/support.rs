@@ -27,7 +27,7 @@
 //! its row in the driver's `fixtures!` table. It inherits every rule above.
 use crate::{
     Command, LiveState, SheprdWindow,
-    sidebar::layout_tests::{PaintedProbes, PaintedText, VerifyChildGeometry},
+    sidebar::layout_tests::{PaintedProbes, VerifyChildGeometry},
 };
 use anyhow::{Context as _, Result, anyhow, bail};
 use gpui::*;
@@ -234,6 +234,8 @@ pub(crate) fn key(name: &str, window: &mut Window, cx: &mut App) -> Result<()> {
 
 /// Repeats `inspect` on the fixture window until it answers, bounded so a
 /// window that never does fails the fixture instead of hanging the run.
+#[cfg(target_os = "macos")]
+use crate::sidebar::layout_tests::PaintedText;
 #[cfg(target_os = "macos")]
 use std::time::{Duration, Instant};
 
