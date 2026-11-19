@@ -349,6 +349,12 @@ impl CoreTerminals {
         self.views.values().chain(fallback)
     }
 
+    /// The herdr-core group this window shows, or none for a legacy
+    /// workspace.
+    pub(crate) fn selected_group(&self) -> Option<&CoreGroupKey> {
+        self.workspace_ui.selected_group.as_ref()
+    }
+
     /// Whether any shown terminal has output the window has not drawn.
     pub(crate) fn updated(&self, cx: &App) -> bool {
         self.shown().any(|view| view.read(cx).changed())

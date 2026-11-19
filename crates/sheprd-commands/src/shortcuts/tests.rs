@@ -3,6 +3,7 @@ use crate::{COMMANDS, Command};
 use gpui::{Keystroke, Modifiers};
 use std::collections::HashMap;
 
+mod collisions;
 mod default_snapshot;
 mod gnome;
 mod linux_symbols;

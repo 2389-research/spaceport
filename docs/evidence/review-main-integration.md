@@ -476,3 +476,38 @@ The same source also qualifies actual Herdr keyboard resizing; see [the native r
 Enlarged Settings captures expose a keyboard-modality wait and clipped navigation labels.
 The scoped corrections preserve native guards, configured font size, and chosen navigation widths.
 Fresh native qualification remains required before closing the accessibility finding.
+
+## Shortcut and browser integration, November 19
+
+Published `f88c8c252` fixes enlarged Settings navigation width and the guarded capture handoff.
+Its navigation regression fails first, then passes while preserving chosen widths and reset behavior.
+Both native after-images remain pending.
+
+Main `e13b88c30cb31ce510825805b2be5edfd4dd4299` merges PRs 134 and 135.
+The normal topic-branch merge accepts the shortcut aliases and browser ownership extraction.
+Linux retains source-confirmed GNOME exclusions and its direct Ctrl-Shift-R Resume binding.
+Windows retains the shared catalog, character-input protection, and keyboard-mapper correction.
+Private prefix routes and their custom-chord precedence remain intact.
+Native chrome and held-window fixtures follow the revised Ctrl-F6 and Ctrl-Shift-N defaults.
+Their process ownership, focus guards, event counts, and cleanup remain unchanged.
+
+Browser operations borrow endpoint, snapshot, store, and workspace state through `BrowserHosts`.
+Core admission uses the frozen hub-enabled flag, preserving restart-only opt-in behavior.
+Runtime pane history remains separate from private view settings.
+Independent review finds no material shortcut, restoration, or browser-ownership issue.
+
+The command suite passes 46 tests with none ignored.
+The focused UI consumer run passes 334 tests with none ignored in 1.25 seconds.
+Logs are `/tmp/spaceport-9s44-wave10-commands.log` and `/tmp/spaceport-9s44-wave10-consumers.log`.
+The shortcut snapshot is regenerated through its existing producer and reviewed.
+`just lint lint-windows` passes all four workspace/all-target feature configurations.
+The existing external `block` future-compatibility notice remains unchanged.
+File-size, sorting, operations, i18n, commit-subject, and diff checks pass.
+The added-line credential scan finds no credential patterns; the destination remains the public Spaceport repository.
+Fresh native checks and platform CI remain required on the published merge.
+
+Crew currently records 49 of 53 children done after Clint closes the shortcut finding.
+Four board-open findings remain: Core confirmation, painting/polling, accessibility, and foreground profiling.
+The shortcut finding's original native keyboard requirement also remains unverified by this squad.
+The coordination question is recorded on Crew as `20261119T215435870Z.30aefa`.
+No draft merge or release is authorized by this checkpoint.

@@ -1,4 +1,4 @@
-// ABOUTME: Verifies retained Herdr prefix routes for commands without Linux symbol defaults.
+// ABOUTME: Verifies retained Herdr prefix routes for commands alongside Linux symbol aliases.
 // ABOUTME: Exercises the real parsed view keymap rather than assuming catalog availability.
 use super::*;
 

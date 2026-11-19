@@ -2350,26 +2350,25 @@ switching input languages. Alt+F4 closes a window through Windows itself.
 
 | Action | Linux and Windows default |
 | --- | --- |
-| New tab / New window | Ctrl+Shift+T / Ctrl+Alt+N |
-| New workspace / New worktree | Ctrl+Alt+Shift+N / Ctrl+Shift+N |
+| New tab / New window | Ctrl+Shift+T / Ctrl+Shift+N |
+| New workspace | Ctrl+Alt+Shift+N |
 | Copy / Paste | Ctrl+Shift+C / Ctrl+Shift+V |
 | Find / Command palette | Ctrl+Shift+F / Ctrl+Shift+P |
-| Resume palette | Ctrl+Alt+Shift+R |
+| Resume palette | Ctrl+Shift+R (Linux) / Ctrl+Alt+Shift+R (Windows) |
 | Split right / Split down | Ctrl+Shift+D / Ctrl+Alt+Shift+D |
 | Close pane / Close tab | Ctrl+Shift+W / Ctrl+Alt+Shift+W |
-| Next / Previous tab | Prefix, N / Prefix, P |
+| Next / Previous tab | Ctrl+Shift+PageDown / Ctrl+Shift+PageUp |
 | Toggle sidebar | Ctrl+Shift+B |
-| Settings / Keyboard Shortcuts | Prefix, S / Prefix, ? (Linux); Ctrl+Shift+, / Ctrl+Shift+/ (Windows) |
+| Toggle status bar | Ctrl+Alt+B (Linux) / Ctrl+Alt+Shift+B (Windows) |
+| Zen mode | Ctrl+Shift+Z |
+| Focus next / previous region | Ctrl+F6 / Ctrl+Shift+F6 |
+| Settings / Keyboard Shortcuts | Ctrl+Shift+, / Ctrl+Shift+/ |
 | Larger / Smaller text | Ctrl+Shift+= / Ctrl+Shift+- |
 | Reset text size | Ctrl+Shift+0 (Linux) / Ctrl+0 (Windows) |
 | Quit | Ctrl+Shift+Q |
-| Full screen | Prefix, F11 |
+| Full screen | Ctrl+Shift+F11 |
 
 The default prefix is Ctrl+B. Press the prefix, release it, then press the chord key.
-Linux leaves shifted digit and punctuation defaults unbound when GPUI cannot map their layout.
-Herdr's prefix routes retain tab digits, next/previous pane, Settings, and Keyboard Shortcuts.
-Back, Forward, Split Editor, and Cycle Windows remain in the command palette and shortcut settings.
-Windows keeps its mapped shifted-symbol shortcuts.
 Plain F6, Shift+F6, F11, and Ctrl+PageUp/PageDown remain available to pane programs.
 Spaceport adds private-view `focus_next_region`, `focus_previous_region`, and `toggle_full_screen` prefix defaults on Linux and Windows.
 They use Prefix+F6, Prefix+Shift+F6, and Prefix+F11 respectively.
@@ -2377,6 +2376,7 @@ These three entries are Spaceport commands, rather than Herdr TUI defaults.
 Their unconfigured defaults yield to existing daemon custom chords.
 Explicit `[keys]` or `[keybindings]` assignments keep their configured precedence.
 Herdr-native prefix defaults retain their TUI precedence.
+Linux leaves GNOME's Ctrl+Alt+Shift+arrows unbound; Prefix, H/J/K/L still focus panes.
 
 The in-app reference lists all platform defaults and current overrides. The
 Cmd examples elsewhere in this document describe the macOS profile.
@@ -2391,6 +2391,15 @@ Configured command shortcuts keep priority over these row keys.
 For pane dividers, use **Resize mode** or the directional **Resize** commands in shortcut settings.
 Herdr's resize mode uses the prefix followed by R, then arrows or H/J/K/L; Escape leaves it.
 Core pane layouts accept the same directional Resize commands.
+
+A shifted digit or punctuation key arrives as the symbol it types, so every
+default of that kind is bound both ways and either spelling runs it: Ctrl+Shift-1
+and Ctrl+!, Ctrl+Shift-[ and Ctrl+{, and the same for `]`, `,`, `/`, `\`, and
+`` ` ``. Windows reports AltGr as Ctrl+Alt, so nothing paired with a letter alone
+becomes a Windows default: where Ctrl+Alt is the second tier Windows takes
+Ctrl+Alt+Shift instead, and a window closes with Alt+F4 itself. Bare function
+keys belong to the programs a pane runs (mc moves with F6 and htop sorts with
+it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
 
 ## Supported
 
@@ -3394,21 +3403,22 @@ unavailable preferences leave the last known policy unchanged.
 
 #### The keyboard in the chrome
 
-Tab belongs to the terminal, so the chrome is reached a region at a time.
-On Linux and Windows, **Prefix, F6** (Focus Next Region) moves the keyboard from the
-terminal to the title bar, the sidebar (from its activity bar), and the status
-bar, then back to the terminal; **Prefix, Shift+F6** (Focus Previous Region) goes the
-other way. Inside a region, Tab and Shift+Tab move between its controls and
-wrap, the arrows also move in the sidebar, Enter or Space uses the control, and
-Escape returns to the terminal. The focused control has an accent ring.
-**F10** opens the menu bar. Both region commands can be rebound in Keyboard
-Shortcuts (Cmd+F6 and Cmd+Shift+F6 on macOS). The default prefix is Ctrl+B.
-A region's controls are tab
-stops only while it holds the keyboard, so clicking a chrome button never pulls
-typing away from the terminal.
+Tab belongs to the terminal, so the chrome is reached a region at a time, as
+in other Windows apps. **Ctrl+F6** (Focus Next Region) moves the keyboard from
+the terminal to the title bar, the sidebar (from its activity bar), and the
+status bar, then back to the terminal; **Ctrl+Shift+F6** (Focus Previous
+Region) goes the other way. Bare F6 stays with the program in the pane, as mc
+and htop take it. Inside a region, Tab and Shift+Tab move between its
+controls and wrap, the arrows also move in the sidebar, Enter or Space uses the
+control, and Escape returns to the terminal. The focused control has an accent
+ring. **F10** opens the menu bar. Both region commands can be rebound in
+Keyboard Shortcuts (Cmd+F6 and Cmd+Shift+F6 on macOS). A region's controls are
+tab stops only while it holds the keyboard, so clicking a chrome button never
+pulls typing away from the terminal.
+The default prefix is Ctrl+B. Prefix, F6 and Prefix, Shift+F6 also switch regions.
 
 `tests/accessibility_windows.rs` reads a running window's tree and checks
-these names and where prefix region commands and Tab move focus:
+these names and where Ctrl+F6 and Tab move focus:
 
 ```bash
 HERDR_TEST_BINARY=C:/path/to/herdr.exe cargo test -p sheprd-gpui --test accessibility_windows -- --ignored --nocapture

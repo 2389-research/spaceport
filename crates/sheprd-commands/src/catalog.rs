@@ -17,17 +17,24 @@ use crate::CommandInfo;
 /// The number ends the keybinding name and each shortcut:
 ///
 /// ```text
-/// Variant(1 2 3), "keybinding_name_", "message-id", mac: ["key-"], linux: ["key-"];
+/// Variant(1 2 3), "keybinding_name_", "message-id", mac: ["key-"], linux: ["key-"],
+///     symbols: ["alt-"];
 /// ```
+///
+/// `symbols` holds one more Linux alias prefix per number, for a backend that
+/// reports Shift with a digit as the symbol the digit types: `alt-!` beside
+/// `alt-shift-1`. A numbered row with no such alias passes `symbols: []`.
 ///
 /// Doc comments above a row document its variant. The `@` rules are the
 /// macro's own steps: `@rows` reads one row at a time into the variants and
 /// the commands read so far, then writes the items once no row is left.
 macro_rules! catalog {
+    // Each number is captured as a token rather than a literal, so that the
+    // digit still matches the literal of its own symbol arm below.
     (@rows [$($variants:tt)*] [$($commands:tt)*]
         $(#[$meta:meta])*
-        $variant:ident($($number:literal)+), $name:literal, $message:literal,
-        mac: $mac:tt, linux: $linux:tt;
+        $variant:ident($($number:tt)+), $name:literal, $message:literal,
+        mac: $mac:tt, linux: $linux:tt, symbols: $symbols:tt;
         $($rest:tt)*
     ) => {
         catalog! {
@@ -36,7 +43,8 @@ macro_rules! catalog {
             [$($commands)* $({
                 [Command::$variant($number)]
                 concat!($name, $number), $message,
-                catalog!(@numbered $mac $number), catalog!(@numbered $linux $number)
+                catalog!(@numbered $mac $number),
+                catalog!(@symbols $linux $symbols $number)
             })+]
             $($rest)*
         }
@@ -103,6 +111,33 @@ macro_rules! catalog {
     (@numbered [$($prefix:literal),*] $number:literal) => {
         &[$(concat!($prefix, $number)),*]
     };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 1) => {
+        &[$(concat!($prefix, "1"),)* $(concat!($symbol, "!"),)*]
+    };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 2) => {
+        &[$(concat!($prefix, "2"),)* $(concat!($symbol, "@"),)*]
+    };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 3) => {
+        &[$(concat!($prefix, "3"),)* $(concat!($symbol, "#"),)*]
+    };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 4) => {
+        &[$(concat!($prefix, "4"),)* $(concat!($symbol, "$"),)*]
+    };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 5) => {
+        &[$(concat!($prefix, "5"),)* $(concat!($symbol, "%"),)*]
+    };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 6) => {
+        &[$(concat!($prefix, "6"),)* $(concat!($symbol, "^"),)*]
+    };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 7) => {
+        &[$(concat!($prefix, "7"),)* $(concat!($symbol, "&"),)*]
+    };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 8) => {
+        &[$(concat!($prefix, "8"),)* $(concat!($symbol, "*"),)*]
+    };
+    (@symbols [$($prefix:literal),*] [$($symbol:literal),*] 9) => {
+        &[$(concat!($prefix, "9"),)* $(concat!($symbol, "("),)*]
+    };
     ($($rows:tt)*) => {
         catalog! { @rows [] [] $($rows)* }
     };
@@ -111,12 +146,23 @@ macro_rules! catalog {
 // The order is the palette's and the keybindings window's, so it is not
 // sorted. Each `"keybinding_name"` is a key of the config file's
 // `[keybindings]`: renaming one breaks existing configs.
+//
+// A Linux and Windows default keeps Ctrl-Alt away from a letter wherever the
+// app can, because Windows reports AltGr as Ctrl-Alt: a row bound to
+// Ctrl-Alt-N would take the `ń` a Polish layout types. The second-tier rows
+// keep Ctrl-Alt-Shift, which no layout was checked against: where a layout has
+// a capital of its AltGr letter, AltGr-Shift types it, and Ctrl-Alt-Shift with
+// an arrow or with `r` conflicts with GNOME defaults. The Linux wrapper removes
+// those bindings; Windows retains them. Real keyboard qualification remains required.
 catalog! {
     OpenNotificationTarget, "open_notification_target", "commands-open-notification-target",
         mac: ["cmd-alt-n"], linux: ["ctrl-alt-shift-u"];
     Logs, "logs", "commands-logs", mac: [], linux: [];
     Messages, "messages", "commands-messages", mac: [], linux: [];
-    NewWindow, "new_window", "commands-new-window", mac: ["cmd-alt-shift-n"], linux: ["ctrl-alt-n"];
+    // Ctrl-Shift-N, as Windows Terminal opens a window. Ctrl-Alt-N is a
+    // letter on an AltGr layout, where AltGr is Ctrl-Alt on Windows.
+    NewWindow, "new_window", "commands-new-window",
+        mac: ["cmd-alt-shift-n"], linux: ["ctrl-shift-n"];
     Workspace, "new_workspace", "commands-new-workspace",
         mac: ["cmd-shift-n"], linux: ["ctrl-alt-shift-n"];
     /// The focused repository's "Open worktree..." dialog.
@@ -128,15 +174,16 @@ catalog! {
     PreviousWorkspace, "previous_workspace", "commands-previous-workspace", mac: [], linux: [];
     NextWorkspace, "next_workspace", "commands-next-workspace", mac: [], linux: [];
     WorkspaceNumber(1 2 3 4 5 6 7 8 9), "focus_workspace_", "commands-focus-workspace",
-        mac: [], linux: [];
+        mac: [], linux: [], symbols: [];
     RenameWorkspace, "rename_workspace", "commands-rename-workspace", mac: [], linux: [];
     Tab, "new_tab", "commands-new-tab", mac: ["cmd-t"], linux: ["ctrl-shift-t"];
     SplitRight, "split_right", "commands-split-right", mac: ["cmd-d"], linux: ["ctrl-shift-d"];
     SplitDown, "split_down", "commands-split-down",
         mac: ["cmd-shift-d"], linux: ["ctrl-alt-shift-d"];
-    NextTab, "next_tab", "commands-next-tab", mac: ["cmd-shift-]"], linux: [];
+    // A pane program pages its own output with Ctrl-PageDown and Ctrl-PageUp.
+    NextTab, "next_tab", "commands-next-tab", mac: ["cmd-shift-]"], linux: ["ctrl-shift-pagedown"];
     PreviousTab, "previous_tab", "commands-previous-tab",
-        mac: ["cmd-shift-["], linux: [];
+        mac: ["cmd-shift-["], linux: ["ctrl-shift-pageup"];
     MoveTabPrevious, "move_tab_previous", "commands-move-tab-previous", mac: [], linux: [];
     MoveTabNext, "move_tab_next", "commands-move-tab-next", mac: [], linux: [];
     RenameTab, "rename_tab", "commands-rename-tab", mac: [], linux: [];
@@ -147,13 +194,17 @@ catalog! {
     FocusUp, "focus_up", "commands-focus-up", mac: ["cmd-alt-up"], linux: ["ctrl-alt-shift-up"];
     FocusDown, "focus_down", "commands-focus-down",
         mac: ["cmd-alt-down"], linux: ["ctrl-alt-shift-down"];
-    NextPane, "next_pane", "commands-next-pane", mac: ["cmd-alt-]"], linux: ["ctrl-alt-shift-]"];
+    NextPane, "next_pane", "commands-next-pane",
+        mac: ["cmd-alt-]"], linux: ["ctrl-alt-shift-]", "ctrl-alt-}"];
     PreviousPane, "previous_pane", "commands-previous-pane",
-        mac: ["cmd-alt-["], linux: ["ctrl-alt-shift-["];
+        mac: ["cmd-alt-["], linux: ["ctrl-alt-shift-[", "ctrl-alt-{"];
     LastPane, "last_pane", "commands-last-pane", mac: [], linux: [];
     /// Back through the panes this endpoint has focused.
-    Back, "back", "commands-back", mac: ["cmd-["], linux: ["ctrl-shift-["];
-    Forward, "forward", "commands-forward", mac: ["cmd-]"], linux: ["ctrl-shift-]"];
+    // Back and Forward name both spellings of a shifted bracket, as the font
+    // keys name both spellings of a shifted `=`: a host that reports Shift
+    // with the symbol it types never sends `ctrl-shift-[`.
+    Back, "back", "commands-back", mac: ["cmd-["], linux: ["ctrl-shift-[", "ctrl-{"];
+    Forward, "forward", "commands-forward", mac: ["cmd-]"], linux: ["ctrl-shift-]", "ctrl-}"];
     SwapLeft, "swap_pane_left", "commands-swap-pane-left", mac: [], linux: [];
     SwapRight, "swap_pane_right", "commands-swap-pane-right", mac: [], linux: [];
     SwapUp, "swap_pane_up", "commands-swap-pane-up", mac: [], linux: [];
@@ -184,24 +235,26 @@ catalog! {
     ReopenClosedTab, "reopen_closed_tab", "commands-reopen-closed-tab",
         mac: ["cmd-shift-t"], linux: ["ctrl-alt-shift-t"];
     TabNumber(1 2 3 4 5 6 7 8 9), "focus_tab_", "commands-focus-tab",
-        mac: ["cmd-"], linux: ["ctrl-shift-"];
+        mac: ["cmd-"], linux: ["ctrl-shift-"], symbols: ["ctrl-"];
     PreviousAgent, "previous_agent", "commands-previous-agent", mac: [], linux: [];
     NextAgent, "next_agent", "commands-next-agent", mac: [], linux: [];
-    AgentNumber(1 2 3 4 5 6 7 8 9), "focus_agent_", "commands-focus-agent", mac: [], linux: [];
+    AgentNumber(1 2 3 4 5 6 7 8 9), "focus_agent_", "commands-focus-agent",
+        mac: [], linux: [], symbols: [];
     ToggleSidebar, "toggle_sidebar", "commands-toggle-sidebar",
         mac: ["cmd-b"], linux: ["ctrl-shift-b"];
     ToggleStatusBar, "toggle_status_bar", "commands-toggle-status-bar",
         mac: ["cmd-alt-b"], linux: ["ctrl-alt-b"];
     /// Moves keyboard focus to the next of the terminal, the title bar, the
     /// sidebar, and the status bar, where Tab moves between controls.
-    // Ctrl platforms use explicit prefix chords so pane programs keep bare F6.
+    // F6 is Windows' own region key, and mc and htop take it in a pane, so
+    // the app keeps the F6 name under its own Ctrl prefix.
     FocusNextRegion, "focus_next_region", "commands-focus-next-region",
-        mac: ["cmd-f6"], linux: [];
+        mac: ["cmd-f6"], linux: ["ctrl-f6"];
     FocusPreviousRegion, "focus_previous_region", "commands-focus-previous-region",
-        mac: ["cmd-shift-f6"], linux: [];
+        mac: ["cmd-shift-f6"], linux: ["ctrl-shift-f6"];
     /// Hides the window's chrome and every group but the one in use.
     ToggleZenMode, "toggle_zen_mode", "commands-toggle-zen-mode",
-        mac: ["ctrl-cmd-z"], linux: ["ctrl-alt-z"];
+        mac: ["ctrl-cmd-z"], linux: ["ctrl-shift-z"];
     DevicesOverview, "devices_overview", "commands-devices-overview", mac: [], linux: [];
     /// Starts a shell in herdr-core (Herdr 2) and shows it in a tab.
     NewCoreTerminal, "new_core_terminal", "commands-new-core-terminal", mac: [], linux: [];
@@ -215,9 +268,9 @@ catalog! {
         mac: ["cmd--"], linux: ["ctrl-shift--", "ctrl-_"];
     ResetFontSize, "reset_font_size", "commands-reset-font-size",
         mac: ["cmd-0"], linux: ["ctrl-shift-0", "ctrl-)"];
-    Settings, "settings", "commands-settings", mac: ["cmd-,"], linux: ["ctrl-shift-,"];
+    Settings, "settings", "commands-settings", mac: ["cmd-,"], linux: ["ctrl-shift-,", "ctrl-<"];
     ReloadConfig, "reload_config", "commands-reload-config", mac: [], linux: [];
-    Keybinds, "keybindings", "commands-keybindings", mac: ["cmd-/"], linux: ["ctrl-shift-/"];
+    Keybinds, "keybindings", "commands-keybindings", mac: ["cmd-/"], linux: ["ctrl-shift-/", "ctrl-?"];
     Sessions, "sessions", "commands-sessions", mac: ["cmd-shift-s"], linux: ["ctrl-shift-s"];
     Themes, "themes", "commands-themes", mac: [], linux: [];
     WorkspacePicker, "workspace_picker", "commands-workspace-picker",
@@ -234,11 +287,13 @@ catalog! {
     About, "about", "commands-about", mac: [], linux: [];
     InstallBrowserSkill, "install_browser_skill", "commands-install-browser-skill",
         mac: [], linux: [];
-    SplitEditor, "split_editor", "commands-split-editor", mac: ["cmd-\\"], linux: ["ctrl-shift-\\"];
+    SplitEditor, "split_editor", "commands-split-editor",
+        mac: ["cmd-\\"], linux: ["ctrl-shift-\\", "ctrl-|"];
+    // F11 full screen and F6 belong to the pane programs a terminal runs.
     ToggleFullScreen, "toggle_full_screen", "commands-toggle-full-screen",
-        mac: ["ctrl-cmd-f"], linux: [];
+        mac: ["ctrl-cmd-f"], linux: ["ctrl-shift-f11"];
     CycleWindows, "cycle_windows", "commands-cycle-windows",
-        mac: ["cmd-`"], linux: ["ctrl-shift-`"];
+        mac: ["cmd-`"], linux: ["ctrl-shift-`", "ctrl-~"];
     /// Closes the window it runs in, leaving the daemon and its terminals.
     // Tiling compositors such as Hyprland draw no close button.
     CloseWindow, "close_window", "commands-close-window",

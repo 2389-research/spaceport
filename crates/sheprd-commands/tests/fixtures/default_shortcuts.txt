@@ -1,9 +1,9 @@
 about linux: -
 about macos: -
 about windows: -
-back linux: -
+back linux: ctrl-shift-[ ctrl-{
 back macos: cmd-[
-back windows: ctrl-shift-[
+back windows: ctrl-shift-[ ctrl-{
 check-for-updates linux: -
 check-for-updates macos: -
 check-for-updates windows: -
@@ -18,7 +18,7 @@ close_tab macos: cmd-shift-w
 close_tab windows: ctrl-alt-shift-w
 close_window linux: ctrl-alt-w
 close_window macos: cmd-alt-shift-w
-close_window windows: ctrl-alt-w
+close_window windows: -
 close_workspace linux: -
 close_workspace macos: -
 close_workspace windows: -
@@ -28,9 +28,9 @@ command_palette windows: ctrl-shift-p
 copy_mode linux: ctrl-alt-shift-c
 copy_mode macos: cmd-shift-c
 copy_mode windows: ctrl-alt-shift-c
-cycle_windows linux: -
+cycle_windows linux: ctrl-shift-` ctrl-~
 cycle_windows macos: cmd-`
-cycle_windows windows: ctrl-shift-`
+cycle_windows windows: ctrl-shift-` ctrl-~
 decrease_font_size linux: ctrl-shift-- ctrl-_
 decrease_font_size macos: cmd--
 decrease_font_size windows: ctrl-shift--
@@ -91,42 +91,42 @@ focus_down windows: ctrl-alt-shift-down
 focus_left linux: -
 focus_left macos: cmd-alt-left
 focus_left windows: ctrl-alt-shift-left
-focus_next_region linux: -
+focus_next_region linux: ctrl-f6
 focus_next_region macos: cmd-f6
-focus_next_region windows: -
-focus_previous_region linux: -
+focus_next_region windows: ctrl-f6
+focus_previous_region linux: ctrl-shift-f6
 focus_previous_region macos: cmd-shift-f6
-focus_previous_region windows: -
+focus_previous_region windows: ctrl-shift-f6
 focus_right linux: -
 focus_right macos: cmd-alt-right
 focus_right windows: ctrl-alt-shift-right
-focus_tab_1 linux: -
+focus_tab_1 linux: ctrl-shift-1 ctrl-!
 focus_tab_1 macos: cmd-1
-focus_tab_1 windows: ctrl-shift-1
-focus_tab_2 linux: -
+focus_tab_1 windows: ctrl-shift-1 ctrl-!
+focus_tab_2 linux: ctrl-shift-2 ctrl-@
 focus_tab_2 macos: cmd-2
-focus_tab_2 windows: ctrl-shift-2
-focus_tab_3 linux: -
+focus_tab_2 windows: ctrl-shift-2 ctrl-@
+focus_tab_3 linux: ctrl-shift-3 ctrl-#
 focus_tab_3 macos: cmd-3
-focus_tab_3 windows: ctrl-shift-3
-focus_tab_4 linux: -
+focus_tab_3 windows: ctrl-shift-3 ctrl-#
+focus_tab_4 linux: ctrl-shift-4 ctrl-$
 focus_tab_4 macos: cmd-4
-focus_tab_4 windows: ctrl-shift-4
-focus_tab_5 linux: -
+focus_tab_4 windows: ctrl-shift-4 ctrl-$
+focus_tab_5 linux: ctrl-shift-5 ctrl-%
 focus_tab_5 macos: cmd-5
-focus_tab_5 windows: ctrl-shift-5
-focus_tab_6 linux: -
+focus_tab_5 windows: ctrl-shift-5 ctrl-%
+focus_tab_6 linux: ctrl-shift-6 ctrl-^
 focus_tab_6 macos: cmd-6
-focus_tab_6 windows: ctrl-shift-6
-focus_tab_7 linux: -
+focus_tab_6 windows: ctrl-shift-6 ctrl-^
+focus_tab_7 linux: ctrl-shift-7 ctrl-&
 focus_tab_7 macos: cmd-7
-focus_tab_7 windows: ctrl-shift-7
-focus_tab_8 linux: -
+focus_tab_7 windows: ctrl-shift-7 ctrl-&
+focus_tab_8 linux: ctrl-shift-8 ctrl-*
 focus_tab_8 macos: cmd-8
-focus_tab_8 windows: ctrl-shift-8
-focus_tab_9 linux: -
+focus_tab_8 windows: ctrl-shift-8 ctrl-*
+focus_tab_9 linux: ctrl-shift-9 ctrl-(
 focus_tab_9 macos: cmd-9
-focus_tab_9 windows: ctrl-shift-9
+focus_tab_9 windows: ctrl-shift-9 ctrl-(
 focus_up linux: -
 focus_up macos: cmd-alt-up
 focus_up windows: ctrl-alt-shift-up
@@ -157,18 +157,18 @@ focus_workspace_8 windows: -
 focus_workspace_9 linux: -
 focus_workspace_9 macos: -
 focus_workspace_9 windows: -
-forward linux: -
+forward linux: ctrl-shift-] ctrl-}
 forward macos: cmd-]
-forward windows: ctrl-shift-]
+forward windows: ctrl-shift-] ctrl-}
 increase_font_size linux: ctrl-shift-= ctrl-shift-+ ctrl-+
 increase_font_size macos: cmd-= cmd-+
 increase_font_size windows: ctrl-shift-= ctrl-shift-+
 install_browser_skill linux: -
 install_browser_skill macos: -
 install_browser_skill windows: -
-keybindings linux: -
+keybindings linux: ctrl-shift-/ ctrl-?
 keybindings macos: cmd-/
-keybindings windows: ctrl-shift-/
+keybindings windows: ctrl-shift-/ ctrl-?
 last_pane linux: -
 last_pane macos: -
 last_pane windows: -
@@ -196,21 +196,21 @@ new_core_terminal windows: -
 new_tab linux: ctrl-shift-t
 new_tab macos: cmd-t
 new_tab windows: ctrl-shift-t
-new_window linux: ctrl-alt-n
+new_window linux: ctrl-shift-n
 new_window macos: cmd-alt-shift-n
-new_window windows: ctrl-alt-n
+new_window windows: ctrl-shift-n
 new_workspace linux: ctrl-alt-shift-n
 new_workspace macos: cmd-shift-n
 new_workspace windows: ctrl-alt-shift-n
 next_agent linux: -
 next_agent macos: -
 next_agent windows: -
-next_pane linux: -
+next_pane linux: ctrl-alt-shift-] ctrl-alt-}
 next_pane macos: cmd-alt-]
-next_pane windows: ctrl-alt-shift-]
-next_tab linux: -
+next_pane windows: ctrl-alt-shift-] ctrl-alt-}
+next_tab linux: ctrl-shift-pagedown
 next_tab macos: cmd-shift-]
-next_tab windows: -
+next_tab windows: ctrl-shift-pagedown
 next_workspace linux: -
 next_workspace macos: -
 next_workspace windows: -
@@ -223,12 +223,12 @@ open_worktree windows: -
 previous_agent linux: -
 previous_agent macos: -
 previous_agent windows: -
-previous_pane linux: -
+previous_pane linux: ctrl-alt-shift-[ ctrl-alt-{
 previous_pane macos: cmd-alt-[
-previous_pane windows: ctrl-alt-shift-[
-previous_tab linux: -
+previous_pane windows: ctrl-alt-shift-[ ctrl-alt-{
+previous_tab linux: ctrl-shift-pageup
 previous_tab macos: cmd-shift-[
-previous_tab windows: -
+previous_tab windows: ctrl-shift-pageup
 previous_workspace linux: -
 previous_workspace macos: -
 previous_workspace windows: -
@@ -277,15 +277,15 @@ resume_palette windows: ctrl-alt-shift-r
 sessions linux: ctrl-shift-s
 sessions macos: cmd-shift-s
 sessions windows: ctrl-shift-s
-settings linux: -
+settings linux: ctrl-shift-, ctrl-<
 settings macos: cmd-,
-settings windows: ctrl-shift-,
+settings windows: ctrl-shift-, ctrl-<
 split_down linux: ctrl-alt-shift-d
 split_down macos: cmd-shift-d
 split_down windows: ctrl-alt-shift-d
-split_editor linux: -
+split_editor linux: ctrl-shift-\ ctrl-|
 split_editor macos: cmd-\
-split_editor windows: ctrl-shift-\
+split_editor windows: ctrl-shift-\ ctrl-|
 split_right linux: ctrl-shift-d
 split_right macos: cmd-d
 split_right windows: ctrl-shift-d
@@ -304,18 +304,18 @@ swap_pane_up windows: -
 themes linux: -
 themes macos: -
 themes windows: -
-toggle_full_screen linux: -
+toggle_full_screen linux: ctrl-shift-f11
 toggle_full_screen macos: ctrl-cmd-f
-toggle_full_screen windows: -
+toggle_full_screen windows: ctrl-shift-f11
 toggle_sidebar linux: ctrl-shift-b
 toggle_sidebar macos: cmd-b
 toggle_sidebar windows: ctrl-shift-b
 toggle_status_bar linux: ctrl-alt-b
 toggle_status_bar macos: cmd-alt-b
-toggle_status_bar windows: ctrl-alt-b
-toggle_zen_mode linux: ctrl-alt-z
+toggle_status_bar windows: ctrl-alt-shift-b
+toggle_zen_mode linux: ctrl-shift-z
 toggle_zen_mode macos: ctrl-cmd-z
-toggle_zen_mode windows: ctrl-alt-z
+toggle_zen_mode windows: ctrl-shift-z
 toggle_zoom linux: ctrl-shift-enter
 toggle_zoom macos: cmd-shift-enter
 toggle_zoom windows: ctrl-shift-enter

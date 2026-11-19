@@ -223,14 +223,16 @@ project_roots = []
 # defaults; a command named here keeps only the keystrokes listed here.
 # The examples below use the macOS defaults. Linux and Windows have their own
 # Ctrl+Shift defaults (not Super or Win): new_tab = "ctrl-shift-t",
-# new_window = "ctrl-alt-n", close_window = "ctrl-alt-w",
+# new_window = "ctrl-shift-n", close_window = "ctrl-alt-w",
 # new_workspace = "ctrl-alt-shift-n",
-# new_worktree = "ctrl-shift-n",
 # split_right = "ctrl-shift-d", split_down = "ctrl-alt-shift-d",
-# command_palette = "ctrl-shift-p", resume_palette = "ctrl-alt-shift-r",
-# quit = "ctrl-shift-q", and reset_font_size =
-# "ctrl-shift-0" on Linux but "ctrl-0" on Windows, which can take
-# Ctrl+Shift+0 for switching input languages.
+# command_palette = "ctrl-shift-p",
+# resume_palette = "ctrl-shift-r" on Linux or "ctrl-alt-shift-r" on Windows,
+# toggle_full_screen = "ctrl-shift-f11", quit = "ctrl-shift-q", and
+# reset_font_size = "ctrl-shift-0" on Linux but "ctrl-0" on Windows, which can
+# take Ctrl+Shift+0 for switching input languages. Windows reports AltGr as
+# Ctrl-Alt, so it has no close_window default (Alt+F4 closes the window) and
+# toggles the status bar with "ctrl-alt-shift-b".
 # See Keyboard Shortcuts for the full platform-specific list. Explicit values
 # are used literally on every platform; cmd is not translated to Ctrl+Shift.
 # Ctrl+Shift+U is left to GNOME/IBus Unicode character entry.
@@ -242,8 +244,8 @@ project_roots = []
 # These unconfigured Spaceport defaults yield to existing daemon custom chords.
 # Explicit [keys] and [keybindings] assignments keep their configured precedence.
 # Herdr's prefix+n/p still select the next/previous tab.
-# Linux also leaves unmapped shifted symbols unbound; use prefix tab digits,
-# prefix+s for Settings, and prefix+? for Keyboard Shortcuts.
+# Shifted digits and punctuation also bind their symbol spellings.
+# Linux leaves GNOME's Ctrl+Alt+Shift+arrows unbound; prefix+h/j/k/l still focus panes.
 # [keybindings]
 # new_tab = "cmd-t"
 # new_workspace = "cmd-shift-n"
@@ -264,8 +266,8 @@ project_roots = []
 # close_tab = "cmd-shift-w"
 # focus_tab_1 = "cmd-1"   # through focus_tab_9 = "cmd-9"
 # toggle_sidebar = "cmd-b"
-# toggle_status_bar = "cmd-ctrl-b"   # unbound by default
-# toggle_zen_mode = "ctrl-cmd-z"   # Linux and Windows: "ctrl-alt-z"
+# toggle_status_bar = "cmd-alt-b"   # Windows: "ctrl-alt-shift-b"
+# toggle_zen_mode = "ctrl-cmd-z"   # Linux and Windows: "ctrl-shift-z"
 # increase_font_size = ["cmd-=", "cmd-+"]
 # decrease_font_size = "cmd--"
 # reset_font_size = "cmd-0"

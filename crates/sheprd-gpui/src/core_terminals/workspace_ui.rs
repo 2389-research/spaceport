@@ -176,7 +176,7 @@ impl<'a> Access<'a> {
 
 impl SheprdWindow {
     pub(crate) fn selected_core_group(&self) -> Option<&CoreGroupKey> {
-        self.core_terminals.workspace_ui.selected_group.as_ref()
+        self.core_terminals.selected_group()
     }
 
     pub(crate) fn leave_core_group(&mut self, cx: &mut Context<Self>) {

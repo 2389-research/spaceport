@@ -218,6 +218,27 @@ The change applies live; `config get focus_follows_mouse` reads it back.
 An unnamed tab shows its number. To show its agent's terminal title instead,
 run `spaceport config set tab_labels.agent_title true`.
 
+### Default shortcuts
+
+`keybinds list` prints each command's shortcuts as this build binds them, and
+the catalog in `crates/sheprd-commands` is their one declaration. macOS takes
+Cmd; Linux and Windows take Ctrl, Ctrl+Shift for the primary actions and
+Ctrl+Alt+Shift for their partners, so plain Ctrl still reaches the terminal
+program. A few platform facts decide the rest:
+
+- A shifted digit or punctuation key arrives as the symbol it types, so Linux
+  and Windows bind both spellings of each: `ctrl-shift-1` and `ctrl-!`,
+  `ctrl-shift-[` and `ctrl-{`.
+- Windows reports AltGr as Ctrl+Alt, so no Windows default pairs Ctrl+Alt with
+  a letter alone. New window is Ctrl+Shift+N there, zen mode Ctrl+Shift+Z, and
+  the status bar Ctrl+Alt+Shift+B. A window closes with Alt+F4 itself.
+- Bare F6, F11, Ctrl+PageUp, and Ctrl+PageDown belong to the programs a pane
+  runs, so region focus, full screen, and tab cycling carry the app's Ctrl
+  prefix: Ctrl+F6 and Ctrl+Shift+F6, Ctrl+Shift+F11, Ctrl+Shift+PageDown, and
+  Ctrl+Shift+PageUp.
+- Linux leaves GNOME's Ctrl+Alt+Shift+arrows unbound and resumes the palette with Ctrl+Shift+R.
+  Herdr prefix H/J/K/L still focus panes; private prefix F6 and F11 routes also remain available.
+
 ### Events
 
 `events` prints what happened in the app: windows opening, closing, and

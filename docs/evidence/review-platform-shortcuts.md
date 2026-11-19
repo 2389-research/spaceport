@@ -214,6 +214,33 @@ The [activation contract](https://learn.microsoft.com/en-us/windows/win32/api/wi
 The diagnostic never calls LoadKeyboardLayout or changes the GUI thread.
 Its bounded receipt lists loaded KLIDs and whether Polish Programmers `00000415` is present.
 An absent layout remains an unavailable input-test prerequisite, rather than a passing AltGr result.
+
+## Shortcut catalog integration, November 19
+
+Main `e13b88c30` includes PR 134's symbol aliases and revised Ctrl shortcuts.
+The review branch keeps those aliases instead of leaving Linux symbol commands unbound.
+Canonical and symbol spellings follow the existing font-key catalog pattern.
+The Linux wrapper still excludes GNOME's four window-movement chords and uses Ctrl-Shift-R for Resume.
+Windows reads the shared Ctrl catalog directly, preserving its separate platform policy.
+The existing character-input guard and Windows keyboard-mapper correction remain unchanged.
+
+Direct Ctrl-F6, Ctrl-Shift-F6, Ctrl-Shift-F11, and Ctrl-Shift-PageUp/PageDown coexist with retained private prefix routes.
+Bare pane keys remain unbound by the app's default catalog.
+Explicit private-view assignments and daemon custom chords keep their existing precedence.
+The native held-window fixture now uses Ctrl-Shift-N and retains its ownership and repeat-count assertions.
+The native chrome fixture uses Ctrl-F6 through the existing isolated `Running` owner.
+
+The incoming snapshot first fails on retained GNOME exclusions and the task's Close Workspace rows.
+The existing `UPDATE_SHORTCUT_FIXTURE` producer regenerates it from the resolved catalog.
+The command suite then passes 46 tests with none ignored.
+The focused keymap, prefix, browser, group, tab, Zen, and Core consumer run passes 334 tests with none ignored.
+Independent review finds no material shared-contract or browser-ownership issue.
+
+Crew records 3wd4 as done after PR 134 merges.
+Its source note explicitly records that no native keyboard check ran.
+The review squad asks Clint for any newer qualification evidence without changing his task status.
+Real Linux/Windows keyboard delivery, non-US layouts, and actual GNOME interception remain unverified here.
+Fresh Windows qualification of Ctrl-F6 and held Ctrl-Shift-N also remains pending.
 Actual native execution remains pending; Windows cross-lint does not compile or execute the embedded C#.
 This diagnostic does not qualify actual key delivery or close `3wd4`.
 Independent read-only review finds no material thread-scope, cleanup, bounds, or framework-compatibility issue.

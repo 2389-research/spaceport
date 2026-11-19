@@ -481,7 +481,7 @@ mod workspace_reorder;
 
 #[test]
 #[ignore = "requires an active Windows desktop and HERDR_TEST_BINARY; launches a native GUI and isolated daemon"]
-fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
+fn ui_automation_names_the_chrome_and_ctrl_f6_reaches_it() {
     let mut running = Running::start();
 
     // AccessKit builds the tree once a client first asks, a frame later, and
@@ -519,7 +519,7 @@ fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
     // Back and Forward have no history to go to yet.
     assert!(tree.contains("Button 'Back' [disabled]"), "{tree}");
 
-    let focus = running.read("^b{F6}|{TAB}|^b{F6}|^b{F6}|+{TAB}|{ESC}|^b+{F6}");
+    let focus = running.read("^{F6}|{TAB}|^{F6}|^{F6}|+{TAB}|{ESC}|^+{F6}");
     eprintln!("{focus}");
     let moves: Vec<&str> = focus
         .lines()
@@ -540,7 +540,7 @@ fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
         "{focus}"
     );
     assert_ne!(moves[4], moves[3], "{focus}");
-    // Escape and the terminal; Prefix, Shift-F6 goes back to the last region.
+    // Escape and the terminal; Ctrl-Shift-F6 goes back to the last region.
     assert!(moves[5].starts_with("Document 'Terminal'"), "{focus}");
     assert!(!moves[6].starts_with("Document"), "{focus}");
 }

@@ -120,7 +120,7 @@ try { [HeldKeys]::Send(0x12, $false) } finally { [HeldKeys]::Send(0x12, $true) }
 Start-Sleep -Milliseconds 500
 Require-Focus
 $key = switch ($Action) { 'New' { 0x54 }; 'Close' { 0x57 }; 'Window' { 0x4e }; 'Split' { 0x44 }; 'Custom' { 0x77 } }
-$modifiers = if ($Action -eq 'Close') { @(0x11,0x12,0x10) } elseif ($Action -eq 'Window') { @(0x11,0x12) } else { @(0x11,0x10) }
+$modifiers = if ($Action -eq 'Close') { @(0x11,0x12,0x10) } else { @(0x11,0x10) }
 foreach ($code in @($modifiers) + @($key)) {
   if (([HeldKeys]::GetAsyncKeyState($code) -band 0x8000) -ne 0) { throw 'A fixture key is already held' }
 }
