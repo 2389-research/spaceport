@@ -28,6 +28,9 @@ pub(crate) struct BrowserHosts<'a> {
     pub(crate) now: Instant,
     /// The newest metadata of the shown endpoint, or none before it connects.
     pub(crate) snapshot: Option<&'a ClientShellSnapshot>,
+    /// The narrowest a tab draws in the layout in use, `TabLayout::min_width`,
+    /// which a growing tab starts from.
+    pub(crate) tab_min_width: f32,
     /// The window's tab store, read for a caller with a window context; none
     /// without one, and none while no store is installed.
     pub(crate) tabs: Option<&'a Store>,
@@ -49,6 +52,7 @@ impl SheprdWindow {
             now: motion::now(),
             selected_endpoint: self.selected_endpoint,
             snapshot: self.live.snapshot.as_deref(),
+            tab_min_width: self.tab_layout().min_width(),
             tabs: cx.and_then(super::view::store),
             workspace: cx.and_then(|cx| self.active_browser_key(cx)),
         }
@@ -63,6 +67,7 @@ impl SheprdWindow {
     ) -> (&'a mut super::Browser, BrowserHosts<'a>) {
         let now = motion::now();
         let selected_endpoint = self.selected_endpoint;
+        let tab_min_width = self.tab_layout().min_width();
         let workspace = cx.and_then(|cx| self.active_browser_key(cx));
         let tabs = cx.and_then(super::view::store);
         let SheprdWindow {
@@ -79,6 +84,7 @@ impl SheprdWindow {
             now,
             selected_endpoint,
             snapshot: live.snapshot.as_deref(),
+            tab_min_width,
             tabs,
             workspace,
         };

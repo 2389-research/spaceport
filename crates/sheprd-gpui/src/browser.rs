@@ -12,6 +12,7 @@ mod hosts;
 mod layouts;
 mod location;
 mod store;
+mod strip;
 mod tab_appear;
 pub(crate) mod tab_body;
 mod tab_move;

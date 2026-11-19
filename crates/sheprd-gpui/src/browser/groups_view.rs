@@ -5,8 +5,6 @@
 //! group draws live in [`super::groups`]; this applies them to the focused
 //! workspace and carries out what they imply, such as focusing the Herdr tab
 //! a group asks for.
-use super::tab_appear::{Leaving, Listed};
-use super::tab_scroll::Thumb;
 use super::{
     Browser, Location, Scope, TabId,
     groups::{GroupId, Layout, Pick, Shown, Slot},
@@ -15,7 +13,7 @@ use super::{
 };
 use crate::{NavigationTarget, SheprdWindow, controls::Command};
 use gpui::{prelude::*, *};
-use std::{collections::hash_map::Entry, time::Instant};
+use std::collections::hash_map::Entry;
 
 /// The tab a strip listing `tabs` goes to when `pick` leaves it: the nearest
 /// one after it that `near` accepts, or else before it.
@@ -255,6 +253,19 @@ impl Browser {
         self.new_tab_group.as_ref().map(|(_, group)| *group)
     }
 
+    /// The focused workspace's browser tabs and the labels their strips
+    /// show, in strip order.
+    pub(crate) fn browser_tab_labels(&self, hosts: &BrowserHosts<'_>) -> Vec<(Pick, SharedString)> {
+        let (Some((scope, workspace)), Some(store)) = (hosts.workspace.as_ref(), hosts.tabs) else {
+            return Vec::new();
+        };
+        store
+            .in_workspace(scope, workspace)
+            .filter(|tab| hosts.core_enabled || !tab.requires_core())
+            .map(|tab| (Pick::Page(tab.id), super::view::tab_label(&tab.label())))
+            .collect()
+    }
+
     /// Moves the divider after the `divider`th group; see [`Layout::drag`].
     pub(crate) fn drag_divider(
         &mut self,
@@ -333,131 +344,11 @@ impl SheprdWindow {
         self.browser.group_pick(group, &self.browser_hosts(None))
     }
 
-    /// Records what `group`'s strip draws; see
-    /// [`super::tab_appear::TabAppear::observe`].
-    pub(crate) fn observe_strip(&mut self, group: GroupId, tabs: Vec<Listed>, now: Instant) {
-        self.browser.appear.observe(group, tabs, now);
-    }
-
-    /// The tabs shrinking out of `group`'s strip.
-    pub(crate) fn leaving_tabs(&self, group: GroupId) -> Vec<Leaving> {
-        self.browser.appear.leaving(group).to_vec()
-    }
-
-    /// Forgets the strips of groups that closed, so their tabs never shrink
-    /// out of a strip no longer drawn.
-    pub(crate) fn forget_gone_strips(&mut self) {
-        let layouts = &self.browser.layouts;
-        let live = |group| {
-            layouts
-                .values()
-                .any(|layout| layout.slots().any(|slot| slot.id == group))
-        };
-        self.browser.appear.retain(live);
-        self.browser.tab_body.retain(live);
-        self.browser
-            .group_bounds
-            .borrow_mut()
-            .retain(|group, _| live(*group));
-        self.browser.emptied.retain(|group| live(*group));
-        // The group drawn before any workspace has a layout keeps its strip.
-        let fallback = self.browser.fallback_group;
-        self.browser
-            .tab_scroll
-            .retain(|group| group == fallback || live(group));
-    }
-
-    /// What tracks `group`'s strip's sideways scroll.
-    pub(crate) fn strip_scroll(&mut self, group: GroupId) -> ScrollHandle {
-        self.browser.tab_scroll.handle(group)
-    }
-
-    /// Brings `group`'s chosen tab, at `index` in its strip, into view when
-    /// the choice changes or while the tab grows in. Whether the strip needs
-    /// another frame to do it.
-    pub(crate) fn reveal_tab(
-        &mut self,
-        group: GroupId,
-        pick: &Pick,
-        index: usize,
-        width: f32,
-    ) -> bool {
-        let growing = self
-            .browser
-            .appear
-            .growth(group, pick, crate::motion::now())
-            .is_some();
-        self.browser
-            .tab_scroll
-            .reveal(group, pick, index, width, growing)
-    }
-
-    /// The thumb `group`'s strip draws, when its tabs outgrow it.
-    pub(crate) fn strip_thumb(&self, group: GroupId) -> Option<Thumb> {
-        self.browser.tab_scroll.thumb(group)
-    }
-
-    /// Takes hold of `group`'s strip thumb with the pointer at `x`.
-    pub(crate) fn grab_strip_thumb(&mut self, group: GroupId, x: Pixels) {
-        self.browser.tab_scroll.grab(group, x);
-    }
-
-    /// Drags `group`'s strip thumb to the pointer at `x`; whether it moved.
-    pub(crate) fn drag_strip_thumb(&mut self, group: GroupId, x: Pixels) -> bool {
-        self.browser.tab_scroll.drag(group, x)
-    }
-
     /// The focused workspace's browser tabs and the labels their strips
     /// show, in strip order.
     pub(crate) fn browser_tab_labels(&self, cx: &App) -> Vec<(Pick, SharedString)> {
-        let (Some((scope, workspace)), Some(store)) = (self.active_browser_key(cx), store(cx))
-        else {
-            return Vec::new();
-        };
-        store
-            .in_workspace(&scope, &workspace)
-            .filter(|tab| self.core_enabled() || !tab.requires_core())
-            .map(|tab| (Pick::Page(tab.id), super::view::tab_label(&tab.label())))
-            .collect()
-    }
-
-    /// Whether a tab is still growing or shrinking, so the window draws
-    /// another frame.
-    pub(crate) fn tabs_growing(&self) -> bool {
-        self.browser.appear.animating()
-    }
-
-    /// Makes groups open and fold, held where their motion starts.
-    #[cfg(test)]
-    pub(crate) fn hold_group_motion(&mut self) {
-        self.browser.group_motion.enable();
-        self.browser.group_motion.freeze(std::time::Duration::ZERO);
-    }
-
-    /// Ends every tab's growing and shrinking at once, as a moment later.
-    #[cfg(test)]
-    pub(crate) fn settle_tabs(&mut self) {
-        self.browser.appear = Default::default();
-    }
-
-    /// Narrows and fades `tab` while it grows into the strip; a whole tab
-    /// is left as it is.
-    pub(crate) fn grow_tab<E: Styled>(&self, tab: E, group: GroupId, pick: &Pick) -> E {
-        /// Wider than any label a strip shows, so the last frame of growth
-        /// does not visibly clamp a long one.
-        const GROWN: f32 = 480.;
-        match self
-            .browser
-            .appear
-            .growth(group, pick, crate::motion::now())
-        {
-            Some(k) => tab
-                .min_w(px(self.tab_layout().min_width() * k))
-                .max_w(px(GROWN * k))
-                .overflow_hidden()
-                .opacity(k),
-            None => tab,
-        }
+        self.browser
+            .browser_tab_labels(&self.browser_hosts(Some(cx)))
     }
 
     pub(crate) fn group_lists(&self, group: GroupId, pick: &Pick) -> bool {
