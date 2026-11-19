@@ -114,3 +114,10 @@ The six GPUI client-localization cases also pass, including English Display equa
 Logs use `/tmp/spaceport-9s44-clipboard-copy-{red,client-green,localized-green}.log`.
 Independent review checks the actual reservation, preparation, and incremental write producers.
 Native speech and visual qualification do not establish this wording contract and remain separate work.
+
+The final client library scope passes 33 cases after moving the separate reader-closure test into its own integration target.
+All four host and Windows GNU lint configurations pass with the corrected copy.
+Independent completion review finds no remaining original-scope terminology gap.
+Kata `cx2r` closes on `4156467f3` with event `9785` and UID `01M7SAGQPPECJE259BM03R7Q2B`.
+Fresh issue and parent reads confirm 40 closed children and 13 open children.
+The umbrella remains open.
