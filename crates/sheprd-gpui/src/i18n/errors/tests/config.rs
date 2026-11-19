@@ -70,6 +70,25 @@ fn every_config_variant_has_a_message() {
     ]);
 }
 
+/// The settings a message names are the files this build reads, not the
+/// inherited `config-gpui.toml` the app never looks for.
+#[test]
+fn a_message_names_the_settings_file_it_speaks_of() {
+    crate::i18n::show(&Locale::FALLBACK);
+    let cases = [
+        (Error::RemovedGitHub, "spaceport/config.local.toml"),
+        (
+            Error::UnknownKeys(vec!["colour".into()]),
+            "spaceport/config.toml",
+        ),
+    ];
+    for (error, file) in cases {
+        let shown = error.localize();
+        assert!(shown.contains(file), "{shown}");
+        assert!(!shown.contains("config-gpui"), "{shown}");
+    }
+}
+
 #[test]
 fn every_theme_parse_variant_has_a_message() {
     assert_localized(&[

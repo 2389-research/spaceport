@@ -35,7 +35,7 @@ error-config-key-not-table = { $key }: a part of this key holds a value, not a t
 error-config-migration-conflict = Cannot migrate { $original }: { $local } already contains different settings. Merge your old settings into the local file, then remove the old config; it will be regenerated.
 error-config-preferences-not-object = preferences must be an object
 error-config-removed-change-counts = sidebar.change_counts was removed; remove this setting
-error-config-removed-github = [github] account settings were removed; remove this table from config-gpui.toml
+error-config-removed-github = [github] account settings were removed; remove this table from spaceport/config.local.toml
 # A line of a terminal theme file. $line is its number, $key the color it sets.
 error-config-theme-line = line { $line }: { $key }: { $error }
 # $name is the theme's name, quoted; $directories lists the folders searched.
@@ -44,7 +44,7 @@ error-config-theme-not-found = theme { $name } not found in { $directories }
 error-config-too-many-devices = [devices] must list at most { $limit } devices
 error-config-too-many-font-fallbacks = { $table }.fallback must list at most 8 families
 # $keys lists the config keys, separated by commas.
-error-config-unknown-keys = Spaceport has no setting { $keys }; config-gpui.toml lists every setting
+error-config-unknown-keys = Spaceport has no setting { $keys }; spaceport/config.toml lists every setting
 # $name is the layout's name as the config wrote it, quoted.
 error-config-unknown-layout = Unknown sidebar layout { $name }
 

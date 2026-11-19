@@ -50,7 +50,7 @@ fn stacked_cards_and_the_command_chip_stay_inside_a_narrow_window(cx: &mut TestA
     };
     view.update(cx, |view, cx| {
         view.gui_config_diagnostic.sync(Some(
-            "config-gpui.local.toml: ignoring unknown keys a, b, c",
+            "spaceport/config.local.toml: ignoring unknown keys a, b, c",
         ));
         view.icon_font_notice.observe(true, Some(&icon));
         cx.notify();

@@ -17,7 +17,7 @@ error-keymap-pane-key-without-modifier = pane_keys: { $keystroke } needs a cmd, 
 error-keymap-too-many-keystrokes = keybindings.{ $command } must list at most 8 keystrokes
 # $limit is the most keys the table may list.
 error-keymap-too-many-pane-keys = pane_keys must list at most { $limit } keystrokes
-error-keymap-unknown-keybinding = keybindings.{ $command } is not a command; see the keybindings list in config-gpui.toml
+error-keymap-unknown-keybinding = keybindings.{ $command } is not a command; see the keybindings list in spaceport/config.toml
 # $from is the key pressed and $to the key a pane would be sent, both quoted.
 error-keymap-unsendable-pane-key = pane_keys.{ $from }: a pane cannot receive { $to }
 

@@ -102,7 +102,9 @@ pub enum Error {
     RelativeConfigRoot,
     #[error("sidebar.change_counts was removed; remove this setting")]
     RemovedChangeCounts,
-    #[error("[github] account settings were removed; remove this table from config-gpui.toml")]
+    #[error(
+        "[github] account settings were removed; remove this table from spaceport/config.local.toml"
+    )]
     RemovedGitHub,
     #[error("Custom updater settings have been removed; remove [updates] from the configuration")]
     RemovedUpdates,
@@ -129,9 +131,12 @@ pub enum Error {
     TooManyDevices(usize),
     #[error("{0}.fallback must list at most 8 families")]
     TooManyFontFallbacks(&'static str),
-    #[error("keybindings.{0} is not a command; see the keybindings list in config-gpui.toml")]
+    #[error("keybindings.{0} is not a command; see the keybindings list in spaceport/config.toml")]
     UnknownKeybinding(String),
-    #[error("Spaceport has no setting {}; config-gpui.toml lists every setting", .0.join(", "))]
+    #[error(
+        "Spaceport has no setting {}; spaceport/config.toml lists every setting",
+        .0.join(", ")
+    )]
     UnknownKeys(Vec<String>),
     #[error("Unknown sidebar layout {0:?}")]
     UnknownLayout(String),

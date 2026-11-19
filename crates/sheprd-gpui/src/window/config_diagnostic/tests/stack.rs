@@ -2,7 +2,7 @@ use super::*;
 use crate::window::chrome_focus::Region;
 
 const LONG: &str =
-    "config-gpui.local.toml: layout.sidebar_gap is deprecated; use terminal.padding_x";
+    "spaceport/config.local.toml: layout.sidebar_gap is deprecated; use terminal.padding_x";
 
 fn press(key: &str, cx: &mut VisualTestContext) {
     let keystroke = crate::keymap::parse_keystroke(key).unwrap();
@@ -81,7 +81,7 @@ fn dismissing_the_last_card_by_keyboard_returns_to_the_terminal(cx: &mut TestApp
     cx.update(|window, _| window.activate_window());
     view.update(cx, |view, cx| {
         view.gui_config_diagnostic
-            .sync(Some("config-gpui.local.toml: ignoring unknown keys a"));
+            .sync(Some("theme must not be empty"));
         cx.notify();
     });
     draw(cx);
