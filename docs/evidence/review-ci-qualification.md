@@ -620,3 +620,29 @@ Linux ARM all-feature CI executes the moved integration target: three cases pass
 Both native Windows jobs pass, including all four x64 UIA scenarios without ignored cases.
 Logs use `/tmp/spaceport-9s44-copy-pipe-{linux-arm-all,native-x64}.log`.
 Mac foreground checks, speech, and the release working-session profile remain pending.
+
+## Windows pipe fixture startup on `7607bde87`
+
+The [Windows all-feature job](https://github.com/2389-research/spaceport/actions/runs/44537828031/job/135608225409) fails three SSH anonymous-pipe fixtures.
+Each failure records zero bytes before its unchanged 30-second startup bound.
+They fail before their actual handshake, cancellation, and banner-limit assertions.
+This establishes a fixture startup failure, without proving why PowerShell stalled or a production bridge regression.
+The same source passes ARM all-feature checks.
+
+The replacement launches an exact ignored child of the compiled test binary.
+Its cleared environment retains only the selected test case and required Windows system paths.
+The child flushes a startup sentinel, then waits for a parent acknowledgment before emitting protocol traffic.
+The parent bounds libtest's preamble to 16 KiB.
+Successful children flush and exit directly, so libtest cannot append bytes to the exact EOF check.
+
+The existing three native cases retain their real Windows anonymous pipes and original assertions.
+They still cover the compatible handshake, exact echo and EOF, idle timeout, cancellation, and oversized banner.
+The existing `cmd.exe` stderr/exit classification case remains unchanged.
+The fixture still uses the existing exact-child kill/wait guard.
+The one added ignored entry is a child endpoint invoked by its enabled parent tests.
+No existing test is ignored, retried, or given a longer deadline.
+
+Independent source review finds no material framing, ownership, or scope issue.
+Both Windows GNU lint configurations pass.
+Logs: `/tmp/spaceport-9s44-ssh-self-child-windows-lint.log` and `ssh-self-child-minimal-windows-lint.log` under the same prefix.
+Actual Windows execution remains pending; this Mac cannot run those platform-specific cases.
