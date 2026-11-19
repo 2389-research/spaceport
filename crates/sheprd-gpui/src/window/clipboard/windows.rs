@@ -23,6 +23,11 @@ const DEADLINE: Duration = Duration::from_secs(3);
 /// Set while a reader thread runs, including one its caller stopped waiting for.
 static READING: AtomicBool = AtomicBool::new(false);
 
+#[cfg(feature = "integration-test")]
+pub(crate) fn reader_active() -> bool {
+    READING.load(Ordering::Acquire)
+}
+
 pub(super) fn read(mode: Mode) -> Result<Option<ClipboardItem>> {
     bounded(&READING, DEADLINE, move |deadline| read_now(mode, deadline))
 }

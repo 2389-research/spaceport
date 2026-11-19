@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `940749d29` passes full CI, native Settings, and clipboard-owner safety qualification.
+Status: `64970ccce` passes full CI and native popup Quit qualification.
 Kata `9s44` has 47 closed children and six open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
@@ -32,7 +32,9 @@ The replacement Windows SSH pipe tests pass the configured default and all-featu
 Doctor Biz subsequently identified popup Quit and uncertain chat-creation P2 regressions.
 Both corrections pass 28 focused tests and all four host/Windows GNU lint configurations.
 See [the focused P2 evidence](review-popup-quit-chat-outcomes.md).
-Their new native popup Quit test and exact-head full CI remain pending.
+Their new native popup Quit test passes on `64970ccce`, preserving the private daemon and tab IDs.
+That source passes full CI with eighteen successful jobs and one unconfigured skip.
+Both Windows native jobs and supply-chain checks pass.
 
 ## Sound extraction integration
 

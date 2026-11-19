@@ -8,6 +8,9 @@ mod pending;
 
 pub(crate) use pending::{reserve, start, start_with};
 
+#[cfg(all(windows, feature = "integration-test"))]
+pub(crate) use windows::reader_active;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Mode {
     // keep-sorted start

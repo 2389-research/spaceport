@@ -29,6 +29,7 @@ use super::{
 use crate::{SheprdWindow, config::ChatLayoutMode};
 
 mod accessibility;
+mod clipboard;
 mod input_resize;
 mod running;
 mod selection;
@@ -127,6 +128,8 @@ impl Options {
                 | "widgets-end"
                 | "jump"
                 | "conversation"
+                | "clipboard"
+                | "clipboard-field"
                 | "accessibility"
                 | "existing"
                 | "input-resize"
@@ -139,7 +142,7 @@ impl Options {
                 | "all"
         ) {
             bail!(
-                "HERDR_TEST_RICH_CHAT expects math, code, diagram, activity, activity-open, attachments, questions, selection, user, widgets, widgets-end, jump, conversation, accessibility, existing, input-resize, tools, turns, running, running-open, steps, steps-open, or all"
+                "HERDR_TEST_RICH_CHAT expects math, code, diagram, activity, activity-open, attachments, questions, selection, user, widgets, widgets-end, jump, conversation, accessibility, clipboard, clipboard-field, existing, input-resize, tools, turns, running, running-open, steps, steps-open, or all"
             );
         }
         let hold = std::env::var("HERDR_TEST_RICH_CHAT_HOLD_MS")
@@ -148,12 +151,17 @@ impl Options {
             .transpose()
             .context("invalid preview hold duration")?
             .unwrap_or(2_000)
-            // The interactive accessibility case spans several bounded native helpers.
-            .min(if case == "accessibility" {
-                180_000
-            } else {
-                60_000
-            });
+            // Interactive qualification spans several bounded native helpers.
+            .min(
+                if matches!(
+                    case.as_str(),
+                    "accessibility" | "clipboard" | "clipboard-field"
+                ) {
+                    180_000
+                } else {
+                    60_000
+                },
+            );
         let layout = std::env::var("HERDR_TEST_RICH_CHAT_LAYOUT")
             .ok()
             .map(|name| {
@@ -218,6 +226,9 @@ async fn run(
     options: Options,
     cx: &mut AsyncApp,
 ) -> Result<()> {
+    if options.case == "clipboard-field" {
+        return clipboard::standalone(handle, options.hold, cx).await;
+    }
     handle.update(cx, |view, window, cx| install(view, window, cx, &options))??;
     let timer = cx.background_executor().clone();
     let deadline = Instant::now() + WAIT;
@@ -344,6 +355,7 @@ async fn run(
     let hold_until = Instant::now() + options.hold;
     let mut selection_probe = selection::Probe::default();
     let mut resize_probe = input_resize::Probe::default();
+    let mut clipboard_probe = clipboard::Probe::default();
     let mut accessibility_probe = (options.case == "accessibility")
         .then(accessibility::Probe::new)
         .transpose()?;
@@ -357,6 +369,14 @@ async fn run(
             }
             if options.case == "input-resize" {
                 resize_probe.observe(view, window);
+            }
+            if options.case == "clipboard"
+                && let Some(input) = view
+                    .chats
+                    .pane(PANE)
+                    .and_then(|pane| pane.composer.as_ref())
+            {
+                clipboard_probe.observe(input.read(cx));
             }
             if let Some(probe) = &mut accessibility_probe {
                 probe.observe(view, cx)?;

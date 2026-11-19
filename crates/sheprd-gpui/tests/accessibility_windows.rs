@@ -27,9 +27,12 @@ struct Running {
     sandbox: Sandbox,
 }
 
+#[derive(Clone, Copy)]
 enum GuiTarget {
     // keep-sorted start
     ChatAccessibility,
+    ChatClipboard,
+    ClipboardField,
     Local,
     SettingsKeyboard,
     ShortcutFenceObserver,
@@ -110,6 +113,19 @@ impl Running {
             .sandbox
             .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
         match target {
+            GuiTarget::ChatClipboard | GuiTarget::ClipboardField => {
+                command
+                    .arg("--sidebar-test")
+                    .env(
+                        "HERDR_TEST_RICH_CHAT",
+                        if matches!(target, GuiTarget::ChatClipboard) {
+                            "clipboard"
+                        } else {
+                            "clipboard-field"
+                        },
+                    )
+                    .env("HERDR_TEST_RICH_CHAT_HOLD_MS", "180000");
+            }
             GuiTarget::ChatAccessibility => {
                 command
                     .arg("--sidebar-test")
@@ -417,6 +433,8 @@ mod announcements;
 mod chat;
 #[path = "accessibility_windows/clipboard_broker.rs"]
 mod clipboard_broker;
+#[path = "accessibility_windows/clipboard_paste.rs"]
+mod clipboard_paste;
 #[path = "accessibility_windows/close_others.rs"]
 mod close_others;
 #[path = "accessibility_windows/held_shortcuts.rs"]

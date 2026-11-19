@@ -1,6 +1,6 @@
 // ABOUTME: Qualifies clipboard admission and ownership using only authored Windows data.
 // ABOUTME: Requires a disposable empty clipboard and preserves any foreign replacement.
-use super::{CAPTURE_LIMIT, Duration, Instant, Read, Running, fs, thread};
+use super::{CAPTURE_LIMIT, Duration, GuiTarget, Instant, Read, Running, fs, thread};
 use std::{
     panic::{AssertUnwindSafe, catch_unwind},
     process::ExitStatus,
@@ -68,6 +68,14 @@ fn preserve_owner(running: Running) {
 }
 
 fn owner_check(parent_failure: bool) -> String {
+    run_owner(parent_failure, None)
+}
+
+pub(super) fn application_check(target: GuiTarget, scenario: &str) -> String {
+    run_owner(false, Some((target, scenario)))
+}
+
+fn run_owner(parent_failure: bool, application: Option<(GuiTarget, &str)>) -> String {
     let mut running = Running::prepared();
     for (name, source) in [
         (
@@ -78,16 +86,40 @@ fn owner_check(parent_failure: bool) -> String {
             "native_clipboard.ps1",
             include_str!("../support/native_clipboard.ps1"),
         ),
+        (
+            "uia_clipboard.ps1",
+            include_str!("../support/uia_clipboard.ps1"),
+        ),
     ] {
         fs::write(running.sandbox.dir.join(name), source).unwrap();
     }
-    let mut command = running.powershell(
-        &running.sandbox.dir.join("native_clipboard.ps1"),
-        "clipboard-broker.log",
-    );
+    let script = if let Some((target, _)) = &application {
+        fs::write(
+            running
+                .sandbox
+                .dir
+                .join("config/spaceport/config.local.toml"),
+            "language = \"en-US\"\n",
+        )
+        .unwrap();
+        running.start_gui(*target);
+        running.wait_tree("native paste input", |tree| {
+            tree.contains(if matches!(target, GuiTarget::ChatClipboard) {
+                "Edit 'Message the agent'"
+            } else {
+                "Edit 'Native standalone field'"
+            })
+        });
+        "uia_clipboard.ps1"
+    } else {
+        "native_clipboard.ps1"
+    };
+    let mut command = running.powershell(&running.sandbox.dir.join(script), "clipboard-broker.log");
     command.args([
         "-Scenario",
-        if parent_failure {
+        if let Some((_, scenario)) = application {
+            scenario
+        } else if parent_failure {
             "Watchdog"
         } else {
             "Ownership"
@@ -108,7 +140,8 @@ fn owner_check(parent_failure: bool) -> String {
             thread::sleep(Duration::from_millis(25));
         }
         // Start the publication budget only after compilation and guardian startup.
-        let deadline = Instant::now() + Duration::from_secs(35);
+        let deadline =
+            Instant::now() + Duration::from_secs(if application.is_some() { 90 } else { 35 });
         if parent_failure {
             while !stop.with_extension("ready").exists() {
                 assert!(
@@ -137,7 +170,7 @@ fn owner_check(parent_failure: bool) -> String {
         Err(failure) => {
             let requested = fs::write(&stop, "stop");
             // Retain Running and its owner until cooperative cleanup or the independent guardian exits.
-            // The native guardian runs after 20 seconds and has a two-second clipboard-open deadline.
+            // The stop file triggers the guardian immediately; its clipboard-open deadline is two seconds.
             let status = match await_exit(&mut running, Instant::now() + Duration::from_secs(35)) {
                 Some(status) => status,
                 None => {
@@ -205,6 +238,7 @@ fn native_clipboard_fixture_preserves_foreign_content_and_cleans_its_own() {
         "CLIPBOARD_BROKER authored_utf8_bytes=2097153",
         "CLIPBOARD_GUARD foreign_publication_preserved=true",
         "CLIPBOARD_GUARD same_hwnd_stale_sequence_refused=true",
+        "CLIPBOARD_GUARD bounded_hold_released=true callback_failure_released=true",
         "CLIPBOARD_GUARD failure_cleanup=true empty=true",
         "CLIPBOARD BROKER native PASS:",
     ] {

@@ -17,6 +17,10 @@ public sealed class ClipboardOwnershipException : Exception {
     public ClipboardOwnershipException() : base("Refusing a stale or foreign clipboard publication") { }
 }
 
+public sealed class ClipboardHoldExpiredException : TimeoutException {
+    public ClipboardHoldExpiredException() : base("GUI callback outlived the bounded clipboard hold") { }
+}
+
 public sealed class NativeClipboardFixture : IDisposable {
     const uint UnicodeText = 13;
     const int MaxUnits = 2 * 1024 * 1024 + 1;
@@ -213,6 +217,46 @@ public sealed class NativeClipboardFixture : IDisposable {
         }
     }
 
+    public void Hold(Action action) {
+        var opened = new ManualResetEvent(false);
+        var release = new ManualResetEvent(false);
+        Exception failure = null;
+        bool expired = false;
+        var holder = new Thread(delegate() {
+            try {
+                lock (Gate) {
+                    CheckCancellation();
+                    Open();
+                    try {
+                        if (!OwnsPublication()) throw new ClipboardOwnershipException();
+                    } catch { Close(); throw; }
+                }
+                try {
+                    opened.Set();
+                    // Release independently if UIA blocks against a regressed GUI thread.
+                    expired = !release.WaitOne(2000);
+                } finally { Close(); }
+            } catch (Exception error) { failure = error; opened.Set(); }
+        });
+        holder.IsBackground = true;
+        holder.SetApartmentState(ApartmentState.STA);
+        holder.Start();
+        bool joined = false;
+        try {
+            if (!opened.WaitOne(2500)) throw new TimeoutException("Owned clipboard hold did not start");
+            if (failure != null) throw failure;
+            // Only native clipboard calls run on the holder; this callback keeps its PS runspace.
+            action();
+        } finally {
+            release.Set();
+            joined = holder.Join(4500);
+            if (joined) { opened.Dispose(); release.Dispose(); }
+        }
+        if (!joined) throw new TimeoutException("Owned clipboard holder did not exit");
+        if (failure != null) throw failure;
+        if (expired) throw new ClipboardHoldExpiredException();
+    }
+
     public void AssertStaleFence() {
         lock (Gate) {
             Open();
@@ -258,10 +302,24 @@ public sealed class ExpectedClipboardFailure : Exception { }
 
 public static class NativeClipboardChecks {
     public static void Run(string stopFile, bool watchdog) {
+        RunOwned(stopFile, 20, delegate() {
+            if (watchdog) {
+                using (var held = new NativeClipboardFixture()) {
+                    held.Publish("Authored watchdog payload");
+                    Console.WriteLine("CLIPBOARD_GUARDIAN publication_ready=true");
+                    File.WriteAllText(stopFile + ".ready", "ready");
+                    Application.Run(new ApplicationContext());
+                }
+            } else { OwnershipChecks(); }
+        });
+    }
+
+    public static void RunOwned(string stopFile, int seconds, Action action) {
+        if (seconds < 20 || seconds > 90) throw new ArgumentOutOfRangeException("seconds");
         if (File.Exists(stopFile)) throw new OperationCanceledException("Clipboard owner was stopped before startup");
         using (var finished = new ManualResetEvent(false)) {
             var guardian = new Thread(delegate() {
-                DateTime deadline = DateTime.UtcNow.AddSeconds(20);
+                DateTime deadline = DateTime.UtcNow.AddSeconds(seconds);
                 while (!finished.WaitOne(20)) {
                     if (!File.Exists(stopFile) && DateTime.UtcNow < deadline) continue;
                     try {
@@ -279,14 +337,7 @@ public static class NativeClipboardChecks {
             try {
                 File.WriteAllText(stopFile + ".started", "ready");
                 if (File.Exists(stopFile)) throw new OperationCanceledException("Clipboard owner stopped before publication");
-                if (watchdog) {
-                    using (var held = new NativeClipboardFixture()) {
-                        held.Publish("Authored watchdog payload");
-                        Console.WriteLine("CLIPBOARD_GUARDIAN publication_ready=true");
-                        File.WriteAllText(stopFile + ".ready", "ready");
-                        Application.Run(new ApplicationContext());
-                    }
-                } else { OwnershipChecks(); }
+                action();
             } finally {
                 bool safe = false;
                 try {
@@ -312,6 +363,19 @@ public static class NativeClipboardChecks {
         try {
             first.Publish(text);
             first.AssertOwnText(text);
+            bool callbackFailed = false;
+            try {
+                first.Hold(delegate() { throw new ExpectedClipboardFailure(); });
+            } catch (ExpectedClipboardFailure) { callbackFailed = true; }
+            if (!callbackFailed) throw new InvalidOperationException("The hold callback's failure was lost");
+            first.AssertOwnText(text);
+            bool holdExpired = false;
+            try {
+                first.Hold(delegate() { Thread.Sleep(2200); });
+            } catch (ClipboardHoldExpiredException) { holdExpired = true; }
+            if (!holdExpired) throw new InvalidOperationException("The independent clipboard hold did not expire");
+            first.AssertOwnText(text);
+            Console.WriteLine("CLIPBOARD_GUARD bounded_hold_released=true callback_failure_released=true");
             bool refused = false;
             try {
                 using (var unexpected = new NativeClipboardFixture()) { }

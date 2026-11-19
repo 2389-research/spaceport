@@ -237,3 +237,46 @@ C# compilation and both actual native safety regressions remain pending Windows 
 No local clipboard access or publication occurred.
 Real chat and standalone multiline paste, cancellation, and reader recovery remain the next qualification step.
 Kata `d378` remains open.
+
+## Native owner qualification and application candidate
+
+Source `940749d29` compiles and passes both native owner safety cases on the disposable Windows runner.
+Its full CI has eighteen successful jobs and one unconfigured skip.
+Source `64970ccce` repeats those passes in the [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44551798252/job/135657584169).
+The safe-cleanup receipt, expected guardian exit, and fresh empty-only admission qualify parent-failure cleanup.
+These receipts do not qualify application paste.
+
+The next candidate drives real native Ctrl-V through separate chat and standalone field windows.
+The chat fixture retains its production capture owner and composer constructor.
+The standalone fixture mounts the actual MultilineInput without chat capture.
+Its headless wiring test verifies real field keyboard routing and normalized text.
+That headless test uses GPUI's test clipboard and does not qualify native acquisition.
+
+The prewarmed native helper publishes authored Unicode with CRLF and checks the normalized field value.
+It accepts exactly 262144 UTF-8 bytes, including a multibyte character.
+It rejects 262145-byte prompts and 2097153-byte acquisition while preserving the draft.
+It checks distinct exact error descriptions after clearing each prior error through real edits.
+Description comparison removes only Fluent isolate marks and en-US numeric grouping separators.
+The helper logs receipts and lengths, never field or clipboard contents.
+
+Cancellation holds the exact-owned clipboard without modifying its data.
+An independent STA holder opens and closes it on that same thread.
+It releases after at most two seconds even if GUI automation blocks.
+No shared gate remains locked during the hold or automation callback.
+An expired hold fails the responsiveness check.
+Safety cases separately exercise callback failure and independent hold expiry.
+
+The app observer only reports actual pending state, native reader lease, and UTF-8 length.
+Typing and blur must cancel pending paste while the native reader remains active and the hold still exists.
+After release, the helper requires reader completion, unchanged authored draft, and a successful fresh paste.
+The production three-second reader deadline is unchanged.
+The guardian retains the existing cleanup contract, with a bounded ninety-second application scenario.
+Parent failures reuse the same owner retention and safe-cleanup receipt checks.
+
+Thirty-two headless wiring and clipboard consumer tests pass, with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- chat::preview::clipboard::tests:: chat::preview::tests:: window::clipboard::tests:: multiline_input::tests:: --nocapture`.
+Log: `/tmp/spaceport-9s44-clipboard-native-consumers-fixed.log`.
+Both host and Windows GNU lint configurations and static checks pass.
+Independent review finds no material ownership, privacy, cancellation-evidence, or parent-cleanup issue.
+C# compilation, native helper execution, and the application scenarios remain pending Windows CI.
+No local clipboard operation ran, and `d378` remains open.

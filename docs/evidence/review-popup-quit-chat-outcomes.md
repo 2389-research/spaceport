@@ -17,7 +17,9 @@ It passes after the correction, including ordinary-command isolation and held-ke
 The native Windows case opens the actual shortcut popup and sends Ctrl-Shift-Q.
 It requires successful GUI exit, a live private daemon, and unchanged daemon tab IDs.
 Its helper stops inspecting focus after sending Quit, since another app may then own focus.
-Native execution remains pending CI.
+Native execution passes on source `64970ccce`.
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44551798252/job/135657584169) records successful popup Quit at `2026-11-19T15:19:57.1370376Z`.
+The GUI exits cleanly while the exact private daemon and tab IDs survive.
 
 ## Chat creation
 
@@ -44,4 +46,7 @@ Independent review finds no material routing, outcome, ownership, or test gap.
 Both host lint configurations pass.
 Both Windows GNU lint configurations pass after importing the native test's Windows `CommandExt` trait.
 Format, size, sorting, operations, localization, commit, and diff checks pass.
-Full platform CI and native popup Quit execution remain pending for these fixes.
+Source `64970ccce` passes [full platform CI](https://github.com/2389-research/spaceport/actions/runs/44551798252).
+Eighteen jobs succeed and one unconfigured target skips; supply-chain checks also pass.
+Both Windows native jobs pass; x64 has eight GUI and sixteen UIA passes, with none ignored.
+ARM retains its existing UIA skip policy.
