@@ -1,6 +1,6 @@
 # ABOUTME: Queries real terminal text, its unselected caret, and native output-change events.
 # ABOUTME: Sends authored input only to the exact private foreground terminal window.
-param([int]$ProcessId)
+param([int]$ProcessId, [ValidateSet('Text','Resize')][string]$Action = 'Text')
 . "$PSScriptRoot\uia_tree.ps1" -ProcessId $ProcessId
 Add-Type -Path "$PSScriptRoot\uia_live.cs" -ReferencedAssemblies @(
   [System.Windows.Automation.AutomationElement].Assembly.Location,
@@ -45,6 +45,76 @@ while (-not [System.Windows.Automation.Automation]::Compare($automation::Focused
   Start-Sleep -Milliseconds 10
 }
 Require-Terminal
+if ($Action -eq 'Resize') {
+  $documentBounds = $document.Current.BoundingRectangle
+  $deadline = [DateTime]::UtcNow.AddSeconds(5)
+  do {
+    Require-Terminal
+    $selection = $pattern.GetSelection()
+    $ready = $false
+    if ($selection.Length -eq 1) {
+      $line = $selection[0].Clone()
+      $line.ExpandToEnclosingUnit([System.Windows.Automation.Text.TextUnit]::Line)
+      $rectangles = $line.GetBoundingRectangles()
+      $ready = $rectangles.Length -eq 1 -and $rectangles[0].Left -gt $documentBounds.Left + $documentBounds.Width / 3
+    }
+    if ($ready) { break }
+    if ([DateTime]::UtcNow -ge $deadline) { throw 'The private right split has no presented native caret line' }
+    Start-Sleep -Milliseconds 25
+  } while ($true)
+  function Press-Resize([string]$key) {
+    Require-Terminal
+    Require-Released
+    [System.Windows.Forms.SendKeys]::SendWait($key)
+    Require-Released
+    Require-Terminal
+  }
+  function Marker-Bounds {
+    Require-Terminal
+    $range = $pattern.DocumentRange
+    if (($range.GetText(16384) -split '\r?\n') -cnotcontains 'SP_RESIZE_7') { return $null }
+    $marker = $range.FindText('SP_RESIZE_7', $false, $false)
+    if ($null -eq $marker) { return $null }
+    $marker.ExpandToEnclosingUnit([System.Windows.Automation.Text.TextUnit]::Line)
+    $rectangles = $marker.GetBoundingRectangles()
+    if ($rectangles.Length -ne 1) { throw 'The authored resize line has no unique native rectangle' }
+    $rect = $rectangles[0]
+    $outer = $document.Current.BoundingRectangle
+    foreach ($property in @('Left','Top','Width','Height')) {
+      if ([Math]::Abs($outer.$property - $documentBounds.$property) -gt 1) { throw 'The terminal viewport moved during pane resizing' }
+    }
+    foreach ($number in @($rect.Left, $rect.Top, $rect.Width, $rect.Height)) {
+      if ([double]::IsNaN($number) -or [double]::IsInfinity($number)) { throw 'Resize text geometry is not finite' }
+    }
+    if ($rect.Width -le 0 -or $rect.Height -le 0 -or
+        $rect.Left -lt $outer.Left - 1 -or $rect.Top -lt $outer.Top - 1 -or
+        $rect.Right -gt $outer.Right + 1 -or $rect.Bottom -gt $outer.Bottom + 1) {
+      throw 'Resize text geometry escapes the private terminal'
+    }
+    return $rect
+  }
+  function Wait-Resize($accept) {
+    $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    do {
+      $rect = Marker-Bounds
+      if ($null -ne $rect -and (& $accept $rect)) { return $rect }
+      if ([DateTime]::UtcNow -ge $deadline) { throw 'Native resize geometry did not reach its expected boundary' }
+      Start-Sleep -Milliseconds 25
+    } while ($true)
+  }
+  Press-Resize 'echo SP_RESIZE_7{ENTER}'
+  $before = Wait-Resize { param($rect) $true }
+  Press-Resize '^br'
+  Press-Resize '{LEFT}'
+  $changed = Wait-Resize { param($rect) $rect.Left -lt $before.Left - 1 }
+  Press-Resize '{RIGHT}'
+  $restored = Wait-Resize { param($rect) [Math]::Abs($rect.Left - $before.Left) -le 1 }
+  Press-Resize '{ESC}'
+  Require-Released
+  Require-Terminal
+  [Console]::WriteLine('TERMINAL_RESIZE native=true prefix=true left=true right=true restored=true released=true')
+  return
+}
 $observer = [SpaceportLiveEvents]::new($handle, $ProcessId, [System.Windows.Automation.TextPattern]::TextChangedEvent)
 try {
   Require-Terminal

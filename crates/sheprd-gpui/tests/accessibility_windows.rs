@@ -343,6 +343,21 @@ impl Running {
             .unwrap()
     }
 
+    fn daemon_result(&mut self, args: &[&str]) -> serde_json::Value {
+        use std::os::windows::process::CommandExt as _;
+        let capture = self.sandbox.dir.join("daemon-api.log");
+        let mut command = self.sandbox.command(daemon_binary(), "daemon-api.log");
+        // Queries must not open a console and take focus from native input.
+        command.creation_flags(sheprd_client::CREATE_NO_WINDOW);
+        command.args(args);
+        let output = self
+            .command_output(command, &capture, Duration::from_secs(3))
+            .unwrap();
+        let value: serde_json::Value = serde_json::from_str(&output).unwrap();
+        assert!(value["error"].is_null(), "{value}");
+        value["result"].clone()
+    }
+
     fn uia_action(&mut self, flag: &str, name: &str) {
         self.script_output(
             &self.sandbox.dir.join("uia_tree.ps1"),
@@ -441,6 +456,8 @@ mod close_others;
 mod held_shortcuts;
 #[path = "accessibility_windows/keyboard_layouts.rs"]
 mod keyboard_layouts;
+#[path = "accessibility_windows/pane_resize.rs"]
+mod pane_resize;
 #[path = "accessibility_windows/quit.rs"]
 mod quit;
 #[path = "accessibility_windows/recovery.rs"]

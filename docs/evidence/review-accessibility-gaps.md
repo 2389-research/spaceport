@@ -139,6 +139,31 @@ The role and keyboard-effect evidence satisfies the original close-button requir
 It does not qualify the remaining Core, caret, scaled Settings glyph, reorder, or selected-tab image checks.
 Kata `q72g` remains open.
 
+## Native Herdr resize candidate
+
+The Windows suite also includes `native_herdr_prefix_resize_moves_text_bounds_and_preserves_both_panes`.
+Setup creates one real right split through the existing app command.
+The daemon must report both stable pane IDs before native input starts.
+The helper waits for the focused right pane's presented native caret-line bounds.
+It sends authored output, then Ctrl-B, r, and Left through native keyboard input.
+The authored line must move left before Right may run.
+Right must restore its original horizontal position within one pixel.
+The outer terminal viewport must stay fixed throughout both observations.
+Every observed line rectangle must remain finite, positive, and inside the native terminal.
+Both daemon pane IDs must remain unchanged after resizing.
+
+The existing terminal helper defaults to its unchanged text-and-caret action.
+The resize action reuses its exact foreground, document-focus, and modifier-release checks.
+It creates no live-event observer and changes no clipboard data.
+The shared daemon query preserves the held-key fixture's flags, deadline, and bounded capture.
+Independent review finds no concrete issue in the native route or ownership checks.
+The targeted Windows native-harness lint passes.
+All four canonical host and Windows GNU lint configurations pass.
+Formatting, size, sorting, operations, localization, commit, and diff checks pass.
+The final five-file review finds no further material issue.
+Logs use `/tmp/spaceport-9s44-pane-keys-*.log`.
+Actual Windows execution remains pending; this does not qualify Core resizing or close `q72g`.
+
 ## Native Herdr text and caret candidate
 
 The next Windows case opens only a private Herdr terminal.

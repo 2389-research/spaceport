@@ -4,10 +4,9 @@ use super::{
     Duration, GuiTarget, Instant, Read, Running, fs, shortcut_prepared, start_shortcut, thread,
     window_ids,
 };
-use crate::{CAPTURE_LIMIT, daemon_binary};
+use crate::CAPTURE_LIMIT;
 use serde_json::Value;
 use std::collections::BTreeSet;
-use std::os::windows::process::CommandExt as _;
 
 #[derive(Clone, Copy)]
 enum Action {
@@ -66,25 +65,9 @@ fn helper_output(running: &Running) -> String {
     String::from_utf8(bytes).unwrap()
 }
 
-fn daemon_result(running: &mut Running, args: &[&str]) -> Value {
-    let capture = running.sandbox.dir.join("held-daemon-api.log");
-    let mut command = running
-        .sandbox
-        .command(daemon_binary(), "held-daemon-api.log");
-    // Queries run while keys are held; a console window must not take focus.
-    command.creation_flags(sheprd_client::CREATE_NO_WINDOW);
-    command.args(args);
-    let output = running
-        .command_output(command, &capture, Duration::from_secs(3))
-        .unwrap();
-    let value: Value = serde_json::from_str(&output).unwrap();
-    assert!(value["error"].is_null(), "{value}");
-    value["result"].clone()
-}
-
 fn starting_tab(running: &mut Running) -> Value {
     assert_eq!(window_ids(running).len(), 1);
-    let result = daemon_result(running, &["tab", "list"]);
+    let result = running.daemon_result(&["tab", "list"]);
     assert_eq!(result["type"], "tab_list");
     let tabs = result["tabs"].as_array().unwrap();
     assert_eq!(tabs.len(), 1);
@@ -93,14 +76,14 @@ fn starting_tab(running: &mut Running) -> Value {
 }
 
 fn pane_count(running: &mut Running, tab: &str) -> usize {
-    let result = daemon_result(running, &["tab", "get", tab]);
+    let result = running.daemon_result(&["tab", "get", tab]);
     assert_eq!(result["type"], "tab_info");
     assert_eq!(result["tab"]["tab_id"], tab);
     usize::try_from(result["tab"]["pane_count"].as_u64().unwrap()).unwrap()
 }
 
 fn panes(running: &mut Running, workspace: &str, tab: &str) -> BTreeSet<String> {
-    let result = daemon_result(running, &["pane", "list", "--workspace", workspace]);
+    let result = running.daemon_result(&["pane", "list", "--workspace", workspace]);
     assert_eq!(result["type"], "pane_list");
     let ids: Vec<_> = result["panes"]
         .as_array()
