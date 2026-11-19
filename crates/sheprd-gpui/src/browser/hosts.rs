@@ -6,9 +6,10 @@
 //! window: it is the whole of the seam the browser has to the app.
 
 use super::{CoreGroupKey, Scope, Store};
-use crate::{SheprdWindow, endpoint::Endpoint};
+use crate::{SheprdWindow, endpoint::Endpoint, motion};
 use gpui::App;
 use sheprd_client::protocol::ClientShellSnapshot;
+use std::time::Instant;
 
 /// What one window offers the browser for a single call. The app owns the
 /// window and the store; the browser only reads them.
@@ -23,6 +24,8 @@ pub(crate) struct BrowserHosts<'a> {
     /// Which of `endpoints` this window shows,
     /// `SheprdWindow.selected_endpoint`.
     pub(crate) selected_endpoint: usize,
+    /// `motion::now()`, read once per call so every animation in it agrees.
+    pub(crate) now: Instant,
     /// The newest metadata of the shown endpoint, or none before it connects.
     pub(crate) snapshot: Option<&'a ClientShellSnapshot>,
     /// The window's tab store, read for a caller with a window context; none
@@ -43,6 +46,7 @@ impl SheprdWindow {
             core_enabled: self.core_enabled(),
             core_group: self.selected_core_group(),
             endpoints: &self.endpoints,
+            now: motion::now(),
             selected_endpoint: self.selected_endpoint,
             snapshot: self.live.snapshot.as_deref(),
             tabs: cx.and_then(super::view::store),
@@ -57,6 +61,7 @@ impl SheprdWindow {
         &'a mut self,
         cx: Option<&'a App>,
     ) -> (&'a mut super::Browser, BrowserHosts<'a>) {
+        let now = motion::now();
         let selected_endpoint = self.selected_endpoint;
         let workspace = cx.and_then(|cx| self.active_browser_key(cx));
         let tabs = cx.and_then(super::view::store);
@@ -71,6 +76,7 @@ impl SheprdWindow {
             core_enabled: core_terminals.hub.enabled(),
             core_group: core_terminals.selected_group(),
             endpoints,
+            now,
             selected_endpoint,
             snapshot: live.snapshot.as_deref(),
             tabs,

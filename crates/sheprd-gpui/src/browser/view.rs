@@ -169,10 +169,6 @@ impl SheprdWindow {
         self.browser.browser_key(&self.browser_hosts(None))
     }
 
-    pub(crate) fn layout_key(&self) -> Option<(Scope, String)> {
-        self.browser.layout_key(&self.browser_hosts(None))
-    }
-
     pub(crate) fn active_browser_key(&self, cx: &App) -> Option<(Scope, String)> {
         match self.selected_core_group() {
             Some(key) => self.core_group_available(key, cx).then(|| key.parts()),
@@ -181,6 +177,7 @@ impl SheprdWindow {
     }
 
     /// The focused workspace's browser tabs, in the order they opened.
+    #[cfg(test)]
     pub(crate) fn browser_tab_ids(&self, cx: &App) -> Vec<TabId> {
         self.browser.browser_tab_ids(&self.browser_hosts(Some(cx)))
     }
