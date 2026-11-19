@@ -31,6 +31,7 @@ enum GuiTarget {
     // keep-sorted start
     ChatAccessibility,
     Local,
+    SettingsKeyboard,
     ShortcutFenceObserver,
     ShortcutObserver,
     Socket,
@@ -119,8 +120,14 @@ impl Running {
                         self.sandbox.dir.join("native-chat.png"),
                     );
             }
-            GuiTarget::Socket | GuiTarget::ShortcutObserver | GuiTarget::ShortcutFenceObserver => {
+            GuiTarget::Socket
+            | GuiTarget::ShortcutObserver
+            | GuiTarget::ShortcutFenceObserver
+            | GuiTarget::SettingsKeyboard => {
                 command.arg("--socket").arg(self.sandbox.socket());
+                if matches!(target, GuiTarget::SettingsKeyboard) {
+                    command.env("HERDR_TEST_SETTINGS_KEYBOARD", "1");
+                }
                 if matches!(
                     target,
                     GuiTarget::ShortcutObserver | GuiTarget::ShortcutFenceObserver
@@ -414,6 +421,8 @@ mod close_others;
 mod held_shortcuts;
 #[path = "accessibility_windows/recovery.rs"]
 mod recovery;
+#[path = "accessibility_windows/settings.rs"]
+mod settings;
 #[path = "accessibility_windows/workspace_close.rs"]
 mod workspace_close;
 // keep-sorted end

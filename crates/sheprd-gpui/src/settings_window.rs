@@ -9,6 +9,8 @@ mod keyboard;
 #[cfg(windows)]
 mod launch_at_login;
 mod layouts;
+#[cfg(all(windows, feature = "integration-test"))]
+mod native_keyboard;
 mod navigation;
 mod pages;
 pub(crate) use layouts::{apply_loaded_layout, layout_load_revision};
@@ -157,7 +159,11 @@ fn open_with(
             model
         },
     ) {
-        Ok(handle) => cx.default_global::<SettingsWindowHandle>().window = Some(handle),
+        Ok(handle) => {
+            cx.default_global::<SettingsWindowHandle>().window = Some(handle);
+            #[cfg(all(windows, feature = "integration-test"))]
+            native_keyboard::observe(handle, cx);
+        }
         Err(_) => tracing::error!("Unable to open Settings window"),
     }
 }

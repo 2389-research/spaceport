@@ -1,7 +1,8 @@
 # Settings keyboard navigation
 
 Date: 2026-11-17. Scope: `d0n2` under `9s44`.
-Doctor Biz authorized fixes and validation without commits or external writes.
+The original implementation authorization excluded commits and external writes.
+Doctor Biz later authorized the aggregate draft checkpoint and its qualification updates.
 
 ## Current implementation
 
@@ -155,3 +156,40 @@ UIA focus alone cannot prove that ring.
 This route can run in the private Windows CI desktop without a Mac foreground fixture.
 Speech, contrast auditing, release profiling, and exhaustive glyph checks belong to separate findings.
 Keep `d0n2` open until its actual keyboard and image receipts pass.
+
+## Windows qualifier implementation
+
+The private fixture now opens Settings through the normal main-window button.
+It retains the unique PID-owned Settings HWND, rather than `Process.MainWindowHandle`.
+Every key requires that exact foreground HWND and focused-element ancestry within Settings.
+It refuses already-held modifiers before sending a key.
+
+The first stage anchors the actual search field, then uses Tab and Shift+Tab.
+Space opens General from its navigation tab.
+Native Tab reaches Smooth scrolling, leaves it, and returns to the same control.
+Switches expose UIA Button and Toggle state in the pinned AccessKit version.
+Layout segments expose RadioButton and SelectionItem state.
+
+The capture observer starts only for the Windows integration fixture.
+It observes the actual singleton handle without changing focus or settings.
+It captures the switch row with keyboard focus, then captures it after focus leaves.
+The comparison requires identical geometry, viewport, ring color, and switch state.
+It counts actual ring-colored pixels near the switch and requires more when focused.
+It retains both row PNGs for inspection.
+Image cropping, counting, and encoding run on the background executor.
+Full readbacks are bounded to four million pixels; encoded crops are bounded to 128 KiB each.
+
+Later native stages toggle the switch with Space and restore it with Enter.
+They select Bubbles and restore Timeline with the actual segment controls.
+The parent parses the real private TOML after each action and checks persisted values.
+The language dropdown opens, receives Down/Up, dismisses, reopens, and selects its current English choice.
+Dismissal and selection must restore the exact trigger and collapse its expanded state.
+The existing headless tests separately check the intermediate arrow-selection indices.
+
+Nine focused Settings keyboard tests pass, with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- settings_window::tests::keyboard settings_window::ui::tests::keyboard --nocapture`.
+Log: `/tmp/spaceport-9s44-settings-native-consumers.log`.
+Both host and Windows GNU lint configurations and the static checks pass.
+Independent review finds no material ownership, keyboard, measurement, or original-scope gap.
+Actual Windows keyboard execution, persisted-value receipts, and both native PNG inspections remain pending.
+Kata `d0n2` remains open.
