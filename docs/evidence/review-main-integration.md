@@ -261,8 +261,8 @@ Their three regressions fail first; the corrected focused scopes pass 70 tests.
 The normal-consumer test retains 150-millisecond slide timing.
 See [OS accessibility evidence](review-os-accessibility.md#reorder-extraction-follow-up).
 
-Kata now has 36 closed children and 17 open children.
-Native pipe-owner rejection and Windows identity qualification supply the latest two closures.
+Kata now has 37 closed children and 16 open children.
+Reduced motion closes after its extracted-slide and chat-glide corrections pass scoped verification.
 The umbrella remains open.
 Native Settings readiness is pending Doctor Biz's answer.
 Both Windows native GUI jobs and the x64 accessibility tree/focus case pass on `46738c99c`.

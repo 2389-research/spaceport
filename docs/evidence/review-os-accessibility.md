@@ -143,7 +143,10 @@ The Linux desktop-backend limitation above remains explicit.
 
 Logs: `/tmp/spaceport-9s44-reduced-motion-consumers-{red,green}.log` and `reduced-motion-normal-consumer.log`.
 Short names share the `/tmp/spaceport-9s44-` prefix.
-Kata `krqj` remains open while the correction awaits publication and final verification.
+Kata `krqj` closes after publication of fix `1ff2bb922` and final scoped verification.
+Its closure event is `9782` (`01M7S1ZEDMQ46YPVEYN7RZBY6H`).
+A fresh issue read confirms its closed status.
+This closure does not qualify the separate UI Automation timeout, speech, Settings input, or release performance findings.
 Canonical host and Windows GNU lint pass both feature configurations.
 The Windows GNU checks pass again after adding the timeout diagnostic.
 Formatting, size, sorting, operations, localization, specification, and diff validators pass.
