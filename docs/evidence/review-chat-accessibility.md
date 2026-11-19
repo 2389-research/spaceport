@@ -41,6 +41,50 @@ Inspect those real rendered controls through Windows UIA and activate permission
 Preview has no linked transport.
 Its Session can prove queued Answer intent, while existing framed-wire tests supply separate delivery evidence.
 Do not describe a preview answer as a connected-agent delivery receipt.
+
+## Native chat candidate
+
+The `accessibility` preview case installs one embedded protocol fixture and its preserved draft.
+The fixture contains readable user/agent messages, a completed tool, three plan states, and two distinct permission requests.
+An Other-category setting exposes the real Agent settings button.
+The preview uses the shared composer and conversation-focus constructors.
+
+The dataset regression fails before installation uses the fixture.
+Log: `/tmp/spaceport-9s44-chat-accessibility-dataset-red.log`.
+The corrected producer and existing chat consumers pass thirteen tests, with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- chat::preview::tests:: chat::tests::accessibility:: --nocapture`.
+Log: `/tmp/spaceport-9s44-chat-accessibility-consumers.log`.
+The added rendered-key test reaches both real permission buttons and observes exact queued Answer commands.
+
+The Windows scenario reads the rendered message, tool, plan, permission, and control nodes through native UIA.
+It anchors the actual named composer and checks its native Value against the authored draft.
+It reaches Agent settings, tool disclosure, and permission buttons through native Tab presses.
+Enter opens the settings/disclosure and answers the first permission.
+Space answers the second permission.
+The settings and tool transitions must occur; expanded tool text must appear and disappear from UIA.
+
+Before each key, the exact private HWND and focused-element ancestry must match.
+Immediately before activation, focus must still identify the exact selected button.
+An already-held Alt key refuses setup; the temporary Alt press releases in `finally`.
+The scenario starts no daemon or agent and reuses exact-child helper cleanup.
+
+The preview probe verifies each real Session queue entry's exact permission/option IDs and unchanged draft.
+It locally applies ordinary ACK and PermissionResolved messages to advance the authored sample.
+No linked agent receives those commands.
+The native receipts therefore prove queued intent; framed-wire tests retain separate delivery evidence.
+
+The scenario also retains a PNG of its owned initial scene through the existing native preview capture path.
+Keyboard actions wait for the post-capture readiness receipt.
+The parent validates PNG framing and limits the emitted receipt to 512 KiB before publication.
+The image contains only the authored private-window scene, not a desktop capture.
+
+Both host and Windows GNU lint configurations pass with and without default features.
+The final Windows harness also passes focused lint after its readiness and capture additions.
+Logs: `/tmp/spaceport-9s44-chat-accessibility-lint.log`, `/tmp/spaceport-9s44-chat-accessibility-final-windows-lint.log`, and `/tmp/spaceport-9s44-chat-accessibility-harness-final-lint.log`.
+Static, commit, and diff checks pass.
+Independent review accepts the Session ownership, native contract assertions, isolation, and corrected key guards.
+The owner review finds no remaining material issue.
+Actual Windows execution and image inspection remain pending; `2njz` stays open.
 Doctor Biz authorized this finding and its validation within umbrella `9s44`.
 No commit, push, or issue-tracker write has been performed here.
 

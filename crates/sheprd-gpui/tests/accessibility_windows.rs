@@ -28,6 +28,7 @@ struct Running {
 }
 
 enum GuiTarget {
+    ChatAccessibility,
     Local,
     ShortcutObserver,
     Socket,
@@ -105,6 +106,16 @@ impl Running {
             .sandbox
             .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
         match target {
+            GuiTarget::ChatAccessibility => {
+                command
+                    .arg("--sidebar-test")
+                    .env("HERDR_TEST_RICH_CHAT", "accessibility")
+                    .env("HERDR_TEST_RICH_CHAT_HOLD_MS", "60000")
+                    .env(
+                        "HERDR_TEST_RICH_CHAT_CAPTURE",
+                        self.sandbox.dir.join("native-chat.png"),
+                    );
+            }
             GuiTarget::Socket | GuiTarget::ShortcutObserver => {
                 command.arg("--socket").arg(self.sandbox.socket());
                 if matches!(target, GuiTarget::ShortcutObserver) {
@@ -382,6 +393,8 @@ fn a_command_timeout_reaps_its_owned_child() {
 // keep-sorted start
 #[path = "accessibility_windows/announcements.rs"]
 mod announcements;
+#[path = "accessibility_windows/chat.rs"]
+mod chat;
 #[path = "accessibility_windows/close_others.rs"]
 mod close_others;
 #[path = "accessibility_windows/held_tabs.rs"]

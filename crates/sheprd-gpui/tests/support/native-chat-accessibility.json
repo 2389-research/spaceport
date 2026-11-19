@@ -1,0 +1,36 @@
+{
+  "draft": "Native draft stays put",
+  "transcript": {
+    "agent": "Native fixture agent",
+    "status": {"state": "idle"},
+    "entries": [
+      {"id": 1, "kind": {"type": "user", "text": "Native user message remains readable"}},
+      {"id": 2, "kind": {"type": "agent", "text": "Native agent message remains readable"}},
+      {"id": 3, "kind": {
+        "type": "tool",
+        "call_id": "native-fixture-tool",
+        "kind": "execute",
+        "title": "Native fixture tool",
+        "status": "completed",
+        "content": [{"type": "text", "text": "Native expanded tool output"}]
+      }}
+    ],
+    "permissions": [
+      {"id": 41, "title": "Native permission for Enter", "options": [
+        {"id": "allow-native", "kind": "allow_once", "name": "Allow once"}
+      ]},
+      {"id": 42, "title": "Native permission for Space", "options": [
+        {"id": "reject-native", "kind": "reject_once", "name": "Reject once"}
+      ]}
+    ],
+    "plan": [
+      {"content": "Native completed step", "status": "completed"},
+      {"content": "Native active step", "status": "in_progress"},
+      {"content": "Native pending step", "status": "pending"}
+    ],
+    "options": [
+      {"id": "native-setting", "name": "Native setting", "category": "other",
+       "kind": {"type": "toggle", "current": true}}
+    ]
+  }
+}
