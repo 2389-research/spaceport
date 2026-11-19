@@ -17,10 +17,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+const CAPTURE_LIMIT: usize = 1_048_576;
+
 struct Running {
     command: Option<Child>,
     daemon: Option<Child>,
     gui: Option<Child>,
+    observer: Option<Child>,
     sandbox: Sandbox,
 }
 
@@ -31,7 +34,12 @@ enum GuiTarget {
 
 impl Drop for Running {
     fn drop(&mut self) {
-        stop_children([&mut self.command, &mut self.gui, &mut self.daemon]);
+        stop_children([
+            &mut self.command,
+            &mut self.observer,
+            &mut self.gui,
+            &mut self.daemon,
+        ]);
     }
 }
 
@@ -47,6 +55,7 @@ impl Running {
             command: None,
             daemon: None,
             gui: None,
+            observer: None,
             sandbox,
         }
     }
@@ -156,9 +165,18 @@ impl Running {
                 "the owned GUI exited",
             ));
         }
-        let process = self.gui.as_ref().map_or(0, Child::id);
         let capture = self.sandbox.dir.join("uia-capture.log");
-        let mut command = self.sandbox.command("powershell.exe", "uia-capture.log");
+        let mut command = self.powershell(script, "uia-capture.log");
+        command.args([flag, value]);
+        if let Some(button) = expected_button {
+            command.args(["-ExpectedButton", button]);
+        }
+        self.command_output(command, &capture, limit)
+    }
+
+    fn powershell(&self, script: &Path, log: &str) -> std::process::Command {
+        let process = self.gui.as_ref().map_or(0, Child::id);
+        let mut command = self.sandbox.command("powershell.exe", log);
         // Windows PowerShell uses these system paths while loading cmdlets.
         for name in ["ProgramFiles", "ProgramFiles(x86)"] {
             if let Some(value) = std::env::var_os(name) {
@@ -168,20 +186,26 @@ impl Running {
         command
             .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
             .arg(script)
-            .args(["-ProcessId", &process.to_string(), flag, value]);
-        if let Some(button) = expected_button {
-            command.args(["-ExpectedButton", button]);
-        }
+            .args(["-ProcessId", &process.to_string()]);
+        command
+    }
+
+    fn command_output(
+        &mut self,
+        mut command: std::process::Command,
+        capture: &Path,
+        limit: Duration,
+    ) -> io::Result<String> {
         self.command = Some(command.spawn()?);
         let result = (|| {
             let deadline = Instant::now() + limit;
             loop {
                 if let Some(status) = self.command.as_mut().unwrap().try_wait()? {
                     let mut bytes = Vec::new();
-                    fs::File::open(&capture)?
-                        .take(1_048_577)
+                    fs::File::open(capture)?
+                        .take((CAPTURE_LIMIT + 1) as u64)
                         .read_to_end(&mut bytes)?;
-                    if bytes.len() > 1_048_576 {
+                    if bytes.len() > CAPTURE_LIMIT {
                         return Err(io::Error::new(
                             io::ErrorKind::InvalidData,
                             "UI Automation capture exceeds 1 MiB",
@@ -214,8 +238,8 @@ impl Running {
                 return error;
             }
             let mut bytes = Vec::new();
-            let capture = fs::File::open(&capture)
-                .and_then(|file| file.take(1_048_576).read_to_end(&mut bytes));
+            let capture = fs::File::open(capture)
+                .and_then(|file| file.take(CAPTURE_LIMIT as u64).read_to_end(&mut bytes));
             io::Error::new(
                 error.kind(),
                 format!(
@@ -330,11 +354,14 @@ fn a_command_timeout_reaps_its_owned_child() {
     );
 }
 
-#[path = "accessibility_windows/workspace_close.rs"]
-mod workspace_close;
-
+// keep-sorted start
+#[path = "accessibility_windows/announcements.rs"]
+mod announcements;
 #[path = "accessibility_windows/recovery.rs"]
 mod recovery;
+#[path = "accessibility_windows/workspace_close.rs"]
+mod workspace_close;
+// keep-sorted end
 
 #[test]
 #[ignore = "requires an active Windows desktop and HERDR_TEST_BINARY; launches a native GUI and isolated daemon"]

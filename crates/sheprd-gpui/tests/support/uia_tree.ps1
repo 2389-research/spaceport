@@ -5,7 +5,7 @@
 # its control type, name, and the patterns or states that matter here. With
 # -Keys, it then brings the window forward, sends each key ("|"-separated,
 # SendKeys syntax), and prints the element that has keyboard focus after it.
-param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '')
+param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '')
 [Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
@@ -61,15 +61,21 @@ foreach ($window in $windows) {
 }
 [Console]::WriteLine('UIA stage: tree complete')
 
-if ($Invoke) {
-  $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $Invoke)
-  $button = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
+if ($Invoke -or $MenuItem -or $Expand) {
+  $target = if ($Invoke) { $Invoke } elseif ($MenuItem) { $MenuItem } else { $Expand }
+  $type = if ($Invoke) { [System.Windows.Automation.ControlType]::Button } else { [System.Windows.Automation.ControlType]::MenuItem }
+  $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $target)
+  $button = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, $type)
   $namedButton = [System.Windows.Automation.AndCondition]::new($name, $button)
   $buttons = @(foreach ($window in $windows) {
     $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $namedButton)
   })
-  if ($buttons.Count -ne 1) { throw "Expected one private button named '$Invoke', found $($buttons.Count)" }
-  $buttons[0].GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+  if ($buttons.Count -ne 1) { throw "Expected one private control named '$target', found $($buttons.Count)" }
+  if ($Expand) {
+    $buttons[0].GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+  } else {
+    $buttons[0].GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+  }
 }
 
 if ($Keys) {

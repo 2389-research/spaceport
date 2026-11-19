@@ -116,3 +116,7 @@ Pinned AccessKit Windows raises those events for named live nodes.
 Microsoft documents the [native live-region event](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-event-ids).
 This check does not require audible speech, a Mac foreground fixture, Settings, or release profiling.
 Keep those broader qualifications separate from `kjkw`.
+
+The [native announcement qualifier](review-native-error-announcements.md) now implements that focused check.
+Its parser, type, static, and independent review evidence passes locally.
+Its actual Windows event and removal receipts remain pending CI.
