@@ -199,3 +199,23 @@ Independent review finds no material discoverability, platform, precedence, or p
 That cfg-specific case requires Linux CI; a macOS pass cannot qualify its branch.
 Native Linux/Windows keyboard delivery and actual GNOME session checks remain pending.
 This correction does not close `3wd4`.
+
+## Loaded-layout prerequisite diagnostic
+
+The Windows native suite now has a separate loaded-layout diagnostic.
+It creates only a private PowerShell helper, without an app, daemon, clipboard operation, or input event.
+It enumerates at most 64 actual HKLs and identifies their eight-digit KLIDs.
+One synchronous C# call temporarily activates each candidate on its own calling thread with flags zero.
+It verifies the active HKL before reading its name and restores the original HKL in `finally`.
+The diagnostic also exercises an intentional early failure and verifies that restoration succeeds.
+Its receipt says whether that failure actually changed layouts; a single-layout host cannot prove that transition.
+
+The [activation contract](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-activatekeyboardlayout) limits this operation to the calling thread without `KLF_SETFORPROCESS`.
+The diagnostic never calls LoadKeyboardLayout or changes the GUI thread.
+Its bounded receipt lists loaded KLIDs and whether Polish Programmers `00000415` is present.
+An absent layout remains an unavailable input-test prerequisite, rather than a passing AltGr result.
+Actual native execution remains pending; Windows cross-lint does not compile or execute the embedded C#.
+This diagnostic does not qualify actual key delivery or close `3wd4`.
+Independent read-only review finds no material thread-scope, cleanup, bounds, or framework-compatibility issue.
+The canonical static checks, focused Windows native-harness cross-lint, and diff check pass.
+Logs: `/tmp/spaceport-9s44-layout-inventory-static.log`, `layout-inventory-canonical.log`, and `layout-inventory-windows-lint.log`.
