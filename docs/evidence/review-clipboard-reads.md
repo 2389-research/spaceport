@@ -203,3 +203,37 @@ That backend is not a live native Core runtime.
 Keep shared native-reader evidence separate from Core contract evidence unless a private runtime is explicitly selected.
 Do not invent a new live-runtime prerequisite for the original issue.
 No clipboard access, write, or native launch occurred during this read-only research.
+
+## Native owner candidate
+
+The Windows fixture now has an empty-only native publication owner and two native safety regressions.
+The helper creates an owned hidden HWND and eagerly publishes only authored Unicode data.
+It publishes the documented history/cloud exclusion before the text, without changing OS preferences.
+Admission counts formats under the clipboard lock and refuses nonempty state unchanged.
+Reads and clears require the exact HWND and publication sequence while locked.
+Successful native allocation transfers belong to Windows; failed transfers retain cleanup ownership.
+
+The first native case checks Unicode and authored 262144/2097153-byte payloads through the real clipboard APIs.
+It checks nonempty refusal, a stale sequence with the same HWND, and preservation of a successor's publication.
+It also checks cleanup after a deliberate managed exception.
+These are helper ownership checks, not application paste or acquisition-limit results.
+
+The second native case deliberately fails the Rust parent after authored publication.
+The parent retains the owner, requests cleanup, and waits for the exact process to exit.
+An independent native guardian starts before publication and prevents future publication after cancellation.
+It clears only an exact-owned publication and writes a fresh safe-cleanup receipt before exit.
+The native startup handshake separates compilation from the publication deadline.
+A fresh empty-only admission verifies the guardian's actual removal.
+
+Review found that hard termination could bypass managed `finally` cleanup.
+It also found an unconditional guardian shutdown after failed cleanup.
+Both paths now retain the HWND, lease, owner process, and private files until cleanup is proved.
+Persistent external contention is reported as pending cleanup.
+It cannot authorize termination or deletion without a safe receipt or exact terminal process evidence.
+Independent correction review finds no remaining material ownership or privacy issue.
+
+Windows native-harness lint and static checks pass.
+C# compilation and both actual native safety regressions remain pending Windows CI.
+No local clipboard access or publication occurred.
+Real chat and standalone multiline paste, cancellation, and reader recovery remain the next qualification step.
+Kata `d378` remains open.

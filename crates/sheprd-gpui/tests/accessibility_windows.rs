@@ -415,6 +415,8 @@ fn a_command_timeout_reaps_its_owned_child() {
 mod announcements;
 #[path = "accessibility_windows/chat.rs"]
 mod chat;
+#[path = "accessibility_windows/clipboard_broker.rs"]
+mod clipboard_broker;
 #[path = "accessibility_windows/close_others.rs"]
 mod close_others;
 #[path = "accessibility_windows/held_shortcuts.rs"]
