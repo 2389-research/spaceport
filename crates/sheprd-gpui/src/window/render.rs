@@ -272,6 +272,18 @@ impl Render for SheprdWindow {
                 **shown == Shown::Terminal && primary.is_none_or(|group| group == slot.id)
             })
             .map(|(slot, _)| *slot);
+        // Terminal feedback belongs inside the cells' padded container. Other
+        // views keep the same feedback in the window body.
+        let over_terminal = self.activity_section().is_none()
+            && terminal_slot
+                .is_some_and(|slot| self.active_group().is_none_or(|group| group == slot.id))
+            && self.core_fallback_view().is_none();
+        let flash = self.render_flash(over_terminal, cx);
+        let (terminal_flash, window_flash) = if over_terminal {
+            (flash, None)
+        } else {
+            (None, flash)
+        };
         let find_bar = self.render_find_bar(surface.as_deref(), cx);
         let copy_badge = self.render_copy_mode_badge(surface.as_deref(), cx);
         let chats = self.render_chats(surface.as_deref(), cx);
@@ -574,6 +586,7 @@ impl Render for SheprdWindow {
                     .children(self.render_reconnecting(cx))
                     .when_some(find_bar, |terminal, bar| terminal.child(bar))
                     .when_some(copy_badge, |terminal, badge| terminal.child(badge))
+                    .children(terminal_flash)
             });
         // A focus handle belongs to one element: the terminal when drawn,
         // otherwise the group in use.
@@ -796,7 +809,7 @@ impl Render for SheprdWindow {
                             .min_h_0()
                             .relative()
                             .child(content)
-                            .children(self.render_flash(cx))
+                            .children(window_flash)
                             .children(self.render_notices(cx))
                             .children(self.zen_status_bar(cx)),
                     ),

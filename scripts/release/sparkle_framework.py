@@ -101,6 +101,23 @@ def validate_sdk(directory, config=CONFIG):
     return framework
 
 
+def stage_test_runtime(sdk, profile, config=CONFIG):
+    """Expose verified SDK bytes at Cargo's existing executable-relative rpaths."""
+    framework = validate_sdk(sdk, config).resolve()
+    profile = Path(profile).resolve()
+    destinations = [directory / 'Frameworks/Sparkle.framework'
+                    for directory in [profile, profile.parent]]
+    for destination in destinations:
+        if (destination.exists() or destination.is_symlink()) and not (
+                destination.is_symlink() and destination.resolve() == framework):
+            raise ValueError(f'Test framework already exists: {destination}')
+    for destination in destinations:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if not destination.is_symlink():
+            destination.symlink_to(framework, target_is_directory=True)
+        print(destination)
+
+
 def validate_license(path, archive):
     # Sparkle's root SDK license also carries licenses for its bundled code.
     # It is outside Sparkle.framework, so preserve and verify it separately.
@@ -227,11 +244,12 @@ def sign_framework(framework, options):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__ or 'Validate and package pinned Sparkle framework')
-    parser.add_argument('action', choices=('acquire', 'validate-sdk', 'configure', 'validate-bundle', 'validate-unsigned-bundle', 'sign'))
+    parser.add_argument('action', choices=('acquire', 'validate-sdk', 'stage-tests', 'configure', 'validate-bundle', 'validate-unsigned-bundle', 'sign'))
     parser.add_argument('path', type=Path, help='SDK directory or Spaceport.app')
     parser.add_argument('--architecture', choices=('arm64', 'universal'), default='universal')
     parser.add_argument('--config', type=Path, default=CONFIG)
     parser.add_argument('--archive', type=Path, help='Local SDK archive; otherwise download the pinned official release')
+    parser.add_argument('--sdk', type=Path, help='Verified SDK directory for stage-tests; path names the Cargo profile directory')
     args, options = parser.parse_known_args()
     if args.action != 'sign' and options:
         parser.error('Unexpected signing options')
@@ -240,6 +258,10 @@ def main():
     elif args.action == 'validate-sdk':
         validate_sdk(args.path, args.config)
         validate_framework(args.path / 'Sparkle.framework', args.architecture)
+    elif args.action == 'stage-tests':
+        if args.sdk is None:
+            parser.error('stage-tests requires --sdk SDK_DIRECTORY')
+        stage_test_runtime(args.sdk, args.path, args.config)
     elif args.action == 'configure':
         configure_bundle(args.path, args.config)
     else:

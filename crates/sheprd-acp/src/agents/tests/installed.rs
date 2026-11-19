@@ -1,3 +1,5 @@
+// ABOUTME: Checks installed agent discovery and ordered executable search paths.
+// ABOUTME: Uses native absolute fixture paths on every supported platform.
 use super::*;
 
 #[cfg(unix)]
@@ -15,12 +17,15 @@ fn only_agents_with_their_own_command_are_installed() {
 
 #[test]
 fn the_search_path_adds_user_and_system_folders_after_path() {
-    let home = Path::new("/home/me");
-    let path = search_path(Some(OsStr::new("/usr/bin")), Some(home));
+    let root = tempfile::tempdir().unwrap();
+    let home = root.path().join("home");
+    let bin = root.path().join("bin");
+    let input = std::env::join_paths([&bin]).unwrap();
+    let path = search_path(Some(&input), Some(&home));
     let dirs: Vec<PathBuf> = std::env::split_paths(&path).collect();
-    assert_eq!(dirs[0], PathBuf::from("/usr/bin"));
+    assert_eq!(dirs[0], bin);
     assert!(dirs.contains(&home.join(".local/bin")));
     assert!(dirs.contains(&home.join(".opencode/bin")));
     let without_home = search_path(None, None);
-    assert!(std::env::split_paths(&without_home).all(|dir| !dir.starts_with("/home/me")));
+    assert!(std::env::split_paths(&without_home).all(|dir| !dir.starts_with(&home)));
 }

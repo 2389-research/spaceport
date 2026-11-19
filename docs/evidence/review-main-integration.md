@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: sound extraction integration locally verified for draft update.
+Status: repairing the first complete CI run, then integrating newer main.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
@@ -11,6 +11,10 @@ Draft: [PR 125](https://github.com/2389-research/spaceport/pull/125).
 The remote branch and draft head were read back and match that commit.
 The next verified draft head is `e8acf1aa6262f91d3610d5b97b5bb5a928b0ffa7`.
 It includes main `099e380ff` and the combined-source checks recorded below.
+The current published head is `6d89f5e42c0478aa865df329720f4a017e3764f5`.
+Its first complete CI run failed; see [the qualification repairs](review-ci-qualification.md).
+Main subsequently advanced to `57d6ea140722a613ce17beb9ec6d942e5d4c504f`.
+The draft now needs that integration before another hosted run can start.
 
 ## Sound extraction integration
 
@@ -45,7 +49,8 @@ Logs use `/tmp/spaceport-9s44-sound-integration-*.log` and `sound-restored-tests
 The focused test summary is `/tmp/spaceport-9s44-sound-integration-test-summary.json`.
 Native sound-device behavior, desktop interaction, release timing, and hosted platform checks remain unqualified.
 
-Requested landing-order coordination with Clint while these moving conflicts keep PR CI from starting.
+Requested optional landing-order coordination while moving conflicts prevented CI from starting.
+Withdrew that request once the draft became conflict-free and CI started.
 The workflow permits manual dispatch only on main; this work does not bypass that policy.
 
 ## Newer-main integration

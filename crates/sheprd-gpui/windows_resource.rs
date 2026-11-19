@@ -1,3 +1,5 @@
+// ABOUTME: Embeds the shared product identity, icon, and manifest in Windows executables.
+// ABOUTME: Uses target metadata so native and cross builds receive the same resources.
 //! Embeds the Windows executable's resources: the Herdr icon as icon resource
 //! 1, which GPUI's Windows platform loads for the window class and Explorer and
 //! the taskbar show, the version information Windows shows for the file, and
@@ -11,10 +13,12 @@ use std::{
 use crate::release_version;
 use winresource::{VersionInfo, WindowsResource};
 
+#[path = "../sheprd-client/src/app_name.rs"]
+mod app_name;
+use app_name::APP_NAME;
+
 const ICON: &str = "assets/icons/Sheprd.ico";
 const WORKTREE_ICON: &str = "assets/icons/Sheprd-worktree.ico";
-/// Windows shows FileDescription as the application name, as in Task Manager.
-const APP_NAME: &str = "Sheprd";
 /// The version shown for builds outside the release pipeline, as in the app.
 const DEV_VERSION: &str = "dev";
 /// The application manifest: per-monitor DPI, long paths, the UTF-8 code
@@ -34,7 +38,12 @@ pub fn embed(manifest: &Path, worktree: bool) -> std::io::Result<()> {
     }
     println!("cargo:rerun-if-env-changed=HERDR_RELEASE_VERSION");
     let workspace = manifest.join("../..");
-    for file in [ICON, WORKTREE_ICON, MANIFEST] {
+    for file in [
+        ICON,
+        WORKTREE_ICON,
+        MANIFEST,
+        "crates/sheprd-client/src/app_name.rs",
+    ] {
         println!("cargo:rerun-if-changed={}", workspace.join(file).display());
     }
     let icon = workspace.join(if worktree { WORKTREE_ICON } else { ICON });

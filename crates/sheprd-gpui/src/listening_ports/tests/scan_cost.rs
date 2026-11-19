@@ -42,7 +42,11 @@ pub(super) fn owned_environment_and_listener() {
     let mut owned = Process(command.spawn().unwrap());
     let deadline = Instant::now() + Duration::from_secs(5);
     while !fs::read_to_string(root.dir.join("port")).is_ok_and(|port| port.ends_with('\n')) {
-        assert!(owned.0.try_wait().unwrap().is_none());
+        assert!(
+            owned.0.try_wait().unwrap().is_none(),
+            "owned listener exited before readiness:\n{}",
+            fs::read_to_string(root.dir.join("listener.log")).unwrap()
+        );
         assert!(Instant::now() < deadline);
         thread::sleep(Duration::from_millis(5));
     }

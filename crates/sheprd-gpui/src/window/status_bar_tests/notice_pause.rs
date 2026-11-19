@@ -62,8 +62,13 @@ fn newer_warnings_and_explicit_context_reset_do_not_inherit_an_old_pause(cx: &mu
             if reset {
                 view.reset_selected(cx);
             }
-            view.expire_status_notices(start + Duration::from_secs(11));
-            assert!(view.live.notices.is_none());
+            // Start after the replacement exists, even on a loaded runner.
+            view.expire_status_notices(Instant::now() + Duration::from_secs(11));
+            assert!(
+                view.live.notices.is_none(),
+                "reset={reset}: {:?}",
+                view.live.notices
+            );
         });
     }
 }

@@ -32,7 +32,6 @@ pub(super) async fn with_deadline(
 }
 
 #[cfg(target_os = "linux")]
-
 pub(super) async fn read() -> zbus::Result<Preferences> {
     let connection = zbus::Connection::session().await?;
     read_from(&connection).await

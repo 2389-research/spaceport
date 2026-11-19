@@ -1,3 +1,5 @@
+// ABOUTME: Checks dialog fencing across explicit reconnects and background retries.
+// ABOUTME: Waits for the old reader to drain before advancing the retry clock.
 use super::*;
 use crate::menu::Page;
 
@@ -6,7 +8,7 @@ use crate::menu::Page;
 fn retry(view: &mut SheprdWindow, cx: &mut Context<SheprdWindow>) {
     wait_until(|| {
         view.endpoints[0].poll(Instant::now());
-        view.endpoints[0].connection.handle.is_none()
+        view.endpoints[0].connection.handle.is_none() && view.endpoints[0].connection.retry_ready()
     });
     let generation = view.endpoints[0].generation;
     view.endpoints[0].set_retry_at_for_test(Instant::now());

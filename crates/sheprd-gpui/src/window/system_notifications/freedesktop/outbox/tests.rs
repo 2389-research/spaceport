@@ -1,3 +1,5 @@
+// ABOUTME: Verifies notification replacement queues and failed bus replies.
+// ABOUTME: Coordinates controlled replies without blocking the native UI thread.
 use super::super::tests::posted;
 use super::*;
 use gpui::TestAppContext;
@@ -144,11 +146,7 @@ fn rejection_keeps_the_previous_id_and_continues_other_tags(cx: &mut TestAppCont
     server.post("a", "retry", cx);
     server.post("b", "other", cx);
     assert_eq!(server.sent(), [("a".into(), "rejected".into(), 7)]);
-    server.reply(
-        0,
-        Err(super::super::zbus::Error::Failure("rejected".into()).into()),
-        cx,
-    );
+    server.reply(0, Err(zbus::Error::Failure("rejected".into()).into()), cx);
     assert_eq!(server.sent().last(), Some(&("a".into(), "retry".into(), 7)));
     server.reply(1, Ok(8), cx);
     assert_eq!(server.sent().last(), Some(&("b".into(), "other".into(), 0)));

@@ -849,7 +849,7 @@ mod tests {
             error.downcast_ref::<sheprd_client::Error>(),
             Some(sheprd_client::Error::EmptySurface)
         ));
-        assert!(format!("{error:#}").contains("surface dimensions must be nonzero"));
+        assert!(format!("{error:#}").contains(&sheprd_client::Error::EmptySurface.to_string()));
         Ok(())
     }
 

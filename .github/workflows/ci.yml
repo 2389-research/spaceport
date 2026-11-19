@@ -197,7 +197,11 @@ jobs:
         run: cargo test --locked --workspace
       - name: Test integration-feature build and executable CLI
         if: matrix.features == 'all'
-        run: cargo test --locked --workspace --all-features
+        run: |
+          if [[ "$RUNNER_OS" == 'macOS' ]]; then
+            python3 scripts/release/sparkle_framework.py stage-tests target/debug --sdk "$SPARKLE_FRAMEWORK_PATH"
+          fi
+          cargo test --locked --workspace --all-features
       - name: Test native macOS routing without an unlocked desktop
         if: runner.os == 'macOS' && matrix.features == 'all'
         run: cargo test --locked -p sheprd-gpui --features integration-test --test live_gui sidebar_routing::native_host_routing -- --ignored --exact --nocapture --test-threads=1

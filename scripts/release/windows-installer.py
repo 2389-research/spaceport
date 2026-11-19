@@ -274,12 +274,14 @@ def enable_notification_identity():
         winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, "Spaceport")
 
 
-def shell_identity(app):
-    """The installed app's FileDescription, and its Start menu shortcut's
+def shell_identity(app, launcher):
+    """The installed executables' product names, and the Start menu shortcut's
     AppUserModelID and target, which only the shell reads."""
     script = (
         "$ErrorActionPreference = 'Stop';"
-        "(Get-Item -LiteralPath $env:HERDR_SMOKE_APP).VersionInfo.FileDescription;"
+        "foreach ($path in @($env:HERDR_SMOKE_APP, $env:HERDR_SMOKE_LAUNCHER)) {"
+        "$version = (Get-Item -LiteralPath $path).VersionInfo;"
+        "$version.FileDescription; $version.ProductName; };"
         "$programs = [Environment]::GetFolderPath('Programs');"
         "$link = (New-Object -ComObject Shell.Application).Namespace($programs).ParseName('Spaceport.lnk');"
         "$link.ExtendedProperty('System.AppUserModel.ID');"
@@ -287,7 +289,8 @@ def shell_identity(app):
     )
     output = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
                             capture_output=True, text=True, check=True, timeout=120,
-                            env={**os.environ, "HERDR_SMOKE_APP": str(app)}).stdout
+                            env={**os.environ, "HERDR_SMOKE_APP": str(app),
+                                 "HERDR_SMOKE_LAUNCHER": str(launcher)}).stdout
     return tuple(output.splitlines())
 
 
@@ -336,8 +339,9 @@ def check_installation(app, signed_installer, handlers):
     # Printed through a pipe, as an agent's shell reads it.
     if not info.startswith("worktree="):
         raise ValueError(f"Installed spaceport.exe printed no build info:\n{info}")
-    identity = shell_identity(exe)
-    if identity != ("Spaceport", app_user_model_id(), str(launcher)):
+    identity = shell_identity(exe, launcher)
+    if identity != ("Spaceport", "Spaceport", "Spaceport", "Spaceport",
+                    app_user_model_id(), str(launcher)):
         raise ValueError(f"Installed app or shortcut has the wrong identity: {identity}")
     if signed_installer is not None:
         check_signed([signed_installer.resolve(), *(app / name for name in packaged_executables()),

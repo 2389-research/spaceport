@@ -5,7 +5,7 @@ use crate::{i18n::fl, window::chrome_focus::Region};
 use gpui::{prelude::*, *};
 
 impl SheprdWindow {
-    pub(super) fn render_flash(&self, cx: &mut Context<Self>) -> Option<Div> {
+    pub(super) fn render_flash(&self, over_terminal: bool, cx: &mut Context<Self>) -> Option<Div> {
         use crate::config::ClipboardToastPosition::*;
         if self.menu.page.is_some() {
             return None;
@@ -14,7 +14,8 @@ impl SheprdWindow {
         let active = self.flash.is_some();
         let position = self.config.clipboard_toast.position;
         let edge = px(12. - (1. - shown) * super::flash::SLIDE);
-        let strip = if self.activity_section().is_none()
+        let strip = if !over_terminal
+            && self.activity_section().is_none()
             && self
                 .active_group()
                 .is_some_and(|group| !self.strip_hidden(group, cx))
@@ -27,7 +28,7 @@ impl SheprdWindow {
             crate::herdr_settings::TabBarPosition::Top => (strip, 0.),
             crate::herdr_settings::TabBarPosition::Bottom => (0., strip),
         };
-        let bottom = if self.status_bar_visible && !self.zen_layout() {
+        let bottom = if !over_terminal && self.status_bar_visible && !self.zen_layout() {
             self.status_bar_height()
         } else {
             0.

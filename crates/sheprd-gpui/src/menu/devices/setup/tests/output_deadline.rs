@@ -64,7 +64,8 @@ fn a_device_command_keeps_its_final_error_after_progress_output() {
     };
     assert!(
         status.success(),
-        "isolated device output fixture failed: {status}"
+        "isolated device output fixture failed: {status}\n{}",
+        std::fs::read_to_string(sandbox.dir.join("device-output.log")).unwrap()
     );
 }
 
