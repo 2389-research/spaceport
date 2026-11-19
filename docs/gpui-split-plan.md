@@ -9,13 +9,14 @@ next ones. Update it as each step lands.
 ## What moved
 
 Five modules have left the app, each one a pure function of its inputs with no
-`gpui` types:
+`gpui` types — and the settings body, the largest, has too:
 
 | Crate | From | Dependencies | Files importing it |
 | --- | --- | --- | --- |
 | `crates/sheprd-ago` | `crates/sheprd-gpui/src/ago.rs` | none | 1 (`palette/render.rs`) |
 | `crates/sheprd-lenient` | `crates/sheprd-gpui/src/lenient.rs` | `serde`, `toml` | 4 settings files |
 | `crates/sheprd-osc52` | `crates/sheprd-gpui/src/osc52.rs` | none | 2 (`state.rs` and its tests) |
+| `crates/sheprd-settings` | `crates/sheprd-gpui/src/config*`, `src/contrast.rs` | `sheprd-client`, `sheprd-commands`, `sheprd-i18n`, `sheprd-usage`, `sheprd-lenient`, `serde`, `toml`, `thiserror`, … | 307 (through the `crate::config` façade in `src/config.rs`) |
 | `crates/sheprd-sound` | `crates/sheprd-gpui/src/sound/` | `rodio`, `serde`, `sheprd-lenient`, `sheprd-protocol`, `thiserror`, `toml`, `tracing` | 17 |
 | `crates/sheprd-words` | `crates/sheprd-gpui/src/words.rs` | `unicode-segmentation` | 2 (`multiline_input.rs`, `text_editing/keys.rs`) |
 
@@ -154,14 +155,11 @@ Three couplings had to invert first, each one parameter or struct:
 
 Cheap, dependency-free moves first; the blocked ones carry real work.
 
-| Module | production / test lines | importers | blockers |
-| --- | --- | --- | --- |
-| `sound` | 848 / 1170 | 16 | the `rodio` win, but `Policy::poll(&mut LiveState)` (4 fields), `config::view_settings_path`, `config::SoundConfig`, `lenient`, and the root `Error::Sound` variant all have to move or invert first |
-
-`reorder` was the next cheap one and did not land in this wave: both extractions
-above compile `sheprd-gpui`, and the local disk floor (3 GiB free) stopped
-further builds before a third one. It needs no design work when disk allows it —
-`reorder.rs` is std-only and its inline tests move to `src/tests.rs`.
+The next extractions are the three large features; see the feature table below.
+The settings crate landed with the `crate::config` façade still in place in
+`src/config.rs`, so importers keep compiling unchanged; flattening those paths
+to `sheprd_settings::` is a separate, batched readability commit, not a
+migration step.
 
 `chat`, `browser` and `sidebar` are the app's three large features and each is a
 program of its own; none can move before the state and text they read have
@@ -169,9 +167,9 @@ homes. Counted today, production lines first:
 
 | Feature | production / test lines | `gpui::`/entity uses | i18n messages | files importing it | what blocks it |
 | --- | --- | --- | --- | --- | --- |
-| `browser` | 4,748 / 3,064 | 55 | 10 | 53 | reads `endpoint` and `group_terminals` and paints the tab strip from them; wants those value types below it first |
-| `chat` | 20,440 / 16,011 | 128 | 174 | 12 | GPUI views all the way down; also imports `browser`, `terminal_painter`, `notifications`, `controls`, `actions`, `constants`, `motion`, `contrast`, `bundled` |
-| `sidebar` | 11,195 / 14,506 | 162 | 75 | 263 | the most-imported module in the crate; reads `config`, `menu`, `keymap`, `state`, `endpoint`, `icons`, `worktree_notes`, `device_tags` |
+| `browser` | 4,748 / 3,064 | 55 | 10 | 53 | 1,398 lines of `impl SheprdWindow` methods (92) need the mechanical inversion behind a `&BrowserHosts<'_>` borrow struct; see the browser-extraction design |
+| `chat` | 20,440 / 16,011 | 128 | 174 | 12 | GPUI views all the way down; needs `browser` below it first, then the `sheprd-live` trigger named in the settings design |
+| `sidebar` | 11,195 / 14,506 | 162 | 75 | 263 | the most-imported module in the crate; settings now below it, still needs `menu`, `keymap`, `endpoint`, `icons`, `worktree_notes`, `device_tags` |
 
 Order that falls out of the counts: `browser` before `sidebar` (53 against 263
 importers), and `chat` only after `browser` and the shared paint/settings types
