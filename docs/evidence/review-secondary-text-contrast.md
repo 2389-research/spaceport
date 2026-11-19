@@ -158,3 +158,9 @@ No original contrast requirement remains unmet.
 Kata `8zvq` closes at `2026-11-19T13:44:29.862Z`.
 Closure event: `9791` (`01M7T0TED6JFV7VBP09Q40ZX7E`).
 Fresh issue and parent reads retain the open umbrella, with 46 closed children and seven open children.
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44534448320/job/135596374736) also passes all eight GUI cases.
+Its 24 native RGB pairs and ratios match ARM exactly, including the 4.5030737:1 minimum.
+Raster glyph counts differ across architectures; the x64 images are not claimed byte-identical or separately inspected.
+That job later fails an unrelated chat traversal deadline, with eleven UIA cases passing and one failing.
+The complete CI run remains unqualified while those later results are pending.

@@ -299,6 +299,24 @@ Windows GNU cross-check, exit `0`, finished in 21.81 seconds:
 The host reports the existing `block 0.1.6` future-compatibility notice.
 The Windows command compiles the GNU target; it does not execute native Windows checks.
 
+## Native traversal correction on November 19
+
+Source `8a4beb1ec` passes all eight x64 native GUI cases, including the separate palette qualifier.
+Its later UIA scope passes eleven cases and fails the chat Allow action at its 20-second parent deadline.
+The last receipt shows nine forward Tab steps after anchoring the actual composer.
+This is not the earlier preview-lifetime expiry; the owned preview remains alive.
+
+The captured native tree places tool and permission buttons before the composer.
+Agent settings follows the composer.
+The native script now traverses backward to the preceding controls and forward to Agent settings.
+The correction preserves exact-window guards, deliberate activation, the iteration bound, and the existing deadline.
+It adds no retry or synthetic permission answer.
+Actual native execution of the shorter traversal remains pending.
+Independent review confirms direction against the actual render order and finds no material issue.
+The focused Windows native harness lint, static checks, and diff check pass.
+Logs: `/tmp/spaceport-9s44-native-traversal-windows-lint.log` and `native-traversal-static.log` under the same prefix.
+Earlier complete chat qualification on `99e318867` and `5c696d3c8` remains recorded separately.
+
 ## Native qualification still pending
 
 Pinned GPUI's TestPlatform cannot activate the complete accessibility tree through its public API.

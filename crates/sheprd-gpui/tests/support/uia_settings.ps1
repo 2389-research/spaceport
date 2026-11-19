@@ -60,7 +60,7 @@ function Press([string]$key) {
   Require-SettingsFocus
 }
 
-function Tab-To([string]$name, $type) {
+function Tab-To([string]$name, $type, [string]$key = '{TAB}') {
   for ($index = 0; $index -lt 128; $index++) {
     Require-SettingsFocus
     $current = $automation::FocusedElement.Current
@@ -69,7 +69,7 @@ function Tab-To([string]$name, $type) {
       if (-not (Same-Focus $target)) { throw 'Settings target lost focus before activation' }
       return $target
     }
-    Press '{TAB}'
+    Press $key
   }
   throw "Tab could not reach private Settings control '$name'"
 }
@@ -120,14 +120,15 @@ if ($Action -eq 'OpenAndRing') {
   Press $key
   if ($toggle.Current.ToggleState -eq $before) { throw 'Native Settings key did not change the switch state' }
 } elseif ($Action -eq 'Bubbles' -or $Action -eq 'Timeline') {
-  $segment = Tab-To $Action ([System.Windows.Automation.ControlType]::RadioButton)
+  $traverse = if ($Action -eq 'Timeline') { '+{TAB}' } else { '{TAB}' }
+  $segment = Tab-To $Action ([System.Windows.Automation.ControlType]::RadioButton) $traverse
   $selection = $segment.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
   if ($selection.Current.IsSelected) { throw 'Native Settings segment was already selected' }
   $key = if ($Action -eq 'Bubbles') { ' ' } else { '{ENTER}' }
   Press $key
   if (-not $selection.Current.IsSelected) { throw 'Native Settings key did not select the segment' }
 } elseif ($Action -eq 'Dropdown') {
-  $trigger = Tab-To 'English' ([System.Windows.Automation.ControlType]::Button)
+  $trigger = Tab-To 'English' ([System.Windows.Automation.ControlType]::Button) '+{TAB}'
   $expanded = $trigger.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
   Press '{ENTER}'
   if ($expanded.Current.ExpandCollapseState -ne [System.Windows.Automation.ExpandCollapseState]::Expanded) { throw 'Native Enter did not open the language dropdown' }

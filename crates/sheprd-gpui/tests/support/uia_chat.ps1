@@ -59,11 +59,13 @@ if (-not [System.Windows.Automation.Automation]::Compare($automation::FocusedEle
   throw 'Native chat could not anchor focus in its actual composer'
 }
 $reached = $false
+# Tool and permission controls precede the composer; Settings follows it.
+$traverse = if ($Action -eq 'Settings') { '{TAB}' } else { '+{TAB}' }
 for ($index = 0; $index -lt 32; $index++) {
   Chat-Stage "tab-$index"
   Require-ChatFocus
   if ([System.Windows.Automation.Automation]::Compare($automation::FocusedElement, $target)) { $reached = $true; break }
-  [System.Windows.Forms.SendKeys]::SendWait('{TAB}')
+  [System.Windows.Forms.SendKeys]::SendWait($traverse)
   Start-Sleep -Milliseconds 100
 }
 if (-not $reached) { throw 'Native Tab could not reach the named chat control' }
