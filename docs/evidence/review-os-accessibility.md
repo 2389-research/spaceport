@@ -153,3 +153,7 @@ Formatting, size, sorting, operations, localization, specification, and diff val
 The specification gate explicitly skips JSON Schema validation.
 Logs use `/tmp/spaceport-9s44-reduced-motion-{host-lint,windows-lint,final-static}.log`.
 The diagnostic cross-check log is `/tmp/spaceport-9s44-uia-diagnostic-windows-lint.log`.
+Source `260250da5` also passes all three new reduced-motion regressions in the actual Linux all-feature job.
+Its real portal-wire case passes alongside them.
+Verified [Linux logs](https://github.com/2389-research/spaceport/actions/runs/44460366471/job/135345733790).
+This strengthens the consumer proof without qualifying a particular Linux desktop backend.

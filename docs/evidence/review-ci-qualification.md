@@ -425,3 +425,22 @@ The script reports assembly loading, native-helper compilation, window discovery
 The deadline and keyboard ownership guards remain unchanged.
 The diagnostic does not retry actions or claim the timeout is fixed.
 Log: `/tmp/spaceport-9s44-consent-native-x64.log`.
+
+## Empty-capture diagnostic
+
+Source `260250da5` repeats both native UIA timeouts with zero captured bytes.
+No assembly-loading stage marker appears.
+The stall therefore precedes those markers; its cause remains unproven.
+The first marker now uses direct Console output before the encoding assignment.
+A separate plain-script probe uses the same cleared environment and private capture before any GUI starts.
+It has a 60-second diagnostic bound and reports actual startup duration.
+The existing UIA command deadline stays at 20 seconds.
+This distinguishes host startup from encoding setup and later UIA calls.
+The Windows workspace suite also runs that plain-script test without a desktop or daemon.
+Native execution of the new probe remains pending.
+The prior 100-millisecond timeout test did not establish that its script body began executing.
+
+Microsoft documents [PowerShell's startup phases](https://learn.microsoft.com/en-us/powershell/scripting/dev-cross-plat/performance/startup-performance).
+The [module-path documentation](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath?view=powershell-5.1) explains reconstruction when the process variable is absent.
+These references guide diagnosis; they do not establish this runner's cause.
+Log: `/tmp/spaceport-9s44-motion-native-x64.log`.

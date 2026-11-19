@@ -43,6 +43,7 @@ impl Running {
 
     fn start() -> Self {
         let mut running = Self::empty();
+        running.check_shell();
         let config = running.sandbox.dir.join("config/spaceport");
         fs::create_dir_all(&config).unwrap();
         fs::write(
@@ -76,6 +77,24 @@ impl Running {
         )
         .unwrap();
         running
+    }
+
+    fn check_shell(&mut self) {
+        let script = self.sandbox.dir.join("shell-ready.ps1");
+        fs::write(
+            &script,
+            "param([int]$ProcessId, [string]$Keys)\n[Console]::WriteLine('PRIVATE POWERSHELL READY')\n",
+        )
+        .unwrap();
+        let started = Instant::now();
+        let output = self
+            .script_output(&script, "-Keys", "", Duration::from_secs(60))
+            .expect("the private PowerShell host must execute a plain script before UI Automation");
+        assert!(output.contains("PRIVATE POWERSHELL READY"), "{output}");
+        eprintln!(
+            "PRIVATE POWERSHELL READY: cleared environment and private capture in {} ms",
+            started.elapsed().as_millis()
+        );
     }
 
     fn script_output(
@@ -187,6 +206,11 @@ impl Running {
             thread::sleep(Duration::from_millis(200));
         }
     }
+}
+
+#[test]
+fn a_private_powershell_host_executes_a_plain_script() {
+    Running::empty().check_shell();
 }
 
 #[test]

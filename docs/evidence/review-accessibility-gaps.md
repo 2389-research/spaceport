@@ -108,3 +108,21 @@ Native screen-reader announcements, Settings glyph/clipping checks, and physical
 Doctor Biz kept native keyboard and performance checks pending for this review.
 Native Windows execution and the full workspace CI gate remain pending.
 No personal daemon, SSH host, agent, or production credentials were used.
+
+## Native completion audit
+
+An independent audit finds implementation and regression coverage for all six original requirements.
+It finds no concrete remaining code defect in this scope.
+The published Windows tree/focus check covers only part of the native contract.
+It does not query terminal text or caret ranges.
+The first consent follow-up also times out before returning a tree.
+Kata `q72g` remains open for these specific checks:
+
+| Requirement | Remaining native evidence |
+| --- | --- |
+| Core Terminal node | Inspect actual text, caret, bounds, and observing panes with accessibility active. |
+| Herdr caret and announcements | Query caret/text ranges and observe changed output announced by a screen reader. |
+| Settings font scaling | Inspect enlarged glyphs and clipping, including a narrow window. |
+| Keyboard reorder and resize | Reorder workspace rows and resize both terminal kinds through native key delivery. |
+| Selected-tab focus contrast | Inspect focused tabs on actual fills, including applicable translucent or image backdrops. |
+| Close-button roles | Inspect button names, roles, and keyboard focus in an actual close dialog. |

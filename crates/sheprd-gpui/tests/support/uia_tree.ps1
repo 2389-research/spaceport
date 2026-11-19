@@ -6,6 +6,7 @@
 # -Keys, it then brings the window forward, sends each key ("|"-separated,
 # SendKeys syntax), and prints the element that has keyboard focus after it.
 param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '')
+[Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 Write-Output 'UIA stage: loading assemblies'

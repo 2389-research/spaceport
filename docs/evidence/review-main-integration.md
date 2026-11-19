@@ -255,7 +255,9 @@ See [the completed reconciliation](review-jargon-main-integration.md).
 Keep the draft unmerged while its hosted and native gates remain open.
 CI qualifies the published workspace suites, platform jobs, application build, and CLI smoke.
 The consent follow-up fails its first Windows UI Automation run.
-Bounded partial capture and stage markers will locate the stall without weakening the deadline.
+The diagnostic returns zero bytes before its assembly-loading markers.
+A plain-script startup probe will separate host initialization from later script work.
+The existing UIA deadline remains unchanged.
 An independent audit also finds reduced-motion gaps in extracted slides and opted-in chat glide.
 Their three regressions fail first; the corrected focused scopes pass 70 tests.
 The normal-consumer test retains 150-millisecond slide timing.
