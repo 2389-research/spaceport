@@ -505,10 +505,9 @@ impl SheprdWindow {
             .flex_col()
             .gap(px(12.))
             .child(
-                div()
+                close_text("close-title", close.title.clone(), active)
                     .text_size(px(self.config.ui.size * 1.35))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .child(close.title.clone()),
+                    .font_weight(FontWeight::SEMIBOLD),
             )
             .child(
                 div()
@@ -525,28 +524,25 @@ impl SheprdWindow {
                             .when(!active, |labels| labels.overflow_hidden())
                     })
                     .child(
-                        div()
+                        close_text("close-target-text", close.label.clone(), active)
                             .debug_selector(|| "close-target-text".into())
                             .relative()
-                            .when(!active, |label| label.top(close.offset.y))
-                            .child(close.label.clone()),
+                            .when(!active, |label| label.top(close.offset.y)),
                     ),
             )
             .when_some(close.interrupts.clone(), |panel, interrupts| {
                 panel.child(
-                    div()
+                    close_text("close-interrupts", interrupts, active)
                         .debug_selector(|| "close-interrupts".into())
-                        .text_color(crate::menu::danger(theme))
-                        .child(interrupts),
+                        .text_color(crate::menu::danger(theme)),
                 )
             })
             .child(
-                div()
-                    .text_color(rgb(theme.subtext()))
-                    .child(close.note.clone()),
+                close_text("close-note", close.note.clone(), active)
+                    .text_color(rgb(theme.subtext())),
             )
             .when_some(close.error.clone(), |panel, error| {
-                panel.child(div().bg(rgb(theme.active)).p(px(8.)).child(error))
+                panel.child(close_error(error, active).bg(rgb(theme.active)).p(px(8.)))
             })
             .when(close.offers_do_not_ask_again, |panel| {
                 panel.child(
@@ -628,6 +624,29 @@ impl SheprdWindow {
                     ),
             )
     }
+}
+
+fn close_text(id: &'static str, text: String, active: bool) -> Stateful<Div> {
+    div()
+        .id(id)
+        .when(active, |label| {
+            label.role(Role::Label).aria_value(text.clone())
+        })
+        .child(text)
+}
+
+fn close_error(error: String, active: bool) -> Stateful<Div> {
+    div()
+        .id("close-error")
+        .when(active, |label| {
+            label
+                .role(Role::Alert)
+                .aria_label(error.clone())
+                .a11y_synthetic_children(|builder| {
+                    builder.parent_node().set_live(accesskit::Live::Assertive);
+                })
+        })
+        .child(error)
 }
 
 fn close_button(id: &'static str, label: String, active: bool) -> Stateful<Div> {

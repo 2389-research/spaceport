@@ -10,69 +10,202 @@ mod sandbox;
 use sandbox::{Sandbox, daemon_binary, stop_children};
 use std::{
     fs,
+    io::{self, Read},
     path::Path,
-    process::{Child, Command},
+    process::Child,
     thread,
     time::{Duration, Instant},
 };
 
 struct Running {
-    sandbox: Sandbox,
+    command: Option<Child>,
     daemon: Option<Child>,
     gui: Option<Child>,
+    sandbox: Sandbox,
 }
 
 impl Drop for Running {
     fn drop(&mut self) {
-        stop_children([&mut self.gui, &mut self.daemon]);
+        stop_children([&mut self.command, &mut self.gui, &mut self.daemon]);
     }
 }
 
-/// The tree, then the focus after each of `keys`, from `support/uia_tree.ps1`.
-fn read(script: &Path, process: u32, keys: &str) -> String {
-    let output = Command::new("powershell.exe")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
-        .arg(script)
-        .args(["-ProcessId", &process.to_string(), "-Keys", keys])
-        .output()
+impl Running {
+    fn empty() -> Self {
+        let sandbox = Sandbox::new();
+        Self {
+            command: None,
+            daemon: None,
+            gui: None,
+            sandbox,
+        }
+    }
+
+    fn start() -> Self {
+        let mut running = Self::empty();
+        let config = running.sandbox.dir.join("config/spaceport");
+        fs::create_dir_all(&config).unwrap();
+        fs::write(
+            config.join("view.toml"),
+            "language = \"en-US\"\n[ui]\nprompt_new_workspace_name = true\n",
+        )
         .unwrap();
-    assert!(
-        output.status.success(),
-        "UI Automation script failed: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    String::from_utf8_lossy(&output.stdout).into_owned()
+        running.daemon = Some(
+            running
+                .sandbox
+                .command(daemon_binary(), "daemon.log")
+                .arg("server")
+                .spawn()
+                .unwrap(),
+        );
+        running
+            .sandbox
+            .wait_for_daemon(running.daemon.as_mut().unwrap(), Duration::from_secs(20));
+        running.gui = Some(
+            running
+                .sandbox
+                .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log")
+                .arg("--socket")
+                .arg(running.sandbox.socket())
+                .spawn()
+                .unwrap(),
+        );
+        fs::write(
+            running.sandbox.dir.join("uia_tree.ps1"),
+            include_str!("support/uia_tree.ps1"),
+        )
+        .unwrap();
+        running
+    }
+
+    fn script_output(
+        &mut self,
+        script: &Path,
+        flag: &str,
+        value: &str,
+        limit: Duration,
+    ) -> io::Result<String> {
+        if let Some(gui) = &mut self.gui
+            && gui.try_wait()?.is_some()
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "the owned GUI exited",
+            ));
+        }
+        let process = self.gui.as_ref().map_or(0, Child::id);
+        let capture = self.sandbox.dir.join("uia-capture.log");
+        self.command = Some(
+            self.sandbox
+                .command("powershell.exe", "uia-capture.log")
+                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
+                .arg(script)
+                .args(["-ProcessId", &process.to_string(), flag, value])
+                .spawn()?,
+        );
+        let result = (|| {
+            let deadline = Instant::now() + limit;
+            loop {
+                if let Some(status) = self.command.as_mut().unwrap().try_wait()? {
+                    let mut bytes = Vec::new();
+                    fs::File::open(&capture)?
+                        .take(1_048_577)
+                        .read_to_end(&mut bytes)?;
+                    if bytes.len() > 1_048_576 {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            "UI Automation capture exceeds 1 MiB",
+                        ));
+                    }
+                    if !status.success() {
+                        return Err(io::Error::other(format!(
+                            "UI Automation failed: {status}: {}",
+                            String::from_utf8_lossy(&bytes)
+                        )));
+                    }
+                    return String::from_utf8(bytes)
+                        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error));
+                }
+                if Instant::now() >= deadline {
+                    return Err(io::Error::new(
+                        io::ErrorKind::TimedOut,
+                        "UI Automation command exceeded its deadline",
+                    ));
+                }
+                thread::sleep(Duration::from_millis(10));
+            }
+        })();
+        stop_children([&mut self.command]);
+        if self.command.as_mut().unwrap().try_wait()?.is_none() {
+            return Err(io::Error::other("UI Automation child was not reaped"));
+        }
+        result
+    }
+
+    fn read(&mut self, keys: &str) -> String {
+        self.script_output(
+            &self.sandbox.dir.join("uia_tree.ps1"),
+            "-Keys",
+            keys,
+            Duration::from_secs(20),
+        )
+        .unwrap()
+    }
+
+    fn invoke(&mut self, name: &str) {
+        self.script_output(
+            &self.sandbox.dir.join("uia_tree.ps1"),
+            "-Invoke",
+            name,
+            Duration::from_secs(20),
+        )
+        .unwrap();
+    }
+
+    fn wait_tree(&mut self, label: &str, ready: impl Fn(&str) -> bool) -> String {
+        let deadline = Instant::now() + Duration::from_secs(60);
+        loop {
+            let tree = self.read("");
+            if ready(&tree) {
+                return tree;
+            }
+            assert!(Instant::now() < deadline, "{label} did not appear:\n{tree}");
+            thread::sleep(Duration::from_millis(200));
+        }
+    }
 }
+
+#[test]
+fn a_command_timeout_reaps_its_owned_child() {
+    let mut running = Running::empty();
+    let script = running.sandbox.dir.join("sleep.ps1");
+    fs::write(
+        &script,
+        "param([int]$ProcessId, [string]$Keys)\nwhile ($true) { Start-Sleep -Seconds 30 }\n",
+    )
+    .unwrap();
+    let error = running
+        .script_output(&script, "-Keys", "", Duration::from_millis(100))
+        .unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::TimedOut);
+    assert!(
+        running
+            .command
+            .as_mut()
+            .unwrap()
+            .try_wait()
+            .unwrap()
+            .is_some()
+    );
+}
+
+#[path = "accessibility_windows/workspace_close.rs"]
+mod workspace_close;
 
 #[test]
 #[ignore = "requires an active Windows desktop and HERDR_TEST_BINARY; launches a native GUI and isolated daemon"]
 fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
-    let binary = daemon_binary();
-    let mut running = Running {
-        sandbox: Sandbox::new(),
-        daemon: None,
-        gui: None,
-    };
-    let daemon = running
-        .sandbox
-        .command(binary, "daemon.log")
-        .arg("server")
-        .spawn();
-    running.daemon = Some(daemon.unwrap());
-    running
-        .sandbox
-        .wait_for_daemon(running.daemon.as_mut().unwrap(), Duration::from_secs(20));
-    let socket = running.sandbox.socket();
-    let gui = running
-        .sandbox
-        .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log")
-        .arg("--socket")
-        .arg(&socket)
-        .spawn();
-    running.gui = Some(gui.unwrap());
-    let process = running.gui.as_ref().unwrap().id();
-    let script = running.sandbox.dir.join("uia_tree.ps1");
-    fs::write(&script, include_str!("support/uia_tree.ps1")).unwrap();
+    let mut running = Running::start();
 
     // AccessKit builds the tree once a client first asks, a frame later, and
     // the sidebar arrives with the first snapshot after that.
@@ -94,23 +227,9 @@ fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
         "Button 'Theme' [Invoke]",
         "Text 'Version ",
     ];
-    let deadline = Instant::now() + Duration::from_secs(60);
-    let tree = loop {
-        let tree = read(&script, process, "");
-        let missing: Vec<_> = expected
-            .iter()
-            .filter(|name| !tree.contains(**name))
-            .collect();
-        if missing.is_empty() {
-            break tree;
-        }
-        assert!(
-            Instant::now() < deadline,
-            "missing {missing:?} in:
-{tree}"
-        );
-        thread::sleep(Duration::from_millis(500));
-    };
+    let tree = running.wait_tree("main chrome", |tree| {
+        expected.iter().all(|name| tree.contains(name))
+    });
     eprintln!("{tree}");
     let version = tree
         .lines()
@@ -123,11 +242,7 @@ fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
     // Back and Forward have no history to go to yet.
     assert!(tree.contains("Button 'Back' [disabled]"), "{tree}");
 
-    let focus = read(
-        &script,
-        process,
-        "^b{F6}|{TAB}|^b{F6}|^b{F6}|+{TAB}|{ESC}|^b+{F6}",
-    );
+    let focus = running.read("^b{F6}|{TAB}|^b{F6}|^b{F6}|+{TAB}|{ESC}|^b+{F6}");
     eprintln!("{focus}");
     let moves: Vec<&str> = focus
         .lines()

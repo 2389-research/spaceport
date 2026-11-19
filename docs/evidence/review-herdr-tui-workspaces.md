@@ -97,3 +97,27 @@ This change does not claim atomic backend consent or add automatic retries.
 Native workspace-dialog visuals, OS keyboard routing, and Windows runtime execution remain pending.
 Doctor Biz requested that native keyboard and performance checks remain pending.
 Full workspace CI remains deferred.
+
+## Native Windows follow-up plan
+
+Keep this follow-up inside the existing isolated runtime and UI Automation harness.
+Keep the Mac foreground fixture pending.
+
+- [x] Add real-renderer context regressions in `close_modal/tests/context.rs`.
+  Text and inline-error regressions first fail with no role.
+  The corrected close and departure scopes pass 105 cases, with one existing private fixture ignored directly.
+- [x] Bound PowerShell commands in `tests/accessibility_windows.rs` with private capture files and exact-child cleanup.
+  The timeout regression is added and compiled; actual Windows execution remains pending.
+- [x] Add named-button invocation and exact foreground-window checks in `tests/support/uia_tree.ps1`.
+  Refuse keyboard input when the private window does not own foreground focus.
+- [x] Add a standalone scenario in `tests/accessibility_windows/workspace_close.rs`.
+  Create a workspace through the real GUI and preserve a private checkout marker.
+  Read its name and affected-pane count through UI Automation.
+  Cancel the first dialog and confirm the second dialog with fresh keyboard input.
+  Verify that the created workspace closes while the original workspace, marker, and daemon remain.
+- [x] Run focused regressions, both lint configurations, and the Windows GNU checks.
+  Keep native acceptance pending until the existing x64 CI job executes the scenario.
+- [ ] Execute both new Windows tests in CI and inspect their actual results.
+- [ ] Qualify native speech and inline-error announcements separately.
+
+Use the repository's existing test and evidence locations instead of another scenario registry.

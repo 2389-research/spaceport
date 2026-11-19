@@ -137,4 +137,18 @@ Access-denied, invalid-owner, or privilege-not-held creation errors explicitly r
 Every other creation failure fails the test.
 Successful group assignment must produce a measured owner distinct from the user.
 The same unchecked byte exchange and checked refusal assertions then run with both startup settings.
-Kata `q7h6` remains open pending actual negative branch markers.
+At that checkpoint, Kata `q7h6` remained open pending actual negative branch markers.
+
+## Native pipe closure
+
+Source `46738c99c92851245887114dc174d95221cf95b1` supplies both negative branch markers on x64 and ARM.
+The readable group-owned pipe is refused with automatic startup enabled and disabled.
+The unchecked connector exchanges bytes first, so ACL denial cannot explain the checked refusal.
+Same-owner acceptance also passes with both startup settings.
+
+Verified [x64 logs](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241316)
+and [ARM logs](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241284).
+The complete CI run passes.
+Kata `q7h6` closes with event `9780` (`01M7RYRWEZN0JW0CEZ2BMMXFS1`).
+A fresh issue read confirms its closed status.
+The closure qualifies this pipe-owner contract, not the remaining native accessibility matrix.

@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 mod accessibility;
 mod batch;
+mod context;
 mod core_only;
 mod departure;
 mod en_xa;

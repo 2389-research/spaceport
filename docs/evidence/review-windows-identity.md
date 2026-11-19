@@ -72,7 +72,7 @@ It now names `spaceport`; the installer message validator passes with that corre
 
 ## Remaining validation
 
-Native Windows pipe, link, and installer execution remains pending Windows CI.
+At the original checkpoint, native Windows pipe, link, and installer execution remained pending Windows CI.
 No personal Windows installation, registry, SSH credentials, or daemon was used locally.
 Native keyboard and performance checks remain pending at Doctor Biz's request.
 Full workspace CI remains deferred.
@@ -93,3 +93,20 @@ No production Link, reader, retry, or daemon startup policy changed during this 
 
 The root agent independently reviewed final installer ownership, pipe bounds, and repaired lifecycle tests.
 No material findings remained, conditional on the final queued scopes.
+
+## Native Windows closure
+
+Source `46738c99c92851245887114dc174d95221cf95b1` passes all four native Windows workspace legs.
+Both all-feature GPUI suites report 4,322 passed, zero failed, and six private fixtures ignored directly.
+The native runs include state-root selection, 135 portable endpoint cases, and all 41 link cases.
+Canonical document paths and remote-prefix refusal also pass on both architectures.
+
+Verified [x64 all-feature logs](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241319)
+and [ARM all-feature logs](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241301).
+The [installer job](https://github.com/2389-research/spaceport/actions/runs/44452942264/job/135321241179) also passes.
+It executes the actual CLI and install/reinstall/uninstall smoke checks.
+Those checks preserve shortcut identity, startup state, and owned uninstall cleanup.
+
+Kata `1wwk` closes with event `9781` (`01M7RZFXYM5BMTJN1HPAND0198`).
+A fresh issue read confirms its closed status.
+This closure does not qualify screen-reader speech, foreground Mac input, or interactive release performance.

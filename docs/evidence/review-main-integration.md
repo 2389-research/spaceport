@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: reorder extraction and platform fixture integration locally verified for draft update.
+Status: published source `46738c99c` passes CI; the native consent follow-up awaits its own hosted run.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
@@ -248,17 +248,19 @@ The remaining failures exposed shortcut checkout conversion, accepted-batch cont
 The repairs pass 235 focused checks and both canonical lint configurations locally.
 See [the CI qualification record](review-ci-qualification.md#close-batch-contention) for exact limits and remaining hosted qualification.
 
-Await the updated hosted platform checks on draft PR 125.
+Published source `46738c99c` passes all required hosted platform checks on draft PR 125.
 Keep the concrete PR handoff and dashboard current for Clint and CI.
 PR 123's additional protocol copy is reconciled with the local safety guidance.
 See [the completed reconciliation](review-jargon-main-integration.md).
 Keep the draft unmerged while its hosted and native gates remain open.
-The full workspace test suite, hosted platform jobs, application build and CLI smoke remain deferred to CI.
+CI qualifies the published workspace suites, platform jobs, application build, and CLI smoke.
+The new consent follow-up requires its own hosted results.
 
-Kata now has 34 closed children and 19 open children after native Windows agent-tree, tunnel-cleanup, and CI-restoration qualification.
+Kata now has 36 closed children and 17 open children.
+Native pipe-owner rejection and Windows identity qualification supply the latest two closures.
 The umbrella remains open.
 Native Settings readiness is pending Doctor Biz's answer.
-Both Windows native GUI jobs and the x64 accessibility tree/focus case pass on `86842ddc3`.
-Windows workspace path resolution and mismatched-owner rejection still need their corrected native runs.
+Both Windows native GUI jobs and the x64 accessibility tree/focus case pass on `46738c99c`.
+Windows workspace path resolution and mismatched-owner rejection also pass on that source.
 The full accessibility matrix and interactive release profiling remain pending.
 Offscreen Metal pixel checks qualify rendering only.

@@ -356,3 +356,57 @@ The specification gate still reports JSON Schema validation as not run.
 Independent security review confirms unchanged refusal ordering, symlink bounds, document safety, and endpoint fencing.
 Kata `jvcf` closes from restored scheduling and actual native execution, independently of these application failures.
 Its closure event and scope limits are recorded in [Windows CI evidence](review-windows-ci.md#ci-restoration-closure).
+
+## Green published checkpoint
+
+Source `46738c99c92851245887114dc174d95221cf95b1` passes [CI run 44452942264](https://github.com/2389-research/spaceport/actions/runs/44452942264).
+Its PR status reports 22 passed checks and one skipped target.
+The CodeRabbit success remains a draft skip, not an independent code review.
+The separate supply-chain workflow also passes.
+
+All Windows workspace legs pass, including the exact canonical-directory endpoint URL assertion.
+Both all-feature GPUI suites report 4,322 passed, zero failed, and six private fixtures ignored directly.
+Both native GUI jobs pass; x64 runs seven cases and ARM runs six.
+The x64 UI Automation case passes the version-text tree and seven keyboard-focus observations.
+Both native owner probes prove readable mismatched-owner refusal with automatic startup enabled and disabled.
+The Windows package job passes actual CLI and installer smoke checks.
+The macOS CLI failures no longer occur.
+
+These results qualify the published checkpoint only.
+The consent-context follow-up below requires a new hosted run.
+Foreground Mac Settings, screen-reader speech, and interactive release profiling remain pending.
+
+## Native workspace consent follow-up
+
+The close dialog's title, targets, pane count, and interruption text lacked accessible roles.
+Its inline error also lacked an Alert role.
+The real text producers now expose active labels and a named, assertive error alert.
+Departing captures expose no accessibility role.
+Unit regressions verify names, values, and absence of Click or Focus actions.
+They do not prove native speech or execution of the live-region callback.
+
+The context regression first fails with no label role.
+The inline-error regression separately fails with no Alert role.
+The corrected close-dialog and departure scopes pass 105 tests, with one existing private fixture ignored directly.
+The PowerShell helper retains its exact child and bounds command waits to 20 seconds.
+It caps capture reads at 1 MiB; the capture file can grow during the bounded command.
+The new timeout test checks actual child reaping.
+Named-button invocation searches only the owned GUI's windows.
+Keyboard delivery requires the exact foreground window and focused process.
+
+The standalone Windows scenario creates a private workspace and reads its actual consent context.
+It cancels once, then reopens and confirms with fresh keyboard input.
+It checks the original workspace, checkout marker, and owned daemon afterward.
+Actions run once; readiness polling only observes.
+The existing x64 native workflow selects every ignored accessibility scenario without a name filter.
+Neither this new scenario nor the Windows timeout test has run on this Mac.
+Their runtime results remain pending CI.
+
+Logs: `/tmp/spaceport-9s44-close-context-red.log`, `close-error-context-red.log`, and `close-context-final.log`.
+Short log names share the `/tmp/spaceport-9s44-` prefix.
+Independent review finds no material issue in the text, error, native targeting, or exact-child cleanup changes.
+Canonical `just lint` and `just lint-windows` pass both feature configurations.
+Both scheduling tests pass against the actual workflow command.
+Formatting, file-size, sorted-region, operations, localization, specification, and diff checks pass.
+The specification gate explicitly reports JSON Schema validation as not run.
+Logs use `/tmp/spaceport-9s44-consent-{host-lint,windows-lint,ci-scheduling,static}.log`.
