@@ -9,7 +9,23 @@ use crate::{
 };
 use gpui::{ClipboardItem, Context};
 use sheprd_client::RemoteHost;
+use std::collections::VecDeque;
 use std::time::Instant;
+
+/// What a tick through the endpoints changed.
+#[derive(Default)]
+struct Polled {
+    /// The widest redraw the changes need.
+    changed: Redraw,
+    /// OSC 52 payloads to write, drained per endpoint so a later poll does
+    /// not re-read them.
+    clipboard_writes: VecDeque<String>,
+    /// Whether the selected endpoint itself moved on. Only then does the
+    /// window take its state: another endpoint changing, or this one's inbox
+    /// being busy for a poll, must not replace what the window has stamped
+    /// since, such as the split drag request it is waiting on.
+    selected_changed: bool,
+}
 
 impl SheprdWindow {
     /// `request`'s answer in `answer`'s slot once it has arrived, cleared
@@ -50,6 +66,31 @@ impl SheprdWindow {
         if self.endpoints.is_empty() {
             return;
         }
+        self.poll_connection_setup(cx);
+        let mut polled = self.poll_connections(cx);
+        self.sync_selected_endpoint(polled.selected_changed, cx);
+        self.renew_activation();
+        if self.queue_retry_activation() {
+            polled.changed = Redraw::Window;
+        }
+        // The window's state is current: a dropped row the daemon has answered
+        // is done.
+        self.finish_workspace_settle();
+        // Held input precedes any deferred navigation.
+        self.flush_pending_input(cx);
+        if self.settle_navigation(cx) {
+            polled.changed = Redraw::Window;
+        }
+        self.sync_server_keymap(cx);
+        match polled.changed {
+            Redraw::None => {}
+            Redraw::Terminal => self.redraw_terminal(cx),
+            Redraw::Window => cx.notify(),
+        }
+    }
+
+    /// What each connection and the endpoint catalog report this tick.
+    fn poll_connection_setup(&mut self, cx: &mut Context<Self>) {
         self.recover_connections(
             Instant::now(),
             std::time::SystemTime::now(),
@@ -81,88 +122,22 @@ impl SheprdWindow {
                 }
             }
         }
-        let mut changed = Redraw::None;
-        // Whether the selected endpoint itself moved on. Only then does the
-        // window take its state: another endpoint changing, or this one's
-        // inbox being busy for a poll, must not replace what the window has
-        // stamped since, such as the split drag request it is waiting on.
-        let mut selected_changed = false;
-        // OSC 52 writes are drained per endpoint so they are written once and
-        // never linger in a live state that a later poll would re-read.
-        let mut clipboard_writes = std::collections::VecDeque::new();
-        for (index, endpoint) in self.endpoints.iter_mut().enumerate() {
-            let updated = endpoint.poll(Instant::now());
-            // Nothing to keep current, or to silence, while nothing is muted.
-            let muted = Mutes::any(cx)
-                .and(endpoint.live.latest_snapshot())
-                .filter(|_| endpoint.live.status.is_connected())
-                .cloned()
-                .map(|snapshot| (Daemon::of(endpoint), snapshot));
-            // Only a change touches the global, which every window observes.
-            if updated == Redraw::Window
-                && let Some((daemon, snapshot)) = &muted
-            {
-                let now = std::time::SystemTime::now();
-                if Mutes::any(cx).is_some_and(|mutes| !mutes.current(daemon, snapshot, now)) {
-                    Mutes::update(cx, |mutes| mutes.reconcile(daemon, snapshot, now));
-                }
-            }
-            clipboard_writes.append(&mut endpoint.live.clipboard_writes);
-            // Bells are a presentation effect: only the selected endpoint's
-            // ring, as the TUI drops them from inactive endpoints.
-            let bells = std::mem::take(&mut endpoint.live.bells);
-            let host_muted = Mutes::any(cx).is_some_and(|mutes| mutes.host(&endpoint.id));
-            if index == self.selected_endpoint && !host_muted {
-                self.bell.queue(bells);
-            }
-            selected_changed |= index == self.selected_endpoint && updated != Redraw::None;
-            let silenced = Mutes::any(cx)
-                .map(|mutes| match &muted {
-                    Some((daemon, snapshot)) => mutes.silenced(daemon, snapshot),
-                    None => mutes.silenced_offline(&endpoint.id),
-                })
-                .unwrap_or_default();
-            // `latest_snapshot` borrows `&self`, so resolve it before the
-            // `&mut` borrows; the clone is the one `Service::poll` already made.
-            let snapshot = endpoint.live.latest_snapshot().cloned();
-            let live = endpoint.live.sound_live(snapshot.as_deref());
-            self.sound.poll(
-                &mut endpoint.sounds,
-                live,
-                index == self.selected_endpoint && self.active,
-                Instant::now(),
-                |event| {
-                    silenced.notice(
-                        event.workspace_id.as_deref(),
-                        event.tab_id.as_deref(),
-                        event.pane_id.as_deref(),
-                    )
-                },
-            );
-            changed = changed.max(updated);
-            if endpoint.may_dial() && Instant::now() >= endpoint.retry_at() {
-                endpoint.connect(self.options, index == 0 && self.selected_endpoint == 0);
-                selected_changed |= index == self.selected_endpoint;
-                changed = Redraw::Window;
-            }
-            // Only a requested surface flushes, which in practice is the
-            // selected endpoint's, so its error is the one the window shows.
-            if let Err(error) = endpoint.flush_config_reload()
-                && index == self.selected_endpoint
-            {
-                self.notices.show(
-                    crate::notice::Cause::Configuration,
-                    fl!("endpoint-reload-config-failed", error = error.localize()),
-                );
-            }
+    }
+
+    /// Drains every connection, writes what they forwarded, and follows the
+    /// selection and the toasts that moved.
+    fn poll_connections(&mut self, cx: &mut Context<Self>) -> Polled {
+        let mut polled = Polled::default();
+        for index in 0..self.endpoints.len() {
+            self.drain_endpoint(index, &mut polled, cx);
         }
         crate::palette::LastSeen::trim(
             self.endpoints
                 .iter_mut()
                 .map(|endpoint| &mut endpoint.last_seen),
         );
-        if self.apply_clipboard_writes(clipboard_writes, cx) {
-            changed = Redraw::Window;
+        if self.apply_clipboard_writes(std::mem::take(&mut polled.clipboard_writes), cx) {
+            polled.changed = Redraw::Window;
         }
         self.restore_selection(cx);
         if self.tick_toasts(
@@ -170,10 +145,88 @@ impl SheprdWindow {
             Instant::now(),
             cx,
         ) {
-            changed = Redraw::Window;
+            polled.changed = Redraw::Window;
         }
-        let endpoint = &mut self.endpoints[self.selected_endpoint];
-        if self.selected_generation != endpoint.generation {
+        polled
+    }
+
+    /// One endpoint's turn in the tick: its snapshot, its mutes, its sound,
+    /// and the connection it may redial.
+    fn drain_endpoint(&mut self, index: usize, polled: &mut Polled, cx: &mut Context<Self>) {
+        let endpoint = &mut self.endpoints[index];
+        let updated = endpoint.poll(Instant::now());
+        // Nothing to keep current, or to silence, while nothing is muted.
+        let muted = Mutes::any(cx)
+            .and(endpoint.live.latest_snapshot())
+            .filter(|_| endpoint.live.status.is_connected())
+            .cloned()
+            .map(|snapshot| (Daemon::of(endpoint), snapshot));
+        // Only a change touches the global, which every window observes.
+        if updated == Redraw::Window
+            && let Some((daemon, snapshot)) = &muted
+        {
+            let now = std::time::SystemTime::now();
+            if Mutes::any(cx).is_some_and(|mutes| !mutes.current(daemon, snapshot, now)) {
+                Mutes::update(cx, |mutes| mutes.reconcile(daemon, snapshot, now));
+            }
+        }
+        polled
+            .clipboard_writes
+            .append(&mut endpoint.live.clipboard_writes);
+        // Bells are a presentation effect: only the selected endpoint's
+        // ring, as the TUI drops them from inactive endpoints.
+        let bells = std::mem::take(&mut endpoint.live.bells);
+        let host_muted = Mutes::any(cx).is_some_and(|mutes| mutes.host(&endpoint.id));
+        if index == self.selected_endpoint && !host_muted {
+            self.bell.queue(bells);
+        }
+        polled.selected_changed |= index == self.selected_endpoint && updated != Redraw::None;
+        let silenced = Mutes::any(cx)
+            .map(|mutes| match &muted {
+                Some((daemon, snapshot)) => mutes.silenced(daemon, snapshot),
+                None => mutes.silenced_offline(&endpoint.id),
+            })
+            .unwrap_or_default();
+        // `latest_snapshot` borrows `&self`, so resolve it before the
+        // `&mut` borrows; the clone is the one `Service::poll` already made.
+        let snapshot = endpoint.live.latest_snapshot().cloned();
+        let live = endpoint.live.sound_live(snapshot.as_deref());
+        self.sound.poll(
+            &mut endpoint.sounds,
+            live,
+            index == self.selected_endpoint && self.active,
+            Instant::now(),
+            |event| {
+                silenced.notice(
+                    event.workspace_id.as_deref(),
+                    event.tab_id.as_deref(),
+                    event.pane_id.as_deref(),
+                )
+            },
+        );
+        polled.changed = polled.changed.max(updated);
+        if endpoint.may_dial() && Instant::now() >= endpoint.retry_at() {
+            endpoint.connect(self.options, index == 0 && self.selected_endpoint == 0);
+            polled.selected_changed |= index == self.selected_endpoint;
+            polled.changed = Redraw::Window;
+        }
+        // Only a requested surface flushes, which in practice is the
+        // selected endpoint's, so its error is the one the window shows.
+        if let Err(error) = endpoint.flush_config_reload()
+            && index == self.selected_endpoint
+        {
+            self.notices.show(
+                crate::notice::Cause::Configuration,
+                fl!("endpoint-reload-config-failed", error = error.localize()),
+            );
+        }
+    }
+
+    /// Takes the selected endpoint's state once it moved on, and holds the
+    /// picture while its connection is out.
+    fn sync_selected_endpoint(&mut self, selected_changed: bool, cx: &mut Context<Self>) {
+        let generation = self.endpoints[self.selected_endpoint].generation;
+        if self.selected_generation != generation {
             self.reset_selected(cx);
         }
         let endpoint = &mut self.endpoints[self.selected_endpoint];
@@ -198,6 +251,12 @@ impl SheprdWindow {
         } else {
             self.presentation.resume();
         }
+    }
+
+    /// Renews the activation an endpoint that is down or still handshaking
+    /// needs, and waits on the one whose surface is not requested yet.
+    fn renew_activation(&mut self) {
+        let endpoint = &mut self.endpoints[self.selected_endpoint];
         // Activation is timed from the snapshot it needs. An endpoint that is
         // down or still handshaking is retried in place, never given up for Local.
         // The handle stops before the disconnect state reaches the inbox, so
@@ -231,6 +290,11 @@ impl SheprdWindow {
                     .transition(crate::state::activation::Transition::Wait(Instant::now()));
             }
         }
+    }
+
+    /// Queues the activation a retried fence still needs, or boots the inbox
+    /// onto the snapshot's boot. Returns whether the window must repaint.
+    fn queue_retry_activation(&mut self) -> bool {
         self.pending_releases
             .retain_mut(|release| !release.resolved());
         let retry = match &self.live.activation {
@@ -239,6 +303,7 @@ impl SheprdWindow {
             }
             _ => None,
         };
+        let endpoint = &mut self.endpoints[self.selected_endpoint];
         if (!endpoint.initial_surface || retry.is_some())
             && self.pending_releases.is_empty()
             && let (Some(handle), Some(snapshot)) =
@@ -295,13 +360,14 @@ impl SheprdWindow {
             self.live = state.clone();
             // take_update already moved this response out of the inbox.
             self.live.dialog_response = endpoint.live.dialog_response.clone();
-            changed = Redraw::Window;
+            return true;
         }
-        // The window's state is current: a dropped row the daemon has answered
-        // is done.
-        self.finish_workspace_settle();
-        // Held input precedes any deferred navigation.
-        self.flush_pending_input(cx);
+        false
+    }
+
+    /// Opens the activation's surface and runs what waited for it, or expires
+    /// it and recovers. Returns whether the window must repaint.
+    fn settle_navigation(&mut self, cx: &mut Context<Self>) -> bool {
         if self.navigation_ready() {
             if let Ok(mut state) = self.endpoints[self.selected_endpoint]
                 .connection
@@ -321,48 +387,43 @@ impl SheprdWindow {
             } else if let Some(target) = self.pending_navigation.take() {
                 self.dispatch_navigation(target.as_deref(), cx);
             }
-        } else {
-            let now = Instant::now();
-            if let Ok(mut state) = self.endpoints[self.selected_endpoint]
-                .connection
-                .inbox
-                .try_lock()
-                && state.activation.request() == self.live.activation.request()
-            {
-                state
-                    .activation
-                    .transition(crate::state::activation::Transition::Expire(now));
-            }
-            self.live
+            return false;
+        }
+        let now = Instant::now();
+        if let Ok(mut state) = self.endpoints[self.selected_endpoint]
+            .connection
+            .inbox
+            .try_lock()
+            && state.activation.request() == self.live.activation.request()
+        {
+            state
                 .activation
                 .transition(crate::state::activation::Transition::Expire(now));
-            if self.live.activation.failed() {
-                let device = self.endpoints[self.selected_endpoint].label.clone();
-                let error = match self.live.notices.text() {
-                    Some(reason) => fl!(
-                        "endpoint-activation-failed-because",
-                        device = device,
-                        reason = reason
-                    ),
-                    None => fl!("endpoint-activation-failed", device = device),
-                };
-                if self.selected_endpoint != 0 {
-                    let _ = self.switch_endpoint(LOCAL, cx);
-                } else {
-                    // Recover Local with a fresh active handshake, even if the
-                    // previous surface lane or its acknowledgement was unavailable.
-                    self.reconnect(cx);
-                }
-                self.notices.show(crate::notice::Cause::Activation, error);
-                changed = Redraw::Window;
-            }
         }
-        self.sync_server_keymap(cx);
-        match changed {
-            Redraw::None => {}
-            Redraw::Terminal => self.redraw_terminal(cx),
-            Redraw::Window => cx.notify(),
+        self.live
+            .activation
+            .transition(crate::state::activation::Transition::Expire(now));
+        if !self.live.activation.failed() {
+            return false;
         }
+        let device = self.endpoints[self.selected_endpoint].label.clone();
+        let error = match self.live.notices.text() {
+            Some(reason) => fl!(
+                "endpoint-activation-failed-because",
+                device = device,
+                reason = reason
+            ),
+            None => fl!("endpoint-activation-failed", device = device),
+        };
+        if self.selected_endpoint != 0 {
+            let _ = self.switch_endpoint(LOCAL, cx);
+        } else {
+            // Recover Local with a fresh active handshake, even if the
+            // previous surface lane or its acknowledgement was unavailable.
+            self.reconnect(cx);
+        }
+        self.notices.show(crate::notice::Cause::Activation, error);
+        true
     }
 
     /// Scan local sessions while the popup asks for them, and ask the saved
