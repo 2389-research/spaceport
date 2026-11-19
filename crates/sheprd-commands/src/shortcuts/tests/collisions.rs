@@ -10,7 +10,7 @@ use super::*;
 fn a_shifted_digit_arrives_as_its_symbol_so_tab_numbers_bind_both_spellings() {
     let symbols = ["!", "@", "#", "$", "%", "^", "&", "*", "("];
     for (index, symbol) in symbols.into_iter().enumerate() {
-        let number = u8::try_from(index).unwrap() + 1;
+        let number = index as u8 + 1;
         let command = Command::TabNumber(number);
         let digit = format!("ctrl-shift-{number}");
         let alias = format!("ctrl-{symbol}");
