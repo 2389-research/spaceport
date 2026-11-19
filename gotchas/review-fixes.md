@@ -2,6 +2,7 @@
 
 - ScrollHandle indexes direct children. Keep live rows direct. Capture snapped extents for departure. Reset form handles on cancel. See [popup evidence](../docs/evidence/review-host-popup-departure.md).
 - Headless GPUI exposes element metadata. Qualify accessibility trees natively. Release dependencies disable debug selectors. Run selector GUI suites in debug. See [accessibility evidence](../docs/evidence/review-accessibility-gaps.md).
+- GPUI 0.3.10 replays cached paint without replaying accessibility nodes. Bypass the sidebar cache while accessibility is active. Preserve ordinary caching. See [native sidebar evidence](../docs/evidence/review-ci-qualification.md#native-bootstrap-results-and-sidebar-retention).
 - zbus encodes fixed arrays as D-Bus structures. Pass slices for arrays. Verify the real wire signature with an isolated peer. See [OS accessibility evidence](../docs/evidence/review-os-accessibility.md).
 - APFS rejects invalid UTF-8 filenames with EILSEQ. Preserve OS bytes in Unix APIs. Run real invalid-filename fixtures on Linux. See [CLI transport evidence](../docs/evidence/review-cli-contracts.md).
 - A captured Unix process-group number does not preserve identity after reaping. Keep the leader waitable with NOWAIT until group signals finish. Retire signaling before the final reap. See [agent ownership evidence](../docs/evidence/review-jargon-main-integration.md).

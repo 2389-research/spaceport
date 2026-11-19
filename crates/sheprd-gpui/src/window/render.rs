@@ -127,7 +127,11 @@ impl Render for SheprdWindow {
             .sidebar_column_width(f32::from(window.viewport_size().width))
             .map(|width| {
                 (
-                    crate::sidebar::cached_view(&self.sidebar_view, width),
+                    crate::sidebar::view_element(
+                        &self.sidebar_view,
+                        width,
+                        window.is_a11y_active(),
+                    ),
                     width,
                 )
             });

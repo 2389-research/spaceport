@@ -62,7 +62,7 @@ pub(crate) use order::step as sidebar_step;
 pub(crate) use metrics::LABEL_WIDTH;
 
 pub(crate) use snapshot_index::{IndexedSnapshot, SnapshotIndexCache};
-pub(crate) use view::cached as cached_view;
+pub(crate) use view::element as view_element;
 
 use agents::agents_sort;
 use metrics::*;

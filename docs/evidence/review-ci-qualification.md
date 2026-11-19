@@ -509,3 +509,55 @@ Native execution must establish whether this correction resolves the stall.
 Both Windows GNU lint configurations and static validators pass.
 The specification gate explicitly skips JSON Schema validation.
 Logs use `/tmp/spaceport-9s44-powershell-modules-final-{windows-lint,static}.log`.
+
+## Native bootstrap results and sidebar retention
+
+[Run 44468640390](https://github.com/2389-research/spaceport/actions/runs/44468640390) tests `09b5ae61b`.
+The explicit module bootstrap completes on Windows x64.
+The unqualified cmdlet and owned-child timeout regressions pass in both Windows all-feature process suites.
+Each architecture also passes 4,328 application cases, with six private fixtures ignored directly.
+The native chrome tree and seven keyboard-focus moves pass.
+Both UIA scenarios reach completed tree captures without the former cmdlet timeout.
+
+The workspace-consent scenario still fails before opening consent.
+Its private window exposes the terminal and status bar but omits the sidebar subtree.
+The window title contains the expected original workspace name.
+This is not proof of workspace consent or screen-reader speech.
+The capture is `/tmp/spaceport-9s44-modules-native-x64.log`.
+
+The pinned GPUI 0.3.10 source clears accessibility nodes on each active frame.
+Its cached view replay retains paint and input state but omits accessibility nodes and actions.
+Spaceport always caches its sidebar, so later frames can drop its accessible subtree.
+The repair bypasses this cache while accessibility is active.
+The real-view regression first fails when a second accessible frame reuses the cache.
+It then passes with the uncached path, alongside the existing ordinary-redraw cache regression.
+This headless result proves rendering behavior; it does not prove native AccessKit output.
+The unchanged native workspace scenario must qualify the repair in CI.
+
+## Close-sequence fixture contention
+
+The same run fails the Linux ARM all-feature close-sequence fixture.
+It reports 4,545 passing cases, one failure, and 19 ignored fixtures.
+The failed peer read returns `WouldBlock` after its existing three-second bound.
+The log does not identify which receive call timed out.
+
+Source review finds a deterministic race after both surface-barrier prerequisites arrive.
+The fixture advances once, then blocks waiting for the second close.
+If the inbox is busy, that advance defers work until the next tick.
+Production supplies subsequent ticks; the fixture has stopped supplying them.
+
+The regression holds the real inbox guard during that final advance.
+It reproduces the same receive timeout on macOS without changing the socket deadline.
+The repair uses the existing bounded polling helper to resume advancement after releasing the guard.
+Both barrier arrival orders and the exact second-tab assertion pass.
+Production command timing, ordering, and retry behavior remain unchanged.
+Baseline and red logs use `/tmp/spaceport-9s44-close-sequence-{baseline,contention-red}.log`.
+
+The combined focused suite passes four cases with no failures or ignored cases.
+It includes both sidebar policies, shared-indicator invalidation, and the close-sequence fixture.
+Logs: `/tmp/spaceport-9s44-sidebar-accessibility-red.log` and `/tmp/spaceport-9s44-sidebar-close-green.log`.
+Formatting, file size, sorted regions, operations, localization, and diff checks pass.
+Both host and Windows GNU lint configurations pass through `just lint lint-windows`.
+Independent review finds no remaining issue after correcting the use of GPUI's public cache API.
+Lint and static logs use `/tmp/spaceport-9s44-sidebar-close-{lint,static}.log`.
+Native Windows rerun, Mac foreground checks, speech, and interactive profiling remain pending.
