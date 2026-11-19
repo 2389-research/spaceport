@@ -101,3 +101,18 @@ Logs: `/tmp/spaceport-qnz9/2njz-host-clippy-source-stable.log` and `2njz-windows
 That checkpoint also passes aggregate formatting, size, sorting, localization, and diff checks.
 Later popup-family changes still need their own final aggregate qualification.
 Keep native keyboard, accessibility, visual, and release-performance checks pending.
+
+## Remaining original finding scope
+
+The 2026-11-19 audit finds no remaining implementation defect in the scoped feedback paths.
+The original finding still needs native announcement-delivery evidence.
+The existing UIA chrome and workspace checks do not trigger warning or toast announcements.
+Headless metadata checks do not execute GPUI's native synthetic accessibility children.
+
+Add one owned Windows UIA scenario that triggers a benign warning and a live toast.
+Verify their displayed names with the status bar hidden and in Zen mode.
+Observe their native `LiveRegionChanged` events.
+Pinned AccessKit Windows raises those events for named live nodes.
+Microsoft documents the [native live-region event](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-event-ids).
+This check does not require audible speech, a Mac foreground fixture, Settings, or release profiling.
+Keep those broader qualifications separate from `kjkw`.
