@@ -71,6 +71,20 @@ impl TerminalPainter {
                     );
                     #[cfg(test)]
                     super::image_probe::image(*_z, geometry, texture, painted.is_ok(), window);
+                    #[cfg(any(test, all(windows, feature = "integration-test")))]
+                    if crate::window::native_images::active(window.window_handle().window_id()) {
+                        crate::window::native_images::image(
+                            window.window_handle().window_id(),
+                            crate::window::native_images::ImagePaint {
+                                id: texture.id,
+                                image: geometry.image,
+                                mask: window.content_mask().bounds,
+                                uploaded: painted.is_ok() && window.has_image_atlas_entry(texture),
+                                visible: geometry.visible,
+                                z: *_z,
+                            },
+                        );
+                    }
                     painted
                 },
             );

@@ -236,8 +236,20 @@ impl Render for SheprdWindow {
             let signal = self.surface_signal.clone();
             window.on_next_frame(move |_, cx| signal.update(cx, |_, cx| cx.notify()));
         }
+        #[cfg(all(windows, feature = "integration-test"))]
+        let native_slide = super::native_images::enabled()
+            .then(|| slide.clone())
+            .flatten();
         let (regions, main_images) =
             self.terminal_regions(window_frame.as_ref(), &highlights, slide, &look, cx);
+        #[cfg(all(windows, feature = "integration-test"))]
+        super::native_images::observe(
+            self,
+            window_frame.as_ref(),
+            native_slide.as_ref(),
+            window,
+            cx,
+        );
         // Without regions the canvas paints the whole grid, images included.
         let whole = regions.is_empty();
         // The IME composition paints inline at the input cursor; a menu's

@@ -22,7 +22,7 @@ fn native_settings_enlarged_text_keeps_its_row_inside_wide_and_narrow_windows() 
         tree.contains("Button 'Settings'")
     });
     running.settings_action("Scale");
-    let log = running.settings_log();
+    let log = running.gui_log();
     assert!(
         log.contains("SETTINGS_SCALE_PASS ui=24 wide=1100x780 narrow=680x780"),
         "{log}"

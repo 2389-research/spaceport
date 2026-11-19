@@ -7,6 +7,7 @@ use crate::{
 };
 use gpui::{Bounds, Window, point, px};
 
+mod native_probe;
 mod pane_scroll;
 mod scrolling;
 

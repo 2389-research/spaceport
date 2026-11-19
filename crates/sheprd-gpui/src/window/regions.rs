@@ -216,6 +216,8 @@ impl Render for RegionView {
         canvas(
             |_, _, _| (),
             move |bounds, _, window, cx| {
+                #[cfg(any(test, all(windows, feature = "integration-test")))]
+                super::native_images::cells(window.window_handle().window_id());
                 let mut painter = painter.borrow_mut();
                 let look = &region.look;
                 let mut paint = |frame: &FrameData,

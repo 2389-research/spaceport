@@ -3,7 +3,7 @@
 use super::{CAPTURE_LIMIT, Duration, GuiTarget, Instant, Read, Running, fs, thread};
 
 impl Running {
-    pub(super) fn settings_log(&self) -> String {
+    pub(super) fn gui_log(&self) -> String {
         let mut bytes = Vec::new();
         fs::File::open(self.sandbox.dir.join("gui.log"))
             .unwrap()
@@ -12,7 +12,7 @@ impl Running {
             .unwrap();
         assert!(
             bytes.len() <= CAPTURE_LIMIT,
-            "native Settings log exceeds bound"
+            "native fixture GUI log exceeds bound"
         );
         String::from_utf8(bytes).unwrap()
     }
@@ -21,7 +21,7 @@ impl Running {
         let script = self.sandbox.dir.join("uia_settings.ps1");
         let result = self.script_output(&script, "-Action", action, None, Duration::from_secs(35));
         if result.is_err() {
-            eprintln!("{}", self.settings_log());
+            eprintln!("{}", self.gui_log());
         }
         let output = result.unwrap();
         eprintln!("{output}");
@@ -82,7 +82,7 @@ fn native_settings_keyboard_persistence_and_painted_focus_ring() {
     running.start_gui(GuiTarget::SettingsKeyboard);
     running.wait_tree("Settings opener", |tree| tree.contains("Button 'Settings'"));
     running.settings_action("OpenAndRing");
-    let log = running.settings_log();
+    let log = running.gui_log();
     eprintln!("{log}");
     assert!(log.contains("SETTINGS_RING_PASS "), "{log}");
     assert!(

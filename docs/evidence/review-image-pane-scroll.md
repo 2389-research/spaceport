@@ -195,3 +195,59 @@ Encode only bounded captures from the owned window on the background executor.
 This route has been inspected, but no new native image case has run.
 It qualifies the remaining image-rendering gate when executed and inspected.
 It does not replace the separate foreground release profile owned by `gg9v`.
+
+## Real-pane native candidate
+
+The new `accessibility_windows::images` case keeps the existing normal Socket GUI and private daemon.
+It discovers the actual pane, then submits one authored script through Herdr's existing `pane run` command.
+The script writes four tiny inline RGBA images through the pane's existing PowerShell process.
+It writes bounded scrollback and a unique fixture token before waiting on its private completion marker.
+The wait is bounded, and no additional producer process starts.
+The observer requires that token, exact source pixels, paired asset serials, and a coherent presented frame.
+Queue acceptance alone never satisfies image delivery.
+
+The nonvisual probe records actual region canvas callbacks and actual image paint/atlas observations.
+It belongs to one window and bounds each frame's image records.
+It never paints diagnostic quads or retains image textures.
+An actual renderer regression fails first because the initial cells produce no observed callbacks.
+After wiring the real callbacks, it passes actual decoding, upload, unchanged region identities, zero replay callbacks, and probe release.
+Logs are `/tmp/spaceport-9s44-native-image-probe-{red,green}.log`.
+
+The native observer records the completed frame through GPUI's next-frame callback.
+Pinned GPUI runs that callback before drawing the following frame.
+The readback therefore uses the scene associated with the recorded picture and slide.
+The case captures stationary, unchanged replay, fractional, and settled frames without changing the clock or scroll policy.
+Each screenshot permits at most two million pixels and a 128 KiB PNG.
+Encoding runs on the background executor.
+Failures retain a bounded owned-window capture before reporting the original error.
+
+Native input requires one exact PID, HWND, focused Terminal document, and released buttons/modifiers.
+The helper sends one wheel delta and never retries it.
+It uses Windows' [physical cursor APIs](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setphysicalcursorpos).
+Finally, cancellation, and an independent watchdog restore only the helper's unchanged pointer claim.
+Later user movement or a different foreground window prevents restoration.
+An intentional pointer-failure case requires restoration before the actual image gesture starts.
+The parent preserves the original failure and waits for helper cleanup before dropping its owned processes.
+
+Review finds that absence outside the pane cannot prove clipping when the edge image is also missing.
+Two pixel-validator regressions fail first on missing interior cyan and an unavailable outside sample.
+The validator now requires both sides and rejects an unavailable sample.
+Its fractional case also requires a historical image mapping beyond the fixed pane before masking.
+The stationary wire placement cannot supply that oversized extent: pinned Herdr [clips it before export](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/kitty_graphics.rs#L495).
+The actual masked fractional paint supplies the stronger client-side evidence.
+The capture also checks contrasting source rows, transparent overlap, and below/above-text glyph visibility.
+Independent review confirms the original clipping finding is resolved without changing the renderer or limits.
+
+The focused consumer run passes 97 tests, with two existing Metal opt-ins ignored.
+The raster false-positive regressions pass in that run.
+Both offscreen Metal pixel cases also pass explicitly after the new observation hooks, with none ignored.
+Their log is `/tmp/spaceport-9s44-native-image-metal.log`.
+Logs are `/tmp/spaceport-9s44-native-image-clipping-red.log` and `/tmp/spaceport-9s44-native-image-consumers.log`.
+`just lint lint-windows` passes all four workspace/all-target feature configurations.
+The final Windows harness cleanup follow-up also passes targeted all-feature and no-default-feature cross-lint.
+Canonical formatting, size, sorting, operations, i18n, commit-subject, and diff checks pass.
+The existing external `block` future-compatibility notice remains unchanged.
+
+The PowerShell/ConPTY producer and embedded C# still require actual Windows execution.
+Cross-lint checks the Rust harness but does not compile or execute those embedded scripts.
+No native image qualification or `gfde` closure is claimed by this candidate.

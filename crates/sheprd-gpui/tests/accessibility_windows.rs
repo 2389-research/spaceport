@@ -33,6 +33,7 @@ enum GuiTarget {
     ChatAccessibility,
     ChatClipboard,
     ClipboardField,
+    Images(uuid::Uuid),
     Local,
     SettingsKeyboard,
     SettingsScaling,
@@ -138,11 +139,15 @@ impl Running {
                     );
             }
             GuiTarget::Socket
+            | GuiTarget::Images(_)
             | GuiTarget::ShortcutObserver
             | GuiTarget::ShortcutFenceObserver
             | GuiTarget::SettingsKeyboard
             | GuiTarget::SettingsScaling => {
                 command.arg("--socket").arg(self.sandbox.socket());
+                if let GuiTarget::Images(token) = target {
+                    command.env("HERDR_TEST_NATIVE_IMAGES", token.to_string());
+                }
                 if matches!(target, GuiTarget::SettingsKeyboard) {
                     command.env("HERDR_TEST_SETTINGS_KEYBOARD", "1");
                 }
@@ -459,6 +464,8 @@ mod clipboard_paste;
 mod close_others;
 #[path = "accessibility_windows/held_shortcuts.rs"]
 mod held_shortcuts;
+#[path = "accessibility_windows/images.rs"]
+mod images;
 #[path = "accessibility_windows/keyboard_layouts.rs"]
 mod keyboard_layouts;
 #[path = "accessibility_windows/pane_resize.rs"]

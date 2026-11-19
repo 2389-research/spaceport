@@ -32,6 +32,8 @@ pub(crate) mod image_source;
 mod images;
 mod input;
 mod layout_save;
+#[cfg(any(test, all(windows, feature = "integration-test")))]
+pub(crate) mod native_images;
 pub(crate) use layout_save::LayoutSaves;
 mod lifecycle;
 pub(crate) use lifecycle::reasserts;
