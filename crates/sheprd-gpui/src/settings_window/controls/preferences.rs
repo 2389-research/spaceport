@@ -63,7 +63,10 @@ impl SettingsWindow {
             self.save_with(move || (io.write)(edit), move || (io.load)(), false, cx);
             return;
         }
-        self.save_native(move || Config::save_preference(edit), cx);
+        self.save_native(
+            move || Config::save_preference(edit).map_err(crate::Error::from),
+            cx,
+        );
     }
 
     pub(in crate::settings_window) fn render_integration_controls(

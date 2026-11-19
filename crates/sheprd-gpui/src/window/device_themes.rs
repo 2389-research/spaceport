@@ -190,7 +190,9 @@ impl SheprdWindow {
             endpoint,
             value,
             theme,
-            move || Config::save_device_theme(&profile, saved.as_deref()),
+            move || {
+                Config::save_device_theme(&profile, saved.as_deref()).map_err(crate::Error::from)
+            },
             cx,
         );
     }

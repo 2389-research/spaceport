@@ -581,7 +581,7 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         // Keep the original geometry fixture explicit; density-switching tests
         // above exercise all three modes independently of the default.
         config: crate::config::Config {
-            layout: crate::config::Layout {
+            layout: sheprd_settings::Layout {
                 mode: crate::config::LayoutMode::from(crate::config::Density::Comfortable),
                 ..Default::default()
             },
@@ -669,6 +669,7 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         // No AppKit event to read; a test that needs one supplies its own.
         key_press: || None,
         key_layout: |_| None,
+        keymap: Default::default(),
         file_transfer: Default::default(),
         presentation: Default::default(),
         wake: crate::endpoint::WakeClock::new(

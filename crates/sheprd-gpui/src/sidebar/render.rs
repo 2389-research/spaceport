@@ -129,7 +129,7 @@ impl SheprdWindow {
         // A lifted device folds the list to its headers.
         let device_plan = headed.then(|| self.device_plan(devices, &query)).flatten();
         let mut sliding = device_plan.as_ref().is_some_and(|plan| plan.sliding);
-        let worktree_glyph = self.config.worktrees.glyph(theme);
+        let worktree_glyph = crate::worktree_identity::glyph(&self.config.worktrees, theme);
         // A lifted device folds the list to headers alone, and search results
         // are not arranged by group.
         let grouped = device_plan.is_none() && self.lists_tag_sections(headed, &query);

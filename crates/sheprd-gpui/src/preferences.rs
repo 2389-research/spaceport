@@ -37,12 +37,13 @@ impl SheprdWindow {
                 save()?;
                 let mut config = Config::load()?;
                 config.resolve_fonts(|| text_system.all_font_names());
+                let keymap = crate::config::keymap(&config)?;
                 let theme = if ThemeName::follows_herdr(&config.theme, light) {
                     Default::default()
                 } else {
                     config.theme(light)?
                 };
-                Ok((config, theme))
+                Ok((config, keymap, theme))
             },
             cx,
         );
@@ -76,47 +77,7 @@ static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 /// Asynchronous, endpoint-local preferences. Dropping lets the worker drain queued
 /// saves without waiting; process exit may interrupt pending writes.
-/// How the agents panel orders its rows, as in the terminal client: grouped
-/// keeps the daemon's workspace order, priority floats the agents that want
-/// attention. Herdr's `ui.agent_panel_sort` seeds it until the user toggles
-/// it, which deserializes upstream's spellings ("spaces", alias "workspaces").
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Deserialize)]
-pub enum AgentSort {
-    #[default]
-    #[serde(rename = "spaces", alias = "workspaces")]
-    Grouped,
-    #[serde(rename = "priority")]
-    Priority,
-}
-
-impl std::fmt::Display for AgentSort {
-    /// Also the stored spelling, which `AgentSort::parse` reads back.
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            Self::Grouped => "grouped",
-            Self::Priority => "priority",
-        })
-    }
-}
-
-impl AgentSort {
-    pub fn toggled(self) -> Self {
-        match self {
-            Self::Grouped => Self::Priority,
-            Self::Priority => Self::Grouped,
-        }
-    }
-
-    /// An unreadable or unknown stored value is no override at all, so the
-    /// daemon's setting applies rather than a guessed sort.
-    fn parse(value: Option<&serde_json::Value>) -> Option<Self> {
-        match value.and_then(serde_json::Value::as_str)? {
-            "grouped" => Some(Self::Grouped),
-            "priority" => Some(Self::Priority),
-            _ => None,
-        }
-    }
-}
+pub use sheprd_settings::AgentSort;
 
 /// The window chrome this endpoint remembers between runs.
 #[derive(Clone, Debug, Default, PartialEq)]

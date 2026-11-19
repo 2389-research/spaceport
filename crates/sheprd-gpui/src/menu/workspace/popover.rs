@@ -167,7 +167,7 @@ impl SheprdWindow {
     /// the popover draws costs no more than drawing them.
     pub(in crate::menu) fn workspace_popover_width(&self, window: &Window, room: Pixels) -> Pixels {
         let size = px((self.config.ui.size - 1.).max(8.));
-        let font = self.config.ui.font();
+        let font = crate::config::font_for(&self.config.ui);
         let (tiles, _) = layout(&self.workspace_items());
         let widest = tiles
             .iter()

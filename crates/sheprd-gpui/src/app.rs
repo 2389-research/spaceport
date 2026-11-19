@@ -13,7 +13,9 @@ use crate::{
     cli,
     config::{Config, Theme},
     core_terminals::Start,
-    diagnostics, icons, log_window, menus, titlebar,
+    diagnostics, icons,
+    keymap::Keymap,
+    log_window, menus, titlebar,
 };
 #[cfg(feature = "integration-test")]
 use crate::{performance, smoke};
@@ -38,17 +40,28 @@ impl From<ConnectTarget> for WindowLaunch {
 #[derive(Clone, Default)]
 pub(crate) struct InitialAppearance {
     pub config: Config,
+    /// The keymap `config` was resolved into when it loaded, so a window's
+    /// keys and its settings never disagree.
+    pub keymap: Keymap,
     pub theme: Theme,
     pub error: Option<String>,
 }
 
 impl Global for InitialAppearance {}
 
+/// First-frame settings and the keymap they resolve into.
+fn load_startup_settings() -> crate::Result<(Config, Keymap)> {
+    let config = Config::load_startup()?;
+    let keymap = crate::config::keymap(&config)?;
+    Ok((config, keymap))
+}
+
 impl InitialAppearance {
-    fn load(load: impl FnOnce() -> crate::Result<Config>, light: bool) -> Self {
-        match load().and_then(|config| Ok((config.theme(light)?, config))) {
-            Ok((theme, config)) => Self {
+    fn load(load: impl FnOnce() -> crate::Result<(Config, Keymap)>, light: bool) -> Self {
+        match load().and_then(|(config, keymap)| Ok((config.theme(light)?, config, keymap))) {
+            Ok((theme, config, keymap)) => Self {
                 config,
+                keymap,
                 theme,
                 error: None,
             },
@@ -78,7 +91,7 @@ struct StartupAppearance {
 }
 
 impl StartupAppearance {
-    fn load(load: impl FnOnce() -> crate::Result<Config>) -> Self {
+    fn load(load: impl FnOnce() -> crate::Result<(Config, Keymap)>) -> Self {
         let dark = InitialAppearance::load(load, false);
         let light = (dark.error.is_none()
             && crate::config::ThemeName::follows_system(&dark.config.theme))
@@ -413,7 +426,7 @@ pub(crate) fn run() -> std::process::ExitCode {
         // Before anything resolves a config path or the daemon's socket.
         crate::login_env::adopt_config_home();
         let started = std::time::Instant::now();
-        let appearance = StartupAppearance::load(Config::load_startup);
+        let appearance = StartupAppearance::load(load_startup_settings);
         tracing::debug!(
             elapsed_us = started.elapsed().as_micros() as u64,
             "Startup appearance loaded"

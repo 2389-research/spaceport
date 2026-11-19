@@ -1,5 +1,8 @@
 use super::*;
-use crate::{browser::Store, config::TabLayoutMode};
+use crate::{
+    browser::Store,
+    config::{Label as _, TabLayoutMode},
+};
 
 /// A window whose strip lists a working tab, a plain one, a zoomed one, and
 /// a titled page, in `mode`.
@@ -215,7 +218,13 @@ fn a_tab_layout_read_from_the_config_file_moves_the_menu_check(cx: &mut TestAppC
         let mut config = view.config.clone();
         config.tab_layout = TabLayoutMode::Cards;
         let theme = view.theme.clone();
-        view.load_gui_config_with(move || Ok((config, theme)), cx);
+        view.load_gui_config_with(
+            move || {
+                let keymap = crate::config::keymap(&config)?;
+                Ok((config, keymap, theme))
+            },
+            cx,
+        );
     });
     cx.run_until_parked();
     let checked: Vec<String> = cx.update(|_, cx| {

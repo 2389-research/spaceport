@@ -289,7 +289,7 @@ until it restarts; check Core's machine list to see what happened.
 
 The dialog has no host-key option. Hosts that keep no stable key to check are
 listed by hand under `[ssh] skip_host_key_verification` in the local config,
-by target (see `config-gpui.example.toml`). For those targets the app passes
+by target (see [`config-gpui.example.toml`](../sheprd-settings/config-gpui.example.toml)). For those targets the app passes
 `StrictHostKeyChecking=no` and reads no known hosts file. To verify a host
 again, delete its target from that list; connections opened without checking
 take no new commands once it is gone.
@@ -445,7 +445,7 @@ on reload. Native overrides do not modify Herdr's shared config; the shared
 settings controls described below explicitly edit that separate file.
 
 See
-[`config-gpui.example.toml`](config-gpui.example.toml) for a complete example.
+[`config-gpui.example.toml`](../sheprd-settings/config-gpui.example.toml) for a complete example.
 Font sizes use logical pixels (finite 8..48), not typographic points. Saving
 `config-gpui.local.toml` automatically reloads every open GUI window, usually
 within half a second. Font family, font size, theme, and layout changes apply

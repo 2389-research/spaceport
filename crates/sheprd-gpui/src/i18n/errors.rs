@@ -39,7 +39,6 @@ mod sound;
 #[cfg(test)]
 pub(crate) mod tests;
 mod usage;
-mod worktree_identity;
 mod wsl_drop;
 
 use std::sync::Arc;

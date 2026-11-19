@@ -1,5 +1,6 @@
 use super::*;
-use crate::config::{Padding, Sides};
+use crate::config::Padding;
+use sheprd_settings::Sides;
 // `super::*` brings in gpui's `test`, which `#[gpui::test]` expands to.
 use core::prelude::v1::test;
 use gpui::px;

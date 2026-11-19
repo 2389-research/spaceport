@@ -39,7 +39,7 @@ pub(super) fn theme(
         return;
     }
     if let Err(error) = ThemeName::parse(&name) {
-        incoming.respond(failed(&error));
+        incoming.respond(failed(&Error::from(error)));
         return;
     }
     let handle = match window_for(caller, cx) {
@@ -58,7 +58,7 @@ pub(super) fn theme(
     let task = cx.background_executor().spawn(async move {
         match config.save_theme(&name) {
             Ok(()) => Response::done(format!("Theme set to {name}")),
-            Err(error) => failed(&error),
+            Err(error) => failed(&Error::from(error)),
         }
     });
     answer_when_done(task, wait, incoming, watches, cx);
@@ -114,7 +114,7 @@ pub(super) fn font(
                 Some(name) => format!("Font set to {name}"),
                 None => "Fonts set back to the defaults".to_owned(),
             }),
-            Err(error) => failed(&error),
+            Err(error) => failed(&Error::from(error)),
         }
     });
     answer_when_done(task, wait, incoming, watches, cx);

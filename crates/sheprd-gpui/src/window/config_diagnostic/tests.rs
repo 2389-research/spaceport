@@ -102,7 +102,7 @@ fn gui_config_warning_stacks_above_the_endpoint_card(cx: &mut TestAppContext) {
     };
     view.update(cx, |view, cx| {
         view.gui_config_diagnostic
-            .sync_own(config.diagnostic().as_deref());
+            .sync_own(crate::config::diagnostic(&config).as_deref());
         cx.notify();
     });
     draw(cx);
@@ -126,7 +126,7 @@ fn gui_config_warning_stacks_above_the_endpoint_card(cx: &mut TestAppContext) {
     view.update(cx, |view, _| {
         view.gui_config_diagnostic.sync_own(None);
         view.gui_config_diagnostic
-            .sync_own(config.diagnostic().as_deref());
+            .sync_own(crate::config::diagnostic(&config).as_deref());
     });
     draw(cx);
     assert!(cx.debug_bounds("gui-config-diagnostic").is_some());

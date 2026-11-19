@@ -15,7 +15,7 @@ pub(crate) trait StyledFont: Styled + Sized {
     fn text_font(mut self, config: &FontConfig) -> Self {
         let Font {
             family, fallbacks, ..
-        } = config.font();
+        } = crate::config::font_for(config);
         let style = self.text_style();
         style.font_family = Some(family);
         style.font_fallbacks = fallbacks;

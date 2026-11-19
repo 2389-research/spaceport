@@ -17,7 +17,7 @@ pub(crate) use panel::PANEL_WIDTH;
 pub(crate) use render::Hint;
 #[cfg(test)]
 pub(crate) use sheprd_usage::registry;
-pub(crate) use sheprd_usage::{Host, Provider, Reading, Shell, Usage, UsageConfig, model};
+pub(crate) use sheprd_usage::{Host, Provider, Reading, Shell, Usage, model};
 
 pub(crate) fn icon(path: &str) -> Option<&'static [u8]> {
     icons::PROVIDER_ICONS

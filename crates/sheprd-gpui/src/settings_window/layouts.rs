@@ -97,7 +97,7 @@ impl SettingsWindow {
             if let Some(io) = io {
                 return (io.write)(mode);
             }
-            Config::save_layout(mode)
+            Config::save_layout(mode).map_err(crate::Error::from)
         }
     }
 

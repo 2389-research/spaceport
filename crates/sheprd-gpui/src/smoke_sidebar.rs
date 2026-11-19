@@ -9,19 +9,19 @@ use super::*;
 /// cannot show this: the test text system reports no installed families and
 /// gives every glyph the same fixed advance.
 fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
-    let detected = crate::config::symbol_fallbacks(cx.text_system().all_font_names());
+    use sheprd_settings::fonts::symbol_fallbacks;
+    let detected = symbol_fallbacks(cx.text_system().all_font_names());
     if detected.is_empty() {
         // An installed icon font is an external resource, like a daemon binary.
         return Ok("symbol cascade skipped (no Nerd Font installed)");
     }
-    let font = crate::config::FontConfig {
+    let font = crate::config::font_for(&crate::config::FontConfig {
         family: "Menlo".into(),
         size: crate::terminal::FONT_SIZE,
         fallbacks: Some(detected.clone()),
         line_height_multiple: None,
-        weight: FontWeight::NORMAL,
-    }
-    .font();
+        weight: crate::config::Weight::NORMAL,
+    });
     // Fallback faces never enter `get_font_for_id`, and a cascade gives the
     // same family a new font id, so coverage is read from the glyphs: anything
     // no font carries shapes to the platform's missing-glyph box, and a covered

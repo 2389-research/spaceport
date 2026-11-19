@@ -38,35 +38,7 @@ mod search;
 
 use agent_filter::AgentFilter;
 use go_to::{destination_exists, go_to_entries, note_entries};
-
-#[derive(Clone, Debug, serde::Deserialize, PartialEq, Eq)]
-#[serde(default)]
-pub struct PaletteConfig {
-    pub double_shift: bool,
-    pub project_roots: Vec<String>,
-}
-
-impl Default for PaletteConfig {
-    fn default() -> Self {
-        Self {
-            double_shift: true,
-            project_roots: Vec::new(),
-        }
-    }
-}
-
-impl PaletteConfig {
-    pub(crate) fn validate(&self) -> Result<()> {
-        if self.project_roots.len() > 16
-            || self.project_roots.iter().any(|root| {
-                root.trim().is_empty() || root.len() > 8192 || root.chars().any(char::is_control)
-            })
-        {
-            return Err(Error::ProjectRoots.into());
-        }
-        Ok(())
-    }
-}
+use sheprd_settings::palette::PaletteConfig;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(crate) enum Filter {

@@ -6,8 +6,8 @@
 use super::{SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{
-        AgentsPlacement, Config, DeviceFooter, LayoutMode, SelectMode, SidebarOverrides,
-        preferences::Preference,
+        AgentsPlacement, Config, DeviceFooter, Label as _, LayoutMode, SelectMode,
+        SidebarOverrides, preferences::Preference,
     },
     i18n::{self, fl},
     settings_window::{
@@ -230,7 +230,10 @@ impl SettingsWindow {
                     )
                     .on_click(cx.listener(|this, _, _, cx| {
                         let show = !this.config.show_agents;
-                        this.save_native(move || Config::save_show_agents(show), cx);
+                        this.save_native(
+                            move || Config::save_show_agents(show).map_err(crate::Error::from),
+                            cx,
+                        );
                     })),
                 ),
             )

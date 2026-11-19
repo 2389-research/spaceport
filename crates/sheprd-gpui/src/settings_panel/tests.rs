@@ -13,13 +13,12 @@ fn followed_theme_updates_startup_cache_without_persisting_session_font_size(
         view.settings.shared = Some(shared);
         view.load_gui_config_with(
             || {
-                Ok((
-                    crate::config::Config {
-                        theme: "Follow Herdr".into(),
-                        ..Default::default()
-                    },
-                    Default::default(),
-                ))
+                let config = crate::config::Config {
+                    theme: "Follow Herdr".into(),
+                    ..Default::default()
+                };
+                let keymap = crate::config::keymap(&config)?;
+                Ok((config, keymap, Default::default()))
             },
             cx,
         );
@@ -82,9 +81,8 @@ fn the_daemon_sort_seeds_the_agents_panel_until_toggled(cx: &mut TestAppContext)
         view.update(cx, |view, cx| {
             view.load_shared_settings_with(
                 move || {
-                    Ok(Settings::parse_text(&format!(
-                        "[ui]\nagent_panel_sort = '{sort}'"
-                    ))?)
+                    Settings::parse_text(&format!("[ui]\nagent_panel_sort = '{sort}'"))
+                        .map_err(crate::Error::from)
                 },
                 cx,
             );
@@ -111,7 +109,10 @@ fn the_daemon_sort_seeds_the_agents_panel_until_toggled(cx: &mut TestAppContext)
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     view.update(cx, |view, cx| {
         view.load_shared_settings_with(
-            || Ok(Settings::parse_text("[ui]\nagent_panel_sort = 'priority'")?),
+            || {
+                Settings::parse_text("[ui]\nagent_panel_sort = 'priority'")
+                    .map_err(crate::Error::from)
+            },
             cx,
         );
     });
@@ -129,8 +130,9 @@ fn the_daemon_sort_seeds_the_agents_panel_until_toggled(cx: &mut TestAppContext)
 #[gpui::test]
 fn first_shared_load_honors_sidebar_start_collapsed_once(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
-    let load =
-        || Settings::parse_text("[ui]\nsidebar_start_collapsed = true\n").map_err(Into::into);
+    let load = || {
+        Settings::parse_text("[ui]\nsidebar_start_collapsed = true\n").map_err(crate::Error::from)
+    };
     view.update(cx, |view, cx| view.load_shared_settings_with(load, cx));
     cx.run_until_parked();
     view.update(cx, |view, cx| {
@@ -167,7 +169,13 @@ fn gui_config_load_applies_the_loaded_fonts(cx: &mut TestAppContext) {
         let mut config = view.config.clone();
         config.sidebar.family = "Loaded Sidebar".into();
         config.sidebar.size = 19.;
-        view.load_gui_config_with(move || Ok((config, Default::default())), cx);
+        view.load_gui_config_with(
+            move || {
+                let keymap = crate::config::keymap(&config)?;
+                Ok((config, keymap, Default::default()))
+            },
+            cx,
+        );
         // Completion cannot run until this update returns. No disk writes are needed.
         assert!(view.config_load.is_some());
     });

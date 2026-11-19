@@ -2,6 +2,12 @@
 
 use super::Error;
 
+impl From<sheprd_settings::herdr_settings::Error> for Error {
+    fn from(error: sheprd_settings::herdr_settings::Error) -> Self {
+        Self::Settings(sheprd_settings::Error::from(error))
+    }
+}
+
 impl From<config_loader::ConfigError> for Error {
     fn from(error: config_loader::ConfigError) -> Self {
         // config preserves this cause but does not expose it through Error::source.

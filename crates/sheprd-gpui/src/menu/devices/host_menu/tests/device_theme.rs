@@ -1,9 +1,7 @@
 use super::*;
-use crate::{
-    config::{DeviceSettings, Theme},
-    menu::devices::host_menu::theme::Row,
-};
+use crate::{config::Theme, menu::devices::host_menu::theme::Row};
 use gpui::Entity;
+use sheprd_settings::DeviceSettings;
 
 const PROFILE: &str = "0123456789abcdef0123456789abcdef";
 

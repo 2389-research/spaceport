@@ -1,10 +1,11 @@
 use super::*;
 use crate::{
-    config::{ClipboardToastPosition, Padding, Sides},
+    config::{ClipboardToastPosition, Padding},
     terminal::viewport,
     window::Flash,
 };
 use gpui::{px, size};
+use sheprd_settings::Sides;
 use std::time::{Duration, Instant};
 
 fn draw(cx: &mut gpui::VisualTestContext) {

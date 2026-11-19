@@ -21,7 +21,6 @@ fn every_palette_variant_has_a_message() {
         Error::ProjectRemoved,
         Error::ProjectResponse,
         Error::ProjectRootMissing,
-        Error::ProjectRoots,
         Error::ProjectStateChanged,
         Error::ProjectVariable("CODE_HOME".into()),
         Error::SessionChanged,

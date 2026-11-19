@@ -49,6 +49,8 @@ pub enum Error {
     CoreTerminalRequired,
     #[error("ACP chats are off in Settings")]
     Disabled,
+    #[error(transparent)]
+    Environment(#[from] super::env::Error),
     #[error("{app} is not connected", app = crate::constants::WINDOW_TITLE)]
     NotConnected,
     #[error("chats start on this machine's Herdr or an SSH host's")]
@@ -252,6 +254,7 @@ impl SheprdWindow {
         let cwd = pane.and_then(|pane| pane.foreground_cwd.clone().or_else(|| pane.cwd.clone()));
         let boot = snapshot.boot_id.clone();
         let endpoint = &self.endpoints[self.selected_endpoint];
+        super::check_env(&self.config.chat.env)?;
         let request = endpoint
             .connection
             .request_script(

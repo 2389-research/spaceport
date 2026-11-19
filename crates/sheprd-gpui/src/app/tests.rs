@@ -4,6 +4,7 @@ use super::{Config, InitialAppearance, StartupAppearance, Theme};
 #[cfg(feature = "integration-test")]
 use super::{ConnectTarget, SheprdWindow};
 use crate::config::LayoutMode;
+use crate::keymap::Keymap;
 #[cfg(feature = "integration-test")]
 use gpui::px;
 
@@ -19,7 +20,7 @@ fn startup_appearance_loads_a_coherent_pair_and_reports_errors() {
                 ..Default::default()
             };
             config.layout.mode = LayoutMode::from(crate::config::Density::Compact);
-            Ok(config)
+            Ok((config, Default::default()))
         },
         false,
     );
@@ -33,10 +34,13 @@ fn startup_appearance_loads_a_coherent_pair_and_reports_errors() {
         InitialAppearance::load(|| Err(crate::Error::MissingHome), false),
         InitialAppearance::load(
             || {
-                Ok(Config {
-                    theme: "../invalid".into(),
-                    ..Default::default()
-                })
+                Ok((
+                    Config {
+                        theme: "../invalid".into(),
+                        ..Default::default()
+                    },
+                    Default::default(),
+                ))
             },
             false,
         ),
@@ -98,10 +102,13 @@ fn only_a_plain_launch_hands_off_to_the_running_app() {
 fn startup_resolves_both_sides_so_the_first_frame_needs_no_disk_read() {
     let load = || {
         StartupAppearance::load(|| {
-            Ok(Config {
-                theme: "light:Catppuccin Latte,dark:Nord".into(),
-                ..Default::default()
-            })
+            Ok((
+                Config {
+                    theme: "light:Catppuccin Latte,dark:Nord".into(),
+                    ..Default::default()
+                },
+                Keymap::default(),
+            ))
         })
     };
     assert_eq!(
@@ -110,10 +117,13 @@ fn startup_resolves_both_sides_so_the_first_frame_needs_no_disk_read() {
     );
     assert_eq!(Some(load().select(false).theme), Theme::builtin("Nord"));
     let single = StartupAppearance::load(|| {
-        Ok(Config {
-            theme: "Nord".into(),
-            ..Default::default()
-        })
+        Ok((
+            Config {
+                theme: "Nord".into(),
+                ..Default::default()
+            },
+            Keymap::default(),
+        ))
     });
     assert!(single.light.is_none());
     assert_eq!(Some(single.select(true).theme), Theme::builtin("Nord"));
@@ -132,10 +142,13 @@ fn first_window_frame_uses_startup_layout(cx: &mut gpui::TestAppContext) {
         let (view, cx) = cx.add_window_view(|window, cx| {
             let mut appearance = InitialAppearance::load(
                 || {
-                    Ok(Config {
-                        theme: "Nord".into(),
-                        ..Default::default()
-                    })
+                    Ok((
+                        Config {
+                            theme: "Nord".into(),
+                            ..Default::default()
+                        },
+                        Keymap::default(),
+                    ))
                 },
                 false,
             );

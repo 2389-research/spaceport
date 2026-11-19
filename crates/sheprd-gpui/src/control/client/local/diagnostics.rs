@@ -56,8 +56,8 @@ fn gather() -> String {
     }
     text.push_str("\n== Settings files ==\n");
     let files: [(&str, crate::Result<PathBuf>); 3] = [
-        ("local", Config::local_path()),
-        ("managed", Config::path()),
+        ("local", Config::local_path().map_err(crate::Error::from)),
+        ("managed", Config::path().map_err(crate::Error::from)),
         ("view", Ok(view_settings_path(sheprd_client::local_var))),
     ];
     for (name, path) in &files {
@@ -77,9 +77,7 @@ fn gather() -> String {
             let _ = writeln!(
                 text,
                 "{}",
-                config
-                    .diagnostic()
-                    .unwrap_or_else(|| "No problems found".into())
+                crate::config::diagnostic(&config).unwrap_or_else(|| "No problems found".into())
             );
         }
         Err(error) => {

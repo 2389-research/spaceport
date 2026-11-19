@@ -211,7 +211,7 @@ impl EntityInputHandler for SheprdWindow {
             range,
             cursor,
             input_area(surface, self.bounds, metrics),
-            &self.config.terminal.font(),
+            &crate::config::font_for(&self.config.terminal),
             window,
         ))
     }

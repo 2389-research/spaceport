@@ -2,7 +2,7 @@
 
 use super::Localize;
 use crate::{
-    config::{Error, ThemeParseError, ssh_hosts, tab_layout},
+    config::{Error, ThemeParseError, tab_layout},
     i18n::fl,
 };
 
@@ -10,6 +10,9 @@ impl Localize for Error {
     fn localize(&self) -> String {
         match self {
             // keep-sorted start
+            // The loader's, the parser's and the system's own words.
+            Self::ConfigFile { source, .. } => source.to_string(),
+            Self::ConfigLoad(error) => error.to_string(),
             Self::DeviceTheme { device, source } => fl!(
                 "error-config-device-theme",
                 device = device.as_str(),
@@ -20,6 +23,9 @@ impl Localize for Error {
             }
             Self::EmptyFontFamily(table) => fl!("error-config-empty-font-family", table = *table),
             Self::EmptyTheme => fl!("error-config-empty-theme"),
+            Self::HerdrSettings(error) => error.to_string(),
+            Self::InvalidBackdrop(problem) => problem.localize(),
+            Self::InvalidChatMirror => fl!("error-chat-mirror-config"),
             Self::InvalidChatWidth => fl!("error-config-invalid-chat-width"),
             Self::InvalidDeviceId(device) => fl!(
                 "error-config-invalid-device-id",
@@ -39,6 +45,7 @@ impl Localize for Error {
             Self::InvalidLineHeight(table) => {
                 fl!("error-config-invalid-line-height", table = *table)
             }
+            Self::InvalidProjectRoots => fl!("error-palette-project-roots"),
             Self::InvalidSidebarGap => fl!("error-config-invalid-sidebar-gap"),
             // `max` as Rust writes the `f32`, as the `Display` does.
             Self::InvalidSidebarMetric { key, max } => fl!(
@@ -53,18 +60,32 @@ impl Localize for Error {
             Self::InvalidThemePair => fl!("error-config-invalid-theme-pair"),
             Self::InvalidThemePath => fl!("error-config-invalid-theme-path"),
             Self::InvalidUsageTable => fl!("error-config-invalid-usage-table"),
+            Self::InvalidWorktreeTint(tint) => fl!(
+                "error-worktree-identity-invalid-tint",
+                tint = format!("{tint:?}")
+            ),
             Self::InvalidZenFontSize => fl!("error-config-invalid-zen-font-size"),
             Self::InvalidZenWidth => fl!("error-config-invalid-zen-width"),
+            Self::Io(error) => error.to_string(),
+            Self::Json(error) => error.to_string(),
             Self::KeyNotTable { key } => fl!("error-config-key-not-table", key = key.as_str()),
             Self::MigrationConflict { original, local } => fl!(
                 "error-config-migration-conflict",
                 original = original.display().to_string(),
                 local = local.display().to_string()
             ),
+            Self::MissingHome => fl!("error-missing-home"),
+            Self::Path { path, source } => fl!(
+                "error-path",
+                path = path.display().to_string(),
+                error = source.localize()
+            ),
             Self::PreferencesNotObject => fl!("error-config-preferences-not-object"),
+            Self::RelativeConfigRoot => fl!("error-relative-config-root"),
             Self::RemovedChangeCounts => fl!("error-config-removed-change-counts"),
             Self::RemovedGitHub => fl!("error-config-removed-github"),
             Self::RemovedUpdates => fl!("error-config-removed-updates"),
+            Self::SshHosts(error) => error.localize(),
             Self::ThemeLine { line, key, source } => fl!(
                 "error-config-theme-line",
                 line = *line,
@@ -76,10 +97,16 @@ impl Localize for Error {
                 name = format!("{name:?}"),
                 directories = format!("{directories:?}")
             ),
+            Self::Toml(error) => error.to_string(),
+            Self::TomlEdit(error) => error.to_string(),
             Self::TooManyDevices(limit) => fl!("error-config-too-many-devices", limit = *limit),
             Self::TooManyFontFallbacks(table) => {
                 fl!("error-config-too-many-font-fallbacks", table = *table)
             }
+            Self::UnknownKeybinding(command) => fl!(
+                "error-keymap-unknown-keybinding",
+                command = command.as_str()
+            ),
             Self::UnknownKeys(keys) => fl!("error-config-unknown-keys", keys = keys.join(", ")),
             Self::UnknownLayout(n) => fl!("error-config-unknown-layout", name = format!("{n:?}")),
             // keep-sorted end
@@ -100,7 +127,7 @@ impl Localize for ThemeParseError {
     }
 }
 
-impl Localize for ssh_hosts::Error {
+impl Localize for sheprd_settings::ssh_hosts::Error {
     fn localize(&self) -> String {
         match self {
             // keep-sorted start
@@ -123,6 +150,17 @@ impl Localize for tab_layout::Error {
                     name = format!("{name:?}")
                 )
             }
+        }
+    }
+}
+
+impl Localize for sheprd_settings::BackdropProblem {
+    fn localize(&self) -> String {
+        match self {
+            Self::EmptyImage => fl!("error-backdrop-empty-image"),
+            Self::ImagePathEncoding => fl!("error-backdrop-image-path-encoding"),
+            Self::Opacity => fl!("error-backdrop-opacity"),
+            Self::RelativeImage => fl!("error-backdrop-relative-image"),
         }
     }
 }

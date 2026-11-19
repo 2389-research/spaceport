@@ -4,8 +4,7 @@
 
 use super::Localize;
 use crate::{
-    chat::{Error, Program, Refusal, StartError, page, pasted, visual, widgets},
-    config::chat::{MAX_ENV, MAX_ENV_BYTES},
+    chat::{Error, Program, Refusal, StartError, env, page, pasted, visual, widgets},
     i18n::fl,
 };
 
@@ -19,16 +18,8 @@ impl Localize for Error {
             Self::Bye(reason) => fl!("error-chat-bye", reason = format!("{reason:?}")),
             Self::Closed => fl!("error-chat-closed"),
             Self::Connect(_) => fl!("error-chat-connect"),
-            Self::EnvironmentName { name } => {
-                fl!("error-chat-environment-name", name = name.as_str())
-            }
-            Self::EnvironmentSize => fl!(
-                "error-chat-environment-size",
-                count = MAX_ENV,
-                bytes = MAX_ENV_BYTES
-            ),
+            Self::Environment(error) => error.localize(),
             Self::Handshake => fl!("error-chat-handshake"),
-            Self::MirrorConfig => fl!("error-chat-mirror-config"),
             Self::NoEndpointDir => fl!("error-chat-no-endpoint-dir"),
             Self::NotAttached => fl!("error-chat-not-attached"),
             Self::Overflow => fl!("error-chat-overflow"),
@@ -62,6 +53,7 @@ impl Localize for StartError {
             }
             Self::CoreTerminalRequired => fl!("error-chat-start-core-terminal-required"),
             Self::Disabled => fl!("error-chat-start-disabled"),
+            Self::Environment(error) => error.localize(),
             Self::NotConnected => fl!(
                 "error-chat-start-not-connected",
                 app = crate::constants::WINDOW_TITLE
@@ -181,6 +173,19 @@ impl Localize for widgets::Error {
             Self::TooLarge => fl!("error-chat-card-too-large"),
             Self::TooManyFields => fl!("error-chat-card-too-many-fields"),
             // keep-sorted end
+        }
+    }
+}
+
+impl Localize for env::Error {
+    fn localize(&self) -> String {
+        match self {
+            Self::Name { name } => fl!("error-chat-environment-name", name = name.as_str()),
+            Self::Size => fl!(
+                "error-chat-environment-size",
+                count = env::MAX_ENV,
+                bytes = env::MAX_ENV_BYTES
+            ),
         }
     }
 }

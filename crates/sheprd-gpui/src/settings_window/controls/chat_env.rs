@@ -4,7 +4,7 @@
 // i18n: migrated
 use super::*;
 use crate::{
-    config::chat::{env_text, parse_env},
+    chat::{env_text, parse_env},
     i18n::fl,
 };
 
@@ -67,13 +67,16 @@ impl SettingsWindow {
         self.save_native(
             move || {
                 if env.is_empty() {
-                    return Config::unset_key("chat.env").map(drop);
+                    return Config::unset_key("chat.env")
+                        .map(drop)
+                        .map_err(crate::Error::from);
                 }
                 let mut table = toml_edit::InlineTable::new();
                 for (name, value) in env {
                     table.insert(&name, value.into());
                 }
                 Config::set_key("chat.env", toml_edit::Value::InlineTable(table))
+                    .map_err(crate::Error::from)
             },
             cx,
         );
