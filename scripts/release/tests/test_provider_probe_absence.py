@@ -46,7 +46,7 @@ class ProviderProbeAbsence(unittest.TestCase):
             self.assertNotIn(symbol, usage)
 
     def test_sign_in_config_is_absent(self):
-        example = source("crates/sheprd-gpui/config-gpui.example.toml")
+        example = source("crates/sheprd-settings/config-gpui.example.toml")
         for symbol in ("usage.providers", "browser_cookies", "OPENAI_ADMIN_KEY"):
             self.assertNotIn(symbol, example)
         manifest = source("crates/sheprd-usage/Cargo.toml")
