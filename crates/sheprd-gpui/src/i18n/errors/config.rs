@@ -10,6 +10,9 @@ impl Localize for Error {
     fn localize(&self) -> String {
         match self {
             // keep-sorted start
+            // The loader's, the parser's and the system's own words.
+            Self::ConfigFile { source, .. } => source.to_string(),
+            Self::ConfigLoad(error) => error.to_string(),
             Self::DeviceTheme { device, source } => fl!(
                 "error-config-device-theme",
                 device = device.as_str(),
@@ -55,13 +58,22 @@ impl Localize for Error {
             Self::InvalidUsageTable => fl!("error-config-invalid-usage-table"),
             Self::InvalidZenFontSize => fl!("error-config-invalid-zen-font-size"),
             Self::InvalidZenWidth => fl!("error-config-invalid-zen-width"),
+            Self::Io(error) => error.to_string(),
+            Self::Json(error) => error.to_string(),
             Self::KeyNotTable { key } => fl!("error-config-key-not-table", key = key.as_str()),
             Self::MigrationConflict { original, local } => fl!(
                 "error-config-migration-conflict",
                 original = original.display().to_string(),
                 local = local.display().to_string()
             ),
+            Self::MissingHome => fl!("error-missing-home"),
+            Self::Path { path, source } => fl!(
+                "error-path",
+                path = path.display().to_string(),
+                error = source.localize()
+            ),
             Self::PreferencesNotObject => fl!("error-config-preferences-not-object"),
+            Self::RelativeConfigRoot => fl!("error-relative-config-root"),
             Self::RemovedChangeCounts => fl!("error-config-removed-change-counts"),
             Self::RemovedGitHub => fl!("error-config-removed-github"),
             Self::RemovedUpdates => fl!("error-config-removed-updates"),
@@ -76,6 +88,8 @@ impl Localize for Error {
                 name = format!("{name:?}"),
                 directories = format!("{directories:?}")
             ),
+            Self::Toml(error) => error.to_string(),
+            Self::TomlEdit(error) => error.to_string(),
             Self::TooManyDevices(limit) => fl!("error-config-too-many-devices", limit = *limit),
             Self::TooManyFontFallbacks(table) => {
                 fl!("error-config-too-many-font-fallbacks", table = *table)

@@ -3,8 +3,8 @@
 //! the device footer is drawn, whose change counts a row shows, and whether
 //! the activity bar leads it.
 
-use super::Error;
 use super::fonts::FontSettings;
+use super::{Error, parse_hex};
 use crate::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -127,19 +127,6 @@ impl Default for SidebarStyle {
 }
 
 /// `#rgb` or `#rrggbb`, in either case.
-pub(crate) fn parse_hex(value: &str) -> Option<u32> {
-    let digits = value.strip_prefix('#')?;
-    let expanded: String = match digits.len() {
-        3 => digits.chars().flat_map(|c| [c, c]).collect(),
-        6 => digits.to_owned(),
-        _ => return None,
-    };
-    if !expanded.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return None;
-    }
-    u32::from_str_radix(&expanded, 16).ok()
-}
-
 /// The raw `[sidebar]` table: font keys beside the style keys. Deserialized
 /// by hand so a key this build does not know is still handed to the ignored
 /// key reporter, which a flattened struct would swallow.

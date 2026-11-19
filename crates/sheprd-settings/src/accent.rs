@@ -22,7 +22,7 @@ impl Accent {
     /// The color to use in place of the theme's accent, if any. Reads the
     /// system setting each time, so a theme loaded after the user changed it
     /// picks up the new color.
-    pub(crate) fn color(self) -> Option<u32> {
+    pub fn color(self) -> Option<u32> {
         match self {
             Self::Theme => None,
             #[cfg(windows)]

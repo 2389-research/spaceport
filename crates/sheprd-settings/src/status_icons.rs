@@ -59,7 +59,7 @@ status_icons! {
 /// `status_icons` as a file may hold it: a set, or the retired `rail`, which
 /// drew outline icons with the edge rail and now reads as both.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
-pub(super) enum SavedIcons {
+pub enum SavedIcons {
     #[serde(rename = "rail")]
     Rail,
     #[serde(untagged)]
@@ -68,7 +68,7 @@ pub(super) enum SavedIcons {
 
 impl SavedIcons {
     /// The set, and whether the rail is on when `edge_rail` does not say.
-    pub(super) fn resolve(saved: Option<Self>) -> (StatusIcons, bool) {
+    pub fn resolve(saved: Option<Self>) -> (StatusIcons, bool) {
         match saved {
             Some(Self::Rail) => (StatusIcons::Outline, true),
             Some(Self::Set(set)) => (set, false),

@@ -10,45 +10,25 @@ use crate::{
     i18n::fl,
     keymap::{Binding, DaemonKeys, Keymap, PaneKeys},
 };
-mod accent;
-mod agent_skill;
-mod agents_placement;
 pub(crate) mod backdrop;
-mod bitmap_fonts;
 pub(crate) mod chat;
-mod cjk_fonts;
 mod daemon;
 mod devices;
 mod edit;
-mod error;
 pub(crate) mod favorite_themes;
-mod features;
 mod files;
-mod font_weight;
 mod fonts;
 mod keybindings;
-mod layout;
 mod notifications;
 mod omarchy;
-mod option_as_alt;
-mod padding;
 pub(crate) mod preferences;
-pub(crate) mod sidebar;
 mod sidebar_style;
 pub(crate) mod ssh_hosts;
-pub(crate) mod status_bar;
-mod status_icons;
-mod tab_labels;
-pub(crate) mod tab_layout;
-pub(crate) use sidebar_style::parse_hex;
 mod theme;
 pub(crate) mod watch;
 mod worktrees;
 mod zen;
 
-pub use accent::Accent;
-pub use agent_skill::{AgentSkillConfig, SkillInstall};
-pub use agents_placement::AgentsPlacement;
 pub use backdrop::{Backdrop, Material};
 pub use chat::{ChatLauncher, ChatLayoutMode};
 #[cfg(test)]
@@ -58,45 +38,90 @@ use daemon::{Daemon, daemon_settings};
 use devices::MAX_DEVICES;
 pub(crate) use devices::{DeviceSettings, KeybindingSource};
 pub(crate) use edit::{Layer, parse_value};
-pub(crate) use error::{Error, ThemeParseError};
-pub use features::{Feature, Features};
 use files::write_config;
-pub use font_weight::bold as bold_font_weight;
 pub(crate) use fonts::FontFace;
 use fonts::FontSettings;
 #[cfg(any(test, feature = "integration-test"))]
 pub use fonts::symbol_fallbacks;
 pub use fonts::{FONT_SIZE_RANGE, FONT_SIZE_STEP, FontConfig};
-pub use layout::{Density, Layout, LayoutMode, Style};
 pub(crate) use notifications::NotificationDelivery;
 pub use notifications::{
     BellConfig, ClipboardToast, ClipboardToastPosition, NotificationConfig, SoundConfig,
 };
 use notifications::{ClipboardToastSettings, NotificationSettings};
-pub use option_as_alt::{OptionAsAlt, OptionKeys};
-pub use padding::Padding;
-pub(crate) use padding::{Axis, MAX_PADDING, Side, Sides};
 use serde::Deserialize;
-pub(crate) use sidebar::{
-    AgentLayout, AgentToken, Rows, SidebarLayout, SpaceLayout, SpaceToken, TokenStyle,
+// The settings crate's value types, under the path the app has always named
+// them by. The alias list is temporary: it keeps the first commit of the
+// extraction from touching every importer, and shrinks as later commits move
+// the files that named these values.
+pub use sheprd_settings::{
+    Accent, AgentSkillConfig, AgentsPlacement, Density, Feature, Features, Layout, LayoutMode,
+    OptionAsAlt, OptionKeys, Padding, SkillInstall, StatusBar, StatusIcons, Style, TabLabels,
+    TabLayoutMode,
+};
+pub(crate) use sheprd_settings::{
+    AgentLayout, AgentToken, Axis, Error, MAX_PADDING, Rows, Side, SidebarLayout, Sides,
+    SpaceLayout, SpaceToken, ThemeParseError, TokenStyle, Weight, parse_hex,
+};
+pub(crate) use sheprd_settings::{
+    bitmap_fonts, cjk_fonts, font_weight, status_bar, status_icons, tab_layout,
 };
 pub(crate) use sidebar_style::DeviceFooter;
 pub use sidebar_style::{SelectMode, SidebarOverrides, SidebarStyle};
 pub use ssh_hosts::SshConfig;
-pub use status_bar::StatusBar;
-pub use status_icons::StatusIcons;
 use std::{
     collections::BTreeMap,
     fs,
     io::ErrorKind,
     path::{Path, PathBuf},
 };
-pub use tab_labels::TabLabels;
-pub use tab_layout::TabLayoutMode;
 pub use theme::Theme;
 pub(crate) use theme::mix;
 pub(crate) use theme::{FOLLOW_HERDR, ThemeName};
 pub use zen::{Zen, ZenWidth};
+/// Pads `element`, so the bounds its children are laid out in exclude the
+/// padding.
+pub(crate) fn pad<E: gpui::Styled>(element: E, padding: Padding) -> E {
+    element
+        .pl(gpui::px(padding.x.start()))
+        .pr(gpui::px(padding.x.end()))
+        .pt(gpui::px(padding.y.start()))
+        .pb(gpui::px(padding.y.end()))
+}
+
+/// A configured weight as the renderer's.
+pub(crate) fn weight(weight: Weight) -> gpui::FontWeight {
+    gpui::FontWeight(weight.0)
+}
+
+/// The renderer's weight as a configured one.
+pub(crate) fn settings_weight(weight: gpui::FontWeight) -> Weight {
+    Weight(weight.0)
+}
+
+/// The weight bold cells draw at: a fixed step heavier than `weight`, never
+/// lighter than bold, so bold stays visible over a medium or light base.
+pub(crate) fn bold_font_weight(weight: gpui::FontWeight) -> gpui::FontWeight {
+    self::weight(font_weight::bold(settings_weight(weight)))
+}
+
+/// A settings value as the app titles it, in the reader's language. Settings
+/// carries the message it names; choosing the words is the app's.
+pub(crate) trait Label {
+    fn label(self) -> String;
+}
+
+impl Label for LayoutMode {
+    fn label(self) -> String {
+        crate::i18n::message(self.message(), &[])
+    }
+}
+
+impl Label for TabLayoutMode {
+    fn label(self) -> String {
+        crate::i18n::message(self.message(), &[])
+    }
+}
 
 const DEFAULT_CONFIG: &str = include_str!("../config-gpui.example.toml");
 const MANAGED_HEADER: &str = sheprd_client::settings_files::MANAGED_HEADER;
@@ -244,7 +269,7 @@ impl Default for Config {
             size,
             fallbacks: None,
             line_height_multiple: None,
-            weight: gpui::FontWeight::NORMAL,
+            weight: Weight::NORMAL,
         };
         Self {
             // keep-sorted start

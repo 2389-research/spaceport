@@ -25,7 +25,9 @@ pub(crate) enum ThemeName<'a> {
 }
 
 impl<'a> ThemeName<'a> {
-    pub(crate) fn parse(value: &'a str) -> Result<Self> {
+    /// The pair `value` names, or the single theme it names. Its own error,
+    /// because a device's theme is validated where the file is read.
+    pub(crate) fn parse(value: &'a str) -> Result<Self, Error> {
         let value = value.trim();
         let side = |part: &'a str| {
             let part = part.trim();
@@ -48,7 +50,7 @@ impl<'a> ThemeName<'a> {
             {
                 Ok(Self::System { light, dark })
             }
-            _ => Err(Error::InvalidThemePair.into()),
+            _ => Err(Error::InvalidThemePair),
         }
     }
 

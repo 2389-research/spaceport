@@ -45,7 +45,7 @@ impl DeviceSettings {
             source: Box::new(source),
         };
         if theme.trim().is_empty() {
-            return Err(wrap(Error::EmptyTheme.into()).into());
+            return Err(wrap(Error::EmptyTheme).into());
         }
         ThemeName::parse(theme)
             .map(drop)

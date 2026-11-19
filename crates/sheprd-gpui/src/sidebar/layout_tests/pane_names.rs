@@ -266,7 +266,7 @@ fn the_agent_name_stays_whole_beside_long_labels(cx: &mut gpui::TestAppContext) 
     let (view, cx) = window(cx, snapshot);
     view.update(cx, |view, _| {
         view.config.sidebar_layout.agents.rows =
-            vec![vec![crate::config::sidebar::ConfiguredToken::plain(
+            vec![vec![sheprd_settings::sidebar::ConfiguredToken::plain(
                 crate::config::AgentToken::StateText,
             )]];
     });
@@ -300,7 +300,7 @@ fn the_written_status_stays_beside_long_pane_and_place_labels(cx: &mut gpui::Tes
     let (view, cx) = window(cx, snapshot);
     view.update(cx, |view, _| {
         view.config.sidebar_layout.agents.rows =
-            vec![vec![crate::config::sidebar::ConfiguredToken::plain(
+            vec![vec![sheprd_settings::sidebar::ConfiguredToken::plain(
                 crate::config::AgentToken::StateText,
             )]];
     });

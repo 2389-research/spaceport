@@ -36,7 +36,7 @@ pub enum Button {
 }
 
 impl Button {
-    pub(crate) fn shown(self) -> bool {
+    pub fn shown(self) -> bool {
         self != Self::Hidden
     }
 }
@@ -70,7 +70,7 @@ impl Default for StatusBar {
 
 /// One `[status_bar]` key, as the Settings window saves it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Edit {
+pub enum Edit {
     Usage(Detail),
     KeepAwake(bool),
     KeepAwakeScope(AwakeScope),
@@ -80,8 +80,8 @@ pub(crate) enum Edit {
 }
 
 impl Edit {
-    pub(super) fn entry(self) -> crate::Result<(&'static str, toml_edit::Value)> {
-        use super::edit::spelled;
+    pub fn entry(self) -> crate::Result<(&'static str, toml_edit::Value)> {
+        use crate::toml_value::spelled;
         Ok(match self {
             Self::Usage(detail) => ("usage", spelled(detail)?),
             Self::KeepAwake(shown) => ("keep_awake", shown.into()),

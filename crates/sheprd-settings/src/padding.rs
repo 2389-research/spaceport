@@ -1,22 +1,20 @@
 //! Blank space between a terminal's cells and the edges of its tab group.
-use super::Error;
-use crate::Result;
-use gpui::{Styled, px};
+use crate::{Error, Result};
 
 /// Padding wider than this stops reading as spacing and starts eating the
 /// columns and rows the terminal needs, so each side is held to a band a
 /// window can afford.
-pub(crate) const MAX_PADDING: f32 = 64.;
+pub const MAX_PADDING: f32 = 64.;
 
 /// The direction a pair of sides pads along, named by its `[terminal]` key.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Axis {
+pub enum Axis {
     X,
     Y,
 }
 
 impl Axis {
-    pub(crate) fn key(self) -> &'static str {
+    pub fn key(self) -> &'static str {
         match self {
             Self::X => "padding_x",
             Self::Y => "padding_y",
@@ -26,7 +24,7 @@ impl Axis {
 
 /// One of an axis's two sides: left or top first, right or bottom last.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Side {
+pub enum Side {
     Start,
     End,
 }
@@ -41,13 +39,13 @@ pub struct Sides {
 }
 
 impl Sides {
-    pub(crate) fn new(start: f32, end: f32) -> Option<Self> {
+    pub fn new(start: f32, end: f32) -> Option<Self> {
         let valid = |side: f32| side.is_finite() && (0.0..=MAX_PADDING).contains(&side);
         (valid(start) && valid(end)).then_some(Self { start, end })
     }
 
     /// These sides with one of them moved by `step`, held inside the band.
-    pub(crate) fn stepped(self, side: Side, step: f32) -> Self {
+    pub fn stepped(self, side: Side, step: f32) -> Self {
         let moved = |value: f32| (value + step).clamp(0., MAX_PADDING);
         match side {
             Side::Start => Self {
@@ -61,18 +59,18 @@ impl Sides {
         }
     }
 
-    pub(crate) fn side(self, side: Side) -> f32 {
+    pub fn side(self, side: Side) -> f32 {
         match side {
             Side::Start => self.start,
             Side::End => self.end,
         }
     }
 
-    pub(crate) fn start(self) -> f32 {
+    pub fn start(self) -> f32 {
         self.start
     }
 
-    pub(crate) fn end(self) -> f32 {
+    pub fn end(self) -> f32 {
         self.end
     }
 
@@ -92,7 +90,7 @@ impl Sides {
         };
         sides
             .and_then(|(start, end)| Self::new(start, end))
-            .ok_or(Error::InvalidTerminalPadding(axis.key()).into())
+            .ok_or(Error::InvalidTerminalPadding(axis.key()))
     }
 }
 
@@ -100,15 +98,15 @@ impl Sides {
 /// own size, so the daemon is told about the columns and rows actually drawn.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Padding {
-    pub(crate) x: Sides,
-    pub(crate) y: Sides,
+    pub x: Sides,
+    pub y: Sides,
 }
 
 impl Padding {
     /// Reads `[terminal] padding_x` and `padding_y`. The deprecated
     /// `[layout] sidebar_gap` only padded the left side, so it stands in for
     /// that side while `padding_x` is unset.
-    pub(super) fn resolve(
+    pub fn resolve(
         x: Option<&toml::Value>,
         y: Option<&toml::Value>,
         legacy_sidebar_gap: Option<f32>,
@@ -128,20 +126,10 @@ impl Padding {
         Ok(Self { x, y })
     }
 
-    pub(crate) fn axis(self, axis: Axis) -> Sides {
+    pub fn axis(self, axis: Axis) -> Sides {
         match axis {
             Axis::X => self.x,
             Axis::Y => self.y,
         }
-    }
-
-    /// Pads `element`, so the bounds its children are laid out in exclude
-    /// the padding.
-    pub(crate) fn pad<E: Styled>(self, element: E) -> E {
-        element
-            .pl(px(self.x.start))
-            .pr(px(self.x.end))
-            .pt(px(self.y.start))
-            .pb(px(self.y.end))
     }
 }

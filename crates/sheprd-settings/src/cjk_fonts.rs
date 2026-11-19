@@ -13,11 +13,11 @@ use std::collections::BTreeSet;
 /// A platform's CJK families by the script they draw, in the order searched
 /// when no preferred language names a script. A script may list several
 /// families; the first installed one serves it.
-pub(super) type CjkFonts = &'static [(CjkScript, &'static str)];
+pub type CjkFonts = &'static [(CjkScript, &'static str)];
 
 /// Every macOS release since 10.11 ships PingFang, Hiragino Sans, and Apple
 /// SD Gothic Neo.
-pub(super) const MACOS_CJK_FONTS: CjkFonts = &[
+pub const MACOS_CJK_FONTS: CjkFonts = &[
     (CjkScript::Simplified, "PingFang SC"),     // i18n: data
     (CjkScript::Traditional, "PingFang TC"),    // i18n: data
     (CjkScript::HongKong, "PingFang HK"),       // i18n: data
@@ -27,7 +27,7 @@ pub(super) const MACOS_CJK_FONTS: CjkFonts = &[
 
 /// The `UI` cuts are the interface variants Windows draws its own chrome
 /// with. Microsoft JhengHei serves Hong Kong as well as Taiwan.
-pub(super) const WINDOWS_CJK_FONTS: CjkFonts = &[
+pub const WINDOWS_CJK_FONTS: CjkFonts = &[
     (CjkScript::Simplified, "Microsoft YaHei UI"), // i18n: data
     (CjkScript::Traditional, "Microsoft JhengHei UI"), // i18n: data
     (CjkScript::HongKong, "Microsoft JhengHei UI"), // i18n: data
@@ -37,7 +37,7 @@ pub(super) const WINDOWS_CJK_FONTS: CjkFonts = &[
 
 /// Distributions package Noto Sans CJK, its Source Han Sans twin, or only
 /// the older WenQuanYi and Droid faces, which draw Chinese shapes.
-pub(super) const LINUX_CJK_FONTS: CjkFonts = &[
+pub const LINUX_CJK_FONTS: CjkFonts = &[
     (CjkScript::Simplified, "Noto Sans CJK SC"), // i18n: data
     (CjkScript::Traditional, "Noto Sans CJK TC"), // i18n: data
     (CjkScript::HongKong, "Noto Sans CJK HK"),   // i18n: data
@@ -53,7 +53,7 @@ pub(super) const LINUX_CJK_FONTS: CjkFonts = &[
     (CjkScript::Simplified, "Droid Sans Fallback"), // i18n: data
 ];
 
-pub(super) const PLATFORM_CJK_FONTS: CjkFonts = if cfg!(target_os = "linux") {
+pub const PLATFORM_CJK_FONTS: CjkFonts = if cfg!(target_os = "linux") {
     LINUX_CJK_FONTS
 } else if cfg!(windows) {
     WINDOWS_CJK_FONTS
@@ -65,10 +65,7 @@ pub(super) const PLATFORM_CJK_FONTS: CjkFonts = if cfg!(target_os = "linux") {
 /// `language` setting when it names a CJK language, else the first such
 /// language the system prefers. The setting counts even before messages in
 /// that language exist, since the glyphs are wanted either way.
-pub(super) fn preferred_script(
-    language: &Language,
-    system: &[LanguageIdentifier],
-) -> Option<CjkScript> {
+pub fn preferred_script(language: &Language, system: &[LanguageIdentifier]) -> Option<CjkScript> {
     let configured = match language {
         Language::Locale(locale) if locale.pseudo().is_none() => Some(locale.id()),
         Language::Locale(_) | Language::System => None,
@@ -79,7 +76,7 @@ pub(super) fn preferred_script(
 /// The installed families of `fonts` to search for CJK glyphs: the first
 /// installed family of each script, the `preferred` script's first and the
 /// rest in table order, each family once.
-pub(super) fn cjk_fallbacks(
+pub fn cjk_fallbacks(
     fonts: CjkFonts,
     preferred: Option<CjkScript>,
     installed: &BTreeSet<String>,

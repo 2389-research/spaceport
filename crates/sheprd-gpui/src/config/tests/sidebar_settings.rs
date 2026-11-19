@@ -233,7 +233,7 @@ fn compact_layout_is_opt_in() -> anyhow::Result<()> {
     ] {
         assert!(matches!(
             LayoutMode::try_from(name),
-            Err(crate::Error::Settings(Error::UnknownLayout(unknown))) if unknown == name
+            Err(Error::UnknownLayout(unknown)) if unknown == name
         ));
     }
     for value in ["'unknown'", "'rounded'", "'normal-square'", "true", "1"] {

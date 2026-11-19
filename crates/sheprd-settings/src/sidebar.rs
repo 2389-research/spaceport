@@ -2,7 +2,7 @@
 use serde::Deserialize;
 use std::{collections::BTreeMap, str::FromStr};
 
-pub(crate) const MAX_ROWS: usize = 16;
+pub const MAX_ROWS: usize = 16;
 const MAX_TOKENS_PER_ROW: usize = 16;
 const MAX_RULES: usize = 16;
 const MAX_CUSTOM_TOKEN_LEN: usize = 32;
@@ -40,7 +40,7 @@ pub struct SidebarLayout {
 
 impl SidebarLayout {
     /// Defaults when `[ui.sidebar]` is absent; unrelated tables are ignored.
-    pub(crate) fn from_daemon_config(table: &toml::Table) -> Result<Self, toml::de::Error> {
+    pub fn from_daemon_config(table: &toml::Table) -> Result<Self, toml::de::Error> {
         let Some(sidebar) = table.get("ui").and_then(|ui| ui.get("sidebar")) else {
             return Ok(Self::default());
         };
@@ -61,7 +61,7 @@ pub struct AgentLayout {
 }
 
 impl AgentLayout {
-    pub(crate) fn shows_status_text(&self, agent: Option<&str>) -> bool {
+    pub fn shows_status_text(&self, agent: Option<&str>) -> bool {
         self.rows_for(agent)
             .iter()
             .flatten()
@@ -326,20 +326,24 @@ struct TokenColor(u32);
 impl<'de> Deserialize<'de> for TokenColor {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let value = String::deserialize(deserializer)?;
-        parse_color(&value)
+        parse_hex(&value)
             .map(Self)
             .ok_or_else(|| serde::de::Error::custom(SidebarConfigError::InvalidColor))
     }
 }
 
-fn parse_color(value: &str) -> Option<u32> {
-    let hex = value.strip_prefix('#')?;
-    if !matches!(hex.len(), 3 | 6) || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+/// `#RGB` or `#RRGGBB`, as packed RGB, or `None` for anything else.
+pub fn parse_hex(value: &str) -> Option<u32> {
+    let digits = value.strip_prefix('#')?;
+    let expanded: String = match digits.len() {
+        3 => digits.chars().flat_map(|c| [c, c]).collect(),
+        6 => digits.to_owned(),
+        _ => return None,
+    };
+    if !expanded.bytes().all(|b| b.is_ascii_hexdigit()) {
         return None;
     }
-    gpui::Rgba::try_from(value)
-        .ok()
-        .map(|color| u32::from(color) >> 8)
+    u32::from_str_radix(&expanded, 16).ok()
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]

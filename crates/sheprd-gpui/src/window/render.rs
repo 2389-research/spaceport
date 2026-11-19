@@ -270,8 +270,7 @@ impl Render for SheprdWindow {
         let find_bar = self.render_find_bar(surface.as_deref(), cx);
         let copy_badge = self.render_copy_mode_badge(surface.as_deref(), cx);
         let chats = self.render_chats(surface.as_deref(), cx);
-        let terminal = padding
-            .pad(div())
+        let terminal = crate::config::pad(div(), padding)
             .id("terminal")
             .debug_selector(|| "terminal".into())
             .when(self.hovered_terminal_link, |terminal| {

@@ -2,11 +2,11 @@
 //! CJK cascades.
 use super::Error;
 use super::{
-    Config, cjk_fonts,
+    Config, Weight, cjk_fonts,
     font_weight::{self, MissingWeight},
 };
 use crate::Result;
-use gpui::{Font, FontFallbacks, FontWeight};
+use gpui::{Font, FontFallbacks};
 use serde::Deserialize;
 use std::{collections::BTreeSet, ops::RangeInclusive};
 
@@ -284,7 +284,7 @@ pub struct FontConfig {
     /// changes. `None` keeps the default of 20/14.
     pub line_height_multiple: Option<f32>,
     /// Weight of regular text; bold text draws at [`font_weight::bold`] of it.
-    pub weight: FontWeight,
+    pub weight: Weight,
 }
 
 impl FontConfig {
@@ -302,7 +302,7 @@ impl FontConfig {
     /// missing-glyph box unless the cascade names an icon font explicitly.
     pub fn font(&self) -> Font {
         let mut font = gpui::font(self.family.clone());
-        font.weight = self.weight;
+        font.weight = crate::config::weight(self.weight);
         font.fallbacks = self
             .fallbacks
             .as_ref()
@@ -410,9 +410,9 @@ impl Config {
     /// Records whether the terminal's family lacks a face at its configured
     /// weight. Runs after [`Self::resolve_fonts_with`], so it checks the
     /// family that will draw, and skips one already reported missing.
-    pub(super) fn check_font_weight(&mut self, has_weight: impl Fn(&str, FontWeight) -> bool) {
+    pub(super) fn check_font_weight(&mut self, has_weight: impl Fn(&str, Weight) -> bool) {
         let terminal = &self.terminal;
-        self.missing_weight = (terminal.weight != FontWeight::NORMAL
+        self.missing_weight = (terminal.weight != Weight::NORMAL
             && !terminal.family.starts_with('.')
             && !self.missing_fonts.contains(&terminal.family)
             && !has_weight(&terminal.family, terminal.weight))

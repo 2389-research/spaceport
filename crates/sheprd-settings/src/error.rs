@@ -1,16 +1,28 @@
 //! Why the user's settings or a theme could not be loaded, validated, or edited.
 
-use std::path::PathBuf;
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     // keep-sorted start
+    /// A configuration file that could not be read at the URI given.
+    #[error("{source}")]
+    ConfigFile {
+        uri: Option<String>,
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+    #[error("{0}")]
+    ConfigLoad(#[source] config_loader::ConfigError),
     /// A `[devices.<id>]` theme that does not parse, named by its device.
     #[error("devices.{device}.theme: {source}")]
     DeviceTheme {
         device: String,
         #[source]
-        source: Box<crate::Error>,
+        source: Box<Error>,
     },
     #[error("{0}.fallback families must not be empty")]
     EmptyFontFallback(&'static str),
@@ -54,12 +66,26 @@ pub enum Error {
     InvalidZenFontSize,
     #[error("zen.width must be 20 to 1000 columns, or a percentage from \"10%\" to \"100%\"")]
     InvalidZenWidth,
+    #[error("{0}")]
+    Io(#[from] io::Error),
+    #[error("{0}")]
+    Json(#[from] serde_json::Error),
     #[error("{key}: a part of this key holds a value, not a table; unset that part first")]
     KeyNotTable { key: String },
     #[error("Cannot migrate {}: {} already contains different settings. Merge your old settings into the local file, then remove the old config; it will be regenerated.", original.display(), local.display())]
     MigrationConflict { original: PathBuf, local: PathBuf },
+    #[error("HOME is not set")]
+    MissingHome,
+    #[error("{}: {source}", path.display())]
+    Path {
+        path: PathBuf,
+        #[source]
+        source: Box<Error>,
+    },
     #[error("preferences must be an object")]
     PreferencesNotObject,
+    #[error("XDG_CONFIG_HOME must be an absolute path")]
+    RelativeConfigRoot,
     #[error("sidebar.change_counts was removed; remove this setting")]
     RemovedChangeCounts,
     #[error("[github] account settings were removed; remove this table from config-gpui.toml")]
@@ -78,6 +104,10 @@ pub enum Error {
         name: String,
         directories: Vec<PathBuf>,
     },
+    #[error("{0}")]
+    Toml(#[from] toml::de::Error),
+    #[error("{0}")]
+    TomlEdit(#[from] toml_edit::TomlError),
     #[error("[devices] must list at most {0} devices")]
     TooManyDevices(usize),
     #[error("{0}.fallback must list at most 8 families")]
@@ -103,3 +133,27 @@ pub enum ThemeParseError {
     #[error("palette index must be between 0 and 255")]
     PaletteIndexOutOfRange,
 }
+
+impl From<config_loader::ConfigError> for Error {
+    fn from(error: config_loader::ConfigError) -> Self {
+        // config preserves this cause but does not expose it through Error::source.
+        match error {
+            config_loader::ConfigError::FileParse { uri, cause } => {
+                Self::ConfigFile { uri, source: cause }
+            }
+            error => Self::ConfigLoad(error),
+        }
+    }
+}
+
+impl Error {
+    /// This failure, as one concerning `path`.
+    pub fn at_path(self, path: &Path) -> Self {
+        Self::Path {
+            path: path.to_owned(),
+            source: Box::new(self),
+        }
+    }
+}
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;

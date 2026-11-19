@@ -11,7 +11,7 @@ fn every_config_variant_has_a_message() {
     assert_localized(&[
         Error::DeviceTheme {
             device: "ssh-build-box".into(),
-            source: Box::new(crate::Error::NoTab),
+            source: Box::new(Error::EmptyTheme),
         },
         Error::EmptyFontFallback("font"),
         Error::EmptyFontFamily("font"),

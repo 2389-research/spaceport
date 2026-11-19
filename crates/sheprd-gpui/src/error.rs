@@ -205,7 +205,7 @@ pub enum Error {
     #[error(transparent)]
     ServerKeybindings(#[from] crate::keymap::daemon::Error),
     #[error(transparent)]
-    Settings(#[from] crate::config::Error),
+    Settings(#[from] sheprd_settings::Error),
     #[error("Could not finish saving Settings: {0}")]
     SettingsSave(#[source] std::sync::Arc<Error>),
     #[error("Could not install the agent skill at {}: {source}", path.display())]

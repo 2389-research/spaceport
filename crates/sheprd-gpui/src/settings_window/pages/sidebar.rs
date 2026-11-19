@@ -6,8 +6,8 @@
 use super::{SettingsWindow, catalog, on_value, ui};
 use crate::{
     config::{
-        AgentsPlacement, Config, DeviceFooter, LayoutMode, SelectMode, SidebarOverrides,
-        preferences::Preference,
+        AgentsPlacement, Config, DeviceFooter, Label as _, LayoutMode, SelectMode,
+        SidebarOverrides, preferences::Preference,
     },
     i18n::{self, fl},
     settings_window::{

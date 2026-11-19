@@ -1,5 +1,8 @@
 use super::*;
-use crate::{browser::Store, config::TabLayoutMode};
+use crate::{
+    browser::Store,
+    config::{Label as _, TabLayoutMode},
+};
 
 /// A window whose strip lists a working tab, a plain one, a zoomed one, and
 /// a titled page, in `mode`.

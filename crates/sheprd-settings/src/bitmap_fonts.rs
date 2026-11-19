@@ -10,8 +10,8 @@
 /// Whether swash would panic on some glyph of face `index` in `data`: a
 /// byte-aligned 1, 2, or 4 bit EBDT mask whose width is zero. Packed and
 /// 8 bit masks decode without dividing rows, so they are safe at any width.
-#[cfg(any(target_os = "linux", test))]
-pub(super) fn has_undrawable_bitmap(data: &[u8], index: u32) -> bool {
+#[cfg(any(target_os = "linux", test, feature = "test-support"))]
+pub fn has_undrawable_bitmap(data: &[u8], index: u32) -> bool {
     use skrifa::{
         FontRef, GlyphId,
         bitmap::{BitmapData, BitmapFormat, BitmapStrikes, MaskData},
@@ -45,7 +45,7 @@ pub(super) fn has_undrawable_bitmap(data: &[u8], index: u32) -> bool {
 /// system font database is built once, off the UI thread, by the first
 /// config resolution that asks.
 #[cfg(target_os = "linux")]
-pub(super) fn is_undrawable(family: &str) -> bool {
+pub fn is_undrawable(family: &str) -> bool {
     use std::sync::OnceLock;
     static FONTS: OnceLock<fontdb::Database> = OnceLock::new();
     let fonts = FONTS.get_or_init(|| {
@@ -65,6 +65,6 @@ pub(super) fn is_undrawable(family: &str) -> bool {
 
 /// macOS and Windows rasterize through CoreText and DirectWrite, not swash.
 #[cfg(not(target_os = "linux"))]
-pub(super) fn is_undrawable(_family: &str) -> bool {
+pub fn is_undrawable(_family: &str) -> bool {
     false
 }

@@ -5,7 +5,7 @@ use windows_sys::Win32::UI::{
 };
 
 /// Whether a contrast theme is on.
-pub(super) fn high_contrast() -> bool {
+pub fn high_contrast() -> bool {
     let mut info = HIGHCONTRASTW {
         cbSize: size_of::<HIGHCONTRASTW>() as u32,
         ..Default::default()

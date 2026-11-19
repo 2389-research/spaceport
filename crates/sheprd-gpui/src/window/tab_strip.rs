@@ -669,9 +669,7 @@ impl SheprdWindow {
             Shown::Page(_) | Shown::Empty => ("".into(), fl!("tab-strip-nothing")),
         };
         let elsewhere = matches!(shown, Shown::Elsewhere(_));
-        self.config
-            .terminal_padding
-            .pad(div())
+        crate::config::pad(div(), self.config.terminal_padding)
             .id(SharedString::from(slot.selector("stand-in")))
             .debug_selector(move || slot.selector("stand-in"))
             .flex()

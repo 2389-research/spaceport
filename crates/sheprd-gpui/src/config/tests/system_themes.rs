@@ -31,10 +31,7 @@ fn theme_names_parse_a_system_pair_in_either_order() -> anyhow::Result<()> {
         "light:Nord,Dracula",
     ] {
         assert!(
-            matches!(
-                ThemeName::parse(value),
-                Err(crate::Error::Settings(Error::InvalidThemePair))
-            ),
+            matches!(ThemeName::parse(value), Err(Error::InvalidThemePair)),
             "{value}"
         );
     }

@@ -1,9 +1,9 @@
 use super::*;
-use crate::config::{Config, FontConfig, bold_font_weight};
+use crate::config::{Config, FontConfig, Weight, bold_font_weight};
 
 /// The terminal face as the config builds it, so these checks follow a
 /// `[terminal] weight` setting all the way to the painter.
-fn terminal_font(weight: FontWeight) -> Font {
+fn terminal_font(weight: Weight) -> Font {
     FontConfig {
         weight,
         ..Config::default().terminal
@@ -19,15 +19,15 @@ fn bold() -> usize {
 
 #[test]
 fn regular_and_bold_cells_shape_relative_to_the_configured_weight() {
-    let font = terminal_font(FontWeight::MEDIUM);
-    assert_eq!(font.weight, FontWeight::MEDIUM);
+    let font = terminal_font(Weight::MEDIUM);
+    assert_eq!(crate::config::settings_weight(font.weight), Weight::MEDIUM);
     assert_eq!(
         glyphs::styled_font(&font, REGULAR).weight,
         FontWeight::MEDIUM
     );
     assert_eq!(
         glyphs::styled_font(&font, bold()).weight,
-        bold_font_weight(FontWeight::MEDIUM)
+        bold_font_weight(crate::config::weight(Weight::MEDIUM))
     );
     // Italic keeps the weight; bold italic takes both.
     let bold_italic = glyphs::styled_font(&font, glyphs::style(BOLD | ITALIC));
@@ -98,13 +98,13 @@ fn a_weight_only_change_discards_cached_glyphs(cx: &mut TestAppContext) {
         styles
     };
 
-    let medium = terminal_font(FontWeight::MEDIUM);
+    let medium = terminal_font(Weight::MEDIUM);
     draw(medium.clone());
     assert_eq!(painter.borrow().config.as_ref(), Some(&medium));
     assert_eq!(cached_styles(&painter.borrow()), [REGULAR, bold()]);
 
     // Only the weight differs, and that alone must reshape both styles.
-    let normal = terminal_font(FontWeight::NORMAL);
+    let normal = terminal_font(Weight::NORMAL);
     assert_eq!(
         Font {
             weight: FontWeight::MEDIUM,

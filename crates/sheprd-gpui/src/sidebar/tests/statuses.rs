@@ -39,7 +39,7 @@ fn status_slots_are_fixed_for_each_set_and_font_size() {
             size,
             fallbacks: None,
             line_height_multiple: None,
-            weight: gpui::FontWeight::NORMAL,
+            weight: crate::config::Weight::NORMAL,
         };
         let drawn =
             Indicators::new(None, StatusIcons::Solid, false, false, &Theme::default()).width(&font);
@@ -74,7 +74,7 @@ fn wide_mark_rows_keep_layout_density_and_expand_child_indent() {
         size: 20.,
         fallbacks: None,
         line_height_multiple: None,
-        weight: gpui::FontWeight::NORMAL,
+        weight: crate::config::Weight::NORMAL,
     };
     let theme = Theme::default();
     for mode in [
@@ -222,7 +222,7 @@ fn child_gutter_lines_land_on_whole_device_pixels() {
         size: 12.,
         fallbacks: None,
         line_height_multiple: None,
-        weight: gpui::FontWeight::NORMAL,
+        weight: crate::config::Weight::NORMAL,
     };
     for scale in [1., 2., 3.] {
         let row = Bounds::new(point(px(0.), px(244.)), size(px(231.), px(40.)));

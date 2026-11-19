@@ -33,11 +33,6 @@ macro_rules! tab_layouts {
                 }
             }
 
-            /// How menus title it.
-            pub fn label(self) -> String {
-                crate::i18n::message(self.message(), &[])
-            }
-
             /// The message naming it.
             pub const fn message(self) -> &'static str {
                 match self {

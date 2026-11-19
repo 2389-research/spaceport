@@ -16,7 +16,7 @@ use crate::{
         Copy, Cut, Paste, RingBellPreview, SelectAll, SetChatLayout, SetLayout, SetTabLayout,
         ShowToastPreview, TogglePseudoLocale, ToggleSlowAnimations,
     },
-    config::{ChatLayoutMode, Config, LayoutMode, TabLayoutMode},
+    config::{ChatLayoutMode, Config, Label as _, LayoutMode, TabLayoutMode},
     controls::Command,
 };
 use gpui::{App, Menu, MenuItem, OsAction};

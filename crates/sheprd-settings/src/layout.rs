@@ -1,6 +1,5 @@
 //! Named sidebar layouts.
-use super::Error;
-use crate::Result;
+use crate::{Error, Result};
 use serde::Deserialize;
 
 /// Sidebar layout and spacing the config file can adjust.
@@ -11,7 +10,7 @@ pub struct Layout {
     /// files written before `[terminal] padding_x` keep loading: the gap
     /// stands in for the terminal's left padding while that key is unset.
     // TODO: remove once config files have had a few releases to move over.
-    pub(crate) legacy_sidebar_gap: Option<f32>,
+    pub legacy_sidebar_gap: Option<f32>,
 }
 
 /// How much the sidebar fits: spacing, indents, and which details show.
@@ -58,7 +57,7 @@ impl Default for LayoutMode {
 
 impl LayoutMode {
     /// `ALL`'s names, for errors that list what a config may say.
-    pub(super) const NAMES: &'static [&'static str] = &[
+    pub const NAMES: &'static [&'static str] = &[
         "normal",
         "compact",
         "comfortable",
@@ -139,11 +138,6 @@ impl LayoutMode {
         }
     }
 
-    /// How menus title it.
-    pub fn label(self) -> String {
-        crate::i18n::message(self.message(), &[])
-    }
-
     /// The message naming it.
     pub const fn message(self) -> &'static str {
         match self {
@@ -170,13 +164,13 @@ impl From<Density> for LayoutMode {
 }
 
 impl TryFrom<&str> for LayoutMode {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(name: &str) -> Result<Self> {
         Self::ALL
             .into_iter()
             .find(|mode| mode.name() == name)
-            .ok_or_else(|| Error::UnknownLayout(name.to_owned()).into())
+            .ok_or_else(|| Error::UnknownLayout(name.to_owned()))
     }
 }
 

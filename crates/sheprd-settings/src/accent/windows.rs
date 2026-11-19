@@ -9,7 +9,7 @@ const VALUE: &str = "AccentColor";
 
 /// The accent as packed RGB, or `None` when the value is missing, as it is
 /// until the user first picks a color.
-pub(super) fn accent() -> Option<u32> {
+pub fn accent() -> Option<u32> {
     let wide = |text: &str| text.encode_utf16().chain([0]).collect::<Vec<u16>>();
     let (key, value) = (wide(KEY), wide(VALUE));
     let mut data = 0_u32;

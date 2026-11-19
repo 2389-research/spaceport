@@ -39,7 +39,7 @@ pub(super) fn theme(
         return;
     }
     if let Err(error) = ThemeName::parse(&name) {
-        incoming.respond(failed(&error));
+        incoming.respond(failed(&Error::from(error)));
         return;
     }
     let handle = match window_for(caller, cx) {
