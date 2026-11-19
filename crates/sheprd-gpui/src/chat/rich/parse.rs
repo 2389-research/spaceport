@@ -1,12 +1,15 @@
 // ABOUTME: Builds bounded rich blocks from Markdown while preserving source semantics.
 // ABOUTME: Normalizes math candidates and leaves ordinary source ready for the final parser.
-use super::{Block, Fence, Inline, Kind, MathMode, Style, formula, math_input::Normalized};
-use crate::chat::visual::{Source, VisualId, Visuals};
+use super::{
+    Block, Fence, Inline, Kind, MathMode, SourceTail, Style, code_id, formula,
+    math_input::Normalized,
+};
+use crate::chat::visual::{Source, Visuals};
 use pulldown_cmark::{Alignment, CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
 use std::{collections::HashMap, ops::Range, sync::Arc};
 
 /// Words of one rich fragment; a longer one uses the plain line renderer.
-const MAX_WORDS: usize = 4_096;
+pub(super) const MAX_WORDS: usize = 4_096;
 /// Markdown events of one rich fragment; a longer one is not rich.
 const MAX_EVENTS: usize = 16_384;
 /// Rows and columns of one table; a larger table makes the fragment plain.
@@ -17,12 +20,16 @@ const MAX_HIGHLIGHTED: usize = 32;
 /// Characters of a fence's language kept.
 const MAX_LANGUAGE: usize = 64;
 
+pub(in crate::chat) fn within_word_limit(text: &str) -> bool {
+    text.split_whitespace().take(MAX_WORDS + 1).count() <= MAX_WORDS
+}
+
 /// Every bounded message uses the same Markdown semantics. Ordinary prose is
 /// laid out as shaped text runs; only mixed math needs individual inline atoms.
 pub(in crate::chat) fn parse(text: &str, visuals: &mut Visuals) -> Option<Vec<Block>> {
     // Inline layout creates native word elements. Oversized rich fragments
     // use the existing bounded source renderer instead of building a huge tree.
-    if text.split_whitespace().take(MAX_WORDS + 1).count() > MAX_WORDS {
+    if !within_word_limit(text) {
         return None;
     }
     let display = text
@@ -83,12 +90,15 @@ enum Mark {
 struct Builder<'a> {
     /// The protected Markdown event ranges index.
     markdown: &'a str,
+    /// EOF after the spaces ordinary Markdown removes.
+    trimmed_end: usize,
     /// Display math sources by the offset of their placeholder.
     display: &'a HashMap<usize, String>,
     visuals: &'a mut Visuals,
     blocks: Vec<Block>,
     /// The paragraph being built.
     content: Vec<Inline>,
+    source_tail: SourceTail,
     kind: Kind,
     style: Style,
     bold: usize,
@@ -119,10 +129,12 @@ impl<'a> Builder<'a> {
     ) -> Self {
         Self {
             markdown,
+            trimmed_end: markdown.trim_end_matches(' ').len(),
             display,
             visuals,
             blocks: Vec::new(),
             content: Vec::new(),
+            source_tail: SourceTail::Unmapped,
             kind: Kind::Paragraph,
             style: Style::default(),
             bold: 0,
@@ -149,11 +161,14 @@ impl<'a> Builder<'a> {
                 kind: self.kind,
                 indent: self.lists.len().saturating_sub(1),
                 content: std::mem::take(&mut self.content),
+                source_tail: self.source_tail,
             });
         }
+        self.source_tail = SourceTail::Unmapped;
     }
 
     fn text(&mut self, text: &str) {
+        self.source_tail = SourceTail::Unmapped;
         push_text(&mut self.content, text, &self.style);
     }
 
@@ -185,8 +200,22 @@ impl<'a> Builder<'a> {
                 }
             }
             Event::DisplayMath(source) => self.display_math(&source, range),
-            Event::Text(text) => push_linked_text(&mut self.content, &text, &self.style),
-            Event::Html(text) | Event::InlineHtml(text) => self.text(&text),
+            Event::Text(text) => {
+                self.source_tail = if range.end >= self.trimmed_end {
+                    SourceTail::Trimmed
+                } else {
+                    SourceTail::Unmapped
+                };
+                push_linked_text(&mut self.content, &text, &self.style);
+            }
+            Event::Html(text) | Event::InlineHtml(text) => {
+                self.text(&text);
+                self.source_tail = if range.end == self.markdown.len() {
+                    SourceTail::Verbatim
+                } else {
+                    SourceTail::Unmapped
+                };
+            }
             Event::Code(text) => {
                 let mut style = self.style.clone();
                 style.code = true;
@@ -205,6 +234,7 @@ impl<'a> Builder<'a> {
                     kind: Kind::Rule,
                     indent: 0,
                     content: Vec::new(),
+                    source_tail: SourceTail::Unmapped,
                 });
             }
             _ => {}
@@ -283,6 +313,7 @@ impl<'a> Builder<'a> {
                 self.table = Some(align);
             }
             Tag::TableHead | Tag::TableRow => self.row.clear(),
+            Tag::TableCell => self.source_tail = SourceTail::Unmapped,
             _ => {}
         }
     }
@@ -325,8 +356,10 @@ impl<'a> Builder<'a> {
                     self.blocks.push(Block::Table {
                         align,
                         rows: std::mem::take(&mut self.rows),
+                        source_tail: self.source_tail,
                     });
                 }
+                self.source_tail = SourceTail::Unmapped;
             }
             _ => {}
         }
@@ -373,7 +406,7 @@ impl<'a> Builder<'a> {
             return;
         };
         let source: Arc<str> = source.into();
-        let id = VisualId::of(("code", &language, &source));
+        let id = code_id(&language, &source);
         if closed && source.len() <= super::MAX_CODE_BYTES && self.codes < MAX_HIGHLIGHTED {
             self.visuals.want(
                 id,

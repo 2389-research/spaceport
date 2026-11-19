@@ -559,8 +559,11 @@ impl ChatPane {
     /// entries whose visible content changed are reprojected.
     pub(crate) fn refresh_text(&mut self) {
         self.prepared.set_expanded(&self.expanded);
-        self.prepared
-            .update(self.session.transcript(), &self.list_keys);
+        self.prepared.update(
+            self.session.transcript(),
+            &self.list_keys,
+            |id, revision| self.session.appended_since(id, revision),
+        );
         self.selection.validate(self.prepared.text());
     }
 }

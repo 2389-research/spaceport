@@ -4,6 +4,9 @@
 use super::*;
 use crate::chat::visual::{Error, Visuals};
 
+mod append_boundaries;
+mod append_provenance;
+mod append_work;
 mod code;
 mod display_math;
 mod parser_work;
@@ -68,7 +71,7 @@ fn a_table_has_cells_alignment_and_inline_content() {
         &mut Visuals::default(),
     )
     .unwrap();
-    let Block::Table { align, rows } = &blocks[0] else {
+    let Block::Table { align, rows, .. } = &blocks[0] else {
         panic!("table")
     };
     assert_eq!(align, &[Alignment::Left, Alignment::Right]);

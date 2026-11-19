@@ -7,7 +7,7 @@ Scope: the chat parsing part of `gfde`, authorized by the existing all-findings 
 Root owns this slice.
 The initial slice excluded publication; Doctor Biz later authorized the aggregate draft and qualification updates.
 
-## Existing contract
+## Initial no-marker contract
 
 Unchanged entry revisions already reuse prepared bodies.
 Changed rich fragments always run math normalization and display protection before the final CommonMark parser.
@@ -116,7 +116,7 @@ They do not establish native frame latency, glyph behavior, or whole-window perf
 
 ## Remaining full-prefix work, November 19
 
-The original-scope audit confirms that changed Agent answers still enter the final CommonMark parser in full.
+On source `f904651ac`, the original-scope audit confirms changed Agent answers enter the final CommonMark parser in full.
 The earlier counter observed only math protection; it could not qualify that remaining cost.
 The test-only meter now counts protection and final-parser input separately at their actual call sites.
 It restores nested scopes and isolates concurrent test threads.
@@ -133,22 +133,76 @@ Log: `/tmp/spaceport-9s44-final-parser-meter-final.log`.
 The first consumer run incorrectly expected the trailing raw space and failed; the corrected display assertion passes.
 These byte counts establish remaining work, rather than an optimization or CPU timing result.
 
-## Next implementation checkpoint
-
-First add a failing work budget through real Session Append events and Prepared updates.
-Use the final-parser meter and verify output against the unchanged full preparation path.
-Consider reusing a prepared trailing paragraph only when validated append provenance and literal text make it safe.
-Keep provenance inside the existing Session reducer; do not add wire fields or another transcript copy.
-Invalidate reuse on replacement, snapshots, truncation, language changes, or incompatible message shapes.
-Fall back to full preparation whenever appended Markdown can change earlier semantics.
-Preserve links, entities, open delimiters, references, math, embedded content, limits, and selectable text.
-Do not substitute throttling, delayed content, or stale formatting for the current streaming result.
-Measure actual parser input and release preparation cost after semantic consumers pass.
-Keep `gfde` open until that implementation and native image qualification have evidence.
-
-The meter receives an independent read-only review with no material finding.
-Host and Windows GNU lint pass with all features and with default features disabled.
-The canonical formatting, size, sorted-region, operations, localization, commit-message, and diff checks pass.
+The `f904651ac` meter checkpoint receives an independent read-only review with no material finding.
+Its host and Windows GNU lints pass with all features and with default features disabled.
+Its canonical static checks and diff check pass.
 Logs: `/tmp/spaceport-9s44-final-parser-meter-lint.log` and `final-parser-meter-static.log`.
+
+## Validated streaming append preparation
+
+Session now records the last replacement alongside each entry revision.
+A snapshot fences all earlier prepared revisions.
+Only successfully applied Append events can prove that an existing prefix stays unchanged.
+The transcript remains the sole raw-text owner; prepared caches retain bounded source positions only.
+
+Literal appends reuse eligible prose, lists, quotes, tables, and unfinished code.
+The parser records whether a final text event reaches its actual input end.
+Paragraphs and tables require that proof, including their ordinary or verbatim space behavior.
+Hidden reference definitions and ignored table cells cannot extend an earlier visible word.
+Code verifies its current raw line and keeps the pinned parser's actual EOF behavior.
+An already clipped message reuses its immutable visible body without scanning the growing hidden suffix.
+
+New syntax and unsupported boundaries use the existing full preparation path immediately.
+Replacement, snapshot, truncation, and locale resets invalidate reuse.
+The existing message, word, event, table, highlight, and visual limits remain authoritative.
+No update is throttled, delayed, or rendered with stale formatting.
+
+The real Session-to-Prepared work regression fails first with 1,059,968 parser bytes for 16,409 source bytes.
+The same generated rich answer now submits 153 bytes.
+Its tests compare every update with fresh full preparation.
+They compare complete bodies, selectable text, cells, atomic ranges, and source offsets.
+They also retain old bodies to verify immutable ownership.
+The full chat scope passes 581 cases, with the existing release-only benchmark ignored.
+Log: `/tmp/spaceport-9s44-append-chat-final.log`.
+
+The expanded list and clipped-source regressions fail before their fixes, with 12 and 262,144 unnecessary parser bytes.
+The first code attempt incorrectly assumes an EOF newline; pinned pulldown-cmark 0.13.6 preserves the raw EOF.
+Raw HTML also preserves spaces that ordinary prose removes.
+The corrected mappings pass the full-versus-append boundary checks.
+Independent review finds a hidden-reference footer regression before publication.
+That exact case fails before parser-owned EOF coverage and passes afterward.
+The narrow follow-up review finds no remaining material issue.
+Logs: `/tmp/spaceport-9s44-append-container-cut-red.log`, `append-code-eof-diagnostic.log`, `append-reference-footer-red.log`, and `append-parser-eof-green.log`.
+
+## Release preparation measurement
+
+One immutable test executable compares full preparation and validated append using the same real Session workload.
+Each case appends 128 generated 128-byte chunks.
+Each mode records nine rounds after two warmups.
+The compiler artifact confirms optimization level three and disabled debug assertions.
+Root runs no concurrent Cargo or test process during timing.
+
+| Source prefix | Full preparation median | Validated append median | Reduction |
+| --- | ---: | ---: | ---: |
+| Plain | 12.103 ms | 1.211 ms | 90.0% |
+| Inline math | 14.762 ms | 1.223 ms | 91.7% |
+| Open code | 4.081 ms | 2.694 ms | 34.0% |
+| Heading and bold prose | 12.244 ms | 1.240 ms | 89.9% |
+
+Full preparation submits about one MiB to the final parser per generated answer.
+Validated append submits only the first 128–153 bytes in these cases.
+The math case also reduces protection-parser input from 1,057,536 bytes to 134 bytes.
+These are elapsed synthetic release preparation measurements, including test counters.
+They do not measure process CPU counters or foreground frame timing.
+
+Artifact: `/tmp/spaceport-9s44-gpui.BOQSp2/spaceport-tests`.
+Log: `/tmp/spaceport-9s44-append-release-benchmark.log`.
+Receipt: `/tmp/spaceport-9s44-append-release-receipt.json`.
+The receipt retains every measured round, compiler profile, executable hash, and qualified source-file hashes.
+Current-head platform CI and authored native image qualification remain pending.
+Kata `gfde` stays open for its remaining original-scope qualification.
+
+The final streaming implementation passes host and Windows GNU lints with all features and default features disabled.
+The canonical formatting, size, sorted-region, operations, localization, commit-message, and diff checks pass.
+Logs: `/tmp/spaceport-9s44-append-final-lint.log` and `append-final-static.log`.
 The existing debug-link unwind warning and external `block 0.1.6` notice remain unchanged.
-No release benchmark or native performance claim follows from this new debug work measurement.

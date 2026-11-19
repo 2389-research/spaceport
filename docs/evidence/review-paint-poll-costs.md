@@ -127,13 +127,14 @@ The independent audit accepts the theme cache, bounded glyph replacement, shared
 Image caching and scrolling have actual decode, cache-callback, geometry, and offscreen Metal evidence.
 They still need the authored foreground visual qualification described above.
 
-Streaming preparation remains an implementation gap.
-`Prepared::update` still scans each changed complete Agent prefix for summaries, then rebuilds its message fragments.
-The rich parser still submits the complete changed fragment to its final CommonMark parser.
-The 17.5 percent synthetic improvement removes redundant math protection work only.
-It does not prove that the final full-prefix work is resolved.
-The current test-only work meter observes that final parser directly through real transcript appends.
-Keep `gfde` open until the remaining work is fixed and qualified.
+At `f904651ac`, streaming preparation remains an implementation gap despite the 17.5 percent no-marker improvement.
+The validated append implementation now reuses parser-owned tails without delaying content.
+It preserves full parsing for syntax changes, hidden definitions, and unsupported boundaries.
+The full chat scope passes 581 cases; parser work drops from 1,059,968 bytes to 153 in the rich fixture.
+Paired synthetic release preparation improves by 34.0–91.7 percent across plain, math, code, and formatted cases.
+See [streaming evidence](review-streaming-parse-costs.md#validated-streaming-append-preparation) for actual rounds, limits, and reviewed regressions.
+Current-head platform CI and the authored native image scene still need qualification.
+Keep `gfde` open until its remaining original scope has evidence.
 
 The separate redraw finding, `gg9v`, requires a release-mode profile first.
 Doctor Biz requested that native keyboard and performance checks remain pending.

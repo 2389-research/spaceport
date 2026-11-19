@@ -2,7 +2,7 @@
 // ABOUTME: Measures synthetic streaming preparation in release mode without a desktop.
 use super::*;
 use crate::chat::prepared::{Body, Part, Prepared};
-use sheprd_chat_protocol::{Change, Entry, EntryId, EntryKind, Transcript};
+use sheprd_chat_protocol::{Change, EntryId};
 use std::{hint::black_box, time::Instant};
 
 #[test]
@@ -34,54 +34,55 @@ fn synthetic_stream_preparation_cost() {
     );
     let chunk = "plain paragraph ".repeat(8);
     assert_eq!(chunk.len(), 128);
-    for (case, prefix) in [("plain", ""), ("math", "$x^2$ ")] {
-        let mut samples = Vec::new();
-        let mut counts = work::Counts::default();
-        for round in 0..11 {
-            let id = EntryId(1);
-            let mut transcript = Transcript::new("Synthetic");
-            transcript
-                .apply(&Change::Push {
-                    entry: Entry {
-                        id,
-                        kind: EntryKind::Agent {
-                            text: prefix.into(),
-                        },
-                    },
-                })
-                .unwrap();
-            let mut prepared = Prepared::default();
-            let (elapsed, bytes) = work::measure(|| {
-                let started = Instant::now();
-                for revision in 1..=128 {
-                    transcript
-                        .apply(&Change::Append {
-                            id,
-                            text: chunk.clone(),
-                        })
-                        .unwrap();
-                    prepared.update(&transcript, &[(id, revision)]);
-                    black_box(prepared.body(id));
-                }
-                started.elapsed().as_nanos()
-            });
-            assert!(matches!(&*prepared.body(id).unwrap(), Body::Message(parts)
+    for (case, prefix) in [
+        ("plain", ""),
+        ("math", "$x^2$ "),
+        ("code", "```text\n"),
+        ("rich", "# Heading\n\n**Streaming** "),
+    ] {
+        for (mode, reuse) in [("full", false), ("append", true)] {
+            let mut samples = Vec::new();
+            let mut counts = work::Counts::default();
+            for round in 0..11 {
+                let id = EntryId(1);
+                let mut session = append_work::session(prefix);
+                let mut prepared = Prepared::default();
+                let (elapsed, bytes) = work::measure(|| {
+                    let started = Instant::now();
+                    for _ in 0..128 {
+                        append_work::apply(
+                            &mut session,
+                            Change::Append {
+                                id,
+                                text: chunk.clone(),
+                            },
+                        );
+                        prepared.update(session.transcript(), &session.keys(), |id, revision| {
+                            reuse && session.appended_since(id, revision)
+                        });
+                        black_box(prepared.body(id));
+                    }
+                    started.elapsed().as_nanos()
+                });
+                assert!(matches!(&*prepared.body(id).unwrap(), Body::Message(parts)
                 if matches!(&parts[..], [Part::Rich(_)])));
-            if round >= 2 {
-                samples.push(elapsed);
-                counts = bytes;
+                if round >= 2 {
+                    samples.push(elapsed);
+                    counts = bytes;
+                }
             }
+            samples.sort_unstable();
+            let result = serde_json::json!({
+                "case": case,
+                "mode": mode,
+                "chunks": 128,
+                "chunk_bytes": chunk.len(),
+                "median_ns": samples[samples.len() / 2],
+                "protection_bytes": counts.protection_bytes,
+                "markdown_bytes": counts.markdown_bytes,
+                "samples_ns": samples,
+            });
+            println!("{result}");
         }
-        samples.sort_unstable();
-        let result = serde_json::json!({
-            "case": case,
-            "chunks": 128,
-            "chunk_bytes": chunk.len(),
-            "median_ns": samples[samples.len() / 2],
-            "protection_bytes": counts.protection_bytes,
-            "markdown_bytes": counts.markdown_bytes,
-            "samples_ns": samples,
-        });
-        println!("{result}");
     }
 }

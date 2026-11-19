@@ -1,11 +1,14 @@
+// ABOUTME: Checks spacing between prepared Markdown block types.
+// ABOUTME: Uses explicit prose fixtures with ordinary source-space handling.
 use super::*;
-use crate::chat::rich::Block;
+use crate::chat::rich::{Block, SourceTail};
 
 fn block(kind: Kind) -> Block {
     Block::Paragraph {
         kind,
         indent: 0,
         content: Vec::new(),
+        source_tail: SourceTail::Unmapped,
     }
 }
 

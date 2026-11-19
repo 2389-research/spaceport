@@ -1,3 +1,5 @@
+// ABOUTME: Renders prepared Markdown blocks with native text and visual elements.
+// ABOUTME: Keeps layout separate from parser source and whitespace metadata.
 //! Native rich blocks. No HTML is executed and code-copy buttons only copy.
 use crate::chat::{
     rich::{Block, Inline, Kind, Style},
@@ -68,6 +70,7 @@ impl SheprdWindow {
                         kind,
                         indent,
                         content,
+                        ..
                     } => self
                         .rich_paragraph(*kind, *indent, content, index, &mut context)
                         .into_any_element(),
@@ -92,7 +95,7 @@ impl SheprdWindow {
                     } => self
                         .rich_code(*id, language, source, index, &mut context)
                         .into_any_element(),
-                    Block::Table { align, rows } => self
+                    Block::Table { align, rows, .. } => self
                         .rich_table(align, rows, index, &mut context)
                         .into_any_element(),
                 };

@@ -22,7 +22,7 @@ fn readable_nodes_share_the_visible_prepared_projection_and_follow_disclosure() 
         },
     }];
     let mut prepared = Prepared::default();
-    prepared.update(&transcript, &[(id, 1)]);
+    prepared.update(&transcript, &[(id, 1)], |_, _| false);
     let folded = prepared.text().entry(id).unwrap();
     assert!(Rc::ptr_eq(&folded, &prepared.text().entry(id).unwrap()));
     fn read<'a>(texts: impl Iterator<Item = &'a str>) -> String {
@@ -34,7 +34,7 @@ fn readable_nodes_share_the_visible_prepared_projection_and_follow_disclosure() 
     assert!(read(folded.texts()).contains("Visible first line"));
     assert!(!read(folded.texts()).contains("hidden tail"));
     prepared.set_expanded(&HashSet::from([id]));
-    prepared.update(&transcript, &[(id, 1)]);
+    prepared.update(&transcript, &[(id, 1)], |_, _| false);
     let expanded = prepared.text().entry(id).unwrap();
     assert!(!Rc::ptr_eq(&folded, &expanded));
     assert_eq!(read(expanded.texts()), source);

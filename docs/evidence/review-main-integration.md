@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `b6214c15b` passes full CI and both native Windows jobs; five original findings remain open.
+Status: `f904651ac` passes full CI; the validated streaming candidate passes local semantic and release checks.
 Kata `9s44` has 48 closed children and five open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
@@ -69,8 +69,12 @@ At that checkpoint, its bounded state-observation correction still needed native
 Source `b6214c15b` subsequently passes full CI with eighteen successful jobs and one unconfigured skip.
 Its native x64 job passes all eight GUI and nineteen UIA cases, including the corrected Settings observer.
 Both Windows native jobs and supply-chain checks pass.
-The original painting/polling audit still finds changed streaming prefixes reparsed in full.
-That implementation gap remains separate from `gg9v`'s release-profile requirement.
+Source `f904651ac` subsequently passes full CI and both native Windows jobs.
+Its x64 job passes eight GUI and twenty UIA cases, including the loaded-layout diagnostic.
+That runner has only US layout `00000409`; no Polish or AltGr delivery claim follows.
+The validated streaming candidate passes 581 chat cases and the paired release preparation workload.
+It reduces synthetic preparation by 34.0–91.7 percent without changing displayed or selectable results.
+Current-head CI and remaining native qualification are pending; `gg9v` still requires its separate foreground profile.
 
 Main advanced again to `4feee1830b1daffa2ea42792478cddd042d348da` during validation.
 PR 124 moves sound policy and playback into `sheprd-sound`, with lenient decoding in `sheprd-lenient`.

@@ -1,3 +1,5 @@
+// ABOUTME: Prepares bounded chat messages and their visual resources by revision.
+// ABOUTME: Reuses proven literal appends without changing Markdown or selectable text.
 //! What the view draws for an entry, prepared when the entry changes rather
 //! than on every frame: message text parsed as Markdown with its Mermaid
 //! fences split out as diagrams, its HTML fences as pages to preview, and
@@ -22,6 +24,8 @@ use std::{
     fmt::Write as _,
     rc::Rc,
 };
+
+mod append;
 
 /// Lines of a tool call's text output shown under it.
 const TOOL_LINES: usize = 6;
@@ -216,6 +220,8 @@ impl Body {
 #[derive(Default)]
 pub(crate) struct Prepared {
     bodies: HashMap<EntryId, (u64, Rc<Body>)>,
+    /// Source spans only; the Session transcript remains the sole raw text owner.
+    tails: HashMap<EntryId, append::Tail>,
     /// Files the transcript's tool calls changed, first change first, with
     /// their lines added and removed summed.
     changed: Vec<DiffSummary>,
@@ -277,9 +283,15 @@ impl Prepared {
     }
 
     /// Prepares the entries whose revision moved and forgets those gone.
-    pub(crate) fn update(&mut self, transcript: &Transcript, keys: &[(EntryId, u64)]) {
+    pub(crate) fn update(
+        &mut self,
+        transcript: &Transcript,
+        keys: &[(EntryId, u64)],
+        can_append: impl Fn(EntryId, u64) -> bool,
+    ) {
         let live: HashSet<EntryId> = keys.iter().map(|(id, _)| *id).collect();
         self.bodies.retain(|id, _| live.contains(id));
+        self.tails.retain(|id, _| live.contains(id));
         for (entry, (_, revision)) in transcript.entries.iter().zip(keys) {
             if self
                 .bodies
@@ -288,38 +300,66 @@ impl Prepared {
             {
                 continue;
             }
-            let visuals = &mut self.visuals;
-            let body = match &entry.kind {
-                EntryKind::User { text, .. } => Body::Message(message(text, Author::User, visuals)),
-                EntryKind::Notice { answers, .. } if !answers.is_empty() => {
-                    let text: Rc<str> = answers_text(answers).into();
-                    let parts = vec![prose(&text, visuals)];
-                    Body::Answers { text, parts }
+            let extended = match (
+                &entry.kind,
+                self.bodies.get(&entry.id),
+                self.tails.get(&entry.id),
+            ) {
+                (EntryKind::Agent { text }, Some((prepared, body)), Some(tail))
+                    if can_append(entry.id, *prepared) =>
+                {
+                    append::extend(body, *tail, text)
                 }
-                EntryKind::Agent { text } => {
-                    let (lines, cut) = release_notes::parse_within(text, MESSAGE);
-                    match super::summary::summary(&lines) {
-                        Some(mut summary) => {
-                            if cut {
-                                summary.lines.push(release_notes::note(&cut_note()));
-                            }
-                            Body::Summary(summary)
-                        }
-                        None => Body::Message(message(text, Author::Agent, visuals)),
-                    }
-                }
-                EntryKind::Image { image, .. } => {
-                    let id = VisualId::of(&image.data);
-                    visuals.want(id, Source::Image(image.clone()));
-                    Body::Image(id)
-                }
-                EntryKind::Tool(tool) => Body::Tool(summarize(&tool.content, visuals)),
-                _ => {
-                    self.bodies.remove(&entry.id);
-                    continue;
-                }
+                _ => None,
             };
-            self.bodies.insert(entry.id, (*revision, Rc::new(body)));
+            let visuals = &mut self.visuals;
+            let (body, reused_tail) = if let Some((body, tail)) = extended {
+                (body, Some(tail))
+            } else {
+                let body = match &entry.kind {
+                    EntryKind::User { text, .. } => {
+                        Body::Message(message(text, Author::User, visuals))
+                    }
+                    EntryKind::Notice { answers, .. } if !answers.is_empty() => {
+                        let text: Rc<str> = answers_text(answers).into();
+                        let parts = vec![prose(&text, visuals)];
+                        Body::Answers { text, parts }
+                    }
+                    EntryKind::Agent { text } => {
+                        let (lines, cut) = release_notes::parse_within(text, MESSAGE);
+                        match super::summary::summary(&lines) {
+                            Some(mut summary) => {
+                                if cut {
+                                    summary.lines.push(release_notes::note(&cut_note()));
+                                }
+                                Body::Summary(summary)
+                            }
+                            None => Body::Message(message(text, Author::Agent, visuals)),
+                        }
+                    }
+                    EntryKind::Image { image, .. } => {
+                        let id = VisualId::of(&image.data);
+                        visuals.want(id, Source::Image(image.clone()));
+                        Body::Image(id)
+                    }
+                    EntryKind::Tool(tool) => Body::Tool(summarize(&tool.content, visuals)),
+                    _ => {
+                        self.bodies.remove(&entry.id);
+                        self.tails.remove(&entry.id);
+                        continue;
+                    }
+                };
+                (Rc::new(body), None)
+            };
+            if let EntryKind::Agent { text } = &entry.kind {
+                self.tails.insert(
+                    entry.id,
+                    reused_tail.unwrap_or_else(|| append::Tail::of(text)),
+                );
+            } else {
+                self.tails.remove(&entry.id);
+            }
+            self.bodies.insert(entry.id, (*revision, body));
         }
         self.text.update(transcript, keys, &self.bodies);
         self.steps.clear();
@@ -365,12 +405,14 @@ impl Prepared {
     /// the language now shown.
     pub(crate) fn forget_text(&mut self) {
         self.bodies.clear();
+        self.tails.clear();
         self.text.clear();
     }
 
     /// Starts over, as after a snapshot that may reuse entry ids.
     pub(crate) fn clear(&mut self) {
         self.bodies.clear();
+        self.tails.clear();
         self.changed.clear();
         self.steps.clear();
         self.text.clear();
@@ -414,6 +456,16 @@ pub(super) fn answers_text(answers: &[QuestionAnswer]) -> String {
     source
 }
 
+/// End of the source admitted by the message byte and line limits.
+fn message_end(text: &str) -> usize {
+    MESSAGE
+        .clip(text)
+        .split_inclusive('\n')
+        .take(MESSAGE.lines)
+        .map(str::len)
+        .sum()
+}
+
 /// A message as Markdown text with its diagrams, pages, and
 /// pictures between it. Only a closed fence becomes a diagram or a page, so
 /// one still streaming shows as code. A user's own text is shown as Markdown,
@@ -421,12 +473,7 @@ pub(super) fn answers_text(answers: &[QuestionAnswer]) -> String {
 /// pasting an earlier reply must not turn the user's bubble into a form that
 /// sends prompts.
 fn message(text: &str, author: Author, visuals: &mut Visuals) -> Vec<Part> {
-    let end = MESSAGE
-        .clip(text)
-        .split_inclusive('\n')
-        .take(MESSAGE.lines)
-        .map(str::len)
-        .sum();
+    let end = message_end(text);
     let cut = end < text.len();
     let text = &text[..end];
     let mut parts = Vec::new();

@@ -28,7 +28,7 @@ fn appended_transcript_reports_final_parser_work_without_losing_text() {
                     text: chunk.clone(),
                 })
                 .unwrap();
-            prepared.update(&transcript, &[(id, revision)]);
+            prepared.update(&transcript, &[(id, revision)], |_, _| false);
         }
     });
     let body = prepared.body(id).unwrap();
