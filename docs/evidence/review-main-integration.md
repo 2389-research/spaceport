@@ -51,6 +51,19 @@ Its original native Linux/Windows qualification remains open under `3wd4`.
 
 ## Sound extraction integration
 
+Main advanced to `b2a82175c3e54ecc529136d95ef23335b9ce0368` through documentation PRs 130 and 131.
+The integration branch merges that three-path delta without conflicts.
+It retains the sound dependency correction and the browser extraction proposal.
+Rust source and dependency graphs match the validated pre-merge tree.
+The browser proposal's Store path policy remains a future design decision.
+The merge does not claim a link-size or startup improvement from sound extraction.
+
+Current local validation passes forty-one command tests and seventy-three keymap, prefix, and resume cases.
+Both canonical host and Windows GNU lint configurations pass.
+The corrected native terminal harness also passes focused Windows lint.
+Static checks pass after formatting the final Linux override assertion.
+Linux-specific GPUI assertions and the corrected native enclosing-line case still require CI.
+
 Main advanced again to `4feee1830b1daffa2ea42792478cddd042d348da` during validation.
 PR 124 moves sound policy and playback into `sheprd-sound`, with lenient decoding in `sheprd-lenient`.
 The draft branch incorporates that 63-path delta.

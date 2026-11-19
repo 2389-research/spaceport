@@ -85,9 +85,15 @@ malformed TOML fails with `toml`'s own error in the caller.
 
 ### `sheprd-sound`
 
-The first extraction that took a dependency out of the app rather than just
-lines: `rodio` and the audio stack below it (`cpal`, CoreAudio, `symphonia`)
-left `sheprd-gpui`'s build graph for good.
+The first extraction that moved a dependency out of the app crate's own
+direct dependencies: `rodio` (with `cpal`, CoreAudio, `symphonia` below it)
+is no longer in `sheprd-gpui`'s `[dependencies]`, `sheprd-sound` can be
+tested without building GPUI, and the audio code has its own crate. The
+stack is still in the app's *transitive* graph — `sheprd-gpui` depends on
+`sheprd-sound`, which depends on `rodio` — so a built app binary links it
+as before; the win is ownership and test isolation, not link size. A
+boundary that actually excludes those dependencies would need the sound
+feature to be optional, which is a product decision, not a refactor.
 
 | Before | After |
 | --- | --- |

@@ -73,13 +73,20 @@ Deviations:
 - `MAX_FILE_BYTES` is a named constant in `config.rs` (the app had
   `1_048_576`/`1_048_577` literals inline).
 
-## Step 2 — playback, worker, and `rodio` leaving the app (`92b256abf`)
+## Step 2 — playback, worker, and `rodio` leaving the app's direct dependencies (`92b256abf`)
 
 `playback.rs` and `service.rs` move; `crates/sheprd-gpui/src/sound*` and
 `mod sound;` are deleted. `Service::new(path: PathBuf, volume: u8)` takes the
 settings file and the starting volume, and `app::shared_sound` passes
 `config::view_settings_path(sheprd_client::local_var)` and
 `config::SoundConfig::default().volume`.
+
+A correction recorded after merge: `rodio` left `sheprd-gpui`'s *direct*
+dependencies, not its build graph — the crate depends on `sheprd-sound`,
+which depends on `rodio`, so the audio stack still builds and links with the
+app. The extraction's win is ownership and `cargo test -p sheprd-sound`
+without GPUI, not link size (`docs/gpui-split-plan.md` says this correctly
+now).
 
 - **Error shape** as section 3: `sheprd_sound::Error` owns the seven playback
   variants (the three `impl From<rodio::…> for crate::Error` blocks are gone)
