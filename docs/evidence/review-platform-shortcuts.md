@@ -240,7 +240,11 @@ Crew records 3wd4 as done after PR 134 merges.
 Its source note explicitly records that no native keyboard check ran.
 The review squad asks Clint for any newer qualification evidence without changing his task status.
 Real Linux/Windows keyboard delivery, non-US layouts, and actual GNOME interception remain unverified here.
-Fresh Windows qualification of Ctrl-F6 and held Ctrl-Shift-N also remains pending.
+On `7b7498762`, [Windows native qualification](https://github.com/2389-research/spaceport/actions/runs/44624169019/job/135913747987) passes Ctrl-F6 navigation and held Ctrl-Shift-N.
+The held-window case preserves three windows after two fresh presses and ten held events.
+All four Linux CI configurations also pass on that source.
+The native layout inventory still contains only US `00000409`; Polish Programmers remains unavailable.
+Those results do not qualify non-US keyboard delivery or actual GNOME interception.
 Actual native execution remains pending; Windows cross-lint does not compile or execute the embedded C#.
 This diagnostic does not qualify actual key delivery or close `3wd4`.
 Independent read-only review finds no material thread-scope, cleanup, bounds, or framework-compatibility issue.

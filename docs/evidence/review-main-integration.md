@@ -518,4 +518,8 @@ Revised Ctrl-F6 navigation and held Ctrl-Shift-N retain their native assertions.
 The enlarged Settings case now produces both bounded PNGs and preserves private preferences.
 Root inspects both native images and qualifies their enlarged glyphs, navigation, wrapping, and viewport containment.
 See [the captures and remaining accessibility gates](review-accessibility-gaps.md#enlarged-settings-qualification-on-7b7498762).
-The broader platform CI run remains in progress at this checkpoint.
+The [complete CI run](https://github.com/2389-research/spaceport/actions/runs/44624169019) succeeds on that exact source.
+Eighteen jobs pass and one unconfigured release target skips.
+Both macOS release executable smoke checks and all Linux/Windows feature configurations pass.
+The separate [supply-chain run](https://github.com/2389-research/spaceport/actions/runs/44624169010) also succeeds on `7b7498762`.
+The following commits add only evidence documents, original captures, and their receipt; application code remains unchanged.
