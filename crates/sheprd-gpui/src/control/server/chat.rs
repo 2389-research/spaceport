@@ -71,7 +71,9 @@ fn creation_error(error: &crate::Error) -> Response {
     }
     if matches!(
         error,
-        crate::Error::StaleConnection | crate::Error::NotConnected
+        crate::Error::Chat(crate::chat::Error::Start(crate::chat::StartError::Response))
+            | crate::Error::StaleConnection
+            | crate::Error::NotConnected
     ) {
         return unknown(ErrorCode::Failed);
     }
