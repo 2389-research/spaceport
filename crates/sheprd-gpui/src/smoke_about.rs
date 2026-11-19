@@ -1,9 +1,13 @@
 // ABOUTME: Verify Spaceport and upstream attribution in the real native About box.
 // ABOUTME: Check painted glyphs, narrow layouts and focus in the isolated GUI fixture.
-use super::*;
+use crate::SheprdWindow;
 use crate::about::{AUTHOR, COPYRIGHT_YEAR, PUBLISHER};
 use crate::i18n::fl;
 use crate::menu::Page;
+use crate::smoke::*;
+use anyhow::{Context as _, Result, bail};
+use gpui::*;
+use std::time::Duration;
 
 pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {
     use crate::sidebar::layout_tests::PaintedProbes;

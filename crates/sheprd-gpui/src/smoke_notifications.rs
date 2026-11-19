@@ -1,8 +1,14 @@
 //! Offline notification preview driver for the daemon-free sidebar fixture.
-use super::*;
+use crate::smoke::*;
+use crate::{Command, SheprdWindow};
+use anyhow::{Context as _, Result, bail};
+use gpui::*;
+use sheprd_client::protocol::*;
+use std::time::Duration;
 
-pub(super) fn start_notifications(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
-    EXIT_CODE.store(1, Ordering::SeqCst);
+/// Entry: every offline toast preview drawn at a narrow and a wide size.
+pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    set_exit_code(1);
     let timer = cx.background_executor().clone();
     cx.spawn(async move |cx| {
         for (width, height) in [(360., 240.), (1200., 780.)] {
@@ -32,9 +38,12 @@ pub(super) fn start_notifications(handle: WindowHandle<SheprdWindow>, cx: &mut A
                     }
                     Ok(())
                 });
-                let drawn = AnyWindowHandle::from(handle).update(cx, |_, window, cx| window.draw(cx).clear(cx));
-                if !matches!(result, Ok(Ok(()))) || drawn.is_err() {
-                    eprintln!("NOTIFICATIONS native FAIL: {result:?} {drawn:?}");
+                let painted = with_root(handle, cx, |_, window, cx| {
+                    draw(window, cx);
+                    Ok(())
+                });
+                if !matches!(result, Ok(Ok(()))) || painted.is_err() {
+                    eprintln!("NOTIFICATIONS native FAIL: {result:?} {painted:?}");
                     std::process::exit(1);
                 }
             }

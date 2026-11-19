@@ -1,5 +1,8 @@
 //! Native Settings window checks run by the sidebar smoke driver.
-use super::*;
+use crate::SheprdWindow;
+use anyhow::{Result, bail};
+use gpui::*;
+use std::time::{Duration, Instant};
 
 pub(super) async fn sidebar_preferences(
     handle: WindowHandle<SheprdWindow>,
