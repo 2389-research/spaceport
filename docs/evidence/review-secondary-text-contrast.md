@@ -90,5 +90,37 @@ Root authorized changing that exact fixture to true, including its pinned text a
 That producer/load contract passes in the 312 configuration tests.
 This correction changes no focus behavior.
 
-Native screenshots, keyboard checks, and performance checks remain pending at Doctor Biz's request.
+Native screenshot qualification remains pending.
+Keyboard and working-session performance checks belong to separate findings.
 No private configuration, OS preference, runtime, or daemon was changed by these checks.
+
+## Native palette qualifier, November 19
+
+The Windows integration fixture loads the four shipped palettes through `Config::theme_named`.
+It retains the actual standard OS contrast policy and refuses a high-contrast host.
+It paints muted and subtext on background, surface, and hover colors.
+Each cell includes real 9px and 12px glyphs and an opaque foreground probe.
+
+The fixture reads back only its own synthetic GPU windows.
+It removes each window before encoding or measuring the image on the background executor.
+Palette loading also runs on the background executor.
+Each image stays within two million pixels and 128 KiB of encoded PNG data.
+No daemon, desktop capture, clipboard, personal configuration, or preference write is involved.
+
+Measurements require native RGB agreement with the configured colors.
+They require an unrounded ratio of at least 4.5:1 for every text/background pair.
+Separate ink counts require visible glyphs in both small-text rows.
+The PNG is emitted before a failed measurement propagates, preserving diagnostic evidence.
+
+The [WCAG contrast guidance](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) uses foreground and background colors rather than antialiased glyph edges.
+It also prohibits rounding a below-threshold ratio up to the threshold.
+The solid probes measure those native colors; glyph checks and image inspection assess actual small text separately.
+
+Independent review finds no material ownership, privacy, measurement, or original-scope gap in the fixture.
+Both host and Windows GNU lint configurations and the static checks pass.
+The prepared-palette and contrast consumer scope passes ten tests, with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- config::tests::secondary_text:: contrast::tests:: contrast::system_tests:: --nocapture`.
+Log: `/tmp/spaceport-9s44-native-contrast-consumers.log`.
+The existing debug-linker unwind-size warning and `block 0.1.6` future-compatibility notice remain unchanged.
+Actual Windows execution, all four PNG inspections, and the measured ratios remain pending.
+Kata `8zvq` stays open until that native evidence passes.

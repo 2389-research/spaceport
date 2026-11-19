@@ -3,9 +3,9 @@
 
 # Shortcut repeats
 
-Verified on 2026-11-17 for the held-shortcut report (`agbt`).
-Doctor Biz authorized implementation and validation in the aggregate worktree.
-This work does not commit, publish, or update the issue tracker.
+Native qualification completed on 2026-11-19 for the held-shortcut report (`agbt`).
+Doctor Biz authorized implementation, validation, and draft publication in the aggregate worktree.
+Kata `agbt` is closed on source `5c696d3c8` after independent scope review.
 
 ## Acceptance
 
@@ -300,3 +300,30 @@ Log: `/tmp/spaceport-9s44-daemon-repeat-harness-final-lint.log`.
 Formatting, size, sorting, operations, localization, commit, and diff checks pass.
 Localization validates 2174 messages in 114 files.
 Log: `/tmp/spaceport-9s44-daemon-repeat-static.log`.
+
+## Qualified native result on `5c696d3c8`
+
+[CI 44528210347](https://github.com/2389-research/spaceport/actions/runs/44528210347) succeeds on published `5c696d3c8e5c05af4515caffe11530e14b42f074`.
+Both Windows native jobs succeed.
+The [x64 job](https://github.com/2389-research/spaceport/actions/runs/44528210347/job/135574587159) passes eight GUI and twelve UIA cases, with none ignored.
+The UIA step remains x64-only under the existing workflow policy.
+
+Each New and Close Tab action gets two fresh bursts with five observed held events per burst.
+New Window gets two fresh bursts with five events actually resolved to that command.
+The real window list retains unique IDs through counts one, two, and three.
+Split gets two fresh bursts with five ready held events after each actual daemon effect and coherent fence.
+The real pane list preserves IDs through counts one, two, and three.
+Custom gets two real executions, ten ready held events, and exactly two accepted invocations.
+The final coherent fences precede the effect and queue assertions.
+
+The deliberate parent-failure case passes at `2026-11-19T13:05:25.1007821Z`.
+It retains the exact expected panic, reaps the helper, checks actual released key states, and preserves two panes.
+The expected panic text is caught and asserted; it is not an unhandled test failure.
+The complete UIA scope passes at `2026-11-19T13:06:41.3246632Z`.
+
+Existing framed tests retain ordinary terminal repeats and fresh-press behavior after release.
+Independent review accepts closure against the original issue at revision one.
+This closes the original window, tab, split, and custom-command repeat scope.
+AltGr, Core-specific confirmations, working-session profiling, and other accessibility findings retain their separate gates.
+Closure event `9790` (`01M7SZ3EBQJ2NDRAX665NB3Q5T`) was recorded at `2026-11-19T13:14:27.575Z`.
+Fresh issue and parent reads confirm `agbt` closed and `9s44` at 45 closed children, eight open.

@@ -293,6 +293,10 @@ fn native_fixture(fixture: Fixture) {
     if matches!(fixture, Fixture::LocalControls { .. }) {
         assert!(log.contains("STATUS SHAPES native PASS:"), "{log}");
     }
+    #[cfg(windows)]
+    if matches!(fixture, Fixture::LocalControls { light: true }) {
+        assert!(log.contains("SECONDARY TEXT native PASS:"), "{log}");
+    }
 }
 
 fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {

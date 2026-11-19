@@ -85,6 +85,10 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
     shutdown::verify(handle, light, cx).await?;
     #[cfg(windows)]
     cx.update(|cx| sidebar::verify_status_shapes(light, cx))?;
+    #[cfg(windows)]
+    if light {
+        crate::contrast::verify_secondary_text(cx).await?;
+    }
     if !cx
         .background_spawn(async { crate::diagnostics::flush(Duration::from_secs(2)) })
         .await

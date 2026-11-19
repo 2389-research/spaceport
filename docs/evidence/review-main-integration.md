@@ -1,7 +1,8 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `46738c99c` passes CI; the later consent run exposes a Windows UI Automation timeout.
+Status: `5c696d3c8` passes full CI and native held-shortcut qualification.
+Kata `9s44` has 45 closed children and eight open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
@@ -278,7 +279,7 @@ Their three regressions fail first; the corrected focused scopes pass 70 tests.
 The normal-consumer test retains 150-millisecond slide timing.
 See [OS accessibility evidence](review-os-accessibility.md#reorder-extraction-follow-up).
 
-Kata now has 44 closed children and nine open children.
+Kata now has 45 closed children and eight open children.
 Reduced motion closes after its extracted-slide and chat-glide corrections pass scoped verification.
 Herdr TUI workspace closing closes after native creation, consent, cancellation, and preservation checks pass.
 Recovery-button keyboard access closes after native focus and retry verification, with scoped headless callback evidence.
@@ -287,6 +288,7 @@ Status shapes close after both Windows native jobs pass and all eight monochrome
 Visible errors close after real Windows warning, toast, and Zen-warning live-region events pass native qualification.
 Popup departures and Close Others close after native animation, stable-ID consent, and all nine image inspections pass.
 Chat accessibility closes after native content, named controls, deliberate permission answers, and image inspection pass on `99e318867`.
+Shortcut repeats close after native window, tab, split, custom-command, and failure-cleanup qualification passes on `5c696d3c8`.
 Source `b20cca86f` then passes full CI: eighteen jobs succeed and one unconfigured target skips.
 Its separate supply-chain run also succeeds.
 The umbrella remains open.

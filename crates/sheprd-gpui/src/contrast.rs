@@ -11,6 +11,11 @@
 use serde::Deserialize;
 use std::{cell::RefCell, collections::HashMap};
 
+#[cfg(all(windows, feature = "integration-test"))]
+mod native;
+#[cfg(all(windows, feature = "integration-test"))]
+pub(crate) use native::verify_secondary_text;
+
 #[cfg(test)]
 mod system_tests;
 
