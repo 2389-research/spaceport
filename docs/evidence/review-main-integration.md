@@ -255,7 +255,7 @@ See [the completed reconciliation](review-jargon-main-integration.md).
 Keep the draft unmerged while its hosted and native gates remain open.
 The full workspace test suite, hosted platform jobs, application build and CLI smoke remain deferred to CI.
 
-Kata now has 32 closed children and 21 open children after native Windows agent-tree qualification.
+Kata now has 33 closed children and 20 open children after native Windows agent-tree and tunnel-cleanup qualification.
 The umbrella remains open.
 Native Settings readiness is pending Doctor Biz's answer.
 Native Windows, native accessibility, and interactive release profiling remain pending.

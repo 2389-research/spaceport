@@ -245,7 +245,7 @@ No commit, push, PR, hosted CI run, or new native check occurred.
 
 ## Findings
 
-Current November 18 checkpoint: 32 children closed, 21 open, umbrella open.
+Current November 18 checkpoint: 33 children closed, 20 open, umbrella open.
 Core guidance (`jemh`) closed after copy review, native General wrapping, and three Core-enabled catalog tests.
 The closure ledger retains event 9502 and its UID.
 The latest keyboard fixture timed out without becoming key, including after Doctor Biz confirmed readiness.
@@ -289,7 +289,7 @@ The generic shell follow-up now passes its headless regressions; final native an
 - [x] `fzwm` — Keep saved tabs when browser-tabs.json fails to load
 - [x] `hv7g` — Turn off agent forwarding for hosts that skip host-key checks
 - [x] `fe28` — Require a fresh key press to confirm End processes and Remove device
-- [x] `zdrf` — End port tunnels and forwards when Spaceport crashes (native Windows execution pending CI)
+- [x] `zdrf` — End port tunnels and forwards when Spaceport crashes (closed after native Windows and Linux qualification)
 - [x] `t45y` — Report a lost connection when the connection thread panics
 - [x] `bs4s` — Stop restarting a Herdr server the user stopped
 - [x] `jwa1` — Make the reconnect and missing-Herdr card buttons keyboard-reachable (headless keyboard checks; OS routing pending)

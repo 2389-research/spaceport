@@ -1,7 +1,8 @@
 # Tunnel ownership after parent exit
 
 Review child `zdrf` belongs to the review squad task `9s44`.
-Doctor Biz authorized fixes and validation without commits, pushes, PR changes, or Kata writes.
+The original checkpoint authorized fixes and validation without publication or Kata writes.
+Doctor Biz later authorized the public draft checkpoint and closing verified issues; see [integration evidence](review-main-integration.md).
 The original `kata-zdrf` worktree remains unchanged.
 
 ## Cause and change
@@ -73,13 +74,26 @@ They are not unexecuted acceptance tests.
 
 ## Limits and pending checks
 
-The native Windows crash tests remain pending Windows CI.
-The Windows GNU check proves compilation, not Windows job behavior.
-The non-UTF-8 executable filesystem test is Linux-only.
-APFS refused its invalid UTF-8 filename with `EILSEQ` during local fixture setup.
-Linux CI must execute that test.
+Native Windows and Linux qualification was pending at the original local checkpoint.
+The Windows GNU check alone proved compilation, not Windows job behavior.
+APFS refused the Linux-only invalid UTF-8 filename fixture with `EILSEQ`.
 No live SSH end-to-end connection was attempted.
 Local process fixtures prove ownership and cleanup, not remote authentication or forwarding.
 The full workspace gates and platform jobs remain CI work.
 The GPUI link emitted the existing oversized unwind-section warning.
 Cargo also reported the existing `block 0.1.6` future-incompatibility notice.
+
+## Native platform qualification
+
+CI source `620a31af7992f5020cf33ef5042132d6647f13fc` passes all three click-tunnel process regressions on Windows x64 and ARM.
+They cover forced owner exit, drop/cancellation, and cancellation during readiness with real listeners.
+Parent tests explicitly launch the two private fixture entries ignored directly by the harness.
+See [x64 results](https://github.com/2389-research/spaceport/actions/runs/44441388353/job/135283127710)
+and [ARM results](https://github.com/2389-research/spaceport/actions/runs/44441388353/job/135283127650).
+Those jobs fail unrelated GUI fixtures; they do not qualify the whole Windows workspace.
+
+The [Linux x64 default job](https://github.com/2389-research/spaceport/actions/runs/44441388353/job/135283127800) passes forward crash cleanup and all three click-tunnel cases.
+It also passes the real non-UTF-8 executable-path fixture.
+Kata `zdrf` closed after these results and a fresh issue-status readback.
+Its closure event is `9760` (`01M7RSVHMGEAA4Z794F7DM7BB1`).
+Windows saved-host forwards remain explicitly unsupported.
