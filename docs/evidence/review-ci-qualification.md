@@ -460,3 +460,27 @@ They use the same private environment and capture helper.
 Their native execution remains pending.
 No environment variable or existing UIA deadline changes.
 Log: `/tmp/spaceport-9s44-startup-native-x64.log`.
+
+## Isolated cmdlet failure
+
+Source `134f912e3` passes the plain-script and UTF-8 process probes on Windows x64 and ARM.
+The independent `Write-Output` probe times out on both architectures.
+Its capture contains only `CMDLET START`.
+The failing operation therefore does not require a GUI, UI Automation, or encoding mutation.
+Both all-feature GPUI unit suites pass 4,328 cases before this separate process-test failure.
+The native x64 trace also reaches its encoding-complete marker before the same first-cmdlet stall.
+
+Verified [x64 process logs](https://github.com/2389-research/spaceport/actions/runs/44463521378/job/135356144268)
+and [ARM process logs](https://github.com/2389-research/spaceport/actions/runs/44463521378/job/135356144186).
+Logs use `/tmp/spaceport-9s44-shell-operations-{x64-all,arm-all,native-x64}.log`.
+
+The PowerShell command now restores existing `ProgramFiles` and `ProgramFiles(x86)` values from its parent.
+Microsoft documents their role in [module-path construction](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath?view=powershell-5.1).
+A maintainer reports their omission breaking Windows PowerShell in [PowerShell issue 3545](https://github.com/PowerShell/PowerShell/issues/3545).
+This is a controlled correction for the module-loading hypothesis, pending native results.
+The shared sandbox, private profile paths, system PATH, deadlines, and child cleanup remain unchanged.
+
+Both Windows GNU lint configurations and static validators pass with this correction.
+Independent review finds no material isolation or ownership issue.
+The actual cmdlet probe and both UIA scenarios still need successful native execution.
+Logs: `/tmp/spaceport-9s44-powershell-system-paths-{windows-lint,static}.log`.

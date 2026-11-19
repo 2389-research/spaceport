@@ -120,9 +120,15 @@ impl Running {
         }
         let process = self.gui.as_ref().map_or(0, Child::id);
         let capture = self.sandbox.dir.join("uia-capture.log");
+        let mut command = self.sandbox.command("powershell.exe", "uia-capture.log");
+        // Windows PowerShell uses these system paths while loading cmdlets.
+        for name in ["ProgramFiles", "ProgramFiles(x86)"] {
+            if let Some(value) = std::env::var_os(name) {
+                command.env(name, value);
+            }
+        }
         self.command = Some(
-            self.sandbox
-                .command("powershell.exe", "uia-capture.log")
+            command
                 .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
                 .arg(script)
                 .args(["-ProcessId", &process.to_string(), flag, value])

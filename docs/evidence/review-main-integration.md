@@ -257,8 +257,10 @@ CI qualifies the published workspace suites, platform jobs, application build, a
 The consent follow-up fails its first Windows UI Automation run.
 The earlier diagnostic returns zero bytes before its assembly-loading markers.
 The next plain-script probe executes in 167–180 milliseconds.
-The UIA script reaches entry, then stalls before its first cmdlet marker.
-Separate encoding and cmdlet probes will locate that narrower boundary.
+The UIA script reaches entry and completes encoding setup, then stalls at its first cmdlet.
+Independent x64 and ARM probes pass startup/encoding and fail only `Write-Output`.
+The PowerShell command now restores two documented system paths for module loading.
+Its native correction remains unqualified.
 The existing UIA deadline remains unchanged.
 An independent audit also finds reduced-motion gaps in extracted slides and opted-in chat glide.
 Their three regressions fail first; the corrected focused scopes pass 70 tests.
