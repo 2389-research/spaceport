@@ -186,6 +186,10 @@ impl SheprdWindow {
         if leaving.is_some() && !paint.is_some_and(|paint| paint.holds(page)) {
             return div().id("menu-panel");
         }
+        #[cfg(all(windows, feature = "integration-test"))]
+        if let Some(shown) = leaving {
+            self.menu.appear.drawn_departure.set(Some((page, shown)));
+        }
         let font = &self.config.ui;
         let theme = &self.theme;
         let viewport = window.viewport_size();

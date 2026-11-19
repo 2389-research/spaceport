@@ -112,6 +112,13 @@ fn native_sidebar() {
     native_fixture(Fixture::Sidebar);
 }
 
+#[cfg(windows)]
+#[test]
+#[ignore = "requires active Windows desktop; captures only owned popup scenes"]
+fn native_popup_departures() {
+    native_fixture(Fixture::Departures);
+}
+
 #[cfg(target_os = "macos")]
 #[test]
 #[ignore = "requires selecting the isolated Spaceport keyboard check window and leaving it foreground"]
@@ -194,6 +201,8 @@ fn native_input_shutdown(field: &'static str) {
 }
 
 enum Fixture {
+    #[cfg(windows)]
+    Departures,
     LocalControls {
         light: bool,
     },
@@ -267,6 +276,8 @@ fn native_fixture(fixture: Fixture) {
     }
     assert!(status.success(), "native sidebar failed: {status}");
     assert!(log.contains(match fixture {
+        #[cfg(windows)]
+        Fixture::Departures => "DEPARTURES native PASS:",
         Fixture::Preview { .. } => "RICH CHAT native fixture PASS",
         #[cfg(target_os = "macos")]
         Fixture::SidebarRouting => "SIDEBAR routing PASS:",
@@ -306,6 +317,10 @@ fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {
         command.env("HERDR_TEST_CHAT_START_CAPTURE", path);
     }
     match fixture {
+        #[cfg(windows)]
+        Fixture::Departures => {
+            command.env("HERDR_TEST_POPUP_DEPARTURES", "1");
+        }
         Fixture::Preview { light, narrow } => {
             let theme = if *light { "light" } else { "dark" };
             let size = if *narrow { "narrow" } else { "wide" };

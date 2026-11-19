@@ -11,27 +11,6 @@ const WARNING: &str = "Load GUI config:";
 const TOAST: &str = "QA preview: a custom notification message.";
 
 impl Running {
-    fn control(&mut self, args: &[&str]) {
-        let capture = self.sandbox.dir.join("control.log");
-        let mut command = self
-            .sandbox
-            .command(env!("CARGO_BIN_EXE_spaceport"), "control.log");
-        command.args(args);
-        self.command_output(command, &capture, Duration::from_secs(20))
-            .unwrap();
-    }
-
-    fn menu_action(&mut self, flag: &str, name: &str) {
-        self.script_output(
-            &self.sandbox.dir.join("uia_tree.ps1"),
-            flag,
-            name,
-            None,
-            Duration::from_secs(20),
-        )
-        .unwrap();
-    }
-
     fn start_live_observer(&mut self) {
         for (name, source) in [
             ("uia_live.cs", include_str!("../support/uia_live.cs")),
@@ -170,11 +149,11 @@ fn native_warnings_and_toasts_deliver_named_live_region_events() {
     running.wait_tree("cleared configuration warning", |tree| {
         !tree.contains(WARNING)
     });
-    running.menu_action("-Expand", "QA");
+    running.uia_action("-Expand", "QA");
     running.wait_tree("custom preview action", |tree| {
         tree.contains("MenuItem 'Show Custom toast'")
     });
-    running.menu_action("-MenuItem", "Show Custom toast");
+    running.uia_action("-MenuItem", "Show Custom toast");
     running.wait_tree("visible custom toast", |tree| tree.contains(TOAST));
     running.wait_live(&[TOAST], 0);
 

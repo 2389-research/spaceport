@@ -282,6 +282,27 @@ impl Running {
         .unwrap();
     }
 
+    fn control(&mut self, args: &[&str]) {
+        let capture = self.sandbox.dir.join("control.log");
+        let mut command = self
+            .sandbox
+            .command(env!("CARGO_BIN_EXE_spaceport"), "control.log");
+        command.args(args);
+        self.command_output(command, &capture, Duration::from_secs(20))
+            .unwrap();
+    }
+
+    fn uia_action(&mut self, flag: &str, name: &str) {
+        self.script_output(
+            &self.sandbox.dir.join("uia_tree.ps1"),
+            flag,
+            name,
+            None,
+            Duration::from_secs(20),
+        )
+        .unwrap();
+    }
+
     fn wait_tree(&mut self, label: &str, ready: impl Fn(&str) -> bool) -> String {
         let deadline = Instant::now() + Duration::from_secs(60);
         loop {
@@ -357,6 +378,8 @@ fn a_command_timeout_reaps_its_owned_child() {
 // keep-sorted start
 #[path = "accessibility_windows/announcements.rs"]
 mod announcements;
+#[path = "accessibility_windows/close_others.rs"]
+mod close_others;
 #[path = "accessibility_windows/recovery.rs"]
 mod recovery;
 #[path = "accessibility_windows/workspace_close.rs"]

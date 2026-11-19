@@ -70,6 +70,10 @@ pub use sidebar_fixture::start_sidebar;
 #[path = "smoke_local_controls.rs"]
 mod local_controls;
 
+#[cfg(windows)]
+#[path = "smoke_departures.rs"]
+mod departures;
+
 #[path = "smoke_about.rs"]
 mod about;
 

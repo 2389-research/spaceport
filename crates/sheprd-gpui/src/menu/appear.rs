@@ -69,6 +69,8 @@ pub(crate) struct Appear {
     /// All Devices' height as last laid out, which its rise travels.
     pub(super) rise_height: std::rc::Rc<std::cell::Cell<Option<Pixels>>>,
     backdrop: Toggle,
+    #[cfg(all(windows, feature = "integration-test"))]
+    pub(in crate::menu) drawn_departure: std::cell::Cell<Option<(Page, f32)>>,
     /// Unit tests lay menus out where they settle unless one asks to see
     /// them move, so geometry checks need not wait out the motion.
     #[cfg(test)]
@@ -181,6 +183,8 @@ impl SheprdWindow {
     /// Takes the popup this frame draws, and keeps frames coming while it,
     /// or the dimming a closed dialog leaves, still moves.
     pub(crate) fn tick_menu_appear(&mut self, window: &mut Window) {
+        #[cfg(all(windows, feature = "integration-test"))]
+        self.menu.appear.drawn_departure.set(None);
         let now = motion::now();
         let shown = self.menu.page.map(|_| match self.menu_dims() {
             true => Shown::Dialog,
@@ -191,6 +195,16 @@ impl SheprdWindow {
         if self.menu.appear.moving(now) {
             window.request_animation_frame();
         }
+    }
+
+    #[cfg(all(windows, feature = "integration-test"))]
+    pub(crate) fn native_departure_frame(&self) -> Option<(Page, f32)> {
+        self.menu.appear.drawn_departure.get()
+    }
+
+    #[cfg(all(windows, feature = "integration-test"))]
+    pub(crate) fn native_departure_released(&self) -> bool {
+        self.menu.appear.leaving.is_none() && self.menu.appear.kept.is_none()
     }
 }
 

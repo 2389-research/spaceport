@@ -66,6 +66,18 @@ fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
 }
 
 pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    #[cfg(windows)]
+    if std::env::var_os("HERDR_TEST_POPUP_DEPARTURES").is_some() {
+        cx.spawn(async move |cx| {
+            if let Err(error) = departures::verify(handle, cx).await {
+                eprintln!("DEPARTURES native FAIL: {error:#}");
+                std::process::exit(1);
+            }
+            std::process::exit(0);
+        })
+        .detach();
+        return;
+    }
     if std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_ONLY").is_some() {
         cx.spawn(async move |cx| {
             if let Err(error) = local_controls::verify(handle, cx).await {

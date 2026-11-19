@@ -5,7 +5,7 @@
 # its control type, name, and the patterns or states that matter here. With
 # -Keys, it then brings the window forward, sends each key ("|"-separated,
 # SendKeys syntax), and prints the element that has keyboard focus after it.
-param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '')
+param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '', [string]$GroupActionsFor = '')
 [Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
@@ -60,6 +60,25 @@ foreach ($window in $windows) {
   Walk $window ''
 }
 [Console]::WriteLine('UIA stage: tree complete')
+
+if ($GroupActionsFor) {
+  $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $GroupActionsFor)
+  $type = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::TabItem)
+  $condition = [System.Windows.Automation.AndCondition]::new($name, $type)
+  $tabs = @(foreach ($window in $windows) { $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition) })
+  if ($tabs.Count -ne 1) { throw "Expected one private tab '$GroupActionsFor', found $($tabs.Count)" }
+  $strip = $walker.GetParent($tabs[0])
+  if ($strip.Current.ControlType -ne [System.Windows.Automation.ControlType]::Tab) { throw 'The private tab has no tab-strip parent' }
+  $control = $walker.GetNextSibling($strip)
+  while ($null -ne $control -and $control.Current.ControlType -ne [System.Windows.Automation.ControlType]::Tab) {
+    if ($control.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button -and $control.Current.Name -ceq 'Tab actions') { break }
+    $control = $walker.GetNextSibling($control)
+  }
+  if ($null -eq $control -or $control.Current.ControlType -ne [System.Windows.Automation.ControlType]::Button -or $control.Current.ProcessId -ne $ProcessId) {
+    throw 'The private tab strip has no adjacent Tab actions control'
+  }
+  $control.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+}
 
 if ($Invoke -or $MenuItem -or $Expand) {
   $target = if ($Invoke) { $Invoke } elseif ($MenuItem) { $MenuItem } else { $Expand }

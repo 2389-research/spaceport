@@ -303,3 +303,52 @@ Passive outgoing captures intentionally expose no accessibility nodes.
 Tree disappearance alone therefore cannot prove outgoing painting.
 Keep `ydr4` open for this bounded qualification.
 Unrelated speech, Settings, Mac foreground, and release profiling do not gate this original finding.
+
+## Native qualification candidate, November 19
+
+The Windows accessibility suite adds a private three-tab Close Others scenario.
+It uses the selected test daemon and the normal application.
+It finds the group action beside the strip containing the selected tab.
+The UIA helper restricts discovery and invocation to the exact application process.
+
+The scenario checks both named targets and the aggregate terminal and view counts.
+It presses Enter on the default Cancel action and requires all three tabs to survive.
+It reopens the same batch and invokes its single confirmation.
+Only the selected tab may remain, without a second prompt.
+The private checkout marker and daemon must survive both paths.
+
+A separate daemon-free native fixture captures popover, About dialog, and command palette scenes.
+It uses the production renderer, real clock, and existing QA slow-motion control.
+It reads the actual Windows motion preference and applies the same value to GPUI.
+It never changes the OS preference or freezes time.
+The authored background omits its terminal cursor to prevent unrelated blinking differences.
+
+Animated mode requires an actual rendered departure between 25 and 80 percent visibility.
+It compares that frame with the open scene and clean closed baseline.
+Those comparisons prove scene changes, not outgoing text by themselves.
+Inspect every emitted outgoing image for its actual popup body before closing the issue.
+Backdrop-only differences cannot qualify the dialog or palette body.
+The settled popup region must exactly match the baseline.
+Palette dismissal must release the search entity and all outgoing paint.
+Reduced-motion mode instead requires release and baseline pixels on the first dismissed draw.
+A reduced-motion receipt does not qualify intermediate animated frames.
+
+Each scene emits bounded PNG receipts for inspection.
+Each image permits at most two million pixels and 128 KiB of encoded data.
+Animated mode emits at most nine images; reduced-motion mode emits six.
+Encoding and pixel comparison run on the background executor.
+The fixture keeps the existing native deadline.
+Its read-only render metadata exists only in Windows integration builds.
+
+The focused appearance and batch scopes pass 74 tests, with one private subprocess entry ignored directly.
+The parent test invokes that subprocess entry.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- menu::appear::tests:: close_modal::tests::batch:: --nocapture`.
+Log: `/tmp/spaceport-9s44-native-popup-consumers.log`.
+Formatting, file size, sorting, operations, localization, and diff checks pass.
+Host and Windows GNU lint pass with all features and without default features.
+Log: `/tmp/spaceport-9s44-native-popup-final-lint.log`.
+Independent popup review accepts the explicit manual content-inspection gate.
+Independent consent and privacy review finds no remaining material issue.
+The owner review confirms exact private targets, bounded captures, and unchanged operation lifetimes.
+Native execution and image inspection remain pending for this candidate.
+Keep `ydr4` open until those results qualify its original scope.
