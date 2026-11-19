@@ -80,21 +80,27 @@ impl Running {
     }
 
     fn check_shell(&mut self) {
-        let script = self.sandbox.dir.join("shell-ready.ps1");
-        fs::write(
-            &script,
-            "param([int]$ProcessId, [string]$Keys)\n[Console]::WriteLine('PRIVATE POWERSHELL READY')\n",
-        )
-        .unwrap();
         let started = Instant::now();
         let output = self
-            .script_output(&script, "-Keys", "", Duration::from_secs(60))
+            .shell_probe(
+                "[Console]::WriteLine('PRIVATE POWERSHELL READY')",
+                Duration::from_secs(60),
+            )
             .expect("the private PowerShell host must execute a plain script before UI Automation");
         assert!(output.contains("PRIVATE POWERSHELL READY"), "{output}");
         eprintln!(
             "PRIVATE POWERSHELL READY: cleared environment and private capture in {} ms",
             started.elapsed().as_millis()
         );
+    }
+
+    fn shell_probe(&mut self, body: &str, limit: Duration) -> io::Result<String> {
+        let script = self.sandbox.dir.join("shell-probe.ps1");
+        fs::write(
+            &script,
+            format!("param([int]$ProcessId, [string]$Keys)\n{body}\n"),
+        )?;
+        self.script_output(&script, "-Keys", "", limit)
     }
 
     fn script_output(
@@ -211,6 +217,30 @@ impl Running {
 #[test]
 fn a_private_powershell_host_executes_a_plain_script() {
     Running::empty().check_shell();
+}
+
+#[test]
+fn a_private_powershell_host_sets_utf8_output() {
+    let output = Running::empty()
+        .shell_probe(
+            "[Console]::WriteLine('ENCODING START')\n\
+             [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)\n\
+             [Console]::WriteLine('ENCODING READY ' + [char]0x2603)",
+            Duration::from_secs(20),
+        )
+        .unwrap();
+    assert!(output.contains("ENCODING READY \u{2603}"), "{output}");
+}
+
+#[test]
+fn a_private_powershell_host_executes_a_cmdlet() {
+    let output = Running::empty()
+        .shell_probe(
+            "[Console]::WriteLine('CMDLET START')\nWrite-Output 'CMDLET READY'",
+            Duration::from_secs(20),
+        )
+        .unwrap();
+    assert!(output.contains("CMDLET READY"), "{output}");
 }
 
 #[test]

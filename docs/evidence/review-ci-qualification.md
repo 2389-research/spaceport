@@ -444,3 +444,19 @@ Microsoft documents [PowerShell's startup phases](https://learn.microsoft.com/en
 The [module-path documentation](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_psmodulepath?view=powershell-5.1) explains reconstruction when the process variable is absent.
 These references guide diagnosis; they do not establish this runner's cause.
 Log: `/tmp/spaceport-9s44-motion-native-x64.log`.
+
+## Startup ruled out
+
+Source `2520ac72c` executes the plain private script in 180 and 167 milliseconds on native Windows x64.
+The [native job](https://github.com/2389-research/spaceport/actions/runs/44461941941/job/135350958417) then fails both UIA scenarios at their unchanged 20-second limit.
+Each capture contains only the direct script-entry marker.
+PowerShell startup, the private capture file, and basic Console output therefore work.
+The next boundary contains encoding setup and the first cmdlet call.
+The cause within that boundary remains unproven.
+
+The next trace adds a direct marker after encoding setup.
+Two separate Windows process tests exercise UTF-8 snowman output and `Write-Output` loading.
+They use the same private environment and capture helper.
+Their native execution remains pending.
+No environment variable or existing UIA deadline changes.
+Log: `/tmp/spaceport-9s44-startup-native-x64.log`.

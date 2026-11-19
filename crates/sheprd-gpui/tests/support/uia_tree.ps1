@@ -9,6 +9,7 @@ param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '')
 [Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::WriteLine('UIA stage: encoding configured')
 Write-Output 'UIA stage: loading assemblies'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
 Write-Output 'UIA stage: compiling native helpers'
