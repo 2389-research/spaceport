@@ -5,7 +5,7 @@
 
 Doctor Biz authorized implementation and validation of the popup/Close Others report (`ydr4`).
 Doctor Biz later authorized closing fully completed Kata children.
-Keep this child open while required native checks remain pending.
+Kata `ydr4` is closed after the scoped native qualification on `b20cca86f`.
 Doctor Biz later authorized committing and publishing the reviewed checkpoint as a public draft PR.
 Review and validation follow-ups stay on draft PR 125.
 
@@ -415,3 +415,38 @@ Formatting, file size, sorting, operations, localization, commit, and diff check
 Log: `/tmp/spaceport-9s44-batch-labels-reviewed-static.log`.
 Independent review approves the actual identity correction, preserved fences, and native stable-ID assertions.
 The owner reviewed all eleven changed files and found no remaining material issue.
+
+## Qualified native result on `b20cca86f`
+
+Both Windows native jobs pass on commit `b20cca86f7ba597e223029747ce9c0bc5798a5a4`.
+The [x64 job](https://github.com/2389-research/spaceport/actions/runs/44507153995/job/135501954152) passes eight GUI and seven UIA tests, with none ignored.
+The [ARM job](https://github.com/2389-research/spaceport/actions/runs/44507153995/job/135501954484) passes seven GUI tests, with none ignored.
+The separate pipe-owner cases also pass.
+
+The real private-daemon consent case emits `CLOSE_OTHERS native PASS`.
+Cancel preserves every original daemon tab ID and the checkout marker.
+One confirmation removes both captured targets, without another prompt.
+The sole survivor retains its original stable ID and public number `3`, with automatic label `1`.
+The private daemon remains running until exact-child test cleanup.
+
+ARM reports animated mode with actual outgoing visibility values `0.774314`, `0.75152826`, and `0.69495124`.
+The owner decoded and inspected all nine complete PNGs.
+Every outgoing image retains its popover, About dialog, or palette body and readable text.
+The dialog and palette evidence includes content beyond their fading backdrops.
+All three settled images have the same complete PNG hash.
+The strict baseline checks, active-owner reset, outgoing release, and weak search-entity release all pass.
+
+The local manifest is `/tmp/spaceport-9s44-departures-arm-animated/manifest.json`.
+The outgoing PNG hashes are:
+
+| Scene | SHA-256 |
+| --- | --- |
+| Popover | `0397f3feb6ca889d7af932f98ca71522b9611a403d8cdd46b3bd8fb1da608205` |
+| About dialog | `0c0bf701453d82f7cc6e7a06f90c63aabaf1f1505d69daa0e1eef5a0f426fbf8` |
+| Palette | `d4b11927f514db8ca4d3f8b2e5c64c593590cf08de043c76d47e7733430e95d7` |
+
+x64 separately passes reduced-motion mode and its first-dismissed-draw baseline/release checks.
+These receipts complete `ydr4`'s original popup and single-batch consent scope.
+Other accessibility, shortcut, foreground, and working-session profile findings remain separate.
+Kata closure event `9788` records completion at `2026-11-19T10:49:26.709Z`.
+Fresh issue and parent reads verify this child closed, with 43 children closed and ten open.
