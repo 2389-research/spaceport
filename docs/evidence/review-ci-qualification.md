@@ -561,3 +561,16 @@ Both host and Windows GNU lint configurations pass through `just lint lint-windo
 Independent review finds no remaining issue after correcting the use of GPUI's public cache API.
 Lint and static logs use `/tmp/spaceport-9s44-sidebar-close-{lint,static}.log`.
 Native Windows rerun, Mac foreground checks, speech, and interactive profiling remain pending.
+
+## Native sidebar and close-sequence qualification
+
+[Run 44471538211](https://github.com/2389-research/spaceport/actions/runs/44471538211) tests source `96b5295d5`.
+Both Windows native GUI jobs pass.
+The x64 job passes both actual UI Automation scenarios, including workspace consent.
+They run without ignored cases and retain exact foreground-window guards.
+The workspace case cancels, then confirms fresh consent and preserves unrelated work.
+Linux ARM all-feature CI passes 4,547 application cases, with 19 existing private fixtures ignored directly.
+It includes the real-view cache regression and both controlled close-sequence arrival orders.
+Logs use `/tmp/spaceport-9s44-sidebar-{native-x64,linux-arm-all}.log`.
+The full run remains in progress.
+Mac foreground checks, speech, and interactive profiling remain pending.

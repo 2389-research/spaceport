@@ -94,9 +94,9 @@ Herdr's API accepts no expected revision or explicit member list.
 It expands group membership when the request executes.
 Local revalidation cannot eliminate a later change by another client.
 This change does not claim atomic backend consent or add automatic retries.
-Native workspace-dialog visuals, OS keyboard routing, and Windows runtime execution remain pending.
-Doctor Biz requested that native keyboard and performance checks remain pending.
-Full workspace CI remains deferred.
+Native Windows UI Automation and workspace interaction pass on `96b5295d5`.
+Mac foreground captures, speech, and performance qualification remain separate open work.
+Full workspace CI remains in progress for that source.
 
 ## Native Windows follow-up plan
 
@@ -107,7 +107,7 @@ Keep the Mac foreground fixture pending.
   Text and inline-error regressions first fail with no role.
   The corrected close and departure scopes pass 105 cases, with one existing private fixture ignored directly.
 - [x] Bound PowerShell commands in `tests/accessibility_windows.rs` with private capture files and exact-child cleanup.
-  The timeout regression is added and compiled; actual Windows execution remains pending.
+  The timeout regression passes natively on Windows x64 and ARM.
 - [x] Add named-button invocation and exact foreground-window checks in `tests/support/uia_tree.ps1`.
   Refuse keyboard input when the private window does not own foreground focus.
 - [x] Add a standalone scenario in `tests/accessibility_windows/workspace_close.rs`.
@@ -117,7 +117,29 @@ Keep the Mac foreground fixture pending.
   Verify that the created workspace closes while the original workspace, marker, and daemon remain.
 - [x] Run focused regressions, both lint configurations, and the Windows GNU checks.
   Keep native acceptance pending until the existing x64 CI job executes the scenario.
-- [ ] Execute both new Windows tests in CI and inspect their actual results.
+- [x] Execute both new Windows tests in CI and inspect their actual results.
 - [ ] Qualify native speech and inline-error announcements separately.
 
 Use the repository's existing test and evidence locations instead of another scenario registry.
+
+## Native qualification and issue closure, November 19
+
+[Run 44471538211](https://github.com/2389-research/spaceport/actions/runs/44471538211) tests `96b5295d5`.
+Windows x64 job `135382188039` passes both UI Automation scenarios without ignored cases.
+The workspace scenario creates its workspace through the real GUI.
+It reads the exact target and pane count from the native tree.
+Enter cancels the first dialog; fresh Tab and Enter confirm the second.
+The original workspace, private checkout marker, and owned daemon survive.
+The other scenario also passes all seven keyboard-focus observations.
+The captured log is `/tmp/spaceport-9s44-sidebar-native-x64.log`.
+
+The sidebar cache repair makes its accessible subtree survive subsequent frames.
+Its real-view regression fails first, then passes while ordinary caching remains covered.
+Linux ARM all-feature CI passes that regression and the controlled close-sequence contention case.
+It passes 4,547 application cases, with 19 existing fixtures ignored directly.
+Independent completion review finds no remaining requirement in this issue's original scope.
+Speech, Settings, performance, and Mac captures remain separate qualification work.
+
+Kata `knqh` closes on source `96b5295d5` with event `9783`.
+The event UID is `01M7S85798ZRZKJEGR578TS1KG`.
+Fresh reads confirm the issue is closed and the parent has 38 closed children and 15 open children.

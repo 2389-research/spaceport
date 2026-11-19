@@ -261,15 +261,25 @@ The UIA script reaches entry and completes encoding setup, then stalls at its fi
 Independent x64 and ARM probes pass startup/encoding and fail only `Write-Output`.
 Restoring two documented system paths is insufficient on ARM and in native UIA.
 A shared bootstrap now explicitly loads the two required system command modules.
-Its native correction remains unqualified; the existing regression and deadlines stay intact.
+Source `09b5ae61b` passes the unqualified cmdlet and owned-child reaping regressions on both Windows architectures.
+The native x64 chrome tree and all seven keyboard-focus observations also pass.
+The workspace-consent scenario reaches completed captures but loses the cached sidebar's accessible subtree.
+Source `96b5295d5` bypasses that cache while accessibility is active and preserves ordinary caching.
+It also resumes the close-sequence fixture after controlled inbox contention.
+Both regressions fail first; the combined four-case suite and all four lint configurations then pass.
+Independent review finds no remaining issue.
+The [new CI run](https://github.com/2389-research/spaceport/actions/runs/44471538211) qualifies both native UIA scenarios.
+Both Windows native jobs and the Linux ARM all-feature job pass.
+The complete run remains in progress.
 The existing UIA deadline remains unchanged.
 An independent audit also finds reduced-motion gaps in extracted slides and opted-in chat glide.
 Their three regressions fail first; the corrected focused scopes pass 70 tests.
 The normal-consumer test retains 150-millisecond slide timing.
 See [OS accessibility evidence](review-os-accessibility.md#reorder-extraction-follow-up).
 
-Kata now has 37 closed children and 16 open children.
+Kata now has 38 closed children and 15 open children.
 Reduced motion closes after its extracted-slide and chat-glide corrections pass scoped verification.
+Herdr TUI workspace closing closes after native creation, consent, cancellation, and preservation checks pass.
 The umbrella remains open.
 Native Settings readiness is pending Doctor Biz's answer.
 Both Windows native GUI jobs and the x64 accessibility tree/focus case pass on `46738c99c`.
