@@ -77,5 +77,5 @@ public static class ImageWheel {
       if (watchdog != null) watchdog.Dispose();
     }
   }
-  public static bool End() { Restore(); return restored; }
+  public static bool Finish() { Restore(); return restored; }
 }

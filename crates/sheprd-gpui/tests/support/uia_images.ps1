@@ -93,7 +93,7 @@ try {
   [ImageWheel]::Wheel()
   Wait-Image 'IMAGE_NATIVE_CAPTURED ' $true
 } finally {
-  $restored = [ImageWheel]::End()
+  $restored = [ImageWheel]::Finish()
   [Console]::WriteLine("IMAGE_INPUT_POINTER_RELEASE restored=$restored")
 }
 if (-not $restored) { throw 'Native image pointer claim was not restored' }

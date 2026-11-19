@@ -251,3 +251,20 @@ The existing external `block` future-compatibility notice remains unchanged.
 The PowerShell/ConPTY producer and embedded C# still require actual Windows execution.
 Cross-lint checks the Rust harness but does not compile or execute those embedded scripts.
 No native image qualification or `gfde` closure is claimed by this candidate.
+
+## First Windows execution on `97864f275`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44635700648/job/135953846600) passes 23 UIA cases and fails the new image case.
+Its pointer-failure helper reaches the private terminal before failing in its `finally` block.
+The C# cleanup method returns Boolean, but PowerShell's dynamic call site requires Object.
+The [official binder source](https://github.com/PowerShell/PowerShell/blob/master/src/System.Management.Automation/engine/runtime/Binding/Binders.cs) special-cases methods named `End` or `Process` before boxing their results.
+That name-based branch incorrectly includes this unrelated `End` method.
+It prevents cleanup invocation and masks the expected intentional failure.
+The run therefore proves neither pointer restoration nor native image qualification.
+It never reaches the image producer, so this failure says nothing about ConPTY graphics support.
+
+The test-only method and caller now use `Finish`.
+Restore logic, ownership, watchdog, deadlines, and restoration receipts remain unchanged.
+The existing negative native case requires both the original intentional failure and `restored=True`.
+Independent review confirms the root cause and the two-line correction.
+Its actual Windows rerun remains pending; local Rust cross-lint cannot prove this fix.
