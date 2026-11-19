@@ -4,8 +4,9 @@
 //! binds the shortcuts and runs the commands that stay in the window.
 
 // `catalog!` reads its table one row per expansion step, so the default
-// limit of 128 would cap the catalog at about that many rows.
-#![recursion_limit = "512"]
+// limit of 128 would cap the catalog at about that many rows. A numbered row
+// expands a step per number, and one more for the symbol each digit types.
+#![recursion_limit = "1024"]
 
 use serde_json::{Value, json};
 use sheprd_client::{Method, protocol::ClientShellSnapshot};
