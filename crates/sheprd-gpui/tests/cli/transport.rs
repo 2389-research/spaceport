@@ -7,7 +7,7 @@ use sheprd_control_protocol::protocol::{
 };
 use std::{
     io::{BufRead, BufReader, Write},
-    os::unix::net::UnixListener,
+    os::unix::net::{UnixListener, UnixStream},
     sync::mpsc,
 };
 
@@ -15,6 +15,16 @@ enum Answer {
     Eof,
     Bytes(Vec<u8>),
     Silent,
+}
+
+#[path = "transport/socket_mode.rs"]
+mod socket_mode;
+
+fn prepare_peer(stream: &UnixStream) {
+    stream.set_nonblocking(false).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
 }
 
 fn scripted(answer: Answer) -> Output {
@@ -45,9 +55,7 @@ fn scripted_for(args: &[&str], method: &str, answer: Answer) -> Output {
                 Err(error) => panic!("accept failed: {error}"),
             }
         };
-        stream
-            .set_read_timeout(Some(Duration::from_secs(5)))
-            .unwrap();
+        prepare_peer(&stream);
         let mut request = String::new();
         BufReader::new(&stream).read_line(&mut request).unwrap();
         let request: serde_json::Value = serde_json::from_str(&request).unwrap();

@@ -301,3 +301,58 @@ The formatting, size, sorting, operations, localization, specification-package, 
 The specification gate still reports JSON Schema validation as not run.
 Independent review finds no material issues in either delta.
 The default-owner fixture and its explicit native scheduling are described in [pipe qualification](review-windows-safety.md#native-pipe-qualification).
+
+## Drive prefixes and accepted CLI streams
+
+Source `86842ddc3e6b9296ca6f7efacc0318b15f280608` finishes [run 44449866662](https://github.com/2389-research/spaceport/actions/runs/44449866662).
+Its PR status has fifteen passed checks, seven failures, and one skipped target.
+The failures comprise four Windows workspace legs, macOS default, the x64 release CLI suite, and the aggregate.
+Both Windows native jobs and the Windows installer pass.
+The x64 UI Automation case now passes the actual version-text and seven keyboard-focus observations.
+The version appears as Text with no action patterns.
+Screen-reader speech, Core accessibility, and the full Settings keyboard matrix remain separate.
+
+Every Windows workspace leg now has exactly one failed GPUI case: the canonical-directory endpoint click fixture.
+Default legs pass 4,281 cases; all-feature legs pass 4,319.
+Each retains six private fixture entries ignored directly.
+The missing-file diagnostics and all other link cases pass.
+
+The earlier canonical-directory correction produces a Windows verbatim drive path.
+The resolver already permits that prefix, but queried it before adding its root separator.
+It now defers that incomplete lookup until the next component.
+Remote-prefix refusal still runs before this deferral and before every filesystem read.
+The exact endpoint URL assertion remains unchanged.
+New Windows regressions use an actual canonical document and require remote/device prefixes to return Remote.
+The existing native endpoint failure supplies the failing runtime baseline.
+Direct execution of the new Windows cases remains unavailable on this Mac and awaits CI.
+All 66 affected link and file-resolution cases pass locally.
+
+Both macOS failures report EAGAIN while the scripted CLI peer reads its first request.
+A private standard-library probe reproduces inherited nonblocking mode on accepted macOS sockets.
+Its initial read returns immediately; explicit blocking mode makes the existing timeout effective.
+The peer now clears nonblocking mode before applying its unchanged five-second read timeout.
+The listener stays nonblocking for bounded acceptance and duplicate-request detection.
+A deterministic actual-descriptor regression first fails on O_NONBLOCK, then passes after the correction.
+The first attempted exact test filter selected zero cases; the corrected full-name run supplies the genuine failure.
+All 45 compiled CLI cases pass locally, with one opt-in clipboard check ignored.
+Command deadlines, exit codes, response envelopes, and no-retry assertions remain unchanged.
+
+Both native default-owner probes report same-owner acceptance with both startup settings.
+They do not qualify mismatched-owner refusal.
+The fixture now also requests an existing group owner without enabling privileges or creating an account.
+Only documented owner/access failures report that assignment unavailable.
+Successful assignment must expose a different actual owner and prove readable unchecked access before checked refusal.
+The negative qualification still requires its actual native branch markers.
+See [the pipe qualification limits](review-windows-safety.md#native-pipe-qualification).
+
+Logs use `/tmp/spaceport-9s44-868-*`, `cli-socket-mode-*`, `verbatim-link-tests.log`, and `prefix-and-peer-*`.
+The short names share the `/tmp/spaceport-9s44-` prefix.
+The Mac harness built from `86842ddc3` with `--no-run`; no foreground fixture ran.
+
+The final local CLI run also passes all 45 cases with default test parallelism and one opt-in check ignored.
+Canonical host and Windows GNU lint pass both feature configurations after these corrections.
+Formatting, size, sorting, operations, localization, specification-package, and diff checks pass.
+The specification gate still reports JSON Schema validation as not run.
+Independent security review confirms unchanged refusal ordering, symlink bounds, document safety, and endpoint fencing.
+Kata `jvcf` closes from restored scheduling and actual native execution, independently of these application failures.
+Its closure event and scope limits are recorded in [Windows CI evidence](review-windows-ci.md#ci-restoration-closure).

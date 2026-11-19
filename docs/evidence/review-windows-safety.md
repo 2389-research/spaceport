@@ -127,3 +127,14 @@ Both scheduling cases, 11 CI policy cases, six release-transition cases, and thr
 Actionlint and offline Zizmor pass with their existing configured exclusions.
 Windows GNU Clippy compiles the test; it cannot execute it on this Mac.
 Independent review approves the private handles, replacement listener, bounded probe I/O, and explicit qualification limits.
+
+The actual native x64 and ARM probes on `86842ddc3` both observe the current user as default owner.
+Both startup settings pass same-owner acceptance; neither run supplies negative owner evidence.
+The fixture now also tries the documented [built-in Administrators owner alias](https://learn.microsoft.com/en-us/windows/win32/secauthz/sid-strings).
+[Windows validates an assigned owner against the existing token](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-createprivateobjectsecurityex).
+The test does not enable privileges or create accounts.
+Access-denied, invalid-owner, or privilege-not-held creation errors explicitly report group ownership unavailable.
+Every other creation failure fails the test.
+Successful group assignment must produce a measured owner distinct from the user.
+The same unchecked byte exchange and checked refusal assertions then run with both startup settings.
+Kata `q7h6` remains open pending actual negative branch markers.

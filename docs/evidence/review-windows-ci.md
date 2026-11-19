@@ -96,3 +96,21 @@ The first hosted execution on `aaff481f9` fails because the version label has no
 The ordinary seven-case GUI suite passes before that failure.
 The label repair and a stricter Text assertion now await native confirmation.
 See [the actual qualification results](review-ci-qualification.md#native-windows-path-and-accessibility-results).
+
+Source `86842ddc3` subsequently passes the actual x64 UI Automation tree and keyboard-focus case.
+The version is exposed as noninteractive Text, and all seven focus observations pass.
+The same source passes both ordinary native GUI jobs and the Windows installer.
+Workspace and release CLI failures still prevent the aggregate from passing.
+See [the current corrections](review-ci-qualification.md#drive-prefixes-and-accepted-cli-streams).
+
+## CI restoration closure
+
+Kata `jvcf` closed after native execution and independent review of its actual requirements.
+The closure event is `9778` (`01M7RY0H37ZC1QFA6QPWF0BZZ8`).
+The verified source is `86842ddc3e6b9296ca6f7efacc0318b15f280608`.
+Both native jobs pass local controls and sidebar tests; x64 also passes the live-daemon and UI Automation cases.
+The installer passes actual installation and cleanup.
+The four Windows check jobs run formatting, lint, and tests independently of the performance variable.
+The aggregate correctly rejects their separate canonical-path failures and the macOS CLI fixture failures.
+The issue does not require a globally green application suite to prove restored scheduling and execution.
+Overall CI acceptance stays open, along with Windows performance under `h8g5`.

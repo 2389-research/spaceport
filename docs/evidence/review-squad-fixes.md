@@ -245,7 +245,7 @@ No commit, push, PR, hosted CI run, or new native check occurred.
 
 ## Findings
 
-Current November 18 checkpoint: 33 children closed, 20 open, umbrella open.
+Current November 18 checkpoint: 34 children closed, 19 open, umbrella open.
 Core guidance (`jemh`) closed after copy review, native General wrapping, and three Core-enabled catalog tests.
 The closure ledger retains event 9502 and its UID.
 The latest keyboard fixture timed out without becoming key, including after Doctor Biz confirmed readiness.
@@ -323,7 +323,7 @@ The generic shell follow-up now passes its headless regressions; final native an
 - [x] `2rqs` — Bound chat uploads over SSH and clean up dropped files
 - [x] `rder` — Stop the whole agent process tree on Windows (closed after native x64 and ARM regressions)
 - [x] `q7h6` — Check the Herdr pipe's owner before connecting on Windows (native execution pending Windows CI)
-- [x] `jvcf` — Restore Windows CI and run native GUI tests somewhere (hosted execution pending an authorized push)
+- [x] `jvcf` — Restore Windows CI and run native GUI tests somewhere (closed after actual native execution; unrelated application failures remain)
 - [x] `05be` — Show agent status with more than colour (native visual qualification pending)
 - [x] `d0n2` — Make the Settings window keyboard-navigable (native keyboard and assistive-technology qualification pending)
 - [x] `8zvq` — Raise secondary text contrast on light themes (native screen qualification pending)
