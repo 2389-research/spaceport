@@ -278,6 +278,10 @@ fn native_fixture(fixture: Fixture) {
         Fixture::InputShutdown(_) => "INPUT shutdown ready:",
         _ => "SIDEBAR native PASS:",
     }));
+    #[cfg(windows)]
+    if matches!(fixture, Fixture::LocalControls { .. }) {
+        assert!(log.contains("STATUS SHAPES native PASS:"), "{log}");
+    }
 }
 
 fn run_fixture(fixture: &Fixture) -> Option<(ExitStatus, String)> {

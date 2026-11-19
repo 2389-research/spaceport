@@ -18,3 +18,20 @@ Root reviewed the shared renderer and its callers.
 Native visual qualification remains pending.
 
 Logs: `/tmp/spaceport-9s44-status-shapes-{red,green}.log` and `/tmp/spaceport-9s44-status-paint-{red,green}.log`.
+
+## Native Windows qualification plan
+
+Render the shared production marker in owned native windows at default and doubled sidebar font sizes.
+Use identical marker colors against dark and light backgrounds, so color cannot distinguish the statuses.
+Require visible pixels for both marks and a larger filled area for Blocked.
+Return only those small authored scenes as PNG receipts through the existing isolated fixture log.
+Inspect the native results and images before closing `05be`.
+This check does not qualify foreground performance or the complete sidebar layout.
+
+The existing default-style and painted-quad regressions remain the baseline proof.
+The Windows-only raster fixture cannot run on this Mac; native pixels and images remain pending CI.
+Both host and Windows GNU lint configurations pass.
+Format, file size, sorted regions, operations, localization, and diff checks pass.
+Independent review confirms that readback receives only the owned rendered scene, not desktop pixels.
+The parent requires a native completion receipt and already retains the private child's complete log.
+Logs use `/tmp/spaceport-9s44-native-shapes-{lint,static}.log` and the corresponding `final-windows-lint` and `final-static` logs.

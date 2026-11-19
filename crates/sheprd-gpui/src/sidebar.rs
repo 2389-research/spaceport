@@ -64,6 +64,9 @@ pub(crate) use metrics::LABEL_WIDTH;
 pub(crate) use snapshot_index::{IndexedSnapshot, SnapshotIndexCache};
 pub(crate) use view::element as view_element;
 
+#[cfg(all(windows, feature = "integration-test"))]
+pub(crate) use agents::verify_status_shapes;
+
 use agents::agents_sort;
 use metrics::*;
 use row::{RowBadge, first_text};
