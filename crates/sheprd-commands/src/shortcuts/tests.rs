@@ -4,6 +4,7 @@ use gpui::{Keystroke, Modifiers};
 use std::collections::HashMap;
 
 mod default_snapshot;
+mod gnome;
 mod linux_symbols;
 mod pane_keys;
 mod toggle_status_bar;

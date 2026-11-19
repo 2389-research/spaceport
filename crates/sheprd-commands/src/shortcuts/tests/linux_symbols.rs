@@ -19,9 +19,11 @@ fn removed(command: Command) -> bool {
 }
 
 #[test]
-fn linux_uses_only_the_listed_shifted_symbol_fallbacks() {
+fn linux_uses_only_the_listed_platform_fallbacks() {
     for info in COMMANDS {
-        let expected = if removed(info.command) {
+        let expected = if info.command == Command::ResumePalette {
+            &["ctrl-shift-r"][..]
+        } else if removed(info.command) || super::gnome::catalog_uses_gnome_chord(info.command) {
             &[][..]
         } else {
             catalog::linux::defaults(info.command)

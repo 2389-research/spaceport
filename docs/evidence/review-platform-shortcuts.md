@@ -166,10 +166,36 @@ Unicode packet injection cannot qualify AltGr translation.
 GNOME 46 defines concrete conflicts with the retained shared Ctrl profile.
 Its [workspace movement bindings](https://github.com/GNOME/gsettings-desktop-schemas/blob/46.0/schemas/org.gnome.desktop.wm.keybindings.gschema.xml.in#L241) use Ctrl+Alt+Shift+arrows.
 Its [recording binding](https://github.com/GNOME/gnome-shell/blob/46.0/data/org.gnome.shell.gschema.xml.in#L287) uses Ctrl+Alt+Shift+R.
-The Linux wrapper still retains those Focus and Resume Palette defaults.
+The inspected pre-correction Linux wrapper retained those Focus and Resume Palette defaults.
 This source evidence establishes a default conflict, without claiming interception in an untested local session.
 
 Current Linux CI has no qualified GNOME session.
 Xvfb/XTest can qualify an X11 application route, but cannot establish GNOME or Wayland interception.
 No layout change, native input, or desktop launch occurred during this read-only research.
 Kata `3wd4` remains open.
+
+## GNOME default correction
+
+GNOME 46's source confirms all four workspace-movement conflicts and the recording conflict above.
+The Linux wrapper now leaves the four direct pane-focus shortcuts unbound.
+Existing Herdr prefix then h/j/k/l still focuses the corresponding pane.
+Resume Palette uses Ctrl-Shift-R on Linux, since that command is deliberately excluded from the palette itself.
+Windows retains the shared Ctrl defaults, and macOS keeps its original defaults.
+Explicit shortcut configuration keeps its existing precedence.
+The generated default fixture changes only those five Linux rows.
+README documents the retained focus routes and the new Resume binding.
+
+The reserved-chord and bounded-profile regressions fail first on Focus Left.
+The separate Resume regression fails first with Ctrl-Alt-Shift-R instead of Ctrl-Shift-R.
+Logs: `/tmp/spaceport-9s44-gnome-shortcuts-red.log` and `gnome-resume-red.log`.
+The complete commands scope then passes forty-one tests, with none ignored.
+Log: `/tmp/spaceport-9s44-gnome-commands-final.log`.
+The fixture generator initially caught the five intended differences; its reviewed update retains all other rows.
+The Linux-only keymap case also checks all four retained prefix routes and the new Resume binding.
+The host keymap, prefix dispatch, and palette-resume scope passes seventy-three tests, with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- keymap:: window::prefix::tests:: palette::tests::resume:: --nocapture`.
+Log: `/tmp/spaceport-9s44-gnome-consumers.log`.
+Independent review finds no material discoverability, platform, precedence, or profile-boundary issue.
+That cfg-specific case requires Linux CI; a macOS pass cannot qualify its branch.
+Native Linux/Windows keyboard delivery and actual GNOME session checks remain pending.
+This correction does not close `3wd4`.

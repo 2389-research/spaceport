@@ -39,6 +39,10 @@ In Settings, use Tab and Shift+Tab to move between enabled controls.
 Use Enter or Space to activate buttons and choices; Escape closes a dropdown or font picker.
 The opacity slider accepts arrow keys, Home, and End.
 
+On Linux, focus panes with Herdr's prefix followed by h/j/k/l.
+Ctrl-Shift-R resumes the last command palette.
+Linux defaults leave GNOME's Ctrl-Alt-Shift-arrow and Ctrl-Alt-Shift-R shortcuts free.
+
 ## Work on the fork
 
 Use the pinned Rust toolchain in `rust-toolchain.toml`. From the repository
