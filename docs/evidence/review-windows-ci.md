@@ -92,4 +92,7 @@ Windows GNU Clippy passes the changed integration target with all features and w
 That check proves compilation, not Windows execution.
 Independent review corrected a stale Version-button assertion to require the actual noninteractive accessible label.
 The existing PowerShell capture has no per-call timeout; the job's 90-minute limit remains its final bound.
-Actual hosted UI Automation execution remains pending.
+The first hosted execution on `aaff481f9` fails because the version label has no accessible role.
+The ordinary seven-case GUI suite passes before that failure.
+The label repair and a stricter Text assertion now await native confirmation.
+See [the actual qualification results](review-ci-qualification.md#native-windows-path-and-accessibility-results).

@@ -11,7 +11,38 @@ import unittest
 import test_ci_policy as policy
 
 
+def cargo_arguments(script):
+    # Execute the real command; this recorder does not prove native behavior.
+    with tempfile.TemporaryDirectory() as directory:
+        cargo = Path(directory) / "cargo"
+        cargo.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+        cargo.chmod(0o700)
+        result = subprocess.run(
+            ["bash", "-e", "-c", script], check=True, text=True,
+            capture_output=True,
+            env={**os.environ, "PATH": f"{directory}{os.pathsep}{os.environ['PATH']}"},
+        )
+    return result.stdout.splitlines()
+
+
 class WindowsAccessibilityCi(unittest.TestCase):
+    def test_native_job_reports_the_actual_pipe_owner_boundary(self):
+        step = re.search(
+            r"      - name: Native pipe owner qualification\n(.*?)"
+            r"(?=      - name:)", policy.JOBS["windows-native"], re.S,
+        )
+        self.assertIsNotNone(step, "native pipe owner qualification must run")
+        self.assertIsNone(re.search(r"^        if:", step[1], re.M))
+        args = cargo_arguments(re.search(r"^        run: (.+)$", step[1], re.M)[1])
+        self.assertEqual(args[:4], ["test", "--locked", "-p", "sheprd-gpui"])
+        self.assertEqual(args[args.index("--bin") + 1], "spaceport")
+        self.assertEqual(args[args.index("--features") + 1], "integration-test")
+        self.assertEqual(
+            args[args.index("--") - 1],
+            "daemon::windows_tests::daemon_pipe_compares_the_opened_owner_despite_read_write_access",
+        )
+        self.assertEqual(args[args.index("--") + 1:], ["--exact", "--nocapture", "--test-threads=1"])
+
     def test_native_x64_runs_every_ignored_accessibility_fixture(self):
         step = re.search(
             r"      - name: Native UI Automation tree and keyboard focus\n(.*?)"
@@ -26,17 +57,7 @@ class WindowsAccessibilityCi(unittest.TestCase):
                 runner == "windows-2025",
             )
         script = re.search(r"^        run: (.+)$", step[1], re.M)[1]
-        # The shell executes the workflow's command; this recorder is not a native GUI test.
-        with tempfile.TemporaryDirectory() as directory:
-            cargo = Path(directory) / "cargo"
-            cargo.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
-            cargo.chmod(0o700)
-            result = subprocess.run(
-                ["bash", "-e", "-c", script], check=True, text=True,
-                capture_output=True,
-                env={**os.environ, "PATH": f"{directory}{os.pathsep}{os.environ['PATH']}"},
-            )
-        args = result.stdout.splitlines()
+        args = cargo_arguments(script)
         self.assertEqual(args[0], "test")
         self.assertIn("--locked", args)
         self.assertEqual(args[args.index("-p") + 1], "sheprd-gpui")

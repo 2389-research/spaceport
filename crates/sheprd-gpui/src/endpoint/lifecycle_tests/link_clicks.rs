@@ -1,3 +1,5 @@
+// ABOUTME: Checks which mouse clicks belong to a verified local file link.
+// ABOUTME: Uses a real document and the pane's explicit working directory.
 //! A link-modifier click on a printed path in an application that reads the
 //! mouse: the application keeps it until the path is verified.
 
@@ -7,6 +9,7 @@ use super::*;
 fn an_unchecked_path_leaves_the_click_to_the_application(cx: &mut gpui::TestAppContext) {
     let root = tempfile::tempdir().unwrap();
     std::fs::write(root.path().join("notes.txt"), "notes").unwrap();
+    let cwd = root.path().canonicalize().unwrap();
     let (fixture, cx) = cx.add_window_view(|window, cx| {
         Fixture(cx.new(|cx| crate::sidebar::layout_tests::fixture_window(window, cx)))
     });
@@ -17,7 +20,7 @@ fn an_unchecked_path_leaves_the_click_to_the_application(cx: &mut gpui::TestAppC
         view.update(cx, |view, cx| {
             prepare_mouse(view, endpoint, cx);
             let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
-            snapshot.panes[0].cwd = Some(root.path().to_str().unwrap().into());
+            snapshot.panes[0].cwd = Some(cwd.to_str().unwrap().into());
             snapshot.panes[0].foreground_cwd = snapshot.panes[0].cwd.clone();
             let frame = &mut Arc::make_mut(view.live.surface.as_mut().unwrap()).frame;
             let text = "notes.txt";

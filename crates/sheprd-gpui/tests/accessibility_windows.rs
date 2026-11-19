@@ -92,7 +92,7 @@ fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
         "Document 'Terminal'",
         "StatusBar 'Status bar'",
         "Button 'Theme' [Invoke]",
-        " 'Version ",
+        "Text 'Version ",
     ];
     let deadline = Instant::now() + Duration::from_secs(60);
     let tree = loop {
@@ -114,10 +114,10 @@ fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
     eprintln!("{tree}");
     let version = tree
         .lines()
-        .find(|line| line.contains(" 'Version "))
+        .find(|line| line.trim_start().starts_with("Text 'Version "))
         .unwrap();
     assert!(
-        !version.trim_start().starts_with("Button "),
+        !version.contains("Invoke") && !version.contains("Value"),
         "the version label has no action: {version}"
     );
     // Back and Forward have no history to go to yet.

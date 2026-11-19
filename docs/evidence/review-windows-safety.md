@@ -106,3 +106,24 @@ Those jobs later failed unrelated SSH parser fixtures; this does not qualify the
 Kata `rder` closed after a fresh native-result read and issue-status readback.
 The closure event is `9757` (`01M7RNCXC99A8HFWN28N4Q1HMF`).
 Pipe-specific GUI tests and the foreign-owner limitation remain separate qualification work for `q7h6`.
+
+## Native pipe qualification
+
+Source `aaff481f9` passes all three daemon pipe regressions on native x64 and ARM, with both feature configurations.
+They qualify same-owner byte exchange, denied-write refusal without startup, and identification-only impersonation limits.
+They do not exercise a readable pipe owned by a different SID.
+
+A new private fixture creates a pipe with current-user read/write access and the token's default owner.
+The unchecked connector exchanges five fixture bytes and the test reads the actual opened pipe's owner.
+The checked connector must then refuse a different owner, with automatic startup enabled and disabled.
+If the default owner equals the current user, the fixture instead verifies acceptance and reports mismatch qualification unavailable.
+It grants no new account access, changes no token privileges, and prints no SIDs.
+The native job runs this exact test with uncaptured branch markers on both Windows architectures.
+Only actual mismatched-owner refusal markers qualify the negative security boundary.
+The issue remains open until those native results arrive.
+
+The scheduling regression fails before the workflow step exists, then passes with its actual shell invocation.
+Both scheduling cases, 11 CI policy cases, six release-transition cases, and three security cases pass locally.
+Actionlint and offline Zizmor pass with their existing configured exclusions.
+Windows GNU Clippy compiles the test; it cannot execute it on this Mac.
+Independent review approves the private handles, replacement listener, bounded probe I/O, and explicit qualification limits.

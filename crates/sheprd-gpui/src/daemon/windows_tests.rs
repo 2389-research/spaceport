@@ -8,6 +8,7 @@ use interprocess::os::windows::{
 };
 use std::{
     io::{Read, Write},
+    os::windows::io::AsHandle,
     sync::atomic::AtomicU64,
 };
 
@@ -84,6 +85,43 @@ fn daemon_pipe_preserves_access_denied_without_starting_a_daemon() {
             dial(&socket, auto_start).unwrap_err().kind(),
             io::ErrorKind::PermissionDenied
         );
+    }
+}
+
+#[test]
+fn daemon_pipe_compares_the_opened_owner_despite_read_write_access() {
+    let user = sheprd_client::private_endpoint::user_sid().unwrap();
+    for auto_start in [false, true] {
+        // Omitting O: uses the token's default owner, which can differ from its user.
+        let (socket, listener) = listener(&format!("D:P(A;;GA;;;{user})"));
+        let mut unchecked = Stream::connect(&socket).unwrap();
+        unchecked
+            .set_write_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        let mut peer = listener.accept().unwrap();
+        let owner = sheprd_client::private_endpoint::owner_sid(peer.as_handle()).unwrap();
+        // The unchecked connector can exchange bytes; ACL denial cannot explain a refusal.
+        unchecked.write_all(b"probe").unwrap();
+        unchecked.flush().unwrap();
+        let mut bytes = [0; 5];
+        peer.read_exact(&mut bytes).unwrap();
+        assert_eq!(&bytes, b"probe");
+        drop(unchecked);
+        drop(peer);
+
+        let checked = dial(&socket, auto_start);
+        if owner == user {
+            let client = checked.unwrap();
+            let peer = listener.accept().unwrap();
+            drop(client);
+            drop(peer);
+            eprintln!(
+                "PIPE OWNER: same-owner accepted; mismatch unavailable; auto_start={auto_start}"
+            );
+        } else {
+            assert_eq!(checked.unwrap_err().kind(), io::ErrorKind::PermissionDenied);
+            eprintln!("PIPE OWNER: readable mismatched-owner refused; auto_start={auto_start}");
+        }
     }
 }
 

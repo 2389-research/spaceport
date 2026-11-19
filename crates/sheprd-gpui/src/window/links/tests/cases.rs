@@ -83,9 +83,11 @@ enum Click {
     Address(&'static str),
     /// Asks first, and opens the address once the user says yes.
     Asks(&'static str),
-    /// Shows that the file at this path under the working directory is not
-    /// found.
+    /// Shows the missing path as written, relative to the working directory
+    /// when needed.
     NotFound(&'static str),
+    /// Shows that the file named by this file URL is not found.
+    NotFoundUrl(&'static str),
     /// Shows this error.
     Says(crate::Error),
 }
@@ -184,7 +186,19 @@ impl Sandbox {
             Click::NotFound(path) => Outcome {
                 message: Some(
                     crate::Error::LinkedFileMissing {
-                        path: self.work.join(path),
+                        path: self.work.join(self.fill(path)),
+                    }
+                    .to_string(),
+                ),
+                ..outcome
+            },
+            Click::NotFoundUrl(address) => Outcome {
+                message: Some(
+                    crate::Error::LinkedFileMissing {
+                        path: url::Url::parse(&self.fill(address))
+                            .unwrap()
+                            .to_file_path()
+                            .unwrap(),
                     }
                     .to_string(),
                 ),
@@ -422,14 +436,14 @@ fn check(
 #[test_case(Text::Osc8("{work_url}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "file address, local host, existing file")]
 #[test_case(Text::Osc8("{localhost_url}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "file address, localhost, existing file")]
 #[test_case(Text::Osc8("{work_url}/src"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src") ; "file address, local host, existing folder")]
-#[test_case(Text::Osc8("{work_url}/src/missing.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("src/missing.rs") ; "file address, local host, missing file")]
+#[test_case(Text::Osc8("{work_url}/src/missing.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFoundUrl("{work_url}/src/missing.rs") ; "file address, local host, missing file")]
 #[test_case(Text::Osc8("file://other-host/src/sample.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::Says(crate::Error::LinkOnAnotherHost { host: "other-host".into() }) ; "file address, another host")]
 #[test_case(Text::Osc8("{work}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare absolute path, existing file")]
 #[test_case(Text::Osc8("{tilde}/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare home path, existing file")]
 #[test_case(Text::Osc8("./src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare dot path, existing file")]
 #[test_case(Text::Osc8("../work/src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare parent path, existing file")]
 #[test_case(Text::Osc8("src/sample.rs"), DASHES, DASHES, SOLID_AND_HAND, Click::Opens("src/sample.rs") ; "bare relative path, existing file")]
-#[test_case(Text::Osc8("{work}/src/missing.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("src/missing.rs") ; "bare absolute path, missing file")]
+#[test_case(Text::Osc8("{work}/src/missing.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("{work}/src/missing.rs") ; "bare absolute path, missing file")]
 #[test_case(Text::Osc8("./no/such/file.rs"), DASHES, DASHES, DASHES_AND_HAND, Click::NotFound("./no/such/file.rs") ; "bare dot path, missing file")]
 // OSC 8 hyperlink to a URL.
 #[test_case(Text::Osc8("https://example.com/something/"), DASHES, DASHES, SOLID_AND_HAND, Click::Address("https://example.com/something/") ; "https address")]

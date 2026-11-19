@@ -257,3 +257,47 @@ The Windows-only regressions compile in those checks; they do not execute on thi
 Formatting, file size, sorted regions, operations, localization, specification-package, and diff checks pass.
 The specification check still reports JSON Schema validation as not run.
 Native Windows qualification remains pending on the repaired source.
+
+## Native Windows path and accessibility results
+
+CI tested source `aaff481f9703bffdb138374eeb9047a7b58e900e` in [run 44446880785](https://github.com/2389-research/spaceport/actions/runs/44446880785).
+The final PR status reports sixteen passed checks, six failures, and one skipped target.
+The failures comprise four Windows workspace legs, x64 accessibility, and the aggregate gate.
+Both macOS workspace legs, all Linux legs, and native macOS host routing pass.
+The CodeRabbit success remains a draft skip.
+All four Windows workspace legs now reach the GPUI suite with only three failures each.
+Default legs report 4,277 passed; all-feature legs report 4,315 passed.
+Each reports six private fixture entries ignored directly.
+The owner-rights, denied-write, and identification-only pipe cases pass on both architectures and feature configurations.
+The Windows drive-classifier, Settings catalog, recovery, and exact CLI snapshot regressions also pass.
+The native ARM GUI job and the Windows package/installer job pass.
+
+The three remaining workspace failures compare path spelling rather than file identity or click behavior.
+The endpoint click fixture supplied a short Windows temporary path but expected its canonical long spelling.
+It now supplies the canonical working directory while keeping the exact final URL assertion.
+The two missing-file cases confused a literal path's separators with a file URL's decoded native separators.
+Their expectations now distinguish those representations and retain exact diagnostics and hover behavior.
+Production file resolution and security checks remain unchanged.
+All 66 focused link and file-resolution cases pass locally after these fixture corrections.
+Native Windows confirmation of these corrections remains pending.
+
+The x64 native job passes all seven ordinary GUI cases before its new accessibility step fails.
+The actual UI Automation control tree omits the version label; all other expected names appear.
+The version renderer supplied an accessible name without the role GPUI requires for inclusion.
+It now uses `Role::Label` and the localized value, matching existing passive status text.
+A regression against the real renderer first fails with no role, then passes after the correction.
+It checks the spoken value and absence of Click or Focus actions.
+All 13 focused status-bar cases pass locally.
+The native assertion requires Text with the version name and forbids Invoke and Value action patterns.
+The pinned AccessKit Windows adapter maps Label to Text and derives its name from its value.
+The native tree and subsequent keyboard-focus sequence still require a fresh hosted run.
+
+Logs use `/tmp/spaceport-9s44-version-a11y-*` and `windows-link-aliases-tests.log` with the same prefix.
+The baseline native logs use `/tmp/spaceport-9s44-aaff-*`.
+
+Canonical host and Windows GNU lint pass both feature configurations after the label and path repairs.
+The later Windows-only owner fixture also passes both Windows GNU lint configurations.
+The formatting, size, sorting, operations, localization, specification-package, and diff checks pass.
+The specification gate still reports JSON Schema validation as not run.
+Independent review finds no material issues in either delta.
+The default-owner fixture and its explicit native scheduling are described in [pipe qualification](review-windows-safety.md#native-pipe-qualification).
