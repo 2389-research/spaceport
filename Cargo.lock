@@ -6504,6 +6504,7 @@ dependencies = [
  "sheprd-osc52",
  "sheprd-remote",
  "sheprd-reorder",
+ "sheprd-settings",
  "sheprd-sound",
  "sheprd-truncate",
  "sheprd-usage",
@@ -6598,6 +6599,33 @@ name = "sheprd-reorder"
 version = "0.1.0"
 
 [[package]]
+name = "sheprd-settings"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "config",
+ "fontdb 0.24.0",
+ "rustix",
+ "serde",
+ "serde_ignored",
+ "serde_json",
+ "sheprd-chat-protocol",
+ "sheprd-client",
+ "sheprd-commands",
+ "sheprd-i18n",
+ "sheprd-lenient",
+ "sheprd-usage",
+ "skrifa 0.49.0",
+ "tempfile",
+ "thiserror 2.0.21",
+ "toml 1.1.6+spec-1.1.0",
+ "toml_edit 0.25.15+spec-1.1.0",
+ "tracing",
+ "windows-sys 0.61.2",
+ "zed-font-kit",
+]
+
+[[package]]
 name = "sheprd-sound"
 version = "0.1.0"
 dependencies = [
@@ -6607,6 +6635,7 @@ dependencies = [
  "serde_json",
  "sheprd-lenient",
  "sheprd-protocol",
+ "sheprd-settings",
  "tempfile",
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",

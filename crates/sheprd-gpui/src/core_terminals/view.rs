@@ -410,9 +410,7 @@ impl Render for CoreTerminalView {
                         .child(status),
                 )
             });
-        self.look
-            .padding
-            .pad(div())
+        crate::config::pad(div(), self.look.padding)
             .id(SharedString::from(format!("core-terminal-{}", self.id)))
             .role(Role::Terminal)
             .aria_label(fl!("window-input-terminal"))

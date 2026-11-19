@@ -122,6 +122,7 @@ fn plus_clicks_coalesce_while_busy_and_write_once_afterwards(cx: &mut TestAppCon
     fn loaded() -> crate::Result<super::super::super::Loaded> {
         Ok(super::super::super::Loaded {
             config: Config::default(),
+            keymap: Default::default(),
             theme: Default::default(),
             shared: None,
             error: None,
@@ -182,6 +183,7 @@ fn picker_search_keyboard_refresh_and_dismissal_are_local(cx: &mut TestAppContex
         view.apply_loaded(
             Ok(super::super::super::Loaded {
                 config: view.config.clone(),
+                keymap: Default::default(),
                 theme: view.theme.clone(),
                 shared: None,
                 error: None,
@@ -240,7 +242,10 @@ fn selected_row_specimen_uses_face_and_effective_pending_size(cx: &mut TestAppCo
             view.accept_control_size(face, original.size + 1., cx);
             let specimen = view.control_specimen_font();
             assert_eq!(specimen.family, original.family);
-            assert_eq!(specimen.font(), original.font());
+            assert_eq!(
+                crate::config::font_for(&specimen),
+                crate::config::font_for(&original)
+            );
             assert_eq!(specimen.size, original.size + 1.);
         });
     }
@@ -315,6 +320,7 @@ fn family_commits_capture_target_and_only_change_families(cx: &mut TestAppContex
             load: Arc::new(move || {
                 Ok(super::super::super::Loaded {
                     config: loaded.lock().unwrap().clone(),
+                    keymap: Default::default(),
                     theme: Default::default(),
                     shared: None,
                     error: None,

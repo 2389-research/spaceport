@@ -46,7 +46,7 @@ impl History {
     }
 
     fn load(target: &Target, cancelled: &AtomicBool) -> crate::Result<Self> {
-        match target {
+        let result = match target {
             Target::Local => Settings::load_runtime_history()
                 .map(Box::new)
                 .map(Self::Local),
@@ -58,14 +58,15 @@ impl History {
                     },
                 )
             }
-        }
+        };
+        result.map_err(crate::Error::from)
     }
 
     fn save(&self, enabled: bool, cancelled: &AtomicBool) -> crate::Result<Self> {
         if cancelled.load(Ordering::Acquire) {
             return Err(std::io::Error::from(std::io::ErrorKind::Interrupted).into());
         }
-        match self {
+        let result = match self {
             Self::Local(settings) => settings
                 .save(Edit::PaneHistory(enabled))
                 .map(Box::new)
@@ -76,7 +77,8 @@ impl History {
                     target: target.clone(),
                     history,
                 }),
-        }
+        };
+        result.map_err(crate::Error::from)
     }
 }
 

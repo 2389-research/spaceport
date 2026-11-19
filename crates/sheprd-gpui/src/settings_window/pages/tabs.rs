@@ -5,7 +5,7 @@
 // i18n: migrated
 use super::{SettingsWindow, catalog, on_value, ui};
 use crate::{
-    config::{TabLayoutMode, preferences::Preference},
+    config::{Label as _, TabLayoutMode, preferences::Preference},
     herdr_settings::{Edit, TabBarPosition},
     i18n::fl,
     settings_window::host_history::{HostState, Target},

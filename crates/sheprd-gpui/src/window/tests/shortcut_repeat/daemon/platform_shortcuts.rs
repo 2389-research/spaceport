@@ -52,7 +52,7 @@ fn explicit_prefix_region_commands_move_focus_through_real_dispatch(cx: &mut Tes
         view.update(cx, |view, cx| {
             let table: toml::Table = "[keys]\nfocus_next_region = 'prefix+f6'\nfocus_previous_region = 'prefix+shift+f6'\n".parse().unwrap();
             let keys = crate::keymap::DaemonKeys::from_table(table["keys"].as_table());
-            view.config.keybindings = crate::keymap::Keymap::with_overrides(
+            view.keymap = crate::keymap::Keymap::with_overrides(
                 &Default::default(), &Default::default(), &keys,
             ).unwrap();
             window.focus(&view.focus.clone(), cx);

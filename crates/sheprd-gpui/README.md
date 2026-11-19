@@ -290,7 +290,7 @@ until it restarts; check Core's machine list to see what happened.
 
 The dialog has no host-key option. Hosts that keep no stable key to check are
 listed by hand under `[ssh] skip_host_key_verification` in the local config,
-by target (see `config-gpui.example.toml`). For those targets the app passes
+by target (see [`config-gpui.example.toml`](../sheprd-settings/config-gpui.example.toml)). For those targets the app passes
 `StrictHostKeyChecking=no` and reads no known hosts file. Agent and X11
 forwarding are disabled, even when enabled in SSH config. To verify a host
 again, delete its target from that list; connections opened without checking
@@ -461,7 +461,7 @@ and processes. Invalid local settings keep the current in-memory configuration
 on reload. Base view settings stay in `view.toml`.
 
 See
-[`config-gpui.example.toml`](config-gpui.example.toml) for a complete example.
+[`config-gpui.example.toml`](../sheprd-settings/config-gpui.example.toml) for a complete example.
 Font sizes use logical pixels (finite 8..48), not typographic points. Saving
 `config.local.toml` automatically reloads every open GUI window, usually
 within half a second. Font family, font size, theme, and layout changes apply

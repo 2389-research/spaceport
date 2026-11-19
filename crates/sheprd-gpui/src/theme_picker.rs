@@ -158,7 +158,7 @@ impl SheprdWindow {
         let config = self.config.clone();
         let discovery = cx
             .background_executor()
-            .spawn(async move { config.available_themes() });
+            .spawn(async move { config.available_themes().map_err(crate::Error::from) });
         cx.spawn(async move |this, cx| {
             let result = discovery.await;
             let _ = this.update(cx, |this, cx| {
@@ -387,6 +387,7 @@ impl SheprdWindow {
             } else {
                 config.raw_theme(light)
             }
+            .map_err(crate::Error::from)
         });
         cx.spawn(async move |this, cx| {
             let result = task.await;

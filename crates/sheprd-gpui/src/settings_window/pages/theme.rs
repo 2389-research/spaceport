@@ -212,7 +212,10 @@ impl SettingsWindow {
                     } else {
                         Contrast::High
                     };
-                    this.save_native(move || Config::save_contrast(contrast), cx);
+                    this.save_native(
+                        move || Config::save_contrast(contrast).map_err(crate::Error::from),
+                        cx,
+                    );
                 },
             )),
         )

@@ -10,7 +10,9 @@ use super::{
 use crate::settings_window::inputs::{DropdownField, NumberField};
 use crate::{
     agent_skill::{AgentSkill, Choice},
-    config::{ChatLauncher, ChatLayoutMode, ClipboardToast, Feature, preferences::Preference},
+    config::{
+        ChatLauncher, ChatLayoutMode, ClipboardToast, Feature, Label as _, preferences::Preference,
+    },
     herdr_settings::Edit,
     i18n::fl,
 };

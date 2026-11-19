@@ -589,9 +589,7 @@ impl SheprdWindow {
         let painter = self.painter.clone();
         let cell_width = self.cell_width;
         let ground = self.ground();
-        self.config
-            .terminal_padding
-            .pad(div())
+        crate::config::pad(div(), self.config.terminal_padding)
             .id(SharedString::from(slot.selector(name)))
             .debug_selector(move || slot.selector(name))
             .flex_1()

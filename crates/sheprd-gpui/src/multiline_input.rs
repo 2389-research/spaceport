@@ -583,7 +583,7 @@ impl Render for MultilineInput {
         // the real width, assume a reasonable one.
         // Measure with the same face the field applies below, rather than
         // inheriting the surrounding layout's (possibly monospace) font.
-        let font = self.font.font();
+        let font = crate::config::font_for(&self.font);
         let rows = window.with_text_style(
             Some(gpui::TextStyleRefinement {
                 font_family: Some(font.family),

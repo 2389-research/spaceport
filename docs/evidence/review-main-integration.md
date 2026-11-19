@@ -2,13 +2,14 @@
 
 Scope: Kata `9s44`, all 53 review findings.
 Status: `a1f85f1ea` passes full CI; `679cd74b8` qualifies native workspace reorder.
-Resize lookup and Settings capture corrections are in validation.
+Resize lookup and Settings capture corrections are published in `cd7d317f5`.
+Main's Settings extraction is integrated; combined native CI remains pending.
 Kata `9s44` has 48 closed children and five open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
 
-Current published implementation checkpoint: `679cd74b8f2d5e65f2f5338b4f7c7868a23a66e5`.
+Pre-integration fixture checkpoint: `cd7d317f5e13ce4e319e976164c54ba47642d387`.
 Current collaboration is on [Spaceport Crew](https://artifacts.folk-fujita.ts.net/p/spaceport-crew/).
 The imported `9s44` and `q72g` tasks are claimed by `review-squad` and remain open.
 The prior work dashboard is archived; its earlier evidence and attachments remain intact.
@@ -390,3 +391,54 @@ Both Windows native GUI jobs and the x64 accessibility tree/focus case pass on `
 Windows workspace path resolution and mismatched-owner rejection also pass on that source.
 The full accessibility matrix and interactive release profiling remain pending.
 Offscreen Metal pixel checks qualify rendering only.
+
+## Settings extraction integration, November 19
+
+Main merges PR 133 as `2e690b2da`.
+That extraction conflicts with the published `cd7d317f5` review branch.
+GitHub reports the draft as dirty, and no new native workflow starts.
+The integration merges main into the review branch; it does not merge the draft into main.
+
+The settings crate owns the moved values, files, and guarded writes.
+The app keeps native probes, window refreshes, keymap derivation, and its queued-save worker.
+The pure accessibility cache moves below the app without creating a second policy source.
+Its one snapshot serves both motion and theme readers.
+Test overrides use the settings crate's existing `test-support` feature.
+Native palette rendering stays in GPUI, correcting Git's suggested move into the settings crate.
+The obsolete Windows contrast poller stays removed.
+
+Both focus-follows-mouse defaults remain false.
+Runtime pane-history reads remain separate from private view settings.
+Typed settings errors retain their causes through the app boundary.
+Theme colors retain the text contrast correction and raw palette loading.
+Initial appearance and reloads retain a coherent settings/keymap pair.
+The existing preference worker and native palette scene match the pre-merge task source exactly.
+
+An existing policy test first fails with Standard contrast instead of High.
+The shared-cache correction passes the same test.
+The focused app consumer command then passes 291 tests with none ignored.
+It covers startup, policy, keymaps, prefix routing, Settings, preferences, and affected pane confirmation helpers.
+The final settings suite passes 306 tests with none ignored in 4.64 seconds.
+That run explicitly includes the relocated native announcement configuration test.
+Review caught its initially missing registration before publication.
+Private-prefix and platform-derived view-key tests now load real fixture files before building the app keymap.
+The retired chat-shortcut test also remains registered through that real loader.
+
+The model command is `cargo test --locked -p sheprd-settings --all-features --lib -- --nocapture`.
+The app command is:
+
+```sh
+cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- \
+  app::tests:: accessibility::policy::tests:: keymap:: window::prefix::tests:: \
+  settings_window::tests:: settings_window::host_history::tests:: preferences::tests:: \
+  core_terminals::tests::pane_owner::close_confirmation:: chat::tests::env:: chat::start:: \
+  terminal_painter::tests::glyph_cache:: settings_window::native_png::tests:: --nocapture
+```
+
+Logs use `/tmp/spaceport-9s44-settings-merge-{policy-red,policy-green,consumers,model-tests}.log`.
+The earlier 305-case log remains at `/tmp/spaceport-9s44-settings-merge-model-before-registration.log`.
+`just lint lint-windows` passes all four workspace/all-target feature and platform configurations.
+The existing external `block` future-compatibility notice remains unchanged.
+The debug test linker also retains its existing compact-unwind warning.
+Combined native CI remains pending.
+The five original findings remain open.

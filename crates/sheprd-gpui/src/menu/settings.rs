@@ -149,13 +149,16 @@ impl SheprdWindow {
             move || {
                 let mut config = Config::load()?;
                 config.resolve_fonts(|| text_system.all_font_names());
+                // Built beside the settings it came from: an invalid reload
+                // keeps the previous working pair.
+                let keymap = crate::config::keymap(&config)?;
                 // Follow Herdr is resolved from the latest prepared snapshot on completion.
                 let theme = if ThemeName::follows_herdr(&config.theme, light) {
                     Default::default()
                 } else {
                     config.theme(light)?
                 };
-                Ok((config, theme))
+                Ok((config, keymap, theme))
             },
             cx,
         );
@@ -163,7 +166,9 @@ impl SheprdWindow {
 
     pub(crate) fn load_gui_config_with(
         &mut self,
-        load: impl FnOnce() -> crate::Result<(Config, crate::config::Theme)> + Send + 'static,
+        load: impl FnOnce() -> crate::Result<(Config, crate::keymap::Keymap, crate::config::Theme)>
+        + Send
+        + 'static,
         cx: &mut Context<Self>,
     ) {
         if self.config_load.is_some() {
@@ -183,7 +188,7 @@ impl SheprdWindow {
                 this.config_load_revision = this.config_load_revision.wrapping_add(1);
                 // Apply a coherent pair only after both have loaded successfully.
                 match loaded {
-                    Ok((mut config, mut theme)) => {
+                    Ok((mut config, keymap, mut theme)) => {
                         // Before the Settings drafts: a draft being edited wins.
                         cx.default_global::<crate::window::LayoutSaves>()
                             .keep_newer(layouts, &mut config);
@@ -197,13 +202,14 @@ impl SheprdWindow {
                         this.configured_terminal_size = config.terminal.size;
                         cx.set_global(crate::app::InitialAppearance {
                             config: config.clone(),
+                            keymap: keymap.clone(),
                             theme: theme.clone(),
                             error: None,
                         });
                         crate::caffeine::set_scope(config.status_bar.keep_awake_scope, cx);
                         crate::i18n::follow_config(&config.language, cx);
                         let menus_changed = crate::menus::changed(&this.config, &config);
-                        if config.keybindings != this.config.keybindings {
+                        if keymap != this.keymap {
                             crate::actions::rebind_keys(cx);
                         } else if menus_changed {
                             crate::menus::install(cx);
@@ -223,6 +229,7 @@ impl SheprdWindow {
                             this.status_bar_visible = config.status_bar.show;
                         }
                         this.config = config.clone();
+                        this.keymap = keymap;
                         if !ThemeName::follows_herdr(&this.config.theme, light) {
                             this.theme = theme;
                         }
@@ -234,12 +241,14 @@ impl SheprdWindow {
                         crate::settings_window::apply_loaded_theme(&mut this.config, &mut this.theme, theme_revision, cx);
                         cx.set_global(crate::app::InitialAppearance {
                             config: this.config.clone(),
+                            keymap: this.keymap.clone(),
                             theme: this.theme.clone(),
                             error: None,
                         });
                         this.config = config;
                         this.sound.set_volume(this.config.sound.volume);
-                        this.gui_config_diagnostic.sync_own(this.config.diagnostic().as_deref());
+                        this.gui_config_diagnostic
+                            .sync_own(crate::config::diagnostic(&this.config).as_deref());
                         crate::settings_window::apply_loaded_theme(&mut this.config, &mut this.theme, theme_revision, cx);
                         this.tick_toasts(
                             this.menu.page.is_some() || this.toasts_hidden,

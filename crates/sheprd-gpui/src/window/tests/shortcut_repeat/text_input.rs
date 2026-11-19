@@ -55,7 +55,7 @@ fn preferred_text_bypasses_direct_catalog_and_custom_shortcuts(cx: &mut TestAppC
             (fixture.view.clone(), fixture.input.clone())
         });
         view.update(cx, |view, _| {
-            view.config.keybindings = crate::keymap::Keymap::with_overrides(
+            view.keymap = crate::keymap::Keymap::with_overrides(
                 &[(
                     "new_window".into(),
                     crate::keymap::Binding::One("ctrl-alt-n".into()),
@@ -94,7 +94,7 @@ fn preferred_text_yields_even_after_a_direct_repeatable_shortcut(cx: &mut TestAp
         (fixture.view.clone(), fixture.input.clone())
     });
     view.update(cx, |view, _| {
-        view.config.keybindings = crate::keymap::Keymap::with_overrides(
+        view.keymap = crate::keymap::Keymap::with_overrides(
             &[(
                 "increase_font_size".into(),
                 crate::keymap::Binding::One("ctrl-alt-n".into()),
@@ -135,7 +135,7 @@ fn resize_mode_owns_a_previously_captured_direct_repeat(cx: &mut TestAppContext)
     let (fixture, cx) = cx.add_window_view(text_window);
     let view = fixture.read_with(cx, |fixture, _| fixture.view.clone());
     view.update(cx, |view, _| {
-        view.config.keybindings = crate::keymap::Keymap::with_overrides(
+        view.keymap = crate::keymap::Keymap::with_overrides(
             &[(
                 "increase_font_size".into(),
                 crate::keymap::Binding::One("ctrl-alt-n".into()),

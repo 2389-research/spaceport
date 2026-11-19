@@ -473,7 +473,7 @@ mod tests {
             .parse()
             .unwrap();
         view.update(cx, |view, _| {
-            view.config.keybindings = Keymap::with_overrides(
+            view.keymap = Keymap::with_overrides(
                 &Default::default(),
                 &Default::default(),
                 &DaemonKeys::from_table(Some(&table)),
@@ -566,7 +566,7 @@ mod tests {
         let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
         let table: toml::Table = "prefix = '@'\ntoggle_sidebar = 'prefix+b'".parse().unwrap();
         view.update(cx, |view, _| {
-            view.config.keybindings = Keymap::with_overrides(
+            view.keymap = Keymap::with_overrides(
                 &Default::default(),
                 &Default::default(),
                 &DaemonKeys::from_table(Some(&table)),

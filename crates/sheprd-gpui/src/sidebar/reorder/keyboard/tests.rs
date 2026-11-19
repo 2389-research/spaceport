@@ -187,7 +187,7 @@ fn configured_commands_keep_priority_over_row_reorder_keys(cx: &mut TestAppConte
     let (row, cx) = row(&peer, "a", cx);
     let (boot, before) = row.update(cx, |row, cx| {
         row.owner.update(cx, |view, _| {
-            view.config.keybindings = crate::keymap::Keymap::with_overrides(
+            view.keymap = crate::keymap::Keymap::with_overrides(
                 &[(
                     "toggle_sidebar".into(),
                     crate::keymap::Binding::One("alt-down".into()),

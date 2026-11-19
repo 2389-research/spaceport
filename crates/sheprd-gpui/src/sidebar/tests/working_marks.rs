@@ -28,7 +28,7 @@ impl Render for Slot {
             size: 12.,
             fallbacks: None,
             line_height_multiple: None,
-            weight: gpui::FontWeight::NORMAL,
+            weight: crate::config::Weight::NORMAL,
         };
         div().child(status_indicator(self.status, &font, self.indicators))
     }
@@ -75,7 +75,7 @@ fn every_set_moves_while_working_and_rests_when_settled(cx: &mut TestAppContext)
                         size: 12.,
                         fallbacks: None,
                         line_height_multiple: None,
-                        weight: gpui::FontWeight::NORMAL,
+                        weight: crate::config::Weight::NORMAL,
                     };
                     let slot = gpui::px(indicators.width(&font));
                     assert!(

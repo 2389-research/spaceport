@@ -1,6 +1,7 @@
 use super::*;
-use crate::config::{Padding, Sides};
+use crate::config::Padding;
 use gpui::px;
+use sheprd_settings::Sides;
 
 /// The find bar belongs to the pane it searches, so it keeps its place in
 /// the top right corner of the cells, not of the padding around them.

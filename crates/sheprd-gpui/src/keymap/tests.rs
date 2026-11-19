@@ -8,6 +8,9 @@ mod literal_plus;
 mod pane_keys;
 mod platform_defaults;
 mod plugin_actions;
+mod private_view;
+mod removed_chat_lifecycle;
+mod settings_files;
 mod shift_enter;
 
 fn overrides(entries: &[(&str, Binding)]) -> BTreeMap<String, Binding> {

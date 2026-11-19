@@ -38,7 +38,7 @@ fn connect(
                 .iter()
                 .map(|(typed, sent)| ((*typed).to_owned(), (*sent).to_owned()))
                 .collect();
-            view.config.keybindings = crate::keymap::Keymap::with_overrides(
+            view.keymap = crate::keymap::Keymap::with_overrides(
                 &Default::default(),
                 &pane_keys,
                 &crate::keymap::DaemonKeys::from_table(Some(&keys)),

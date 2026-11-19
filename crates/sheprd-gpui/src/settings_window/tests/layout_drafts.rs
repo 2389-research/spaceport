@@ -76,7 +76,16 @@ fn layout_draft_survives_settings_and_main_reloads_and_other_saves(cx: &mut Test
     let settings = cx.update(|cx| {
         let weak = main
             .update(cx, |view, _, cx| {
-                view.load_gui_config_with(|| Ok((Config::default(), Theme::default())), cx);
+                view.load_gui_config_with(
+                    || {
+                        Ok((
+                            Config::default(),
+                            crate::keymap::Keymap::default(),
+                            Theme::default(),
+                        ))
+                    },
+                    cx,
+                );
                 cx.weak_entity()
             })
             .unwrap();
@@ -187,7 +196,13 @@ fn a_settings_draft_outlives_a_view_menu_choice_during_a_reload(cx: &mut TestApp
         view.set_layout_with(LayoutMode::Minimal, |_| Ok(()), cx);
         let stale = view.config.clone();
         let theme = view.theme.clone();
-        view.load_gui_config_with(move || Ok((stale, theme)), cx);
+        view.load_gui_config_with(
+            move || {
+                let keymap = crate::config::keymap(&stale)?;
+                Ok((stale, keymap, theme))
+            },
+            cx,
+        );
         layouts::draft_layout(LayoutMode::Orca, cx);
     })
     .unwrap();

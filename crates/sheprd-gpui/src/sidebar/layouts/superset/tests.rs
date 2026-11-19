@@ -17,7 +17,7 @@ fn the_slot_dot_follows_a_configured_leading_state_icon() {
         size: 12.,
         fallbacks: None,
         line_height_multiple: None,
-        weight: gpui::FontWeight::NORMAL,
+        weight: crate::config::Weight::NORMAL,
     };
     let theme = Theme::default();
     let indicators = Indicators::new(

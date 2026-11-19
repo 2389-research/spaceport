@@ -208,12 +208,11 @@ impl SheprdWindow {
         target: &InputTarget,
         modifiers: Modifiers,
     ) -> Option<Modifiers> {
-        if self
-            .settings
-            .shared
-            .as_ref()
-            .is_some_and(|shared| shared.right_click_passthrough.matches(modifiers))
-        {
+        if self.settings.shared.as_ref().is_some_and(|shared| {
+            shared
+                .right_click_passthrough
+                .matches(crate::config::modifiers(modifiers))
+        }) {
             return Some(modifiers);
         }
         let InputTarget::Pane(id) = target else {

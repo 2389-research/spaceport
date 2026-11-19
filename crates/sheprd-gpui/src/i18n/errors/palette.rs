@@ -24,7 +24,6 @@ impl Localize for Error {
             Self::ProjectRemoved => fl!("error-palette-project-removed"),
             Self::ProjectResponse => fl!("error-palette-project-response"),
             Self::ProjectRootMissing => fl!("error-palette-project-root-missing"),
-            Self::ProjectRoots => fl!("error-palette-project-roots"),
             Self::ProjectStateChanged => fl!("error-palette-project-state-changed"),
             Self::ProjectVariable(name) => {
                 fl!("error-palette-project-variable", variable = name.as_str())

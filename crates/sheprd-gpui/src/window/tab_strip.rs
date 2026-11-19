@@ -99,7 +99,7 @@ impl SheprdWindow {
     ) -> f32 {
         let run = TextRun {
             len: label.len(),
-            font: self.config.tabs.font(),
+            font: crate::config::font_for(&self.config.tabs),
             color: black(),
             background_color: None,
             underline: None,
@@ -682,9 +682,7 @@ impl SheprdWindow {
             Shown::Page(_) | Shown::Empty => ("".into(), fl!("tab-strip-nothing")),
         };
         let elsewhere = matches!(shown, Shown::Elsewhere(_));
-        self.config
-            .terminal_padding
-            .pad(div())
+        crate::config::pad(div(), self.config.terminal_padding)
             .id(SharedString::from(slot.selector("stand-in")))
             .debug_selector(move || slot.selector("stand-in"))
             .flex()
@@ -801,7 +799,7 @@ impl SheprdWindow {
             .snapshot
             .as_deref()
             .is_some_and(crate::worktree_identity::focused_is_linked);
-        let rule = self.config.worktrees.rule(linked, &self.theme);
+        let rule = crate::worktree_identity::rule(&self.config.worktrees, linked, &self.theme);
         let rule = rule.map(|rule| rule.debug_selector(move || slot.selector("worktree-rule")));
         let strip = crate::worktree_identity::place_rule(strip, rule, bottom);
         // Zen mode draws the one group in use across the whole row, at once

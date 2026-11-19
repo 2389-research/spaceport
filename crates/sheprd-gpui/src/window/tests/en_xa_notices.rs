@@ -67,7 +67,7 @@ fn the_main_windows_notices_draw_only_messages() {
             ..Default::default()
         };
         config.layout.legacy_sidebar_gap = Some(3.);
-        let diagnostic = config.diagnostic().unwrap();
+        let diagnostic = crate::config::diagnostic(&config).unwrap();
         view.update(cx, |view, cx| {
             view.gui_config_diagnostic.sync_own(Some(&diagnostic));
             cx.notify();

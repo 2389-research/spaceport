@@ -296,7 +296,10 @@ impl SettingsWindow {
                 return (io.write)(choice.name, shared).map(|_| None);
             }
             match choice.scope {
-                Scope::App => config.save_theme(&choice.name).map(|_| None),
+                Scope::App => config
+                    .save_theme(&choice.name)
+                    .map(|()| None)
+                    .map_err(crate::Error::from),
                 // Every resolved Herdr intent carries a snapshot; a load here
                 // only reports the real failure if one never resolved.
                 Scope::Herdr => super::persistence::SharedWrite::save(
@@ -730,6 +733,7 @@ impl SettingsWindow {
                     .map(|theme| theme.styled_for(&config)),
                 Scope::App => config.theme(light),
             }
+            .map_err(crate::Error::from)
         })
     }
 

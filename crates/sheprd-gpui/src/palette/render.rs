@@ -249,7 +249,7 @@ impl SheprdWindow {
             }) => {
                 let terminal = &self.config.terminal;
                 let look = preview::Look {
-                    font: terminal.font(),
+                    font: crate::config::font_for(terminal),
                     size: terminal.size,
                     line_ratio: terminal.line_height() / terminal.size,
                     cell_ratio: self.cell_width / terminal.size,

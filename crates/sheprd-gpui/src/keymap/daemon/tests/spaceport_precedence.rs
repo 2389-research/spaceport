@@ -113,7 +113,7 @@ fn existing_custom_chrome_chords_reach_the_real_wire(cx: &mut TestAppContext) {
                     } else {
                         String::new()
                     };
-                    view.config.keybindings = resolved(&text);
+                    view.keymap = resolved(&text);
                     let command = custom(&format!("prefix+{}", chord.replace('-', "+")));
                     assert_eq!(
                         view.keymap().custom_bindings([&command])[0][0].reach,

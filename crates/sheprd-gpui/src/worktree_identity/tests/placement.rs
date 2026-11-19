@@ -23,9 +23,12 @@ impl Render for Group {
                 .flex_none()
                 .h(px(STRIP))
         });
-        let rule = Worktrees::new(None, &[Surface::Terminal])
-            .rule(true, &Theme::default())
-            .map(|rule| rule.debug_selector(|| "rule".into()));
+        let rule = rule(
+            &Worktrees::new(None, &[Surface::Terminal]),
+            true,
+            &Theme::default(),
+        )
+        .map(|rule| rule.debug_selector(|| "rule".into()));
         let strip = place_rule(strip, rule, below);
         let body = div().debug_selector(|| "body".into()).flex_1().min_h_0();
         div()

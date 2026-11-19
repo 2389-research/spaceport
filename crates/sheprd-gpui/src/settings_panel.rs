@@ -20,7 +20,7 @@ pub(crate) struct SettingsPanel {
 
 impl SheprdWindow {
     pub(crate) fn load_shared_settings(&mut self, cx: &mut Context<Self>) {
-        self.load_shared_settings_with(Settings::load, cx);
+        self.load_shared_settings_with(|| Settings::load().map_err(crate::Error::from), cx);
     }
 
     fn load_shared_settings_with(

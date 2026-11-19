@@ -233,7 +233,7 @@ impl SheprdWindow {
                 card: selector,
                 label: label.into(),
                 lines: lines.clone(),
-                font: self.config.ui.font(),
+                font: crate::config::font_for(&self.config.ui),
                 size: px(self.config.ui.size),
                 foldable,
                 overflow: self.notice_overflow.clone(),

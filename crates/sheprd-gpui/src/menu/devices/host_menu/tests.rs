@@ -124,7 +124,7 @@ fn the_menu_shows_the_server_keybindings_choice(cx: &mut TestAppContext) {
     view.update(cx, |view, cx| {
         view.config.devices.insert(
             "0123456789abcdef0123456789abcdef".into(),
-            crate::config::DeviceSettings {
+            sheprd_settings::DeviceSettings {
                 keybindings: KeybindingSource::Server,
                 ..Default::default()
             },

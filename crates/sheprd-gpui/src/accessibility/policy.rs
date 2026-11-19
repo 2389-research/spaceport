@@ -1,66 +1,14 @@
-// ABOUTME: Caches OS accessibility preferences for animation and theme consumers.
-// ABOUTME: Applies one coherent snapshot without blocking the UI on portal calls.
+// ABOUTME: Reads OS accessibility preferences and refreshes application windows.
+// ABOUTME: Uses one shared cached snapshot without blocking the UI on portal calls.
 use gpui::{App, Global, Task};
-use std::sync::atomic::{AtomicU8, Ordering};
+use sheprd_settings::contrast::policy::store;
+pub(crate) use sheprd_settings::contrast::policy::{Preferences, reduce_motion};
 use std::time::Duration;
 
 #[cfg(any(target_os = "linux", all(test, unix)))]
 mod portal;
 #[cfg(test)]
 pub(crate) mod tests;
-
-const REDUCE_MOTION: u8 = 1;
-const HIGH_CONTRAST: u8 = 2;
-static POLICY: AtomicU8 = AtomicU8::new(0);
-
-/// Missing preferences leave the last known policy unchanged.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Preferences {
-    pub(crate) high_contrast: Option<bool>,
-    pub(crate) reduce_motion: Option<bool>,
-}
-
-#[cfg(test)]
-thread_local! {
-    // Injected UI tests must not change another test's background palette reads.
-    static OVERRIDE: std::cell::Cell<Option<u8>> = const { std::cell::Cell::new(None) };
-}
-
-fn snapshot() -> u8 {
-    #[cfg(test)]
-    if let Some(policy) = OVERRIDE.get() {
-        return policy;
-    }
-    POLICY.load(Ordering::Relaxed)
-}
-
-fn store(preferences: Preferences) -> bool {
-    let previous = snapshot();
-    let mut policy = previous;
-    for (flag, value) in [
-        (REDUCE_MOTION, preferences.reduce_motion),
-        (HIGH_CONTRAST, preferences.high_contrast),
-    ] {
-        if let Some(value) = value {
-            policy = if value { policy | flag } else { policy & !flag };
-        }
-    }
-    #[cfg(test)]
-    if OVERRIDE.get().is_some() {
-        OVERRIDE.set(Some(policy));
-        return (previous ^ policy) & HIGH_CONTRAST != 0;
-    }
-    POLICY.store(policy, Ordering::Relaxed);
-    (previous ^ policy) & HIGH_CONTRAST != 0
-}
-
-pub(crate) fn reduce_motion() -> bool {
-    snapshot() & REDUCE_MOTION != 0
-}
-
-pub(crate) fn high_contrast() -> bool {
-    snapshot() & HIGH_CONTRAST != 0
-}
 
 /// Native getters run before startup palettes load. Linux resolves its portal asynchronously.
 pub(crate) fn prime() {

@@ -83,7 +83,7 @@ fn get(key: &str) -> crate::Result<Output> {
 fn check(context: &Context) -> crate::Result<Output> {
     let mut problems = Vec::new();
     match Config::check_files() {
-        Ok(config) => problems.extend(config.diagnostic()),
+        Ok(config) => problems.extend(crate::config::diagnostic(&config)),
         Err(error) => problems.push(error.to_string()),
     }
     let fonts_checked = match settings(context, SettingsOp::CheckConfig) {

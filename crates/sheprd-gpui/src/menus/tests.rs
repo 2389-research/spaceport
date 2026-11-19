@@ -1,7 +1,7 @@
 // ABOUTME: Checks application menu actions, layouts and platform entries.
 // ABOUTME: Keeps menu definitions consistent with the command catalog.
 use super::*;
-use crate::config::Layout;
+use sheprd_settings::Layout;
 
 mod local_controls;
 

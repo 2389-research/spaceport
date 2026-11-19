@@ -55,7 +55,7 @@ fn a_canonical_named_binding_keeps_priority_over_another_mapped_binding() {
 fn a_mapped_configured_binding_keeps_its_key_from_a_daemon_custom_symbol(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
     view.update(cx, |view, _| {
-        view.config.keybindings = keys(&[("focus_tab_1", "ctrl-shift-1")]);
+        view.keymap = keys(&[("focus_tab_1", "ctrl-shift-1")]);
         view.live.status = ConnectionStatus::Connected;
         Arc::make_mut(view.live.snapshot.as_mut().unwrap()).commands = vec![ClientShellCommand {
             command_id: "custom.symbol".into(),

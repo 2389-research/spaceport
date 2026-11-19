@@ -283,7 +283,7 @@ fn reload_publishes_baseline_and_rebinds_only_changed_keys(cx: &mut TestAppConte
                 let keys = cx.key_bindings();
                 assert_eq!(keys.borrow().bindings_for_action(&Close).count(), 1);
                 let mut loaded = fixture();
-                loaded.config.keybindings = crate::keymap::Keymap::with_overrides(
+                loaded.keymap = crate::keymap::Keymap::with_overrides(
                     &std::collections::BTreeMap::from([(
                         "settings".into(),
                         crate::keymap::Binding::One("ctrl-alt-p".into()),
@@ -295,8 +295,7 @@ fn reload_publishes_baseline_and_rebinds_only_changed_keys(cx: &mut TestAppConte
                 view.apply_loaded(Ok(loaded), cx);
                 assert_eq!(
                     cx.global::<crate::app::InitialAppearance>()
-                        .config
-                        .keybindings
+                        .keymap
                         .primary(crate::controls::Command::Settings),
                     "ctrl-alt-p"
                 );

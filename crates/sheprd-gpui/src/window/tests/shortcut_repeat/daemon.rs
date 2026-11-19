@@ -181,7 +181,7 @@ fn navigation_and_resize_commands_keep_repeating(cx: &mut TestAppContext) {
                     Command::FocusRight => "focus_right",
                     _ => "resize_pane_right",
                 };
-                view.config.keybindings = crate::keymap::Keymap::with_overrides(
+                view.keymap = crate::keymap::Keymap::with_overrides(
                     &[(name.into(), crate::keymap::Binding::One("alt-f11".into()))].into(),
                     &Default::default(),
                     &crate::keymap::DaemonKeys::default(),

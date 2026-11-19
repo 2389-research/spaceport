@@ -22,12 +22,21 @@ use crate::{
 };
 use gpui::{Context, Window};
 
+/// Keeps a chat layout choice, as the chat view switches it.
+fn save_chat_layout(mode: ChatLayoutMode) -> crate::Result<()> {
+    Config::save_preference(Preference::ChatLayout(mode)).map_err(crate::Error::from)
+}
+
 impl SheprdWindow {
     /// Switches the sidebar layout here at once, then keeps it: the choice is
     /// saved to the local overrides off the UI thread, and the config watcher
     /// brings every other window along.
     pub(crate) fn set_layout(&mut self, mode: LayoutMode, cx: &mut Context<Self>) {
-        self.set_layout_with(mode, Config::save_layout, cx);
+        self.set_layout_with(
+            mode,
+            |mode| Config::save_layout(mode).map_err(crate::Error::from),
+            cx,
+        );
     }
 
     /// `save` persists the choice; tests pass one that leaves the real
@@ -66,7 +75,7 @@ impl SheprdWindow {
     pub(crate) fn set_tab_layout(&mut self, mode: TabLayoutMode, cx: &mut Context<Self>) {
         self.set_tab_layout_with(
             mode,
-            |mode| Config::save_preference(Preference::TabLayout(mode)),
+            |mode| Config::save_preference(Preference::TabLayout(mode)).map_err(crate::Error::from),
             cx,
         );
     }
@@ -104,20 +113,13 @@ impl SheprdWindow {
     /// Switches how chat views draw, then keeps it as [`Self::set_layout`]
     /// keeps the sidebar's.
     pub(crate) fn set_chat_layout(&mut self, mode: ChatLayoutMode, cx: &mut Context<Self>) {
-        self.set_chat_layout_with(
-            mode,
-            |mode| Config::save_preference(Preference::ChatLayout(mode)),
-            cx,
-        );
+        self.set_chat_layout_with(mode, save_chat_layout, cx);
     }
 
     /// The layout after the one showing now, not the one the last frame
     /// drew: a second click can land before the next frame.
     pub(crate) fn step_chat_layout(&mut self, cx: &mut Context<Self>) {
-        self.step_chat_layout_with(
-            |mode| Config::save_preference(Preference::ChatLayout(mode)),
-            cx,
-        );
+        self.step_chat_layout_with(save_chat_layout, cx);
     }
 
     /// `save` persists the choice, as in [`Self::set_chat_layout_with`].

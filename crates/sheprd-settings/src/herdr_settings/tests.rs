@@ -1,0 +1,43 @@
+// ABOUTME: Shares real-file runtime settings fixtures and topic tests.
+// ABOUTME: Keeps Unix-only persistence coverage gated once at each module.
+use super::*;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+use std::{fs, path::Path};
+
+// Every test in `edits` is Unix-only.
+#[cfg(unix)]
+mod edits;
+mod input_settings;
+mod pane_history;
+#[cfg(unix)]
+mod permissions;
+mod reading;
+mod save_safety;
+// Saving is Unix-only; Windows refuses every shared edit.
+#[cfg(unix)]
+mod symlinks;
+mod theme_palettes;
+
+fn parsed(text: &str) -> crate::Result<Settings, Error> {
+    #[cfg(unix)]
+    let snapshot = persistence::Snapshot {
+        text: Some(text.into()),
+        ..Default::default()
+    };
+    #[cfg(windows)]
+    let snapshot = persistence::Snapshot {
+        text: Some(text.into()),
+    };
+    Settings::parse(PathBuf::from("/fixture/herdr/config.toml"), snapshot)
+}
+
+fn source(error: &crate::Error) -> Option<&Error> {
+    let mut cause: &(dyn std::error::Error + 'static) = error;
+    loop {
+        if let Some(error) = cause.downcast_ref::<Error>() {
+            return Some(error);
+        }
+        cause = cause.source()?;
+    }
+}

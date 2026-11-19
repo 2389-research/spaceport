@@ -185,8 +185,9 @@ fn the_reload_of_an_earlier_save_leaves_a_newer_layout_alone(cx: &mut TestAppCon
     // The reload has started on the first choice when the second is made.
     view.update(cx, |view, cx| {
         let stale = view.config.clone();
+        let keymap = view.keymap.clone();
         let theme = view.theme.clone();
-        view.load_gui_config_with(move || Ok((stale, theme)), cx);
+        view.load_gui_config_with(move || Ok((stale, keymap, theme)), cx);
         view.set_chat_layout_with(ChatLayoutMode::Bubbles, |_| Ok(()), cx);
     });
     cx.run_until_parked();

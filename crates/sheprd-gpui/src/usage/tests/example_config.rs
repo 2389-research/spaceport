@@ -3,7 +3,7 @@
 
 #[test]
 fn example_config_has_no_provider_sign_in_setup() {
-    let example = include_str!("../../../config-gpui.example.toml");
+    let example = include_str!("../../../../sheprd-settings/config-gpui.example.toml");
     for key in ["usage.providers", "browser_cookies", "OPENAI_ADMIN_KEY"] {
         assert!(!example.contains(key), "excluded key: {key}");
     }

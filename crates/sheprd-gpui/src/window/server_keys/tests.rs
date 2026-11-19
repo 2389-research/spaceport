@@ -1,6 +1,7 @@
 use super::*;
-use crate::{Command, Error, config::DeviceSettings, keymap::Binding};
+use crate::{Command, Error, keymap::Binding};
 use gpui::{Entity, Keystroke, TestAppContext, VisualTestContext};
+use sheprd_settings::DeviceSettings;
 use std::sync::Arc;
 
 const ID: &str = "0123456789abcdef0123456789abcdef";
@@ -81,7 +82,7 @@ fn the_keymap_follows_the_selected_device_only_when_it_opted_in(cx: &mut TestApp
         );
         // The window's config, which other windows and reloads compare,
         // keeps the local keymap.
-        assert!(view.config.keybindings.is_prefix(&key("ctrl-b")));
+        assert!(view.keymap.is_prefix(&key("ctrl-b")));
     });
     let server = view.read_with(cx, |view, _| view.keymap().clone());
     assert_eq!(

@@ -318,7 +318,7 @@ fn shape(
 ) -> ShapedLine {
     let run = TextRun {
         len: text.len(),
-        font: font.font(),
+        font: crate::config::font_for(font),
         color: color.into(),
         background_color: None,
         underline: None,

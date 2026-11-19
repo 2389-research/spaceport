@@ -1,10 +1,14 @@
 mod custom_shortcuts;
 mod legacy_plugin_actions;
 
+use crate::keymap::Keymap;
+
 #[gpui::test]
 #[allow(clippy::unwrap_used)]
 fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppContext) {
-    use crate::{config::Config, notifications::tests::notification, state::ConnectionStatus};
+    use crate::{
+        config::Config, keymap::Keymap, notifications::tests::notification, state::ConnectionStatus,
+    };
     use sheprd_client::{
         ClientEvent,
         protocol::{SemanticNotificationKind, ServerMessage},
@@ -19,7 +23,10 @@ fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppCon
     wire.kind = SemanticNotificationKind::Custom;
     for _ in 0..2 {
         view.update(cx, |view, cx| {
-            view.load_gui_config_with(|| Ok((Config::default(), Default::default())), cx)
+            view.load_gui_config_with(
+                || Ok((Config::default(), Keymap::default(), Default::default())),
+                cx,
+            )
         });
         cx.run_until_parked();
         {
@@ -37,7 +44,7 @@ fn enabling_does_not_replay_undrained_disabled_ingress(cx: &mut gpui::TestAppCon
                     let mut config = Config::default();
                     config.notifications.enabled = true;
                     config.notifications.delay_seconds = 0;
-                    Ok((config, Default::default()))
+                    Ok((config, Keymap::default(), Default::default()))
                 },
                 cx,
             )
@@ -95,8 +102,9 @@ fn enabling_system_delivery_does_not_post_the_backlog(cx: &mut gpui::TestAppCont
                 let mut config = Config::default();
                 config.notifications.system = true;
                 config.notifications.delay_seconds = 0;
+                let keymap = crate::config::keymap(&config)?;
                 let theme = config.theme(false)?;
-                Ok((config, theme))
+                Ok((config, keymap, theme))
             },
             cx,
         )
@@ -147,11 +155,12 @@ fn notification_reload_retimes_pending_clears_disabled_and_keeps_failed_settings
                 config.notifications.position =
                     sheprd_client::protocol::ToastHerdrPosition::TopRight;
                 config.terminal.size = 18.;
-                config.terminal_padding.x = crate::config::Sides::new(16., 16.).unwrap();
+                config.terminal_padding.x = sheprd_settings::Sides::new(16., 16.).unwrap();
                 config.layout.mode =
                     crate::config::LayoutMode::from(crate::config::Density::Compact);
+                let keymap = crate::config::keymap(&config)?;
                 let theme = config.theme(false)?;
-                Ok((config, theme))
+                Ok((config, keymap, theme))
             },
             cx,
         )
@@ -181,7 +190,10 @@ fn notification_reload_retimes_pending_clears_disabled_and_keeps_failed_settings
             view.config.layout.mode,
             crate::config::LayoutMode::from(crate::config::Density::Compact)
         );
-        view.load_gui_config_with(|| Ok((Config::default(), Default::default())), cx);
+        view.load_gui_config_with(
+            || Ok((Config::default(), Keymap::default(), Default::default())),
+            cx,
+        );
     });
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
@@ -207,8 +219,9 @@ fn config_reload_toggles_tab_flags_and_preserves_them_on_failure(cx: &mut gpui::
                         show_agents,
                         ..Default::default()
                     };
+                    let keymap = crate::config::keymap(&config)?;
                     let theme = config.theme(false)?;
-                    Ok((config, theme))
+                    Ok((config, keymap, theme))
                 },
                 cx,
             );
@@ -266,8 +279,9 @@ fn config_load_is_coherent_bounded_and_cancellable(cx: &mut gpui::TestAppContext
                     theme: "Nord".into(),
                     ..Default::default()
                 };
+                let keymap = crate::config::keymap(&config)?;
                 let theme = config.theme(false)?;
-                Ok((config, theme))
+                Ok((config, keymap, theme))
             },
             cx,
         );
@@ -294,7 +308,16 @@ fn config_load_is_coherent_bounded_and_cancellable(cx: &mut gpui::TestAppContext
                     .unwrap()
                     .contains("theme must not be empty")
             );
-            view.load_gui_config_with(|| Ok((Default::default(), Default::default())), cx);
+            view.load_gui_config_with(
+                || {
+                    Ok((
+                        crate::config::Config::default(),
+                        Keymap::default(),
+                        Default::default(),
+                    ))
+                },
+                cx,
+            );
             view.open_theme_picker(window, cx);
             assert!(view.config_load.is_none());
         });
@@ -389,14 +412,11 @@ fn config_reload_rebinds_the_keymap(cx: &mut gpui::TestAppContext) {
                 .map(|(name, binding)| (name.to_owned(), binding))
                 .collect();
                 let config = Config {
-                    keybindings: Keymap::with_overrides(
-                        &overrides,
-                        &Default::default(),
-                        &crate::keymap::DaemonKeys::default(),
-                    )?,
+                    keybinding_overrides: overrides,
                     ..Config::default()
                 };
-                Ok((config, Default::default()))
+                let keymap = crate::config::keymap(&config)?;
+                Ok((config, keymap, Default::default()))
             },
             cx,
         )
@@ -419,20 +439,18 @@ fn config_reload_rebinds_the_keymap(cx: &mut gpui::TestAppContext) {
         assert_eq!(console.len(), 1);
     });
     view.read_with(cx, |view, _| {
-        assert_eq!(
-            view.config.keybindings.primary(Command::Workspace),
-            default("cmd-t")
-        );
+        assert_eq!(view.keymap.primary(Command::Workspace), default("cmd-t"));
         // Only Herdr's default chord is left once cmd-t moves away.
-        assert_eq!(view.config.keybindings.primary(Command::Tab), "ctrl-b c");
+        assert_eq!(view.keymap.primary(Command::Tab), "ctrl-b c");
     });
 
     view.update(cx, |view, cx| {
-        view.load_gui_config_with(|| Ok((Config::default(), Default::default())), cx)
+        view.load_gui_config_with(
+            || Ok((Config::default(), Keymap::default(), Default::default())),
+            cx,
+        )
     });
     cx.run_until_parked();
     assert!(runs(default("cmd-t"), Command::Tab, cx));
-    view.read_with(cx, |view, _| {
-        assert_eq!(view.config.keybindings, Keymap::default())
-    });
+    view.read_with(cx, |view, _| assert_eq!(view.keymap, Keymap::default()));
 }

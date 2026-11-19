@@ -1,0 +1,54 @@
+[package]
+edition.workspace      = true
+license.workspace      = true
+name                   = "sheprd-settings"
+publish.workspace      = true
+rust-version.workspace = true
+version.workspace      = true
+
+[lints]
+workspace = true
+
+[dependencies]
+config_loader.workspace  = true
+serde.workspace          = true
+serde_ignored.workspace  = true
+serde_json.workspace     = true
+sheprd-chat-protocol.workspace = true
+sheprd-client.workspace  = true
+sheprd-commands.workspace = true
+sheprd-i18n.workspace    = true
+sheprd-lenient.workspace = true
+sheprd-usage.workspace   = true
+# Reads the weight a family has a face at (macOS only).
+skrifa.workspace         = true
+thiserror.workspace      = true
+toml.workspace           = true
+toml_edit.workspace      = true
+tracing.workspace        = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+font-kit.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+# Owned-file checks before a settings write replaces a file.
+rustix.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { features = [
+  "Win32_System_Registry",
+], workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# The system font database behind `bitmap_fonts::is_undrawable`, a
+# Linux-only code path the moved file brought with it.
+fontdb.workspace = true
+
+[features]
+# `bitmap_fonts::has_undrawable_bitmap` and `contrast::hue_degrees`, which only
+# this crate's tests and the app's use.
+test-support = []
+
+[dev-dependencies]
+anyhow.workspace   = true
+tempfile.workspace = true

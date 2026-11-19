@@ -161,7 +161,7 @@ fn failed_definition_keeps_close_pending_draft_for_explicit_retry(cx: &mut TestA
                     || {
                         let mut config = Config::default();
                         config.ui.size = 23.;
-                        Ok((config, Theme::default()))
+                        Ok((config, crate::keymap::Keymap::default(), Theme::default()))
                     },
                     cx,
                 );

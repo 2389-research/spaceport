@@ -2,17 +2,7 @@
 // ABOUTME: Isolates injected snapshots from parallel UI and background tests.
 use super::*;
 
-pub(crate) struct Scope(Option<u8>);
-impl Scope {
-    pub(crate) fn new() -> Self {
-        Self(OVERRIDE.replace(Some(0)))
-    }
-}
-impl Drop for Scope {
-    fn drop(&mut self) {
-        OVERRIDE.set(self.0);
-    }
-}
+pub(crate) use sheprd_settings::contrast::policy::test_support::Scope;
 
 pub(crate) fn set(preferences: Preferences, cx: &mut App) {
     apply(preferences, cx);
@@ -75,27 +65,6 @@ fn one_snapshot_updates_gpui_manual_motion_and_theme_contrast(cx: &mut gpui::Tes
             Some(0.)
         );
     });
-}
-
-#[test]
-fn missing_preferences_keep_the_last_snapshot_and_do_not_leak_to_other_threads() {
-    let _scope = Scope::new();
-    store(Preferences {
-        high_contrast: Some(true),
-        reduce_motion: Some(true),
-    });
-    store(Preferences::default());
-    assert!(reduce_motion() && high_contrast());
-    assert_eq!(
-        std::thread::spawn(snapshot).join().ok(),
-        Some(POLICY.load(Ordering::Relaxed))
-    );
-    store(Preferences {
-        high_contrast: None,
-        reduce_motion: Some(false),
-    });
-    assert!(!reduce_motion());
-    assert!(high_contrast());
 }
 
 #[cfg(target_os = "macos")]

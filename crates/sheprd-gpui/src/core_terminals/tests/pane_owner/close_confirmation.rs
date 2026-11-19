@@ -138,11 +138,13 @@ fn close_shortcut_rebinding_preserves_menu_actions_and_other_commands(cx: &mut T
         Keymap::with_overrides(&overrides, &Default::default(), &DaemonKeys::default()).unwrap();
     let (handle, tab) = split_window(cx);
     handle
-        .update(cx, |view, _, _| view.config.keybindings = keymap.clone())
+        .update(cx, |view, _, _| view.keymap = keymap.clone())
         .unwrap();
     cx.update(|cx| {
-        let mut appearance = crate::app::InitialAppearance::default();
-        appearance.config.keybindings = keymap;
+        let appearance = crate::app::InitialAppearance {
+            keymap,
+            ..Default::default()
+        };
         cx.set_global(appearance);
         crate::actions::rebind_keys(cx);
         assert!(

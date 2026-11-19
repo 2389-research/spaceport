@@ -365,7 +365,11 @@ impl SettingsWindow {
             return;
         }
         self.save_native(
-            move || edits.into_iter().try_for_each(Config::save_backdrop),
+            move || {
+                edits
+                    .into_iter()
+                    .try_for_each(|edit| Config::save_backdrop(edit).map_err(crate::Error::from))
+            },
             cx,
         );
     }

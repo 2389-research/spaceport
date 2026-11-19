@@ -83,8 +83,9 @@ fn a_reload_moves_the_baseline_and_discards_a_session_size(cx: &mut gpui::TestAp
     let load = move || {
         let mut config = Config::default();
         config.terminal.size = configured;
+        let keymap = crate::config::keymap(&config)?;
         let theme = config.theme(false)?;
-        Ok((config, theme))
+        Ok((config, keymap, theme))
     };
 
     view.update(cx, |view, cx| view.load_gui_config_with(load, cx));

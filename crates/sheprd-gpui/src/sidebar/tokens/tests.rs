@@ -1,8 +1,8 @@
 // ABOUTME: Exercises configured sidebar token resolution and omission rules.
 // ABOUTME: Preserves observable behavior while sharing indexed snapshot fixtures.
 use super::*;
-use crate::config::SidebarLayout;
 use crate::sidebar::layout_tests;
+use sheprd_settings::SidebarLayout;
 
 mod plugin_rows;
 mod translated_rules;

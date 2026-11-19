@@ -183,7 +183,7 @@ impl SheprdWindow {
         room: Pixels,
     ) -> Pixels {
         let size = px((self.config.ui.size - 1.).max(8.));
-        let font = self.config.ui.font();
+        let font = crate::config::font_for(&self.config.ui);
         let widest = paint
             .tiles
             .iter()

@@ -72,7 +72,7 @@ impl Global for ActiveServerKeymap {}
 impl SheprdWindow {
     /// The keymap this window's keys and labels follow.
     pub(crate) fn keymap(&self) -> &Keymap {
-        self.server_keymap().unwrap_or(&self.config.keybindings)
+        self.server_keymap().unwrap_or(&self.keymap)
     }
 
     fn server_keymap(&self) -> Option<&Keymap> {

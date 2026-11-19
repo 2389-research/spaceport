@@ -111,7 +111,7 @@ impl Render for SheprdWindow {
         let fill = self.fill();
         let ground = self.ground();
         self.viewport_width = f32::from(window.viewport_size().width);
-        let font = self.config.terminal.font();
+        let font = crate::config::font_for(&self.config.terminal);
         // Parked groups paint with the same face as the window's terminal.
         let parked_font = font.clone();
         let cell_height = self.config.terminal.line_height();
@@ -291,8 +291,7 @@ impl Render for SheprdWindow {
         let find_bar = self.render_find_bar(surface.as_deref(), cx);
         let copy_badge = self.render_copy_mode_badge(surface.as_deref(), cx);
         let chats = self.render_chats(surface.as_deref(), cx);
-        let terminal = padding
-            .pad(div())
+        let terminal = crate::config::pad(div(), padding)
             .id("terminal")
             .debug_selector(|| "terminal".into())
             .when(self.hovered_terminal_link, |terminal| {
