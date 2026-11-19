@@ -32,10 +32,7 @@ use crate::{
 use anyhow::{Context as _, Result, anyhow, bail};
 use gpui::*;
 use sheprd_client::protocol::*;
-use std::{
-    sync::atomic::{AtomicU8, Ordering},
-    time::{Duration, Instant},
-};
+use std::sync::atomic::{AtomicU8, Ordering};
 
 pub(crate) static EXIT_CODE: AtomicU8 = AtomicU8::new(0);
 
@@ -111,7 +108,9 @@ pub(crate) fn clear_probes(cx: &mut App) {
     cx.default_global::<PaintedProbes>().0.clear();
 }
 
-/// The painted text `label` of the frame just drawn.
+/// The painted text `label` of the frame just drawn. Its only callers are
+/// the macOS-gated interaction fixtures, so it is gated with them.
+#[cfg(target_os = "macos")]
 pub(crate) fn probe<'a>(cx: &'a App, label: &str) -> Result<&'a PaintedText> {
     cx.try_global::<PaintedProbes>()
         .and_then(|probes| probes.0.get(label))
@@ -235,6 +234,9 @@ pub(crate) fn key(name: &str, window: &mut Window, cx: &mut App) -> Result<()> {
 
 /// Repeats `inspect` on the fixture window until it answers, bounded so a
 /// window that never does fails the fixture instead of hanging the run.
+#[cfg(target_os = "macos")]
+use std::time::{Duration, Instant};
+
 #[cfg(target_os = "macos")]
 pub(crate) async fn wait<T>(
     handle: WindowHandle<SheprdWindow>,
