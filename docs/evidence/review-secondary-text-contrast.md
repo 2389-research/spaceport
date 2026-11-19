@@ -3,6 +3,7 @@
 Verified on macOS with Rust 1.99.0 on 2026-11-17.
 Scope: the remaining secondary-text portion of `8zvq` under `9s44`.
 `8zvq` is implemented and independently reviewed.
+Native palette qualification completed on published source `8a4beb1ec` on 2026-11-19.
 The OS preference work is recorded in [OS accessibility evidence](review-os-accessibility.md).
 
 ## Cause and change
@@ -124,3 +125,36 @@ Log: `/tmp/spaceport-9s44-native-contrast-consumers.log`.
 The existing debug-linker unwind-size warning and `block 0.1.6` future-compatibility notice remain unchanged.
 Actual Windows execution, all four PNG inspections, and the measured ratios remain pending.
 Kata `8zvq` stays open until that native evidence passes.
+
+## Qualified native result on `8a4beb1ec`
+
+The [Windows ARM native job](https://github.com/2389-research/spaceport/actions/runs/44534448320/job/135596374844) succeeds on `8a4beb1ec29a57c00368948cda2c602e24566e6c`.
+The palette fixture passes at `2026-11-19T13:38:52.7347722Z`.
+Its native GUI suite passes seven cases, with none ignored.
+This result does not claim ARM UIA qualification; that step remains skipped by existing policy.
+The complete CI run and x64 native job were still running when this result was recorded.
+
+All 24 unique native measurements match the configured RGB values exactly.
+Repeated tail summaries match their original measurements and are deduplicated.
+Every background, surface, and hover pair exceeds the unrounded 4.5:1 threshold.
+Every 9px and 12px glyph region has more than 300 matching ink pixels.
+
+| Palette | Muted on hover | Subtext on hover | PNG bytes | PNG SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| GitHub Light Default | 4.5467134:1 | 6.085221:1 | 45936 | `8b26b81d93a517ea74ea0ab07ad7aadc3265358738d42c344288182db8312745` |
+| Atom One Light | 4.54313:1 | 5.313711:1 | 45090 | `6dc7ec240599e85ae50069250d85834a1c55ef68951831b2c5496d4be5e65bdb` |
+| Gruvbox Light | 4.5410166:1 | 4.5030737:1 | 44724 | `54ae83ea403db495528823a6f93bb36c0a711f747b12b499a4773082bbc3355e` |
+| One Half Light | 4.505819:1 | 4.5690207:1 | 44907 | `fdd1e9c4efb63f92b374023eec59918f92b4abe5fdf7fef03cfd144ba052b5f0` |
+
+All four full PNGs passed canonical base64, size, signature, and complete IEND checks.
+The owner inspected every image: both text sizes are visible and neither column is clipped.
+Each image shows the actual three background fills and both secondary text roles.
+Images and the complete measurement manifest remain in `/tmp/spaceport-9s44-native-contrast-8a/arm/`.
+
+The separate [OS-reader qualification](review-os-accessibility.md#reorder-extraction-follow-up) records actual macOS and Windows getter execution.
+The original issue requires no foreground keyboard or working-session performance check.
+Root checked its fresh revision-one scope against these results and the earlier independent implementation review.
+No original contrast requirement remains unmet.
+Kata `8zvq` closes at `2026-11-19T13:44:29.862Z`.
+Closure event: `9791` (`01M7T0TED6JFV7VBP09Q40ZX7E`).
+Fresh issue and parent reads retain the open umbrella, with 46 closed children and seven open children.
