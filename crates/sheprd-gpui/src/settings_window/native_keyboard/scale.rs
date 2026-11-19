@@ -1,5 +1,6 @@
 // ABOUTME: Captures enlarged Settings text through the real native Windows renderer.
 // ABOUTME: Resizes only its private window and keeps GPU encoding off the UI thread.
+use super::super::native_png;
 use super::{SettingsWindow, capture, wait_capture};
 use anyhow::{Result, ensure};
 use base64::Engine as _;
@@ -39,22 +40,7 @@ pub(super) async fn verify(handle: WindowHandle<SettingsWindow>, cx: &mut AsyncA
         let dimensions = (captured.image.width(), captured.image.height());
         let row = captured.row;
         let png = cx
-            .background_spawn(async move {
-                use image::codecs::png::{CompressionType, FilterType, PngEncoder};
-                let mut png = Vec::new();
-                captured
-                    .image
-                    .write_with_encoder(PngEncoder::new_with_quality(
-                        &mut png,
-                        CompressionType::Fast,
-                        FilterType::Sub,
-                    ))?;
-                ensure!(
-                    png.len() <= 196_608,
-                    "native Settings scale PNG exceeds 192 KiB"
-                );
-                anyhow::Ok(png)
-            })
+            .background_spawn(async move { native_png::encode(captured.image) })
             .await?;
         eprintln!(
             "SETTINGS_SCALE_PNG {name} {}",

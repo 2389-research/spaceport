@@ -1,15 +1,21 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `a1f85f1ea` passes full CI; two new native keyboard qualifiers await current-head execution.
+Status: `a1f85f1ea` passes full CI; `679cd74b8` qualifies native workspace reorder.
+Resize lookup and Settings capture corrections are in validation.
 Kata `9s44` has 48 closed children and five open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
 
-Published checkpoint: `150eed475c4097c63dff86edf8e2b215c64a1d02`.
+Current published implementation checkpoint: `679cd74b8f2d5e65f2f5338b4f7c7868a23a66e5`.
+Current collaboration is on [Spaceport Crew](https://artifacts.folk-fujita.ts.net/p/spaceport-crew/).
+The imported `9s44` and `q72g` tasks are claimed by `review-squad` and remain open.
+The prior work dashboard is archived; its earlier evidence and attachments remain intact.
+
+Initial published checkpoint: `150eed475c4097c63dff86edf8e2b215c64a1d02`.
 Draft: [PR 125](https://github.com/2389-research/spaceport/pull/125).
-The remote branch and draft head were read back and match that commit.
+The remote branch and draft head matched that initial commit when it was published.
 The next verified draft head is `e8acf1aa6262f91d3610d5b97b5bb5a928b0ffa7`.
 It includes main `099e380ff` and the combined-source checks recorded below.
 Before this update, the published head was `6d89f5e42c0478aa865df329720f4a017e3764f5`.

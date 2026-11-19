@@ -11,6 +11,8 @@ mod launch_at_login;
 mod layouts;
 #[cfg(all(windows, feature = "integration-test"))]
 mod native_keyboard;
+#[cfg(any(test, all(windows, feature = "integration-test")))]
+mod native_png;
 mod navigation;
 mod pages;
 pub(crate) use layouts::{apply_loaded_layout, layout_load_revision};

@@ -70,16 +70,24 @@ if ($Action -eq 'Resize') {
     Require-Released
     Require-Terminal
   }
-  function Marker-Bounds {
+  function Output-CaretBounds {
     Require-Terminal
     $range = $pattern.DocumentRange
     $script:resizeOutputSeen = ($range.GetText(16384) -split '\r?\n') -ccontains 'SP_RESIZE_7'
     if (-not $script:resizeOutputSeen) { return $null }
-    $marker = $range.FindText('SP_RESIZE_7', $false, $false)
-    if ($null -eq $marker) { return $null }
-    $marker.ExpandToEnclosingUnit([System.Windows.Automation.Text.TextUnit]::Line)
-    $rectangles = $marker.GetBoundingRectangles()
-    if ($rectangles.Length -ne 1) { throw 'The authored resize line has no unique native rectangle' }
+    # Pinned AccessKit does not implement FindText; use its proven caret-range contract.
+    $selection = $pattern.GetSelection()
+    if ($selection.Length -ne 1) { throw 'Native resize terminal has no unique caret range' }
+    $start = [System.Windows.Automation.Text.TextPatternRangeEndpoint]::Start
+    $end = [System.Windows.Automation.Text.TextPatternRangeEndpoint]::End
+    if ($selection[0].CompareEndpoints($start, $selection[0], $end) -ne 0 -or $selection[0].GetText(1) -cne '') {
+      throw 'Native resize terminal reports selected text instead of its caret'
+    }
+    $line = $selection[0].Clone()
+    $line.ExpandToEnclosingUnit([System.Windows.Automation.Text.TextUnit]::Line)
+    $rectangles = $line.GetBoundingRectangles()
+    if ($rectangles.Length -eq 0) { return $null }
+    if ($rectangles.Length -ne 1) { throw 'The native resize caret line has no unique rectangle' }
     $rect = $rectangles[0]
     $outer = $document.Current.BoundingRectangle
     foreach ($property in @('Left','Top','Width','Height')) {
@@ -100,7 +108,7 @@ if ($Action -eq 'Resize') {
     $script:resizeOutputSeen = $false
     $last = 'none'
     do {
-      $rect = Marker-Bounds
+      $rect = Output-CaretBounds
       if ($null -ne $rect) { $last = "left=$($rect.Left),width=$($rect.Width)" }
       if ($null -ne $rect -and (& $accept $rect)) {
         [Console]::WriteLine("TERMINAL_RESIZE_STAGE stage=$stage output=true $last")

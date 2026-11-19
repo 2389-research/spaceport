@@ -123,7 +123,7 @@ Kata `q72g` remains open for these specific checks:
 | Core Terminal node | Inspect actual text, caret, bounds, and observing panes with accessibility active. |
 | Herdr caret and announcements | Query caret/text ranges and observe changed output announced by a screen reader. |
 | Settings font scaling | Inspect enlarged glyphs and clipping, including a narrow window. |
-| Keyboard reorder and resize | Reorder workspace rows and resize both terminal kinds through native key delivery. |
+| Keyboard reorder and resize | Workspace reorder passes on `679cd74b8`; both terminal kinds still need native resize qualification. |
 | Selected-tab focus contrast | Inspect focused tabs on actual fills, including applicable translucent or image backdrops. |
 | Close-button roles | Native names, Button roles, cancellation, and confirmation pass on `64970ccce`; see below. |
 
@@ -146,7 +146,7 @@ Setup creates one real right split through the existing app command.
 The daemon must report both stable pane IDs before native input starts.
 The helper waits for the focused right pane's presented native caret-line bounds.
 It sends authored output, then Ctrl-B, r, and Left through native keyboard input.
-The authored line must move left before Right may run.
+After authored output arrives, the native caret line must move left before Right may run.
 Right must restore its original horizontal position within one pixel.
 The outer terminal viewport must stay fixed throughout both observations.
 Every observed line rectangle must remain finite, positive, and inside the native terminal.
@@ -289,3 +289,40 @@ It records no terminal text and changes no key, geometry assertion, or deadline.
 This diagnoses the failure; it does not claim a resize fix.
 Independent review confirms both narrow changes without material findings.
 Both corrected native scenarios still need execution.
+
+## Keyboard and scaling result on `679cd74b8`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44599468067/job/135826942474) passes eight GUI cases and twenty-one UIA cases.
+The two remaining UIA failures belong to resize lookup and Settings PNG encoding.
+This checkpoint is not green.
+
+Workspace reorder passes at `2026-11-19T19:47:36.1177302Z`.
+Actual Alt+Down and Alt+Up change both daemon and native row order.
+The scenario preserves every workspace ID, every observed pane ID, and the daemon boot.
+This qualifies the workspace keyboard alternative on Windows; pane resizing remains open.
+
+Resize passes its presented-right-pane guard and observes authored output.
+Its `authored_output` stage returns `output=True` without a text range.
+Pinned `accesskit_windows` 0.34.0 leaves `FindText` unimplemented in `src/text.rs:406`.
+The corrected helper uses `GetSelection` and expands its unique collapsed caret to a visible line.
+The existing terminal qualifier already exercises those supported APIs.
+Authored output remains a barrier before resizing.
+Focus, viewport, direction, restoration, and daemon pane-ID assertions remain unchanged.
+Actual native resizing still needs the corrected scenario to pass.
+
+Settings loads the 24-point configuration but emits no image before hitting the 192 KiB PNG limit.
+The encoder correction keeps that limit and both original image dimensions.
+A new regression uses two existing full native Settings captures.
+Fast/Sub encoding fails first with a 247,400-byte PNG.
+Adaptive filtering passes while preserving every decoded RGBA byte.
+Best compression adds headroom for the larger native scene.
+Final encoded sizes are 120,905 and 102,400 bytes, with all pixels and dimensions unchanged.
+The complete two-image regression takes 0.70 seconds in the local debug test executable.
+Encoding remains background work behind the Windows integration-test gate.
+The helper is additionally compiled for its unit test on other hosts.
+No ordinary production build includes it.
+Logs use `/tmp/spaceport-9s44-native-png-{red,green,final}.log`.
+Current Windows GNU all-target Clippy checks pass with all features and without default features.
+Formatting, file-size, sorting, operations, i18n, commit subjects, and diff checks pass.
+The corrected native rerun and actual enlarged-glyph inspection remain pending.
+Kata `q72g` stays open.
