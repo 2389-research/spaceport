@@ -4,7 +4,7 @@ use super::*;
 fn a_card_opens_and_closes_on_the_text_it_shows() {
     let mut state = ConfigDiagnostic::default();
     state.sync(Some(
-        "config-gpui.local.toml: layout.sidebar_gap is deprecated",
+        "spaceport/config.local.toml: layout.sidebar_gap is deprecated",
     ));
     assert!(!state.expanded());
     let lines = state.visible().unwrap().clone();
@@ -12,7 +12,7 @@ fn a_card_opens_and_closes_on_the_text_it_shows() {
     assert!(state.expanded());
     // Snapshots repeating the text keep it open.
     state.sync(Some(
-        "config-gpui.local.toml: layout.sidebar_gap is deprecated",
+        "spaceport/config.local.toml: layout.sidebar_gap is deprecated",
     ));
     assert!(state.expanded());
     assert!(state.toggle(&lines));
