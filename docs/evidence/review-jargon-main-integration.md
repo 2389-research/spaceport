@@ -93,3 +93,24 @@ The run-owner baseline is `/tmp/spaceport-9s44-run-owner-red.log`.
 Linux and native Windows qualification remain assigned to hosted CI.
 Native Settings input, accessibility, and release profiling remain pending.
 Kata closures remain unchanged while those qualification gates stay open.
+
+## Clipboard message follow-up, November 19
+
+The original-scope completion audit finds four remaining clipboard messages with internal terms.
+The Busy message exposes a reservation; the fallback message exposes semantic-input targeting.
+The timeout messages expose a skipped reservation or an unnamed reconnect instruction.
+These messages reach the real `Localize` implementation and its English catalog.
+
+The corrected messages describe clipboard pasting and name **Terminal → Reconnect** when needed.
+Preparation applies to clipboard text and images, so the message covers both.
+Before preparation completes, the worker still has no bytes to send.
+Its timeout message can therefore say this paste was not sent.
+A write timeout may follow partial input, so its message retains that uncertainty.
+Error variants, source chains, retry categories, framing, and cancellation remain unchanged.
+
+The existing error-output/category regression fails first against the old Busy message.
+The corrected client scopes pass 34 cases without ignored cases.
+The six GPUI client-localization cases also pass, including English Display equality and pseudo-locales.
+Logs use `/tmp/spaceport-9s44-clipboard-copy-{red,client-green,localized-green}.log`.
+Independent review checks the actual reservation, preparation, and incremental write producers.
+Native speech and visual qualification do not establish this wording contract and remain separate work.

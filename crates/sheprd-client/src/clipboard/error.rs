@@ -1,19 +1,22 @@
-//! Why a clipboard image upload did not reach the daemon.
+// ABOUTME: Describes failures preparing or sending clipboard content to a terminal.
+// ABOUTME: Preserves retry and cancellation categories independently of message wording.
 
 use std::io;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     // keep-sorted start
-    #[error("a clipboard image upload is already reserved or in progress")]
+    #[error("Another clipboard paste is in progress. Wait for it to finish.")]
     Busy,
     #[error("clipboard image upload cancelled")]
     Cancelled,
-    #[error("semantic input fallback requires a pane or popup target")]
+    #[error("This terminal connection cannot paste this clipboard content.")]
     InputTarget,
-    #[error("clipboard image preparation timed out; reservation skipped")]
+    #[error("Preparing the clipboard content took too long. It was not pasted. Try pasting again.")]
     PreparationTimeout,
-    #[error("clipboard image write timed out; reconnect required")]
+    #[error(
+        "Spaceport could not finish sending clipboard input. Some input may have arrived. Choose Terminal → Reconnect."
+    )]
     WriteTimeout,
     // keep-sorted end
 }

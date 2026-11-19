@@ -1,5 +1,5 @@
-//! Feature errors keep the retry/cancellation category and the display text
-//! they had as flat root variants.
+// ABOUTME: Checks typed feature error categories and user-facing diagnostics.
+// ABOUTME: Keeps wording changes separate from retry and cancellation policy.
 use super::*;
 
 fn assert_kinds(cases: impl IntoIterator<Item = (Error, io::ErrorKind, &'static str)>) {
@@ -136,7 +136,7 @@ fn clipboard_errors_keep_kind_and_text() {
         (
             clipboard::Error::Busy.into(),
             WouldBlock,
-            "a clipboard image upload is already reserved or in progress",
+            "Another clipboard paste is in progress. Wait for it to finish.",
         ),
         (
             clipboard::Error::Cancelled.into(),
@@ -146,17 +146,17 @@ fn clipboard_errors_keep_kind_and_text() {
         (
             clipboard::Error::InputTarget.into(),
             InvalidData,
-            "semantic input fallback requires a pane or popup target",
+            "This terminal connection cannot paste this clipboard content.",
         ),
         (
             clipboard::Error::PreparationTimeout.into(),
             TimedOut,
-            "clipboard image preparation timed out; reservation skipped",
+            "Preparing the clipboard content took too long. It was not pasted. Try pasting again.",
         ),
         (
             clipboard::Error::WriteTimeout.into(),
             TimedOut,
-            "clipboard image write timed out; reconnect required",
+            "Spaceport could not finish sending clipboard input. Some input may have arrived. Choose Terminal → Reconnect.",
         ),
     ]);
 }
