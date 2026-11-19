@@ -5,7 +5,7 @@
 
 Scope: the chat parsing part of `gfde`, authorized by the existing all-findings task.
 Root owns this slice.
-No commit, publication, or native qualification is authorized by this work.
+The initial slice excluded publication; Doctor Biz later authorized the aggregate draft and qualification updates.
 
 ## Existing contract
 
@@ -113,3 +113,42 @@ Native keyboard, glyph, accessibility, and timing checks remain pending.
 
 These measurements concern CPU preparation of synthetic transcripts.
 They do not establish native frame latency, glyph behavior, or whole-window performance acceptance.
+
+## Remaining full-prefix work, November 19
+
+The original-scope audit confirms that changed Agent answers still enter the final CommonMark parser in full.
+The earlier counter observed only math protection; it could not qualify that remaining cost.
+The test-only meter now counts protection and final-parser input separately at their actual call sites.
+It restores nested scopes and isolates concurrent test threads.
+Production builds contain neither counter.
+
+The final-parser measurement regression fails first with zero bytes instead of thirteen.
+Log: `/tmp/spaceport-9s44-final-parser-meter-red.log`.
+After wiring the final call site, thirty focused rich and summary cases pass, including the real Prepared append consumer.
+The existing release-only benchmark remains ignored in this debug run.
+The new real Append-to-Prepared workload appends 128 generated chunks.
+It verifies the complete displayed prose, including CommonMark's removal of trailing source spaces.
+Its 16,398-byte source submits 1,058,560 bytes to the final parser, with zero protection-parser bytes.
+Log: `/tmp/spaceport-9s44-final-parser-meter-final.log`.
+The first consumer run incorrectly expected the trailing raw space and failed; the corrected display assertion passes.
+These byte counts establish remaining work, rather than an optimization or CPU timing result.
+
+## Next implementation checkpoint
+
+First add a failing work budget through real Session Append events and Prepared updates.
+Use the final-parser meter and verify output against the unchanged full preparation path.
+Consider reusing a prepared trailing paragraph only when validated append provenance and literal text make it safe.
+Keep provenance inside the existing Session reducer; do not add wire fields or another transcript copy.
+Invalidate reuse on replacement, snapshots, truncation, language changes, or incompatible message shapes.
+Fall back to full preparation whenever appended Markdown can change earlier semantics.
+Preserve links, entities, open delimiters, references, math, embedded content, limits, and selectable text.
+Do not substitute throttling, delayed content, or stale formatting for the current streaming result.
+Measure actual parser input and release preparation cost after semantic consumers pass.
+Keep `gfde` open until that implementation and native image qualification have evidence.
+
+The meter receives an independent read-only review with no material finding.
+Host and Windows GNU lint pass with all features and with default features disabled.
+The canonical formatting, size, sorted-region, operations, localization, commit-message, and diff checks pass.
+Logs: `/tmp/spaceport-9s44-final-parser-meter-lint.log` and `final-parser-meter-static.log`.
+The existing debug-link unwind warning and external `block 0.1.6` notice remain unchanged.
+No release benchmark or native performance claim follows from this new debug work measurement.

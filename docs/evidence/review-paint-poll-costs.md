@@ -1,6 +1,6 @@
 # Painting and polling costs
 
-Finding: `gfde`. Verified partial work through 2026-11-18.
+Finding: `gfde`. Verified partial work through 2026-11-19.
 The finding remains open.
 
 ## Theme changes
@@ -68,7 +68,8 @@ The complete region scope now passes seven tests, with no failure or ignore.
 Green: `/tmp/spaceport-9s44-popup-image-region-green.log`.
 Artifact: `/tmp/spaceport-9s44-gpui.xD8o8D/spaceport-tests`.
 Independent review approved target matching, paint order, and unchanged texture ownership after reading the green log.
-Main-grid image fallback and smooth scrolling remain unchanged.
+At that earlier popup-only checkpoint, main-grid image fallback and smooth scrolling remained unchanged.
+The later image-cache and scrolling sections below record their implemented replacements.
 
 Port scanning passes 56 checks, including shared consumers, exact-host bounds, cleanup, reconnect, and owned process attribution.
 Eight ignored subprocess entry points run through their nonignored private parents.
@@ -117,7 +118,22 @@ Replacing or losing a needed asset cancels the gesture before the asset collecti
 The image painter uses snapped destination masks instead of cropping texture coordinates.
 Four-scale crossed-image tests and both historical directions pass.
 See [image-pane scrolling](review-image-pane-scroll.md) for regression and review evidence.
-Native raster and timing qualification remain pending.
+The offscreen Metal pixel checks pass.
+Foreground image mapping, clipping, scrolling, and native timing qualification remain pending.
+
+## Original-scope audit, November 19
+
+The independent audit accepts the theme cache, bounded glyph replacement, shared port scans, and sidebar index fixes.
+Image caching and scrolling have actual decode, cache-callback, geometry, and offscreen Metal evidence.
+They still need the authored foreground visual qualification described above.
+
+Streaming preparation remains an implementation gap.
+`Prepared::update` still scans each changed complete Agent prefix for summaries, then rebuilds its message fragments.
+The rich parser still submits the complete changed fragment to its final CommonMark parser.
+The 17.5 percent synthetic improvement removes redundant math protection work only.
+It does not prove that the final full-prefix work is resolved.
+The current test-only work meter observes that final parser directly through real transcript appends.
+Keep `gfde` open until the remaining work is fixed and qualified.
 
 The separate redraw finding, `gg9v`, requires a release-mode profile first.
 Doctor Biz requested that native keyboard and performance checks remain pending.

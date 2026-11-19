@@ -1,3 +1,5 @@
+// ABOUTME: Defines bounded Markdown blocks independently from native layout.
+// ABOUTME: Shares parser types and visual ownership across chat preparation.
 //! Structured Markdown kept separately from layout. Parsing is bounded by
 //! the message limit; math rasterization and grammar parsing use Visuals' workers.
 
@@ -8,6 +10,9 @@ mod math_input;
 mod parse;
 mod quote;
 mod remote;
+
+#[cfg(test)]
+mod work;
 
 pub(super) use code::{CodeText, MAX_CODE_LINE_CHARS, MAX_CODE_LINES, TAB_WIDTH};
 pub(super) use fence::Fence;

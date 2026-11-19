@@ -8,12 +8,20 @@ use std::{hint::black_box, time::Instant};
 #[test]
 fn ordinary_markdown_does_not_enter_the_math_protection_parser() {
     for text in ["**bold** text", "```rust\nlet x = 1;\n```"] {
-        let (blocks, bytes) = math_input::work::measure(|| parse(text, &mut Visuals::default()));
+        let (blocks, counts) = work::measure(|| parse(text, &mut Visuals::default()));
         assert!(
             blocks.is_some(),
             "the real rich consumer accepts the fixture"
         );
-        assert_eq!(bytes, 0, "ordinary Markdown needs no math protection parse");
+        assert_eq!(
+            counts.protection_bytes, 0,
+            "ordinary Markdown needs no math protection parse"
+        );
+        assert_eq!(
+            counts.markdown_bytes,
+            text.len(),
+            "measure the actual final parser"
+        );
     }
 }
 
@@ -28,7 +36,7 @@ fn synthetic_stream_preparation_cost() {
     assert_eq!(chunk.len(), 128);
     for (case, prefix) in [("plain", ""), ("math", "$x^2$ ")] {
         let mut samples = Vec::new();
-        let mut protection_bytes = 0;
+        let mut counts = work::Counts::default();
         for round in 0..11 {
             let id = EntryId(1);
             let mut transcript = Transcript::new("Synthetic");
@@ -43,7 +51,7 @@ fn synthetic_stream_preparation_cost() {
                 })
                 .unwrap();
             let mut prepared = Prepared::default();
-            let (elapsed, bytes) = math_input::work::measure(|| {
+            let (elapsed, bytes) = work::measure(|| {
                 let started = Instant::now();
                 for revision in 1..=128 {
                     transcript
@@ -61,7 +69,7 @@ fn synthetic_stream_preparation_cost() {
                 if matches!(&parts[..], [Part::Rich(_)])));
             if round >= 2 {
                 samples.push(elapsed);
-                protection_bytes = bytes;
+                counts = bytes;
             }
         }
         samples.sort_unstable();
@@ -70,7 +78,8 @@ fn synthetic_stream_preparation_cost() {
             "chunks": 128,
             "chunk_bytes": chunk.len(),
             "median_ns": samples[samples.len() / 2],
-            "protection_bytes": protection_bytes,
+            "protection_bytes": counts.protection_bytes,
+            "markdown_bytes": counts.markdown_bytes,
             "samples_ns": samples,
         });
         println!("{result}");

@@ -283,3 +283,14 @@ The review found no further issue in this bounded observation change.
 `just format-check check-file-size check-sorted check-just-operations check-i18n check-commits` passes.
 `git diff --check` passes.
 No PowerShell runtime is installed on this Mac; actual script execution remains assigned to Windows CI.
+
+## Bounded observation qualification on `b6214c15b`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44569043691/job/135719499011) passes eight GUI cases and all nineteen UIA cases.
+The corrected Settings case passes at `2026-11-19T16:55:44.7670560Z`.
+The actual saved preference changes to false after Space and returns to true after Enter.
+Both layout choices and dropdown return focus also pass.
+The native ring comparison again records 120 focused pixels and zero unfocused pixels.
+The ARM native job also passes; its existing policy excludes UIA.
+The [complete CI run](https://github.com/2389-research/spaceport/actions/runs/44569043691) succeeds with eighteen passing jobs and one unconfigured skip.
+Supply-chain checks also pass on this exact source.

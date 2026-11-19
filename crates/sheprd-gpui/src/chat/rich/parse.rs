@@ -36,6 +36,8 @@ pub(in crate::chat) fn parse(text: &str, visuals: &mut Visuals) -> Option<Vec<Bl
         | Options::ENABLE_MATH
         | Options::ENABLE_STRIKETHROUGH
         | Options::ENABLE_TASKLISTS;
+    #[cfg(test)]
+    super::work::record_markdown(markdown.len());
     let events: Vec<_> = Parser::new_ext(markdown, options)
         .into_offset_iter()
         .take(MAX_EVENTS + 1)

@@ -6,6 +6,7 @@ use crate::chat::visual::{Error, Visuals};
 
 mod code;
 mod display_math;
+mod parser_work;
 mod prose;
 mod streaming_work;
 
