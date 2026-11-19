@@ -29,3 +29,4 @@
 {"issue":"jemh","uid":"01M7JWV9GH85YAAKB6QBVJJEMH","status":"closed","event_id":9502,"event_uid":"01M7QSRXM67SSS8D7DFGZ0PTXR","closed_at":"2026-11-18T17:02:51.014Z","evidence":"docs/evidence/review-core-experiment-copy.md"}
 {"issue":"fe28","uid":"01M7JWV51FY9NSCK49JC02FE28","status":"closed","event_id":9503,"event_uid":"01M7QTDYHPCMCJ5NVG5BY0TMY4","closed_at":"2026-11-18T17:14:20.086Z","evidence":"docs/evidence/review-destructive-keys.md"}
 {"issue":"2qr3","uid":"01M7JWV6DF3WEAXWGHPR1K2QR3","status":"closed","event_id":9647,"event_uid":"01M7R9E97RXRY1W47V9HZSR0ET","closed_at":"2026-11-18T21:36:39.672Z","evidence":"docs/evidence/review-input-recovery.md"}
+{"issue":"rder","uid":"01M7JWV7DYPRMVVDTQQP0XRDER","status":"closed","event_id":9757,"event_uid":"01M7RNCXC99A8HFWN28N4Q1HMF","closed_at":"2026-11-19T01:05:37.673Z","evidence":"docs/evidence/review-windows-safety.md"}

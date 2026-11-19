@@ -109,3 +109,44 @@ Permissions, triggers, credentials, and required test gates remain unchanged.
 The three release-security checks and all 24 CI policy checks now pass locally.
 Independent review approved the condition, ordering, and preserved security contract.
 The other platform jobs still require their actual hosted results.
+
+## Platform fixture qualification
+
+The same run completed with twelve passing checks, ten failures, and one skipped target.
+The failure count includes the aggregate gate.
+Both Windows native GUI jobs, both macOS release builds, and the Windows installer job passed.
+macOS all-feature workspace tests and native host routing passed.
+The GPUI scope reports 4,545 passed and 23 explicit-resource cases ignored.
+Windows ARM skips its documented live-daemon case; both Windows performance steps remain skipped.
+
+The remaining failures fall into three groups:
+
+- Three default jobs hit the canonical workflow-step contract described above.
+- Both Linux all-feature jobs found two shortcut assumptions and a floating-point assertion.
+- Four Windows workspace jobs failed the same three isolated OpenSSH parser cases.
+
+Linux intentionally leaves layout-dependent symbol shortcuts unbound.
+The config test now derives GUI defaults from the typed command catalog before adding daemon chords.
+The sidebar layout fixture uses a real default when one exists, or the production Keybinds handler otherwise.
+Its editing gestures use the existing platform Edit keys.
+Focus, search, composition, and layout assertions remain intact.
+
+The image test compared independently reconstructed `f32` texture sizes bit for bit.
+Linux reported `19.999996` versus `20`: two ULPs, about four millionths of a pixel.
+The mapping assertion now permits four relative floating-point epsilons.
+Shared mask edges still compare exactly; fragment count, order, and cache assertions remain unchanged.
+Both offscreen Metal pixel regressions pass again.
+Independent review approved this arithmetic bound against the actual geometry producer.
+
+[Microsoft's OpenSSH source](https://github.com/PowerShell/openssh-portable/blob/0172cc6adb99d8b4324b8f0391b5b1fd6f39b2c6/contrib/win32/win32compat/w32fd.c#L230)
+requires `ProgramData` during startup, before initializing stderr.
+The cleared parser fixture omitted that variable, matching its blank startup failures.
+The fixture now supplies private `ProgramData` and retains only `SystemRoot` alongside its private `HOME`.
+It preserves the resolved executable, explicit private `-F` configuration, and all three forwarding-policy assertions.
+Failure diagnostics include the executable, status, and stderr.
+The installed runner OpenSSH version was not captured; native Windows confirmation remains pending.
+
+All three real OpenSSH parser cases and twelve affected GPUI cases pass locally on macOS.
+These results do not qualify the Windows or Linux branches.
+The complete four-file fixture correction received independent review.
+Kata `rder` separately closed from verified native process results; see [Windows evidence](review-windows-safety.md).

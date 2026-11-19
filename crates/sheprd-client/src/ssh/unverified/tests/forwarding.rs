@@ -12,9 +12,18 @@ fn effective_options(command: &Command) -> String {
         "Host *\n    ForwardAgent yes\n    ForwardX11 yes\n    CanonicalizeHostname no\n",
     )
     .unwrap();
-    let output = Command::new(command.get_program())
-        .env_clear()
-        .env("HOME", root.path())
+    let mut probe = Command::new(command.get_program());
+    probe.env_clear().env("HOME", root.path());
+    #[cfg(windows)]
+    probe
+        // Windows OpenSSH requires ProgramData before initializing its stderr.
+        // Explicit -F keeps this parser probe out of default system/user config.
+        .env("ProgramData", root.path())
+        .env(
+            "SystemRoot",
+            std::env::var_os("SystemRoot").unwrap(),
+        );
+    let output = probe
         .args(["-G", "-F"])
         .arg(config)
         .args(command.get_args())
@@ -22,7 +31,9 @@ fn effective_options(command: &Command) -> String {
         .unwrap();
     assert!(
         output.status.success(),
-        "ssh -G failed: {}",
+        "ssh -G failed for {:?}: {}; {}",
+        command.get_program(),
+        output.status,
         String::from_utf8_lossy(&output.stderr)
     );
     String::from_utf8(output.stdout).unwrap()

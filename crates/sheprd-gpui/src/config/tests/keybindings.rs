@@ -1,3 +1,5 @@
+// ABOUTME: Verifies GUI and daemon keybinding precedence through real config files.
+// ABOUTME: Checks platform defaults separately from explicitly configured shortcuts.
 use super::*;
 
 #[test]
@@ -201,14 +203,16 @@ fn daemon_keys_layer_under_gui_keybindings() -> anyhow::Result<()> {
             "ctrl-a \\"
         ]
     );
-    assert_eq!(
-        shortcuts(&config, Command::TabNumber(2)),
-        [
-            crate::controls::platform_default("cmd-2"),
-            "ctrl-a 2",
-            "alt-2"
-        ]
-    );
+    let mut expected = crate::controls::COMMANDS
+        .iter()
+        .find(|info| info.command == Command::TabNumber(2))
+        .unwrap()
+        .default_shortcuts()
+        .iter()
+        .map(|key| (*key).to_owned())
+        .collect::<Vec<_>>();
+    expected.extend(["ctrl-a 2".to_owned(), "alt-2".to_owned()]);
+    assert_eq!(shortcuts(&config, Command::TabNumber(2)), expected);
     assert!(
         config
             .keybindings

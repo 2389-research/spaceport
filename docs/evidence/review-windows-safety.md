@@ -2,7 +2,8 @@
 
 Review children `q7h6` and `rder`, under `9s44`. Source review: 2026-11-17.
 
-Doctor Biz authorized these reported fixes and tests. No publishing or credential changes are authorized.
+The original November 17 scope covered fixes and tests without publication.
+Doctor Biz authorized the public draft checkpoint on November 18, as recorded in the integration evidence.
 
 ## Pipe connection
 
@@ -81,7 +82,27 @@ Logs live under `/tmp/spaceport-windows-safety/`.
 The first combined Windows clippy run stopped at another task's nested `if` in the control socket.
 That finding was sent to its implementation owner.
 
-Windows runtime tests have not run on this Mac. Cross-compilation does not prove native behavior.
+At the original local checkpoint, Windows runtime tests had not run on this Mac.
+Cross-compilation does not prove native behavior.
 The Windows regressions were written before the fixes, but native failing-baseline proof remains unavailable.
 The restored Windows CI jobs must run the pipe, process, and retained workspace tests before shipping.
-No CI run was triggered because publishing was not authorized.
+Publication remained unauthorized at that original checkpoint.
+
+## Native Windows agent qualification
+
+CI tested source `208fa3929748d89cc815a79eba1340745b6a7a15` on native Windows x64 and ARM.
+Both ACP unit suites report 419 passed and one private fixture entry ignored directly.
+Parent tests explicitly launch that entry.
+All four process regressions pass on both architectures:
+
+- Stopping a Windows shim ends its agent and tool, including concurrent wait/stop.
+- Stopping an exited shim still ends its tool and preserves the direct exit status.
+- Dropping the last owner ends its process tree.
+- Stdio, explicit environment, repeated stop, and cached status remain intact.
+
+Verified [x64 job logs](https://github.com/2389-research/spaceport/actions/runs/44431160334/job/135248813591)
+and [ARM job logs](https://github.com/2389-research/spaceport/actions/runs/44431160334/job/135248813776).
+Those jobs later failed unrelated SSH parser fixtures; this does not qualify the whole job.
+Kata `rder` closed after a fresh native-result read and issue-status readback.
+The closure event is `9757` (`01M7RNCXC99A8HFWN28N4Q1HMF`).
+Pipe-specific GUI tests and the foreign-owner limitation remain separate qualification work for `q7h6`.

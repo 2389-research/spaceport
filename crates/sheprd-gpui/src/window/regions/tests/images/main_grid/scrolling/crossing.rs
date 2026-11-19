@@ -50,10 +50,21 @@ fn crossing_images_keep_equal_z_order_and_nonoverlapping_masks(cx: &mut TestAppC
             "shared mask edge at scale {scale}"
         );
         assert_eq!(moving[1].bounds.right(), stationary[1].bounds.left());
-        assert_eq!(
-            moving[0].mapped.size, stationary[0].mapped.size,
-            "both paint calls preserve the full texture mapping"
-        );
+        // Reconstructing clipped rectangles rounds f32 operations independently.
+        // Keep mask edges exact above and bound mapping roundoff to four epsilons.
+        for (moving, stationary) in [
+            (moving[0].mapped.size.width, stationary[0].mapped.size.width),
+            (
+                moving[0].mapped.size.height,
+                stationary[0].mapped.size.height,
+            ),
+        ] {
+            let (moving, stationary) = (f32::from(moving), f32::from(stationary));
+            assert!(
+                (moving - stationary).abs() <= stationary.abs() * f32::EPSILON * 4.,
+                "both paint calls preserve full texture mapping at scale {scale}: {moving} vs {stationary}"
+            );
+        }
         assert_eq!(session.preparations().len(), 1);
     }
 }
