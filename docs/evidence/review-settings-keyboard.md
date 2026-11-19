@@ -233,3 +233,32 @@ Each poll retains the exact Settings foreground HWND and ancestry guard.
 The timeout logs a fixed diagnostic, without reading another window's control name.
 Independent review confirms the async contract and retained guards.
 Actual native execution of the acknowledgment correction remains pending.
+
+## Completed native qualification on `940749d29`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44545681976/job/135635803161) passes all eight GUI and fifteen UIA cases, with none ignored.
+The complete CI run has eighteen successful jobs and one unconfigured target skipped.
+Supply-chain checks and the ARM native job also pass.
+ARM does not run UIA under the existing runner policy.
+
+Actual Settings keys pass at `2026-11-19T14:49:48.5050717Z`.
+Tab and Shift+Tab traverse the owned Settings window.
+Space changes Smooth scrolling to false; Enter restores true.
+Native segment activation saves Bubbles, then restores Timeline.
+The real private TOML confirms each value and the unchanged English language.
+Dropdown dismissal and selection return focus to the exact trigger.
+
+The native focused and unfocused captures retain identical row geometry and switch state.
+The focused capture contains 120 ring-colored pixels; the unfocused capture contains zero.
+Both PNGs were decoded, framing/hash-checked, and visually inspected.
+Both show the authored Smooth scrolling row and its switch, with the changed focus border.
+The focused PNG has 7748 bytes and SHA-256 `bd0ecd512c828f5abca3c1c1a6868cade4b5ea219bf54275a820621a16877e5d`.
+The unfocused PNG has 7561 bytes and SHA-256 `756d1578ac9d9386b2c168ef06567d09d6a5a8ec85ae9d26af96b63dcf7d50e0`.
+The pair and manifest remain in `/tmp/spaceport-9s44-settings-native-940/`.
+
+The fresh original-scope audit confirms switches, segments, buttons, keyboard reachability, activation, and visible focus.
+The 267 headless Settings cases cover the remaining control callbacks, traversal, IME, and boundaries.
+The native case qualifies OS keyboard delivery, persisted values, dropdown return focus, and the painted ring.
+The original issue does not require release profiling or a separate Mac-only matrix.
+Those broader checks remain tracked by their own open findings.
+This evidence satisfies the original scope of Kata `d0n2`.
