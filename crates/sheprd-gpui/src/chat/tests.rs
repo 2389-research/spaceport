@@ -212,16 +212,26 @@ impl Program {
             .accepted
             .recv_timeout(WAIT)
             .expect("no client connected");
-        let (mut reader, writer, closer) = connection.split().unwrap();
-        reader.set_timeout(Some(WAIT)).unwrap();
-        let mut peer = Peer {
-            _closer: closer,
-            reader,
-            writer,
-        };
-        let hello = read(&mut peer).expect("a greeting");
-        (peer, hello)
+        greeted(connection)
     }
+
+    /// Accepts a client that has already connected, without waiting.
+    fn try_accept(&self) -> Option<(Peer, ClientMessage)> {
+        self.accepted.try_recv().ok().map(greeted)
+    }
+}
+
+/// Reads the greeting of a client that just connected.
+fn greeted(connection: Connection) -> (Peer, ClientMessage) {
+    let (mut reader, writer, closer) = connection.split().unwrap();
+    reader.set_timeout(Some(WAIT)).unwrap();
+    let mut peer = Peer {
+        _closer: closer,
+        reader,
+        writer,
+    };
+    let hello = read(&mut peer).expect("a greeting");
+    (peer, hello)
 }
 
 /// The program's end of one connection.
