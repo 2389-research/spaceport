@@ -8,6 +8,7 @@ mod group_settle;
 mod groups;
 mod groups_view;
 mod hidden;
+mod hosts;
 mod layouts;
 mod location;
 mod store;
