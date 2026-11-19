@@ -580,5 +580,13 @@ impl SheprdWindow {
         self.refresh_palette(window, cx);
         self.report_focus();
         self.sync_window_title(window, cx);
+        #[cfg(all(windows, feature = "integration-test"))]
+        if prefix::native_shortcut_fences_observed() {
+            tracing::debug!(
+                input_ready = self.input_ready(),
+                surface_stream = self.live.supports_surface,
+                "Native shortcut readiness"
+            );
+        }
     }
 }

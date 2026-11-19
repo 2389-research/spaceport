@@ -4,7 +4,7 @@
 # Chat accessibility
 
 The `2njz` implementation and scoped local verification are complete in `review-squad-fixes`.
-The finding remains open for native assistive-technology and keyboard qualification.
+Kata `2njz` closes after native qualification on `99e318867`.
 
 ## Native fixture parity, November 19
 
@@ -164,6 +164,36 @@ Formatting, size, sorting, operations, localization, commit, and diff checks pas
 Log: `/tmp/spaceport-9s44-chat-lifetime-window-repeat-static.log`.
 Independent review accepts the scoped budget correction and keeps native completion pending.
 The owner review finds no remaining material issue in this correction.
+
+## Qualified native result on `99e318867`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44520974760/job/135549493119) executes the complete chat scenario successfully.
+The exact pass receipt is recorded at `2026-11-19T12:18:27.4335207Z`.
+The native tree exposes the authored messages, tool, plan states, permission prompts, and named controls.
+Native Tab reaches Agent settings, the disclosure, and both permission buttons.
+Settings opens and dismisses; tool output expands and folds through the actual controls.
+Enter and Space produce the two exact queued answers and preserve the draft.
+The native tree then removes both resolved prompts.
+The probe verifies the real Session queue; it does not claim a linked agent received those commands.
+Existing framed-wire tests retain the separate delivery evidence described above.
+
+Command: `cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- --ignored --nocapture --test-threads=1`.
+Its UIA scope reports eight passing cases and one failure, with none ignored.
+The later New Window qualifier fails on its incorrect CLI argument order before sending shortcut keys.
+That unrelated failure keeps the PR's CI red; it does not invalidate this chat case's pass.
+
+The exact-head initial PNG is complete and inspected by the owner and independent reviewer.
+It contains the authored messages, tool row, plan, prompts, draft, and controls without clipping those areas.
+Its size is 94,052 bytes.
+SHA-256: `713d862ac79ddb59efff7475a528a7754b4311b5612bb7f30a844f0a319dc556`.
+Private review files: `/tmp/spaceport-9s44-native-chat-99/initial.png` and `manifest.json`.
+Independent review accepts closure against the original issue at revision one.
+No audible-speech, native connected-agent, or performance qualification is claimed.
+
+Kata closure: event `9789`, UID `01M7SWNA1CGD5BH6X4MM7YTAS6`, at `2026-11-19T12:31:47.244Z`.
+Fresh issue and parent reads confirm closure, with 44 children closed and nine open.
+The parent remains open.
+The closure ledger retains one unique row for this finding.
 
 ## Scope
 

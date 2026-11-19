@@ -28,10 +28,13 @@ struct Running {
 }
 
 enum GuiTarget {
+    // keep-sorted start
     ChatAccessibility,
     Local,
+    ShortcutFenceObserver,
     ShortcutObserver,
     Socket,
+    // keep-sorted end
 }
 
 impl Drop for Running {
@@ -116,10 +119,16 @@ impl Running {
                         self.sandbox.dir.join("native-chat.png"),
                     );
             }
-            GuiTarget::Socket | GuiTarget::ShortcutObserver => {
+            GuiTarget::Socket | GuiTarget::ShortcutObserver | GuiTarget::ShortcutFenceObserver => {
                 command.arg("--socket").arg(self.sandbox.socket());
-                if matches!(target, GuiTarget::ShortcutObserver) {
+                if matches!(
+                    target,
+                    GuiTarget::ShortcutObserver | GuiTarget::ShortcutFenceObserver
+                ) {
                     command.env("HERDR_TEST_SHORTCUT_OBSERVER", "1");
+                }
+                if matches!(target, GuiTarget::ShortcutFenceObserver) {
+                    command.env("HERDR_TEST_SHORTCUT_FENCES", "1");
                 }
             }
             GuiTarget::Local => {

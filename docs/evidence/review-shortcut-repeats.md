@@ -233,3 +233,70 @@ Log: `/tmp/spaceport-9s44-chat-lifetime-repeat-consumers.log`.
 Static, localization, commit, rename-reference, and diff checks pass.
 Log: `/tmp/spaceport-9s44-chat-lifetime-window-repeat-static.log`.
 The owner review finds no remaining material issue in this candidate.
+
+## First New Window execution and daemon candidates
+
+Source `99e318867` passes chat and the retained tab-repeat cases in the [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44520974760/job/135549493119).
+The New Window case stops before its held-input helper runs.
+Its initial `--json window list` call enters startup parsing and reports `Unknown option: window`.
+The fixture now uses `window list --json`, matching the existing CLI wire table and transport tests.
+No application CLI contract changes.
+New Window execution remains pending.
+
+The split and custom candidates use the same private daemon and exact-window input helper.
+Each case requires two fresh presses, with five matching held downs after each first effect.
+The helper holds the main key while the parent checks the actual daemon and app fence.
+The parent owns CLI queries separately from the PowerShell helper.
+CLI queries use the existing no-console flag so they cannot open a focus-stealing console window.
+
+The app emits optional readiness receipts only for the explicit fence-observer fixture.
+Readiness requires the real surface stream and existing coherent-input predicate.
+The existing ordered surface barrier follows the command request in the client's FIFO queue.
+The first native event, later readiness, and real first effect must all precede the parent's ACK file.
+The helper then sends its held tail.
+All five actual matching input records must show readiness.
+A later coherent readiness receipt fences the final assertions too.
+These diagnostics contain booleans, with no key names or command arguments.
+The parent reads complete JSON records within the existing four-MiB diagnostic bound.
+Normal integration and performance runs omit these receipts.
+
+The split case reads the stable tab through Herdr's real `tab get` command.
+It checks pane counts one, two, and three and preserves all prior pane IDs through `pane list`.
+The custom case configures one shell command under the sandbox's private TEMP.
+Its bounded chain creates the first available directory among sixteen atomic slots.
+Each fresh press must produce exactly one real marker and one accepted invocation.
+The accepted-invocation receipts prevent delayed shell children from hiding extra dispatches.
+They do not claim that the client owns or reaps those daemon-owned children.
+Herdr's pinned CLI, configuration, and response schemas were checked at `2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01`.
+No Herdr source changes.
+
+Independent review catches a parent-unwind cleanup gap before native execution.
+A failed CLI query or assertion could previously drop Running and kill the helper before key release.
+The parent now catches failures while retaining Running, requests release, and waits for the owned helper.
+It preserves the original failure after finally or the independent watchdog can release the keys.
+Forced reaping retains the original parent deadline and watchdog cleanup reserve.
+An added native regression deliberately fails after a real first split.
+It requires the original panic, a reaped helper, actual Ctrl/Shift/D key-up states, and exactly two panes.
+The correction review finds no remaining material issue.
+
+Windows GNU all-feature and no-default lint configurations pass.
+Log: `/tmp/spaceport-9s44-daemon-repeat-lint-final.log`.
+The first lint attempt catches an incorrect Method import in the fixture-only queue receipt.
+The corrected path uses the client's actual root export.
+Actual Windows execution of New Window, split, custom, and the cleanup regression remains pending.
+Kata `agbt` stays open until those native requirements pass.
+
+The combined repeat, CLI wire, preview, and chat-accessibility scope passes 29 tests, with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- window::tests::shortcut_repeat:: control::client::tests::wire:: chat::preview::tests:: chat::tests::accessibility:: --nocapture`.
+Log: `/tmp/spaceport-9s44-daemon-repeat-consumers.log`.
+The CLI wire table exercises the corrected argument order through the real parser and serializer.
+Both host lint configurations also pass.
+Log: `/tmp/spaceport-9s44-daemon-repeat-host-lint.log`.
+The native cleanup regression cannot run on this Mac; its baseline and corrected execution remain Windows CI work.
+The owner review finds no remaining material issue in the reviewed candidate.
+The final key-state helper uses the existing PowerShell module bootstrap and terminating errors.
+Its final Windows harness lint also passes.
+Log: `/tmp/spaceport-9s44-daemon-repeat-harness-final-lint.log`.
+Formatting, size, sorting, operations, localization, commit, and diff checks pass.
+Localization validates 2174 messages in 114 files.
+Log: `/tmp/spaceport-9s44-daemon-repeat-static.log`.

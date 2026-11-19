@@ -278,7 +278,7 @@ Their three regressions fail first; the corrected focused scopes pass 70 tests.
 The normal-consumer test retains 150-millisecond slide timing.
 See [OS accessibility evidence](review-os-accessibility.md#reorder-extraction-follow-up).
 
-Kata now has 43 closed children and ten open children.
+Kata now has 44 closed children and nine open children.
 Reduced motion closes after its extracted-slide and chat-glide corrections pass scoped verification.
 Herdr TUI workspace closing closes after native creation, consent, cancellation, and preservation checks pass.
 Recovery-button keyboard access closes after native focus and retry verification, with scoped headless callback evidence.
@@ -286,6 +286,7 @@ Terminology closes after the final clipboard error family passes its output, cat
 Status shapes close after both Windows native jobs pass and all eight monochrome marker scenes are inspected.
 Visible errors close after real Windows warning, toast, and Zen-warning live-region events pass native qualification.
 Popup departures and Close Others close after native animation, stable-ID consent, and all nine image inspections pass.
+Chat accessibility closes after native content, named controls, deliberate permission answers, and image inspection pass on `99e318867`.
 Source `b20cca86f` then passes full CI: eighteen jobs succeed and one unconfigured target skips.
 Its separate supply-chain run also succeeds.
 The umbrella remains open.

@@ -25,6 +25,19 @@ pub(crate) use shifted_keys::KeyChars;
 use shifted_keys::Typed;
 pub(super) use shifted_keys::current_layout;
 
+#[cfg(all(windows, feature = "integration-test"))]
+pub(super) fn native_shortcuts_observed() -> bool {
+    static OBSERVE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *OBSERVE.get_or_init(|| std::env::var_os("HERDR_TEST_SHORTCUT_OBSERVER").is_some())
+}
+
+#[cfg(all(windows, feature = "integration-test"))]
+pub(super) fn native_shortcut_fences_observed() -> bool {
+    static OBSERVE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    native_shortcuts_observed()
+        && *OBSERVE.get_or_init(|| std::env::var_os("HERDR_TEST_SHORTCUT_FENCES").is_some())
+}
+
 /// What a keystroke is bound to here.
 enum Bound {
     // keep-sorted start
@@ -122,8 +135,7 @@ impl SheprdWindow {
         let typed = Typed::new(keystroke, restored);
         #[cfg(all(windows, feature = "integration-test"))]
         {
-            static OBSERVE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-            if *OBSERVE.get_or_init(|| std::env::var_os("HERDR_TEST_SHORTCUT_OBSERVER").is_some()) {
+            if native_shortcuts_observed() {
                 let bound = typed.find_unheld(
                     |key| {
                         self.bound(key, false, event.prefer_character_input, |key| {
@@ -136,9 +148,20 @@ impl SheprdWindow {
                     },
                     |key| self.keymap().holds_directly(key),
                 );
-                let new_window =
-                    !self.prefix_armed && matches!(bound, Some(Bound::Command(Command::NewWindow)));
-                tracing::debug!(is_held = event.is_held, new_window, "Native shortcut input");
+                let new_window = !self.prefix_armed
+                    && matches!(&bound, Some(Bound::Command(Command::NewWindow)));
+                let split_right = !self.prefix_armed
+                    && matches!(&bound, Some(Bound::Command(Command::SplitRight)));
+                let custom_command =
+                    !self.prefix_armed && matches!(&bound, Some(Bound::Custom(..)));
+                tracing::debug!(
+                    is_held = event.is_held,
+                    input_ready = self.input_ready(),
+                    new_window,
+                    split_right,
+                    custom_command,
+                    "Native shortcut input"
+                );
             }
         }
         let key = typed.held_key();

@@ -270,6 +270,13 @@ impl SheprdWindow {
                 #[cfg(feature = "integration-test")]
                 self.navigations
                     .record(label, focus.as_ref(), std::panic::Location::caller());
+                #[cfg(all(windows, feature = "integration-test"))]
+                if super::prefix::native_shortcut_fences_observed() {
+                    tracing::debug!(
+                        custom_command = label == sheprd_client::Method::CommandInvoke.as_str(),
+                        "Native shortcut queued"
+                    );
+                }
                 self.fence_focus_change(focus);
                 return true;
             }

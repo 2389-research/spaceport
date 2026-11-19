@@ -1,16 +1,28 @@
 // ABOUTME: Checks native held shortcuts against private windows and Herdr tabs.
 // ABOUTME: Requires observed native repeat flags after the first visible effect.
-use super::{Duration, GuiTarget, Instant, Running, fs, thread};
+use super::{Duration, GuiTarget, Instant, Read, Running, fs, thread};
+
+#[path = "held_shortcuts/daemon.rs"]
+mod daemon;
 
 #[path = "../support/state_path.rs"]
 mod state_path;
 
 impl Running {
-    fn held_events(&self, action: &str) -> usize {
+    fn shortcut_records(&self) -> Vec<serde_json::Value> {
         let path = sheprd_diagnostics::log_file(&state_path::app_state_path(
             &self.sandbox.dir.join("state"),
         ));
-        let bytes = fs::read(path).unwrap_or_default();
+        let mut bytes = Vec::new();
+        let file = match fs::File::open(path) {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Vec::new(),
+            Err(error) => panic!("cannot read the owned shortcut log: {error}"),
+        };
+        file.take(sheprd_diagnostics::TAIL_BYTES + 1)
+            .read_to_end(&mut bytes)
+            .unwrap();
+        assert!((bytes.len() as u64) <= sheprd_diagnostics::TAIL_BYTES);
         let namespace = std::path::Path::new(env!("CARGO_BIN_EXE_spaceport"))
             .file_stem()
             .unwrap()
@@ -20,9 +32,15 @@ impl Running {
             .split_inclusive(|byte| *byte == b'\n')
             .filter(|line| line.ends_with(b"\n"))
             .filter_map(|line| serde_json::from_slice::<serde_json::Value>(line).ok())
+            .filter(|record| record["namespace"] == namespace)
+            .collect()
+    }
+
+    fn held_events(&self, action: &str) -> usize {
+        self.shortcut_records()
+            .into_iter()
             .filter(|record| {
-                record["namespace"] == namespace
-                    && record["message"] == "Native shortcut input"
+                record["message"] == "Native shortcut input"
                     && record["fields"]["is_held"] == true
                     && (action != "Window" || record["fields"]["new_window"] == true)
             })
@@ -123,7 +141,7 @@ fn native_new_window_ignores_held_tail_across_the_foreground_change() {
 }
 
 fn window_ids(running: &mut Running) -> Vec<u64> {
-    let output = running.control_output(&["--json", "window", "list"]);
+    let output = running.control_output(&["window", "list", "--json"]);
     let value: serde_json::Value = serde_json::from_str(&output).unwrap();
     let ids: Vec<_> = value["windows"]
         .as_array()
@@ -139,7 +157,13 @@ fn window_ids(running: &mut Running) -> Vec<u64> {
 }
 
 fn shortcut_fixture() -> Running {
-    let mut running = Running::prepared();
+    let mut running = shortcut_prepared();
+    start_shortcut(&mut running, GuiTarget::ShortcutObserver);
+    running
+}
+
+fn shortcut_prepared() -> Running {
+    let running = Running::prepared();
     fs::write(
         running.sandbox.dir.join("uia_held_shortcuts.ps1"),
         include_str!("../support/uia_held_shortcuts.ps1"),
@@ -158,8 +182,11 @@ fn shortcut_fixture() -> Running {
         "language = \"en-US\"\nconfirm_close_tab = false\n",
     )
     .unwrap();
-    running.start_daemon();
-    running.start_gui(GuiTarget::ShortcutObserver);
-    running.wait_tree("one private starting tab", |tree| tabs(tree, &["1"]));
     running
+}
+
+fn start_shortcut(running: &mut Running, target: GuiTarget) {
+    running.start_daemon();
+    running.start_gui(target);
+    running.wait_tree("one private starting tab", |tree| tabs(tree, &["1"]));
 }

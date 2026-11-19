@@ -1,6 +1,6 @@
 # ABOUTME: Delivers held shortcuts after observing their first private tab or window change.
 # ABOUTME: Requires the exact private window and releases only keys this fixture pressed.
-param([int]$ProcessId, [ValidateSet('New','Close','Window')][string]$Action, [long]$DeadlineEpochMs)
+param([int]$ProcessId, [ValidateSet('New','Close','Window','Split','Custom')][string]$Action, [long]$DeadlineEpochMs)
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -70,6 +70,7 @@ public static class HeldKeys {
 "@
 $automation = [System.Windows.Automation.AutomationElement]
 $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
+$release = "$PSScriptRoot\held-release.request"
 $owned = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $ProcessId)
 function Private-Windows {
   return $automation::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $owned)
@@ -82,7 +83,7 @@ $roots = if ($windows.Count -eq 1) { $windows } else {
 }
 if (@($roots).Count -ne 1) { throw 'Held shortcut has no unique owned foreground window' }
 $root = @($roots)[0]
-if ($Action -ne 'Window') {
+if ($Action -in @('New','Close')) {
   $stripType = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Tab)
   $stripName = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Tabs')
   $strips = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.AndCondition]::new($stripType, $stripName))
@@ -93,6 +94,7 @@ $handle = [IntPtr]$root.Current.NativeWindowHandle
 if ($handle -eq [IntPtr]::Zero) { throw 'Private window has no native handle' }
 
 function Require-Focus {
+  if ([System.IO.File]::Exists($release)) { throw 'Parent requested held-input release' }
   if ([HeldKeys]::GetForegroundWindow() -ne $handle) { throw 'Private HWND lost foreground' }
   $element = $automation::FocusedElement
   while ($null -ne $element) {
@@ -117,15 +119,23 @@ try { [HeldKeys]::Send(0x12, $false) } finally { [HeldKeys]::Send(0x12, $true) }
 [HeldKeys]::SetForegroundWindow($handle) | Out-Null
 Start-Sleep -Milliseconds 500
 Require-Focus
-$key = switch ($Action) { 'New' { 0x54 }; 'Close' { 0x57 }; 'Window' { 0x4e } }
-$modifiers = switch ($Action) { 'New' { @(0x11,0x10) }; 'Close' { @(0x11,0x12,0x10) }; 'Window' { @(0x11,0x12) } }
+$key = switch ($Action) { 'New' { 0x54 }; 'Close' { 0x57 }; 'Window' { 0x4e }; 'Split' { 0x44 }; 'Custom' { 0x77 } }
+$modifiers = if ($Action -eq 'Close') { @(0x11,0x12,0x10) } elseif ($Action -eq 'Window') { @(0x11,0x12) } else { @(0x11,0x10) }
 foreach ($code in @($modifiers) + @($key)) {
   if (([HeldKeys]::GetAsyncKeyState($code) -band 0x8000) -ne 0) { throw 'A fixture key is already held' }
 }
-$before = Target-Count
+$external = $Action -in @('Split','Custom')
+$first = "$PSScriptRoot\held-first.down"
+$ack = "$PSScriptRoot\held-effect.ack"
+if ($external -and ([System.IO.File]::Exists($first) -or [System.IO.File]::Exists($ack))) {
+  throw 'The native handshake still contains a previous burst'
+}
+if (-not $external) {
+  $before = Target-Count
+  $expected = if ($Action -eq 'Close') { $before - 1 } else { $before + 1 }
+  if ($expected -lt 1) { throw 'The fixture must retain its last tab' }
+}
 $beforeHandles = @($windows | ForEach-Object { [IntPtr]$_.Current.NativeWindowHandle })
-$expected = if ($Action -eq 'Close') { $before - 1 } else { $before + 1 }
-if ($expected -lt 1) { throw 'The fixture must retain its last tab' }
 [HeldKeys]::Begin($DeadlineEpochMs)
 try {
   foreach ($modifier in $modifiers) {
@@ -135,10 +145,19 @@ try {
   Require-Focus
   [HeldKeys]::Press($key)
   $deadline = [DateTime]::UtcNow.AddSeconds(10)
-  while ((Target-Count) -ne $expected) {
-    if ($Action -ne 'Window') { Require-Focus }
-    if ([DateTime]::UtcNow -ge $deadline) { throw 'First native shortcut had no single acknowledged tab change' }
-    Start-Sleep -Milliseconds 25
+  if ($external) {
+    [System.IO.File]::WriteAllText($first, '1')
+    while (-not [System.IO.File]::Exists($ack)) {
+      Require-Focus
+      if ([DateTime]::UtcNow -ge $deadline) { throw 'The first daemon effect and app fence were not acknowledged' }
+      Start-Sleep -Milliseconds 25
+    }
+  } else {
+    while ((Target-Count) -ne $expected) {
+      if ($Action -ne 'Window') { Require-Focus }
+      if ([DateTime]::UtcNow -ge $deadline) { throw 'First native shortcut had no single acknowledged target change' }
+      Start-Sleep -Milliseconds 25
+    }
   }
   if ($Action -eq 'Window') {
     # Adopt only the one newly created PID-owned root before sending more keys.
@@ -172,7 +191,7 @@ try {
     }
     [HeldKeys]::Press($key)
     Start-Sleep -Milliseconds 100
-    if ((Target-Count) -ne $expected) { throw 'A held repeat changed the acknowledged target count' }
+    if (-not $external -and (Target-Count) -ne $expected) { throw 'A held repeat changed the acknowledged target count' }
   }
 } finally {
   [HeldKeys]::End()
