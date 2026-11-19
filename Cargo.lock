@@ -6584,6 +6584,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "config",
+ "fontdb 0.24.0",
  "rustix",
  "serde",
  "serde_ignored",

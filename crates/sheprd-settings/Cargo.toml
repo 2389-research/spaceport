@@ -41,6 +41,11 @@ windows-sys = { features = [
   "Win32_UI_WindowsAndMessaging",
 ], workspace = true }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+# The system font database behind `bitmap_fonts::is_undrawable`, a
+# Linux-only code path the moved file brought with it.
+fontdb.workspace = true
+
 [features]
 # `bitmap_fonts::has_undrawable_bitmap` and `contrast::hue_degrees`, which only
 # this crate's tests and the app's use.
