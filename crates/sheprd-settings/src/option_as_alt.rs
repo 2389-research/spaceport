@@ -37,7 +37,7 @@ impl OptionKeys {
 
     /// The side from an `NSEvent`'s modifier flags, whose device-dependent
     /// bits tell the two keys apart. Flags naming neither count as the left.
-    #[cfg(any(target_os = "macos", test))]
+    #[cfg(any(target_os = "macos", feature = "test-support"))]
     pub fn from_device_flags(flags: usize) -> Self {
         const LEFT: usize = 0x20;
         const RIGHT: usize = 0x40;
