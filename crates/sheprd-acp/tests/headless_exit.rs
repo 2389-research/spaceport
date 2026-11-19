@@ -6,6 +6,14 @@
 #[allow(dead_code, clippy::disallowed_methods, clippy::expect_used)]
 mod sandbox;
 
+#[cfg(unix)]
+#[path = "../../test-support/executable.rs"]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "shared Unix-only fixture writer runs /bin/sh; no Windows console can open"
+)]
+mod test_executable;
+
 use std::{
     process::{Child, Command},
     thread,

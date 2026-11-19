@@ -1,14 +1,12 @@
 // ABOUTME: Exercises real helper startup with private trusted and checkout programs.
 // ABOUTME: Prevents relative PATH entries from launching a checkout's custom agent.
 use super::*;
-use std::{fs, os::unix::fs::PermissionsExt, path::Path};
+use std::{fs, path::Path};
 
 const PROGRAM: &str = "spaceport-fixture-agent";
 
 fn install(dir: &Path, script: &str) {
-    let path = dir.join(PROGRAM);
-    fs::write(&path, format!("#!/bin/sh\n{script}\n")).unwrap();
-    fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
+    test_executable::write(dir.join(PROGRAM), format!("#!/bin/sh\n{script}\n"), 0o700).unwrap();
 }
 
 #[test]

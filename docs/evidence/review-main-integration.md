@@ -442,3 +442,29 @@ The existing external `block` future-compatibility notice remains unchanged.
 The debug test linker also retains its existing compact-unwind warning.
 Combined native CI remains pending.
 The five original findings remain open.
+
+## Headless executable fixture race
+
+The `63a885b15` [Linux ARM all-feature job](https://github.com/2389-research/spaceport/actions/runs/44610744275/job/135866673252) fails the trusted PATH-selection case.
+The actual helper reports `Text file busy (os error 26)` for the private trusted executable.
+Six other headless cases pass, and all 454 ACP unit cases pass before that failure.
+
+The test writes executable scripts from the parallel test process.
+A sibling fork can inherit that writable descriptor until its own exec.
+Linux then refuses to execute the still-open script.
+The existing `crates/test-support/executable.rs` writer already prevents this race in client tests.
+It writes through a single-threaded shell child, then waits before returning.
+The ACP PATH fixtures now use that same helper.
+The production agent launcher, path-selection assertions, deadlines, and test parallelism remain unchanged.
+No retry or sleep was added.
+
+`cargo test --locked -p sheprd-acp --all-features --test headless_exit -- --nocapture` passes all seven cases locally.
+The suite takes 2.35 seconds after compilation.
+Its unwind fixture deliberately catches its own panic while verifying cleanup.
+The log is `/tmp/spaceport-9s44-headless-executable-race-tests.log`.
+That macOS pass does not qualify the Linux race correction; the next Linux CI run remains required.
+ACP all-target/all-feature Clippy passes with warnings denied.
+The Unix-only shared helper expects the Windows-console lint at its import, beside the existing sandbox exception.
+No production lint rule changes.
+Quick format, size, sorting, operations, i18n, subject, and diff checks pass.
+The native result on this source is recorded in [accessibility evidence](review-accessibility-gaps.md#native-result-after-settings-extraction-on-63a885b15).

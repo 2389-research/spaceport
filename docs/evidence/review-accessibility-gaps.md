@@ -310,7 +310,7 @@ Authored output remains a barrier before resizing.
 Focus, viewport, direction, restoration, and daemon pane-ID assertions remain unchanged.
 Actual native resizing still needs the corrected scenario to pass.
 
-Settings loads the 24-point configuration but emits no image before hitting the 192 KiB PNG limit.
+Settings loads the 24px configuration but emits no image before hitting the 192 KiB PNG limit.
 The encoder correction keeps that limit and both original image dimensions.
 A new regression uses two existing full native Settings captures.
 Fast/Sub encoding fails first with a 247,400-byte PNG.
@@ -326,3 +326,28 @@ Current Windows GNU all-target Clippy checks pass with all features and without 
 Formatting, file-size, sorting, operations, i18n, commit subjects, and diff checks pass.
 The corrected native rerun and actual enlarged-glyph inspection remain pending.
 Kata `q72g` stays open.
+
+## Native result after Settings extraction on `63a885b15`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44610744275/job/135866672998) passes eight GUI cases and twenty-one UIA cases.
+Workspace reorder passes again at `2026-11-19T20:50:25.4203838Z`.
+The ARM native job also passes its configured checks.
+Resize and enlarged Settings captures remain the two UIA failures.
+
+Resize observes authored output and actual Left movement from 1103 to 1054 pixels.
+The next observation receives no `DocumentRange` and dereferences that missing range.
+The corrected observation waits for a document and caret range within its existing five-second deadline.
+It still requires one collapsed caret, finite contained geometry, both directions, restoration, and unchanged pane IDs.
+It sends no additional keys while waiting.
+Full native resize qualification remains pending.
+
+The Settings keyboard, saved-preference, and painted-ring case passes.
+The enlarged-text case reaches its native row but emits neither a PNG nor an encoder error.
+Its PowerShell observer times out waiting for the completion marker.
+That failure does not identify compression, focus, or resizing as the cause.
+The next candidate logs initial focus, resize requests, capture readiness, and encoder entry and exit.
+Readiness diagnostics run at most three times per wait.
+They contain only viewport dimensions and private fixture state flags.
+No image limit, native guard, encoder, or deadline changes with those diagnostics.
+Windows GNU GPUI all-target/all-feature Clippy passes with warnings denied.
+Actual enlarged-glyph inspection remains pending.

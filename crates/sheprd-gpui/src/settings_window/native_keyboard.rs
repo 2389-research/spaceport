@@ -145,10 +145,18 @@ async fn wait_capture(
     deadline: Instant,
     cx: &mut AsyncApp,
 ) -> Result<Capture> {
+    let mut polls = 0;
     loop {
         if let Some(capture) = capture(handle, focused, cx)? {
             return Ok(capture);
         }
+        if matches!(polls, 0 | 60 | 300) {
+            eprintln!(
+                "SETTINGS_CAPTURE_WAIT focused={focused} {}",
+                capture_status(handle, cx)?
+            );
+        }
+        polls += 1;
         ensure!(
             Instant::now() < deadline,
             "native Settings ring transition timed out"
@@ -157,6 +165,29 @@ async fn wait_capture(
             .timer(Duration::from_millis(16))
             .await;
     }
+}
+
+fn capture_status(handle: WindowHandle<SettingsWindow>, cx: &mut AsyncApp) -> Result<String> {
+    handle.update(cx, |view, window, cx| {
+        let row_focused = window
+            .context_stack()
+            .iter()
+            .rev()
+            .find_map(|context| context.get("settings-row"))
+            .is_some_and(|row| row == ROW);
+        format!(
+            "viewport={:?} active={} keyboard={} focus={} row={} general={} busy={} search={} dropdown={}",
+            window.viewport_size(),
+            window.is_window_active(),
+            window.last_input_was_keyboard(),
+            window.focused(cx).is_some(),
+            row_focused,
+            view.section == Section::General,
+            view.busy(),
+            view.search_results.is_some(),
+            view.dropdown.is_some(),
+        )
+    })
 }
 
 async fn verify(handle: WindowHandle<SettingsWindow>, cx: &mut AsyncApp) -> Result<()> {

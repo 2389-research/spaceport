@@ -73,10 +73,12 @@ if ($Action -eq 'Resize') {
   function Output-CaretBounds {
     Require-Terminal
     $range = $pattern.DocumentRange
+    if ($null -eq $range) { return $null }
     $script:resizeOutputSeen = ($range.GetText(16384) -split '\r?\n') -ccontains 'SP_RESIZE_7'
     if (-not $script:resizeOutputSeen) { return $null }
     # Pinned AccessKit does not implement FindText; use its proven caret-range contract.
     $selection = $pattern.GetSelection()
+    if ($null -eq $selection -or $selection.Length -eq 0) { return $null }
     if ($selection.Length -ne 1) { throw 'Native resize terminal has no unique caret range' }
     $start = [System.Windows.Automation.Text.TextPatternRangeEndpoint]::Start
     $end = [System.Windows.Automation.Text.TextPatternRangeEndpoint]::End
