@@ -526,10 +526,8 @@ fn install(
         },
         transcript,
     )?;
-    if options.case == "selection"
-        && let Some(pane) = view.chats.pane_mut(PANE)
-    {
-        pane.text_focus = Some(cx.focus_handle());
+    if let Some(pane) = view.chats.pane_mut(PANE) {
+        pane.text_focus = Some(super::window::conversation_focus(cx));
     }
     if options.case == "activity-open"
         && let Some(pane) = view.chats.pane_mut(PANE)
@@ -559,7 +557,7 @@ fn install(
         let font = view.config.ui.clone();
         let theme = view.theme.clone();
         let input = cx.new(|cx| {
-            let mut input = crate::multiline_input::MultilineInput::new(cx);
+            let mut input = super::window::composer(cx);
             input.set_appearance(font, theme, cx);
             input.set_placeholder_with(|| "Preview only — no agent is connected".to_owned(), cx); // i18n: data
             if let Some(draft) = &options.draft {

@@ -19,6 +19,17 @@ use gpui::{prelude::*, *};
 use sheprd_chat_protocol::{Attachment, Command, MAX_PROMPT_SIZE, Status, assist};
 use std::time::Instant;
 
+pub(super) fn conversation_focus(cx: &mut App) -> FocusHandle {
+    cx.focus_handle().tab_stop(true)
+}
+
+pub(super) fn composer(cx: &mut Context<MultilineInput>) -> MultilineInput {
+    let mut input = MultilineInput::new(cx);
+    input.focus = input.focus.clone().tab_stop(true);
+    input.set_label(fl!("chat-composer-label"), cx);
+    input
+}
+
 impl SheprdWindow {
     /// Runs every tick: attaches to the selected daemon's chat panes when it
     /// is local, applies what their programs sent, and keeps each composer
@@ -184,7 +195,7 @@ impl SheprdWindow {
             }
             pane.text_focus.get_or_insert_with(|| {
                 changed = true;
-                cx.focus_handle().tab_stop(true)
+                conversation_focus(cx)
             });
             match pane.input() {
                 ChatInput::Composer => {}
@@ -207,11 +218,7 @@ impl SheprdWindow {
                 .composer
                 .get_or_insert_with(|| {
                     changed = true;
-                    cx.new(|cx| {
-                        let mut input = MultilineInput::new(cx);
-                        input.focus = input.focus.clone().tab_stop(true);
-                        input
-                    })
+                    cx.new(composer)
                 })
                 .clone();
             let accepts = pane.session.transcript().status.accepts_prompts();

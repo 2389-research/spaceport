@@ -5,6 +5,42 @@
 
 The `2njz` implementation and scoped local verification are complete in `review-squad-fixes`.
 The finding remains open for native assistive-technology and keyboard qualification.
+
+## Native fixture parity, November 19
+
+The original finding requires readable content, named controls, and keyboard permission answers.
+It does not require audible speech, release profiling, or an announcement for every streamed message.
+
+The rich-chat preview bypasses normal chat polling.
+Its visual preparation does not initialize the normal composer or conversation focus owner.
+Consequently, the previous preview omitted the composer's accessible name and Tab stop.
+It also omitted the conversation focus owner outside the selection sample.
+That preview could not qualify the production keyboard route.
+
+Production polling and previews now share the composer and conversation-focus constructors.
+The composer constructor owns its Tab stop and accessible name.
+Normal polling retains locale refresh, appearance, completion, and placeholder updates.
+The preview retains its synthetic draft and disconnected-agent placeholder.
+
+Both rendered regressions fail first on the previous preview.
+The actual field exposes no name, and Tab cannot leave and return to it.
+Log: `/tmp/spaceport-9s44-chat-preview-parity-red.log`.
+After the correction, all eleven preview and accessibility consumer tests pass without ignored cases.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- chat::preview::tests:: chat::tests::accessibility:: --nocapture`.
+Log: `/tmp/spaceport-9s44-chat-preview-parity-green.log`.
+Independent review accepts the actual rendered traversal, unchanged draft, and prepaint name assertions.
+Both host and Windows GNU lint configurations pass, with and without default features.
+Log: `/tmp/spaceport-9s44-chat-preview-parity-lint.log`.
+Formatting, file size, sorting, operations, localization, commit, and diff checks pass.
+Log: `/tmp/spaceport-9s44-chat-preview-parity-static.log`.
+The owner review finds no remaining material issue in this parity correction.
+
+This establishes headless fixture parity, not native qualification of `2njz`.
+The next native dataset needs messages, a completed tool, plan steps, permission options, and Agent settings.
+Inspect those real rendered controls through Windows UIA and activate permission answers through native keys.
+Preview has no linked transport.
+Its Session can prove queued Answer intent, while existing framed-wire tests supply separate delivery evidence.
+Do not describe a preview answer as a connected-agent delivery receipt.
 Doctor Biz authorized this finding and its validation within umbrella `9s44`.
 No commit, push, or issue-tracker write has been performed here.
 
