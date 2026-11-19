@@ -1,5 +1,5 @@
 // ABOUTME: Exercises pipe retention through real kernel pipes and bounded waits.
-// ABOUTME: Verifies capture completion releases its descriptor before the writer closes.
+// ABOUTME: Verifies bounded prefix, tail, and zero-limit capture behavior.
 use super::*;
 use std::io::Write;
 
@@ -30,16 +30,6 @@ fn prefix_and_tail_remain_bounded_across_multiple_reads() {
     assert_eq!(
         retained(Retain::Tail(17), &bytes),
         bytes[bytes.len() - 17..]
-    );
-}
-
-#[test]
-fn dropping_a_capture_closes_a_reader_even_while_its_writer_stays_open() {
-    let (pipe, mut writer) = io::pipe().unwrap();
-    let capture = capture(pipe, Retain::Prefix(64)).unwrap();
-    drop(capture);
-    assert!(
-        matches!(writer.write(b"closed"), Err(error) if error.kind() == io::ErrorKind::BrokenPipe)
     );
 }
 

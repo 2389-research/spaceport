@@ -575,3 +575,42 @@ Logs use `/tmp/spaceport-9s44-sidebar-{native-x64,linux-arm-all}.log`.
 The full run passes: 18 jobs succeed and one unconfigured target is skipped.
 The separate supply-chain run also passes.
 Mac foreground checks, speech, and interactive profiling remain pending.
+
+## Reader-closure fixture isolation
+
+Run `44474270771` tests `17cc0d2ab` and passes all four native Windows UIA cases.
+Its Linux ARM all-feature job fails the immediate BrokenPipe assertion in the process-output fixture.
+The assertion does not record the actual unexpected write result or identify another reader.
+The focused local client scope passes the same assertion before its fixture changes.
+
+`Capture` owns its reader in one worker and joins that worker on drop.
+Rust documents that [join waits for thread completion](https://doc.rust-lang.org/std/thread/struct.JoinHandle.html#method.join).
+The pipe assertion also requires every other reader copy to be closed.
+Linux documents [pipe EOF and BrokenPipe behavior](https://man7.org/linux/man-pages/man7/pipe.7.html)
+and [close-on-exec behavior](https://man7.org/linux/man-pages/man2/open.2.html).
+A concurrent fork can retain a reader before exec closes it.
+This makes the fixture's global assertion stronger than its owned-reader contract.
+
+A coordinated local probe retains a CLOEXEC reader in an exact child before exec.
+Closing the parent's reader still permits a six-byte write.
+BrokenPipe appears after the retained child exits and is reaped.
+This proves the competing inheritance path; the exact CI inheriting process remains unknown.
+
+The fixture now creates its pipe after exec in one exact owned test subprocess.
+It preserves the real BrokenPipe assertion, without write retries or a relaxed cleanup deadline.
+The child reports the actual write result on failure.
+After success, it emits a receipt that the parent requires, so an empty test filter cannot pass silently.
+The parent bounds the child wait and captured diagnostics and reaps that exact child on every path.
+It reuses the shared sandbox and its cleared private environment.
+The test import uses the existing performance harness's scoped expectations for unused daemon helpers and their assertions.
+No production cleanup code or lint policy changes.
+The closure check lives in `crates/sheprd-client/tests/process_output.rs` beside the crate's other integration targets.
+This lets the shared sandbox use the client as an external crate on Windows.
+The final integration target passes three cases; its one private child entry is ignored directly and invoked by the parent.
+Log: `/tmp/spaceport-9s44-output-integration-final.log`.
+The final client library scope passes 33 cases without ignored cases.
+All four host and Windows GNU lint configurations pass.
+The tiny receipt addition also passes focused host and Windows target lint.
+The existing caught sandbox-unwind probe prints its expected panic under `--nocapture` and passes.
+Logs use `/tmp/spaceport-9s44-copy-pipe-final-{client,lint,static}.log` and `/tmp/spaceport-9s44-output-receipt-{host,windows}-lint.log`.
+Hosted Linux ARM confirmation remains pending.
