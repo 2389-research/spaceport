@@ -1,11 +1,13 @@
 // ABOUTME: Starts ACP agents with owned process trees and drained standard error.
-// ABOUTME: Stops Unix process groups or Windows jobs without blocking wait cancellation.
+// ABOUTME: Retains exit status while stopping owned Unix groups and Windows jobs.
 //! The agent's process and descendants, including an npm shim's Node child.
 
+#[cfg(unix)]
+mod unix;
 #[cfg(windows)]
 mod windows;
 #[cfg(unix)]
-use std::process::Child;
+use unix::Child;
 #[cfg(windows)]
 use windows::Child;
 
@@ -42,6 +44,14 @@ pub(crate) struct AgentProcess {
     stderr: Arc<Mutex<VecDeque<String>>>,
 }
 
+pub(crate) struct StopOnDrop(AgentProcess);
+
+impl Drop for StopOnDrop {
+    fn drop(&mut self) {
+        self.0.stop();
+    }
+}
+
 pub(crate) fn spawn(
     program: &OsString,
     args: &[OsString],
@@ -57,9 +67,7 @@ pub(crate) fn spawn(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     #[cfg(unix)]
-    std::os::unix::process::CommandExt::process_group(&mut command, 0);
-    #[cfg(unix)]
-    let child = command.spawn();
+    let child = unix::spawn(command);
     #[cfg(windows)]
     let child = windows::spawn(command);
     let mut child = child.map_err(|source| Error::AgentSpawn {
@@ -97,6 +105,10 @@ pub(crate) fn spawn(
 }
 
 impl AgentProcess {
+    pub(crate) fn stop_on_drop(&self) -> StopOnDrop {
+        StopOnDrop(self.clone())
+    }
+
     fn lock(&self) -> std::sync::MutexGuard<'_, Child> {
         self.child.lock().unwrap_or_else(PoisonError::into_inner)
     }
@@ -125,31 +137,13 @@ impl AgentProcess {
     /// Unix groups receive TERM before KILL; Windows jobs terminate together.
     pub(crate) fn stop(&self) {
         #[cfg(unix)]
+        self.lock().stop();
+        #[cfg(windows)]
         {
-            use rustix::process::{Signal, kill_process_group, test_kill_process_group};
-            let id = self.lock().id();
-            let group = i32::try_from(id)
-                .ok()
-                .and_then(rustix::process::Pid::from_raw);
-            if let Some(group) = group {
-                let _ = kill_process_group(group, Signal::TERM);
-            }
-            let deadline = std::time::Instant::now() + GRACE;
-            while std::time::Instant::now() < deadline {
-                let agent_gone = matches!(self.lock().try_wait(), Ok(Some(_)) | Err(_));
-                let group_gone = group.is_none_or(|group| test_kill_process_group(group).is_err());
-                if agent_gone && group_gone {
-                    return;
-                }
-                thread::sleep(POLL);
-            }
-            if let Some(group) = group {
-                let _ = kill_process_group(group, Signal::KILL);
-            }
+            let mut child = self.lock();
+            let _ = child.kill();
+            let _ = child.wait();
         }
-        let mut child = self.lock();
-        let _ = child.kill();
-        let _ = child.wait();
     }
 }
 

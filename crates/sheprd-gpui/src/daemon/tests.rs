@@ -184,7 +184,7 @@ fn missing_executable_is_actionable() {
     .unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::NotFound);
     assert!(is_missing_installation(&error));
-    assert!(error.to_string().contains("Could not start herdr server"));
+    assert!(error.to_string().contains("Herdr is not installed"));
     assert!(
         error
             .get_ref()

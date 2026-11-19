@@ -28,8 +28,15 @@ fn boxed(error: Error) -> Box<Error> {
 
 #[test]
 fn every_client_variant_has_a_message() {
+    let errors = every_client_error();
+    assert_localized(&errors);
+    assert_no_wire_words(&errors);
+}
+
+/// Every variant of the client's error, for the checks above.
+fn every_client_error() -> Vec<Error> {
     let newer = ENDPOINT_PROTOCOL_GENERATION + 1;
-    assert_localized(&[
+    vec![
         Error::BridgeIncompatible {
             generation: Some(newer),
             version: Some("0.9.4".into()),
@@ -170,7 +177,7 @@ fn every_client_variant_has_a_message() {
             message: "too many clients".into(),
         },
         Error::Wsl(wsl::Error::Timeout),
-    ]);
+    ]
 }
 
 #[test]

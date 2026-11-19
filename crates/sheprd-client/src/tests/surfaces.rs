@@ -31,7 +31,7 @@ fn full_popup_surface_is_delivered_and_invalid_cells_fail_closed() {
             .unwrap()
             .unwrap_err()
             .to_string()
-            .contains("cell count")
+            .contains("wrong number of cells")
     );
 }
 

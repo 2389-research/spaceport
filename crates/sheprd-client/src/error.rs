@@ -67,7 +67,7 @@ pub enum Error {
     EmptySurface,
     #[error("This terminal size is larger than Herdr supports. Resize the window and try again.")]
     GeometryLimit,
-    #[error("invalid session name")]
+    #[error("That is not a valid session name.")]
     InvalidSession,
     #[error("This remote connection has no local socket file.")]
     NoLocalSocket,
@@ -114,7 +114,7 @@ pub enum Error {
     },
     #[error("Herdr sent unsupported connection information. Choose Terminal → Reconnect.")]
     WelcomeKind,
-    #[error("{code}: {message}")]
+    #[error("The host's Herdr daemon refused the connection ({code}): {message}")]
     WelcomeRejected { code: String, message: String },
     #[error("This version of Herdr uses a terminal format Spaceport does not support.")]
     IncompatibleCodecs,
@@ -170,11 +170,11 @@ pub enum Error {
         generation: Option<u32>,
         version: Option<String>,
     },
-    #[error("remote command failed ({0})")]
+    #[error("The command on the host failed ({0}).")]
     RemoteCommand(std::process::ExitStatus),
-    #[error("remote command returned unexpected output")]
+    #[error("The command on the host printed something this app did not expect.")]
     RemoteOutput,
-    #[error("SSH file transfer requires a Linux or macOS client")]
+    #[error("SSH file transfer needs this app running on Linux or macOS.")]
     UploadUnsupported,
     #[error("SSH file transfer accepts at most 256 paths")]
     UploadPathLimit,
@@ -182,7 +182,7 @@ pub enum Error {
     UploadName,
     #[error("file transfer source is not a regular file")]
     UploadNotFile,
-    #[error("file transfer total size exceeds u64")]
+    #[error("The files are too large to transfer at once.")]
     UploadSizeOverflow,
     #[error("file transfer source changed length")]
     UploadSourceChanged,
@@ -192,7 +192,7 @@ pub enum Error {
     UploadTimeout,
     #[error("invalid or excessive SSH file transfer response")]
     UploadResponse,
-    #[error("cleanup requires unchanged absolute paths returned by upload_files")]
+    #[error("Cleaning up the files left on the host needs the paths the upload returned.")]
     UploadCleanupPath,
     #[error("SSH file transfer failed; check host trust, authentication, and remote storage")]
     UploadExit { status: std::process::ExitStatus },
@@ -204,7 +204,7 @@ pub enum Error {
         source: Box<Error>,
         cleanup: Box<Error>,
     },
-    #[error("host scripts require a Linux or macOS client")]
+    #[error("Host scripts need this app running on Linux or macOS.")]
     ScriptUnsupported,
     #[error("could not start host script")]
     ScriptSpawn(#[source] io::Error),
@@ -230,18 +230,18 @@ pub enum Error {
         status: std::process::ExitStatus,
         stderr: String,
     },
-    #[error("could not start SSH for the port forward")]
+    #[error("Could not start SSH for the port forward.")]
     ForwardSpawn(#[source] io::Error),
-    #[error("no local port is free to forward to")]
+    #[error("No local port is free to forward to.")]
     ForwardLocalPort(#[source] io::Error),
-    #[error("could not create the port forward's private control directory")]
+    #[error("Could not prepare the port forward's private folder.")]
     ForwardControl(#[source] io::Error),
-    #[error("SSH did not connect in time; check host trust and authentication")]
+    #[error("SSH did not connect in time; check host trust and authentication.")]
     ForwardTimeout,
-    #[error("SSH could not listen on a local port ({0})")]
+    #[error("SSH could not listen on a local port ({0}).")]
     ForwardRefused(std::process::ExitStatus),
     /// Stderr is discarded, as for every SSH child: it can carry banners or secrets.
-    #[error("SSH port forward ended ({0}); check host trust, authentication, and the network")]
+    #[error("The SSH port forward ended ({0}); check host trust, authentication, and the network.")]
     ForwardExit(std::process::ExitStatus),
     #[error("The saved connection choice path is not a file.")]
     SelectionNotFile,
@@ -251,9 +251,9 @@ pub enum Error {
     SelectionVersion,
     #[error("The selected connection is missing or disabled. Select another device.")]
     SelectionUnavailable,
-    #[error("invalid storage path")]
+    #[error("Spaceport's saved data has a path it cannot use.")]
     StoragePath,
-    #[error("storage destination is not a regular file")]
+    #[error("Spaceport's saved data is not a regular file.")]
     StorageDestinationNotFile,
     #[error("The saved connections path is not a file.")]
     CatalogNotFile,

@@ -144,7 +144,7 @@ pub enum Error {
     MissingHome,
     #[error("neither XDG_STATE_HOME nor HOME is set")]
     MissingStateRoot,
-    #[error("No current daemon snapshot.")]
+    #[error("The daemon's current session data is not loaded; reconnect.")]
     NoSnapshot,
     #[error("No tab selected.")]
     NoTab,
@@ -182,7 +182,7 @@ pub enum Error {
     Remote(#[from] sheprd_remote::Error),
     #[error("Could not install the agent tools on the SSH host: {0}")]
     RemoteAgentTools(#[source] sheprd_client::Error),
-    #[error("{method}: {source}")]
+    #[error("Could not send {method} to the daemon: {source}")]
     Request {
         method: sheprd_client::Method,
         #[source]

@@ -146,6 +146,7 @@ pub(crate) fn run(options: Options) -> anyhow::Result<()> {
     let agent = agent(&options, &cwd)?;
     let spawned = process::spawn(&agent.program, &agent.args, &agent.env, &cwd)?;
     let agent_process = spawned.process.clone();
+    let _stop_agent = agent_process.stop_on_drop();
     let (inputs, receiver) = bounded::<Input>(INPUTS);
 
     let to_session = inputs.clone();

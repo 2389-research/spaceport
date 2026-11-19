@@ -47,7 +47,7 @@ fn reports_move_a_forward_to_listening_then_ended_and_say_so() {
     )));
     assert_eq!(
         notice.text(),
-        "Port 80 forward ended: could not start SSH for the port forward: no ssh"
+        "Port 80 forward ended: Could not start SSH for the port forward.: no ssh"
     );
     assert!(matches!(forward.state, State::Ended(_)));
     assert_eq!(forward.url(), None);

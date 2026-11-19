@@ -85,7 +85,7 @@ fn storage_errors_retain_operation_paths_sources_and_redacted_display() {
     );
     assert_eq!(
         error.to_string(),
-        "storage destination is not a regular file"
+        "Spaceport's saved data is not a regular file."
     );
     fs::remove_dir_all(root).unwrap();
 }

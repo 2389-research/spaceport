@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: repairing the first complete CI run, then integrating newer main.
+Status: CI repairs and newer-main integration locally verified for draft update.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
@@ -11,10 +11,11 @@ Draft: [PR 125](https://github.com/2389-research/spaceport/pull/125).
 The remote branch and draft head were read back and match that commit.
 The next verified draft head is `e8acf1aa6262f91d3610d5b97b5bb5a928b0ffa7`.
 It includes main `099e380ff` and the combined-source checks recorded below.
-The current published head is `6d89f5e42c0478aa865df329720f4a017e3764f5`.
+Before this update, the published head was `6d89f5e42c0478aa865df329720f4a017e3764f5`.
 Its first complete CI run failed; see [the qualification repairs](review-ci-qualification.md).
 Main subsequently advanced to `57d6ea140722a613ce17beb9ec6d942e5d4c504f`.
-The draft now needs that integration before another hosted run can start.
+The topic branch incorporates that main alongside the CI repairs.
+See [the newer integration evidence](review-jargon-main-integration.md).
 
 ## Sound extraction integration
 
@@ -239,16 +240,11 @@ Those earlier results do not prove this combined checkout passed.
 
 ## Remaining work
 
-Prepare a concrete handoff for the overlapping work with Clint.
-Reconcile PR 123's additional protocol copy with the local error guidance.
-See [the bounded comparison](review-pr123-overlap.md).
-Commit the reviewed topic-branch integration and update draft PR 125 under Doctor Biz's recorded approval.
+Await the updated hosted platform checks on draft PR 125.
+Keep the concrete PR handoff and dashboard current for Clint and CI.
+PR 123's additional protocol copy is reconciled with the local safety guidance.
+See [the completed reconciliation](review-jargon-main-integration.md).
 Keep the draft unmerged while its hosted and native gates remain open.
-The exact overlap list is `/tmp/spaceport-9s44-handoff-new-main-overlaps.txt`.
-An isolated preflight found two textual conflicts among those 24 paths.
-They affect `sheprd-client/src/forward.rs` and the Devices setup implementation.
-Its inputs and proposed merges remain under `/tmp/spaceport-9s44-new-main-preflight`.
-The completed topic integration implements the reviewed resolutions described above.
 The full workspace test suite, hosted platform jobs, application build and CLI smoke remain deferred to CI.
 
 Kata remains 31 closed children and 22 open children at this checkpoint.

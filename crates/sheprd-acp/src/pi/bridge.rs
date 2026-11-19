@@ -16,12 +16,8 @@ use crate::rpc::Inbound;
 mod opening;
 mod turn;
 
-const MODEL: &str = "model";
-const THINKING: &str = "thinking";
 /// pi's thinking levels, for a model that reasons.
 const LEVELS: [&str; 6] = ["off", "minimal", "low", "medium", "high", "xhigh"];
-/// Models kept from pi's list, so a long list cannot grow the session.
-const MAX_MODELS: usize = 64;
 
 /// What a command sent to pi is waiting for.
 #[derive(Debug)]
@@ -153,7 +149,7 @@ impl Bridge {
                     return vec![out::reply(id, Err(wire::Error::invalid_params()))];
                 };
                 match setting.as_str() {
-                    MODEL => {
+                    out::MODEL => {
                         let Some((provider, model)) = value.split_once('/') else {
                             return vec![out::reply(id, Err(wire::Error::invalid_params()))];
                         };
@@ -163,18 +159,18 @@ impl Bridge {
                             command,
                             Pending::Setting {
                                 acp: id,
-                                setting: MODEL,
+                                setting: out::MODEL,
                                 value,
                             },
                         )]
                     }
-                    THINKING if LEVELS.contains(&value.as_str()) => {
+                    out::THINKING if LEVELS.contains(&value.as_str()) => {
                         let command = json!({"type": "set_thinking_level", "level": value});
                         vec![self.command(
                             command,
                             Pending::Setting {
                                 acp: id,
-                                setting: THINKING,
+                                setting: out::THINKING,
                                 value,
                             },
                         )]
@@ -224,7 +220,7 @@ impl Bridge {
         // pi names its model "unknown" until a provider is set up.
         if let Some(model) = self.model.as_ref().filter(|_| !models.is_empty()) {
             options.push(out::select(
-                MODEL,
+                out::MODEL,
                 "Model",
                 wire::SessionConfigOptionCategory::Model,
                 model,
@@ -238,13 +234,13 @@ impl Bridge {
             .any(|(id, _, reasons)| Some(id) == self.model.as_ref() && *reasons);
         if let (true, Some(level)) = (reasons, &self.thinking) {
             options.push(out::select(
-                THINKING,
+                out::THINKING,
                 "Thinking",
                 wire::SessionConfigOptionCategory::ThoughtLevel,
                 level,
                 LEVELS
                     .iter()
-                    .map(|level| ((*level).to_owned(), capitalized(level), None)),
+                    .map(|level| ((*level).to_owned(), out::capitalized(level), None)),
             ));
         }
         options
@@ -341,7 +337,7 @@ impl Bridge {
                 if let Some(error) = failed {
                     return vec![out::reply(acp, Err(out::failure(error)))];
                 }
-                if setting == MODEL {
+                if setting == out::MODEL {
                     self.model = model_id(Some(&data)).or(Some(value));
                 } else {
                     self.thinking = Some(value);
@@ -619,13 +615,6 @@ fn model_id(model: Option<&Value>) -> Option<String> {
     let provider = model.get("provider")?.as_str()?;
     let id = model.get("id")?.as_str()?;
     Some(format!("{provider}/{id}"))
-}
-
-fn capitalized(text: &str) -> String {
-    let mut chars = text.chars();
-    chars.next().map_or_else(String::new, |first| {
-        first.to_uppercase().chain(chars).collect()
-    })
 }
 
 #[cfg(test)]

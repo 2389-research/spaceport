@@ -12,8 +12,9 @@ fn missing_legacy_daemon_does_not_show_herdr_install_in_status() {
         view.update(cx, |view, cx| {
             view.live.status = ConnectionStatus::Disconnected;
             view.live.missing_installation = true;
-            view.live.notices.show(crate::notice::Cause::Connection,
-                "Could not start herdr server: missing. Install Herdr and use Terminal > Reconnect."
+            view.live.notices.show(
+                crate::notice::Cause::Connection,
+                "Herdr is not installed: missing. Install Herdr and use Terminal > Reconnect."
                     .into(),
             );
             cx.notify();
