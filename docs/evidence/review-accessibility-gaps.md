@@ -121,8 +121,8 @@ Kata `q72g` remains open for these specific checks:
 | Requirement | Remaining native evidence |
 | --- | --- |
 | Core Terminal node | Inspect actual text, caret, bounds, and observing panes with accessibility active. |
-| Herdr caret and announcements | Query caret/text ranges and observe changed output announced by a screen reader. |
-| Settings font scaling | Inspect enlarged glyphs and clipping, including a narrow window. |
+| Herdr caret and announcements | Text, caret, line bounds, and TextChanged pass; audible screen-reader announcements remain pending. |
+| Settings font scaling | Enlarged native glyphs and clipping pass at 1100×780 and 680×780 on `7b7498762`; see captures below. |
 | Keyboard reorder and resize | Workspace reorder and Herdr resize pass on `4194cb1ab`; Core resize remains pending. |
 | Selected-tab focus contrast | Inspect focused tabs on actual fills, including applicable translucent or image backdrops. |
 | Close-button roles | Native names, Button roles, cancellation, and confirmation pass on `64970ccce`; see below. |
@@ -392,3 +392,34 @@ Independent review finds no material width-policy, focus-handoff, role, or guard
 The private handoff and corrected layout still need execution on Windows.
 Fresh native captures of the corrected layout remain pending.
 Kata `q72g` remains open for the rest of its matrix.
+
+## Enlarged Settings qualification on `7b7498762`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44624169019/job/135913747987) passes eight GUI cases and all twenty-three UIA cases.
+Its separate pipe-owner case also passes.
+The ARM native job passes its configured seven GUI cases and pipe-owner case.
+ARM does not run the UIA suite or live-daemon input case.
+
+The enlarged Settings case loads `[ui] size = 24` and preserves the private config bytes exactly.
+Both captures retain their original encoded bytes, exact native dimensions, and unchanged 192 KiB cap.
+The in-app observer requires an active window, keyboard modality, and the focused Smooth scrolling row before each capture.
+The guarded native handoff runs at the wide viewport; the narrow capture then passes without another handoff.
+The fixture log calls the size points, but the configuration and renderer use logical pixels.
+
+| Native capture | Dimensions | PNG bytes | SHA256 |
+| --- | --- | ---: | --- |
+| [Wide](review-squad/settings-scale/ui-24-after-wide-1100.png) | 1100×780 | 129267 | `bb1da0709815a0ac0a2c4ae9f5fa023728c7802ff68998fdd01846954c163b4a` |
+| [Narrow](review-squad/settings-scale/ui-24-after-narrow-680.png) | 680×780 | 103064 | `8d701d1f33932a0dc4d9c78bbedd4318a8c04d6ccc4a1069996009e659830ab2` |
+
+Root decodes and inspects both native PNGs.
+Tabs & panes, Notifications, Configuration, and the search placeholder now fit the navigation.
+General body text remains readable and wraps inside the narrow window.
+The focused Smooth scrolling control and footer remain inside both viewports.
+This qualifies the original enlarged Settings glyph and clipping requirement for these authored native scenes.
+The [before-image](review-squad/settings-scale/ui-24-before-wide-1100.png) records the original navigation clipping.
+The [receipt](review-squad/settings-scale/qualification-7b7498762.json) records source, job, dimensions, and hashes without machine-local paths.
+
+The same native job also passes revised Ctrl-F6 region navigation and held Ctrl-Shift-N window creation.
+Herdr text/caret/change events, workspace reorder, pane resize/restoration, and stable daemon identities pass again.
+Core text/caret/observing panes, audible announcements, Core resize, and selected-tab backdrop contrast remain pending.
+Kata `q72g` stays open; these images do not qualify those separate requirements.

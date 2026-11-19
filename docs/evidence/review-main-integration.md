@@ -511,3 +511,11 @@ Four board-open findings remain: Core confirmation, painting/polling, accessibil
 The shortcut finding's original native keyboard requirement also remains unverified by this squad.
 The coordination question is recorded on Crew as `20261119T215435870Z.30aefa`.
 No draft merge or release is authorized by this checkpoint.
+
+On `7b7498762`, both Windows native jobs pass their configured cases.
+The x64 job passes eight GUI cases, one pipe-owner case, and all twenty-three UIA cases.
+Revised Ctrl-F6 navigation and held Ctrl-Shift-N retain their native assertions.
+The enlarged Settings case now produces both bounded PNGs and preserves private preferences.
+Root inspects both native images and qualifies their enlarged glyphs, navigation, wrapping, and viewport containment.
+See [the captures and remaining accessibility gates](review-accessibility-gaps.md#enlarged-settings-qualification-on-7b7498762).
+The broader platform CI run remains in progress at this checkpoint.

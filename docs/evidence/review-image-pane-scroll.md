@@ -164,3 +164,34 @@ The two Metal cases are macOS-only; the preceding Windows GNU checks cover the u
 This establishes offscreen Metal image raster correctness for the tested fragments.
 It does not establish AppKit input, actual foreground presentation, native glyph behavior, or interactive timing.
 The original native keyboard readiness question remains pending, and its fixture has not launched.
+
+## Remaining native route, November 19
+
+The existing Windows `accessibility_windows` harness can qualify a real image-bearing pane without synthetic connection state.
+Use `Running::prepared`, its explicit private daemon, and the normal Socket GUI target.
+Keep exact-child cleanup and the sandbox's isolated home, configuration, temporary directory, and socket.
+
+Pinned Herdr `2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01` has a real inline Kitty RGBA producer test.
+Its [graphics test](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/server/headless/tests/pane_graphics.rs#L385) checks actual client-shell image assets.
+Its [pane CLI](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/cli/pane.rs#L1039) runs a command in one exact pane.
+An authored finite PowerShell script can use that path inside the fixture's existing private shell.
+The Windows PowerShell/ConPTY producer path still needs execution; the upstream test alone does not qualify it.
+
+The case must discover the private pane before submitting the producer.
+Require coherent presented metadata, paired authored image assets, actual decoding, and actual atlas upload before capture.
+Use contrasting source rows, below-text and above-text images, transparent overlap, and known scrollback lines.
+Capture the stationary frame, an unchanged redraw, one fractional image-bearing slide, and the settled frame.
+Check fixed pane clipping, image/text translation, source mapping, and layer order against those frames.
+Require unchanged region identities and zero cell paint callbacks during the stationary redraw.
+
+The existing test image probe paints marker quads and must stay out of this native scene.
+A scoped nonvisual integration counter must observe actual cell paint callbacks instead.
+Arm the in-app observer before native wheel input; the existing 48-millisecond spread can evade external polling.
+Keep the real clock, smooth-scroll policy, and native input behavior unchanged.
+Guard input with the exact PID, HWND, foreground, focused terminal, and released-modifier checks.
+Any wheel helper must bound its own pointer movement and restore it without overriding later user movement.
+Encode only bounded captures from the owned window on the background executor.
+
+This route has been inspected, but no new native image case has run.
+It qualifies the remaining image-rendering gate when executed and inspected.
+It does not replace the separate foreground release profile owned by `gg9v`.
