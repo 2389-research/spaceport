@@ -1,6 +1,6 @@
 # Error feedback checkpoint
 
-Date: 2026-11-17. Finding: `kjkw`. This issue remains open.
+Date: 2026-11-17. Finding: `kjkw`. The issue is closed after native qualification; see the receipt below.
 
 ## Implemented so far
 
@@ -102,16 +102,16 @@ That checkpoint also passes aggregate formatting, size, sorting, localization, a
 Later popup-family changes still need their own final aggregate qualification.
 Keep native keyboard, accessibility, visual, and release-performance checks pending.
 
-## Remaining original finding scope
+## Original finding audit and qualification
 
 The 2026-11-19 audit finds no remaining implementation defect in the scoped feedback paths.
-The original finding still needs native announcement-delivery evidence.
+The original finding required native announcement-delivery evidence; the receipt below now supplies it.
 The existing UIA chrome and workspace checks do not trigger warning or toast announcements.
 Headless metadata checks do not execute GPUI's native synthetic accessibility children.
 
-Add one owned Windows UIA scenario that triggers a benign warning and a live toast.
-Verify their displayed names with the status bar hidden and in Zen mode.
-Observe their native `LiveRegionChanged` events.
+The owned Windows UIA scenario triggers a benign warning and a live toast.
+It verifies their displayed names with the status bar hidden and checks a distinct Zen warning.
+It observes their native `LiveRegionChanged` events.
 Pinned AccessKit Windows raises those events for named live nodes.
 Microsoft documents the [native live-region event](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-event-ids).
 This check does not require audible speech, a Mac foreground fixture, Settings, or release profiling.
@@ -119,4 +119,8 @@ Keep those broader qualifications separate from `kjkw`.
 
 The [native announcement qualifier](review-native-error-announcements.md) now implements that focused check.
 Its parser, type, static, and independent review evidence passes locally.
-Its actual Windows event and removal receipts remain pending CI.
+Its actual Windows x64 event and removal receipts now pass on source `88566686c`.
+All five native UIA cases pass without failures or ignored cases.
+The real hidden-status warning, Custom toast, and distinct Zen warning deliver named live-region events.
+The earlier rendered tests retain the timing, pause, history, and view-ownership proof.
+The combined evidence qualifies the original visible-error and announcement finding.

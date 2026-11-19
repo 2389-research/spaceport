@@ -132,5 +132,26 @@ Do not reuse q72g's earlier Clippy result as validation for these later changes.
 
 Headless tests exercise actual GPUI controls and their real callbacks.
 They do not qualify physical keyboard delivery, native glyphs, or screen-reader behavior.
-Native keyboard checks remain pending at Doctor Biz's request.
-Native Windows execution and the full workspace CI gate remain pending.
+The dedicated Mac keyboard fixture has not reached its matrix assertions.
+Native Settings keyboard checks remain pending.
+The full workspace CI gate passes on source `88566686c`.
+
+## Private Windows qualification route, November 19
+
+The original-scope audit finds no remaining Settings implementation defect.
+Open Settings through the owned app's normal Settings button.
+Find exactly one PID-owned top-level window titled `Settings` and retain its HWND.
+Scope control lookup to that root.
+Before each key, require that exact foreground HWND and focused-element ancestry within Settings.
+The existing `Process.MainWindowHandle` target does not distinguish Settings from the terminal window.
+
+Traverse search, navigation, and controls with Tab and Shift+Tab.
+Toggle Smooth scrolling with Space and Enter, then verify the private saved preference.
+Choose and restore a chat-layout segment.
+Open and dismiss a dropdown, then verify focus returns to its trigger.
+Compare native focused and unfocused switch images to qualify the painted focus ring.
+UIA focus alone cannot prove that ring.
+
+This route can run in the private Windows CI desktop without a Mac foreground fixture.
+Speech, contrast auditing, release profiling, and exhaustive glyph checks belong to separate findings.
+Keep `d0n2` open until its actual keyboard and image receipts pass.

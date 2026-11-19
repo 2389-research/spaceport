@@ -6,7 +6,8 @@
 Doctor Biz authorized implementation and validation of the popup/Close Others report (`ydr4`).
 Doctor Biz later authorized closing fully completed Kata children.
 Keep this child open while required native checks remain pending.
-No commit or publication is authorized.
+Doctor Biz later authorized committing and publishing the reviewed checkpoint as a public draft PR.
+Review and validation follow-ups stay on draft PR 125.
 
 ## Captured batch
 
@@ -284,3 +285,21 @@ Formatting, file-size, sorted-region, i18n 2174/114, spec integrity, and diff ch
 Native visual, keyboard, glyph, and platform qualification remain pending.
 The Kata child remains open; the local implementation checkbox records completed code work only.
 Do not reimplement or discard this qualified popup work on resume.
+
+## Remaining original finding scope, November 19
+
+The original-scope audit finds no remaining production defect in the batch or popup paths.
+The existing native workspace consent check exercises workspaces, not Close Others.
+The native local-controls fixture does not observe an intermediate outgoing popup frame.
+
+Use one private Windows scenario with three owned Herdr tabs.
+Open Close Others through its actual menu and verify both targets and the aggregate counts.
+Cancel and require all three tabs to survive.
+Reopen and confirm once; require only the selected tab to remain without another prompt.
+Capture actual native outgoing frames for a popover, dialog, and palette.
+Retain the broader family coverage in the existing rendered tests.
+
+Passive outgoing captures intentionally expose no accessibility nodes.
+Tree disappearance alone therefore cannot prove outgoing painting.
+Keep `ydr4` open for this bounded qualification.
+Unrelated speech, Settings, Mac foreground, and release profiling do not gate this original finding.
