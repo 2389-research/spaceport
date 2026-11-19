@@ -1,10 +1,10 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `a1f85f1ea` passes full CI; `679cd74b8` qualifies native workspace reorder.
-Resize lookup and Settings capture corrections are published in `cd7d317f5`.
-Main's Settings extraction is integrated; combined native CI remains pending.
-Kata `9s44` has 48 closed children and five open children.
+Status: `3307213db` passes full CI; native image candidate `97864f275` is in CI.
+Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
+Crew tracks 49 done children and four open children for `9s44`.
+The closed shortcut child still has an explicitly recorded native qualification gap.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.

@@ -115,12 +115,7 @@ impl AgentProcess {
 
     /// Waits for the agent to exit, polling so that `stop` can still reach it.
     pub(crate) fn wait(&self) -> std::io::Result<ExitStatus> {
-        loop {
-            if let Some(status) = self.lock().try_wait()? {
-                return Ok(status);
-            }
-            thread::sleep(POLL);
-        }
+        wait_with(|| self.lock().try_wait(), || thread::sleep(POLL))
     }
 
     /// The last lines the agent wrote to standard error.
@@ -144,6 +139,21 @@ impl AgentProcess {
             let _ = child.kill();
             let _ = child.wait();
         }
+    }
+}
+
+fn wait_with(
+    mut observe: impl FnMut() -> std::io::Result<Option<ExitStatus>>,
+    mut idle: impl FnMut(),
+) -> std::io::Result<ExitStatus> {
+    loop {
+        match observe() {
+            Ok(Some(status)) => return Ok(status),
+            Ok(None) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(error) => return Err(error),
+        }
+        idle();
     }
 }
 

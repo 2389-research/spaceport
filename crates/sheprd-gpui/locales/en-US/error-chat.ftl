@@ -14,7 +14,7 @@ error-chat-environment-name = `{ $name }` cannot be a chat environment variable
 # $count is the most variables, and $bytes the most bytes, they may hold.
 error-chat-environment-size = [chat.env] holds more than { $count } variables or { $bytes } bytes
 error-chat-handshake = the chat program did not greet first
-error-chat-mirror-config = [chat.mirrors] needs at most 16 valid pane and endpoint identifiers
+error-chat-mirror-config = [chat.mirrors] needs at most 16 valid pane and chat connection identifiers
 error-chat-no-endpoint-dir = no private directory holds chat sockets
 error-chat-not-attached = the chat view is not attached
 error-chat-overflow = the chat view fell behind the program

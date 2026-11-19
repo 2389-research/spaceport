@@ -82,6 +82,8 @@ impl Child {
             return Ok(());
         };
         let _ = signal(group, Signal::TERM);
+        // An exited leader does not prove its descendants stopped handling TERM.
+        // Give descendants the full grace while the leader reserves the group identity.
         let deadline = Instant::now() + grace;
         while Instant::now() < deadline {
             if let Err(error) = observe(self) {

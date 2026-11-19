@@ -95,3 +95,14 @@ Formatting, size, sorting, i18n, and diff checks pass.
 The separate `1qx4` Core Cmd-W finding remains open.
 Its remaining check must enter consent through a focused Core split's native Cmd-W path.
 The existing native helper opens that dialog directly and does not prove this route.
+
+## PR 125 headless coverage clarification, November 19
+
+Clint's review reports no headless coverage for Core pane close.
+The registered `core_terminals::tests::pane_owner::close_confirmation` module already contains eight cases.
+Six cover consent, cancel focus, stale selection, rebinding, exact targets, and held shortcuts.
+Two exercise Core-only operation without a Herdr TUI endpoint.
+Positive cases inspect actual framed `terminal.kill` requests for the captured terminal.
+The current localized-error and Core-close run passes 62 cases, including all eight Core-close cases.
+Log: `/tmp/spaceport-9s44-review-p2-consumers-green.log`.
+These headless tests do not close the native `1qx4` gate described above.

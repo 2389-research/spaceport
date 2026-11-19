@@ -121,3 +121,42 @@ Independent completion review finds no remaining original-scope terminology gap.
 Kata `cx2r` closes on `4156467f3` with event `9785` and UID `01M7SAGQPPECJE259BM03R7Q2B`.
 Fresh issue and parent reads confirm 40 closed children and 13 open children.
 The umbrella remains open.
+
+## PR 125 review follow-up, November 19
+
+[Clint's review](https://github.com/2389-research/spaceport/pull/125#issuecomment-7024224759) found remaining visible connection jargon on `3307213db`.
+The earlier completion assessment missed activation notices, batch readiness, and chat mirror validation.
+Those messages now describe terminal screens, connection readiness, and chat connection identifiers.
+The unsupported-switch error receives the same correction in Rust and Fluent.
+Chat mirror identifiers name chat attach connections; they do not name saved SSH hosts.
+Configuration keys, message IDs, typed errors, protocol values, and source chains stay intact.
+
+Both rendered-copy regressions fail against the old messages and pass after the correction.
+The config localization table now includes `InvalidChatMirror`.
+English Display equality, inserted labels and reasons, and complete pseudo-localization remain covered.
+The localized-error and Core-close scopes pass 62 cases, with none ignored.
+Logs: `/tmp/spaceport-9s44-p2-copy-red.log` and `/tmp/spaceport-9s44-review-p2-consumers-green.log`.
+Native screenshots of the updated error messages remain pending desktop fixture readiness.
+
+The review also identifies asymmetric interruption handling in the agent exit waiter.
+The waiter now retries only `Interrupted`, before sleeping or reporting exit.
+Other errors retain their original OS causes.
+The child lock drops between observations and before sleeping.
+The regression injects one interruption, then observes an actual private child exiting with code 7.
+It also verifies that the exact leader remains waitable until cleanup.
+The baseline fails on the injected interruption; all 13 process cases pass after the correction.
+Logs: `/tmp/spaceport-9s44-interrupted-wait-{red,green}.log`.
+This proves portable retry policy; it does not reproduce native signal delivery.
+Independent review finds no material ownership, cancellation, or cleanup regression.
+
+The full TERM grace remains intentional after the leader exits.
+That exit cannot establish whether descendants stopped.
+The waitable leader reserves the group identity until cleanup finishes.
+New comments explain this cost; signaling and timing remain unchanged.
+
+Both canonical host lint configurations and both Windows GNU lint configurations pass.
+Format, file size, sorting, operations, localization, commit subjects, and diff checks pass.
+Logs: `/tmp/spaceport-9s44-review-p2-{lints,static}.log`.
+Root's final review checks the changed producers, localized consumers, and both new test files.
+The existing external `block` compatibility notice remains unchanged.
+Full platform CI remains pending for this follow-up; no native keyboard or speech claim follows.

@@ -3,6 +3,7 @@
 use super::*;
 use std::io::{BufRead, BufReader, Read};
 
+mod polling;
 mod unix_ownership;
 
 /// The agent exits at once on TERM, but leaves a tool behind that ignores

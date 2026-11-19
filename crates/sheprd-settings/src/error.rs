@@ -1,3 +1,5 @@
+// ABOUTME: Defines typed failures for settings and theme validation.
+// ABOUTME: Preserves original causes and readable configuration diagnostics.
 //! Why the user's settings or a theme could not be loaded, validated, or edited.
 
 use std::{
@@ -38,7 +40,7 @@ pub enum Error {
     /// A `[backdrop]` value the window cannot paint with.
     #[error("{0}")]
     InvalidBackdrop(#[from] BackdropProblem),
-    #[error("[chat.mirrors] needs at most 16 valid pane and endpoint identifiers")]
+    #[error("[chat.mirrors] needs at most 16 valid pane and chat connection identifiers")]
     InvalidChatMirror,
     #[error("chat.max_width must be 0 (full width) or 320–4000 logical pixels")]
     InvalidChatWidth,

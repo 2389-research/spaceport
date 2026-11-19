@@ -1,3 +1,5 @@
+// ABOUTME: Checks localization of settings and theme error variants.
+// ABOUTME: Keeps English diagnostics aligned with their typed error displays.
 use super::*;
 use crate::config::{Error, ThemeParseError, tab_layout};
 use std::path::PathBuf;
@@ -16,6 +18,7 @@ fn every_config_variant_has_a_message() {
         Error::EmptyFontFallback("font"),
         Error::EmptyFontFamily("font"),
         Error::EmptyTheme,
+        Error::InvalidChatMirror,
         Error::InvalidChatWidth,
         Error::InvalidDeviceId("nope".into()),
         Error::InvalidDevicesTable,
