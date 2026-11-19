@@ -3,6 +3,7 @@
 use super::*;
 #[cfg(feature = "integration-test")]
 mod daemon;
+mod quit;
 mod text_input;
 
 fn press(cx: &mut gpui::VisualTestContext, key: &str, held: bool) -> bool {

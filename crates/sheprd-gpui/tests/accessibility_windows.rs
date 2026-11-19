@@ -421,6 +421,8 @@ mod clipboard_broker;
 mod close_others;
 #[path = "accessibility_windows/held_shortcuts.rs"]
 mod held_shortcuts;
+#[path = "accessibility_windows/quit.rs"]
+mod quit;
 #[path = "accessibility_windows/recovery.rs"]
 mod recovery;
 #[path = "accessibility_windows/settings.rs"]

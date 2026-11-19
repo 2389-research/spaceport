@@ -108,6 +108,14 @@ fn repeatable(command: Command) -> bool {
 }
 
 impl SheprdWindow {
+    fn shortcut_command(&mut self, command: Command, window: &mut Window, cx: &mut Context<Self>) {
+        if command == Command::Quit {
+            window.dispatch_action(Box::new(crate::actions::Quit), cx);
+        } else {
+            self.command(command, window, cx);
+        }
+    }
+
     /// The window's keyboard boundary, also usable without its terminal canvas.
     pub(crate) fn shortcut_scope(cx: &mut Context<Self>) -> Div {
         div()
@@ -193,7 +201,7 @@ impl SheprdWindow {
             }
             match held {
                 HeldShortcut::PassThrough => return,
-                HeldShortcut::Repeat(command, _) => self.command(command, window, cx),
+                HeldShortcut::Repeat(command, _) => self.shortcut_command(command, window, cx),
                 HeldShortcut::Consume(_) => {}
             }
             cx.stop_propagation();
@@ -274,7 +282,7 @@ impl SheprdWindow {
                 }
                 Some(Bound::Command(command)) => {
                     if !is_held || repeatable(command) {
-                        self.command(command, window, cx);
+                        self.shortcut_command(command, window, cx);
                     }
                     return Some(if repeatable(command) {
                         HeldShortcut::Repeat(command, KeyOwner::Direct)
@@ -302,7 +310,7 @@ impl SheprdWindow {
         }
         match bound {
             Bound::Command(command) => {
-                self.command(command, window, cx);
+                self.shortcut_command(command, window, cx);
                 Some(if repeatable(command) {
                     HeldShortcut::Repeat(command, KeyOwner::Modal)
                 } else {

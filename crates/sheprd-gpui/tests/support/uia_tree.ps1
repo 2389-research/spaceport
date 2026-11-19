@@ -5,7 +5,7 @@
 # its control type, name, and the patterns or states that matter here. With
 # -Keys, it then brings the window forward, sends each key ("|"-separated,
 # SendKeys syntax), and prints the element that has keyboard focus after it.
-param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '', [string]$GroupActionsFor = '')
+param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '', [string]$Expand = '', [string]$MenuItem = '', [string]$GroupActionsFor = '', [switch]$ExpectExit)
 [Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
@@ -118,6 +118,11 @@ if ($Keys) {
       throw "The focused control is not the expected private button '$ExpectedButton'"
     }
     [System.Windows.Forms.SendKeys]::SendWait($key)
+    if ($ExpectExit) {
+      # The owned app may already be gone; never inspect another app's new focus.
+      [Console]::WriteLine('UIA_KEY expected_exit=true sent=true')
+      break
+    }
     Start-Sleep -Milliseconds 400
     "focus after $key -> $(Describe $automation::FocusedElement)"
   }
