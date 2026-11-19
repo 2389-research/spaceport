@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `1ad093a96` qualifies native clipboard scenarios; a separate terminal qualifier correction remains pending.
+Status: `fe4b3d7e4` qualifies native terminal text and line bounds; its Settings observation check fails.
 Kata `9s44` has 48 closed children and five open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
@@ -62,7 +62,11 @@ Current local validation passes forty-one command tests and seventy-three keymap
 Both canonical host and Windows GNU lint configurations pass.
 The corrected native terminal harness also passes focused Windows lint.
 Static checks pass after formatting the final Linux override assertion.
-Linux-specific GPUI assertions and the corrected native enclosing-line case still require CI.
+All four Linux check jobs pass on `fe4b3d7e4`.
+The corrected native enclosing-line case passes, alongside eighteen passing UIA cases in total.
+The Settings qualifier fails while observing Enter after one fixed 100 ms wait.
+Its bounded state-observation correction still needs native execution.
+The full CI result remains pending and cannot be reported as green.
 
 Main advanced again to `4feee1830b1daffa2ea42792478cddd042d348da` during validation.
 PR 124 moves sound policy and playback into `sheprd-sound`, with lenient decoding in `sheprd-lenient`.

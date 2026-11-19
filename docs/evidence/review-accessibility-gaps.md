@@ -176,3 +176,17 @@ It expands a cloned range to the enclosing line and checks every visible Rect's 
 It reports enclosing-line bounds, rather than claiming a caret rectangle that the API need not return.
 The app's accessibility producer and listener lifecycle remain unchanged.
 Corrected native execution remains pending; `q72g` stays open.
+
+## Native Herdr text and line qualification on `fe4b3d7e4`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44565690663/job/135707084161) passes the corrected terminal case.
+Its receipt occurs at `2026-11-19T16:35:43.9022389Z`.
+Actual native input produces the expected private terminal output.
+The provider exposes that text, a collapsed caret, and visible enclosing-line rectangles within the document.
+The native TextChanged subscription observes the output and removes its listener.
+The existing warning/toast live-region case also passes.
+
+This qualifies Herdr text, caret semantics, line geometry, and the changed-output event only.
+It does not prove audible speech, Core text providers, or exact collapsed-caret rectangles.
+The remaining native matrix above keeps `q72g` open.
+The job has eighteen passing UIA cases and one Settings observation failure; it is not green.

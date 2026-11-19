@@ -262,3 +262,24 @@ The native case qualifies OS keyboard delivery, persisted values, dropdown retur
 The original issue does not require release profiling or a separate Mac-only matrix.
 Those broader checks remain tracked by their own open findings.
 This evidence satisfies the original scope of Kata `d0n2`.
+
+## Native toggle observation on `fe4b3d7e4`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44565690663/job/135707084161) passes eight GUI cases and eighteen UIA cases.
+Settings passes its ring comparison and saves Smooth scrolling as false after Space.
+Its next Enter check observes the unchanged toggle after the fixed 100 ms wait.
+That fails at `2026-11-19T16:35:40.3540622Z`.
+
+[Microsoft's SendWait contract](https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.sendkeys.sendwait) does not await another process on its SendInput path.
+The fixture now polls the actual toggle state for at most three seconds after that single keypress.
+It retains the exact Settings HWND, focus ancestry, and switch focus guards while waiting.
+It sends no additional key and still verifies the actual private saved preference afterward.
+A missing activation still fails at the deadline.
+Native execution must confirm whether asynchronous observation explains this failure.
+The previous completed qualification remains recorded above; this regression run remains failed.
+
+Root reviewed the four-file diff, actual failing receipt, parent deadline, and owned-focus guards.
+The review found no further issue in this bounded observation change.
+`just format-check check-file-size check-sorted check-just-operations check-i18n check-commits` passes.
+`git diff --check` passes.
+No PowerShell runtime is installed on this Mac; actual script execution remains assigned to Windows CI.

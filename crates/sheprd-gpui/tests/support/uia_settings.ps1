@@ -137,7 +137,15 @@ if ($Action -eq 'OpenAndRing') {
   $before = $toggle.Current.ToggleState
   $key = if ($Action -eq 'ToggleSpace') { ' ' } else { '{ENTER}' }
   Press $key
-  if ($toggle.Current.ToggleState -eq $before) { throw 'Native Settings key did not change the switch state' }
+  # SendWait does not await another process's message handling on the SendInput path.
+  $toggleDeadline = [DateTime]::UtcNow.AddSeconds(3)
+  while ($toggle.Current.ToggleState -eq $before) {
+    if (-not (Same-Focus $switch)) { throw 'Settings switch lost focus while awaiting its state' }
+    if ([DateTime]::UtcNow -ge $toggleDeadline) {
+      throw 'Native Settings key did not change the switch state before its deadline'
+    }
+    Start-Sleep -Milliseconds 25
+  }
 } elseif ($Action -eq 'Bubbles' -or $Action -eq 'Timeline') {
   $traverse = if ($Action -eq 'Timeline') { '+{TAB}' } else { '{TAB}' }
   $segment = Tab-To $Action ([System.Windows.Automation.ControlType]::RadioButton) $traverse
