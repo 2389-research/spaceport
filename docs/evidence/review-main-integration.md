@@ -270,7 +270,8 @@ Both regressions fail first; the combined four-case suite and all four lint conf
 Independent review finds no remaining issue.
 The [new CI run](https://github.com/2389-research/spaceport/actions/runs/44471538211) qualifies both native UIA scenarios.
 Both Windows native jobs and the Linux ARM all-feature job pass.
-The complete run remains in progress.
+The complete run passes all 18 executed jobs; one unconfigured target is skipped.
+The separate supply-chain run also passes.
 The existing UIA deadline remains unchanged.
 An independent audit also finds reduced-motion gaps in extracted slides and opted-in chat glide.
 Their three regressions fail first; the corrected focused scopes pass 70 tests.

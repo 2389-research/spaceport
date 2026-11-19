@@ -83,6 +83,27 @@ Its log is `/tmp/spaceport-9s44-missing-recovery-host-lint.log`.
 Formatting, file size, sorting, and diff checks pass.
 Canonical Windows GNU lint passes both feature configurations too.
 The log is `/tmp/spaceport-9s44-missing-recovery-windows-lint.log`.
+
+## Native Windows qualification scenario
+
+The passing workspace harness now also checks recovery-card focus.
+One scenario reaches Reconnect now through the native prefix-region and Tab routes.
+Another starts Local with no Herdr executable in its private home or system-only PATH.
+It reaches Install Herdr and Try again through the same native routes.
+It starts the explicitly selected private daemon only after the missing-runtime card appears.
+Enter and Space each recover to that daemon's real workspace in separate isolated runs.
+The missing-runtime card must remain before keyboard activation.
+The scenario never activates the website button or installs a runtime.
+It verifies the final focus observation and guards the exact button immediately before sending each activation key.
+An intentionally mismatched button name must refuse activation before sending Enter.
+Existing process ownership, capture bounds, foreground guards, and cleanup apply.
+These are pending CI assertions, not claims of native success.
+The Reconnect now scenario proves native focus; the existing headless callback test proves its retry effect.
+Both Windows GNU lint configurations pass after the focus-guard correction.
+Format, file size, sorted regions, operations, localization, and diff checks pass.
+Independent review finds no remaining issue.
+This Mac has no PowerShell runtime, so the new native cases and negative baseline remain unrun locally.
+Logs use `/tmp/spaceport-9s44-native-recovery-final-{windows-lint,static}.log`.
 This is cross-compilation, not native Windows execution.
 
 Kata `2qr3` closed after these checks and the scoped review.

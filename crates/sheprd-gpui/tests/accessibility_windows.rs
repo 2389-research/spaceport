@@ -24,6 +24,11 @@ struct Running {
     sandbox: Sandbox,
 }
 
+enum GuiTarget {
+    Local,
+    Socket,
+}
+
 impl Drop for Running {
     fn drop(&mut self) {
         stop_children([&mut self.command, &mut self.gui, &mut self.daemon]);
@@ -47,6 +52,13 @@ impl Running {
     }
 
     fn start() -> Self {
+        let mut running = Self::prepared();
+        running.start_daemon();
+        running.start_gui(GuiTarget::Socket);
+        running
+    }
+
+    fn prepared() -> Self {
         let mut running = Self::empty();
         running.check_shell();
         let config = running.sandbox.dir.join("config/spaceport");
@@ -56,32 +68,52 @@ impl Running {
             "language = \"en-US\"\n[ui]\nprompt_new_workspace_name = true\n",
         )
         .unwrap();
-        running.daemon = Some(
-            running
-                .sandbox
-                .command(daemon_binary(), "daemon.log")
-                .arg("server")
-                .spawn()
-                .unwrap(),
-        );
-        running
-            .sandbox
-            .wait_for_daemon(running.daemon.as_mut().unwrap(), Duration::from_secs(20));
-        running.gui = Some(
-            running
-                .sandbox
-                .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log")
-                .arg("--socket")
-                .arg(running.sandbox.socket())
-                .spawn()
-                .unwrap(),
-        );
         fs::write(
             running.sandbox.dir.join("uia_tree.ps1"),
             include_str!("support/uia_tree.ps1"),
         )
         .unwrap();
         running
+    }
+
+    fn start_daemon(&mut self) {
+        assert!(self.daemon.is_none());
+        self.daemon = Some(
+            self.sandbox
+                .command(daemon_binary(), "daemon.log")
+                .arg("server")
+                .spawn()
+                .unwrap(),
+        );
+        self.sandbox
+            .wait_for_daemon(self.daemon.as_mut().unwrap(), Duration::from_secs(20));
+    }
+
+    fn start_gui(&mut self, target: GuiTarget) {
+        assert!(self.gui.is_none());
+        let mut command = self
+            .sandbox
+            .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
+        match target {
+            GuiTarget::Socket => {
+                command.arg("--socket").arg(self.sandbox.socket());
+            }
+            GuiTarget::Local => {
+                // Refuse an installed system candidate before testing the missing-runtime card.
+                let path = command
+                    .get_envs()
+                    .find(|(key, _)| *key == "PATH")
+                    .and_then(|(_, value)| value)
+                    .unwrap();
+                for directory in std::env::split_paths(path) {
+                    assert!(!directory.join("herdr.exe").exists());
+                }
+                for directory in [".local/bin", ".cargo/bin"] {
+                    assert!(!self.sandbox.dir.join(directory).join("herdr.exe").exists());
+                }
+            }
+        }
+        self.gui = Some(command.spawn().unwrap());
     }
 
     fn check_shell(&mut self) {
@@ -105,7 +137,7 @@ impl Running {
             &script,
             format!("param([int]$ProcessId, [string]$Keys)\n{body}\n"),
         )?;
-        self.script_output(&script, "-Keys", "", limit)
+        self.script_output(&script, "-Keys", "", None, limit)
     }
 
     fn script_output(
@@ -113,6 +145,7 @@ impl Running {
         script: &Path,
         flag: &str,
         value: &str,
+        expected_button: Option<&str>,
         limit: Duration,
     ) -> io::Result<String> {
         if let Some(gui) = &mut self.gui
@@ -132,13 +165,14 @@ impl Running {
                 command.env(name, value);
             }
         }
-        self.command = Some(
-            command
-                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
-                .arg(script)
-                .args(["-ProcessId", &process.to_string(), flag, value])
-                .spawn()?,
-        );
+        command
+            .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
+            .arg(script)
+            .args(["-ProcessId", &process.to_string(), flag, value]);
+        if let Some(button) = expected_button {
+            command.args(["-ExpectedButton", button]);
+        }
+        self.command = Some(command.spawn()?);
         let result = (|| {
             let deadline = Instant::now() + limit;
             loop {
@@ -197,9 +231,20 @@ impl Running {
             &self.sandbox.dir.join("uia_tree.ps1"),
             "-Keys",
             keys,
+            None,
             Duration::from_secs(20),
         )
         .unwrap()
+    }
+
+    fn press_button(&mut self, keys: &str, button: &str) -> io::Result<String> {
+        self.script_output(
+            &self.sandbox.dir.join("uia_tree.ps1"),
+            "-Keys",
+            keys,
+            Some(button),
+            Duration::from_secs(20),
+        )
     }
 
     fn invoke(&mut self, name: &str) {
@@ -207,6 +252,7 @@ impl Running {
             &self.sandbox.dir.join("uia_tree.ps1"),
             "-Invoke",
             name,
+            None,
             Duration::from_secs(20),
         )
         .unwrap();
@@ -270,7 +316,7 @@ fn a_command_timeout_reaps_its_owned_child() {
     )
     .unwrap();
     let error = running
-        .script_output(&script, "-Keys", "", Duration::from_millis(100))
+        .script_output(&script, "-Keys", "", None, Duration::from_millis(100))
         .unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::TimedOut);
     assert!(
@@ -286,6 +332,9 @@ fn a_command_timeout_reaps_its_owned_child() {
 
 #[path = "accessibility_windows/workspace_close.rs"]
 mod workspace_close;
+
+#[path = "accessibility_windows/recovery.rs"]
+mod recovery;
 
 #[test]
 #[ignore = "requires an active Windows desktop and HERDR_TEST_BINARY; launches a native GUI and isolated daemon"]

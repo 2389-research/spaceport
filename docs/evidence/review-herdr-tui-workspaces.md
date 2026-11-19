@@ -96,7 +96,7 @@ Local revalidation cannot eliminate a later change by another client.
 This change does not claim atomic backend consent or add automatic retries.
 Native Windows UI Automation and workspace interaction pass on `96b5295d5`.
 Mac foreground captures, speech, and performance qualification remain separate open work.
-Full workspace CI remains in progress for that source.
+Full workspace CI also passes for that source.
 
 ## Native Windows follow-up plan
 

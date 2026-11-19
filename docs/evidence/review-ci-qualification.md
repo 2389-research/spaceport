@@ -572,5 +572,6 @@ The workspace case cancels, then confirms fresh consent and preserves unrelated 
 Linux ARM all-feature CI passes 4,547 application cases, with 19 existing private fixtures ignored directly.
 It includes the real-view cache regression and both controlled close-sequence arrival orders.
 Logs use `/tmp/spaceport-9s44-sidebar-{native-x64,linux-arm-all}.log`.
-The full run remains in progress.
+The full run passes: 18 jobs succeed and one unconfigured target is skipped.
+The separate supply-chain run also passes.
 Mac foreground checks, speech, and interactive profiling remain pending.

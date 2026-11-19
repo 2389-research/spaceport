@@ -5,7 +5,7 @@
 # its control type, name, and the patterns or states that matter here. With
 # -Keys, it then brings the window forward, sends each key ("|"-separated,
 # SendKeys syntax), and prints the element that has keyboard focus after it.
-param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '')
+param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '', [string]$ExpectedButton = '')
 [Console]::WriteLine('UIA stage: script entry')
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
@@ -81,9 +81,15 @@ if ($Keys) {
   [HerdrUia]::SetForegroundWindow($handle) | Out-Null
   Start-Sleep -Milliseconds 500
   foreach ($key in $Keys.Split('|')) {
+    $focused = $automation::FocusedElement
     if ([HerdrUia]::GetForegroundWindow() -ne $handle -or
-        $automation::FocusedElement.Current.ProcessId -ne $ProcessId) {
+        $focused.Current.ProcessId -ne $ProcessId) {
       throw 'The private window does not own foreground keyboard focus'
+    }
+    if ($ExpectedButton -and
+        ($focused.Current.ControlType -ne [System.Windows.Automation.ControlType]::Button -or
+         $focused.Current.Name -cne $ExpectedButton)) {
+      throw "The focused control is not the expected private button '$ExpectedButton'"
     }
     [System.Windows.Forms.SendKeys]::SendWait($key)
     Start-Sleep -Milliseconds 400
