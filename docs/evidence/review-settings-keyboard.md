@@ -214,3 +214,22 @@ It shows the authored Smooth scrolling row and its native switch.
 It has 7748 bytes and SHA-256 `bd0ecd512c828f5abca3c1c1a6868cade4b5ea219bf54275a820621a16877e5d`.
 The partial image and manifest remain in `/tmp/spaceport-9s44-settings-native-760/`.
 One focused image does not prove the comparison; `d0n2` stays open.
+
+## Native focus acknowledgment on `7711184cc`
+
+The next [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44542123431/job/135623241590) again passes all eight GUI cases and native chat.
+Its Settings case fails earlier, immediately after requesting search focus.
+It does not reach the corrected log read or emit another ring image.
+The UIA scope has twelve passing cases and one Settings failure, with none ignored.
+
+Pinned `accesskit_windows 0.34.0` implements `SetFocus` by dispatching `Action::Focus`.
+Pinned `gpui-pre 0.3.10` sends that action through a channel to its foreground executor.
+The provider returns before that executor applies `Window::focus`.
+An immediate UIA focus assertion therefore races the queued action.
+
+The fixture still requests focus once.
+It now waits up to three seconds for exact search focus within its existing 35-second parent budget.
+Each poll retains the exact Settings foreground HWND and ancestry guard.
+The timeout logs a fixed diagnostic, without reading another window's control name.
+Independent review confirms the async contract and retained guards.
+Actual native execution of the acknowledgment correction remains pending.

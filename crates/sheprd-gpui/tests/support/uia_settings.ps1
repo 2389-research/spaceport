@@ -108,7 +108,14 @@ if ($Action -eq 'OpenAndRing') {
   Start-Sleep -Milliseconds 300
   $search = Named-Control $root 'Search settings' ([System.Windows.Automation.ControlType]::Edit)
   $search.SetFocus()
-  if (-not (Same-Focus $search)) { throw 'Could not anchor the actual Settings search field' }
+  # GPUI queues UIA focus requests to its foreground executor; the provider call does not await focus.
+  $anchorDeadline = [DateTime]::UtcNow.AddSeconds(3)
+  while (-not (Same-Focus $search)) {
+    if ([DateTime]::UtcNow -ge $anchorDeadline) {
+      throw 'Settings search focus was not acknowledged before its deadline'
+    }
+    Start-Sleep -Milliseconds 25
+  }
   Press '{TAB}'
   $general = Named-Control $root 'General' ([System.Windows.Automation.ControlType]::TabItem)
   if (-not (Same-Focus $general)) { throw 'Tab did not reach General from search' }
