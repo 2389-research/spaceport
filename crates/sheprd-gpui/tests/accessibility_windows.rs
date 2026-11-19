@@ -139,7 +139,21 @@ impl Running {
         if self.command.as_mut().unwrap().try_wait()?.is_none() {
             return Err(io::Error::other("UI Automation child was not reaped"));
         }
-        result
+        result.map_err(|error| {
+            if error.kind() != io::ErrorKind::TimedOut {
+                return error;
+            }
+            let mut bytes = Vec::new();
+            let capture = fs::File::open(&capture)
+                .and_then(|file| file.take(1_048_576).read_to_end(&mut bytes));
+            io::Error::new(
+                error.kind(),
+                format!(
+                    "{error}; private capture read: {capture:?}\n{}",
+                    String::from_utf8_lossy(&bytes)
+                ),
+            )
+        })
     }
 
     fn read(&mut self, keys: &str) -> String {

@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: published source `46738c99c` passes CI; the native consent follow-up awaits its own hosted run.
+Status: `46738c99c` passes CI; the later consent run exposes a Windows UI Automation timeout.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
 It does not authorize merging the draft into main or releasing it.
@@ -254,7 +254,12 @@ PR 123's additional protocol copy is reconciled with the local safety guidance.
 See [the completed reconciliation](review-jargon-main-integration.md).
 Keep the draft unmerged while its hosted and native gates remain open.
 CI qualifies the published workspace suites, platform jobs, application build, and CLI smoke.
-The new consent follow-up requires its own hosted results.
+The consent follow-up fails its first Windows UI Automation run.
+Bounded partial capture and stage markers will locate the stall without weakening the deadline.
+An independent audit also finds reduced-motion gaps in extracted slides and opted-in chat glide.
+Their three regressions fail first; the corrected focused scopes pass 70 tests.
+The normal-consumer test retains 150-millisecond slide timing.
+See [OS accessibility evidence](review-os-accessibility.md#reorder-extraction-follow-up).
 
 Kata now has 36 closed children and 17 open children.
 Native pipe-owner rejection and Windows identity qualification supply the latest two closures.

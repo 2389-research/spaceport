@@ -410,3 +410,18 @@ Both scheduling tests pass against the actual workflow command.
 Formatting, file-size, sorted-region, operations, localization, specification, and diff checks pass.
 The specification gate explicitly reports JSON Schema validation as not run.
 Logs use `/tmp/spaceport-9s44-consent-{host-lint,windows-lint,ci-scheduling,static}.log`.
+
+## First native consent run
+
+Source `1ef9582317a8d9a561034628f5c7a48c7d0e4380` reaches actual Windows UI Automation in [run 44458748028](https://github.com/2389-research/spaceport/actions/runs/44458748028).
+The x64 job passes all seven ordinary native GUI cases and its pipe-owner probe.
+Both UI Automation scenarios then time out before returning their first tree.
+Each command reaches its 20-second deadline and the owned child is reaped.
+Neither the consent scenario nor the existing tree/focus scenario passes on this source.
+The cause of the stall remains unproven.
+
+The next diagnostic retains at most 1 MiB of partial output after timeout cleanup.
+The script reports assembly loading, native-helper compilation, window discovery, and tree completion stages.
+The deadline and keyboard ownership guards remain unchanged.
+The diagnostic does not retry actions or claim the timeout is fixed.
+Log: `/tmp/spaceport-9s44-consent-native-x64.log`.

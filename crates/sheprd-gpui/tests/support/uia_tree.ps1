@@ -8,7 +8,9 @@
 param([int]$ProcessId, [string]$Keys = '', [string]$Invoke = '')
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+Write-Output 'UIA stage: loading assemblies'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
+Write-Output 'UIA stage: compiling native helpers'
 Add-Type @"
 using System; using System.Runtime.InteropServices;
 public static class HerdrUia {
@@ -48,10 +50,13 @@ function Walk($element, $indent) {
 }
 
 $condition = New-Object System.Windows.Automation.PropertyCondition ($automation::ProcessIdProperty), $ProcessId
+Write-Output 'UIA stage: finding private windows'
 $windows = $automation::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $condition)
+Write-Output "UIA stage: reading $($windows.Count) private windows"
 foreach ($window in $windows) {
   Walk $window ''
 }
+Write-Output 'UIA stage: tree complete'
 
 if ($Invoke) {
   $name = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, $Invoke)
