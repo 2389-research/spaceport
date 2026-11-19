@@ -1,5 +1,5 @@
-//! Reads a running window through UI Automation, the interface Narrator and
-//! NVDA use, and checks where prefix region commands and Tab take the keyboard.
+// ABOUTME: Reads a running window through native Windows UI Automation.
+// ABOUTME: Checks keyboard focus with an isolated app and pinned daemon.
 //! Requires an active Windows desktop and an explicitly selected daemon
 //! executable (`HERDR_TEST_BINARY`), like the live GUI test.
 #![cfg(windows)]
@@ -92,7 +92,7 @@ fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
         "Document 'Terminal'",
         "StatusBar 'Status bar'",
         "Button 'Theme' [Invoke]",
-        "Button 'Version ",
+        " 'Version ",
     ];
     let deadline = Instant::now() + Duration::from_secs(60);
     let tree = loop {
@@ -112,6 +112,14 @@ fn ui_automation_names_the_chrome_and_prefix_region_commands_reach_it() {
         thread::sleep(Duration::from_millis(500));
     };
     eprintln!("{tree}");
+    let version = tree
+        .lines()
+        .find(|line| line.contains(" 'Version "))
+        .unwrap();
+    assert!(
+        !version.trim_start().starts_with("Button "),
+        "the version label has no action: {version}"
+    );
     // Back and Forward have no history to go to yet.
     assert!(tree.contains("Button 'Back' [disabled]"), "{tree}");
 

@@ -306,6 +306,9 @@ jobs:
           skip=()
           if [[ $RUNNER == windows-11-arm ]]; then skip=(--skip native_gui_live); fi
           cargo test --locked -p sheprd-gpui --features integration-test --test live_gui -- --ignored --nocapture --test-threads=1 "${skip[@]}"
+      - name: Native UI Automation tree and keyboard focus
+        if: matrix.runner == 'windows-2025'
+        run: cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- --ignored --nocapture --test-threads=1
       - name: Release-mode performance budget
         if: vars.WINDOWS_ENABLED == 'true'
         env:

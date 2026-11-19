@@ -65,6 +65,31 @@ No action pin, runner matrix or production release permission changed.
 
 ## Remaining qualification
 
-Hosted Windows jobs have not run for this diff. No push was authorized.
-Native Windows rendering, input, live-daemon and installer execution remain pending CI.
+Doctor Biz authorized the public draft checkpoint on November 18.
+Hosted native GUI and installer jobs subsequently ran; see [CI qualification](review-ci-qualification.md).
+Full workspace qualification remains pending the latest repairs.
 Performance remains explicitly deferred to `h8g5`.
+
+## Windows UI Automation
+
+The x64 native job also selects the existing `accessibility_windows` integration target.
+It runs every ignored case in that target without a test-name filter.
+The step uses the job's pinned Herdr executable and the existing isolated sandbox.
+It runs after the ordinary native GUI fixtures, with one test thread.
+The ARM exclusion follows the existing unsupported live-daemon boundary.
+Workflow triggers, credential boundaries, and the performance gate remain unchanged.
+
+The test reads the real UI Automation tree and checks native keyboard focus moves.
+It covers main-window chrome, terminal exposure, prefix region commands, Tab, and Escape.
+It does not qualify screen-reader speech, Core transcripts, or the full Settings keyboard matrix.
+Those acceptance checks remain separate.
+
+The scheduling regression first fails because no accessibility step exists, then passes with the step.
+Its argument recorder proves command selection, not native execution.
+All 24 CI policy cases, six release-transition cases, and three release-security cases pass locally.
+`actionlint` passes; offline `zizmor` reports no findings and retains two existing ignores.
+Windows GNU Clippy passes the changed integration target with all features and warnings denied.
+That check proves compilation, not Windows execution.
+Independent review corrected a stale Version-button assertion to require the actual noninteractive accessible label.
+The existing PowerShell capture has no per-call timeout; the job's 90-minute limit remains its final bound.
+Actual hosted UI Automation execution remains pending.
