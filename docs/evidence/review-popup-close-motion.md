@@ -450,3 +450,5 @@ These receipts complete `ydr4`'s original popup and single-batch consent scope.
 Other accessibility, shortcut, foreground, and working-session profile findings remain separate.
 Kata closure event `9788` records completion at `2026-11-19T10:49:26.709Z`.
 Fresh issue and parent reads verify this child closed, with 43 children closed and ten open.
+The complete [CI run](https://github.com/2389-research/spaceport/actions/runs/44507153995) passes all eighteen executed jobs; one unconfigured target skips.
+The separate [supply-chain run](https://github.com/2389-research/spaceport/actions/runs/44507154272) also passes on the same source.

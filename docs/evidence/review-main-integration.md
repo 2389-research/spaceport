@@ -286,6 +286,8 @@ Terminology closes after the final clipboard error family passes its output, cat
 Status shapes close after both Windows native jobs pass and all eight monochrome marker scenes are inspected.
 Visible errors close after real Windows warning, toast, and Zen-warning live-region events pass native qualification.
 Popup departures and Close Others close after native animation, stable-ID consent, and all nine image inspections pass.
+Source `b20cca86f` then passes full CI: eighteen jobs succeed and one unconfigured target skips.
+Its separate supply-chain run also succeeds.
 The umbrella remains open.
 Native Settings readiness is pending Doctor Biz's answer.
 Both Windows native GUI jobs and the x64 accessibility tree/focus case pass on `46738c99c`.
