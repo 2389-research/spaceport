@@ -150,3 +150,24 @@ All three real OpenSSH parser cases and twelve affected GPUI cases pass locally 
 These results do not qualify the Windows or Linux branches.
 The complete four-file fixture correction received independent review.
 Kata `rder` separately closed from verified native process results; see [Windows evidence](review-windows-safety.md).
+
+## Shortcut snapshot checkout
+
+Source `5f788861a7c8eced4c7ef197903fb0b5288603bb` passes both Windows native GUI jobs.
+The x64 workspace suite passes all 279 client cases, including the three OpenSSH parser regressions.
+It then fails the command catalog snapshot without reporting any changed lines.
+See [the actual Windows job](https://github.com/2389-research/spaceport/actions/runs/44437876917/job/135271422037).
+
+An actual Git checkout with `core.autocrlf=true` reproduced CRLF conversion of that snapshot.
+The existing exact-byte snapshot test then failed with the same empty line diff.
+The fixture now has a specific `text eol=lf` attribute, matching its generated format.
+The same checkout preserves identical LF bytes, and all 38 command tests pass against those bytes.
+The snapshot content, ordering assertion, and shortcut defaults remain unchanged.
+The checkout reproduction is throwaway; it restores the original fixture in a `finally` block.
+Logs are `/tmp/spaceport-9s44-shortcut-checkout-red.log` and `shortcut-checkout-green.log` with the same prefix.
+Actual Windows workspace execution of this attribute correction remains pending.
+
+The new x64 native job passes seven cases, including live Herdr, local controls, and sidebar checks.
+The ARM native job passes six cases and retains its documented live-daemon exclusion.
+Both skip the symbol cascade because no Nerd Font is installed; performance remains separately gated.
+These jobs do not qualify foreground Settings input, accessibility, or release working-session profiling.
