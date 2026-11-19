@@ -33,6 +33,11 @@ impl Drop for Running {
 impl Running {
     fn empty() -> Self {
         let sandbox = Sandbox::new();
+        fs::write(
+            sandbox.dir.join("powershell_modules.ps1"),
+            include_str!("support/powershell_modules.ps1"),
+        )
+        .unwrap();
         Self {
             command: None,
             daemon: None,
@@ -242,10 +247,16 @@ fn a_private_powershell_host_sets_utf8_output() {
 fn a_private_powershell_host_executes_a_cmdlet() {
     let output = Running::empty()
         .shell_probe(
-            "[Console]::WriteLine('CMDLET START')\nWrite-Output 'CMDLET READY'",
+            "[Console]::WriteLine('CMDLET START')\n\
+             . \"$PSScriptRoot\\powershell_modules.ps1\"\n\
+             Write-Output 'CMDLET READY'",
             Duration::from_secs(20),
         )
         .unwrap();
+    assert!(
+        output.contains("POWERSHELL stage: system modules ready"),
+        "{output}"
+    );
     assert!(output.contains("CMDLET READY"), "{output}");
 }
 

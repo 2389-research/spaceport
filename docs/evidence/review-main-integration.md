@@ -259,8 +259,9 @@ The earlier diagnostic returns zero bytes before its assembly-loading markers.
 The next plain-script probe executes in 167–180 milliseconds.
 The UIA script reaches entry and completes encoding setup, then stalls at its first cmdlet.
 Independent x64 and ARM probes pass startup/encoding and fail only `Write-Output`.
-The PowerShell command now restores two documented system paths for module loading.
-Its native correction remains unqualified.
+Restoring two documented system paths is insufficient on ARM and in native UIA.
+A shared bootstrap now explicitly loads the two required system command modules.
+Its native correction remains unqualified; the existing regression and deadlines stay intact.
 The existing UIA deadline remains unchanged.
 An independent audit also finds reduced-motion gaps in extracted slides and opted-in chat glide.
 Their three regressions fail first; the corrected focused scopes pass 70 tests.

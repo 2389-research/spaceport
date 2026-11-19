@@ -484,3 +484,28 @@ Both Windows GNU lint configurations and static validators pass with this correc
 Independent review finds no material isolation or ownership issue.
 The actual cmdlet probe and both UIA scenarios still need successful native execution.
 Logs: `/tmp/spaceport-9s44-powershell-system-paths-{windows-lint,static}.log`.
+
+## Explicit system module bootstrap
+
+The system-path correction on `210e5a653` is insufficient.
+The x64 default process suite passes its cmdlet probe after about 17 seconds.
+Both ARM process suites still time out at `Write-Output`.
+The x64 UIA scenarios also retain the first-cmdlet timeout.
+Logs: `/tmp/spaceport-9s44-system-paths-{x64-default,arm-all,arm-default,native-x64}.log`.
+
+The next correction loads Utility and Management explicitly from a shared private bootstrap.
+The module-qualified Core loader avoids automatic command discovery for `Import-Module` itself.
+Both the UIA script and the existing unqualified `Write-Output` regression load that same file.
+The regression also requires the completed-imports marker.
+Plain startup and UTF-8 probes retain their independent paths.
+Diagnostic stage messages use direct Console output.
+Native tree/focus output, assertions, environment isolation, deadlines, and cleanup remain unchanged.
+
+Microsoft documents [module-qualified commands](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_command_precedence)
+and [script imports](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/import-module?view=powershell-5.1).
+By-name imports still use `PSModulePath`; this is not path-pinned loading.
+Independent review finds no material scope, file-path, lifetime, or test-fidelity issue.
+Native execution must establish whether this correction resolves the stall.
+Both Windows GNU lint configurations and static validators pass.
+The specification gate explicitly skips JSON Schema validation.
+Logs use `/tmp/spaceport-9s44-powershell-modules-final-{windows-lint,static}.log`.
