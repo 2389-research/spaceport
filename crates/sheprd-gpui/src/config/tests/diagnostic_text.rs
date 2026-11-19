@@ -8,7 +8,7 @@ fn unknown_keys_lose_breaks_and_direction_overrides() -> anyhow::Result<()> {
     let shown = plain(config.diagnostic()).context("a diagnostic")?;
     assert_eq!(
         shown,
-        "config-gpui.local.toml: ignoring unknown keys badkey"
+        "spaceport/config.local.toml: ignoring unknown keys badkey"
     );
     Ok(())
 }
@@ -18,7 +18,7 @@ fn a_short_list_names_no_remainder() -> anyhow::Result<()> {
     let config = Config::parse("a = 1\nb = 2")?;
     assert_eq!(
         plain(config.diagnostic()).as_deref(),
-        Some("config-gpui.local.toml: ignoring unknown keys a, b")
+        Some("spaceport/config.local.toml: ignoring unknown keys a, b")
     );
     Ok(())
 }

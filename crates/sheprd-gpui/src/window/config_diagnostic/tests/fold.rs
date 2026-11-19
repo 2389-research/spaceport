@@ -3,7 +3,7 @@ use crate::window::chrome_focus::Region;
 
 /// The warning from #756, too long for the card's one row.
 const LONG: &str =
-    "config-gpui.local.toml: layout.sidebar_gap is deprecated; use terminal.padding_x";
+    "spaceport/config.local.toml: layout.sidebar_gap is deprecated; use terminal.padding_x";
 
 fn show_gui_warning(
     view: &gpui::Entity<crate::SheprdWindow>,
@@ -34,7 +34,9 @@ fn click(selector: &'static str, cx: &mut VisualTestContext) {
 fn a_message_that_fits_draws_no_chevron_and_ignores_clicks(cx: &mut TestAppContext) {
     let (view, cx) = cx.add_window_view(fixture_window);
     cx.simulate_resize(size(px(1000.), px(600.)));
-    show_gui_warning(&view, "config-gpui.local.toml: ignoring unknown keys a", cx);
+    // Short enough for the card's one row: this test is about the fit, not
+    // about the wording of the message it shows.
+    show_gui_warning(&view, "theme must not be empty", cx);
     assert!(cx.debug_bounds("gui-config-diagnostic-fold").is_none());
     let card = cx.debug_bounds("gui-config-diagnostic").unwrap();
     // The dismiss button still ends the card, as it did before.

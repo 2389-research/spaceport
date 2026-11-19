@@ -1,7 +1,8 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `3307213db` passes full CI; native image candidate `97864f275` is in CI.
+Status: `3307213db` passes full CI; the first native image run fails before its producer.
+The PowerShell cleanup correction and review follow-up await combined platform CI.
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
 Crew tracks 49 done children and four open children for `9s44`.
 The closed shortcut child still has an explicitly recorded native qualification gap.
@@ -523,3 +524,19 @@ Eighteen jobs pass and one unconfigured release target skips.
 Both macOS release executable smoke checks and all Linux/Windows feature configurations pass.
 The separate [supply-chain run](https://github.com/2389-research/spaceport/actions/runs/44624169010) also succeeds on `7b7498762`.
 The following commits add only evidence documents, original captures, and their receipt; application code remains unchanged.
+
+## Review follow-up and settings-message integration
+
+Review corrections are committed in `f3dda69b2`; the image cleanup rename is in `d2de8939e`.
+The native image run failed before its producer; see [the exact failure](review-image-pane-scroll.md#first-windows-execution-on-97864f275).
+No image qualification or task closure follows from that run.
+
+Main advanced to `fa63a98d8` through PR 138's settings-message correction.
+Its thirteen-path delta changes diagnostic file names and corresponding tests.
+The merge has no conflicts and retains both sets of settings error corrections.
+The combined diagnostic consumers pass 87 cases, with none ignored, in 1.83 seconds.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- i18n::errors::tests:: config::tests::diagnostic_text:: config_diagnostic::tests::`.
+Log: `/tmp/spaceport-9s44-review-p2-main-consumers.log`.
+Root reviews the complete main delta and the merged settings/localization producers.
+Full platform CI and the real Windows image rerun remain pending for this combined source.
+The previous four lint results apply to `f3dda69b2`; they are not combined-source CI results.

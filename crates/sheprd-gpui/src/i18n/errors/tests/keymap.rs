@@ -48,6 +48,16 @@ fn every_keymap_variant_has_a_message() {
     ]);
 }
 
+/// A keybinding that names no command points at the managed file that lists
+/// them, the only file this build reads the list from.
+#[test]
+fn an_unknown_command_points_at_the_keybindings_list() {
+    crate::i18n::show(&Locale::FALLBACK);
+    let shown = Error::UnknownKeybinding("new_tabb".into()).localize();
+    assert!(shown.contains("spaceport/config.toml"), "{shown}");
+    assert!(!shown.contains("config-gpui"), "{shown}");
+}
+
 #[test]
 fn every_keymap_daemon_variant_has_a_message() {
     assert_localized(&[

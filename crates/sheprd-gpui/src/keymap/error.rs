@@ -48,7 +48,7 @@ pub enum Error {
     TooManyKeystrokes(&'static str),
     #[error("pane_keys must list at most {0} keystrokes")]
     TooManyPaneKeys(usize),
-    #[error("keybindings.{0} is not a command; see the keybindings list in config-gpui.toml")]
+    #[error("keybindings.{0} is not a command; see the keybindings list in spaceport/config.toml")]
     UnknownKeybinding(String),
     #[error("pane_keys.{from:?}: a pane cannot receive {to:?}")]
     UnsendablePaneKey { from: String, to: String },

@@ -94,7 +94,7 @@ fn cards_that_name_no_command_draw_no_chip(cx: &mut TestAppContext) {
     cx.simulate_resize(size(px(1000.), px(600.)));
     view.update(cx, |view, cx| {
         view.gui_config_diagnostic
-            .sync(Some("config-gpui.local.toml: ignoring unknown keys a"));
+            .sync(Some("spaceport/config.local.toml: ignoring unknown keys a"));
         cx.notify();
     });
     set_diagnostic(&view, 0, Some("config.toml invalid; using defaults"), cx);

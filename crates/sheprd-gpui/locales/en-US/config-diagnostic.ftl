@@ -1,15 +1,15 @@
 # The text of the app's own config diagnostic cards, one line each: what
-# this build ignored in config-gpui.local.toml, and fonts it could not use.
+# this build ignored in spaceport/config.local.toml, and fonts it could not use.
 # File names and config keys stay as written.
 
 # $keys lists unknown config keys, separated by
 # commas; $more counts the keys left out of the list.
 config-diagnostic-unknown-keys =
     { $more ->
-        [0] config-gpui.local.toml: ignoring unknown keys { $keys }
-       *[other] config-gpui.local.toml: ignoring unknown keys { $keys } and { $more } more
+        [0] spaceport/config.local.toml: ignoring unknown keys { $keys }
+       *[other] spaceport/config.local.toml: ignoring unknown keys { $keys } and { $more } more
     }
-config-diagnostic-sidebar-gap = config-gpui.local.toml: layout.sidebar_gap is deprecated; use terminal.padding_x
+config-diagnostic-sidebar-gap = spaceport/config.local.toml: layout.sidebar_gap is deprecated; use terminal.padding_x
 # $fonts lists configured font families, each in quotes, separated by
 # commas; $more counts those left out of the list.
 config-diagnostic-missing-fonts =
