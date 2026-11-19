@@ -5,7 +5,7 @@
 
 Inspected on 2026-11-17 for the default-shortcut report (`3wd4`).
 Doctor Biz authorized the scoped default fixes and their validation.
-No commit, publication, or issue-tracker write is authorized.
+The original implementation authorization excluded publication; the later aggregate draft authorization covers qualification updates.
 Doctor Biz requested native keyboard checks remain pending.
 
 ## Shifted symbols
@@ -141,7 +141,35 @@ Native Linux/Windows keyboard delivery, GNOME interception, and performance qual
 
 ## Verification boundary
 
-Native Linux and Windows keyboard checks, desktop interception, and performance remain pending.
+Native Linux and Windows keyboard checks and desktop interception remain pending.
+The original issue adds no working-session performance prerequisite.
 Portable profiles prove both platforms' catalog selection and GPUI parsing.
 Headless dispatch and actual framed peers prove application routing on this host.
 They do not prove native OS key delivery or unseen platform `cfg` branches.
+
+## Native route research, November 19
+
+The fresh revision-one issue explicitly requires Linux and Windows keyboard qualification.
+Windows-only results cannot close that scope.
+Use the main window's Search spaces field to exercise the actual main shortcut owner.
+The separate Settings window bypasses that owner.
+
+Microsoft lists [Polish (Programmers)](https://learn.microsoft.com/en-us/globalization/keyboards/kbdpl1) as KLID `00000415`.
+Native qualification must verify the owned GUI thread's actual keyboard layout.
+A background helper cannot assume its own layout changed the GUI.
+[LoadKeyboardLayoutW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-loadkeyboardlayoutw) documents foreground restrictions and Windows 8 system-wide behavior.
+Use the owned window's [layout-change request](https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-inputlangchangerequest), verify the result, and restore the original layout.
+Derive scan codes with [MapVirtualKeyExW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-mapvirtualkeyexw).
+Derive expected translated text with [ToUnicodeEx](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-tounicodeex) without mutating keyboard state.
+Unicode packet injection cannot qualify AltGr translation.
+
+GNOME 46 defines concrete conflicts with the retained shared Ctrl profile.
+Its [workspace movement bindings](https://github.com/GNOME/gsettings-desktop-schemas/blob/46.0/schemas/org.gnome.desktop.wm.keybindings.gschema.xml.in#L241) use Ctrl+Alt+Shift+arrows.
+Its [recording binding](https://github.com/GNOME/gnome-shell/blob/46.0/data/org.gnome.shell.gschema.xml.in#L287) uses Ctrl+Alt+Shift+R.
+The Linux wrapper still retains those Focus and Resume Palette defaults.
+This source evidence establishes a default conflict, without claiming interception in an untested local session.
+
+Current Linux CI has no qualified GNOME session.
+Xvfb/XTest can qualify an X11 application route, but cannot establish GNOME or Wayland interception.
+No layout change, native input, or desktop launch occurred during this read-only research.
+Kata `3wd4` remains open.

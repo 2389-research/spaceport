@@ -175,3 +175,31 @@ Earlier Settings lint results predate the worker cancellation correction and rem
 No full workspace CI run, native Windows execution, or Linux desktop acquisition is claimed.
 Native keyboard, visual, accessibility, and release performance qualification remain pending.
 No personal clipboard, production daemon, commit, push, or Kata write was used for this work.
+
+## Native route research, November 19
+
+The original `d378` scope has no release-profile prerequisite; `gg9v` owns that work.
+Native clipboard qualification needs an exclusive disposable Windows session and an empty-only preflight.
+Windows places the clipboard in the [window station](https://learn.microsoft.com/en-us/windows/win32/winstation/window-stations).
+Private HOME or a second desktop in the same station does not isolate it.
+Refuse a nonempty clipboard unchanged, without reading its data.
+
+An owned broker can publish only authored text after a successful empty preflight under [OpenClipboard](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-openclipboard).
+It needs an owned HWND and correct allocation transfer under [SetClipboardData](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setclipboarddata).
+Exclude synthetic text from history and cloud sync through the documented [clipboard formats](https://learn.microsoft.com/en-gb/windows/desktop/dataxchg/clipboard-formats).
+Clean only if clipboard ownership and sequence still match the fixture; preserve any foreign replacement.
+The broker must outlive GUI failures and release resources before the parent propagates an assertion.
+
+Exercise the real chat composer and a standalone MultilineInput separately.
+Chat capture does not exercise the standalone field's Mode::Text acquisition path.
+Verify normalized Unicode, the exact 262144-byte limit, overflow refusal, and the separate 2 MiB acquisition bound.
+Generate payloads inside the fixture; log lengths, hashes, and receipts rather than clipboard text.
+For cancellation, hold the already-published synthetic clipboard without mutation, observe pending acquisition, then type or blur.
+Prewarm helpers and retain the production three-second deadline.
+Release the lock and verify no stale insertion, then verify a subsequent paste recovers the reader lease.
+
+Existing Core worker and view tests qualify ordering and delivery against their explicit test backend.
+That backend is not a live native Core runtime.
+Keep shared native-reader evidence separate from Core contract evidence unless a private runtime is explicitly selected.
+Do not invent a new live-runtime prerequisite for the original issue.
+No clipboard access, write, or native launch occurred during this read-only research.
