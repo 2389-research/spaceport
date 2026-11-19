@@ -3,11 +3,11 @@
 
 use super::*;
 use crate::{
-    reorder::LIFT_DELAY,
     sidebar::layout_tests::{fixture_window, full_draw, snapshot},
     state::ConnectionStatus,
 };
 use gpui::{Entity, Modifiers, MouseButton, TestAppContext, VisualTestContext, px, size};
+use sheprd_reorder::LIFT_DELAY;
 use std::sync::Arc;
 
 /// Local, selected and connected, with two more devices, so both a workspace

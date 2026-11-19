@@ -5,11 +5,9 @@
 //! there moves the device for this client (`endpoint::order`), Local
 //! included.
 
-use crate::{
-    SheprdWindow,
-    reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, SLIDE, Slide, preview, slot_for},
-};
+use crate::SheprdWindow;
 use gpui::{prelude::*, *};
+use sheprd_reorder::{Beside, LIFT_DELAY, LIFT_DISTANCE, SLIDE, Slide, preview, slot_for};
 use std::{
     cell::{Cell, RefCell},
     collections::HashMap,

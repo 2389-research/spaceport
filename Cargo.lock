@@ -6484,7 +6484,9 @@ dependencies = [
  "sheprd-lenient",
  "sheprd-osc52",
  "sheprd-remote",
+ "sheprd-reorder",
  "sheprd-sound",
+ "sheprd-truncate",
  "sheprd-usage",
  "sheprd-words",
  "skrifa 0.49.0",
@@ -6572,6 +6574,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "sheprd-reorder"
+version = "0.1.0"
+
+[[package]]
 name = "sheprd-sound"
 version = "0.1.0"
 dependencies = [
@@ -6595,6 +6601,15 @@ dependencies = [
  "sheprd-backend",
  "sheprd-protocol",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "sheprd-truncate"
+version = "0.1.0"
+dependencies = [
+ "sheprd-client",
+ "unicode-segmentation",
+ "unicode-width",
 ]
 
 [[package]]

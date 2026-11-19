@@ -3,11 +3,11 @@
 use super::landing;
 use crate::{
     SheprdWindow,
-    reorder::{Beside, LIFT_DELAY},
     sidebar::layout_tests::{fixture_window, full_draw, snapshot},
 };
 use gpui::{Entity, Modifiers, MouseButton, VisualTestContext, point, px, size};
 use sheprd_client::ConnectTarget;
+use sheprd_reorder::{Beside, LIFT_DELAY};
 use std::sync::Arc;
 
 #[test]

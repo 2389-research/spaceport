@@ -118,7 +118,7 @@ impl ConfigDiagnostic {
 }
 
 fn own_line(line: &str) -> String {
-    crate::truncate::cut_chars(line, MAX_LINE_CHARS)
+    sheprd_truncate::cut_chars(line, MAX_LINE_CHARS)
         .unwrap_or(line)
         .to_owned()
 }
