@@ -68,7 +68,7 @@ tab_layouts! {
 impl TryFrom<&str> for TabLayoutMode {
     type Error = Error;
 
-    fn try_from(name: &str) -> Result<Self, Error> {
+    fn try_from(name: &str) -> crate::Result<Self, Error> {
         Self::ALL
             .iter()
             .copied()
@@ -84,7 +84,7 @@ impl std::fmt::Display for TabLayoutMode {
 }
 
 impl<'de> Deserialize<'de> for TabLayoutMode {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> crate::Result<Self, D::Error> {
         let name = String::deserialize(deserializer)?;
         Self::try_from(name.as_str())
             .map_err(|_| serde::de::Error::unknown_variant(&name, Self::NAMES))

@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::contrast::{Contrast, ratio};
+use sheprd_settings::Surface;
 
 mod placement;
 
@@ -31,7 +32,7 @@ fn themes() -> Vec<(String, Theme)> {
 fn the_mark_reads_on_every_theme_at_its_contrast_level() {
     let worktrees = Worktrees::default();
     for (name, theme) in themes() {
-        let mark = worktrees.mark(&theme);
+        let mark = mark(&worktrees, &theme);
         let target = theme.contrast.mark_ratio();
         for chrome in [
             theme.background,
@@ -56,7 +57,7 @@ fn the_mark_reads_on_every_theme_at_its_contrast_level() {
 fn the_default_hue_is_the_themes_blue_and_never_the_selection_accent() {
     let worktrees = Worktrees::default();
     for (name, theme) in themes() {
-        let mark = worktrees.mark(&theme);
+        let mark = mark(&worktrees, &theme);
         assert_eq!(mark, theme.ink(theme.palette[4]), "{name}");
         if theme.contrast == Contrast::High {
             continue;
@@ -80,7 +81,7 @@ fn a_configured_tint_keeps_its_hue() {
             tint: Some(tint),
             ..Worktrees::default()
         };
-        let mark = worktrees.mark(&theme);
+        let mark = mark(&worktrees, &theme);
         assert_eq!(mark, theme.ink(tint));
         assert!(ratio(mark, theme.background) >= 3. - 0.01, "{tint:06x}");
     }
@@ -93,8 +94,8 @@ fn the_glyph_and_the_rule_share_the_mark() {
     for (name, theme) in themes() {
         let worktrees = Worktrees::default();
         assert_eq!(
-            worktrees.glyph(&theme),
-            Some(worktrees.mark(&theme)),
+            glyph(&worktrees, &theme),
+            Some(mark(&worktrees, &theme)),
             "{name}"
         );
     }
@@ -110,14 +111,14 @@ fn surfaces_switch_each_mark_on_its_own() {
         (&[][..], false, false),
     ] {
         let worktrees = Worktrees::new(None, surfaces);
-        assert_eq!(worktrees.glyph(&theme).is_some(), sidebar, "{surfaces:?}");
+        assert_eq!(glyph(&worktrees, &theme).is_some(), sidebar, "{surfaces:?}");
         assert_eq!(
-            worktrees.rule(true, &theme).is_some(),
+            rule(&worktrees, true, &theme).is_some(),
             terminal,
             "{surfaces:?}"
         );
         // A main checkout never gets a rule, whatever is switched on.
-        assert!(worktrees.rule(false, &theme).is_none());
+        assert!(rule(&worktrees, false, &theme).is_none());
     }
 }
 

@@ -195,6 +195,9 @@ pub(crate) struct SheprdWindow {
     pub(crate) key_layout: fn(u16) -> Option<prefix::KeyChars>,
     /// The key code and Shift of the key being handled, from AppKit's event.
     pub(crate) key_press: fn() -> Option<(u16, bool)>,
+    /// The keymap `config` was resolved into when it loaded. Built beside the
+    /// settings it came from, so a change to either arrives as one pair.
+    pub(crate) keymap: crate::keymap::Keymap,
     /// When this window last forwarded user input; gates re-claiming a frame another client sized.
     pub(crate) last_input: Option<std::time::Instant>,
     /// The last pointer position over the panes, so a move event that did not move is not use.
@@ -477,7 +480,10 @@ impl SheprdWindow {
         // A config reload rebuilds the GUI config card; a language switch,
         // which only redraws the windows, writes it again here.
         let config = &self.config;
-        if self.gui_config_diagnostic.relocale(|| config.diagnostic()) {
+        if self
+            .gui_config_diagnostic
+            .relocale(|| config::diagnostic(config))
+        {
             cx.notify();
         }
         self.post_system_notifications(window, cx);

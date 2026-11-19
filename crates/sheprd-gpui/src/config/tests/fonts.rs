@@ -1,5 +1,5 @@
 use super::*;
-use crate::config::fonts::MAX_FONT_FALLBACKS;
+use crate::fonts::MAX_FONT_FALLBACKS;
 
 #[test]
 fn font_family_saves_and_reset_preserve_other_overrides() -> anyhow::Result<()> {
@@ -202,7 +202,7 @@ fn fonts_are_not_enumerated_when_nothing_needs_checking() -> anyhow::Result<()> 
         },
         |_| false,
     );
-    let defaults = crate::config::fonts::PLATFORM_FONTS;
+    let defaults = crate::fonts::PLATFORM_FONTS;
     assert_eq!(enumerated, defaults.is_replaceable(defaults.monospace));
     Ok(())
 }

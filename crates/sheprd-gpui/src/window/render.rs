@@ -107,7 +107,7 @@ impl Render for SheprdWindow {
         let fill = self.fill();
         let ground = self.ground();
         self.viewport_width = f32::from(window.viewport_size().width);
-        let font = self.config.terminal.font();
+        let font = crate::config::font_for(&self.config.terminal);
         // Parked groups paint with the same face as the window's terminal.
         let parked_font = font.clone();
         let cell_height = self.config.terminal.line_height();

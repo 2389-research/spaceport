@@ -115,7 +115,7 @@ pub(crate) fn bind_keys(cx: &mut App) {
         .and_then(|active| active.0.clone())
         .or_else(|| {
             cx.try_global::<crate::app::InitialAppearance>()
-                .map(|appearance| appearance.config.keybindings.clone())
+                .map(|appearance| appearance.keymap.clone())
         })
         .unwrap_or_default();
     // Shortcuts come from the user's config, so one GPUI refuses is skipped

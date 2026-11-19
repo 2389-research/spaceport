@@ -172,8 +172,7 @@ impl SheprdWindow {
         // where the picker opens, and it outlives this frame's rebuild.
         let painted_sessions = self.sessions_anchor.clone();
         let hint: SharedString = self
-            .config
-            .keybindings
+            .keymap
             .shortcuts(Command::Settings)
             .next()
             .map_or_else(

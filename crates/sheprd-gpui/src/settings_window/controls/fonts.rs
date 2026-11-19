@@ -203,9 +203,12 @@ impl SettingsWindow {
             return;
         }
         self.save_native(
-            move || match target {
-                FontTarget::All => Config::save_all_font_families(family.as_deref()),
-                FontTarget::Face(face) => Config::save_font_family(face, family.as_deref()),
+            move || {
+                match target {
+                    FontTarget::All => Config::save_all_font_families(family.as_deref()),
+                    FontTarget::Face(face) => Config::save_font_family(face, family.as_deref()),
+                }
+                .map_err(crate::Error::from)
             },
             cx,
         );

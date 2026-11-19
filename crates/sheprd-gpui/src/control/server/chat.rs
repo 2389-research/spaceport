@@ -90,6 +90,7 @@ fn start_code(error: &crate::chat::StartError) -> ErrorCode {
         | StartError::Disabled
         | StartError::NotLocal
         | StartError::ProgramMissing => ErrorCode::Unsupported,
+        StartError::Environment(_) => ErrorCode::InvalidRequest,
         StartError::NoWorkspace => ErrorCode::NotFound,
         StartError::SlotBusy | StartError::ProgramUnknown => ErrorCode::Busy,
         StartError::NotConnected

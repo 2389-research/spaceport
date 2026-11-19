@@ -239,7 +239,7 @@ impl SheprdWindow {
             KeybindingSource::Server => KeybindingSource::Local,
         };
         self.save_preference(
-            move || Config::save_device_keybindings(&profile, source),
+            move || Config::save_device_keybindings(&profile, source).map_err(crate::Error::from),
             cx,
         );
     }

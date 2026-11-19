@@ -81,6 +81,7 @@ impl SheprdWindow {
             .unwrap_or_default();
         let crate::app::InitialAppearance {
             config,
+            keymap,
             theme,
             error,
         } = appearance;
@@ -88,7 +89,7 @@ impl SheprdWindow {
         let configured_terminal_size = config.terminal.size;
         let status_bar_visible = config.status_bar.show;
         let mut gui_config_diagnostic = crate::config_diagnostic::ConfigDiagnostic::default();
-        gui_config_diagnostic.sync_own(config.diagnostic().as_deref());
+        gui_config_diagnostic.sync_own(crate::config::diagnostic(&config).as_deref());
         let (catalog, endpoints, core_key) = match launch {
             WindowLaunch::Legacy(target) => (
                 endpoint::Catalog::new(&target),
@@ -207,6 +208,7 @@ impl SheprdWindow {
             integrations: Default::default(),
             key_layout: prefix::current_layout,
             key_press: function_keys::current_press,
+            keymap,
             last_input: None,
             last_pointer: None,
             last_queued_options: None,

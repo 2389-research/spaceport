@@ -1,5 +1,5 @@
 use super::*;
-use crate::config::Sides;
+use sheprd_settings::Sides;
 
 /// `[zen] width` counts the terminal's columns, so the column also makes
 /// room for `[terminal]`'s padding beside them.

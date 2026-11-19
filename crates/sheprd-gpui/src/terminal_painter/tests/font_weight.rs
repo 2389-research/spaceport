@@ -4,11 +4,10 @@ use crate::config::{Config, FontConfig, Weight, bold_font_weight};
 /// The terminal face as the config builds it, so these checks follow a
 /// `[terminal] weight` setting all the way to the painter.
 fn terminal_font(weight: Weight) -> Font {
-    FontConfig {
+    crate::config::font_for(&FontConfig {
         weight,
         ..Config::default().terminal
-    }
-    .font()
+    })
 }
 
 const REGULAR: usize = 0;
@@ -39,7 +38,7 @@ fn regular_and_bold_cells_shape_relative_to_the_configured_weight() {
     assert_eq!(bold_italic.style, FontStyle::Italic);
 
     // The default config draws as it always has: regular, and bold at bold.
-    let font = Config::default().terminal.font();
+    let font = crate::config::font_for(&Config::default().terminal);
     assert_eq!(
         glyphs::styled_font(&font, REGULAR).weight,
         FontWeight::NORMAL

@@ -91,7 +91,13 @@ fn usage_display_switches_apply_independently_on_reload(cx: &mut TestAppContext)
             )
             .unwrap();
             let theme = view.theme.clone();
-            view.load_gui_config_with(move || Ok((config, theme)), cx);
+            view.load_gui_config_with(
+                move || {
+                    let keymap = crate::config::keymap(&config)?;
+                    Ok((config, keymap, theme))
+                },
+                cx,
+            );
         });
         cx.run_until_parked();
         assert_eq!(cx.debug_bounds("titlebar-status").is_some(), topbar);

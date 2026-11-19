@@ -1,7 +1,7 @@
 #![allow(clippy::unwrap_used)]
 use super::*;
 
-fn layout(text: &str) -> Result<SidebarLayout, toml::de::Error> {
+fn layout(text: &str) -> crate::Result<SidebarLayout, toml::de::Error> {
     SidebarLayout::from_daemon_config(&text.parse().unwrap())
 }
 
@@ -107,9 +107,15 @@ rules = [{ equals = "Local", bold = true }, { starts_with = "L", fg = "#222222" 
 
 #[test]
 fn colors_take_both_hex_forms() {
-    assert_eq!(parse_hex("#abc"), Some(0xaabbcc));
-    assert_eq!(parse_hex("#A1b2C3"), Some(0xa1b2c3));
+    assert_eq!(
+        super::super::sidebar_style::parse_hex("#abc"),
+        Some(0xaabbcc)
+    );
+    assert_eq!(
+        super::super::sidebar_style::parse_hex("#A1b2C3"),
+        Some(0xa1b2c3)
+    );
     for bad in ["abc", "#ab", "#abcd", "#ggg", "#1234567", "#"] {
-        assert_eq!(parse_hex(bad), None, "{bad}");
+        assert_eq!(super::super::sidebar_style::parse_hex(bad), None, "{bad}");
     }
 }

@@ -65,7 +65,7 @@ fn f20_window(
                 Some(view.live.surface.as_ref().unwrap().projection_revision),
             );
             let keys: toml::Table = "prefix = \"f20\"".parse().unwrap();
-            view.config.keybindings = crate::keymap::Keymap::with_overrides(
+            view.keymap = crate::keymap::Keymap::with_overrides(
                 &Default::default(),
                 &Default::default(),
                 &crate::keymap::DaemonKeys::from_table(Some(&keys)),

@@ -31,7 +31,7 @@ use super::chats::{ChatInput, ChatPane};
 use crate::i18n::fl;
 use crate::{
     SheprdWindow,
-    config::{Theme, corners},
+    config::{Label as _, Theme, corners},
     fonts::StyledFont,
 };
 use gpui::{prelude::*, *};

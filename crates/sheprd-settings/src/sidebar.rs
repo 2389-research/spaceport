@@ -40,7 +40,7 @@ pub struct SidebarLayout {
 
 impl SidebarLayout {
     /// Defaults when `[ui.sidebar]` is absent; unrelated tables are ignored.
-    pub fn from_daemon_config(table: &toml::Table) -> Result<Self, toml::de::Error> {
+    pub fn from_daemon_config(table: &toml::Table) -> crate::Result<Self, toml::de::Error> {
         let Some(sidebar) = table.get("ui").and_then(|ui| ui.get("sidebar")) else {
             return Ok(Self::default());
         };
@@ -117,7 +117,7 @@ fn plain<T>(tokens: impl IntoIterator<Item = T>) -> Vec<ConfiguredToken<T>> {
     tokens.into_iter().map(ConfiguredToken::plain).collect()
 }
 
-fn check_rows<T>(rows: &Rows<T>) -> Result<(), SidebarConfigError> {
+fn check_rows<T>(rows: &Rows<T>) -> crate::Result<(), SidebarConfigError> {
     if rows.len() > MAX_ROWS {
         return Err(SidebarConfigError::TooManyRows);
     }
@@ -127,7 +127,7 @@ fn check_rows<T>(rows: &Rows<T>) -> Result<(), SidebarConfigError> {
     Ok(())
 }
 
-fn bounded_rows<'de, D, T>(deserializer: D) -> Result<Rows<T>, D::Error>
+fn bounded_rows<'de, D, T>(deserializer: D) -> crate::Result<Rows<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
     ConfiguredToken<T>: Deserialize<'de>,
@@ -137,7 +137,9 @@ where
     Ok(rows)
 }
 
-fn rows_by_agent<'de, D>(deserializer: D) -> Result<BTreeMap<String, Rows<AgentToken>>, D::Error>
+fn rows_by_agent<'de, D>(
+    deserializer: D,
+) -> crate::Result<BTreeMap<String, Rows<AgentToken>>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -190,7 +192,7 @@ impl<'de, T> Deserialize<'de> for ConfiguredToken<T>
 where
     T: FromStr<Err = SidebarConfigError>,
 {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> crate::Result<Self, D::Error> {
         #[derive(Deserialize)]
         #[serde(untagged, deny_unknown_fields)]
         enum Raw {
@@ -239,7 +241,7 @@ where
     }
 }
 
-fn custom_token(name: &str) -> Result<String, SidebarConfigError> {
+fn custom_token(name: &str) -> crate::Result<String, SidebarConfigError> {
     let custom = name
         .strip_prefix('$')
         .ok_or_else(|| SidebarConfigError::UnknownToken(name.to_owned()))?;
@@ -271,7 +273,7 @@ pub enum AgentToken {
 impl FromStr for AgentToken {
     type Err = SidebarConfigError;
 
-    fn from_str(name: &str) -> Result<Self, Self::Err> {
+    fn from_str(name: &str) -> crate::Result<Self, Self::Err> {
         Ok(match name {
             "state_icon" => Self::StateIcon,
             "state_text" => Self::StateText,
@@ -299,7 +301,7 @@ pub enum SpaceToken {
 impl FromStr for SpaceToken {
     type Err = SidebarConfigError;
 
-    fn from_str(name: &str) -> Result<Self, Self::Err> {
+    fn from_str(name: &str) -> crate::Result<Self, Self::Err> {
         Ok(match name {
             "state_icon" => Self::StateIcon,
             "state_text" => Self::StateText,
@@ -324,26 +326,12 @@ pub struct TokenStyle {
 struct TokenColor(u32);
 
 impl<'de> Deserialize<'de> for TokenColor {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> crate::Result<Self, D::Error> {
         let value = String::deserialize(deserializer)?;
-        parse_hex(&value)
+        crate::sidebar_style::parse_hex(&value)
             .map(Self)
             .ok_or_else(|| serde::de::Error::custom(SidebarConfigError::InvalidColor))
     }
-}
-
-/// `#RGB` or `#RRGGBB`, as packed RGB, or `None` for anything else.
-pub fn parse_hex(value: &str) -> Option<u32> {
-    let digits = value.strip_prefix('#')?;
-    let expanded: String = match digits.len() {
-        3 => digits.chars().flat_map(|c| [c, c]).collect(),
-        6 => digits.to_owned(),
-        _ => return None,
-    };
-    if !expanded.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return None;
-    }
-    u32::from_str_radix(&expanded, 16).ok()
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize)]
@@ -385,7 +373,7 @@ struct RawRule {
 impl TryFrom<RawRule> for TokenRule {
     type Error = SidebarConfigError;
 
-    fn try_from(raw: RawRule) -> Result<Self, SidebarConfigError> {
+    fn try_from(raw: RawRule) -> crate::Result<Self, SidebarConfigError> {
         let mut conditions = [
             raw.equals.map(Condition::Equals),
             raw.contains.map(Condition::Contains),

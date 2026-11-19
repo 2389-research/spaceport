@@ -40,7 +40,7 @@ fn editor_shows_unbound_commands_and_cancels_without_changing_bindings(cx: &mut 
     view.read_with(cx, |view, _| {
         assert!(view.menu.shortcut_editor.is_none());
         assert_eq!(view.menu.page, Some(Page::Keybinds));
-        assert_eq!(view.config.keybindings, Keymap::default());
+        assert_eq!(view.keymap, Keymap::default());
     });
 }
 
@@ -105,7 +105,7 @@ fn save_failure_keeps_the_draft_and_old_keymap(cx: &mut TestAppContext) {
         assert!(!editor.saving);
         assert!(editor.error.as_ref().unwrap().contains("read-only config"));
         assert_eq!(editor.input.read(cx).text(), "alt-t ctrl-shift-t");
-        assert_eq!(view.config.keybindings, Keymap::default());
+        assert_eq!(view.keymap, Keymap::default());
     });
 }
 

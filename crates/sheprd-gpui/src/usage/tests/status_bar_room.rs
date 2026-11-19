@@ -70,7 +70,7 @@ fn compact_usage_and_icon_buttons_give_the_bar_back(cx: &mut TestAppContext) {
         view
     });
     cx.simulate_resize(size(px(1280.), px(600.)));
-    let mut measure = |change: &dyn Fn(&mut crate::config::StatusBar)| {
+    let mut measure = |change: &dyn Fn(&mut sheprd_settings::StatusBar)| {
         view.update(cx, |view, cx| {
             change(&mut view.config.status_bar);
             cx.notify();

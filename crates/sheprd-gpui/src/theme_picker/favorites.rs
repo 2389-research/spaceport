@@ -94,7 +94,10 @@ impl SheprdWindow {
     }
 
     fn save_favorite_themes(&mut self, cx: &mut Context<Self>) {
-        self.save_favorite_themes_with(|edits| Config::save_favorite_themes(&edits), cx);
+        self.save_favorite_themes_with(
+            |edits| Config::save_favorite_themes(&edits).map_err(crate::Error::from),
+            cx,
+        );
     }
 
     /// Writes the queued stars off the UI thread, each batch against the

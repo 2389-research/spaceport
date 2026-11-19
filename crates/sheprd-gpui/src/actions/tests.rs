@@ -47,8 +47,10 @@ fn a_system_key_is_kept_until_a_command_is_bound_to_it() {
 fn a_command_bound_to_a_system_key_runs_in_its_place(cx: &mut gpui::TestAppContext) {
     let typed = |keystroke: &str| [crate::keymap::parse_keystroke(keystroke).unwrap()];
     let bind = |keymap: Keymap, cx: &mut App| {
-        let mut appearance = crate::app::InitialAppearance::default();
-        appearance.config.keybindings = keymap;
+        let appearance = crate::app::InitialAppearance {
+            keymap,
+            ..Default::default()
+        };
         cx.set_global(appearance);
         cx.clear_key_bindings();
         bind_keys(cx);

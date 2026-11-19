@@ -163,7 +163,7 @@ fn rich_zoom_leaves_raw_terminals_and_explicit_pane_bindings_alone(cx: &mut Test
     cx.update(|window, cx| {
         view.update(cx, |view, cx| {
             view.set_chat_raw("w1:p1", false, window, cx);
-            view.config.keybindings = crate::keymap::Keymap::with_overrides(
+            view.keymap = crate::keymap::Keymap::with_overrides(
                 &Default::default(),
                 &[("ctrl--".into(), "ctrl-u".into())].into(),
                 &crate::keymap::DaemonKeys::default(),

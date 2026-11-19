@@ -38,8 +38,6 @@ pub enum Error {
     ProjectResponse,
     #[error("The first configured project root is not available")]
     ProjectRootMissing,
-    #[error("palette.project_roots must contain at most 16 nonempty paths of at most 8192 bytes")]
-    ProjectRoots,
     #[error("Workspace directories changed. Select the project again.")]
     ProjectStateChanged,
     #[error("Project path references an unset environment variable: {0}")]

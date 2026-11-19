@@ -108,7 +108,12 @@ impl SheprdWindow {
     }
 
     fn save_shortcut_edit(&mut self, edit: Edit, window: &mut Window, cx: &mut Context<Self>) {
-        self.save_shortcut_with(edit, Config::save_keybinding, window, cx);
+        self.save_shortcut_with(
+            edit,
+            |name, binding| Config::save_keybinding(name, binding).map_err(crate::Error::from),
+            window,
+            cx,
+        );
     }
 
     fn save_shortcut_with(

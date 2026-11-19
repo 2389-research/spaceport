@@ -1,6 +1,7 @@
 use super::*;
-use crate::config::{Axis, Padding, Sides, preferences::Preference};
+use crate::config::{Axis, Padding, preferences::Preference};
 use crate::settings_window::controls::preferences::PreferenceIo;
+use sheprd_settings::Sides;
 use std::sync::{Arc, Mutex};
 
 #[gpui::test]

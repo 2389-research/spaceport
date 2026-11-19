@@ -775,7 +775,7 @@ impl SheprdWindow {
             background: self.fill().base(self.terminal_theme().background),
             cell_height: self.config.terminal.line_height(),
             cell_width: self.cell_width,
-            font: self.config.terminal.font(),
+            font: crate::config::font_for(&self.config.terminal),
             ground: self.ground(),
             option_as_alt: self.config.option_as_alt,
             padding: self.config.terminal_padding,

@@ -18,6 +18,7 @@ pub(super) use operation::{Reconciled, Request, SharedWrite};
 
 pub(super) struct Loaded {
     pub(super) config: Config,
+    pub(super) keymap: crate::keymap::Keymap,
     pub(super) theme: Theme,
     pub(super) shared: Option<herdr_settings::Settings>,
     pub(super) error: Option<String>,
@@ -126,7 +127,10 @@ impl SettingsWindow {
         if let Some(io) = self.size_io.clone() {
             return self.shutdown_with(move |sizes| (io.write)(sizes), cx);
         }
-        self.shutdown_with(|sizes| Config::save_font_sizes(&sizes), cx)
+        self.shutdown_with(
+            |sizes| Config::save_font_sizes(&sizes).map_err(crate::Error::from),
+            cx,
+        )
     }
 
     pub(super) fn shutdown_with(
@@ -223,7 +227,7 @@ impl SettingsWindow {
             return;
         }
         self.save_kind(
-            move || Config::save_font_sizes(&sizes),
+            move || Config::save_font_sizes(&sizes).map_err(crate::Error::from),
             self.loader(cx),
             false,
             Kind::Ordinary,
@@ -260,15 +264,19 @@ impl SettingsWindow {
                     (Some(shared), None, theme)
                 }
                 // The side shown has no theme without Herdr's settings.
-                Err(error) if ThemeName::follows_herdr(&config.theme, light) => return Err(error),
+                Err(error) if ThemeName::follows_herdr(&config.theme, light) => {
+                    return Err(error.into());
+                }
                 Err(error) => (
                     None,
                     Some(fl!("settings-error-load-herdr", error = error.localize())),
                     config.theme(light)?,
                 ),
             };
+            let keymap = crate::config::keymap(&config)?;
             Ok(Loaded {
                 config,
+                keymap,
                 theme,
                 shared,
                 error,
@@ -304,6 +312,7 @@ impl SettingsWindow {
                     self.dropdown = None;
                 }
                 self.config = loaded.config;
+                self.keymap = loaded.keymap;
                 if let Some(mode) = self.layout_intent {
                     self.config.layout.mode = mode;
                 }

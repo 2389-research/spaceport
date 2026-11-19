@@ -20,6 +20,7 @@
 mod chats;
 mod core_pane;
 mod discovery;
+pub(crate) mod env;
 mod existing;
 mod files;
 mod glide;
@@ -57,6 +58,7 @@ pub(super) fn now_ms() -> u64 {
             u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
         })
 }
+pub(crate) use env::{MAX_ENV, MAX_ENV_BYTES, check_env, env_text, parse_env};
 #[cfg(feature = "integration-test")]
 pub(crate) use start::native as native_start;
 pub(crate) use start::{Error as StartError, PROGRAM_ENV, Program};
@@ -90,18 +92,11 @@ pub enum Error {
     Closed,
     #[error("could not reach the chat program")]
     Connect(#[source] io::Error),
-    #[error("`{name}` cannot be a chat environment variable")]
-    EnvironmentName { name: String },
-    #[error(
-        "[chat.env] holds more than {} variables or {} bytes",
-        crate::config::chat::MAX_ENV,
-        crate::config::chat::MAX_ENV_BYTES
-    )]
-    EnvironmentSize,
+    #[error(transparent)]
+    Environment(#[from] env::Error),
     #[error("the chat program did not greet first")]
     Handshake,
-    #[error("[chat.mirrors] needs at most 16 valid pane and endpoint identifiers")]
-    MirrorConfig,
+
     #[error("no private directory holds chat sockets")]
     NoEndpointDir,
     #[error("the chat view is not attached")]

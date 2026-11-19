@@ -1,6 +1,7 @@
 use super::*;
-use crate::{config::DeviceSettings, sidebar::layout_tests::fixture_window};
+use crate::sidebar::layout_tests::fixture_window;
 use gpui::{Entity, TestAppContext, VisualTestContext, px, size};
+use sheprd_settings::DeviceSettings;
 
 const PROFILE: &str = "0123456789abcdef0123456789abcdef";
 const HOST: &str = "ssh:0123456789abcdef0123456789abcdef";

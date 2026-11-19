@@ -19,6 +19,7 @@ pub(crate) use error::Error;
 #[cfg(test)]
 pub(crate) use host::secondary_key;
 pub(crate) use host::{HOST_OS, parse_keystroke, secondary};
+pub(crate) use sheprd_settings::keys::{Binding, PaneKeys};
 
 use crate::{
     Result,
@@ -26,7 +27,6 @@ use crate::{
 };
 use daemon::Trigger;
 use gpui::{KeybindingKeystroke, Keystroke, Modifiers};
-use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// A command may carry an alias or two, never an unbounded list.
@@ -40,11 +40,6 @@ const MAX_PANE_TEXT: usize = 1024;
 
 /// Marks a `[pane_keys]` value as text, as in Ghostty's `text:` binds.
 const TEXT_PREFIX: &str = "text:";
-
-/// The config's `[pane_keys]` table: a keystroke, and the keystroke or
-/// `text:` the focused pane receives for it instead. An empty value removes
-/// a default.
-pub(crate) type PaneKeys = BTreeMap<String, String>;
 
 /// What the focused pane receives for a `[pane_keys]` keystroke.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -81,28 +76,6 @@ type Claimed = HashMap<(Modifiers, String), &'static str>;
 
 fn identity(keystroke: &Keystroke) -> (Modifiers, String) {
     (keystroke.modifiers, keystroke.key.clone())
-}
-
-/// One entry of the config's `[keybindings]` table: a keystroke, or a list of
-/// them. An empty string or list leaves the command unbound.
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-#[serde(untagged)]
-pub(crate) enum Binding {
-    One(String),
-    Many(Vec<String>),
-}
-
-impl Binding {
-    fn keystrokes(&self) -> impl Iterator<Item = &str> {
-        let keystrokes = match self {
-            Self::One(keystroke) => std::slice::from_ref(keystroke),
-            Self::Many(keystrokes) => keystrokes.as_slice(),
-        };
-        keystrokes
-            .iter()
-            .map(|keystroke| keystroke.trim())
-            .filter(|keystroke| !keystroke.is_empty())
-    }
 }
 
 /// One way to run a command.

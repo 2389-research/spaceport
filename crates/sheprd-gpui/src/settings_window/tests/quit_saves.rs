@@ -314,12 +314,12 @@ fn quit_shared_theme_uses_only_successfully_reconciled_preceding_snapshot(cx: &m
         cx.run_until_parked();
         let result = result.try_recv().unwrap();
         if external_conflict {
-            let crate::Error::ConfigFile { source, .. } = result.unwrap_err() else {
+            let crate::Error::Settings(source) = result.unwrap_err() else {
                 panic!("expected typed shared conflict")
             };
             assert!(matches!(
-                source.downcast_ref::<herdr_settings::Error>(),
-                Some(herdr_settings::Error::Conflict)
+                source,
+                sheprd_settings::Error::HerdrSettings(herdr_settings::Error::Conflict)
             ));
         } else if saved_ok {
             result.unwrap();

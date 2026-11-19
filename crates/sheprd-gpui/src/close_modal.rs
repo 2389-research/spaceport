@@ -2,7 +2,7 @@
 use crate::i18n::fl;
 use crate::{
     Error, Result, SheprdWindow,
-    config::preferences::Preference,
+    config::{Config, preferences::Preference},
     controls::{self, Command},
     menu::Page,
 };
@@ -245,7 +245,10 @@ impl SheprdWindow {
 
     fn confirm_close(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         if let Some(edit) = self.send_close(window, cx) {
-            self.save_preference(move || crate::config::Config::save_preference(edit), cx);
+            self.save_preference(
+                move || Config::save_preference(edit).map_err(Error::from),
+                cx,
+            );
         }
     }
 

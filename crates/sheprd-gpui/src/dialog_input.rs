@@ -218,7 +218,7 @@ impl SheprdWindow {
                             };
                             let run = TextRun {
                                 len: input.text.len(),
-                                font: this.config.ui.font(),
+                                font: crate::config::font_for(&this.config.ui),
                                 color: rgb(this.theme.foreground).into(),
                                 background_color: None,
                                 underline: None,

@@ -152,6 +152,9 @@ fn open_with(
 struct SettingsWindow {
     caption: crate::caption::Caption,
     config: Config,
+    /// The keymap `config` resolves into, so a published appearance carries a
+    /// settings and keymap pair that always agree.
+    keymap: crate::keymap::Keymap,
     /// The config as the last successful load read it, which sidebar saves
     /// diff against; previews change only `config`.
     loaded_config: Config,
@@ -229,17 +232,18 @@ impl SettingsWindow {
             .try_global::<crate::app::InitialAppearance>()
             .cloned()
             .unwrap_or_default();
-        let (config, theme, shared) =
-            source
-                .upgrade()
-                .map_or((appearance.config, appearance.theme, None), |source| {
-                    let source = source.read(cx);
-                    (
-                        source.config.clone(),
-                        source.theme.clone(),
-                        source.settings.shared.clone(),
-                    )
-                });
+        let (config, keymap, theme, shared) = source.upgrade().map_or(
+            (appearance.config, appearance.keymap, appearance.theme, None),
+            |source| {
+                let source = source.read(cx);
+                (
+                    source.config.clone(),
+                    source.keymap.clone(),
+                    source.theme.clone(),
+                    source.settings.shared.clone(),
+                )
+            },
+        );
         let subscription = source
             .upgrade()
             .map(|source| cx.observe(&source, Self::source_changed));
@@ -273,6 +277,7 @@ impl SettingsWindow {
             caption: Default::default(),
             loaded_config: config.clone(),
             config,
+            keymap,
             theme,
             shared,
             source,
@@ -433,8 +438,7 @@ impl SettingsWindow {
             return;
         }
         let previous = cx.try_global::<crate::app::InitialAppearance>();
-        let keys_changed =
-            previous.is_none_or(|previous| previous.config.keybindings != self.config.keybindings);
+        let keys_changed = previous.is_none_or(|previous| previous.keymap != self.keymap);
         let menus_changed =
             previous.is_some_and(|previous| crate::menus::changed(&previous.config, &self.config));
         // Future windows inherit an explicit Settings draft, but not a main
@@ -449,6 +453,7 @@ impl SettingsWindow {
         });
         let mut appearance = crate::app::InitialAppearance {
             config: self.config.clone(),
+            keymap: self.keymap.clone(),
             theme: self.theme.clone(),
             error: None,
         };

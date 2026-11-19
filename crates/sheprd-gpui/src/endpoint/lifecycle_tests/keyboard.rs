@@ -50,7 +50,7 @@ fn keyboard_report_all_releases_sent_keys(cx: &mut gpui::TestAppContext) {
             // A second key-up has nothing left to release.
             view.key_up(&up("c"), window, cx);
             // A pane key presses and releases the key it sends instead.
-            view.config.keybindings = crate::keymap::Keymap::with_overrides(
+            view.keymap = crate::keymap::Keymap::with_overrides(
                 &Default::default(),
                 &[("cmd-backspace".into(), "ctrl-u".into())].into(),
                 &crate::keymap::DaemonKeys::default(),

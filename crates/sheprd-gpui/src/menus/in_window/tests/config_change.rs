@@ -17,7 +17,13 @@ fn turning_on_the_qa_menu_closes_the_open_popup(cx: &mut TestAppContext) {
         let mut config = view.config.clone();
         config.features.qa_menu = true;
         let theme = view.theme.clone();
-        view.load_gui_config_with(move || Ok((config, theme)), cx);
+        view.load_gui_config_with(
+            move || {
+                let keymap = crate::config::keymap(&config)?;
+                Ok((config, keymap, theme))
+            },
+            cx,
+        );
     });
     cx.run_until_parked();
     view.read_with(cx, |view, _| {
@@ -39,7 +45,13 @@ fn a_reload_that_keeps_the_menus_leaves_the_popup_open(cx: &mut TestAppContext) 
     view.update(cx, |view, cx| {
         let config = view.config.clone();
         let theme = view.theme.clone();
-        view.load_gui_config_with(move || Ok((config, theme)), cx);
+        view.load_gui_config_with(
+            move || {
+                let keymap = crate::config::keymap(&config)?;
+                Ok((config, keymap, theme))
+            },
+            cx,
+        );
     });
     cx.run_until_parked();
     view.read_with(cx, |view, _| {

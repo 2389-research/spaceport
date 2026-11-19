@@ -169,7 +169,7 @@ fn custom_shortcuts_search_description_section_and_active_prefix(cx: &mut gpui::
     );
     view.update(cx, |view, _| {
         let keys = DaemonKeys::from_profile(Some("[keys]\nprefix = 'ctrl+a'\n")).unwrap();
-        view.config.keybindings =
+        view.keymap =
             Keymap::with_overrides(&Default::default(), &Default::default(), &keys).unwrap();
     });
     cx.update(|window, cx| view.update(cx, |view, cx| view.open_keybinds(window, cx)));

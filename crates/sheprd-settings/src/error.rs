@@ -30,6 +30,16 @@ pub enum Error {
     EmptyFontFamily(&'static str),
     #[error("theme must not be empty")]
     EmptyTheme,
+    /// Herdr's shared settings, which the app reads and edits beside its own.
+    /// Not `transparent`: this error must stay in the source chain, where the
+    /// caller reads which shared-config failure it was.
+    #[error("{0}")]
+    HerdrSettings(#[from] crate::herdr_settings::Error),
+    /// A `[backdrop]` value the window cannot paint with.
+    #[error("{0}")]
+    InvalidBackdrop(#[from] BackdropProblem),
+    #[error("[chat.mirrors] needs at most 16 valid pane and endpoint identifiers")]
+    InvalidChatMirror,
     #[error("chat.max_width must be 0 (full width) or 320–4000 logical pixels")]
     InvalidChatWidth,
     #[error("devices.{0:?} is not a saved device ID")]
@@ -46,6 +56,8 @@ pub enum Error {
     InvalidHostColor { host: String, value: String },
     #[error("{0}.line_height must be a finite number between 1 and 2 times the font size")]
     InvalidLineHeight(&'static str),
+    #[error("Project paths must be absolute UTF-8 paths without control characters")]
+    InvalidProjectRoots,
     #[error("layout.sidebar_gap must be finite and between 0 and 64 logical pixels")]
     InvalidSidebarGap,
     #[error("sidebar.{key} must be finite and between 0 and {max} logical pixels")]
@@ -62,6 +74,8 @@ pub enum Error {
     InvalidThemePath,
     #[error("usage must be a TOML table")]
     InvalidUsageTable,
+    #[error("worktrees.tint must be a #rgb or #rrggbb colour, not {0:?}")]
+    InvalidWorktreeTint(String),
     #[error("zen.font_size must be finite and between 8 and 48 logical pixels")]
     InvalidZenFontSize,
     #[error("zen.width must be 20 to 1000 columns, or a percentage from \"10%\" to \"100%\"")]
@@ -92,6 +106,9 @@ pub enum Error {
     RemovedGitHub,
     #[error("Custom updater settings have been removed; remove [updates] from the configuration")]
     RemovedUpdates,
+    /// A `[ssh]` table this build cannot use.
+    #[error("{0}")]
+    SshHosts(#[from] crate::ssh_hosts::Error),
     #[error("line {line}: {key}: {source}")]
     ThemeLine {
         line: usize,
@@ -112,11 +129,26 @@ pub enum Error {
     TooManyDevices(usize),
     #[error("{0}.fallback must list at most 8 families")]
     TooManyFontFallbacks(&'static str),
+    #[error("keybindings.{0} is not a command; see the keybindings list in config-gpui.toml")]
+    UnknownKeybinding(String),
     #[error("Spaceport has no setting {}; config-gpui.toml lists every setting", .0.join(", "))]
     UnknownKeys(Vec<String>),
     #[error("Unknown sidebar layout {0:?}")]
     UnknownLayout(String),
     // keep-sorted end
+}
+
+/// Why a `[backdrop]` value cannot be used.
+#[derive(Debug, thiserror::Error)]
+pub enum BackdropProblem {
+    #[error("backdrop.image must not be empty")]
+    EmptyImage,
+    #[error("backdrop.image must be a UTF-8 path")]
+    ImagePathEncoding,
+    #[error("backdrop.opacity must be finite and between 0 and 1")]
+    Opacity,
+    #[error("backdrop.image must be an absolute path or start with ~/")]
+    RelativeImage,
 }
 
 /// Why one line of a terminal theme's colors did not parse.

@@ -125,6 +125,7 @@ fn choose(view: &mut SettingsWindow, name: &str, cx: &mut Context<SettingsWindow
 pub(super) fn fixture() -> Loaded {
     Loaded {
         config: Config::default(),
+        keymap: Default::default(),
         theme: Theme::default(),
         shared: None,
         error: None,
@@ -148,6 +149,7 @@ pub(super) fn skill_fixture(
 pub(super) fn skill_load() -> crate::Result<Loaded> {
     Ok(Loaded {
         config: Config::default(),
+        keymap: Default::default(),
         theme: Default::default(),
         shared: None,
         error: None,

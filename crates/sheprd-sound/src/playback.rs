@@ -19,7 +19,8 @@ use std::{
 };
 
 /// The loudest volume; a percentage above it plays at full level.
-pub const MAX_VOLUME: u8 = 100;
+/// The loudest volume a sound plays at, as `[sound] volume` bounds it.
+pub const MAX_VOLUME: u8 = sheprd_settings::SoundConfig::MAX_VOLUME;
 
 const MAX_DURATION: Duration = Duration::from_secs(15);
 const MAX_FILE_BYTES: u64 = 16 * 1024 * 1024;

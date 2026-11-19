@@ -3,10 +3,10 @@
 //! checkout and plain folders keep the theme as drawn.
 use super::*;
 use crate::{
-    config::{Density, LayoutMode, StatusIcons, Style},
+    config::{Density, LayoutMode, StatusIcons, Style, Worktrees},
     sidebar::{STATUS_WIDTH, layout::SidebarMetrics},
-    worktree_identity::{Surface, Worktrees},
 };
+use sheprd_settings::Surface;
 
 /// The fixture's repository: `agent-launcher` is the main checkout (w3) with
 /// two linked worktrees nested under it, w4 and then w5, the last child. w2

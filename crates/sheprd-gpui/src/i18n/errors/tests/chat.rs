@@ -1,5 +1,5 @@
 use super::*;
-use crate::chat::{Error, StartError, page, pasted, visual, widgets};
+use crate::chat::{Error, StartError, env, page, pasted, visual, widgets};
 use sheprd_chat_protocol::{Agent, ByeReason, Cursor};
 use std::{io, sync::Arc};
 
@@ -21,12 +21,11 @@ fn every_chat_variant_has_a_message() {
         Error::Busy,
         Error::Closed,
         Error::Connect(io::Error::other("refused")),
-        Error::EnvironmentName {
+        Error::Environment(env::Error::Name {
             name: "HERDR=1".into(),
-        },
-        Error::EnvironmentSize,
+        }),
+        Error::Environment(env::Error::Size),
         Error::Handshake,
-        Error::MirrorConfig,
         Error::NoEndpointDir,
         Error::NotAttached,
         Error::Overflow,

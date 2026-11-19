@@ -66,6 +66,7 @@ impl Default for RemoteHistory {
             generation: 0,
             read: Arc::new(|target, cancel| {
                 RemotePaneHistory::load(ScriptHost::Ssh(target, SshLane::Quick), cancel)
+                    .map_err(crate::Error::from)
             }),
         }
     }
@@ -231,11 +232,13 @@ impl SettingsWindow {
             return;
         };
         let task = cx.background_executor().spawn(async move {
-            let result = history.save(
-                ScriptHost::Ssh(&job.target, SshLane::Quick),
-                enabled,
-                &job.cancel,
-            );
+            let result = history
+                .save(
+                    ScriptHost::Ssh(&job.target, SshLane::Quick),
+                    enabled,
+                    &job.cancel,
+                )
+                .map_err(crate::Error::from);
             (job, result)
         });
         let source = self.source.clone();

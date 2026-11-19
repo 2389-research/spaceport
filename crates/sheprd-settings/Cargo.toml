@@ -14,6 +14,7 @@ config_loader.workspace  = true
 serde.workspace          = true
 serde_ignored.workspace  = true
 serde_json.workspace     = true
+sheprd-chat-protocol.workspace = true
 sheprd-client.workspace  = true
 sheprd-commands.workspace = true
 sheprd-i18n.workspace    = true

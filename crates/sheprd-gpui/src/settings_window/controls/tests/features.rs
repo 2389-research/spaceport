@@ -1,6 +1,7 @@
 use super::*;
-use crate::config::{Feature, Features, preferences::Preference};
+use crate::config::{Feature, preferences::Preference};
 use crate::settings_window::controls::preferences::PreferenceIo;
+use sheprd_settings::Features;
 use std::sync::{Arc, Mutex};
 
 #[gpui::test]

@@ -114,14 +114,13 @@ fn cache_reuses_cells_invalidates_fonts_and_bounds_storage(cx: &mut TestAppConte
     // A changed icon cascade reshapes every cell: the same family can now
     // resolve Private Use Area glyphs a text face does not carry.
     let with_fallbacks = |families: &[&str]| {
-        crate::config::FontConfig {
+        crate::config::font_for(&crate::config::FontConfig {
             family: "Courier".into(),
             size: FONT_SIZE,
             fallbacks: Some(families.iter().map(|family| (*family).to_owned()).collect()),
             line_height_multiple: None,
             weight: crate::config::Weight::NORMAL,
-        }
-        .font()
+        })
     };
     let cascaded = with_fallbacks(&["Symbols Nerd Font Mono"]);
     assert_ne!(cascaded, font("Courier"));

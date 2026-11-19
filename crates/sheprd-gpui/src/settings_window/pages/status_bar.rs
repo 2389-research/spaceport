@@ -95,7 +95,13 @@ impl SettingsWindow {
                     .switch(
                         ui::toggle(theme, "status-usage-toggle", usage, true).on_click(
                             cx.listener(move |this, _, _, cx| {
-                                this.save_native(move || Config::save_usage_visibility(!usage), cx);
+                                this.save_native(
+                                    move || {
+                                        Config::save_usage_visibility(!usage)
+                                            .map_err(crate::Error::from)
+                                    },
+                                    cx,
+                                );
                             }),
                         ),
                     ),

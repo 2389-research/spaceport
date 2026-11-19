@@ -74,7 +74,7 @@ impl OptionAsAlt {
 }
 
 impl<'de> Deserialize<'de> for OptionAsAlt {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> crate::Result<Self, D::Error> {
         #[derive(Deserialize)]
         #[serde(untagged)]
         enum Value {

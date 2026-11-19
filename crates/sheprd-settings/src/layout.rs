@@ -181,9 +181,7 @@ impl std::fmt::Display for LayoutMode {
 }
 
 impl<'de> Deserialize<'de> for LayoutMode {
-    fn deserialize<D: serde::Deserializer<'de>>(
-        deserializer: D,
-    ) -> std::result::Result<Self, D::Error> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let name = String::deserialize(deserializer)?;
         Self::try_from(name.as_str())
             .map_err(|_| serde::de::Error::unknown_variant(&name, Self::NAMES))
@@ -191,9 +189,7 @@ impl<'de> Deserialize<'de> for LayoutMode {
 }
 
 impl<'de> Deserialize<'de> for Layout {
-    fn deserialize<D: serde::Deserializer<'de>>(
-        deserializer: D,
-    ) -> std::result::Result<Self, D::Error> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         // Keep shipped [layout] spacing settings readable alongside named
         // layouts. A visitor rather than an untagged enum, so a key this build
         // does not know is reported as ignored instead of buffered away.
@@ -215,7 +211,7 @@ impl<'de> Deserialize<'de> for Layout {
                 formatter.write_str("a layout name or a [layout] table")
             }
 
-            fn visit_str<E: serde::de::Error>(self, name: &str) -> std::result::Result<Layout, E> {
+            fn visit_str<E: serde::de::Error>(self, name: &str) -> Result<Layout, E> {
                 let mode = LayoutMode::try_from(name)
                     .map_err(|_| E::unknown_variant(name, LayoutMode::NAMES))?;
                 Ok(Layout {
@@ -224,10 +220,7 @@ impl<'de> Deserialize<'de> for Layout {
                 })
             }
 
-            fn visit_map<A: serde::de::MapAccess<'de>>(
-                self,
-                map: A,
-            ) -> std::result::Result<Layout, A::Error> {
+            fn visit_map<A: serde::de::MapAccess<'de>>(self, map: A) -> Result<Layout, A::Error> {
                 let Options { mode, sidebar_gap } =
                     Options::deserialize(serde::de::value::MapAccessDeserializer::new(map))?;
                 Ok(Layout {

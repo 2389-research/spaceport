@@ -1,9 +1,7 @@
 use super::*;
-use crate::{
-    config::{Padding, Sides},
-    terminal::viewport,
-};
+use crate::{config::Padding, terminal::viewport};
 use gpui::px;
+use sheprd_settings::Sides;
 
 /// A second tab group touches no sidebar, and its terminal is drawn through
 /// a parked connection. It takes the same padding, and that connection is

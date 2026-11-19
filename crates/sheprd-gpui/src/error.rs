@@ -217,7 +217,7 @@ pub enum Error {
     #[error(transparent)]
     Sound(#[from] sheprd_sound::Error),
     #[error(transparent)]
-    SshHosts(#[from] crate::config::ssh_hosts::Error),
+    SshHosts(#[from] sheprd_settings::ssh_hosts::Error),
     #[error("The original target changed or no longer exists. Cancel and try again.")]
     StaleCloseTarget,
     #[error("The selected connection changed or is not ready. Cancel and try again.")]
@@ -249,8 +249,6 @@ pub enum Error {
     WorkspaceDocument(#[from] crate::core_terminals::workspace_document::Error),
     #[error("Repository changed. Dismiss and reopen the menu.")]
     WorkspaceRepositoryChanged,
-    #[error(transparent)]
-    WorktreeIdentity(#[from] crate::worktree_identity::Error),
     #[error("Invalid or oversized worktree list. Dismiss and reopen the menu.")]
     WorktreeList,
     #[error("Malformed worktree list. Dismiss and reopen the menu.")]

@@ -230,7 +230,10 @@ impl SettingsWindow {
                     )
                     .on_click(cx.listener(|this, _, _, cx| {
                         let show = !this.config.show_agents;
-                        this.save_native(move || Config::save_show_agents(show), cx);
+                        this.save_native(
+                            move || Config::save_show_agents(show).map_err(crate::Error::from),
+                            cx,
+                        );
                     })),
                 ),
             )

@@ -1,5 +1,5 @@
 use super::*;
-use crate::config::{Error, ThemeParseError, ssh_hosts, tab_layout};
+use crate::config::{Error, ThemeParseError, tab_layout};
 use std::path::PathBuf;
 
 fn parse_int() -> std::num::ParseIntError {
@@ -84,8 +84,8 @@ fn every_theme_parse_variant_has_a_message() {
 #[test]
 fn every_ssh_hosts_variant_has_a_message() {
     assert_localized(&[
-        ssh_hosts::Error::InvalidTarget("-oProxyCommand=x".into()),
-        ssh_hosts::Error::TooMany(256),
+        sheprd_settings::ssh_hosts::Error::InvalidTarget("-oProxyCommand=x".into()),
+        sheprd_settings::ssh_hosts::Error::TooMany(256),
     ]);
 }
 
