@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `dd3495336` publishes streaming reuse; the painter integration passes focused checks and review.
+Status: `a1f85f1ea` passes full CI; two new native keyboard qualifiers await current-head execution.
 Kata `9s44` has 48 closed children and five open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
@@ -51,8 +51,8 @@ Its original native Linux/Windows qualification remains open under `3wd4`.
 
 ## Terminal painter split integration
 
-Published streaming source `dd3495336` conflicts with main `fc9bb0c79` from PR 132.
-GitHub reports `mergeable_state: dirty`; no current-commit workflow run appears.
+Streaming source `dd3495336` conflicted with main `fc9bb0c79` from PR 132.
+At that checkpoint, GitHub reported `mergeable_state: dirty` and no current-commit workflow run.
 The integration retains main's painter modules and the review fixes within those modules.
 `surface.rs` preserves glyph shapes when only the theme changes.
 `text.rs` retains bounded cold-glyph replacement.
@@ -71,8 +71,14 @@ The known debug-link unwind and external `block` notices remain unchanged.
 Streaming source matches published `dd3495336`; its prior semantic and release receipts remain applicable.
 Logs use `/tmp/spaceport-9s44-painter-integration-{tests,metal,lint,static}.log`.
 Published merge `a1f85f1ea` is conflict-free and matches the remote topic branch.
-Its [CI run](https://github.com/2389-research/spaceport/actions/runs/44592189535) and supply-chain run are live.
-Their terminal results remain pending; this is not a current-head CI success claim.
+Its [CI run](https://github.com/2389-research/spaceport/actions/runs/44592189535) passes with eighteen successful jobs and one unconfigured skip.
+Its [supply-chain run](https://github.com/2389-research/spaceport/actions/runs/44592189691) also passes.
+Both Windows native jobs pass.
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44592189535/job/135801197666) passes eight GUI and twenty UIA cases.
+That includes Settings, terminal text/caret/line bounds, clipboard application cases, and popup Quit.
+Its layout inventory again contains only US `00000409`; no AltGr claim follows.
+This qualifies the published streaming and painter source across the configured CI platforms.
+The later workspace-reorder and Herdr-resize native scenarios still need their own current-head execution.
 This merges main into the draft branch; it does not merge the draft into main.
 
 ## Sound extraction integration
