@@ -95,3 +95,17 @@ Both touched application crates pass all-target, all-feature Clippy with warning
 The specification gate explicitly reports JSON Schema validation as not run.
 Hosted platform checks, native Settings input, accessibility, and release profiling remain pending.
 No Kata issue closes solely because these local checks pass.
+
+## Canonical workflow steps
+
+The [updated CI run](https://github.com/2389-research/spaceport/actions/runs/44431160334) tested head `208fa3929748d89cc815a79eba1340745b6a7a15`.
+Three default jobs stopped at the existing release-security contract test.
+That test requires each workspace test command in its own canonical step.
+The inline framework preparation had changed that step's shape.
+
+Moved framework preparation into a separate macOS/all step immediately before the unchanged workspace test.
+The step still runs after Cargo cache restoration and uses the verified SDK.
+Permissions, triggers, credentials, and required test gates remain unchanged.
+The three release-security checks and all 24 CI policy checks now pass locally.
+Independent review approved the condition, ordering, and preserved security contract.
+The other platform jobs still require their actual hosted results.
