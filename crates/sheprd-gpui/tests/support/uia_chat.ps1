@@ -7,13 +7,20 @@ if ($windows.Count -ne 1) { throw 'Native chat requires exactly one private wind
 $root = $windows[0]
 $handle = [IntPtr]$root.Current.NativeWindowHandle
 if ($handle -eq [IntPtr]::Zero) { throw 'Native chat has no HWND' }
+function Chat-Stage([string]$stage) {
+  [Console]::WriteLine("CHAT_STAGE action=$Action stage=$stage at=$([DateTime]::UtcNow.ToString('O'))")
+}
 function Require-ChatFocus {
   if ([HerdrUia]::GetForegroundWindow() -ne $handle) { throw 'Native chat lost exact foreground HWND' }
   $element = $automation::FocusedElement
+  $depth = 0
   while ($null -ne $element) {
-    if ($element.Current.ProcessId -ne $ProcessId) { throw 'Native chat focus left its process' }
+    if ($element.Current.ProcessId -ne $ProcessId) {
+      throw "Native chat focus left its process: expected=$ProcessId actual=$($element.Current.ProcessId) depth=$depth"
+    }
     if ([System.Windows.Automation.Automation]::Compare($element, $root)) { return }
     $element = $walker.GetParent($element)
+    $depth++
   }
   throw 'Native chat focus left its owned window'
 }
@@ -22,6 +29,7 @@ $editName = [System.Windows.Automation.PropertyCondition]::new($automation::Name
 $edits = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.AndCondition]::new($editType, $editName))
 if ($edits.Count -ne 1) { throw 'Native chat has no unique named composer' }
 $composer = $edits[0]
+Chat-Stage 'read-draft'
 if ($composer.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value -cne $fixture.draft) {
   throw 'Native composer draft changed before keyboard input'
 }
@@ -42,14 +50,17 @@ try { [HerdrUia]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero) }
 finally { [HerdrUia]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero) }
 [HerdrUia]::SetForegroundWindow($handle) | Out-Null
 Start-Sleep -Milliseconds 500
+Chat-Stage 'anchor-composer'
 $composer.SetFocus()
 Start-Sleep -Milliseconds 200
+Chat-Stage 'check-composer-focus'
 Require-ChatFocus
 if (-not [System.Windows.Automation.Automation]::Compare($automation::FocusedElement, $composer)) {
   throw 'Native chat could not anchor focus in its actual composer'
 }
 $reached = $false
 for ($index = 0; $index -lt 32; $index++) {
+  Chat-Stage "tab-$index"
   Require-ChatFocus
   if ([System.Windows.Automation.Automation]::Compare($automation::FocusedElement, $target)) { $reached = $true; break }
   [System.Windows.Forms.SendKeys]::SendWait('{TAB}')
@@ -61,5 +72,6 @@ if (-not [System.Windows.Automation.Automation]::Compare($automation::FocusedEle
   throw 'Native chat focus changed before activation'
 }
 $key = if ($Action -eq 'Reject') { ' ' } else { '{ENTER}' }
+Chat-Stage 'activate'
 [System.Windows.Forms.SendKeys]::SendWait($key)
 [Console]::WriteLine("CHAT_KEY action=$Action native=true")

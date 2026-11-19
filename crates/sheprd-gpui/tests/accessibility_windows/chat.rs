@@ -7,15 +7,32 @@ const FIXTURE: &str = include_str!("../support/native-chat-accessibility.json");
 
 impl Running {
     fn chat_action(&mut self, action: &str) {
-        let output = self
-            .script_output(
-                &self.sandbox.dir.join("uia_chat.ps1"),
-                "-Action",
-                action,
-                None,
-                Duration::from_secs(20),
-            )
-            .unwrap();
+        eprintln!(
+            "CHAT_FIXTURE action={action} started at {:?}",
+            std::time::SystemTime::now()
+        );
+        let result = self.script_output(
+            &self.sandbox.dir.join("uia_chat.ps1"),
+            "-Action",
+            action,
+            None,
+            Duration::from_secs(20),
+        );
+        if result.is_err() {
+            let mut log = Vec::new();
+            fs::File::open(self.sandbox.dir.join("gui.log"))
+                .unwrap()
+                .take((CAPTURE_LIMIT + 1) as u64)
+                .read_to_end(&mut log)
+                .unwrap();
+            assert!(log.len() <= CAPTURE_LIMIT, "native chat log exceeds bound");
+            eprintln!(
+                "CHAT_FIXTURE action={action} process={:?}\n{}",
+                self.gui.as_mut().unwrap().try_wait().unwrap(),
+                String::from_utf8_lossy(&log)
+            );
+        }
+        let output = result.unwrap();
         assert!(
             output.contains(&format!("CHAT_KEY action={action} native=true")),
             "{output}"
@@ -64,6 +81,7 @@ fn native_chat_content_controls_and_permission_keyboard_answers() {
     }
     running.start_gui(GuiTarget::ChatAccessibility);
     running.wait_chat_receipt("RICH CHAT READY case=accessibility");
+    eprintln!("CHAT_FIXTURE ready at {:?}", std::time::SystemTime::now());
     let fixture: serde_json::Value = serde_json::from_str(FIXTURE).unwrap();
     let transcript = &fixture["transcript"];
     let tree = running.wait_tree("readable native chat and named controls", |tree| {
@@ -108,6 +126,18 @@ fn native_chat_content_controls_and_permission_keyboard_answers() {
         !tree.contains("Native expanded tool output"),
         "collapsed output leaked"
     );
+    let mut png = Vec::new();
+    fs::File::open(running.sandbox.dir.join("native-chat.png"))
+        .unwrap()
+        .take(524_289)
+        .read_to_end(&mut png)
+        .unwrap();
+    assert!(png.len() <= 524_288, "native chat PNG exceeds 512 KiB");
+    assert!(png.starts_with(b"\x89PNG\r\n\x1a\n") && png.ends_with(b"\0\0\0\0IEND\xaeB`\x82"));
+    eprintln!(
+        "CHAT_ACCESSIBILITY_PNG {}",
+        base64::engine::general_purpose::STANDARD.encode(png)
+    );
     running.chat_action("Settings");
     running.wait_chat_receipt("CHAT_ACCESSIBILITY menu=open");
     running.read("{ESC}");
@@ -137,18 +167,6 @@ fn native_chat_content_controls_and_permission_keyboard_answers() {
         !tree.contains("Group 'Native permission for Enter'")
             && !tree.contains("Group 'Native permission for Space'")
     });
-    let mut png = Vec::new();
-    fs::File::open(running.sandbox.dir.join("native-chat.png"))
-        .unwrap()
-        .take(524_289)
-        .read_to_end(&mut png)
-        .unwrap();
-    assert!(png.len() <= 524_288, "native chat PNG exceeds 512 KiB");
-    assert!(png.starts_with(b"\x89PNG\r\n\x1a\n") && png.ends_with(b"\0\0\0\0IEND\xaeB`\x82"));
-    eprintln!(
-        "CHAT_ACCESSIBILITY_PNG {}",
-        base64::engine::general_purpose::STANDARD.encode(png)
-    );
     eprintln!(
         "CHAT_ACCESSIBILITY native PASS: named content and controls, Tab, Enter, Space, queued answers and preserved draft"
     );

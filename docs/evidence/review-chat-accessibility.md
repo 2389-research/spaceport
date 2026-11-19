@@ -84,9 +84,47 @@ Logs: `/tmp/spaceport-9s44-chat-accessibility-lint.log`, `/tmp/spaceport-9s44-ch
 Static, commit, and diff checks pass.
 Independent review accepts the Session ownership, native contract assertions, isolation, and corrected key guards.
 The owner review finds no remaining material issue.
-Actual Windows execution and image inspection remain pending; `2njz` stays open.
+The first actual Windows run fails as recorded below; `2njz` stays open.
 Doctor Biz authorized this finding and its validation within umbrella `9s44`.
-No commit, push, or issue-tracker write has been performed here.
+Doctor Biz also authorized reviewed checkpoint publication in draft PR 125.
+
+## First native execution and diagnostic checkpoint
+
+Source `82eaf8cb9` runs in [CI 44515264034](https://github.com/2389-research/spaceport/actions/runs/44515264034).
+The x64 native job passes eight GUI cases, then fails the new chat case.
+Its UIA scope reports seven passing cases and one failure, with none ignored.
+The actual initial tree contains the required messages, controls, tool, plan, and permission nodes.
+The first keyboard action refuses because focused-element ancestry leaves the expected process.
+That refusal occurs about sixty-two seconds after the test starts.
+The log lacks action-stage timing, the unexpected process ID, and the fixture's own log.
+It does not establish the cause or prove a fixture timeout.
+No native chat completion or inspected image is claimed.
+
+The diagnostic checkpoint retains action-stage timestamps and process/depth facts on refusal.
+It captures bounded fixture output and exact child status before cleanup.
+It emits the already-captured, bounded owned-window PNG before keyboard actions.
+The exact foreground, ancestry, target, draft, and answer assertions remain unchanged.
+The fixture's sixty-second hold cap remains unchanged.
+No production behavior changes in this checkpoint.
+
+The ARM all-feature job also times out in the existing activity-visit merge test.
+Its five-second disk poll reports `merged visits were not saved`.
+The test now drains its existing owned writer outside the view update before reading.
+It still requires the stored visit, current visit, and saved width in the real file.
+Draining cannot manufacture the merged save if the production resave is missing.
+This removes the test's scheduling deadline; it does not establish a production persistence defect.
+All three activity-visit tests pass locally with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- preferences::tests::activity_last_opened:: --nocapture`.
+Log: `/tmp/spaceport-9s44-chat-ci-preferences.log`.
+Independent review finds no material issue in the diagnostics or retained persistence assertions.
+Both host and Windows GNU lint configurations pass, with and without default features.
+Command: `just lint lint-windows`.
+Log: `/tmp/spaceport-9s44-chat-ci-diagnostics-lint.log`.
+Formatting, size, sorting, operations, localization, commit, and diff checks pass.
+Localization validates 2174 messages in 114 files.
+Log: `/tmp/spaceport-9s44-chat-ci-diagnostics-static.log`.
+The owner review finds no remaining issue in this diagnostic checkpoint.
+The next native CI execution remains required.
 
 ## Scope
 
