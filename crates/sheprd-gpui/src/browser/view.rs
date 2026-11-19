@@ -48,8 +48,6 @@ pub(crate) struct Browser {
     /// The group whose "+" asked for a new Herdr tab, which it picks once
     /// the daemon focuses the tab.
     pub(super) new_tab_group: Option<((Scope, String), GroupId)>,
-    /// The connection of each group that shows a terminal.
-    pub(crate) terminals: crate::group_terminals::GroupTerminals,
     /// Tabs growing into the strip as they open.
     pub(super) appear: super::tab_appear::TabAppear,
     /// Each strip's sideways scroll.
@@ -81,7 +79,6 @@ impl Browser {
             closing: None,
             group_bounds: Default::default(),
             new_tab_group: None,
-            terminals: Default::default(),
             appear: Default::default(),
             tab_scroll: Default::default(),
             tab_body: Default::default(),

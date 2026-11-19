@@ -179,6 +179,12 @@ pub(crate) struct SheprdWindow {
     pub(crate) flash: Option<(Flash, std::time::Instant)>,
     pub(crate) flash_motion: flash::Motion,
     pub(crate) focus: FocusHandle,
+    /// The connection behind each terminal group of this window's split
+    /// layouts, and the groups whose connections are parked or retrying; see
+    /// `group_terminals`. It holds connections, presentation and painters, none
+    /// of which a tab's own state names, so the window owns it rather than the
+    /// browser that decides which group shows which tab.
+    pub(crate) group_terminals: crate::group_terminals::GroupTerminals,
     /// Unknown keys in the GUI config, ignored but reported; follows `config`.
     pub(crate) gui_config_diagnostic: crate::config_diagnostic::ConfigDiagnostic,
     pub(crate) held_keys: crate::terminal::HeldKeys,

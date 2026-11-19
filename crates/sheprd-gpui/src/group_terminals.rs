@@ -143,8 +143,7 @@ impl SheprdWindow {
     /// while it shows a terminal.
     pub(crate) fn primary_group(&self) -> Option<GroupId> {
         let slots = self.group_slots();
-        self.browser
-            .terminals
+        self.group_terminals
             .primary
             .filter(|group| slots.iter().any(|slot| slot.id == *group))
             .or_else(|| self.active_group())
@@ -159,8 +158,7 @@ impl SheprdWindow {
             return self.focused_herdr_tab().map(str::to_owned);
         }
         let key = self.browser_key()?;
-        self.browser
-            .terminals
+        self.group_terminals
             .parked
             .iter()
             .find(|parked| parked.group == group && parked.workspace == key)
@@ -170,8 +168,7 @@ impl SheprdWindow {
 
     /// Whether a parked connection already shows `tab`.
     pub(crate) fn parked_focuses(&self, tab: &str) -> bool {
-        self.browser
-            .terminals
+        self.group_terminals
             .parked
             .iter()
             .any(|parked| parked.focused_tab() == Some(tab))
@@ -179,8 +176,7 @@ impl SheprdWindow {
 
     /// Whether `group` has a connection of its own on its way to its tab.
     pub(crate) fn group_connecting(&self, group: GroupId) -> bool {
-        self.browser
-            .terminals
+        self.group_terminals
             .parked
             .iter()
             .any(|parked| parked.group == group)
@@ -188,15 +184,14 @@ impl SheprdWindow {
 
     /// Parked connections are clients of their own, each told the theme.
     pub(crate) fn sync_group_host_theme(&self, theme: &sheprd_client::HostTheme) {
-        for parked in &self.browser.terminals.parked {
+        for parked in &self.group_terminals.parked {
             parked.connection.sync_host_theme(&parked.live, theme);
         }
     }
 
     /// Cheap enough for every display frame.
     pub(crate) fn group_terminals_updated(&self) -> bool {
-        self.browser
-            .terminals
+        self.group_terminals
             .parked
             .iter()
             .any(|parked| parked.connection.has_update())
@@ -218,12 +213,12 @@ impl SheprdWindow {
         // when the group has a parked connection of its own.
         if let Some(active) = active {
             let wants = pick(self, active);
-            let primary = self.browser.terminals.primary;
+            let primary = self.group_terminals.primary;
             if focused.is_some() && wants == focused.clone().map(Pick::Herdr) {
-                self.browser.terminals.primary = Some(active);
+                self.group_terminals.primary = Some(active);
             } else if primary != Some(active)
                 && matches!(wants, Some(Pick::Herdr(_)))
-                && self.browser.terminals.parked.iter().any(|parked| {
+                && self.group_terminals.parked.iter().any(|parked| {
                     parked.group == active && parked.workspace == key && parked.connected()
                 })
             {
@@ -243,8 +238,7 @@ impl SheprdWindow {
             }
         }
         if self
-            .browser
-            .terminals
+            .group_terminals
             .primary
             .is_none_or(|group| !slots.iter().any(|slot| slot.id == group))
         {
@@ -256,10 +250,10 @@ impl SheprdWindow {
                     .map(|slot| slot.id)
                     .find(|group| pick(self, *group).as_ref() == Some(&focused))
             });
-            self.browser.terminals.primary = showing.or(active);
+            self.group_terminals.primary = showing.or(active);
         }
         self.steer_restored(&key, cx);
-        let primary = self.browser.terminals.primary;
+        let primary = self.group_terminals.primary;
         let focused = self.focused_herdr_tab().map(str::to_owned);
         // Every other group holding a Herdr tab needs a connection of its own.
         // The tab the window's connection shows is left to it: two clients on
@@ -273,7 +267,7 @@ impl SheprdWindow {
             .collect();
         let now = Instant::now();
         let last_input = self.last_input;
-        let terminals = &mut self.browser.terminals;
+        let terminals = &mut self.group_terminals;
         terminals.parked.retain(|parked| {
             parked.workspace == key && needed.iter().any(|(group, _)| *group == parked.group)
         });
@@ -355,7 +349,7 @@ impl SheprdWindow {
     pub(crate) fn poll_group_terminals(&mut self) -> bool {
         let mut changed = false;
         let now = Instant::now();
-        let terminals = &mut self.browser.terminals;
+        let terminals = &mut self.group_terminals;
         for parked in &mut terminals.parked {
             if let Some(mut update) = parked.connection.take_update() {
                 update.notifications.clear();
@@ -399,16 +393,15 @@ impl SheprdWindow {
     /// as a switch of endpoint drops it.
     fn swap_primary(&mut self, group: GroupId, key: &(Scope, String), cx: &mut Context<Self>) {
         let Some(index) = self
-            .browser
-            .terminals
+            .group_terminals
             .parked
             .iter()
             .position(|parked| parked.group == group)
         else {
             return;
         };
-        let mut parked = self.browser.terminals.parked.swap_remove(index);
-        let old = self.browser.terminals.primary.replace(group);
+        let mut parked = self.group_terminals.parked.swap_remove(index);
+        let old = self.group_terminals.primary.replace(group);
         self.endpoints[self.selected_endpoint]
             .trade_connection(&mut parked.connection, &mut parked.live);
         std::mem::swap(&mut self.presentation, &mut parked.presentation);
@@ -424,7 +417,7 @@ impl SheprdWindow {
             parked.workspace = key.clone();
             parked.unfocused = false;
             parked.asked = None;
-            self.browser.terminals.parked.push(parked);
+            self.group_terminals.parked.push(parked);
         }
         self.live = self.endpoints[self.selected_endpoint].live.clone();
         self.cancel_file_transfer(cx);
@@ -454,8 +447,7 @@ impl SheprdWindow {
     ) {
         let cell_width = self.cell_width;
         let Some(parked) = self
-            .browser
-            .terminals
+            .group_terminals
             .parked
             .iter_mut()
             .find(|parked| parked.group == group)
@@ -478,8 +470,7 @@ impl SheprdWindow {
     /// The frame a parked group paints.
     pub(crate) fn parked_frame(&mut self, group: GroupId) -> Option<Picture> {
         let parked = self
-            .browser
-            .terminals
+            .group_terminals
             .parked
             .iter_mut()
             .find(|parked| parked.group == group)?;
@@ -496,7 +487,7 @@ impl SheprdWindow {
     /// Hands the window's connection to `group` without moving it: the
     /// connection already shows the tab the group asked for.
     pub(crate) fn set_primary_group(&mut self, group: GroupId) {
-        self.browser.terminals.primary = Some(group);
+        self.group_terminals.primary = Some(group);
     }
 
     /// A parked group's terminal: its connection's frame, painted without
@@ -532,8 +523,7 @@ impl SheprdWindow {
             return window_frame;
         }
         let parked = self
-            .browser
-            .terminals
+            .group_terminals
             .parked
             .iter_mut()
             .find(|parked| parked.focused_tab() == Some(tab))?;
@@ -662,14 +652,14 @@ impl SheprdWindow {
     /// Drops every parked connection: the window left their workspace or
     /// endpoint.
     pub(crate) fn drop_group_terminals(&mut self) {
-        let terminals = &mut self.browser.terminals;
+        let terminals = &mut self.group_terminals;
         terminals.parked.clear();
         terminals.primary = None;
     }
 
     /// Forgets `group`'s parked connection; the group closed.
     pub(crate) fn forget_group_terminal(&mut self, group: GroupId) {
-        let terminals = &mut self.browser.terminals;
+        let terminals = &mut self.group_terminals;
         terminals.parked.retain(|parked| parked.group != group);
         terminals.retry.retain(|(waiting, _)| *waiting != group);
         if terminals.primary == Some(group) {

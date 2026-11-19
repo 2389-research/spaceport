@@ -34,7 +34,7 @@ fn a_parked_group_takes_the_terminal_padding_too(cx: &mut TestAppContext) {
             let key = view.browser_key().unwrap();
             let target = view.endpoints[0].connection.target.clone();
             let parked = parked(left, key, target, &peer, on_t1);
-            view.browser.terminals.parked.push(parked);
+            view.group_terminals.parked.push(parked);
         })
     });
     draw(cx);
@@ -54,7 +54,7 @@ fn a_parked_group_takes_the_terminal_padding_too(cx: &mut TestAppContext) {
     assert!(outer.right() <= terminal.left());
     view.read_with(cx, |view, _| {
         assert_eq!(view.bounds, inset(terminal));
-        let parked = &view.browser.terminals.parked[0];
+        let parked = &view.group_terminals.parked[0];
         assert_eq!(parked.bounds, inset(outer));
         assert_eq!(
             parked.options.surface_size,
