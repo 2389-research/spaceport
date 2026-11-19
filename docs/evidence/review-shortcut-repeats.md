@@ -138,3 +138,51 @@ The integrating owner independently approved the mapper correction after inspect
 Windows mapping performs cached hash lookups and string clones per candidate.
 Native translation populates those caches when the platform constructs its mapper.
 The raw mapping lookup therefore does not invoke `ToUnicode` or mutate dead-key state.
+
+## Native tab qualification candidate, November 19
+
+The original issue has no Mac-only requirement.
+The Windows candidate uses the selected private Herdr daemon and normal application.
+Two fresh New Tab presses must each create exactly one tab.
+Two fresh Close Tab presses must each close exactly one tab.
+The fixture always retains its first tab.
+
+Each press remains down until its first tab change appears in UI Automation.
+Five additional native down events then exercise the held tail after that acknowledgement.
+No intervening up event converts those repeats into fresh presses.
+Each burst must preserve the acknowledged tab count.
+The fixture counts only the terminal `Tabs` container, excluding sidebar activity tabs.
+
+The helper uses Microsoft's [SendInput API](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput).
+Windows exposes previous key state through [WM_KEYDOWN bit 30](https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keydown).
+The pinned GPUI mapper converts that native bit into `is_held`.
+A Windows integration-only diagnostic records that boolean before shortcut policy returns.
+Only the held-tab fixture enables its observer; other integration and performance runs omit those records.
+The fixture requires five complete held-event records per burst before starting another baseline.
+It records no key names, text, terminal output, or command arguments.
+
+Before each down event, the exact private HWND must own foreground and focused-element ancestry.
+Initially held keys cause refusal.
+The helper tracks only successfully injected keys and releases them in reverse order.
+Rust supplies its absolute deadline before launching the helper.
+The helper subtracts setup time and reserves five seconds for cleanup before the parent deadline.
+It refuses injection when the remaining budget cannot cover the held phase.
+A C# timer releases tracked keys and exits the exact helper if UIA stalls.
+Normal exceptions use the same release owner through `finally`.
+
+The existing shortcut-repeat consumer scope passes all 15 tests.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- window::tests::shortcut_repeat:: --nocapture`.
+Log: `/tmp/spaceport-9s44-held-tabs-consumers.log`.
+Independent review found and corrected the broad tab count and setup-time deadline race.
+The correction review finds no remaining material issue.
+Native execution remains pending.
+This candidate covers tab shortcuts only.
+Window, split, and custom-command qualification remain pending for `agbt`.
+
+The final candidate passes both host lint configurations and both Windows GNU configurations.
+The explicit observer gate also passes the two Windows configurations after its addition.
+Logs: `/tmp/spaceport-9s44-batch-labels-final-lint.log` and `/tmp/spaceport-9s44-batch-labels-observer-lint.log`.
+Static, commit, and diff checks pass.
+Independent review approves exact focus ownership, terminal-strip counts, and deadline-aware key release.
+The owner review finds no remaining material issue.
+Rust cross-checking does not execute the C# helper or qualify native held events.

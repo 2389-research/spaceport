@@ -110,6 +110,13 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        #[cfg(all(windows, feature = "integration-test"))]
+        {
+            static OBSERVE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+            if *OBSERVE.get_or_init(|| std::env::var_os("HERDR_TEST_SHORTCUT_OBSERVER").is_some()) {
+                tracing::debug!(is_held = event.is_held, "Native shortcut input");
+            }
+        }
         if !matches!(
             event.keystroke.key.as_str(),
             "shift" | "shiftleft" | "shiftright"

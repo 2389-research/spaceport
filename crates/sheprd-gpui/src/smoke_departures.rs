@@ -106,6 +106,22 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
     motion::set_slow(true);
     handle.update(cx, |view, window, cx| {
         view.sidebar_visible = false;
+        if let Some(snapshot) = &mut view.live.snapshot {
+            let snapshot = Arc::make_mut(snapshot);
+            // Sidebar collapse retains the compact rail. Keep its authored indicators still.
+            for workspace in &mut snapshot.workspaces {
+                workspace.agent_status = AgentStatus::Idle;
+            }
+            for tab in &mut snapshot.tabs {
+                tab.agent_status = AgentStatus::Idle;
+            }
+            for agent in &mut snapshot.agents {
+                agent.agent_status = AgentStatus::Idle;
+            }
+        }
+        if let Some(endpoint) = view.endpoints.first_mut() {
+            endpoint.live = view.live.clone();
+        }
         if let Some(surface) = &mut view.live.surface {
             // This authored scene needs no terminal caret between captures.
             Arc::make_mut(surface).frame.cursor = None;
@@ -173,8 +189,9 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
             );
             Ok(())
         })??;
+        let mut immediate = None;
         let middle = if reduced {
-            let immediate = capture(handle, cx, true)?;
+            immediate = Some(capture(handle, cx, true)?.pixels);
             handle.update(cx, |view, _, _| -> Result<()> {
                 ensure!(
                     view.native_departure_released(),
@@ -182,11 +199,6 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
                 );
                 Ok(())
             })??;
-            let (base_pixels, active_pixels) = (base.clone(), active.clone());
-            cx.background_spawn(async move {
-                compare(&base_pixels, &active_pixels, None, &immediate.pixels)
-            })
-            .await?;
             None
         } else {
             let deadline = Instant::now() + motion::duration(motion::LEAVE);
@@ -226,18 +238,33 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
             cx.notify();
             Ok(())
         })??;
-        let (base, active, middle, settled) = cx
+        let (comparison, base, active, middle, settled, immediate) = cx
             .background_spawn(async move {
-                compare(&base, &active, middle.as_ref(), &settled)?;
-                anyhow::Ok((base, active, middle, settled))
+                let first_draw = immediate
+                    .as_ref()
+                    .map_or(Ok(()), |immediate| compare(&base, &active, None, immediate));
+                (
+                    first_draw.and_then(|()| compare(&base, &active, middle.as_ref(), &settled)),
+                    base,
+                    active,
+                    middle,
+                    settled,
+                    immediate,
+                )
             })
-            .await?;
-        drop(base);
+            .await;
         receipt(name, "active", active, cx).await?;
         if let Some(middle) = middle {
             receipt(name, "outgoing", middle, cx).await?;
         }
         receipt(name, "settled", settled, cx).await?;
+        if comparison.is_err() {
+            receipt(name, "baseline", base, cx).await?;
+            if let Some(immediate) = immediate {
+                receipt(name, "immediate", immediate, cx).await?;
+            }
+        }
+        comparison?;
     }
     eprintln!(
         "DEPARTURES native PASS: mode={} owner reset, native frames, settled baseline and release",

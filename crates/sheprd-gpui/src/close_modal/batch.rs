@@ -28,6 +28,7 @@ pub(super) struct Batch {
 pub(super) enum Item {
     Herdr {
         close: CloseConfirmation,
+        custom_label: bool,
         panes: BTreeSet<String>,
     },
     View(Tab),
@@ -67,6 +68,12 @@ impl Batch {
                     let snapshot = view.live.snapshot.as_deref().ok_or(Error::NotConnected)?;
                     let close = CloseConfirmation::capture_tab(snapshot, &id)
                         .ok_or(Error::StaleCloseTarget)?;
+                    let custom_label = snapshot
+                        .tabs
+                        .iter()
+                        .find(|tab| tab.tab_id == id)
+                        .ok_or(Error::StaleCloseTarget)?
+                        .custom_label;
                     let Target::Herdr(target) = &close.target else {
                         return Err(Error::StaleCloseTarget);
                     };
@@ -79,7 +86,11 @@ impl Batch {
                         .filter(|pane| pane.tab_id == id && pane.workspace_id == owner.1)
                         .map(|pane| pane.pane_id.clone())
                         .collect();
-                    Item::Herdr { close, panes }
+                    Item::Herdr {
+                        close,
+                        custom_label,
+                        panes,
+                    }
                 }
             });
         }
@@ -194,7 +205,12 @@ impl Batch {
 
     fn validate_snapshot(items: &[Item], snapshot: &ClientShellSnapshot) -> Result<()> {
         for item in items {
-            let Item::Herdr { close, panes } = item else {
+            let Item::Herdr {
+                close,
+                custom_label,
+                panes,
+            } = item
+            else {
                 continue;
             };
             close.request(snapshot)?;
@@ -208,10 +224,12 @@ impl Batch {
                 .map(|pane| pane.pane_id.clone())
                 .collect();
             if &current != panes
-                || !snapshot
-                    .tabs
-                    .iter()
-                    .any(|tab| tab.tab_id == target.tab && tab.label == close.label)
+                || !snapshot.tabs.iter().any(|tab| {
+                    tab.tab_id == target.tab
+                        && tab.custom_label == *custom_label
+                        // Default labels follow position; earlier accepted closes renumber them.
+                        && (!custom_label || tab.label == close.label)
+                })
             {
                 return Err(Error::StaleCloseTarget);
             }

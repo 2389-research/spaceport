@@ -336,6 +336,7 @@ A reduced-motion receipt does not qualify intermediate animated frames.
 Each scene emits bounded PNG receipts for inspection.
 Each image permits at most two million pixels and 128 KiB of encoded data.
 Animated mode emits at most nine images; reduced-motion mode emits six.
+On a comparison failure, the fixture also emits that scene's baseline before returning the error.
 Encoding and pixel comparison run on the background executor.
 The fixture keeps the existing native deadline.
 Its read-only render metadata exists only in Windows integration builds.
@@ -352,3 +353,65 @@ Independent consent and privacy review finds no remaining material issue.
 The owner review confirms exact private targets, bounded captures, and unchanged operation lifetimes.
 Native execution and image inspection remain pending for this candidate.
 Keep `ydr4` open until those results qualify its original scope.
+
+### First native result
+
+Source `197d5c65c` fails the ARM native popup check.
+Its popover reaches a real outgoing frame with remaining visibility `0.7685689`.
+The settled region then differs from the clean baseline.
+The failing comparison emitted no images on that source.
+The x64 run passes reduced-motion popup checks and emits six complete PNG receipts.
+The owner inspected all six images.
+They show the collapsed sidebar's compact rail remains visible inside the comparison region.
+The authored source supplies Working status to its workspaces, tabs, and agents.
+Animated mode can therefore change unrelated status indicators between the baseline and settled frames.
+The next candidate gives that authored background Idle status before drawing.
+It preserves the strict comparison and actual OS motion preference.
+Native verification of this fixture correction remains pending.
+
+Comparison failures now preserve open, outgoing, settled, and baseline images before returning.
+Reduced-motion comparison failures also preserve the first dismissed draw.
+Normal successful animated receipts remain nine images; failure diagnostics add at most two images.
+The six inspected reduced-motion images live in `/tmp/spaceport-9s44-departures-x64-reduced/`.
+Their manifest records full PNG signatures, completion markers, sizes, and hashes.
+Run: [44503324192](https://github.com/2389-research/spaceport/actions/runs/44503324192).
+ARM job: [135488771829](https://github.com/2389-research/spaceport/actions/runs/44503324192/job/135488771829).
+
+### Default tab labels after a close
+
+The x64 native consent scenario preserves all targets on Cancel and reaches its final confirmation.
+Its final tree contains two tabs, with automatic labels `1` and `2`.
+The selected label `2` alone does not identify which stable tab survived.
+
+The pinned Windows runtime is Herdr v0.9.5, commit `2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01`.
+Its [display-name producer](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/workspace.rs#L442) numbers automatic labels by current position.
+Its [tab producer](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/app/creation.rs#L202) preserves stable tab IDs and public numbers separately.
+Closing the first target therefore changes the next target's automatic label.
+The client incorrectly rejects that remaining target because its label differs from the captured label.
+
+Batch capture now retains whether each label is custom.
+Validation requires unchanged label ownership and exact custom names.
+Automatic labels may renumber while stable IDs and every existing ownership fence remain unchanged.
+Boot, connection, workspace, pane-set, and current/pending snapshot checks remain in force.
+
+The regression first fails on default renumbering and an unchanged-text label-ownership transition.
+The custom-name refusal already passes before the fix.
+Log: `/tmp/spaceport-9s44-batch-labels-red.log`.
+After the correction, all ten batch, label, and sequence checks pass.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- close_modal::tests::batch_labels:: close_modal::tests::batch:: close_modal::sequence::tests:: --nocapture`.
+Log: `/tmp/spaceport-9s44-batch-labels-green.log`.
+The existing poison fixture emits its expected caught worker panics.
+
+The native fixture now reads the private daemon's real `herdr tab list` response.
+It records the unique stable tab with public number `3` before consent.
+Cancel must preserve the entire original ID set.
+Confirmation must leave only that recorded ID and public number, now displayed with label `1`.
+No custom names hide the automatic-renumbering regression.
+Native qualification of the correction remains pending.
+
+The corrected source passes host and Windows GNU lint, with and without default features.
+Logs: `/tmp/spaceport-9s44-batch-labels-final-lint.log` and `/tmp/spaceport-9s44-batch-labels-observer-lint.log`.
+Formatting, file size, sorting, operations, localization, commit, and diff checks pass.
+Log: `/tmp/spaceport-9s44-batch-labels-reviewed-static.log`.
+Independent review approves the actual identity correction, preserved fences, and native stable-ID assertions.
+The owner reviewed all eleven changed files and found no remaining material issue.

@@ -1,6 +1,21 @@
 // ABOUTME: Verifies one real Close Others consent before either owned tab closes.
 // ABOUTME: Preserves the selected tab, private checkout bytes, and daemon across cancellation.
-use super::{GuiTarget, Running, fs};
+use super::{Duration, GuiTarget, Running, daemon_binary, fs};
+
+fn daemon_tabs(running: &mut Running, workspace: Option<&str>) -> Vec<serde_json::Value> {
+    let capture = running.sandbox.dir.join("tab-list.log");
+    let mut command = running.sandbox.command(daemon_binary(), "tab-list.log");
+    command.args(["tab", "list"]);
+    if let Some(workspace) = workspace {
+        command.args(["--workspace", workspace]);
+    }
+    let output = running
+        .command_output(command, &capture, Duration::from_secs(20))
+        .unwrap();
+    let response: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(response["result"]["type"], "tab_list");
+    response["result"]["tabs"].as_array().unwrap().clone()
+}
 
 fn all_tabs(tree: &str) -> bool {
     ["1", "2", "3"]
@@ -60,6 +75,16 @@ fn native_close_others_cancels_every_target_then_confirms_once() {
                 && tree.contains("Document 'Terminal'")
         });
     }
+    let before = daemon_tabs(&mut running, None);
+    assert_eq!(before.len(), 3);
+    let kept = before.iter().find(|tab| tab["number"] == 3).unwrap();
+    let kept_id = kept["tab_id"].as_str().unwrap().to_owned();
+    let workspace = kept["workspace_id"].as_str().unwrap().to_owned();
+    let ids = |tabs: &[serde_json::Value]| {
+        tabs.iter()
+            .map(|tab| tab["tab_id"].as_str().unwrap().to_owned())
+            .collect::<std::collections::BTreeSet<_>>()
+    };
     running.control(&["run", "split_editor"]);
     running.wait_tree("an empty second client group", |tree| {
         all_tabs(tree) && tree.matches("Button 'Tab actions' [Invoke]").count() == 2
@@ -71,6 +96,10 @@ fn native_close_others_cancels_every_target_then_confirms_once() {
         all_tabs(tree) && !tree.contains("Close 2 tabs?")
     });
     assert_eq!(
+        ids(&daemon_tabs(&mut running, Some(&workspace))),
+        ids(&before)
+    );
+    assert_eq!(
         fs::read_to_string(&marker).unwrap(),
         "preserve the private checkout\n"
     );
@@ -80,13 +109,18 @@ fn native_close_others_cancels_every_target_then_confirms_once() {
     running.wait_tree(
         "only the kept tab remains, without another prompt",
         |tree| {
-            tree.contains("TabItem '3' [selected=True]")
-                && !tree.contains("TabItem '1'")
+            tree.contains("TabItem '1' [selected=True]")
+                && !tree.contains("TabItem '3'")
                 && !tree.contains("TabItem '2'")
                 && !tree.contains("Close 2 tabs?")
                 && !tree.contains("Close tab?")
         },
     );
+    let after = daemon_tabs(&mut running, Some(&workspace));
+    assert_eq!(after.len(), 1);
+    assert_eq!(after[0]["tab_id"], kept_id);
+    assert_eq!(after[0]["number"], 3);
+    assert_eq!(after[0]["label"], "1");
     assert_eq!(
         fs::read_to_string(marker).unwrap(),
         "preserve the private checkout\n"
@@ -99,5 +133,8 @@ fn native_close_others_cancels_every_target_then_confirms_once() {
             .try_wait()
             .unwrap()
             .is_none()
+    );
+    eprintln!(
+        "CLOSE_OTHERS native PASS: cancelled all targets, confirmed once, kept stable tab number 3"
     );
 }

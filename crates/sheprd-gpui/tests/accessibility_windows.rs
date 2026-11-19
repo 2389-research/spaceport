@@ -29,6 +29,7 @@ struct Running {
 
 enum GuiTarget {
     Local,
+    ShortcutObserver,
     Socket,
 }
 
@@ -104,8 +105,11 @@ impl Running {
             .sandbox
             .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
         match target {
-            GuiTarget::Socket => {
+            GuiTarget::Socket | GuiTarget::ShortcutObserver => {
                 command.arg("--socket").arg(self.sandbox.socket());
+                if matches!(target, GuiTarget::ShortcutObserver) {
+                    command.env("HERDR_TEST_SHORTCUT_OBSERVER", "1");
+                }
             }
             GuiTarget::Local => {
                 // Refuse an installed system candidate before testing the missing-runtime card.
@@ -380,6 +384,8 @@ fn a_command_timeout_reaps_its_owned_child() {
 mod announcements;
 #[path = "accessibility_windows/close_others.rs"]
 mod close_others;
+#[path = "accessibility_windows/held_tabs.rs"]
+mod held_tabs;
 #[path = "accessibility_windows/recovery.rs"]
 mod recovery;
 #[path = "accessibility_windows/workspace_close.rs"]
