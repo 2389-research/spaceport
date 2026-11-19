@@ -126,6 +126,45 @@ Log: `/tmp/spaceport-9s44-chat-ci-diagnostics-static.log`.
 The owner review finds no remaining issue in this diagnostic checkpoint.
 The next native CI execution remains required.
 
+## Native lifetime correction
+
+Source `98b4063cc` runs in [CI 44518097705](https://github.com/2389-research/spaceport/actions/runs/44518097705).
+The Windows ARM all-feature job passes the corrected activity-visit test and its complete scope.
+The x64 native chat case reaches Settings activation, Escape dismissal, and native tool expansion.
+Its expanded tool appears in the real UIA tree.
+Readiness is recorded at `11:58:29.212 UTC`; traversal fails at `11:59:29.501 UTC`.
+The failure changes to `E_UNEXPECTED` while traversing the expanded tool scene.
+
+The preview starts its sixty-second hold after readiness.
+At that deadline, it requires both permission answers and exits.
+The multi-action native scenario has not yet reached those answers.
+Source and exact timing strongly indicate fixture expiry caused the provider loss.
+This read-path failure did not retain the producer log.
+The original focus refusal alone could not establish this cause.
+
+Only the interactive `accessibility` case now accepts a hold up to 180 seconds.
+Its native parent requests that budget for the existing sequential helpers.
+Other preview cases retain their sixty-second cap and two-second default.
+The exact focus guards, per-helper deadlines, answer assertions, and owned-child cleanup remain unchanged.
+The native case must still pass; the longer fixture budget is not a qualification receipt.
+
+The retained initial PNG is complete and contains only the authored scene.
+The owner inspects its readable messages, tool row, plan states, permission prompts, draft, and controls.
+Its size is 94,059 bytes.
+SHA-256: `2900be0d1c88701940306f21e8322af96b490d7393e8bc841d66822e2977dca4`.
+Private review files: `/tmp/spaceport-9s44-native-chat-98/initial.png` and `manifest.json`.
+Permission keyboard completion remains pending, so `2njz` stays open.
+
+The combined chat, preview, and repeat consumer scope passes 28 tests, with none ignored.
+Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- chat::preview::tests:: chat::tests::accessibility:: window::tests::shortcut_repeat:: --nocapture`.
+Log: `/tmp/spaceport-9s44-chat-lifetime-repeat-consumers.log`.
+Both host and Windows GNU lint configurations pass, with and without default features.
+Log: `/tmp/spaceport-9s44-chat-lifetime-window-repeat-lint.log`.
+Formatting, size, sorting, operations, localization, commit, and diff checks pass.
+Log: `/tmp/spaceport-9s44-chat-lifetime-window-repeat-static.log`.
+Independent review accepts the scoped budget correction and keeps native completion pending.
+The owner review finds no remaining material issue in this correction.
+
 ## Scope
 
 Expose named header and composer controls.

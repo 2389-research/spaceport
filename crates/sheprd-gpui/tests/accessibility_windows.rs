@@ -110,7 +110,7 @@ impl Running {
                 command
                     .arg("--sidebar-test")
                     .env("HERDR_TEST_RICH_CHAT", "accessibility")
-                    .env("HERDR_TEST_RICH_CHAT_HOLD_MS", "60000")
+                    .env("HERDR_TEST_RICH_CHAT_HOLD_MS", "180000")
                     .env(
                         "HERDR_TEST_RICH_CHAT_CAPTURE",
                         self.sandbox.dir.join("native-chat.png"),
@@ -298,13 +298,17 @@ impl Running {
     }
 
     fn control(&mut self, args: &[&str]) {
+        self.control_output(args);
+    }
+
+    fn control_output(&mut self, args: &[&str]) -> String {
         let capture = self.sandbox.dir.join("control.log");
         let mut command = self
             .sandbox
             .command(env!("CARGO_BIN_EXE_spaceport"), "control.log");
         command.args(args);
         self.command_output(command, &capture, Duration::from_secs(20))
-            .unwrap();
+            .unwrap()
     }
 
     fn uia_action(&mut self, flag: &str, name: &str) {
@@ -397,8 +401,8 @@ mod announcements;
 mod chat;
 #[path = "accessibility_windows/close_others.rs"]
 mod close_others;
-#[path = "accessibility_windows/held_tabs.rs"]
-mod held_tabs;
+#[path = "accessibility_windows/held_shortcuts.rs"]
+mod held_shortcuts;
 #[path = "accessibility_windows/recovery.rs"]
 mod recovery;
 #[path = "accessibility_windows/workspace_close.rs"]

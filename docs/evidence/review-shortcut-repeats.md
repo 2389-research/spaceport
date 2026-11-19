@@ -157,7 +157,7 @@ The helper uses Microsoft's [SendInput API](https://learn.microsoft.com/en-us/wi
 Windows exposes previous key state through [WM_KEYDOWN bit 30](https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keydown).
 The pinned GPUI mapper converts that native bit into `is_held`.
 A Windows integration-only diagnostic records that boolean before shortcut policy returns.
-Only the held-tab fixture enables its observer; other integration and performance runs omit those records.
+Only explicit shortcut fixtures enable its observer; other integration and performance runs omit those records.
 The fixture requires five complete held-event records per burst before starting another baseline.
 It records no key names, text, terminal output, or command arguments.
 
@@ -175,7 +175,7 @@ Command: `cargo test --locked -p sheprd-gpui --all-features --bin spaceport -- w
 Log: `/tmp/spaceport-9s44-held-tabs-consumers.log`.
 Independent review found and corrected the broad tab count and setup-time deadline race.
 The correction review finds no remaining material issue.
-Native execution remains pending.
+Native execution was pending when this candidate was prepared.
 This candidate covers tab shortcuts only.
 Window, split, and custom-command qualification remain pending for `agbt`.
 
@@ -186,3 +186,50 @@ Static, commit, and diff checks pass.
 Independent review approves exact focus ownership, terminal-strip counts, and deadline-aware key release.
 The owner review finds no remaining material issue.
 Rust cross-checking does not execute the C# helper or qualify native held events.
+
+## Native tab result and New Window candidate
+
+The tab candidate passes on source `b20cca86f` in the [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44507153995/job/135501954152).
+Both New bursts and both Close bursts receive five held events after their first visible tab change.
+The [popup qualification](review-popup-close-motion.md#qualified-native-result-on-b20cca86f) records that complete native job.
+This qualifies native tab repeats; `agbt` remains open for windows, splits, and custom commands.
+
+The extended candidate uses the same helper and private daemon for New Window.
+Two fresh presses must grow the UIA window count from one to two to three.
+Each first effect precedes five additional downs of the still-held main key.
+Each held tail must preserve the window count.
+The real `window list --json` command separately verifies unique IDs and preservation of all previous IDs.
+The new windows inherit the captured private endpoint target.
+
+The helper adopts only the unique newly created PID-owned HWND.
+It waits for that exact window's foreground and focused ancestry within its original deadline.
+Window actions do not require terminal tab chrome to have loaded.
+All down events retain the exact focus guard, initially-held refusal, and owned-key cleanup.
+
+Pinned GPUI activation sends Alt down/up before requesting foreground.
+That sequence can release the fixture's Alt modifier while N remains down.
+After exact activation, the helper requires N still held and restores only missing, previously owned modifiers.
+It checks the complete chord before every held tail event.
+N receives no intervening up event.
+
+The integration-only observer records whether the actual event resolves to New Window through the existing binding selector.
+It uses the real mapper, configured/catalog precedence, and preferred-text policy without dispatching.
+The native test counts only records with both `is_held` and `new_window` true.
+Activation's Alt events and incorrectly modified N events cannot satisfy that proof.
+The diagnostic retains only booleans, with no raw keys or command arguments.
+
+Independent review catches and resolves activation readiness, modifier loss, and unnecessary tab-chrome dependencies.
+The correction review finds no remaining material issue.
+Actual Windows execution remains pending.
+This candidate does not qualify split or custom-command repeats.
+
+The current candidate passes both Windows GNU lint configurations.
+The final combined chat-lifetime checkpoint also passes both host configurations and repeats both Windows configurations.
+Logs: `/tmp/spaceport-9s44-native-window-repeat-final-lint.log` and `/tmp/spaceport-9s44-chat-lifetime-window-repeat-lint.log`.
+The unchanged repeat consumers pass all fifteen tests with none ignored.
+Log: `/tmp/spaceport-9s44-native-window-repeat-consumers.log`.
+The final combined preview, chat-accessibility, and repeat scope passes 28 tests with none ignored.
+Log: `/tmp/spaceport-9s44-chat-lifetime-repeat-consumers.log`.
+Static, localization, commit, rename-reference, and diff checks pass.
+Log: `/tmp/spaceport-9s44-chat-lifetime-window-repeat-static.log`.
+The owner review finds no remaining material issue in this candidate.

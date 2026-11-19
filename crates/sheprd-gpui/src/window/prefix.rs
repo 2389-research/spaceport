@@ -110,13 +110,6 @@ impl SheprdWindow {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        #[cfg(all(windows, feature = "integration-test"))]
-        {
-            static OBSERVE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-            if *OBSERVE.get_or_init(|| std::env::var_os("HERDR_TEST_SHORTCUT_OBSERVER").is_some()) {
-                tracing::debug!(is_held = event.is_held, "Native shortcut input");
-            }
-        }
         if !matches!(
             event.keystroke.key.as_str(),
             "shift" | "shiftleft" | "shiftright"
@@ -127,6 +120,27 @@ impl SheprdWindow {
         let keystroke = named.as_ref().unwrap_or(&event.keystroke);
         let restored = shifted_keys::restore(keystroke, self.key_press, self.key_layout);
         let typed = Typed::new(keystroke, restored);
+        #[cfg(all(windows, feature = "integration-test"))]
+        {
+            static OBSERVE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+            if *OBSERVE.get_or_init(|| std::env::var_os("HERDR_TEST_SHORTCUT_OBSERVER").is_some()) {
+                let bound = typed.find_unheld(
+                    |key| {
+                        self.bound(key, false, event.prefer_character_input, |key| {
+                            KeybindingKeystroke::new_with_mapper(
+                                key,
+                                false,
+                                cx.keyboard_mapper().as_ref(),
+                            )
+                        })
+                    },
+                    |key| self.keymap().holds_directly(key),
+                );
+                let new_window =
+                    !self.prefix_armed && matches!(bound, Some(Bound::Command(Command::NewWindow)));
+                tracing::debug!(is_held = event.is_held, new_window, "Native shortcut input");
+            }
+        }
         let key = typed.held_key();
         let previous = self.shortcut_keys.get(key).copied();
         if !event.is_held {

@@ -148,7 +148,12 @@ impl Options {
             .transpose()
             .context("invalid preview hold duration")?
             .unwrap_or(2_000)
-            .min(60_000);
+            // The interactive accessibility case spans several bounded native helpers.
+            .min(if case == "accessibility" {
+                180_000
+            } else {
+                60_000
+            });
         let layout = std::env::var("HERDR_TEST_RICH_CHAT_LAYOUT")
             .ok()
             .map(|name| {

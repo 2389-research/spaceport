@@ -1,6 +1,6 @@
-# ABOUTME: Delivers a held tab shortcut after observing its first real tab change.
+# ABOUTME: Delivers held shortcuts after observing their first private tab or window change.
 # ABOUTME: Requires the exact private window and releases only keys this fixture pressed.
-param([int]$ProcessId, [ValidateSet('New','Close')][string]$Action, [long]$DeadlineEpochMs)
+param([int]$ProcessId, [ValidateSet('New','Close','Window')][string]$Action, [long]$DeadlineEpochMs)
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
-public static class HeldTabs {
+public static class HeldKeys {
   static readonly List<ushort> pressed = new List<ushort>();
   static Timer watchdog;
   static bool finished;
@@ -71,19 +71,29 @@ public static class HeldTabs {
 $automation = [System.Windows.Automation.AutomationElement]
 $walker = [System.Windows.Automation.TreeWalker]::ControlViewWalker
 $owned = [System.Windows.Automation.PropertyCondition]::new($automation::ProcessIdProperty, $ProcessId)
-$windows = $automation::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $owned)
-if ($windows.Count -ne 1) { throw 'Held-tab fixture requires exactly one private window' }
-$root = $windows[0]
-$stripType = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Tab)
-$stripName = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Tabs')
-$strips = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.AndCondition]::new($stripType, $stripName))
-if ($strips.Count -ne 1) { throw 'Held-tab fixture requires exactly one terminal tab strip' }
-$strip = $strips[0]
+function Private-Windows {
+  return $automation::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children, $owned)
+}
+$windows = @(Private-Windows)
+if ($Action -ne 'Window' -and $windows.Count -ne 1) { throw 'Held-tab fixture requires exactly one private window' }
+if ($windows.Count -eq 0) { throw 'Held-shortcut fixture has no private window' }
+$roots = if ($windows.Count -eq 1) { $windows } else {
+  @($windows | Where-Object { [IntPtr]$_.Current.NativeWindowHandle -eq [HeldKeys]::GetForegroundWindow() })
+}
+if (@($roots).Count -ne 1) { throw 'Held shortcut has no unique owned foreground window' }
+$root = @($roots)[0]
+if ($Action -ne 'Window') {
+  $stripType = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Tab)
+  $stripName = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Tabs')
+  $strips = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.AndCondition]::new($stripType, $stripName))
+  if ($strips.Count -ne 1) { throw 'Held-tab fixture requires exactly one terminal tab strip' }
+  $strip = $strips[0]
+}
 $handle = [IntPtr]$root.Current.NativeWindowHandle
 if ($handle -eq [IntPtr]::Zero) { throw 'Private window has no native handle' }
 
 function Require-Focus {
-  if ([HeldTabs]::GetForegroundWindow() -ne $handle) { throw 'Private HWND lost foreground' }
+  if ([HeldKeys]::GetForegroundWindow() -ne $handle) { throw 'Private HWND lost foreground' }
   $element = $automation::FocusedElement
   while ($null -ne $element) {
     if ($element.Current.ProcessId -ne $ProcessId) { throw 'Keyboard focus left the private process' }
@@ -96,42 +106,75 @@ function Tab-Count {
   $type = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::TabItem)
   return $strip.FindAll([System.Windows.Automation.TreeScope]::Descendants, $type).Count
 }
+function Target-Count {
+  if ($Action -eq 'Window') { return @(Private-Windows).Count }
+  return Tab-Count
+}
 
 # The existing fixture uses an Alt press to obtain foreground permission.
-if (([HeldTabs]::GetAsyncKeyState(0x12) -band 0x8000) -ne 0) { throw 'Alt is already held' }
-try { [HeldTabs]::Send(0x12, $false) } finally { [HeldTabs]::Send(0x12, $true) }
-[HeldTabs]::SetForegroundWindow($handle) | Out-Null
+if (([HeldKeys]::GetAsyncKeyState(0x12) -band 0x8000) -ne 0) { throw 'Alt is already held' }
+try { [HeldKeys]::Send(0x12, $false) } finally { [HeldKeys]::Send(0x12, $true) }
+[HeldKeys]::SetForegroundWindow($handle) | Out-Null
 Start-Sleep -Milliseconds 500
 Require-Focus
-$key = if ($Action -eq 'New') { 0x54 } else { 0x57 }
-$modifiers = if ($Action -eq 'New') { @(0x11,0x10) } else { @(0x11,0x12,0x10) }
+$key = switch ($Action) { 'New' { 0x54 }; 'Close' { 0x57 }; 'Window' { 0x4e } }
+$modifiers = switch ($Action) { 'New' { @(0x11,0x10) }; 'Close' { @(0x11,0x12,0x10) }; 'Window' { @(0x11,0x12) } }
 foreach ($code in @($modifiers) + @($key)) {
-  if (([HeldTabs]::GetAsyncKeyState($code) -band 0x8000) -ne 0) { throw 'A fixture key is already held' }
+  if (([HeldKeys]::GetAsyncKeyState($code) -band 0x8000) -ne 0) { throw 'A fixture key is already held' }
 }
-$before = Tab-Count
-$expected = if ($Action -eq 'New') { $before + 1 } else { $before - 1 }
+$before = Target-Count
+$beforeHandles = @($windows | ForEach-Object { [IntPtr]$_.Current.NativeWindowHandle })
+$expected = if ($Action -eq 'Close') { $before - 1 } else { $before + 1 }
 if ($expected -lt 1) { throw 'The fixture must retain its last tab' }
-[HeldTabs]::Begin($DeadlineEpochMs)
+[HeldKeys]::Begin($DeadlineEpochMs)
 try {
   foreach ($modifier in $modifiers) {
     Require-Focus
-    [HeldTabs]::Press($modifier)
+    [HeldKeys]::Press($modifier)
   }
   Require-Focus
-  [HeldTabs]::Press($key)
+  [HeldKeys]::Press($key)
   $deadline = [DateTime]::UtcNow.AddSeconds(10)
-  while ((Tab-Count) -ne $expected) {
-    Require-Focus
+  while ((Target-Count) -ne $expected) {
+    if ($Action -ne 'Window') { Require-Focus }
     if ([DateTime]::UtcNow -ge $deadline) { throw 'First native shortcut had no single acknowledged tab change' }
     Start-Sleep -Milliseconds 25
   }
+  if ($Action -eq 'Window') {
+    # Adopt only the one newly created PID-owned root before sending more keys.
+    $added = @((Private-Windows) | Where-Object { [IntPtr]$_.Current.NativeWindowHandle -notin $beforeHandles })
+    if ($added.Count -ne 1) { throw 'New Window did not create one unique private HWND' }
+    $root = $added[0]
+    $handle = [IntPtr]$root.Current.NativeWindowHandle
+    if ($handle -eq [IntPtr]::Zero) { throw 'New Window has no native handle' }
+    # Creation precedes GPUI's deferred activation. Wait for this exact root.
+    $focused = $false
+    while (-not $focused) {
+      try { Require-Focus; $focused = $true }
+      catch {
+        if ([DateTime]::UtcNow -ge $deadline) { throw }
+        Start-Sleep -Milliseconds 25
+      }
+    }
+    # GPUI activation releases Alt. Restore only this fixture's modifiers;
+    # the main N key remains down, so its next down is still a held event.
+    Require-Focus
+    if (([HeldKeys]::GetAsyncKeyState($key) -band 0x8000) -eq 0) { throw 'New Window released the main held key' }
+    foreach ($modifier in $modifiers) {
+      Require-Focus
+      if (([HeldKeys]::GetAsyncKeyState($modifier) -band 0x8000) -eq 0) { [HeldKeys]::Press($modifier) }
+    }
+  }
   for ($index = 0; $index -lt 5; $index++) {
     Require-Focus
-    [HeldTabs]::Press($key)
+    foreach ($code in @($modifiers) + @($key)) {
+      if (([HeldKeys]::GetAsyncKeyState($code) -band 0x8000) -eq 0) { throw 'The held shortcut lost a required key' }
+    }
+    [HeldKeys]::Press($key)
     Start-Sleep -Milliseconds 100
-    if ((Tab-Count) -ne $expected) { throw 'A held repeat changed the acknowledged tab count' }
+    if ((Target-Count) -ne $expected) { throw 'A held repeat changed the acknowledged target count' }
   }
 } finally {
-  [HeldTabs]::End()
+  [HeldKeys]::End()
 }
-[Console]::WriteLine('HELD_TABS sent=5 released=true')
+[Console]::WriteLine('HELD_SHORTCUT sent=5 released=true')
