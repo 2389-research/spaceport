@@ -99,7 +99,11 @@ fn linux_shortcuts_preserve_terminal_keys_and_shifted_actions() {
     ])
     .unwrap();
     assert!(configured.triggers(Command::FocusLeft, &keystroke("ctrl-alt-shift-left"), false));
-    assert!(configured.triggers(Command::ResumePalette, &keystroke("ctrl-alt-shift-r"), false));
+    assert!(configured.triggers(
+        Command::ResumePalette,
+        &keystroke("ctrl-alt-shift-r"),
+        false
+    ));
 }
 
 #[cfg(windows)]

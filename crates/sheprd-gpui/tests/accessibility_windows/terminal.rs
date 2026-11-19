@@ -4,7 +4,7 @@ use super::{Duration, Running, fs};
 
 #[test]
 #[ignore = "requires an active Windows desktop and HERDR_TEST_BINARY; reads only the private terminal"]
-fn native_herdr_text_caret_bounds_and_output_change_events() {
+fn native_herdr_text_caret_line_bounds_and_output_change_events() {
     let mut running = Running::start();
     running.wait_tree("native terminal text provider", |tree| {
         tree.contains("Document 'Terminal' [Value, Text]")
@@ -27,12 +27,12 @@ fn native_herdr_text_caret_bounds_and_output_change_events() {
         .command_output(command, &capture, Duration::from_secs(30))
         .unwrap();
     for receipt in [
-        "TERMINAL_A11Y text=true native_text_changed=true unselected_caret=true caret_bounds=true",
+        "TERMINAL_A11Y text=true native_text_changed=true unselected_caret=true caret_line_bounds=true",
         "TERMINAL_A11Y observer_removed=true",
     ] {
         assert!(output.contains(receipt), "{output}");
     }
     eprintln!(
-        "TERMINAL_A11Y native PASS: actual text, changed-output event, collapsed caret, contained bounds, observer removal"
+        "TERMINAL_A11Y native PASS: actual text, changed-output event, collapsed caret, contained line bounds, observer removal"
     );
 }

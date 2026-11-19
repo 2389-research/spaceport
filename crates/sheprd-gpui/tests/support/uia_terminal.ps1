@@ -69,17 +69,22 @@ try {
   if ($selection[0].CompareEndpoints($start, $selection[0], $end) -ne 0 -or $selection[0].GetText(1) -cne '') {
     throw 'Native terminal reports a selection instead of its unselected caret'
   }
-  $rectangles = $selection[0].GetBoundingRectangles()
-  if ($rectangles.Length -ne 4) { throw 'Native caret has no unique bounding rectangle' }
+  # A collapsed range can validly have no rectangles; measure its enclosing visible line.
+  $line = $selection[0].Clone()
+  $line.ExpandToEnclosingUnit([System.Windows.Automation.Text.TextUnit]::Line)
+  $rectangles = $line.GetBoundingRectangles()
+  if ($rectangles.Length -eq 0) { throw 'Native caret line has no visible bounding rectangle' }
   $bounds = $document.Current.BoundingRectangle
-  $x = $rectangles[0]; $y = $rectangles[1]; $width = $rectangles[2]; $height = $rectangles[3]
-  foreach ($number in $rectangles) {
-    if ([double]::IsNaN($number) -or [double]::IsInfinity($number)) { throw 'Native caret bounds are not finite' }
+  foreach ($rectangle in $rectangles) {
+    foreach ($number in @($rectangle.X, $rectangle.Y, $rectangle.Width, $rectangle.Height)) {
+      if ([double]::IsNaN($number) -or [double]::IsInfinity($number)) { throw 'Native caret-line bounds are not finite' }
+    }
+    if ($rectangle.Width -lt 0 -or $rectangle.Height -le 0 -or
+        $rectangle.Left -lt $bounds.Left - 1 -or $rectangle.Top -lt $bounds.Top - 1 -or
+        $rectangle.Right -gt $bounds.Right + 1 -or $rectangle.Bottom -gt $bounds.Bottom + 1) {
+      throw 'Native caret-line bounds escape the terminal document'
+    }
   }
-  if ($width -lt 0 -or $height -le 0 -or $x -lt $bounds.Left - 1 -or $y -lt $bounds.Top - 1 -or
-      $x + $width -gt $bounds.Right + 1 -or $y + $height -gt $bounds.Bottom + 1) {
-    throw 'Native caret bounds escape the terminal document'
-  }
-  [Console]::WriteLine('TERMINAL_A11Y text=true native_text_changed=true unselected_caret=true caret_bounds=true')
+  [Console]::WriteLine('TERMINAL_A11Y text=true native_text_changed=true unselected_caret=true caret_line_bounds=true')
 } finally { $observer.Dispose() }
 [Console]::WriteLine('TERMINAL_A11Y observer_removed=true')

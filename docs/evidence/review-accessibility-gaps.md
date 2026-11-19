@@ -150,7 +150,7 @@ It resolves a fresh document range and reads at most 16384 characters, without l
 
 The [UIA GetSelection contract](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.textpattern.getselection) returns a collapsed range for an unselected system caret.
 Pinned AccessKit Windows 0.34 implements that path through its terminal text selection.
-The fixture requires one collapsed range with finite bounds contained in the terminal document.
+The fixture checks the collapsed caret separately from its enclosing visible line's finite, contained bounds.
 It does not invent TextPattern2 support; the pinned provider exposes TextPattern.
 Observer removal and thread join must succeed before the helper prints its removal receipt.
 
@@ -163,3 +163,16 @@ Logs: `/tmp/spaceport-9s44-terminal-native-{lint,static}.log`.
 C# compilation, actual native text/caret execution, and the existing live-event regression remain pending CI.
 The [TextChanged contract](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.textpattern.textchangedevent) qualifies native text-change delivery once this case passes.
 It does not prove audible screen-reader speech or Core terminal accessibility.
+
+## First native terminal result on `1ad093a96`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44560521338/job/135688647754) passes eighteen UIA cases and fails only this new terminal qualifier.
+The qualifier reaches the rectangle assertion after observing authored output, a native TextChanged event, and a collapsed caret.
+Its rectangle assertion incorrectly expects four scalar coordinates from a managed API.
+[GetBoundingRectangles](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.text.textpatternrange.getboundingrectangles) returns Rect objects and permits no rectangles for a collapsed range.
+
+The correction retains the collapsed-caret checks.
+It expands a cloned range to the enclosing line and checks every visible Rect's finite, contained geometry.
+It reports enclosing-line bounds, rather than claiming a caret rectangle that the API need not return.
+The app's accessibility producer and listener lifecycle remain unchanged.
+Corrected native execution remains pending; `q72g` stays open.
