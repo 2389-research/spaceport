@@ -19,10 +19,7 @@ fn effective_options(command: &Command) -> String {
         // Windows OpenSSH requires ProgramData before initializing its stderr.
         // Explicit -F keeps this parser probe out of default system/user config.
         .env("ProgramData", root.path())
-        .env(
-            "SystemRoot",
-            std::env::var_os("SystemRoot").unwrap(),
-        );
+        .env("SystemRoot", std::env::var_os("SystemRoot").unwrap());
     let output = probe
         .args(["-G", "-F"])
         .arg(config)
