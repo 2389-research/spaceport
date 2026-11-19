@@ -10,7 +10,7 @@ use super::*;
 /// gives every glyph the same fixed advance.
 fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
     use sheprd_settings::fonts::symbol_fallbacks;
-    let detected = sheprd_settings::symbol_fallbacks(cx.text_system().all_font_names());
+    let detected = symbol_fallbacks(cx.text_system().all_font_names());
     if detected.is_empty() {
         // An installed icon font is an external resource, like a daemon binary.
         return Ok("symbol cascade skipped (no Nerd Font installed)");
