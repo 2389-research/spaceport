@@ -83,6 +83,13 @@ Its log is `/tmp/spaceport-9s44-missing-recovery-host-lint.log`.
 Formatting, file size, sorting, and diff checks pass.
 Canonical Windows GNU lint passes both feature configurations too.
 The log is `/tmp/spaceport-9s44-missing-recovery-windows-lint.log`.
+This is cross-compilation, not native Windows execution.
+
+Kata `2qr3` closed after these checks and the scoped review.
+Close event `9647` has UID `01M7R9E97RXRY1W47V9HZSR0ET`.
+Fresh issue and parent reads confirm the closure, thirty-one closed children, and twenty-two open children.
+The umbrella remains open.
+The closure ledger retains the issue, event, and evidence identities.
 
 ## Native Windows qualification scenario
 
@@ -97,17 +104,32 @@ The scenario never activates the website button or installs a runtime.
 It verifies the final focus observation and guards the exact button immediately before sending each activation key.
 An intentionally mismatched button name must refuse activation before sending Enter.
 Existing process ownership, capture bounds, foreground guards, and cleanup apply.
-These are pending CI assertions, not claims of native success.
+These assertions pass in the native Windows run recorded below.
 The Reconnect now scenario proves native focus; the existing headless callback test proves its retry effect.
 Both Windows GNU lint configurations pass after the focus-guard correction.
 Format, file size, sorted regions, operations, localization, and diff checks pass.
 Independent review finds no remaining issue.
 This Mac has no PowerShell runtime, so the new native cases and negative baseline remain unrun locally.
 Logs use `/tmp/spaceport-9s44-native-recovery-final-{windows-lint,static}.log`.
-This is cross-compilation, not native Windows execution.
 
-Kata `2qr3` closed after these checks and the scoped review.
-Close event `9647` has UID `01M7R9E97RXRY1W47V9HZSR0ET`.
-Fresh issue and parent reads confirm the closure, thirty-one closed children, and twenty-two open children.
+## Recovery keyboard qualification and closure, November 19
+
+[Run 44474270771](https://github.com/2389-research/spaceport/actions/runs/44474270771) tests source `17cc0d2ab`.
+Windows x64 native job `135391137140` passes all four UI Automation cases without ignored cases.
+It includes both new recovery scenarios, the existing chrome focus scenario, and workspace consent.
+The receipt is `/tmp/spaceport-9s44-recovery-native-x64.log`.
+Both missing-runtime iterations recover to a real private daemon after keyboard activation.
+The mismatched-name activation must return the exact focused-button guard error.
+
+The native Reconnect now case proves region and Tab focus, not its retry effect.
+The existing headless keyboard test proves that callback's connection-generation reset.
+The existing Install Herdr keyboard test proves its exact URL callback.
+All three buttons share the same focus and keyboard activation implementation.
+The native retry case verifies both Enter and Space through that implementation.
+Independent source and receipt review confirms this meets `jwa1`'s original scope.
+The Linux ARM process-output fixture failure belongs to separate cleanup qualification.
+Mac Settings, speech, and performance remain separate open work.
+
+Kata `jwa1` closes with event `9784` and UID `01M7S9FDPY6KWZ73RDG1C705WF`.
+Fresh issue and parent reads confirm 39 closed children and 14 open children.
 The umbrella remains open.
-The closure ledger retains the issue, event, and evidence identities.

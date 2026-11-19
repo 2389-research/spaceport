@@ -36,3 +36,4 @@
 {"issue":"1wwk","uid":"01M7JWV9W2700A84Y8CM5V1WWK","status":"closed","event_id":9781,"event_uid":"01M7RZFXYM5BMTJN1HPAND0198","closed_at":"2026-11-19T04:02:02.324Z","evidence":"docs/evidence/review-windows-identity.md"}
 {"issue":"krqj","uid":"01M7JWV6VA1V46JWW5XA9GKRQJ","status":"closed","event_id":9782,"event_uid":"01M7S1ZEDMQ46YPVEYN7RZBY6H","closed_at":"2026-11-19T04:45:27.86Z","evidence":"docs/evidence/review-os-accessibility.md"}
 {"issue":"knqh","uid":"01M7JWV9M76H00X1F3FYYPKNQH","status":"closed","event_id":9783,"event_uid":"01M7S85798ZRZKJEGR578TS1KG","closed_at":"2026-11-19T06:33:28.616Z","evidence":"docs/evidence/review-herdr-tui-workspaces.md"}
+{"issue":"jwa1","uid":"01M7K42NGDKQTXN3MK4NN6JWA1","status":"closed","event_id":9784,"event_uid":"01M7S9FDPY6KWZ73RDG1C705WF","closed_at":"2026-11-19T06:56:31.453Z","evidence":"docs/evidence/review-input-recovery.md"}
