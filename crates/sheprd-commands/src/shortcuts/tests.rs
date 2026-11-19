@@ -3,6 +3,7 @@ use crate::{COMMANDS, Command};
 use gpui::{Keystroke, Modifiers};
 use std::collections::HashMap;
 
+mod collisions;
 mod default_snapshot;
 mod toggle_status_bar;
 
@@ -19,16 +20,19 @@ fn parse(shortcut: &str) -> Keystroke {
 
 /// Checks a Ctrl profile on every host, not only the platform it ships on:
 /// each catalog shortcut has a counterpart, none needs the platform key, and
-/// no two commands share a keystroke.
-fn assert_ctrl_profile(profile: Profile) {
+/// no two commands share a keystroke. `system` names the commands a platform
+/// leaves to a key of its own instead.
+fn assert_ctrl_profile(profile: Profile, system: &[Command]) {
     let mut seen = HashMap::new();
     for info in COMMANDS {
         let shortcuts = profile(info.command);
-        assert!(
-            shortcuts.len() >= info.base_shortcuts().len(),
-            "{}",
-            info.name
-        );
+        if !system.contains(&info.command) {
+            assert!(
+                shortcuts.len() >= info.base_shortcuts().len(),
+                "{}",
+                info.name
+            );
+        }
         for shortcut in shortcuts {
             let key = parse(shortcut);
             assert!(!key.modifiers.platform, "{shortcut}");
@@ -42,12 +46,13 @@ fn assert_ctrl_profile(profile: Profile) {
 
 #[test]
 fn linux_profile_is_complete_unique_and_free_of_super() {
-    assert_ctrl_profile(linux::defaults);
+    assert_ctrl_profile(linux::defaults, &[]);
 }
 
 #[test]
 fn windows_profile_is_complete_unique_and_free_of_win() {
-    assert_ctrl_profile(windows::defaults);
+    // Alt+F4 closes a window through Windows itself.
+    assert_ctrl_profile(windows::defaults, &[Command::CloseWindow]);
 }
 
 /// Windows keeps these for itself or for the shell's programs: plain Ctrl

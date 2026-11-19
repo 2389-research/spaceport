@@ -253,7 +253,14 @@ fn daemon_keystrokes_move_from_gui_defaults_but_not_from_gui_config() {
         list(&keymap, Command::Tab),
         [default("cmd-t"), "alt-1", "ctrl-a c"]
     );
-    assert_eq!(list(&keymap, Command::TabNumber(1)), [default("cmd-1")]);
+    // A platform may append aliases for normalized backend keystrokes, so
+    // the GUI default is the catalog's whole list for this host.
+    let tab_number_defaults = COMMANDS
+        .iter()
+        .find(|info| info.command == Command::TabNumber(1))
+        .map(|info| info.default_shortcuts())
+        .unwrap_or_default();
+    assert_eq!(list(&keymap, Command::TabNumber(1)), tab_number_defaults);
     assert_eq!(list(&keymap, Command::CloseTab), [default("cmd-shift-w")]);
     assert_eq!(list(&keymap, Command::ClosePane), [default("cmd-w")]);
     assert_eq!(list(&keymap, Command::About), ["cmd-e"]);

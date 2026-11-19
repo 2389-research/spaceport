@@ -2319,25 +2319,37 @@ switching input languages. Alt+F4 closes a window through Windows itself.
 
 | Action | Linux and Windows default |
 | --- | --- |
-| New tab / New window | Ctrl+Shift+T / Ctrl+Alt+N |
-| New workspace / New worktree | Ctrl+Alt+Shift+N / Ctrl+Shift+N |
+| New tab / New window | Ctrl+Shift+T / Ctrl+Shift+N |
+| New workspace | Ctrl+Alt+Shift+N |
 | Copy / Paste | Ctrl+Shift+C / Ctrl+Shift+V |
 | Find / Command palette | Ctrl+Shift+F / Ctrl+Shift+P |
 | Resume palette | Ctrl+Alt+Shift+R |
 | Split right / Split down | Ctrl+Shift+D / Ctrl+Alt+Shift+D |
 | Close pane / Close tab | Ctrl+Shift+W / Ctrl+Alt+Shift+W |
-| Next / Previous tab | Ctrl+PageDown / Ctrl+PageUp |
+| Next / Previous tab | Ctrl+Shift+PageDown / Ctrl+Shift+PageUp |
 | Toggle sidebar | Ctrl+Shift+B |
+| Toggle status bar | Ctrl+Alt+B (Linux) / Ctrl+Alt+Shift+B (Windows) |
+| Zen mode | Ctrl+Shift+Z |
+| Focus next / previous region | Ctrl+F6 / Ctrl+Shift+F6 |
 | Settings / Keyboard Shortcuts | Ctrl+Shift+, / Ctrl+Shift+/ |
 | Larger / Smaller text | Ctrl+Shift+= / Ctrl+Shift+- |
 | Reset text size | Ctrl+Shift+0 (Linux) / Ctrl+0 (Windows) |
 | Quit | Ctrl+Shift+Q |
-| Full screen | F11 |
+| Full screen | Ctrl+Shift+F11 |
 
 The in-app reference lists all platform defaults and current overrides. The
 Cmd examples elsewhere in this document describe the macOS profile.
 Ctrl+Shift+U is left unbound for
 [GNOME/IBus Unicode character entry](https://help.gnome.org/users/gnome-help/stable/tips-specialchars.html.en#ctrlshiftu).
+
+A shifted digit or punctuation key arrives as the symbol it types, so every
+default of that kind is bound both ways and either spelling runs it: Ctrl+Shift-1
+and Ctrl+!, Ctrl+Shift-[ and Ctrl+{, and the same for `]`, `,`, `/`, `\`, and
+`` ` ``. Windows reports AltGr as Ctrl+Alt, so nothing paired with a letter alone
+becomes a Windows default: where Ctrl+Alt is the second tier Windows takes
+Ctrl+Alt+Shift instead, and a window closes with Alt+F4 itself. Bare function
+keys belong to the programs a pane runs (mc moves with F6 and htop sorts with
+it), so the app's own F6, F11, and tab keys carry its Ctrl prefix.
 
 ## Supported
 
@@ -3337,19 +3349,20 @@ system's contrast colors.
 #### The keyboard in the chrome
 
 Tab belongs to the terminal, so the chrome is reached a region at a time, as
-in other Windows apps. **F6** (Focus Next Region) moves the keyboard from the
-terminal to the title bar, the sidebar (from its activity bar), and the status
-bar, then back to the terminal; **Shift+F6** (Focus Previous Region) goes the
-other way. Inside a region, Tab and Shift+Tab move between its controls and
-wrap, the arrows also move in the sidebar, Enter or Space uses the control, and
-Escape returns to the terminal. The focused control has an accent ring.
-**F10** opens the menu bar. Both region commands can be rebound in Keyboard
-Shortcuts (Cmd+F6 and Cmd+Shift+F6 on macOS). A region's controls are tab
-stops only while it holds the keyboard, so clicking a chrome button never pulls
-typing away from the terminal.
+in other Windows apps. **Ctrl+F6** (Focus Next Region) moves the keyboard from
+the terminal to the title bar, the sidebar (from its activity bar), and the
+status bar, then back to the terminal; **Ctrl+Shift+F6** (Focus Previous
+Region) goes the other way. Bare F6 stays with the program in the pane, as mc
+and htop take it. Inside a region, Tab and Shift+Tab move between its
+controls and wrap, the arrows also move in the sidebar, Enter or Space uses the
+control, and Escape returns to the terminal. The focused control has an accent
+ring. **F10** opens the menu bar. Both region commands can be rebound in
+Keyboard Shortcuts (Cmd+F6 and Cmd+Shift+F6 on macOS). A region's controls are
+tab stops only while it holds the keyboard, so clicking a chrome button never
+pulls typing away from the terminal.
 
 `tests/accessibility_windows.rs` reads a running window's tree and checks
-these names and where F6 and Tab move focus:
+these names and where Ctrl+F6 and Tab move focus:
 
 ```bash
 HERDR_TEST_BINARY=C:/path/to/herdr.exe cargo test -p sheprd-gpui --test accessibility_windows -- --ignored --nocapture

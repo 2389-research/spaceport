@@ -50,7 +50,7 @@ fn linux_shortcuts_preserve_terminal_keys_and_shifted_actions() {
     let keymap = Keymap::default();
     for (command, key) in [
         (Command::Tab, "ctrl-shift-t"),
-        (Command::NewWindow, "ctrl-alt-n"),
+        (Command::NewWindow, "ctrl-shift-n"),
         (Command::CloseWindow, "ctrl-alt-w"),
         (Command::Workspace, "ctrl-alt-shift-n"),
         (Command::Palette, "ctrl-shift-p"),
@@ -61,7 +61,7 @@ fn linux_shortcuts_preserve_terminal_keys_and_shifted_actions() {
         (Command::IncreaseFontSize, "ctrl-shift-="),
         (Command::DecreaseFontSize, "ctrl-shift--"),
         (Command::ResetFontSize, "ctrl-shift-0"),
-        (Command::ToggleFullScreen, "f11"),
+        (Command::ToggleFullScreen, "ctrl-shift-f11"),
     ] {
         assert_eq!(keymap.primary(command), key);
     }
@@ -102,13 +102,14 @@ fn windows_shortcuts_preserve_terminal_and_system_keys() {
     let keymap = Keymap::default();
     for (command, key) in [
         (Command::Tab, "ctrl-shift-t"),
-        (Command::NewWindow, "ctrl-alt-n"),
+        (Command::NewWindow, "ctrl-shift-n"),
         (Command::Palette, "ctrl-shift-p"),
         (Command::SplitRight, "ctrl-shift-d"),
         (Command::CopyMode, "ctrl-alt-shift-c"),
+        (Command::ToggleStatusBar, "ctrl-alt-shift-b"),
         (Command::ResetFontSize, "ctrl-0"),
         (Command::Quit, "ctrl-shift-q"),
-        (Command::ToggleFullScreen, "f11"),
+        (Command::ToggleFullScreen, "ctrl-shift-f11"),
     ] {
         assert_eq!(keymap.primary(command), key);
     }
