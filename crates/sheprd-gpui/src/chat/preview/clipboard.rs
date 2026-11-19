@@ -1,6 +1,6 @@
 // ABOUTME: Observes real native paste state without acquiring or changing clipboard data.
 // ABOUTME: Mounts the standalone multiline field separately from chat's paste capture.
-use crate::{SheprdWindow, multiline_input::MultilineInput};
+use crate::{SheprdWindow, i18n::Localize, multiline_input::MultilineInput};
 use anyhow::Result;
 use gpui::{
     AnyWindowHandle, AppContext as _, AsyncApp, Context, Entity, FocusHandle, InteractiveElement,
@@ -14,7 +14,7 @@ mod tests;
 
 #[derive(Default)]
 pub(super) struct Probe {
-    previous: Option<(bool, bool, usize)>,
+    previous: Option<(bool, bool, usize, &'static str)>,
 }
 
 impl Probe {
@@ -23,11 +23,25 @@ impl Probe {
         let reader = crate::window::clipboard::reader_active();
         #[cfg(not(windows))]
         let reader = false;
-        let state = (input.is_pasting(), reader, input.text().len());
+        let error = match input.paste_error_text() {
+            None => "none",
+            Some(error) if error == crate::i18n::fl!("chat-prompt-too-long") => "prompt",
+            Some(error)
+                if error
+                    == crate::window::clipboard::Error::Size {
+                        limit: 2 * 1024 * 1024,
+                    }
+                    .localize() =>
+            {
+                "acquisition"
+            }
+            Some(_) => "other",
+        };
+        let state = (input.is_pasting(), reader, input.text().len(), error);
         if self.previous != Some(state) {
             eprintln!(
-                "CLIPBOARD_STATE pending={} reader={} utf8_bytes={}",
-                state.0, state.1, state.2
+                "CLIPBOARD_STATE pending={} reader={} utf8_bytes={} error={}",
+                state.0, state.1, state.2, state.3
             );
             self.previous = Some(state);
         }

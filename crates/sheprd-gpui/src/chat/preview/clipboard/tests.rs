@@ -33,3 +33,38 @@ fn standalone_fixture_pastes_through_its_field_without_chat_capture(cx: &mut gpu
         assert!(!input.is_pasting());
     });
 }
+
+#[gpui::test]
+fn native_probe_distinguishes_real_prompt_acquisition_and_cleared_errors(
+    cx: &mut gpui::TestAppContext,
+) {
+    let (view, cx) = cx.add_window_view(|_, cx| Field::new(cx));
+    let input = view.read_with(cx, |view, _| view.input.clone());
+    let mut probe = Probe::default();
+    input.read_with(cx, |input, _| probe.observe(input));
+    assert_eq!(probe.previous.unwrap().3, "none");
+    input.update(cx, |input, cx| {
+        input.set_text_at(
+            &"a".repeat(sheprd_chat_protocol::MAX_PROMPT_SIZE + 1),
+            0,
+            cx,
+        );
+    });
+    input.read_with(cx, |input, _| probe.observe(input));
+    assert_eq!(probe.previous.unwrap().3, "prompt");
+    input.update(cx, |input, cx| {
+        input.clear(cx);
+        input.paste_error(
+            crate::window::clipboard::Error::Size {
+                limit: 2 * 1024 * 1024,
+            }
+            .into(),
+            cx,
+        );
+    });
+    input.read_with(cx, |input, _| probe.observe(input));
+    assert_eq!(probe.previous.unwrap().3, "acquisition");
+    input.update(cx, |input, cx| input.clear(cx));
+    input.read_with(cx, |input, _| probe.observe(input));
+    assert_eq!(probe.previous.unwrap().3, "none");
+}

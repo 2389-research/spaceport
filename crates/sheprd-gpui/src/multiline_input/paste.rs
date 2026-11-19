@@ -29,6 +29,11 @@ impl Drop for Pending {
 }
 
 impl MultilineInput {
+    #[cfg(feature = "integration-test")]
+    pub(crate) fn paste_error_text(&self) -> Option<&str> {
+        self.error.as_deref()
+    }
+
     pub(crate) fn is_pasting(&self) -> bool {
         self.pending_paste.is_some()
     }

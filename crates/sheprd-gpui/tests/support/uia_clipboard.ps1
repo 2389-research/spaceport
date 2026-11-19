@@ -55,10 +55,6 @@ function Send-FieldKeys([string]$keys) {
   Require-Released
   [System.Windows.Forms.SendKeys]::SendWait($keys)
 }
-function Description {
-  # Fluent isolates number placeables and may group the en-US byte count.
-  $field.Current.HelpText -replace '[\u2068\u2069,]', ''
-}
 function Expect-Value([string]$expected) {
   Wait-For { $value.Current.Value -ceq $expected } 'Native field value differs from authored expectation'
 }
@@ -66,7 +62,7 @@ function Reset-Draft {
   Focus-Field
   Send-FieldKeys '^a{BACKSPACE}draft'
   Expect-Value 'draft'
-  Wait-For { (Description) -ceq '' } 'Native edit did not clear the prior paste error'
+  Expect-Error 'none'
 }
 function Read-State {
   $stream = [System.IO.File]::Open("$PSScriptRoot\gui.log", [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
@@ -81,13 +77,16 @@ function Read-State {
     if ($length -gt 1048576) { throw 'Native clipboard log exceeds bound' }
     $log = [System.Text.Encoding]::UTF8.GetString($bytes, 0, $length)
   } finally { $stream.Dispose() }
-  $states = [regex]::Matches($log, 'CLIPBOARD_STATE pending=(true|false) reader=(true|false) utf8_bytes=(\d+)')
+  $states = [regex]::Matches($log, 'CLIPBOARD_STATE pending=(true|false) reader=(true|false) utf8_bytes=(\d+) error=(none|prompt|acquisition|other)')
   if ($states.Count -eq 0) { return '' }
   $states[$states.Count - 1].Value
 }
 function Expect-State([bool]$pending, [bool]$reading, [int]$milliseconds = 1000) {
   $prefix = "CLIPBOARD_STATE pending=$($pending.ToString().ToLowerInvariant()) reader=$($reading.ToString().ToLowerInvariant()) "
   Wait-For { (Read-State).StartsWith($prefix) } 'Native clipboard pending/reader state did not match' $milliseconds
+}
+function Expect-Error([string]$kind) {
+  Wait-For { (Read-State).EndsWith(" error=$kind") } 'Real field did not expose the expected paste error state'
 }
 Require-Released
 try { [HerdrUia]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero) }
@@ -116,10 +115,11 @@ $stop = "$PSScriptRoot\clipboard-stop"
     foreach ($stage in @('Prompt', 'Acquisition')) {
       Reset-Draft
       $length = if ($stage -eq 'Prompt') { 262145 } else { 2097153 }
-      $expected = if ($stage -eq 'Prompt') { 'The prompt is longer than the agent accepts' } else { 'Clipboard content exceeds the 2097152-byte limit.' }
-      $owner.Publish([string]::new('a', $length))
+      $payload = if ($stage -eq 'Prompt') { $exact + 'a' } else { [string]::new('a', $length) }
+      if ([System.Text.Encoding]::UTF8.GetByteCount($payload) -ne $length) { throw 'Authored clipboard payload has an unexpected byte count' }
+      $owner.Publish($payload)
       Send-FieldKeys '^v'
-      Wait-For { (Description) -ceq $expected } 'Native paste did not expose the exact expected size error'
+      Expect-Error ($stage.ToLowerInvariant())
       Expect-Value 'draft'
       Expect-State $false $false 5000
       [Console]::WriteLine("CLIPBOARD_APPLICATION rejected_utf8_bytes=$length draft_preserved=true error=$stage")

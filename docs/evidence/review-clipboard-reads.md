@@ -255,8 +255,9 @@ That headless test uses GPUI's test clipboard and does not qualify native acquis
 The prewarmed native helper publishes authored Unicode with CRLF and checks the normalized field value.
 It accepts exactly 262144 UTF-8 bytes, including a multibyte character.
 It rejects 262145-byte prompts and 2097153-byte acquisition while preserving the draft.
-It checks distinct exact error descriptions after clearing each prior error through real edits.
-Description comparison removes only Fluent isolate marks and en-US numeric grouping separators.
+The prompt overflow appends one byte to the multibyte exact-limit payload, distinguishing UTF-8 from UTF-16 counts.
+It checks distinct error tags after clearing each prior error through real edits.
+The read-only observer classifies the field's actual error by exact localized prompt and acquisition diagnostics.
 The helper logs receipts and lengths, never field or clipboard contents.
 
 Cancellation holds the exact-owned clipboard without modifying its data.
@@ -266,7 +267,7 @@ No shared gate remains locked during the hold or automation callback.
 An expired hold fails the responsiveness check.
 Safety cases separately exercise callback failure and independent hold expiry.
 
-The app observer only reports actual pending state, native reader lease, and UTF-8 length.
+The app observer only reports actual pending state, native reader lease, UTF-8 length, and error kind.
 Typing and blur must cancel pending paste while the native reader remains active and the hold still exists.
 After release, the helper requires reader completion, unchanged authored draft, and a successful fresh paste.
 The production three-second reader deadline is unchanged.
@@ -280,3 +281,30 @@ Both host and Windows GNU lint configurations and static checks pass.
 Independent review finds no material ownership, privacy, cancellation-evidence, or parent-cleanup issue.
 C# compilation, native helper execution, and the application scenarios remain pending Windows CI.
 No local clipboard operation ran, and `d378` remains open.
+
+## First native application result on `47fd690d6`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44556877754/job/135675531922) passes eight GUI cases and sixteen UIA cases, with two UIA failures.
+Both application cases pass real Unicode/CRLF paste and exact 262144-byte acceptance.
+Both then fail the fixture's assertion that HelpText must become empty after editing.
+Neither reaches prompt overflow, acquisition overflow, or cancellation qualification.
+Both emit a safe clipboard cleanup receipt before reporting failure.
+
+The native C# helper compiles and passes the strengthened ownership regressions.
+Callback failure releases the holder, and a delayed callback cannot extend the independent two-second hold.
+The exact-owned publication survives both cases and remains readable afterward.
+Guardian cleanup and fresh empty-only admission also pass again after deliberate parent failure.
+
+Pinned AccessKit Windows maps `UIA_HelpTextPropertyId` to the placeholder.
+It maps the field's description to `UIA_FullDescriptionPropertyId` instead.
+The failed reset read the normal placeholder rather than the error.
+[Microsoft's property contract](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-automation-element-propids) distinguishes those properties.
+
+The corrected fixture observes the actual field error through its existing read-only state probe.
+It compares exact localized diagnostics and emits only none, prompt, acquisition, or other.
+Native keys still clear each prior error, and native UIA Value still verifies preserved draft contents.
+The probe adds no paste, acquisition, or state-changing path.
+A headless test exercises the real prompt-error producer, typed acquisition-error boundary, and clearing.
+Corrected actual native execution remains pending; `d378` stays open.
+The corrected full consumer scope passes thirty-three tests, with none ignored.
+Independent correction review finds no material issue in the read-only observation or retained native checks.
