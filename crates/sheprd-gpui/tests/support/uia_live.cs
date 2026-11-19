@@ -1,4 +1,4 @@
-// ABOUTME: Observes live-region events only from the retained private GUI window.
+// ABOUTME: Observes selected accessibility events only from the retained private GUI window.
 // ABOUTME: Bounds callback data and unregisters on its dedicated MTA thread.
 using System;
 using System.Collections.Generic;
@@ -8,6 +8,7 @@ using System.Windows.Automation;
 public sealed class SpaceportLiveEvents : IDisposable {
     private readonly int processId;
     private readonly IntPtr handle;
+    private readonly AutomationEvent eventId;
     private readonly object gate = new object();
     private readonly List<string> records = new List<string>();
     private readonly ManualResetEventSlim ready = new ManualResetEventSlim(false);
@@ -16,9 +17,13 @@ public sealed class SpaceportLiveEvents : IDisposable {
     private Exception error;
     private int received;
 
-    public SpaceportLiveEvents(IntPtr handle, int processId) {
+    public SpaceportLiveEvents(IntPtr handle, int processId, AutomationEvent eventId) {
+        if (eventId == null || (eventId != AutomationElementIdentifiers.LiveRegionChangedEvent
+            && eventId != TextPattern.TextChangedEvent))
+            throw new ArgumentException("Unsupported native accessibility event", "eventId");
         this.handle = handle;
         this.processId = processId;
+        this.eventId = eventId;
         thread = new Thread(Run);
         thread.IsBackground = true;
         thread.SetApartmentState(ApartmentState.MTA);
@@ -46,7 +51,7 @@ public sealed class SpaceportLiveEvents : IDisposable {
         try {
             var element = (AutomationElement)sender;
             if (element.Current.ProcessId != processId) return;
-            if (args.EventId.Id != 20024) throw new InvalidOperationException("Unexpected UIA event");
+            if (args.EventId.Id != eventId.Id) throw new InvalidOperationException("Unexpected UIA event");
             string name = element.Current.Name;
             if (name.Length > 4096) throw new InvalidOperationException("Private UIA name exceeds limit");
             lock (gate) {
@@ -60,14 +65,11 @@ public sealed class SpaceportLiveEvents : IDisposable {
 
     private void Run() {
         AutomationElement window = null;
-        AutomationEvent eventId = null;
         AutomationEventHandler handler = OnEvent;
         bool registered = false;
         try {
             window = AutomationElement.FromHandle(handle);
             if (window.Current.ProcessId != processId) throw new InvalidOperationException("UIA window owner differs");
-            eventId = AutomationElementIdentifiers.LiveRegionChangedEvent;
-            if (eventId == null || eventId.Id != 20024) throw new InvalidOperationException("Native live-region event unavailable");
             Automation.AddAutomationEventHandler(eventId, window, TreeScope.Subtree, handler);
             registered = true;
             ready.Set();

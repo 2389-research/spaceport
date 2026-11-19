@@ -36,6 +36,11 @@ Their new native popup Quit test passes on `64970ccce`, preserving the private d
 That source passes full CI with eighteen successful jobs and one unconfigured skip.
 Both Windows native jobs and supply-chain checks pass.
 
+Doctor Biz approved accepting Clint's separate read-only PR review on November 19.
+The review targets current head `47fd690d6`, including the contracts Clint named.
+It permits PR findings or a review document, with no edits, merge, push, or rebase.
+The preceding P2 source `64970ccce` is fully qualified; the new clipboard scenarios remain in CI.
+
 ## Sound extraction integration
 
 Main advanced again to `4feee1830b1daffa2ea42792478cddd042d348da` during validation.

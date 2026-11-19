@@ -125,4 +125,41 @@ Kata `q72g` remains open for these specific checks:
 | Settings font scaling | Inspect enlarged glyphs and clipping, including a narrow window. |
 | Keyboard reorder and resize | Reorder workspace rows and resize both terminal kinds through native key delivery. |
 | Selected-tab focus contrast | Inspect focused tabs on actual fills, including applicable translucent or image backdrops. |
-| Close-button roles | Inspect button names, roles, and keyboard focus in an actual close dialog. |
+| Close-button roles | Native names, Button roles, cancellation, and confirmation pass on `64970ccce`; see below. |
+
+## Native close-button qualification
+
+Source `64970ccce` passes the [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44551798252/job/135657584169).
+The private workspace case requires native `Button 'Close workspace'` and `Button 'Cancel'` nodes.
+Actual Enter cancels without losing the workspace; Tab then Enter confirms a fresh dialog.
+The private Close Others case requires both native Button roles before any tab closes.
+Cancellation preserves every captured ID, and one confirmation closes only the two named targets.
+Those cases pass at `2026-11-19T15:21:01.2369189Z` and `15:19:18.8859389Z` respectively.
+The role and keyboard-effect evidence satisfies the original close-button requirement.
+It does not qualify the remaining Core, caret, scaled Settings glyph, reorder, or selected-tab image checks.
+Kata `q72g` remains open.
+
+## Native Herdr text and caret candidate
+
+The next Windows case opens only a private Herdr terminal.
+It requires the native Document's TextPattern before running its helper.
+Native keys require the exact foreground HWND, the owned Terminal focus, and released modifiers.
+The helper sends an authored echo command and requires its standalone output line.
+It observes the native Terminal TextChanged event through the shared bounded MTA listener.
+It resolves a fresh document range and reads at most 16384 characters, without logging terminal contents.
+
+The [UIA GetSelection contract](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.textpattern.getselection) returns a collapsed range for an unselected system caret.
+Pinned AccessKit Windows 0.34 implements that path through its terminal text selection.
+The fixture requires one collapsed range with finite bounds contained in the terminal document.
+It does not invent TextPattern2 support; the pinned provider exposes TextPattern.
+Observer removal and thread join must succeed before the helper prints its removal receipt.
+
+The shared observer now accepts only LiveRegionChanged or TextChanged.
+The existing warning/toast consumer explicitly selects its original live-region event.
+PID/window scoping, record bounds, registration, removal, and join contracts remain unchanged.
+Independent review finds no material contract, ownership, or evidence gap.
+Both host and Windows GNU lint configurations and static checks pass.
+Logs: `/tmp/spaceport-9s44-terminal-native-{lint,static}.log`.
+C# compilation, actual native text/caret execution, and the existing live-event regression remain pending CI.
+The [TextChanged contract](https://learn.microsoft.com/en-us/dotnet/api/system.windows.automation.textpattern.textchangedevent) qualifies native text-change delivery once this case passes.
+It does not prove audible screen-reader speech or Core terminal accessibility.

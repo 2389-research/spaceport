@@ -12,7 +12,7 @@ Add-Type -Path "$PSScriptRoot\uia_live.cs" -ReferencedAssemblies @(
 $process = Get-Process -Id $ProcessId
 $handle = $process.MainWindowHandle
 if ($handle -eq [IntPtr]::Zero) { throw 'The private GUI has no main window' }
-$observer = [SpaceportLiveEvents]::new($handle, $ProcessId)
+$observer = [SpaceportLiveEvents]::new($handle, $ProcessId, [System.Windows.Automation.AutomationElementIdentifiers]::LiveRegionChangedEvent)
 try {
     [Console]::WriteLine('UIA_LIVE_READY')
     [System.IO.File]::WriteAllText("$PSScriptRoot\live-events-ready", 'ready')

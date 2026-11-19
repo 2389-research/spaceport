@@ -445,6 +445,8 @@ mod quit;
 mod recovery;
 #[path = "accessibility_windows/settings.rs"]
 mod settings;
+#[path = "accessibility_windows/terminal.rs"]
+mod terminal;
 #[path = "accessibility_windows/workspace_close.rs"]
 mod workspace_close;
 // keep-sorted end
