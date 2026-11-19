@@ -1,7 +1,7 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `f904651ac` passes full CI; the validated streaming candidate passes local semantic and release checks.
+Status: `dd3495336` publishes streaming reuse; the painter integration passes focused checks and review.
 Kata `9s44` has 48 closed children and five open children.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
@@ -48,6 +48,30 @@ The managed API returns Rect objects and permits empty rectangles for a collapse
 The corrected qualifier checks the caret separately from its enclosing visible line geometry.
 Current Linux work also removes four GNOME-conflicting defaults and moves Resume Palette to Ctrl-Shift-R.
 Its original native Linux/Windows qualification remains open under `3wd4`.
+
+## Terminal painter split integration
+
+Published streaming source `dd3495336` conflicts with main `fc9bb0c79` from PR 132.
+GitHub reports `mergeable_state: dirty`; no current-commit workflow run appears.
+The integration retains main's painter modules and the review fixes within those modules.
+`surface.rs` preserves glyph shapes when only the theme changes.
+`text.rs` retains bounded cold-glyph replacement.
+`frame.rs` starts each cache epoch and retains the image test probes.
+The shared image painter keeps destination masks, texture ownership, and layer ordering.
+Both new glyph regression modules remain registered.
+No dependency or wire contract changes occur in this integration.
+The combined candidate passes 94 painter, region, and smooth-scroll tests.
+Both ignored offscreen Metal pixel cases pass separately.
+These cases do not qualify foreground native image scrolling.
+All four canonical host and Windows GNU lint configurations pass.
+Formatting, size, sorting, operations, localization, and diff checks pass.
+Independent review confirms twelve moved methods retain the task parent's bodies.
+The fresh-eyes review finds no material issue in the fourteen-path integration diff.
+The known debug-link unwind and external `block` notices remain unchanged.
+Streaming source matches published `dd3495336`; its prior semantic and release receipts remain applicable.
+Logs use `/tmp/spaceport-9s44-painter-integration-{tests,metal,lint,static}.log`.
+Current combined-source hosted CI remains pending until this merge is published.
+This merges main into the draft branch; it does not merge the draft into main.
 
 ## Sound extraction integration
 

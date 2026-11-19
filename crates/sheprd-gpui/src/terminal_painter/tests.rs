@@ -1,8 +1,23 @@
 // ABOUTME: Shares frame fixtures for the actual terminal painter and its caches.
 // ABOUTME: Registers scoped rendering, geometry, and image lifecycle regressions.
 use super::*;
+
+use crate::terminal::*;
+#[cfg(feature = "integration-test")]
+use crate::terminal_painter::area::whole;
+use crate::terminal_painter::backgrounds::background_spans;
+use crate::terminal_painter::composition::{byte_index, composition_origin};
+use crate::terminal_painter::decorations::decoration_offsets;
+use crate::terminal_painter::diagnostics::{REPORT_INTERVAL, SLOW_PAINT};
+use crate::terminal_painter::grid::{background_extent, grid_corners, last_row_has_separator};
+use crate::terminal_painter::links::link_bounds;
 use core::prelude::v1::test;
-use std::sync::Arc;
+use gpui::*;
+use sheprd_client::protocol::{CellData, FrameData, SurfaceRect};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 mod backdrop;
 mod cells;
