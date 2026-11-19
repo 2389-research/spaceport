@@ -244,3 +244,27 @@ Actual PowerShell execution and native reorder qualification remain pending Wind
 No Mac fixture launched, and no personal daemon or clipboard was inspected.
 This candidate does not qualify pane resizing, Core access, or audible screen-reader output.
 Kata `q72g` remains open.
+
+## Native enlarged Settings candidate
+
+The Windows qualifier loads `[ui] size = 24` from its private config file.
+It opens the real Settings window and reaches Smooth scrolling through native keyboard focus.
+The existing integration-only observer requires that row's active keyboard context before capturing.
+It resizes only that window to 1100 by 780, then 680 by 780 logical pixels.
+The narrow width respects Settings' actual 680-pixel minimum.
+Both captures must report the exact viewport and a contained focused row.
+They use the existing native GPU readback and four-million-pixel bound.
+PNG encoding runs in the background and allows at most 192 KiB per image.
+The harness requires one image per width and unchanged private config bytes.
+
+The ordinary focus-ring observer and keyboard actions retain their prior behavior.
+The new scale observer stays behind the Windows integration-test gate.
+Independent review finds no material issue in focus, capture bounds, ownership, or evidence scope.
+Targeted Windows binary and native-harness lint passes with all features and without default features.
+Formatting, size, sorting, operations, localization, commit, and diff checks pass.
+The final seven-file review finds no further material issue.
+Full workspace gates remain assigned to CI.
+Logs use `/tmp/spaceport-9s44-settings-scale-*.log`.
+Actual Windows execution and inspection of both PNGs remain pending.
+Row containment alone does not establish glyph readability or text clipping.
+Kata `q72g` remains open.

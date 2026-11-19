@@ -3,7 +3,7 @@
 use super::{CAPTURE_LIMIT, Duration, GuiTarget, Instant, Read, Running, fs, thread};
 
 impl Running {
-    fn settings_log(&self) -> String {
+    pub(super) fn settings_log(&self) -> String {
         let mut bytes = Vec::new();
         fs::File::open(self.sandbox.dir.join("gui.log"))
             .unwrap()
@@ -17,7 +17,7 @@ impl Running {
         String::from_utf8(bytes).unwrap()
     }
 
-    fn settings_action(&mut self, action: &str) {
+    pub(super) fn settings_action(&mut self, action: &str) {
         let script = self.sandbox.dir.join("uia_settings.ps1");
         let result = self.script_output(&script, "-Action", action, None, Duration::from_secs(35));
         if result.is_err() {

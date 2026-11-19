@@ -11,6 +11,8 @@ use std::{
 
 const ROW: &str = "general-smooth-scroll";
 
+mod scale;
+
 struct Capture {
     image: image::RgbaImage,
     row: Bounds<Pixels>,
@@ -20,11 +22,15 @@ struct Capture {
 }
 
 pub(super) fn observe(handle: WindowHandle<SettingsWindow>, cx: &mut App) {
-    if std::env::var_os("HERDR_TEST_SETTINGS_KEYBOARD").is_none() {
+    let Some(mode) = std::env::var_os("HERDR_TEST_SETTINGS_KEYBOARD") else {
         return;
-    }
+    };
     cx.spawn(async move |cx| {
-        if let Err(error) = verify(handle, cx).await {
+        if mode == "scale" {
+            if let Err(error) = scale::verify(handle, cx).await {
+                eprintln!("SETTINGS_SCALE_ERROR {error:#}");
+            }
+        } else if let Err(error) = verify(handle, cx).await {
             eprintln!("SETTINGS_RING_ERROR {error:#}");
         }
     })

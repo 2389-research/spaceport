@@ -35,6 +35,7 @@ enum GuiTarget {
     ClipboardField,
     Local,
     SettingsKeyboard,
+    SettingsScaling,
     ShortcutFenceObserver,
     ShortcutObserver,
     Socket,
@@ -139,10 +140,14 @@ impl Running {
             GuiTarget::Socket
             | GuiTarget::ShortcutObserver
             | GuiTarget::ShortcutFenceObserver
-            | GuiTarget::SettingsKeyboard => {
+            | GuiTarget::SettingsKeyboard
+            | GuiTarget::SettingsScaling => {
                 command.arg("--socket").arg(self.sandbox.socket());
                 if matches!(target, GuiTarget::SettingsKeyboard) {
                     command.env("HERDR_TEST_SETTINGS_KEYBOARD", "1");
+                }
+                if matches!(target, GuiTarget::SettingsScaling) {
+                    command.env("HERDR_TEST_SETTINGS_KEYBOARD", "scale");
                 }
                 if matches!(
                     target,
@@ -464,6 +469,8 @@ mod quit;
 mod recovery;
 #[path = "accessibility_windows/settings.rs"]
 mod settings;
+#[path = "accessibility_windows/settings_scale.rs"]
+mod settings_scale;
 #[path = "accessibility_windows/terminal.rs"]
 mod terminal;
 #[path = "accessibility_windows/workspace_close.rs"]

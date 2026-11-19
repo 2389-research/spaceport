@@ -1,6 +1,6 @@
 # ABOUTME: Drives the separate private Settings window through actual Windows keyboard input.
 # ABOUTME: Guards its exact HWND and focus ancestry before every key and preserves private preferences.
-param([int]$ProcessId, [ValidateSet('OpenAndRing','ToggleSpace','ToggleEnter','Bubbles','Timeline','Dropdown')][string]$Action)
+param([int]$ProcessId, [ValidateSet('OpenAndRing','ToggleSpace','ToggleEnter','Bubbles','Timeline','Dropdown','Scale')][string]$Action)
 . "$PSScriptRoot\uia_tree.ps1" -ProcessId $ProcessId
 
 function Named-Control($root, [string]$name, $type) {
@@ -12,7 +12,7 @@ function Named-Control($root, [string]$name, $type) {
   return $matches[0]
 }
 
-if ($Action -eq 'OpenAndRing') {
+if ($Action -in @('OpenAndRing','Scale')) {
   if ($windows.Count -ne 1) { throw 'Settings opener requires exactly one private main window' }
   $opener = Named-Control $windows[0] 'Settings' ([System.Windows.Automation.ControlType]::Button)
   $opener.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
@@ -94,13 +94,14 @@ function Wait-Ring([string]$marker) {
       $text = [System.Text.Encoding]::UTF8.GetString($bytes, 0, $length)
     } finally { $stream.Dispose() }
     if ($text.Contains('SETTINGS_RING_ERROR ')) { throw 'The owned Settings ring observer failed' }
+    if ($text.Contains('SETTINGS_SCALE_ERROR ')) { throw 'The owned Settings scale observer failed' }
     if ($text.Contains($marker)) { return }
     if ([DateTime]::UtcNow -ge $deadline) { throw "Missing native Settings marker '$marker'" }
     Start-Sleep -Milliseconds 25
   } while ($true)
 }
 
-if ($Action -eq 'OpenAndRing') {
+if ($Action -in @('OpenAndRing','Scale')) {
   if (([HerdrUia]::GetAsyncKeyState(0x12) -band 0x8000) -ne 0) { throw 'Alt was already held' }
   try { [HerdrUia]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero) }
   finally { [HerdrUia]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero) }
@@ -125,6 +126,12 @@ if ($Action -eq 'OpenAndRing') {
   if (-not (Same-Focus $general)) { throw 'Tab did not restore the same General control' }
   Press ' '
   $switch = Tab-To 'Smooth scrolling' ([System.Windows.Automation.ControlType]::Button)
+  if ($Action -eq 'Scale') {
+    Wait-Ring 'SETTINGS_SCALE_PASS ui=24 wide=1100x780 narrow=680x780'
+    Require-SettingsFocus
+    [Console]::WriteLine('SETTINGS_KEY action=Scale native=true')
+    return
+  }
   Wait-Ring 'SETTINGS_RING_READY focused'
   Press '+{TAB}'
   if (Same-Focus $switch) { throw 'Shift-Tab did not leave the switch' }
