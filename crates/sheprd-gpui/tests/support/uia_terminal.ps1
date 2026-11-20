@@ -1,11 +1,15 @@
 # ABOUTME: Queries real terminal text, its unselected caret, and native output-change events.
 # ABOUTME: Sends authored input only to the exact private foreground terminal window.
-param([int]$ProcessId, [ValidateSet('Text','Resize','Observe','CoreResize')][string]$Action = 'Text')
+param([int]$ProcessId, [ValidateSet('Text','Resize','Observe','CoreResize')][string]$Action = 'Text', [switch]$CapturePixels, [string]$CoreToken = '')
 . "$PSScriptRoot\uia_tree.ps1" -ProcessId $ProcessId
 Add-Type -Path "$PSScriptRoot\uia_live.cs" -ReferencedAssemblies @(
   [System.Windows.Automation.AutomationElement].Assembly.Location,
   [System.Windows.Automation.AutomationEvent].Assembly.Location
 )
+if ($CapturePixels) {
+  Add-Type -AssemblyName System.Drawing
+  Add-Type -Path "$PSScriptRoot\native_tab_capture.cs" -ReferencedAssemblies System.Drawing
+}
 if ($windows.Count -ne 1) { throw 'Terminal check requires one owned window' }
 $root = $windows[0]
 $handle = [IntPtr]$root.Current.NativeWindowHandle
@@ -59,14 +63,58 @@ function Require-Released {
     if (([HerdrUia]::GetAsyncKeyState($key) -band 0x8000) -ne 0) { throw 'A modifier is already held' }
   }
 }
+function Write-TerminalPixels {
+  if (-not $CapturePixels) { return }
+  Require-Terminal
+  $bounds = $document.Current.BoundingRectangle
+  Require-NativeBounds $bounds
+  $left = [int][Math]::Ceiling($bounds.Left)
+  $top = [int][Math]::Ceiling($bounds.Top)
+  $right = [int][Math]::Floor($bounds.Right)
+  $bottom = [Math]::Min([int][Math]::Floor($bounds.Bottom), $top + 120)
+  $bitmap = [NativeTabCapture]::Capture($handle, $left, $top, $right - $left, $bottom - $top)
+  try {
+    Require-Terminal
+    [Console]::WriteLine('CORE_TERMINAL_PNG '+[NativeTabCapture]::Png($bitmap))
+  } finally { $bitmap.Dispose() }
+}
 Require-Released
 try { [HerdrUia]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero) }
 finally { [HerdrUia]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero) }
-[HerdrUia]::SetForegroundWindow($handle) | Out-Null
-$document.SetFocus()
+$activated = [HerdrUia]::SetForegroundWindow($handle)
 $deadline = [DateTime]::UtcNow.AddSeconds(3)
-while (-not [System.Windows.Automation.Automation]::Compare($automation::FocusedElement, $document)) {
-  if ([DateTime]::UtcNow -ge $deadline) { throw 'Native terminal focus was not acknowledged' }
+if ($CoreToken) {
+  do {
+    $present = $false
+    $current = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+    if ($current.Count -eq 1) {
+      $candidate = $current[0]
+      $candidatePattern = $candidate.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
+      $present = $candidatePattern.DocumentRange.GetText(16384).Contains($CoreToken)
+      if ($present) { $document = $candidate; $pattern = $candidatePattern }
+    }
+    $foreground = [HerdrUia]::GetForegroundWindow() -eq $handle
+    if ($foreground -and $present) { break }
+    if ([DateTime]::UtcNow -ge $deadline) {
+      throw "Native Core target was not presented: activated=$activated foreground=$foreground token_present=$present documents=$($current.Count)"
+    }
+    Start-Sleep -Milliseconds 10
+  } while ($true)
+}
+$document.SetFocus()
+if (-not $CoreToken) { $deadline = [DateTime]::UtcNow.AddSeconds(3) }
+while ($true) {
+  $focused = $automation::FocusedElement
+  if ($null -ne $focused -and [System.Windows.Automation.Automation]::Compare($focused, $document)) { break }
+  if ([DateTime]::UtcNow -ge $deadline) {
+    try {
+      $focusedProcess = if ($null -eq $focused) { -1 } else { $focused.Current.ProcessId }
+      $focusedName = if ($focusedProcess -eq $ProcessId) { $focused.Current.Name } else { '<foreign>' }
+      $state = "document_focus=$($document.Current.HasKeyboardFocus) focused_process=$focusedProcess owned_name=$focusedName"
+    } catch { $state = "inspection_failed=$($_.Exception.GetType().Name)" }
+    $foreground = [HerdrUia]::GetForegroundWindow() -eq $handle
+    throw "Native terminal focus was not acknowledged: activated=$activated foreground=$foreground $state"
+  }
   Start-Sleep -Milliseconds 10
 }
 Require-Terminal
@@ -209,6 +257,8 @@ try {
     if ([DateTime]::UtcNow -ge $deadline) {
       # This fixture owns the terminal and its authored input; preserve escaped text only on failure.
       $snapshot = ConvertTo-Json -InputObject $text -Compress
+      try { Write-TerminalPixels }
+      catch { [Console]::WriteLine('CORE_PIXEL_CAPTURE_ERROR '+$_.Exception.Message) }
       throw "Native terminal text or changed-output event is missing: changed=$changed output=$output utf16_length=$($text.Length) marker_present=$($text.Contains($marker)) private_text=$snapshot"
     }
     Start-Sleep -Milliseconds 25
@@ -237,5 +287,6 @@ try {
     }
   }
   [Console]::WriteLine('TERMINAL_A11Y text=true native_text_changed=true unselected_caret=true caret_line_bounds=true')
+  Write-TerminalPixels
 } finally { $observer.Dispose() }
 [Console]::WriteLine('TERMINAL_A11Y observer_removed=true')

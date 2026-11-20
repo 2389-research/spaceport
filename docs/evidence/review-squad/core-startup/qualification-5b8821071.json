@@ -1,0 +1,231 @@
+{
+  "probe_source": "5b8821071bb86e3b35da0350bce70642cae275fd",
+  "run_id": 44750040641,
+  "job_id": 136335612209,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44750040641",
+  "overall_result": "failure",
+  "reason": "Pre-fix sample1 failed focus acknowledgement before any input. Known reproductions were preserved; no whole-probe success is claimed.",
+  "candidate": {
+    "terminal_tests": 83,
+    "native_core_contracts": 3,
+    "focused_core_samples": 6,
+    "all_passed": true,
+    "pngs": 7
+  },
+  "negative_controls": [
+    {
+      "sample": 1,
+      "result": "unexpected pre-input focus failure",
+      "png": false
+    },
+    {
+      "sample": 2,
+      "result": "pass",
+      "png": true
+    },
+    {
+      "sample": 3,
+      "result": "known stale-suffix failure",
+      "png": true
+    },
+    {
+      "sample": 4,
+      "result": "pass",
+      "png": true
+    },
+    {
+      "sample": 5,
+      "result": "pass",
+      "png": true
+    },
+    {
+      "sample": 6,
+      "result": "known stale-suffix failure",
+      "png": true
+    },
+    {
+      "sample": 7,
+      "result": "pass",
+      "png": true
+    },
+    {
+      "sample": 8,
+      "result": "known stale-suffix failure",
+      "png": true
+    }
+  ],
+  "images": [
+    {
+      "file": "before-2222112ab.png",
+      "production_source": "2222112abf2d45acc33da70b994dc9118a975f58",
+      "capture_fixture_source": "5b8821071bb86e3b35da0350bce70642cae275fd",
+      "case": "negative-control sample3",
+      "width": 924,
+      "height": 120,
+      "bytes": 10788,
+      "sha256": "b30d13339bef6e7494383661aaa742c2982f0a5938bbd4b2757287f857c22336",
+      "observed_grid": {
+        "cols": 112,
+        "rows": 33
+      },
+      "visual_inspection": "First prompt missing from row0; marker on row1 retains the old prompt suffix.",
+      "frames": [
+        {
+          "type": "event",
+          "level": "INFO",
+          "timestamp": "[2026-11-20 14:20:58]",
+          "target": "spaceport::core_terminals::view::frame_probe",
+          "namespace": "spaceport",
+          "message": "CORE_FRAME_PROBE",
+          "fields": {
+            "terminal": "t1",
+            "observe": false,
+            "frame_width": 80,
+            "frame_height": 24,
+            "queued_size": "Some(Size { cols: 112, rows: 33 })",
+            "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 677px } })",
+            "cell_width": 8.203125,
+            "cell_height": 20,
+            "rows_with_hidden_counts": "[(\"                                                                                \", 0), (\"                                                                                \", 0), (\"                                                                                \", 0)]"
+          },
+          "spans": [],
+          "truncated": false
+        },
+        {
+          "type": "event",
+          "level": "INFO",
+          "timestamp": "[2026-11-20 14:20:58]",
+          "target": "spaceport::core_terminals::view::frame_probe",
+          "namespace": "spaceport",
+          "message": "CORE_FRAME_PROBE",
+          "fields": {
+            "terminal": "t1",
+            "observe": false,
+            "frame_width": 112,
+            "frame_height": 33,
+            "queued_size": "Some(Size { cols: 112, rows: 33 })",
+            "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 677px } })",
+            "cell_width": 8.203125,
+            "cell_height": 20,
+            "rows_with_hidden_counts": "[(\"                                                                                                \", 0), (\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-kRTmiI>                                      \", 0), (\"                                                                                                \", 0)]"
+          },
+          "spans": [],
+          "truncated": false
+        },
+        {
+          "type": "event",
+          "level": "INFO",
+          "timestamp": "[2026-11-20 14:21:00]",
+          "target": "spaceport::core_terminals::view::frame_probe",
+          "namespace": "spaceport",
+          "message": "CORE_FRAME_PROBE",
+          "fields": {
+            "terminal": "t1",
+            "observe": false,
+            "frame_width": 112,
+            "frame_height": 33,
+            "queued_size": "Some(Size { cols: 112, rows: 33 })",
+            "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 677px } })",
+            "cell_width": 8.203125,
+            "cell_height": 20,
+            "rows_with_hidden_counts": "[(\"                                                           echo SP_A11Y_7                       \", 0), (\"SP_A11Y_7rs\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-kRTmiI>                                      \", 0), (\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-kRTmiI>                                      \", 0)]"
+          },
+          "spans": [],
+          "truncated": false
+        }
+      ]
+    },
+    {
+      "file": "after-5b8821071.png",
+      "production_source": "5b8821071bb86e3b35da0350bce70642cae275fd",
+      "case": "initial ordinary Core case",
+      "width": 924,
+      "height": 120,
+      "bytes": 11951,
+      "sha256": "dade45f0d26a47c880c21ec5c03ddd1a0e2082e1450a6470f4bca8d1741fe203",
+      "observed_grid": {
+        "cols": 112,
+        "rows": 34
+      },
+      "visual_inspection": "Complete prompt and command on row0; standalone marker on row1; next prompt on row2.",
+      "frames": [
+        {
+          "type": "event",
+          "level": "INFO",
+          "timestamp": "[2026-11-20 14:15:49]",
+          "target": "spaceport::core_terminals::view::frame_probe",
+          "namespace": "spaceport",
+          "message": "CORE_FRAME_PROBE",
+          "fields": {
+            "terminal": "t1",
+            "observe": false,
+            "frame_width": 80,
+            "frame_height": 24,
+            "queued_size": "Some(Size { cols: 112, rows: 34 })",
+            "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 699px } })",
+            "cell_width": 8.203125,
+            "cell_height": 20,
+            "rows_with_hidden_counts": "[(\"                                                                                \", 0), (\"                                                                                \", 0), (\"                                                                                \", 0)]"
+          },
+          "spans": [],
+          "truncated": false
+        },
+        {
+          "type": "event",
+          "level": "INFO",
+          "timestamp": "[2026-11-20 14:15:50]",
+          "target": "spaceport::core_terminals::view::frame_probe",
+          "namespace": "spaceport",
+          "message": "CORE_FRAME_PROBE",
+          "fields": {
+            "terminal": "t1",
+            "observe": false,
+            "frame_width": 112,
+            "frame_height": 34,
+            "queued_size": "Some(Size { cols: 112, rows: 34 })",
+            "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 699px } })",
+            "cell_width": 8.203125,
+            "cell_height": 20,
+            "rows_with_hidden_counts": "[(\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-7YDQPT>                                      \", 0), (\"                                                                                                \", 0), (\"                                                                                                \", 0)]"
+          },
+          "spans": [],
+          "truncated": false
+        },
+        {
+          "type": "event",
+          "level": "INFO",
+          "timestamp": "[2026-11-20 14:15:52]",
+          "target": "spaceport::core_terminals::view::frame_probe",
+          "namespace": "spaceport",
+          "message": "CORE_FRAME_PROBE",
+          "fields": {
+            "terminal": "t1",
+            "observe": false,
+            "frame_width": 112,
+            "frame_height": 34,
+            "queued_size": "Some(Size { cols: 112, rows: 34 })",
+            "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 699px } })",
+            "cell_width": 8.203125,
+            "cell_height": 20,
+            "rows_with_hidden_counts": "[(\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-7YDQPT> echo SP_A11Y_7                       \", 0), (\"SP_A11Y_7                                                                                       \", 0), (\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-7YDQPT>                                      \", 0)]"
+          },
+          "spans": [],
+          "truncated": false
+        }
+      ]
+    }
+  ],
+  "capture": {
+    "producer": "existing NativeTabCapture",
+    "scope": "top120px of the exact owned foreground Core document",
+    "maximum_png_bytes": 131072,
+    "guard": "exact foreground HWND plus owned visible rectangle before and after capture",
+    "edited": false
+  },
+  "privacy": "Only authored markers and ephemeral GitHub runner paths are visible.",
+  "limitations": [
+    "Underlying viewport heights differ: pre-fix33rows and corrected34rows. Both native crops are924x120pixels.",
+    "This receipt qualifies the inspected captures, not every negative-control outcome.",
+    "Metadata-only clear preservation and corrected focus readiness still await renewed native execution."
+  ]
+}

@@ -204,6 +204,10 @@ impl Fixture {
                 include_str!("../support/uia_terminal.ps1"),
             ),
             ("uia_live.cs", include_str!("../support/uia_live.cs")),
+            (
+                "native_tab_capture.cs",
+                include_str!("../support/native_tab_capture.cs"),
+            ),
         ] {
             fs::write(self.running.sandbox.dir.join(name), source).unwrap();
         }
@@ -211,6 +215,11 @@ impl Fixture {
             .running
             .powershell(&self.running.sandbox.dir.join("uia_terminal.ps1"), capture);
         command.args(["-Action", action]);
+        if action == "Text" {
+            command
+                .args(["-CapturePixels", "-CoreToken"])
+                .arg(self.dir.as_ref().unwrap().path().file_name().unwrap());
+        }
         command
     }
 
@@ -373,6 +382,11 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
     ] {
         assert!(output.contains(receipt), "{output}");
     }
+    let pixels = output
+        .lines()
+        .find(|line| line.starts_with("CORE_TERMINAL_PNG "))
+        .expect("private Core helper did not capture native pixels");
+    eprintln!("{pixels}");
     let (present, runtime) = runtime_diagnostic(&observed, Duration::from_secs(10)).unwrap();
     assert!(
         present,

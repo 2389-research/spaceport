@@ -9,7 +9,10 @@ Source `2df05862e` passes all eighteen configured CI jobs and all three supply-c
 One unconfigured release target skips.
 The [exact-source receipt](review-squad/qualification-2df05862e.json) records every job and the native Windows outcomes.
 The earlier Windows bridge echo stall does not recur; its cause remains unknown.
-The metadata-only clear preservation and Core readiness follow-up remains separate and still qualifying.
+The candidate now includes the metadata-only clear preservation and Core readiness follow-up from `b99a69843`.
+Its Linux Clippy check and all 84 terminal tests pass.
+Its Windows candidate steps pass, including the native Core suite and six fresh samples.
+The separate pinned pre-fix capture control remains running; the overall probe stays pending.
 Source `e60795ab9` fixes the reproduced Core prompt drift during startup height growth.
 All 83 terminal tests pass on Linux and Windows.
 The native Core suite and six fresh ordinary Core samples pass.

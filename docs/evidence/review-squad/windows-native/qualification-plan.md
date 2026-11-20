@@ -231,6 +231,69 @@ The [qualification receipt](qualification-e60795ab9.json) retains exact source, 
 This fixes the reproduced app-frame corruption; painted pixels remain unverified.
 Audible screen-reader checks, Mac Cmd-W qualification, release profiling, and native before/after images remain pending.
 
+### Native Core pixel comparison
+
+The throwaway visual probe reuses the existing foreground-guarded, bounded native capture helper.
+The ordinary Core fixture requests the top 120 pixels of its exact terminal document.
+Success requires a PNG; failure retains a PNG when the owned window remains capturable.
+Capture refusal never replaces the original text failure or permits another window.
+No measured input, assertion, or deadline changes.
+
+The corrected app runs its existing native suite and six focused samples first.
+A separate detached worktree then builds exact pre-fix source 2222112ab with only the capture fixture copied in.
+Its target directory is separate, preventing cross-worktree executable reuse.
+Eight fresh private negative-control samples retain every result and PNG.
+The control requires the expected text failure, known stale suffix, and a PNG at least once.
+It rejects the Core cleanup-failure receipt, even when the original text failure also remains.
+Any different failure, missing capture, or absent reproduction fails the probe.
+The pre-fix production source remains unchanged; neither runtime is modified.
+Both actual PNGs still need inspection before publication or any painted-pixel claim.
+The fast Linux prerequisite now lints every terminal target and feature before running its full suite.
+This catches duplicate fixture-module imports before the larger native build.
+Independent read-only review verifies ownership, bounds, baseline selection, and the corrected cleanup refusal.
+Native execution and PNG inspection remain pending.
+
+### Metadata-only clear preservation
+
+Alacritty's visual emptiness predicate ignores hyperlinks and bold, dim, or italic metadata on spaces.
+The clear guard must preserve those cells when the actual clear saves their row into history.
+A new real-cell regression checks the retained hyperlink and style bits after height growth.
+Its baseline runs before tightening the production predicate.
+The existing native pixel probe continues on its pinned source without interruption.
+
+The [b828059d5 baseline](https://github.com/2389-research/spaceport/actions/runs/44751583266) fails exactly the new metadata test.
+All 83 earlier tests pass; the hyperlink-only row has zero retained history instead of one.
+The correction now requires each pre-clear cell to equal Alacritty's complete default cell.
+The zero-history and primary-screen conditions stay intact.
+The actual clear still runs, preserving everything its original behavior retains.
+Source b99a69843 now passes Clippy and all 84 terminal tests on Linux.
+The Windows candidate's terminal and contract steps pass, followed by its native Core suite and six fresh samples.
+The [probe](https://github.com/2389-research/spaceport/actions/runs/44755289151) is still running the separate pinned pre-fix capture control.
+These candidate results do not establish an overall probe success.
+
+### Visual probe results and target readiness
+
+Source 5b8821071 passes the corrected app's full terminal suite, native contracts, and all six Core samples.
+It captures seven corrected terminal PNGs.
+The pinned pre-fix control captures three stale-suffix PNGs and four successful PNGs.
+One additional pre-fix sample fails before input because native terminal focus was not acknowledged.
+The probe correctly remains failed; those partial captures are retained.
+The [probe](https://github.com/2389-research/spaceport/actions/runs/44750040641) does not qualify every negative-control outcome.
+
+The ordinary fixture now waits for its exact Core directory token in the unique document and for foreground acknowledgement.
+It then sends the original single focus request.
+All preparation and focus checks share the original three-second focus budget.
+Other helper actions retain their existing timing.
+Failure diagnostics include activation, foreground, focus, and process identity without reading a foreign window's text.
+No input is retried, and the measured text assertions and deadlines stay unchanged.
+The b99a69843 candidate now passes that native execution; its separate negative-control series remains pending.
+The selected [before and after captures](../core-startup/qualification-5b8821071.json) pass direct visual inspection.
+The pre-fix crop shows the stale suffix; the corrected crop shows the complete prompt and standalone marker.
+Both are unedited 924-by-120 native crops from exact owned foreground windows.
+Their underlying viewport heights differ, as recorded in the receipt.
+These inspected images do not turn the failed preparation case into a passing probe.
+Independent read-only review finds no material issue in the narrower metadata guard or the readiness barrier.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
