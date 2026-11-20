@@ -72,6 +72,7 @@ NOT_SHOWN = {
     "assert_ne!",
     "bail!",
     "concat!",
+    "conclude",
     "context",
     "debug!",
     "debug_assert!",

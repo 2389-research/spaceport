@@ -60,12 +60,10 @@ fn pane_input_set_wire_name() {
 }
 
 #[test]
-fn link_methods_are_separate_advertisements() {
+fn link_resolve_wire_name_and_advertisement() {
     assert_eq!(Method::PaneLinkResolve.as_str(), "pane.link.resolve");
-    assert_eq!(Method::PaneLinkActivate.as_str(), "pane.link.activate");
-    // A daemon may resolve hover regions without activating, or the reverse.
     assert!(Method::PaneLinkResolve.advertised_in(&["pane.link.resolve".into()]));
-    assert!(!Method::PaneLinkActivate.advertised_in(&["pane.link.resolve".into()]));
+    assert!(!Method::PaneLinkResolve.advertised_in(&["pane.link.activate".into()]));
 }
 
 #[test]

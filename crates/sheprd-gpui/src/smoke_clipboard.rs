@@ -1,9 +1,17 @@
 //! Production clipboard acquisition -> AppKit Cmd-V -> isolated raw PTY readback.
-use super::*;
+use crate::SheprdWindow;
+use crate::open_window;
 use crate::sidebar::native_tests::Target;
+use crate::smoke::*;
+use anyhow::{Context as _, Result, bail};
+use gpui::*;
 use objc2_app_kit::NSPasteboard;
 use objc2_foundation::{NSData, NSString};
-use std::io::Cursor;
+use sheprd_client::ConnectTarget;
+use std::{
+    io::Cursor,
+    time::{Duration, Instant},
+};
 
 pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {
     cases(handle, "local", cx).await

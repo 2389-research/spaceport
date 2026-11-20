@@ -1,143 +1,31 @@
 // ABOUTME: Runs daemon-free native sidebar, menu, and glyph qualification.
 // ABOUTME: Keeps activation-dependent checks distinct from directly delivered native events.
 use super::*;
+use crate::{SheprdWindow, sidebar};
+#[cfg(target_os = "macos")]
+use crate::app_icon;
+use anyhow::{Context as _, Result, bail};
+use gpui::*;
 
-/// Native check that the icon cascade reaches an installed Nerd Font. Prompts
-/// draw powerline separators and icons from the Private Use Area, which no text
-/// face and no platform default cascade covers, so without the cascade every
-/// such cell shapes to the platform's missing-glyph box. Headless shaping
-/// cannot show this: the test text system reports no installed families and
-/// gives every glyph the same fixed advance.
-fn symbol_cascade(window: &mut Window, cx: &mut App) -> Result<&'static str> {
-    use sheprd_settings::fonts::symbol_fallbacks;
-    let detected = symbol_fallbacks(cx.text_system().all_font_names());
-    if detected.is_empty() {
-        // An installed icon font is an external resource, like a daemon binary.
-        return Ok("symbol cascade skipped (no Nerd Font installed)");
-    }
-    let font = crate::config::font_for(&crate::config::FontConfig {
-        family: "Menlo".into(),
-        size: crate::terminal::FONT_SIZE,
-        fallbacks: Some(detected.clone()),
-        line_height_multiple: None,
-        weight: crate::config::Weight::NORMAL,
-    });
-    // Fallback faces never enter `get_font_for_id`, and a cascade gives the
-    // same family a new font id, so coverage is read from the glyphs: anything
-    // no font carries shapes to the platform's missing-glyph box, and a covered
-    // codepoint must not land on that same glyph.
-    let glyphs = |symbol: &str, window: &mut Window| {
-        window
-            .text_system()
-            .shape_line(
-                symbol.to_owned().into(),
-                px(crate::terminal::FONT_SIZE),
-                &[TextRun {
-                    len: symbol.len(),
-                    font: font.clone(),
-                    color: rgb(0xffffff).into(),
-                    background_color: None,
-                    underline: None,
-                    strikethrough: None,
-                }],
-                None,
-            )
-            .runs
-            .iter()
-            .flat_map(|run| run.glyphs.iter().map(|glyph| glyph.id))
-            .collect::<Vec<_>>()
-    };
-    // Plane 15 is private and unassigned by every shipped font, including the
-    // Nerd Font patches, so it names the missing-glyph box for this machine.
-    let missing = glyphs("\u{f0000}", window);
-    if missing.is_empty() {
-        bail!("no missing-glyph baseline to compare icons against");
-    }
-    // A separator, a branch and a clock: three prompt icons from three ranges.
-    for symbol in ["\u{e0b0}", "\u{e0a0}", "\u{f017}"] {
-        if glyphs(symbol, window) == missing {
-            bail!("icon {symbol:?} stayed a missing-glyph box under cascade {detected:?}");
-        }
-    }
-    if glyphs("A", window) == missing {
-        bail!("cascade lost the configured face for plain text");
-    }
-    Ok("symbol cascade reaches installed Nerd Fonts")
-}
+#[path = "smoke_sidebar/glyphs.rs"]
+mod glyphs;
+#[cfg(target_os = "macos")]
+#[path = "smoke_sidebar/interaction.rs"]
+mod interaction;
 
-pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
-    #[cfg(windows)]
-    if std::env::var_os("HERDR_TEST_POPUP_DEPARTURES").is_some() {
-        cx.spawn(async move |cx| {
-            if let Err(error) = departures::verify(handle, cx).await {
-                eprintln!("DEPARTURES native FAIL: {error:#}");
-                std::process::exit(1);
-            }
-            std::process::exit(0);
-        })
-        .detach();
-        return;
-    }
-    if std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_ONLY").is_some() {
-        cx.spawn(async move |cx| {
-            if let Err(error) = local_controls::verify(handle, cx).await {
-                eprintln!("LOCAL CONTROLS native FAIL: {error:#}");
-                std::process::exit(1);
-            }
-            std::process::exit(0);
-        })
-        .detach();
-        return;
-    }
-    #[cfg(target_os = "macos")]
-    if std::env::var_os("HERDR_TEST_SIDEBAR_ROUTING").is_some() {
-        hosts::start_routing(handle, cx);
-        return;
-    }
-    if std::env::var_os("HERDR_TEST_CHAT_START_ERRORS").is_some() {
-        crate::chat::native_start::start(handle, cx);
-        return;
-    }
-    if std::env::var_os("HERDR_TEST_RICH_CHAT").is_some() {
-        crate::chat::preview::start(handle, cx);
-        return;
-    }
-    #[cfg(target_os = "linux")]
-    if std::env::var_os("HERDR_TEST_APPLICATION_MENUS").is_some() {
-        cx.spawn(
-            async move |cx| match crate::menus::in_window::native::run(handle, cx).await {
-                Ok(()) => {
-                    eprintln!("APPLICATION MENUS native PASS");
-                    std::process::exit(0);
-                }
-                Err(error) => {
-                    eprintln!("APPLICATION MENUS native FAIL: {error:#}");
-                    std::process::exit(1);
-                }
-            },
-        )
-        .detach();
-        return;
-    }
-    #[cfg(target_os = "linux")]
-    if let Ok(field) = std::env::var("HERDR_TEST_INPUT_SHUTDOWN") {
-        input_shutdown::start(handle, field, cx);
-        return;
-    }
-    if std::env::var_os("HERDR_TEST_NOTIFICATIONS_ONLY").is_some() {
-        start_notifications(handle, cx);
-        return;
-    }
-    EXIT_CODE.store(1, Ordering::SeqCst);
+/// Entry: the sidebar glyph and layout qualification a `--sidebar-test` run
+/// without a fixture variable asks for.
+pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    set_exit_code(1);
     // AppKit may exit(0) inside cx.quit(), bypassing main's ExitCode. These
     // daemon-free fixtures exit explicitly, like the performance driver.
     #[cfg(target_os = "macos")]
-    if let Err(error) = app_icon::verify_native().and_then(|()| crate::app_badge::verify_native()) {
-        eprintln!("ICON native FAIL: {error:#}");
-        std::process::exit(1);
-    }
+    require(
+        "ICON native",
+        app_icon::verify_native().and_then(|()| crate::app_badge::verify_native()),
+    );
     cx.set_global(sidebar::layout_tests::PaintedProbes::default());
-    cx.set_global(sidebar::layout_tests::VerifyChildGeometry(true));
+    verify_child_geometry(cx, true);
     if std::env::var_os("HERDR_TEST_SIDEBAR_PROBE_FAILURE").is_some() {
         let _ = handle.update(cx, |view, _, cx| {
             // Exercise the real native paint failure path with a column that
@@ -146,514 +34,114 @@ pub fn start_sidebar(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
             cx.notify();
         });
     }
-    let timer = cx.background_executor().clone();
     cx.spawn(async move |cx| {
-        // Shaping first: the cascade is independent of every layout probe below.
-        let cascade = match handle.update(cx, |_, window, cx| symbol_cascade(window, cx)) {
-            Ok(Ok(summary)) => summary,
-            other => {
-                eprintln!("SIDEBAR native symbol cascade FAIL: {other:?}");
-                std::process::exit(1);
-            }
+        let summary = match qualify(handle, cx).await {
+            Ok(summary) => summary,
+            Err(error) => conclude("SIDEBAR native", "", Err(error)),
         };
-        eprintln!("SIDEBAR native symbol cascade: {cascade}");
-        match handle.update(cx, |_, window, _| bidi::check(window)) {
-            // CoreText draws right-to-left runs in visual order; another
-            // platform's answer is reported for docs/i18n.md.
-            Ok(Ok(report)) if cfg!(target_os = "macos") && !report.visual_order => {
-                eprintln!("SIDEBAR native bidi FAIL: Hebrew drawn in logical order");
-                std::process::exit(1);
-            }
-            Ok(Ok(report)) => eprintln!(
+        conclude("SIDEBAR native", &summary, Ok(()));
+    })
+    .detach();
+}
+
+/// Runs every sidebar check in order, each reporting under its own label.
+async fn qualify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<String> {
+    // Shaping first: the cascade is independent of every layout probe below.
+    let cascade = require(
+        "SIDEBAR native symbol cascade",
+        with_root(handle, cx, |_, window, cx| glyphs::symbol_cascade(window, cx)),
+    );
+    eprintln!("SIDEBAR native symbol cascade: {cascade}");
+    require("SIDEBAR native bidi", bidi_shaping(handle, cx).await);
+    #[cfg(target_os = "macos")]
+    require(
+        "SIDEBAR native preferences",
+        preferences::sidebar_preferences(handle, cx).await,
+    );
+    let drawn = require(
+        "SIDEBAR native glyphs",
+        glyphs::frames(handle, cx).await,
+    );
+    require(
+        "SIDEBAR native layouts",
+        glyphs::other_layouts(handle, cx).await,
+    );
+    // Later fixtures add PR badges and dialogs that change label budgets.
+    handle
+        .update(cx, |view, _, cx| {
+            verify_child_geometry(cx, false);
+            view.config.layout.mode =
+                crate::config::LayoutMode::from(crate::config::Density::Comfortable);
+            cx.notify();
+        })
+        .context("resetting the sidebar layout")?;
+    #[cfg(target_os = "macos")]
+    require(
+        "SIDEBAR native interaction",
+        interaction::menu_isolation(handle, cx).await,
+    );
+    require("SIDEBAR native visibility", agents_visibility(handle, cx).await);
+    #[cfg(target_os = "macos")]
+    require(
+        "SIDEBAR native dialog",
+        interaction::dialogs(handle, cx).await,
+    );
+    require(
+        "SIDEBAR native local controls",
+        local_controls::verify(handle, cx).await,
+    );
+    #[cfg(target_os = "macos")]
+    require(
+        "SIDEBAR native hosts",
+        hosts::sidebar_hosts(handle, cx).await,
+    );
+    require("SIDEBAR native paint", cx.update(check_probes));
+    Ok(format!(
+        "{cascade}; {drawn}/72 Menlo draws (the rest larger than the display), flat and rounded normal/compact/comfortable layouts at 4 sizes, collapse/expand, menu isolation, profile popup, right-click dialogs and Unicode fields at 2 sizes; host routing, disabled selection, scoped repositories, resized host/agent glyphs, independent scroll and decoy key window"
+    ))
+}
+
+/// The platform's own shaper draws Hebrew right to left and gives the
+/// isolation marks Fluent writes around every placeable no room.
+async fn bidi_shaping(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {
+    match with_root(handle, cx, |_, window, _| bidi::check(window)) {
+        // CoreText draws right-to-left runs in visual order; another
+        // platform's answer is reported for docs/i18n.md.
+        Ok(report) if cfg!(target_os = "macos") && !report.visual_order => {
+            bail!("Hebrew drawn in logical order");
+        }
+        Ok(report) => {
+            eprintln!(
                 "SIDEBAR native bidi: isolation marks take no room; Hebrew in {} order; en-XB {:?}",
                 if report.visual_order { "visual" } else { "logical" },
                 report.pseudo,
-            ),
-            other => {
-                eprintln!("SIDEBAR native bidi FAIL: {other:?}");
-                std::process::exit(1);
-            }
-        }
-        #[cfg(target_os = "macos")]
-        if let Err(error) = sidebar_preferences(handle, cx).await {
-            eprintln!("SIDEBAR native preferences FAIL: {error:#}");
-            std::process::exit(1);
-        }
-        // Frames verified at their full size; the rest were skipped as larger
-        // than the display.
-        let mut drawn = 0;
-        for frame in 0..72 {
-            timer.timer(Duration::from_millis(100)).await;
-            let result = AnyWindowHandle::from(handle).update(
-                cx,
-                |root, window, cx| -> Result<bool> {
-                    use crate::sidebar::layout_tests::PaintedProbes;
-                    let (w, h) =
-                        [(1200., 780.), (640., 400.), (1000., 650.), (800., 600.)][(frame % 12) / 3];
-                    // Retain the glyph fixture's list viewport while reserving
-                    // the fixed device footer below both scrollable sections.
-                    use crate::config::{Density, LayoutMode, Style};
-                    let density = [Density::Comfortable, Density::Normal, Density::Compact][frame / 12 % 3];
-                    let style = [Style::Flat, Style::Rounded][frame / 36];
-                    // Rounded rows are taller; grow both sections so the probed
-                    // rows stay inside their lists at the smallest size too.
-                    // The activity bar's Workspaces title sits over the
-                    // sidebar, so its height is added back too.
-                    let title = root
-                        .clone()
-                        .downcast::<SheprdWindow>()
-                        .map_err(|_| anyhow!("unexpected root"))?
-                        .read(cx)
-                        .activity_title_height();
-                    let h = h
-                        + sidebar::DEVICE_FOOTER_HEIGHT
-                        + title
-                        + if style == Style::Rounded { 160. } else { 0. };
-                    let mode = LayoutMode::new(density, style);
-                    let compact = density == Density::Compact;
-                    if frame % 3 == 0 {
-                        window.resize(fixture_size(w, h));
-                    } else if window.viewport_size() != fixture_size(w, h) {
-                        // The platform keeps a window within its screen, so a
-                        // size larger than the display (a 1024x768 CI runner)
-                        // is skipped and counted, never passed as drawn.
-                        let size = fixture_size(w, h);
-                        let fits = window.display(cx).is_none_or(|display| {
-                            let screen = display.visible_bounds().size;
-                            size.width <= screen.width && size.height <= screen.height
-                        });
-                        if !fits {
-                            eprintln!(
-                                "SIDEBAR skipped frame={frame}: {size:?} does not fit the display"
-                            );
-                            return Ok(false);
-                        }
-                        bail!(
-                            "native resize did not settle: {:?}",
-                            window.viewport_size()
-                        );
-                    }
-                    cx.default_global::<PaintedProbes>().0.clear();
-                    root.downcast::<SheprdWindow>()
-                        .map_err(|_| anyhow!("unexpected root"))?
-                        .update(cx, |view, cx| {
-                            view.config.layout.mode = mode;
-                            cx.notify();
-                        });
-                    window.refresh();
-                    window.draw(cx).clear(cx);
-                    cx.default_global::<PaintedProbes>().check()?;
-                    let probes = &cx.global::<PaintedProbes>().0;
-                    let mut failed = false;
-                    for input in [
-                        "herdr",
-                        "main",
-                        "Claude Code",
-                        "agent",
-                        "1256789",
-                        "herdr-gpui-sidebar-rendering-regression-investigation",
-                        "fix/sidebar-label-width-and-overflow-regression",
-                    ] {
-                        if compact && matches!(input, "main" | "1256789" | "fix/sidebar-label-width-and-overflow-regression") {
-                            if probes.contains_key(input) {
-                                bail!("compact layout painted branch: {input}");
-                            }
-                            continue;
-                        }
-                        let p = probes
-                            .get(input)
-                            .with_context(|| format!("missing paint: {input}"))?;
-                        if frame == 0 {
-                            eprintln!("SIDEBAR frame={frame} input={input:?} {p:?}");
-                        }
-                        let expected_short = input.len() < 20;
-                        let title_icon = matches!(input, "herdr" | "herdr-gpui-sidebar-rendering-regression-investigation");
-                        // Rounded rows give up the highlight's inset, the
-                        // density's gap, on both edges.
-                        let extra_width = match density {
-                            Density::Comfortable => 0.,
-                            Density::Normal => 10.,
-                            Density::Compact => 16.,
-                        } - match (style, density) {
-                            (Style::Flat, _) => 0.,
-                            (Style::Rounded, Density::Comfortable) => 16.,
-                            (Style::Rounded, Density::Normal) => 12.,
-                            (Style::Rounded, Density::Compact) => 8.,
-                        };
-                        let icon_reserve = if title_icon {
-                            sidebar::ICON_RESERVE
-                        } else if matches!(input, "Claude Code" | "agent") {
-                            16. // 12px agent mark and 4px gap before its name.
-                        } else {
-                            0.
-                        };
-                        let expected_width = px(sidebar::LABEL_WIDTH + extra_width - icon_reserve);
-                        if p.glyph_text != p.cached
-                            || (expected_short && p.glyph_text != input)
-                            || (!expected_short
-                                && (p.width < px(150.) || !p.glyph_text.ends_with('\u{2026}')))
-                            || p.clipped
-                            || !sidebar::layout_tests::within_device_pixel(p.bounds.size.width, expected_width, window.scale_factor())
-                            || p.mask.size.width != p.bounds.size.width
-                            // Native glyph advances can exceed a device-snapped box
-                            // by a fraction of a pixel without clipping.
-                            || (p.width > p.bounds.size.width
-                                && !sidebar::layout_tests::within_device_pixel(
-                                    p.width,
-                                    p.bounds.size.width,
-                                    window.scale_factor(),
-                                ))
-                            || p.bounds.size.height != px(16.)
-                        {
-                            eprintln!("SIDEBAR bad paint frame={frame} input={input:?} {p:?}");
-                            failed = true;
-                        }
-                    }
-                    if failed {
-                        bail!("incomplete/cropped native glyph output");
-                    }
-                    eprintln!(
-                        "SIDEBAR verified frame={frame} mode={mode:?} viewport={:?} clipped=0",
-                        window.viewport_size()
-                    );
-                    Ok(true)
-                },
             );
-            match result {
-                Ok(Ok(true)) => drawn += 1,
-                Ok(Ok(false)) => {}
-                _ => {
-                    eprintln!("SIDEBAR native FAIL: {result:?}");
-                    std::process::exit(1);
-                }
-            }
+            Ok(())
         }
-        if drawn == 0 {
-            eprintln!("SIDEBAR native FAIL: no fixture size fits the display");
-            std::process::exit(1);
-        }
-        // The other row layouts place text by their own geometry, so they are
-        // held to what every layout owes: shaped glyphs match the text they
-        // were given, and none is cropped or wider than its box.
-        {
-            use crate::config::LayoutMode;
-            cx.update(|cx| cx.set_global(sidebar::layout_tests::VerifyChildGeometry(false)));
-            for mode in [LayoutMode::Superset, LayoutMode::Orca, LayoutMode::Minimal] {
-                        timer.timer(Duration::from_millis(100)).await;
-                        let result = AnyWindowHandle::from(handle).update(
-                            cx,
-                            |root, window, cx| -> Result<()> {
-                                use crate::sidebar::layout_tests::PaintedProbes;
-                                cx.default_global::<PaintedProbes>().0.clear();
-                                root.downcast::<SheprdWindow>()
-                                    .map_err(|_| anyhow!("unexpected root"))?
-                                    .update(cx, |view, cx| {
-                                        view.config.layout.mode = mode;
-                                        cx.notify();
-                                    });
-                                window.refresh();
-                                window.draw(cx).clear(cx);
-                                cx.default_global::<PaintedProbes>().check()?;
-                                let probes = &cx.global::<PaintedProbes>().0;
-                                // The long name must be cut short in every
-                                // layout, which proves ellipsizing natively.
-                                const LONG: &str =
-                                    "herdr-gpui-sidebar-rendering-regression-investigation";
-                                if !probes.get(LONG).is_some_and(|p| p.glyph_text.ends_with('\u{2026}')) {
-                                    bail!("{mode}: {LONG:?} was not ellipsized");
-                                }
-                                for input in ["herdr", "Claude Code", LONG] {
-                                    let p = probes
-                                        .get(input)
-                                        .with_context(|| format!("missing paint: {input}"))?;
-                                    // Orca shares one line between an agent and
-                                    // its place, so a name may end in an ellipsis.
-                                    let shown = p.glyph_text == input
-                                        || p.glyph_text.strip_suffix('\u{2026}').is_some_and(
-                                            |kept| input.starts_with(kept.trim_end()),
-                                        );
-                                    if p.glyph_text != p.cached
-                                        || !shown
-                                        || p.clipped
-                                        || (p.width > p.bounds.size.width
-                                            && !sidebar::layout_tests::within_device_pixel(
-                                                p.width,
-                                                p.bounds.size.width,
-                                                window.scale_factor(),
-                                            ))
-                                    {
-                                        bail!("{mode}: bad paint {input:?} {p:?}");
-                                    }
-                                }
-                                eprintln!("SIDEBAR verified layout={mode}");
-                                Ok(())
-                            },
-                        );
-                        if !matches!(result, Ok(Ok(()))) {
-                            eprintln!("SIDEBAR native FAIL: {result:?}");
-                            std::process::exit(1);
-                        }
-            }
-        }
-        let _ = handle.update(cx, |view, _, cx| {
-            // Later fixtures add PR badges and dialogs that change label budgets.
-            cx.set_global(sidebar::layout_tests::VerifyChildGeometry(false));
-            view.config.layout.mode = crate::config::LayoutMode::from(crate::config::Density::Comfortable);
-            cx.notify();
-        });
-        #[cfg(target_os = "macos")]
-        for step in 0..4 {
-            let point = AnyWindowHandle::from(handle).update(cx, |root, window, cx| {
-                let view = root
-                    .downcast::<SheprdWindow>()
-                    .map_err(|_| anyhow!("unexpected root"))?;
-                view.update(cx, |view, _| {
-                    if step == 0 {
-                        if let Some(snapshot) = view.live.snapshot.as_mut() {
-                            let snapshot = Arc::make_mut(snapshot);
-                            snapshot.focused_workspace_id = Some("w4".into());
-                            for workspace in &mut snapshot.workspaces {
-                                workspace.focused = workspace.workspace_id == "w4";
-                            }
-                        }
-                        view.marked = "preserve active child".into();
-                    }
-                });
-                window.refresh();
-                cx.default_global::<sidebar::layout_tests::PaintedProbes>()
-                    .0
-                    .clear();
-                window.draw(cx).clear(cx);
-                let label = match step {
-                    0 => "\u{25be}",
-                    1 => "\u{25b8}",
-                    _ => "menu",
-                };
-                cx.global::<sidebar::layout_tests::PaintedProbes>()
-                    .0
-                    .get(label)
-                    .map(|probe| probe.bounds.center())
-                    .context("missing native click target")
-                    .and_then(|point| Ok((sidebar::native_tests::Target::acquire(window)?, point)))
+        Err(error) => Err(error),
+    }
+}
+
+/// The native Agents setting decides whether agent rows are painted, and it
+/// leaves the workspace rows alone either way.
+async fn agents_visibility(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {
+    for show_agents in [false, true] {
+        with_root(handle, cx, |view, window, cx| -> Result<()> {
+            view.update(cx, |view, cx| {
+                view.config.show_agents = show_agents;
+                cx.notify();
             });
-            let result = point
-                .context("updating native click target")
-                .and_then(|point| point.context("native target"))
-                .and_then(|(target, point)| target.click(point.x.to_f64(), point.y.to_f64()));
-            timer.timer(Duration::from_millis(50)).await;
-            let result = if step == 3 {
-                result.and_then(|()| {
-                    let (target, point) = AnyWindowHandle::from(handle)
-                        .update(cx, |root, window, cx| -> Result<_> {
-                            // Paint the reopened menu before targeting its outside hitbox.
-                            window.draw(cx).clear(cx);
-                            let view = root.downcast::<SheprdWindow>()
-                                .map_err(|_| anyhow!("unexpected root"))?;
-                            let state = view.read(cx);
-                            if state.menu.page != Some(menu::Page::Menu) {
-                                bail!(
-                                    "native footer click did not reopen menu: page={:?}, cover={:?}",
-                                    state.menu.page,
-                                    state.menu.cover.get()
-                                );
-                            }
-                            let menu::Cover::Panel(panel) = state.menu.cover.get() else {
-                                bail!("reopened native menu has no painted panel bounds");
-                            };
-                            let viewport = Bounds::new(Point::default(), window.viewport_size());
-                            let x = if viewport.right() - panel.right() >= panel.left() {
-                                (panel.right() + viewport.right()) / 2.
-                            } else {
-                                panel.left() / 2.
-                            };
-                            let point = gpui::point(x, viewport.center().y);
-                            if !viewport.contains(&point) || panel.contains(&point) {
-                                bail!("no outside click target: panel={panel:?} viewport={viewport:?}");
-                            }
-                            eprintln!("SIDEBAR native outside click: panel={panel:?} viewport={viewport:?} target={point:?}");
-                            Ok((sidebar::native_tests::Target::acquire(window)?, point))
-                        })
-                        .context("acquiring outside-click target")??;
-                    target.click(point.x.to_f64(), point.y.to_f64())
-                })
-            } else {
-                result
-            };
-            let verified = AnyWindowHandle::from(handle).update(
-                cx,
-                |root, window, cx| -> Result<()> {
-                    result?;
-                    let view = root
-                        .downcast::<SheprdWindow>()
-                        .map_err(|_| anyhow!("unexpected root"))?;
-                    let state = view.read(cx);
-                    if step < 2 {
-                        if state.endpoints[0]
-                            .collapsed_repos
-                            .contains("/fixture/agent-launcher/.git")
-                            != (step == 0)
-                            || state.marked != "preserve active child"
-                            || state.live.snapshot.as_ref().is_none_or(|s| {
-                                s.workspaces.len() != 40
-                                    || s.focused_workspace_id.as_deref() != Some("w4")
-                            })
-                        {
-                            bail!("collapse navigated, removed rows, or lost selection");
-                        }
-                    } else if step == 2 {
-                        if state.menu.page != Some(menu::Page::Menu) {
-                            bail!("native footer click did not open menu");
-                        }
-                        let before = state.input_probe;
-                        window.dispatch_action(Box::new(RunCommand { command: Command::Tab }), cx);
-                        for key in ["down", "down", "enter", "x", "escape"] {
-                            window.dispatch_keystroke(
-                                Keystroke {
-                                    key: key.into(),
-                                    ..Default::default()
-                                },
-                                cx,
-                            );
-                        }
-                        let state = view.read(cx);
-                        if state.menu.page.is_some()
-                            || state.input_probe.text != before.text
-                            || state.input_probe.keys != before.keys
-                            || state.input_probe.actions != before.actions
-                        {
-                            bail!("menu keyboard handling leaked terminal input");
-                        }
-                    } else if state.menu.page.is_some() {
-                        bail!("outside click did not dismiss native menu");
-                    }
-                    Ok(())
-                },
-            );
-            if !matches!(verified, Ok(Ok(()))) {
-                eprintln!("SIDEBAR native interaction FAIL: {verified:?}");
-                std::process::exit(1);
+            clear_probes(cx);
+            draw(window, cx);
+            let probes = &cx.default_global::<sidebar::layout_tests::PaintedProbes>().0;
+            if probes.contains_key("Claude Code") != show_agents
+                || !probes.contains_key("herdr")
+                || !probes.contains_key("menu")
+            {
+                bail!("native Agents visibility did not follow configuration");
             }
-        }
-        for show_agents in [false, true] {
-            let result = AnyWindowHandle::from(handle).update(cx, |root, window, cx| {
-                let view = root.downcast::<SheprdWindow>()
-                    .map_err(|_| anyhow!("unexpected root"))?;
-                view.update(cx, |view, cx| {
-                    view.config.show_agents = show_agents;
-                    cx.notify();
-                });
-                cx.default_global::<sidebar::layout_tests::PaintedProbes>().0.clear();
-                window.refresh();
-                window.draw(cx).clear(cx);
-                let probes = &cx.global::<sidebar::layout_tests::PaintedProbes>().0;
-                if probes.contains_key("Claude Code") != show_agents
-                    || !probes.contains_key("herdr")
-                    || !probes.contains_key("menu")
-                {
-                    bail!("native Agents visibility did not follow configuration");
-                }
-                Ok(())
-            });
-            if !matches!(result, Ok(Ok(()))) {
-                eprintln!("SIDEBAR native visibility FAIL: {result:?}");
-                std::process::exit(1);
-            }
-        }
-        #[cfg(target_os = "macos")]
-        for (width, height) in [(640., 400.), (1200., 780.)] {
-            let _ = handle.update(cx, |_, window, _| window.resize(size(px(width), px(height))));
-            timer.timer(Duration::from_millis(100)).await;
-            for action in [menu::WorkspaceAction::Rename] {
-                let point = handle.update(cx, |view, window, cx| {
-                    view.live.status = ConnectionStatus::Connected;
-                    // Keep the clicked row inside the scroll viewport below the native titlebar.
-                    view.sidebar_scroll[0].set_offset(point(px(0.), px(-80.)));
-                    cx.default_global::<sidebar::layout_tests::PaintedProbes>().0.clear();
-                    cx.notify();
-                    window.refresh();
-                });
-                if let Err(error) = point {
-                    eprintln!("SIDEBAR native dialog setup FAIL: {error}");
-                    std::process::exit(1);
-                }
-                let point = AnyWindowHandle::from(handle).update(cx, |_, window, cx| {
-                    window.draw(cx).clear(cx);
-                    cx.global::<sidebar::layout_tests::PaintedProbes>().0.get("agent-launcher").map(|probe| {
-                        eprintln!("DIALOG native {action:?} viewport={:?}", window.viewport_size());
-                         probe.bounds.center()
-                    })
-                });
-                let target = handle.update(cx, |_, window, _| sidebar::native_tests::Target::acquire(window));
-                let clicked = match (point, target) {
-                    (Ok(Some(point)), Ok(Ok(target))) => target.right_click(point.x.to_f64(), point.y.to_f64()),
-                    _ => Err(anyhow!("missing native workspace")),
-                };
-                timer.timer(Duration::from_millis(50)).await;
-                let opened = AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<_> {
-                    clicked?;
-                    let view = root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?;
-                    if view.read(cx).menu.page != Some(menu::Page::Workspace) { bail!("right click did not open workspace menu"); }
-                    let before = view.read(cx).input_probe;
-                    let steps = view.read(cx).native_workspace_dialog_steps(action)
-                        .context("workspace dialog is absent from its menu")?;
-                    for key in std::iter::repeat_n("down", steps).chain(std::iter::once("enter")) {
-                        window.dispatch_keystroke(crate::keymap::parse_keystroke(key)?, cx);
-                    }
-                    window.draw(cx).clear(cx);
-                    if view.read(cx).menu.page != Some(menu::Page::Dialog(action)) {
-                        bail!("workspace menu opened wrong dialog at {width}x{height} after {steps} down keys: expected {:?}, actual {:?}", menu::Page::Dialog(action), view.read(cx).menu.page);
-                    }
-                    window.dispatch_action(Box::new(RunCommand { command: Command::Tab }), cx);
-                    Ok(before)
-                });
-                // Finish entity creation before inspecting the dialog's focused input.
-                let verified = AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<()> {
-                    let before = opened.context("opening native dialog")??;
-                    let view = root.downcast::<SheprdWindow>().map_err(|_| anyhow!("unexpected root"))?;
-                    // Only the editable dialogs carry a text field; confirmations do not.
-                    if action == menu::WorkspaceAction::Rename {
-                        window.dispatch_keystroke(Keystroke::parse("cmd-a")?, cx);
-                        for ch in "long-label-\u{65e5}\u{672c}-\u{1f600}".repeat(4).chars() {
-                            window.dispatch_keystroke(crate::keymap::parse_keystroke(&ch.to_string())?, cx);
-                        }
-                        window.draw(cx).clear(cx);
-                        view.update(cx, |view, cx| -> Result<()> {
-                            let input = view.menu.input.as_ref().context("missing native editor")?;
-                            if input.text != "long-label-\u{65e5}\u{672c}-\u{1f600}".repeat(4) { bail!("native editor lost Unicode text"); }
-                            let end = input.text.encode_utf16().count();
-                            let field = input.bounds;
-                            let caret = view.bounds_for_range(end..end, Bounds::default(), window, cx).context("missing native IME bounds")?;
-                            if !field.contains(&caret.origin) || field.right() > window.viewport_size().width || field.bottom() > window.viewport_size().height { bail!("native dialog caret/field out of bounds"); }
-                            Ok(())
-                        })?;
-                    }
-                    window.dispatch_keystroke(Keystroke::parse("escape")?, cx);
-                    let state = view.read(cx);
-                    if state.menu.page.is_some() || state.input_probe.text != before.text || state.input_probe.keys != before.keys || state.input_probe.actions != before.actions || !state.focus.is_focused(window) { bail!("workspace dialog leaked input or lost focus"); }
-                    Ok(())
-                });
-                if !matches!(verified, Ok(Ok(()))) {
-                    eprintln!("SIDEBAR native dialog FAIL: {verified:?}");
-                    std::process::exit(1);
-                }
-            }
-        }
-        if let Err(error) = local_controls::verify(handle, cx).await {
-            eprintln!("SIDEBAR native local controls FAIL: {error:#}");
-            std::process::exit(1);
-        }
-        #[cfg(target_os = "macos")]
-        if let Err(error) = sidebar_hosts(handle, cx).await {
-            eprintln!("SIDEBAR native hosts FAIL: {error:#}");
-            std::process::exit(1);
-        }
-        let probes = cx.update(|cx| cx.default_global::<sidebar::layout_tests::PaintedProbes>().check());
-        if !matches!(probes, Ok(())) {
-            eprintln!("SIDEBAR native paint FAIL: {probes:?}");
-            std::process::exit(1);
-        }
-        eprintln!("SIDEBAR native PASS: {cascade}; {drawn}/72 Menlo draws (the rest larger than the display), flat and rounded normal/compact/comfortable layouts at 4 sizes, collapse/expand, menu isolation, profile popup, right-click dialogs and Unicode fields at 2 sizes; host routing, disabled selection, scoped repositories, resized host/agent glyphs, independent scroll and decoy key window");
-        std::process::exit(0);
-    })
-    .detach();
+            Ok(())
+        })?;
+    }
+    Ok(())
 }

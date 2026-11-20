@@ -554,20 +554,15 @@ impl ConnectionBridge {
         Ok(id)
     }
 
-    /// Queues a link request without waiting on the event reader: a busy
+    /// Queues a link resolve without waiting on the event reader: a busy
     /// mailbox is reported as such, and the caller tries again later.
-    pub(crate) fn request_link(
-        &self,
-        request: crate::links::LinkRequest,
-        cell: &crate::links::LinkCell,
-    ) -> crate::Result<String> {
+    pub(crate) fn request_link(&self, cell: &crate::links::LinkCell) -> crate::Result<String> {
         let mut links = self
             .links
             .try_lock()
             .map_err(|_| crate::Error::ConnectionBusy)?;
         links.request(
             self.handle.as_ref().ok_or(crate::Error::NotConnected)?,
-            request,
             cell,
         )
     }

@@ -119,11 +119,10 @@ pub struct LiveState {
     /// `workspace.move` takes a single workspace; without it a drop sends
     /// every reorder as `workspace.move_block`.
     pub(crate) supports_workspace_move: bool,
-    /// `pane.link.resolve` and `pane.link.activate` let the daemon find links
-    /// across wrapped rows and run plugin link handlers; without them links
-    /// are found row by row here and always opened by this client.
+    /// `pane.link.resolve` lets the daemon name the cells a link covers,
+    /// including the rows a wrapped one continues onto; without it links are
+    /// underlined row by row here. Either way this client opens them itself.
     pub(crate) supports_link_resolve: bool,
-    pub(crate) supports_link_activate: bool,
     /// `pane.copy_search` drives the find bar; without it Find says so.
     pub(crate) supports_copy_search: bool,
     /// `pane.selection.read` copies selections reaching beyond the screen.
@@ -228,7 +227,6 @@ impl Default for LiveState {
             supports_tab_move: false,
             supports_workspace_move: false,
             supports_link_resolve: false,
-            supports_link_activate: false,
             supports_copy_search: false,
             supports_selection_read: false,
             supports_copy_motion: false,
@@ -336,7 +334,6 @@ impl LiveState {
             supports_tab_move,
             supports_workspace_move,
             supports_link_resolve,
-            supports_link_activate,
             supports_copy_search,
             supports_selection_read,
             supports_copy_motion,
@@ -394,7 +391,6 @@ impl LiveState {
             && *supports_tab_move == self.supports_tab_move
             && *supports_workspace_move == self.supports_workspace_move
             && *supports_link_resolve == self.supports_link_resolve
-            && *supports_link_activate == self.supports_link_activate
             && *supports_copy_search == self.supports_copy_search
             && *supports_selection_read == self.supports_selection_read
             && *supports_copy_motion == self.supports_copy_motion
@@ -534,10 +530,7 @@ impl LiveState {
                     Method::ProductAnnouncementDismiss.advertised_in(&welcome.methods);
                 self.supports_release_notes_dismiss =
                     Method::ReleaseNotesDismiss.advertised_in(&welcome.methods);
-                self.supports_link_resolve =
-                    crate::links::LinkRequest::Resolve.advertised_in(&welcome.methods);
-                self.supports_link_activate =
-                    crate::links::LinkRequest::Activate.advertised_in(&welcome.methods);
+                self.supports_link_resolve = Method::PaneLinkResolve.advertised_in(&welcome.methods);
                 self.supports_copy_search = Method::PaneCopySearch.advertised_in(&welcome.methods);
                 self.supports_selection_read =
                     Method::PaneSelectionRead.advertised_in(&welcome.methods);

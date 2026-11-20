@@ -102,7 +102,5 @@ window-input-cleanup-failed-body = No path was pasted. Temporary files may remai
 
 # Dragging a tab to another place in the strip.
 window-input-tab-move-failed = Tab move not sent: { $error }
-# Clicking a link whose handler could not open it.
-window-input-link-failed = Link handler failed: { $error }
 # The window resized, and the pane size could not be sent.
 window-input-resize-failed = Resize: { $error }

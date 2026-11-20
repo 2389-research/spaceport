@@ -1908,8 +1908,12 @@ its dashes turn solid once its target is verified:
   address, keeps its dashes; a click says why nothing opens.
 
 A plain URL is read from its row. One that reaches the pane's right edge may
-wrap onto the next row; a daemon that offers `pane.link.resolve` reads it
-whole, and otherwise it needs explicit terminal hyperlink metadata. A file
+wrap onto the next row, and this app then reads no address for it: the row
+alone does not say where it ends. A daemon that offers `pane.link.resolve`
+names the cells the link covers, so every row of it is underlined, but a
+click there opens nothing until a daemon route reports the address without
+acting on a click. An address wrapped by an explicit terminal hyperlink is a
+link on every row, because the hyperlink carries its own target. A file
 path or `file://` address that fills a row to the right edge and goes on in
 the next is read across those rows, up to 16 of them. The rest may start the
 next row, where the terminal wraps it, or follow an indent, where an agent
@@ -1924,24 +1928,21 @@ similar) opens itself, judged by where symlinks lead. An application, script,
 or unknown file type opens the folder that holds it, and a network path opens
 nothing.
 
-With a daemon that offers it, a link click, a file path or `file://` hyperlink
-included, first goes to the daemon so a plugin's `[[link_handlers]]` entry can
-claim it; see [Herdr Plugins](#herdr-plugins).
+A link click never goes to the daemon. This app reads the address or path
+itself and opens it, so no plugin's `[[link_handlers]]` entry runs for a
+click; see [Herdr Plugins](#herdr-plugins).
 
 ## Herdr Plugins
 
 Herdr runs plugins; this client does not offer their actions in the command
 palette, shortcut reference, or key routes. The legacy connection still
 accepts the daemon's snapshot wire format while the remaining terminal path
-uses it. One plugin-related host route remains:
-- **Link handlers.** A link click that a handler claims opens nothing here. If the
-  handler fails, its error is shown and nothing opens in its place. A click that
-  nothing claims opens here as described in [Terminal Links](#terminal-links).
-  Herdr matches handlers against the URL it reads at the click (a terminal
-  hyperlink's target, or a web address in the text), so a plain printed path is
-  never claimed. A link-modifier click on any terminal hyperlink is offered to
-  the daemon, including one this client never opens itself, such as an SSH
-  host's own `file://` link, so a handler on that host can still claim it.
+uses it. One plugin route is gone:
+- **Link handlers.** No link click reaches the daemon, so a
+  `[[link_handlers]]` entry never claims one: this app reads the address or
+  path itself and opens it, as described in [Terminal Links](#terminal-links).
+  A hyperlink this app never opens, such as an SSH host's own `file://` link,
+  is answered with why and stays unopened.
 - **Popups and panes.** Plugin popups, splits, and tabs are ordinary daemon
   terminals: keys, paste, input methods, and the mouse go to a popup while it is
   open, and focus is whatever the daemon reports, including after a plugin's

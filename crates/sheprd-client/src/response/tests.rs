@@ -103,7 +103,6 @@ fn a_refusal_without_text_still_displays() {
 fn known_codes_round_trip_and_unknown_ones_stay_open() {
     for code in [
         EndpointErrorCode::PaneNotFound,
-        EndpointErrorCode::PluginLinkFailed,
         EndpointErrorCode::QueryTooLarge,
         EndpointErrorCode::StaleContent,
         EndpointErrorCode::Other("future_code".into()),

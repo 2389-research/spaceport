@@ -23,6 +23,18 @@ fn key(handle: WindowHandle<SheprdWindow>, key: &str, cx: &mut AsyncApp) -> Resu
     })?
 }
 
+/// Entry: the application menu bar behind `HERDR_TEST_APPLICATION_MENUS`.
+pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    cx.spawn(async move |cx| {
+        crate::smoke::conclude(
+            "APPLICATION MENUS native",
+            "menu bar geometry, native clicks and keyboard reachability at two widths",
+            run(handle, cx).await,
+        );
+    })
+    .detach();
+}
+
 pub(crate) async fn run(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {
     for width in [1200., 360.] {
         handle.update(cx, |view, window, cx| {

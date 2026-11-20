@@ -599,7 +599,7 @@ pub(crate) fn run() -> std::process::ExitCode {
                     }
                     #[cfg(feature = "integration-test")]
                     if integration_test {
-                        smoke::start(_window, cx);
+                        smoke::start_live(_window, cx);
                     }
                     #[cfg(feature = "integration-test")]
                     if sidebar_test {

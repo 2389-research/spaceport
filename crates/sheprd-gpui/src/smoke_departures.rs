@@ -1,13 +1,34 @@
 // ABOUTME: Captures real native popup entry, outgoing paint, and release frames.
 // ABOUTME: Uses QA slow motion and bounded PNG receipts without changing the clock or OS policy.
-use super::*;
-use crate::{menu::Page, motion};
-use anyhow::ensure;
+use super::{conclude, set_exit_code};
+use crate::{SheprdWindow, controls::Command, menu::Page, motion};
+use anyhow::{Result, anyhow, ensure};
 use base64::Engine as _;
+use gpui::*;
 use image::{
     RgbaImage,
     codecs::png::{CompressionType, FilterType, PngEncoder},
 };
+use sheprd_client::protocol::AgentStatus;
+use std::{sync::Arc, time::{Duration, Instant}};
+
+pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    set_exit_code(1);
+    cx.spawn(async move |cx| {
+        let result = verify(handle, cx).await;
+        let mode = if crate::accessibility::policy::reduce_motion() {
+            "reduced"
+        } else {
+            "animated"
+        };
+        conclude(
+            "DEPARTURES native",
+            &format!("mode={mode} owner reset, native frames, settled baseline and release"),
+            result,
+        );
+    })
+    .detach();
+}
 
 struct SlowMotion(bool);
 
@@ -266,9 +287,5 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
         }
         comparison?;
     }
-    eprintln!(
-        "DEPARTURES native PASS: mode={} owner reset, native frames, settled baseline and release",
-        if reduced { "reduced" } else { "animated" }
-    );
     Ok(())
 }

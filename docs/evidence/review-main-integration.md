@@ -24,7 +24,7 @@ Windows CI continues; this instruction does not pause the full review goal.
 Clint confirms at 03:15 UTC that no foreground release profile has run and no measurement evidence exists.
 He retains that dedicated desktop lane; the merged browser refactors remain groundwork rather than profile results.
 His separate 03:17 UTC reply closes his Interrupted/copy review loop without merge or launch authorization.
-The [workspace-name correction](review-workspace-name-qualification.md) records the current CI failure and pending native rerun.
+The [workspace-name correction](review-workspace-name-qualification.md) records the setup failure and successful native rerun on `1679d74f0`.
 The prior work dashboard is archived; its earlier evidence and attachments remain intact.
 
 ## Navigation ownership integration from PR 136
@@ -43,6 +43,32 @@ Canonical quick checks and diff review pass.
 Logs: `/tmp/spaceport-9s44-nav-integration-{consumers,metal,host-clippy,windows-all,windows-minimal,static}.log`.
 No foreground Mac fixture, working-session profile, or corrected Windows capture runs locally.
 New combined-source CI remains required before claiming current-head platform success.
+
+## Smoke, replay, activity, and read-only link integration
+
+The next normal merge incorporates main `61c57dee9cf9ce410ceb997ac5601f73c37ec8eb`.
+It includes PRs 137, 139, 141, and 142.
+The fixture registry retains the Windows popup-departure entry and one complete verdict.
+Moved helpers retain typed `EmptySurface` diagnostics and footer failure state.
+Windows file and URL cases remain enabled with actual native path fixtures.
+Wrapped plain-text links intentionally underline without opening; local link openers retain their confirmation rules.
+Replay additions test existing same-ID acknowledgement and conversation fencing without changing production replay policy.
+Activity tests keep daemon snapshots as the sole status source.
+
+Host compilation exposes a lost `Arc` import in the confirmation helper.
+Windows compilation exposes a smoke-module shadow of the app's `sidebar` module.
+Explicit imports and the app-module path correct both errors; the failed checks pass after correction.
+Independent read-only review finds no material safety or contract regression.
+
+The combined smoke, link, delivery, activity, focus, and tab scope passes 151 cases.
+Its one Metal opt-in passes separately without opening a desktop window.
+The ACP command scope passes nine cases, including acknowledgement after reconnect without repeated execution.
+The client method and response scope passes sixteen cases.
+Host binary/test Clippy and both Windows binary/native-harness feature configurations pass with warnings denied.
+The four link-removal guards and canonical quick checks pass.
+Logs: `/tmp/spaceport-9s44-wave12-{integration-consumers,integration-metal,replay,host-clippy,windows-all,windows-minimal,link-absence,static}.log`.
+Fresh combined-source platform CI and corrected Windows captures remain pending.
+Mac foreground checks remain pending under Doctor Biz's instruction.
 
 Initial published checkpoint: `150eed475c4097c63dff86edf8e2b215c64a1d02`.
 Draft: [PR 125](https://github.com/2389-research/spaceport/pull/125).

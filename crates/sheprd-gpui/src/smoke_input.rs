@@ -1,10 +1,23 @@
 //! Native input-handler shutdown regression.
-use super::*;
+use crate::smoke::*;
+use crate::{SheprdWindow, sidebar};
+use anyhow::{Context as _, Result, bail};
+use gpui::*;
+use std::sync::Arc;
 
-/// Leave the real platform input handler installed until normal app teardown.
-/// Unlike the paint-only fixtures, process::exit would hide leaked entities here.
-pub(super) fn start(handle: WindowHandle<SheprdWindow>, field: String, cx: &mut App) {
-    EXIT_CODE.store(1, Ordering::SeqCst);
+/// Entry: leave the real platform input handler installed until normal app
+/// teardown.
+///
+/// Unlike the paint-only fixtures, `process::exit` would hide leaked entities
+/// here, so this one quits through the app and lets `main` read the code.
+pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    // The variable that selects this fixture also names the field it leaves focused.
+    let field = std::env::var("HERDR_TEST_INPUT_SHUTDOWN").unwrap_or_default();
+    verify(handle, field, cx);
+}
+
+fn verify(handle: WindowHandle<SheprdWindow>, field: String, cx: &mut App) {
+    set_exit_code(1);
     cx.spawn(async move |cx| {
         // Each field's handler is installed only while its focus handle is
         // focused at paint time, so keep the handle to check after drawing.
@@ -70,7 +83,7 @@ pub(super) fn start(handle: WindowHandle<SheprdWindow>, field: String, cx: &mut 
         match result {
             Ok(()) => {
                 eprintln!("INPUT shutdown ready: {field}");
-                EXIT_CODE.store(0, Ordering::SeqCst);
+                set_exit_code(0);
             }
             Err(error) => eprintln!("INPUT shutdown FAIL: {error:#}"),
         }

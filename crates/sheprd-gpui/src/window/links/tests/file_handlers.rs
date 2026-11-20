@@ -1,3 +1,7 @@
+//! A `file://` hyperlink opens in the system's application, read from the row
+//! itself: no click reaches the daemon, so no link handler can claim it. What
+//! this machine cannot open, such as another host's file, a click explains.
+
 use super::*;
 
 /// A 20-column pane whose first row is an OSC 8 hyperlink to `target`.
@@ -19,9 +23,8 @@ pub(super) fn hyperlinked(target: &str) -> Arc<PaneSurfaceFrame> {
     surface
 }
 
-/// Shows a hyperlink to `document`. Its file opens in the system's
-/// application, which the test observes; these tests are about which
-/// clicks reach the daemon.
+/// Shows a hyperlink to `document`, whose file opens in the system's
+/// application, which these tests observe.
 fn show(view: &mut SheprdWindow, document: &Document) {
     view.live.surface = Some(hyperlinked(&document.url()));
 }
@@ -55,46 +58,12 @@ impl Drop for Document {
     }
 }
 
-/// The next `pane.link.activate`, skipping hover resolution.
-fn activation(peer: &mut MockPeer) -> serde_json::Value {
-    loop {
-        let request = peer.request();
-        if request["method"] == "pane.link.activate" {
-            return request;
-        }
-    }
-}
-
-fn reply(
-    peer: &mut MockPeer,
-    view: &Entity<SheprdWindow>,
-    cx: &mut VisualTestContext,
-    request: &serde_json::Value,
-    response: serde_json::Value,
-) {
-    let id = request["id"].as_str().unwrap();
-    let mut response = response;
-    response["id"] = json!(id);
-    let event = peer.respond(&snapshot().boot_id, id, &response);
-    let links = view.read_with(cx, |view, _| {
-        view.endpoints[view.selected_endpoint]
-            .connection
-            .links
-            .clone()
-    });
-    assert!(links.lock().unwrap().apply(event).is_none());
-    cx.update(|window, cx| view.update(cx, |view, cx| view.poll_links(window, cx)));
-    cx.run_until_parked();
-}
-
-/// A link-modifier click on a `file://` hyperlink reaches the daemon at once,
-/// before any hover resolved it, so a plugin handler such as a Markdown
-/// reviewer can claim it. A handler that fails spends the click, and only a
-/// click nothing claims opens the file here.
+/// A link-modifier click on a `file://` hyperlink opens the file here at
+/// once, with nothing asked of the daemon.
 #[gpui::test]
-fn file_hyperlinks_go_to_plugin_handlers_before_opening_here(cx: &mut gpui::TestAppContext) {
+fn a_file_hyperlink_opens_here_without_asking_the_daemon(cx: &mut gpui::TestAppContext) {
     let document = Document::new();
-    let mut peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
+    let peer = MockPeer::advertising(&["pane.link.resolve"]);
     let (view, cx) = window(&peer, true, cx);
     view.update(cx, |view, _| show(view, &document));
     let link = at(&view, cx, 3, 0);
@@ -103,70 +72,25 @@ fn file_hyperlinks_go_to_plugin_handlers_before_opening_here(cx: &mut gpui::Test
         assert!(view.hovered_daemon_link().is_none());
     });
 
-    // The handler fails: its reason is shown and nothing opens.
+    // The click opens the file and queues no request; only a hover would.
     cx.simulate_click(link, crate::keymap::secondary_key());
-    let request = activation(&mut peer);
-    assert_eq!(
-        request["params"],
-        json!({
-            "pane_id": "w1:p1", "viewport_row": 0, "col": 3,
-            "content_revision": 2, "offset_from_bottom": null,
-        })
-    );
-    reply(
-        &mut peer,
-        &view,
-        cx,
-        &request,
-        json!({"error": {"code": "plugin_link_failed", "message": "review failed"}}),
-    );
-    assert!(cx.opened_url().is_none());
-    view.read_with(cx, |view, _| {
-        assert_eq!(
-            view.notices
-                .text()
-                .map(crate::i18n::leak_tests::unmarked)
-                .as_deref(),
-            Some("Link handler failed: review failed")
-        );
-    });
-
-    // A handler claims it: still nothing opens here.
-    cx.simulate_click(link, crate::keymap::secondary_key());
-    let request = activation(&mut peer);
-    reply(
-        &mut peer,
-        &view,
-        cx,
-        &request,
-        json!({"result": {"type": "pane_link_activated", "url": document.url(), "handled": true}}),
-    );
-    assert!(cx.opened_url().is_none());
-
-    // Nothing claims it: the file opens here, once.
-    cx.simulate_click(link, crate::keymap::secondary_key());
-    let request = activation(&mut peer);
-    assert!(cx.opened_url().is_none(), "the daemon answers first");
-    reply(
-        &mut peer,
-        &view,
-        cx,
-        &request,
-        json!({"result": {"type": "pane_link_activated", "url": document.url(), "handled": false}}),
-    );
     let opened = cx.opened_url().unwrap();
     assert!(
         opened.starts_with("file://") && opened.ends_with("/notes.md"),
         "{opened}"
     );
+    view.read_with(cx, |view, _| {
+        assert!(view.links.resolving.is_none());
+        assert!(view.pressed_terminal_link.is_none());
+    });
 }
 
 /// A hover that already resolved the hyperlink changes nothing: the click
-/// still carries its file, which opens once when no handler claims it.
+/// still opens the file here, from the row's own reading.
 #[gpui::test]
-fn a_resolved_file_hyperlink_keeps_its_local_fallback(cx: &mut gpui::TestAppContext) {
+fn a_resolved_file_hyperlink_still_opens_here(cx: &mut gpui::TestAppContext) {
     let document = Document::new();
-    let mut peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
+    let mut peer = MockPeer::advertising(&["pane.link.resolve"]);
     let (view, cx) = window(&peer, true, cx);
     view.update(cx, |view, _| show(view, &document));
     let link = at(&view, cx, 3, 0);
@@ -174,37 +98,29 @@ fn a_resolved_file_hyperlink_keeps_its_local_fallback(cx: &mut gpui::TestAppCont
     resolve_after_delay(cx);
     let request = peer.request();
     assert_eq!(request["method"], "pane.link.resolve");
-    reply(
+    answer(
         &mut peer,
         &view,
         cx,
         &request,
-        json!({"result": {"type": "pane_link_resolved", "regions": [
+        json!({"type": "pane_link_resolved", "regions": [
             {"row": 0, "start_col": 0, "end_col": 7},
-        ]}}),
+        ]}),
     );
     view.read_with(cx, |view, _| assert!(view.hovered_daemon_link().is_some()));
 
     cx.simulate_click(link, crate::keymap::secondary_key());
-    let request = activation(&mut peer);
-    reply(
-        &mut peer,
-        &view,
-        cx,
-        &request,
-        json!({"result": {"type": "pane_link_activated", "url": document.url(), "handled": false}}),
-    );
     let opened = cx.opened_url().unwrap();
     assert!(opened.ends_with("/notes.md"), "{opened}");
-    view.read_with(cx, |view, _| assert!(view.links.activating.is_none()));
+    view.read_with(cx, |view, _| assert!(view.links.resolving.is_none()));
 }
 
 /// A pane on an SSH host prints that host's `file://` links, which never open
-/// here, yet a quick click, before any hover resolved it, still reaches the
-/// daemon so a handler on that host can claim it. Declined, nothing opens.
+/// here. A click claims the gesture and says why, rather than sending it on
+/// for a handler on that host to run.
 #[gpui::test]
-fn a_remote_file_hyperlink_still_reaches_plugin_handlers(cx: &mut gpui::TestAppContext) {
-    let mut peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
+fn a_remote_file_hyperlink_says_why_it_opens_nothing(cx: &mut gpui::TestAppContext) {
+    let peer = MockPeer::advertising(&["pane.link.resolve"]);
     let (view, cx) = window(&peer, true, cx);
     let url = "file://devbox/home/dev/notes.md";
     view.update(cx, |view, _| {
@@ -222,19 +138,24 @@ fn a_remote_file_hyperlink_still_reaches_plugin_handlers(cx: &mut gpui::TestAppC
         assert!(view.hovered_daemon_link().is_none());
     });
 
-    for handled in [true, false] {
-        cx.simulate_click(link, crate::keymap::secondary_key());
-        let request = activation(&mut peer);
-        assert_eq!(request["params"]["col"], 3);
-        reply(
-            &mut peer,
-            &view,
-            cx,
-            &request,
-            json!({"result": {"type": "pane_link_activated", "url": url, "handled": handled}}),
+    cx.simulate_click(link, crate::keymap::secondary_key());
+    assert!(cx.opened_url().is_none());
+    view.read_with(cx, |view, _| {
+        assert_eq!(
+            view.flash
+                .as_ref()
+                .map(|(flash, _)| flash.text.to_string())
+                .as_deref(),
+            Some(
+                crate::Error::LinkOnAnotherHost {
+                    host: "devbox".into()
+                }
+                .to_string()
+                .as_str()
+            )
         );
-        assert!(cx.opened_url().is_none(), "handled={handled}");
-    }
+        assert!(view.links.resolving.is_none());
+    });
     // Without the modifier the click stays the pane's, as on any hyperlink
     // this client cannot open.
     view.read_with(cx, |view, _| {

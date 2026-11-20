@@ -30,6 +30,7 @@ const STATUSES: [AgentStatus; 5] = [
     AgentStatus::Unknown,
 ];
 
+mod agent_activity;
 mod agent_order;
 mod hierarchy;
 mod host_mark;

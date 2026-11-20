@@ -56,171 +56,46 @@ fn release_after(
     cx.simulate_mouse_up(position, MouseButton::Left, modifiers);
 }
 
-fn activation(peer: &mut MockPeer) -> serde_json::Value {
-    loop {
-        let request = peer.request();
-        if request["method"] == "pane.link.activate" {
-            return request;
-        }
-    }
-}
-
-fn handler_failed(
-    peer: &mut MockPeer,
-    view: &Entity<SheprdWindow>,
-    cx: &mut VisualTestContext,
-    request: &serde_json::Value,
-) {
-    let id = request["id"].as_str().unwrap();
-    let event = peer.respond(
-        &snapshot().boot_id,
-        id,
-        &json!({
-            "id": id,
-            "error": {"code": "plugin_link_failed", "message": "handler failed"}
-        }),
-    );
-    let links = view.read_with(cx, |view, _| {
-        view.endpoints[view.selected_endpoint]
-            .connection
-            .links
-            .clone()
-    });
-    assert!(links.lock().unwrap().apply(event).is_none());
-    cx.update(|window, cx| view.update(cx, |view, cx| view.poll_links(window, cx)));
-}
-
-fn declined(url: &str) -> serde_json::Value {
-    json!({"type": "pane_link_activated", "url": url, "handled": false})
-}
-
-/// Press the visible address at revision 2, swap in revision 4 with the
-/// address intact, and release.
-fn release_on_revision(
-    view: &Entity<SheprdWindow>,
-    cx: &mut VisualTestContext,
-    position: Point<Pixels>,
-) {
-    view.update(cx, |view, _| place(view, WEB, 2));
-    release_after(view, cx, position, crate::keymap::secondary_key(), |view| {
-        place(view, WEB, 4);
-    });
-}
-
-/// A redraw that leaves the address in place completes the click at the
-/// release revision. A handler that claims it or fails spends the click, and
-/// a decline opens the address once.
-#[gpui::test]
-fn an_unchanged_url_activates_at_the_release_revision(cx: &mut gpui::TestAppContext) {
-    let mut peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
-    let (view, cx) = window(&peer, true, cx);
-    let link = at(&view, cx, 2, 0);
-
-    release_on_revision(&view, cx, link);
-    let request = activation(&mut peer);
-    assert_eq!(request["params"]["content_revision"], 4);
-    assert!(
-        cx.opened_url().is_none(),
-        "the daemon answers before anything opens"
-    );
-    answer(
-        &mut peer,
-        &view,
-        cx,
-        &request,
-        json!({"type": "pane_link_activated", "url": WEB, "handled": true}),
-    );
-    assert!(cx.opened_url().is_none());
-
-    release_on_revision(&view, cx, link);
-    let request = activation(&mut peer);
-    handler_failed(&mut peer, &view, cx, &request);
-    assert!(cx.opened_url().is_none());
-    view.read_with(cx, |view, _| {
-        assert_eq!(
-            view.notices
-                .text()
-                .map(crate::i18n::leak_tests::unmarked)
-                .as_deref(),
-            Some("Link handler failed: handler failed")
-        );
-        assert!(view.links.activating.is_none());
-    });
-
-    release_on_revision(&view, cx, link);
-    let request = activation(&mut peer);
-    assert_eq!(
-        request["params"],
-        json!({
-            "pane_id": "w1:p1", "viewport_row": 0, "col": 2,
-            "content_revision": 4, "offset_from_bottom": null,
-        })
-    );
-    assert!(cx.opened_url().is_none());
-    answer(&mut peer, &view, cx, &request, declined(WEB));
-    assert_eq!(cx.opened_url().as_deref(), Some(WEB));
-    view.read_with(cx, |view, _| assert!(view.links.activating.is_none()));
-    cx.update(|window, cx| view.update(cx, |view, cx| view.poll_links(window, cx)));
-    assert_eq!(cx.opened_url().as_deref(), Some(WEB));
-    view.read_with(cx, |view, _| assert!(view.links.activating.is_none()));
-}
-
-/// A click whose revision does not move still reaches the daemon, and only a
-/// decline opens the address here.
-#[gpui::test]
-fn an_unchanged_revision_still_opens_through_the_daemon(cx: &mut gpui::TestAppContext) {
-    let mut peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
-    let (view, cx) = window(&peer, true, cx);
-    view.update(cx, |view, _| place(view, WEB, 2));
-    let link = at(&view, cx, 2, 0);
-
-    cx.simulate_click(link, crate::keymap::secondary_key());
-    let request = activation(&mut peer);
-    assert_eq!(request["params"]["content_revision"], 2);
-    assert!(cx.opened_url().is_none());
-    answer(
-        &mut peer,
-        &view,
-        cx,
-        &request,
-        json!({"type": "pane_link_activated", "url": WEB, "handled": true}),
-    );
-    assert!(cx.opened_url().is_none());
-
-    cx.simulate_click(link, crate::keymap::secondary_key());
-    let request = activation(&mut peer);
-    handler_failed(&mut peer, &view, cx, &request);
-    assert!(cx.opened_url().is_none());
-    view.read_with(cx, |view, _| assert!(view.links.activating.is_none()));
-
-    cx.simulate_click(link, crate::keymap::secondary_key());
-    let request = activation(&mut peer);
-    assert_eq!(request["params"]["content_revision"], 2);
-    answer(&mut peer, &view, cx, &request, declined(WEB));
-    assert_eq!(cx.opened_url().as_deref(), Some(WEB));
-}
-
-fn assert_not_activated(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext, label: &str) {
+fn assert_not_opened(view: &Entity<SheprdWindow>, cx: &mut VisualTestContext, label: &str) {
     assert!(cx.opened_url().is_none(), "{label}");
     view.read_with(cx, |view, _| {
-        assert!(view.links.activating.is_none(), "{label}");
         assert!(view.pressed_terminal_link.is_none(), "{label}");
     });
 }
 
-/// Replacing or clearing the address cancels the click while the pane
-/// viewport stays the one that was pressed.
+/// A redraw that leaves the address in place completes the click, whichever
+/// revision each half of the gesture read.
 #[gpui::test]
-fn a_changed_or_removed_url_does_not_activate(cx: &mut gpui::TestAppContext) {
-    let peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
-    let (view, cx) = window(&peer, true, cx);
+fn an_unchanged_url_opens_at_the_release(cx: &mut gpui::TestAppContext) {
+    let peer = MockPeer::new();
+    let (view, cx) = window(&peer, false, cx);
+    let link = at(&view, cx, 2, 0);
+
+    view.update(cx, |view, _| place(view, WEB, 2));
+    release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
+        place(view, WEB, 4);
+    });
+    assert_eq!(cx.opened_url().as_deref(), Some(WEB));
+
+    // The same address at the same revision opens the same way.
+    view.update(cx, |view, _| place(view, WEB, 2));
+    cx.simulate_click(link, crate::keymap::secondary_key());
+    assert_eq!(cx.opened_url().as_deref(), Some(WEB));
+}
+
+/// Replacing or clearing the address cancels the click: the release is a
+/// different link from the press.
+#[gpui::test]
+fn a_changed_or_removed_url_does_not_open(cx: &mut gpui::TestAppContext) {
+    let peer = MockPeer::new();
+    let (view, cx) = window(&peer, false, cx);
     let link = at(&view, cx, 2, 0);
 
     view.update(cx, |view, _| place(view, WEB, 2));
     release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
         place(view, OTHER, 2);
     });
-    assert_not_activated(&view, cx, "changed url");
+    assert_not_opened(&view, cx, "changed url");
     view.read_with(cx, |view, _| {
         assert_eq!(view.terminal_link_at(link).as_deref(), Some(OTHER));
     });
@@ -229,107 +104,60 @@ fn a_changed_or_removed_url_does_not_activate(cx: &mut gpui::TestAppContext) {
     release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
         place(view, "see notes", 2);
     });
-    assert_not_activated(&view, cx, "removed url");
+    assert_not_opened(&view, cx, "removed url");
     view.read_with(cx, |view, _| assert!(view.terminal_link_at(link).is_none()));
 }
 
-fn prepare(view: &mut SheprdWindow) {
-    Arc::make_mut(view.live.snapshot.as_mut().unwrap()).boot_id = snapshot().boot_id;
-    view.live.supports_link_activate = true;
-    place(view, WEB, 2);
-}
-
-/// Press the address, then revise it and apply `change`, which keeps the
-/// address readable. The click must not activate.
-fn reject_revised(
-    view: &Entity<SheprdWindow>,
-    cx: &mut VisualTestContext,
-    link: Point<Pixels>,
-    label: &str,
-    change: impl FnOnce(&mut SheprdWindow),
-) {
-    view.update(cx, |view, _| prepare(view));
-    release_after(view, cx, link, crate::keymap::secondary_key(), |view| {
-        place(view, WEB, 4);
-        change(view);
-    });
-    assert_not_activated(view, cx, label);
-    view.read_with(cx, |view, _| {
-        assert_eq!(view.terminal_link_at(link).as_deref(), Some(WEB), "{label}");
-    });
-}
-
-/// The address can survive a redraw and still be a different click: another
-/// boot, pane, rectangle, or scroll offset, or a daemon cell on only one
-/// side of the gesture.
+/// A link is what it points at, so a redraw that keeps the address under the
+/// pointer keeps the click: another boot, pane, rectangle, or scroll offset
+/// is the same link, and so is a revision that only redrew other cells.
 #[gpui::test]
-fn a_different_viewport_or_a_missing_cell_does_not_activate(cx: &mut gpui::TestAppContext) {
-    let peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
-    let (view, cx) = window(&peer, true, cx);
+fn a_redraw_that_keeps_the_address_keeps_the_click(cx: &mut gpui::TestAppContext) {
+    let peer = MockPeer::new();
+    let (view, cx) = window(&peer, false, cx);
     let link = at(&view, cx, 2, 0);
-    reject_revised(&view, cx, link, "boot", |view| {
-        let boot = "next-boot";
-        Arc::make_mut(view.live.snapshot.as_mut().unwrap()).boot_id = boot.into();
-        Arc::make_mut(view.live.surface.as_mut().unwrap()).boot_id = boot.into();
-    });
-    reject_revised(&view, cx, link, "pane", |view| {
-        Arc::make_mut(view.live.surface.as_mut().unwrap()).panes[0].pane_id = "other".into();
-    });
-    reject_revised(&view, cx, link, "rectangle", |view| {
-        Arc::make_mut(view.live.surface.as_mut().unwrap()).panes[0]
-            .inner_rect
-            .height = 3;
-    });
-    reject_revised(&view, cx, link, "scroll", |view| {
-        Arc::make_mut(view.live.surface.as_mut().unwrap()).panes[0].scroll =
-            Some(PaneSurfaceScrollMetrics {
-                offset_from_bottom: 4,
-                max_offset_from_bottom: 10,
-                viewport_rows: 4,
-            });
-    });
 
-    // The press had a daemon cell; the release, at the new revision, does not.
-    view.update(cx, |view, _| prepare(view));
-    release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
-        place(view, WEB, 4);
-        view.live.supports_link_activate = false;
-    });
-    assert_not_activated(&view, cx, "release cell missing");
-    view.read_with(cx, |view, _| {
-        assert_eq!(view.terminal_link_at(link).as_deref(), Some(WEB));
-        assert!(
-            view.terminal_link_press(link, crate::keymap::secondary_key())
-                .is_some_and(|pressed| pressed.cell.is_none())
-        );
-    });
-
-    // The release grew a daemon cell the press did not have.
-    view.update(cx, |view, _| {
-        prepare(view);
-        view.live.supports_link_activate = false;
-    });
-    release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
-        view.live.supports_link_activate = true;
-        place(view, WEB, 4);
-    });
-    assert_not_activated(&view, cx, "press cell missing");
-    view.read_with(cx, |view, _| {
-        assert!(
-            view.terminal_link_press(link, crate::keymap::secondary_key())
-                .is_some_and(
-                    |pressed| pressed.cell.is_some() && pressed.url.as_deref() == Some(WEB)
-                )
-        );
-    });
+    for move_pane in [
+        &(|view: &mut SheprdWindow| {
+            let boot = "next-boot";
+            Arc::make_mut(view.live.snapshot.as_mut().unwrap()).boot_id = boot.into();
+            Arc::make_mut(view.live.surface.as_mut().unwrap()).boot_id = boot.into();
+        }) as &dyn Fn(&mut SheprdWindow),
+        &|view: &mut SheprdWindow| {
+            Arc::make_mut(view.live.surface.as_mut().unwrap()).panes[0].pane_id = "other".into();
+        },
+        &|view: &mut SheprdWindow| {
+            Arc::make_mut(view.live.surface.as_mut().unwrap()).panes[0]
+                .inner_rect
+                .height = 3;
+        },
+        &|view: &mut SheprdWindow| {
+            Arc::make_mut(view.live.surface.as_mut().unwrap()).panes[0].scroll =
+                Some(PaneSurfaceScrollMetrics {
+                    offset_from_bottom: 4,
+                    max_offset_from_bottom: 10,
+                    viewport_rows: 4,
+                });
+        },
+        &|view: &mut SheprdWindow| {
+            Arc::make_mut(view.live.surface.as_mut().unwrap()).panes[0].content_revision = 6;
+        },
+    ] {
+        view.update(cx, |view, _| place(view, WEB, 2));
+        release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
+            place(view, WEB, 4);
+            move_pane(view);
+        });
+        assert_eq!(cx.opened_url().as_deref(), Some(WEB));
+    }
 }
 
 /// Retargeting a device session clears the pending press, so a release on
 /// an identical-looking address does not inherit it.
 #[gpui::test]
 fn endpoint_retargeting_drops_a_pending_press(cx: &mut gpui::TestAppContext) {
-    let peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
-    let (view, cx) = window(&peer, true, cx);
+    let peer = MockPeer::new();
+    let (view, cx) = window(&peer, false, cx);
     view.update(cx, |view, _| {
         place(view, WEB, 2);
         view.endpoints[0].live.supports_surface = true;
@@ -358,27 +186,86 @@ fn endpoint_retargeting_drops_a_pending_press(cx: &mut gpui::TestAppContext) {
         view.live.surface = surface;
         view.live.snapshot = snapshot;
         view.live.status = ConnectionStatus::Connected;
-        view.live.supports_link_activate = true;
         view.live
             .activation
             .transition(crate::state::activation::Transition::Reset(None));
     });
     cx.simulate_mouse_up(link, MouseButton::Left, crate::keymap::secondary_key());
-    assert_not_activated(&view, cx, "retarget");
+    assert_not_opened(&view, cx, "retarget");
     view.read_with(cx, |view, _| {
         assert_eq!(view.terminal_link_at(link).as_deref(), Some(WEB));
     });
 }
 
-/// File paths and links with no locally known address keep rejecting a
-/// revision change. A resolved hover is stale after one, and an odd
-/// write-in-progress revision is not a cell a click may send.
+/// A printed path survives a redraw the same way. A `file://` hyperlink on
+/// another host names its target, so a click says so; a span only the daemon
+/// resolved is no click at all, because this client reads no target for it.
 #[gpui::test]
-fn file_and_daemon_only_links_reject_revision_changes(cx: &mut gpui::TestAppContext) {
-    let mut peer = MockPeer::advertising(&["pane.link.resolve", "pane.link.activate"]);
+fn a_file_link_survives_a_redraw_and_a_resolved_span_is_no_click(cx: &mut gpui::TestAppContext) {
+    let folder = tempfile::tempdir().unwrap();
+    std::fs::write(folder.path().join("notes.md"), "# Notes\n").unwrap();
+    let path = "notes.md";
+    let mut peer = MockPeer::advertising(&["pane.link.resolve"]);
     let (view, cx) = window(&peer, true, cx);
+    let modifiers = crate::keymap::secondary_key();
+
+    view.update(cx, |view, _| {
+        // The pane prints a path relative to the directory it is in.
+        let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
+        snapshot.panes[0].cwd = Some(folder.path().to_str().unwrap().into());
+        snapshot.panes[0].foreground_cwd = snapshot.panes[0].cwd.clone();
+        place(view, path, 2);
+    });
+    let link = at(&view, cx, 2, 0);
+    // A printed path is a link once it is found on disk, as a hover with
+    // the modifier held would have it.
+    view.update(cx, |view, _| {
+        let file = view.file_link_at(link).unwrap();
+        view.links.checked = Some((file, Some(true)));
+    });
+    release_after(&view, cx, link, modifiers, |view| place(view, path, 4));
+    let opened = cx.opened_url().unwrap();
+    let real = folder.path().join(path).canonicalize().unwrap();
+    let expected = url::Url::from_file_path(real).unwrap();
+    assert_eq!(opened, expected.as_str());
+    // Nothing else opens from here on.
+    let nothing_more =
+        |cx: &mut VisualTestContext| assert_eq!(cx.opened_url(), Some(opened.clone()));
+
+    // A `file://` hyperlink this machine cannot read names its target, so a
+    // click says so instead of opening anything.
+    let target = "file://devbox/home/dev/notes.md";
+    view.update(cx, |view, _| {
+        view.live.surface = Some(hyperlink("notes.md", target, 2));
+    });
+    view.read_with(cx, |view, _| {
+        assert!(view.terminal_link_at(link).is_none());
+        assert!(view.file_link_at(link).is_none());
+        let pressed = view.terminal_link_press(link, modifiers).unwrap();
+        assert!(pressed.url.is_none() && pressed.file.is_none());
+    });
+    cx.simulate_click(link, modifiers);
+    nothing_more(cx);
+    view.read_with(cx, |view, _| {
+        assert_eq!(
+            view.flash
+                .as_ref()
+                .map(|(flash, _)| flash.text.to_string())
+                .as_deref(),
+            Some(
+                crate::Error::LinkOnAnotherHost {
+                    host: "devbox".into()
+                }
+                .to_string()
+                .as_str()
+            )
+        );
+    });
+
+    // The daemon's span says these cells are one link; no click follows.
+    view.update(cx, |view, _| view.live.surface = Some(wrapped(2)));
     let continuation = at(&view, cx, 2, 1);
-    cx.simulate_mouse_move(continuation, None, crate::keymap::secondary_key());
+    cx.simulate_mouse_move(continuation, None, modifiers);
     resolve_after_delay(cx);
     let request = peer.request();
     assert_eq!(request["method"], "pane.link.resolve");
@@ -392,78 +279,10 @@ fn file_and_daemon_only_links_reject_revision_changes(cx: &mut gpui::TestAppCont
             {"row": 1, "start_col": 0, "end_col": 11},
         ]}),
     );
-    view.read_with(cx, |view, _| assert!(view.hovered_daemon_link().is_some()));
-    cx.simulate_mouse_down(
-        continuation,
-        MouseButton::Left,
-        crate::keymap::secondary_key(),
-    );
     view.read_with(cx, |view, _| {
-        let pressed = view.pressed_terminal_link.as_ref().unwrap();
-        assert!(pressed.url.is_none());
-        assert!(pressed.file.is_none());
-        assert!(pressed.cell.is_some());
+        assert!(view.hovered_daemon_link().is_some());
+        assert!(view.terminal_link_press(continuation, modifiers).is_none());
     });
-    view.update(cx, |view, _| view.live.surface = Some(wrapped(4)));
-    view.read_with(cx, |view, _| assert!(view.hovered_daemon_link().is_none()));
-    cx.simulate_mouse_up(
-        continuation,
-        MouseButton::Left,
-        crate::keymap::secondary_key(),
-    );
-    assert_not_activated(&view, cx, "wrapped");
-
-    let modifiers = crate::keymap::secondary_key();
-    let path = "/tmp/notes.md";
-    view.update(cx, |view, _| place(view, path, 2));
-    let link = at(&view, cx, 2, 0);
-    // A printed path is a link once it is found on disk, as a hover with
-    // the modifier held would have it.
-    view.update(cx, |view, _| {
-        let file = view.file_link_at(link).unwrap();
-        view.links.checked = Some((file, Some(true)));
-    });
-    view.read_with(cx, |view, _| {
-        assert!(view.terminal_link_at(link).is_none());
-        let pressed = view.terminal_link_press(link, modifiers).unwrap();
-        assert!(pressed.url.is_none() && pressed.file.is_some() && pressed.cell.is_some());
-    });
-    release_after(&view, cx, link, modifiers, |view| place(view, path, 4));
-    assert_not_activated(&view, cx, "file");
-    view.read_with(cx, |view, _| {
-        let release = view.terminal_link_press(link, modifiers).unwrap();
-        assert!(release.url.is_none() && release.file.is_some() && release.cell.is_some());
-    });
-
-    let target = "file://devbox/home/dev/notes.md";
-    view.update(cx, |view, _| {
-        view.live.surface = Some(hyperlink("notes.md", target, 2));
-    });
-    view.read_with(cx, |view, _| {
-        assert!(view.terminal_link_at(link).is_none());
-        assert!(view.file_link_at(link).is_none());
-        let pressed = view.terminal_link_press(link, modifiers).unwrap();
-        assert!(pressed.url.is_none() && pressed.file.is_none() && pressed.cell.is_some());
-    });
-    release_after(&view, cx, link, modifiers, |view| {
-        view.live.surface = Some(hyperlink("notes.md", target, 4));
-    });
-    assert_not_activated(&view, cx, "daemon-only");
-    view.read_with(cx, |view, _| {
-        let release = view.terminal_link_press(link, modifiers).unwrap();
-        assert!(release.url.is_none() && release.file.is_none() && release.cell.is_some());
-    });
-
-    view.update(cx, |view, _| place(view, WEB, 2));
-    release_after(&view, cx, link, crate::keymap::secondary_key(), |view| {
-        place(view, WEB, 3)
-    });
-    assert_not_activated(&view, cx, "odd revision");
-    view.read_with(cx, |view, _| {
-        let release = view
-            .terminal_link_press(link, crate::keymap::secondary_key())
-            .unwrap();
-        assert_eq!(release.url.as_deref(), Some(WEB));
-        assert!(release.cell.is_none());
-    });
+    cx.simulate_click(continuation, modifiers);
+    nothing_more(cx);
 }

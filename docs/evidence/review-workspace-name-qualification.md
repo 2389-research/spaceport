@@ -23,4 +23,7 @@ All original target, consent, cancel-first, confirmation, checkout, and daemon a
 Both Windows feature configurations pass the targeted accessibility-harness Clippy check with warnings denied.
 Logs: `/tmp/spaceport-9s44-workspace-name-windows-{all,minimal}.log`.
 Independent read-only review finds no material targeting, acknowledgement, helper syntax, or consent regression.
-PowerShell execution and native confirmation qualification remain pending the next Windows run.
+On `1679d74f0`, the [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44663710320/job/136048031195) passes the workspace-consent case.
+The completed-name handshake runs before the original target, cancellation, confirmation, and preservation assertions.
+All 25 non-Core native UIA cases pass on that source.
+The job separately fails Core resize qualification; this workspace result does not imply an overall green job.

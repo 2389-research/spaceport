@@ -1,6 +1,7 @@
 // ABOUTME: Checks held Enter against actual native confirmation windows.
 // ABOUTME: Uses inert fixtures with no process worker, external host, or Core connection.
 use super::*;
+use std::sync::Arc;
 
 pub(super) async fn verify(
     handle: WindowHandle<SheprdWindow>,
