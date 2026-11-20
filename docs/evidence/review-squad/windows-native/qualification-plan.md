@@ -231,6 +231,28 @@ The [qualification receipt](qualification-e60795ab9.json) retains exact source, 
 This fixes the reproduced app-frame corruption; painted pixels remain unverified.
 Audible screen-reader checks, Mac Cmd-W qualification, release profiling, and native before/after images remain pending.
 
+### Native Core pixel comparison
+
+The throwaway visual probe reuses the existing foreground-guarded, bounded native capture helper.
+The ordinary Core fixture requests the top 120 pixels of its exact terminal document.
+Success requires a PNG; failure retains a PNG when the owned window remains capturable.
+Capture refusal never replaces the original text failure or permits another window.
+No measured input, assertion, or deadline changes.
+
+The corrected app runs its existing native suite and six focused samples first.
+A separate detached worktree then builds exact pre-fix source 2222112ab with only the capture fixture copied in.
+Its target directory is separate, preventing cross-worktree executable reuse.
+Eight fresh private negative-control samples retain every result and PNG.
+The control requires the expected text failure, known stale suffix, and a PNG at least once.
+It rejects the Core cleanup-failure receipt, even when the original text failure also remains.
+Any different failure, missing capture, or absent reproduction fails the probe.
+The pre-fix production source remains unchanged; neither runtime is modified.
+Both actual PNGs still need inspection before publication or any painted-pixel claim.
+The fast Linux prerequisite now lints every terminal target and feature before running its full suite.
+This catches duplicate fixture-module imports before the larger native build.
+Independent read-only review verifies ownership, bounds, baseline selection, and the corrected cleanup refusal.
+Native execution and PNG inspection remain pending.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.

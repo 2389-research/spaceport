@@ -37,7 +37,9 @@ jobs:
           key: core-replay-ubuntu-24.04
           save-if: false
       - name: Test terminal semantics and replay captured Core output
-        run: cargo test --locked -p sheprd-terminal -- --nocapture --test-threads=1
+        run: |
+          cargo clippy --locked -p sheprd-terminal --all-targets --all-features -- -D warnings
+          cargo test --locked -p sheprd-terminal -- --nocapture --test-threads=1
   probe:
     needs: replay
     if: >-
@@ -117,3 +119,37 @@ jobs:
             fi
           done
           exit "$result"
+      - name: Capture the pre-fix native Core negative control
+        run: |
+          baseline=2222112abf2d45acc33da70b994dc9118a975f58
+          git fetch --depth=1 origin "$baseline"
+          git worktree add --detach .worktrees/core-before "$baseline"
+          cp crates/sheprd-gpui/tests/accessibility_windows/core.rs .worktrees/core-before/crates/sheprd-gpui/tests/accessibility_windows/core.rs
+          cp crates/sheprd-gpui/tests/support/uia_terminal.ps1 .worktrees/core-before/crates/sheprd-gpui/tests/support/uia_terminal.ps1
+          cd .worktrees/core-before
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/core-before-target"
+          reproduced=0
+          unexpected=0
+          for sample in 1 2 3 4 5 6 7 8; do
+            capture="$RUNNER_TEMP/core-before-$sample.log"
+            printf 'CORE_VISUAL_BEFORE_SAMPLE %s/8\n' "$sample"
+            if cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows core::native_core_text_caret_bounds_and_output_changes_match_the_real_runtime -- --ignored --exact --nocapture --test-threads=1 > "$capture" 2>&1; then
+              if ! grep -Fq 'CORE_TERMINAL_PNG ' "$capture"; then
+                unexpected=1
+                printf 'CORE_VISUAL_BEFORE_UNEXPECTED sample=%s reason=missing-png\n' "$sample"
+              fi
+            elif grep -Fq 'Native terminal text or changed-output event is missing: changed=True output=False' "$capture" &&
+                 grep -Fq 'SP_A11Y_7rs' "$capture" && grep -Fq 'CORE_TERMINAL_PNG ' "$capture" &&
+                 ! grep -Fq 'CORE_NATIVE cleanup failed' "$capture"; then
+              reproduced=1
+              printf 'CORE_VISUAL_BEFORE_REPRO sample=%s\n' "$sample"
+            else
+              unexpected=1
+              printf 'CORE_VISUAL_BEFORE_UNEXPECTED sample=%s reason=unexpected-failure\n' "$sample"
+            fi
+            cat "$capture"
+          done
+          printf 'CORE_VISUAL_BEFORE_RESULT reproduced=%s unexpected=%s\n' "$reproduced" "$unexpected"
+          if [[ "$reproduced" != 1 || "$unexpected" != 0 ]]; then
+            exit 1
+          fi
