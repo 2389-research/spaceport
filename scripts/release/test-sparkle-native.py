@@ -243,6 +243,25 @@ def claim_caches(root, manifest):
         raise
 
 
+def census_matches(output, root, paths):
+    # `ps -o uid=` prints macOS's `nobody` (4294967294) signed as -2, which is a
+    # valid uid rather than a malformed row. A row carrying another account's
+    # uid is never ours: the fixture root is 0700 and every fixture process
+    # starts with this account's credentials.
+    prefixes = [str(Path(root).resolve()) + '/'] + [str(path) + '/' for path in paths]
+    matches, uid = [], os.getuid()
+    for line in output.splitlines():
+        fields = line.strip().split(None, 2)
+        if len(fields) != 3 or not fields[0].isdigit() or not re.fullmatch(r'-?[0-9]+', fields[1]):
+            raise ValueError('Executable-path census returned an unexpected row')
+        if int(fields[1]) != uid:
+            continue
+        executable = str(Path(fields[2]).resolve()) if fields[2].startswith('/') else ''
+        if int(fields[0]) != os.getpid() and any(executable.startswith(prefix) for prefix in prefixes):
+            matches.append(int(fields[0]))
+    return matches
+
+
 def fixture_processes(root, paths):
     # Read executable paths only, never unrelated process arguments. These
     # observations authorize refusal/retention; they never authorize signals.
@@ -250,16 +269,7 @@ def fixture_processes(root, paths):
                             capture_output=True, text=True, timeout=5, check=True)
     if len(result.stdout) > LIMIT or result.stderr:
         raise ValueError('Executable-path census failed or exceeded its bound')
-    prefixes = [str(Path(root).resolve()) + '/'] + [str(path) + '/' for path in paths]
-    matches = []
-    for line in result.stdout.splitlines():
-        fields = line.strip().split(None, 2)
-        if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
-            raise ValueError('Executable-path census returned an unexpected row')
-        executable = str(Path(fields[2]).resolve()) if fields[2].startswith('/') else ''
-        if int(fields[0]) != os.getpid() and any(executable.startswith(prefix) for prefix in prefixes):
-            matches.append(int(fields[0]))
-    return matches
+    return census_matches(result.stdout, root, paths)
 
 
 def cache_open_processes(path):
