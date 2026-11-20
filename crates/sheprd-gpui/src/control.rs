@@ -9,6 +9,7 @@
 
 mod client;
 mod server;
+mod targets;
 
 use crate::SheprdWindow;
 pub(crate) use client::help::usage as command_usage;

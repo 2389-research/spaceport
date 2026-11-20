@@ -197,6 +197,7 @@ impl SheprdWindow {
             flash: None,
             flash_motion: Default::default(),
             focus,
+            group_terminals: Default::default(),
             gui_config_diagnostic,
             held_keys: Default::default(),
             hover: None,

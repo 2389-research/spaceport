@@ -64,8 +64,7 @@ fn split_history<'a>(
             shown.focused_pane_id = Some("a".into());
             let key = view.browser_key().unwrap();
             let target = view.endpoints[0].connection.target.clone();
-            view.browser
-                .terminals
+            view.group_terminals
                 .parked
                 .push(parked(left, key, target, &parked_peer, shown));
             assert_eq!(view.primary_group(), Some(right));

@@ -27,6 +27,23 @@ His separate 03:17 UTC reply closes his Interrupted/copy review loop without mer
 The [workspace-name correction](review-workspace-name-qualification.md) records the current CI failure and pending native rerun.
 The prior work dashboard is archived; its earlier evidence and attachments remain intact.
 
+## Navigation ownership integration from PR 136
+
+The combined candidate incorporates main `9bb1adaf71361051384fb91cbb0d0ca59e360e21`.
+Main moves terminal groups onto the window and relocates navigation and control target helpers.
+The sole conflict retains endpoint-serving readiness and attach-only startup while borrowing the new window field.
+Independent review finds one stale profile-helper borrow on the removed browser field.
+Host all-feature compilation reproduces that error; the corrected borrow preserves paired live and presented state.
+AST search finds no remaining old browser-terminal field access.
+
+The combined group, control-target, browser, focus, tab, and Core-close scope passes 62 cases.
+Its ordinary batch skips the one explicit Metal opt-in; that real raster case passes separately.
+Host binary/test Clippy and both Windows binary/native-harness configurations pass with warnings denied.
+Canonical quick checks and diff review pass.
+Logs: `/tmp/spaceport-9s44-nav-integration-{consumers,metal,host-clippy,windows-all,windows-minimal,static}.log`.
+No foreground Mac fixture, working-session profile, or corrected Windows capture runs locally.
+New combined-source CI remains required before claiming current-head platform success.
+
 Initial published checkpoint: `150eed475c4097c63dff86edf8e2b215c64a1d02`.
 Draft: [PR 125](https://github.com/2389-research/spaceport/pull/125).
 The remote branch and draft head matched that initial commit when it was published.

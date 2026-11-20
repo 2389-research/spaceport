@@ -284,9 +284,9 @@ fn using_a_parked_group_swaps_its_connection_in(cx: &mut TestAppContext) {
                 inbox.notifications_lost = true;
                 inbox.dirty = true;
             }
-            view.browser.terminals.parked.push(parked);
+            view.group_terminals.parked.push(parked);
             assert!(view.poll_group_terminals());
-            assert!(!view.browser.terminals.parked[0].live.notifications_lost);
+            assert!(!view.group_terminals.parked[0].live.notifications_lost);
             let _ = cx;
         })
     });
@@ -332,7 +332,7 @@ fn using_a_parked_group_swaps_its_connection_in(cx: &mut TestAppContext) {
             Some("t1")
         );
         // The right group keeps its tab through the connection it had.
-        let parked = &view.browser.terminals.parked;
+        let parked = &view.group_terminals.parked;
         assert_eq!(parked.len(), 1);
         assert_eq!(parked[0].group, right);
         assert_eq!(parked[0].focused_tab(), Some("t0"));
@@ -346,7 +346,7 @@ fn using_a_parked_group_swaps_its_connection_in(cx: &mut TestAppContext) {
     // Closing the group drops its connection.
     cx.update(|window, cx| view.update(cx, |view, cx| view.close_group(right, window, cx)));
     view.read_with(cx, |view, _| {
-        assert!(view.browser.terminals.parked.is_empty());
+        assert!(view.group_terminals.parked.is_empty());
         assert_eq!(view.primary_group(), Some(left));
     });
 }
@@ -366,16 +366,15 @@ fn leaving_the_workspace_drops_parked_connections(cx: &mut TestAppContext) {
             on_t1.focused_workspace_id = Some("w0".into());
             on_t1.focused_tab_id = Some("t1".into());
             let target = view.endpoints[0].connection.target.clone();
-            view.browser
-                .terminals
+            view.group_terminals
                 .parked
                 .push(parked(slots[0].id, key, target, &peer, on_t1));
             view.reconcile_group_terminals(cx);
-            assert_eq!(view.browser.terminals.parked.len(), 1);
+            assert_eq!(view.group_terminals.parked.len(), 1);
             let snapshot = Arc::make_mut(view.live.snapshot.as_mut().unwrap());
             snapshot.focused_workspace_id = Some("w1".into());
             view.reconcile_group_terminals(cx);
-            assert!(view.browser.terminals.parked.is_empty());
+            assert!(view.group_terminals.parked.is_empty());
         })
     });
 }

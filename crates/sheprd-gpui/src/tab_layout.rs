@@ -1,3 +1,5 @@
+// ABOUTME: Shares tab content, focus indicators, and controls across strip layouts.
+// ABOUTME: Keeps translucent focus paint independent of the colors behind the window.
 //! Tab strips as swappable layouts.
 //!
 //! The strip prepares what a tab shows once, as a [`TabFace`], and hands it

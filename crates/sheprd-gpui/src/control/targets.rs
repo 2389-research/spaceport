@@ -1,6 +1,7 @@
 //! Control target matching for app requests.
 
-use crate::{SheprdWindow, browser::Scope, control::Target};
+use super::Target;
+use crate::{SheprdWindow, browser::Scope};
 
 impl SheprdWindow {
     /// The endpoint and workspace a control request names, if this window
@@ -54,7 +55,7 @@ impl SheprdWindow {
     /// `scope`, whether or not the window shows it now.
     pub(crate) fn endpoint_showing(&self, scope: &Scope, workspace: &str) -> Option<usize> {
         self.hosts().find_map(|(index, endpoint, live)| {
-            if &super::scope(endpoint) != scope {
+            if &crate::browser::scope(endpoint) != scope {
                 return None;
             }
             live.snapshot
@@ -66,3 +67,6 @@ impl SheprdWindow {
         })
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -14,8 +14,7 @@ impl SheprdWindow {
                 let state = if primary {
                     Some((&self.live, &self.presentation))
                 } else {
-                    self.browser
-                        .terminals
+                    self.group_terminals
                         .parked
                         .iter()
                         .find(|parked| parked.group == slot.id)
