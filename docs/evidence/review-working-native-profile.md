@@ -719,3 +719,18 @@ Installed WPR details at job `136539796095` show both CPU file profiles use 1,02
 Verbose includes sampled-profile and context-switch stacks; Light exposes no System Stacks section.
 Light cannot supply the required stack evidence and was not selected.
 The next tools probe exports the installed verbose definition through its documented read-only command.
+
+At `d387b3fe6`, run `44811394158` passed all four ordinary jobs.
+Windows and Mac harness, observer, and scoped Clippy checks passed.
+Windows ordinary accessibility controls, recorder inventory, tools, and encrypted retention also passed.
+No native Core execution occurred.
+
+### Sampled CPU profile validation
+
+The installed verbose definition includes context-switch stacks and extra event providers.
+The new `scripts/profile/spaceport-cpu.wprp` keeps sampled-profile stacks and process/module identity events.
+Its single system collector keeps the installed 1,024 KB buffers and count 20.
+File and memory definitions share that collector without inheriting other providers.
+The ordinary tools job validates available installed schema and both native parser selectors without recording.
+Independent review caught its missing job checkout; the job now checks out with read-only contents permission.
+Actual installed acceptance remains pending; the recorder still uses the built-in CPU profile.

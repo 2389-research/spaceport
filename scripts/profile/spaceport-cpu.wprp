@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ABOUTME: Collects sampled CPU stacks for the private Spaceport profile fixture. -->
+<!-- ABOUTME: Shares one system collector across explicit file and memory definitions. -->
+<WindowsPerformanceRecorder Version="1.0">
+  <Profiles>
+    <SystemCollector Id="SpaceportCpuCollector" Name="WPR_initiated_WprApp_WPR System Collector">
+      <BufferSize Value="1024" />
+      <Buffers Value="20" />
+    </SystemCollector>
+    <SystemProvider Id="SpaceportCpuProvider">
+      <Keywords>
+        <Keyword Value="CpuConfig" />
+        <Keyword Value="Loader" />
+        <Keyword Value="ProcessThread" />
+        <Keyword Value="SampledProfile" />
+      </Keywords>
+      <Stacks>
+        <Stack Value="SampledProfile" />
+      </Stacks>
+    </SystemProvider>
+    <Profile Id="SpaceportCpu.Verbose.File" Name="SpaceportCpu" Description="Sampled CPU stacks for the private Spaceport profile fixture" LoggingMode="File" DetailLevel="Verbose">
+      <Collectors>
+        <SystemCollectorId Value="SpaceportCpuCollector">
+          <SystemProviderId Value="SpaceportCpuProvider" />
+        </SystemCollectorId>
+      </Collectors>
+    </Profile>
+    <Profile Id="SpaceportCpu.Verbose.Memory" Name="SpaceportCpu" Description="Sampled CPU stacks for the private Spaceport profile fixture" LoggingMode="Memory" DetailLevel="Verbose">
+      <Collectors>
+        <SystemCollectorId Value="SpaceportCpuCollector">
+          <SystemProviderId Value="SpaceportCpuProvider" />
+        </SystemCollectorId>
+      </Collectors>
+    </Profile>
+  </Profiles>
+</WindowsPerformanceRecorder>

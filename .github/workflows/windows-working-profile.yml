@@ -20,7 +20,12 @@ jobs:
       github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-profile'
     runs-on: windows-2025
     timeout-minutes: 3
+    permissions:
+      contents: read
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Inspect installed sampling tools and built-in profiles
         timeout-minutes: 1
         shell: powershell
@@ -87,6 +92,31 @@ jobs:
         timeout-minutes: 1
         shell: powershell
         run: wpr.exe -help status
+      - name: Validate sampled CPU profile without recording
+        timeout-minutes: 1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $profile = Join-Path $env:GITHUB_WORKSPACE 'scripts/profile/spaceport-cpu.wprp'
+          $toolkit = Split-Path (Get-Command xperf.exe -CommandType Application -ErrorAction Stop).Source
+          $schema = Get-ChildItem -LiteralPath $toolkit -Filter WPRControlProfiles.xsd -File -Recurse | Select-Object -First 1
+          if ($null -ne $schema) {
+            $settings = [System.Xml.XmlReaderSettings]::new()
+            $settings.ValidationType = [System.Xml.ValidationType]::Schema
+            $settings.Schemas.Add($null, $schema.FullName) | Out-Null
+            $xml = [System.Xml.XmlReader]::Create($profile, $settings)
+            try { while ($xml.Read()) {} } finally { $xml.Dispose() }
+            "Installed WPR schema validated: $($schema.FullName)" | Write-Output
+          } else {
+            'Installed WPR schema unavailable; validating through the native parser.' | Write-Output
+          }
+          Get-FileHash -LiteralPath $profile -Algorithm SHA256
+          & wpr.exe -profiles $profile
+          if ($LASTEXITCODE -ne 0) { throw 'Native sampled CPU profile listing failed.' }
+          & wpr.exe -profiledetails "$profile!SpaceportCpu" -filemode
+          if ($LASTEXITCODE -ne 0) { throw 'Native sampled CPU file profile validation failed.' }
+          & wpr.exe -profiledetails "$profile!SpaceportCpu"
+          if ($LASTEXITCODE -ne 0) { throw 'Native sampled CPU memory profile validation failed.' }
       - name: Inspect recording stop flags
         if: ${{ !cancelled() }}
         timeout-minutes: 1
