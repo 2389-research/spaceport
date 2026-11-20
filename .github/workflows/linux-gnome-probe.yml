@@ -1,0 +1,38 @@
+name: Linux GNOME prerequisite probe
+
+on:
+  push:
+    branches: [fix/review-squad-linux-native]
+
+permissions: {}
+
+concurrency:
+  group: linux-gnome-probe-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.ref == 'refs/heads/fix/review-squad-linux-native'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the real GNOME prerequisite
+        run: |
+          sudo apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=20 update --error-on=any
+          sudo apt-get install --no-install-recommends -y gnome-shell dbus-x11 at-spi2-core libgl1-mesa-dri mesa-vulkan-drivers
+          gnome-shell --version
+          systemctl is-active systemd-logind
+      - name: Compile and run the throwaway startup probe
+        run: |
+          rustup show
+          rustfmt --edition 2024 --check scripts/qualification/linux_gnome_probe.rs
+          rustc --edition 2024 scripts/qualification/linux_gnome_probe.rs -o "$RUNNER_TEMP/spaceport-gnome-probe"
+          "$RUNNER_TEMP/spaceport-gnome-probe"
