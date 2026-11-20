@@ -15,7 +15,8 @@ use sheprd_client::protocol::{
 
 /// A grid half the width of a laptop window's group, in cells.
 const GRID: (u16, u16) = (80, 24);
-/// A grid filling a group half of a 1920x1080 window shares.
+/// A large shared group: more cells than a real half-window group holds at
+/// the app's cell metrics, as an upper bound.
 const SHARED_GROUP: (u16, u16) = (100, 56);
 
 /// Output on every row of `grid`, as the daemon projects a pane running a
@@ -151,6 +152,10 @@ fn a_mark_frame_repaints_no_mirrored_cells(cx: &mut TestAppContext) {
 fn a_mirrored_group_paints_the_cells_that_changed(cx: &mut TestAppContext) {
     let (view, cx) = split_window_mirroring_t0(cx);
     assert_eq!(mark_frame_counts(cx).paints, 0);
+    eprintln!(
+        "MIRROR-CANVAS theme background before: {:06x}",
+        view.read_with(cx, |view, _| view.theme.background)
+    );
     cx.update(|_, cx| {
         view.update(cx, |view, _| {
             let surface = Arc::make_mut(view.live.surface.as_mut().unwrap());
@@ -163,6 +168,44 @@ fn a_mirrored_group_paints_the_cells_that_changed(cx: &mut TestAppContext) {
     assert_eq!(changed.paints, 1, "{changed:?}");
     assert!(changed.glyphs > 0, "{changed:?}");
     assert_eq!(mark_frame_counts(cx).paints, 0);
+}
+
+/// The mirror's cached look includes the terminal theme: cell colors come
+/// from it, so a theme change must retire the cached view even though the
+/// mirrored cells and metrics are unchanged — as the window's own regions
+/// already do. The stored picture's look must carry the new theme once the
+/// frame that saw the change has rendered.
+#[gpui::test]
+fn a_theme_change_repaints_the_mirror(cx: &mut TestAppContext) {
+    let (view, cx) = split_window_mirroring_t0(cx);
+    let before = view.read_with(cx, |view, _| {
+        view.group_pictures
+            .iter()
+            .map(|p| p.cached_look().theme.background)
+            .collect::<Vec<_>>()
+    });
+    assert!(!before.is_empty(), "the mirror's picture is cached");
+    cx.update(|_, cx| {
+        view.update(cx, |view, cx| {
+            view.theme = sheprd_settings::Theme {
+                background: 0x000000,
+                ..view.theme.clone()
+            };
+            cx.notify();
+        });
+    });
+    mark_frame(cx);
+    let after = view.read_with(cx, |view, _| {
+        view.group_pictures
+            .iter()
+            .map(|p| p.cached_look().theme.background)
+            .collect::<Vec<_>>()
+    });
+    assert_eq!(
+        after,
+        vec![0x000000; after.len()],
+        "the cached picture's look follows the theme"
+    );
 }
 
 /// What a mark frame costs, in microseconds, once the window has settled on

@@ -9,6 +9,7 @@
 //! region is: while what it paints has not changed, GPUI replays its scene,
 //! and a change takes a fresh view, which has no scene to replay.
 
+use crate::config;
 use crate::{
     browser::GroupId,
     presentation::Picture,
@@ -18,12 +19,16 @@ use crate::{
 use gpui::{prelude::*, *};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-/// Everything besides the cells that changes how a picture paints.
+/// Everything besides the cells that changes how a picture paints. The
+/// theme is part of the look because cell colors come from it: a replayed
+/// scene must repaint when the theme changes, as the window's own regions
+/// already do.
 #[derive(Clone, PartialEq)]
 pub(crate) struct PictureLook {
     pub(crate) cell_height: f32,
     pub(crate) cell_width: f32,
     pub(crate) font: Font,
+    pub(crate) theme: config::Theme,
     pub(crate) ground: Ground,
 }
 
@@ -48,6 +53,13 @@ impl GroupPicture {
             picture,
             view,
         }
+    }
+
+    /// The look the cached view replays with, for tests that assert the
+    /// cache follows what it paints.
+    #[cfg(any(test, feature = "test-support"))]
+    pub(crate) fn cached_look(&self) -> &PictureLook {
+        &self.look
     }
 
     pub(crate) fn group(&self) -> GroupId {

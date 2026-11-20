@@ -103,7 +103,7 @@ Each pair is one run of the final binary, and the share is now inside the
 noise: the one-cell baseline alone reads 399.1, 429.4 and 405.5 us across runs,
 so a share of a few tens of microseconds is the machine, not the mirror. The
 count says the same thing — `paints: 0, quads: 0, glyphs: 0` on a mark frame.
-The whole frame fell by 79 us for the 80x24 group and 294 us for the 100x56 one.
+The whole frame fell by 71-79 us for the 80x24 group and 286-294 us for the 100x56 one across the recorded runs.
 
 ## Tests
 

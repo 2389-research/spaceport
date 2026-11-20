@@ -583,6 +583,7 @@ impl SheprdWindow {
             cell_height,
             cell_width: self.cell_width,
             font,
+            theme: self.terminal_theme().clone(),
             ground: self.ground(),
         };
         let view = self.picture_view(previous, group, surface, look, cx);
