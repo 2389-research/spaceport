@@ -731,5 +731,19 @@ Three initial cases fail behaviorally against the old full-grid path before the 
 The complete focused run passes 124 cases; two unrelated explicit Metal opt-ins remain ignored.
 Log: `/tmp/spaceport-9s44-core-viewport-{red,green}.log`.
 The native helper retains its containment guards and deadlines, adding only numeric failure bounds.
-Fresh Windows Core resize qualification remains pending for the correction.
+The following native run qualifies the correction.
 Mac foreground and audible screen-reader checks remain pending.
+
+### Corrected native Core bounds on `d747cdbdb`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44680270572/job/136101908188) passes all three Core cases.
+The unchanged resize test now moves left, restores right, and preserves exact runtime input and terminal identities.
+Its receipt appears at `2026-11-20T05:33:58.4153432Z`; the Rust case passes afterward.
+Ordinary and observing text, native change events, caret bounds, and observer cleanup also pass.
+See the [scoped receipt](review-squad/windows-native/qualification-d747cdbdb.json).
+
+The same job passes eight GUI cases, pipe ownership, 25 ordinary UIA cases, and the Polish input case.
+The release-performance step skips; this is no working-session performance measurement.
+This qualifies the corrected Core geometry on this source and real Windows consumer.
+It does not establish the cause of the earlier separate intermittent ordinary Core failure.
+Audible speech and Mac foreground Cmd-W remain pending, so their findings stay open.
