@@ -67,7 +67,7 @@ function cleanup() {
     if (window !== null)
         attempt(() => window.destroy());
     passed = passed && cleanupPassed && closed && down.size === 0;
-    print(`GNOME_INPUT gtk_native=${passed} evdev=true polish=${JSON.stringify(actualText)} keys_released=${down.size === 0} session_closed=${closed} layout_restored=${restored} spaceport_started=false`);
+    print(`GNOME_INPUT gtk_native=${passed} transport=evdev sequence_sent=${sent} polish=${JSON.stringify(actualText)} keys_released=${down.size === 0} session_closed=${closed} layout_restored=${restored} spaceport_started=false`);
 }
 
 try {
@@ -86,8 +86,10 @@ try {
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
         try {
             if (GLib.get_monotonic_time() >= deadline)
-                throw new Error(`GTK input deadline: active=${window.is_active()} text=${JSON.stringify(entry.get_text())}`);
-            if (!window.is_active())
+                throw new Error(`GTK input deadline: active=${window.is_active} text=${JSON.stringify(entry.get_text())}`);
+            if (typeof window.is_active !== 'boolean')
+                throw new Error('GTK active-window property is not Boolean');
+            if (!window.is_active)
                 return GLib.SOURCE_CONTINUE;
             if (!sent) {
                 if (!entry.grab_focus())

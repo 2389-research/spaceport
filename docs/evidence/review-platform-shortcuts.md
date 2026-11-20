@@ -396,4 +396,11 @@ RealtimeKit and GNOME SessionManager remain absent; the probe does not establish
 It starts no Spaceport process and sends no keys.
 The next prerequisite uses a private GTK field and Mutter's persistent input session to test Polish evdev input.
 Spaceport shortcut behavior and actual GNOME interception remain unqualified, so Kata `3wd4` stays open.
+
+The first GTK input attempt on `c3f01ab84` fails before remote-session creation or key injection.
+GJS exposes `Gtk.Window:is-active` as a Boolean property; the probe incorrectly calls it as a method.
+The [failed-attempt receipt](review-squad/linux-native/gtk-input-c3f01ab84.json) retains the exact boundary and cleanup observations.
+The private layout restores, and the input driver, Shell, and bus all reap.
+The correction reads the property and reports the selected transport separately from actual sequence delivery.
+Its actual GTK rerun remains pending; no Spaceport keyboard qualification follows from this failure.
 Mutter-only or nested startup cannot substitute for those checks.
