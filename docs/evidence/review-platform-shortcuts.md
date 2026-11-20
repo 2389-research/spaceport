@@ -415,4 +415,9 @@ The [actual diagnostic on `63db1a89c`](review-squad/linux-native/gtk-shell-state
 GNOME 46 installs the Alt-Tab handler only for normal action mode.
 The next correction closes the private overview through its supported UI property and verifies closure before native activation.
 The original active-window, exact-text, deadline, and cleanup requirements remain.
+The [actual rerun on `8e43cd345`](review-squad/linux-native/gtk-input-8e43cd345.json) passes the GTK native-input prerequisite.
+The private overview changes from true to false before activation.
+Native evdev Right Alt plus L, then Shift plus Right Alt plus N, produces `łŃ`.
+Key release, remote-session closure, private layout restoration/readback, and all direct process reaps pass.
+Spaceport has not started in this route; its keyboard normalization, shortcuts, and terminal delivery remain pending.
 Mutter-only or nested startup cannot substitute for those checks.

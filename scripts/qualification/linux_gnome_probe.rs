@@ -1,16 +1,28 @@
 // ABOUTME: Probes real GNOME startup in a private session on a disposable Linux runner.
-// ABOUTME: This throwaway prerequisite probe starts no Spaceport process and sends no keys.
+// ABOUTME: Runs explicitly selected GTK and Spaceport tests on its owned display.
 use std::{
-    env, fs,
+    env,
+    ffi::OsStr,
+    fs,
     io::{self, Read},
     os::unix::fs::{DirBuilderExt, FileTypeExt},
-    path::Path,
+    path::{Path, PathBuf},
     process::{Child, Command, ExitStatus, Stdio},
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 struct Owned(Child);
+
+enum Probe {
+    Startup,
+    Gtk(PathBuf),
+    Spaceport {
+        gtk: PathBuf,
+        test: PathBuf,
+        herdr: PathBuf,
+    },
+}
 
 impl Owned {
     fn reap(&mut self) -> io::Result<ExitStatus> {
@@ -46,7 +58,7 @@ fn wait(child: &mut Child, duration: Duration) -> io::Result<ExitStatus> {
     }
 }
 
-fn command(program: &str, root: &Path) -> Command {
+fn command(program: impl AsRef<OsStr>, root: &Path) -> Command {
     let mut command = Command::new(program);
     command
         .env_clear()
@@ -58,6 +70,7 @@ fn command(program: &str, root: &Path) -> Command {
         .env("XDG_CACHE_HOME", root.join("cache"))
         .env("XDG_STATE_HOME", root.join("state"))
         .env("XDG_RUNTIME_DIR", root.join("runtime"))
+        .stdin(Stdio::null())
         .env(
             "DBUS_SESSION_BUS_ADDRESS",
             format!("unix:path={}", root.join("bus").display()),
@@ -92,7 +105,47 @@ fn input_probe(root: &Path, script: &Path, display: &Path) -> io::Result<()> {
     Ok(())
 }
 
-fn session(root: &Path, input: Option<&Path>) -> io::Result<()> {
+fn native_test(root: &Path, display: &Path, binary: &Path, herdr: &Path) -> io::Result<()> {
+    let log = fs::File::create(root.join("spaceport.log"))?;
+    let mut test = Owned(
+        command(binary, root)
+            .args([
+                "--ignored",
+                "--exact",
+                "linux_shortcuts::native_linux_shortcuts",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env("WAYLAND_DISPLAY", display)
+            .env("HERDR_TEST_BINARY", herdr)
+            .env("HERDR_TEST_TMPDIR", "/tmp")
+            .env("GITHUB_ACTIONS", "true")
+            .env("RUNNER_ENVIRONMENT", "github-hosted")
+            .env("RUNNER_OS", "Linux")
+            .stdout(Stdio::from(log.try_clone()?))
+            .stderr(Stdio::from(log))
+            .spawn()?,
+    );
+    let result = wait(&mut test.0, Duration::from_secs(180));
+    let cleanup = test.reap();
+    println!("GNOME_PROBE native_test_reaped={}", cleanup.is_ok());
+    if result.is_err() {
+        eprintln!(
+            "GNOME_PROBE native test exceeded the outer bound; descendant containment remains the disposable runner's responsibility"
+        );
+    }
+    print_log(root, "spaceport.log")?;
+    let status = result?;
+    cleanup?;
+    if !status.success() {
+        return Err(io::Error::other(format!(
+            "Spaceport native pipeline failed: {status}"
+        )));
+    }
+    Ok(())
+}
+
+fn session(root: &Path, probe: &Probe) -> io::Result<()> {
     let log = fs::File::create(root.join("gnome.log"))?;
     let mut shell = Owned(
         command("gnome-shell", root)
@@ -151,7 +204,14 @@ fn session(root: &Path, input: Option<&Path>) -> io::Result<()> {
                 println!(
                     "GNOME_PROBE startup=true private_wayland=true private_bus_owner=true spaceport_started=false keyboard_input=false"
                 );
-                return input.map_or(Ok(()), |script| input_probe(root, script, &display));
+                return match probe {
+                    Probe::Startup => Ok(()),
+                    Probe::Gtk(script) => input_probe(root, script, &display),
+                    Probe::Spaceport { gtk, test, herdr } => {
+                        input_probe(root, gtk, &display)?;
+                        native_test(root, &display, test, herdr)
+                    }
+                };
             }
             if Instant::now() >= deadline {
                 return Err(io::Error::new(
@@ -202,10 +262,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
     }
-    if !cfg!(target_os = "linux") || env::args_os().len() > 2 {
-        return Err(io::Error::other("usage: spaceport-gnome-probe [GJS_INPUT_PROBE]").into());
-    }
-    let input = env::args_os().nth(1).map(fs::canonicalize).transpose()?;
+    let args = env::args_os()
+        .skip(1)
+        .map(fs::canonicalize)
+        .collect::<io::Result<Vec<_>>>()?;
+    let probe = match args.as_slice() {
+        [] if cfg!(target_os = "linux") => Probe::Startup,
+        [gtk] if cfg!(target_os = "linux") => Probe::Gtk(gtk.clone()),
+        [gtk, test, herdr] if cfg!(target_os = "linux") => Probe::Spaceport {
+            gtk: gtk.clone(),
+            test: test.clone(),
+            herdr: herdr.clone(),
+        },
+        _ => {
+            return Err(io::Error::other(
+                "usage: spaceport-gnome-probe [GTK_SCRIPT [LIVE_GUI_TEST HERDR_BINARY]]",
+            )
+            .into());
+        }
+    };
     let nonce = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
     let root = env::temp_dir().join(format!("spaceport-gnome-{}-{nonce}", std::process::id()));
     fs::DirBuilder::new().mode(0o700).create(&root)?;
@@ -247,7 +322,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             thread::sleep(Duration::from_millis(20));
         }
-        session(&root, input.as_deref())
+        session(&root, &probe)
     })();
     let cleanup = bus.reap();
     println!(
