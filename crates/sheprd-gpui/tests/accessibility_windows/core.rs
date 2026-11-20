@@ -287,29 +287,31 @@ fn require_runtime_output(observed: &Attachment, marker: &[u8]) {
     );
 }
 
-fn runtime_diagnostic(observed: &Attachment) -> anyhow::Result<String> {
-    let deadline = Instant::now() + Duration::from_secs(1);
+fn runtime_diagnostic(observed: &Attachment, limit: Duration) -> anyhow::Result<(bool, String)> {
+    let deadline = Instant::now() + limit;
     let mut bytes = Vec::new();
     while Instant::now() < deadline {
         let chunk = observed.read(Duration::from_millis(100))?;
+        anyhow::ensure!(
+            chunk.end.is_none(),
+            "owned Core terminal ended during native input check"
+        );
         anyhow::ensure!(
             bytes.len() + chunk.bytes.len() <= CAPTURE_LIMIT,
             "Core fixture diagnostic exceeds 1 MiB"
         );
         bytes.extend(chunk.bytes);
-        if chunk.end.is_some() {
-            break;
-        }
     }
     let marker = b"SP_A11Y_7";
     let present = bytes.windows(marker.len()).any(|part| part == marker);
     let shown = &bytes[..bytes.len().min(8192)];
-    Ok(format!(
+    let diagnostic = format!(
         "marker={present} bytes={} shown={} text={:?} hex={shown:02x?}",
         bytes.len(),
         shown.len(),
         String::from_utf8_lossy(shown)
-    ))
+    );
+    Ok((present, diagnostic))
 }
 
 #[test]
@@ -343,7 +345,7 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
         .running
         .command_output(command, &capture, Duration::from_secs(30))
         .unwrap_or_else(|error| {
-            let runtime = runtime_diagnostic(&observed);
+            let runtime = runtime_diagnostic(&observed, Duration::from_secs(1));
             panic!(
                 "{error}; exact Core runtime on helper failure: cols={} rows={} {runtime:?}",
                 info.cols, info.rows
@@ -355,7 +357,15 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
     ] {
         assert!(output.contains(receipt), "{output}");
     }
-    require_runtime_output(&observed, b"SP_A11Y_7");
+    let (present, runtime) = runtime_diagnostic(&observed, Duration::from_secs(10)).unwrap();
+    assert!(
+        present,
+        "native input did not reach this exact Core terminal"
+    );
+    eprintln!(
+        "CORE_RUNTIME_CAPTURE cols={} rows={} {runtime}",
+        info.cols, info.rows
+    );
     assert_eq!(fixture.api().list(false).unwrap().terminals.len(), 1);
     eprintln!(
         "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true"

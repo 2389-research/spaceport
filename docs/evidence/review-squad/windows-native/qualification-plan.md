@@ -84,6 +84,19 @@ It displays at most 8 KiB of captured bytes as escaped text and byte-exact hex.
 It also records the terminal dimensions observed before attachment.
 No replay, corrective terminal input, production change, or Core cause is claimed.
 
+### Private stream capture for deterministic replay
+
+The integrated PR head remains `287f65aa5` while its full CI runs.
+A separate Windows topic candidate retains the ordinary Core capture on success too.
+This avoids losing all raw evidence when the intermittent corruption does not recur.
+The capture reads the same observer, preserves its 1 MiB bound, and prints at most 8 KiB.
+Escaped text remains readable; hex preserves the exact bytes.
+The runtime marker must still arrive from the exact terminal.
+Its original ten-second success budget remains unchanged.
+Failure capture retains its separate one-second budget.
+No input, UIA assertion, runtime target, or production code changes.
+Captured bytes need deterministic emulator replay before any Core fix is justified.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
