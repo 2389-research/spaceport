@@ -171,7 +171,19 @@ Success requires an observer record; failure retains the original error alongsid
 This observes app state, not painted pixels, and changes no terminal input or render path.
 Independent read-only review found no material issue with scope, bounds, ownership, types, or module paths.
 Formatting, file-size, sorted-list, recipe, translation, commit, whitespace, and workflow checks pass locally.
-Compilation, sampling tests, and native execution remain pending on the disposable Windows runner.
+Source e68a3561f passes both jobs in [run 44738518938](https://github.com/2389-research/spaceport/actions/runs/44738518938).
+Linux and Windows each pass six scope and stream checks.
+Windows also passes the production pipeline test, frame sampler test, and all native probe cases.
+Thirteen actual app-frame records retain a 112-by-34 grid and matching queued dimensions.
+Their final rows contain the full command, standalone output marker, and next prompt.
+The sampled cells have no concealment flags.
+This successful observation does not reproduce or fix the intermittent native text corruption.
+
+The next probe runs six fresh private ordinary-Core fixtures after its three existing Core cases.
+Every sample runs once and retains its own frame records and result.
+Any failure keeps the entire step failed, even when later samples pass.
+This fixed reproduction series seeks a failed app frame; it does not qualify the defect as fixed.
+All original input, assertions, deadlines, target isolation, and cleanup remain unchanged.
 
 ## Implementation
 

@@ -106,4 +106,14 @@ jobs:
       - name: Diagnose native Core text and retain its other contracts
         if: ${{ !cancelled() }}
         run: |
-          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows core:: -- --ignored --nocapture --test-threads=1
+          result=0
+          if ! cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows core:: -- --ignored --nocapture --test-threads=1; then
+            result=1
+          fi
+          for sample in 1 2 3 4 5 6; do
+            printf 'CORE_REPRO_SAMPLE %s/6\n' "$sample"
+            if ! cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows core::native_core_text_caret_bounds_and_output_changes_match_the_real_runtime -- --ignored --exact --nocapture --test-threads=1; then
+              result=1
+            fi
+          done
+          exit "$result"
