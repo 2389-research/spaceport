@@ -484,6 +484,13 @@ The Stop refactor imports `File`, so the tests must use that import instead of `
 No Windows runtime controls ran at that source; their GREEN remains pending.
 Mac job `136445967717` passed its ordinary tests and scoped Clippy.
 
+At `69c3200e0`, Windows job `136456602608` compiled and passed 35 ordinary tests, with two resource cases ignored.
+Only the receipt-failure control failed: its actual `cmd.exe` child exited with code one before the receipt-cause assertion.
+The output-setup, known-spawn, no-replay, and measurement-retention controls passed.
+The real recorder inventory and scoped Windows Clippy passed.
+Capture the control child's actual stdout/stderr before changing its command invocation.
+The workflow contains a throwaway standalone Windows probe for that boundary; it starts no recorder.
+
 ### Concurrent redraw change
 
 PR [145](https://github.com/2389-research/spaceport/pull/145) merged as `55c206e7c6be1a16f2e0643819f4dfc5df360f66` on November 20.
