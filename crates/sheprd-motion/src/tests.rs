@@ -18,3 +18,14 @@ fn slow_animations_last_ten_times_longer() {
     assert_eq!(stretch(length, false), length);
     assert_eq!(stretch(length, true), Duration::from_millis(1800));
 }
+
+#[test]
+fn progress_eases_out_and_ends() {
+    let start = Instant::now();
+    assert_eq!(progress(start, start, ENTER), Some(0.));
+    let half = progress(start, start + ENTER / 2, ENTER).unwrap_or_default();
+    assert!(half > 0.8 && half < 1., "{half}");
+    assert_eq!(progress(start, start + ENTER, ENTER), None);
+    // A start still ahead reads as not begun.
+    assert_eq!(progress(start + ENTER, start, ENTER), Some(0.));
+}

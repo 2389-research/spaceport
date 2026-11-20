@@ -6479,6 +6479,7 @@ dependencies = [
  "sheprd-core-client",
  "sheprd-diagnostics",
  "sheprd-i18n",
+ "sheprd-motion",
  "sheprd-osc52",
  "sheprd-panes",
  "sheprd-remote",
@@ -6545,6 +6546,10 @@ dependencies = [
  "serde",
  "toml 1.1.6+spec-1.1.0",
 ]
+
+[[package]]
+name = "sheprd-motion"
+version = "0.1.0"
 
 [[package]]
 name = "sheprd-osc52"

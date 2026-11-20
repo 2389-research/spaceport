@@ -2,31 +2,15 @@
 //! notes panel, notes. Each is a function of when it started and the time
 //! now, so a frame never depends on the one before it, and a view keeps
 //! drawing frames only while something is still moving.
-mod slow;
-
+//!
+//! The clock they are measured by, and how long each takes, are
+//! [`sheprd_motion`]'s, so code below this crate can time a motion too.
 use gpui::{
     AnimationElement, AnimationExt, Div, ElementId, IntoElement, ParentElement, Pixels, Styled,
     div, px,
 };
-use std::{
-    cell::Cell,
-    rc::Rc,
-    time::{Duration, Instant},
-};
-
-pub(crate) use slow::{duration, is_slow, now, set_slow};
-
-/// How long something takes to grow in.
-pub(crate) const ENTER: Duration = Duration::from_millis(180);
-/// How long something takes to shrink out; leaving is a little quicker.
-pub(crate) const LEAVE: Duration = Duration::from_millis(150);
-
-/// How far a motion that began at `since` has come at `now`, eased out, or
-/// `None` once it is done.
-pub(crate) fn progress(since: Instant, now: Instant, length: Duration) -> Option<f32> {
-    let k = now.saturating_duration_since(since).as_secs_f32() / length.as_secs_f32();
-    (k < 1.).then(|| 1. - (1. - k.clamp(0., 1.)).powi(3))
-}
+pub(crate) use sheprd_motion::{ENTER, LEAVE, duration, is_slow, now, progress, set_slow};
+use std::{cell::Cell, rc::Rc, time::Instant};
 
 /// How far a dropdown drops into place as it appears.
 const DROP: f32 = 4.;
@@ -178,40 +162,4 @@ impl Toggle {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn progress_eases_out_and_ends() {
-        let start = Instant::now();
-        assert_eq!(progress(start, start, ENTER), Some(0.));
-        let half = progress(start, start + ENTER / 2, ENTER).unwrap_or_default();
-        assert!(half > 0.8 && half < 1., "{half}");
-        assert_eq!(progress(start, start + ENTER, ENTER), None);
-        // A start still ahead reads as not begun.
-        assert_eq!(progress(start + ENTER, start, ENTER), Some(0.));
-    }
-
-    #[test]
-    fn a_toggle_opens_closes_and_starts_still() {
-        let start = Instant::now();
-        let mut panel = Toggle::default();
-        panel.set(true, start, true);
-        assert_eq!(panel.shown(start), 1.);
-        assert!(!panel.moving(start));
-        panel.set(false, start, false);
-        assert_eq!(panel.shown(start), 1.);
-        assert!(panel.moving(start));
-        assert_eq!(panel.shown(start + LEAVE), 0.);
-        assert!(!panel.moving(start + LEAVE));
-        panel.set(true, start + LEAVE, false);
-        assert_eq!(panel.shown(start + LEAVE), 0.);
-        assert_eq!(panel.shown(start + LEAVE + ENTER), 1.);
-        // Closing half-open continues from where it is.
-        let mid = start + LEAVE + ENTER + ENTER;
-        panel.set(false, mid, false);
-        panel.set(true, mid, false);
-        let shown = panel.shown(mid);
-        assert!(shown > 0.9, "{shown}");
-    }
-}
+mod tests;
