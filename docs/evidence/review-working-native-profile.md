@@ -1018,3 +1018,9 @@ The painter's actual theme, font size, and line height must enter the key; curre
 A read-only appearance snapshot avoids creating another authoritative configuration store.
 Test input dispatch, resize/IME geometry, content, selection/cursor, and foreground-only theme changes before accepting caching.
 The new regression started as run `44836845723` on `a0de2f5d9`; no runtime RED is claimed yet.
+
+The first Mac execution stopped at the initial-paint precondition, before the regression assertion.
+The projection fixture inserted a view without synchronizing the visible tab's pane state.
+Its normal window therefore drew a connecting placeholder; existing projection tests drew the entity separately.
+The fixture now runs the actual `sync_core_views` consumer before inserting its controlled view.
+This is a fixture correction, not a cache fix or an accepted regression RED.

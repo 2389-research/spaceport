@@ -70,6 +70,7 @@ fn selected(cx: &mut TestAppContext, observe: bool) -> (Selected, &mut VisualTes
         .unwrap();
         owner.core_terminals.hub.set_join_for_test(no_core);
         assert!(owner.show_core_group(&key, cx));
+        owner.sync_core_views(cx);
         let view = cx.new(|cx| {
             let mut view = CoreTerminalView::new(
                 terminal.clone(),
