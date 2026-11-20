@@ -4,8 +4,20 @@ use anyhow::{Context as _, Result, ensure};
 use std::time::Duration;
 
 #[cfg(windows)]
-pub(super) fn cpu_ticks(_value: &str) -> Result<Duration> {
-    anyhow::bail!("Windows 100ns CPU ticks are not supported yet")
+pub(super) fn cpu_ticks(value: &str) -> Result<Duration> {
+    let value = value.trim();
+    ensure!(
+        !value.is_empty() && value.len() <= 19 && value.bytes().all(|byte| byte.is_ascii_digit()),
+        "invalid CPU tick clock"
+    );
+    let ticks = value
+        .parse::<i64>()
+        .context("CPU ticks exceed TimeSpan bounds")?;
+    let ticks = u64::try_from(ticks)?;
+    Ok(Duration::new(
+        ticks / 10_000_000,
+        (ticks % 10_000_000) as u32 * 100,
+    ))
 }
 
 pub(super) fn cpu_clock(value: &str) -> Result<Duration> {

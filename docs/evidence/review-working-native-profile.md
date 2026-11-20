@@ -336,3 +336,32 @@ Primary measurement references:
 [xperf actions](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/xperf-actions),
 [stack filters](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/stack), and
 [process CPU clock](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.totalprocessortime).
+
+### Windows contract RED and implementation checkpoint
+
+Root ran ordinary Windows contracts at `45dec3577` in run `44766284975`, job `136391654250`.
+Four controls passed and two new contracts failed for the intended reasons.
+The tick parser returned its explicit unsupported error.
+The observation decoder rejected null AppKit facts because the old fields required Booleans.
+No GUI, daemon, WPR trace, model, or credential ran in that checkpoint.
+
+The adapter now keeps the Mac clock grammar and shares only interval CPU arithmetic.
+Windows uses the explicit `cpu_ticks` parser with 100ns units and signed TimeSpan limits.
+Windows observations carry an actual GPUI HWND and null Mac-only facts.
+The harness reads that HWND's actual owner/thread, foreground HWND, visibility, and minimized state.
+Only the owned GUI HWND can qualify the Windows foreground gate.
+
+The Windows observer uses a first-instance, local-only pipe with the existing user-only SID/DACL policy.
+Its complete bounded reply fits the pipe's output buffer.
+Idle reads peek with a deadline on the dedicated worker thread.
+Readiness uses a private `profile.ready` file after a successful observer bind.
+The harness connects with the existing owner-checked, deadline-bearing client stream.
+
+New real-pipe tests cover rebind refusal, whole-reply buffering, and idle-read timeout.
+No old Windows profile server exists for a runtime baseline: the original module was Mac-only.
+These new server contracts still require actual Windows GREEN execution.
+Ordinary helper tests read the actual test process's CPU clock and reject an invalid real HWND.
+The invalid-HWND test requires the helper's specific ownership diagnostic.
+
+Only formatting and `git diff --check` have run locally under Root's compilation hold.
+The temporary sampling refusal remains until actual tool output establishes the supported trace edges.

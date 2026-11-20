@@ -31,7 +31,7 @@ use serde_json::json;
 use sheprd_client::{ConnectOptions, Method};
 use std::time::{Duration, Instant};
 
-#[cfg(all(target_os = "macos", feature = "integration-test"))]
+#[cfg(all(any(target_os = "macos", windows), feature = "integration-test"))]
 #[path = "working_profile/groups.rs"]
 mod working_profile;
 

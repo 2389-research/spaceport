@@ -3,6 +3,7 @@
 use super::report::marker_visible;
 use anyhow::{Context as _, Result, bail, ensure};
 use serde_json::{Value, json};
+use sheprd_client::Stream;
 use sheprd_client::{
     Client, ClientEvent, ConnectOptions, ConnectTarget, Method,
     protocol::{
@@ -11,7 +12,6 @@ use sheprd_client::{
 };
 use std::{
     io::{BufRead, BufReader, Read, Write},
-    os::unix::net::UnixStream,
     path::Path,
     sync::Arc,
     time::{Duration, Instant},
@@ -205,14 +205,27 @@ impl Peer {
     }
 }
 
+#[cfg(unix)]
 pub(super) fn generated_command() -> String {
     format!(
         "i=0; while [ \"$i\" -lt {GENERATED_LINES} ]; do printf 'synthetic profile row %03d\\n' \"$i\"; i=$((i+1)); done; printf 'SP_PROFILE_%s\\n' READY"
     )
 }
 
+#[cfg(windows)]
+pub(super) fn generated_command() -> String {
+    format!(
+        "0..{} | ForEach-Object {{ 'synthetic profile row {{0:000}}' -f $_ }}; 'SP_PROFILE_{{0}}' -f 'READY'",
+        GENERATED_LINES - 1
+    )
+}
+
 pub(super) fn report_status(api: &Path, pane: &str, state: &str, sequence: u64) -> Result<()> {
-    let mut stream = UnixStream::connect(api).context("connect private status API")?;
+    #[cfg(unix)]
+    let mut stream = Stream::connect(api).context("connect private status API")?;
+    #[cfg(windows)]
+    let mut stream = Stream::connect_owned(Path::new(&format!(r"\\.\pipe\{}", api.display())))
+        .context("connect owned private status API")?;
     stream.set_read_timeout(Some(LIMIT))?;
     stream.set_write_timeout(Some(LIMIT))?;
     let id = format!("synthetic-profile-{sequence}");

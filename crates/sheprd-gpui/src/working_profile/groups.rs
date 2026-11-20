@@ -1,4 +1,4 @@
-// ABOUTME: Reads terminal group presentation for the opt-in macOS profile observer.
+// ABOUTME: Reads terminal group presentation for the opt-in native profile observer.
 // ABOUTME: Borrows paired presented assets and keeps latest projections explicitly separate.
 use super::*;
 use crate::working_profile::report::{Frame, Group, marker_visible};

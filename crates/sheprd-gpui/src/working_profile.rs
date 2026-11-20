@@ -6,17 +6,27 @@ use crate::SheprdWindow;
 use anyhow::{Context as _, Result, ensure};
 use futures_channel::oneshot;
 use gpui::{App, AppContext as _, WindowHandle};
-use report::{MAX_LINE, OBSERVER_ENV, Observation, Reply, Request, SOCKET};
+use report::{MAX_LINE, OBSERVER_ENV, Observation, Reply, Request};
+#[cfg(windows)]
+mod pipe;
+#[cfg(windows)]
+use pipe::{Listener, Stream};
+#[cfg(unix)]
+use std::os::unix::{
+    fs::PermissionsExt,
+    net::{UnixListener as Listener, UnixStream as Stream},
+};
 use std::{
     fs,
     io::{BufRead, BufReader, Read, Write},
-    os::unix::{
-        fs::PermissionsExt,
-        net::{UnixListener, UnixStream},
-    },
     path::PathBuf,
     time::Duration,
 };
+
+#[cfg(windows)]
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+struct NativeHandleError(raw_window_handle::HandleError);
 
 pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
     let Some(directory) = std::env::var_os(OBSERVER_ENV).map(PathBuf::from) else {
@@ -50,10 +60,38 @@ pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                     break;
                 };
                 let (observation, image) = handle.update(cx, |view, window, cx| {
+                    #[cfg(target_os = "macos")]
                     let target = crate::sidebar::native_tests::Target::acquire(window)?;
+                    #[cfg(target_os = "macos")]
                     let main = objc2::MainThreadMarker::new()
                         .context("profile activation observation requires the main thread")?;
+                    #[cfg(target_os = "macos")]
                     let app = objc2_app_kit::NSApplication::sharedApplication(main);
+                    #[cfg(target_os = "macos")]
+                    let (native_key, app_active, app_hidden, native_activation, windows_hwnd) = (
+                        Some(target.is_key()),
+                        Some(app.isActive()),
+                        Some(app.isHidden()),
+                        target.activation_facts()?,
+                        None,
+                    );
+                    #[cfg(windows)]
+                    let (native_key, app_active, app_hidden, native_activation, windows_hwnd) = {
+                        let handle = raw_window_handle::HasWindowHandle::window_handle(window)
+                            .map_err(NativeHandleError)
+                            .context("profile native handle")?;
+                        let raw_window_handle::RawWindowHandle::Win32(handle) = handle.as_raw()
+                        else {
+                            anyhow::bail!("profile requires an actual Win32 window");
+                        };
+                        (
+                            None,
+                            None,
+                            None,
+                            "Win32 HWND; native activation read by harness".into(),
+                            Some(handle.hwnd.get() as i64),
+                        )
+                    };
                     let observation = Observation {
                         request_id: id,
                         gui_pid: std::process::id(),
@@ -61,10 +99,12 @@ pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
                         window_id: window.window_handle().window_id().as_u64(),
                         window_active: window.is_window_active(),
                         window_visible: window.is_visible(),
-                        native_key: target.is_key(),
-                        app_active: app.isActive(),
-                        app_hidden: app.isHidden(),
-                        native_activation: target.activation_facts()?,
+                        native_key,
+                        app_active,
+                        app_hidden,
+                        native_activation,
+                        windows_hwnd,
+                        windows_native: None,
                         workspace: view
                             .live
                             .snapshot
@@ -112,19 +152,14 @@ pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
     .detach();
 }
 
-fn answer(mut stream: UnixStream, reply: &Reply) -> Result<()> {
-    let bytes = serde_json::to_vec(reply)?;
-    ensure!(
-        bytes.len() as u64 <= MAX_LINE,
-        "profile observation exceeds bound"
-    );
+fn answer(mut stream: Stream, reply: &Reply) -> Result<()> {
+    let bytes = report::encode_reply(reply)?;
     stream.write_all(&bytes)?;
-    stream.write_all(b"\n")?;
     Ok(())
 }
 
 struct Incoming {
-    stream: UnixStream,
+    stream: Stream,
     request: Request,
     next: oneshot::Receiver<Incoming>,
 }
@@ -135,19 +170,27 @@ fn serve(directory: PathBuf, mut send: oneshot::Sender<Incoming>) -> Result<()> 
         "profile directory must be absolute"
     );
     let metadata = fs::metadata(&directory)?;
+    ensure!(metadata.is_dir(), "profile directory must exist");
+    #[cfg(unix)]
     ensure!(
-        metadata.is_dir() && metadata.permissions().mode() & 0o077 == 0,
+        metadata.permissions().mode() & 0o077 == 0,
         "profile directory must be private"
     );
-    let listener = UnixListener::bind(directory.join(SOCKET)).context("bind profile observer")?;
+    let listener =
+        Listener::bind(&report::endpoint(&directory)?).context("bind profile observer")?;
+    fs::write(directory.join(report::READY), b"ready\n")?;
     let mut captures = 0;
     for _ in 0..512 {
         // The dedicated thread blocks here; it occupies no GPUI worker or UI timer.
-        let (stream, _) = listener.accept()?;
+        #[cfg(unix)]
+        let mut stream = listener.accept()?.0;
+        #[cfg(windows)]
+        let mut stream = listener.accept()?;
         stream.set_read_timeout(Some(Duration::from_secs(15)))?;
+        #[cfg(unix)]
         stream.set_write_timeout(Some(Duration::from_secs(15)))?;
         let mut line = String::new();
-        BufReader::new(stream.try_clone()?)
+        BufReader::new(&mut stream)
             .take(MAX_LINE + 1)
             .read_line(&mut line)?;
         ensure!(

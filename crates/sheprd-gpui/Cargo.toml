@@ -96,9 +96,6 @@ sheprd-usage = { features = ["test-support"], workspace = true }
 socket2.workspace = true
 test-case.workspace = true
 
-[target.'cfg(windows)'.dev-dependencies]
-interprocess.workspace = true
-
 [target.'cfg(unix)'.dev-dependencies]
 libc.workspace = true
 futures-lite.workspace = true
@@ -131,6 +128,7 @@ rustix.workspace = true
 # taskbar, the jump list, and toasts); `windows-registry` reads the link
 # handler and the startup entry, failing with `windows-result` errors.
 [target.'cfg(windows)'.dependencies]
+interprocess.workspace = true
 clipboard-win.workspace     = true
 raw-window-handle.workspace = true
 windows = { features = [

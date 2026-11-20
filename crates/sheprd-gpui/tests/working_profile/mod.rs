@@ -4,6 +4,9 @@ mod harness;
 mod markers;
 mod measurements;
 mod peer;
+#[cfg(windows)]
+mod windows_contracts;
+mod wire;
 
 #[path = "../../src/working_profile/report.rs"]
 mod report;

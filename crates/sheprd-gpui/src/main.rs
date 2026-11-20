@@ -131,7 +131,7 @@ mod test_executable;
 #[allow(unsafe_code)]
 #[path = "../../test-support/process.rs"]
 mod test_process;
-#[cfg(all(target_os = "macos", feature = "integration-test"))]
+#[cfg(all(any(target_os = "macos", windows), feature = "integration-test"))]
 mod working_profile;
 
 pub use error::{Error, Result};

@@ -79,12 +79,21 @@ jobs:
         timeout-minutes: 1
         shell: powershell
         run: wpr.exe -status collectors -details
+      - name: Inspect all active trace sessions
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        shell: powershell
+        run: xperf.exe -loggers
   contracts:
     if: >-
       github.repository == '2389-research/spaceport' &&
       github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
       github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-profile'
-    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, windows-2025]
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 40
     permissions:
       contents: read
@@ -99,7 +108,7 @@ jobs:
         run: rustup show
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
-          key: working-profile-windows-2025
+          key: working-profile-${{ matrix.runner }}
           save-if: false
       - name: Exercise ordinary profile contracts without a GUI or daemon
         shell: bash

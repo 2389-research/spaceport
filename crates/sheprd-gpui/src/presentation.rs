@@ -54,7 +54,7 @@ pub(crate) struct Presentation {
 
 impl Presentation {
     /// The already presented frame and its paired assets, without advancing presentation.
-    #[cfg(all(target_os = "macos", feature = "integration-test"))]
+    #[cfg(all(any(target_os = "macos", windows), feature = "integration-test"))]
     pub(crate) fn profile_presented(&self) -> Option<(&PaneSurfaceFrame, &SurfaceImages)> {
         Some((self.presented.as_deref()?, self.images.as_ref()))
     }

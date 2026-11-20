@@ -583,7 +583,10 @@ pub(crate) fn run() -> std::process::ExitCode {
             match opened {
                 Ok(_window) => {
                     if mode == LaunchMode::Normal {
-                        #[cfg(all(target_os = "macos", feature = "integration-test"))]
+                        #[cfg(all(
+                            any(target_os = "macos", windows),
+                            feature = "integration-test"
+                        ))]
                         crate::working_profile::start(_window, cx);
                         let sound = shared_sound(cx);
                         let _ = _window.update(cx, |view, _, _| {

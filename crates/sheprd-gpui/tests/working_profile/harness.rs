@@ -16,17 +16,31 @@ use anyhow::{Context as _, Result, bail, ensure};
 mod sandbox;
 use sandbox::{Sandbox, daemon_binary, stop_children};
 use serde_json::{Value, json};
+use sheprd_client::Stream;
 use std::{
     fs::{self, File},
-    io::{BufRead, BufReader, Read, Write},
-    os::unix::net::UnixStream,
-    path::Path,
+    io::Write,
+    path::{Path, PathBuf},
     process::{Child, Command},
     time::{Duration, Instant},
 };
 
 const STARTUP: Duration = Duration::from_secs(30);
 const SAMPLE_SECONDS: u64 = 5;
+
+#[cfg(target_os = "macos")]
+mod macos;
+#[cfg(windows)]
+mod windows;
+
+struct Sample {
+    before: Duration,
+    after: Duration,
+    wall: Duration,
+    path: PathBuf,
+    details: Value,
+    interval_ms: Option<u64>,
+}
 
 #[cfg(test)]
 #[path = "before_sample.rs"]
@@ -92,6 +106,8 @@ impl Fixture {
                     "observer reports another GUI PID"
                 );
                 ensure!(observation.release, "observer must run in release mode");
+                #[cfg(windows)]
+                let observation = self.native_observation(observation)?;
                 if capture {
                     let (width, height) = image::image_dimensions(
                         self.sandbox()?.dir.join(format!("capture-{request}.png")),
@@ -126,6 +142,8 @@ impl Fixture {
             env!("CARGO_BIN_EXE_spaceport"),
             format!("{name}.stderr.log"),
         );
+        #[cfg(windows)]
+        windows::hide(&mut command);
         command.args(args).arg("--json");
         let bytes = command_output(
             command,
@@ -133,19 +151,6 @@ impl Fixture {
             Duration::from_secs(15),
         )?;
         serde_json::from_slice(&bytes).with_context(|| format!("profile CLI {name} output"))
-    }
-
-    fn cpu(&self, name: &str, pid: u32) -> Result<Duration> {
-        let mut command = self
-            .sandbox()?
-            .command("/bin/ps", format!("{name}.stderr.log"));
-        command.args(["-p", &pid.to_string(), "-o", "time="]);
-        let bytes = command_output(
-            command,
-            &self.sandbox()?.dir.join(format!("{name}.txt")),
-            Duration::from_secs(5),
-        )?;
-        measurements::cpu_clock(std::str::from_utf8(&bytes)?)
     }
 
     fn phase(&mut self, name: &str, targets: &Targets, working: bool) -> Result<Value> {
@@ -161,41 +166,20 @@ impl Fixture {
         validate_before_sample(&before_image, targets, working)
             .with_context(|| format!("profile {name} before sample"))?;
         let pid = self.alive()?;
-        let start = Instant::now();
-        let before = self.cpu(&format!("{name}-cpu-before"), pid)?;
-        let path = self.sandbox()?.dir.join(format!("{name}.sample.txt"));
-        let mut command = self
-            .sandbox()?
-            .command("/usr/bin/sample", format!("{name}-sample.stderr.log"));
-        command
-            .args([&pid.to_string(), &SAMPLE_SECONDS.to_string(), "1", "-file"])
-            .arg(&path);
-        command_output(
-            command,
-            &self
-                .sandbox()?
-                .dir
-                .join(format!("{name}-sample.stdout.log")),
-            Duration::from_secs(20),
-        )?;
-        let after = self.cpu(&format!("{name}-cpu-after"), pid)?;
-        let wall = start.elapsed();
+        let Sample {
+            before,
+            after,
+            wall,
+            path,
+            details,
+            interval_ms,
+        } = self.sample(name, pid, &before_image)?;
         self.alive()?;
-        ensure!(
-            fs::metadata(&path)?.len() <= 32 * 1024 * 1024,
-            "native sample exceeds read bound"
-        );
-        let stacks = fs::read_to_string(&path).context("read actual native sample")?;
-        ensure!(
-            stacks.contains("com.apple.main-thread"),
-            "sample lacks actual UI-thread stacks: {}",
-            path.display()
-        );
         let after_image = self.observe(true)?;
         let foreground_qualified = foreground(&after_image);
         let percentage = measurements::process_cpu(before, after, wall)?;
         let phase = json!({"phase":name,"synthetic_working":working,"pid":pid,"sample_seconds":SAMPLE_SECONDS,
-            "sample_interval_ms":1,"wall_seconds":wall.as_secs_f64(),"cpu_before_seconds":before.as_secs_f64(),
+            "sampling":details,"sample_interval_ms":interval_ms,"wall_seconds":wall.as_secs_f64(),"cpu_before_seconds":before.as_secs_f64(),
             "cpu_after_seconds":after.as_secs_f64(),"process_cpu_percent":percentage,"sample_path":path,
             "window_active_before":before_image.window_active,"window_active_after":after_image.window_active,
             "listening_port_poller_enabled":false,
@@ -227,11 +211,22 @@ impl Fixture {
 }
 
 fn foreground(observation: &Observation) -> bool {
-    observation.window_active
-        && observation.window_visible
-        && observation.native_key
-        && observation.app_active
-        && !observation.app_hidden
+    if !observation.window_active || !observation.window_visible {
+        return false;
+    }
+    if let Some(hwnd) = observation.windows_hwnd {
+        return observation.windows_native.as_ref().is_some_and(|native| {
+            native.hwnd == hwnd
+                && native.gui_pid == observation.gui_pid
+                && native.thread_id != 0
+                && native.foreground_hwnd == hwnd
+                && native.visible
+                && !native.minimized
+        });
+    }
+    observation.native_key == Some(true)
+        && observation.app_active == Some(true)
+        && observation.app_hidden == Some(false)
 }
 
 fn validate_before_sample(
@@ -286,9 +281,15 @@ pub(crate) fn run() -> Result<()> {
         !std::hint::black_box(cfg!(debug_assertions)),
         "run working_terminal_groups_profile with --release"
     );
+    #[cfg(unix)]
     ensure!(
         std::env::var_os("HERDR_TEST_TMPDIR").as_deref() == Some(std::ffi::OsStr::new("/tmp")),
         "set HERDR_TEST_TMPDIR=/tmp explicitly"
+    );
+    #[cfg(windows)]
+    ensure!(
+        std::env::var_os("HERDR_TEST_TMPDIR").is_some_and(|path| Path::new(&path).is_dir()),
+        "set HERDR_TEST_TMPDIR to an existing private temporary parent explicitly"
     );
     let binary = daemon_binary();
     let mut fixture = Fixture {
@@ -333,7 +334,7 @@ pub(crate) fn run() -> Result<()> {
             .spawn()?,
     );
     let deadline = Instant::now() + STARTUP;
-    while !dir.join(report::SOCKET).exists() {
+    while !dir.join(report::READY).exists() {
         fixture.alive()?;
         ensure!(
             Instant::now() < deadline,
@@ -393,19 +394,14 @@ pub(crate) fn run() -> Result<()> {
 }
 
 fn exchange(directory: &Path, request: &Request) -> Result<Reply> {
-    let mut stream = UnixStream::connect(directory.join(report::SOCKET))?;
+    #[cfg(unix)]
+    let mut stream = Stream::connect(report::endpoint(directory)?)?;
+    #[cfg(windows)]
+    let mut stream = Stream::connect_owned(report::endpoint(directory)?)?;
     stream.set_read_timeout(Some(Duration::from_secs(15)))?;
     stream.set_write_timeout(Some(Duration::from_secs(15)))?;
     writeln!(stream, "{}", serde_json::to_string(request)?)?;
-    let mut line = String::new();
-    BufReader::new(stream)
-        .take(report::MAX_LINE + 1)
-        .read_line(&mut line)?;
-    ensure!(
-        line.len() as u64 <= report::MAX_LINE && line.ends_with('\n'),
-        "invalid profile reply size"
-    );
-    Ok(serde_json::from_str(&line)?)
+    super::wire::read_reply(stream)
 }
 
 fn command_output(mut command: Command, output: &Path, limit: Duration) -> Result<Vec<u8>> {
