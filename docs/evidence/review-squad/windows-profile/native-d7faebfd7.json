@@ -1,0 +1,127 @@
+{
+  "source": "d7faebfd7f8e1afaed07d71729ea464bb50abb8e",
+  "run_id": 44790226021,
+  "job_id": 136475625222,
+  "artifact_id": 14657851882,
+  "artifact_bytes": 105717771,
+  "artifact_sha256": "ba7937f806c16265a15cdbc414e4ff1e8d3e6d28fa4f0a7568a69d296537ab28",
+  "ciphertext_sha256": "8b9d8f3c5d3b78eb72024d6a8a117b654fbe5c8b0c9f2bf95aac0459b03daaa8",
+  "private_decryption_verified": true,
+  "zip_crc_verified": true,
+  "windows_zip_separators": "Archive paths validated before extraction; unzip emitted only the backslash separator warning.",
+  "binary": {
+    "bytes": 57278976,
+    "sha256": "34ad29d6904e006b1d7c800208ea57354d13ebe40a33a725b77ec569adb05a85"
+  },
+  "pdb": {
+    "bytes": 171134976,
+    "sha256": "18f5a8cd4e2baa29e67393c95a6325a55cdb861539826c2cac13bfc052dcee72"
+  },
+  "workload": {
+    "runtime": "real isolated Herdr TUI",
+    "synthetic_status": true,
+    "provider_executed": false,
+    "settled_output": true,
+    "generated_lines": 120,
+    "authored_utf8_bytes": 3137,
+    "window_pixels": [
+      1200,
+      780
+    ],
+    "terminal_groups": 2,
+    "mark_cap_fps": 30,
+    "actual_mark_frame_rate_measured": false
+  },
+  "phases": [
+    {
+      "phase": "idle-before",
+      "pid": 2124,
+      "thread_id": 2216,
+      "hwnd": 131464,
+      "cpu_before_seconds": 4.265625,
+      "cpu_after_seconds": 4.46875,
+      "cpu_delta_seconds": 0.203125,
+      "wall_seconds": 5.5920255,
+      "process_cpu_percent": 3.6324047520884872,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "ui_stack_events_classified": false
+    },
+    {
+      "phase": "synthetic-working",
+      "pid": 2124,
+      "thread_id": 2216,
+      "hwnd": 131464,
+      "cpu_before_seconds": 5.40625,
+      "cpu_after_seconds": 5.5625,
+      "cpu_delta_seconds": 0.15625,
+      "wall_seconds": 5.4540931,
+      "process_cpu_percent": 2.8648209177067403,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "ui_stack_events_classified": false
+    },
+    {
+      "phase": "idle-after",
+      "pid": 2124,
+      "thread_id": 2216,
+      "hwnd": 131464,
+      "cpu_before_seconds": 6.390625,
+      "cpu_after_seconds": 6.546875,
+      "cpu_delta_seconds": 0.15625,
+      "wall_seconds": 5.3949137,
+      "process_cpu_percent": 2.8962465145642646,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "ui_stack_events_classified": false
+    }
+  ],
+  "captures": [
+    {
+      "phase": "idle-before",
+      "before_request": 6,
+      "after_request": 7,
+      "before_sha256": "ed671cd15d1f8c8d0a454d6f3e26532c531e32adcef9e61579d849fad9629bf6",
+      "after_sha256": "ed671cd15d1f8c8d0a454d6f3e26532c531e32adcef9e61579d849fad9629bf6",
+      "root_reviewed": true
+    },
+    {
+      "phase": "synthetic-working",
+      "before_request": 11,
+      "after_request": 12,
+      "before_sha256": "94ec01d138913af4359a95e4515b9c8fc2251af2999f19df8e1a308833321b3c",
+      "after_sha256": "94ec01d138913af4359a95e4515b9c8fc2251af2999f19df8e1a308833321b3c",
+      "root_reviewed": true
+    },
+    {
+      "phase": "idle-after",
+      "before_request": 16,
+      "after_request": 17,
+      "before_sha256": "b2272d886ea796f69e0b84ad3585ac724c6504caf74dc94f77f09e31277454cf",
+      "after_sha256": "b2272d886ea796f69e0b84ad3585ac724c6504caf74dc94f77f09e31277454cf",
+      "root_reviewed": true
+    }
+  ],
+  "qualification": {
+    "native_fixture": true,
+    "process_cpu_clocks": true,
+    "endpoint_identity": true,
+    "owned_recorder_lifecycle": true,
+    "local_symbols_present": true,
+    "cpu_stack_attribution": false,
+    "performance_improvement": false,
+    "core_chat_mirror": false
+  },
+  "limits": [
+    "One short sequence; no statistical comparison or improvement claim.",
+    "Process CPU covers all threads; UI stack reports include unclassified event hits.",
+    "Raw trace includes recorder overhead outside the narrower process CPU interval.",
+    "Sampling interval and actual mark cadence remain unverified.",
+    "The workload is settled generated output, not streaming or a running AI provider.",
+    "GPU captures prove retained scene content, not continuous physical presentation.",
+    "Core, chat, mirrored pictures, and the merged 20fps cap are not measured here."
+  ]
+}

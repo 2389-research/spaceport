@@ -558,3 +558,37 @@ Its selected-view accessor deliberately returns no observation until remote RED 
 Expected failures: six on Mac and five on Windows; three serialization and fixture controls should pass.
 Independent static review found no material defect.
 No Core process or performance measurement has run.
+
+### First Windows native TUI result
+
+Run `44790226021`, job `136475625222`, passed the release fixture at exact source `d7faebfd7`.
+Artifact `14657851882` contains only the encrypted evidence archive.
+Its archive and ciphertext hashes match the runner receipts.
+Private decryption, ZIP integrity, and executable/PDB identity checks passed.
+The [structured receipt](review-squad/windows-profile/native-d7faebfd7.json) records the verified values and limits.
+
+Root inspected captures 6, 11, 12, and 16.
+Each phase's before/after images have matching hashes.
+They show two populated terminal groups, authored output, and the controlled Working status in its phase.
+The workload contains 120 generated lines and settled output; no AI provider ran.
+All six endpoint checks identify the same foreground, visible HWND and its owned process/thread.
+They do not prove uninterrupted foreground state or actual animation cadence.
+
+| Phase | Process CPU delta | Wall interval | Process CPU rate |
+| --- | ---: | ---: | ---: |
+| Idle before | 0.203125 s | 5.592026 s | 3.6324% |
+| Synthetic Working | 0.156250 s | 5.454093 s | 2.8648% |
+| Idle after | 0.156250 s | 5.394914 s | 2.8962% |
+
+These are all-thread process clocks, expressed relative to one CPU core.
+One short sequence supports no improvement or statistical comparison.
+An independent review confirmed phase identity, clocks, and acknowledged recording lifecycle.
+No CPU, WPR, or xperf stderr diagnostic was present.
+
+The stack exports resolve local app symbols but contain unclassified stack-event hits.
+Their commands specify PID/thread filters and omit the event filter.
+Microsoft's [stack reference](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/stack) defines that missing filter.
+The HTML reports omit event identity; their percentages cannot establish CPU shares.
+Retain the raw traces privately and obtain sampled-profile event exports before attributing CPU hotspots.
+Sampling interval and trace-range alignment also remain unqualified.
+This result qualifies the fixture and process clocks, not Core/chat/mirrors or the merged 20 fps change.
