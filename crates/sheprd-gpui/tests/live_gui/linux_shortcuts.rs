@@ -95,6 +95,12 @@ fn run() -> Result<()> {
         input.start()?;
         input.chord(&[56, 15])?;
         for case in CASES {
+            if case.outcome == cases::Outcome::CycleWindows {
+                observer.wait(Notice::FocusOriginal(case.id), &mut isolated)?;
+                // This prepares focus through GNOME; READY still requires the exact original window.
+                input.chord(&[56, 1])?;
+                eprintln!("LINUX_NATIVE preparation=original-window native_alt_escape=true");
+            }
             observer.wait(Notice::Ready(case.id), &mut isolated)?;
             for chord in case.chords {
                 input.chord(chord)?;

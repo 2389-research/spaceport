@@ -326,7 +326,7 @@ fn advance(
             let after = baseline(view, window, cx)?;
             same_runtime(&before, &after)?;
             same_members(&before, &after)?;
-            owned.activate_original(cx);
+            eprintln!("{}", notice(nonce, Notice::FocusOriginal(CASES[index].id)));
             return Ok(Step::Continue(Stage::AwaitCycleFocus {
                 baseline: before,
                 index,

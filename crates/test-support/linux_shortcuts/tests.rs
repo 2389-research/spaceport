@@ -33,6 +33,17 @@ fn other_sessions_and_unknown_cases_cannot_authorize_input() {
 }
 
 #[test]
+fn native_window_preparation_requires_its_compiled_case_and_nonce() {
+    for case in CASES {
+        let line = notice(NONCE, Notice::FocusOriginal(case.id));
+        let expected =
+            (case.outcome == Outcome::CycleWindows).then_some(Notice::FocusOriginal(case.id));
+        assert_eq!(parse_notice(&line, NONCE), expected);
+        assert_eq!(parse_notice(&line, "fedcba9876543210"), None);
+    }
+}
+
+#[test]
 fn case_ids_are_unique_and_evdev_sequences_are_bounded() {
     let mut ids = std::collections::HashSet::new();
     for case in CASES {

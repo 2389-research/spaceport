@@ -114,7 +114,7 @@ impl Opening {
             root_last: Cell::new(None),
             target: self.target.clone(),
         };
-        if owned.inspect(before, cx)?.is_none() {
+        if owned.inspect(before, cx)? != Some(true) {
             return Ok(None);
         }
         owned.check_addition(before, &cx.windows())?;

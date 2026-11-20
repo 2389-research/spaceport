@@ -242,6 +242,7 @@ pub(super) fn tab_at_position(tabs: &[String], number: u8) -> Option<&str> {
 pub(super) enum Notice<'a> {
     // keep-sorted start
     Complete,
+    FocusOriginal(&'a str),
     Mapped,
     Passed(&'a str),
     Ready(&'a str),
@@ -255,6 +256,7 @@ pub(super) fn valid_nonce(nonce: &str) -> bool {
 pub(super) fn notice(nonce: &str, value: Notice<'_>) -> String {
     let suffix = match value {
         Notice::Mapped => "mapped".to_owned(),
+        Notice::FocusOriginal(id) => format!("focus-original {id}"),
         Notice::Ready(id) => format!("ready {id}"),
         Notice::Passed(id) => format!("passed {id}"),
         Notice::Complete => "complete".to_owned(),
@@ -280,6 +282,13 @@ pub(super) fn parse_notice<'a>(line: &'a str, nonce: &str) -> Option<Notice<'a>>
                 return None;
             }
             match kind {
+                "focus-original"
+                    if CASES
+                        .iter()
+                        .any(|case| case.id == id && case.outcome == Outcome::CycleWindows) =>
+                {
+                    Some(Notice::FocusOriginal(id))
+                }
                 "ready" => Some(Notice::Ready(id)),
                 "passed" => Some(Notice::Passed(id)),
                 _ => None,

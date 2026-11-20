@@ -282,3 +282,19 @@ The next diagnostic checkpoint reports creation callbacks and changed readiness 
 It records activation, connection, fencing, config loading, surface sizing, and coherence as bounded booleans.
 It adds no input, activation request, creation retry, deadline change, or measured-scope relaxation.
 The next native result must identify the actual waiting gate before a correction is chosen.
+
+Source `2db45a502` passes compilation, eight shared tests, and two receipt tests.
+Its [diagnostic native run](https://github.com/2389-research/spaceport/actions/runs/44709971306) still stops before measured Cycle Windows input.
+The [diagnostic receipt](spaceport-window-focus-2db45a502.json) identifies the gate.
+The second window is created, active, connected, unfenced, config-loaded, surface-sized, and coherent.
+The original is coherent but remains inactive after its activation request.
+This establishes the missing preparation acknowledgement; it does not yet establish a product shortcut failure.
+
+The correction requires the exact second window active and coherent before requesting native focus preparation.
+A compiled `FocusOriginal` notice carries the exact nonce and Cycle Windows case ID.
+The parser rejects that preparation notice for every other case or nonce.
+The parent sends fixed Alt-Escape once, then waits for the original active/coherent and target inactive before READY.
+GNOME 46 defines [Alt-Escape as direct window switching](https://github.com/GNOME/gsettings-desktop-schemas/blob/46.0/schemas/org.gnome.desktop.wm.keybindings.gschema.xml.in).
+Alt-Tab switches applications, so it cannot serve as the two-window preparation contract here.
+Measured Ctrl-Shift-Grave, cleanup, and existing deadlines remain unchanged.
+The new notice boundary test and corrected native run remain pending.

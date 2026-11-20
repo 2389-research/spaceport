@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "scope": "Linux second-window preparation diagnosis; measured Cycle Windows input never runs",
+  "source": "2db45a502a56683181752afe9ee5723157e757a8",
+  "run": {
+    "id": 44709971306,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44709971306",
+    "job_id": 136198887915,
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "checks": {
+    "shared_contract_tests": {
+      "passed": 8,
+      "failed": 0
+    },
+    "receipt_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "native_test": {
+      "passed": 0,
+      "failed": 1,
+      "seconds": 25.49
+    }
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T09:24:59.8521630Z",
+      "message": "GNOME_PROBE native_test_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8558895Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE keys_released=true session_closed=true"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8583625Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE other_window_requested=true"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8584108Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE other_window_created=true"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8585091Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: true, coherent: false, config_loading: false, connected: true, fenced: false, surface_matches: false }"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8586575Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=target state=Probe { active: true, coherent: true, config_loading: false, connected: true, fenced: false, surface_matches: true }"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8587684Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE other_window_prepared=true"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8588184Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE original_activation_requested=true"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8589184Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE window_probe=original state=Probe { active: false, coherent: true, config_loading: false, connected: true, fenced: false, surface_matches: true }"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8590791Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE qualification FAIL: timed out waiting for Ready(\"cycle-windows-alias\"): LINUX_KEYS_CASE id=direct-fullscreen-leave fullscreen_before=true fullscreen_after=false"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8764140Z",
+      "message": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T09:24:59.8799702Z",
+      "message": "GNOME_PROBE bus_reaped=true root_preserved_for_runner_cleanup=/tmp/spaceport-gnome-13325-1795166667881363315"
+    }
+  ],
+  "diagnosis": "The exact second window is created, active, connected, unfenced, config-loaded, surface-sized, and coherent. The original is coherent but remains inactive after its programmatic activation request. READY never arrives, so measured Ctrl-Shift-Grave input is not sent.",
+  "next_action": "Use one fixed native GNOME Alt-Escape during preparation after the nonce-correlated request. Still require the exact original active/coherent and target inactive before READY. Keep the measured shortcut and all deadlines unchanged.",
+  "not_qualified": [
+    "Cycle Windows delivery",
+    "Final Polish case on this failed source",
+    "Whole-matrix success; qualified source5979 remains separate"
+  ]
+}
