@@ -365,3 +365,18 @@ The invalid-HWND test requires the helper's specific ownership diagnostic.
 
 Only formatting and `git diff --check` have run locally under Root's compilation hold.
 The temporary sampling refusal remains until actual tool output establishes the supported trace edges.
+
+### Complete-line boundary RED
+
+Run `44770754711` tested source `d1c5ff7d178694c5a3c18c7021772b82dc43fb61` on both platforms.
+Mac job `136407451705` passed 17 ordinary tests and failed the new complete-line boundary test.
+Windows job `136407451151` passed 23 ordinary tests and failed that test plus the invalid-HWND helper control.
+Both jobs ignored the explicit native profile case.
+The encoder accepted a 64 KiB JSON payload before adding its newline.
+The real consumer rejected that complete line because the newline exceeded its bound.
+The encoder must reserve one byte for that newline.
+
+Windows clock, schema, real-pipe deadlines, and complete-line round-trip controls passed.
+The invalid-HWND helper failed after 15 seconds with empty stderr.
+Its cause remains unknown; retain the deadline and add stage diagnostics before changing behavior.
+No GUI, daemon, WPR recording, CPU profile, or stack extraction ran.

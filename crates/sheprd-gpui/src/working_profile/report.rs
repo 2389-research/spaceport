@@ -13,7 +13,7 @@ pub(crate) const MAX_LINE: u64 = 65_536;
 pub(crate) fn encode_reply(reply: &Reply) -> Result<Vec<u8>> {
     let mut bytes = serde_json::to_vec(reply)?;
     ensure!(
-        bytes.len() as u64 <= MAX_LINE,
+        (bytes.len() as u64) < MAX_LINE,
         "profile observation exceeds bound"
     );
     bytes.push(b'\n');

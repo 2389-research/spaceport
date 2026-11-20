@@ -3,6 +3,8 @@
 use super::*;
 use std::os::windows::process::CommandExt as _;
 
+mod recording;
+
 pub(super) fn hide(command: &mut Command) {
     command.creation_flags(sheprd_client::CREATE_NO_WINDOW);
 }
@@ -39,11 +41,15 @@ mod tests {
             "window_active":true,"window_visible":true,"native_activation":"invalid real HWND control",
             "windows_hwnd":0,"workspace":null,"synthetic_working_panes":[],"groups":[]
         }))?;
-        assert!(fixture.native_observation(observation).is_err());
+        let error = fixture
+            .native_observation(observation)
+            .err()
+            .context("invalid HWND unexpectedly passed native observation")?;
+        eprintln!("WORKING PROFILE invalid HWND control: {error:#}");
         let diagnostic = fs::read_to_string(fixture.sandbox()?.dir.join("native-1.stderr.log"))?;
         assert!(
             diagnostic.contains("Profile HWND no longer belongs to the exact GUI process"),
-            "native helper failed before HWND validation: {diagnostic}"
+            "native helper failed before HWND validation: {diagnostic}; full failure: {error:#}"
         );
         Ok(())
     }
@@ -62,18 +68,28 @@ impl Fixture {
         command
             .args(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command"])
             .arg(format!(
-                "& {{\n{}\n}} -WindowHandle {hwnd} -ProcessId {}",
+                "& {{\n{}\n}} -WindowHandle {hwnd} -ProcessId {} -ReceiptFile native-{}.stages.txt",
                 include_str!("windows_native.ps1"),
                 observation.gui_pid,
+                observation.request_id,
             ));
-        let bytes = command_output(
-            command,
-            &self
-                .sandbox()?
-                .dir
-                .join(format!("native-{}.json", observation.request_id)),
-            Duration::from_secs(15),
-        )?;
+        let directory = &self.sandbox()?.dir;
+        let output = directory.join(format!("native-{}.json", observation.request_id));
+        let bytes =
+            command_output(command, &output, Duration::from_secs(15)).with_context(|| {
+                format!(
+                    "native helper request={} gui_pid={}; stdout={}; stderr={}; stages={}",
+                    observation.request_id,
+                    observation.gui_pid,
+                    bounded_diagnostic(&output),
+                    bounded_diagnostic(
+                        &directory.join(format!("native-{}.stderr.log", observation.request_id))
+                    ),
+                    bounded_diagnostic(
+                        &directory.join(format!("native-{}.stages.txt", observation.request_id))
+                    ),
+                )
+            })?;
         observation.windows_native = Some(serde_json::from_slice(&bytes)?);
         Ok(observation)
     }
@@ -102,5 +118,14 @@ impl Fixture {
         anyhow::bail!(
             "Windows sampling requires verified recorder ownership and actual tool help before qualification"
         )
+    }
+}
+
+fn bounded_diagnostic(path: &Path) -> String {
+    use std::io::Read as _;
+    let mut bytes = Vec::new();
+    match File::open(path).and_then(|file| file.take(4096).read_to_end(&mut bytes)) {
+        Ok(_) => String::from_utf8_lossy(&bytes).into_owned(),
+        Err(error) => format!("unavailable ({error})"),
     }
 }
