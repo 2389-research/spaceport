@@ -1,0 +1,170 @@
+//! A mirrored group's terminal picture on a frame nothing in it changed.
+//!
+//! A moving mark asks for a frame while an agent works, and that frame draws
+//! the whole window again. The main surface's cells are cached views, which
+//! replay their scene, so such a frame paints no cells. This fixture gives a
+//! mirrored group real output to paint, so what its own canvas costs on those
+//! frames can be counted and timed; see `docs/notes-mirror-canvas-cache.md`.
+
+use super::*;
+use crate::sidebar::layout_tests::full_draw;
+use gpui::TestAppContext;
+use sheprd_client::protocol::{
+    CellData, CursorState, PaneSurfaceFrame, PaneSurfacePane, SurfaceRect,
+};
+
+/// A grid half the width of a laptop window's group, in cells.
+const GRID: (u16, u16) = (80, 24);
+/// A grid filling a group half of a 1920x1080 window shares.
+const SHARED_GROUP: (u16, u16) = (100, 56);
+
+/// Output on every row of `grid`, as the daemon projects a pane running a
+/// command.
+fn output(snapshot: &ClientShellSnapshot, pane: &str, grid: (u16, u16)) -> Arc<PaneSurfaceFrame> {
+    let lines = [
+        "$ cargo test --workspace --locked",
+        "   Compiling sheprd-gpui v0.1.0 (/Users/clint/code/spaceport)",
+        "    Finished `test` profile [optimized] target(s) in 41.28s",
+        "     Running unittests src/main.rs (target/release/deps/spaceport)",
+        "test terminal::tests::wire_colors_are_not_argb ... ok",
+    ];
+    let width = usize::from(grid.0);
+    let cells = (0..width * usize::from(grid.1))
+        .map(|index| {
+            let line = lines[(index / width) % lines.len()].as_bytes();
+            CellData {
+                symbol: char::from(line[index % line.len()]).to_string(),
+                fg: 0,
+                bg: 0,
+                modifier: 0,
+                skip: false,
+                hyperlink: None,
+            }
+        })
+        .collect();
+    let rect = SurfaceRect {
+        x: 0,
+        y: 0,
+        width: grid.0,
+        height: grid.1,
+    };
+    Arc::new(PaneSurfaceFrame {
+        boot_id: snapshot.boot_id.clone(),
+        projection_revision: snapshot.revision,
+        surface_revision: 1,
+        frame: FrameData {
+            width: grid.0,
+            height: grid.1,
+            cells,
+            cursor: Some(CursorState {
+                x: 0,
+                y: 5.min(grid.1 - 1),
+                visible: true,
+                shape: 0,
+            }),
+            hyperlinks: vec![],
+            graphics: vec![],
+        },
+        panes: vec![PaneSurfacePane {
+            pane_id: pane.into(),
+            content_revision: 1,
+            rect,
+            inner_rect: rect,
+            scrollbar_rect: None,
+            scroll: None,
+            focused: true,
+            mouse_reporting: false,
+            sgr_pixel_mouse: false,
+            alternate_screen_active: false,
+            pixel_width: u32::from(grid.0) * 8,
+            pixel_height: u32::from(grid.1) * 17,
+        }],
+        splits: vec![],
+        popup: None,
+        graphics: Default::default(),
+    })
+}
+
+impl SheprdWindow {
+    /// Gives the window's connection the frame of `grid` cells `pane` holds.
+    fn show_grid(&mut self, grid: (u16, u16)) {
+        let snapshot = self.live.snapshot.clone().unwrap();
+        self.live.surface = Some(output(&snapshot, "p0", grid));
+        self.endpoints[self.selected_endpoint].live = self.live.clone();
+    }
+}
+
+/// A split editor whose left group holds the window's own tab, `t0`, with
+/// output on it, and whose right group mirrors that tab: the group picking a
+/// tab another group shows, as an editor shows one file in two groups.
+fn split_window_mirroring_t0(
+    cx: &mut TestAppContext,
+) -> (Entity<SheprdWindow>, &mut VisualTestContext) {
+    let (view, cx) = fixture_window_on_t0(cx);
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            view.show_grid(GRID);
+            view.command(Command::SplitEditor, window, cx);
+            let slots = view.group_slots();
+            let (left, right) = (slots[0].id, slots[1].id);
+            let layout = view.ensure_layout().unwrap();
+            layout.show(right, Pick::Herdr("t0".into()));
+            layout.activate(left);
+            view.set_primary_group(left);
+        });
+        full_draw(window, cx).clear(cx);
+    });
+    let slots = view.read_with(cx, |view, _| view.group_slots());
+    let shown = view.read_with(cx, |view, cx| view.group_shown(slots[1].id, cx));
+    assert_eq!(shown, Shown::Elsewhere("t0".into()));
+    (view, cx)
+}
+
+/// Draws a frame nothing in the window invalidated, as a moving mark's does.
+fn mark_frame(cx: &mut VisualTestContext) {
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+}
+
+/// What a mark frame costs, in microseconds, once the window has settled on
+/// `grid`. A mark frame is measured after a warm-up: the first frames after a
+/// change paint what changed.
+fn mark_frame_cost(
+    view: &Entity<SheprdWindow>,
+    grid: (u16, u16),
+    cx: &mut VisualTestContext,
+) -> f64 {
+    cx.update(|window, cx| {
+        view.update(cx, |view, _| view.show_grid(grid));
+        full_draw(window, cx).clear(cx);
+    });
+    for _ in 0..10 {
+        mark_frame(cx);
+    }
+    let frames = 200;
+    let start = Instant::now();
+    for _ in 0..frames {
+        mark_frame(cx);
+    }
+    start.elapsed().as_secs_f64() * 1e6 / f64::from(frames)
+}
+
+/// What a mark frame costs with the mirror painting a grid, against the same
+/// frame with next to nothing on it. The difference is the mirror's canvas
+/// re-entry. A measurement, not an assertion: run it in release with
+/// `--nocapture`.
+#[gpui::test]
+#[ignore = "measures a release-mode frame cost; run with --release --ignored --nocapture"]
+fn a_mark_frame_costs_the_mirror_its_grid(cx: &mut TestAppContext) {
+    let (view, cx) = split_window_mirroring_t0(cx);
+    let barest = mark_frame_cost(&view, (1, 1), cx);
+    for grid in [GRID, SHARED_GROUP] {
+        let painted = mark_frame_cost(&view, grid, cx);
+        eprintln!(
+            "MIRROR-CANVAS {}x{} cells: {:.1} us per mark frame ({painted:.1} us with the mirror, {barest:.1} us without it), viewport {:?}",
+            grid.0,
+            grid.1,
+            painted - barest,
+            cx.update(|window, _| window.viewport_size()),
+        );
+    }
+}
