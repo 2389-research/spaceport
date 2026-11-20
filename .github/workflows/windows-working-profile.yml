@@ -49,6 +49,14 @@ jobs:
         timeout-minutes: 1
         shell: powershell
         run: xperf.exe -help stack
+      - name: Inspect trace event statistics flags
+        timeout-minutes: 1
+        shell: powershell
+        run: xperf.exe -help tracestats
+      - name: Inspect sampled profile export flags
+        timeout-minutes: 1
+        shell: powershell
+        run: xperf.exe -help profile
       - name: Inspect local symbol resolution flags
         if: ${{ !cancelled() }}
         timeout-minutes: 1

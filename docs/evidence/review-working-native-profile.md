@@ -559,6 +559,18 @@ Expected failures: six on Mac and five on Windows; three serialization and fixtu
 Independent static review found no material defect.
 No Core process or performance measurement has run.
 
+At `0af2f433b`, Mac job `136489057580` produced the expected runtime RED.
+All six selected-Core cases failed at the explicit missing-observation assertion.
+The three serialization and fixture controls passed; no compiler or fixture failure substituted for those REDs.
+The ordinary harness passed 18 tests with its native case ignored.
+Scoped app/harness Clippy passed.
+Windows job `136489057556` produced its five expected runtime REDs at the same assertion.
+Its three controls, 36 ordinary tests, actual recorder inventory, and scoped Clippy passed.
+Neither platform substituted a compiler failure for the expected baseline.
+The Mac binary-test link emitted the existing `__eh_frame` size warning.
+The same warning appears in base job `136364441214` at `ac69cfa00`.
+The existing `block v0.1.6` future-compatibility warning also remains.
+
 ### First Windows native TUI result
 
 Run `44790226021`, job `136475625222`, passed the release fixture at exact source `d7faebfd7`.
