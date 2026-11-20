@@ -121,59 +121,6 @@ jobs:
           path: ${{ runner.temp }}/spaceport-retention-probe.zip.gpg
           if-no-files-found: error
           retention-days: 7
-      - name: Diagnose the actual Stop control child
-        timeout-minutes: 1
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $module = (Join-Path $env:GITHUB_WORKSPACE 'crates/sheprd-client/src/process.rs').Replace('\', '/')
-          $program = @'
-          // ABOUTME: Reproduces the isolated Windows control child's command-line boundary.
-          // ABOUTME: This is throwaway diagnostic code and starts no GUI, daemon, or recorder.
-          use std::{env, fs, io, path::PathBuf, process::Stdio};
-          #[path = "PROCESS_MODULE_PATH"] mod process;
-          fn main() -> io::Result<()> {
-              let directory = PathBuf::from(env::args_os().nth(1).ok_or(io::ErrorKind::InvalidInput)?);
-              fs::create_dir(&directory)?;
-              let root = env::var_os("SystemRoot").ok_or(io::ErrorKind::NotFound)?;
-              let executables = [
-                  ("mixed", PathBuf::from(&root).join("System32/cmd.exe")),
-                  ("native", PathBuf::from(&root).join("System32").join("cmd.exe")),
-              ];
-              let cases: &[(&str, &[&str])] = &[
-                  ("echo_script", &["echo acknowledged"]),
-                  ("echo_words", &["echo", "acknowledged"]),
-                  ("exit_script", &["exit 0"]),
-                  ("exit_words", &["exit", "0"]),
-              ];
-              for (style, executable) in &executables {
-                for (name, arguments) in cases {
-                  let case = directory.join(format!(".tmp-{style}-{name}"));
-                  fs::create_dir(&case)?;
-                  let receipt = fs::write(&case, b"receipt");
-                  let stdout = case.join("stdout.txt");
-                  let stderr = case.join("stderr.txt");
-                  let mut command = process::new_command(executable);
-                  command.env_clear().env("SystemRoot", &root).current_dir(&case)
-                      .args(["/d", "/c"]).args(*arguments).stdin(Stdio::null())
-                      .stdout(fs::File::create(&stdout)?).stderr(fs::File::create(&stderr)?);
-                  let result = command.spawn()?.wait()?;
-                  println!("case={style}_{name} receipt={receipt:?} status={result:?} command={command:?}");
-                  println!("stdout={:?} stderr={:?}", String::from_utf8_lossy(&fs::read(stdout)?), String::from_utf8_lossy(&fs::read(stderr)?));
-                }
-              }
-              Ok(())
-          }
-          '@
-          $program = $program.Replace('PROCESS_MODULE_PATH', $module)
-          $sourceFile = Join-Path $env:RUNNER_TEMP 'spaceport-stop-control.rs'
-          $executable = Join-Path $env:RUNNER_TEMP 'spaceport-stop-control.exe'
-          [IO.File]::WriteAllText($sourceFile, $program, [Text.UTF8Encoding]::new($false))
-          & rustc --edition=2024 $sourceFile -o $executable
-          if ($LASTEXITCODE -ne 0) { throw 'Control diagnostic compilation failed.' }
-          & $executable (Join-Path $env:RUNNER_TEMP 'spaceport-stop-control-data')
-          if ($LASTEXITCODE -ne 0) { throw 'Control diagnostic execution failed.' }
-
   contracts:
     if: >-
       github.repository == '2389-research/spaceport' &&

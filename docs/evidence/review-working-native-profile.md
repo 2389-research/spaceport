@@ -498,6 +498,16 @@ Compare it with a native-separator path while keeping the wrapper, environment, 
 The receipt control now uses component-wise native path joining and retains bounded child stderr on failure.
 Runtime verification of that correction remains pending.
 
+At `d7faebfd7`, standalone probe job `136470858602` isolated the executable-path difference.
+All four mixed-separator cases exited one with directory-creation diagnostics.
+All four native-separator cases exited zero; both echo cases returned exactly `acknowledged\r\n` with empty stderr.
+The wrapper, cleared environment, deliberate receipt failure, and argument variants stayed unchanged.
+This proves the test-helper path correction.
+Windows job `136470858021` passed all 36 ordinary tests, with two resource cases ignored.
+The actual recorder inventory and scoped app/harness Clippy passed.
+Mac job `136470858800`, retention, and tools also passed; run `44788858393` completed successfully.
+The throwaway comparison step was removed after this proof; the permanent lifecycle controls remain.
+
 ### Concurrent redraw change
 
 PR [145](https://github.com/2389-research/spaceport/pull/145) merged as `55c206e7c6be1a16f2e0643819f4dfc5df360f66` on November 20.
@@ -517,4 +527,23 @@ The first Windows workload measures this branch's original 30 fps cap.
 It does not measure the merged 20 fps change or close the remaining Core/chat clauses.
 The workflow retains the exact release executable, PDB, identities, captures, and partial traces through the shared sealer.
 Only ciphertext uploads; Root must inspect native observations and filtered stacks before qualification.
-Native workflow static review found no material defect; no native execution has run yet.
+Native workflow static review found no material defect.
+Root verified source `d7faebfd7f8e1afaed07d71729ea464bb50abb8e` on the dedicated native branch.
+Run [44790226021](https://github.com/2389-research/spaceport/actions/runs/44790226021) started its release build.
+Native measurements and retained evidence remain pending.
+
+### Core follow-up boundary
+
+The existing Windows Core fixture provides private `HC_SESSION`/`HC_SOCKET`, explicit `serve`, and holder-aware shutdown.
+Reuse `tests/accessibility_windows/core.rs`; prepare its stop logs before starting Core.
+Enable Core in private `config.local.toml` before normal app launch.
+Keep the seeded TUI group, then use existing `split_editor` and `new_core_terminal` commands.
+Observe creation through real Core listing and the matching app tab location; command dispatch alone is insufficient.
+Use actual returned shell arguments before generating bounded Core output through existing attachments.
+
+Current profile readiness proves two TUI frames and cannot qualify a Core group.
+Core's existing frame probe observes mailbox state before paint; `shown()` also includes hidden views.
+Select the drawn `Shown::Page` and exact Core terminal location.
+Require Core identity, live state, canvas bounds, marker content, and an actual paint-consumer receipt plus native capture.
+Do not call `frame_to_paint` from the observer; it mutates the veil cache.
+Root has made no Core profiling change or qualification claim; TUI qualification remains first.
