@@ -726,7 +726,7 @@ pub(crate) fn fixture_window(window: &mut Window, cx: &mut Context<SheprdWindow>
         _sidebar_invalidation: SheprdWindow::invalidate_sidebar(cx),
         _host_theme: SheprdWindow::observe_host_theme(cx),
         _notification_mutes: SheprdWindow::observe_notification_mutes(cx),
-        browser: crate::browser::Browser::new(cx),
+        browser: crate::browser::new_browser(cx),
         _browser_tabs: cx.observe_global::<crate::browser::Store>(|_, cx| cx.notify()),
         _device_tags: cx.observe_global::<crate::device_tags::DeviceTags>(|_, cx| cx.notify()),
         _worktree_notes: SheprdWindow::observe_worktree_notes(window, cx),

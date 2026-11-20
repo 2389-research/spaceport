@@ -1,91 +1,26 @@
 // ABOUTME: Projects saved native tabs into each window workspace.
 // ABOUTME: Hides disabled Core views without deleting their stored references.
-//! Native tab entries and shared split layouts in a window.
-//! Retained URL requests use the system handler rather than a page engine.
-#[cfg(test)]
-use super::Location;
-use super::{
-    CoreGroupKey, GroupId, GroupIds, GroupMotion, Hidden, Layout, Pick, SavedLayout, Scope, Store,
-    TabAppear, TabBodies, TabId, TabScroll, WebUrl, hosts::BrowserHosts,
-};
+//! What the window itself does with the browser: the browser it holds, the
+//! store and the scope its daemon files tabs under, and the ticks that keep
+//! them in step with the daemon. The tabs and their groups are
+//! `sheprd_browser`'s.
+use super::Layout;
 use crate::SheprdWindow;
 #[cfg(test)]
 use crate::{i18n::fl, window::Flash};
 use gpui::{prelude::*, *};
-use std::collections::{HashMap, HashSet};
+#[cfg(test)]
+use sheprd_browser::Location;
+use sheprd_browser::{Browser, Layouts, Pick, Scope, Store, TabId, WebUrl};
+use std::collections::HashSet;
 
 mod render;
 
-/// One window's browser state. How each workspace's view is split, and what
-/// each group shows, is the window's own choice, like its focused workspace;
-/// the tabs themselves are the app's.
-pub(crate) struct Browser {
-    /// Per workspace, its groups. A workspace missing here has one group
-    /// following its terminal.
-    pub(crate) layouts: HashMap<(Scope, String), Layout>,
-    /// Layouts saved before this window opened, restored the first time it
-    /// shows each workspace.
-    pub(crate) saved: HashMap<(Scope, String), SavedLayout>,
-    /// The workspace whose layout was just restored, whose group in use is
-    /// taken back to its tab once, rather than following wherever the
-    /// daemon's focus was left.
-    pub(crate) restored: Option<(Scope, String)>,
-    pub(super) group_ids: GroupIds,
-    /// The group drawn before the window has a workspace to split.
-    pub(super) fallback_group: GroupId,
-    /// Groups whose shown tab closed where their strips were not at hand:
-    /// in another window, or in a workspace not on screen. Each is given
-    /// another of its tabs, or closed, when its workspace next settles.
-    pub(super) emptied: Vec<GroupId>,
-    /// Tabs this window keeps out of its strips, as tearing one off does.
-    pub(crate) hidden: Hidden,
-    /// Tabs being closed one after another, as Close Others closes them.
-    pub(crate) closing: Option<crate::close_modal::CloseRun>,
-    /// Where each group drew last frame, so a carried tab knows the group
-    /// it is over.
-    pub(crate) group_bounds: std::rc::Rc<std::cell::RefCell<HashMap<GroupId, Bounds<Pixels>>>>,
-    /// The group whose "+" asked for a new Herdr tab, which it picks once
-    /// the daemon focuses the tab.
-    pub(super) new_tab_group: Option<((Scope, String), GroupId)>,
-    /// Tabs growing into the strip as they open.
-    pub(super) appear: TabAppear,
-    /// Each strip's sideways scroll.
-    pub(super) tab_scroll: TabScroll,
-    /// Each strip's connected tab body, for layouts that draw one.
-    pub(crate) tab_body: TabBodies,
-    /// Groups opening from a split and folding away as they close.
-    pub(super) group_motion: GroupMotion,
-    /// The workspaces of the last snapshot and the boot they came from: one
-    /// missing from the next snapshot of the same boot was closed.
-    workspaces: Option<(Scope, String, HashSet<String>)>,
-    /// The Herdr tabs of the last snapshot, with its boot and revision: one
-    /// missing from the next snapshot of the same boot, in a workspace still
-    /// open, was closed and can be reopened.
-    pub(super) herdr_tabs: Option<(Scope, String, u64, Vec<super::ClosedHerdrTab>)>,
-}
-
-impl Browser {
-    pub(crate) fn new(cx: &mut App) -> Self {
-        let mut group_ids = GroupIds::default();
-        Self {
-            layouts: HashMap::new(),
-            saved: super::Layouts::snapshot(cx),
-            restored: None,
-            fallback_group: group_ids.next(),
-            group_ids,
-            emptied: Vec::new(),
-            hidden: Default::default(),
-            closing: None,
-            group_bounds: Default::default(),
-            new_tab_group: None,
-            appear: Default::default(),
-            tab_scroll: Default::default(),
-            tab_body: Default::default(),
-            group_motion: Default::default(),
-            workspaces: None,
-            herdr_tabs: None,
-        }
-    }
+/// A window's browser, restoring the layouts the app saved for each workspace
+/// as the window first shows it. Built before the window itself, so the saved
+/// layouts it reads come from the app's global rather than from a window.
+pub(crate) fn new_browser(cx: &mut App) -> Browser {
+    Browser::new(Layouts::snapshot(cx))
 }
 
 /// Names the daemon behind an endpoint the way browser tabs remember it.
@@ -97,11 +32,11 @@ pub(crate) fn scope(endpoint: &crate::endpoint::Endpoint) -> Scope {
 }
 
 /// Page titles run long; a tab shows the start of one.
-pub(super) fn tab_label(title: &str) -> SharedString {
+pub(crate) fn tab_label(title: &str) -> SharedString {
     sheprd_truncate::tab_title(title).into()
 }
 
-pub(super) fn store(cx: &App) -> Option<&Store> {
+pub(crate) fn store(cx: &App) -> Option<&Store> {
     cx.try_global::<Store>()
 }
 
@@ -112,50 +47,6 @@ pub(crate) enum PageOpened {
     SystemBrowser,
     /// Not opened: the window has no such host.
     Unreachable,
-}
-
-impl Browser {
-    pub(super) fn browser_key(&self, hosts: &BrowserHosts<'_>) -> Option<(Scope, String)> {
-        if hosts.core_group.is_some() {
-            return None;
-        }
-        let workspace = hosts.snapshot?.focused_workspace_id.clone()?;
-        Some((scope(&hosts.endpoints[hosts.selected_endpoint]), workspace))
-    }
-
-    /// The group drawn in this window, which may belong to Core instead of
-    /// the legacy endpoint that still supplies the transitional shell.
-    pub(super) fn layout_key(&self, hosts: &BrowserHosts<'_>) -> Option<(Scope, String)> {
-        hosts
-            .core_group
-            .map(CoreGroupKey::parts)
-            .or_else(|| self.browser_key(hosts))
-    }
-
-    /// The focused workspace's browser tabs, in the order they opened.
-    pub(super) fn browser_tab_ids(&self, hosts: &BrowserHosts<'_>) -> Vec<TabId> {
-        let (Some((scope, workspace)), Some(store)) = (hosts.workspace.as_ref(), hosts.tabs) else {
-            return Vec::new();
-        };
-        store
-            .in_workspace(scope, workspace)
-            .filter(|tab| hosts.core_enabled || !tab.requires_core())
-            .map(|tab| tab.id)
-            .collect()
-    }
-
-    pub(super) fn forget_browser_tabs(&mut self, mut gone: impl FnMut(TabId) -> bool) {
-        for layout in self.layouts.values_mut() {
-            let closed: Vec<Pick> = layout
-                .tabs()
-                .filter(|pick| matches!(pick, Pick::Page(id) if gone(*id)))
-                .cloned()
-                .collect();
-            for pick in closed {
-                self.emptied.extend(layout.forget(&pick));
-            }
-        }
-    }
 }
 
 impl SheprdWindow {
@@ -286,7 +177,7 @@ impl SheprdWindow {
             .layouts
             .retain(|(saved, workspace), _| saved != &scope || !closed.contains(workspace));
         self.browser.hidden.forget_workspaces(&scope, &closed);
-        super::Layouts::forget_workspaces(cx, &scope, &closed);
+        Layouts::forget_workspaces(cx, &scope, &closed);
         if !store(cx).is_some_and(|store| store.has_workspaces(&scope, &closed)) {
             return;
         }

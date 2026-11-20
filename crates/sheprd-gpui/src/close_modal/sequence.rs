@@ -7,27 +7,15 @@
 
 use crate::{
     SheprdWindow,
-    browser::{Pick, Scope},
+    browser::{CloseRun, Pick},
     menu::Page,
 };
 use gpui::{Context, Window};
-use std::{
-    collections::VecDeque,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 /// How long a close the daemon was sent may go unanswered before the run
 /// gives up rather than wait on a tab that is not going away.
 const ANSWER_TIMEOUT: Duration = Duration::from_secs(5);
-
-pub(crate) struct CloseRun {
-    workspace: (Scope, String),
-    rest: VecDeque<Pick>,
-    /// The Herdr tab whose close is being decided, or answered by the daemon.
-    current: Option<String>,
-    /// When its close went to the daemon.
-    sent: Option<Instant>,
-}
 
 impl SheprdWindow {
     /// Closes `tabs` of the focused workspace in order.

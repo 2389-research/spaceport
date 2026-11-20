@@ -17,10 +17,12 @@ mod view;
 #[cfg(test)]
 mod view_tests;
 
+#[cfg(test)]
+pub(crate) use sheprd_browser::GroupIds;
 pub(crate) use sheprd_browser::{
-    Cells, ClosedHerdrTab, ClosedTab, CoreGroupKey, Fold, GroupId, GroupIds, GroupMotion, Hidden,
-    Layout, Layouts, Leaving, List, Listed, Location, Pick, SavedLayout, Scope, Shown, Slot, Span,
-    Store, Tab, TabAppear, TabBodies, TabId, TabScroll, Thumb, ThumbDrag, WebUrl,
+    Browser, BrowserHosts, Cells, CloseRun, ClosedHerdrTab, ClosedTab, CoreGroupKey, Fold, GroupId,
+    Layout, Layouts, Leaving, List, Listed, Location, Pick, Scope, Shown, Slot, Span, Store, Tab,
+    TabId, Thumb, ThumbDrag, WebUrl,
 };
 
 /// The file the app keeps its browser tabs in, or none when it has no state
@@ -33,8 +35,7 @@ pub(crate) fn tabs_path() -> Option<std::path::PathBuf> {
 pub(crate) fn layouts_path() -> Option<std::path::PathBuf> {
     crate::preferences::state_dir().map(|dir| dir.join("editor-groups.json"))
 }
-pub(crate) use view::Browser;
-pub(crate) use view::{PageOpened, scope};
+pub(crate) use view::{PageOpened, new_browser, scope};
 
 /// The title the window shows for `tab`: what its content names itself, or
 /// the words this window's language gives a tab that has not. A terminal tab
