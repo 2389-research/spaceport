@@ -427,7 +427,7 @@ Kata `q72g` stays open; these images do not qualify those separate requirements.
 ## Real Core Windows qualification plan
 
 The [official versioned manifest](https://releases.herdr.dev/core/0.1.21/manifest.json) publishes generation 1, version 0.1.21, for Windows x64.
-Root reads that manifest directly; no binary is downloaded or executed during this investigation.
+The first investigation reads that manifest directly without downloading or executing a binary.
 Its archive digest is `a8984634c35b58ba82d0aec078d5a5e6004da01d5a25b3daf822ab5e31c7312b`.
 The [pinned installer](https://github.com/herdrdev/herdr-core/blob/v0.1.21/distribution/install.ps1) requires the adjacent `conpty/` directory.
 Use private archive staging rather than the installer, which changes user installation state.
@@ -447,3 +447,10 @@ This remains a plan; no native Core qualification follows from release availabil
 
 Windows Ctrl-Shift-W does not establish macOS AppKit Cmd-W routing.
 Audible screen-reader output and selected-tab backdrop contrast remain separate native gates.
+
+The follow-up archive inspection downloads the exact versioned Windows zip into temporary storage.
+Its 3,862,941 bytes match the manifest's SHA-256 above.
+The archive contains `herdr-core.exe`, `conpty/conpty.dll`, and `conpty/x64/OpenConsole.exe`.
+It also includes an Apache-2.0 license and third-party notices, which the private staging step must retain.
+No archive member is extracted or executed, and no local runtime is installed.
+This verifies the fixture's input artifact; strict ownership and native behavior remain untested.
