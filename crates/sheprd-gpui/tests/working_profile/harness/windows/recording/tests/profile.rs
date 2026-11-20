@@ -55,3 +55,15 @@ fn retained_profile_has_native_sampled_stacks_and_matching_identity() -> Result<
     );
     Ok(())
 }
+
+#[test]
+fn retaining_profile_preserves_existing_definition_or_identity() -> Result<()> {
+    for name in ["validation-cpu.wprp", "validation-profile.json"] {
+        let directory = tempfile::tempdir()?;
+        let existing = directory.path().join(name);
+        fs::write(&existing, b"existing private artifact")?;
+        assert!(retain_profile(directory.path(), "validation").is_err());
+        assert_eq!(fs::read(existing)?, b"existing private artifact");
+    }
+    Ok(())
+}

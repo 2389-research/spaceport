@@ -147,7 +147,8 @@ impl Fixture {
             path,
             interval_ms: None,
             details: json!({
-                "sampler":"Windows Performance Recorder CPU","raw_trace_private":true,"stack_review_required":true,
+                "sampler":"Windows Performance Recorder SpaceportCpu","raw_trace_private":true,"stack_review_required":true,
+                "event_loss":"unqualified; Stop acknowledgement does not establish zero loss",
                 "setup_seconds":setup.as_secs_f64(),"stop_seconds":shutdown.as_secs_f64(),
             "trace_scope":"CPU-clock interval is inside the owned trace; trace endpoints also include recorder overhead",
                 "symbols":"local executable PDB only; decoding remains unqualified until actual output inspection",

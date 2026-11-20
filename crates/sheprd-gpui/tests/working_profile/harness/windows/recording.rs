@@ -3,7 +3,9 @@
 use super::{Child, Command, File, Fixture, command_output, hide, wait_for_output};
 use anyhow::{Context as _, Result, ensure};
 use serde_json::json;
+use sha2::{Digest as _, Sha256};
 use std::collections::HashSet;
+use std::io::Write as _;
 use std::path::PathBuf;
 use std::{fs, path::Path, time::Duration};
 
@@ -43,8 +45,29 @@ const CPU_PROFILE: &[u8] = include_bytes!(concat!(
     "/../../scripts/profile/spaceport-cpu.wprp"
 ));
 
-fn retain_profile(_directory: &Path, _name: &str) -> Result<std::ffi::OsString> {
-    anyhow::bail!("sampled CPU profile retention is not implemented")
+fn retain_profile(directory: &Path, name: &str) -> Result<std::ffi::OsString> {
+    let path = directory.join(format!("{name}-cpu.wprp"));
+    let mut selection = path.as_os_str().to_os_string();
+    selection.push("!SpaceportCpu");
+    fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)?
+        .write_all(CPU_PROFILE)?;
+    let digest: String = Sha256::digest(CPU_PROFILE)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let identity = json!({
+        "path":path,"bytes":CPU_PROFILE.len(),"sha256":digest,
+        "selection":selection.to_string_lossy(),"logging_mode":"File",
+    });
+    fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join(format!("{name}-profile.json")))?
+        .write_all(&serde_json::to_vec_pretty(&identity)?)?;
+    Ok(selection)
 }
 
 pub(super) struct Recording {
@@ -64,6 +87,7 @@ impl Recording {
         local_symbols()?;
         let tools = fixture.recorder_available(name)?;
         let directory = &fixture.sandbox()?.dir;
+        let profile = retain_profile(directory, name)?;
         let path = directory.join(format!("{name}.etl"));
         ensure!(!path.exists(), "refusing to replace an existing trace");
         let temporary = directory.join(format!("{name}-wpr-temp"));
@@ -100,7 +124,9 @@ impl Recording {
             .command(&tools.wpr, format!("{name}-wpr-start.stderr.log"));
         hide(&mut command);
         command
-            .args(["-start", "CPU", "-filemode", "-recordtempto"])
+            .arg("-start")
+            .arg(profile)
+            .args(["-filemode", "-recordtempto"])
             .arg(&temporary)
             .arg("-instancename")
             .arg(&instance);
@@ -166,7 +192,8 @@ impl Recording {
                 fs::write(
                     receipt,
                     serde_json::to_vec_pretty(
-                        &json!({"instance":instance,"start":"acknowledged","stop":"acknowledged","stop_helper_pid":pid,"raw_trace_private":true,"trace":path}),
+                        &json!({"instance":instance,"start":"acknowledged","stop":"acknowledged","stop_helper_pid":pid,"raw_trace_private":true,"trace":path,
+                            "event_loss":"unqualified; inspect retained Stop logs and trace statistics"}),
                     )?,
                 )?;
                 submitted.context("owned Stop completed but its submission receipt failed")?;

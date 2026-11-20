@@ -750,3 +750,16 @@ The pinned SHA output type lacks `LowerHex`; the test now uses the existing per-
 Mac contracts, Windows observer/accessibility controls, tools, and retention passed.
 This compile failure supplies no runtime RED evidence.
 Review also added an exact retained-path assertion rather than comparing only helper-produced selectors.
+
+Corrected checkpoint `68cadef20fe3ab7cfcdce65fa3201bf926952015` runs under `44816254167`.
+Windows job `136565263564` reached the intended runtime refusal: retention is not implemented.
+The other 45 harness tests, eight observer tests, ten accessibility controls, inventory, and scoped Clippy passed.
+This supplies runtime RED; the earlier compile failure does not.
+
+The helper now retains exact embedded definition bytes and their SHA-256 receipt before Start.
+It refuses existing definition or identity files without replacing them.
+WPR receives one native selector for the retained copy and explicit file mode.
+The instance, Stop authority, pre-opened Stop streams, and cleanup ordering remain unchanged.
+The ordinary native-decoder and no-replacement controls still need remote GREEN.
+No new native recording or event-loss qualification is claimed.
+Independent review found no material defect in retained bytes, selectors, refusal, or recorder ownership.
