@@ -498,30 +498,27 @@ impl SheprdWindow {
     /// checks read it to find the menu.
     #[cfg(any(windows, test, feature = "integration-test"))]
     fn menu_panel_cover(&self, layer: &Layer, panel: Stateful<Div>) -> Stateful<Div> {
-        let panel = {
-            let cover = self.menu.cover.clone();
-            if layer.dims {
-                cover.set(crate::menu::state::Cover::All);
-            }
-            // A menu on its way out no longer covers anything.
-            panel.when(!layer.dims && layer.leaving.is_none(), |panel| {
-                panel.child(
-                    canvas(
-                        // Laid out inside the panel's border; the margin takes
-                        // in the border and the start of its shadow.
-                        move |bounds, _, _| {
-                            cover.set(crate::menu::state::Cover::Panel(
-                                bounds.dilate(px(COVER_MARGIN)),
-                            ))
-                        },
-                        |_, _, _, _| {},
-                    )
-                    .absolute()
-                    .inset_0(),
+        let cover = self.menu.cover.clone();
+        if layer.dims {
+            cover.set(crate::menu::state::Cover::All);
+        }
+        // A menu on its way out no longer covers anything.
+        panel.when(!layer.dims && layer.leaving.is_none(), |panel| {
+            panel.child(
+                canvas(
+                    // Laid out inside the panel's border; the margin takes
+                    // in the border and the start of its shadow.
+                    move |bounds, _, _| {
+                        cover.set(crate::menu::state::Cover::Panel(
+                            bounds.dilate(px(COVER_MARGIN)),
+                        ))
+                    },
+                    |_, _, _, _| {},
                 )
-            })
-        };
-        panel
+                .absolute()
+                .inset_0(),
+            )
+        })
     }
 
     /// A menu on its way out takes no clicks, so it asks for none.

@@ -231,7 +231,7 @@ impl SheprdWindow {
                         *ground,
                         *cell_width,
                         font,
-                        &highlights,
+                        highlights,
                         &surface.panes,
                         None,
                         images.as_deref().map(|images| PlacedImages {
@@ -276,7 +276,7 @@ impl SheprdWindow {
                     Ground::Opaque,
                     *cell_width,
                     font,
-                    &popup_highlights,
+                    popup_highlights,
                     &[],
                     None,
                     images.as_deref().map(|images| PlacedImages {
@@ -295,7 +295,7 @@ impl SheprdWindow {
                 marked,
                 input_cursor_bounds(live, bounds.origin, *metrics).origin + point(px(0.), *shift),
                 input_area(live, bounds, *metrics),
-                &font,
+                font,
                 window,
             );
         }
