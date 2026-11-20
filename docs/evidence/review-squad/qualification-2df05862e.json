@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "source": "2df05862ee2573a73be535372b20acf632528aa2",
+  "pr": 125,
+  "ci": {
+    "id": 44753463619,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44753463619",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 136346981218,
+        "name": "Workflow Security",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347103586,
+        "name": "Commit messages",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347356960,
+        "name": "Windows package and installer",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357058,
+        "name": "Windows native GUI (windows-11-arm)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357080,
+        "name": "Windows native GUI (windows-2025)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357102,
+        "name": "Windows check (windows-2025, default)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357112,
+        "name": "Windows check (windows-2025, all)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357116,
+        "name": "Release (x86_64-apple-darwin)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357130,
+        "name": "Release (aarch64-apple-darwin)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357144,
+        "name": "Windows check (windows-11-arm, default)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357151,
+        "name": "Format, lint, and test (ubuntu-24.04-arm, all)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357188,
+        "name": "Format, lint, and test (ubuntu-24.04, all)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357197,
+        "name": "Format, lint, and test (macos-15, default)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357237,
+        "name": "Format, lint, and test (macos-15, all)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357291,
+        "name": "Windows check (windows-11-arm, all)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357335,
+        "name": "Format, lint, and test (ubuntu-24.04, default)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347357548,
+        "name": "Format, lint, and test (ubuntu-24.04-arm, default)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347360054,
+        "name": "Release (${{ matrix.target }})",
+        "status": "completed",
+        "conclusion": "skipped"
+      },
+      {
+        "id": 136359755446,
+        "name": "Format, lint, and test",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "supply_chain": {
+    "id": 44753463708,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44753463708",
+    "status": "completed",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 136346980733,
+        "name": "Supply Chain Workflow Security",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347145422,
+        "name": "cargo-deny (advisories)",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 136347145512,
+        "name": "cargo-deny (bans licenses sources)",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "windows_x64_native": {
+    "job_id": 136347357080,
+    "gui_passed": 8,
+    "pipe_owner_passed": 1,
+    "uia_passed": 25,
+    "non_us_passed": 6,
+    "core_passed": 3
+  },
+  "windows_x64_all": {
+    "job_id": 136347357112,
+    "bridge_echo_passed": true,
+    "client_suite": {
+      "passed": 278,
+      "failed": 0,
+      "ignored": 4
+    },
+    "gpui_suite": {
+      "passed": 4053,
+      "failed": 0,
+      "ignored": 6
+    }
+  },
+  "limits": [
+    "The earlier fa02187c0 bridge echo stall did not recur. Its cause remains unknown.",
+    "Metadata-only clear preservation and Core readiness follow-up b99a69843 is separate and still qualifying.",
+    "No local compiler, VM, Mac foreground fixture, or release profile ran.",
+    "Core Cmd-W, audible screen-reader output, and release profiling remain open.",
+    "No merge into main or release is authorized."
+  ]
+}

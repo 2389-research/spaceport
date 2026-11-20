@@ -4,7 +4,12 @@ Scope: Kata `9s44`, all 53 review findings.
 Status: the candidate integrates the reviewed native fixtures, exact GPUI 0.3.11 pins, and the qualified Core startup correction.
 Previous PR head `287f65aa5` passes all eighteen configured CI jobs and all three supply-chain jobs.
 The combined CI on 7f82df03f exposes a duplicated test-fixture module import.
-The fixture now loads once in the shared test parent; renewed configured CI remains pending.
+The fixture now loads once in the shared test parent.
+Source `2df05862e` passes all eighteen configured CI jobs and all three supply-chain jobs.
+One unconfigured release target skips.
+The [exact-source receipt](review-squad/qualification-2df05862e.json) records every job and the native Windows outcomes.
+The earlier Windows bridge echo stall does not recur; its cause remains unknown.
+The metadata-only clear preservation and Core readiness follow-up remains separate and still qualifying.
 Source `e60795ab9` fixes the reproduced Core prompt drift during startup height growth.
 All 83 terminal tests pass on Linux and Windows.
 The native Core suite and six fresh ordinary Core samples pass.
@@ -27,6 +32,9 @@ The imported `9s44` and `q72g` tasks are claimed by `review-squad` and remain op
 The painting/polling finding `gfde` is closed after its five-clause audit and all four native image inspections.
 See the [native image receipt](review-squad/native-images/qualification-a8f7bd371.json) and [Crew closure receipt](review-squad/crew-closures.jsonl).
 The remaining children cover native Core Cmd-W, accessibility speech, and Clint's foreground release profile.
+The [speech prerequisite probe](review-screen-reader-audio.md) finds no sound devices on its exact hosted Windows image.
+Its actual default speech playback fails with audio-device error `0x2`.
+No screen reader or audio recording qualifies from that result.
 On November 20 at 02:54 UTC, Doctor Biz explicitly answered “Keep Mac checks pending.”
 Do not launch Mac foreground fixtures until Doctor Biz changes that instruction.
 Windows CI continues; this instruction does not pause the full review goal.
