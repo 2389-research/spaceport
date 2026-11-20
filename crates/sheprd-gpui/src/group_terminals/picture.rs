@@ -57,7 +57,7 @@ impl GroupPicture {
 
     /// The look the cached view replays with, for tests that assert the
     /// cache follows what it paints.
-    #[cfg(any(test, feature = "test-support"))]
+    #[cfg(any(test, feature = "integration-test"))]
     pub(crate) fn cached_look(&self) -> &PictureLook {
         &self.look
     }
