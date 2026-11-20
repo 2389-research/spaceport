@@ -682,3 +682,26 @@ Log: `/tmp/spaceport-9s44-host-refusal-consumers-green.log`.
 The existing debug-link unwind and external `block` notices remain unchanged.
 Final GPUI all-target/all-feature Windows GNU lint also passes after correcting those consumers.
 Log: `/tmp/spaceport-9s44-readiness-hosts-final-windows-lint.log`.
+
+## Split Core scheduling contract on `daab7134e`
+
+Both default Linux jobs fail the release-script scheduling check on `daab7134e`.
+The test treats YAML's block indicator as the shell command and attempts to execute `|`.
+It also predates the separate Core qualification step.
+The same failure reproduces locally before the correction.
+
+The test now executes both actual shell commands through its existing argument recorder.
+Ordinary UIA may skip only `core::`; the separate step must select that entire namespace.
+Both steps retain ignored-test selection, serialized execution, and the accessibility harness.
+The Core condition runs only on x64 and refuses cancelled runs.
+The shared restricted condition evaluator supports that explicit status function and negation.
+Unknown expressions still fail rather than executing workflow text.
+
+The two accessibility scheduling cases, 11 policy cases, and release-transition cases pass locally.
+Logs: `/tmp/spaceport-9s44-core-ci-{contract-red,contract-green,policy-green,transition-green}.log`.
+The full `just test-release-scripts` run executes 396 cases with 20 skipped.
+It fails four cases and errors once in the unchanged macOS Sparkle cleanup checks.
+The executable census rejects one observed row whose UID is nonnumeric.
+No process names, arguments, or private paths are captured in that diagnosis.
+Those failures remain visible in `/tmp/spaceport-9s44-core-ci-release-suite.log`; cleanup controls remain intact.
+The full suite is not claimed passing.

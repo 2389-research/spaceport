@@ -35,13 +35,17 @@ def expression_value(expression, context):
     # Unsupported syntax fails rather than executing workflow text as Python.
     if expression.strip() in context:
         return context[expression.strip()]
+    expression = expression.strip().removeprefix("${{").removesuffix("}}").strip()
     expression = " ".join(expression.split()).replace("&&", "and").replace("||", "or")
+    expression = re.sub(r"!(?!=)", "not ", expression)
 
     def evaluate(node):
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             return node.value
         if isinstance(node, ast.Attribute):
             return context[ast.unparse(node)]
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+            return not evaluate(node.operand)
         if isinstance(node, ast.BoolOp):
             values = [evaluate(value) for value in node.values]
             if isinstance(node.op, ast.And):
@@ -54,8 +58,11 @@ def expression_value(expression, context):
             if isinstance(node.ops[0], ast.NotEq):
                 return evaluate(node.left) != evaluate(node.comparators[0])
         if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                and node.func.id == "always" and not node.args and not node.keywords):
-            return True
+                and not node.args and not node.keywords):
+            if node.func.id == "always":
+                return True
+            if node.func.id == "cancelled":
+                return context["cancelled()"]
         raise AssertionError(f"Unsupported CI expression: {ast.dump(node)}")
 
     return evaluate(ast.parse(expression, mode="eval").body)
