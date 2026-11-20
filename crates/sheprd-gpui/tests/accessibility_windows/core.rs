@@ -1,44 +1,30 @@
 // ABOUTME: Qualifies a real isolated Core terminal through native Windows accessibility.
 // ABOUTME: Owns the exact runtime, pipe, GUI, and state without installing or discovering a daemon.
-use super::{CAPTURE_LIMIT, Duration, GuiTarget, Instant, Running, fs, thread};
-use sheprd_core_client::{Attachment, Core, Endpoint, wire::Attach};
-use std::{
-    io,
-    os::windows::process::CommandExt as _,
-    path::PathBuf,
-    process::{Child, Command},
-};
+use super::{CAPTURE_LIMIT, Duration, GuiTarget, Instant, Running, Sandbox, fs, thread};
+use sheprd_core_client::{Attachment, Core, wire::Attach};
+use std::{io, process::Command};
+
+#[path = "../../../test-support/core_windows.rs"]
+mod runtime;
+use runtime::Runtime;
 
 #[path = "core/resize.rs"]
 mod resize;
 
 #[derive(Clone, Copy)]
-pub(super) struct Target {
-    nonce: uuid::Uuid,
-}
+pub(super) struct Target(runtime::Target);
 
 impl Target {
     pub(super) fn apply(&self, command: &mut Command) {
-        let endpoint = self.endpoint();
-        command
-            .env("HC_SESSION", endpoint.session)
-            .env("HC_SOCKET", endpoint.socket)
-            .env(
-                "SPACEPORT_TEST_CORE_FRAME_OBSERVER",
-                self.nonce.simple().to_string(),
-            );
-    }
-
-    fn endpoint(&self) -> Endpoint {
-        Endpoint {
-            session: format!("sp-{}", self.nonce.simple()),
-            socket: PathBuf::from(format!(r"\\.\pipe\spaceport-core-{}", self.nonce.simple())),
-        }
+        self.0.apply(command);
+        command.env(
+            "SPACEPORT_TEST_CORE_FRAME_OBSERVER",
+            self.0.nonce().simple().to_string(),
+        );
     }
 }
 
 struct Fixture {
-    binary: PathBuf,
     core: Option<Core>,
     dir: Option<tempfile::TempDir>,
     running: Running,
@@ -46,27 +32,11 @@ struct Fixture {
     target: Target,
 }
 
-struct Runtime {
-    capture: PathBuf,
-    child: Child,
-    stop: Command,
-}
-
 impl Fixture {
     fn start() -> Self {
-        let binary = PathBuf::from(
-            std::env::var_os("HERDR_CORE_TEST_BINARY")
-                .expect("select the exact staged HERDR_CORE_TEST_BINARY"),
-        );
-        assert!(
-            binary.is_absolute() && binary.is_file(),
-            "Core fixture binary must be an absolute file"
-        );
-        let target = Target {
-            nonce: uuid::Uuid::new_v4(),
-        };
+        let binary = runtime::binary();
+        let target = Target(runtime::Target::new());
         let mut fixture = Self {
-            binary,
             core: None,
             dir: Some(
                 tempfile::Builder::new()
@@ -78,46 +48,13 @@ impl Fixture {
             runtime: None,
             target,
         };
-        let capture = fixture.dir.as_ref().unwrap().path().join("core-stop.log");
-        let mut stop = fixture.runtime_command("core-stop.log");
-        stop.args(["server", "stop"]);
-        let mut command = fixture.runtime_command("core-serve.log");
-        command.arg("serve");
-        let child = command.spawn().unwrap();
-        fixture.runtime = Some(Runtime {
-            capture,
-            child,
-            stop,
-        });
-        let deadline = Instant::now() + Duration::from_secs(15);
-        loop {
-            match Core::connect(&fixture.target.endpoint()) {
-                Ok(core) => {
-                    fixture.core = Some(core);
-                    break;
-                }
-                Err(error) => {
-                    assert!(
-                        fixture
-                            .runtime
-                            .as_mut()
-                            .unwrap()
-                            .child
-                            .try_wait()
-                            .unwrap()
-                            .is_none(),
-                        "owned Core exited: {error}"
-                    );
-                    assert!(
-                        Instant::now() < deadline,
-                        "private Core connection failed without relaxing ownership: {error}"
-                    );
-                    thread::sleep(Duration::from_millis(20));
-                }
-            }
-        }
-        assert_eq!(fixture.api().hello().generation, 1);
-        assert!(fixture.api().list(false).unwrap().terminals.is_empty());
+        fixture.runtime = Some(Runtime::start(
+            &fixture.running.sandbox,
+            &binary,
+            fixture.dir.as_ref().unwrap().path(),
+            target.0,
+        ));
+        fixture.core = Some(fixture.runtime.as_mut().unwrap().connect());
         fs::write(
             fixture
                 .running
@@ -139,28 +76,6 @@ impl Fixture {
 
     fn api(&self) -> &Core {
         self.core.as_ref().unwrap()
-    }
-
-    fn runtime_command(&self, log: &str) -> Command {
-        let root = self.dir.as_ref().unwrap().path();
-        let mut command = self.running.sandbox.command(&self.binary, root.join(log));
-        self.target.apply(&mut command);
-        command
-            .creation_flags(sheprd_client::CREATE_NO_WINDOW)
-            .env("HOME", root)
-            .env("USERPROFILE", root)
-            .env("APPDATA", root.join("appdata"))
-            .env("LOCALAPPDATA", root.join("localappdata"))
-            .env("XDG_CONFIG_HOME", root.join("config"))
-            .env("XDG_STATE_HOME", root.join("state"))
-            .env("XDG_DATA_HOME", root.join("data"))
-            .env("XDG_CACHE_HOME", root.join("cache"))
-            .env("XDG_RUNTIME_DIR", root)
-            .env("TMPDIR", root)
-            .env("TEMP", root)
-            .env("TMP", root)
-            .current_dir(root);
-        command
     }
 
     fn open_terminal(&mut self) -> String {
@@ -241,29 +156,14 @@ impl Fixture {
             &mut self.running.gui,
         ]);
         self.core.take();
-        let Some(mut runtime) = self.runtime.take() else {
+        let Some(runtime) = self.runtime.take() else {
             return Ok(());
         };
-        let stopped = self
-            .running
-            .command_output(runtime.stop, &runtime.capture, Duration::from_secs(10))
-            .map(|_| ());
-        let ended = sheprd_client::wait::exit(
-            &mut runtime.child,
-            Instant::now() + Duration::from_secs(10),
-            || false,
-        )
-        .and_then(|outcome| match outcome {
-            sheprd_client::wait::Exit::Exited(status) if status.success() => Ok(()),
-            sheprd_client::wait::Exit::Exited(status) => {
-                Err(io::Error::other(format!("owned Core exited with {status}")))
-            }
-            sheprd_client::wait::Exit::Stopped(_) => Err(io::Error::new(
-                io::ErrorKind::TimedOut,
-                "owned Core did not exit after private shutdown",
-            )),
-        });
-        stopped.and(ended)
+        runtime.shutdown(|command, capture, limit| {
+            self.running
+                .command_output(command, capture, limit)
+                .map(|_| ())
+        })
     }
 }
 

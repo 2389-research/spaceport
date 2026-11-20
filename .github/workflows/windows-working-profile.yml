@@ -169,6 +169,13 @@ jobs:
         if: ${{ !cancelled() }}
         shell: bash
         run: cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport core_terminals::view::profile::tests -- --nocapture
+      - name: Exercise ordinary Windows Core fixture contracts
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- --nocapture
+          cargo clippy --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- -D warnings
       - name: Classify actual Windows recorder state without recording
         if: runner.os == 'Windows' && !cancelled()
         shell: bash

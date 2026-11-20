@@ -638,3 +638,17 @@ The next native run also retains throwaway read-only xperf postprocessing report
 Installed-tool help at job `136495315872` verifies the event-statistics, sampled-profile, and frequency commands.
 Those whole-trace reports remain private and require interpretation before any CPU attribution.
 Review found an absent postprocessing deadline; the step now has a five-minute limit before sealing.
+
+### Shared Windows Core owner extraction
+
+Reuse the existing accessibility fixture's runtime owner through `crates/test-support/core_windows.rs`.
+Keep unique targets, explicit binary selection, isolated commands, prepared stop streams, and exact bounded waits unchanged.
+The caller still owns GUI/client shutdown and failed-state retention.
+Its existing command runner owns and reaps the submitted stop child.
+Do not import the Core-client live sandbox; its environment and retention policies differ.
+
+The accessibility GUI keeps its explicit frame observer flag locally.
+Core serve/stop commands no longer receive that unrelated flag.
+The profile must never enable poll-time frame text logging.
+Windows CI compiles, runs existing ordinary accessibility controls, and lints that test target.
+The existing ignored real Core cases still need explicit native acceptance after extraction.
