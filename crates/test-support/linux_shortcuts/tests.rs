@@ -80,7 +80,10 @@ fn tab_cases_cover_each_shifted_digit_before_the_final_search() {
         };
         assert_eq!(case.chords, &[&[29, 42, u32::from(number) + 1][..]]);
     }
-    assert_eq!(CASES.last().unwrap().outcome, Outcome::PolishSearch);
+    assert_eq!(
+        CASES.last().map(|case| case.outcome),
+        Some(Outcome::PolishSearch)
+    );
 }
 
 #[test]
@@ -106,7 +109,9 @@ fn pane_cases_use_shifted_aliases_and_the_private_geometric_prefix() {
         ("prefix-pane-up", vec![PREFIX.to_vec(), vec![37]]),
         ("prefix-pane-right", vec![PREFIX.to_vec(), vec![38]]),
     ] {
-        let case = CASES.iter().find(|case| case.id == id).unwrap();
+        let Some(case) = CASES.iter().find(|case| case.id == id) else {
+            panic!("missing native pane case {id}");
+        };
         assert_eq!(case.chords, chords);
     }
 }
