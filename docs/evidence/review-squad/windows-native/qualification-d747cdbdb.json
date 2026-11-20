@@ -5,6 +5,18 @@
   "job_url": "https://github.com/2389-research/spaceport/actions/runs/44680270572/job/136101908188",
   "platform": "windows-2025 x64",
   "job_result": "success",
+  "ci": {
+    "run_id": 44680270572,
+    "result": "success",
+    "successful_jobs": 18,
+    "skipped_unconfigured_jobs": 1,
+    "reported_updated_utc": "2026-11-20T05:44:45Z"
+  },
+  "supply_chain": {
+    "run_id": 44680270699,
+    "result": "success",
+    "successful_jobs": 3
+  },
   "gui": {"passed": 8, "failed": 0},
   "pipe_owner": {"passed": 1, "failed": 0},
   "ordinary_uia": {"passed": 25, "failed": 0, "filtered_out": 10},

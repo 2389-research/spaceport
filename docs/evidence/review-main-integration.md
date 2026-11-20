@@ -678,5 +678,21 @@ Package Clippy passes all targets with all features and without default features
 Commands use `cargo clippy --locked -p sheprd-gpui --all-targets`, the selected feature flag, and `-- -D warnings`.
 Windows runs also select `--target x86_64-pc-windows-gnu`.
 Canonical quick checks, JSON receipt validation, and diff checks pass.
-Independent actual-diff review finds no material regression; fresh Windows native qualification remains pending.
+Independent actual-diff review finds no material regression; the following native run qualifies the correction.
 Logs are `/tmp/spaceport-9s44-core-viewport-{host-all,host-minimal,windows-all,windows-minimal,static}.log`.
+
+## Green platform checkpoint on `d747cdbdb`
+
+The [complete CI run](https://github.com/2389-research/spaceport/actions/runs/44680270572) succeeds on exact source `d747cdbdb82e48e6f4efb14866416f789a118b8f`.
+All 18 configured jobs pass; one unconfigured release target skips.
+The [supply-chain run](https://github.com/2389-research/spaceport/actions/runs/44680270699) also passes all three jobs.
+Both configured Mac builds, all workspace feature/platform jobs, Windows installer, and both native jobs pass.
+The x64 native job passes the original strict Core resize case, ordinary/observing text, chat actions, and Polish input.
+See the [qualified receipt](review-squad/windows-native/qualification-d747cdbdb.json) for exact native times, assertions, and scope.
+The native release-performance step skips and supplies no working-session profile.
+
+Following commits add only evidence documents and the viewport gotcha.
+Application, fixture, build, and workflow files remain unchanged from the qualified source.
+Their own CI results remain separate from this exact-source qualification.
+Kata remains 49 closed and four open; no Mac, speech, Linux/GNOME, or profiling gate is waived.
+The earlier intermittent ordinary Core failure still lacks an established cause, despite later native passes.
