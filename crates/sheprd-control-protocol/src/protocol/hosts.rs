@@ -35,8 +35,8 @@ pub enum HostOp {
     Unforward {
         port: u16,
     },
-    /// Show `localhost:port` of the caller's workspace in a browser tab,
-    /// forwarding or tunnelling a remote port first.
+    /// Show `localhost:port` of the caller's workspace with the system URL
+    /// handler, forwarding or tunnelling a remote port first.
     OpenPort {
         port: u16,
     },
