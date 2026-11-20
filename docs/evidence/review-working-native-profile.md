@@ -831,3 +831,13 @@ It parses and validates the required ports, skill, and Core settings before any 
 Report metadata now names configured settings and explicitly excludes a live poller-state claim.
 Remote GREEN and native configuration acceptance remain pending.
 Independent review found no material defect in lock lifetime, startup ordering, configuration scope, or test relevance.
+
+At `538ff3ca6d1bec6b9d92d0fe6d4aef755d8fe1b8`, run `44827740662` passed all four jobs.
+Windows passed 49 harness tests, eight observer tests, ten accessibility controls, inventory, and scoped Clippy.
+Mac passed 29 harness tests, nine observer tests, and scoped Clippy.
+Both real configuration consumers now pass in both workload modes.
+
+The native branch advanced normally to this exact source.
+Corrected-config native run `44829422916` is live; no new execution or sampling outcome is claimed yet.
+Inspect its retained settings, structured logs, captures, loss counters, and identities before accepting a new baseline.
+The selected source still has the 30 fps cap and retains the remaining original performance clauses above.
