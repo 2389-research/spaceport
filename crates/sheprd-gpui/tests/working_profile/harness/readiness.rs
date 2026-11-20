@@ -28,7 +28,57 @@ impl<'a> Workload<'a> {
     pub(super) fn populated(self, observation: &Observation) -> bool {
         match self {
             Self::TwoTui(targets) => super::populated(observation, targets),
-            Self::Mixed { .. } => false,
+            Self::Mixed { tui, core } => {
+                if observation.workspace.as_deref() != Some(&tui.workspace)
+                    || observation.groups.len() != 2
+                {
+                    return false;
+                }
+                let Some(tui_group) = observation.groups.iter().find(|group| group.shown_terminal)
+                else {
+                    return false;
+                };
+                let Some(core_group) = observation
+                    .groups
+                    .iter()
+                    .find(|group| !group.shown_terminal)
+                else {
+                    return false;
+                };
+                let has_area = |bounds: &[f32; 4]| {
+                    bounds.iter().all(|value| value.is_finite()) && bounds[2] > 0. && bounds[3] > 0.
+                };
+                tui_group.core.is_none()
+                    && tui_group.connected
+                    && tui_group.tab.is_some()
+                    && has_area(&tui_group.bounds)
+                    && tui_group.presented.as_ref().is_some_and(|frame| {
+                        frame.current
+                            && frame.boot == tui.boot
+                            && frame.columns > 0
+                            && frame.rows > 0
+                            && frame.pane_ids.contains(&tui.pane)
+                            && frame.nonblank_cells > 0
+                            && frame.marker_visible
+                    })
+                    && has_area(&core_group.bounds)
+                    && core_group.core.as_ref().is_some_and(|observed| {
+                        observed.core_id.as_deref() == Some(core.core_id)
+                            && observed.tab == core.tab
+                            && observed.terminal == core.terminal
+                            && !observed.observe
+                            && observed.connected
+                            && !observed.ended
+                            && !observed.failed
+                            && observed.last_layout.as_ref().is_some_and(has_area)
+                            && observed.projected.as_ref().is_some_and(|frame| {
+                                frame.columns > 0
+                                    && frame.rows > 0
+                                    && frame.nonblank_cells > 0
+                                    && frame.projected_marker
+                            })
+                    })
+            }
         }
     }
 

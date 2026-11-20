@@ -626,6 +626,14 @@ Nine new ordinary tests should yield one positive-readiness RED and eight passin
 The existing two-TUI predicate and native case remain unchanged.
 Independent review found no material readiness defect.
 
+At `78c6006a3`, run `44797481556` produced that exact ordinary runtime RED on both platforms.
+Windows passed 44 tests and failed only the mixed positive, with two resource cases ignored.
+Mac passed 26 and failed that same positive, with its native case ignored.
+Both failures reached the explicit projected-Core/generated-TUI assertion; all eight new refusal controls passed.
+Windows Core observer tests, actual recorder inventory, and scoped Clippy passed.
+Mac repeated the known lost-group fixture failure; its scoped Clippy passed.
+The committed fixture correction and implemented mixed predicate still need remote GREEN together.
+
 The next native run also retains throwaway read-only xperf postprocessing reports.
 Installed-tool help at job `136495315872` verifies the event-statistics, sampled-profile, and frequency commands.
 Those whole-trace reports remain private and require interpretation before any CPU attribution.
