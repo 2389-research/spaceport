@@ -275,11 +275,11 @@ Retain exact source, release executable identity, raw CPU endpoints, wall interv
 Do not estimate measured CPU from frame count or a nominal frame cost.
 Keep raw captures private until their scope and contents have been inspected.
 
-- [ ] Qualify the runner's actual sampling tools and profile support.
-- [ ] Define Windows transport, native observation, and measurement edges while preserving the Mac path.
-- [ ] Add tests first for real endpoint bounds, native readiness, and CPU-clock semantics.
-- [ ] Run the normal release app with idle, controlled Working, and final idle phases.
-- [ ] Add bounded real output before claiming patch or frame-copy coverage.
+- [x] Qualify installed tool/configuration support; trace quality remains pending below.
+- [x] Define Windows transport, native observation, and measurement edges while preserving the Mac path.
+- [x] Add tests first for real endpoint bounds, native readiness, and CPU-clock semantics.
+- [x] Run the normal release app with idle, controlled Working, and final idle phases.
+- [x] Add bounded real TUI output; this does not qualify continuous patch or frame-copy costs.
 - [ ] Inspect native captures, actual samples, and CPU/frame data before changing redraw behavior.
 - [ ] Verify the original Core, mirror, chat, copying, and polling clauses separately before closing gg9v.
 
@@ -744,3 +744,9 @@ This proves configuration acceptance, not recording quality or absence of event 
 The next ordinary Windows test retains the definition and checks its identity through the recorder's exact WPR executable.
 Its initial retention helper deliberately refuses; this should produce runtime RED before implementation.
 The recorder remains unchanged at this checkpoint.
+
+Run `44813491558` failed Windows compilation before the intended retention refusal.
+The pinned SHA output type lacks `LowerHex`; the test now uses the existing per-byte formatting pattern.
+Mac contracts, Windows observer/accessibility controls, tools, and retention passed.
+This compile failure supplies no runtime RED evidence.
+Review also added an exact retained-path assertion rather than comparing only helper-produced selectors.

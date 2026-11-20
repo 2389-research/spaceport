@@ -14,15 +14,19 @@ fn retained_profile_has_native_sampled_stacks_and_matching_identity() -> Result<
     };
     let directory = &fixture.sandbox()?.dir;
     let selection = retain_profile(directory, "validation")?;
+    let mut expected = directory.join("validation-cpu.wprp").into_os_string();
+    expected.push("!SpaceportCpu");
+    assert_eq!(selection, expected);
     let definition = fs::read(directory.join("validation-cpu.wprp"))?;
     assert_eq!(definition, CPU_PROFILE);
     let identity: serde_json::Value =
         serde_json::from_slice(&fs::read(directory.join("validation-profile.json"))?)?;
     assert_eq!(identity["bytes"], definition.len());
-    assert_eq!(
-        identity["sha256"],
-        format!("{:x}", Sha256::digest(&definition))
-    );
+    let digest: String = Sha256::digest(&definition)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    assert_eq!(identity["sha256"], digest);
     assert_eq!(identity["selection"], selection.to_string_lossy().as_ref());
 
     let tools = Tools::installed()?;
