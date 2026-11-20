@@ -19,6 +19,13 @@ fn settled_core_cells_replay_while_working_marks_advance(cx: &mut TestAppContext
     let probe = cx
         .update(|window, _| Session::start(window.window_handle().window_id()))
         .unwrap();
+    fixture.owner.update(cx, |owner, cx| {
+        owner.sync_core_views(cx);
+        owner.core_terminals.views.insert(
+            (fixture.tab, fixture.terminal.clone()),
+            fixture.view.clone(),
+        );
+    });
     cx.update(|window, cx| window.draw(cx).clear(cx));
     run_frames(cx, 2, Duration::from_millis(150));
     assert!(

@@ -1053,3 +1053,12 @@ The curated receipt is `review-squad/windows-profile/native-dcadebfaf.json` besi
 An independent raw audit found no material recording or cleanup defect.
 No savings, cross-run comparison, exact cadence, mirror/chat, or continuous-update qualification is claimed.
 The next code gate remains the corrected Core cell-paint runtime RED, before cache implementation.
+
+At `454d16f22`, Mac job `136640846589` reached the intended cache assertion: 760 cell paints instead of zero.
+The earlier population, bounds, advancing-mark, stable-frame, and no-failure checks passed.
+The global fixture correction also broke the existing projection-only test's pre-layout assertion.
+GPUI can draw after the synchronized setup update, even before an explicit test draw.
+The shared projection fixture must retain its original undrawn semantics.
+Initialization now occurs only inside the rendering test, with the paint probe active first.
+It restores the controlled view after the normal synchronizer prepares pane state.
+No cache implementation has been added; clean controls and the isolated intended RED remain pending.
