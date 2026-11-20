@@ -1,0 +1,521 @@
+[
+  {
+    "id": "tab-1",
+    "chords": [
+      [
+        162,
+        160,
+        49
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 1
+    }
+  },
+  {
+    "id": "tab-2",
+    "chords": [
+      [
+        162,
+        160,
+        50
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 2
+    }
+  },
+  {
+    "id": "tab-3",
+    "chords": [
+      [
+        162,
+        160,
+        51
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 3
+    }
+  },
+  {
+    "id": "tab-4",
+    "chords": [
+      [
+        162,
+        160,
+        52
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 4
+    }
+  },
+  {
+    "id": "tab-5",
+    "chords": [
+      [
+        162,
+        160,
+        53
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 5
+    }
+  },
+  {
+    "id": "tab-6",
+    "chords": [
+      [
+        162,
+        160,
+        54
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 6
+    }
+  },
+  {
+    "id": "tab-7",
+    "chords": [
+      [
+        162,
+        160,
+        55
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 7
+    }
+  },
+  {
+    "id": "tab-8",
+    "chords": [
+      [
+        162,
+        160,
+        56
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 8
+    }
+  },
+  {
+    "id": "tab-9",
+    "chords": [
+      [
+        162,
+        160,
+        57
+      ]
+    ],
+    "outcome": {
+      "kind": "digit",
+      "number": 9
+    }
+  },
+  {
+    "id": "next-tab",
+    "chords": [
+      [
+        162,
+        160,
+        34
+      ]
+    ],
+    "outcome": {
+      "kind": "next_tab"
+    }
+  },
+  {
+    "id": "previous-tab",
+    "chords": [
+      [
+        162,
+        160,
+        33
+      ]
+    ],
+    "outcome": {
+      "kind": "previous_tab"
+    }
+  },
+  {
+    "id": "back",
+    "chords": [
+      [
+        162,
+        160,
+        219
+      ]
+    ],
+    "outcome": {
+      "kind": "back"
+    }
+  },
+  {
+    "id": "forward",
+    "chords": [
+      [
+        162,
+        160,
+        221
+      ]
+    ],
+    "outcome": {
+      "kind": "forward"
+    }
+  },
+  {
+    "id": "next-pane",
+    "chords": [
+      [
+        162,
+        164,
+        160,
+        221
+      ]
+    ],
+    "outcome": {
+      "kind": "next_pane"
+    }
+  },
+  {
+    "id": "previous-pane",
+    "chords": [
+      [
+        162,
+        164,
+        160,
+        219
+      ]
+    ],
+    "outcome": {
+      "kind": "previous_pane"
+    }
+  },
+  {
+    "id": "keybinds",
+    "chords": [
+      [
+        162,
+        160,
+        191
+      ]
+    ],
+    "outcome": {
+      "kind": "keybinds"
+    }
+  },
+  {
+    "id": "settings",
+    "chords": [
+      [
+        162,
+        160,
+        188
+      ]
+    ],
+    "outcome": {
+      "kind": "settings"
+    }
+  },
+  {
+    "id": "split-editor",
+    "chords": [
+      [
+        162,
+        160,
+        220
+      ]
+    ],
+    "outcome": {
+      "kind": "split_editor"
+    }
+  },
+  {
+    "id": "cycle-windows",
+    "chords": [
+      [
+        162,
+        160,
+        192
+      ]
+    ],
+    "outcome": {
+      "kind": "cycle_windows"
+    }
+  },
+  {
+    "id": "fullscreen",
+    "chords": [
+      [
+        162,
+        160,
+        122
+      ]
+    ],
+    "outcome": {
+      "kind": "fullscreen"
+    }
+  },
+  {
+    "id": "zen",
+    "chords": [
+      [
+        162,
+        160,
+        90
+      ]
+    ],
+    "outcome": {
+      "kind": "zen"
+    }
+  },
+  {
+    "id": "sidebar",
+    "chords": [
+      [
+        162,
+        160,
+        66
+      ]
+    ],
+    "outcome": {
+      "kind": "sidebar"
+    }
+  },
+  {
+    "id": "status-bar",
+    "chords": [
+      [
+        162,
+        164,
+        160,
+        66
+      ]
+    ],
+    "outcome": {
+      "kind": "status_bar"
+    }
+  },
+  {
+    "id": "palette",
+    "chords": [
+      [
+        162,
+        160,
+        80
+      ]
+    ],
+    "outcome": {
+      "kind": "palette"
+    }
+  },
+  {
+    "id": "resume-palette",
+    "chords": [
+      [
+        162,
+        164,
+        160,
+        82
+      ]
+    ],
+    "outcome": {
+      "kind": "resume"
+    }
+  },
+  {
+    "id": "font-larger",
+    "chords": [
+      [
+        162,
+        160,
+        187
+      ]
+    ],
+    "outcome": {
+      "kind": "font_larger"
+    }
+  },
+  {
+    "id": "font-smaller",
+    "chords": [
+      [
+        162,
+        160,
+        189
+      ]
+    ],
+    "outcome": {
+      "kind": "font_smaller"
+    }
+  },
+  {
+    "id": "font-reset",
+    "chords": [
+      [
+        162,
+        48
+      ]
+    ],
+    "outcome": {
+      "kind": "font_reset"
+    }
+  },
+  {
+    "id": "focus-left",
+    "chords": [
+      [
+        162,
+        164,
+        160,
+        37
+      ]
+    ],
+    "outcome": {
+      "kind": "left"
+    }
+  },
+  {
+    "id": "focus-right",
+    "chords": [
+      [
+        162,
+        164,
+        160,
+        39
+      ]
+    ],
+    "outcome": {
+      "kind": "right"
+    }
+  },
+  {
+    "id": "focus-up",
+    "chords": [
+      [
+        162,
+        164,
+        160,
+        38
+      ]
+    ],
+    "outcome": {
+      "kind": "up"
+    }
+  },
+  {
+    "id": "focus-down",
+    "chords": [
+      [
+        162,
+        164,
+        160,
+        40
+      ]
+    ],
+    "outcome": {
+      "kind": "down"
+    }
+  },
+  {
+    "id": "console-attachment",
+    "chords": [
+      [
+        119
+      ]
+    ],
+    "outcome": {
+      "kind": "pane_key",
+      "key": "F8",
+      "modifiers": []
+    }
+  },
+  {
+    "id": "pane-f6",
+    "chords": [
+      [
+        117
+      ]
+    ],
+    "outcome": {
+      "kind": "pane_key",
+      "key": "F6",
+      "modifiers": []
+    }
+  },
+  {
+    "id": "pane-shift-f6",
+    "chords": [
+      [
+        160,
+        117
+      ]
+    ],
+    "outcome": {
+      "kind": "pane_key",
+      "key": "F6",
+      "modifiers": [
+        "Shift"
+      ]
+    }
+  },
+  {
+    "id": "pane-f11",
+    "chords": [
+      [
+        122
+      ]
+    ],
+    "outcome": {
+      "kind": "pane_key",
+      "key": "F11",
+      "modifiers": []
+    }
+  },
+  {
+    "id": "pane-ctrl-pageup",
+    "chords": [
+      [
+        162,
+        33
+      ]
+    ],
+    "outcome": {
+      "kind": "pane_key",
+      "key": "PageUp",
+      "modifiers": [
+        "Control"
+      ]
+    }
+  },
+  {
+    "id": "pane-ctrl-pagedown",
+    "chords": [
+      [
+        162,
+        34
+      ]
+    ],
+    "outcome": {
+      "kind": "pane_key",
+      "key": "PageDown",
+      "modifiers": [
+        "Control"
+      ]
+    }
+  }
+]

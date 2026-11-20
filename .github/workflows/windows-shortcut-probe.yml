@@ -1,0 +1,68 @@
+# ABOUTME: Qualifies the remaining keyboard cases on one disposable Windows branch.
+# ABOUTME: Keeps the pinned daemon, native layouts, and helpers inside isolated fixtures.
+name: Windows shortcut qualification probe
+
+on:
+  push:
+    branches: [fix/review-squad-windows-native]
+
+permissions: {}
+
+concurrency:
+  group: windows-shortcut-probe-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_PROFILE_DEV_DEBUG: '0'
+
+jobs:
+  probe:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-native'
+    runs-on: windows-2025
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select the pinned Rust toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          key: native-windows-2025
+          save-if: false
+      - name: Stage the checksum-pinned private Herdr
+        run: |
+          binary=$(python scripts/install-herdr-windows.py "$RUNNER_TEMP/herdr")
+          printf 'HERDR_TEST_BINARY=%s\n' "$binary" >> "$GITHUB_ENV"
+      - name: Prepare the disposable desktop
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/set-display-resolution.ps1
+      - name: Check formatting and compile the native harness
+        run: |
+          cargo fmt --all --check
+          cargo clippy --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- -D warnings
+      - name: Test the fixed input contract
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::matrix::tests:: -- --nocapture --test-threads=1
+      - name: Qualify the real pane console and its keys
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::matrix::console::native_pane_program_keeps_bare_function_and_control_page_keys -- --ignored --exact --nocapture --test-threads=1
+      - name: Qualify digits punctuation and revised defaults
+        if: ${{ !cancelled() }}
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::matrix::native_ -- --ignored --nocapture --test-threads=1
+      - name: Qualify Polish AltGr letters and both restoration paths
+        if: ${{ !cancelled() }}
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::native_altgr_text_survives_the_workspace_shortcut_and_restores_layouts -- --ignored --exact --nocapture --test-threads=1
+      - name: Retain the direct chrome shortcut qualification
+        if: ${{ !cancelled() }}
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows ui_automation_names_the_chrome_and_ctrl_f6_reaches_it -- --ignored --exact --nocapture --test-threads=1

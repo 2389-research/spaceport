@@ -84,8 +84,14 @@ try {
   $scope.Type($false)
   Require-Text ([string][char]0x0142)
   Require-Field
+  $scope.TypeLetter(0x4E, $false)
+  Require-Text (([string][char]0x0142) + [char]0x0144)
+  Require-Field
+  $scope.TypeLetter(0x5A, $false)
+  Require-Text (([string][char]0x0142) + [char]0x0144 + [char]0x017C)
+  Require-Field
   $scope.Type($true)
-  Require-Text (([string][char]0x0142) + [char]0x0143)
+  Require-Text (([string][char]0x0142) + [char]0x0144 + [char]0x017C + [char]0x0143)
   $button = [System.Windows.Automation.PropertyCondition]::new($automation::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)
   $create = [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Create')
   if ($root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.AndCondition]::new($button, $create)).Count -ne 0) { throw 'AltGr opened the Workspace dialog' }
@@ -93,4 +99,4 @@ try {
 } finally {
   if ($null -ne $scope) { $scope.Dispose() }
 }
-[Console]::WriteLine('ALTGR native PASS: klid=00000415 text=U+0142,U+0143 workspace_dialog=false keys_released=true layouts_restored=true failure_cleanup=true')
+[Console]::WriteLine('ALTGR native PASS: klid=00000415 text=U+0142,U+0144,U+017C,U+0143 workspace_dialog=false keys_released=true layouts_restored=true failure_cleanup=true')
