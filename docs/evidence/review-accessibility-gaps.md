@@ -475,3 +475,23 @@ Logs: `/tmp/spaceport-9s44-core-staging-{red,green,offline}.log`.
 Local checks use uv with an isolated temporary project; CI retains its existing standard-library Python command.
 Independent review finds no material archive trust, bounds, path, cleanup, or default-contract issue.
 This implements the staging prerequisite; real Windows Core startup and native qualification remain pending.
+
+### Real Core text candidate
+
+The Windows harness now starts the explicitly selected Core binary in a separate private state directory.
+One nonce supplies its exact pipe and session, including the prepared shutdown command.
+The fixture owns its `serve` child and preserves private state if cleanup fails.
+It retains strict pipe-owner checks and never uses an installer or discovers a personal daemon.
+
+The actual app command creates one terminal, whose address must match Core's independent terminal listing.
+Native UI Automation then checks text, caret-line bounds, and TextChanged delivery through the existing helper.
+An observe-only runtime stream must independently contain the marker typed through that native helper.
+The actual runtime must retain exactly one terminal after the check.
+The fixture removes its event observer, stops its private Core, and reaps its owned child.
+
+Both Windows GNU feature configurations pass the targeted accessibility-harness Clippy check with warnings denied.
+Logs: `/tmp/spaceport-9s44-core-native-windows-{all,minimal}.log`.
+Independent read-only review finds no material lifecycle, isolation, targeting, or evidence issue.
+CI runs this namespace separately, after staging Core, even if another UIA case fails.
+Actual Windows execution remains pending.
+This first case does not qualify Core close, splits, observing-pane input refusal, resize, speech, or macOS Cmd-W.

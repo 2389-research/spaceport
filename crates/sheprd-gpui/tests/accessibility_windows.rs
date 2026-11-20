@@ -33,6 +33,7 @@ enum GuiTarget {
     ChatAccessibility,
     ChatClipboard,
     ClipboardField,
+    Core(core::Target),
     Images(uuid::Uuid),
     Local,
     SettingsKeyboard,
@@ -115,6 +116,10 @@ impl Running {
             .sandbox
             .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
         match target {
+            GuiTarget::Core(target) => {
+                command.arg("--socket").arg(self.sandbox.socket());
+                target.apply(&mut command);
+            }
             GuiTarget::ChatClipboard | GuiTarget::ClipboardField => {
                 command
                     .arg("--sidebar-test")
@@ -471,6 +476,8 @@ mod clipboard_broker;
 mod clipboard_paste;
 #[path = "accessibility_windows/close_others.rs"]
 mod close_others;
+#[path = "accessibility_windows/core.rs"]
+mod core;
 #[path = "accessibility_windows/held_shortcuts.rs"]
 mod held_shortcuts;
 #[path = "accessibility_windows/images.rs"]
