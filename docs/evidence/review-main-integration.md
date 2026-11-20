@@ -845,3 +845,20 @@ Both test topics import its existing constant.
 No production behavior, test assertion, captured byte, or lint allowance changes.
 The earlier terminal and native qualification receipts retain their source limits.
 Renewed configured CI must qualify the corrected module wiring.
+
+## Windows bridge echo diagnosis
+
+CI on fa02187c0 passes the shared-fixture lint correction across platforms.
+Its Windows all-feature job fails the real bridge-child echo test at the unchanged 30-second bound.
+The [job](https://github.com/2389-research/spaceport/actions/runs/44749441430/job/136333730030) reports 277 passes, one echo stall, and four ignored tests.
+The production transport source is unchanged from earlier green head 287f65aa5.
+The primary [CopyTo implementation](https://github.com/microsoft/referencesource/blob/main/mscorlib/system/io/stream.cs#L199-L209) forwards each completed read.
+The [console stream constructor](https://github.com/microsoft/referencesource/blob/main/mscorlib/system/console.cs#L442-L471) selects an unbuffered stream.
+The failure alone therefore does not justify a production transport change.
+
+The test retains stderr in a tempfile and reports an excerpt capped at 4096 bytes.
+It also reports accepted bytes, echoed bytes, child status, stream state, and write settlement.
+Its helper emits a stderr readiness marker immediately before copying bytes.
+Both existing bridge-child tests reuse the exact-child guard for cleanup on panic.
+The 20-millisecond operation timeouts, 30-second echo bound, and exact byte equality remain unchanged.
+The precise stall cause and renewed Windows execution remain pending.
