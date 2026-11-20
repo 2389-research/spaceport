@@ -838,7 +838,7 @@ Mac passed 29 harness tests, nine observer tests, and scoped Clippy.
 Both real configuration consumers now pass in both workload modes.
 
 The native branch advanced normally to this exact source.
-Corrected-config native run `44829422916` is live; no new execution or sampling outcome is claimed yet.
+Corrected-config native run `44829422916` started from this exact source.
 Inspect its retained settings, structured logs, captures, loss counters, and identities before accepting a new baseline.
 The selected source still has the 30 fps cap and retains the remaining original performance clauses above.
 
@@ -854,3 +854,30 @@ The ordinary counter test uses actual headless draws.
 The readiness test requires a Working sample to refuse reduced motion while permitting an idle control.
 The initial counter accessor returns zero and the eligibility guard is absent, so both tests should reach runtime RED.
 The corrected-config native run retains its frozen source and continues independently.
+
+### Corrected configuration native audit
+
+Native run `44829422916`, job `136610302731`, completed successfully on exact source `538ff3ca6`.
+Artifact `14676985748` passed download size/hash checks, private decryption, member validation, and ZIP integrity checks.
+Actual executable, PDB, profile, trace, and image hashes match the retained evidence.
+All three traces report zero lost events and buffers; all nine exports succeeded.
+All six endpoints preserve owned HWND 131480, PID 7676, and UI thread 820.
+Root viewed captures 7, 12, and 17; each matches its after image by exact hash.
+They show populated TUI and Core content, the authored Core marker, and the expected synthetic status.
+
+The combined local override contains the required ports, skill, Core, and language settings.
+The structured log contains no migration conflict or startup port-scan entry.
+This qualifies fixture configuration and startup evidence, not a live poller-state probe.
+Two jump-list warnings and one aggregate paint warning remain; the aggregate is not phase-specific.
+Private Core Stop acknowledges shutdown and the owned serve exits successfully.
+Retained holder and terminal PIDs are null; no independent OS holder-liveness check ran.
+
+Recorded CPU deltas are 0.015625, zero, and 0.031250 seconds over the three short intervals.
+Zero measured delta does not establish zero work.
+Motion policy and render counts remain absent, so no cadence, savings, or cross-run comparison is qualified.
+The curated receipt is `review-squad/windows-profile/native-538ff3ca6.json` beside this plan.
+An independent raw-evidence review found no material recording or cleanup defect.
+
+Ordinary motion-observation checkpoint `bc2b4f2d1` is running in CI as `44832512025`.
+Its deliberate counter and readiness runtime failures remain pending.
+The native branch remains frozen at `538ff3ca6`; the zero-counter stub is not promoted there.

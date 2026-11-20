@@ -1,0 +1,161 @@
+{
+  "source": "538ff3ca6d1bec6b9d92d0fe6d4aef755d8fe1b8",
+  "run_id": 44829422916,
+  "job_id": 136610302731,
+  "artifact_id": 14676985748,
+  "artifact_bytes": 88837754,
+  "artifact_sha256": "4313c555ef68a61d307cae41966527af31215983c7dea2ee57f8246624fe4753",
+  "ciphertext_sha256": "99a4948dbc3334d3e836193c0cac817e7d82c5a6ca66fa7cc80894990ee088d6",
+  "private_decryption_verified": true,
+  "zip_crc_verified": true,
+  "windows_zip_separators": "Normalized member paths validated; extraction emitted only the known backslash-separator warning.",
+  "binary": {
+    "name": "spaceport.exe",
+    "bytes": 56895488,
+    "sha256": "392ef2fb4b028e102e8f59105c31c0cf6bd63243092298ff5631973282e908fd"
+  },
+  "pdb": {
+    "name": "spaceport.pdb",
+    "bytes": 170053632,
+    "sha256": "9aa9fce12a7afff7d9d8c3780a4ac43399e4e3ad0c8b347f74e365f885748f64"
+  },
+  "workload": {
+    "runtime": "real isolated Herdr TUI and Herdr Core 0.1.21",
+    "synthetic_status": true,
+    "provider_executed": false,
+    "settled_output": true,
+    "tui_generated_lines": 120,
+    "core_generated_lines": 120,
+    "window_pixels": [
+      1200,
+      780
+    ],
+    "terminal_groups": 2,
+    "mark_cap_fps": 30,
+    "actual_mark_frame_rate_measured": false,
+    "motion_policy_recorded": false,
+    "core_marker_visually_reviewed": true,
+    "fixture_settings_and_startup_qualified": true,
+    "configuration_scope": "One local override contains disabled listening ports, disabled skill installation, Core enabled and en-US. Real settings preflight passed. Structured log has no migration-conflict or startup port-scan entry. No live poller-state probe."
+  },
+  "phases": [
+    {
+      "phase": "idle-before",
+      "pid": 7676,
+      "thread_id": 820,
+      "hwnd": 131480,
+      "cpu_before_seconds": 5.09375,
+      "cpu_after_seconds": 5.109375,
+      "cpu_delta_seconds": 0.015625,
+      "wall_seconds": 5.3706212,
+      "process_cpu_percent": 0.2909346874063656,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 22827,
+      "sampled_profile_events_with_stacks": 1034,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_bytes": 13631488,
+      "etl_sha256": "c20ae5087bdd905dc51b53db320301a089c2267bbda63a18b687bd3bcbb2172f"
+    },
+    {
+      "phase": "synthetic-working",
+      "pid": 7676,
+      "thread_id": 820,
+      "hwnd": 131480,
+      "cpu_before_seconds": 5.828125,
+      "cpu_after_seconds": 5.828125,
+      "cpu_delta_seconds": 0,
+      "wall_seconds": 5.290408,
+      "process_cpu_percent": 0,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 22060,
+      "sampled_profile_events_with_stacks": 977,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_bytes": 12582912,
+      "etl_sha256": "c1cb96401d1a30520eb1d50bdabd033e14bb41ca10fca014f4cdbb17bbe79cea"
+    },
+    {
+      "phase": "idle-after",
+      "pid": 7676,
+      "thread_id": 820,
+      "hwnd": 131480,
+      "cpu_before_seconds": 6.375,
+      "cpu_after_seconds": 6.40625,
+      "cpu_delta_seconds": 0.03125,
+      "wall_seconds": 5.3484131,
+      "process_cpu_percent": 0.5842854584287814,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 22260,
+      "sampled_profile_events_with_stacks": 1024,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_bytes": 13631488,
+      "etl_sha256": "5c7bae22b329e2a4e502e2620478c80e1b7043050e5006cffab7eb30649ffe85"
+    }
+  ],
+  "captures": [
+    {
+      "phase": "idle-before",
+      "before_request": 7,
+      "after_request": 8,
+      "before_sha256": "756048063db38cb9fee0b790415ab54f1e0c81ebac2d7e41a643f4f17247bc57",
+      "after_sha256": "756048063db38cb9fee0b790415ab54f1e0c81ebac2d7e41a643f4f17247bc57",
+      "root_reviewed": true,
+      "review_method": "Root viewed before image; exact hash proves equal after image."
+    },
+    {
+      "phase": "synthetic-working",
+      "before_request": 12,
+      "after_request": 13,
+      "before_sha256": "2e9c46c7a89ecb87d5830d186aa4a92b2ac732c3e5c80246dd32b099b2f6fcf6",
+      "after_sha256": "2e9c46c7a89ecb87d5830d186aa4a92b2ac732c3e5c80246dd32b099b2f6fcf6",
+      "root_reviewed": true,
+      "review_method": "Root viewed before image; exact hash proves equal after image."
+    },
+    {
+      "phase": "idle-after",
+      "before_request": 17,
+      "after_request": 18,
+      "before_sha256": "c276c37caf2ddec74e7a29eaa8f260b8fb32706548b71a3445ecfa943992b929",
+      "after_sha256": "c276c37caf2ddec74e7a29eaa8f260b8fb32706548b71a3445ecfa943992b929",
+      "root_reviewed": true,
+      "review_method": "Root viewed before image; exact hash proves equal after image."
+    }
+  ],
+  "core_shutdown": {
+    "stop_acknowledged": true,
+    "owned_serve_exit_success": true,
+    "retained_holder_is_null": true,
+    "retained_terminal_pid_is_null": true,
+    "retained_terminal_reason": "server_stop",
+    "independent_os_holder_liveness_audit": false
+  },
+  "all_nine_exports_succeeded": true,
+  "interpretation": {
+    "process_cpu_scope": "All-thread process CPU delta divided by recorded wall duration; relative to one core. Zero measured delta does not prove zero work.",
+    "foreground_scope": "Exact owned HWND, process and thread at before/after endpoints; no continuous monitoring.",
+    "sample_event_basis": "Retained sampled-only profile and explicit trace statistics; whole-system event totals are not app CPU shares.",
+    "cpu_share_or_improvement_qualified": false,
+    "configuration_comparison_qualified": false,
+    "limits": [
+      "One short sequence; no improvement, cross-run or Idle-versus-Working inference.",
+      "Motion policy and mark-layer render counts were absent; identical endpoint images do not prove static rendering or actual cadence.",
+      "Two jump-list warnings and one aggregate paint warning remain. Aggregate timing is not phase-specific.",
+      "No chat, native mirror, continuous updates, or merged 20fps-source comparison.",
+      "No physical uninterrupted foreground or independent holder-liveness proof."
+    ]
+  }
+}
