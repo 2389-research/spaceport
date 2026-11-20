@@ -50,6 +50,17 @@ jobs:
           if ($null -eq $wpr) { throw 'Windows Performance Recorder is not available on PATH.' }
           & $wpr.Source -profiles
           if ($LASTEXITCODE -ne 0) { throw "WPR profile inventory failed with exit $LASTEXITCODE" }
+      - name: Inspect the disposable desktop animation preference
+        timeout-minutes: 1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $null = [Windows.UI.ViewManagement.UISettings,Windows.UI.ViewManagement,ContentType=WindowsRuntime]
+          $settings = [Windows.UI.ViewManagement.UISettings]::new()
+          [ordered]@{
+            animations_enabled = [bool]$settings.AnimationsEnabled
+            scope = 'Read-only OS preference; the native app must independently report its cached policy.'
+          } | ConvertTo-Json -Compress | Write-Output
       - name: Inspect stack extraction flags
         timeout-minutes: 1
         shell: powershell

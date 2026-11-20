@@ -129,8 +129,11 @@ impl Global for Layers {}
 /// The layer drawing one window's moving marks.
 pub(crate) struct MarkLayer {
     marks: Rc<Marks>,
-    #[cfg(test)]
-    pub(crate) renders: usize,
+    #[cfg(any(
+        test,
+        all(feature = "integration-test", any(target_os = "macos", windows))
+    ))]
+    pub(crate) renders: u64,
 }
 
 impl MarkLayer {
@@ -139,7 +142,7 @@ impl MarkLayer {
         all(feature = "integration-test", any(target_os = "macos", windows))
     ))]
     pub(crate) fn profile_render_count(&self) -> u64 {
-        0
+        self.renders
     }
 
     /// A layer for `window`, drawing the marks `hosts` reserve.
@@ -153,7 +156,10 @@ impl MarkLayer {
         layers.insert(window.window_handle().window_id(), Rc::downgrade(&marks));
         Self {
             marks,
-            #[cfg(test)]
+            #[cfg(any(
+                test,
+                all(feature = "integration-test", any(target_os = "macos", windows))
+            ))]
             renders: 0,
         }
     }
@@ -161,7 +167,10 @@ impl MarkLayer {
 
 impl Render for MarkLayer {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-        #[cfg(test)]
+        #[cfg(any(
+            test,
+            all(feature = "integration-test", any(target_os = "macos", windows))
+        ))]
         {
             self.renders += 1;
         }

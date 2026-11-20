@@ -84,6 +84,10 @@ impl<'a> Workload<'a> {
 
     pub(super) fn validate(self, observation: &Observation, working: bool) -> Result<()> {
         ensure!(
+            !working || !observation.reduce_motion,
+            "refusing Working sample while the app applies reduced motion; {observation:?}"
+        );
+        ensure!(
             foreground(observation),
             "refusing foreground qualification: inactive, hidden, occluded, or non-key window; {observation:?}"
         );

@@ -881,3 +881,38 @@ An independent raw-evidence review found no material recording or cleanup defect
 Ordinary motion-observation checkpoint `bc2b4f2d1` is running in CI as `44832512025`.
 Its deliberate counter and readiness runtime failures remain pending.
 The native branch remains frozen at `538ff3ca6`; the zero-counter stub is not promoted there.
+
+### Source boundaries for the remaining measurements
+
+Read-only review of `bc2b4f2d1` distinguishes construction from cell painting.
+Primary TUI layers already replay stable paint; parked and mirrored pictures still use an uncached canvas.
+Core's separate entity also lacks a cached mount, and `set_pane` currently relies on its next render.
+Adding caching alone could leave pane appearance stale, so invalidation must be tested first.
+Chat uses prepared entries and virtualization, but its Working pulse shares the window construction path.
+The 16 ms timer polls independently; an unchanged tick does not always request a redraw.
+These source facts establish boundaries, not CPU shares.
+
+PR 147 at `6f268561e` supplies a cached parked/mirror picture proposal and headless tests.
+Its appearance key includes theme; graphics placements deliberately prevent replay.
+Native mark-driven replay, streaming-copy cost, and polling attribution remain separate requirements.
+
+The next ordinary tools job reads Windows `UISettings::AnimationsEnabled` without changing it.
+The read follows Microsoft's [WinRT bridge](https://devblogs.microsoft.com/oldnewthing/20180110-00/?p=97755)
+and [UISettings contract](https://learn.microsoft.com/en-us/uwp/api/windows.ui.viewmanagement.uisettings.animationsenabled?view=winrt-26100).
+That OS observation cannot replace the native app's own cached-policy report.
+
+### Motion observation runtime RED and implementation
+
+At `bc2b4f2d1`, run `44832512025` reached both intended runtime failures on both platforms.
+Windows job `136620700680` passed 50 harness tests; only the reduced-motion refusal assertion failed.
+Mac job `136620700536` passed 30 harness tests with the same single harness failure.
+Both idle reduced-motion controls passed.
+Both actual headless render tests failed with `render counter did not advance: 0 -> 0`.
+Observer, Windows accessibility/inventory, scoped Clippy, tools, and retention checks passed.
+The known Mac linker and `block` future-compatibility warnings remain.
+
+The accessor now returns the existing counter, enabled for supported integration builds as well as tests.
+The counter remains passive and does not notify or schedule frames.
+The shared readiness validator now refuses reduced-motion Working samples at both endpoints.
+The after check still retains partial phase metrics before refusing a changed state.
+Ordinary GREEN and actual native policy/render observations remain pending.

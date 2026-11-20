@@ -310,18 +310,9 @@ impl Fixture {
             self.sandbox()?.dir.join(format!("{name}.json")),
             serde_json::to_vec_pretty(&phase)?,
         )?;
-        ensure!(
-            foreground_qualified,
-            "refusing foreground qualification after {name}; native activation changed; partial phase metrics retained"
-        );
-        ensure!(
-            workload.populated(&after_image),
-            "populated groups changed during {name}: {after_image:?}"
-        );
-        ensure!(
-            after_image.synthetic_working_panes.contains(&targets.pane) == working,
-            "synthetic status changed during {name}"
-        );
+        workload.validate(&after_image, working).with_context(|| {
+            format!("profile {name} after sample; partial phase metrics retained")
+        })?;
         eprintln!(
             "WORKING PROFILE phase={name} pid={pid} process_cpu_percent={percentage:.2} wall_seconds={:.3} sample={}",
             wall.as_secs_f64(),
