@@ -5,10 +5,18 @@
 pub(super) enum Outcome {
     // keep-sorted start
     DecreaseFont,
+    Fullscreen(bool),
     IncreaseFont,
+    Keybindings,
     NewTab,
+    NextRegion,
+    NextTab,
+    Palette,
     PolishSearch,
+    PreviousRegion,
+    PreviousTab,
     ResetFont,
+    ResumePalette,
     Tab(u8),
     TerminalBytes(&'static [u8]),
     // keep-sorted end
@@ -22,6 +30,7 @@ pub(super) struct Case {
 }
 
 pub(super) const CAPTURE_FILE: &str = "linux-key-capture.sh";
+pub(super) const PREFIX: &[u32] = &[29, 48];
 
 #[path = "linux_shortcuts/capture.rs"]
 pub(super) mod capture;
@@ -117,6 +126,81 @@ pub(super) const CASES: &[Case] = &[
         chords: &[&[29, 109]],
         id: "pane-ctrl-page-down",
         outcome: Outcome::TerminalBytes(b"\x1b[6;5~"),
+    },
+    Case {
+        chords: &[&[29, 42, 109]],
+        id: "direct-next-tab",
+        outcome: Outcome::NextTab,
+    },
+    Case {
+        chords: &[&[29, 42, 104]],
+        id: "direct-previous-tab",
+        outcome: Outcome::PreviousTab,
+    },
+    Case {
+        chords: &[PREFIX, &[49]],
+        id: "prefix-next-tab",
+        outcome: Outcome::NextTab,
+    },
+    Case {
+        chords: &[PREFIX, &[25]],
+        id: "prefix-previous-tab",
+        outcome: Outcome::PreviousTab,
+    },
+    Case {
+        chords: &[&[29, 64]],
+        id: "direct-next-region",
+        outcome: Outcome::NextRegion,
+    },
+    Case {
+        chords: &[&[29, 42, 64]],
+        id: "direct-previous-region",
+        outcome: Outcome::PreviousRegion,
+    },
+    Case {
+        chords: &[PREFIX, &[64]],
+        id: "prefix-next-region",
+        outcome: Outcome::NextRegion,
+    },
+    Case {
+        chords: &[PREFIX, &[42, 64]],
+        id: "prefix-previous-region",
+        outcome: Outcome::PreviousRegion,
+    },
+    Case {
+        chords: &[&[29, 42, 87]],
+        id: "direct-fullscreen-enter",
+        outcome: Outcome::Fullscreen(true),
+    },
+    Case {
+        chords: &[&[29, 42, 87]],
+        id: "direct-fullscreen-leave",
+        outcome: Outcome::Fullscreen(false),
+    },
+    Case {
+        chords: &[PREFIX, &[87]],
+        id: "prefix-fullscreen-enter",
+        outcome: Outcome::Fullscreen(true),
+    },
+    Case {
+        chords: &[PREFIX, &[87]],
+        id: "prefix-fullscreen-leave",
+        outcome: Outcome::Fullscreen(false),
+    },
+    Case {
+        chords: &[&[29, 42, 53]],
+        id: "keybindings",
+        outcome: Outcome::Keybindings,
+    },
+    Case {
+        chords: &[&[29, 42, 25]],
+        id: "palette",
+        outcome: Outcome::Palette,
+    },
+    Case {
+        chords: &[&[29, 42, 19]],
+        id: "palette-resume",
+        outcome: Outcome::ResumePalette,
     },
     Case {
         chords: &[&[100, 38], &[42, 100, 49]],

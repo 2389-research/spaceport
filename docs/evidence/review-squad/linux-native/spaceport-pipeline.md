@@ -131,3 +131,20 @@ It waits for pending config loading before recording the size and cell-height ba
 Reset begins at a different session size, then must restore the configured size.
 These three cases remain pending until their own exact-source native run passes.
 The earlier sixteen-case success does not qualify these additions.
+
+Source `8a07fb51b` now passes its [exact-source run](https://github.com/2389-research/spaceport/actions/runs/44700969910).
+Eight shared tests and two receipt tests pass again.
+The exact native test passes all nineteen cases in 8.10 seconds.
+Increase changes size 14 to 15 and cell height 20 to 21.
+Decrease restores size 14 and cell height 20.
+Reset changes prepared size 16 to configured size 14 and cell height 23 to 20.
+The [font receipt](spaceport-fonts-8a07fb51b.json) preserves those actual observations and the cleanup results.
+
+The next cases cover Keybindings, Palette, saved Palette resume, and the revised Ctrl routes.
+Popup checks require actual search focus; Resume compares the complete saved state and query.
+Tab cycling requires exact neighboring daemon IDs, wrapping within the prepared workspace.
+Region cycling requires an actual focused control beyond the temporary entry focus.
+Fullscreen checks require real entry and exit while preserving the focused terminal.
+Prefix cases first verify Ctrl-B against the resolved private keymap.
+These additions remain unqualified until their own exact-source run passes.
+Settings, Cycle Windows, split groups, pane history/cycling, geometric prefix focus, and remaining Windows cases stay pending.

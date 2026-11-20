@@ -10,6 +10,8 @@ mod cases;
 use cases::{CASES, Notice, Outcome, notice};
 #[path = "smoke_linux_shortcuts/capture.rs"]
 mod capture;
+#[path = "smoke_linux_shortcuts/popups.rs"]
+mod popups;
 
 struct Baseline {
     boot: String,
@@ -19,6 +21,7 @@ struct Baseline {
     focused_tab: String,
     font_size: f32,
     fullscreen: bool,
+    palette_resume: Option<crate::palette::Resume>,
     revision: u64,
     tabs: Vec<String>,
     windows: Vec<AnyWindowHandle>,
@@ -46,6 +49,7 @@ enum Stage {
         index: usize,
         target: String,
     },
+    AwaitResume(usize),
     Mapped,
     Mapping,
     Observe {
@@ -135,6 +139,7 @@ fn baseline(view: &SheprdWindow, window: &Window, cx: &App) -> Result<Baseline> 
             .context("native focused tab is missing")?,
         font_size: view.config.terminal.size,
         fullscreen: window.is_fullscreen(),
+        palette_resume: view.menu.palette_resume.clone(),
         revision: snapshot.revision,
         tabs,
         windows: cx.windows(),
@@ -177,6 +182,47 @@ fn observed(
     let after = baseline(view, window, cx)?;
     same_scene(before, &after)?;
     match outcome {
+        Outcome::Fullscreen(expected) => {
+            same_tabs(before, &after)?;
+            ensure!(
+                before.focused_tab == after.focused_tab
+                    && before.focused_pane == after.focused_pane,
+                "native fullscreen key changed the focused terminal"
+            );
+            ensure!(
+                before.fullscreen != expected,
+                "native fullscreen case began at its target"
+            );
+            let done = after.fullscreen == expected && view.focus.is_focused(window);
+            if done {
+                eprintln!(
+                    "LINUX_KEYS_CASE id={id} fullscreen_before={} fullscreen_after={}",
+                    before.fullscreen, after.fullscreen
+                );
+            }
+            Ok(done)
+        }
+        Outcome::NextRegion | Outcome::PreviousRegion => {
+            same_terminal(before, &after)?;
+            let expected = if outcome == Outcome::NextRegion {
+                crate::window::chrome_focus::Region::TitleBar
+            } else {
+                crate::window::chrome_focus::Region::StatusBar
+            };
+            let done = view.menu.page.is_none()
+                && view.chrome_region == Some(expected)
+                && window.focused(cx).is_some()
+                && !view.chrome_entry_focus.is_focused(window)
+                && !view.focus.is_focused(window);
+            if done {
+                eprintln!("LINUX_KEYS_CASE id={id} region={expected:?} control_focused=true");
+            }
+            Ok(done)
+        }
+        Outcome::Keybindings | Outcome::Palette | Outcome::ResumePalette => {
+            same_terminal(before, &after)?;
+            popups::observed(view, before.palette_resume.as_ref(), outcome, window, cx)
+        }
         Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont => {
             same_terminal(before, &after)?;
             ensure!(
@@ -229,9 +275,12 @@ fn observed(
             Ok(!before.tabs.contains(&after.focused_tab)
                 && after.workspace_tabs.contains(&after.focused_tab))
         }
-        Outcome::Tab(number) => {
+        Outcome::Tab(_) | Outcome::NextTab | Outcome::PreviousTab => {
             same_tabs(before, &after)?;
-            let target = numbered_tab(before, number)?;
+            let target = match outcome {
+                Outcome::Tab(number) => numbered_tab(before, number)?,
+                _ => stepped_tab(before, outcome == Outcome::NextTab)?,
+            };
             ensure!(
                 before.focused_tab != target,
                 "native tab case began on its target"
@@ -244,7 +293,7 @@ fn observed(
                 "native tab focus has no new daemon revision"
             );
             eprintln!(
-                "LINUX_KEYS_CASE number={number} before={:.80} target={target:.80} after={:.80}",
+                "LINUX_KEYS_CASE id={id} before={:.80} target={target:.80} after={:.80}",
                 before.focused_tab, after.focused_tab
             );
             Ok(true)
@@ -335,6 +384,17 @@ fn numbered_tab(before: &Baseline, number: u8) -> Result<&str> {
         .context("native numbered tab is missing or zero")
 }
 
+fn stepped_tab(before: &Baseline, forward: bool) -> Result<&str> {
+    let tabs = &before.workspace_tabs;
+    ensure!(tabs.len() >= 2, "native tab step needs distinct targets");
+    let current = tabs
+        .iter()
+        .position(|id| id == &before.focused_tab)
+        .context("native current tab is outside the workspace")?;
+    let target = (current + if forward { 1 } else { tabs.len() - 1 }) % tabs.len();
+    Ok(&tabs[target])
+}
+
 fn advance(
     stage: Stage,
     nonce: &str,
@@ -363,6 +423,15 @@ fn advance(
         .frame
         .validate()?;
     match stage {
+        Stage::AwaitResume(index) => {
+            if !popups::finish_resume(view, window, cx)? {
+                return Ok(Step::Continue(Stage::AwaitResume(index)));
+            }
+            Ok(Step::Paint(Stage::Ready {
+                baseline: baseline(view, window, cx)?,
+                index,
+            }))
+        }
         Stage::AwaitCaptureTab {
             baseline: before,
             index,
@@ -455,6 +524,13 @@ fn advance(
                 return Ok(Step::Continue(Stage::Prepare(index)));
             }
             let case = &CASES[index];
+            if case.chords.first().copied() == Some(cases::PREFIX) {
+                ensure!(
+                    view.keymap
+                        .is_prefix(&crate::keymap::parse_keystroke("ctrl-b")?),
+                    "native prefix differs from the resolved private keymap"
+                );
+            }
             if matches!(
                 case.outcome,
                 Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont
@@ -472,6 +548,32 @@ fn advance(
             }
             let baseline = baseline(view, window, cx)?;
             match case.outcome {
+                Outcome::Fullscreen(expected) => {
+                    ensure!(
+                        baseline.fullscreen != expected,
+                        "native fullscreen preparation is already at the target"
+                    );
+                    window.focus(&view.focus, cx);
+                }
+                Outcome::NextRegion | Outcome::PreviousRegion => {
+                    ensure!(
+                        !view.zen_layout(),
+                        "native region preparation requires visible chrome"
+                    );
+                    if !view.status_bar_visible {
+                        view.command(Command::ToggleStatusBar, window, cx);
+                    }
+                    window.focus(&view.focus, cx);
+                }
+                Outcome::NextTab | Outcome::PreviousTab => {
+                    stepped_tab(&baseline, case.outcome == Outcome::NextTab)?;
+                    window.focus(&view.focus, cx);
+                }
+                Outcome::Keybindings | Outcome::Palette => popups::close(view, window, cx)?,
+                Outcome::ResumePalette => {
+                    popups::start_resume(view, window, cx)?;
+                    return Ok(Step::Paint(Stage::AwaitResume(index)));
+                }
                 Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont => {
                     ensure!(
                         baseline.cell_height > 0,
@@ -535,6 +637,22 @@ fn advance(
         } => {
             let case = &CASES[index];
             let focused = match case.outcome {
+                Outcome::Fullscreen(_)
+                | Outcome::NextRegion
+                | Outcome::PreviousRegion
+                | Outcome::NextTab
+                | Outcome::PreviousTab => {
+                    same_terminal(&before, &baseline(view, window, cx)?)?;
+                    view.chrome_region.is_none() && view.focus.is_focused(window)
+                }
+                Outcome::Keybindings | Outcome::Palette | Outcome::ResumePalette => {
+                    same_terminal(&before, &baseline(view, window, cx)?)?;
+                    ensure!(
+                        view.menu.page.is_none(),
+                        "native popup case opened before READY"
+                    );
+                    view.focus.is_focused(window)
+                }
                 Outcome::IncreaseFont | Outcome::DecreaseFont | Outcome::ResetFont => {
                     let current = baseline(view, window, cx)?;
                     same_terminal(&before, &current)?;
