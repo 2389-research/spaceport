@@ -634,6 +634,12 @@ Windows Core observer tests, actual recorder inventory, and scoped Clippy passed
 Mac repeated the known lost-group fixture failure; its scoped Clippy passed.
 The committed fixture correction and implemented mixed predicate still need remote GREEN together.
 
+At `bdcedbc26`, run `44800498235` passed all four jobs.
+Windows passed all 45 ordinary harness tests, eight Core observer tests, actual inventory, and scoped Clippy.
+Mac passed all 27 ordinary tests, nine Core observer tests, and scoped Clippy.
+The Mac connection-loss fixture correction now passes.
+The native resource cases remain ignored in this ordinary run.
+
 The next native run also retains throwaway read-only xperf postprocessing reports.
 Installed-tool help at job `136495315872` verifies the event-statistics, sampled-profile, and frequency commands.
 Those whole-trace reports remain private and require interpretation before any CPU attribution.
@@ -652,3 +658,53 @@ Core serve/stop commands no longer receive that unrelated flag.
 The profile must never enable poll-time frame text logging.
 Windows CI compiles, runs existing ordinary accessibility controls, and lints that test target.
 The existing ignored real Core cases still need explicit native acceptance after extraction.
+
+The dedicated native branch now points to exact reviewed source `bdcedbc267358fd0d9361f245fe3db14f0f88556`.
+Run `44802807684`, job `136519017846`, is building its release TUI classification run.
+Its Windows contracts and retention passed before launch; Mac headless contracts passed afterward.
+The shared runtime extraction is a later source and does not enter this native run.
+This still measures the 30 fps TUI source, with no Core process or 20 fps qualification.
+
+At `b5da3c7b3`, run `44803314753` passed all four ordinary jobs.
+Windows passed 45 harness tests, eight observer tests, ten ordinary accessibility controls, and actual recorder inventory.
+Its app, harness, and accessibility-target Clippy checks passed.
+Mac passed 27 harness tests, nine observer tests, and scoped Clippy.
+The 34 native accessibility cases remain ignored in this ordinary pass.
+
+### Classification run failure and retained evidence
+
+Native run `44802807684` completed all three TUI phase guards and process CPU intervals.
+The first xperf export then failed with status `0x80070570`.
+Its idle-before Stop log reports 32,370 dropped events; xperf repeats that count and refuses unreliable data.
+The other two Stop logs contain no dropped-event warning, but their analysis never ran.
+This proves event loss, not its disk or buffer cause.
+The first `d7faebfd7` run's Stop logs contain no such warning.
+
+Failure artifact `14663671044` matched its archive and ciphertext hashes.
+Private decryption and ZIP integrity passed.
+All completed phase JSON, acknowledged Stop records, captures, and raw traces survived the ordinary failure.
+No second-run stack attribution or native qualification is claimed.
+
+The diagnostic collector now reads completed per-phase manifests and requires their matching acknowledged Stop.
+It runs after ordinary fixture failure and attempts each safe export independently within its five-minute step bound.
+It retains exit status when available, private diagnostics, partial exports, and an explicit unqualified outcome ledger.
+The original profile failure remains a failure; only ciphertext uploads.
+
+The next read-only tools job inspects installed `CPU` and `CPU.light` file-mode definitions.
+It must verify sampled-profile events, sampled-profile stacks, and actual buffers before selecting Light.
+The recorder still uses the existing CPU profile; no loss-ignoring flag or buffer guess was added.
+
+### Mixed native implementation checkpoint
+
+The new ignored Windows case is `working_tui_and_core_profile`.
+It starts only explicit private TUI/Core runtimes and enables Core before normal app launch.
+It submits creation once, then matches Core list/get state with the app's exact tab location.
+It verifies supported observed shell arguments and bounded raw output whose markers cannot come from command echo.
+Extra attachments drop before sampling; projected metadata and capture review remain distinct.
+The old TUI-only path provides no native baseline for this new orchestration.
+Pure mixed readiness had runtime RED and GREEN; real mixed execution still requires ordinary CI and native acceptance.
+
+Lifecycle review found no material defect in registration, shutdown ordering, exact-child reaping, or failure retention.
+The shared phase path preserves existing TUI guards and partial measurements.
+The next native workflow stages the pinned Core binary and selects this exact mixed case with a fifteen-minute bound.
+This workflow change does not affect the already completed TUI classification run.

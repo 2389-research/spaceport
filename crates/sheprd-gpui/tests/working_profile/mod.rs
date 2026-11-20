@@ -12,3 +12,5 @@ mod wire;
 mod report;
 
 pub(super) use harness::run;
+#[cfg(windows)]
+pub(super) use harness::run_core;

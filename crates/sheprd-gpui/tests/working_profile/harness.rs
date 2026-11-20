@@ -1,4 +1,4 @@
-// ABOUTME: Profiles an owned release GUI against two real private TUI terminal groups.
+// ABOUTME: Profiles an owned release GUI against explicit private terminal workloads.
 // ABOUTME: Retains workload observations, native captures, CPU clocks, and sampled UI stacks.
 use super::{
     measurements,
@@ -29,6 +29,12 @@ const STARTUP: Duration = Duration::from_secs(30);
 const SAMPLE_SECONDS: u64 = 5;
 
 mod readiness;
+use readiness::Workload;
+
+#[cfg(windows)]
+mod core;
+#[cfg(windows)]
+pub(super) use core::run as run_core;
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -73,6 +79,30 @@ impl Drop for Fixture {
 }
 
 impl Fixture {
+    fn prepare() -> Result<Self> {
+        let fixture = Self {
+            sandbox: Some(Sandbox::new()),
+            gui: None,
+            server: None,
+            request: 0,
+        };
+        let dir = &fixture.sandbox()?.dir;
+        eprintln!(
+            "WORKING PROFILE synthetic workload; private artifacts={}",
+            dir.display()
+        );
+        fs::create_dir_all(dir.join("config/spaceport"))?;
+        fs::write(
+            dir.join("config/spaceport/config.toml"),
+            "show_listening_ports = false\n[agent_skill]\ninstall=\"off\"\n",
+        )?;
+        fs::write(
+            dir.join("config/spaceport/view.toml"),
+            "[ui]\nprompt_new_tab_name=false\nprompt_new_workspace_name=false\n",
+        )?;
+        Ok(fixture)
+    }
+
     fn sandbox(&self) -> Result<&Sandbox> {
         self.sandbox.as_ref().context("missing profile sandbox")
     }
@@ -155,9 +185,78 @@ impl Fixture {
         serde_json::from_slice(&bytes).with_context(|| format!("profile CLI {name} output"))
     }
 
-    fn phase(&mut self, name: &str, targets: &Targets, working: bool) -> Result<Value> {
+    fn start_tui(&mut self) -> Result<Targets> {
+        self.server = Some(
+            self.sandbox()?
+                .command(daemon_binary(), "daemon.log")
+                .arg("server")
+                .spawn()?,
+        );
+        let sandbox = self.sandbox.as_ref().context("profile sandbox")?;
+        sandbox.wait_for_daemon(self.server.as_mut().context("profile server")?, STARTUP);
+        let mut peer = Peer::open(&sandbox.socket())?;
+        peer.seed(&sandbox.dir)
+    }
+
+    fn launch_gui(&mut self, configure: impl FnOnce(&mut Command)) -> Result<()> {
+        let dir = self.sandbox()?.dir.clone();
+        let mut command = self
+            .sandbox()?
+            .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log");
+        command
+            .arg("--socket")
+            .arg(self.sandbox()?.socket())
+            .env(report::OBSERVER_ENV, &dir);
+        configure(&mut command);
+        self.gui = Some(command.spawn()?);
+        let ready = dir.join(report::READY);
+        let deadline = Instant::now() + STARTUP;
+        while !ready.exists() {
+            self.alive()?;
+            ensure!(
+                Instant::now() < deadline,
+                "profile observer startup timed out"
+            );
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        Ok(())
+    }
+
+    fn split_window(&mut self, targets: &Targets) -> Result<String> {
+        let windows = self.cli("windows", &["window", "list"])?;
+        let windows = windows["windows"]
+            .as_array()
+            .context("window list must contain windows")?;
+        ensure!(
+            windows.len() == 1,
+            "private profile requires exactly one window: {windows:?}"
+        );
+        let window = windows[0]["id"]
+            .as_u64()
+            .context("actual window ID")?
+            .to_string();
+        self.cli("size", &["window", "size", "1200x780", "--window", &window])?;
+        self.cli("focus", &["window", "focus", &window])?;
+        self.wait("initial presented terminal", |observation| {
+            observation.workspace.as_deref() == Some(&targets.workspace)
+                && observation.groups.iter().any(|group| {
+                    group
+                        .presented
+                        .as_ref()
+                        .is_some_and(|frame| frame.marker_visible)
+                })
+        })?;
+        self.cli("split", &["run", "split_editor", "--window", &window])?;
+        self.wait("split groups", |observation| observation.groups.len() == 2)?;
+        Ok(window)
+    }
+
+    fn phase(&mut self, name: &str, workload: Workload<'_>, working: bool) -> Result<Value> {
+        let targets = match workload {
+            Workload::TwoTui(targets) | Workload::Mixed { tui: targets, .. } => targets,
+        };
         self.wait(name, |observation| {
-            populated(observation, targets)
+            workload.populated(observation)
                 && observation.synthetic_working_panes.contains(&targets.pane) == working
         })?;
         let activation_deadline = Instant::now() + Duration::from_secs(3);
@@ -165,7 +264,8 @@ impl Fixture {
             std::thread::sleep(Duration::from_millis(100));
         }
         let before_image = self.observe(true)?;
-        validate_before_sample(&before_image, targets, working)
+        workload
+            .validate(&before_image, working)
             .with_context(|| format!("profile {name} before sample"))?;
         let pid = self.alive()?;
         let Sample {
@@ -201,7 +301,7 @@ impl Fixture {
             "refusing foreground qualification after {name}; native activation changed; partial phase metrics retained"
         );
         ensure!(
-            populated(&after_image, targets),
+            workload.populated(&after_image),
             "populated groups changed during {name}: {after_image:?}"
         );
         ensure!(
@@ -271,7 +371,7 @@ fn populated(observation: &Observation, targets: &Targets) -> bool {
         })
 }
 
-pub(crate) fn run() -> Result<()> {
+fn check_environment() -> Result<()> {
     ensure!(
         !std::hint::black_box(cfg!(debug_assertions)),
         "run working_terminal_groups_profile with --release"
@@ -286,89 +386,23 @@ pub(crate) fn run() -> Result<()> {
         std::env::var_os("HERDR_TEST_TMPDIR").is_some_and(|path| Path::new(&path).is_dir()),
         "set HERDR_TEST_TMPDIR to an existing private temporary parent explicitly"
     );
-    let binary = daemon_binary();
-    let mut fixture = Fixture {
-        sandbox: Some(Sandbox::new()),
-        gui: None,
-        server: None,
-        request: 0,
-    };
+    Ok(())
+}
+
+pub(crate) fn run() -> Result<()> {
+    check_environment()?;
+    let mut fixture = Fixture::prepare()?;
     let dir = fixture.sandbox()?.dir.clone();
-    eprintln!(
-        "WORKING PROFILE synthetic workload; private artifacts={}",
-        dir.display()
-    );
-    fs::create_dir_all(dir.join("config/spaceport"))?;
-    fs::write(
-        dir.join("config/spaceport/config.toml"),
-        "show_listening_ports = false\n[agent_skill]\ninstall=\"off\"\n",
-    )?;
-    fs::write(
-        dir.join("config/spaceport/view.toml"),
-        "[ui]\nprompt_new_tab_name=false\nprompt_new_workspace_name=false\n",
-    )?;
-    fixture.server = Some(
-        fixture
-            .sandbox()?
-            .command(binary, "daemon.log")
-            .arg("server")
-            .spawn()?,
-    );
-    let sandbox = fixture.sandbox.as_ref().context("profile sandbox")?;
-    sandbox.wait_for_daemon(fixture.server.as_mut().context("profile server")?, STARTUP);
-    let mut peer = Peer::open(&sandbox.socket())?;
-    let targets = peer.seed(&dir)?;
-    drop(peer);
-    fixture.gui = Some(
-        fixture
-            .sandbox()?
-            .command(env!("CARGO_BIN_EXE_spaceport"), "gui.log")
-            .arg("--socket")
-            .arg(fixture.sandbox()?.socket())
-            .env(report::OBSERVER_ENV, &dir)
-            .spawn()?,
-    );
-    let deadline = Instant::now() + STARTUP;
-    while !dir.join(report::READY).exists() {
-        fixture.alive()?;
-        ensure!(
-            Instant::now() < deadline,
-            "profile observer startup timed out"
-        );
-        std::thread::sleep(Duration::from_millis(20));
-    }
-    let windows = fixture.cli("windows", &["window", "list"])?;
-    let windows = windows["windows"]
-        .as_array()
-        .context("window list must contain windows")?;
-    ensure!(
-        windows.len() == 1,
-        "private profile requires exactly one window: {windows:?}"
-    );
-    let window = windows[0]["id"]
-        .as_u64()
-        .context("actual window ID")?
-        .to_string();
-    fixture.cli("size", &["window", "size", "1200x780", "--window", &window])?;
-    fixture.cli("focus", &["window", "focus", &window])?;
-    fixture.wait("initial presented terminal", |observation| {
-        observation.workspace.as_deref() == Some(&targets.workspace)
-            && observation.groups.iter().any(|group| {
-                group
-                    .presented
-                    .as_ref()
-                    .is_some_and(|frame| frame.marker_visible)
-            })
-    })?;
-    fixture.cli("split", &["run", "split_editor", "--window", &window])?;
-    fixture.wait("split groups", |observation| observation.groups.len() == 2)?;
+    let targets = fixture.start_tui()?;
+    fixture.launch_gui(|_| {})?;
+    let window = fixture.split_window(&targets)?;
     fixture.cli("new-tab", &["run", "new_tab", "--window", &window])?;
     let mut phases = Vec::new();
-    phases.push(fixture.phase("idle-before", &targets, false)?);
+    phases.push(fixture.phase("idle-before", Workload::TwoTui(&targets), false)?);
     peer::report_status(&dir.join("a.sock"), &targets.pane, "working", 1)?;
-    phases.push(fixture.phase("synthetic-working", &targets, true)?);
+    phases.push(fixture.phase("synthetic-working", Workload::TwoTui(&targets), true)?);
     peer::report_status(&dir.join("a.sock"), &targets.pane, "idle", 2)?;
-    phases.push(fixture.phase("idle-after", &targets, false)?);
+    phases.push(fixture.phase("idle-after", Workload::TwoTui(&targets), false)?);
     #[cfg(windows)]
     fixture.extract_stacks(&mut phases)?;
     fs::write(

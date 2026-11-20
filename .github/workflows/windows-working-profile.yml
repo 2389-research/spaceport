@@ -67,6 +67,17 @@ jobs:
         timeout-minutes: 1
         shell: powershell
         run: wpr.exe -help start
+      - name: Inspect installed CPU recording definitions without recording
+        timeout-minutes: 1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & wpr.exe -help profiles
+          if ($LASTEXITCODE -ne 0) { throw 'WPR profile help failed.' }
+          & wpr.exe -profiledetails CPU -filemode
+          if ($LASTEXITCODE -ne 0) { throw 'Installed CPU file profile inspection failed.' }
+          & wpr.exe -profiledetails CPU.light -filemode
+          if ($LASTEXITCODE -ne 0) { throw 'Installed light CPU file profile inspection failed.' }
       - name: Inspect recording status flags
         if: ${{ !cancelled() }}
         timeout-minutes: 1
