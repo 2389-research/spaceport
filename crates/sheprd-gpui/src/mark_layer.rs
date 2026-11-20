@@ -28,9 +28,13 @@ use std::{
 
 type Build = Rc<dyn Fn() -> AnyElement>;
 
-/// The most frames a second a repeating mark asks for. A window can show
-/// many at once, and a turning or pulsing mark reads as smooth at this rate.
-pub(crate) const MAX_FPS: f32 = 30.;
+/// The most frames a second a repeating mark asks for. A turning or pulsing
+/// mark reads as smooth at this rate, and it is what a working agent costs:
+/// every frame of one mark rebuilds its whole window's scene, measured at
+/// 4.0 ms in a 1200x780 window with a 40-workspace sidebar, whatever the
+/// number of marks on screen. That is 8% of a core while any agent works,
+/// against 12% at 30 fps and none at all once nothing moves.
+pub(crate) const MAX_FPS: f32 = 20.;
 
 /// One reserved slot: where it landed, the clip it landed under, and how to
 /// draw the mark there.
