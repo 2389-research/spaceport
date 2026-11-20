@@ -1,5 +1,6 @@
 use super::*;
 
+mod accessibility;
 mod composition;
 mod control_keys;
 mod key_table;

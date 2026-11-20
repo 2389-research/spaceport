@@ -6,7 +6,7 @@ param([int]$ProcessId, [string]$CaseId, [long]$DeadlineEpochMs,
       [switch]$ObserveState, [switch]$ValidateContract, [switch]$Diagnostic)
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot\powershell_modules.ps1"
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 Add-Type -Path @("$PSScriptRoot\native_profile_id.cs", "$PSScriptRoot\native_altgr.cs")
 $tablePath = "$PSScriptRoot\windows_shortcut_cases.json"
 if ((Get-Item -LiteralPath $tablePath).Length -gt 32768) { throw 'Native case table exceeds bound' }
@@ -199,14 +199,20 @@ if ($PrepareInput -ne '') {
   if ($PrepareInput.Length -gt 4096 -or $PrepareInput.Contains("`r") -or $PrepareInput.Contains("`n")) {
     throw 'Pane preparation requires one bounded trusted command'
   }
-  $pattern = $document.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
-  $document.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($PrepareInput)
-  Wait-For 'prepared command echo through the actual GUI input route' {
+  $preparation = $null
+  try {
+    $preparation = [SpaceportAltGr]::Begin($handle, [uint32]$ProcessId, $DeadlineEpochMs)
+    $preparation.TypePreparation($PrepareInput)
+    Wait-For 'prepared command echo through the actual GUI input route' {
+      Require-Root
+      $pattern = (Document).GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
+      $pattern.DocumentRange.GetText(32768).Replace("`r", '').Replace("`n", '').Contains($PrepareInput)
+    }
     Require-Root
-    $pattern.DocumentRange.GetText(32768).Replace("`r", '').Replace("`n", '').Contains($PrepareInput)
+    $preparation.Chord([int[]]@(13))
+  } finally {
+    if ($null -ne $preparation) { $preparation.Dispose() }
   }
-  Require-Root
-  [System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
   [Console]::WriteLine('WINDOWS_KEYS pane_preparation=true actual_gui_input=true')
   exit 0
 }

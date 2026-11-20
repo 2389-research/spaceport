@@ -183,15 +183,18 @@ public sealed class SpaceportAltGr : IDisposable {
     input.data.keyboard.scan = key.scan;
     input.data.keyboard.flags = key.flags | (up ? 2u : 0u);
     if (SendInput(1, new Input[] { input }, Marshal.SizeOf(typeof(Input))) != 1)
-      throw new InvalidOperationException("Owned scan-code input failed: " + Marshal.GetLastWin32Error());
+      throw new InvalidOperationException("Owned native input failed: " + Marshal.GetLastWin32Error());
+  }
+  void RequireInputScope() {
+    if (disposed) throw new InvalidOperationException("Native layout fixture already ended");
+    if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() >= deadlineEpochMs - 5000)
+      throw new InvalidOperationException("Native input reached its cleanup reserve");
+    RequireForeground();
+    if (GetKeyboardLayout(thread) != polish) throw new InvalidOperationException("Owned GUI lost its Polish HKL");
   }
   void Press(uint key) {
     lock (pressed) {
-      if (disposed) throw new InvalidOperationException("Native layout fixture already ended");
-      if (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() >= deadlineEpochMs - 5000)
-        throw new InvalidOperationException("Native input reached its cleanup reserve");
-      RequireForeground();
-      if (GetKeyboardLayout(thread) != polish) throw new InvalidOperationException("Owned GUI lost its Polish HKL");
+      RequireInputScope();
       uint scan = MapVirtualKeyExW(key, 4, polish);
       if ((scan & 0xff) == 0 || scan > 0xe0ff || ((scan & 0xff00) != 0 && (scan & 0xff00) != 0xe000))
         throw new InvalidOperationException("Native key has no supported scan code");
@@ -231,6 +234,26 @@ public sealed class SpaceportAltGr : IDisposable {
     RequireKeysReleased(keys);
     try { foreach (int key in keys) Press((uint)key); }
     finally { Release(); }
+  }
+  public void TypePreparation(string text) {
+    if (String.IsNullOrEmpty(text) || text.Length > 4096)
+      throw new ArgumentException("Preparation needs one bounded authored text value");
+    foreach (char character in text) {
+      if (character < 0x20 || character > 0x7e)
+        throw new ArgumentException("Preparation accepts printable ASCII only");
+    }
+    RequireReleased();
+    foreach (char character in text) {
+      try {
+        lock (pressed) {
+          RequireInputScope();
+          // KEYEVENTF_UNICODE uses wVk=0 and the character in wScan, without SCANCODE.
+          Pressed value = new Pressed { scan = (ushort)character, flags = 4u };
+          pressed.Add(value);
+          Send(value, false);
+        }
+      } finally { Release(); }
+    }
   }
   public void Dispose() {
     lock (pressed) { if (disposed) return; disposed = true; }

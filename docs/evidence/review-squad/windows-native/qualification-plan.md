@@ -169,3 +169,32 @@ The producer validates sentinel order and distinct scalar IDs in that same path.
 Independent review confirms collection and child-scope return behavior, with no remaining material finding.
 Static checks pass; the corrected PowerShell preflight and native outcomes remain pending CI.
 This fixes the identified selection defect; it does not yet prove the earlier watchdog or digit outcomes pass.
+
+### Native preparation and assistive search editing
+
+Source `7e2459d67` passes Clippy, four Rust contracts, and both real PowerShell consumer preflights.
+The native sender selects all thirty-eight cases; the console producer selects six pane cases.
+The [native run](https://github.com/2389-research/spaceport/actions/runs/44716174820) passes digits, punctuation, pane cycling, history, Settings, groups, window cycling, and retained arrows.
+Twenty-eight native case receipts pass, with layout restoration.
+Three matrix tests pass; the revised-default test stops at Palette preparation.
+Extended Polish AltGr and direct chrome also pass.
+
+The console preparation fails because Windows exposes the terminal's ValuePattern as read-only.
+Its document value is not a writable editor contract.
+Preparation now sends bounded authored ASCII through the existing owned native input scope.
+It uses [KEYEVENTF_UNICODE](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-keybdinput) with a zero virtual key and character scan value.
+It tracks each uncertain press before submission and reuses the existing release and disposal paths.
+The helper waits for the actual command echo before sending its one Enter chord.
+Its exact child receives the existing disposable-runner marker; no guard is relaxed.
+
+The Palette query failure reveals a separate app contract gap.
+SearchInput exposes an editable value but registers no SetValue listener.
+GPUI's built-in actions handle click, focus, and blur; they do not apply that value.
+SearchInput now handles SetValue through its weak entity and existing normalized setter.
+Changed notifications still drive the owning search, while duplicate text emits no Changed event.
+Masked fields register no listener and reject stale value actions inside the handler too.
+The native Resume fixture keeps using SetValue, so it tests the real repaired accessibility route.
+Three new unit cases cover Unicode replacement, composition cleanup, empty values, masked/invalid actions, and Changed notifications.
+The exact-source probe runs those cases before native execution.
+The recorded native failures supply the before-fix regression evidence; new unit and native results remain pending.
+Local compiler and Mac foreground checks remain held; no test waiver is inferred.

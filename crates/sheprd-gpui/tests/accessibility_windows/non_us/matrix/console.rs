@@ -12,6 +12,7 @@ pub(super) fn prepare_input(running: &mut Running, command: Option<&str>) {
         &running.sandbox.dir.join("uia_shortcut_matrix.ps1"),
         "shell-prompt.log",
     );
+    probe.env("SPACEPORT_DISPOSABLE_LAYOUT_TEST", "github-hosted-windows");
     let deadline = (std::time::SystemTime::now() + Duration::from_secs(40))
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
