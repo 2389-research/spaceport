@@ -663,3 +663,10 @@ Host binary/test Clippy and both Windows binary/native-harness feature configura
 Formatting, file-size, sorted regions, operations, localization, commit subjects, and diff checks pass.
 The existing large debug-link unwind warning and external `block` future-compatibility notice remain unchanged.
 Corrected native Windows pixels and Core resize execution still remain pending.
+
+On `b94978e3b`, default-feature macOS CI finds the raster module missing its integration-feature gate.
+The renderer API itself is available only with `gpui_platform/test-support`, enabled by the app's `integration-test` feature.
+The module now uses the same macOS-and-integration gate as the existing image Metal tests.
+Host binary/test Clippy without default features passes after correction.
+Log: `/tmp/spaceport-9s44-tab-halo-default-gate.log`.
+The correction does not change the tab painter or turn this opt-in raster test into native keyboard qualification.

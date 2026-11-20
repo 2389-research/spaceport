@@ -3,7 +3,7 @@
 use super::*;
 use core::prelude::v1::test;
 
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "integration-test"))]
 mod focus_raster;
 
 #[test]
