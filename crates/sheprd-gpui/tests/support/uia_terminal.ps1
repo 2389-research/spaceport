@@ -207,7 +207,9 @@ try {
     $output = ($text -split '\r?\n') -ccontains $marker
     if ($changed -and $output) { break }
     if ([DateTime]::UtcNow -ge $deadline) {
-      throw "Native terminal text or changed-output event is missing: changed=$changed output=$output utf16_length=$($text.Length) marker_present=$($text.Contains($marker))"
+      # This fixture owns the terminal and its authored input; preserve escaped text only on failure.
+      $snapshot = ConvertTo-Json -InputObject $text -Compress
+      throw "Native terminal text or changed-output event is missing: changed=$changed output=$output utf16_length=$($text.Length) marker_present=$($text.Contains($marker)) private_text=$snapshot"
     }
     Start-Sleep -Milliseconds 25
   } while ($true)

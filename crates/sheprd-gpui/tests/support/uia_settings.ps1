@@ -174,7 +174,15 @@ if ($Action -in @('OpenAndRing','Scale')) {
   if ($selection.Current.IsSelected) { throw 'Native Settings segment was already selected' }
   $key = if ($Action -eq 'Bubbles') { ' ' } else { '{ENTER}' }
   Press $key
-  if (-not $selection.Current.IsSelected) { throw 'Native Settings key did not select the segment' }
+  # SendWait does not await this process's UIA selection update.
+  $selectionDeadline = [DateTime]::UtcNow.AddSeconds(3)
+  while (-not $selection.Current.IsSelected) {
+    if (-not (Same-Focus $segment)) { throw 'Settings segment lost focus while awaiting its state' }
+    if ([DateTime]::UtcNow -ge $selectionDeadline) {
+      throw 'Native Settings key did not select the segment before its deadline'
+    }
+    Start-Sleep -Milliseconds 25
+  }
 } elseif ($Action -eq 'Dropdown') {
   $trigger = Tab-To 'English' ([System.Windows.Automation.ControlType]::Button) '+{TAB}'
   $expanded = $trigger.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern)

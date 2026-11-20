@@ -68,3 +68,16 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows ui_automation_names_the_chrome_and_ctrl_f6_reaches_it -- --ignored --exact --nocapture --test-threads=1
+      - name: Qualify the native Settings selection acknowledgement
+        if: ${{ !cancelled() }}
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows settings::native_settings_keyboard_persistence_and_painted_focus_ring -- --ignored --exact --nocapture --test-threads=1
+      - name: Stage the checksum-pinned private Core
+        if: ${{ !cancelled() }}
+        run: |
+          core_binary=$(python scripts/install-herdr-windows.py --core "$RUNNER_TEMP/herdr-core")
+          printf 'HERDR_CORE_TEST_BINARY=%s\n' "$core_binary" >> "$GITHUB_ENV"
+      - name: Diagnose native Core text and retain its other contracts
+        if: ${{ !cancelled() }}
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows core:: -- --ignored --nocapture --test-threads=1

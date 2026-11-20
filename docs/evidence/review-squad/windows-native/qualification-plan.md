@@ -26,6 +26,36 @@ The exact-branch Windows probe will supply compilation and execution evidence.
 - Every layout scope releases keys and restores the original GUI HKL and profile set.
 - Fixture cleanup touches only exact children, windows, and private paths it owns.
 
+## Full CI follow-up on `1feda67f7`
+
+The [full run](https://github.com/2389-research/spaceport/actions/runs/44720815181) ends with 16 passing jobs, two failures, and one unconfigured skip.
+The aggregate fails after the Windows x64 native job.
+Both Mac builds, the Windows installer, and all platform feature checks pass.
+The [supply-chain run](https://github.com/2389-research/spaceport/actions/runs/44720815809) passes all three jobs.
+The complete native shortcut matrix passes again.
+
+Ordinary UIA passes 24 cases and fails the Settings segment check.
+That check reads selection immediately after `SendWait` and a fixed 100ms sleep.
+[Microsoft documents](https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.sendkeys.sendwait) that the newer implementation does not await another process.
+The candidate follows the existing switch qualifier's bounded acknowledgement.
+It submits the original key once, then requires the same focused segment's selected state within three seconds.
+It neither retries input nor changes the app's segment behavior.
+The existing failed native test supplies the baseline; the candidate still needs native execution.
+
+Core passes its observing and resizing cases.
+The ordinary case reports `changed=True output=False marker_present=True` with 222 UTF-16 code units.
+Its independent runtime observer also sees the marker.
+These receipts do not distinguish an echoed command, padded output, or another rendering/input defect.
+The diagnostic preserves the five-second deadline and exact standalone-line assertion.
+Only on failure, it records the fixture's bounded, JSON-escaped private terminal text.
+The terminal uses private runner state and authored input; no personal session is attached.
+No Core fix or cause is claimed.
+
+The exact-branch probe now includes this Settings case and all three Core cases.
+It stages Core through the existing checksum-pinned installer.
+Doctor Biz's Mac hold and Root's local compiler/VM hold remain active.
+Kata remains 49 closed and four open.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
