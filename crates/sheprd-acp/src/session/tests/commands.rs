@@ -168,6 +168,45 @@ fn a_resent_command_is_acknowledged_without_running_twice() {
 }
 
 #[test]
+fn a_command_resent_on_a_new_connection_is_acknowledged_without_running_twice() {
+    let mut harness = ready();
+    let first = harness.subscribe(1, false, None);
+    let id = CommandId::random();
+    let resent = Command::Prompt {
+        text: "once".to_owned(),
+        attachments: Vec::new(),
+    };
+    harness.input(Input::Command {
+        command: resent.clone(),
+        conn: ConnId(1),
+        id,
+    });
+    // The client wrote the command, then its connection ended before it read
+    // the acknowledgement: it reconnects and sends the same id again. The
+    // deduplication is the whole reason the client may resend at all, so it
+    // has to hold across connections, not only within one.
+    harness.input(Input::Detach(ConnId(1)));
+    let second = harness.subscribe(2, false, None);
+    harness.input(Input::Command {
+        command: resent,
+        conn: ConnId(2),
+        id,
+    });
+    let prompts = harness
+        .sent()
+        .into_iter()
+        .filter(|message| message["method"] == "session/prompt")
+        .count();
+    assert_eq!(prompts, 1, "one command id asks the agent once");
+    assert!(
+        harness.transcript().queued.is_empty(),
+        "the repeat is not a second prompt waiting behind the first"
+    );
+    assert_eq!(acks(&first), [(id, None)]);
+    assert_eq!(acks(&second), [(id, None)]);
+}
+
+#[test]
 fn set_mode_asks_the_agent_then_records_the_mode() {
     let mut harness = ready();
     harness.command(

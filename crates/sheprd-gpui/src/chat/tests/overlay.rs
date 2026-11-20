@@ -83,6 +83,22 @@ pub(super) fn attach_with(
     stream
 }
 
+/// Accepts the connection the window starts after its last one ended,
+/// polling so a backed-off reconnect is reached, at most [`WAIT`].
+pub(super) fn reconnect(
+    view: &Entity<SheprdWindow>,
+    program: &Program,
+    cx: &mut VisualTestContext,
+) -> (Peer, ClientMessage) {
+    let mut accepted = None;
+    wait_until(|| {
+        poll(view, program, cx);
+        accepted = program.try_accept();
+        accepted.is_some()
+    });
+    accepted.unwrap()
+}
+
 #[gpui::test]
 fn a_local_chat_pane_is_drawn_over_its_cells(cx: &mut TestAppContext) {
     let (view, _peer, cx) = open(cx, ConnectTarget::Local);
