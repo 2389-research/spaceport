@@ -268,3 +268,31 @@ Restore logic, ownership, watchdog, deadlines, and restoration receipts remain u
 The existing negative native case requires both the original intentional failure and `restored=True`.
 Independent review confirms the root cause and the two-line correction.
 Its actual Windows rerun remains pending; local Rust cross-lint cannot prove this fix.
+
+## Native progress and silent producer command on `da9023c8c`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44641489126/job/135973846144) passes eight GUI cases and pipe-owner qualification.
+It passes 23 UIA cases, then reports the image case's JSON parse failure.
+All eight Linux/Windows workspace jobs also pass; the ARM native job passes its configured cases.
+This run reaches UIA after the readiness correction; it does not establish universal startup reliability.
+The [Windows x64 all-feature job](https://github.com/2389-research/spaceport/actions/runs/44641489126/job/135973845658) executes both real-pipe readiness regressions successfully.
+That proves the corrected first-connection and missing-pipe behavior on Windows; the old-probe unit baseline remains unrun.
+
+The image case advances past both intentional-pointer-failure assertions before the later panic.
+Those assertions require the original error and `restored=True`.
+That control flow establishes the `Finish` failure-cleanup slice; the earlier receipt was not printed separately.
+The fixture now emits an explicit bounded receipt immediately after those assertions.
+
+Pinned Herdr's [`pane_run`](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/cli/pane.rs#L1039-L1051) uses `send_ok_request`.
+Its [success path](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/cli.rs#L755) returns zero without printing JSON.
+The fixture incorrectly treats that silent success as a query envelope.
+The producer may already have started before the parser panic; no retry is justified.
+
+The producer now uses the shared status-only CLI path, once.
+Queries still require JSON and retain operation/byte-count diagnostics for malformed output.
+The same child deadline, no-console flag, capture limit, and cleanup remain intact.
+Command success is not delivery; exact authored assets and all four captures remain mandatory.
+Independent review finds no weaker delivery or cleanup condition.
+Both Windows harness cross-lints pass: all features and integration-only without default features.
+Logs: `/tmp/spaceport-9s44-image-silent-command-lint-{all,minimal}.log`.
+Actual native scene, fractional motion, clipping, mapping, and layer qualification remain pending.

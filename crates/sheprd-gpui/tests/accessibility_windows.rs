@@ -353,17 +353,26 @@ impl Running {
             .unwrap()
     }
 
-    fn daemon_result(&mut self, args: &[&str]) -> serde_json::Value {
+    fn daemon_output(&mut self, args: &[&str]) -> String {
         use std::os::windows::process::CommandExt as _;
         let capture = self.sandbox.dir.join("daemon-api.log");
         let mut command = self.sandbox.command(daemon_binary(), "daemon-api.log");
-        // Queries must not open a console and take focus from native input.
+        // CLI children must not open a console and take focus from native input.
         command.creation_flags(sheprd_client::CREATE_NO_WINDOW);
         command.args(args);
-        let output = self
-            .command_output(command, &capture, Duration::from_secs(3))
-            .unwrap();
-        let value: serde_json::Value = serde_json::from_str(&output).unwrap();
+        self.command_output(command, &capture, Duration::from_secs(3))
+            .unwrap()
+    }
+
+    fn daemon_result(&mut self, args: &[&str]) -> serde_json::Value {
+        let output = self.daemon_output(args);
+        let value: serde_json::Value = serde_json::from_str(&output).unwrap_or_else(|error| {
+            panic!(
+                "Herdr query {:?} returned {} non-JSON bytes: {error}",
+                &args[..args.len().min(2)],
+                output.len()
+            )
+        });
         assert!(value["error"].is_null(), "{value}");
         value["result"].clone()
     }

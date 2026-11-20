@@ -123,6 +123,7 @@ fn native_images_preserve_mapping_layers_clipping_and_cached_cell_replay() {
         failure.contains("IMAGE_INPUT_POINTER_RELEASE restored=True"),
         "{failure}"
     );
+    eprintln!("IMAGE_INPUT_FAILURE native=true pointer_restored=true preserved_original=true");
 
     let limit = Duration::from_secs(45);
     let deadline = Instant::now() + limit;
@@ -150,7 +151,12 @@ fn native_images_preserve_mapping_layers_clipping_and_cached_cell_replay() {
         let producer = producer.to_str().unwrap().replace('\'', "''");
         let invocation = format!("& '{producer}' -Rows {rows} -Token '{token}'");
         // Queue success is not image delivery; the observer waits for exact authored pixels.
-        running.daemon_result(&["pane", "run", pane, &invocation]);
+        let submitted = running.daemon_output(&["pane", "run", pane, &invocation]);
+        assert!(
+            submitted.trim().is_empty(),
+            "unexpected pane run output: {submitted}"
+        );
+        eprintln!("IMAGE_PRODUCER submitted_once=true delivery_pending=true");
         loop {
             if let Some(status) = running.observer.as_mut().unwrap().try_wait().unwrap() {
                 let output = helper_log(&running);
