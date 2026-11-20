@@ -45,39 +45,40 @@ jobs:
           if ($null -eq $wpr) { throw 'Windows Performance Recorder is not available on PATH.' }
           & $wpr.Source -profiles
           if ($LASTEXITCODE -ne 0) { throw "WPR profile inventory failed with exit $LASTEXITCODE" }
-      - name: Inspect sampler flags and current recording state
-        timeout-minutes: 2
+      - name: Inspect stack extraction flags
+        timeout-minutes: 1
         shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          function Inspect-Tool([string]$name, [string]$arguments) {
-            $tool = Get-Command $name -CommandType Application -ErrorAction Stop | Select-Object -First 1
-            $start = [System.Diagnostics.ProcessStartInfo]::new()
-            $start.FileName = $tool.Source
-            $start.Arguments = $arguments
-            $start.UseShellExecute = $false
-            $start.CreateNoWindow = $true
-            [Console]::WriteLine("PROFILE_TOOL_BEGIN name=$name arguments=$arguments")
-            $child = [System.Diagnostics.Process]::Start($start)
-            try {
-              if (-not $child.WaitForExit(15000)) { throw "Owned tool probe timed out: $name $arguments" }
-              [Console]::WriteLine("PROFILE_TOOL_EXIT name=$name arguments=$arguments code=$($child.ExitCode)")
-            } finally {
-              try {
-                if (-not $child.HasExited) {
-                  $child.Kill()
-                  if (-not $child.WaitForExit(5000)) { throw "Owned tool probe did not exit after cleanup: $name" }
-                }
-              } finally { $child.Dispose() }
-            }
-          }
-          Inspect-Tool 'xperf.exe' '-help stack'
-          Inspect-Tool 'xperf.exe' '-help symbols'
-          Inspect-Tool 'wpr.exe' '-help start'
-          Inspect-Tool 'wpr.exe' '-help status'
-          Inspect-Tool 'wpr.exe' '-help stop'
-          Inspect-Tool 'wpr.exe' '-status'
-          Inspect-Tool 'wpr.exe' '-status collectors -details'
+        run: xperf.exe -help stack
+      - name: Inspect local symbol resolution flags
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        shell: powershell
+        run: xperf.exe -help symbols
+      - name: Inspect recording start flags
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        shell: powershell
+        run: wpr.exe -help start
+      - name: Inspect recording status flags
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        shell: powershell
+        run: wpr.exe -help status
+      - name: Inspect recording stop flags
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        shell: powershell
+        run: wpr.exe -help stop
+      - name: Inspect current recording state
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        shell: powershell
+        run: wpr.exe -status
+      - name: Inspect detailed recording collectors
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        shell: powershell
+        run: wpr.exe -status collectors -details
   contracts:
     if: >-
       github.repository == '2389-research/spaceport' &&
