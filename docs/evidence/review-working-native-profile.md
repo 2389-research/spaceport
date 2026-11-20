@@ -781,3 +781,20 @@ Native run `44821546335` started with the real mixed TUI/Core case and sampled-o
 Its build, actual Core execution, capture review, trace quality, and attribution remain pending.
 Next inspect its completed job and retained encrypted artifacts; never retry uncertain runtime actions blindly.
 Doctor Biz's Mac and actual-speech holds remain in force, with Kata still 50 closed and three open.
+
+### Remaining original performance scope
+
+The mixed native run qualifies one baseline; it cannot close every clause in gg9v.
+Source observations below refer to measured candidate `2c86f1971`, not newer main or PR 147.
+
+| Clause | Inspected source or evidence | Remaining proof |
+| --- | --- | --- |
+| Release profile | First TUI process clocks and captures qualify narrowly; stack event identity did not. | Inspect mixed native captures, loss statistics, actual samples, and executable identity. |
+| Working redraw rate | `src/mark_layer.rs` still caps this candidate at 30 fps. Main's 20 fps change is outside it. | Measure actual cadence and compare exact sources before claiming savings. |
+| Parked and mirrored terminals | This candidate retains `render_terminal_picture`'s painting canvas. PR 147 proposes cached picture views separately. | Profile a populated native mirror and qualify cache invalidation and appearance. |
+| Core panes | `src/core_terminals/view.rs` paints terminal cells through its canvas callback. | Establish its native cost and cache boundaries from actual samples and paint evidence. |
+| Chat panes | `render_chats` and `core_pane_body` call chat rendering from the window. | Profile bounded real chat rendering separately; the current fixture has no chat workload. |
+| Frame copying | `sheprd-client/src/session.rs` uses `Arc::make_mut` for scroll and ordinary patches. | Measure copy cost under real bounded updates; settled output does not exercise it continuously. |
+| Window polling | `window_effects` retains its 16 ms timer before `tick`. | Attribute idle and Working wakeup costs before changing scheduling policy. |
+
+These source observations identify work to measure; they do not establish CPU shares or new regressions.
