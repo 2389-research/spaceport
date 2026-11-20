@@ -5,6 +5,9 @@ use sheprd_client::{ClientEvent, ConnectOptions, ConnectTarget, protocol::Client
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
+#[path = "non_us/matrix.rs"]
+mod matrix;
+
 fn snapshot(running: &Running) -> Arc<ClientShellSnapshot> {
     let client = sheprd_client::connect_with_surface_active(
         ConnectTarget::Socket(running.sandbox.socket().to_owned()),
@@ -102,7 +105,7 @@ fn native_altgr_text_survives_the_workspace_shortcut_and_restores_layouts() {
         .to_string();
     command.args(["-DeadlineEpochMs", &deadline]);
     let output = running.command_output(command, &capture, limit).unwrap();
-    assert!(output.contains("ALTGR native PASS: klid=00000415 text=U+0142,U+0143 workspace_dialog=false keys_released=true layouts_restored=true failure_cleanup=true"), "{output}");
+    assert!(output.contains("ALTGR native PASS: klid=00000415 text=U+0142,U+0144,U+017C,U+0143 workspace_dialog=false keys_released=true layouts_restored=true failure_cleanup=true"), "{output}");
     assert_eq!(identities(&snapshot(&running)), before);
     assert!(
         running

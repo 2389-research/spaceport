@@ -44,6 +44,7 @@ public sealed class SpaceportAltGr : IDisposable {
   [DllImport("user32.dll", SetLastError=true)] static extern bool PostMessageW(IntPtr handle, uint message, IntPtr word, IntPtr value);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr handle);
   [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+  public static IntPtr ForegroundWindow() { return GetForegroundWindow(); }
   [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
   [DllImport("user32.dll")] static extern uint MapVirtualKeyExW(uint key, uint type, IntPtr layout);
   [DllImport("user32.dll", SetLastError=true)] static extern uint SendInput(uint count, Input[] inputs, int size);
@@ -139,7 +140,10 @@ public sealed class SpaceportAltGr : IDisposable {
       scope.watchdog = new Timer(delegate {
         lock (scope.pressed) {
           if (scope.disposed) return;
-          try { scope.Dispose(); } finally { Environment.Exit(73); }
+          Console.WriteLine("ALTGR watchdog_expired=true tracked_keys=" + scope.pressed.Count);
+          try { scope.Dispose(); }
+          catch (Exception error) { Console.WriteLine("ALTGR watchdog_cleanup_failure=" + error.Message); }
+          finally { Environment.Exit(73); }
         }
       }, null, (int)remaining, Timeout.Infinite);
       return scope;
@@ -166,8 +170,13 @@ public sealed class SpaceportAltGr : IDisposable {
     }
   }
   public static void RequireReleased() {
-    foreach (int key in new int[] { 0x10, 0x11, 0x12, 0x5B, 0x5C, 0x4C, 0x4E })
-      if ((GetAsyncKeyState(key) & 0x8000) != 0) throw new InvalidOperationException("A fixture key is already held");
+    RequireKeysReleased(new int[] { 0x10, 0x11, 0x12, 0x5B, 0x5C, 0x4C, 0x4E, 0x5A });
+  }
+  public static void RequireKeysReleased(int[] keys) {
+    foreach (int key in keys) {
+      if (key < 1 || key > 255) throw new ArgumentException("Native virtual key exceeds fixture bounds");
+      if ((GetAsyncKeyState(key) & 0x8000) != 0) throw new InvalidOperationException("A fixture key is already held: VK_" + key.ToString("X2"));
+    }
   }
   static void Send(Pressed key, bool up) {
     Input input = new Input(); input.type = 1;
@@ -195,19 +204,33 @@ public sealed class SpaceportAltGr : IDisposable {
     lock (pressed) {
       List<Exception> errors = new List<Exception>();
       for (int index = pressed.Count - 1; index >= 0; index--) {
-        try { Send(pressed[index], true); } catch (Exception error) { errors.Add(error); }
+        try { Send(pressed[index], true); pressed.RemoveAt(index); }
+        catch (Exception error) { errors.Add(error); }
       }
-      pressed.Clear();
+      // Retain uncertain releases so Dispose can still release those exact keys.
       if (errors.Count != 0) throw new AggregateException(errors);
     }
   }
   public void Type(bool shifted) {
+    TypeLetter(shifted ? 0x4Eu : 0x4Cu, shifted);
+  }
+  public void TypeLetter(uint letter, bool shifted) {
+    if (letter != 0x4C && letter != 0x4E && letter != 0x5A)
+      throw new ArgumentException("AltGr fixture accepts only L, N, and Z");
     RequireReleased();
     try {
       Press(0xA5); // Extended RightAlt; Windows supplies AltGr's control state.
       if (shifted) Press(0xA0);
-      Press(shifted ? 0x4Eu : 0x4Cu);
+      Press(letter);
     } finally { Release(); }
+  }
+  public void Chord(int[] keys) {
+    if (keys == null || keys.Length < 1 || keys.Length > 4 || new HashSet<int>(keys).Count != keys.Length)
+      throw new ArgumentException("Native chord must contain one to four distinct keys");
+    RequireReleased();
+    RequireKeysReleased(keys);
+    try { foreach (int key in keys) Press((uint)key); }
+    finally { Release(); }
   }
   public void Dispose() {
     lock (pressed) { if (disposed) return; disposed = true; }
