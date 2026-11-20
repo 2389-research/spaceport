@@ -20,7 +20,7 @@ Mac `sample`/`ps` support remains separate from the held Mac native checks.
 - Ordinary `e076fbac1` passed both motion regressions after actual RED; published `7d1772994` passed all four ordinary jobs again.
 - Disposable desktop preparation passed real enable, repeated-refusal, restoration, and fresh-process checks at `dcadebfaf`.
 - Native `dcadebfaf` passed with real animation activity, verified clocks, captures, identities, and zero-loss traces; dominant CPU attribution remains unresolved.
-- Core paint `a0de2f5d9` stopped at a fixture precondition; correction `454d16f22` runs as `44838523549`.
+- Core `454d16f22` reached the intended paint failure but broke a projection control; localized setup `acc229aeb` awaits CI.
 - Core caching has not been implemented; the proposed boundary and controls appear at this document's end.
 
 ## Authority and limits
@@ -1062,3 +1062,10 @@ The shared projection fixture must retain its original undrawn semantics.
 Initialization now occurs only inside the rendering test, with the paint probe active first.
 It restores the controlled view after the normal synchronizer prepares pane state.
 No cache implementation has been added; clean controls and the isolated intended RED remain pending.
+
+The next native analysis also exports stacks for the exact GUI PID across all its threads.
+It uses the existing verified xperf stack flags without the UI-thread filter.
+This read-only export uses already-stopped traces; it starts no new recording and remains bounded to 32 MiB.
+It may expose callers beneath unresolved worker leaves; readability or command success alone cannot qualify attribution.
+The existing ledger keeps qualification false until actual outputs are reviewed.
+No new native run is launched solely for this export; it accompanies the next justified recording.

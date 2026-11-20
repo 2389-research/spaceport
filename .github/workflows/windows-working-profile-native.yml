@@ -136,7 +136,10 @@ jobs:
                 $outcomes += [ordered]@{directory = $directory.Name; phase = $phaseName; action = 'manifest'; success = $false; error = $_.Exception.Message}
                 continue
               }
-              foreach ($export in $exports) {
+              $phaseExports = $exports + @(
+                @{ name = 'process-stacks'; arguments = @('-symbols', '-a', 'stack', '-butterfly', '0', '-pid', [string]$phase.pid) }
+              )
+              foreach ($export in $phaseExports) {
                 $nativeExit = $null
                 try {
                   $output = Join-Path $directory.FullName "$phaseName-$($export.name).txt"
