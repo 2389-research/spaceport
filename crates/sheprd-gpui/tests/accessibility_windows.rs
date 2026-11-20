@@ -494,6 +494,8 @@ mod recovery;
 mod settings;
 #[path = "accessibility_windows/settings_scale.rs"]
 mod settings_scale;
+#[path = "accessibility_windows/tab_contrast.rs"]
+mod tab_contrast;
 #[path = "accessibility_windows/terminal.rs"]
 mod terminal;
 #[path = "accessibility_windows/workspace_close.rs"]

@@ -569,3 +569,31 @@ Logs: `/tmp/spaceport-9s44-core-resize-windows-{all,minimal}.log`.
 Independent read-only review finds no material targeting, geometry, lifecycle, or existing-helper regression.
 PowerShell is unavailable locally; actual native execution remains assigned to Windows CI.
 This case does not qualify a Core-only default keymap, macOS Cmd-W, or audible speech.
+
+### Selected-tab native capture candidate
+
+Use the existing isolated Windows app and real Herdr fixture.
+Capture one selected tab before and after actual keyboard-region entry and native tab focus.
+Cover a light theme and a dark theme with opaque chrome and a private authored image backdrop.
+Require the exact foreground window, selected tab, terminal focus, released modifiers, and stable contained bounds.
+Capture only the owned window, with bounded PNG output and unchanged private preferences.
+The image backdrop covers the desktop; do not capture personal desktop content.
+Inspect every pair and measure the painted ring against its actual neighboring fill before claiming contrast qualification.
+Do not treat a configured color, focus event, or uninspected PNG as native contrast proof.
+
+The candidate uses Classic tabs with Nord and Catppuccin Latte.
+Image cases use a private two-tone PNG at the existing 0.75 image opacity.
+Two separated native terminal samples must show that image before either tab capture runs.
+The helper emits only the selected tab's cropped rectangle, never a full desktop screenshot.
+Each PNG has a 128 KiB bound, and each capture checks exact foreground and rectangle-point ownership.
+The helper restores its thread DPI context and disposes temporary drawing resources on all paths.
+An explicit zero-window case must refuse capture before native input starts.
+Both feature configurations pass Windows accessibility-harness Clippy with warnings denied.
+Logs: `/tmp/spaceport-9s44-tab-contrast-windows-{all,minimal}.log`.
+Independent read-only review finds no material source-level ownership, provenance, cleanup, or helper syntax issue.
+PowerShell and C# execution remain pending Windows CI.
+Actual contrast measurements, all eight image inspections, and non-Classic layout captures remain unqualified.
+This candidate covers image-backed translucency, not desktop material composition.
+
+The screen copy follows [CopyFromScreen](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.graphics.copyfromscreen).
+The helper restores the context returned by [SetThreadDpiAwarenessContext](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setthreaddpiawarenesscontext).
