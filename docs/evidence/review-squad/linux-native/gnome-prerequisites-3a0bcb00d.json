@@ -1,0 +1,41 @@
+{
+  "date_utc": "2026-11-20",
+  "purpose": "Disposable GNOME compositor prerequisite probe; no Spaceport keyboard qualification",
+  "spaceport_started": false,
+  "keyboard_input_sent": false,
+  "image": "ubuntu@sha256:ab18ecc70c55c703eae968948f9f1dbbe662aa8d9badac7c982e6a6237b9d74c",
+  "architecture": "linux/arm64",
+  "versions": {
+    "gnome-shell": "46.0-0ubuntu6~24.04.17",
+    "libmutter-14-0": "46.2-1ubuntu0.24.04.18",
+    "libgl1-mesa-dri": "25.2.8-0ubuntu0.24.04.5"
+  },
+  "command": ["gnome-shell", "--headless", "--wayland", "--no-x11", "--virtual-monitor", "1280x800", "--sm-disable"],
+  "observed": [
+    "Created surfaceless renderer without GPU",
+    "Added virtual monitor Meta-0",
+    "Using Wayland display name 'wayland-0'"
+  ],
+  "first_attempt": {
+    "shell_pid": 4473,
+    "exit_signal": 11,
+    "failure": "LoginManagerSystemd: Gio.IOErrorEnum: Could not connect: No such file or directory",
+    "shell_reaped": true
+  },
+  "private_system_bus_attempt": {
+    "shell_pid": 4510,
+    "system_bus_pid": 4505,
+    "exit_signal": 11,
+    "failure": "Error calling StartServiceByName for org.freedesktop.login1: Launch helper exited with unknown return code 1",
+    "shell_reaped": true,
+    "system_bus_reaped": true
+  },
+  "cleanup": {
+    "container": "spaceport-gnome-3a0bcb00d",
+    "remaining_before_stop": "Only owned init, prerequisite shell, and its lifetime sleep remained",
+    "stopped_and_deleted": true,
+    "fresh_inspect": "container not found",
+    "launch_process_exit": 143
+  },
+  "qualification": "pending: GNOME Shell did not complete startup; no app or native shortcut assertion ran"
+}
