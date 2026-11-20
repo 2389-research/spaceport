@@ -89,6 +89,51 @@ jobs:
         timeout-minutes: 1
         shell: powershell
         run: xperf.exe -loggers
+  retention:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-profile'
+    runs-on: windows-2025
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Encrypt a generated retention probe
+        timeout-minutes: 1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $probeRoot = Join-Path $env:RUNNER_TEMP 'spaceport-retention-probe'
+          if (Test-Path $probeRoot) { throw 'Refusing an existing retention probe directory.' }
+          $source = Join-Path $probeRoot 'source'
+          $keyring = Join-Path $probeRoot 'gnupg'
+          [IO.Directory]::CreateDirectory($source) | Out-Null
+          [IO.Directory]::CreateDirectory($keyring) | Out-Null
+          [IO.File]::WriteAllText((Join-Path $source 'marker.txt'), "SPACEPORT_RETENTION_PROBE_v1`n", [Text.UTF8Encoding]::new($false))
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = Join-Path $probeRoot 'probe.zip'
+          [IO.Compression.ZipFile]::CreateFromDirectory($source, $archive)
+          $gpg = Get-Command gpg.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1
+          & $gpg.Source --version
+          if ($LASTEXITCODE -ne 0) { throw 'GPG version inspection failed.' }
+          $recipient = Join-Path $env:GITHUB_WORKSPACE 'docs/evidence/review-squad/windows-profile/retention-public.asc'
+          $sealed = Join-Path $env:RUNNER_TEMP 'spaceport-retention-probe.zip.gpg'
+          if (Test-Path $sealed) { throw 'Refusing an existing encrypted probe.' }
+          & $gpg.Source --no-options --homedir $keyring --batch --no-tty --recipient-file $recipient --output $sealed --encrypt $archive
+          if ($LASTEXITCODE -ne 0) { throw 'Retention probe encryption failed; nothing may upload.' }
+          if ((Get-Item $sealed).Length -le 0) { throw 'Encrypted probe is empty.' }
+          Get-FileHash -Algorithm SHA256 $sealed
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: spaceport-encrypted-retention-probe
+          path: ${{ runner.temp }}/spaceport-retention-probe.zip.gpg
+          if-no-files-found: error
+          retention-days: 7
+
   contracts:
     if: >-
       github.repository == '2389-research/spaceport' &&

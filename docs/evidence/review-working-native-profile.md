@@ -397,3 +397,31 @@ This localizes the failure to the first cmdlet boundary.
 The established [module bootstrap](review-ci-qualification.md#explicit-system-module-bootstrap) addresses that prior sandbox failure class.
 Reuse that bootstrap while preserving JSON-only stdout, private diagnostics, isolation, and the existing deadline.
 The correction still requires actual Windows verification.
+
+### Private retention prerequisite
+
+The runner's tool probe found GPG at the installed Git path.
+Raw machine traces must remain private after the disposable runner exits.
+Use GPG's [recipient-file option](https://www.gnupg.org/documentation/manuals/gnupg/GPG-Key-related-Options.html) with the reviewed public-only export.
+Its fingerprint is `F550E9D83215B9D9A5437A4176C5B051D8CB8646`; it expires on December 20, 2026.
+The private key stays outside Git in operator state.
+The retention job first encrypts only a generated marker archive.
+Upload only its encrypted `.gpg` output.
+Download and decrypt that probe privately before using this path for native traces.
+The local generated-marker encryption/decryption round trip passed exact byte comparison.
+Encryption used a separate empty keyring and only the public recipient file.
+The Windows-to-Mac probe and native trace retention remain unqualified.
+
+### Bootstrap GREEN and real-inventory refusal
+
+Run `44774374418` tested source `9f39d8525519dc9ddffbbe4ddc0b3d74ee00bb90`.
+Mac job `136420117937` passed 18 ordinary tests and scoped app/harness Clippy.
+Windows job `136420117445` passed 30 ordinary tests, with two explicit resource tests ignored.
+The native helper completed Utility import, compilation, and the actual invalid-HWND ownership query within 1.38 seconds.
+Both serialization boundaries and the recorder unit controls passed.
+
+The separate installed-tool consumer refused `DefenderApiLoggerLowPriv`.
+The broad `contains("wpr")` check accidentally matches `LowPriv`.
+Use a delimited WPR identity while retaining system-mode and profiling-provider refusals.
+Windows Clippy also found test-module ordering in `harness/windows.rs`; fix the ordering without an allowance.
+No recording ran; these failures keep Windows qualification pending.
