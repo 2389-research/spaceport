@@ -1,13 +1,16 @@
 // ABOUTME: Qualifies a real isolated Core terminal through native Windows accessibility.
 // ABOUTME: Owns the exact runtime, pipe, GUI, and state without installing or discovering a daemon.
 use super::{CAPTURE_LIMIT, Duration, GuiTarget, Instant, Running, fs, thread};
-use sheprd_core_client::{Core, Endpoint, wire::Attach};
+use sheprd_core_client::{Attachment, Core, Endpoint, wire::Attach};
 use std::{
     io,
     os::windows::process::CommandExt as _,
     path::PathBuf,
     process::{Child, Command},
 };
+
+#[path = "core/resize.rs"]
+mod resize;
 
 #[derive(Clone, Copy)]
 pub(super) struct Target {
@@ -252,6 +255,27 @@ impl Drop for Fixture {
     }
 }
 
+fn require_runtime_output(observed: &Attachment, marker: &[u8]) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let mut seen = Vec::new();
+    while !seen.windows(marker.len()).any(|bytes| bytes == marker) {
+        assert!(
+            Instant::now() < deadline,
+            "native input did not reach this exact Core terminal"
+        );
+        let chunk = observed.read(Duration::from_millis(100)).unwrap();
+        assert!(
+            chunk.end.is_none(),
+            "owned Core terminal ended during native input check"
+        );
+        assert!(
+            seen.len() + chunk.bytes.len() <= CAPTURE_LIMIT,
+            "Core fixture output exceeds 1 MiB"
+        );
+        seen.extend(chunk.bytes);
+    }
+}
+
 #[test]
 #[ignore = "requires Windows desktop plus explicitly selected Herdr and Core fixture binaries"]
 fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
@@ -289,25 +313,7 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
     ] {
         assert!(output.contains(receipt), "{output}");
     }
-    let deadline = Instant::now() + Duration::from_secs(10);
-    let marker = b"SP_A11Y_7";
-    let mut seen = Vec::new();
-    while !seen.windows(marker.len()).any(|bytes| bytes == marker) {
-        assert!(
-            Instant::now() < deadline,
-            "native text did not reach this exact Core terminal"
-        );
-        let chunk = observed.read(Duration::from_millis(100)).unwrap();
-        assert!(
-            chunk.end.is_none(),
-            "owned Core terminal ended during native text check"
-        );
-        assert!(
-            seen.len() + chunk.bytes.len() <= CAPTURE_LIMIT,
-            "Core fixture output exceeds 1 MiB"
-        );
-        seen.extend(chunk.bytes);
-    }
+    require_runtime_output(&observed, b"SP_A11Y_7");
     assert_eq!(fixture.api().list(false).unwrap().terminals.len(), 1);
     eprintln!(
         "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true"

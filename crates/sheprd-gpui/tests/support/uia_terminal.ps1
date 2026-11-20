@@ -1,6 +1,6 @@
 # ABOUTME: Queries real terminal text, its unselected caret, and native output-change events.
 # ABOUTME: Sends authored input only to the exact private foreground terminal window.
-param([int]$ProcessId, [ValidateSet('Text','Resize','Observe')][string]$Action = 'Text')
+param([int]$ProcessId, [ValidateSet('Text','Resize','Observe','CoreResize')][string]$Action = 'Text')
 . "$PSScriptRoot\uia_tree.ps1" -ProcessId $ProcessId
 Add-Type -Path "$PSScriptRoot\uia_live.cs" -ReferencedAssemblies @(
   [System.Windows.Automation.AutomationElement].Assembly.Location,
@@ -15,8 +15,33 @@ $condition = [System.Windows.Automation.AndCondition]::new(
   [System.Windows.Automation.PropertyCondition]::new($automation::NameProperty, 'Terminal')
 )
 $documents = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
-if ($documents.Count -ne 1) { throw 'Terminal check has no unique named document' }
-$document = $documents[0]
+function Require-NativeBounds($bounds) {
+  foreach ($number in @($bounds.Left, $bounds.Top, $bounds.Width, $bounds.Height)) {
+    if ([double]::IsNaN($number) -or [double]::IsInfinity($number)) { throw 'Core document geometry is not finite' }
+  }
+  if ($bounds.Width -le 0 -or $bounds.Height -le 0) { throw 'Core document geometry has no visible area' }
+}
+$coreResize = $Action -eq 'CoreResize'
+if ($coreResize) {
+  if ($documents.Count -ne 2) { throw 'Core resize requires exactly two owned terminal documents' }
+  $peer = $documents[0]
+  $document = $documents[1]
+  if ($peer.Current.BoundingRectangle.Left -gt $document.Current.BoundingRectangle.Left) {
+    $document = $documents[0]
+    $peer = $documents[1]
+  }
+  $peerBounds = $peer.Current.BoundingRectangle
+  $rightBounds = $document.Current.BoundingRectangle
+  Require-NativeBounds $peerBounds
+  Require-NativeBounds $rightBounds
+  if ($peer.Current.ProcessId -ne $ProcessId -or $document.Current.ProcessId -ne $ProcessId -or
+      $peerBounds.Right -gt $rightBounds.Left + 1) {
+    throw 'Core resize has no disjoint owned left/right document pair'
+  }
+} else {
+  if ($documents.Count -ne 1) { throw 'Terminal check has no unique named document' }
+  $document = $documents[0]
+}
 $pattern = $document.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
 function Require-Terminal {
   if ([HerdrUia]::GetForegroundWindow() -ne $handle) { throw 'Terminal check lost exact foreground HWND' }
@@ -45,8 +70,9 @@ while (-not [System.Windows.Automation.Automation]::Compare($automation::Focused
   Start-Sleep -Milliseconds 10
 }
 Require-Terminal
-if ($Action -eq 'Resize') {
+if ($Action -in @('Resize','CoreResize')) {
   $documentBounds = $document.Current.BoundingRectangle
+  $windowBounds = $root.Current.BoundingRectangle
   $deadline = [DateTime]::UtcNow.AddSeconds(5)
   do {
     Require-Terminal
@@ -57,6 +83,10 @@ if ($Action -eq 'Resize') {
       $line.ExpandToEnclosingUnit([System.Windows.Automation.Text.TextUnit]::Line)
       $rectangles = $line.GetBoundingRectangles()
       $ready = $rectangles.Length -eq 1 -and $rectangles[0].Left -gt $documentBounds.Left + $documentBounds.Width / 3
+      if ($coreResize) {
+        $ready = $rectangles.Length -eq 1 -and $rectangles[0].Left -ge $documentBounds.Left - 1 -and
+          $rectangles[0].Right -le $documentBounds.Right + 1
+      }
     }
     if ($ready) { break }
     if ([DateTime]::UtcNow -ge $deadline) { throw 'The private right split has no presented native caret line' }
@@ -92,8 +122,28 @@ if ($Action -eq 'Resize') {
     if ($rectangles.Length -ne 1) { throw 'The native resize caret line has no unique rectangle' }
     $rect = $rectangles[0]
     $outer = $document.Current.BoundingRectangle
-    foreach ($property in @('Left','Top','Width','Height')) {
-      if ([Math]::Abs($outer.$property - $documentBounds.$property) -gt 1) { throw 'The terminal viewport moved during pane resizing' }
+    if ($coreResize) {
+      $currentWindow = $root.Current.BoundingRectangle
+      $currentPeer = $peer.Current.BoundingRectangle
+      Require-NativeBounds $currentWindow
+      Require-NativeBounds $currentPeer
+      Require-NativeBounds $outer
+      foreach ($property in @('Left','Top','Width','Height')) {
+        if ([Math]::Abs($currentWindow.$property - $windowBounds.$property) -gt 1) { throw 'Core resizing moved the owned window' }
+      }
+      foreach ($property in @('Top','Right','Height')) {
+        if ([Math]::Abs($outer.$property - $documentBounds.$property) -gt 1) { throw 'Core resizing moved a fixed right-pane edge' }
+      }
+      foreach ($property in @('Left','Top','Height')) {
+        if ([Math]::Abs($currentPeer.$property - $peerBounds.$property) -gt 1) { throw 'Core resizing moved a fixed left-pane edge' }
+      }
+      $gap = $outer.Left - $currentPeer.Right
+      $originalGap = $documentBounds.Left - $peerBounds.Right
+      if ([Math]::Abs($gap - $originalGap) -gt 1) { throw 'Core resizing changed the native divider gap' }
+    } else {
+      foreach ($property in @('Left','Top','Width','Height')) {
+        if ([Math]::Abs($outer.$property - $documentBounds.$property) -gt 1) { throw 'The terminal viewport moved during pane resizing' }
+      }
     }
     foreach ($number in @($rect.Left, $rect.Top, $rect.Width, $rect.Height)) {
       if ([double]::IsNaN($number) -or [double]::IsInfinity($number)) { throw 'Resize text geometry is not finite' }

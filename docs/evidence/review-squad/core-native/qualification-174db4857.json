@@ -1,0 +1,31 @@
+{
+  "source": "174db4857f73df8f05cf5ca340b2f5fea2fc05fa",
+  "run": 44657637800,
+  "job": 136027900757,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44657637800/job/136027900757",
+  "platform": "Windows x64",
+  "fixture_release": "Herdr Core 0.1.21",
+  "results": [
+    {
+      "test": "core::native_core_observing_pane_exposes_fresh_text_caret_and_change_events",
+      "observed_at": "2026-11-20T02:15:17.9733456Z",
+      "result": "passed",
+      "receipt": "CORE_NATIVE observing=true text=true native_text_changed=true caret_line_bounds=true same_terminal=true observer_removed=true"
+    },
+    {
+      "test": "core::native_core_text_caret_bounds_and_output_changes_match_the_real_runtime",
+      "observed_at": "2026-11-20T02:15:24.0750787Z",
+      "result": "passed",
+      "receipt": "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true"
+    }
+  ],
+  "cleanup": "Both tests return successfully after exact private Core shutdown and child reaping.",
+  "job_result": "failure: separate native image scroll-capture wait",
+  "remaining": [
+    "Core resize and restoration",
+    "Core pane close and held macOS Cmd-W",
+    "observing-pane input refusal",
+    "audible screen-reader announcements",
+    "selected-tab backdrop contrast"
+  ]
+}

@@ -120,7 +120,7 @@ Kata `q72g` remains open for these specific checks:
 
 | Requirement | Remaining native evidence |
 | --- | --- |
-| Core Terminal node | Ordinary Core text, caret, bounds, and change events pass on `23cab5b4b`; native observing panes remain pending. |
+| Core Terminal node | Ordinary Core text passes on `23cab5b4b`; ordinary and observing text, caret, bounds, and change events pass on `174db4857`. |
 | Herdr caret and announcements | Text, caret, line bounds, and TextChanged pass; audible screen-reader announcements remain pending. |
 | Settings font scaling | Enlarged native glyphs and clipping pass at 1100×780 and 680×780 on `7b7498762`; see captures below. |
 | Keyboard reorder and resize | Workspace reorder and Herdr resize pass on `4194cb1ab`; Core resize remains pending. |
@@ -541,3 +541,31 @@ The [receipt](review-squad/core-native/qualification-23cab5b4b.json) records thi
 The same job passes eight GUI cases, pipe ownership, and 23 non-Core UIA cases.
 Its separate image case fails pixel validation, so the native job remains red.
 This passing Core case does not qualify observing panes, Core resize, audible speech, backdrop contrast, or macOS Cmd-W.
+
+### Native observing-pane qualification on `174db4857`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44657637800/job/136027900757) passes both Core cases.
+The observing receipt occurs at `2026-11-20T02:15:17.9733456Z`.
+It confirms fresh text, TextChanged, an unselected caret, contained line bounds, and observer removal.
+The case preserves the runtime terminal and both app tabs, then cleans up the exact private runtime.
+The ordinary Core case also passes at `2026-11-20T02:15:24.0750787Z`.
+The [receipt](review-squad/core-native/qualification-174db4857.json) records both results.
+
+This job still fails its separate image scroll-capture wait.
+Passing Core cases do not qualify resize, observing-pane input refusal, speech, backdrop contrast, or macOS Cmd-W.
+
+### Native Core resize candidate
+
+The new case creates two real Core terminals through the existing app split command.
+It focuses the right native document and uses the private Herdr profile's stock Ctrl-B, r resize mode.
+The app routes Left and Right to Core's existing split geometry commands.
+Native caret-line bounds must move left and return within one pixel.
+The owned window and fixed pane edges must stay fixed, and the divider gap must remain constant.
+An independent runtime stream must contain the marker typed into that exact right terminal.
+Both runtime terminal addresses must survive unchanged.
+
+Both Windows feature configurations pass the targeted accessibility-harness Clippy check with warnings denied.
+Logs: `/tmp/spaceport-9s44-core-resize-windows-{all,minimal}.log`.
+Independent read-only review finds no material targeting, geometry, lifecycle, or existing-helper regression.
+PowerShell is unavailable locally; actual native execution remains assigned to Windows CI.
+This case does not qualify a Core-only default keymap, macOS Cmd-W, or audible speech.
