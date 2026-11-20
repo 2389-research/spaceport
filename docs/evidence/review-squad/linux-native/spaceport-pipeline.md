@@ -66,3 +66,10 @@ The workspace denies unnecessary qualification in `smoke_live.rs:115`.
 Its existing `use super::*` already imports the native fixture module.
 The correction removes the redundant `super::` without relaxing the lint.
 Shared contract tests and native execution remain pending; no cases ran on that source.
+
+The corrected [source `b81adabe2`](https://github.com/2389-research/spaceport/actions/runs/44694961853/job/136149401775) passes compilation, three contract tests, and the exact native test.
+The native test reports one pass in 1.61 seconds; this exercises the two initial cases.
+Its published 30-line tail retains daemon logs but drops the case and cleanup receipts.
+The next correction exports deduplicated protocol receipts separately from that tail.
+It also requires the producer's exact native PASS line, so zero selected tests cannot qualify delivery.
+Actual receipt-export verification and the remaining shortcut matrix stay pending.

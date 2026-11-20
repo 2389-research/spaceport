@@ -1,6 +1,7 @@
 // ABOUTME: Probes real GNOME startup in a private session on a disposable Linux runner.
 // ABOUTME: Runs explicitly selected GTK and Spaceport tests on its owned display.
 use std::{
+    collections::HashSet,
     env,
     ffi::OsStr,
     fs,
@@ -11,6 +12,13 @@ use std::{
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+#[path = "../../crates/test-support/linux_shortcuts/receipt.rs"]
+mod receipt;
+
+#[cfg(test)]
+#[path = "linux_gnome_probe/tests.rs"]
+mod tests;
 
 struct Owned(Child);
 
@@ -134,7 +142,20 @@ fn native_test(root: &Path, display: &Path, binary: &Path, herdr: &Path) -> io::
             "GNOME_PROBE native test exceeded the outer bound; descendant containment remains the disposable runner's responsibility"
         );
     }
-    print_log(root, "spaceport.log")?;
+    let mut log = String::new();
+    fs::File::open(root.join("spaceport.log"))?
+        .take(1_048_577)
+        .read_to_string(&mut log)?;
+    if log.len() > 1_048_576 {
+        return Err(io::Error::other("native test output exceeds 1 MiB"));
+    }
+    for line in native_receipts(&log) {
+        println!(
+            "GNOME_RECEIPT {}",
+            line.chars().take(600).collect::<String>()
+        );
+    }
+    print_tail("spaceport.log", &log);
     let status = result?;
     cleanup?;
     if !status.success() {
@@ -142,7 +163,28 @@ fn native_test(root: &Path, display: &Path, binary: &Path, herdr: &Path) -> io::
             "Spaceport native pipeline failed: {status}"
         )));
     }
+    require_native_verdict(&log)?;
     Ok(())
+}
+
+fn native_receipts(log: &str) -> impl Iterator<Item = &str> {
+    let mut seen = HashSet::new();
+    log.lines().filter(move |line| {
+        ["LINUX_NATIVE ", "LINUX_KEYS ", "LINUX_KEYS_CASE "]
+            .iter()
+            .any(|prefix| line.starts_with(prefix))
+            && seen.insert(*line)
+    })
+}
+
+fn require_native_verdict(log: &str) -> io::Result<()> {
+    if log.lines().any(|line| line == receipt::NATIVE_PASS) {
+        Ok(())
+    } else {
+        Err(io::Error::other(
+            "native test ended without its confirmed PASS receipt",
+        ))
+    }
 }
 
 fn session(root: &Path, probe: &Probe) -> io::Result<()> {
@@ -236,6 +278,11 @@ fn print_log(root: &Path, name: &str) -> io::Result<()> {
     fs::File::open(root.join(name))?
         .take(32768)
         .read_to_string(&mut log)?;
+    print_tail(name, &log);
+    Ok(())
+}
+
+fn print_tail(name: &str, log: &str) {
     println!("GNOME_LOG {name} bounded prefix follows");
     for line in log
         .lines()
@@ -247,7 +294,6 @@ fn print_log(root: &Path, name: &str) -> io::Result<()> {
     {
         println!("GNOME_LOG {}", line.chars().take(600).collect::<String>());
     }
-    Ok(())
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

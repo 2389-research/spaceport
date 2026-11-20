@@ -76,6 +76,8 @@ jobs:
       - name: Run GTK and Spaceport on the owned GNOME display
         run: |
           rustfmt --edition 2024 --check scripts/qualification/linux_gnome_probe.rs
+          rustc --edition 2024 --test scripts/qualification/linux_gnome_probe.rs -o "$RUNNER_TEMP/spaceport-gnome-probe-tests"
+          "$RUNNER_TEMP/spaceport-gnome-probe-tests"
           rustc --edition 2024 scripts/qualification/linux_gnome_probe.rs -o "$RUNNER_TEMP/spaceport-gnome-probe"
           test_binary=$(cat "$RUNNER_TEMP/native-test-path")
           "$RUNNER_TEMP/spaceport-gnome-probe" "$GITHUB_WORKSPACE/scripts/qualification/linux_gnome_input.js" \

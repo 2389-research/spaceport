@@ -21,6 +21,9 @@ use zbus::zvariant::{DynamicDeserialize, DynamicType, OwnedObjectPath, OwnedValu
 mod cases;
 use cases::{CASES, Notice};
 
+#[path = "../../../test-support/linux_shortcuts/receipt.rs"]
+mod receipt;
+
 const CALL_TIMEOUT: Duration = Duration::from_secs(2);
 const PHASE_TIMEOUT: Duration = Duration::from_secs(12);
 const MAX_LOG: u64 = 256 * 1024;
@@ -153,9 +156,7 @@ fn run() -> Result<()> {
     layout_cleanup?;
     children_cleanup?;
     log?;
-    eprintln!(
-        "LINUX_NATIVE PASS: fixed real-app pipeline; keys released, session closed, layout restored, daemon survived GUI exit"
-    );
+    eprintln!("{}", receipt::NATIVE_PASS);
     Ok(())
 }
 
