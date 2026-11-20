@@ -206,6 +206,22 @@ The previous replay experiments changed width but kept the height fixed at 34.
 A new pure test places the observed 80-by-24-to-112-by-34 change before the captured prompt.
 Its baseline must fail before any production fix.
 
+The [2222112ab baseline](https://github.com/2389-research/spaceport/actions/runs/44744415622) fails exactly that new startup test.
+Its rows reproduce the native blank prefix and stale prompt suffix verbatim.
+The six earlier pure cases pass, and Windows skips behind the failed prerequisite.
+
+The fix wraps the existing VTE handler at actual command dispatch.
+It preserves the clear and removes manufactured history only when history and viewport were empty beforehand.
+The cell predicate uses Alacritty's own color, decoration, wrap, and combining semantics.
+All other handler methods delegate to the pinned implementation.
+Both ordinary parsing and forced synchronized-update completion use that handler.
+This avoids guessing whether a scanned command has executed inside a synchronized update.
+New tests cover fragmentation, existing blank history, decorated cells, later output, and both synchronized completion paths.
+The probe now runs the full terminal suite before its existing native cases and fixed reproduction series.
+Independent read-only review verifies all 71 handler methods without missing or duplicate delegation.
+It finds no material issue with history preservation, cell semantics, synchronized dispatch, or the tests.
+Compilation, red-to-green proof, and native validation remain pending.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
