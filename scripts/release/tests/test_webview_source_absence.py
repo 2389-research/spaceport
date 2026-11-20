@@ -47,11 +47,19 @@ class WebviewSourceAbsence(unittest.TestCase):
 
     def test_retained_content_owners_exist(self):
         for owner in (
-            "browser/store.rs", "browser/groups.rs", "core_terminals.rs",
+            "core_terminals.rs",
             "group_terminals.rs", "chat/rich.rs", "chat/visual.rs",
             "window/file_links.rs", "listening_ports.rs", "links.rs",
         ):
             self.assertTrue((ROOT / "crates/sheprd-gpui/src" / owner).exists(), owner)
+        # The browser store and groups' home: the app before the browser-crate
+        # extraction, the crate after it. Either must exist.
+        for owner in ("store.rs", "groups.rs"):
+            self.assertTrue(
+                (ROOT / "crates/sheprd-gpui/src/browser" / owner).exists()
+                or (ROOT / "crates/sheprd-browser/src" / owner).exists(),
+                owner,
+            )
 
 
 if __name__ == "__main__":
