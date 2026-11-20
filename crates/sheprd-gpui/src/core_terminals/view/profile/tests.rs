@@ -19,6 +19,8 @@ use sheprd_terminal::{Damage, Emulator};
 use std::sync::Arc;
 use uuid::Uuid;
 
+mod paint_cache;
+
 fn no_core(_: Start) -> Result<sheprd_core_client::CoreBackend, Error> {
     Err(Error::NotInstalled)
 }

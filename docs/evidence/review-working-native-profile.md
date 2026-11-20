@@ -974,3 +974,17 @@ Native run `44835762627` is in progress with the real mixed workload and the nor
 No new native execution result, render cadence, or savings is claimed yet.
 Next audit actual app policy and render counts, visible content, raw clocks, loss counters, identities, and restoration evidence.
 All original performance clauses and Doctor Biz's Mac/speech holds remain in force.
+
+### Core cell-paint regression checkpoint
+
+The next headless regression uses the existing selected-Core fixture and real emulator output.
+It requires an initial Core paint, actual bounds, and four advancing Working-mark frames.
+Its recording worker accepts resize/focus commands; the test also requires the original populated frame and no view failure.
+After warm-up, unchanged Core cells must not re-enter the painter during those frames.
+The existing scoped paint probe now counts Core paints in tests only; native baseline source remains frozen.
+The current uncached canvas should fail the zero-paint assertion; no cache implementation has been added yet.
+
+The intended boundary caches cells only, preserving outer geometry, focus reporting, input, and accessibility every frame.
+Content, cursor, selection, metrics, font, full paint theme, and veil changes must invalidate cached cells.
+Add repaint and input/geometry controls before accepting the implementation.
+Native baseline and post-change visible-content/counter evidence remain separate requirements.

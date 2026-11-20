@@ -361,6 +361,8 @@ impl Render for CoreTerminalView {
                         let Some(frame) = &frame else {
                             return;
                         };
+                        #[cfg(test)]
+                        crate::window::native_images::cells(window.window_handle().window_id());
                         window.with_content_mask(Some(ContentMask { bounds }), |window| {
                             painter.borrow_mut().paint_frame(
                                 frame,
