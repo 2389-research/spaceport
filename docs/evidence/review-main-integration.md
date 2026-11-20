@@ -3,7 +3,8 @@
 Scope: Kata `9s44`, all 53 review findings.
 Status: the candidate integrates the reviewed native fixtures, exact GPUI 0.3.11 pins, and the qualified Core startup correction.
 Previous PR head `287f65aa5` passes all eighteen configured CI jobs and all three supply-chain jobs.
-The newly combined source still needs its configured CI run.
+The combined CI on 7f82df03f exposes a duplicated test-fixture module import.
+The fixture now loads once in the shared test parent; renewed configured CI remains pending.
 Source `e60795ab9` fixes the reproduced Core prompt drift during startup height growth.
 All 83 terminal tests pass on Linux and Windows.
 The native Core suite and six fresh ordinary Core samples pass.
@@ -834,3 +835,13 @@ Configured CI for the combined PR head remains pending.
 Kata remains 50 closed and three open; the accessibility finding still needs audible speech qualification.
 Mac Cmd-W, release profiling, updated error captures, and native before/after pixel images remain pending.
 Doctor Biz's Mac hold remains active; no merge into main or release is authorized.
+
+## Shared fixture lint correction
+
+Configured CI on 7f82df03f rejects two module mounts of the same captured byte fixture.
+Linux and Windows logs report Clippy's duplicate_mod error in core_snapshot and core_startup.
+The correction loads that unchanged fixture once in their shared test parent.
+Both test topics import its existing constant.
+No production behavior, test assertion, captured byte, or lint allowance changes.
+The earlier terminal and native qualification receipts retain their source limits.
+Renewed configured CI must qualify the corrected module wiring.

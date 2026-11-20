@@ -1,10 +1,7 @@
 // ABOUTME: Replays the byte-exact private Core stream captured during native text corruption.
 // ABOUTME: Checks real emulator output and records bounded resize interleavings for diagnosis.
+use super::core_output_capture::STREAM;
 use super::*;
-
-#[path = "../../../test-support/core_output_capture.rs"]
-mod capture;
-use capture::STREAM;
 
 #[test]
 fn captured_core_stream_exposes_the_authored_output_at_its_runtime_size() {

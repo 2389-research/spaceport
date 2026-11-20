@@ -1,13 +1,11 @@
 // ABOUTME: Replays the startup height change observed before corrupted native Core text.
 // ABOUTME: Keeps the first prompt and later absolute cursor output on their authoritative rows.
+use super::core_output_capture::STREAM;
 use super::*;
-
-#[path = "../../../test-support/core_output_capture.rs"]
-mod capture;
 
 #[test]
 fn captured_core_startup_height_change_preserves_the_first_prompt() {
-    let stream = capture::STREAM;
+    let stream = STREAM;
     let prompt = stream.windows(3).position(|part| part == b"PS ").unwrap();
     let expected = fed(112, 34, stream).frame();
     let mut terminal = emulator(80, 24);

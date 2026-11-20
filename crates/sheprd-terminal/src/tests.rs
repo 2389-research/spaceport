@@ -4,6 +4,8 @@
 
 mod clear;
 mod core_frame_scope;
+#[path = "../../test-support/core_output_capture.rs"]
+mod core_output_capture;
 mod core_snapshot;
 mod core_startup;
 mod cursor;
