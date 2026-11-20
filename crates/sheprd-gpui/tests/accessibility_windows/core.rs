@@ -216,7 +216,9 @@ impl Fixture {
             .powershell(&self.running.sandbox.dir.join("uia_terminal.ps1"), capture);
         command.args(["-Action", action]);
         if action == "Text" {
-            command.arg("-CapturePixels");
+            command
+                .args(["-CapturePixels", "-CoreToken"])
+                .arg(self.dir.as_ref().unwrap().path().file_name().unwrap());
         }
         command
     }

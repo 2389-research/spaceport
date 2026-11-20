@@ -1,6 +1,6 @@
 # ABOUTME: Queries real terminal text, its unselected caret, and native output-change events.
 # ABOUTME: Sends authored input only to the exact private foreground terminal window.
-param([int]$ProcessId, [ValidateSet('Text','Resize','Observe','CoreResize')][string]$Action = 'Text', [switch]$CapturePixels)
+param([int]$ProcessId, [ValidateSet('Text','Resize','Observe','CoreResize')][string]$Action = 'Text', [switch]$CapturePixels, [string]$CoreToken = '')
 . "$PSScriptRoot\uia_tree.ps1" -ProcessId $ProcessId
 Add-Type -Path "$PSScriptRoot\uia_live.cs" -ReferencedAssemblies @(
   [System.Windows.Automation.AutomationElement].Assembly.Location,
@@ -81,11 +81,40 @@ function Write-TerminalPixels {
 Require-Released
 try { [HerdrUia]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero) }
 finally { [HerdrUia]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero) }
-[HerdrUia]::SetForegroundWindow($handle) | Out-Null
-$document.SetFocus()
+$activated = [HerdrUia]::SetForegroundWindow($handle)
 $deadline = [DateTime]::UtcNow.AddSeconds(3)
-while (-not [System.Windows.Automation.Automation]::Compare($automation::FocusedElement, $document)) {
-  if ([DateTime]::UtcNow -ge $deadline) { throw 'Native terminal focus was not acknowledged' }
+if ($CoreToken) {
+  do {
+    $present = $false
+    $current = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+    if ($current.Count -eq 1) {
+      $candidate = $current[0]
+      $candidatePattern = $candidate.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
+      $present = $candidatePattern.DocumentRange.GetText(16384).Contains($CoreToken)
+      if ($present) { $document = $candidate; $pattern = $candidatePattern }
+    }
+    $foreground = [HerdrUia]::GetForegroundWindow() -eq $handle
+    if ($foreground -and $present) { break }
+    if ([DateTime]::UtcNow -ge $deadline) {
+      throw "Native Core target was not presented: activated=$activated foreground=$foreground token_present=$present documents=$($current.Count)"
+    }
+    Start-Sleep -Milliseconds 10
+  } while ($true)
+}
+$document.SetFocus()
+if (-not $CoreToken) { $deadline = [DateTime]::UtcNow.AddSeconds(3) }
+while ($true) {
+  $focused = $automation::FocusedElement
+  if ($null -ne $focused -and [System.Windows.Automation.Automation]::Compare($focused, $document)) { break }
+  if ([DateTime]::UtcNow -ge $deadline) {
+    try {
+      $focusedProcess = if ($null -eq $focused) { -1 } else { $focused.Current.ProcessId }
+      $focusedName = if ($focusedProcess -eq $ProcessId) { $focused.Current.Name } else { '<foreign>' }
+      $state = "document_focus=$($document.Current.HasKeyboardFocus) focused_process=$focusedProcess owned_name=$focusedName"
+    } catch { $state = "inspection_failed=$($_.Exception.GetType().Name)" }
+    $foreground = [HerdrUia]::GetForegroundWindow() -eq $handle
+    throw "Native terminal focus was not acknowledged: activated=$activated foreground=$foreground $state"
+  }
   Start-Sleep -Milliseconds 10
 }
 Require-Terminal

@@ -11,8 +11,9 @@ give the same frame however they are split across `Emulator::feed` calls.
 It never answers terminal queries (herdr-core does), writes to the
 clipboard, or opens hyperlinks.
 
-Full-screen clears keep existing history and saved text.
-Clearing an empty terminal adds no history, so later height growth keeps the cursor in place.
+Full-screen clears keep Alacritty's normal history behavior.
+Clearing default cells with no history adds no synthetic row.
+Later height growth keeps the initial prompt in place.
 
 ## Use
 

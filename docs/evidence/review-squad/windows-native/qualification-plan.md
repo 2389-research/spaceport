@@ -261,6 +261,36 @@ A new real-cell regression checks the retained hyperlink and style bits after he
 Its baseline runs before tightening the production predicate.
 The existing native pixel probe continues on its pinned source without interruption.
 
+The [b828059d5 baseline](https://github.com/2389-research/spaceport/actions/runs/44751583266) fails exactly the new metadata test.
+All 83 earlier tests pass; the hyperlink-only row has zero retained history instead of one.
+The correction now requires each pre-clear cell to equal Alacritty's complete default cell.
+The zero-history and primary-screen conditions stay intact.
+The actual clear still runs, preserving everything its original behavior retains.
+Compilation, green proof, and native qualification of this narrower guard remain pending.
+
+### Visual probe results and target readiness
+
+Source 5b8821071 passes the corrected app's full terminal suite, native contracts, and all six Core samples.
+It captures seven corrected terminal PNGs.
+The pinned pre-fix control captures three stale-suffix PNGs and four successful PNGs.
+One additional pre-fix sample fails before input because native terminal focus was not acknowledged.
+The probe correctly remains failed; those partial captures are retained.
+The [probe](https://github.com/2389-research/spaceport/actions/runs/44750040641) does not qualify every negative-control outcome.
+
+The ordinary fixture now waits for its exact Core directory token in the unique document and for foreground acknowledgement.
+It then sends the original single focus request.
+All preparation and focus checks share the original three-second focus budget.
+Other helper actions retain their existing timing.
+Failure diagnostics include activation, foreground, focus, and process identity without reading a foreign window's text.
+No input is retried, and the measured text assertions and deadlines stay unchanged.
+Renewed native execution remains pending.
+The selected [before and after captures](../core-startup/qualification-5b8821071.json) pass direct visual inspection.
+The pre-fix crop shows the stale suffix; the corrected crop shows the complete prompt and standalone marker.
+Both are unedited 924-by-120 native crops from exact owned foreground windows.
+Their underlying viewport heights differ, as recorded in the receipt.
+These inspected images do not turn the failed preparation case into a passing probe.
+Independent read-only review finds no material issue in the narrower metadata guard or the readiness barrier.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.

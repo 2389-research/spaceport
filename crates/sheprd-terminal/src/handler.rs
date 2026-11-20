@@ -3,8 +3,8 @@
 use crate::listener::Listener;
 use alacritty_terminal::{
     Term,
-    grid::{Dimensions, GridCell},
-    term::TermMode,
+    grid::Dimensions,
+    term::{TermMode, cell::Cell},
     vte::ansi,
 };
 
@@ -96,14 +96,12 @@ impl ansi::Handler for Handler<'_> {
     }
 
     fn clear_screen(&mut self, mode: ansi::ClearMode) {
+        // Visually blank cells can still own links or style metadata that clearing retains.
+        let blank = Cell::default();
         let empty = matches!(mode, ansi::ClearMode::All)
             && !self.0.mode().contains(TermMode::ALT_SCREEN)
             && self.0.grid().history_size() == 0
-            && self
-                .0
-                .grid()
-                .display_iter()
-                .all(|cell| cell.cell.is_empty());
+            && self.0.grid().display_iter().all(|cell| cell.cell == &blank);
         ansi::Handler::clear_screen(self.0, mode);
         if empty {
             // Alacritty saves one blank row even when this clear had no content to retain.
