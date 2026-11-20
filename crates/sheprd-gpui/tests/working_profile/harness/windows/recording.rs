@@ -38,6 +38,15 @@ pub(super) fn local_symbols() -> Result<&'static Path> {
     executable.parent().context("profile executable directory")
 }
 
+const CPU_PROFILE: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../scripts/profile/spaceport-cpu.wprp"
+));
+
+fn retain_profile(_directory: &Path, _name: &str) -> Result<std::ffi::OsString> {
+    anyhow::bail!("sampled CPU profile retention is not implemented")
+}
+
 pub(super) struct Recording {
     authority: Option<String>,
     path: PathBuf,

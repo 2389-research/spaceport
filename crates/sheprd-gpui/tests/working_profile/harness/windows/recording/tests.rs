@@ -3,6 +3,8 @@
 use super::*;
 use std::{fs, path::PathBuf};
 
+mod profile;
+
 fn control_child(directory: &Path, script: &str) -> Result<Child> {
     let root = std::env::var_os("SystemRoot")
         .ok_or_else(|| anyhow::anyhow!("missing Windows SystemRoot"))?;

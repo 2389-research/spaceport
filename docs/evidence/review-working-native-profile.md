@@ -734,3 +734,13 @@ File and memory definitions share that collector without inheriting other provid
 The ordinary tools job validates available installed schema and both native parser selectors without recording.
 Independent review caught its missing job checkout; the job now checks out with read-only contents permission.
 Actual installed acceptance remains pending; the recorder still uses the built-in CPU profile.
+
+At `e5eb16eb3`, tools job `136554356112` passed installed XSD validation and both native parser selectors.
+WPR 10.0.26100 decoded one 1,024 KB × 20 collector, four keywords, and only sampled-profile stacks.
+The Windows checkout's exact profile hash is `b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc`.
+Its checkout newline bytes differ from local LF bytes; each native fixture must retain and hash its actual definition.
+This proves configuration acceptance, not recording quality or absence of event loss.
+
+The next ordinary Windows test retains the definition and checks its identity through the recorder's exact WPR executable.
+Its initial retention helper deliberately refuses; this should produce runtime RED before implementation.
+The recorder remains unchanged at this checkpoint.
