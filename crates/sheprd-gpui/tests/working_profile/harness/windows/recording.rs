@@ -1,7 +1,178 @@
 // ABOUTME: Qualifies Windows recorder ownership before the fixture starts a CPU trace.
 // ABOUTME: Refuses existing or unclassified system sampling without stopping any session.
+use super::{Fixture, command_output, hide};
 use anyhow::{Context as _, Result, ensure};
+use serde_json::json;
 use std::collections::HashSet;
+use std::path::PathBuf;
+use std::{fs, path::Path, time::Duration};
+
+pub(super) struct Tools {
+    pub(super) wpr: PathBuf,
+    pub(super) xperf: PathBuf,
+}
+
+impl Tools {
+    pub(super) fn installed() -> Result<Self> {
+        let wpr =
+            PathBuf::from(std::env::var_os("SystemRoot").context("missing Windows SystemRoot")?)
+                .join("System32/wpr.exe");
+        let xperf = PathBuf::from(
+            std::env::var_os("SPACEPORT_WORKING_PROFILE_XPERF")
+                .context("set SPACEPORT_WORKING_PROFILE_XPERF explicitly")?,
+        );
+        ensure!(
+            wpr.is_absolute() && wpr.is_file() && xperf.is_absolute() && xperf.is_file(),
+            "recorder tools must be explicit installed absolute executables"
+        );
+        Ok(Self { wpr, xperf })
+    }
+}
+
+pub(super) fn local_symbols() -> Result<&'static Path> {
+    let executable = Path::new(env!("CARGO_BIN_EXE_spaceport"));
+    ensure!(
+        executable.with_extension("pdb").is_file(),
+        "release spaceport.pdb is required for local symbol decoding"
+    );
+    executable.parent().context("profile executable directory")
+}
+
+pub(super) struct Recording<'a> {
+    fixture: &'a Fixture,
+    authority: Option<String>,
+    name: String,
+    path: PathBuf,
+    tools: Tools,
+}
+
+impl<'a> Recording<'a> {
+    pub(super) fn start(fixture: &'a Fixture, name: &str) -> Result<Self> {
+        local_symbols()?;
+        let tools = fixture.recorder_available(name)?;
+        let directory = &fixture.sandbox()?.dir;
+        let path = directory.join(format!("{name}.etl"));
+        ensure!(!path.exists(), "refusing to replace an existing trace");
+        let temporary = directory.join(format!("{name}-wpr-temp"));
+        fs::create_dir(&temporary)?;
+        let instance = format!(
+            "Spaceport-{}-{name}",
+            directory
+                .file_name()
+                .context("profile directory name")?
+                .to_string_lossy()
+        );
+        let receipt = directory.join(format!("{name}-recording.json"));
+        fs::write(
+            &receipt,
+            serde_json::to_vec_pretty(
+                &json!({"instance":instance,"start":"submitted; outcome unknown until acknowledgement","raw_trace_private":true}),
+            )?,
+        )?;
+        let mut command = fixture
+            .sandbox()?
+            .command(&tools.wpr, format!("{name}-wpr-start.stderr.log"));
+        hide(&mut command);
+        command
+            .args(["-start", "CPU", "-filemode", "-recordtempto"])
+            .arg(&temporary)
+            .arg("-instancename")
+            .arg(&instance);
+        command_output(
+            command,
+            &directory.join(format!("{name}-wpr-start.txt")),
+            Duration::from_secs(30),
+        )
+        .context(
+            "WPR Start was not acknowledged; never stop or cancel an unacknowledged instance",
+        )?;
+        let recording = Self {
+            fixture,
+            authority: Some(instance.clone()),
+            name: name.into(),
+            path,
+            tools,
+        };
+        // The guard already owns Stop if retaining this acknowledgement fails.
+        fs::write(
+            receipt,
+            serde_json::to_vec_pretty(
+                &json!({"instance":instance,"start":"acknowledged","raw_trace_private":true}),
+            )?,
+        )?;
+        Ok(recording)
+    }
+
+    pub(super) fn stop(&mut self) -> Result<PathBuf> {
+        let directory = &self.fixture.sandbox()?.dir;
+        let receipt = directory.join(format!("{}-recording.json", self.name));
+        let fixture = self.fixture;
+        let tools = &self.tools;
+        let name = &self.name;
+        let path = &self.path;
+        submit_stop(
+            &mut self.authority,
+            |instance| {
+                fs::write(
+                    &receipt,
+                    serde_json::to_vec_pretty(
+                        &json!({"instance":instance,"start":"acknowledged","stop":"submitted; outcome unknown until acknowledgement","raw_trace_private":true}),
+                    )?,
+                )?;
+                Ok(())
+            },
+            |instance| {
+                let mut command = fixture
+                    .sandbox()?
+                    .command(&tools.wpr, format!("{name}-wpr-stop.stderr.log"));
+                hide(&mut command);
+                command
+                    .arg("-stop")
+                    .arg(path)
+                    .arg("Spaceport controlled Working status")
+                    .arg("-skipPdbGen")
+                    .arg("-instancename")
+                    .arg(instance);
+                command_output(command, &directory.join(format!("{name}-wpr-stop.txt")), Duration::from_secs(60))
+                    .context("owned WPR Stop was not acknowledged; preserve partial trace and do not retry blindly")?;
+                fs::write(
+                    &receipt,
+                    serde_json::to_vec_pretty(
+                        &json!({"instance":instance,"start":"acknowledged","stop":"acknowledged","raw_trace_private":true,"trace":path}),
+                    )?,
+                )?;
+                let length = fs::metadata(path)?.len();
+                ensure!(
+                    length > 0 && length <= 512 * 1024 * 1024,
+                    "raw trace is empty or exceeds 512 MiB"
+                );
+                Ok(path.clone())
+            },
+        )
+    }
+}
+
+impl Drop for Recording<'_> {
+    fn drop(&mut self) {
+        if self.authority.is_some()
+            && let Err(error) = self.stop()
+        {
+            eprintln!("WORKING PROFILE owned recording cleanup failed: {error:#}");
+        }
+    }
+}
+
+fn submit_stop(
+    authority: &mut Option<String>,
+    receipt: impl FnOnce(&str) -> Result<()>,
+    stop: impl FnOnce(&str) -> Result<PathBuf>,
+) -> Result<PathBuf> {
+    let instance = authority
+        .take()
+        .context("owned trace Stop was already submitted")?;
+    receipt(&instance)?;
+    stop(&instance)
+}
 
 pub(super) fn ensure_available(status: &str, loggers: &str) -> Result<()> {
     ensure!(
@@ -68,8 +239,11 @@ struct Logger<'a> {
 impl Logger<'_> {
     fn ensure_available(self) -> Result<()> {
         let name = self.name.to_ascii_lowercase();
+        let wpr = name
+            .split(|character: char| !character.is_ascii_alphanumeric())
+            .any(|part| part == "wpr");
         ensure!(
-            !name.contains("wpr") && name != "nt kernel logger",
+            !wpr && name != "nt kernel logger",
             "existing WPR or kernel trace: {}",
             self.name
         );

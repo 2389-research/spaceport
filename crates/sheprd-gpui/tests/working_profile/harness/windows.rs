@@ -9,101 +9,28 @@ pub(super) fn hide(command: &mut Command) {
     command.creation_flags(sheprd_client::CREATE_NO_WINDOW);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn windows_cpu_helper_reads_the_actual_test_process_clock() -> Result<()> {
-        let fixture = Fixture {
-            sandbox: Some(Sandbox::new()),
-            gui: None,
-            server: None,
-            request: 0,
-        };
-        let started = Instant::now();
-        let before = fixture.cpu("cpu-before", std::process::id())?;
-        let after = fixture.cpu("cpu-after", std::process::id())?;
-        assert!(measurements::process_cpu(before, after, started.elapsed())? >= 0.);
-        Ok(())
-    }
-
-    #[test]
-    fn windows_native_helper_rejects_an_invalid_window_without_stealing_focus() -> Result<()> {
-        let fixture = Fixture {
-            sandbox: Some(Sandbox::new()),
-            gui: None,
-            server: None,
-            request: 0,
-        };
-        let observation = serde_json::from_value(json!({
-            "request_id":1,"gui_pid":std::process::id(),"release":true,"window_id":1,
-            "window_active":true,"window_visible":true,"native_activation":"invalid real HWND control",
-            "windows_hwnd":0,"workspace":null,"synthetic_working_panes":[],"groups":[]
-        }))?;
-        let error = fixture
-            .native_observation(observation)
-            .err()
-            .context("invalid HWND unexpectedly passed native observation")?;
-        eprintln!("WORKING PROFILE invalid HWND control: {error:#}");
-        let diagnostic = fs::read_to_string(fixture.sandbox()?.dir.join("native-1.stderr.log"))?;
-        assert!(
-            diagnostic.contains("Profile HWND no longer belongs to the exact GUI process"),
-            "native helper failed before HWND validation: {diagnostic}; full failure: {error:#}"
-        );
-        let stages = fs::read_to_string(fixture.sandbox()?.dir.join("native-1.stages.txt"))?;
-        assert!(
-            stages.contains("utility_import_complete")
-                && stages.contains("add_type_complete")
-                && stages.contains("ownership_complete thread=0 owner=0"),
-            "native helper did not complete expected stages: {stages}"
-        );
-        Ok(())
-    }
-
-    #[test]
-    #[ignore = "requires explicit installed xperf; only queries WPR status and active loggers"]
-    fn read_only_windows_recorder_inventory() -> Result<()> {
-        let fixture = Fixture {
-            sandbox: Some(Sandbox::new()),
-            gui: None,
-            server: None,
-            request: 0,
-        };
-        fixture.recorder_available()
-    }
-}
-
 impl Fixture {
-    fn recorder_available(&self) -> Result<()> {
+    fn recorder_available(&self, name: &str) -> Result<recording::Tools> {
         let directory = &self.sandbox()?.dir;
-        let wpr =
-            PathBuf::from(std::env::var_os("SystemRoot").context("missing Windows SystemRoot")?)
-                .join("System32/wpr.exe");
-        let xperf = PathBuf::from(
-            std::env::var_os("SPACEPORT_WORKING_PROFILE_XPERF")
-                .context("set SPACEPORT_WORKING_PROFILE_XPERF explicitly")?,
-        );
-        ensure!(
-            wpr.is_absolute() && wpr.is_file() && xperf.is_absolute() && xperf.is_file(),
-            "recorder tools must be explicit installed absolute executables"
-        );
-        let mut status = self.sandbox()?.command(&wpr, "inventory-wpr.stderr.log");
+        let tools = recording::Tools::installed()?;
+        let mut status = self
+            .sandbox()?
+            .command(&tools.wpr, format!("{name}-wpr.stderr.log"));
         hide(&mut status);
         status.arg("-status");
         let status = command_output(
             status,
-            &directory.join("inventory-wpr.txt"),
+            &directory.join(format!("{name}-wpr.txt")),
             Duration::from_secs(15),
         )?;
         let mut loggers = self
             .sandbox()?
-            .command(&xperf, "inventory-loggers.stderr.log");
+            .command(&tools.xperf, format!("{name}-loggers.stderr.log"));
         hide(&mut loggers);
         loggers.arg("-loggers");
         let loggers = command_output_bounded(
             loggers,
-            &directory.join("inventory-loggers.txt"),
+            &directory.join(format!("{name}-loggers.txt")),
             Duration::from_secs(15),
             2 * 1024 * 1024,
         )?;
@@ -122,7 +49,7 @@ impl Fixture {
             status.len(),
             loggers.len()
         );
-        Ok(())
+        Ok(tools)
     }
 
     pub(super) fn native_observation(&self, mut observation: Observation) -> Result<Observation> {
@@ -184,15 +111,118 @@ impl Fixture {
         measurements::cpu_ticks(std::str::from_utf8(&bytes)?)
     }
 
-    pub(super) fn sample(
-        &self,
-        _name: &str,
-        _pid: u32,
-        _observation: &Observation,
-    ) -> Result<Sample> {
-        anyhow::bail!(
-            "Windows sampling requires verified recorder ownership and actual tool help before qualification"
-        )
+    pub(super) fn sample(&self, name: &str, pid: u32, observation: &Observation) -> Result<Sample> {
+        let prepared = Instant::now();
+        let mut recording = recording::Recording::start(self, name)?;
+        let setup = prepared.elapsed();
+        let started = Instant::now();
+        let before = self.cpu(&format!("{name}-cpu-before"), pid)?;
+        std::thread::sleep(Duration::from_secs(SAMPLE_SECONDS));
+        let after = self.cpu(&format!("{name}-cpu-after"), pid)?;
+        let wall = started.elapsed();
+        let stopped = Instant::now();
+        let path = recording.stop()?;
+        let shutdown = stopped.elapsed();
+        let percentage = measurements::process_cpu(before, after, wall)?;
+        // Preserve completed clocks if final capture or later export fails.
+        fs::write(
+            self.sandbox()?.dir.join(format!("{name}-measurement.json")),
+            serde_json::to_vec_pretty(&json!({
+                "phase":name,"pid":pid,"cpu_before_seconds":before.as_secs_f64(),"cpu_after_seconds":after.as_secs_f64(),
+                "wall_seconds":wall.as_secs_f64(),"process_cpu_percent":percentage,"raw_trace":path,"raw_trace_private":true,
+                "qualification":"pending final native observation and stack review","before":observation,
+            }))?,
+        )?;
+        Ok(Sample {
+            before,
+            after,
+            wall,
+            path,
+            interval_ms: None,
+            details: json!({
+                "sampler":"Windows Performance Recorder CPU","raw_trace_private":true,"stack_review_required":true,
+                "setup_seconds":setup.as_secs_f64(),"stop_seconds":shutdown.as_secs_f64(),
+            "trace_scope":"CPU-clock interval is inside the owned trace; trace endpoints also include recorder overhead",
+                "symbols":"local executable PDB only; decoding remains unqualified until actual output inspection",
+            }),
+        })
+    }
+
+    pub(super) fn extract_stacks(&self, phases: &mut [Value]) -> Result<()> {
+        let tools = recording::Tools::installed()?;
+        let symbols = recording::local_symbols()?;
+        let directory = &self.sandbox()?.dir;
+        let cache = directory.join("symcache");
+        fs::create_dir(&cache)?;
+        for phase in phases {
+            let name = phase["phase"].as_str().context("phase name")?.to_owned();
+            let pid = phase["pid"].as_u64().context("phase GUI PID")?;
+            let before = &phase["before"]["windows_native"];
+            let after = &phase["after"]["windows_native"];
+            let thread = before["thread_id"].as_u64().context("actual HWND thread")?;
+            ensure!(
+                thread > 0
+                    && before["gui_pid"] == pid
+                    && after["gui_pid"] == pid
+                    && after["thread_id"] == thread
+                    && before["hwnd"] == after["hwnd"],
+                "native owner or HWND thread changed across phase {name}"
+            );
+            let raw = PathBuf::from(
+                phase["sample_path"]
+                    .as_str()
+                    .context("raw owned trace path")?,
+            );
+            ensure!(
+                raw == directory.join(format!("{name}.etl")),
+                "trace is outside its owned phase"
+            );
+            let output = directory.join(format!("{name}-ui-stacks.txt"));
+            ensure!(
+                !output.exists(),
+                "refusing to replace existing filtered stacks"
+            );
+            let mut command = self
+                .sandbox()?
+                .command(&tools.xperf, format!("{name}-xperf.stderr.log"));
+            hide(&mut command);
+            command
+                .arg("-i")
+                .arg(&raw)
+                .arg("-o")
+                .arg(&output)
+                .args([
+                    "-symbols",
+                    "-a",
+                    "stack",
+                    "-butterfly",
+                    "0",
+                    "-pid",
+                    &pid.to_string(),
+                    "-tid",
+                    &thread.to_string(),
+                ])
+                .env("_NT_SYMBOL_PATH", symbols)
+                .env("_NT_SYMCACHE_PATH", &cache);
+            command_output(
+                command,
+                &directory.join(format!("{name}-xperf.stdout.log")),
+                Duration::from_secs(60),
+            )?;
+            let length = fs::metadata(&output)?.len();
+            ensure!(
+                length > 0 && length <= 32 * 1024 * 1024,
+                "filtered stack output is empty or exceeds 32 MiB"
+            );
+            phase["sampling"]["filtered_stacks"] = json!({"path":output,"pid":pid,"thread_id":thread,
+                "bytes":length,"review_required":true,"qualified":false,
+                "limit":"command success and nonempty output do not prove samples or symbolization"});
+            fs::write(
+                directory.join(format!("{name}.json")),
+                serde_json::to_vec_pretty(phase)?,
+            )?;
+        }
+        Ok(())
     }
 }
 
@@ -204,3 +234,6 @@ fn bounded_diagnostic(path: &Path) -> String {
         Err(error) => format!("unavailable ({error})"),
     }
 }
+
+#[cfg(test)]
+mod tests;

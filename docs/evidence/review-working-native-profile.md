@@ -412,6 +412,13 @@ The local generated-marker encryption/decryption round trip passed exact byte co
 Encryption used a separate empty keyring and only the public recipient file.
 The Windows-to-Mac probe and native trace retention remain unqualified.
 
+Run `44776566454`, job `136427828678`, tested the generated marker probe at `ab604e140`.
+Installed Git GPG 2.4.9 treated native Windows paths as relative MSYS paths and refused encryption.
+No artifact uploaded.
+Convert all four GPG paths through its sibling `cygpath -u` before retrying in a fresh runner.
+Keep native Windows paths for ZIP creation and the upload target.
+The correction still needs a successful remote encryption and private decryption.
+
 ### Bootstrap GREEN and real-inventory refusal
 
 Run `44774374418` tested source `9f39d8525519dc9ddffbbe4ddc0b3d74ee00bb90`.
@@ -425,3 +432,15 @@ The broad `contains("wpr")` check accidentally matches `LowPriv`.
 Use a delimited WPR identity while retaining system-mode and profiling-provider refusals.
 Windows Clippy also found test-module ordering in `harness/windows.rs`; fix the ordering without an allowance.
 No recording ran; these failures keep Windows qualification pending.
+
+### Sampler lifecycle test checkpoint
+
+The candidate prepares owned-instance sampling and post-phase PID/thread-filtered extraction.
+The workflow still runs no native profile.
+Three ordinary ownership tests must first expose receipt failure and known pre-spawn failures.
+The current draft retires Stop authority before receipt writing, output setup, or successful child creation.
+Its unknown-outcome test must continue rejecting a second submission.
+Independent review confirmed the log-setup gap; native recording stays gated on its correction.
+Also persist completed CPU clocks and wall duration before Stop, so Stop failure cannot erase those observations.
+The current draft still writes that aggregate after successful Stop; this remains a known gap.
+These lifecycle changes require runtime RED, correction, and GREEN before any recording.

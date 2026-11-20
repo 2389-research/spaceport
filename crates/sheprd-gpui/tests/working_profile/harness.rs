@@ -178,12 +178,17 @@ impl Fixture {
         let after_image = self.observe(true)?;
         let foreground_qualified = foreground(&after_image);
         let percentage = measurements::process_cpu(before, after, wall)?;
+        #[cfg(windows)]
+        let activation_scope = "native checks before recorder setup and after owned trace stop; no monitoring during sampling";
+        #[cfg(target_os = "macos")]
+        let activation_scope =
+            "native state at interval endpoints; no activation monitoring during sampling";
         let phase = json!({"phase":name,"synthetic_working":working,"pid":pid,"sample_seconds":SAMPLE_SECONDS,
             "sampling":details,"sample_interval_ms":interval_ms,"wall_seconds":wall.as_secs_f64(),"cpu_before_seconds":before.as_secs_f64(),
             "cpu_after_seconds":after.as_secs_f64(),"process_cpu_percent":percentage,"sample_path":path,
             "window_active_before":before_image.window_active,"window_active_after":after_image.window_active,
             "listening_port_poller_enabled":false,
-            "foreground_qualified":foreground_qualified,"activation_scope":"native state at interval endpoints; no activation monitoring during sampling",
+            "foreground_qualified":foreground_qualified,"activation_scope":activation_scope,
             "before":before_image,"after":after_image});
         fs::write(
             self.sandbox()?.dir.join(format!("{name}.json")),
@@ -202,7 +207,7 @@ impl Fixture {
             "synthetic status changed during {name}"
         );
         eprintln!(
-            "WORKING PROFILE phase={name} pid={pid} process_cpu_percent={percentage:.2} wall_seconds={:.3} stacks={}",
+            "WORKING PROFILE phase={name} pid={pid} process_cpu_percent={percentage:.2} wall_seconds={:.3} sample={}",
             wall.as_secs_f64(),
             path.display()
         );
@@ -374,11 +379,14 @@ pub(crate) fn run() -> Result<()> {
     phases.push(fixture.phase("synthetic-working", &targets, true)?);
     peer::report_status(&dir.join("a.sock"), &targets.pane, "idle", 2)?;
     phases.push(fixture.phase("idle-after", &targets, false)?);
+    #[cfg(windows)]
+    fixture.extract_stacks(&mut phases)?;
     fs::write(
         dir.join("report.json"),
         serde_json::to_vec_pretty(
             &json!({"workload":"synthetic status with generated terminal output and idle second terminal",
         "generated_lines":peer::GENERATED_LINES,"generated_bytes":(0..peer::GENERATED_LINES).map(|line| format!("synthetic profile row {line:03}\n").len()).sum::<usize>() + report::MARKER.len() + 1,
+        "generated_bytes_scope":"authored UTF-8 text payload with LF separators; Windows console transport/control bytes are not measured",
         "marker":report::MARKER,"workspace":targets.workspace,"boot":targets.boot,
         "generated_pane":targets.pane,"listening_port_poller_enabled":false,
         "cpu_scope":"all-thread process CPU; sample itself perturbs execution", "phases":phases}),
