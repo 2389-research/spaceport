@@ -11,6 +11,8 @@ mod cases;
 use cases::{CASES, Notice, Outcome, notice};
 #[path = "smoke_linux_shortcuts/capture.rs"]
 mod capture;
+#[path = "smoke_linux_shortcuts/groups.rs"]
+mod groups;
 #[path = "smoke_linux_shortcuts/popups.rs"]
 mod popups;
 
@@ -22,7 +24,9 @@ struct Baseline {
     focused_tab: String,
     font_size: f32,
     fullscreen: bool,
+    groups: groups::Baseline,
     palette_resume: Option<crate::palette::Resume>,
+    panes: Vec<String>,
     revision: u64,
     tabs: Vec<String>,
     windows: Vec<AnyWindowHandle>,
@@ -50,9 +54,18 @@ enum Stage {
         index: usize,
         target: String,
     },
+    AwaitGroupClose {
+        baseline: Baseline,
+        index: usize,
+    },
     AwaitResume(usize),
     AwaitSettingsClose {
         handle: AnyWindowHandle,
+        index: usize,
+    },
+    CloseGroup {
+        baseline: Baseline,
+        group: crate::browser::GroupId,
         index: usize,
     },
     Mapped,
@@ -130,6 +143,12 @@ fn baseline(view: &SheprdWindow, window: &Window, cx: &App) -> Result<Baseline> 
         .map(|workspace| workspace.workspace_id.clone())
         .collect::<Vec<_>>();
     workspaces.sort();
+    let mut panes = snapshot
+        .panes
+        .iter()
+        .map(|pane| pane.pane_id.clone())
+        .collect::<Vec<_>>();
+    panes.sort();
     Ok(Baseline {
         boot: snapshot.boot_id.clone(),
         cell_height: view.options.cell_height_px,
@@ -144,7 +163,9 @@ fn baseline(view: &SheprdWindow, window: &Window, cx: &App) -> Result<Baseline> 
             .context("native focused tab is missing")?,
         font_size: view.config.terminal.size,
         fullscreen: window.is_fullscreen(),
+        groups: groups::snapshot(view, cx),
         palette_resume: view.menu.palette_resume.clone(),
+        panes,
         revision: snapshot.revision,
         tabs,
         windows: cx.windows(),
@@ -210,9 +231,19 @@ fn observed(
     }
     same_scene(before, &after)?;
     match outcome {
+        Outcome::SplitEditor => {
+            same_terminal_state(before, &after)?;
+            let created = groups::created(&before.groups, &after.groups, view, cx)?;
+            if let Some(group) = created {
+                eprintln!(
+                    "LINUX_KEYS_CASE id={id} empty_right_group={group:?} active=true runtime_members_preserved=true"
+                );
+            }
+            Ok(created.is_some())
+        }
         Outcome::Settings => anyhow::bail!("Settings outcome bypassed its window observer"),
         Outcome::Fullscreen(expected) => {
-            same_tabs(before, &after)?;
+            same_members(before, &after)?;
             ensure!(
                 before.focused_tab == after.focused_tab
                     && before.focused_pane == after.focused_pane,
@@ -305,7 +336,7 @@ fn observed(
                 && after.workspace_tabs.contains(&after.focused_tab))
         }
         Outcome::Tab(_) | Outcome::NextTab | Outcome::PreviousTab => {
-            same_tabs(before, &after)?;
+            same_members(before, &after)?;
             let target = match outcome {
                 Outcome::Tab(number) => numbered_tab(before, number)?,
                 _ => stepped_tab(before, outcome == Outcome::NextTab)?,
@@ -328,7 +359,7 @@ fn observed(
             Ok(true)
         }
         Outcome::PolishSearch => {
-            same_tabs(before, &after)?;
+            same_members(before, &after)?;
             ensure!(
                 view.menu.page == Some(Page::Themes),
                 "Polish input replaced the owned search popup"
@@ -387,7 +418,11 @@ fn same_runtime(before: &Baseline, after: &Baseline) -> Result<()> {
     Ok(())
 }
 
-fn same_tabs(before: &Baseline, after: &Baseline) -> Result<()> {
+fn same_members(before: &Baseline, after: &Baseline) -> Result<()> {
+    ensure!(
+        after.panes == before.panes,
+        "native case changed pane identities"
+    );
     ensure!(
         after.tabs == before.tabs,
         "native case changed tab identities"
@@ -405,7 +440,7 @@ fn same_terminal(before: &Baseline, after: &Baseline) -> Result<()> {
 }
 
 fn same_terminal_state(before: &Baseline, after: &Baseline) -> Result<()> {
-    same_tabs(before, after)?;
+    same_members(before, after)?;
     ensure!(
         before.focused_tab == after.focused_tab && before.focused_pane == after.focused_pane,
         "native pane key changed the focused terminal"
@@ -461,6 +496,33 @@ fn advance(
         .frame
         .validate()?;
     match stage {
+        Stage::CloseGroup {
+            baseline,
+            group,
+            index,
+        } => {
+            groups::close(view, &baseline.groups, group, window, cx)?;
+            Ok(Step::Paint(Stage::AwaitGroupClose { baseline, index }))
+        }
+        Stage::AwaitGroupClose {
+            baseline: before,
+            index,
+        } => {
+            let after = baseline(view, window, cx)?;
+            same_scene(&before, &after)?;
+            same_terminal_state(&before, &after)?;
+            if !groups::restored(&before.groups, &after.groups) {
+                return Ok(Step::Continue(Stage::AwaitGroupClose {
+                    baseline: before,
+                    index,
+                }));
+            }
+            eprintln!(
+                "LINUX_KEYS_CASE empty_group_closed=true before_case={}",
+                CASES[index].id
+            );
+            Ok(Step::Continue(Stage::Prepare(index)))
+        }
         Stage::AwaitSettingsClose { handle, index } => {
             if cx.windows().contains(&handle) {
                 return Ok(Step::Continue(Stage::AwaitSettingsClose { handle, index }));
@@ -546,7 +608,7 @@ fn advance(
         } => {
             let after = baseline(view, window, cx)?;
             same_scene(&before, &after)?;
-            same_tabs(&before, &after)?;
+            same_members(&before, &after)?;
             if after.focused_tab != target {
                 return Ok(Step::Continue(Stage::AwaitFocus {
                     baseline: before,
@@ -601,6 +663,10 @@ fn advance(
             }
             let baseline = baseline(view, window, cx)?;
             match case.outcome {
+                Outcome::SplitEditor => {
+                    groups::prepared(&baseline.groups)?;
+                    popups::close(view, window, cx)?;
+                }
                 Outcome::Settings => popups::close(view, window, cx)?,
                 Outcome::Fullscreen(expected) => {
                     ensure!(
@@ -691,6 +757,15 @@ fn advance(
         } => {
             let case = &CASES[index];
             let focused = match case.outcome {
+                Outcome::SplitEditor => {
+                    let current = baseline(view, window, cx)?;
+                    same_terminal(&before, &current)?;
+                    ensure!(
+                        groups::restored(&before.groups, &current.groups),
+                        "native group scene changed before READY"
+                    );
+                    view.menu.page.is_none() && view.focus.is_focused(window)
+                }
                 Outcome::Settings => {
                     settings_fixture::window(cx).is_none()
                         && view.menu.page.is_none()
@@ -727,7 +802,7 @@ fn advance(
                 Outcome::Tab(number) => {
                     let current = baseline(view, window, cx)?;
                     same_scene(&before, &current)?;
-                    same_tabs(&before, &current)?;
+                    same_members(&before, &current)?;
                     ensure!(
                         current.focused_tab == before.focused_tab
                             && current.focused_tab != numbered_tab(&before, number)?,
@@ -780,6 +855,18 @@ fn advance(
                 eprintln!("{}", notice(nonce, Notice::Complete));
                 Ok(Step::Done)
             } else {
+                if case.outcome == Outcome::SplitEditor {
+                    let group = view
+                        .group_slots()
+                        .get(1)
+                        .map(|slot| slot.id)
+                        .context("native created group is missing after success")?;
+                    return Ok(Step::Continue(Stage::CloseGroup {
+                        baseline,
+                        group,
+                        index: index + 1,
+                    }));
+                }
                 Ok(Step::Continue(Stage::Prepare(index + 1)))
             }
         }

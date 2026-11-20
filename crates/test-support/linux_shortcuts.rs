@@ -18,6 +18,7 @@ pub(super) enum Outcome {
     ResetFont,
     ResumePalette,
     Settings,
+    SplitEditor,
     Tab(u8),
     TerminalBytes(&'static [u8]),
     // keep-sorted end
@@ -212,6 +213,11 @@ pub(super) const CASES: &[Case] = &[
         chords: &[PREFIX, &[31]],
         id: "prefix-settings",
         outcome: Outcome::Settings,
+    },
+    Case {
+        chords: &[&[29, 42, 43]],
+        id: "split-editor-alias",
+        outcome: Outcome::SplitEditor,
     },
     Case {
         chords: &[&[100, 38], &[42, 100, 49]],

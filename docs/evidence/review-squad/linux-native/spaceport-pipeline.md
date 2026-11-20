@@ -160,12 +160,12 @@ Kata remains 49 closed and four open.
 
 ## Exact resume point
 
-The separate native branch is `fix/review-squad-linux-native`, at qualified source `6c2e09058`.
+The separate native branch is `fix/review-squad-linux-native`, at qualified source `7d8bf54a2`.
 No CI run remains pending for that source.
-The route receipt and this progress note await the next meaningful code checkpoint.
+The Settings receipt and this progress note await the next meaningful code checkpoint.
 Do not publish a documentation-only checkpoint merely to start another native run.
 
-Finish Linux Settings and window aliases, split groups, pane history/cycling, and geometric prefix focus.
+Finish Linux window cycling, split groups, pane history/cycling, and geometric prefix focus.
 Settings deliberately adds a window and changes activation; the general stable-window guard needs a scoped outcome branch.
 Observe the actual Settings global handle rather than inferring its type from a window count.
 Keep any observation hook behind `integration-test` and inside `settings_window`, whose window type is private.
@@ -210,7 +210,38 @@ The next case waits for removal and original-window activation before accepting 
 All other outcomes retain their original window guards.
 These two cases remain unqualified until their exact-source native run passes.
 
+Source `7d8bf54a2` now passes its [exact-source run](https://github.com/2389-research/spaceport/actions/runs/44703331035).
+Eight shared tests and two receipt tests pass.
+The exact native test passes all thirty-six cases in 13.13 seconds.
+Both Settings routes activate the actual window and preserve the original windows and runtime.
+Each owned Settings window closes through the normal path before the next case.
+All prior cases, cleanup, layout/session restoration, direct reaping, and daemon-survival checks pass.
+The [Settings receipt](spaceport-settings-7d8bf54a2.json) preserves those scoped observations.
+
+Source review confirms the next presentation cases can reuse the private runtime.
+`command_new_window` clones the first endpoint's target into deferred `open_additional_window_then` creation.
+An explicit Socket remains attach-only and disables catalog loading; it cannot start Herdr.
+Capture that creation callback's exact second handle, then verify its target, coherent snapshot, and daemon boot before READY.
+Observe actual destination-window activation after Cycle Windows.
+Defer cross-window activation and normal closure until the original view update returns.
+Wait for removal of that exact owned handle before another READY.
+
+Split Editor starts with one ordered group from `group_slots()` and `active_group()`.
+It must retain the original ID left, add one distinct ID right, and activate that new group.
+Require empty `group_tabs()` and `Shown::Empty` for the new group; all old tabs stay with the original.
+Preserve global daemon pane IDs, tabs, runtime focus, boot, workspace, and windows.
+Close only that captured empty group through `close_group`, then await the original layout.
+The owning implementations are `browser/groups_view.rs`, `browser/groups.rs`, and `window/commands/handlers.rs` under the GPUI crate.
+
 The Windows implementation owner works separately in `.worktrees/review-squad-windows-native`.
 That owner may edit Windows fixtures, support, registration, and its exact-branch probe workflow.
 Root owns the Linux app observer, Settings hook, and shared Linux cases.
 The Windows owner must return a reviewable diff before committing or pushing.
+
+The next Linux checkpoint adds the native Ctrl-Shift-Backslash Split Editor alias.
+It records ordered group IDs, active group, group tab ownership, and global runtime pane IDs.
+Success requires the unchanged original group left and exactly one distinct empty active group right.
+Cleanup runs in a separate preparation stage after PASSED.
+It guards the exact captured empty group, calls normal `close_group`, and waits for the original layout.
+The next READY also waits for coherent runtime geometry and preserved runtime members.
+Native compilation and this thirty-seventh case remain pending for the next exact-source run.
