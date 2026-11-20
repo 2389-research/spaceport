@@ -53,6 +53,12 @@ class ProviderProbeAbsence(unittest.TestCase):
         for dependency in ("aes", "cbc", "pbkdf2", "rusqlite", "secrecy", "sha1", "sha2", "ureq", "zeroize"):
             self.assertNotRegex(manifest, rf"(?m)^{dependency}\.workspace")
 
+    def test_app_manifest_names_no_credential_store_dependency(self):
+        manifest = source("crates/sheprd-gpui/Cargo.toml")
+        for dependency in ("aes", "cbc", "pbkdf2", "rusqlite", "secrecy", "sha1", "zeroize"):
+            with self.subTest(dependency=dependency):
+                self.assertNotRegex(manifest, rf"(?m)^{dependency}\.workspace")
+
     def test_shared_host_and_usage_contract_remain(self):
         self.assertTrue((ROOT / "crates/sheprd-usage/src/model.rs").exists())
         self.assertTrue((ROOT / "crates/sheprd-usage/src/shell.rs").exists())
