@@ -19,8 +19,8 @@ Mac `sample`/`ps` support remains separate from the held Mac native checks.
 - Native `538ff3ca6` is audited with valid settings, captures, identities, and zero-loss traces; animation activity was not recorded.
 - Ordinary `e076fbac1` passed both motion regressions after actual RED; published `7d1772994` passed all four ordinary jobs again.
 - Disposable desktop preparation passed real enable, repeated-refusal, restoration, and fresh-process checks at `dcadebfaf`.
-- Native run `44835762627` is building exact `dcadebfaf`; its app policy, render counts, and sampling remain unqualified.
-- Core paint checkpoint `a0de2f5d9` runs as `44836845723`; its intended runtime RED is still pending.
+- Native `dcadebfaf` passed with real animation activity, verified clocks, captures, identities, and zero-loss traces; dominant CPU attribution remains unresolved.
+- Core paint `a0de2f5d9` stopped at a fixture precondition; correction `454d16f22` runs as `44838523549`.
 - Core caching has not been implemented; the proposed boundary and controls appear at this document's end.
 
 ## Authority and limits
@@ -1024,3 +1024,32 @@ The projection fixture inserted a view without synchronizing the visible tab's p
 Its normal window therefore drew a connecting placeholder; existing projection tests drew the entity separately.
 The fixture now runs the actual `sync_core_views` consumer before inserting its controlled view.
 This is a fixture correction, not a cache fix or an accepted regression RED.
+
+### Verified moving-mark native baseline
+
+Native `dcadebfaf993392a3774f16f2fd4bfaba47921c4` passed run `44835762627`, job `136631645252`.
+Artifact `14678249686` passed archive/ciphertext hashes, private decryption, member validation, ZIP integrity, and actual executable/PDB checks.
+All three trace statistics report zero lost events and buffers; all nine exports succeeded.
+All six endpoints preserve owned HWND 196998, PID 7160, and UI thread 7560.
+Each endpoint reports `reduce_motion: false`.
+Mark-layer render calls remain 36→36 while idle, advance 90→251 while Working, and remain 271→271 afterward.
+Those observations surround recorder setup/stop; 161 divided by the CPU wall interval is not a valid frame rate.
+
+Root viewed captures 6, 11, 12, and 16.
+Both distinct Working images show populated TUI/Core content and the authored Core marker; each idle pair matches by hash.
+Configuration remains correct without migration-conflict or startup port-scan logs.
+Private Core Stop and owned-serve exit pass; no independent holder-liveness audit ran.
+Desktop receipts confirm original false/false, prepared true/true, and restored false/false.
+
+Actual Working ticks advance 282500000→465156250: 18.265625 CPU seconds over 6.1949839 recorded wall seconds.
+That is 294.845399% relative to one core across all app threads, not a UI-thread share or portable hardware result.
+The UI-only stack export has 320 hits, including overlapping Core paint 25, window render 59, tick 23, and DirectX draw 48.
+Most all-thread leaf weight remains `Unknown!Unknown`; those UI counts cannot attribute the process total.
+The trace includes `d3d10warp.dll` activity, but no explicit selected-adapter identity or GPU execution timing.
+See Microsoft's [WARP guide](https://learn.microsoft.com/en-us/windows/win32/direct3darticles/directx-warp) for that module's role.
+
+Two jump-list warnings and one aggregate paint warning remain; the aggregate is not phase-specific.
+The curated receipt is `review-squad/windows-profile/native-dcadebfaf.json` beside this plan.
+An independent raw audit found no material recording or cleanup defect.
+No savings, cross-run comparison, exact cadence, mirror/chat, or continuous-update qualification is claimed.
+The next code gate remains the corrected Core cell-paint runtime RED, before cache implementation.
