@@ -17,6 +17,7 @@ impl Localize for Error {
                 fl!("error-agent-context", operation = *operation)
             }
             Self::Backdrop(error) => error.localize(),
+            Self::Browser(error) => error.localize(),
             Self::BundleExists { path: file } => fl!("error-bundle-exists", path = path(file)),
             Self::BundleWrite { path: file, source } => fl!(
                 "error-bundle-write",
@@ -62,13 +63,7 @@ impl Localize for Error {
             Self::ImageReadTimeout => fl!("error-image-read-timeout"),
             Self::ImageSize => fl!("error-image-size"),
             Self::ImageTooLarge { limit } => fl!("error-image-too-large", limit = *limit),
-            Self::InvalidBrowserTabs => fl!("error-invalid-browser-tabs"),
-            Self::InvalidBrowserUrl => fl!("error-invalid-browser-url"),
-            Self::InvalidCodeFile => fl!("error-invalid-code-file"),
             Self::InvalidExternalUrl => fl!("error-invalid-external-url"),
-            Self::InvalidGroupLayouts => fl!("error-invalid-group-layouts"),
-            Self::InvalidLocalPage => fl!("error-invalid-local-page"),
-            Self::InvalidReviewCheckout => fl!("error-invalid-review-checkout"),
             Self::InvalidSidebarWidth => fl!("error-invalid-sidebar-width"),
             Self::InvalidStoredWidth => fl!("error-invalid-stored-width"),
             Self::InvalidWindowState => fl!("error-invalid-window-state"),

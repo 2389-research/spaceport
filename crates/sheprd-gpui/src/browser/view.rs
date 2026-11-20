@@ -5,9 +5,8 @@
 #[cfg(test)]
 use super::Location;
 use super::{
-    CoreGroupKey, Scope, Store, TabId, WebUrl,
-    groups::{GroupId, GroupIds, Layout, Pick, SavedLayout},
-    hosts::BrowserHosts,
+    CoreGroupKey, GroupId, GroupIds, GroupMotion, Hidden, Layout, Pick, SavedLayout, Scope, Store,
+    TabAppear, TabBodies, TabId, TabScroll, WebUrl, hosts::BrowserHosts,
 };
 use crate::SheprdWindow;
 #[cfg(test)]
@@ -39,7 +38,7 @@ pub(crate) struct Browser {
     /// another of its tabs, or closed, when its workspace next settles.
     pub(super) emptied: Vec<GroupId>,
     /// Tabs this window keeps out of its strips, as tearing one off does.
-    pub(crate) hidden: super::hidden::Hidden,
+    pub(crate) hidden: Hidden,
     /// Tabs being closed one after another, as Close Others closes them.
     pub(crate) closing: Option<crate::close_modal::CloseRun>,
     /// Where each group drew last frame, so a carried tab knows the group
@@ -49,13 +48,13 @@ pub(crate) struct Browser {
     /// the daemon focuses the tab.
     pub(super) new_tab_group: Option<((Scope, String), GroupId)>,
     /// Tabs growing into the strip as they open.
-    pub(super) appear: super::tab_appear::TabAppear,
+    pub(super) appear: TabAppear,
     /// Each strip's sideways scroll.
-    pub(super) tab_scroll: super::tab_scroll::TabScroll,
+    pub(super) tab_scroll: TabScroll,
     /// Each strip's connected tab body, for layouts that draw one.
-    pub(crate) tab_body: super::tab_body::TabBodies,
+    pub(crate) tab_body: TabBodies,
     /// Groups opening from a split and folding away as they close.
-    pub(super) group_motion: super::group_motion::GroupMotion,
+    pub(super) group_motion: GroupMotion,
     /// The workspaces of the last snapshot and the boot they came from: one
     /// missing from the next snapshot of the same boot was closed.
     workspaces: Option<(Scope, String, HashSet<String>)>,

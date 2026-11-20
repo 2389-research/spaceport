@@ -1,5 +1,5 @@
 use super::*;
-use crate::browser::GroupIds;
+use crate::GroupIds;
 
 fn pick(id: &str) -> Pick {
     Pick::Herdr(id.into())

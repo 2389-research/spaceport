@@ -1,7 +1,7 @@
 // ABOUTME: Checks that animated native tabs retain a final reveal attempt.
 // ABOUTME: Bounds retries after growth so an unreadable layout cannot spin forever.
 use super::*;
-use crate::browser::GroupIds;
+use crate::GroupIds;
 
 #[test]
 fn growth_does_not_spend_the_final_layout_reveal_budget() {

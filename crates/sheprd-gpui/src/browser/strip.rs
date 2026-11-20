@@ -3,9 +3,7 @@
 //! connected strip. The rules live in [`super::tab_appear`] and
 //! [`super::tab_scroll`]; this applies them to the window's groups.
 
-use super::tab_appear::{Leaving, Listed};
-use super::tab_scroll::Thumb;
-use super::{Browser, Pick, groups::GroupId, hosts::BrowserHosts};
+use super::{Browser, GroupId, Leaving, Listed, Pick, Thumb, hosts::BrowserHosts};
 use crate::SheprdWindow;
 use gpui::{prelude::*, *};
 use std::time::Instant;

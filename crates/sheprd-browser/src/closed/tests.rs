@@ -22,7 +22,7 @@ fn herdr(tab: &str, workspace: &str) -> ClosedHerdrTab {
 
 fn snapshot() -> ClientShellSnapshot {
     serde_json::from_str(include_str!(
-        "../../../../sheprd-protocol/tests/fixtures/endpoint-snapshot-v1.json"
+        "../../../sheprd-protocol/tests/fixtures/endpoint-snapshot-v1.json"
     ))
     .unwrap()
 }

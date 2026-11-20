@@ -14,6 +14,8 @@ pub enum Error {
     },
     #[error(transparent)]
     Backdrop(#[from] crate::backdrop::Error),
+    #[error(transparent)]
+    Browser(#[from] sheprd_browser::Error),
     #[error("{} already exists; choose a new file name", path.display())]
     BundleExists { path: PathBuf },
     #[error("Could not write {}: {source}", path.display())]
@@ -89,22 +91,8 @@ pub enum Error {
     ImageSize,
     #[error("The image exceeds Herdr's {limit}-byte upload limit.")]
     ImageTooLarge { limit: usize },
-    #[error("Invalid saved browser tabs")]
-    InvalidBrowserTabs,
-    #[error("Browser tabs open only http and https addresses with a host, of at most 8 KiB.")]
-    InvalidBrowserUrl,
-    #[error("An old source tab must name an absolute file path without control characters")]
-    InvalidCodeFile,
     #[error("Not an address with a scheme other than http, https, and file, of at most 8 KiB.")]
     InvalidExternalUrl,
-    #[error("Invalid saved editor groups")]
-    InvalidGroupLayouts,
-    #[error(
-        "Local pages must be a plain file in a folder that is not hidden and does not hold your home directory."
-    )]
-    InvalidLocalPage,
-    #[error("A saved review tab names a checkout that is not a local absolute path.")]
-    InvalidReviewCheckout,
     #[error("invalid sidebar width")]
     InvalidSidebarWidth,
     #[error("sidebar_width_px must be finite and positive, or null")]

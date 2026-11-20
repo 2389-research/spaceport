@@ -2,7 +2,6 @@
 use super::*;
 
 mod core_groups;
-mod labels;
 mod retired_code_view;
 mod retired_px0;
 mod retired_review;

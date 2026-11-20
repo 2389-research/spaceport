@@ -3,7 +3,7 @@
 //! Client-owned native tabs and the workspace each one belongs to.
 //! Windows share tab references; the selected runtime owns their terminals.
 use super::Location;
-use crate::i18n::fl;
+use crate::Error;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use sheprd_reorder::Beside;
@@ -18,11 +18,11 @@ const MAX_TITLE_CHARS: usize = 200;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
-pub(crate) struct TabId(u64);
+pub struct TabId(u64);
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 impl TabId {
-    pub(crate) fn test(id: u64) -> Self {
+    pub fn test(id: u64) -> Self {
         Self(id)
     }
 }
@@ -51,7 +51,7 @@ impl std::fmt::Display for TabId {
 /// daemon, so a local session and a saved host can both have a `w_1`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-pub(crate) enum Scope {
+pub enum Scope {
     Legacy(String),
     Core(CoreScope),
 }
@@ -64,7 +64,7 @@ enum ScopeKind {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct CoreScope {
+pub struct CoreScope {
     kind: ScopeKind,
     hub_core_id: String,
     machine_id: Option<String>,
@@ -72,13 +72,13 @@ pub(crate) struct CoreScope {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub(crate) struct CoreGroupKey {
+pub struct CoreGroupKey {
     scope: CoreScope,
     group_id: Uuid,
 }
 
 impl CoreGroupKey {
-    pub(crate) fn new(
+    pub fn new(
         hub_core_id: &str,
         machine_id: Option<&str>,
         document_name: &str,
@@ -96,23 +96,23 @@ impl CoreGroupKey {
         key.valid().then_some(key)
     }
 
-    pub(crate) fn group_id(&self) -> Uuid {
+    pub fn group_id(&self) -> Uuid {
         self.group_id
     }
 
-    pub(crate) fn hub_core_id(&self) -> &str {
+    pub fn hub_core_id(&self) -> &str {
         &self.scope.hub_core_id
     }
 
-    pub(crate) fn machine_id(&self) -> Option<&str> {
+    pub fn machine_id(&self) -> Option<&str> {
         self.scope.machine_id.as_deref()
     }
 
-    pub(crate) fn document_name(&self) -> &str {
+    pub fn document_name(&self) -> &str {
         &self.scope.document_name
     }
 
-    pub(crate) fn parts(&self) -> (Scope, String) {
+    pub fn parts(&self) -> (Scope, String) {
         (Scope::Core(self.scope.clone()), self.group_id.to_string())
     }
 
@@ -131,24 +131,24 @@ impl CoreGroupKey {
 
 impl Scope {
     /// A local daemon, named by the client socket the window connects to.
-    pub(crate) fn local(client_socket: &std::path::Path) -> Self {
+    pub fn local(client_socket: &std::path::Path) -> Self {
         Self::Legacy(format!("local:{}", client_socket.display()))
     }
 
     /// A saved SSH host, named by its catalog ID.
-    pub(crate) fn endpoint(id: &str) -> Self {
+    pub fn endpoint(id: &str) -> Self {
         Self::Legacy(id.to_owned())
     }
 
     /// The scope as `tab list` reports a tab's host.
-    pub(crate) fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             Self::Legacy(id) => id,
             Self::Core(core) => core.machine_id.as_deref().unwrap_or(&core.hub_core_id),
         }
     }
 
-    pub(crate) fn core_group(&self, workspace_id: &str) -> Option<CoreGroupKey> {
+    pub fn core_group(&self, workspace_id: &str) -> Option<CoreGroupKey> {
         let Self::Core(scope) = self else {
             return None;
         };
@@ -159,7 +159,7 @@ impl Scope {
         key.valid().then_some(key)
     }
 
-    pub(crate) fn valid_workspace(&self, workspace_id: &str) -> bool {
+    pub fn valid_workspace(&self, workspace_id: &str) -> bool {
         match self {
             Self::Legacy(_) => !workspace_id.is_empty() && workspace_id.len() <= 256,
             Self::Core(_) => self
@@ -170,7 +170,7 @@ impl Scope {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub(crate) struct Tab {
+pub struct Tab {
     pub id: TabId,
     pub scope: Scope,
     pub workspace_id: String,
@@ -183,27 +183,12 @@ pub(crate) struct Tab {
 }
 
 impl Tab {
-    pub(crate) fn requires_core(&self) -> bool {
+    pub fn requires_core(&self) -> bool {
         matches!(self.scope, Scope::Core(_))
             || matches!(self.location, Some(Location::CoreTerminal { .. }))
     }
 
-    /// The title the window shows: the one the app gives a tab it draws or
-    /// one still waiting for its content. A terminal tab shows its program's
-    /// title once the program sets one.
-    pub(crate) fn label(&self) -> String {
-        match &self.location {
-            None => fl!("browser-tab-new"),
-            Some(location @ Location::CoreTerminal { .. })
-                if !self.title.is_empty() && self.title != location.default_title() =>
-            {
-                self.title.clone()
-            }
-            Some(location) => location.drawn_title(),
-        }
-    }
-
-    pub(crate) fn core_group(&self) -> Option<CoreGroupKey> {
+    pub fn core_group(&self) -> Option<CoreGroupKey> {
         self.scope.core_group(&self.workspace_id)
     }
 }
@@ -217,7 +202,7 @@ struct Saved {
 }
 
 #[derive(Default)]
-pub(crate) struct Store {
+pub struct Store {
     tabs: Vec<Tab>,
     next: u64,
     pub(super) closed: super::closed::ClosedTabs,
@@ -230,7 +215,7 @@ impl Global for Store {}
 /// Page titles are untrusted: one line, bounded, and free of control and
 /// bidirectional formatting characters that could disguise a tab.
 fn clean_title(title: &str) -> String {
-    crate::notifications::safe_text(title, MAX_TITLE_CHARS * 4)
+    sheprd_client::text::safe_text(title, MAX_TITLE_CHARS * 4)
         .chars()
         .take(MAX_TITLE_CHARS)
         .collect::<String>()
@@ -239,24 +224,19 @@ fn clean_title(title: &str) -> String {
 }
 
 impl Store {
-    #[cfg(test)]
-    pub(crate) fn restored_for_test(bytes: &[u8]) -> crate::Result<Self> {
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn restored_for_test(bytes: &[u8]) -> crate::Result<Self> {
         Ok(Self::with_saved(saved::parse(bytes)?, None))
     }
 
-    fn path() -> Option<PathBuf> {
-        crate::preferences::state_dir().map(|dir| dir.join("browser-tabs.json"))
-    }
-
-    /// Called before starting GPUI, like the window state. A missing or
-    /// damaged file starts with no tabs.
-    pub(crate) fn load() -> Self {
-        let path = Self::path();
+    /// Called before starting GPUI, like the window state, with the file the
+    /// app keeps its tabs in. A missing or damaged file starts with no tabs.
+    pub fn load(path: Option<PathBuf>) -> Self {
         let tabs = path
             .as_deref()
             .map(|path| {
                 sheprd_state_file::read(path, MAX_FILE_BYTES)
-                    .map_err(crate::Error::from)
+                    .map_err(Error::from)
                     .and_then(|bytes| bytes.as_deref().map_or(Ok(Saved::default()), saved::parse))
             })
             .transpose()
@@ -288,7 +268,7 @@ impl Store {
         }
     }
 
-    pub(crate) fn install(self, cx: &mut App) {
+    pub fn install(self, cx: &mut App) {
         cx.set_global(self);
         cx.on_app_quit(|cx| {
             let store = cx.global_mut::<Self>();
@@ -305,7 +285,7 @@ impl Store {
 
     /// Runs `f` against the app's store, creating an unsaved one for
     /// fixtures that never installed it.
-    pub(crate) fn update<R>(cx: &mut App, f: impl FnOnce(&mut Self) -> R) -> R {
+    pub fn update<R>(cx: &mut App, f: impl FnOnce(&mut Self) -> R) -> R {
         if !cx.has_global::<Self>() {
             cx.set_global(Self::default());
         }
@@ -329,16 +309,16 @@ impl Store {
     }
 
     /// Every tab of every workspace, in the order they were opened.
-    pub(crate) fn tabs(&self) -> impl Iterator<Item = &Tab> {
+    pub fn tabs(&self) -> impl Iterator<Item = &Tab> {
         self.tabs.iter()
     }
 
-    pub(crate) fn get(&self, id: TabId) -> Option<&Tab> {
+    pub fn get(&self, id: TabId) -> Option<&Tab> {
         self.tabs.iter().find(|tab| tab.id == id)
     }
 
     /// The tab strip tabs of one workspace, in the order they were opened.
-    pub(crate) fn in_workspace<'a>(
+    pub fn in_workspace<'a>(
         &'a self,
         scope: &'a Scope,
         workspace_id: &'a str,
@@ -348,7 +328,7 @@ impl Store {
             .filter(move |tab| &tab.scope == scope && tab.workspace_id == workspace_id)
     }
 
-    pub(crate) fn in_core_group<'a>(
+    pub fn in_core_group<'a>(
         &'a self,
         key: &'a CoreGroupKey,
     ) -> impl Iterator<Item = &'a Tab> + 'a {
@@ -359,7 +339,7 @@ impl Store {
 
     /// Opens a tab for the strips, or returns `None` when the app already
     /// holds the most it keeps.
-    pub(crate) fn open(
+    pub fn open(
         &mut self,
         scope: Scope,
         workspace_id: &str,
@@ -380,11 +360,7 @@ impl Store {
         })
     }
 
-    pub(crate) fn open_core(
-        &mut self,
-        key: &CoreGroupKey,
-        location: Option<Location>,
-    ) -> Option<TabId> {
+    pub fn open_core(&mut self, key: &CoreGroupKey, location: Option<Location>) -> Option<TabId> {
         let (scope, workspace_id) = key.parts();
         self.open(scope, &workspace_id, location, None)
     }
@@ -405,7 +381,7 @@ impl Store {
     /// Moves a tab beside another; whether it moved. Workspaces list their
     /// tabs in store order, so landing beside one of the same workspace
     /// reorders that workspace's strip alone.
-    pub(crate) fn move_tab(&mut self, id: TabId, beside: Beside<TabId>) -> bool {
+    pub fn move_tab(&mut self, id: TabId, beside: Beside<TabId>) -> bool {
         let (Beside::Before(anchor) | Beside::After(anchor)) = beside;
         if anchor == id {
             return false;
@@ -430,7 +406,7 @@ impl Store {
         true
     }
 
-    pub(crate) fn close(&mut self, id: TabId) -> Option<Tab> {
+    pub fn close(&mut self, id: TabId) -> Option<Tab> {
         let tab = self.detach(id)?;
         self.closed.push_page(tab.clone());
         Some(tab)
@@ -438,7 +414,7 @@ impl Store {
 
     /// Removes a tab without recording it as closed, as when its view moves
     /// into a detached window of its own.
-    pub(crate) fn detach(&mut self, id: TabId) -> Option<Tab> {
+    pub fn detach(&mut self, id: TabId) -> Option<Tab> {
         let index = self.tabs.iter().position(|tab| tab.id == id)?;
         let tab = self.tabs.remove(index);
         self.save();
@@ -446,12 +422,7 @@ impl Store {
     }
 
     /// Updates a native content reference or title. Returns whether it changed.
-    pub(crate) fn visited(
-        &mut self,
-        id: TabId,
-        location: Option<Location>,
-        title: Option<&str>,
-    ) -> bool {
+    pub fn visited(&mut self, id: TabId, location: Option<Location>, title: Option<&str>) -> bool {
         let Some(tab) = self.tabs.iter_mut().find(|tab| tab.id == id) else {
             return false;
         };
@@ -477,7 +448,7 @@ impl Store {
     /// Changes a Core terminal tab's pane tree in place, and saves when the
     /// tree changed. Every window draws this one tree. `None` when `id` is
     /// not a Core terminal tab.
-    pub(crate) fn edit_panes<R>(
+    pub fn edit_panes<R>(
         &mut self,
         id: TabId,
         edit: impl FnOnce(&mut sheprd_panes::Panes) -> R,
@@ -495,7 +466,7 @@ impl Store {
     }
 
     /// Drops the tabs of workspaces the daemon closed.
-    pub(crate) fn forget_workspaces(&mut self, scope: &Scope, closed: &[String]) -> bool {
+    pub fn forget_workspaces(&mut self, scope: &Scope, closed: &[String]) -> bool {
         self.closed.forget_workspaces(scope, closed);
         let before = self.tabs.len();
         self.tabs
@@ -509,7 +480,7 @@ impl Store {
 
     /// Whether any tab belongs to one of `closed`, without claiming the
     /// store for writing, which would redraw every window.
-    pub(crate) fn has_workspaces(&self, scope: &Scope, closed: &[String]) -> bool {
+    pub fn has_workspaces(&self, scope: &Scope, closed: &[String]) -> bool {
         self.closed.has_workspaces(scope, closed)
             || self
                 .tabs

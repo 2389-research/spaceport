@@ -33,13 +33,7 @@ error-image-input-too-large = The image exceeds the { $limit }-byte resize input
 error-image-read-timeout = Reading the local image timed out (3 seconds).
 error-image-size = The image must not be empty.
 error-image-too-large = The image exceeds Herdr's { $limit }-byte upload limit.
-error-invalid-browser-tabs = Invalid saved browser tabs
-error-invalid-browser-url = Browser tabs open only http and https addresses with a host, of at most 8 KiB.
-error-invalid-code-file = An old source tab must name an absolute file path without control characters
 error-invalid-external-url = Not an address with a scheme other than http, https, and file, of at most 8 KiB.
-error-invalid-group-layouts = Invalid saved editor groups
-error-invalid-local-page = Local pages must be a plain file in a folder that is not hidden and does not hold your home directory.
-error-invalid-review-checkout = A saved review tab names a checkout that is not a local absolute path.
 error-invalid-sidebar-width = invalid sidebar width
 # sidebar_width_px is a config key.
 error-invalid-stored-width = sidebar_width_px must be finite and positive, or null

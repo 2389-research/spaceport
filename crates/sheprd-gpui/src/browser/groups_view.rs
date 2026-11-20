@@ -6,9 +6,7 @@
 //! workspace and carries out what they imply, such as focusing the Herdr tab
 //! a group asks for.
 use super::{
-    Browser, Location, Scope, TabId,
-    groups::{GroupId, Layout, Pick, Shown, Slot},
-    hosts::BrowserHosts,
+    Browser, GroupId, Layout, Location, Pick, Scope, Shown, Slot, TabId, hosts::BrowserHosts,
     view::store,
 };
 use crate::{NavigationTarget, SheprdWindow, controls::Command};
@@ -262,7 +260,12 @@ impl Browser {
         store
             .in_workspace(scope, workspace)
             .filter(|tab| hosts.core_enabled || !tab.requires_core())
-            .map(|tab| (Pick::Page(tab.id), super::view::tab_label(&tab.label())))
+            .map(|tab| {
+                (
+                    Pick::Page(tab.id),
+                    super::view::tab_label(&super::drawn_label(tab)),
+                )
+            })
             .collect()
     }
 

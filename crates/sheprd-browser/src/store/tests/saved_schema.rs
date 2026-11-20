@@ -140,7 +140,7 @@ fn unknown_kinds_places_and_members_keep_their_outcome() {
     ] {
         let bytes = file(&[legacy(0, devices, ""), unknown], "");
         assert!(
-            matches!(Store::restored_for_test(&bytes), Err(crate::Error::Json(_))),
+            matches!(Store::restored_for_test(&bytes), Err(Error::Json(_))),
             "{}",
             String::from_utf8_lossy(&bytes)
         );
@@ -165,11 +165,11 @@ fn a_malformed_retired_payload_refuses_the_whole_file() {
         format!(r#"{{"kind":"local","file":{{"root":{root},"entry":"{entry}"}}}}"#)
     };
     // Each payload fails its own check; the message names which.
-    let url = crate::Error::InvalidBrowserUrl.to_string();
-    let page = crate::Error::InvalidLocalPage.to_string();
-    let review = crate::Error::InvalidReviewCheckout.to_string();
-    let tabs = crate::Error::InvalidBrowserTabs.to_string();
-    let source = crate::Error::InvalidCodeFile.to_string();
+    let url = Error::InvalidBrowserUrl.to_string();
+    let page = Error::InvalidLocalPage.to_string();
+    let review = Error::InvalidReviewCheckout.to_string();
+    let tabs = Error::InvalidBrowserTabs.to_string();
+    let source = Error::InvalidCodeFile.to_string();
     let cases = [
         (
             r#"{"kind":"web","url":"file:///etc/passwd"}"#.to_owned(),
@@ -209,7 +209,7 @@ fn a_malformed_retired_payload_refuses_the_whole_file() {
             ],
             "",
         );
-        let Err(crate::Error::Json(error)) = Store::restored_for_test(&bytes) else {
+        let Err(Error::Json(error)) = Store::restored_for_test(&bytes) else {
             panic!("{location} loaded or failed another way");
         };
         assert!(
@@ -233,7 +233,7 @@ fn a_malformed_retired_payload_refuses_the_whole_file() {
     ] {
         let bytes = file(&[legacy(1, location, "")], "");
         assert!(
-            matches!(Store::restored_for_test(&bytes), Err(crate::Error::Json(_))),
+            matches!(Store::restored_for_test(&bytes), Err(Error::Json(_))),
             "{location}"
         );
     }
@@ -258,7 +258,7 @@ fn a_tab_that_breaks_a_bound_refuses_the_whole_file() {
         assert!(
             matches!(
                 Store::restored_for_test(&bytes),
-                Err(crate::Error::InvalidBrowserTabs)
+                Err(Error::InvalidBrowserTabs)
             ),
             "{}",
             String::from_utf8_lossy(&bytes)
@@ -269,7 +269,7 @@ fn a_tab_that_breaks_a_bound_refuses_the_whole_file() {
         .collect();
     assert!(matches!(
         Store::restored_for_test(&file(&crowd, "")),
-        Err(crate::Error::InvalidBrowserTabs)
+        Err(Error::InvalidBrowserTabs)
     ));
     assert!(Store::restored_for_test(&file(&crowd[1..], "")).is_ok());
 }

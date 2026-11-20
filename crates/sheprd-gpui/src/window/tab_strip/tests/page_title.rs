@@ -68,7 +68,7 @@ fn a_chosen_core_tab_stays_in_view_when_its_title_comes_in(cx: &mut TestAppConte
     cx.update(|_, cx| Store::update(cx, |store| store.visited(opened, None, Some(TITLE))));
     frames(&view, cx);
     let label = view.read_with(cx, |_, cx| {
-        cx.global::<Store>().get(opened).unwrap().label()
+        crate::browser::drawn_label(cx.global::<Store>().get(opened).unwrap())
     });
     assert!(label.starts_with("feat: scroll pane"), "{label}");
     let (left, right) = viewport(cx);

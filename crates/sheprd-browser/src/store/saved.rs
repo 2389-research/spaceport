@@ -4,7 +4,8 @@
 //! it. Only this module can name a retired tab kind: it checks the whole
 //! file, reserves every ID in it, and hands the store the tabs that restore.
 use super::{Location, MAX_TABS, MAX_TITLE_CHARS, Saved, Scope, Tab, TabId};
-use crate::browser::WebUrl;
+use crate::WebUrl;
+use crate::{Error, Result};
 use serde::Deserialize;
 use sheprd_panes::Panes;
 use std::path::{Component, Path, PathBuf};
@@ -139,10 +140,10 @@ impl SavedTab {
 }
 
 /// The tabs of a saved file that restore, and the next free ID.
-pub(super) fn parse(bytes: &[u8]) -> crate::Result<Saved> {
+pub(super) fn parse(bytes: &[u8]) -> Result<Saved> {
     let file: SavedFile = serde_json::from_slice(bytes)?;
     if file.tabs.len() > MAX_TABS || !file.tabs.iter().all(SavedTab::valid) {
-        return Err(crate::Error::InvalidBrowserTabs);
+        return Err(Error::InvalidBrowserTabs);
     }
     // Saved group picks may still name a discarded tab. Never assign its ID
     // to a new tab, or that old pick could show unrelated content.
@@ -180,11 +181,11 @@ struct RawSourceFile {
 }
 
 impl TryFrom<RawSourceFile> for SourceFile {
-    type Error = crate::Error;
+    type Error = Error;
 
-    fn try_from(raw: RawSourceFile) -> crate::Result<Self> {
+    fn try_from(raw: RawSourceFile) -> Result<Self> {
         if !bounded_path(&raw.path) || !Path::new(&raw.path).is_absolute() {
-            return Err(crate::Error::InvalidCodeFile);
+            return Err(Error::InvalidCodeFile);
         }
         Ok(Self)
     }
@@ -203,14 +204,14 @@ struct RawOrchestratorRepo {
 }
 
 impl TryFrom<RawOrchestratorRepo> for OrchestratorRepo {
-    type Error = crate::Error;
+    type Error = Error;
 
-    fn try_from(raw: RawOrchestratorRepo) -> crate::Result<Self> {
+    fn try_from(raw: RawOrchestratorRepo) -> Result<Self> {
         let checkout = raw.checkout;
         if !bounded_path(&checkout)
             || !(checkout.starts_with('/') || Path::new(&checkout).is_absolute())
         {
-            return Err(crate::Error::InvalidBrowserTabs);
+            return Err(Error::InvalidBrowserTabs);
         }
         Ok(Self)
     }
@@ -231,9 +232,9 @@ struct RawReviewCheckout {
 }
 
 impl TryFrom<RawReviewCheckout> for ReviewCheckout {
-    type Error = crate::Error;
+    type Error = Error;
 
-    fn try_from(raw: RawReviewCheckout) -> crate::Result<Self> {
+    fn try_from(raw: RawReviewCheckout) -> Result<Self> {
         let path = |text: &str| bounded_path(text) && Path::new(text).is_absolute();
         let branch = !raw.branch.is_empty()
             && raw.branch.len() <= 1024
@@ -244,7 +245,7 @@ impl TryFrom<RawReviewCheckout> for ReviewCheckout {
             || !branch
             || raw.checkout.as_deref().is_some_and(|c| !path(c))
         {
-            return Err(crate::Error::InvalidReviewCheckout);
+            return Err(Error::InvalidReviewCheckout);
         }
         Ok(Self)
     }
@@ -265,12 +266,12 @@ struct RawLocalFile {
 }
 
 impl TryFrom<RawLocalFile> for LocalFile {
-    type Error = crate::Error;
+    type Error = Error;
 
-    fn try_from(raw: RawLocalFile) -> crate::Result<Self> {
-        let home = crate::config::home().ok();
+    fn try_from(raw: RawLocalFile) -> Result<Self> {
+        let home = sheprd_client::local_path::home_dir();
         if !servable(&raw.root, &raw.entry, home.as_deref()) {
-            return Err(crate::Error::InvalidLocalPage);
+            return Err(Error::InvalidLocalPage);
         }
         Ok(Self)
     }

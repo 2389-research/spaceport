@@ -6340,6 +6340,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "sheprd-browser"
+version = "0.1.0"
+dependencies = [
+ "gpui-pre",
+ "serde",
+ "serde_json",
+ "sheprd-backend",
+ "sheprd-client",
+ "sheprd-motion",
+ "sheprd-panes",
+ "sheprd-reorder",
+ "sheprd-state-file",
+ "sheprd-truncate",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tracing",
+ "url",
+ "uuid",
+]
+
+[[package]]
 name = "sheprd-chat-protocol"
 version = "0.1.0"
 dependencies = [
@@ -6472,6 +6493,7 @@ dependencies = [
  "sha2 0.11.1",
  "sheprd-ago",
  "sheprd-backend",
+ "sheprd-browser",
  "sheprd-chat-protocol",
  "sheprd-client",
  "sheprd-commands",

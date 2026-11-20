@@ -13,20 +13,20 @@ const MAX_TRIES: u8 = 4;
 
 /// What a thumb drags: the strip it scrolls.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct ThumbDrag(pub(crate) GroupId);
+pub struct ThumbDrag(pub GroupId);
 
 /// Where a strip's thumb sits, from the strip's left edge. The math is the
 /// same along either axis, so the review's vertical scrollbar uses it too.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct Thumb {
-    pub(crate) left: f32,
-    pub(crate) width: f32,
+pub struct Thumb {
+    pub left: f32,
+    pub width: f32,
 }
 
 impl Thumb {
     /// The thumb for a strip `viewport` wide that scrolls `max` further,
     /// scrolled `scrolled` of the way; none when its tabs fit.
-    pub(crate) fn of(viewport: f32, max: f32, scrolled: f32) -> Option<Self> {
+    pub fn of(viewport: f32, max: f32, scrolled: f32) -> Option<Self> {
         if viewport <= 0. || max < 0.5 {
             return None;
         }
@@ -37,7 +37,7 @@ impl Thumb {
     }
 
     /// How far a strip scrolls with this thumb moved to `left`.
-    pub(crate) fn scrolled_at(self, viewport: f32, max: f32, left: f32) -> f32 {
+    pub fn scrolled_at(self, viewport: f32, max: f32, left: f32) -> f32 {
         let travel = viewport - self.width;
         if travel <= 0. {
             return 0.;
@@ -80,13 +80,13 @@ impl Strip {
 }
 
 #[derive(Default)]
-pub(crate) struct TabScroll {
+pub struct TabScroll {
     strips: HashMap<GroupId, Strip>,
 }
 
 impl TabScroll {
     /// What tracks `group`'s strip.
-    pub(crate) fn handle(&mut self, group: GroupId) -> ScrollHandle {
+    pub fn handle(&mut self, group: GroupId) -> ScrollHandle {
         self.strips.entry(group).or_default().handle.clone()
     }
 
@@ -96,7 +96,7 @@ impl TabScroll {
     /// page's title comes in after its tab opened, often once it is whole,
     /// and its tab then widens past the strip's edge, taking its close
     /// button out of view. Whether the strip needs another frame to do it.
-    pub(crate) fn reveal(
+    pub fn reveal(
         &mut self,
         group: GroupId,
         pick: &Pick,
@@ -132,7 +132,7 @@ impl TabScroll {
     }
 
     /// The thumb `group`'s strip draws, as the strip last laid out.
-    pub(crate) fn thumb(&self, group: GroupId) -> Option<Thumb> {
+    pub fn thumb(&self, group: GroupId) -> Option<Thumb> {
         let handle = &self.strips.get(&group)?.handle;
         Thumb::of(
             f32::from(handle.bounds().size.width),
@@ -142,7 +142,7 @@ impl TabScroll {
     }
 
     /// Takes hold of `group`'s thumb with the pointer at `x`.
-    pub(crate) fn grab(&mut self, group: GroupId, x: Pixels) {
+    pub fn grab(&mut self, group: GroupId, x: Pixels) {
         let Some(thumb) = self.thumb(group) else {
             return;
         };
@@ -153,7 +153,7 @@ impl TabScroll {
     }
 
     /// Moves `group`'s thumb with the pointer at `x`; whether it scrolled.
-    pub(crate) fn drag(&mut self, group: GroupId, x: Pixels) -> bool {
+    pub fn drag(&mut self, group: GroupId, x: Pixels) -> bool {
         let Some(thumb) = self.thumb(group) else {
             return false;
         };
@@ -176,7 +176,7 @@ impl TabScroll {
     }
 
     /// Forgets the strips of groups that are gone.
-    pub(crate) fn retain(&mut self, live: impl Fn(GroupId) -> bool) {
+    pub fn retain(&mut self, live: impl Fn(GroupId) -> bool) {
         self.strips.retain(|group, _| live(*group));
     }
 }
