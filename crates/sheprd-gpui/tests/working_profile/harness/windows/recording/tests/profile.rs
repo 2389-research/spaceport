@@ -2,7 +2,7 @@
 // ABOUTME: Checks private artifact identity without starting or stopping any recording.
 use super::*;
 use crate::working_profile::harness::Sandbox;
-use sha2::{Digest as _, Sha256};
+use sha2::Sha256;
 
 #[test]
 fn retained_profile_has_native_sampled_stacks_and_matching_identity() -> Result<()> {

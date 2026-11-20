@@ -763,3 +763,10 @@ The instance, Stop authority, pre-opened Stop streams, and cleanup ordering rema
 The ordinary native-decoder and no-replacement controls still need remote GREEN.
 No new native recording or event-loss qualification is claimed.
 Independent review found no material defect in retained bytes, selectors, refusal, or recorder ownership.
+
+At `04791a5df`, run `44817841476` passed all runtime checks.
+Windows passed 47 harness tests, including actual retained-copy WPR decoding and both no-replacement controls.
+Eight observer tests, ten accessibility controls, and actual recorder inventory also passed.
+Mac, tools, and encrypted retention jobs passed.
+Windows scoped Clippy rejected a redundant test `Digest` import already in scope from its parent.
+The correction removes that redundant import; a warning-free remote gate remains pending.
