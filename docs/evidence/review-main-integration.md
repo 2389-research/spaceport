@@ -5,7 +5,8 @@ Status: the current candidate integrates the reviewed Linux and Windows native f
 Linux source `16a928826` passes all forty-six native cases, including Cycle Windows and cleanup.
 Windows source `7e2459d67` passes twenty-eight native cases but fails console preparation and Palette query setup.
 Shared candidate `3a603345a` repairs native preparation and SearchInput's assistive SetValue contract.
-Its Linux and Windows probes remain pending on the same GPUI 0.3.11 source.
+Its Linux and Windows probes both pass on the same GPUI 0.3.11 source.
+Configured CI on evidence head `1feda67f7` remains pending.
 The shared framework update still needs configured platform CI on the combined source.
 Prior application source `d747cdbdb` passes all eighteen configured CI jobs and its x64 native Core cases.
 Those 0.3.10 results do not qualify the new framework version.
@@ -69,6 +70,21 @@ Independent review verifies these changes and the helper's existing cleanup owne
 Shared candidate `3a603345a` includes both corrections and three new search editing unit cases.
 The [Windows probe](https://github.com/2389-research/spaceport/actions/runs/44719150181) and [Linux probe](https://github.com/2389-research/spaceport/actions/runs/44719193679) now use that same source.
 No corrected unit or native outcome is claimed before those runs finish.
+
+Both shared-source probes now pass.
+The [Linux receipt](review-squad/linux-native/spaceport-complete-3a603345a.json) records ten contracts, two receipt tests, and forty-six native case outcomes.
+It verifies exact window activation, final Polish search, session/layout cleanup, direct reaping, and daemon survival.
+The [Windows receipt](review-squad/windows-native/qualification-3a603345a.json) records thirty-eight native case outcomes and all seven selected native tests passing.
+Four Rust contracts, three search accessibility unit cases, and both real PowerShell consumers also pass.
+The private pane program receives F8, F6, Shift-F6, F11, and Control-PageUp/Down with exact key/modifier records.
+Native Resume restores the assistive query, and all three font geometry cases pass.
+Polish AltGr, direct chrome focus, key release, and layout restoration pass.
+PR head `1feda67f7` has identical application, fixture, Cargo, and workflow files; only evidence differs.
+Its [full configured CI](https://github.com/2389-research/spaceport/actions/runs/44720815181) remains the shortcut closure gate.
+Its [supply-chain run](https://github.com/2389-research/spaceport/actions/runs/44720815809) passes all three jobs.
+When configured CI passes, close only Kata `3wd4` with these exact-source receipts and fresh tracker verification.
+Keep Core Cmd-W, audible accessibility, and release profiling open under the existing Mac hold.
+Do not launch a Mac foreground fixture, merge into main, or release.
 
 Canonical quick checks, workflow lint, offline workflow security checks, receipt parsing, and whitespace checks pass.
 Locked workspace metadata resolves without compilation.

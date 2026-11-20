@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "scope": "Complete native Spaceport Linux shortcut matrix on private GNOME46 with GPUI0.3.11",
+  "source": "3a603345ad2eeac41fbee8194d5e0c9a1c9b71b9",
+  "run": {
+    "id": 44719193679,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44719193679",
+    "job_id": 136230245369,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "checks": {
+    "shared_contract_tests": {
+      "passed": 10,
+      "failed": 0
+    },
+    "receipt_tests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "native_test": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 17.68
+    },
+    "completed_cases": [
+      "new-tab",
+      "tab-1",
+      "tab-2",
+      "tab-3",
+      "tab-4",
+      "tab-5",
+      "tab-6",
+      "tab-7",
+      "tab-8",
+      "tab-9",
+      "font-increase",
+      "font-decrease",
+      "font-reset",
+      "pane-f6",
+      "pane-shift-f6",
+      "pane-f11",
+      "pane-ctrl-page-up",
+      "pane-ctrl-page-down",
+      "direct-next-tab",
+      "direct-previous-tab",
+      "prefix-next-tab",
+      "prefix-previous-tab",
+      "direct-next-region",
+      "direct-previous-region",
+      "prefix-next-region",
+      "prefix-previous-region",
+      "direct-fullscreen-enter",
+      "direct-fullscreen-leave",
+      "prefix-fullscreen-enter",
+      "prefix-fullscreen-leave",
+      "keybindings",
+      "palette",
+      "palette-resume",
+      "settings-alias",
+      "prefix-settings",
+      "split-editor-alias",
+      "next-pane-alias",
+      "previous-pane-alias",
+      "history-back-alias",
+      "history-forward-alias",
+      "prefix-pane-left",
+      "prefix-pane-down",
+      "prefix-pane-up",
+      "prefix-pane-right",
+      "cycle-windows-alias",
+      "polish-search"
+    ]
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T10:29:34.1002469Z",
+      "message": "GNOME_PROBE input_driver_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T10:29:51.7980924Z",
+      "message": "GNOME_PROBE native_test_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T10:29:51.8038290Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE keys_released=true session_closed=true"
+    },
+    {
+      "utc": "2026-11-20T10:29:51.8055339Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE cycle_target_active=true explicit_socket=true coherent_target=true runtime_members_preserved=true"
+    },
+    {
+      "utc": "2026-11-20T10:29:51.8056733Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS_CASE owned_second_window_closed=true before_case=polish-search"
+    },
+    {
+      "utc": "2026-11-20T10:29:51.8058772Z",
+      "message": "GNOME_RECEIPT LINUX_KEYS native PASS: real daemon tabs, shifted digits, pane key bytes, and Polish search text"
+    },
+    {
+      "utc": "2026-11-20T10:29:51.8059342Z",
+      "message": "GNOME_RECEIPT LINUX_NATIVE PASS: fixed real-app pipeline; keys released, session closed, layout restored, daemon survived GUI exit"
+    },
+    {
+      "utc": "2026-11-20T10:29:51.8151385Z",
+      "message": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T10:29:51.8186069Z",
+      "message": "GNOME_PROBE bus_reaped=true root_preserved_for_runner_cleanup=/tmp/spaceport-gnome-13384-1795170564179141803"
+    }
+  ],
+  "regression": {
+    "before": "70395bd4df4314c78ebafbb4fc1cde8268877252 reaches Cycle Windows platform activation but fails its exact target-active outcome.",
+    "change": "Both exact GPUI roots advance from0.3.10 to0.3.11; existing non-GPUI versions stay intact.",
+    "after": "All46 native cases still pass with the new SearchInput accessibility handler and shared-source fixture changes."
+  },
+  "limits": [
+    "Parent receipt timestamps reflect export time, not original child event times.",
+    "This result qualifies GNOME46/Linux x64 with the stock Polish programmer layout, not every compositor or layout.",
+    "Windows and macOS shared-framework qualification remain pending.",
+    "Kata3wd4 remains open for the remaining platform requirements."
+  ]
+}

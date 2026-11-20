@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "scope": "Complete Windows x64 native shortcut matrix and search editing regression on shared GPUI0.3.11 source",
+  "source": "3a603345ad2eeac41fbee8194d5e0c9a1c9b71b9",
+  "run": {
+    "id": 44719150181,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44719150181",
+    "job_id": 136230093026,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "checks": {
+    "formatting_and_clippy": "passed",
+    "rust_contract_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "search_accessibility_unit_tests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "powershell_consumers": {
+      "native_cases": 38,
+      "console_cases": 6,
+      "unknown_case_rejected": true,
+      "input": false
+    },
+    "console_native_test": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 22.83
+    },
+    "matrix_native_tests": {
+      "passed": 4,
+      "failed": 0,
+      "seconds": 111.75
+    },
+    "altgr_test": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 5.86
+    },
+    "direct_chrome_test": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 6.42
+    }
+  },
+  "completed_native_case_ids": [
+    "console-attachment",
+    "pane-f6",
+    "pane-shift-f6",
+    "pane-f11",
+    "pane-ctrl-pageup",
+    "pane-ctrl-pagedown",
+    "back",
+    "forward",
+    "next-pane",
+    "previous-pane",
+    "keybinds",
+    "settings",
+    "split-editor",
+    "cycle-windows",
+    "focus-left",
+    "focus-right",
+    "focus-up",
+    "focus-down",
+    "next-tab",
+    "previous-tab",
+    "fullscreen",
+    "zen",
+    "status-bar",
+    "sidebar",
+    "palette",
+    "resume-palette",
+    "font-larger",
+    "font-smaller",
+    "font-reset",
+    "tab-1",
+    "tab-2",
+    "tab-3",
+    "tab-4",
+    "tab-5",
+    "tab-6",
+    "tab-7",
+    "tab-8",
+    "tab-9"
+  ],
+  "observed": [
+    {
+      "utc": "2026-11-20T10:34:45.7621905Z",
+      "message": "test search_input::tests::accessibility::assistive_replacement_notifies_the_search_owner_only_when_text_changes ... ok"
+    },
+    {
+      "utc": "2026-11-20T10:34:45.7628381Z",
+      "message": "test search_input::tests::accessibility::assistive_value_replaces_the_whole_unicode_query_and_clears_composition ... ok"
+    },
+    {
+      "utc": "2026-11-20T10:34:45.7634805Z",
+      "message": "test search_input::tests::accessibility::masked_fields_and_non_value_actions_do_not_change_the_query ... ok"
+    },
+    {
+      "utc": "2026-11-20T10:34:49.5345548Z",
+      "message": "WINDOWS_KEYS console_contract=true pane_cases=6 input=false"
+    },
+    {
+      "utc": "2026-11-20T10:34:49.5361106Z",
+      "message": "WINDOWS_KEYS PowerShell_contract=true cases=38 unknown_case_rejected=true console_syntax=true input=false"
+    },
+    {
+      "utc": "2026-11-20T10:35:01.0144629Z",
+      "message": "WINDOWS_KEYS pane_receipt id=console-attachment key=F8 modifiers=[] attached=true"
+    },
+    {
+      "utc": "2026-11-20T10:35:03.4327290Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-f6 key=F6 modifiers=[] attached=true"
+    },
+    {
+      "utc": "2026-11-20T10:35:05.8585203Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-shift-f6 key=F6 modifiers=[\"Shift\"] attached=true"
+    },
+    {
+      "utc": "2026-11-20T10:35:08.3068463Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-f11 key=F11 modifiers=[] attached=true"
+    },
+    {
+      "utc": "2026-11-20T10:35:10.7549905Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-ctrl-pageup key=PageUp modifiers=[\"Control\"] attached=true"
+    },
+    {
+      "utc": "2026-11-20T10:35:13.1704923Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-ctrl-pagedown key=PageDown modifiers=[\"Control\"] attached=true"
+    },
+    {
+      "utc": "2026-11-20T10:36:21.8503256Z",
+      "message": "{\"input\":true,\"before\":468,\"width\":492,\"id\":\"font-larger\"}"
+    },
+    {
+      "utc": "2026-11-20T10:36:23.6983629Z",
+      "message": "{\"input\":true,\"before\":562,\"width\":539,\"id\":\"font-smaller\"}"
+    },
+    {
+      "utc": "2026-11-20T10:36:25.5123686Z",
+      "message": "{\"input\":true,\"before\":656,\"width\":328,\"id\":\"font-reset\"}"
+    },
+    {
+      "utc": "2026-11-20T10:37:12.4264286Z",
+      "message": "ALTGR native PASS: klid=00000415 text=U+0142,U+0144,U+017C,U+0143 workspace_dialog=false keys_released=true layouts_restored=true failure_cleanup=true"
+    }
+  ],
+  "regressions": {
+    "search": "Native SetValue now updates font query and ordinary Resume restores it. Three unit cases preserve normalization, Changed delivery, and masked-field refusal.",
+    "terminal_preparation": "Owned native text prepares the actual pane program. F8 qualifies attachment before F6, Shift-F6, F11 and Control-PageUp/Down are received with their exact modifiers.",
+    "font_geometry": "Actual marker widths increase from 468 to 492, decrease from 562 to 539, and reset from 656 to 328."
+  },
+  "limits": [
+    "This qualifies Windows x64 with the stock Polish programmer layout, not every layout or Windows ARM64.",
+    "Full configured CI on PR head1feda67f7 remains pending.",
+    "Mac foreground checks and audible screen-reader qualification remain pending."
+  ]
+}
