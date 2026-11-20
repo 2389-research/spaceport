@@ -196,17 +196,24 @@ $document.SetFocus()
 Wait-For 'terminal focus before native input' { $document.Current.HasKeyboardFocus }
 Require-Root
 if ($PrepareInput -ne '') {
-  if ($PrepareInput.Length -gt 4096 -or $PrepareInput.Contains("`r") -or $PrepareInput.Contains("`n")) {
+  if ($PrepareInput.Length -gt 4096 -or $PrepareInput -cmatch '[^\x20-\x7e]') {
     throw 'Pane preparation requires one bounded trusted command'
   }
   $preparation = $null
   try {
     $preparation = [SpaceportAltGr]::Begin($handle, [uint32]$ProcessId, $DeadlineEpochMs)
-    $preparation.TypePreparation($PrepareInput)
-    Wait-For 'prepared command echo through the actual GUI input route' {
-      Require-Root
-      $pattern = (Document).GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
-      $pattern.DocumentRange.GetText(32768).Replace("`r", '').Replace("`n", '').Contains($PrepareInput)
+    # Bound the injected burst and acknowledge each prefix without replaying input.
+    for ($offset = 0; $offset -lt $PrepareInput.Length; $offset += 16) {
+      $length = [Math]::Min(16, $PrepareInput.Length - $offset)
+      $preparation.TypePreparation($PrepareInput.Substring($offset, $length))
+      $prefix = $PrepareInput.Substring(0, $offset + $length)
+      # Only intermediate prefixes may end with invisible cell padding.
+      $expectedEcho = if ($offset + $length -eq $PrepareInput.Length) { $prefix } else { $prefix.TrimEnd() }
+      Wait-For "prepared command echo through the actual GUI input route: chars=$($prefix.Length)" {
+        Require-Root
+        $pattern = (Document).GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
+        $pattern.DocumentRange.GetText(32768).Replace("`r", '').Replace("`n", '').Contains($expectedEcho)
+      }
     }
     Require-Root
     $preparation.Chord([int[]]@(13))

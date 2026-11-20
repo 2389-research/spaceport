@@ -56,6 +56,34 @@ It stages Core through the existing checksum-pinned installer.
 Doctor Biz's Mac hold and Root's local compiler/VM hold remain active.
 Kata remains 49 closed and four open.
 
+### Follow-up result on `7fe7ac05c`
+
+The [probe](https://github.com/2389-research/spaceport/actions/runs/44723868088) passes formatting, Clippy, four contract cases, and three search unit cases.
+Its four shortcut matrix cases, Polish AltGr case, and direct chrome case pass.
+The exact Settings case passes its keyboard, persistence, painted ring, and dropdown assertions.
+This qualifies the bounded Settings acknowledgement on this source.
+
+The console case fails before submitting Enter or any measured shortcut.
+Native text shows a truncated prepared command tail after the full character burst.
+Its exact owned focus and layout guards pass.
+The client has a bounded 64-command queue; the helper injected the whole command without observing intermediate progress.
+That permits overload, but the available log does not prove where these characters disappeared.
+The correction sends at most sixteen authored characters, then observes that prefix before sending the next chunk.
+It preserves the complete command-echo barrier, original overall deadline, and cleanup reserve.
+It sends each character once and never retries an uncertain submission.
+Intermediate prefix checks ignore only trailing spaces omitted by the existing transcript producer.
+The complete final command retains its exact comparison, including any trailing spaces.
+
+The ordinary Core case fails again; observing and resizing still pass.
+Its escaped private screen text contains `SP_A11Y_7rs\\runneradmin` on one line.
+The marker exists, but a stale prompt suffix prevents the required exact output line.
+This establishes visible text corruption, not a missing accessibility event.
+The next diagnostic drains the existing read-only runtime attachment for one second after failure.
+It preserves the 1 MiB capture bound.
+It displays at most 8 KiB of captured bytes as escaped text and byte-exact hex.
+It also records the terminal dimensions observed before attachment.
+No replay, corrective terminal input, production change, or Core cause is claimed.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.

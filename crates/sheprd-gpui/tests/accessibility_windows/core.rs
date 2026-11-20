@@ -287,6 +287,31 @@ fn require_runtime_output(observed: &Attachment, marker: &[u8]) {
     );
 }
 
+fn runtime_diagnostic(observed: &Attachment) -> anyhow::Result<String> {
+    let deadline = Instant::now() + Duration::from_secs(1);
+    let mut bytes = Vec::new();
+    while Instant::now() < deadline {
+        let chunk = observed.read(Duration::from_millis(100))?;
+        anyhow::ensure!(
+            bytes.len() + chunk.bytes.len() <= CAPTURE_LIMIT,
+            "Core fixture diagnostic exceeds 1 MiB"
+        );
+        bytes.extend(chunk.bytes);
+        if chunk.end.is_some() {
+            break;
+        }
+    }
+    let marker = b"SP_A11Y_7";
+    let present = bytes.windows(marker.len()).any(|part| part == marker);
+    let shown = &bytes[..bytes.len().min(8192)];
+    Ok(format!(
+        "marker={present} bytes={} shown={} text={:?} hex={shown:02x?}",
+        bytes.len(),
+        shown.len(),
+        String::from_utf8_lossy(shown)
+    ))
+}
+
 #[test]
 #[ignore = "requires Windows desktop plus explicitly selected Herdr and Core fixture binaries"]
 fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
@@ -318,8 +343,11 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
         .running
         .command_output(command, &capture, Duration::from_secs(30))
         .unwrap_or_else(|error| {
-            let runtime = runtime_output_seen(&observed, b"SP_A11Y_7", Duration::from_secs(1));
-            panic!("{error}; exact Core runtime marker on helper failure: {runtime:?}");
+            let runtime = runtime_diagnostic(&observed);
+            panic!(
+                "{error}; exact Core runtime on helper failure: cols={} rows={} {runtime:?}",
+                info.cols, info.rows
+            );
         });
     for receipt in [
         "TERMINAL_A11Y text=true native_text_changed=true unselected_caret=true caret_line_bounds=true",
