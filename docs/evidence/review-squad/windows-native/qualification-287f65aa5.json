@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "scope": "Complete configured CI and native shortcut closure checkpoint",
+  "source": "287f65aa5177940eb74e51072035275c8f1775f0",
+  "run": {
+    "id": 44727659632,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44727659632",
+    "status": "completed",
+    "conclusion": "success",
+    "configured_jobs_passed": 18,
+    "unconfigured_release_skipped": 1
+  },
+  "supply": {
+    "id": 44727659623,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44727659623",
+    "jobs_passed": 3
+  },
+  "jobs": [
+    {
+      "id": 136259068443,
+      "name": "Workflow Security",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259175777,
+      "name": "Commit messages",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328240,
+      "name": "Windows native GUI (windows-11-arm)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328308,
+      "name": "Release (aarch64-apple-darwin)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328316,
+      "name": "Windows package and installer",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328327,
+      "name": "Windows check (windows-11-arm, all)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328342,
+      "name": "Release (x86_64-apple-darwin)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328349,
+      "name": "Windows native GUI (windows-2025)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328383,
+      "name": "Windows check (windows-2025, all)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328414,
+      "name": "Format, lint, and test (ubuntu-24.04, default)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328429,
+      "name": "Format, lint, and test (ubuntu-24.04-arm, all)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328432,
+      "name": "Format, lint, and test (macos-15, default)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328439,
+      "name": "Windows check (windows-11-arm, default)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328446,
+      "name": "Windows check (windows-2025, default)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328447,
+      "name": "Format, lint, and test (ubuntu-24.04-arm, default)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328449,
+      "name": "Format, lint, and test (macos-15, all)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259328698,
+      "name": "Format, lint, and test (ubuntu-24.04, all)",
+      "conclusion": "success"
+    },
+    {
+      "id": 136259330258,
+      "name": "Release (${{ matrix.target }})",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 136267130771,
+      "name": "Format, lint, and test",
+      "conclusion": "success"
+    }
+  ],
+  "native": {
+    "job_id": 136259328349,
+    "gui": {
+      "passed": 8,
+      "failed": 0,
+      "seconds": 88.62
+    },
+    "pipe_owner": {
+      "passed": 1,
+      "failed": 0
+    },
+    "ordinary_uia": {
+      "passed": 25,
+      "failed": 0,
+      "seconds": 307.24
+    },
+    "non_us": {
+      "passed": 6,
+      "failed": 0,
+      "seconds": 146.78
+    },
+    "core": {
+      "passed": 3,
+      "failed": 0,
+      "seconds": 18.59
+    },
+    "release_performance": "skipped"
+  },
+  "completed_native_case_ids": [
+    "back",
+    "console-attachment",
+    "cycle-windows",
+    "focus-down",
+    "focus-left",
+    "focus-right",
+    "focus-up",
+    "font-larger",
+    "font-reset",
+    "font-smaller",
+    "forward",
+    "fullscreen",
+    "keybinds",
+    "next-pane",
+    "next-tab",
+    "palette",
+    "pane-ctrl-pagedown",
+    "pane-ctrl-pageup",
+    "pane-f11",
+    "pane-f6",
+    "pane-shift-f6",
+    "previous-pane",
+    "previous-tab",
+    "resume-palette",
+    "settings",
+    "sidebar",
+    "split-editor",
+    "status-bar",
+    "tab-1",
+    "tab-2",
+    "tab-3",
+    "tab-4",
+    "tab-5",
+    "tab-6",
+    "tab-7",
+    "tab-8",
+    "tab-9",
+    "zen"
+  ],
+  "closure": {
+    "issue": "3wd4",
+    "uid": "01M7JWV6MHGJXD30B1C2HN3WD4",
+    "status": "closed",
+    "closed_at": "2026-11-20T11:45:03.036Z",
+    "event_id": 9805,
+    "event_uid": "01M7WCCEHWHGF81GC1NAQH08XX",
+    "idempotency_key": "spaceport-3wd4-287f65aa5",
+    "readback": {
+      "closed": 50,
+      "open": 3,
+      "parent": "9s44",
+      "parent_status": "open"
+    }
+  },
+  "limits": [
+    "Linux/GNOME qualification remains source-scoped to the unchanged production files on 3a603345a.",
+    "The intermittent ordinary Core corruption did not recur; no cause or production fix is claimed.",
+    "Separate Windows topic 70df119a6 adds success-path raw replay evidence and is not part of this qualified PR head.",
+    "Mac foreground Cmd-W, audible screen-reader output, updated native error captures and working-session release profiling remain pending.",
+    "No merge into main or release follows from this checkpoint."
+  ]
+}

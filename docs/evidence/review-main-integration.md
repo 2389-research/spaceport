@@ -788,3 +788,23 @@ Full configured CI remains pending for this integrated checkpoint.
 Kata remains 49 closed and four open.
 Close only the shortcut finding after its remaining configured checks pass.
 Keep Mac Cmd-W, audible speech, and release working-session profiling pending.
+
+## Green configured checkpoint and shortcut closure
+
+The [complete receipt](review-squad/windows-native/qualification-287f65aa5.json) qualifies exact PR head `287f65aa5177940eb74e51072035275c8f1775f0`.
+All 18 configured CI jobs and all three supply-chain jobs pass.
+One unconfigured release target skips.
+Windows x64 passes eight GUI cases, pipe ownership, 25 ordinary UIA cases, six non-US cases, and three Core cases.
+The 38 native shortcut IDs match the actual case table.
+Both Mac release builds, the Windows installer, ARM native, and all feature/platform checks pass.
+Release-performance qualification still skips.
+
+The shortcut finding `3wd4` closes through event `9805`, with commit, PR, native runs, and reviewed paths.
+Fresh Kata reads confirm 50 closed and three open; parent `9s44` remains open.
+The [closure ledger](review-squad/kata-closures.jsonl) retains its stable event ID.
+Mac Cmd-W, accessibility, and release profiling remain open.
+The intermittent Core corruption remains undiagnosed despite the successful native cases.
+The separate Windows topic `70df119a6` retains bounded stream evidence on success for deterministic replay.
+Its probe is independent of this green PR head and is not a production correction.
+Updated native error captures remain pending in the PR checklist.
+No Mac foreground fixture, merge into main, or release follows.
