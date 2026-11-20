@@ -581,7 +581,7 @@ impl SheprdWindow {
 
     /// Where the panel lands in the window.
     fn menu_placement(&self, page: Page, layer: &Layer, panel: Stateful<Div>) -> AnyElement {
-        let placed = if layer.pointer_anchored {
+        if layer.pointer_anchored {
             let position = self.menu.anchor;
             anchored()
                 .position(position)
@@ -606,8 +606,7 @@ impl SheprdWindow {
             .into_any_element()
         } else {
             panel.into_any_element()
-        };
-        placed
+        }
     }
 
     /// The layer that holds the panel, keeps the keyboard, and dismisses the
