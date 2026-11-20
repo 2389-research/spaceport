@@ -759,3 +759,32 @@ Application, fixture, build, and workflow files remain unchanged from the qualif
 Their own CI results remain separate from this exact-source qualification.
 Kata remains 49 closed and four open; no Mac, speech, Linux/GNOME, or profiling gate is waived.
 The earlier intermittent ordinary Core failure still lacks an established cause, despite later native passes.
+
+## Windows acknowledgement and preparation follow-up
+
+The [integrated CI receipt](review-squad/windows-native/qualification-1feda67f7.json) records the two native failures on `1feda67f7`.
+All platform feature checks, both Mac builds, Windows installer, ARM native, and supply-chain jobs pass.
+Windows x64 passes the complete shortcut matrix but fails Settings segment selection and ordinary Core output.
+The aggregate follows that native failure.
+
+The Settings qualifier now awaits the same focused segment's selected state after sending its key once.
+The console qualifier sends bounded command chunks and observes each prefix before proceeding.
+Its complete final command echo, measured scan codes, ownership, overall deadline, and cleanup remain unchanged.
+Failure-only Core diagnostics retain the exact output-line assertion and five-second deadline.
+They capture bounded escaped private text and byte-exact runtime hex without corrective input.
+The [Windows plan](review-squad/windows-native/qualification-plan.md) records both failed baselines and candidate limits.
+
+The [native follow-up receipt](review-squad/windows-native/qualification-d893cc782.json) qualifies exact source `d893cc782578241d4caf8328713d44b7993324d4`.
+Formatting, Clippy, four contract tests, and three search accessibility tests pass.
+All 38 native shortcut receipts match the actual case table.
+Console attachment and keys, four matrix cases, Polish AltGr, direct chrome, Settings, and three Core cases pass.
+Settings includes saved preferences, painted focus, and dropdown restoration.
+The intermittent ordinary Core corruption does not recur; its cause remains unproved.
+No Core production fix follows from that successful run.
+
+Application production files remain identical to the shared `3a603345a` source.
+The Linux 46-case receipt therefore retains its exact production-source scope.
+Full configured CI remains pending for this integrated checkpoint.
+Kata remains 49 closed and four open.
+Close only the shortcut finding after its remaining configured checks pass.
+Keep Mac Cmd-W, audible speech, and release working-session profiling pending.

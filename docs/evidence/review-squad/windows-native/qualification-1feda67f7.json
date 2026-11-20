@@ -1,0 +1,147 @@
+{
+  "source_sha": "1feda67f7242f6b1affdd10fe4711423aeb67b92",
+  "run_id": 44720815181,
+  "native_job_id": 136236058049,
+  "jobs": [
+    {
+      "id": 136235750244,
+      "name": "Workflow Security",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136235865541,
+      "name": "Commit messages",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058049,
+      "name": "Windows native GUI (windows-2025)",
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "id": 136236058056,
+      "name": "Windows package and installer",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058088,
+      "name": "Windows native GUI (windows-11-arm)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058089,
+      "name": "Windows check (windows-2025, all)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058095,
+      "name": "Release (aarch64-apple-darwin)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058126,
+      "name": "Format, lint, and test (ubuntu-24.04-arm, default)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058132,
+      "name": "Format, lint, and test (ubuntu-24.04-arm, all)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058133,
+      "name": "Release (x86_64-apple-darwin)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058134,
+      "name": "Windows check (windows-11-arm, default)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058162,
+      "name": "Format, lint, and test (ubuntu-24.04, all)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058164,
+      "name": "Windows check (windows-2025, default)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058194,
+      "name": "Format, lint, and test (ubuntu-24.04, default)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058222,
+      "name": "Format, lint, and test (macos-15, all)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058241,
+      "name": "Windows check (windows-11-arm, all)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236058314,
+      "name": "Format, lint, and test (macos-15, default)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136236059871,
+      "name": "Release (${{ matrix.target }})",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "id": 136243809371,
+      "name": "Format, lint, and test",
+      "status": "completed",
+      "conclusion": "failure"
+    }
+  ],
+  "native": {
+    "gui": "8 passed",
+    "pipe": "passed",
+    "ordinary_uia": {
+      "passed": 24,
+      "failed": 1,
+      "test": "settings::native_settings_keyboard_persistence_and_painted_focus_ring",
+      "error": "Native Settings key did not select the segment"
+    },
+    "keyboard": "complete matrix passed",
+    "core": {
+      "passed": 2,
+      "failed": 1,
+      "test": "core::native_core_text_caret_bounds_and_output_changes_match_the_real_runtime",
+      "error": "changed=True output=False utf16_length=222 marker_present=True",
+      "runtime_marker": true
+    },
+    "performance": "skipped"
+  },
+  "remaining": [
+    "Settings selection acknowledgement candidate needs execution",
+    "Core ordinary failure cause remains unknown",
+    "Mac Cmd-W held",
+    "Audible screen-reader qualification pending",
+    "Release working-session profiling pending"
+  ]
+}

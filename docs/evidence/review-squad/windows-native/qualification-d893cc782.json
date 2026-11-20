@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "scope": "Windows native follow-up with bounded Settings acknowledgement and paced command preparation",
+  "source": "d893cc782578241d4caf8328713d44b7993324d4",
+  "run": {
+    "id": 44725998315,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44725998315",
+    "job_id": 136253440827,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "checks": {
+    "formatting_and_clippy": "passed",
+    "rust_contract_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "search_accessibility_unit_tests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "console": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 20.89
+    },
+    "matrix": {
+      "passed": 4,
+      "failed": 0,
+      "seconds": 101.57
+    },
+    "altgr": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 6.88
+    },
+    "direct_chrome": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 6.8
+    },
+    "settings": {
+      "passed": 1,
+      "failed": 0,
+      "seconds": 14.42
+    },
+    "core": {
+      "passed": 3,
+      "failed": 0,
+      "seconds": 14.14
+    }
+  },
+  "completed_native_case_ids": [
+    "back",
+    "console-attachment",
+    "cycle-windows",
+    "focus-down",
+    "focus-left",
+    "focus-right",
+    "focus-up",
+    "font-larger",
+    "font-reset",
+    "font-smaller",
+    "forward",
+    "fullscreen",
+    "keybinds",
+    "next-pane",
+    "next-tab",
+    "palette",
+    "pane-ctrl-pagedown",
+    "pane-ctrl-pageup",
+    "pane-f11",
+    "pane-f6",
+    "pane-shift-f6",
+    "previous-pane",
+    "previous-tab",
+    "resume-palette",
+    "settings",
+    "sidebar",
+    "split-editor",
+    "status-bar",
+    "tab-1",
+    "tab-2",
+    "tab-3",
+    "tab-4",
+    "tab-5",
+    "tab-6",
+    "tab-7",
+    "tab-8",
+    "tab-9",
+    "zen"
+  ],
+  "observed": [
+    {
+      "utc": "2026-11-20T11:22:21.3067532Z",
+      "message": "WINDOWS_KEYS pane_receipt id=console-attachment key=F8 modifiers=[] attached=true"
+    },
+    {
+      "utc": "2026-11-20T11:22:23.3640992Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-f6 key=F6 modifiers=[] attached=true"
+    },
+    {
+      "utc": "2026-11-20T11:22:25.3927843Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-shift-f6 key=F6 modifiers=[\"Shift\"] attached=true"
+    },
+    {
+      "utc": "2026-11-20T11:22:27.4055335Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-f11 key=F11 modifiers=[] attached=true"
+    },
+    {
+      "utc": "2026-11-20T11:22:29.3769460Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-ctrl-pageup key=PageUp modifiers=[\"Control\"] attached=true"
+    },
+    {
+      "utc": "2026-11-20T11:22:31.4126847Z",
+      "message": "WINDOWS_KEYS pane_receipt id=pane-ctrl-pagedown key=PageDown modifiers=[\"Control\"] attached=true"
+    },
+    {
+      "utc": "2026-11-20T11:24:21.4680019Z",
+      "message": "ALTGR native PASS: klid=00000415 text=U+0142,U+0144,U+017C,U+0143 workspace_dialog=false keys_released=true layouts_restored=true failure_cleanup=true"
+    },
+    {
+      "utc": "2026-11-20T11:24:44.2984048Z",
+      "message": "SETTINGS native PASS: Tab/Shift-Tab, native Space/Enter switches and segments, dropdown return focus, private saved preferences, painted focus ring"
+    },
+    {
+      "utc": "2026-11-20T11:24:49.5305521Z",
+      "message": "CORE_NATIVE observing=true text=true native_text_changed=true caret_line_bounds=true same_terminal=true observer_removed=true"
+    },
+    {
+      "utc": "2026-11-20T11:24:54.0806473Z",
+      "message": "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true"
+    },
+    {
+      "utc": "2026-11-20T11:24:59.4396213Z",
+      "message": "CORE_RESIZE native=true prefix=true left=true right=true restored=true runtime_marker=true stable_terminal_ids=true"
+    }
+  ],
+  "limits": [
+    "Application production source remains identical to 3a603345a; this changes fixtures, diagnostics and the guarded probe.",
+    "The Settings and console candidates pass real native tests; the exact location of previously truncated characters is unproved.",
+    "The intermittent ordinary Core corruption did not recur. Its failure-only diagnostic did not run; no Core cause or production fix is claimed.",
+    "Full configured CI must qualify the integrated source.",
+    "Mac foreground checks, audible screen-reader output and working-session release profiling remain pending."
+  ]
+}
