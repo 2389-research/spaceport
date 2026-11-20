@@ -13,3 +13,6 @@ pub enum Error {
     Missing(TerminalId),
     // keep-sorted end
 }
+
+/// The crate's fallible results.
+pub type Result<T, E = Error> = std::result::Result<T, E>;
