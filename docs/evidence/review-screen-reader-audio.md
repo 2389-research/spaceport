@@ -21,6 +21,8 @@ It does not prove that every Windows runner lacks audio.
 The device inventory does not enumerate active WASAPI endpoints.
 No screen reader runs, and no audio is recorded or heard.
 The accessibility finding stays open.
+After reading this result, Doctor Biz answered, "No, keep speech pending."
+Keep audible qualification pending until that instruction changes.
 
 ## Qualification route
 
