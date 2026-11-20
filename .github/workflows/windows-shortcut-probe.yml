@@ -50,6 +50,7 @@ jobs:
           cargo clippy --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- -D warnings
       - name: Test the fixed input contract
         run: |
+          cargo test --locked -p sheprd-terminal captured_core_stream -- --nocapture --test-threads=1
           cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::matrix::tests:: -- --nocapture --test-threads=1
           cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport search_input::tests::accessibility:: -- --nocapture --test-threads=1
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File crates/sheprd-gpui/tests/support/uia_shortcut_matrix.ps1 -CaseId console-attachment -ValidateContract

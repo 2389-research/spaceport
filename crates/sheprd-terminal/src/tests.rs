@@ -1,5 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
+mod core_snapshot;
 mod cursor;
 mod damage;
 mod events;

@@ -97,6 +97,28 @@ Failure capture retains its separate one-second budget.
 No input, UIA assertion, runtime target, or production code changes.
 Captured bytes need deterministic emulator replay before any Core fix is justified.
 
+### Captured failure and Cycle source readiness on `70df119a6`
+
+The [probe](https://github.com/2389-research/spaceport/actions/runs/44729475426) reproduces ordinary Core corruption.
+It captures all 1,342 stream bytes, with runtime dimensions 112 columns by 34 rows.
+The capture contains the initial screen, Win32 input mode, typed command, actual output, and following prompt.
+Only the owned runner's authored input and paths appear; no personal session is attached.
+The topic adds real-emulator replay and fragmentation checks using those exact captured bytes.
+A bounded diagnostic reports selected resize interleavings without claiming they reproduce the native cause.
+Fixed-size replay reads the emulator's test frame.
+Production also uses damage publication, app frame patches, and transcript projection.
+A passing replay alone cannot distinguish those later paths or establish the native cause.
+No production correction follows before those results.
+
+The same probe fails Cycle Windows before layout mutation or measured input.
+Its immediate document lookup finds no unique terminal in the selected source window.
+The failure diagnostic then sees one document in each of the two owned windows.
+The candidate waits within the existing phase and overall deadlines for that source's unique document.
+It keeps the exact HWND, chord, target, key-release, and layout-restoration assertions.
+No evidence establishes a shortcut delivery regression, so `3wd4` remains closed.
+The qualified PR head `287f65aa5` and its complete green CI remain unchanged.
+Kata remains 50 closed and three open.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
