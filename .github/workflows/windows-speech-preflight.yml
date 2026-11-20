@@ -1,0 +1,63 @@
+# ABOUTME: Checks audio prerequisites for disposable Windows screen-reader qualification.
+# ABOUTME: Records actual speech API failures without claiming screen-reader or audible evidence.
+name: Windows speech prerequisite probe
+
+on:
+  push:
+    branches: [fix/review-squad-speech-preflight]
+
+permissions: {}
+
+concurrency:
+  group: windows-speech-preflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audio:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-speech-preflight'
+    runs-on: windows-2025
+    timeout-minutes: 3
+    steps:
+      - name: Inventory audio and try the default render path
+        timeout-minutes: 1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber
+          $services = @(Get-Service Audiosrv, AudioEndpointBuilder | Select-Object Name, Status, StartType)
+          $devices = @(Get-CimInstance Win32_SoundDevice | Select-Object Name, Status, ConfigManagerErrorCode)
+          [ordered]@{
+            stage = 'inventory'
+            os = $os
+            services = $services
+            sound_devices = $devices
+            limit = 'Device inventory does not prove active render endpoints.'
+          } | ConvertTo-Json -Depth 5 -Compress | Write-Output
+          $synth = $null
+          try {
+            Add-Type -AssemblyName System.Speech
+            $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+            $voices = @($synth.GetInstalledVoices() | ForEach-Object {
+              [ordered]@{ name = $_.VoiceInfo.Name; enabled = $_.Enabled }
+            })
+            [ordered]@{ stage = 'voices'; voices = $voices } | ConvertTo-Json -Depth 3 -Compress | Write-Output
+            $synth.SetOutputToDefaultAudioDevice()
+            $synth.Speak('Spaceport audio prerequisite check.')
+            [ordered]@{
+              stage = 'speech_api_completed'
+              limit = 'No audio recording or screen reader ran. Audible announcements remain unqualified.'
+            } | ConvertTo-Json -Compress | Write-Output
+          } catch {
+            [ordered]@{
+              stage = 'speech_api_failed'
+              type = $_.Exception.GetType().FullName
+              message = $_.Exception.Message
+              detail = $_.Exception.ToString()
+            } | ConvertTo-Json -Compress | Write-Output
+            throw
+          } finally {
+            if ($null -ne $synth) { $synth.Dispose() }
+          }
