@@ -701,7 +701,24 @@ The two accessibility scheduling cases, 11 policy cases, and release-transition 
 Logs: `/tmp/spaceport-9s44-core-ci-{contract-red,contract-green,policy-green,transition-green}.log`.
 The full `just test-release-scripts` run executes 396 cases with 20 skipped.
 It fails four cases and errors once in the unchanged macOS Sparkle cleanup checks.
-The executable census rejects one observed row whose UID is nonnumeric.
+The executable census rejects one observed signed-decimal UID because its parser requires unsigned digits.
 No process names, arguments, or private paths are captured in that diagnosis.
 Those failures remain visible in `/tmp/spaceport-9s44-core-ci-release-suite.log`; cleanup controls remain intact.
 The full suite is not claimed passing.
+
+### Signed Darwin UID correction
+
+Apple's [`ps` keyword table](https://github.com/apple-oss-distributions/adv_cmds/blob/main/ps/keyword.c#L70-L74) formats Darwin UIDs with signed decimal output.
+The UID column uses that format, so a negative value is valid native output.
+The census now accepts that format while rejecting malformed UID and PID fields.
+It still matches exact fixture directory prefixes and excludes its own process.
+Both census passes, output bounds, `lsof`, ownership checks, and fd-safe deletion remain unchanged.
+The UID column supplies no cleanup authorization.
+
+Signed-UID matching and exclusion cases fail first; all three parser cases then pass.
+They cover active fixture/cache matches, path neighbors, self-exclusion, and malformed-row refusal.
+Logs: `/tmp/spaceport-9s44-signed-uid-{red,green}.log`.
+The full canonical release-script rerun then passes 399 cases with 20 explicit skips.
+This includes the five actual macOS cleanup cases that failed before the correction.
+Log: `/tmp/spaceport-9s44-signed-uid-release-suite.log`.
+Independent read-only review finds no material ownership, refusal, cleanup, or signaling regression.
