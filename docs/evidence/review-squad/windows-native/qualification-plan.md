@@ -220,7 +220,16 @@ New tests cover fragmentation, existing blank history, decorated cells, later ou
 The probe now runs the full terminal suite before its existing native cases and fixed reproduction series.
 Independent read-only review verifies all 71 handler methods without missing or duplicate delegation.
 It finds no material issue with history preservation, cell semantics, synchronized dispatch, or the tests.
-Compilation, red-to-green proof, and native validation remain pending.
+Source e60795ab9 passes both jobs in [run 44745362542](https://github.com/2389-research/spaceport/actions/runs/44745362542).
+All 83 terminal tests pass on Linux and Windows, including the previously red startup regression.
+The three existing native Core contracts and all six focused ordinary Core samples pass.
+Four focused samples record the actual 80-by-24-to-112-by-34 transition with the first prompt on row zero.
+Every final app frame retains the complete command, standalone marker, and next prompt.
+The full shortcut matrix, AltGr, console, chrome, and Settings cases also pass.
+All 38 native case IDs match the source table.
+The [qualification receipt](qualification-e60795ab9.json) retains exact source, job IDs, and selected frame records.
+This fixes the reproduced app-frame corruption; painted pixels remain unverified.
+Audible screen-reader checks, Mac Cmd-W qualification, release profiling, and native before/after images remain pending.
 
 ## Implementation
 
