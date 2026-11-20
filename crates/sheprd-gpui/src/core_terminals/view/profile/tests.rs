@@ -230,9 +230,24 @@ fn projected_core_reports_the_observed_hub_identity_and_connection_loss(cx: &mut
     assert_eq!(projection.core_id.as_deref(), Some("profile-hub"));
     assert!(projection.connected);
     crate::core_terminals::tests::scripted_core::lose(&backend, peer);
-    let projection = observed(&selected, cx);
-    assert_eq!(projection.core_id.as_deref(), Some("profile-hub"));
-    assert!(!projection.connected, "do not wait for a later view poll");
+    selected.owner.read_with(cx, |owner, cx| {
+        assert_eq!(owner.selected_core_group(), Some(&selected.key));
+        assert!(!owner.core_group_available(&selected.key, cx));
+        let slots = owner.drawn_group_slots();
+        assert!(!slots.is_empty(), "the fixture retains its group layout");
+        assert!(
+            slots
+                .iter()
+                .all(|slot| owner.group_shown(slot.id, cx) == Shown::Empty)
+        );
+        let groups = owner.working_profile_groups(cx);
+        assert!(!groups.is_empty(), "observe the hidden group's exclusion");
+        assert!(groups.iter().all(|group| group.core.is_none()));
+        // A lost Core hides its group before the next hub or view poll.
+        let projection = owner.profile_core_tab(selected.tab, cx).unwrap();
+        assert_eq!(projection.core_id.as_deref(), Some("profile-hub"));
+        assert!(!projection.connected, "do not wait for a later view poll");
+    });
 }
 
 #[gpui::test]

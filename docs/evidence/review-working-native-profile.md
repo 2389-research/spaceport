@@ -571,6 +571,12 @@ The Mac binary-test link emitted the existing `__eh_frame` size warning.
 The same warning appears in base job `136364441214` at `ac69cfa00`.
 The existing `block v0.1.6` future-compatibility warning also remains.
 
+At `517770dc8`, Windows passed all eight Core observer tests and its existing contracts.
+Mac passed eight observer tests and failed the connection-loss case at its selected-view precondition.
+The app correctly hides lost Core groups immediately; the fixture wrongly expected the page to remain visible.
+The corrected fixture asserts that exclusion, then reads the narrow accessor's disconnected metadata directly.
+The visibility guard and production accessor remain unchanged; remote GREEN still needs confirmation.
+
 ### First Windows native TUI result
 
 Run `44790226021`, job `136475625222`, passed the release fixture at exact source `d7faebfd7`.
