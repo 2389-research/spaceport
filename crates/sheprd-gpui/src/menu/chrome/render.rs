@@ -96,7 +96,7 @@ impl SheprdWindow {
     /// what opened it, a footer panel above the foot, or a dialog centred.
     fn menu_panel_anchored(&self, page: Page, layer: &Layer) -> Stateful<Div> {
         let font = &self.config.ui;
-        let panel = div()
+        div()
             .id("menu-panel")
             .debug_selector(|| "menu-panel".into())
             .when(matches!(page, Page::Workspace | Page::Dialog(_)), |panel| {
@@ -180,8 +180,7 @@ impl SheprdWindow {
                     .flex_col()
                     .overflow_hidden()
                     .shadow_lg()
-            });
-        panel
+            })
     }
 
     /// The width and height each kind of page takes.
@@ -529,7 +528,7 @@ impl SheprdWindow {
     fn menu_panel_shield(&self, layer: &Layer, panel: Stateful<Div>) -> Stateful<Div> {
         // On its way out it takes no clicks: what they would act on has
         // already closed.
-        let panel = panel.when(layer.leaving.is_some(), |panel| {
+        panel.when(layer.leaving.is_some(), |panel| {
             panel.child(
                 div()
                     .id("menu-leaving-shield")
@@ -538,8 +537,7 @@ impl SheprdWindow {
                     .inset_0()
                     .occlude(),
             )
-        });
-        panel
+        })
     }
 
     /// The application menu's own rows, each an item the window runs.

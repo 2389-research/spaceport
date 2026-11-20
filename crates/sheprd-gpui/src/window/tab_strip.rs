@@ -127,7 +127,7 @@ impl SheprdWindow {
 
     /// `ends` says which of the header's parts the strip carries, when it
     /// stands in for the header.
-
+    ///
     /// Closes a strip's tab as its close button does: a page at once and a
     /// Herdr tab through its confirmation.
     pub(crate) fn close_strip_tab(

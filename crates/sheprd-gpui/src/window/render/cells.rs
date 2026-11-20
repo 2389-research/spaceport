@@ -217,7 +217,7 @@ impl SheprdWindow {
             ..
         } = paint;
         window.handle_input(
-            &focus,
+            focus,
             crate::input::TerminalInputHandler::new(bounds, cx.entity(), *menu_open),
             cx,
         );
@@ -254,7 +254,7 @@ impl SheprdWindow {
                     &surface.frame,
                     bounds.origin + point(px(0.), shift),
                     *cell_width,
-                    &link_rows,
+                    link_rows,
                     window,
                 )
             };
@@ -275,7 +275,7 @@ impl SheprdWindow {
                     None,
                     Ground::Opaque,
                     *cell_width,
-                    &font,
+                    font,
                     &popup_highlights,
                     &[],
                     None,
