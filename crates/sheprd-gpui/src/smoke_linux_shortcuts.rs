@@ -16,6 +16,8 @@ mod groups;
 #[path = "smoke_linux_shortcuts/observe.rs"]
 mod observe;
 use observe::observed;
+#[path = "smoke_linux_shortcuts/panes.rs"]
+mod panes;
 #[path = "smoke_linux_shortcuts/popups.rs"]
 mod popups;
 #[path = "smoke_linux_shortcuts/windows.rs"]
@@ -32,6 +34,7 @@ struct Baseline {
     fullscreen: bool,
     groups: groups::Baseline,
     palette_resume: Option<crate::palette::Resume>,
+    pane_target: Option<String>,
     panes: Vec<String>,
     revision: u64,
     tabs: Vec<String>,
@@ -73,6 +76,10 @@ enum Stage {
     AwaitGroupClose {
         baseline: Baseline,
         index: usize,
+    },
+    AwaitPanes {
+        index: usize,
+        preparation: panes::Preparation,
     },
     AwaitResume(usize),
     AwaitSettingsClose {
@@ -192,6 +199,7 @@ fn baseline(view: &SheprdWindow, window: &Window, cx: &App) -> Result<Baseline> 
         fullscreen: window.is_fullscreen(),
         groups: groups::snapshot(view, cx),
         palette_resume: view.menu.palette_resume.clone(),
+        pane_target: None,
         panes,
         revision: snapshot.revision,
         tabs,
@@ -412,6 +420,16 @@ fn advance(
         | Stage::AwaitWindowClose { .. } => {
             anyhow::bail!("native cross-window stage bypassed its owner")
         }
+        Stage::AwaitPanes {
+            index,
+            mut preparation,
+        } => {
+            if let Some(baseline) = preparation.poll(view, window, cx)? {
+                Ok(Step::Paint(Stage::Ready { baseline, index }))
+            } else {
+                Ok(Step::Continue(Stage::AwaitPanes { index, preparation }))
+            }
+        }
         Stage::CloseGroup {
             baseline,
             group,
@@ -579,6 +597,20 @@ fn advance(
             }
             let baseline = baseline(view, window, cx)?;
             match case.outcome {
+                Outcome::Back
+                | Outcome::Forward
+                | Outcome::NextPane
+                | Outcome::PreviousPane
+                | Outcome::Left
+                | Outcome::Down
+                | Outcome::Up
+                | Outcome::Right => {
+                    popups::close(view, window, cx)?;
+                    return Ok(Step::Continue(Stage::AwaitPanes {
+                        index,
+                        preparation: panes::Preparation::new(baseline, case.outcome),
+                    }));
+                }
                 Outcome::CycleWindows => {
                     popups::close(view, window, cx)?;
                     let opening = windows::open(view, window, cx)?;
@@ -682,6 +714,17 @@ fn advance(
         } => {
             let case = &CASES[index];
             let focused = match case.outcome {
+                Outcome::Back
+                | Outcome::Forward
+                | Outcome::NextPane
+                | Outcome::PreviousPane
+                | Outcome::Left
+                | Outcome::Down
+                | Outcome::Up
+                | Outcome::Right => {
+                    same_terminal(&before, &baseline(view, window, cx)?)?;
+                    view.menu.page.is_none() && view.focus.is_focused(window)
+                }
                 Outcome::CycleWindows => {
                     let current = baseline(view, window, cx)?;
                     same_scene(&before, &current)?;

@@ -93,3 +93,20 @@ fn tab_targets_follow_workspace_order_and_reject_missing_positions() {
     assert_eq!(tab_at_position(&tabs, 4), None);
     assert_eq!(tab_at_position(&[], 1), None);
 }
+
+#[test]
+fn pane_cases_use_shifted_aliases_and_the_private_geometric_prefix() {
+    for (id, chords) in [
+        ("next-pane-alias", vec![vec![29, 56, 42, 27]]),
+        ("previous-pane-alias", vec![vec![29, 56, 42, 26]]),
+        ("history-back-alias", vec![vec![29, 42, 26]]),
+        ("history-forward-alias", vec![vec![29, 42, 27]]),
+        ("prefix-pane-left", vec![PREFIX.to_vec(), vec![35]]),
+        ("prefix-pane-down", vec![PREFIX.to_vec(), vec![36]]),
+        ("prefix-pane-up", vec![PREFIX.to_vec(), vec![37]]),
+        ("prefix-pane-right", vec![PREFIX.to_vec(), vec![38]]),
+    ] {
+        let case = CASES.iter().find(|case| case.id == id).unwrap();
+        assert_eq!(case.chords, chords);
+    }
+}

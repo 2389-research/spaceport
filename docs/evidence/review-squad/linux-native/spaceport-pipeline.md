@@ -160,12 +160,13 @@ Kata remains 49 closed and four open.
 
 ## Exact resume point
 
-The separate native branch is `fix/review-squad-linux-native`, at qualified source `5979a3a9d`.
-No CI run remains pending for that source.
-The group receipt and this progress note await the next meaningful code checkpoint.
+The separate native branch is `fix/review-squad-linux-native`.
+Source `5979a3a9d` remains the last whole-matrix success, with thirty-seven qualified cases.
+Source `a72266897` passes native focus preparation but fails measured Cycle Windows.
+The next checkpoint adds eight pane cases and traces the existing Cycle Windows command boundaries.
 Do not publish a documentation-only checkpoint merely to start another native run.
 
-Finish Linux window cycling, split groups, pane history/cycling, and geometric prefix focus.
+Finish Linux window cycling, pane history/cycling, and geometric prefix focus.
 Settings deliberately adds a window and changes activation; the general stable-window guard needs a scoped outcome branch.
 Observe the actual Settings global handle rather than inferring its type from a window count.
 Keep any observation hook behind `integration-test` and inside `settings_window`, whose window type is private.
@@ -297,4 +298,25 @@ The parent sends fixed Alt-Escape once, then waits for the original active/coher
 GNOME 46 defines [Alt-Escape as direct window switching](https://github.com/GNOME/gsettings-desktop-schemas/blob/46.0/schemas/org.gnome.desktop.wm.keybindings.gschema.xml.in).
 Alt-Tab switches applications, so it cannot serve as the two-window preparation contract here.
 Measured Ctrl-Shift-Grave, cleanup, and existing deadlines remain unchanged.
-The new notice boundary test and corrected native run remain pending.
+Source `a72266897` passes nine shared tests and two receipt tests.
+Its [native run](https://github.com/2389-research/spaceport/actions/runs/44712851380) now reaches Cycle Windows READY after native Alt-Escape preparation.
+The exact original is active and coherent; the target is inactive.
+The measured chord completes submission, but the target remains inactive until the original deadline.
+The [failure receipt](spaceport-cycle-a72266897.json) preserves this distinction from the earlier preparation failures.
+Command dispatch versus platform activation remains unproven.
+The next checkpoint logs those existing boundaries behind the opt-in integration observer.
+It adds no focus, native input, retry, deadline extension, or measured-state mutation.
+
+The next checkpoint adds eight pane cases before Cycle Windows and final Polish input.
+It prepares one two-by-two grid through three acknowledged splits and one acknowledged return to the original pane.
+Each pending split or focus is recorded before submission and never replayed.
+Pane cycling follows actual snapshot order within the current workspace and tab.
+Back starts from an acknowledged top-left, top-right, bottom-right trail.
+Forward requires the retained bottom-right history target after native Back succeeds.
+Prefix h/j/k/l starts from distinct panes and derives targets from the actual visible grid.
+Every measured result preserves runtime members, tabs, windows, and fullscreen state.
+It requires the exact target pane, terminal focus, coherent geometry, and a newer daemon revision.
+The shared test defines the physical aliases before their fixture implementation.
+The local compiler hold prevents a failing-baseline run; no baseline failure or native pass is claimed.
+Independent read-only review finds no concrete blocking issue.
+Compilation, the new shared test, and all eight native cases remain pending CI.

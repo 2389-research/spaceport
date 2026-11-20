@@ -73,6 +73,7 @@ fn run() -> Result<()> {
             gui_command(&isolated.sandbox, |name| std::env::var_os(name))
                 .env("DBUS_SESSION_BUS_ADDRESS", &desktop.bus)
                 .env("HERDR_TEST_LINUX_SHORTCUTS", &nonce)
+                .env("HERDR_TEST_SHORTCUT_OBSERVER", "1")
                 .args([
                     OsStr::new("--socket"),
                     isolated.sandbox.socket().as_os_str(),
@@ -105,6 +106,7 @@ fn run() -> Result<()> {
             for chord in case.chords {
                 input.chord(chord)?;
             }
+            eprintln!("LINUX_NATIVE input_submitted=true id={}", case.id);
             observer.wait(Notice::Passed(case.id), &mut isolated)?;
             eprintln!(
                 "LINUX_NATIVE case={} outcome={:?} native_evdev=true",

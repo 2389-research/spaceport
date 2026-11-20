@@ -1,7 +1,7 @@
 // ABOUTME: Observes real native shortcut outcomes without changing the measured scene.
 // ABOUTME: Checks exact runtime identities, focus, pane bytes, and presentation results.
 use super::{
-    Baseline, Outcome, Page, SheprdWindow, baseline, capture, groups, numbered_tab, popups,
+    Baseline, Outcome, Page, SheprdWindow, baseline, capture, groups, numbered_tab, panes, popups,
     same_members, same_runtime, same_scene, same_terminal, same_terminal_state, settings_fixture,
     stepped_tab,
 };
@@ -56,6 +56,14 @@ pub(super) fn observed(
     }
     same_scene(before, &after)?;
     match outcome {
+        Outcome::Back
+        | Outcome::Forward
+        | Outcome::NextPane
+        | Outcome::PreviousPane
+        | Outcome::Left
+        | Outcome::Down
+        | Outcome::Up
+        | Outcome::Right => panes::observed(view, before, &after, id, window),
         Outcome::CycleWindows => anyhow::bail!("native cycle bypassed its window observer"),
         Outcome::SplitEditor => {
             same_terminal_state(before, &after)?;

@@ -4,24 +4,32 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Outcome {
     // keep-sorted start
+    Back,
     CycleWindows,
     DecreaseFont,
+    Down,
+    Forward,
     Fullscreen(bool),
     IncreaseFont,
     Keybindings,
+    Left,
     NewTab,
+    NextPane,
     NextRegion,
     NextTab,
     Palette,
     PolishSearch,
+    PreviousPane,
     PreviousRegion,
     PreviousTab,
     ResetFont,
     ResumePalette,
+    Right,
     Settings,
     SplitEditor,
     Tab(u8),
     TerminalBytes(&'static [u8]),
+    Up,
     // keep-sorted end
 }
 
@@ -219,6 +227,46 @@ pub(super) const CASES: &[Case] = &[
         chords: &[&[29, 42, 43]],
         id: "split-editor-alias",
         outcome: Outcome::SplitEditor,
+    },
+    Case {
+        chords: &[&[29, 56, 42, 27]],
+        id: "next-pane-alias",
+        outcome: Outcome::NextPane,
+    },
+    Case {
+        chords: &[&[29, 56, 42, 26]],
+        id: "previous-pane-alias",
+        outcome: Outcome::PreviousPane,
+    },
+    Case {
+        chords: &[&[29, 42, 26]],
+        id: "history-back-alias",
+        outcome: Outcome::Back,
+    },
+    Case {
+        chords: &[&[29, 42, 27]],
+        id: "history-forward-alias",
+        outcome: Outcome::Forward,
+    },
+    Case {
+        chords: &[PREFIX, &[35]],
+        id: "prefix-pane-left",
+        outcome: Outcome::Left,
+    },
+    Case {
+        chords: &[PREFIX, &[36]],
+        id: "prefix-pane-down",
+        outcome: Outcome::Down,
+    },
+    Case {
+        chords: &[PREFIX, &[37]],
+        id: "prefix-pane-up",
+        outcome: Outcome::Up,
+    },
+    Case {
+        chords: &[PREFIX, &[38]],
+        id: "prefix-pane-right",
+        outcome: Outcome::Right,
     },
     Case {
         chords: &[&[29, 42, 41]],
