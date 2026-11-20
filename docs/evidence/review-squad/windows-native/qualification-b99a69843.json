@@ -1,0 +1,139 @@
+{
+  "source": "b99a6984332804c3ffead96b60444b90dd9cb67b",
+  "run_id": 44755289151,
+  "run_url": "https://github.com/2389-research/spaceport/actions/runs/44755289151",
+  "jobs": [
+    {
+      "id": 136353283417,
+      "name": "Core stream replay",
+      "conclusion": "success",
+      "clippy": "all terminal targets and features, warnings denied",
+      "terminal_tests": {
+        "passed": 84,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    {
+      "id": 136353771827,
+      "name": "probe",
+      "conclusion": "failure",
+      "candidate": {
+        "terminal_tests": {
+          "passed": 84,
+          "failed": 0,
+          "ignored": 0
+        },
+        "input_contracts_passed": 4,
+        "production_pipeline_passed": 1,
+        "frame_sampler_passed": 1,
+        "search_tests_passed": 3,
+        "native_matrix_passed": 4,
+        "core_suite_passed": 3,
+        "fresh_core_samples_passed": 6,
+        "native_case_ids": [
+          "back",
+          "console-attachment",
+          "cycle-windows",
+          "focus-down",
+          "focus-left",
+          "focus-right",
+          "focus-up",
+          "font-larger",
+          "font-reset",
+          "font-smaller",
+          "forward",
+          "fullscreen",
+          "keybinds",
+          "next-pane",
+          "next-tab",
+          "palette",
+          "pane-ctrl-pagedown",
+          "pane-ctrl-pageup",
+          "pane-f11",
+          "pane-f6",
+          "pane-shift-f6",
+          "previous-pane",
+          "previous-tab",
+          "resume-palette",
+          "settings",
+          "sidebar",
+          "split-editor",
+          "status-bar",
+          "tab-1",
+          "tab-2",
+          "tab-3",
+          "tab-4",
+          "tab-5",
+          "tab-6",
+          "tab-7",
+          "tab-8",
+          "tab-9",
+          "zen"
+        ],
+        "pngs": 7
+      },
+      "negative_control": {
+        "production_source": "2222112abf2d45acc33da70b994dc9118a975f58",
+        "isolated_target_directory": true,
+        "samples": [
+          {
+            "sample": 1,
+            "result": "unexpected_pre_input_focus_failure",
+            "activated": true,
+            "foreground": true,
+            "document_focus": false,
+            "focused_element": "owned Window",
+            "input_sent": false
+          },
+          {
+            "sample": 2,
+            "result": "pass",
+            "png": true
+          },
+          {
+            "sample": 3,
+            "result": "pass",
+            "png": true
+          },
+          {
+            "sample": 4,
+            "result": "expected_stale_suffix",
+            "png": true
+          },
+          {
+            "sample": 5,
+            "result": "expected_stale_suffix",
+            "png": true
+          },
+          {
+            "sample": 6,
+            "result": "expected_stale_suffix",
+            "png": true
+          },
+          {
+            "sample": 7,
+            "result": "pass",
+            "png": true
+          },
+          {
+            "sample": 8,
+            "result": "pass",
+            "png": true
+          }
+        ],
+        "classifier": {
+          "reproduced": 1,
+          "unexpected": 1
+        }
+      }
+    }
+  ],
+  "limits": [
+    "Candidate success does not make the entire probe green.",
+    "Owned-token readiness did not resolve the first negative-control focus failure.",
+    "The proposed cold-first logical-focus tracing is a separate unexecuted experiment.",
+    "Audible speech and Mac native checks remain pending by Doctor Biz's instruction.",
+    "Release profiling remains unqualified."
+  ]
+}

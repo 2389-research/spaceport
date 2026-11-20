@@ -288,6 +288,25 @@ The selected [before and after captures](../core-startup/qualification-5b8821071
 The pre-fix crop shows the stale suffix; the corrected crop shows the complete prompt and standalone marker.
 Both are unedited 924-by-120 native crops from exact owned foreground windows.
 Their underlying viewport heights differ, as recorded in the receipt.
+
+### Logical focus diagnostic
+
+The [b99a69843 receipt](qualification-b99a69843.json) records all 84 terminal tests passing on Linux and Windows.
+All corrected-source native cases, the Core suite, and six fresh Core samples pass.
+The separate pre-fix series stays red: sample one fails before input, three reproduce the suffix, and four pass.
+The owned-token barrier did not resolve that focus failure.
+Foreground belongs to the exact app, but UIA focus remains on its Window instead of the Terminal document.
+
+Read-only tracing of app callbacks finds no established delayed writer that restores hidden Herdr focus.
+The activation callback updates state and reports daemon focus; it does not move logical focus.
+The next throwaway experiment logs Core logical focus, window activity, and current handle identity during render.
+It uses the existing exact nonce, session, and endpoint scope and logs only state transitions.
+It sends no focus action and changes no deadline or input assertion.
+The corrected ordinary Core case runs before other native cases to expose a first-window prerequisite.
+All later native cases retain their failures while diagnostics continue.
+The pinned pre-fix worktree receives only the capture fixtures and these observational source additions.
+The two source files match that baseline before adding tracing.
+Compilation and native results for this experiment remain pending.
 These inspected images do not turn the failed preparation case into a passing probe.
 Independent read-only review finds no material issue in the narrower metadata guard or the readiness barrier.
 

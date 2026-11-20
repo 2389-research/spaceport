@@ -1,8 +1,9 @@
-// ABOUTME: Observes bounded app-frame text only for an explicitly selected private Core fixture.
+// ABOUTME: Observes bounded app-frame text and logical focus for a selected private Core fixture.
 // ABOUTME: Uses the existing nonblocking log writer without changing input, layout, or rendering.
 use super::CoreTerminalView;
-use sheprd_backend::FrameData;
-use std::sync::OnceLock;
+use gpui::{App, Window};
+use sheprd_backend::{FrameData, TerminalId};
+use std::{cell::RefCell, sync::OnceLock};
 
 #[path = "../../../../test-support/core_frame_scope.rs"]
 mod scope;
@@ -58,6 +59,38 @@ pub(super) fn record(view: &CoreTerminalView) {
         rows_with_hidden_counts = ?sampled_rows(frame),
         "CORE_FRAME_PROBE"
     );
+}
+
+pub(super) fn record_focus(view: &CoreTerminalView, window: &Window, cx: &App) {
+    if !enabled() {
+        return;
+    }
+    thread_local! {
+        static PREVIOUS: RefCell<Option<(TerminalId, bool, bool, String)>> = const { RefCell::new(None) };
+    }
+    let state = (
+        view.id.clone(),
+        window.is_window_active(),
+        view.focus.is_focused(window),
+        format!("{:?}", window.focused(cx)),
+    );
+    let changed = PREVIOUS.with_borrow_mut(|previous| {
+        if previous.as_ref() == Some(&state) {
+            return false;
+        }
+        *previous = Some(state.clone());
+        true
+    });
+    if changed {
+        tracing::info!(
+            terminal = %state.0,
+            window_active = state.1,
+            core_focused = state.2,
+            current_focus = %state.3,
+            core_focus = ?view.focus,
+            "CORE_FOCUS_PROBE"
+        );
+    }
 }
 
 #[cfg(test)]

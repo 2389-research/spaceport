@@ -81,7 +81,15 @@ jobs:
           cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport captured_core_frame_samples -- --nocapture --test-threads=1
           cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport search_input::tests::accessibility:: -- --nocapture --test-threads=1
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File crates/sheprd-gpui/tests/support/uia_shortcut_matrix.ps1 -CaseId console-attachment -ValidateContract
+      - name: Stage the checksum-pinned private Core
+        run: |
+          core_binary=$(python scripts/install-herdr-windows.py --core "$RUNNER_TEMP/herdr-core")
+          printf 'HERDR_CORE_TEST_BINARY=%s\n' "$core_binary" >> "$GITHUB_ENV"
+      - name: Diagnose the first native Core window before other native cases
+        run: |
+          cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows core::native_core_text_caret_bounds_and_output_changes_match_the_real_runtime -- --ignored --exact --nocapture --test-threads=1
       - name: Qualify the real pane console and its keys
+        if: ${{ !cancelled() }}
         run: |
           cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::matrix::console::native_pane_program_keeps_bare_function_and_control_page_keys -- --ignored --exact --nocapture --test-threads=1
       - name: Qualify digits punctuation and revised defaults
@@ -100,11 +108,6 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows settings::native_settings_keyboard_persistence_and_painted_focus_ring -- --ignored --exact --nocapture --test-threads=1
-      - name: Stage the checksum-pinned private Core
-        if: ${{ !cancelled() }}
-        run: |
-          core_binary=$(python scripts/install-herdr-windows.py --core "$RUNNER_TEMP/herdr-core")
-          printf 'HERDR_CORE_TEST_BINARY=%s\n' "$core_binary" >> "$GITHUB_ENV"
       - name: Diagnose native Core text and retain its other contracts
         if: ${{ !cancelled() }}
         run: |
@@ -120,12 +123,15 @@ jobs:
           done
           exit "$result"
       - name: Capture the pre-fix native Core negative control
+        if: ${{ !cancelled() }}
         run: |
           baseline=2222112abf2d45acc33da70b994dc9118a975f58
           git fetch --depth=1 origin "$baseline"
           git worktree add --detach .worktrees/core-before "$baseline"
           cp crates/sheprd-gpui/tests/accessibility_windows/core.rs .worktrees/core-before/crates/sheprd-gpui/tests/accessibility_windows/core.rs
           cp crates/sheprd-gpui/tests/support/uia_terminal.ps1 .worktrees/core-before/crates/sheprd-gpui/tests/support/uia_terminal.ps1
+          cp crates/sheprd-gpui/src/core_terminals/view.rs .worktrees/core-before/crates/sheprd-gpui/src/core_terminals/view.rs
+          cp crates/sheprd-gpui/src/core_terminals/view/frame_probe.rs .worktrees/core-before/crates/sheprd-gpui/src/core_terminals/view/frame_probe.rs
           cd .worktrees/core-before
           export CARGO_TARGET_DIR="$RUNNER_TEMP/core-before-target"
           reproduced=0

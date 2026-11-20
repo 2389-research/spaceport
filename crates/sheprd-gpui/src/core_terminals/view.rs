@@ -315,6 +315,8 @@ impl Focusable for CoreTerminalView {
 
 impl Render for CoreTerminalView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        #[cfg(all(windows, feature = "integration-test"))]
+        frame_probe::record_focus(self, window, cx);
         self.report_focus(window);
         let entity = cx.entity();
         let fitting = entity.clone();
