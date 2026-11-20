@@ -157,6 +157,22 @@ No app observer is enabled in that baseline.
 The native probe depends on successful pure tests, preserving expected baseline failure without running unrelated native cases.
 Mac foreground, local compiler, and VM holds remain active.
 
+The scope baseline run on source c753a96c8 fails exactly its positive-target assertion.
+Five other pure checks pass; the dependent native job skips.
+The implementation now accepts only a matching 32-hex nonce, session, and private named pipe.
+Missing, malformed, and unrelated targets remain refused.
+
+The Windows integration-only observer records the app's actual frame before accessibility projection.
+It captures dimensions, queued size, canvas bounds, cell metrics, and three sampled rows.
+Each row includes at most 96 characters and its sampled concealed-cell count.
+The existing diagnostics writer bounds and queues records without blocking the UI thread.
+The private fixture reads those records through the existing local logs command.
+Success requires an observer record; failure retains the original error alongside available frame diagnostics.
+This observes app state, not painted pixels, and changes no terminal input or render path.
+Independent read-only review found no material issue with scope, bounds, ownership, types, or module paths.
+Formatting, file-size, sorted-list, recipe, translation, commit, whitespace, and workflow checks pass locally.
+Compilation, sampling tests, and native execution remain pending on the disposable Windows runner.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.

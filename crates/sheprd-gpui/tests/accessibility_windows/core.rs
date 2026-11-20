@@ -22,7 +22,11 @@ impl Target {
         let endpoint = self.endpoint();
         command
             .env("HC_SESSION", endpoint.session)
-            .env("HC_SOCKET", endpoint.socket);
+            .env("HC_SOCKET", endpoint.socket)
+            .env(
+                "SPACEPORT_TEST_CORE_FRAME_OBSERVER",
+                self.nonce.simple().to_string(),
+            );
     }
 
     fn endpoint(&self) -> Endpoint {
@@ -210,6 +214,17 @@ impl Fixture {
         command
     }
 
+    fn frame_logs(&mut self) -> io::Result<String> {
+        let capture = self.running.sandbox.dir.join("core-frame-log-capture.json");
+        let mut command = self.running.sandbox.command(
+            env!("CARGO_BIN_EXE_spaceport"),
+            "core-frame-log-capture.json",
+        );
+        command.args(["logs", "--json", "--lines", "128"]);
+        self.running
+            .command_output(command, &capture, Duration::from_secs(5))
+    }
+
     fn cleanup(&mut self) -> io::Result<()> {
         super::stop_children([
             &mut self.running.command,
@@ -346,8 +361,9 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
         .command_output(command, &capture, Duration::from_secs(30))
         .unwrap_or_else(|error| {
             let runtime = runtime_diagnostic(&observed, Duration::from_secs(1));
+            let frames = fixture.frame_logs();
             panic!(
-                "{error}; exact Core runtime on helper failure: cols={} rows={} {runtime:?}",
+                "{error}; exact Core runtime on helper failure: cols={} rows={} {runtime:?}; app frames: {frames:?}",
                 info.cols, info.rows
             );
         });
@@ -366,6 +382,12 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
         "CORE_RUNTIME_CAPTURE cols={} rows={} {runtime}",
         info.cols, info.rows
     );
+    let frames = fixture.frame_logs().unwrap();
+    assert!(
+        frames.contains("CORE_FRAME_PROBE"),
+        "private app frame observer did not produce records: {frames}"
+    );
+    eprintln!("CORE_APP_FRAMES {frames}");
     assert_eq!(fixture.api().list(false).unwrap().terminals.len(), 1);
     eprintln!(
         "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true"

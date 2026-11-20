@@ -76,6 +76,7 @@ jobs:
           cargo test --locked -p sheprd-terminal captured_core_ -- --nocapture --test-threads=1
           cargo test --locked -p sheprd-gpui --features integration-test --test accessibility_windows non_us::matrix::tests:: -- --nocapture --test-threads=1
           cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport captured_core_pipeline -- --nocapture --test-threads=1
+          cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport captured_core_frame_samples -- --nocapture --test-threads=1
           cargo test --locked -p sheprd-gpui --features integration-test --bin spaceport search_input::tests::accessibility:: -- --nocapture --test-threads=1
           powershell.exe -NoProfile -ExecutionPolicy Bypass -File crates/sheprd-gpui/tests/support/uia_shortcut_matrix.ps1 -CaseId console-attachment -ValidateContract
       - name: Qualify the real pane console and its keys
