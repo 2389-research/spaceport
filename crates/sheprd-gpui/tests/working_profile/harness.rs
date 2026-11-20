@@ -28,6 +28,8 @@ use std::{
 const STARTUP: Duration = Duration::from_secs(30);
 const SAMPLE_SECONDS: u64 = 5;
 
+mod readiness;
+
 #[cfg(target_os = "macos")]
 mod macos;
 #[cfg(windows)]
@@ -239,19 +241,7 @@ fn validate_before_sample(
     targets: &Targets,
     working: bool,
 ) -> Result<()> {
-    ensure!(
-        foreground(observation),
-        "refusing foreground qualification: inactive, hidden, occluded, or non-key window; {observation:?}"
-    );
-    ensure!(
-        populated(observation, targets),
-        "refusing sample without two populated current presented groups; {observation:?}"
-    );
-    ensure!(
-        observation.synthetic_working_panes.contains(&targets.pane) == working,
-        "refusing sample with changed synthetic status: expected_working={working}; {observation:?}"
-    );
-    Ok(())
+    readiness::Workload::TwoTui(targets).validate(observation, working)
 }
 
 fn populated(observation: &Observation, targets: &Targets) -> bool {

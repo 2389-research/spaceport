@@ -604,3 +604,23 @@ The HTML reports omit event identity; their percentages cannot establish CPU sha
 Retain the raw traces privately and obtain sampled-profile event exports before attributing CPU hotspots.
 Sampling interval and trace-range alignment also remain unqualified.
 This result qualifies the fixture and process clocks, not Core/chat/mirrors or the merged 20 fps change.
+
+### Next Core readiness checkpoint
+
+Preserve the existing two-TUI-group workload as its own typed case.
+Add a separate mixed case containing one generated TUI group and one single-pane Core group.
+Match the exact Core ID, tab ID, terminal ID, active role, connection state, and expected marker.
+Reject ended, failed, disconnected, hidden, empty, or stale views before starting CPU clocks.
+Keep Core content projected; require separate capture inspection for visible-content qualification.
+First prove this predicate's failures and positive boundary through the existing ordinary harness target.
+Only then wire normal Core startup, app commands, real output, and holder-aware teardown.
+No Core runtime starts before its lifecycle implementation and source review are ready.
+The mixed predicate checkpoint deliberately returns false.
+Nine new ordinary tests should yield one positive-readiness RED and eight passing controls on each platform.
+The existing two-TUI predicate and native case remain unchanged.
+Independent review found no material readiness defect.
+
+The next native run also retains throwaway read-only xperf postprocessing reports.
+Installed-tool help at job `136495315872` verifies the event-statistics, sampled-profile, and frequency commands.
+Those whole-trace reports remain private and require interpretation before any CPU attribution.
+Review found an absent postprocessing deadline; the step now has a five-minute limit before sealing.

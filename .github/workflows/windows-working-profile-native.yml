@@ -77,6 +77,40 @@ jobs:
             ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 (Join-Path $destination 'identity.json')
       - name: Profile idle and controlled Working phases
         run: cargo test --locked --release --target x86_64-pc-windows-msvc -p sheprd-gpui --features integration-test --test working_profile working_terminal_groups_profile -- --ignored --exact --nocapture
+      # This is throwaway read-only analysis for qualifying the first trace exports.
+      - name: Retain trace event classes and sampled CPU reports
+        timeout-minutes: 5
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:_NT_SYMBOL_PATH = Join-Path $env:HERDR_TEST_TMPDIR 'build'
+          $env:_NT_SYMCACHE_PATH = Join-Path $env:HERDR_TEST_TMPDIR 'analysis-cache'
+          [IO.Directory]::CreateDirectory($env:_NT_SYMCACHE_PATH) | Out-Null
+          $reports = @(Get-ChildItem -LiteralPath $env:HERDR_TEST_TMPDIR -Directory | ForEach-Object {
+            $reportFile = Join-Path $_.FullName 'report.json'
+            if (Test-Path -LiteralPath $reportFile -PathType Leaf) { Get-Item -LiteralPath $reportFile }
+          })
+          if ($reports.Count -ne 1) { throw 'Expected one completed private profile manifest.' }
+          $report = Get-Content -LiteralPath $reports[0].FullName -Raw | ConvertFrom-Json
+          $exports = @(
+            @{ name = 'event-statistics'; arguments = @('-a', 'tracestats', '-timespan', 'actual', '-detail', 'stack') },
+            @{ name = 'sampled-cpu'; arguments = @('-symbols', '-a', 'profile', '-detail') },
+            @{ name = 'sample-frequency'; arguments = @('-a', 'profile', '-freq') }
+          )
+          foreach ($phase in $report.phases) {
+            $trace = [IO.Path]::GetFullPath($phase.sample_path)
+            $expected = Join-Path $reports[0].DirectoryName "$($phase.phase).etl"
+            if ($trace -ne $expected -or -not (Test-Path -LiteralPath $trace -PathType Leaf)) { throw 'Trace does not match its private manifest.' }
+            foreach ($export in $exports) {
+              $output = Join-Path $reports[0].DirectoryName "$($phase.phase)-$($export.name).txt"
+              if (Test-Path -LiteralPath $output) { throw 'Refusing an existing trace export.' }
+              $traceArguments = @('-i', $trace, '-o', $output) + $export.arguments
+              & $env:SPACEPORT_WORKING_PROFILE_XPERF @traceArguments
+              if ($LASTEXITCODE -ne 0) { throw "Trace export failed with exit $LASTEXITCODE." }
+              $length = (Get-Item -LiteralPath $output).Length
+              if ($length -eq 0 -or $length -gt 33554432) { throw 'Trace export is empty or exceeds 32 MiB.' }
+            }
+          }
       - name: Encrypt completed and partial private evidence
         id: seal
         if: ${{ !cancelled() }}
