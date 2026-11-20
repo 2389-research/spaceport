@@ -63,7 +63,6 @@ unic-langid          = { features = ["macros"], version = "0.9" }
 fontdb               = "0.24"
 foreign-types        = "0.5"
 futures-lite         = "2"
-getrandom            = "0.4.3"
 gpui                 = { package = "gpui-pre", version = "=0.3.10" }
 gpui_platform        = { package = "gpui-pre-platform", version = "=0.3.10" }
 sheprd-ago            = { path = "crates/sheprd-ago" }
