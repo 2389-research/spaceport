@@ -143,6 +143,20 @@ No production behavior changes; the local compiler and Mac holds remain active.
 The guarded workflow also runs pure emulator replay as a separate Linux job.
 Its completed log is available without waiting for the native UI build.
 
+### Private frame observer boundary
+
+The `9de6683ff` probe passes the damage-to-transcript test and both CI jobs.
+All frame chunk sizes preserve the prompt and standalone output at both canvas widths.
+This still does not capture the running UI's active stream or frame.
+
+The next diagnostic observes that actual app frame through the existing bounded log writer.
+Only the private fixture's matching nonce, session, and named pipe may enable it.
+A pure scope test first requires the exact target and rejects unrelated, missing, and malformed values.
+The initial scope implementation denies every target; its positive test must fail before implementation.
+No app observer is enabled in that baseline.
+The native probe depends on successful pure tests, preserving expected baseline failure without running unrelated native cases.
+Mac foreground, local compiler, and VM holds remain active.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
