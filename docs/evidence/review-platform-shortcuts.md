@@ -411,4 +411,8 @@ The [Alt-Tab attempt on `d793d0287`](review-squad/linux-native/gtk-activation-d7
 It acknowledges the activation sequence, closes the remote session, restores the private layout, and reaps all direct children.
 The next diagnostic reads Shell `Mode`, `OverviewActive`, and `ShellVersion` before choosing another activation change.
 Child-log timestamps identify their later bounded emission by the parent, rather than exact event times.
+The [actual diagnostic on `63db1a89c`](review-squad/linux-native/gtk-shell-state-63db1a89c.json) reports user mode with the overview open at mapping and deadline.
+GNOME 46 installs the Alt-Tab handler only for normal action mode.
+The next correction closes the private overview through its supported UI property and verifies closure before native activation.
+The original active-window, exact-text, deadline, and cleanup requirements remain.
 Mutter-only or nested startup cannot substitute for those checks.

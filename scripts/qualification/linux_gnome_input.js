@@ -12,7 +12,7 @@ const manager = 'org.gnome.Mutter.RemoteDesktop';
 const sessionInterface = `${manager}.Session`;
 const down = new Set();
 let session = null;
-let sent = false;
+let phase = 'prepare-overview';
 let passed = false;
 let window = null;
 let entry = null;
@@ -37,8 +37,10 @@ function observeShell(phase) {
             state[name] = value instanceof GLib.Variant ? value.deep_unpack() : value;
         }
         print(`GNOME_INPUT shell_state phase=${phase} state=${JSON.stringify(state)}`);
+        return state;
     } catch (error) {
         printerr(`GNOME_INPUT shell_state phase=${phase} unavailable=${error.message}`);
+        return null;
     }
 }
 
@@ -84,7 +86,7 @@ function cleanup() {
     if (window !== null)
         attempt(() => window.destroy());
     passed = passed && cleanupPassed && closed && down.size === 0;
-    print(`GNOME_INPUT gtk_native=${passed} transport=evdev sequence_sent=${sent} polish=${JSON.stringify(actualText)} keys_released=${down.size === 0} session_closed=${closed} layout_restored=${restored} spaceport_started=false`);
+    print(`GNOME_INPUT gtk_native=${passed} transport=evdev sequence_sent=${phase === 'observe-text'} polish=${JSON.stringify(actualText)} keys_released=${down.size === 0} session_closed=${closed} layout_restored=${restored} spaceport_started=false`);
 }
 
 try {
@@ -110,8 +112,30 @@ try {
                 throw new Error('GTK active-window property is not Boolean');
             if (!window.get_mapped())
                 return GLib.SOURCE_CONTINUE;
-            if (session === null) {
-                observeShell('mapped');
+            if (phase === 'prepare-overview') {
+                const state = observeShell('mapped');
+                if (state?.Mode !== 'user' || typeof state.OverviewActive !== 'boolean')
+                    throw new Error('private GNOME user-session state is unavailable');
+                if (state.OverviewActive) {
+                    bus.call_sync('org.gnome.Shell', '/org/gnome/Shell',
+                        'org.freedesktop.DBus.Properties', 'Set',
+                        new GLib.Variant('(ssv)', ['org.gnome.Shell', 'OverviewActive',
+                            new GLib.Variant('b', false)]), null,
+                        Gio.DBusCallFlags.NONE, 2000, null);
+                    print('GNOME_INPUT overview_close_requested=true private_display=true');
+                }
+                phase = 'wait-overview';
+                return GLib.SOURCE_CONTINUE;
+            }
+            if (phase === 'wait-overview') {
+                const state = observeShell('overview');
+                if (typeof state?.OverviewActive !== 'boolean')
+                    throw new Error('private overview state is unavailable');
+                if (state.OverviewActive)
+                    return GLib.SOURCE_CONTINUE;
+                phase = 'activate';
+            }
+            if (phase === 'activate') {
                 session = call(managerPath, manager, 'CreateSession').deep_unpack()[0];
                 call(session, sessionInterface, 'Start');
                 if (!window.is_active) {
@@ -122,11 +146,12 @@ try {
                     key(56, false);
                     print('GNOME_INPUT activation_requested=true route=alt-tab private_display=true');
                 }
+                phase = 'type';
                 return GLib.SOURCE_CONTINUE;
             }
             if (!window.is_active)
                 return GLib.SOURCE_CONTINUE;
-            if (!sent) {
+            if (phase === 'type') {
                 if (!entry.grab_focus())
                     throw new Error('owned GTK field refused focus');
                 // Linux evdev codes: Right Alt, L, Left Shift, and N.
@@ -140,7 +165,7 @@ try {
                 key(49, false);
                 key(100, false);
                 key(42, false);
-                sent = true;
+                phase = 'observe-text';
             }
             if (entry.get_text() === 'łŃ')
                 return finish(true);
