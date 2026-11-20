@@ -13,7 +13,12 @@ fn caller(workspace: Option<&str>) -> Caller {
 }
 
 /// The layout fixture in a window, with w0 focused as a daemon reports it.
-fn window(cx: &mut gpui::TestAppContext) -> gpui::Entity<crate::SheprdWindow> {
+fn window(
+    cx: &mut gpui::TestAppContext,
+) -> (
+    gpui::Entity<crate::SheprdWindow>,
+    &mut gpui::VisualTestContext,
+) {
     cx.add_window_view(|window, cx| {
         let mut view = crate::sidebar::layout_tests::fixture_window(window, cx);
         if let Some(snapshot) = &view.live.snapshot {
