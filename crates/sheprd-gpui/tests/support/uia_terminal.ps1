@@ -206,7 +206,9 @@ try {
     $text = $pattern.DocumentRange.GetText(16384)
     $output = ($text -split '\r?\n') -ccontains $marker
     if ($changed -and $output) { break }
-    if ([DateTime]::UtcNow -ge $deadline) { throw 'Native terminal text or changed-output event is missing' }
+    if ([DateTime]::UtcNow -ge $deadline) {
+      throw "Native terminal text or changed-output event is missing: changed=$changed output=$output utf16_length=$($text.Length) marker_present=$($text.Contains($marker))"
+    }
     Start-Sleep -Milliseconds 25
   } while ($true)
   $selection = $pattern.GetSelection()

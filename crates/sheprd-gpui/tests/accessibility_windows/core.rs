@@ -255,25 +255,36 @@ impl Drop for Fixture {
     }
 }
 
-fn require_runtime_output(observed: &Attachment, marker: &[u8]) {
-    let deadline = Instant::now() + Duration::from_secs(10);
+fn runtime_output_seen(
+    observed: &Attachment,
+    marker: &[u8],
+    limit: Duration,
+) -> anyhow::Result<bool> {
+    let deadline = Instant::now() + limit;
     let mut seen = Vec::new();
     while !seen.windows(marker.len()).any(|bytes| bytes == marker) {
-        assert!(
-            Instant::now() < deadline,
-            "native input did not reach this exact Core terminal"
-        );
-        let chunk = observed.read(Duration::from_millis(100)).unwrap();
-        assert!(
+        if Instant::now() >= deadline {
+            return Ok(false);
+        }
+        let chunk = observed.read(Duration::from_millis(100))?;
+        anyhow::ensure!(
             chunk.end.is_none(),
             "owned Core terminal ended during native input check"
         );
-        assert!(
+        anyhow::ensure!(
             seen.len() + chunk.bytes.len() <= CAPTURE_LIMIT,
             "Core fixture output exceeds 1 MiB"
         );
         seen.extend(chunk.bytes);
     }
+    Ok(true)
+}
+
+fn require_runtime_output(observed: &Attachment, marker: &[u8]) {
+    assert!(
+        runtime_output_seen(observed, marker, Duration::from_secs(10)).unwrap(),
+        "native input did not reach this exact Core terminal"
+    );
 }
 
 #[test]
@@ -306,7 +317,10 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
     let output = fixture
         .running
         .command_output(command, &capture, Duration::from_secs(30))
-        .unwrap();
+        .unwrap_or_else(|error| {
+            let runtime = runtime_output_seen(&observed, b"SP_A11Y_7", Duration::from_secs(1));
+            panic!("{error}; exact Core runtime marker on helper failure: {runtime:?}");
+        });
     for receipt in [
         "TERMINAL_A11Y text=true native_text_changed=true unselected_caret=true caret_line_bounds=true",
         "TERMINAL_A11Y observer_removed=true",
