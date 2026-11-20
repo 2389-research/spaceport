@@ -58,3 +58,11 @@ CI must compile the new Linux-only paths and run the shared notice tests first.
 Then it runs the exact ignored native test on the owned GNOME display.
 Local formatting and workflow checks do not qualify native delivery.
 Release profiling, Mac Core Cmd-W, and audible screen-reader gates remain separate.
+
+## First compilation result
+
+Source `7ad46da551143d545d40f33c6cb4244c4a08c850` fails Linux compilation in [run `44694321745`](https://github.com/2389-research/spaceport/actions/runs/44694321745/job/136147325933).
+The workspace denies unnecessary qualification in `smoke_live.rs:115`.
+Its existing `use super::*` already imports the native fixture module.
+The correction removes the redundant `super::` without relaxing the lint.
+Shared contract tests and native execution remain pending; no cases ran on that source.

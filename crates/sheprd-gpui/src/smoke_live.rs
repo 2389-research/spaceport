@@ -112,7 +112,7 @@ fn create_external_workspace(
 pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
     #[cfg(target_os = "linux")]
     if let Ok(nonce) = std::env::var("HERDR_TEST_LINUX_SHORTCUTS") {
-        super::linux_shortcuts::start(handle, nonce, cx);
+        linux_shortcuts::start(handle, nonce, cx);
         return;
     }
     let timer = cx.background_executor().clone();
