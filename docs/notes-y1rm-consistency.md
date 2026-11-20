@@ -96,7 +96,11 @@ Cross-cutting rows:
 | Structural doc tests | `documented_commands.rs` pins family names, protocol 37, and the skill's command lines; `family_help.rs` pins the whole `--help` text | MATCH |
 | Managed skill (`skills/spaceport/SKILL.md`) | every backticked `spaceport …` line parses; its table matches real commands (notes, worktree, host mute, `ui panel automations`, `ports open`, `processes`, `chat new`, `config get/set`, `wait tab-closed`, `events --follow`, `caffeine --for`, `run check-for-updates`, `status`, `window`, `tab`) | MATCH |
 
-Counts: 22 MATCH, 6 UNDOCUMENTED, 1 GAP, before the fixes below.
+Counts, before the fixes below: the 47 command rows (the 29 families, with
+`window`, `tab`, `chat`, `notes`, `config`, and `integrations` split by verb)
+hold 37 MATCH, 9 UNDOCUMENTED, and 1 GAP (`wait online`); the 7 cross-cutting
+rows hold 5 MATCH and 2 UNDOCUMENTED (`--help`'s shared text, and where a
+`--json` shape is defined).
 
 ## Fixes made
 
