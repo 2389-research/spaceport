@@ -1,6 +1,6 @@
 // ABOUTME: Closes only a test-created Herdr workspace through native confirmation.
 // ABOUTME: Preserves the original workspace, checkout bytes, and owned daemon.
-use super::{Running, fs};
+use super::{Duration, Running, fs};
 
 const WORKSPACE: &str = "spaceport-close-fixture";
 
@@ -30,7 +30,19 @@ fn native_workspace_consent_names_the_target_and_preserves_other_work() {
     running.wait_tree("workspace creation dialog", |tree| {
         tree.contains("Button 'Create'")
     });
-    running.read(&format!("{WORKSPACE}{{ENTER}}"));
+    let script = running.sandbox.dir.join("uia_workspace_name.ps1");
+    fs::write(&script, include_str!("../support/uia_workspace_name.ps1")).unwrap();
+    let capture = running.sandbox.dir.join("workspace-name.log");
+    let mut command = running.powershell(&script, "workspace-name.log");
+    command.args(["-Name", WORKSPACE]);
+    let output = running
+        .command_output(command, &capture, Duration::from_secs(20))
+        .unwrap();
+    assert!(
+        output.contains("WORKSPACE_NAME native=true acknowledged=true submitted=false"),
+        "{output}"
+    );
+    running.read("{ENTER}");
     let created = format!("ListItem '{WORKSPACE}'");
     running.wait_tree("created workspace", |tree| {
         tree.contains(&created) && tree.contains(&original) && tree.contains("Document 'Terminal'")

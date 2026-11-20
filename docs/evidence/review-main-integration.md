@@ -1,11 +1,11 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `174db4857` passes every workspace job, while its native image scroll-capture wait fails.
-Both ordinary and observing Core text, caret, bounds, and change events pass on that source.
-The next candidate fixes the timing-dependent fractional capture rule and adds native Core resize qualification.
+Status: `a8f7bd371` passes every workspace job, native images, and all three Core native cases.
+The native job fails only workspace-close setup after a partial workspace name is submitted.
+The next candidate adds selected-tab contrast captures and waits for native name acknowledgements before submission.
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
-Crew tracks 49 done children and four open children for `9s44`.
+Crew tracks 50 done children and three open children for `9s44`.
 The closed shortcut child still has an explicitly recorded native qualification gap.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
 That approval covers committing and pushing the reviewed 906-file checkpoint for Clint and CI.
@@ -14,6 +14,10 @@ It does not authorize merging the draft into main or releasing it.
 Pre-integration fixture checkpoint: `cd7d317f5e13ce4e319e976164c54ba47642d387`.
 Current collaboration is on [Spaceport Crew](https://artifacts.folk-fujita.ts.net/p/spaceport-crew/).
 The imported `9s44` and `q72g` tasks are claimed by `review-squad` and remain open.
+The painting/polling finding `gfde` is closed after its five-clause audit and all four native image inspections.
+See the [native image receipt](review-squad/native-images/qualification-a8f7bd371.json) and [Crew closure receipt](review-squad/crew-closures.jsonl).
+The remaining children cover native Core Cmd-W, accessibility speech/contrast, and Clint's foreground release profile.
+The [workspace-name correction](review-workspace-name-qualification.md) records the current CI failure and pending native rerun.
 The prior work dashboard is archived; its earlier evidence and attachments remain intact.
 
 Initial published checkpoint: `150eed475c4097c63dff86edf8e2b215c64a1d02`.
