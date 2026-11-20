@@ -89,11 +89,11 @@ Both checks cover every target and feature with warnings denied.
 The host emits the existing external `block` future-incompatibility notice.
 
 Streaming chat already skips unchanged entry revisions in `chat/prepared.rs::Prepared::update`.
-Changed agent entries still run summary preparation and then Markdown preparation when no summary matches.
+Changes outside the validated append path run summary preparation, then Markdown preparation when no summary matches.
 The message byte and line bounds remain enforced.
-Incremental parsing has not been implemented or qualified.
-Any change must preserve backward references, code fences, math, embedded content, and selection coordinates.
-The read-only parser investigation found a conservative candidate.
+Validated literal appends now reuse parser-owned tails; syntax and unsupported boundaries still use full preparation.
+Backward references, code fences, math, embedded content, and selection coordinates retain their tested semantics.
+The initial parser investigation produced the separate no-marker fast path.
 Fragments without `$` or backslash cannot require math delimiter rewriting.
 They can keep the final CommonMark parser while avoiding its redundant protection parse and two text copies.
 Test-only work instrumentation proved 13 unnecessary protection-parser bytes before the fix.
@@ -119,7 +119,8 @@ The image painter uses snapped destination masks instead of cropping texture coo
 Four-scale crossed-image tests and both historical directions pass.
 See [image-pane scrolling](review-image-pane-scroll.md) for regression and review evidence.
 The offscreen Metal pixel checks pass.
-Foreground image mapping, clipping, scrolling, and native timing qualification remain pending.
+Native image mapping, clipping, and scrolling qualification remain pending.
+The separate `gg9v` finding owns foreground frame timing.
 
 ## Original-scope audit, November 19
 
@@ -133,9 +134,17 @@ It preserves full parsing for syntax changes, hidden definitions, and unsupporte
 The full chat scope passes 581 cases; parser work drops from 1,059,968 bytes to 153 in the rich fixture.
 Paired synthetic release preparation improves by 34.0–91.7 percent across plain, math, code, and formatted cases.
 See [streaming evidence](review-streaming-parse-costs.md#validated-streaming-append-preparation) for actual rounds, limits, and reviewed regressions.
-Current-head platform CI and the authored native image scene still need qualification.
+Source `23cab5b4b` passes all workspace jobs, both macOS release builds, the Windows installer, and ARM native checks.
+Its x64 native image case fails because its witnesses sample atlas filter footprints.
+The corrected `174db4857` candidate preserves the assets, saturated thresholds, and mapping/layer/clipping requirements; its CI remains pending.
+The native [failure capture and source-center correction](review-image-pane-scroll.md#native-source-samples-on-23cab5b4b) preserve that evidence.
 Keep `gfde` open until its remaining original scope has evidence.
 
+A second scoped review maps every original clause to the code and existing execution receipts above.
+It finds no further implementation gap in the theme cache, glyph replacement, shared scans, streaming preparation, or sidebar index.
+The remaining `gfde` gate requires successful native mapping, cached replay, fractional motion, clipping, layering, and four inspected PNGs.
+Operation counts and synthetic preparation results do not claim a native elapsed speed improvement.
+
 The separate redraw finding, `gg9v`, requires a release-mode profile first.
-Doctor Biz requested that native keyboard and performance checks remain pending.
+Clint retains ownership of that foreground working-session profile.
 The synthetic parser measurement does not qualify native frame timing or redraw costs.
