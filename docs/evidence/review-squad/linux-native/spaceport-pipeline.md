@@ -73,3 +73,46 @@ Its published 30-line tail retains daemon logs but drops the case and cleanup re
 The next correction exports deduplicated protocol receipts separately from that tail.
 It also requires the producer's exact native PASS line, so zero selected tests cannot qualify delivery.
 Actual receipt-export verification and the remaining shortcut matrix stay pending.
+
+Source `9254f9df4` passes three shared contract tests, two receipt tests, and the exact native test.
+The [scoped receipt](spaceport-pipeline-9254f9df4.json) preserves the exported app-case and cleanup observations.
+Ctrl-Shift-T creates and focuses a real daemon tab through the ordinary app path.
+Native Polish input produces `łŃ` in the production theme search.
+The private layout restores, the input session closes, and direct process cleanup passes.
+The daemon survives successful GUI exit.
+The remaining matrix above still blocks shortcut issue closure.
+
+## Numbered tabs and terminal bytes
+
+The next checkpoint prepares nine real daemon tabs, one acknowledged creation at a time.
+Each Ctrl-Shift digit begins on another tab and must focus the tab at that workspace position.
+The observer preserves tab order, workspace IDs, window handles, and daemon boot identity.
+
+Each terminal-key case starts a fresh real tab and an owned shell capture script.
+The script sets raw input, reads a bounded byte count, restores terminal discipline, and emits completion.
+Nonce and case markers correlate the actual projected pane output.
+READY requires the capture program's output before native input begins.
+No logical input, focus changes, or forced drawing occur after READY.
+The observer checks exact bytes, terminal focus, tab identities, and fullscreen state.
+
+Pinned Herdr source defines the expected legacy sequences:
+
+| Native key | Hex bytes |
+| --- | --- |
+| F6 | `1b 5b 31 37 7e` |
+| Shift-F6 | `1b 5b 31 37 3b 32 7e` |
+| F11 | `1b 5b 32 33 7e` |
+| Ctrl-PageUp | `1b 5b 35 3b 35 7e` |
+| Ctrl-PageDown | `1b 5b 36 3b 35 7e` |
+
+Sources: [function keys](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/vendor/libghostty-vt/src/input/function_keys.zig#L51-L105),
+[modifier substitution](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/vendor/libghostty-vt/src/input/function_keys.zig#L295-L312),
+[legacy encoding selection](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/vendor/libghostty-vt/src/input/key_encode.zig#L82-L96),
+and [modified page-key forwarding](https://github.com/herdrdev/herdr/blob/2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01/src/server/pane_input.rs#L304-L332).
+The fixture uses official Herdr 0.9.5, whose release commit is `2ecf19a92fc3a7fff75b6ce3655ef04f4625ec01`.
+
+Shared parser tests reject incomplete, unrelated, malformed, and incorrectly sized receipts.
+The workflow selects those tests alongside the existing case and notice tests.
+This expands qualification infrastructure without changing product key handling.
+No failing baseline or compilation was run locally because local compiler work remains held.
+Native delivery and these new parser tests remain pending until the exact-source CI run completes.

@@ -47,6 +47,11 @@ fn run() -> Result<()> {
         gui: None,
     };
     let logs = isolated.sandbox.dir.clone();
+    fs::write(
+        isolated.sandbox.dir.join(cases::CAPTURE_FILE),
+        include_str!("../../../test-support/linux_shortcuts/capture.sh"),
+    )
+    .context("writing owned terminal byte capture")?;
     let mut layout = Layout::capture(&desktop, &logs)?;
     let mut native = None;
     let nonce = uuid::Uuid::new_v4().simple().to_string();

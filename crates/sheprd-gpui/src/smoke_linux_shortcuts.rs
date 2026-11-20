@@ -1,6 +1,6 @@
 // ABOUTME: Observes real Linux shortcut and text outcomes against an isolated Herdr.
 // ABOUTME: Prepares each case before READY and never injects measured keyboard input.
-use crate::{SheprdWindow, menu::Page, smoke};
+use crate::{Command, SheprdWindow, menu::Page, smoke};
 use anyhow::{Context as _, Result, ensure};
 use gpui::*;
 use std::time::{Duration, Instant};
@@ -8,17 +8,41 @@ use std::time::{Duration, Instant};
 #[path = "../../test-support/linux_shortcuts.rs"]
 mod cases;
 use cases::{CASES, Notice, Outcome, notice};
+#[path = "smoke_linux_shortcuts/capture.rs"]
+mod capture;
 
 struct Baseline {
     boot: String,
+    focused_pane: String,
+    focused_tab: String,
+    fullscreen: bool,
+    revision: u64,
     tabs: Vec<String>,
-    windows: usize,
+    windows: Vec<AnyWindowHandle>,
     workspace: String,
+    workspace_tabs: Vec<String>,
     workspaces: Vec<String>,
 }
 
 enum Stage {
     // keep-sorted start
+    AwaitCaptureReady {
+        baseline: Baseline,
+        index: usize,
+    },
+    AwaitCaptureTab {
+        baseline: Baseline,
+        index: usize,
+    },
+    AwaitCreation {
+        baseline: Baseline,
+        index: usize,
+    },
+    AwaitFocus {
+        baseline: Baseline,
+        index: usize,
+        target: String,
+    },
     Mapped,
     Mapping,
     Observe {
@@ -46,7 +70,7 @@ pub(super) fn start(handle: WindowHandle<SheprdWindow>, nonce: String, cx: &mut 
         let result = run(handle, &nonce, cx).await;
         smoke::conclude(
             "LINUX_KEYS native",
-            "real daemon tab creation and Polish search text",
+            "real daemon tabs, shifted digits, pane key bytes, and Polish search text",
             result,
         );
     })
@@ -76,7 +100,7 @@ fn coherent(view: &SheprdWindow) -> bool {
             })
 }
 
-fn baseline(view: &SheprdWindow, cx: &App) -> Result<Baseline> {
+fn baseline(view: &SheprdWindow, window: &Window, cx: &App) -> Result<Baseline> {
     let snapshot = view
         .live
         .snapshot
@@ -96,12 +120,28 @@ fn baseline(view: &SheprdWindow, cx: &App) -> Result<Baseline> {
     workspaces.sort();
     Ok(Baseline {
         boot: snapshot.boot_id.clone(),
+        focused_pane: snapshot
+            .focused_pane_id
+            .clone()
+            .context("native focused pane is missing")?,
+        focused_tab: snapshot
+            .focused_tab_id
+            .clone()
+            .context("native focused tab is missing")?,
+        fullscreen: window.is_fullscreen(),
+        revision: snapshot.revision,
         tabs,
-        windows: cx.windows().len(),
+        windows: cx.windows(),
         workspace: snapshot
             .focused_workspace_id
             .clone()
             .context("native workspace is missing")?,
+        workspace_tabs: snapshot
+            .tabs
+            .iter()
+            .filter(|tab| Some(&tab.workspace_id) == snapshot.focused_workspace_id.as_ref())
+            .map(|tab| tab.tab_id.clone())
+            .collect(),
         workspaces,
     })
 }
@@ -119,17 +159,17 @@ fn search_ready(view: &SheprdWindow, window: &Window, cx: &App) -> bool {
             })
 }
 
-fn observed(view: &SheprdWindow, before: &Baseline, outcome: Outcome, cx: &App) -> Result<bool> {
-    let after = baseline(view, cx)?;
-    ensure!(after.boot == before.boot, "native case changed daemon boot");
-    ensure!(
-        after.workspace == before.workspace && after.workspaces == before.workspaces,
-        "native case changed workspace identity"
-    );
-    ensure!(
-        after.windows == before.windows,
-        "native case opened an unexpected window"
-    );
+fn observed(
+    view: &SheprdWindow,
+    before: &Baseline,
+    outcome: Outcome,
+    nonce: &str,
+    id: &str,
+    window: &Window,
+    cx: &App,
+) -> Result<bool> {
+    let after = baseline(view, window, cx)?;
+    same_scene(before, &after)?;
     match outcome {
         Outcome::NewTab => {
             ensure!(
@@ -141,24 +181,38 @@ fn observed(view: &SheprdWindow, before: &Baseline, outcome: Outcome, cx: &App) 
                     == before.tabs.len(),
                 "native new-tab action lost an existing tab"
             );
+            ensure!(
+                after.tabs.len() <= before.tabs.len() + 1,
+                "native new-tab action created extra tabs"
+            );
             if after.tabs.len() != before.tabs.len() + 1 {
                 return Ok(false);
             }
-            let snapshot = view
-                .live
-                .snapshot
-                .as_ref()
-                .context("native tab snapshot is missing")?;
-            Ok(snapshot
-                .focused_tab_id
-                .as_ref()
-                .is_some_and(|id| !before.tabs.contains(id)))
+            Ok(!before.tabs.contains(&after.focused_tab)
+                && after.workspace_tabs.contains(&after.focused_tab))
+        }
+        Outcome::Tab(number) => {
+            same_tabs(before, &after)?;
+            let target = numbered_tab(before, number)?;
+            ensure!(
+                before.focused_tab != target,
+                "native tab case began on its target"
+            );
+            if after.focused_tab != target {
+                return Ok(false);
+            }
+            ensure!(
+                after.revision > before.revision,
+                "native tab focus has no new daemon revision"
+            );
+            eprintln!(
+                "LINUX_KEYS_CASE number={number} before={:.80} target={target:.80} after={:.80}",
+                before.focused_tab, after.focused_tab
+            );
+            Ok(true)
         }
         Outcome::PolishSearch => {
-            ensure!(
-                after.tabs == before.tabs,
-                "Polish input changed tab identities"
-            );
+            same_tabs(before, &after)?;
             ensure!(
                 view.menu.page == Some(Page::Themes),
                 "Polish input replaced the owned search popup"
@@ -171,7 +225,76 @@ fn observed(view: &SheprdWindow, before: &Baseline, outcome: Outcome, cx: &App) 
                 .context("Polish search field is missing")?;
             Ok(search.read(cx).text() == "łŃ")
         }
+        Outcome::TerminalBytes(expected) => {
+            same_terminal(before, &after)?;
+            ensure!(
+                view.focus.is_focused(window),
+                "native pane key moved focus away from the terminal"
+            );
+            match capture::read(&capture::screen(view)?, nonce, id, expected.len()) {
+                capture::Capture::Pending => Ok(false),
+                capture::Capture::Malformed => {
+                    anyhow::bail!("native pane capture is malformed for {id}")
+                }
+                capture::Capture::Complete(bytes) => {
+                    ensure!(
+                        bytes == expected,
+                        "native pane bytes differ for {id}: {bytes:02x?}"
+                    );
+                    eprintln!(
+                        "LINUX_KEYS_CASE id={id} bytes={bytes:02x?} count={} pane={:.80}",
+                        bytes.len(),
+                        after.focused_pane
+                    );
+                    Ok(true)
+                }
+            }
+        }
     }
+}
+
+fn same_scene(before: &Baseline, after: &Baseline) -> Result<()> {
+    ensure!(after.boot == before.boot, "native case changed daemon boot");
+    ensure!(
+        after.workspace == before.workspace && after.workspaces == before.workspaces,
+        "native case changed workspace identity"
+    );
+    ensure!(
+        after.windows == before.windows,
+        "native case changed window identities"
+    );
+    Ok(())
+}
+
+fn same_tabs(before: &Baseline, after: &Baseline) -> Result<()> {
+    ensure!(
+        after.tabs == before.tabs,
+        "native case changed tab identities"
+    );
+    ensure!(
+        after.workspace_tabs == before.workspace_tabs,
+        "native case changed workspace tab order"
+    );
+    Ok(())
+}
+
+fn same_terminal(before: &Baseline, after: &Baseline) -> Result<()> {
+    same_scene(before, after)?;
+    same_tabs(before, after)?;
+    ensure!(
+        before.focused_tab == after.focused_tab && before.focused_pane == after.focused_pane,
+        "native pane key changed the focused terminal"
+    );
+    ensure!(
+        before.fullscreen == after.fullscreen,
+        "native pane key changed fullscreen state"
+    );
+    Ok(())
+}
+
+fn numbered_tab(before: &Baseline, number: u8) -> Result<&str> {
+    cases::tab_at_position(&before.workspace_tabs, number)
+        .context("native numbered tab is missing or zero")
 }
 
 fn advance(
@@ -181,6 +304,13 @@ fn advance(
     window: &mut Window,
     cx: &mut Context<SheprdWindow>,
 ) -> Result<Step> {
+    if let Stage::Observe { started, index, .. } = &stage {
+        ensure!(
+            started.elapsed() < Duration::from_secs(12),
+            "native case {} timed out",
+            CASES[*index].id
+        );
+    }
     ensure!(
         view.notices.is_none() && view.live.notices.is_none(),
         "native case has a client notice"
@@ -195,6 +325,85 @@ fn advance(
         .frame
         .validate()?;
     match stage {
+        Stage::AwaitCaptureTab {
+            baseline: before,
+            index,
+        } => {
+            let case = &CASES[index];
+            if !observed(view, &before, Outcome::NewTab, nonce, case.id, window, cx)? {
+                return Ok(Step::Continue(Stage::AwaitCaptureTab {
+                    baseline: before,
+                    index,
+                }));
+            }
+            let Outcome::TerminalBytes(bytes) = case.outcome else {
+                anyhow::bail!("capture stage has a non-terminal case");
+            };
+            // Each capture owns a fresh shell, so terminal keyboard modes cannot leak between cases.
+            capture::start(view, nonce, case.id, bytes.len())?;
+            Ok(Step::Continue(Stage::AwaitCaptureReady {
+                baseline: baseline(view, window, cx)?,
+                index,
+            }))
+        }
+        Stage::AwaitCaptureReady {
+            baseline: before,
+            index,
+        } => {
+            let case = &CASES[index];
+            same_terminal(&before, &baseline(view, window, cx)?)?;
+            let screen = capture::screen(view)?;
+            ensure!(
+                !screen.contains(&capture::marker(nonce, case.id, "DONE")),
+                "capture finished before native input"
+            );
+            if !screen.contains(&capture::marker(nonce, case.id, "READY")) {
+                return Ok(Step::Continue(Stage::AwaitCaptureReady {
+                    baseline: before,
+                    index,
+                }));
+            }
+            window.focus(&view.focus, cx);
+            Ok(Step::Paint(Stage::Ready {
+                baseline: baseline(view, window, cx)?,
+                index,
+            }))
+        }
+        Stage::AwaitCreation { baseline, index } => {
+            if !observed(
+                view,
+                &baseline,
+                Outcome::NewTab,
+                nonce,
+                CASES[index].id,
+                window,
+                cx,
+            )? {
+                return Ok(Step::Continue(Stage::AwaitCreation { baseline, index }));
+            }
+            Ok(Step::Continue(Stage::Prepare(index)))
+        }
+        Stage::AwaitFocus {
+            baseline: before,
+            index,
+            target,
+        } => {
+            let after = baseline(view, window, cx)?;
+            same_scene(&before, &after)?;
+            same_tabs(&before, &after)?;
+            if after.focused_tab != target {
+                return Ok(Step::Continue(Stage::AwaitFocus {
+                    baseline: before,
+                    index,
+                    target,
+                }));
+            }
+            ensure!(
+                after.revision > before.revision,
+                "preparation focus has no new daemon revision"
+            );
+            Ok(Step::Continue(Stage::Prepare(index)))
+        }
         Stage::Mapping => {
             window.focus(&view.focus, cx);
             Ok(Step::Paint(Stage::Mapped))
@@ -208,10 +417,44 @@ fn advance(
                 return Ok(Step::Continue(Stage::Prepare(index)));
             }
             let case = &CASES[index];
-            let baseline = baseline(view, cx)?;
+            let baseline = baseline(view, window, cx)?;
             match case.outcome {
                 Outcome::NewTab => window.focus(&view.focus, cx),
+                Outcome::Tab(number) => {
+                    let required = CASES
+                        .iter()
+                        .filter_map(|case| match case.outcome {
+                            Outcome::Tab(number) => Some(usize::from(number)),
+                            _ => None,
+                        })
+                        .max()
+                        .unwrap_or_default()
+                        .max(2);
+                    if baseline.workspace_tabs.len() < required {
+                        view.command(Command::Tab, window, cx);
+                        return Ok(Step::Continue(Stage::AwaitCreation { baseline, index }));
+                    }
+                    ensure!(
+                        baseline.workspace_tabs.len() == required,
+                        "native tab scene has unexpected extra tabs"
+                    );
+                    if baseline.focused_tab == numbered_tab(&baseline, number)? {
+                        let starting_number = if number == 1 { 2 } else { 1 };
+                        let target = numbered_tab(&baseline, starting_number)?.to_owned();
+                        view.command(Command::TabNumber(starting_number), window, cx);
+                        return Ok(Step::Continue(Stage::AwaitFocus {
+                            baseline,
+                            index,
+                            target,
+                        }));
+                    }
+                    window.focus(&view.focus, cx);
+                }
                 Outcome::PolishSearch => view.open_theme_picker(window, cx),
+                Outcome::TerminalBytes(_) => {
+                    view.command(Command::Tab, window, cx);
+                    return Ok(Step::Continue(Stage::AwaitCaptureTab { baseline, index }));
+                }
             }
             eprintln!(
                 "LINUX_KEYS_CASE id={} expected={:?} physical_chords={}",
@@ -221,18 +464,45 @@ fn advance(
             );
             Ok(Step::Paint(Stage::Ready { baseline, index }))
         }
-        Stage::Ready { baseline, index } => {
+        Stage::Ready {
+            baseline: before,
+            index,
+        } => {
             let case = &CASES[index];
             let focused = match case.outcome {
                 Outcome::NewTab => view.focus.is_focused(window),
+                Outcome::Tab(number) => {
+                    let current = baseline(view, window, cx)?;
+                    same_scene(&before, &current)?;
+                    same_tabs(&before, &current)?;
+                    ensure!(
+                        current.focused_tab == before.focused_tab
+                            && current.focused_tab != numbered_tab(&before, number)?,
+                        "native tab preparation changed before READY"
+                    );
+                    view.focus.is_focused(window)
+                }
                 Outcome::PolishSearch => search_ready(view, window, cx),
+                Outcome::TerminalBytes(_) => {
+                    same_terminal(&before, &baseline(view, window, cx)?)?;
+                    let screen = capture::screen(view)?;
+                    ensure!(
+                        screen.contains(&capture::marker(nonce, case.id, "READY"))
+                            && !screen.contains(&capture::marker(nonce, case.id, "DONE")),
+                        "native pane capture changed before READY"
+                    );
+                    view.focus.is_focused(window)
+                }
             };
             if !window.is_window_active() || !focused {
-                return Ok(Step::Continue(Stage::Ready { baseline, index }));
+                return Ok(Step::Continue(Stage::Ready {
+                    baseline: before,
+                    index,
+                }));
             }
             eprintln!("{}", notice(nonce, Notice::Ready(case.id)));
             Ok(Step::Continue(Stage::Observe {
-                baseline,
+                baseline: before,
                 index,
                 started: Instant::now(),
             }))
@@ -243,12 +513,9 @@ fn advance(
             started,
         } => {
             let case = &CASES[index];
-            ensure!(
-                started.elapsed() < Duration::from_secs(12),
-                "native case {} timed out",
-                case.id
-            );
-            if !window.is_window_active() || !observed(view, &baseline, case.outcome, cx)? {
+            if !window.is_window_active()
+                || !observed(view, &baseline, case.outcome, nonce, case.id, window, cx)?
+            {
                 return Ok(Step::Continue(Stage::Observe {
                     baseline,
                     index,

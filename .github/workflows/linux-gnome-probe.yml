@@ -63,7 +63,7 @@ jobs:
           save-if: false
       - name: Compile the real native test and its shared contract tests
         run: |
-          cargo test --locked -p sheprd-gpui --features integration-test --test live_gui linux_shortcuts::cases::tests:: -- --nocapture
+          cargo test --locked -p sheprd-gpui --features integration-test --test live_gui linux_shortcuts::cases:: -- --nocapture
           cargo test --locked -p sheprd-gpui --features integration-test --test live_gui --no-run --message-format=json > "$RUNNER_TEMP/native-build.jsonl"
           jq -ers '[.[] | select(.reason == "compiler-artifact" and .target.name == "live_gui" and .executable != null) | .executable] | if length == 1 then .[0] else error("expected one live_gui executable") end' "$RUNNER_TEMP/native-build.jsonl" > "$RUNNER_TEMP/native-test-path"
       - name: Stage the checksum-pinned private Herdr fixture

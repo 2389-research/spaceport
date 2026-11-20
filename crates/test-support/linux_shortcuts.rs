@@ -1,11 +1,13 @@
 // ABOUTME: Shares fixed native Linux cases and correlated fixture notices.
 // ABOUTME: Keeps input sequences in compiled test data rather than terminal or log text.
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Outcome {
     // keep-sorted start
     NewTab,
     PolishSearch,
+    Tab(u8),
+    TerminalBytes(&'static [u8]),
     // keep-sorted end
 }
 
@@ -16,7 +18,12 @@ pub(super) struct Case {
     pub(super) outcome: Outcome,
 }
 
-// Linux evdev codes: Left Ctrl, Left Shift, T; Right Alt, L, and N.
+pub(super) const CAPTURE_FILE: &str = "linux-key-capture.sh";
+
+#[path = "linux_shortcuts/capture.rs"]
+pub(super) mod capture;
+
+// Linux evdev codes: Ctrl=29, Shift=42, T=20, digits 1..9=2..10, AltGr=100.
 pub(super) const CASES: &[Case] = &[
     Case {
         chords: &[&[29, 42, 20]],
@@ -24,11 +31,87 @@ pub(super) const CASES: &[Case] = &[
         outcome: Outcome::NewTab,
     },
     Case {
+        chords: &[&[29, 42, 2]],
+        id: "tab-1",
+        outcome: Outcome::Tab(1),
+    },
+    Case {
+        chords: &[&[29, 42, 3]],
+        id: "tab-2",
+        outcome: Outcome::Tab(2),
+    },
+    Case {
+        chords: &[&[29, 42, 4]],
+        id: "tab-3",
+        outcome: Outcome::Tab(3),
+    },
+    Case {
+        chords: &[&[29, 42, 5]],
+        id: "tab-4",
+        outcome: Outcome::Tab(4),
+    },
+    Case {
+        chords: &[&[29, 42, 6]],
+        id: "tab-5",
+        outcome: Outcome::Tab(5),
+    },
+    Case {
+        chords: &[&[29, 42, 7]],
+        id: "tab-6",
+        outcome: Outcome::Tab(6),
+    },
+    Case {
+        chords: &[&[29, 42, 8]],
+        id: "tab-7",
+        outcome: Outcome::Tab(7),
+    },
+    Case {
+        chords: &[&[29, 42, 9]],
+        id: "tab-8",
+        outcome: Outcome::Tab(8),
+    },
+    Case {
+        chords: &[&[29, 42, 10]],
+        id: "tab-9",
+        outcome: Outcome::Tab(9),
+    },
+    Case {
+        chords: &[&[64]],
+        id: "pane-f6",
+        outcome: Outcome::TerminalBytes(b"\x1b[17~"),
+    },
+    Case {
+        chords: &[&[42, 64]],
+        id: "pane-shift-f6",
+        outcome: Outcome::TerminalBytes(b"\x1b[17;2~"),
+    },
+    Case {
+        chords: &[&[87]],
+        id: "pane-f11",
+        outcome: Outcome::TerminalBytes(b"\x1b[23~"),
+    },
+    Case {
+        chords: &[&[29, 104]],
+        id: "pane-ctrl-page-up",
+        outcome: Outcome::TerminalBytes(b"\x1b[5;5~"),
+    },
+    Case {
+        chords: &[&[29, 109]],
+        id: "pane-ctrl-page-down",
+        outcome: Outcome::TerminalBytes(b"\x1b[6;5~"),
+    },
+    Case {
         chords: &[&[100, 38], &[42, 100, 49]],
         id: "polish-search",
         outcome: Outcome::PolishSearch,
     },
 ];
+
+/// Mirrors the command catalog's one-based position within the focused workspace.
+pub(super) fn tab_at_position(tabs: &[String], number: u8) -> Option<&str> {
+    tabs.get(usize::from(number).checked_sub(1)?)
+        .map(String::as_str)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Notice<'a> {

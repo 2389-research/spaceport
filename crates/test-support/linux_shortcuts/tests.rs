@@ -38,6 +38,9 @@ fn case_ids_are_unique_and_evdev_sequences_are_bounded() {
     for case in CASES {
         assert!(ids.insert(case.id), "duplicate case {}", case.id);
         assert!((1..=8).contains(&case.chords.len()));
+        if let Outcome::TerminalBytes(bytes) = case.outcome {
+            assert!((1..=64).contains(&bytes.len()));
+        }
         for chord in case.chords {
             assert!((1..=8).contains(&chord.len()));
             assert!(chord.iter().all(|code| (1..=255).contains(code)));
@@ -47,4 +50,35 @@ fn case_ids_are_unique_and_evdev_sequences_are_bounded() {
             );
         }
     }
+}
+
+#[test]
+fn tab_cases_cover_each_shifted_digit_before_the_final_search() {
+    for case in CASES {
+        if let Outcome::Tab(number) = case.outcome {
+            assert!((1..=9).contains(&number), "unsupported tab digit {number}");
+        }
+    }
+    for number in 1..=9 {
+        let matching = CASES
+            .iter()
+            .filter(|case| case.outcome == Outcome::Tab(number))
+            .collect::<Vec<_>>();
+        let [case] = matching.as_slice() else {
+            panic!("expected one physical digit case for tab {number}");
+        };
+        assert_eq!(case.chords, &[&[29, 42, u32::from(number) + 1][..]]);
+    }
+    assert_eq!(CASES.last().unwrap().outcome, Outcome::PolishSearch);
+}
+
+#[test]
+fn tab_targets_follow_workspace_order_and_reject_missing_positions() {
+    let tabs = ["tab-14", "tab-3", "tab-77"].map(str::to_owned);
+    assert_eq!(tab_at_position(&tabs, 1), Some("tab-14"));
+    assert_eq!(tab_at_position(&tabs, 2), Some("tab-3"));
+    assert_eq!(tab_at_position(&tabs, 3), Some("tab-77"));
+    assert_eq!(tab_at_position(&tabs, 0), None);
+    assert_eq!(tab_at_position(&tabs, 4), None);
+    assert_eq!(tab_at_position(&[], 1), None);
 }
