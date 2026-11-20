@@ -242,7 +242,6 @@ fn click_dispatch_opens_browser_and_respects_menu_and_revision(cx: &mut gpui::Te
             event.down.click_count = 1;
             view.pressed_terminal_link = Some(crate::window::PressedLink {
                 url: Some("https://example.com/click".into()),
-                cell: None,
                 file: None,
                 other: None,
                 position,
@@ -251,7 +250,6 @@ fn click_dispatch_opens_browser_and_respects_menu_and_revision(cx: &mut gpui::Te
             event.up.position = position;
             view.pressed_terminal_link = Some(crate::window::PressedLink {
                 url: Some("https://different.example/".into()),
-                cell: None,
                 file: None,
                 other: None,
                 position,

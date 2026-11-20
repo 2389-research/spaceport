@@ -48,7 +48,6 @@ methods! {
     PaneFocus => "pane.focus",
     PaneFocusDirection => "pane.focus_direction",
     PaneInputSet => "pane.input.set",
-    PaneLinkActivate => "pane.link.activate",
     PaneLinkResolve => "pane.link.resolve",
     PaneRename => "pane.rename",
     PaneResize => "pane.resize",

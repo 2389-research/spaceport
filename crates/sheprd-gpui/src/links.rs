@@ -1,9 +1,10 @@
 //! Links the daemon reads from its own terminal state: `pane.link.resolve`
 //! names every cell a link covers, including the rows a soft-wrapped URL
-//! continues onto, and `pane.link.activate` lets a plugin `[[link_handlers]]`
-//! entry claim a click before this client opens the address itself.
+//! continues onto, so a hover underlines the whole link.
 //!
-//! Both are optional. A daemon that does not advertise them keeps the
+//! It is read-only. The daemon reports spans and never acts on a click, so no
+//! plugin link handler can run, and this client opens what it reads itself.
+//! It is also optional: a daemon that does not advertise it keeps the
 //! row-local detector in `terminal::links`, which needs no round trip.
 
 use crate::terminal::{CellMetrics, InputTarget, wheel_target};
@@ -12,18 +13,16 @@ use serde_json::{Value, json};
 use sheprd_client::{
     ClientEvent, Method,
     protocol::{PaneSurfaceFrame, SurfaceRect},
-    response::{self, EndpointErrorCode},
+    response,
 };
 
-/// The resolve and activate requests in flight on one connection. Their
-/// responses stop here instead of reaching the live state, so a hover that
-/// went stale is never reported as a connection error. Like the live inbox,
-/// a reconnect replaces the whole mailbox, so a late answer cannot land in the
-/// next connection.
+/// The resolve request in flight on one connection. Its response stops here
+/// instead of reaching the live state, so a hover that went stale is never
+/// reported as a connection error. Like the live inbox, a reconnect replaces
+/// the whole mailbox, so a late answer cannot land in the next connection.
 #[derive(Default)]
 pub(crate) struct LinkInbox {
     resolving: Option<Pending>,
-    activating: Option<Pending>,
 }
 
 struct Pending {
@@ -31,51 +30,18 @@ struct Pending {
     result: Option<crate::Result<Value>>,
 }
 
-/// Which of the two link requests a mailbox slot holds.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LinkRequest {
-    Resolve,
-    Activate,
-}
-
-impl LinkRequest {
-    fn method(self) -> Method {
-        match self {
-            Self::Resolve => Method::PaneLinkResolve,
-            Self::Activate => Method::PaneLinkActivate,
-        }
-    }
-}
-
-impl LinkRequest {
-    /// Whether the daemon advertised this request when it welcomed us.
-    pub(crate) fn advertised_in(self, methods: &[String]) -> bool {
-        self.method().advertised_in(methods)
-    }
-}
-
 impl LinkInbox {
-    fn slot(&mut self, request: LinkRequest) -> &mut Option<Pending> {
-        match request {
-            LinkRequest::Resolve => &mut self.resolving,
-            LinkRequest::Activate => &mut self.activating,
-        }
-    }
-
     /// Records the answers to this mailbox's own requests, passing every
     /// other event on.
     pub(crate) fn apply(&mut self, event: ClientEvent) -> Option<ClientEvent> {
-        if let ClientEvent::Disconnected { .. } = &event {
-            for pending in [&mut self.resolving, &mut self.activating]
-                .into_iter()
-                .flatten()
-            {
-                pending
-                    .result
-                    .get_or_insert(Err(crate::Error::NotConnected));
-            }
+        if let ClientEvent::Disconnected { .. } = &event
+            && let Some(pending) = &mut self.resolving
+        {
+            pending
+                .result
+                .get_or_insert(Err(crate::Error::NotConnected));
         }
-        let (id, error) = match &event {
+        let (id, rejected) = match &event {
             ClientEvent::Response { request_id, .. } => (request_id, false),
             ClientEvent::CommandRejected {
                 request_id: Some(request_id),
@@ -83,15 +49,15 @@ impl LinkInbox {
             } => (request_id, true),
             _ => return Some(event),
         };
-        let Some(pending) = [&mut self.resolving, &mut self.activating]
-            .into_iter()
-            .flatten()
-            .find(|pending| pending.id == *id && pending.result.is_none())
+        let Some(pending) = self
+            .resolving
+            .as_mut()
+            .filter(|pending| pending.id == *id && pending.result.is_none())
         else {
             return Some(event);
         };
         pending.result = Some(match event {
-            ClientEvent::Response { response, .. } if !error => Ok(response),
+            ClientEvent::Response { response, .. } if !rejected => Ok(response),
             ClientEvent::CommandRejected { reason, .. } => Err(crate::Error::Client(reason)),
             _ => Err(crate::Error::NotConnected),
         });
@@ -99,37 +65,36 @@ impl LinkInbox {
     }
 
     /// Queues one request while holding the mailbox, so even an immediate
-    /// rejection finds it registered. Each kind has a single slot: a second
-    /// request waits until the first is answered and taken. The worker
-    /// rejects a method the daemon did not advertise.
+    /// rejection finds it registered. A second request waits until the first
+    /// is answered and taken. The worker rejects a method the daemon did not
+    /// advertise.
     pub(crate) fn request(
         &mut self,
         handle: &sheprd_client::ClientHandle,
-        request: LinkRequest,
         cell: &LinkCell,
     ) -> crate::Result<String> {
-        if self.slot(request).is_some() {
+        if self.resolving.is_some() {
             return Err(crate::Error::ConnectionBusy);
         }
-        let id = handle.request(&cell.boot, request.method(), cell.params())?;
-        *self.slot(request) = Some(Pending {
+        let id = handle.request(&cell.boot, Method::PaneLinkResolve, cell.params())?;
+        self.resolving = Some(Pending {
             id: id.clone(),
             result: None,
         });
         Ok(id)
     }
 
-    /// The answer to request `id`, freeing its slot. `None` while it is
+    /// The answer to request `id`, freeing the slot. `None` while it is
     /// still in flight, or when the slot belongs to another request.
-    pub(crate) fn take(&mut self, request: LinkRequest, id: &str) -> Option<crate::Result<Value>> {
-        let slot = self.slot(request);
-        if slot
+    pub(crate) fn take(&mut self, id: &str) -> Option<crate::Result<Value>> {
+        if self
+            .resolving
             .as_ref()
             .is_none_or(|pending| pending.id != id || pending.result.is_none())
         {
             return None;
         }
-        slot.take()?.result
+        self.resolving.take()?.result
     }
 }
 
@@ -184,20 +149,13 @@ impl LinkCell {
         })
     }
 
-    /// Whether both cells name the same pane viewport: boot, pane, inner
-    /// rectangle, and scroll offset. A content revision is not part of the
-    /// viewport. [`Self::same_content`] keeps that revision, which hover and
-    /// clicks without a locally read web address still require.
-    pub(crate) fn same_viewport(&self, other: &Self) -> bool {
+    /// Whether both cells read the same pane content, wherever in it they are.
+    pub(crate) fn same_content(&self, other: &Self) -> bool {
         self.boot == other.boot
             && self.pane_id == other.pane_id
             && self.inner_rect == other.inner_rect
             && self.offset_from_bottom == other.offset_from_bottom
-    }
-
-    /// Whether both cells read the same pane content, wherever in it they are.
-    pub(crate) fn same_content(&self, other: &Self) -> bool {
-        self.same_viewport(other) && self.content_revision == other.content_revision
+            && self.content_revision == other.content_revision
     }
 
     /// Whether `surface` still shows the content this cell was read from.
@@ -288,48 +246,6 @@ impl ResolvedLink {
                     ..rect.x.saturating_add(region.end_col).saturating_add(1),
             )
         })
-    }
-}
-
-/// What the daemon made of a click it was asked to activate.
-#[derive(Debug)]
-pub(crate) enum Activation {
-    /// A plugin link handler claimed the click: nothing else may act on it.
-    Handled,
-    /// The handler that claimed the click failed. It may have run partway,
-    /// so the click is spent and the daemon's reason is shown instead of
-    /// opening the address some other way.
-    HandlerFailed(crate::Error),
-    /// Nothing claimed the click. The daemon's own reading of the link, which
-    /// may span wrapped rows, when it is a bounded web address; otherwise the
-    /// client's local reading opens, if it has one. Any other error lands
-    /// here too: a stale or unanswered request never ran a handler.
-    Declined(Option<crate::browser::WebUrl>),
-}
-
-impl From<crate::Result<Value>> for Activation {
-    fn from(response: crate::Result<Value>) -> Self {
-        let Ok(response) = response else {
-            return Self::Declined(None);
-        };
-        let result = match response::tagged(&response, "pane_link_activated") {
-            Ok(result) => result,
-            Err(
-                error @ sheprd_client::Error::Endpoint {
-                    code: EndpointErrorCode::PluginLinkFailed,
-                    ..
-                },
-            ) => return Self::HandlerFailed(error.into()),
-            Err(_) => return Self::Declined(None),
-        };
-        if result["handled"] == true {
-            return Self::Handled;
-        }
-        Self::Declined(
-            result["url"]
-                .as_str()
-                .and_then(|url| crate::browser::WebUrl::try_from(url).ok()),
-        )
     }
 }
 
