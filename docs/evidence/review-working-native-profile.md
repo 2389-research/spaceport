@@ -282,3 +282,57 @@ Keep raw captures private until their scope and contents have been inspected.
 - [ ] Add bounded real output before claiming patch or frame-copy coverage.
 - [ ] Inspect native captures, actual samples, and CPU/frame data before changing redraw behavior.
 - [ ] Verify the original Core, mirror, chat, copying, and polling clauses separately before closing gg9v.
+
+### Windows execution plan and contracts
+
+Use the planning and TDD skills within this existing approved plan.
+Keep implementation inline in the assigned worktree; Root owns builds and CI dispatch.
+
+1. Add Windows clock and observation contract tests in `tests/working_profile/windows_contracts.rs`.
+   Root runs the test-only checkpoint before implementation.
+   A separate unsupported `cpu_ticks` parser preserves the Mac clock grammar for runtime RED.
+   The existing schema requires Mac-only Boolean facts.
+2. Add `src/working_profile/transport.rs` for the observer's bounded platform endpoint.
+   Keep Unix socket deadlines and private-directory checks.
+   Windows uses existing private-endpoint SID/owner checks and a private first-instance named pipe.
+   Requests and replies retain the 64 KiB bound, capture bound, and dedicated waiting thread.
+3. Keep `src/working_profile/report.rs` authoritative for shared readiness and frame observations.
+   Make Mac-only facts optional; Windows records its actual GPUI HWND separately.
+   Add Windows native facts through a bounded PowerShell helper in `tests/working_profile/`.
+   Read foreground HWND, visibility, minimized state, process ID, and actual HWND thread ID.
+   Require the HWND owner to match the owned GUI PID before sampling.
+4. Adapt `tests/working_profile/peer.rs` to the sandbox's actual Windows PowerShell producer and API pipe.
+   Generate 120 bounded real output lines and the split ready marker.
+   Preserve correlated `pane.report_agent` replies and monotonic status sequence numbers.
+5. Split only platform measurement edges from `tests/working_profile/harness.rs`.
+   Windows reads exact-PID `TotalProcessorTime.Ticks`, using 100ns units.
+   Retain raw endpoints and measured wall duration around each controlled phase.
+   Start an owned WPR CPU instance only after refusing unrelated active recording.
+   Stop only after acknowledged start; retain raw ETL privately.
+   Extract stacks with exact GUI PID and actual HWND thread filtering through installed xperf.
+   Qualify actual extraction and symbol support from observed output; never invent stack counts.
+6. Widen only integration-test platform gates in `main.rs`, `app.rs`, `group_terminals.rs`, and `presentation.rs`.
+   Preserve normal application rendering and all Mac-specific native observation behavior.
+   Do not enable GPUI's profiler feature: its optional hdrhistogram dependency is absent from the current lockfile.
+7. Root runs Windows ordinary tests, then the explicit release native fixture.
+   Inspect captures, phase JSON, and filtered stack text before reporting measurement success.
+   Run static format/diff/size checks and obtain independent review before publication.
+
+Ordinary RED command:
+`cargo test --locked -p sheprd-gpui --features integration-test --test working_profile -- --nocapture`
+
+These ordinary clock/schema contracts do not depend on optimization.
+Only the explicit native profile accepts a release executable.
+
+Native GREEN command after implementation:
+`cargo test --locked --release -p sheprd-gpui --features integration-test --test working_profile working_terminal_groups_profile -- --ignored --exact --nocapture`
+
+Set `HERDR_TEST_BINARY` to the checksum-pinned installed daemon's absolute executable.
+Set `HERDR_TEST_TMPDIR` to an existing private runner temporary parent.
+No local build, daemon, native window, VM, model, or credential run is authorized for this agent.
+
+Primary measurement references:
+[WPR options](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/wpr-command-line-options),
+[xperf actions](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/xperf-actions),
+[stack filters](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/stack), and
+[process CPU clock](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.totalprocessortime).

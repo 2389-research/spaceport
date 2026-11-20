@@ -3,6 +3,11 @@
 use anyhow::{Context as _, Result, ensure};
 use std::time::Duration;
 
+#[cfg(windows)]
+pub(super) fn cpu_ticks(_value: &str) -> Result<Duration> {
+    anyhow::bail!("Windows 100ns CPU ticks are not supported yet")
+}
+
 pub(super) fn cpu_clock(value: &str) -> Result<Duration> {
     let value = value.trim();
     ensure!(

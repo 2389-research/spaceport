@@ -45,3 +45,61 @@ jobs:
           if ($null -eq $wpr) { throw 'Windows Performance Recorder is not available on PATH.' }
           & $wpr.Source -profiles
           if ($LASTEXITCODE -ne 0) { throw "WPR profile inventory failed with exit $LASTEXITCODE" }
+      - name: Inspect sampler flags and current recording state
+        timeout-minutes: 2
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Inspect-Tool([string]$name, [string]$arguments) {
+            $tool = Get-Command $name -CommandType Application -ErrorAction Stop | Select-Object -First 1
+            $start = [System.Diagnostics.ProcessStartInfo]::new()
+            $start.FileName = $tool.Source
+            $start.Arguments = $arguments
+            $start.UseShellExecute = $false
+            $start.CreateNoWindow = $true
+            [Console]::WriteLine("PROFILE_TOOL_BEGIN name=$name arguments=$arguments")
+            $child = [System.Diagnostics.Process]::Start($start)
+            try {
+              if (-not $child.WaitForExit(15000)) { throw "Owned tool probe timed out: $name $arguments" }
+              [Console]::WriteLine("PROFILE_TOOL_EXIT name=$name arguments=$arguments code=$($child.ExitCode)")
+            } finally {
+              try {
+                if (-not $child.HasExited) {
+                  $child.Kill()
+                  if (-not $child.WaitForExit(5000)) { throw "Owned tool probe did not exit after cleanup: $name" }
+                }
+              } finally { $child.Dispose() }
+            }
+          }
+          Inspect-Tool 'xperf.exe' '-help stack'
+          Inspect-Tool 'xperf.exe' '-help symbols'
+          Inspect-Tool 'wpr.exe' '-help start'
+          Inspect-Tool 'wpr.exe' '-help status'
+          Inspect-Tool 'wpr.exe' '-help stop'
+          Inspect-Tool 'wpr.exe' '-status'
+          Inspect-Tool 'wpr.exe' '-status collectors -details'
+  contracts:
+    if: >-
+      github.repository == '2389-research/spaceport' &&
+      github.actor == 'harperreed' && github.triggering_actor == 'harperreed' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/fix/review-squad-windows-profile'
+    runs-on: windows-2025
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      CARGO_PROFILE_DEV_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select the pinned Rust toolchain
+        shell: bash
+        run: rustup show
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          key: working-profile-windows-2025
+          save-if: false
+      - name: Exercise ordinary profile contracts without a GUI or daemon
+        shell: bash
+        run: cargo test --locked -p sheprd-gpui --features integration-test --test working_profile -- --nocapture
