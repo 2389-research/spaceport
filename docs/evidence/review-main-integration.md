@@ -1,10 +1,11 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `b94978e3b` passes all 25 non-Core native UIA cases and the corrected four-case tab contrast qualification.
-Core observing and resizing pass; ordinary Core text/events fail without a diagnosed boundary.
-Default macOS compilation and four Windows test jobs expose separate test portability errors.
-The next candidate corrects those tests, adds Core failure diagnostics, and schedules disposable Windows AltGr qualification.
+Status: `3634e5039` passes all ten workspace jobs, both Mac release builds, Windows installation, ARM native, and supply-chain checks.
+All three Core native cases pass; the earlier ordinary Core failure remains unexplained.
+The x64 native job fails a chat-helper deadline and a keyboard-profile format guard before layout mutation.
+The next candidate reduces redundant chat inspection and tests bounded profile-ID parsing.
+Four measured native tab contrast cases remain qualified on `b94978e3b`.
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
 Crew tracks 50 done children and three open children for `9s44`.
 The closed shortcut child still has an explicitly recorded native qualification gap.

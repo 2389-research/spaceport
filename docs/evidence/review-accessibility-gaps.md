@@ -701,3 +701,12 @@ The diagnostic correction retains the deadline, input, output, event, and caret 
 It records separate native booleans and inspects the independent runtime marker when the native helper fails.
 It prints no terminal contents and performs no input retry.
 See the [scoped Core receipt](review-squad/core-native/qualification-b94978e3b.json).
+
+### Core rerun on `3634e5039`
+
+All three [Core native cases](review-squad/core-native/qualification-3634e5039.json) pass on the next source.
+Ordinary text/events, observing text/events, and prefix resizing each retain their complete runtime and cleanup assertions.
+The earlier ordinary failure does not recur, so its new diagnostic branch does not execute.
+No root cause or production correction follows from that successful rerun.
+The job separately fails chat-action timing and a keyboard-profile prerequisite before layout mutation.
+Audible screen-reader qualification and Mac Cmd-W remain pending.

@@ -327,3 +327,19 @@ Metadata tests therefore inspect actual view producers and synthetic-node produc
 Headless key tests use private framed fixtures and actual GPUI controls.
 No personal transcript, clipboard, or daemon supplies test data.
 Native screen readers, physical keyboard delivery, platform visuals, and performance remain pending.
+
+## Redundant action inspection on `3634e5039`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44671802770/job/136074462029) times out during its Settings action.
+The GUI remains alive; the capture reaches the first Tab stage near the helper's twenty-second parent deadline.
+The action starts around 04:12:32 UTC and reaches its initial draft check at 04:12:48.666 UTC.
+Its first Tab stage begins at 04:12:50.327 UTC; the parent reports timeout at 04:12:51.983 UTC.
+These timings establish preparation overhead, without proving which individual UIA call caused the delay.
+
+Each action previously repeated the full diagnostic tree walk already verified by its parent.
+The action now requests discovery without that redundant dump.
+It still finds the exact owned window, composer, draft, target, and native focus ancestry.
+The parent retains complete tree assertions before input and after each relevant scene change.
+Native Tab, Enter, Space, deliberate activation, twenty-second deadlines, and all action assertions remain unchanged.
+Independent review finds no material loss of targeting or verification.
+Actual Windows qualification remains pending; this is not a claimed production chat fix.

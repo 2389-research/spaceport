@@ -329,3 +329,26 @@ It must retain the exact app window, runtime identities, key cleanup, and displa
 The existing runtime stager supplies Windows packages only; an explicit trusted Linux Herdr fixture remains a prerequisite.
 No Linux desktop, runtime, configuration change, or new CI job ran during this research.
 These sources narrow the next setup experiment; they do not qualify the remaining shortcut requirement.
+
+### First native profile prerequisite on `3634e5039`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44671802770/job/136074462029) compiles the C# helper and reaches profile enumeration.
+It refuses an ID that violates the helper's bare eight-character assumption.
+The refusal happens before enabling a profile or sending AltGr input.
+The old diagnostic does not reveal the actual returned string format.
+
+The candidate parser accepts bounded bare KLIDs and language-qualified profile-list forms, with optional hexadecimal prefixes.
+A supplied language must match the native `LANGID`; unknown forms still fail before mutation.
+Cleanup retains the original raw profile identities rather than their parsed presentation.
+Normalized technical IDs are reported when parsing succeeds.
+This is a guarded parsing trial, not a claim about the unobserved Windows string or successful activation.
+
+Real C# tests reproduce rejection of a language-qualified input under the old guard.
+The final parser passes five accepted forms and ten malformed or mismatched cases.
+Mono also compiles the complete native helper beside those real tests.
+The private Linux containers use a read-only source mount and remove themselves after each run.
+Their exact IDs are verified absent afterward; no desktop or Windows API executes in those tests.
+Logs: `/tmp/spaceport-9s44-profile-parser-{red,green,final}.log`.
+The runtime is Mono `6.8.0.105+dfsg-3.6ubuntu2` in Ubuntu 24.04 on Linux ARM64.
+The final image is pinned at `sha256:ab18ecc70c55c703eae968948f9f1dbbe662aa8d9badac7c982e6a6237b9d74c`.
+Windows parsing, activation, native translated text, and cleanup remain pending.
