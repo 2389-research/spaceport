@@ -1,5 +1,6 @@
 // ABOUTME: Observes real Linux shortcut and text outcomes against an isolated Herdr.
 // ABOUTME: Prepares each case before READY and never injects measured keyboard input.
+use crate::settings_window::shortcut_fixture as settings_fixture;
 use crate::{Command, SheprdWindow, menu::Page, smoke};
 use anyhow::{Context as _, Result, ensure};
 use gpui::*;
@@ -50,6 +51,10 @@ enum Stage {
         target: String,
     },
     AwaitResume(usize),
+    AwaitSettingsClose {
+        handle: AnyWindowHandle,
+        index: usize,
+    },
     Mapped,
     Mapping,
     Observe {
@@ -177,11 +182,35 @@ fn observed(
     nonce: &str,
     id: &str,
     window: &Window,
-    cx: &App,
+    cx: &mut App,
 ) -> Result<bool> {
     let after = baseline(view, window, cx)?;
+    if outcome == Outcome::Settings {
+        same_runtime(before, &after)?;
+        same_terminal_state(before, &after)?;
+        let Some(handle) = settings_fixture::window(cx) else {
+            return Ok(false);
+        };
+        ensure!(
+            !before.windows.contains(&handle),
+            "native Settings case began with its window open"
+        );
+        ensure!(
+            after.windows.len() == before.windows.len() + 1
+                && before.windows.iter().all(|old| after.windows.contains(old)),
+            "native Settings action changed unexpected windows"
+        );
+        let active = settings_fixture::active(cx)?;
+        if active {
+            eprintln!(
+                "LINUX_KEYS_CASE id={id} settings_window_active=true original_windows_preserved=true"
+            );
+        }
+        return Ok(active);
+    }
     same_scene(before, &after)?;
     match outcome {
+        Outcome::Settings => anyhow::bail!("Settings outcome bypassed its window observer"),
         Outcome::Fullscreen(expected) => {
             same_tabs(before, &after)?;
             ensure!(
@@ -341,14 +370,19 @@ fn observed(
 }
 
 fn same_scene(before: &Baseline, after: &Baseline) -> Result<()> {
+    same_runtime(before, after)?;
+    ensure!(
+        after.windows == before.windows,
+        "native case changed window identities"
+    );
+    Ok(())
+}
+
+fn same_runtime(before: &Baseline, after: &Baseline) -> Result<()> {
     ensure!(after.boot == before.boot, "native case changed daemon boot");
     ensure!(
         after.workspace == before.workspace && after.workspaces == before.workspaces,
         "native case changed workspace identity"
-    );
-    ensure!(
-        after.windows == before.windows,
-        "native case changed window identities"
     );
     Ok(())
 }
@@ -367,6 +401,10 @@ fn same_tabs(before: &Baseline, after: &Baseline) -> Result<()> {
 
 fn same_terminal(before: &Baseline, after: &Baseline) -> Result<()> {
     same_scene(before, after)?;
+    same_terminal_state(before, after)
+}
+
+fn same_terminal_state(before: &Baseline, after: &Baseline) -> Result<()> {
     same_tabs(before, after)?;
     ensure!(
         before.focused_tab == after.focused_tab && before.focused_pane == after.focused_pane,
@@ -423,6 +461,17 @@ fn advance(
         .frame
         .validate()?;
     match stage {
+        Stage::AwaitSettingsClose { handle, index } => {
+            if cx.windows().contains(&handle) {
+                return Ok(Step::Continue(Stage::AwaitSettingsClose { handle, index }));
+            }
+            eprintln!(
+                "LINUX_KEYS_CASE settings_window_closed=true before_case={}",
+                CASES[index].id
+            );
+            window.activate_window();
+            Ok(Step::Continue(Stage::Prepare(index)))
+        }
         Stage::AwaitResume(index) => {
             if !popups::finish_resume(view, window, cx)? {
                 return Ok(Step::Continue(Stage::AwaitResume(index)));
@@ -520,6 +569,10 @@ fn advance(
             Ok(Step::Continue(Stage::Prepare(0)))
         }
         Stage::Prepare(index) => {
+            if let Some(handle) = settings_fixture::window(cx) {
+                settings_fixture::request_close(cx)?;
+                return Ok(Step::Continue(Stage::AwaitSettingsClose { handle, index }));
+            }
             if !window.is_window_active() {
                 return Ok(Step::Continue(Stage::Prepare(index)));
             }
@@ -548,6 +601,7 @@ fn advance(
             }
             let baseline = baseline(view, window, cx)?;
             match case.outcome {
+                Outcome::Settings => popups::close(view, window, cx)?,
                 Outcome::Fullscreen(expected) => {
                     ensure!(
                         baseline.fullscreen != expected,
@@ -637,6 +691,11 @@ fn advance(
         } => {
             let case = &CASES[index];
             let focused = match case.outcome {
+                Outcome::Settings => {
+                    settings_fixture::window(cx).is_none()
+                        && view.menu.page.is_none()
+                        && view.focus.is_focused(window)
+                }
                 Outcome::Fullscreen(_)
                 | Outcome::NextRegion
                 | Outcome::PreviousRegion
@@ -707,7 +766,7 @@ fn advance(
             started,
         } => {
             let case = &CASES[index];
-            if !window.is_window_active()
+            if (case.outcome != Outcome::Settings && !window.is_window_active())
                 || !observed(view, &baseline, case.outcome, nonce, case.id, window, cx)?
             {
                 return Ok(Step::Continue(Stage::Observe {

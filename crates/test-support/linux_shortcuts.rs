@@ -17,6 +17,7 @@ pub(super) enum Outcome {
     PreviousTab,
     ResetFont,
     ResumePalette,
+    Settings,
     Tab(u8),
     TerminalBytes(&'static [u8]),
     // keep-sorted end
@@ -201,6 +202,16 @@ pub(super) const CASES: &[Case] = &[
         chords: &[&[29, 42, 19]],
         id: "palette-resume",
         outcome: Outcome::ResumePalette,
+    },
+    Case {
+        chords: &[&[29, 42, 51]],
+        id: "settings-alias",
+        outcome: Outcome::Settings,
+    },
+    Case {
+        chords: &[PREFIX, &[31]],
+        id: "prefix-settings",
+        outcome: Outcome::Settings,
     },
     Case {
         chords: &[&[100, 38], &[42, 100, 49]],

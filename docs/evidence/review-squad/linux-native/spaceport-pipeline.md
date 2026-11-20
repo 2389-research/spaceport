@@ -148,3 +148,69 @@ Fullscreen checks require real entry and exit while preserving the focused termi
 Prefix cases first verify Ctrl-B against the resolved private keymap.
 These additions remain unqualified until their own exact-source run passes.
 Settings, Cycle Windows, split groups, pane history/cycling, geometric prefix focus, and remaining Windows cases stay pending.
+
+Source `6c2e09058` now passes its [exact-source run](https://github.com/2389-research/spaceport/actions/runs/44701934407).
+Eight shared tests and two receipt tests pass.
+The exact native test passes all thirty-four cases in 11.38 seconds.
+All added popup, direct, and prefix outcomes pass without weakening the prior guards.
+Key release, session closure, layout restoration, daemon survival, and exact process cleanup pass.
+The [route receipt](spaceport-routes-6c2e09058.json) retains all parent case completions and available detailed route observations.
+PR125 QA links the successful run; its application head remains `53de2db63`.
+Kata remains 49 closed and four open.
+
+## Exact resume point
+
+The separate native branch is `fix/review-squad-linux-native`, at qualified source `6c2e09058`.
+No CI run remains pending for that source.
+The route receipt and this progress note await the next meaningful code checkpoint.
+Do not publish a documentation-only checkpoint merely to start another native run.
+
+Finish Linux Settings and window aliases, split groups, pane history/cycling, and geometric prefix focus.
+Settings deliberately adds a window and changes activation; the general stable-window guard needs a scoped outcome branch.
+Observe the actual Settings global handle rather than inferring its type from a window count.
+Keep any observation hook behind `integration-test` and inside `settings_window`, whose window type is private.
+Close only the owned Settings fixture through its normal close path before the next READY.
+Wait for actual removal; do not cancel its persistence workers or force removal.
+Before testing Cycle Windows, verify that new windows retain the explicit private endpoint and process ownership.
+Prepare real pane additions one acknowledged creation at a time, as the tab fixture already does.
+Keep measured stages free of logical input, focus changes, and forced drawing.
+
+## Remaining Windows qualification
+
+Read-only review identifies native coverage in the existing Windows fixture namespace.
+Chrome Ctrl-F6/Ctrl-Shift-F6, held tab/window/split commands, and Polish `łŃ` already have native checks.
+The Polish helper types RightAlt-L and RightAlt-Shift-N; it does not qualify lowercase AltGr-N/Z.
+Settings button activation does not qualify its comma shortcut.
+Logical `dispatch_keystroke` smoke checks do not qualify native Windows delivery.
+
+Extend the existing disposable Polish scope with lowercase N/Z before claiming those collision examples pass.
+Inspect real translation before choosing text assertions for B/W; do not invent Polish output.
+Reuse `accessibility_windows::Running`, its Sandbox, explicit Herdr, bounded helpers, and real daemon snapshots.
+Add exact positional digit targets, punctuation outcomes, and a real pane-owned console key/modifier producer.
+Microsoft's [Console.ReadKey contract](https://learn.microsoft.com/en-us/dotnet/api/system.console.readkey?view=netframework-4.8.1) is a candidate producer contract.
+First qualify its console attachment; UIA focus and app input counters cannot replace program receipt.
+Windows reset is Ctrl-0; do not copy Linux's Ctrl-Shift-0 chord.
+Windows retains its own arrow and Resume defaults, independently of Linux's GNOME exclusions.
+Revised fullscreen, tab, Zen, and status-bar routes still need native outcome coverage.
+
+Paths below are relative to `crates/sheprd-gpui`.
+Relevant owners are `tests/accessibility_windows/non_us.rs`, `tests/support/native_altgr.cs`, and `tests/support/uia_altgr.ps1`.
+The held native routes live in `tests/accessibility_windows/held_shortcuts.rs` and its `daemon.rs` child.
+Reuse the serial Windows UIA and separate disposable-layout CI steps in `.github/workflows/ci.yml`.
+Preserve ARM's explicit live-daemon limitation and keep default and layout scopes separate.
+These are pending cases; the read-only review ran no compiler or native checks.
+
+The next Linux checkpoint adds two Settings cases: shifted comma and the retained prefix-I route.
+A Linux `integration-test` hook reads the actual typed Settings global and uses its ordinary close path.
+Settings success permits exactly that new window while preserving the original windows and runtime target.
+It requires actual activation of that Settings window.
+Preparation closes the previous popup before READY, then closes the owned Settings window after its measured success.
+The close request defers until the observer releases its main-view borrow; normal close may update source views.
+The next case waits for removal and original-window activation before accepting more native input.
+All other outcomes retain their original window guards.
+These two cases remain unqualified until their exact-source native run passes.
+
+The Windows implementation owner works separately in `.worktrees/review-squad-windows-native`.
+That owner may edit Windows fixtures, support, registration, and its exact-branch probe workflow.
+Root owns the Linux app observer, Settings hook, and shared Linux cases.
+The Windows owner must return a reviewable diff before committing or pushing.
