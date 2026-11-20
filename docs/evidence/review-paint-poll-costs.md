@@ -139,13 +139,17 @@ Its x64 native image case fails because its witnesses sample atlas filter footpr
 Source `174db4857` preserves the assets and thresholds, and passes initial native pixels and cached replay.
 Its scroll capture times out because it also requires the brief interpolation flag; a valid resting fractional slide arrives later.
 The correction retains the actual native wheel and validates its fractional geometry, changed authoritative offset, masks, layers, and pixels.
-Corrected Windows execution and all four inspected success captures remain pending.
+At that checkpoint, corrected Windows execution and all four inspected success captures remained pending.
 The native [failure capture and source-center correction](review-image-pane-scroll.md#native-source-samples-on-23cab5b4b) preserve that evidence.
-Keep `gfde` open until its remaining original scope has evidence.
+The later qualification below supplies that remaining original-scope evidence.
 
 A second scoped review maps every original clause to the code and existing execution receipts above.
 It finds no further implementation gap in the theme cache, glyph replacement, shared scans, streaming preparation, or sidebar index.
-The remaining `gfde` gate requires successful native mapping, cached replay, fractional motion, clipping, layering, and four inspected PNGs.
+Source `a8f7bd371` passes native mapping, cached replay, fractional rendering, clipping, layering, and exact fixture cleanup.
+All four actual PNGs decode, match their recorded hashes and dimensions, and pass independent visual inspection.
+The [qualification receipt](review-squad/native-images/qualification-a8f7bd371.json) retains all four images and precise scope.
+An independent original-scope audit finds no material unmet requirement across the five clauses above.
+This supports closing `gfde`; its native job's separate workspace-name failure does not change those receipts.
 Operation counts and synthetic preparation results do not claim a native elapsed speed improvement.
 
 The separate redraw finding, `gg9v`, requires a release-mode profile first.

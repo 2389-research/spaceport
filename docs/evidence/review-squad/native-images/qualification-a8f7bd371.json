@@ -1,0 +1,38 @@
+{
+  "source": "a8f7bd37126c510329e9c2009b7bd3eaf522342a",
+  "run": 44661227704,
+  "job": 136039952924,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44661227704/job/136039952924",
+  "observed_at": "2026-11-20T02:40:38.1329005Z",
+  "test": "images::native_images_preserve_mapping_layers_clipping_and_cached_cell_replay",
+  "result": "passed",
+  "qualified": true,
+  "frames": [
+    {"phase":"stationary","file":"stationary-a8f7bd371.png","dimensions":[1200,780],"bytes":59277,"sha256":"feadd9a84ffafb6143a9bdd97afae975818b0e435c8451c28cf0dc0a6d9cf067"},
+    {"phase":"replay","file":"replay-a8f7bd371.png","dimensions":[1200,780],"bytes":59277,"sha256":"feadd9a84ffafb6143a9bdd97afae975818b0e435c8451c28cf0dc0a6d9cf067"},
+    {"phase":"fractional","file":"fractional-a8f7bd371.png","dimensions":[1200,780],"bytes":61316,"sha256":"48ac36b35ab1a78a01eed33d1f9a64bf2bd0a788003c60a16e7ae241bc8529ce"},
+    {"phase":"settled","file":"settled-a8f7bd371.png","dimensions":[1200,780],"bytes":61316,"sha256":"48ac36b35ab1a78a01eed33d1f9a64bf2bd0a788003c60a16e7ae241bc8529ce"}
+  ],
+  "receipts": [
+    "IMAGE_INPUT_FAILURE native=true pointer_restored=true preserved_original=true",
+    "IMAGE_PRODUCER submitted_once=true delivery_pending=true",
+    "IMAGE_NATIVE_WHEEL_READY cells=0 regions=3 painted=4",
+    "IMAGE_NATIVE_FRACTIONAL offset=-0.25 painted=5",
+    "IMAGE_NATIVE_CAPTURED stationary=true replay=true fractional=true settled=true",
+    "IMAGE_NATIVE_PASS assets=true cached_cells=true fractional=true clipping=true layers=true"
+  ],
+  "inspection": "Decoded all four original CI PNGs, verified hashes and dimensions, and viewed each actual frame.",
+  "scope": [
+    "real authored Herdr assets and stable source identities",
+    "unchanged cached terminal cell replay",
+    "one real native wheel and image/cell fractional translation",
+    "native source colors, alpha overlap, glyph layer checks, viewport masks and outside rejection",
+    "changed authoritative scrollback, stable pane identity and owned fixture cleanup"
+  ],
+  "limits": [
+    "Fractional resting positions qualify; capture during active interpolation is not required.",
+    "Tiny source texel filtering footprints remain inherited and visible; this is not an atlas-edge appearance fix.",
+    "This is functional native rendering evidence, not the foreground working-session release profile.",
+    "The same native job fails a separate workspace-close fixture setup."
+  ]
+}

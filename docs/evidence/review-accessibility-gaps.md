@@ -123,7 +123,7 @@ Kata `q72g` remains open for these specific checks:
 | Core Terminal node | Ordinary Core text passes on `23cab5b4b`; ordinary and observing text, caret, bounds, and change events pass on `174db4857`. |
 | Herdr caret and announcements | Text, caret, line bounds, and TextChanged pass; audible screen-reader announcements remain pending. |
 | Settings font scaling | Enlarged native glyphs and clipping pass at 1100×780 and 680×780 on `7b7498762`; see captures below. |
-| Keyboard reorder and resize | Workspace reorder and Herdr resize pass on `4194cb1ab`; Core resize remains pending. |
+| Keyboard reorder and resize | Workspace reorder and Herdr resize pass on `4194cb1ab`; Core resize and restoration pass on `a8f7bd371`. |
 | Selected-tab focus contrast | Inspect focused tabs on actual fills, including applicable translucent or image backdrops. |
 | Close-button roles | Native names, Button roles, cancellation, and confirmation pass on `64970ccce`; see below. |
 
@@ -569,6 +569,18 @@ Logs: `/tmp/spaceport-9s44-core-resize-windows-{all,minimal}.log`.
 Independent read-only review finds no material targeting, geometry, lifecycle, or existing-helper regression.
 PowerShell is unavailable locally; actual native execution remains assigned to Windows CI.
 This case does not qualify a Core-only default keymap, macOS Cmd-W, or audible speech.
+
+### Native Core resize qualification on `a8f7bd371`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44661227704/job/136039952924) passes all three Core cases.
+The resize receipt occurs at `2026-11-20T02:43:15.3497430Z`.
+Actual prefix, Left, and Right move and restore the right pane's native caret-line bounds.
+Fixed window and pane edges and the divider gap remain stable.
+The independent Core stream contains the typed marker, and both terminal addresses survive unchanged.
+Exact private Core shutdown and child reaping succeed before the case returns.
+Ordinary and observing text cases also pass on this same source.
+The [combined receipt](review-squad/core-native/qualification-a8f7bd371.json) records all three cases.
+This qualifies the existing resize alternative, while speech, native tab contrast, and macOS Cmd-W remain open.
 
 ### Selected-tab native capture candidate
 

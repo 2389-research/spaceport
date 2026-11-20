@@ -1,0 +1,36 @@
+{
+  "source": "a8f7bd37126c510329e9c2009b7bd3eaf522342a",
+  "run": 44661227704,
+  "job": 136039952924,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44661227704/job/136039952924",
+  "platform": "Windows x64",
+  "fixture_release": "Herdr Core 0.1.21",
+  "results": [
+    {
+      "test": "core::native_core_observing_pane_exposes_fresh_text_caret_and_change_events",
+      "observed_at": "2026-11-20T02:43:05.4102202Z",
+      "result": "passed",
+      "receipt": "CORE_NATIVE observing=true text=true native_text_changed=true caret_line_bounds=true same_terminal=true observer_removed=true"
+    },
+    {
+      "test": "core::native_core_text_caret_bounds_and_output_changes_match_the_real_runtime",
+      "observed_at": "2026-11-20T02:43:10.0856352Z",
+      "result": "passed",
+      "receipt": "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true"
+    },
+    {
+      "test": "core::resize::native_core_prefix_resize_moves_and_restores_bounds_without_ending_either_terminal",
+      "observed_at": "2026-11-20T02:43:15.3497430Z",
+      "result": "passed",
+      "receipt": "CORE_RESIZE native=true prefix=true left=true right=true restored=true runtime_marker=true stable_terminal_ids=true"
+    }
+  ],
+  "cleanup": "Every case returns successfully after exact private Core shutdown and owned child reaping.",
+  "job_result": "failure: separate workspace-close setup creates a partially typed workspace name",
+  "remaining": [
+    "Core pane close and held macOS Cmd-W",
+    "observing-pane input refusal",
+    "audible screen-reader announcements",
+    "selected-tab backdrop contrast"
+  ]
+}

@@ -399,3 +399,24 @@ Both Windows feature configurations pass binary and native-harness Clippy with w
 Independent read-only review finds no material proof gap in accepting genuine fractional resting positions.
 This qualifies fractional rendering when the native run succeeds; it does not require capture during active interpolation.
 Actual Windows execution and inspection of all four success PNGs remain pending.
+
+## Native qualification on `a8f7bd371`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44661227704/job/136039952924) passes the complete image case at `2026-11-20T02:40:38.1329005Z`.
+Actual authored assets paint, unchanged cells replay with zero callbacks, and one native wheel produces a fractional offset of -0.25.
+The moving image geometry matches the daemon placement and cell offset within one physical pixel.
+GPU samples prove source mapping, alpha overlap, layer checks, and clipping inside the fixed viewport.
+The outside sample rejects cyan beyond that viewport.
+The settled frame retains the changed authoritative scrollback and the same asset identities.
+Pointer failure recovery, final pointer restoration, stable pane identity, and owned cleanup also pass.
+
+The [receipt](review-squad/native-images/qualification-a8f7bd371.json) records all four original PNGs.
+Each is 1200 by 780 pixels and stays below the 128 KiB bound.
+Root and an independent reviewer viewed each actual frame and checked hashes and dimensions.
+Stationary and replay match byte-for-byte; fractional and settled also match byte-for-byte.
+This proves a real fractional resting position rather than an active-interpolation capture.
+Tiny source texel filtering footprints remain visible and inherited.
+No foreground working-session release timing is claimed.
+
+The native job separately fails workspace-close setup after creating a partially typed name.
+That unrelated failure does not invalidate the complete image case.
