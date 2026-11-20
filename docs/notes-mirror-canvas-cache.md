@@ -93,17 +93,16 @@ window's own cells:
 
 ## After
 
-| mirrored grid | mark frame | the mirror's share |
-| --- | --- | --- |
-| 80x24 | 424.3 us | -5.0 us |
-| 100x56 | 400.7 us | -28.6 us |
+| mirrored grid | mark frame with the mirror | same frame, mirror holds one cell | the mirror's share |
+| --- | --- | --- | --- |
+| 80x24 | 424.3 us / 431.3 us | 429.4 us / 405.5 us | -5.0 us / +25.8 us |
+| 100x56 | 400.7 us / 400.2 us | 429.4 us / 405.5 us | -28.6 us / -5.3 us |
 
-The share is now inside the noise between the two halves of a run: the mirror
-paints nothing on a mark frame, and the count says so (`paints: 0, quads: 0,
-glyphs: 0`). The whole frame fell by 79 us for the 80x24 group and 294 us for
-the 100x56 one; the negative shares are drift, since the one-cell baseline read
-399.1 us before the change and 429.4 us after it (7.6% between runs on the same
-machine).
+Each pair is one run of the final binary, and the share is now inside the
+noise: the one-cell baseline alone reads 399.1, 429.4 and 405.5 us across runs,
+so a share of a few tens of microseconds is the machine, not the mirror. The
+count says the same thing — `paints: 0, quads: 0, glyphs: 0` on a mark frame.
+The whole frame fell by 79 us for the 80x24 group and 294 us for the 100x56 one.
 
 ## Tests
 
