@@ -1,7 +1,10 @@
 //! Live daemon output -> exact-window AppKit drag -> OS clipboard -> normal
 //! paste -> shell byte readback. Only the opt-in macOS native harness calls this.
-use super::*;
+use crate::SheprdWindow;
 use crate::sidebar::native_tests::Target;
+use crate::smoke::*;
+use anyhow::{Context as _, Result, bail};
+use gpui::*;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {

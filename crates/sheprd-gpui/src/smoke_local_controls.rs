@@ -1,7 +1,23 @@
 // ABOUTME: Checks native local-control actions without a profile or personal daemon.
 // ABOUTME: Captures fresh window frames and verifies popup input and focus isolation.
-use super::*;
 use crate::menu::Page;
+use crate::{Command, SheprdWindow};
+use crate::smoke::*;
+use anyhow::{Result, bail};
+use gpui::*;
+use std::time::Duration;
+
+/// Entry: the local actions, their popup isolation, and the About box.
+pub(crate) fn start(handle: WindowHandle<SheprdWindow>, cx: &mut App) {
+    cx.spawn(async move |cx| {
+        conclude(
+            "LOCAL CONTROLS native",
+            "local actions, popup isolation and focus at two sizes",
+            verify(handle, cx).await,
+        );
+    })
+    .detach();
+}
 
 pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp) -> Result<()> {
     let light = std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_LIGHT").is_some();
@@ -22,14 +38,13 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
             .timer(Duration::from_millis(100))
             .await;
         let capture = std::env::var_os("HERDR_TEST_LOCAL_CONTROLS_CAPTURE");
-        let pixels = AnyWindowHandle::from(handle).update(cx, |_, window, cx| {
-            window.refresh();
-            window.draw(cx).clear(cx);
+        let pixels = with_root(handle, cx, |_, window, cx| {
+            draw(window, cx);
             capture
                 .as_ref()
                 .map(|_| window.render_to_image())
                 .transpose()
-        })??;
+        })?;
         if let (Some(root), Some(pixels)) = (capture, pixels) {
             let root = std::path::PathBuf::from(root);
             if !root.is_absolute() {
@@ -45,13 +60,9 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
             (Command::Themes, Page::Themes),
             (Command::About, Page::About),
         ] {
-            AnyWindowHandle::from(handle).update(cx, |root, window, cx| -> Result<()> {
-                let view = root
-                    .downcast::<SheprdWindow>()
-                    .map_err(|_| anyhow!("unexpected root"))?;
+            with_root(handle, cx, |view, window, cx| -> Result<()> {
                 view.update(cx, |view, cx| view.command(command, window, cx));
-                window.refresh();
-                window.draw(cx).clear(cx);
+                draw(window, cx);
                 let before = view.read(cx).input_probe;
                 if view.read(cx).menu.page != Some(expected) {
                     bail!("native local action {command:?} did not open {expected:?}");
@@ -68,7 +79,7 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
                     bail!("native local action {command:?} leaked input or lost focus");
                 }
                 Ok(())
-            })??;
+            })?;
         }
     }
     about::verify(handle, cx).await?;
@@ -82,6 +93,5 @@ pub(super) async fn verify(handle: WindowHandle<SheprdWindow>, cx: &mut AsyncApp
     {
         bail!("native local-controls diagnostics did not flush");
     }
-    eprintln!("LOCAL CONTROLS native PASS: local actions, popup isolation and focus at two sizes");
     Ok(())
 }
