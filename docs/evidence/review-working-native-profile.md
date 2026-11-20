@@ -1,26 +1,40 @@
-<!-- ABOUTME: Defines an isolated release profile of a real Herdr TUI working session. -->
-<!-- ABOUTME: Separates generated workload observations, sampling results, and unqualified providers or Core. -->
+<!-- ABOUTME: Tracks isolated release profiles and the remaining whole-window performance work. -->
+<!-- ABOUTME: Separates native observations, source findings, qualification limits, and pending regressions. -->
 # Working native session profile implementation plan
 
-**Goal:** Profile the release GUI with two populated terminal groups and controlled output and agent status.
+**Goal:** Resolve gg9v through release profiling and bounded fixes for measured redraw costs.
 
 **Architecture:** Launch only test-owned processes inside the existing Sandbox.
 Drive the private Herdr API and Spaceport control CLI.
 Use a gated observer only for state the public CLI cannot report.
 Sample the owned GUI process; retain the raw stacks, workload observations, CPU readings, and native captures.
 
-**Tech stack:** Existing Rust, GPUI, serde, Sandbox, Herdr TUI, macOS `sample`, and macOS `ps`.
+**Tech stack:** Existing Rust, GPUI, serde, Sandbox, Herdr TUI/Core, and Windows WPR/xperf.
+Mac `sample`/`ps` support remains separate from the held Mac native checks.
+
+## Current checkpoint — November 20
+
+- Kata remains 50 closed and three open; gg9v is the active performance issue.
+- Doctor Biz keeps Mac foreground checks and actual speech pending.
+- Native `538ff3ca6` is audited with valid settings, captures, identities, and zero-loss traces; animation activity was not recorded.
+- Ordinary `e076fbac1` passed both motion regressions after actual RED; published `7d1772994` passed all four ordinary jobs again.
+- Disposable desktop preparation passed real enable, repeated-refusal, restoration, and fresh-process checks at `dcadebfaf`.
+- Native run `44835762627` is building exact `dcadebfaf`; its app policy, render counts, and sampling remain unqualified.
+- Core paint checkpoint `a0de2f5d9` runs as `44836845723`; its intended runtime RED is still pending.
+- Core caching has not been implemented; the proposed boundary and controls appear at this document's end.
 
 ## Authority and limits
 
-Root owns every Cargo build, daemon launch, native interaction, and profile execution.
-This agent owns the harness and its focused observation code.
-No redraw optimization or scheduling change belongs in this step.
-No new dependency, runtime, crate, unsafe code, or public command belongs in this step.
-No provider credential, personal content, or Core process enters the fixture.
+Root coordinates implementation, CI, exact process ownership, and read-only reviews.
+Doctor Biz authorized scoped fixes, validation, normal commits/pushes, draft PR updates, verified Kata closures, and Crew coordination.
+No main merge or release is authorized.
+Local compilation, VMs, and Mac native windows remain held; disposable Windows CI supplies build and native execution.
+Use only the fixture's exact private TUI/Core processes and explicit runtime paths.
+No provider credential or personal content enters the fixture.
 The controlled Working status is synthetic and must be labeled synthetic in every report.
 The existing dense rendering budget does not substitute for this working-session profile.
-No commit or publication is authorized.
+The original two-TUI harness brief evolved into the qualified mixed TUI/Core work recorded below.
+Remaining work includes cache boundaries, chat, frame copying, and polling; a green native job alone cannot close gg9v.
 
 ## Files and boundaries
 
@@ -28,8 +42,8 @@ No commit or publication is authorized.
 - `tests/working_profile/` may hold focused measurement and fixture helpers.
 - `src/working_profile.rs` owns the integration-test-only observation handshake.
 - A shared observation schema may live under `src/working_profile/`.
-- `Cargo.toml` registers this test with `required-features = ["integration-test"]` after Root releases its build hold.
-- `main.rs` declares the module only on macOS with `integration-test`.
+- `Cargo.toml` registers this test with `required-features = ["integration-test"]`.
+- `main.rs` declares the module on macOS and Windows with `integration-test`.
 - `app.rs` starts observation only for a normal window with the explicit profile environment variable.
 - `group_terminals.rs` may expose one gated, borrowed observation accessor; Root reserved this narrow footprint.
 - `presentation.rs` may expose the approved gated borrowed frame/image pair, without advancing presentation.
@@ -37,7 +51,7 @@ No commit or publication is authorized.
 Root released the startup wire gate after the native Settings build and the focus baseline build.
 The observer never calls `Presentation::picture`, steers a connection, or requests a redraw.
 Latest projected surfaces must not be labeled presented surfaces.
-Root approved an exact borrowed presented-frame/image accessor under the same macOS/integration-test gate.
+Root approved the exact borrowed presented-frame/image accessor under the supported-platform/integration-test gate.
 
 ## Test and observation contracts
 
@@ -45,7 +59,9 @@ Root approved an exact borrowed presented-frame/image accessor under the same ma
 Its value names the fixture's existing absolute private directory.
 Normal launches without it create no profile observer.
 The harness starts Spaceport with its explicit private client socket.
-It supplies `HERDR_TEST_BINARY` explicitly and requires `HERDR_TEST_TMPDIR=/tmp`.
+It supplies `HERDR_TEST_BINARY` explicitly and uses a private fixture parent.
+Mac tests require a short parent such as `/tmp`; Windows CI creates its own parent under `RUNNER_TEMP`.
+Mixed tests also require the explicitly selected `HERDR_CORE_TEST_BINARY`.
 Every GUI, API, CLI, sample, and CPU command uses the Sandbox's cleared environment.
 
 The observer answers bounded explicit requests outside the sampling interval.
@@ -988,3 +1004,17 @@ The intended boundary caches cells only, preserving outer geometry, focus report
 Content, cursor, selection, metrics, font, full paint theme, and veil changes must invalidate cached cells.
 Add repaint and input/geometry controls before accepting the implementation.
 Native baseline and post-change visible-content/counter evidence remain separate requirements.
+
+Pinned `gpui-pre` 0.3.11 checks bounds, mask, text style, opacity, dirtiness, and refresh state before replay.
+A hit skips the child's render, prepaint, and paint callbacks.
+Paint replay preserves input handlers, but per-frame accessibility nodes are cleared separately and not replayed.
+The Core interaction canvas must therefore remain live, as primary TUI interaction already does.
+
+The proposed private child holds only cell-paint data and uses GPUI's existing cached-view boundary.
+Replace it when the frame, highlights, pane appearance, metrics, font, ground, or actual painter appearance changes.
+Keep its bounds aligned with the existing canvas and preserve clipping, veil, status, and padding order.
+Retain outer `fit`, input registration, focus reporting, event listeners, and terminal accessibility nodes.
+The painter's actual theme, font size, and line height must enter the key; current Core `Look` omits some inputs.
+A read-only appearance snapshot avoids creating another authoritative configuration store.
+Test input dispatch, resize/IME geometry, content, selection/cursor, and foreground-only theme changes before accepting caching.
+The new regression started as run `44836845723` on `a0de2f5d9`; no runtime RED is claimed yet.
