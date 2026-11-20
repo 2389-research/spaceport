@@ -1,0 +1,18 @@
+{
+  "source": "174db4857f73df8f05cf5ca340b2f5fea2fc05fa",
+  "run": 44657637800,
+  "job": 136027900757,
+  "url": "https://github.com/2389-research/spaceport/actions/runs/44657637800/job/136027900757",
+  "test": "images::native_images_preserve_mapping_layers_clipping_and_cached_cell_replay",
+  "result": "failed: native pointer watchdog exit 73 while waiting for IMAGE_NATIVE_CAPTURED",
+  "qualified": false,
+  "observed": [
+    "IMAGE_INPUT_FAILURE native=true pointer_restored=true preserved_original=true",
+    "IMAGE_PRODUCER submitted_once=true delivery_pending=true",
+    "IMAGE_NATIVE_WHEEL_READY cells=0 regions=3 painted=4",
+    "IMAGE_NATIVE_WAIT moving=false offset=Some(-0.25) crossing=true coherent=true"
+  ],
+  "scope": "Initial GPU source pixels and cached replay passed; fractional and settled captures did not complete.",
+  "diagnosis": "The qualifier required the 48 ms moving flag, but real scrolling preserves fractional resting positions.",
+  "remaining": "Corrected native run and four decoded, inspected success PNGs."
+}

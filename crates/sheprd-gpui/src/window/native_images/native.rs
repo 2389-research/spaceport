@@ -274,7 +274,8 @@ fn after_frame(
                         frame.moving, frame.slide.as_ref().map(|slide| slide.offset), frame.serials.is_some());
                 }
                 observer.wheel_frames += 1;
-                if let Some(offset) = frame.slide.as_ref().filter(|slide| frame.moving && crossing && slide.offset.fract().abs() > 0.001).map(|slide| slide.offset) {
+                // A native wheel gesture may rest between rows after its interpolation ends.
+                if let Some(offset) = frame.slide.as_ref().filter(|slide| crossing && slide.offset.fract().abs() > 0.001).map(|slide| slide.offset) {
                     let moving = Box::new(capture(frame, paint, pane.ok_or_else(|| anyhow::anyhow!("moving pane missing"))?, window)?);
                     scene::validate_motion(&base, &moving, offset)?;
                     eprintln!("IMAGE_NATIVE_FRACTIONAL offset={offset} painted={}", moving.paint.images.iter().filter(|image| image.painted).count());

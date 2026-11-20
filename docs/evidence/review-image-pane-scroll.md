@@ -375,3 +375,27 @@ Logs: `/tmp/spaceport-9s44-native-texel-windows-{all,minimal}.log`.
 Quick formatting, size, sorting, operations, localization, commit-subject, and diff checks pass.
 Independent review finds no material proof gap in the corrected sampling or clipping guards.
 Actual corrected Windows execution and all four success captures remain pending; `gfde` stays open.
+
+## Native fractional resting position on `174db4857`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44657637800/job/136027900757) passes initial GPU pixel validation and unchanged cached replay.
+It then waits for the wheel capture until its owned pointer watchdog restores the pointer and exits 73.
+The actual scroll receipt reports `moving=false offset=Some(-0.25) crossing=true coherent=true`.
+The [failure receipt](review-squad/native-images/scroll-wait-174db4857.json) retains that result without claiming four successful captures.
+
+`SmoothScroll::moving` describes only the 48-millisecond interpolation interval.
+The real model deliberately retains fractional positions after that interval.
+Its existing deterministic resting-position test covers this contract.
+Requiring a frame inside that short interval makes native capture depend on runner scheduling.
+
+The qualifier now accepts an actual crossing fractional slide even after interpolation ends.
+It retains the native wheel, stable viewport, image identity, asset serials, and measured nonzero translation.
+The translation must still match the daemon placement and fractional cell offset within one physical pixel.
+GPU source pixels, layers, clipping masks, and outside-viewport rejection remain mandatory.
+The settled capture still requires ended interpolation and a changed authoritative daemon scrollback offset.
+No clock, native delta, renderer, source asset, threshold, or production scrolling policy changes.
+The existing scroll-model and image raster/consumer scopes pass 37 cases, with two Metal opt-ins skipped.
+Both Windows feature configurations pass binary and native-harness Clippy with warnings denied.
+Independent read-only review finds no material proof gap in accepting genuine fractional resting positions.
+This qualifies fractional rendering when the native run succeeds; it does not require capture during active interpolation.
+Actual Windows execution and inspection of all four success PNGs remain pending.

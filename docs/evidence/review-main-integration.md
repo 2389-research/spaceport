@@ -1,8 +1,9 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: `3307213db` passes full CI; the first native image run fails before its producer.
-The PowerShell cleanup correction and review follow-up await combined platform CI.
+Status: `174db4857` passes every workspace job, while its native image scroll-capture wait fails.
+Both ordinary and observing Core text, caret, bounds, and change events pass on that source.
+The next candidate fixes the timing-dependent fractional capture rule and adds native Core resize qualification.
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
 Crew tracks 49 done children and four open children for `9s44`.
 The closed shortcut child still has an explicitly recorded native qualification gap.

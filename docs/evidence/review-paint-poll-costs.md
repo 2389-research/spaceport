@@ -136,7 +136,10 @@ Paired synthetic release preparation improves by 34.0–91.7 percent across plai
 See [streaming evidence](review-streaming-parse-costs.md#validated-streaming-append-preparation) for actual rounds, limits, and reviewed regressions.
 Source `23cab5b4b` passes all workspace jobs, both macOS release builds, the Windows installer, and ARM native checks.
 Its x64 native image case fails because its witnesses sample atlas filter footprints.
-The corrected `174db4857` candidate preserves the assets, saturated thresholds, and mapping/layer/clipping requirements; its CI remains pending.
+Source `174db4857` preserves the assets and thresholds, and passes initial native pixels and cached replay.
+Its scroll capture times out because it also requires the brief interpolation flag; a valid resting fractional slide arrives later.
+The correction retains the actual native wheel and validates its fractional geometry, changed authoritative offset, masks, layers, and pixels.
+Corrected Windows execution and all four inspected success captures remain pending.
 The native [failure capture and source-center correction](review-image-pane-scroll.md#native-source-samples-on-23cab5b4b) preserve that evidence.
 Keep `gfde` open until its remaining original scope has evidence.
 
