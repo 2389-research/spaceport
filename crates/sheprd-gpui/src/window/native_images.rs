@@ -18,7 +18,7 @@ pub(crate) struct ImagePaint {
     pub(crate) id: ImageId,
     pub(crate) image: Bounds<Pixels>,
     pub(crate) mask: Bounds<Pixels>,
-    pub(crate) uploaded: bool,
+    pub(crate) painted: bool,
     pub(crate) visible: Bounds<Pixels>,
     pub(crate) z: i32,
 }

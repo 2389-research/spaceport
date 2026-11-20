@@ -81,8 +81,8 @@ pub(super) fn image(paint: &FramePaint, z: i32) -> Result<&ImagePaint> {
     paint
         .images
         .iter()
-        .find(|image| image.z == z && image.uploaded)
-        .ok_or_else(|| anyhow::anyhow!("authored image z={z} has no actual atlas upload"))
+        .find(|image| image.z == z && image.painted)
+        .ok_or_else(|| anyhow::anyhow!("authored image z={z} has no successful paint submission"))
 }
 
 fn color(shot: &Shot, x: f32, y: f32) -> Result<[u8; 4]> {
@@ -169,7 +169,7 @@ pub(super) fn validate_pixels(shot: &Shot) -> Result<()> {
         .iter()
         .find(|image| {
             image.z == 4
-                && image.uploaded
+                && image.painted
                 && f32::from(image.visible.bottom() - shot.pane.bottom()) >= -1. / shot.scale
         })
         .ok_or_else(|| anyhow::anyhow!("native cyan edge does not reach its fixed viewport"))?;
@@ -222,7 +222,7 @@ pub(super) fn validate_motion(base: &Shot, moving: &Shot, offset: f32) -> Result
         .images
         .iter()
         .find(|image| {
-            image.z == 4 && image.uploaded && image.visible.bottom() > moving.pane.bottom()
+            image.z == 4 && image.painted && image.visible.bottom() > moving.pane.bottom()
         })
         .ok_or_else(|| {
             anyhow::anyhow!("native fractional image has no oversized historical mapping")

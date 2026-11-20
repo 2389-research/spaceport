@@ -311,3 +311,37 @@ Each existing helper wait also prints its fixed marker once, before polling.
 It preserves input, deadlines, watchdog restoration, once-only submission, and every image assertion.
 Independent read-only diagnosis confirms those missing diagnostics without attributing the stall to ConPTY or rendering.
 Native image qualification and `gfde` remain open.
+
+## Native Windows atlas query on `daab7134e`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44649782332/job/136001693950) returns the missing observer evidence.
+Herdr supplies all four paired authored assets and placements, with four image paint attempts.
+The helper waits for wheel readiness until its watchdog exits 73.
+The old `uploads` diagnostic counts attempts, rather than successful atlas entries.
+
+Pinned `gpui-pre` 0.3.10 defines `PlatformAtlas::contains` with a false default in `src/platform.rs`.
+`gpui-pre-windows` 0.3.10's `DirectXAtlas` implements insertion and removal, but does not override that query.
+`Window::has_image_atlas_entry` therefore returns false on this native backend.
+Requiring it before accepting a capture prevents every Windows image scene from becoming ready.
+
+The observer now records successful paint submission as `painted`.
+The renderer supplies positive geometry and decoded `RenderImage` bytes.
+For that input, `Window::paint_image` obtains an atlas tile and inserts a sprite before returning success.
+DirectX's insertion uploads its texture before returning the tile; errors propagate.
+These facts come from the exact registry sources pinned by Cargo.lock, without dependency changes.
+
+Submission still cannot qualify a native scene by itself.
+Every accepted capture must pass native GPU pixel readback and all existing raster assertions.
+Those assertions require both source rows, alpha blending, glyph layering, cyan edge pixels, and clipping.
+Fractional motion still requires the oversized historical mapping beyond the fixed viewport.
+The separate headless atlas probe retains its actual membership query and matches the same texture ID.
+Diagnostics distinguish paint attempts from successful submissions.
+
+The focused image consumers pass 15 cases, with two existing Metal opt-ins skipped.
+Both Metal cases then pass explicitly through the offscreen GPU path.
+Logs: `/tmp/spaceport-9s44-native-paint-{consumers,metal}.log`.
+Both Windows GNU feature configurations pass Clippy for the app and native accessibility harness with warnings denied.
+Logs: `/tmp/spaceport-9s44-native-paint-windows-{all,minimal}.log`.
+Quick formatting, size, sorting, operations, localization, commit-subject, and diff checks pass.
+Independent read-only review finds no material proof, ownership, or lifecycle regression.
+Actual Windows capture qualification and inspection of all four PNGs remain pending.

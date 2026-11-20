@@ -79,7 +79,7 @@ impl TerminalPainter {
                                 id: texture.id,
                                 image: geometry.image,
                                 mask: window.content_mask().bounds,
-                                uploaded: painted.is_ok() && window.has_image_atlas_entry(texture),
+                                painted: painted.is_ok(),
                                 visible: geometry.visible,
                                 z: *_z,
                             },

@@ -5,6 +5,7 @@ use crate::window::native_images;
 
 #[gpui::test]
 fn nonvisual_probe_sees_real_uploads_and_cached_cell_replay(cx: &mut TestAppContext) {
+    let atlas = Session::start();
     let (view, cx) = cx.add_window_view(fixture_window);
     let window = cx.update(|window, _| window.window_handle().window_id());
     let probe = native_images::Session::start(window).unwrap();
@@ -23,6 +24,7 @@ fn nonvisual_probe_sees_real_uploads_and_cached_cell_replay(cx: &mut TestAppCont
         cx.run_until_parked();
     }
     probe.reset().unwrap();
+    atlas.reset();
     assert_eq!(draw(&view, &surface, cx), first);
     let replay = probe.frame().unwrap();
     assert_eq!(
@@ -32,7 +34,11 @@ fn nonvisual_probe_sees_real_uploads_and_cached_cell_replay(cx: &mut TestAppCont
     assert!(!replay.overflow);
     assert_eq!(replay.images.len(), 1);
     let image = &replay.images[0];
-    assert!(image.uploaded, "the real native atlas entry must exist");
+    assert!(image.painted, "the real image paint must succeed");
+    let uploaded = atlas.painted();
+    assert_eq!(uploaded.len(), replay.images.len());
+    assert!(uploaded[0].uploaded, "the headless atlas entry must exist");
+    assert_eq!(image.id, uploaded[0].texture.id);
     assert_eq!(image.z, 2);
     assert!(image.visible.size.width > px(0.));
     assert!(image.visible.size.height > px(0.));

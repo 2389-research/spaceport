@@ -243,9 +243,9 @@ fn after_frame(
             Stage::Producer => {
                 let ready = frame.serials.is_some() && [-1, 2, 3, 4].iter().all(|z| scene::image(&paint, *z).is_ok());
                 if !ready && matches!(observer.producer_frames, 0 | 60 | 300) {
-                    eprintln!("IMAGE_NATIVE_PRODUCER_WAIT assets={} placements={} authored={} uploads={}",
+                    eprintln!("IMAGE_NATIVE_PRODUCER_WAIT assets={} placements={} authored={} attempts={} painted={}",
                         frame.assets, frame.frame.as_ref().map_or(0, |surface| surface.graphics.placements.len()),
-                        frame.serials.is_some(), paint.images.len());
+                        frame.serials.is_some(), paint.images.len(), paint.images.iter().filter(|image| image.painted).count());
                 }
                 observer.producer_frames += 1;
                 if ready {
@@ -262,12 +262,12 @@ fn after_frame(
                     "unchanged image-bearing cells repainted instead of replaying their cache");
                 let replay = Box::new(capture(frame, paint, pane.ok_or_else(|| anyhow::anyhow!("replay pane missing"))?, window)?);
                 ensure!(replay.scene.serials == base.scene.serials, "stationary native assets changed");
-                eprintln!("IMAGE_NATIVE_WHEEL_READY cells=0 regions={} uploads={}", replay.scene.regions.len(), replay.paint.images.len());
+                eprintln!("IMAGE_NATIVE_WHEEL_READY cells=0 regions={} painted={}", replay.scene.regions.len(), replay.paint.images.iter().filter(|image| image.painted).count());
                 Stage::Wheel { base, replay }
             }
             Stage::Wheel { base, replay } => {
                 let crossing = pane.is_some_and(|pane| paint.images.iter().any(|image|
-                    image.z == 4 && image.uploaded
+                    image.z == 4 && image.painted
                         && f32::from(image.visible.bottom() - pane.bottom()) > 1. / base.scale));
                 if matches!(observer.wheel_frames, 0 | 3 | 15 | 60) {
                     eprintln!("IMAGE_NATIVE_WAIT moving={} offset={:?} crossing={crossing} coherent={}",
@@ -277,7 +277,7 @@ fn after_frame(
                 if let Some(offset) = frame.slide.as_ref().filter(|slide| frame.moving && crossing && slide.offset.fract().abs() > 0.001).map(|slide| slide.offset) {
                     let moving = Box::new(capture(frame, paint, pane.ok_or_else(|| anyhow::anyhow!("moving pane missing"))?, window)?);
                     scene::validate_motion(&base, &moving, offset)?;
-                    eprintln!("IMAGE_NATIVE_FRACTIONAL offset={offset} uploads={}", moving.paint.images.len());
+                    eprintln!("IMAGE_NATIVE_FRACTIONAL offset={offset} painted={}", moving.paint.images.iter().filter(|image| image.painted).count());
                     Stage::Settle { base, replay, moving }
                 } else { Stage::Wheel { base, replay } }
             }
