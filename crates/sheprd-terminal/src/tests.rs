@@ -2,6 +2,7 @@
 
 mod core_frame_scope;
 mod core_snapshot;
+mod core_startup;
 mod cursor;
 mod damage;
 mod events;

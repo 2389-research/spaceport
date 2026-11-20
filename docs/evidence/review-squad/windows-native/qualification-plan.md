@@ -185,6 +185,27 @@ Any failure keeps the entire step failed, even when later samples pass.
 This fixed reproduction series seeks a failed app frame; it does not qualify the defect as fixed.
 All original input, assertions, deadlines, target isolation, and cleanup remain unchanged.
 
+### Failed app frames and startup height
+
+Source 8ffbf97c2 [run 44740706737](https://github.com/2389-research/spaceport/actions/runs/44740706737) preserves two ordinary Core failures and five successes.
+The first suite's ordinary case fails; focused sample four also fails.
+All six focused samples execute, and the job remains failed.
+The observing and resize cases pass, as do all earlier probe steps.
+
+Both failed app-frame sequences begin at 80-by-24, then grow to 112-by-34.
+Their first prompt appears on row one before any authored input.
+Later absolute cursor output lands on row zero and leaves the observed prompt suffix on row one.
+The five successful sequences first record 112-by-34 with the prompt on row zero.
+No sampled cell has a concealment flag.
+These records place the corruption before accessibility projection; painted pixels remain unverified.
+
+Independent source review identifies a matching Alacritty mechanism, pending replay proof.
+Clearing its initial blank viewport creates one blank history line.
+Growing the height pulls that line into view and moves the cursor down once.
+The previous replay experiments changed width but kept the height fixed at 34.
+A new pure test places the observed 80-by-24-to-112-by-34 change before the captured prompt.
+Its baseline must fail before any production fix.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
