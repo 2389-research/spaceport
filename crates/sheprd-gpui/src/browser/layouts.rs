@@ -3,7 +3,6 @@
 //! app keeps one per workspace of each daemon; a window restores it the
 //! first time it shows that workspace, and saves it whenever it changes.
 use super::{Scope, groups::SavedLayout};
-use crate::state_file;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
@@ -29,7 +28,7 @@ struct Saved {
 #[derive(Default)]
 pub(crate) struct Layouts {
     layouts: HashMap<Key, SavedLayout>,
-    writer: Option<state_file::Writer<Saved>>,
+    writer: Option<sheprd_state_file::Writer<Saved>>,
     quitting: bool,
 }
 
@@ -65,7 +64,8 @@ impl Layouts {
         let layouts = path
             .as_deref()
             .map(|path| {
-                state_file::read(path, MAX_FILE_BYTES)
+                sheprd_state_file::read(path, MAX_FILE_BYTES)
+                    .map_err(crate::Error::from)
                     .and_then(|bytes| bytes.as_deref().map_or(Ok(HashMap::new()), parse))
             })
             .transpose()
@@ -74,15 +74,16 @@ impl Layouts {
                 None
             })
             .unwrap_or_default();
-        let writer = path.and_then(
-            |path| match state_file::Writer::start("editor-groups", path) {
-                Ok(writer) => Some(writer),
-                Err(error) => {
-                    tracing::warn!(%error, "Cannot start editor group worker");
-                    None
-                }
-            },
-        );
+        let writer =
+            path.and_then(
+                |path| match sheprd_state_file::Writer::start("editor-groups", path) {
+                    Ok(writer) => Some(writer),
+                    Err(error) => {
+                        tracing::warn!(%error, "Cannot start editor group worker");
+                        None
+                    }
+                },
+            );
         Self {
             layouts,
             writer,

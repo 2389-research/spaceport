@@ -228,8 +228,8 @@ pub enum Error {
     StaleTab,
     #[error("Workspace is no longer available. Dismiss and reopen the menu.")]
     StaleWorkspace,
-    #[error("{} exceeds {limit} bytes", path.display())]
-    StateFileSize { path: PathBuf, limit: u64 },
+    #[error(transparent)]
+    StateFile(#[from] sheprd_state_file::Error),
     #[error(transparent)]
     TabLayout(#[from] crate::config::tab_layout::Error),
     #[error("{0}")]

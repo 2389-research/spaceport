@@ -6485,6 +6485,7 @@ dependencies = [
  "sheprd-reorder",
  "sheprd-settings",
  "sheprd-sound",
+ "sheprd-state-file",
  "sheprd-truncate",
  "sheprd-usage",
  "sheprd-words",
@@ -6625,6 +6626,17 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "toml 1.1.6+spec-1.1.0",
+ "tracing",
+]
+
+[[package]]
+name = "sheprd-state-file"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.21",
  "tracing",
 ]
 

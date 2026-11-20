@@ -7,7 +7,6 @@
 //! daemon boot they were chosen in: a reused ID after a restart never
 //! inherits another pane's history, and the old entry simply ages out.
 
-use crate::state_file;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -126,7 +125,7 @@ impl Boosts {
 #[derive(Default)]
 pub(crate) struct Frecency {
     visits: Vec<Visit>,
-    writer: Option<state_file::Writer<Saved>>,
+    writer: Option<sheprd_state_file::Writer<Saved>>,
     quitting: bool,
 }
 
@@ -147,7 +146,8 @@ impl Frecency {
         let visits = path
             .as_deref()
             .map(|path| {
-                state_file::read(path, MAX_FILE_BYTES)
+                sheprd_state_file::read(path, MAX_FILE_BYTES)
+                    .map_err(crate::Error::from)
                     .and_then(|bytes| bytes.as_deref().map_or(Ok(Vec::new()), parse))
             })
             .transpose()
@@ -157,7 +157,7 @@ impl Frecency {
             })
             .unwrap_or_default();
         let writer = path.and_then(|path| {
-            state_file::Writer::start("palette-frecency", path)
+            sheprd_state_file::Writer::start("palette-frecency", path)
                 .inspect_err(
                     |error| tracing::warn!(%error, "Cannot start the palette history worker"),
                 )

@@ -110,7 +110,8 @@ fn a_restored_store_writes_the_same_bytes_and_never_reuses_a_dropped_id() {
     let folder = tempfile::tempdir().unwrap();
     let path = folder.path().join("browser-tabs.json");
     let mut store = Store::restored_for_test(&file(&every_kind(), r#","next":7"#)).unwrap();
-    store.writer = Some(state_file::Writer::start("browser-tabs-test", path.clone()).unwrap());
+    store.writer =
+        Some(sheprd_state_file::Writer::start("browser-tabs-test", path.clone()).unwrap());
 
     let opened = store
         .open(Scope::endpoint("local"), "w", Some(Location::Devices), None)

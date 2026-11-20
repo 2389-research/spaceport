@@ -6,7 +6,7 @@
 //! recognized by their marker, are ever rewritten or removed. `[agent_skill]
 //! install` in the settings limits all of this, whatever the saved answer.
 // i18n: migrated
-use crate::{config::SkillInstall, state_file};
+use crate::config::SkillInstall;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -192,7 +192,7 @@ impl AgentSkill {
         let path = Self::path();
         let choice = path
             .as_deref()
-            .and_then(|path| match state_file::read(path, 4096) {
+            .and_then(|path| match sheprd_state_file::read(path, 4096) {
                 Ok(bytes) => bytes,
                 Err(error) => {
                     tracing::warn!(%error, "Cannot read the agent skill choice");
@@ -282,7 +282,7 @@ impl AgentSkill {
         };
         cx.background_executor()
             .spawn(async move {
-                if let Err(error) = state_file::write(&path, &Saved { choice }) {
+                if let Err(error) = sheprd_state_file::write(&path, &Saved { choice }) {
                     tracing::warn!(%error, "Cannot save the agent skill choice");
                 }
             })
@@ -294,7 +294,7 @@ impl AgentSkill {
 /// without the app's global, such as the command line. Blocking.
 pub(crate) fn save_choice(choice: Choice) -> crate::Result<()> {
     let path = AgentSkill::path().ok_or(crate::Error::MissingStateRoot)?;
-    state_file::write(&path, &Saved { choice })
+    sheprd_state_file::write(&path, &Saved { choice }).map_err(crate::Error::from)
 }
 
 /// Rewrites the installed skill if this app's text or location changed.

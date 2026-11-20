@@ -36,6 +36,7 @@ mod remote;
 mod root;
 mod shell;
 mod sound;
+mod state_file;
 #[cfg(test)]
 pub(crate) mod tests;
 mod usage;

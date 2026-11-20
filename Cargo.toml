@@ -1,5 +1,5 @@
 [workspace]
-members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-ago", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-lenient", "crates/sheprd-osc52", "crates/sheprd-panes", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-reorder", "crates/sheprd-settings", "crates/sheprd-sound", "crates/sheprd-terminal", "crates/sheprd-truncate", "crates/sheprd-usage", "crates/sheprd-words"]
+members  = ["crates/embed-resource", "crates/sheprd-acp", "crates/sheprd-ago", "crates/sheprd-backend", "crates/sheprd-chat-protocol", "crates/sheprd-client", "crates/sheprd-commands", "crates/sheprd-control-protocol", "crates/sheprd-core-client", "crates/sheprd-diagnostics", "crates/sheprd-gpui", "crates/sheprd-launcher", "crates/sheprd-i18n", "crates/sheprd-lenient", "crates/sheprd-osc52", "crates/sheprd-panes", "crates/sheprd-protocol", "crates/sheprd-remote", "crates/sheprd-reorder", "crates/sheprd-settings", "crates/sheprd-sound", "crates/sheprd-state-file", "crates/sheprd-terminal", "crates/sheprd-truncate", "crates/sheprd-usage", "crates/sheprd-words"]
 resolver = "2"
 
 [workspace.package]
@@ -82,6 +82,7 @@ sheprd-remote         = { default-features = false, path = "crates/sheprd-remote
 sheprd-reorder        = { path = "crates/sheprd-reorder" }
 sheprd-settings       = { path = "crates/sheprd-settings" }
 sheprd-sound          = { path = "crates/sheprd-sound" }
+sheprd-state-file     = { path = "crates/sheprd-state-file" }
 sheprd-truncate       = { path = "crates/sheprd-truncate" }
 sheprd-terminal       = { path = "crates/sheprd-terminal" }
 sheprd-usage          = { path = "crates/sheprd-usage" }

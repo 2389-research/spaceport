@@ -4,7 +4,6 @@
 //! Windows share tab references; the selected runtime owns their terminals.
 use super::Location;
 use crate::i18n::fl;
-use crate::state_file;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use sheprd_reorder::Beside;
@@ -222,7 +221,7 @@ pub(crate) struct Store {
     tabs: Vec<Tab>,
     next: u64,
     pub(super) closed: super::closed::ClosedTabs,
-    writer: Option<state_file::Writer<Saved>>,
+    writer: Option<sheprd_state_file::Writer<Saved>>,
     quitting: bool,
 }
 
@@ -256,7 +255,8 @@ impl Store {
         let tabs = path
             .as_deref()
             .map(|path| {
-                state_file::read(path, MAX_FILE_BYTES)
+                sheprd_state_file::read(path, MAX_FILE_BYTES)
+                    .map_err(crate::Error::from)
                     .and_then(|bytes| bytes.as_deref().map_or(Ok(Saved::default()), saved::parse))
             })
             .transpose()
@@ -265,19 +265,20 @@ impl Store {
                 None
             })
             .unwrap_or_default();
-        let writer = path.and_then(
-            |path| match state_file::Writer::start("browser-tabs", path) {
-                Ok(writer) => Some(writer),
-                Err(error) => {
-                    tracing::warn!(%error, "Cannot start browser-tab worker");
-                    None
-                }
-            },
-        );
+        let writer =
+            path.and_then(
+                |path| match sheprd_state_file::Writer::start("browser-tabs", path) {
+                    Ok(writer) => Some(writer),
+                    Err(error) => {
+                        tracing::warn!(%error, "Cannot start browser-tab worker");
+                        None
+                    }
+                },
+            );
         Self::with_saved(tabs, writer)
     }
 
-    fn with_saved(saved: Saved, writer: Option<state_file::Writer<Saved>>) -> Self {
+    fn with_saved(saved: Saved, writer: Option<sheprd_state_file::Writer<Saved>>) -> Self {
         Self {
             tabs: saved.tabs,
             next: saved.next,

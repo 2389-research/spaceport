@@ -38,6 +38,7 @@ sheprd-remote.workspace         = true
 sheprd-reorder.workspace         = true
 sheprd-settings.workspace        = true
 sheprd-sound.workspace          = true
+sheprd-state-file.workspace     = true
 sheprd-usage.workspace          = true
 sheprd-truncate.workspace       = true
 sheprd-words.workspace          = true

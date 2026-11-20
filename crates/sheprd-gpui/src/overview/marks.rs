@@ -11,7 +11,6 @@ use super::{
     Error,
     model::{Key, State},
 };
-use crate::state_file;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -117,7 +116,7 @@ fn parse(bytes: &[u8]) -> Result<Vec<Mark>, Error> {
 #[derive(Default)]
 pub(crate) struct Marks {
     marks: Vec<Mark>,
-    writer: Option<state_file::Writer<Saved>>,
+    writer: Option<sheprd_state_file::Writer<Saved>>,
     quitting: bool,
     /// Counts changes, so a window can tell another one changed a mark.
     revision: u64,
@@ -139,11 +138,13 @@ impl Marks {
         let marks = path
             .as_deref()
             .map(|path| {
-                state_file::read(path, MAX_FILE_BYTES).and_then(|bytes| {
-                    bytes
-                        .as_deref()
-                        .map_or(Ok(Vec::new()), |bytes| Ok(parse(bytes)?))
-                })
+                sheprd_state_file::read(path, MAX_FILE_BYTES)
+                    .map_err(crate::Error::from)
+                    .and_then(|bytes| {
+                        bytes
+                            .as_deref()
+                            .map_or(Ok(Vec::new()), |bytes| Ok(parse(bytes)?))
+                    })
             })
             .transpose()
             .unwrap_or_else(|error| {
@@ -153,7 +154,7 @@ impl Marks {
             .unwrap_or_default();
         let writer =
             path.and_then(
-                |path| match state_file::Writer::start("overview-marks", path) {
+                |path| match sheprd_state_file::Writer::start("overview-marks", path) {
                     Ok(writer) => Some(writer),
                     Err(error) => {
                         tracing::warn!(%error, "Cannot start the overview marks worker");

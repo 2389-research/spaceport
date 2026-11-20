@@ -3,7 +3,6 @@
 //! daemon nor written into the repository. They are keyed
 //! by endpoint, repository, and branch, because workspace IDs do not survive
 //! a daemon restart. Every window shows the same notes.
-use crate::state_file;
 use gpui::{App, Global};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -91,7 +90,7 @@ fn parse(bytes: &[u8]) -> crate::Result<Vec<Note>> {
 #[derive(Default)]
 pub(crate) struct Notes {
     notes: Vec<Note>,
-    writer: Option<state_file::Writer<Saved>>,
+    writer: Option<sheprd_state_file::Writer<Saved>>,
     quitting: bool,
     /// Counts changes, so a prepared list can tell it is out of date.
     revision: u64,
@@ -114,7 +113,8 @@ impl Notes {
         let notes = path
             .as_deref()
             .map(|path| {
-                state_file::read(path, MAX_FILE_BYTES)
+                sheprd_state_file::read(path, MAX_FILE_BYTES)
+                    .map_err(crate::Error::from)
                     .and_then(|bytes| bytes.as_deref().map_or(Ok(Vec::new()), parse))
             })
             .transpose()
@@ -125,7 +125,7 @@ impl Notes {
             .unwrap_or_default();
         let writer =
             path.and_then(
-                |path| match state_file::Writer::start("worktree-notes", path) {
+                |path| match sheprd_state_file::Writer::start("worktree-notes", path) {
                     Ok(writer) => Some(writer),
                     Err(error) => {
                         tracing::warn!(%error, "Cannot start the worktree notes worker");

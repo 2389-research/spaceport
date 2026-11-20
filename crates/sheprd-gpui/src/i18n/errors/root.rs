@@ -147,9 +147,7 @@ impl Localize for Error {
             Self::StalePane => fl!("error-stale-pane"),
             Self::StaleTab => fl!("error-stale-tab"),
             Self::StaleWorkspace => fl!("error-stale-workspace"),
-            Self::StateFileSize { path: file, limit } => {
-                fl!("error-state-file-size", path = path(file), limit = *limit)
-            }
+            Self::StateFile(error) => error.localize(),
             Self::TabLayout(error) => error.localize(),
             Self::Toml(error) => error.to_string(),
             Self::TomlEdit(error) => error.to_string(),

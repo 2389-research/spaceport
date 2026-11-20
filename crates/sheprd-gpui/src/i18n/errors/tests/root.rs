@@ -102,10 +102,10 @@ fn every_own_variant_has_a_message() {
         Error::StalePane,
         Error::StaleTab,
         Error::StaleWorkspace,
-        Error::StateFileSize {
+        Error::StateFile(sheprd_state_file::Error::Size {
             path: path.clone(),
             limit: 4096,
-        },
+        }),
         Error::UnsupportedCommand,
         Error::WorkspaceRepositoryChanged,
         Error::WorktreeList,
