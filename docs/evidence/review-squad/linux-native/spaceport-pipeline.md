@@ -270,3 +270,15 @@ The observer moves into its own module before adding this ownership flow.
 Its prior body matches committed source exactly before the Cycle Windows branch is added.
 This keeps each file under 1,000 lines without exposing baseline fields.
 The thirty-eighth case remains pending its exact-source compilation and native run.
+
+Source `bf599c076` compiles and passes eight shared tests and two receipt tests.
+Its [native run fails during preparation](https://github.com/2389-research/spaceport/actions/runs/44706339419), before Cycle Windows input is sent.
+Thirty-six earlier cases complete; the final Polish case does not run after the preparation failure.
+The parent waits for `Ready(cycle-windows-alias)` after normal empty-group cleanup, then reaches its unchanged deadline.
+The [failure receipt](spaceport-window-preparation-bf599c076.json) preserves the scope and cleanup observations.
+The previously qualified `5979a3a9d` run remains separate.
+
+The next diagnostic checkpoint reports creation callbacks and changed readiness state for each exact window.
+It records activation, connection, fencing, config loading, surface sizing, and coherence as bounded booleans.
+It adds no input, activation request, creation retry, deadline change, or measured-scope relaxation.
+The next native result must identify the actual waiting gate before a correction is chosen.

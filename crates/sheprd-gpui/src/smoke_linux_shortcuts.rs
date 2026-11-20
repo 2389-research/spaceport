@@ -338,6 +338,7 @@ fn advance(
             index,
             owned,
         } => {
+            owned.report_original(view, window);
             if !window.is_window_active() || !coherent(view) || !owned.inactive(cx)? {
                 return Ok(Step::Continue(Stage::AwaitCycleFocus {
                     baseline: before,

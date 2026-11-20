@@ -15,15 +15,41 @@ enum Creation {
     // keep-sorted end
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Probe {
+    active: bool,
+    coherent: bool,
+    config_loading: bool,
+    connected: bool,
+    fenced: bool,
+    surface_matches: bool,
+}
+
+impl Probe {
+    fn read(view: &SheprdWindow, window: &Window) -> Self {
+        Self {
+            active: window.is_window_active(),
+            coherent: coherent(view),
+            config_loading: view.config_load.is_some(),
+            connected: view.live.status.is_connected(),
+            fenced: view.live.activation.fenced(),
+            surface_matches: view.surface_matches_options(),
+        }
+    }
+}
+
 pub(super) struct Opening {
+    last: Rc<Cell<Option<Probe>>>,
     original: AnyWindowHandle,
     result: Rc<Cell<Creation>>,
     target: ConnectTarget,
 }
 
 pub(super) struct Owned {
+    last: Rc<Cell<Option<Probe>>>,
     original: AnyWindowHandle,
     other: WindowHandle<SheprdWindow>,
+    root_last: Cell<Option<Probe>>,
     target: ConnectTarget,
 }
 
@@ -50,10 +76,12 @@ pub(super) fn open(
     let result = Rc::new(Cell::new(Creation::Pending));
     let opened = Rc::clone(&result);
     let failed = Rc::clone(&result);
+    eprintln!("LINUX_KEYS_CASE other_window_requested=true");
     crate::app::open_additional_window_then(
         target.clone(),
         None,
         move |_, window, _| {
+            eprintln!("LINUX_KEYS_CASE other_window_created=true");
             opened.set(
                 window
                     .window_handle()
@@ -65,6 +93,7 @@ pub(super) fn open(
         cx,
     );
     Ok(Opening {
+        last: Rc::new(Cell::new(None)),
         original: window.window_handle(),
         result,
         target,
@@ -79,14 +108,17 @@ impl Opening {
             Creation::Opened(handle) => handle,
         };
         let owned = Owned {
+            last: Rc::clone(&self.last),
             original: self.original,
             other,
+            root_last: Cell::new(None),
             target: self.target.clone(),
         };
         if owned.inspect(before, cx)?.is_none() {
             return Ok(None);
         }
         owned.check_addition(before, &cx.windows())?;
+        eprintln!("LINUX_KEYS_CASE other_window_prepared=true");
         Ok(Some(owned))
     }
 }
@@ -108,6 +140,10 @@ impl Owned {
     fn inspect(&self, before: &Baseline, cx: &mut App) -> Result<Option<bool>> {
         self.other
             .update(cx, |view, window, cx| -> Result<_> {
+                let probe = Probe::read(view, window);
+                if self.last.replace(Some(probe)) != Some(probe) {
+                    eprintln!("LINUX_KEYS_CASE window_probe=target state={probe:?}");
+                }
                 ensure!(
                     view.endpoints
                         .first()
@@ -136,12 +172,20 @@ impl Owned {
     }
 
     pub(super) fn activate_original(&self, cx: &mut App) {
+        eprintln!("LINUX_KEYS_CASE original_activation_requested=true");
         let original = self.original;
         cx.defer(move |cx| {
             if let Err(error) = original.update(cx, |_, window, _| window.activate_window()) {
                 eprintln!("LINUX_WINDOW_ACTIVATE_ERROR {error:#}");
             }
         });
+    }
+
+    pub(super) fn report_original(&self, view: &SheprdWindow, window: &Window) {
+        let probe = Probe::read(view, window);
+        if self.root_last.replace(Some(probe)) != Some(probe) {
+            eprintln!("LINUX_KEYS_CASE window_probe=original state={probe:?}");
+        }
     }
 
     pub(super) fn inactive(&self, cx: &mut App) -> Result<bool> {
