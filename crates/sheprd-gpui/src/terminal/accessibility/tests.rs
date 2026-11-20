@@ -5,6 +5,7 @@ use crate::terminal::HIDDEN;
 use sheprd_client::protocol::{CellData, PaneSurfacePane, SurfaceRect};
 
 mod caret;
+mod core_replay;
 mod viewport;
 
 const CELL_WIDTH: f32 = 10.;

@@ -4,6 +4,8 @@
 //! text, painted with the window's terminal painter. One per tab showing it;
 //! any number may show the same terminal, as observers.
 
+#[cfg(all(windows, feature = "integration-test"))]
+mod frame_probe;
 pub(super) mod keys;
 pub(super) mod paste;
 mod pointer;
@@ -184,6 +186,8 @@ impl CoreTerminalView {
             return false;
         };
         self.screen = screen;
+        #[cfg(all(windows, feature = "integration-test"))]
+        frame_probe::record(self);
         cx.notify();
         true
     }

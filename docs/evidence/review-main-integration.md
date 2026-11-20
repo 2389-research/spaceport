@@ -1,22 +1,19 @@
 # Review fixes on current main
 
 Scope: Kata `9s44`, all 53 review findings.
-Status: the current candidate integrates the reviewed Linux and Windows native fixtures and exact GPUI 0.3.11 pins.
-Linux source `16a928826` passes all forty-six native cases, including Cycle Windows and cleanup.
-Windows source `7e2459d67` passes twenty-eight native cases but fails console preparation and Palette query setup.
-Shared candidate `3a603345a` repairs native preparation and SearchInput's assistive SetValue contract.
-Its Linux and Windows probes both pass on the same GPUI 0.3.11 source.
-Configured CI on evidence head `1feda67f7` remains pending.
-The shared framework update still needs configured platform CI on the combined source.
-Prior application source `d747cdbdb` passes all eighteen configured CI jobs and its x64 native Core cases.
-Those 0.3.10 results do not qualify the new framework version.
-The earlier ordinary Core failure remains unexplained.
+Status: the candidate integrates the reviewed native fixtures, exact GPUI 0.3.11 pins, and the qualified Core startup correction.
+Previous PR head `287f65aa5` passes all eighteen configured CI jobs and all three supply-chain jobs.
+The newly combined source still needs its configured CI run.
+Source `e60795ab9` fixes the reproduced Core prompt drift during startup height growth.
+All 83 terminal tests pass on Linux and Windows.
+The native Core suite and six fresh ordinary Core samples pass.
+Four samples exercise the earlier 80-by-24-to-112-by-34 path with the prompt on the correct row.
+The [exact-source receipt](review-squad/windows-native/qualification-e60795ab9.json) retains the red baseline and native frame evidence.
 Four measured native tab contrast cases remain qualified on `b94978e3b`.
 Settings glyphs and clipping are qualified on `7b7498762`; other native accessibility gates remain open.
 Crew tracks 50 done children, two doing, and one in review for `9s44`.
-The closed shortcut child still has an explicitly recorded native qualification gap.
-Kata separately records 49 closed children and four open children.
-Its shortcut finding `3wd4` remains open for the required native qualification.
+Kata separately records 50 closed children and three open children.
+The shortcut finding `3wd4` is closed with its configured and native qualification receipts.
 The painting/polling finding `gfde` closes in Kata at 04:09 UTC on November 20, under event 9804.
 The earlier Crew closure alone had not closed that Kata issue.
 On 2026-11-18, Doctor Biz answered “Commit and open draft PR.”
@@ -35,6 +32,7 @@ Windows CI continues; this instruction does not pause the full review goal.
 Clint confirms at 03:15 UTC that no foreground release profile has run and no measurement evidence exists.
 He retains that dedicated desktop lane; the merged browser refactors remain groundwork rather than profile results.
 His separate 03:17 UTC reply closes his Interrupted/copy review loop without merge or launch authorization.
+The sections below retain evidence from earlier checkpoints and their then-current statuses.
 
 ## Native shortcut integration and framework correction
 
@@ -808,3 +806,31 @@ The separate Windows topic `70df119a6` retains bounded stream evidence on succes
 Its probe is independent of this green PR head and is not a production correction.
 Updated native error captures remain pending in the PR checklist.
 No Mac foreground fixture, merge into main, or release follows.
+
+## Qualified Core startup correction
+
+The [failing native series](review-squad/windows-native/qualification-8ffbf97c2.json) preserves two ordinary Core failures and five successes.
+Failed app frames place the first prompt on row one after growing from 80-by-24 to 112-by-34.
+Later absolute cursor output leaves the observed prompt suffix on that wrong row.
+The corruption already exists before accessibility projection.
+
+The deterministic [unfixed replay](https://github.com/2389-research/spaceport/actions/runs/44744415622) reproduces those same rows.
+Alacritty manufactures one blank history line when its initial empty viewport clears.
+Height growth pulls that line back into view and moves the cursor down.
+The correction preserves the clear and removes only its manufactured history when viewport and history were empty.
+It runs inside VTE's actual handler, including deferred and forced synchronized dispatch.
+All other 70 callbacks delegate to the pinned handler.
+Independent read-only review finds no material issue.
+
+Source `e60795ab9` passes all 83 terminal tests on Linux and Windows.
+Its [native probe](https://github.com/2389-research/spaceport/actions/runs/44745362542) passes the three Core contracts and all six focused samples.
+Four focused samples record the formerly failing height transition with correct prompt and output rows.
+All shortcut, AltGr, console, chrome, and Settings checks also pass.
+The actual 38 native case IDs match the source table.
+The [qualified receipt](review-squad/windows-native/qualification-e60795ab9.json) records source, job IDs, and selected app frames.
+
+This integration preserves that exact application and fixture source; its added receipt changes only documentation.
+Configured CI for the combined PR head remains pending.
+Kata remains 50 closed and three open; the accessibility finding still needs audible speech qualification.
+Mac Cmd-W, release profiling, updated error captures, and native before/after pixel images remain pending.
+Doctor Biz's Mac hold remains active; no merge into main or release is authorized.

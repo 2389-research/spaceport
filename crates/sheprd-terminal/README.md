@@ -11,6 +11,9 @@ give the same frame however they are split across `Emulator::feed` calls.
 It never answers terminal queries (herdr-core does), writes to the
 clipboard, or opens hyperlinks.
 
+Full-screen clears keep existing history and saved text.
+Clearing an empty terminal adds no history, so later height growth keeps the cursor in place.
+
 ## Use
 
 - `Emulator::new(Size, scrollback_lines)`, then `feed(bytes)` as output

@@ -77,12 +77,159 @@ The complete final command retains its exact comparison, including any trailing 
 The ordinary Core case fails again; observing and resizing still pass.
 Its escaped private screen text contains `SP_A11Y_7rs\\runneradmin` on one line.
 The marker exists, but a stale prompt suffix prevents the required exact output line.
-This establishes visible text corruption, not a missing accessibility event.
+This establishes native accessibility text corruption.
+The actual painted terminal has not been compared with that failed accessibility transcript.
 The next diagnostic drains the existing read-only runtime attachment for one second after failure.
 It preserves the 1 MiB capture bound.
 It displays at most 8 KiB of captured bytes as escaped text and byte-exact hex.
 It also records the terminal dimensions observed before attachment.
 No replay, corrective terminal input, production change, or Core cause is claimed.
+
+### Private stream capture for deterministic replay
+
+The integrated PR head remains `287f65aa5` while its full CI runs.
+A separate Windows topic candidate retains the ordinary Core capture on success too.
+This avoids losing all raw evidence when the intermittent corruption does not recur.
+The capture reads the same observer, preserves its 1 MiB bound, and prints at most 8 KiB.
+Escaped text remains readable; hex preserves the exact bytes.
+The runtime marker must still arrive from the exact terminal.
+Its original ten-second success budget remains unchanged.
+Failure capture retains its separate one-second budget.
+No input, UIA assertion, runtime target, or production code changes.
+Captured bytes need deterministic emulator replay before any Core fix is justified.
+
+### Captured failure and Cycle source readiness on `70df119a6`
+
+The [probe](https://github.com/2389-research/spaceport/actions/runs/44729475426) reproduces ordinary Core corruption.
+It captures all 1,342 stream bytes, with runtime dimensions 112 columns by 34 rows.
+The capture contains the initial screen, Win32 input mode, typed command, actual output, and following prompt.
+Only the owned runner's authored input and paths appear; no personal session is attached.
+The topic adds real-emulator replay and fragmentation checks using those exact captured bytes.
+A bounded diagnostic reports selected resize interleavings without claiming they reproduce the native cause.
+Fixed-size replay reads the emulator's test frame.
+Production also uses damage publication, app frame patches, and transcript projection.
+A passing replay alone cannot distinguish those later paths or establish the native cause.
+No production correction follows before those results.
+
+The same probe fails Cycle Windows before layout mutation or measured input.
+Its immediate document lookup finds no unique terminal in the selected source window.
+The failure diagnostic then sees one document in each of the two owned windows.
+The candidate waits within the existing phase and overall deadlines for that source's unique document.
+It keeps the exact HWND, chord, target, key-release, and layout-restoration assertions.
+No evidence establishes a shortcut delivery regression, so `3wd4` remains closed.
+The qualified PR head `287f65aa5` and its complete green CI remain unchanged.
+Kata remains 50 closed and three open.
+
+### Fixed replay result and production pipeline candidate
+
+The [probe on `46340b12e`](https://github.com/2389-research/spaceport/actions/runs/44731650086) passes all tests.
+The three captured-stream tests pass, including all fragment boundaries.
+None of the selected resize interleavings reproduces the native stale prompt suffix.
+All 38 native shortcut IDs pass again, including Cycle Windows with source-document readiness.
+Settings and all three Core cases also pass; ordinary Core retains its complete success capture.
+This narrows the parsing experiment without establishing the native cause.
+The failed and successful observer captures each contain 1,342 bytes.
+After replacing only the owned six-character temporary directory names, their ordered bytes are identical.
+The twelve differing bytes come from those directory names in two prompts.
+These captures belong to the read-only observer, not the UI's active attachment.
+They do not exclude differences in that active stream, timing, damage, or native provider state.
+
+The next test feeds the same bytes through real damage publication, `Screen::apply`, and `Transcript::read_frame`.
+It compares complete app frames across chunk sizes and checks full and narrow text projections.
+The captured bytes now live once in shared test support.
+The UI crate adds only the existing emulator crate as a test dependency.
+A test-only re-export reaches the existing app frame consumer without widening production interfaces.
+No production behavior changes; the local compiler and Mac holds remain active.
+The guarded workflow also runs pure emulator replay as a separate Linux job.
+Its completed log is available without waiting for the native UI build.
+
+### Private frame observer boundary
+
+The `9de6683ff` probe passes the damage-to-transcript test and both CI jobs.
+All frame chunk sizes preserve the prompt and standalone output at both canvas widths.
+This still does not capture the running UI's active stream or frame.
+
+The next diagnostic observes that actual app frame through the existing bounded log writer.
+Only the private fixture's matching nonce, session, and named pipe may enable it.
+A pure scope test first requires the exact target and rejects unrelated, missing, and malformed values.
+The initial scope implementation denies every target; its positive test must fail before implementation.
+No app observer is enabled in that baseline.
+The native probe depends on successful pure tests, preserving expected baseline failure without running unrelated native cases.
+Mac foreground, local compiler, and VM holds remain active.
+
+The scope baseline run on source c753a96c8 fails exactly its positive-target assertion.
+Five other pure checks pass; the dependent native job skips.
+The implementation now accepts only a matching 32-hex nonce, session, and private named pipe.
+Missing, malformed, and unrelated targets remain refused.
+
+The Windows integration-only observer records the app's actual frame before accessibility projection.
+It captures dimensions, queued size, canvas bounds, cell metrics, and three sampled rows.
+Each row includes at most 96 characters and its sampled concealed-cell count.
+The existing diagnostics writer bounds and queues records without blocking the UI thread.
+The private fixture reads those records through the existing local logs command.
+Success requires an observer record; failure retains the original error alongside available frame diagnostics.
+This observes app state, not painted pixels, and changes no terminal input or render path.
+Independent read-only review found no material issue with scope, bounds, ownership, types, or module paths.
+Formatting, file-size, sorted-list, recipe, translation, commit, whitespace, and workflow checks pass locally.
+Source e68a3561f passes both jobs in [run 44738518938](https://github.com/2389-research/spaceport/actions/runs/44738518938).
+Linux and Windows each pass six scope and stream checks.
+Windows also passes the production pipeline test, frame sampler test, and all native probe cases.
+Thirteen actual app-frame records retain a 112-by-34 grid and matching queued dimensions.
+Their final rows contain the full command, standalone output marker, and next prompt.
+The sampled cells have no concealment flags.
+This successful observation does not reproduce or fix the intermittent native text corruption.
+
+The next probe runs six fresh private ordinary-Core fixtures after its three existing Core cases.
+Every sample runs once and retains its own frame records and result.
+Any failure keeps the entire step failed, even when later samples pass.
+This fixed reproduction series seeks a failed app frame; it does not qualify the defect as fixed.
+All original input, assertions, deadlines, target isolation, and cleanup remain unchanged.
+
+### Failed app frames and startup height
+
+Source 8ffbf97c2 [run 44740706737](https://github.com/2389-research/spaceport/actions/runs/44740706737) preserves two ordinary Core failures and five successes.
+The first suite's ordinary case fails; focused sample four also fails.
+All six focused samples execute, and the job remains failed.
+The observing and resize cases pass, as do all earlier probe steps.
+
+Both failed app-frame sequences begin at 80-by-24, then grow to 112-by-34.
+Their first prompt appears on row one before any authored input.
+Later absolute cursor output lands on row zero and leaves the observed prompt suffix on row one.
+The five successful sequences first record 112-by-34 with the prompt on row zero.
+No sampled cell has a concealment flag.
+These records place the corruption before accessibility projection; painted pixels remain unverified.
+
+Independent source review identifies a matching Alacritty mechanism, pending replay proof.
+Clearing its initial blank viewport creates one blank history line.
+Growing the height pulls that line into view and moves the cursor down once.
+The previous replay experiments changed width but kept the height fixed at 34.
+A new pure test places the observed 80-by-24-to-112-by-34 change before the captured prompt.
+Its baseline must fail before any production fix.
+
+The [2222112ab baseline](https://github.com/2389-research/spaceport/actions/runs/44744415622) fails exactly that new startup test.
+Its rows reproduce the native blank prefix and stale prompt suffix verbatim.
+The six earlier pure cases pass, and Windows skips behind the failed prerequisite.
+
+The fix wraps the existing VTE handler at actual command dispatch.
+It preserves the clear and removes manufactured history only when history and viewport were empty beforehand.
+The cell predicate uses Alacritty's own color, decoration, wrap, and combining semantics.
+All other handler methods delegate to the pinned implementation.
+Both ordinary parsing and forced synchronized-update completion use that handler.
+This avoids guessing whether a scanned command has executed inside a synchronized update.
+New tests cover fragmentation, existing blank history, decorated cells, later output, and both synchronized completion paths.
+The probe now runs the full terminal suite before its existing native cases and fixed reproduction series.
+Independent read-only review verifies all 71 handler methods without missing or duplicate delegation.
+It finds no material issue with history preservation, cell semantics, synchronized dispatch, or the tests.
+Source e60795ab9 passes both jobs in [run 44745362542](https://github.com/2389-research/spaceport/actions/runs/44745362542).
+All 83 terminal tests pass on Linux and Windows, including the previously red startup regression.
+The three existing native Core contracts and all six focused ordinary Core samples pass.
+Four focused samples record the actual 80-by-24-to-112-by-34 transition with the first prompt on row zero.
+Every final app frame retains the complete command, standalone marker, and next prompt.
+The full shortcut matrix, AltGr, console, chrome, and Settings cases also pass.
+All 38 native case IDs match the source table.
+The [qualification receipt](qualification-e60795ab9.json) retains exact source, job IDs, and selected frame records.
+This fixes the reproduced app-frame corruption; painted pixels remain unverified.
+Audible screen-reader checks, Mac Cmd-W qualification, release profiling, and native before/after images remain pending.
 
 ## Implementation
 

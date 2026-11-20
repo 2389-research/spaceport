@@ -6772,6 +6772,7 @@ dependencies = [
  "sheprd-reorder",
  "sheprd-settings",
  "sheprd-sound",
+ "sheprd-terminal",
  "sheprd-truncate",
  "sheprd-usage",
  "sheprd-words",

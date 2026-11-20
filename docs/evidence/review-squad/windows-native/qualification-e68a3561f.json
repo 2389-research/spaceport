@@ -1,0 +1,99 @@
+{
+  "source": "e68a3561f44d2d3379fc13ddb8aca0924faa7b84",
+  "run_id": 44738518938,
+  "run_url": "https://github.com/2389-research/spaceport/actions/runs/44738518938",
+  "verified_at": "2026-11-20T13:00:28Z",
+  "jobs": [
+    {
+      "id": 136295911399,
+      "name": "Core stream replay",
+      "conclusion": "success",
+      "tests": {
+        "scope": 3,
+        "stream": 3
+      }
+    },
+    {
+      "id": 136296218751,
+      "name": "probe",
+      "conclusion": "success",
+      "platform": "windows-2025 x86_64",
+      "checks": [
+        "cargo fmt --all --check",
+        "cargo clippy --locked -p sheprd-gpui --features integration-test --test accessibility_windows -- -D warnings"
+      ],
+      "tests": {
+        "scope_and_stream": 6,
+        "native_contract": 4,
+        "production_pipeline": 1,
+        "frame_sampler": 1,
+        "search_accessibility": 3,
+        "console_native": 1,
+        "shortcut_matrix_native": 4,
+        "altgr_native": 1,
+        "chrome_native": 1,
+        "settings_native": 1,
+        "core_native": 3
+      },
+      "unique_native_case_ids": [
+        "back",
+        "console-attachment",
+        "cycle-windows",
+        "focus-down",
+        "focus-left",
+        "focus-right",
+        "focus-up",
+        "font-larger",
+        "font-reset",
+        "font-smaller",
+        "forward",
+        "fullscreen",
+        "keybinds",
+        "next-pane",
+        "next-tab",
+        "palette",
+        "pane-ctrl-pagedown",
+        "pane-ctrl-pageup",
+        "pane-f11",
+        "pane-f6",
+        "pane-shift-f6",
+        "previous-pane",
+        "previous-tab",
+        "resume-palette",
+        "settings",
+        "sidebar",
+        "split-editor",
+        "status-bar",
+        "tab-1",
+        "tab-2",
+        "tab-3",
+        "tab-4",
+        "tab-5",
+        "tab-6",
+        "tab-7",
+        "tab-8",
+        "tab-9",
+        "zen"
+      ]
+    }
+  ],
+  "core_frame_observation": {
+    "records": 13,
+    "width": 112,
+    "height": 34,
+    "queued_size_matches": true,
+    "sampled_hidden_counts": 0,
+    "final_rows": [
+      "full prompt and echo command",
+      "standalone SP_A11Y_7",
+      "next prompt"
+    ],
+    "failure_reproduced": false,
+    "painted_pixels_verified": false
+  },
+  "remaining": [
+    "Intermittent ordinary Core native text corruption remains undiagnosed.",
+    "Audible screen-reader qualification remains pending.",
+    "Private Mac Cmd-W and release profiling remain pending."
+  ]
+}

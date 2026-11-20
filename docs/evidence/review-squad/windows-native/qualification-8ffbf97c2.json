@@ -1,0 +1,189 @@
+{
+  "source": "8ffbf97c2a70b8dcdeabb14ecafa59b70ce2fdd9",
+  "run_id": 44740706737,
+  "run_url": "https://github.com/2389-research/spaceport/actions/runs/44740706737",
+  "jobs": [
+    {
+      "id": 136303347878,
+      "name": "Core stream replay",
+      "conclusion": "success"
+    },
+    {
+      "id": 136303617582,
+      "name": "probe",
+      "conclusion": "failure",
+      "failed_step": "Diagnose native Core text and retain its other contracts",
+      "prior_steps": "all passed",
+      "core_suite": {
+        "passed": 2,
+        "failed": 1
+      },
+      "fixed_ordinary_samples": [
+        {
+          "sample": 1,
+          "result": "pass"
+        },
+        {
+          "sample": 2,
+          "result": "pass"
+        },
+        {
+          "sample": 3,
+          "result": "pass"
+        },
+        {
+          "sample": 4,
+          "result": "fail"
+        },
+        {
+          "sample": 5,
+          "result": "pass"
+        },
+        {
+          "sample": 6,
+          "result": "pass"
+        }
+      ]
+    }
+  ],
+  "failed_app_frames": [
+    {
+      "case": "initial suite ordinary Core",
+      "total_frame_records": 13,
+      "first": {
+        "type": "event",
+        "level": "INFO",
+        "timestamp": "[2026-11-20 13:16:06]",
+        "target": "spaceport::core_terminals::view::frame_probe",
+        "namespace": "spaceport",
+        "message": "CORE_FRAME_PROBE",
+        "fields": {
+          "terminal": "t1",
+          "observe": false,
+          "frame_width": 80,
+          "frame_height": 24,
+          "queued_size": "None",
+          "bounds": "None",
+          "cell_width": 8.203125,
+          "cell_height": 20,
+          "rows_with_hidden_counts": "[(\"                                                                                \", 0), (\"                                                                                \", 0), (\"                                                                                \", 0)]"
+        },
+        "spans": [],
+        "truncated": false
+      },
+      "first_prompt": {
+        "type": "event",
+        "level": "INFO",
+        "timestamp": "[2026-11-20 13:16:07]",
+        "target": "spaceport::core_terminals::view::frame_probe",
+        "namespace": "spaceport",
+        "message": "CORE_FRAME_PROBE",
+        "fields": {
+          "terminal": "t1",
+          "observe": false,
+          "frame_width": 112,
+          "frame_height": 34,
+          "queued_size": "Some(Size { cols: 112, rows: 34 })",
+          "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 699px } })",
+          "cell_width": 8.203125,
+          "cell_height": 20,
+          "rows_with_hidden_counts": "[(\"                                                                                                \", 0), (\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-39C0rk>                                      \", 0), (\"                                                                                                \", 0)]"
+        },
+        "spans": [],
+        "truncated": false
+      },
+      "last": {
+        "type": "event",
+        "level": "INFO",
+        "timestamp": "[2026-11-20 13:16:09]",
+        "target": "spaceport::core_terminals::view::frame_probe",
+        "namespace": "spaceport",
+        "message": "CORE_FRAME_PROBE",
+        "fields": {
+          "terminal": "t1",
+          "observe": false,
+          "frame_width": 112,
+          "frame_height": 34,
+          "queued_size": "Some(Size { cols: 112, rows: 34 })",
+          "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 699px } })",
+          "cell_width": 8.203125,
+          "cell_height": 20,
+          "rows_with_hidden_counts": "[(\"                                                           echo SP_A11Y_7                       \", 0), (\"SP_A11Y_7rs\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-39C0rk>                                      \", 0), (\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-39C0rk>                                      \", 0)]"
+        },
+        "spans": [],
+        "truncated": false
+      }
+    },
+    {
+      "case": "focused sample 4",
+      "total_frame_records": 12,
+      "first": {
+        "type": "event",
+        "level": "INFO",
+        "timestamp": "[2026-11-20 13:17:11]",
+        "target": "spaceport::core_terminals::view::frame_probe",
+        "namespace": "spaceport",
+        "message": "CORE_FRAME_PROBE",
+        "fields": {
+          "terminal": "t1",
+          "observe": false,
+          "frame_width": 80,
+          "frame_height": 24,
+          "queued_size": "Some(Size { cols: 112, rows: 34 })",
+          "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 699px } })",
+          "cell_width": 8.203125,
+          "cell_height": 20,
+          "rows_with_hidden_counts": "[(\"                                                                                \", 0), (\"                                                                                \", 0), (\"                                                                                \", 0)]"
+        },
+        "spans": [],
+        "truncated": false
+      },
+      "first_prompt": {
+        "type": "event",
+        "level": "INFO",
+        "timestamp": "[2026-11-20 13:17:12]",
+        "target": "spaceport::core_terminals::view::frame_probe",
+        "namespace": "spaceport",
+        "message": "CORE_FRAME_PROBE",
+        "fields": {
+          "terminal": "t1",
+          "observe": false,
+          "frame_width": 112,
+          "frame_height": 34,
+          "queued_size": "Some(Size { cols: 112, rows: 34 })",
+          "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 699px } })",
+          "cell_width": 8.203125,
+          "cell_height": 20,
+          "rows_with_hidden_counts": "[(\"                                                                                                \", 0), (\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-cXW0AZ>                                      \", 0), (\"                                                                                                \", 0)]"
+        },
+        "spans": [],
+        "truncated": false
+      },
+      "last": {
+        "type": "event",
+        "level": "INFO",
+        "timestamp": "[2026-11-20 13:17:14]",
+        "target": "spaceport::core_terminals::view::frame_probe",
+        "namespace": "spaceport",
+        "message": "CORE_FRAME_PROBE",
+        "fields": {
+          "terminal": "t1",
+          "observe": false,
+          "frame_width": 112,
+          "frame_height": 34,
+          "queued_size": "Some(Size { cols: 112, rows: 34 })",
+          "bounds": "Some(Bounds { origin: Point { x: 276px, y: 59px }, size: Size { 924px × 699px } })",
+          "cell_width": 8.203125,
+          "cell_height": 20,
+          "rows_with_hidden_counts": "[(\"                                                           echo SP_A11Y_7                       \", 0), (\"SP_A11Y_7rs\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-cXW0AZ>                                      \", 0), (\"PS C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\sp-core-cXW0AZ>                                      \", 0)]"
+        },
+        "spans": [],
+        "truncated": false
+      }
+    }
+  ],
+  "successful_ordinary_samples": 5,
+  "evidence_boundary": "App frames already contain the incorrect row and stale suffix before accessibility projection. Painted pixels were not compared.",
+  "cause_status": "Matching source-derived clear/height-growth mechanism awaits pure regression proof and a validated fix.",
+  "mac_checks": "pending"
+}

@@ -191,6 +191,12 @@ if ($Measure) {
   exit 0
 }
 [SpaceportAltGr]::SetForegroundWindow($handle) | Out-Null
+if ($case.outcome.kind -eq 'cycle_windows') {
+  # A mapped HWND can precede its connected terminal's accessibility tree.
+  Wait-For 'one terminal document in the selected Cycle source' {
+    @(Named $root ([System.Windows.Automation.ControlType]::Document) 'Terminal').Count -eq 1
+  }
+}
 $document = Document
 $document.SetFocus()
 Wait-For 'terminal focus before native input' { $document.Current.HasKeyboardFocus }

@@ -87,6 +87,7 @@ gpui = { features = ["test-support"], workspace = true }
 sheprd-client = { features = ["test-support"], workspace = true }
 sheprd-settings = { features = ["test-support"], workspace = true }
 sheprd-sound = { features = ["test-support"], workspace = true }
+sheprd-terminal.workspace = true
 sheprd-commands = { features = ["test-support"], workspace = true }
 sheprd-remote = { features = ["test-support"], workspace = true }
 sheprd-control-protocol = { features = ["test-support"], workspace = true }

@@ -22,7 +22,11 @@ impl Target {
         let endpoint = self.endpoint();
         command
             .env("HC_SESSION", endpoint.session)
-            .env("HC_SOCKET", endpoint.socket);
+            .env("HC_SOCKET", endpoint.socket)
+            .env(
+                "SPACEPORT_TEST_CORE_FRAME_OBSERVER",
+                self.nonce.simple().to_string(),
+            );
     }
 
     fn endpoint(&self) -> Endpoint {
@@ -210,6 +214,17 @@ impl Fixture {
         command
     }
 
+    fn frame_logs(&mut self) -> io::Result<String> {
+        let capture = self.running.sandbox.dir.join("core-frame-log-capture.json");
+        let mut command = self.running.sandbox.command(
+            env!("CARGO_BIN_EXE_spaceport"),
+            "core-frame-log-capture.json",
+        );
+        command.args(["logs", "--json", "--lines", "128"]);
+        self.running
+            .command_output(command, &capture, Duration::from_secs(5))
+    }
+
     fn cleanup(&mut self) -> io::Result<()> {
         super::stop_children([
             &mut self.running.command,
@@ -287,29 +302,31 @@ fn require_runtime_output(observed: &Attachment, marker: &[u8]) {
     );
 }
 
-fn runtime_diagnostic(observed: &Attachment) -> anyhow::Result<String> {
-    let deadline = Instant::now() + Duration::from_secs(1);
+fn runtime_diagnostic(observed: &Attachment, limit: Duration) -> anyhow::Result<(bool, String)> {
+    let deadline = Instant::now() + limit;
     let mut bytes = Vec::new();
     while Instant::now() < deadline {
         let chunk = observed.read(Duration::from_millis(100))?;
+        anyhow::ensure!(
+            chunk.end.is_none(),
+            "owned Core terminal ended during native input check"
+        );
         anyhow::ensure!(
             bytes.len() + chunk.bytes.len() <= CAPTURE_LIMIT,
             "Core fixture diagnostic exceeds 1 MiB"
         );
         bytes.extend(chunk.bytes);
-        if chunk.end.is_some() {
-            break;
-        }
     }
     let marker = b"SP_A11Y_7";
     let present = bytes.windows(marker.len()).any(|part| part == marker);
     let shown = &bytes[..bytes.len().min(8192)];
-    Ok(format!(
+    let diagnostic = format!(
         "marker={present} bytes={} shown={} text={:?} hex={shown:02x?}",
         bytes.len(),
         shown.len(),
         String::from_utf8_lossy(shown)
-    ))
+    );
+    Ok((present, diagnostic))
 }
 
 #[test]
@@ -343,9 +360,10 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
         .running
         .command_output(command, &capture, Duration::from_secs(30))
         .unwrap_or_else(|error| {
-            let runtime = runtime_diagnostic(&observed);
+            let runtime = runtime_diagnostic(&observed, Duration::from_secs(1));
+            let frames = fixture.frame_logs();
             panic!(
-                "{error}; exact Core runtime on helper failure: cols={} rows={} {runtime:?}",
+                "{error}; exact Core runtime on helper failure: cols={} rows={} {runtime:?}; app frames: {frames:?}",
                 info.cols, info.rows
             );
         });
@@ -355,7 +373,21 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
     ] {
         assert!(output.contains(receipt), "{output}");
     }
-    require_runtime_output(&observed, b"SP_A11Y_7");
+    let (present, runtime) = runtime_diagnostic(&observed, Duration::from_secs(10)).unwrap();
+    assert!(
+        present,
+        "native input did not reach this exact Core terminal"
+    );
+    eprintln!(
+        "CORE_RUNTIME_CAPTURE cols={} rows={} {runtime}",
+        info.cols, info.rows
+    );
+    let frames = fixture.frame_logs().unwrap();
+    assert!(
+        frames.contains("CORE_FRAME_PROBE"),
+        "private app frame observer did not produce records: {frames}"
+    );
+    eprintln!("CORE_APP_FRAMES {frames}");
     assert_eq!(fixture.api().list(false).unwrap().terminals.len(), 1);
     eprintln!(
         "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true"
