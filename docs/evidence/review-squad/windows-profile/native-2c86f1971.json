@@ -1,0 +1,170 @@
+{
+  "source": "2c86f1971ff81690dbfb99b80bc1c8673718961c",
+  "run_id": 44821546335,
+  "job_id": 136583385750,
+  "artifact_id": 14673097102,
+  "artifact_bytes": 88927309,
+  "artifact_sha256": "73de8e8bd17f6b61ad99ff4c34866916e2339fbeb176735fd39b2aa91e5f2bdc",
+  "ciphertext_sha256": "9502bee72826bf66dbd4f90493489ab0ea04330f513e6a62e52673db2ecb00c6",
+  "private_decryption_verified": true,
+  "zip_crc_verified": true,
+  "windows_zip_separators": "Normalized member paths validated; extraction emitted only the known backslash-separator warning.",
+  "binary": {
+    "name": "spaceport.exe",
+    "bytes": 56895488,
+    "sha256": "18d9424c485a3fc2bf1088cea5e66923300be46fc98e7fcff7195acb2e97ee66"
+  },
+  "pdb": {
+    "name": "spaceport.pdb",
+    "bytes": 170053632,
+    "sha256": "7b325da72b658f2e78ec2231a1be0e7ecbc2a84b5641146e3f8e29c6d07012d3"
+  },
+  "workload": {
+    "runtime": "real isolated Herdr TUI and Herdr Core 0.1.21",
+    "synthetic_status": true,
+    "provider_executed": false,
+    "settled_output": true,
+    "tui_generated_lines": 120,
+    "core_generated_lines": 120,
+    "window_pixels": [
+      1200,
+      780
+    ],
+    "terminal_groups": 2,
+    "mark_cap_fps": 30,
+    "actual_mark_frame_rate_measured": false,
+    "core_marker_visually_reviewed": true,
+    "effective_configuration_qualified": false,
+    "configuration_defect": "Different personal config.toml and config.local.toml caused MigrationConflict. The local file omitted common fixture settings. A startup port scan occurred; the original hard-coded disabled-poller field is unproven."
+  },
+  "phases": [
+    {
+      "phase": "idle-before",
+      "pid": 1836,
+      "thread_id": 8176,
+      "hwnd": 196992,
+      "cpu_before_seconds": 7.734375,
+      "cpu_after_seconds": 8.09375,
+      "cpu_delta_seconds": 0.359375,
+      "wall_seconds": 5.7194666,
+      "process_cpu_percent": 6.283365655111965,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 25200,
+      "sampled_profile_events_with_stacks": 2009,
+      "ui_stack_hits": 90,
+      "tick_inclusive_hits": 30,
+      "tick_exclusive_hits": 2,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_bytes": 13631488,
+      "etl_sha256": "05c84b5f0da1de3191663ea7995dbf2eb69b0214c5833abb7104d1e3ce2da672"
+    },
+    {
+      "phase": "synthetic-working",
+      "pid": 1836,
+      "thread_id": 8176,
+      "hwnd": 196992,
+      "cpu_before_seconds": 9.34375,
+      "cpu_after_seconds": 9.4375,
+      "cpu_delta_seconds": 0.09375,
+      "wall_seconds": 5.4141359,
+      "process_cpu_percent": 1.7315782560980784,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 22864,
+      "sampled_profile_events_with_stacks": 1533,
+      "ui_stack_hits": 79,
+      "tick_inclusive_hits": 25,
+      "tick_exclusive_hits": 0,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_bytes": 12582912,
+      "etl_sha256": "e23c2237b0898894ecc29dc514e9bebd581a5b70c38fa9f53a31e185dae1ff8e"
+    },
+    {
+      "phase": "idle-after",
+      "pid": 1836,
+      "thread_id": 8176,
+      "hwnd": 196992,
+      "cpu_before_seconds": 10.265625,
+      "cpu_after_seconds": 10.390625,
+      "cpu_delta_seconds": 0.125,
+      "wall_seconds": 5.4116808,
+      "process_cpu_percent": 2.309818420923865,
+      "endpoint_foreground": true,
+      "uninterrupted_foreground_proven": false,
+      "stop_acknowledged": true,
+      "lost_events_reported": 0,
+      "lost_buffers_reported": 0,
+      "sampled_profile_events": 22880,
+      "sampled_profile_events_with_stacks": 1585,
+      "ui_stack_hits": 75,
+      "tick_inclusive_hits": 30,
+      "tick_exclusive_hits": 3,
+      "profile_bytes": 1641,
+      "profile_sha256": "b85415f22593dcc7214c121df856877c9ef8c7eebd4c3e1157f0d506020475bc",
+      "etl_bytes": 12582912,
+      "etl_sha256": "6441c22a4b7f8e51bec73f7897045270d92be0d277495b2e70ba74c0e0800eab"
+    }
+  ],
+  "captures": [
+    {
+      "phase": "idle-before",
+      "before_request": 6,
+      "after_request": 7,
+      "before_sha256": "4f025a8a46102e37be56721641486f9ce820d40d4297e59b9e0a40013838c749",
+      "after_sha256": "6dd8b7d9ac3d5c1dfd635ee2cfd4cdc1086a3464cbfba4ed24aec1a885e37404",
+      "root_reviewed": true,
+      "review_method": "Root viewed both distinct endpoint images."
+    },
+    {
+      "phase": "synthetic-working",
+      "before_request": 11,
+      "after_request": 12,
+      "before_sha256": "c5554f6e6b53dfe3b9662a17415df6ddd35f446fea242835d5a9ecb1b3fab29f",
+      "after_sha256": "c5554f6e6b53dfe3b9662a17415df6ddd35f446fea242835d5a9ecb1b3fab29f",
+      "root_reviewed": true,
+      "review_method": "Root viewed before image; exact hash proves equal after image."
+    },
+    {
+      "phase": "idle-after",
+      "before_request": 16,
+      "after_request": 17,
+      "before_sha256": "78a373f9ba98de9f92ff4b82c458fc78f1c31bc9d8049214473559d8a70d8661",
+      "after_sha256": "78a373f9ba98de9f92ff4b82c458fc78f1c31bc9d8049214473559d8a70d8661",
+      "root_reviewed": true,
+      "review_method": "Root viewed before image; exact hash proves equal after image."
+    }
+  ],
+  "core_shutdown": {
+    "stop_acknowledged": true,
+    "owned_serve_exit_success": true,
+    "retained_holder_is_null": true,
+    "retained_terminal_pid_is_null": true,
+    "retained_terminal_reason": "server_stop",
+    "independent_os_holder_liveness_audit": false
+  },
+  "all_nine_exports_succeeded": true,
+  "interpretation": {
+    "process_cpu_scope": "All-thread process CPU delta divided by recorded wall duration; relative to one core.",
+    "foreground_scope": "Exact owned HWND, process and thread at before/after endpoints; no continuous monitoring.",
+    "stack_scope": "Owned GUI PID/UI-thread hit counts over whole traces wider than CPU-clock intervals. Inclusive callers overlap. Whole-system sampled-cpu Usage percent is not an app share.",
+    "sample_event_basis": "Only Sampled Profile rows have nonzero stack counts in all three statistics reports; the retained profile requests only SampledProfile stacks. HTML itself omits event identity.",
+    "cpu_share_or_improvement_qualified": false,
+    "configuration_comparison_qualified": false,
+    "limits": [
+      "One short sequence, no improvement or Idle-versus-Working inference.",
+      "Capture 6 contains a configuration diagnostic that is absent from capture 7; cold-start and configuration activity are not isolated.",
+      "Unresolved system symbols and small UI hit counts limit hotspot conclusions.",
+      "No chat, native mirror, continuous updates, or merged 20fps-source comparison.",
+      "No physical uninterrupted foreground or actual mark-cadence proof."
+    ]
+  }
+}
