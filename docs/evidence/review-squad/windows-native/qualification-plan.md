@@ -253,6 +253,14 @@ This catches duplicate fixture-module imports before the larger native build.
 Independent read-only review verifies ownership, bounds, baseline selection, and the corrected cleanup refusal.
 Native execution and PNG inspection remain pending.
 
+### Metadata-only clear preservation
+
+Alacritty's visual emptiness predicate ignores hyperlinks and bold, dim, or italic metadata on spaces.
+The clear guard must preserve those cells when the actual clear saves their row into history.
+A new real-cell regression checks the retained hyperlink and style bits after height growth.
+Its baseline runs before tightening the production predicate.
+The existing native pixel probe continues on its pinned source without interruption.
+
 ## Implementation
 
 - [x] Add fixed native cases and pure contract tests before implementing their runner.
