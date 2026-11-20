@@ -163,10 +163,12 @@ Kata remains 49 closed and four open.
 The separate native branch is `fix/review-squad-linux-native`.
 Source `5979a3a9d` remains the last whole-matrix success, with thirty-seven qualified cases.
 Source `a72266897` passes native focus preparation but fails measured Cycle Windows.
-The next checkpoint adds eight pane cases and traces the existing Cycle Windows command boundaries.
+Source `70395bd4d` passes those eight pane cases and confirms the platform activation call.
+The next checkpoint re-pins GPUI to 0.3.11 for its upstream activation-context correction.
 Do not publish a documentation-only checkpoint merely to start another native run.
 
-Finish Linux window cycling, pane history/cycling, and geometric prefix focus.
+Run the unchanged native matrix with the corrected GPUI pin, then qualify the other configured platforms before integration.
+The separate Windows fixture correction is source `c9a585ae5`, with native run `44714614632` pending.
 Settings deliberately adds a window and changes activation; the general stable-window guard needs a scoped outcome branch.
 Observe the actual Settings global handle rather than inferring its type from a window count.
 Keep any observation hook behind `integration-test` and inside `settings_window`, whose window type is private.
@@ -320,3 +322,30 @@ The shared test defines the physical aliases before their fixture implementation
 The local compiler hold prevents a failing-baseline run; no baseline failure or native pass is claimed.
 Independent read-only review finds no concrete blocking issue.
 Compilation, the new shared test, and all eight native cases remain pending CI.
+
+Source `70395bd4d` passes ten shared tests, two receipt tests, and forty-four native case outcomes.
+All eight pane additions reach their exact IDs in real two-by-two geometry with newer daemon revisions.
+The [scoped receipt](spaceport-panes-70395bd4d.json) records these outcomes and the remaining failure.
+The [whole run fails](https://github.com/2389-research/spaceport/actions/runs/44713905098) at Cycle Windows; final Polish input does not run.
+The trace proves native submission, command dispatch, and the platform activation request all occur.
+The exact target stays inactive until the unchanged deadline.
+
+The [pinned GPUI backend](https://github.com/zed-industries/zed/blob/08cbb88a152c3751a43e853425a70e9f631a5918/crates/gpui_linux/src/linux/wayland/window.rs) uses a mouse-press serial and the destination surface for activation tokens.
+[Mutter](https://github.com/GNOME/mutter/blob/46.0/src/wayland/meta-wayland-activation.c) requires the serial and surface from a valid input event.
+This points to the backend's activation context, rather than shortcut routing.
+Upstream [GPUI PR64058](https://github.com/zed-industries/zed/pull/64058) already corrects that context and correlates each token separately.
+Published `gpui-pre-linux` 0.3.11 contains that correction at Zed source `f816e1f9263e3a8ef63c4baaa02e1441ce1c6038`.
+Its license remains Apache-2.0.
+
+The correction re-pins both GPUI roots together to exact 0.3.11.
+This changes the previous pin specifically to fix the reproduced native failure.
+It preserves the pinned Rust toolchain, compositor controls, input sequence, deadlines, and pass criteria.
+The lockfile retains existing non-GPUI versions where the new dependency constraints permit them.
+Cargo resolves metadata locally; compilation and native tests still run only on disposable CI runners.
+The new source must pass the unchanged Linux matrix before this fix can qualify.
+All configured platform and feature jobs must also pass before integration can qualify the dependency change.
+Earlier 0.3.10 qualification does not establish 0.3.11 behavior on Windows or macOS.
+Locked workspace metadata resolves without compilation.
+Quick formatting, size, sorting, recipe, i18n, commit checks, receipt JSON, and whitespace checks pass.
+An independent read-only review verifies the published source, checksum, license, coordinated pins, and preserved dependency versions.
+The review finds no blocking issue; it does not replace any pending platform checks.
