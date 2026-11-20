@@ -17,6 +17,31 @@ fn observed_os_telemetry_without_cpu_recording_allows_preflight() -> Result<()> 
 }
 
 #[test]
+fn observed_security_logger_has_a_present_empty_trace_flags_field() -> Result<()> {
+    ensure_available(
+        "WPR is not recording",
+        "Logger Name : Eventlog-Security\nLog File Mode : NonStoppable Secure PersistOnHybridShutdown IndependentSession NoPerProcessorBuffering\nTrace Flags :\n",
+    )
+}
+
+#[test]
+fn observed_guid_providers_allow_omitted_keywords_and_levels() -> Result<()> {
+    for provider in [
+        "b1ad9b49-051a-4896-ae24-ebc9b8676e76::0x5",
+        "2434b2ae-fcfd-4b69-9ab4-e58a0dd56565:0x3",
+        "1b1d4ff4-f27b-4c99-8bd7-da8f1a74051a",
+    ] {
+        ensure_available(
+            "WPR is not recording",
+            &format!(
+                "Logger Name : Observed telemetry\nLog File Mode : Circular\nTrace Flags : {provider}\n"
+            ),
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
 fn refuses_default_named_and_system_profile_recordings() {
     assert!(ensure_available("WPR recording is in progress", TELEMETRY).is_err());
     for logger in [

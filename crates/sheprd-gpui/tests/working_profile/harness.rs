@@ -404,7 +404,16 @@ fn exchange(directory: &Path, request: &Request) -> Result<Reply> {
     super::wire::read_reply(stream)
 }
 
-fn command_output(mut command: Command, output: &Path, limit: Duration) -> Result<Vec<u8>> {
+fn command_output(command: Command, output: &Path, limit: Duration) -> Result<Vec<u8>> {
+    command_output_bounded(command, output, limit, report::MAX_LINE)
+}
+
+fn command_output_bounded(
+    mut command: Command,
+    output: &Path,
+    limit: Duration,
+    bound: u64,
+) -> Result<Vec<u8>> {
     command.stdout(File::create(output)?);
     let mut child = Some(
         command
@@ -423,7 +432,7 @@ fn command_output(mut command: Command, output: &Path, limit: Duration) -> Resul
                     output.display()
                 );
                 ensure!(
-                    fs::metadata(output)?.len() <= report::MAX_LINE,
+                    fs::metadata(output)?.len() <= bound,
                     "profile command output exceeds limit"
                 );
                 return fs::read(output).context("read profile command output");

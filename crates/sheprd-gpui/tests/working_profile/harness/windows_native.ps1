@@ -8,6 +8,9 @@ function Write-Stage([string]$stage) {
   [IO.File]::AppendAllText($ReceiptFile, $line + [Environment]::NewLine)
 }
 Write-Stage 'script_enter'
+Write-Stage 'utility_import_begin'
+Microsoft.PowerShell.Core\Import-Module -Name Microsoft.PowerShell.Utility -ErrorAction Stop
+Write-Stage 'utility_import_complete'
 Write-Stage 'add_type_begin'
 Add-Type -TypeDefinition @'
 using System;

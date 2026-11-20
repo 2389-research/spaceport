@@ -26,7 +26,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $tools = @(foreach ($name in @('wpr.exe', 'xperf.exe', 'WPAExporter.exe', 'tracerpt.exe')) {
+          $tools = @(foreach ($name in @('wpr.exe', 'xperf.exe', 'WPAExporter.exe', 'tracerpt.exe', 'gpg.exe')) {
             $command = Get-Command $name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
             [ordered]@{
               name = $name
@@ -69,6 +69,11 @@ jobs:
         timeout-minutes: 1
         shell: powershell
         run: wpr.exe -help stop
+      - name: Inspect named recording scope
+        if: ${{ !cancelled() }}
+        timeout-minutes: 1
+        shell: powershell
+        run: wpr.exe -help advanced
       - name: Inspect current recording state
         if: ${{ !cancelled() }}
         timeout-minutes: 1
@@ -110,6 +115,21 @@ jobs:
         with:
           key: working-profile-${{ matrix.runner }}
           save-if: false
+      - name: Select the installed Windows trace reader
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $reader = Get-Command xperf.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1
+          "SPACEPORT_WORKING_PROFILE_XPERF=$($reader.Source)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Exercise ordinary profile contracts without a GUI or daemon
         shell: bash
         run: cargo test --locked -p sheprd-gpui --features integration-test --test working_profile -- --nocapture
+      - name: Classify actual Windows recorder state without recording
+        if: runner.os == 'Windows' && !cancelled()
+        shell: bash
+        run: cargo test --locked -p sheprd-gpui --features integration-test --test working_profile working_profile::harness::windows::tests::read_only_windows_recorder_inventory -- --ignored --exact --nocapture
+      - name: Lint the profile harness and app wiring
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: cargo clippy --locked -p sheprd-gpui --features integration-test --bin spaceport --test working_profile -- -D warnings

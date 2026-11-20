@@ -380,3 +380,20 @@ Windows clock, schema, real-pipe deadlines, and complete-line round-trip control
 The invalid-HWND helper failed after 15 seconds with empty stderr.
 Its cause remains unknown; retain the deadline and add stage diagnostics before changing behavior.
 No GUI, daemon, WPR recording, CPU profile, or stack extraction ran.
+
+### Native helper and recorder RED
+
+Run `44772447956` tested source `7375a66ebb7067b54eda3d5407fcd4f04f98e946`.
+Mac job `136413342857` passed all 18 ordinary tests, including both complete-line boundary controls.
+Windows job `136413343402` passed 26 tests and failed two; its native profile remained ignored.
+The recorder's allowed-telemetry control failed with the explicit unimplemented preflight error.
+Its recording and unclassified-state refusal controls passed.
+Both real serialization boundary controls passed on Windows too.
+
+Passive helper stages reached script entry and `add_type_begin`, then hit the unchanged 15-second deadline.
+They never reached `add_type_complete` or the native window query.
+The separate CPU helper passed using only direct .NET calls.
+This localizes the failure to the first cmdlet boundary.
+The established [module bootstrap](review-ci-qualification.md#explicit-system-module-bootstrap) addresses that prior sandbox failure class.
+Reuse that bootstrap while preserving JSON-only stdout, private diagnostics, isolation, and the existing deadline.
+The correction still requires actual Windows verification.
