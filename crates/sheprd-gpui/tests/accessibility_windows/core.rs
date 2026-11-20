@@ -164,17 +164,9 @@ impl Fixture {
             let terminals = self.api().list(false).unwrap().terminals;
             if let [terminal] = terminals.as_slice() {
                 let address = terminal.address.clone();
-                let tabs: serde_json::Value =
-                    serde_json::from_str(&self.running.control_output(&["tab", "--json", "list"]))
-                        .unwrap();
-                if let Some(tab) = tabs["tabs"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .find(|tab| tab["kind"] == "core_terminal" && tab["location"] == address)
-                {
-                    let tab = tab["id"].as_u64().unwrap().to_string();
-                    self.running.control(&["tab", "--json", "focus", &tab]);
+                if let [tab] = self.tab_ids(&address).as_slice() {
+                    self.running
+                        .control(&["tab", "--json", "focus", &tab.to_string()]);
                     return address;
                 }
             }
@@ -184,6 +176,35 @@ impl Fixture {
             );
             thread::sleep(Duration::from_millis(20));
         }
+    }
+
+    fn tab_ids(&mut self, terminal: &str) -> Vec<u64> {
+        let tabs: serde_json::Value =
+            serde_json::from_str(&self.running.control_output(&["tab", "--json", "list"])).unwrap();
+        tabs["tabs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|tab| tab["kind"] == "core_terminal" && tab["location"] == terminal)
+            .map(|tab| tab["id"].as_u64().unwrap())
+            .collect()
+    }
+
+    fn terminal_helper(&self, action: &str, capture: &str) -> Command {
+        for (name, source) in [
+            (
+                "uia_terminal.ps1",
+                include_str!("../support/uia_terminal.ps1"),
+            ),
+            ("uia_live.cs", include_str!("../support/uia_live.cs")),
+        ] {
+            fs::write(self.running.sandbox.dir.join(name), source).unwrap();
+        }
+        let mut command = self
+            .running
+            .powershell(&self.running.sandbox.dir.join("uia_terminal.ps1"), capture);
+        command.args(["-Action", action]);
+        command
     }
 
     fn cleanup(&mut self) -> io::Result<()> {
@@ -252,24 +273,12 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
             ..Attach::default()
         })
         .unwrap();
-    for (name, source) in [
-        (
-            "uia_terminal.ps1",
-            include_str!("../support/uia_terminal.ps1"),
-        ),
-        ("uia_live.cs", include_str!("../support/uia_live.cs")),
-    ] {
-        fs::write(fixture.running.sandbox.dir.join(name), source).unwrap();
-    }
     let capture = fixture
         .running
         .sandbox
         .dir
         .join("core-terminal-capture.log");
-    let command = fixture.running.powershell(
-        &fixture.running.sandbox.dir.join("uia_terminal.ps1"),
-        "core-terminal-capture.log",
-    );
+    let command = fixture.terminal_helper("Text", "core-terminal-capture.log");
     let output = fixture
         .running
         .command_output(command, &capture, Duration::from_secs(30))
@@ -302,5 +311,89 @@ fn native_core_text_caret_bounds_and_output_changes_match_the_real_runtime() {
     assert_eq!(fixture.api().list(false).unwrap().terminals.len(), 1);
     eprintln!(
         "CORE_NATIVE text=true native_text_changed=true caret_line_bounds=true exact_runtime_output=true observer_removed=true"
+    );
+}
+
+#[test]
+#[ignore = "requires Windows desktop plus explicitly selected Herdr and Core fixture binaries"]
+fn native_core_observing_pane_exposes_fresh_text_caret_and_change_events() {
+    let mut fixture = Fixture::start();
+    let terminal = fixture.open_terminal();
+    let before = fixture.tab_ids(&terminal);
+    assert_eq!(before.len(), 1);
+    fixture
+        .running
+        .control(&["run", "--json", "mirror_core_pane"]);
+    let deadline = Instant::now() + Duration::from_secs(15);
+    let mirror = loop {
+        let tabs = fixture.tab_ids(&terminal);
+        if tabs.len() == 2 && tabs.contains(&before[0]) {
+            break *tabs.iter().find(|tab| **tab != before[0]).unwrap();
+        }
+        assert!(
+            Instant::now() < deadline,
+            "Core mirror did not preserve the exact source tab"
+        );
+        thread::sleep(Duration::from_millis(20));
+    };
+    fixture
+        .running
+        .control(&["tab", "--json", "focus", &mirror.to_string()]);
+    let info = fixture.api().terminal_get(&terminal).unwrap();
+    let writer = fixture
+        .api()
+        .attach(&Attach {
+            cols: info.cols,
+            rows: info.rows,
+            terminal: &terminal,
+            ..Attach::default()
+        })
+        .unwrap();
+    let ready = fixture.running.sandbox.dir.join("core-observe.ready");
+    assert!(!ready.exists());
+    let capture = fixture.running.sandbox.dir.join("core-observe.log");
+    let command = fixture.terminal_helper("Observe", "core-observe.log");
+    let (output, produced) = thread::scope(|scope| {
+        let producer = scope.spawn(|| -> anyhow::Result<()> {
+            let deadline = Instant::now() + Duration::from_secs(15);
+            while !ready.exists() {
+                anyhow::ensure!(
+                    Instant::now() < deadline,
+                    "native Core observer did not register"
+                );
+                thread::sleep(Duration::from_millis(10));
+            }
+            writer.write(b"echo SP_A11Y_OBS_7\r")?;
+            Ok(())
+        });
+        let output = fixture
+            .running
+            .command_output(command, &capture, Duration::from_secs(30));
+        (output, producer.join())
+    });
+    let output =
+        output.unwrap_or_else(|error| panic!("{error}; Core producer result: {produced:?}"));
+    produced.unwrap().unwrap();
+    assert!(output.contains("TERMINAL_A11Y text=true native_text_changed=true unselected_caret=true caret_line_bounds=true"), "{output}");
+    assert!(
+        output.contains("TERMINAL_A11Y observer_removed=true"),
+        "{output}"
+    );
+    let terminals = fixture.api().list(false).unwrap().terminals;
+    assert_eq!(
+        terminals
+            .iter()
+            .map(|terminal| terminal.address.as_str())
+            .collect::<Vec<_>>(),
+        vec![terminal.as_str()]
+    );
+    let after = fixture.tab_ids(&terminal);
+    assert_eq!(after.len(), 2);
+    assert!(
+        after.contains(&before[0]) && after.contains(&mirror),
+        "Core mirror changed app tab identities"
+    );
+    eprintln!(
+        "CORE_NATIVE observing=true text=true native_text_changed=true caret_line_bounds=true same_terminal=true observer_removed=true"
     );
 }

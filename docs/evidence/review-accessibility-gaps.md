@@ -508,3 +508,23 @@ The existing control-command parser scope passes all 12 cases.
 Log: `/tmp/spaceport-9s44-core-cli-contract.log`.
 Independent review confirms that only CLI argument order changes.
 Native execution of the corrected fixture remains pending.
+
+### Native observing-pane candidate
+
+A second case opens the actual app mirror route for the same runtime terminal.
+It finds the new tab through that exact terminal address and focuses its native document.
+The existing helper registers its TextChanged observer before writing a private readiness flag.
+A scoped producer waits for that flag, then writes one authored command through the exact Core attachment.
+The observing view receives no authored keyboard input.
+
+The helper requires fresh marker text, a native change event, an unselected caret, and contained line bounds.
+Observer disposal must complete before the test accepts its receipt.
+The test preserves the sole runtime terminal and both captured app tab IDs.
+The producer joins before fixture cleanup, and helper failures retain the producer result.
+The original Text action and early-return Resize action remain unchanged.
+
+Both Windows feature configurations pass the targeted accessibility-harness Clippy check with warnings denied.
+Logs: `/tmp/spaceport-9s44-core-observe-windows-{all,minimal}.log`.
+Independent read-only review finds no material targeting, event-ordering, lifetime, or helper regression.
+Actual Windows execution and existing native helper regressions remain pending.
+This case does not qualify observing-pane input refusal, Core resize, audible speech, or macOS Cmd-W.

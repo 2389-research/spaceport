@@ -1,6 +1,6 @@
 # ABOUTME: Queries real terminal text, its unselected caret, and native output-change events.
 # ABOUTME: Sends authored input only to the exact private foreground terminal window.
-param([int]$ProcessId, [ValidateSet('Text','Resize')][string]$Action = 'Text')
+param([int]$ProcessId, [ValidateSet('Text','Resize','Observe')][string]$Action = 'Text')
 . "$PSScriptRoot\uia_tree.ps1" -ProcessId $ProcessId
 Add-Type -Path "$PSScriptRoot\uia_live.cs" -ReferencedAssemblies @(
   [System.Windows.Automation.AutomationElement].Assembly.Location,
@@ -139,7 +139,13 @@ $observer = [SpaceportLiveEvents]::new($handle, $ProcessId, [System.Windows.Auto
 try {
   Require-Terminal
   Require-Released
-  [System.Windows.Forms.SendKeys]::SendWait('echo SP_A11Y_7{ENTER}')
+  $marker = 'SP_A11Y_7'
+  if ($Action -eq 'Observe') {
+    $marker = 'SP_A11Y_OBS_7'
+    [IO.File]::WriteAllText("$PSScriptRoot\core-observe.ready", 'registered')
+  } else {
+    [System.Windows.Forms.SendKeys]::SendWait('echo SP_A11Y_7{ENTER}')
+  }
   $changed = $false
   $deadline = [DateTime]::UtcNow.AddSeconds(5)
   do {
@@ -147,7 +153,7 @@ try {
     if ($observer.Drain() -ccontains 'Terminal') { $changed = $true }
     # Resolve a fresh range after each native text-change event.
     $text = $pattern.DocumentRange.GetText(16384)
-    $output = ($text -split '\r?\n') -ccontains 'SP_A11Y_7'
+    $output = ($text -split '\r?\n') -ccontains $marker
     if ($changed -and $output) { break }
     if ([DateTime]::UtcNow -ge $deadline) { throw 'Native terminal text or changed-output event is missing' }
     Start-Sleep -Milliseconds 25
