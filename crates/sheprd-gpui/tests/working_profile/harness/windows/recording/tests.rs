@@ -6,7 +6,7 @@ use std::{fs, path::PathBuf};
 fn control_child(directory: &Path, script: &str) -> Result<Child> {
     let root = std::env::var_os("SystemRoot")
         .ok_or_else(|| anyhow::anyhow!("missing Windows SystemRoot"))?;
-    let binary = Path::new(&root).join("System32/cmd.exe");
+    let binary = Path::new(&root).join("System32").join("cmd.exe");
     let mut command = sheprd_client::new_command(binary);
     command
         .env_clear()
@@ -21,7 +21,13 @@ fn control_child(directory: &Path, script: &str) -> Result<Child> {
 
 fn finish_control(child: Child, directory: &Path) -> Result<PathBuf> {
     let output = directory.join("control.stdout");
-    wait_for_output(child, &output, Duration::from_secs(15), 65_536)?;
+    wait_for_output(child, &output, Duration::from_secs(15), 65_536).with_context(|| {
+        format!(
+            "control stdout={}; stderr={}",
+            super::super::bounded_diagnostic(&output),
+            super::super::bounded_diagnostic(&directory.join("control.stderr")),
+        )
+    })?;
     Ok(output)
 }
 

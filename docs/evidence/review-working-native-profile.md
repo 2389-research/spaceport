@@ -491,6 +491,13 @@ The real recorder inventory and scoped Windows Clippy passed.
 Capture the control child's actual stdout/stderr before changing its command invocation.
 The workflow contains a throwaway standalone Windows probe for that boundary; it starts no recorder.
 
+Probe job `136466512416` at `032797f0b` reproduced exit one for both argument forms.
+Its stderr reports directory-creation errors while processing the executable suffix and command text.
+The executable path was `C:\Windows\System32/cmd.exe`.
+Compare it with a native-separator path while keeping the wrapper, environment, and arguments unchanged.
+The receipt control now uses component-wise native path joining and retains bounded child stderr on failure.
+Runtime verification of that correction remains pending.
+
 ### Concurrent redraw change
 
 PR [145](https://github.com/2389-research/spaceport/pull/145) merged as `55c206e7c6be1a16f2e0643819f4dfc5df360f66` on November 20.

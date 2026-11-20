@@ -136,26 +136,31 @@ jobs:
               let directory = PathBuf::from(env::args_os().nth(1).ok_or(io::ErrorKind::InvalidInput)?);
               fs::create_dir(&directory)?;
               let root = env::var_os("SystemRoot").ok_or(io::ErrorKind::NotFound)?;
-              let executable = PathBuf::from(&root).join("System32/cmd.exe");
+              let executables = [
+                  ("mixed", PathBuf::from(&root).join("System32/cmd.exe")),
+                  ("native", PathBuf::from(&root).join("System32").join("cmd.exe")),
+              ];
               let cases: &[(&str, &[&str])] = &[
                   ("echo_script", &["echo acknowledged"]),
                   ("echo_words", &["echo", "acknowledged"]),
                   ("exit_script", &["exit 0"]),
                   ("exit_words", &["exit", "0"]),
               ];
-              for (name, arguments) in cases {
-                  let case = directory.join(format!(".tmp-{name}"));
+              for (style, executable) in &executables {
+                for (name, arguments) in cases {
+                  let case = directory.join(format!(".tmp-{style}-{name}"));
                   fs::create_dir(&case)?;
                   let receipt = fs::write(&case, b"receipt");
                   let stdout = case.join("stdout.txt");
                   let stderr = case.join("stderr.txt");
-                  let mut command = process::new_command(&executable);
+                  let mut command = process::new_command(executable);
                   command.env_clear().env("SystemRoot", &root).current_dir(&case)
                       .args(["/d", "/c"]).args(*arguments).stdin(Stdio::null())
                       .stdout(fs::File::create(&stdout)?).stderr(fs::File::create(&stderr)?);
                   let result = command.spawn()?.wait()?;
-                  println!("case={name} receipt={receipt:?} status={result:?} command={command:?}");
+                  println!("case={style}_{name} receipt={receipt:?} status={result:?} command={command:?}");
                   println!("stdout={:?} stderr={:?}", String::from_utf8_lossy(&fs::read(stdout)?), String::from_utf8_lossy(&fs::read(stderr)?));
+                }
               }
               Ok(())
           }
