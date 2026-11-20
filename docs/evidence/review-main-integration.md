@@ -17,6 +17,9 @@ The imported `9s44` and `q72g` tasks are claimed by `review-squad` and remain op
 The painting/polling finding `gfde` is closed after its five-clause audit and all four native image inspections.
 See the [native image receipt](review-squad/native-images/qualification-a8f7bd371.json) and [Crew closure receipt](review-squad/crew-closures.jsonl).
 The remaining children cover native Core Cmd-W, accessibility speech/contrast, and Clint's foreground release profile.
+On November 20 at 02:54 UTC, Doctor Biz explicitly answered “Keep Mac checks pending.”
+Do not launch Mac foreground fixtures until Doctor Biz changes that instruction.
+Windows CI continues; this instruction does not pause the full review goal.
 The [workspace-name correction](review-workspace-name-qualification.md) records the current CI failure and pending native rerun.
 The prior work dashboard is archived; its earlier evidence and attachments remain intact.
 
