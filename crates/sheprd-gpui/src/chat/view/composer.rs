@@ -12,117 +12,190 @@ use super::{
 use crate::i18n::{Localize, fl};
 use crate::{SheprdWindow, config::corners, notifications::safe_text};
 use gpui::{prelude::*, *};
-use sheprd_chat_protocol::Command;
+use sheprd_chat_protocol::{Command, Transcript};
 
 impl SheprdWindow {
     pub(super) fn render_chat_composer(&self, chat: &ChatPane, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
-        let hues = Hues::of(theme);
         let transcript = chat.session.transcript();
-        let pane_id = chat.target.pane_id.clone();
         if transcript.read_only {
-            return div()
-                .debug_selector(|| "chat-read-only".into())
-                .flex()
-                .flex_col()
-                .items_start()
-                .gap(px(8.))
-                .p(px(12.))
-                .text_size(self.chat_small_text())
-                .text_color(rgb(theme.subtext()))
-                .child(fl!("chat-read-only-hint"))
-                .child(
-                    div()
-                        .id("chat-reply-terminal")
-                        .map(|button| {
-                            super::accessibility::button(
-                                theme,
-                                fl!("chat-reply-in-terminal"),
-                                button,
-                            )
-                        })
-                        .debug_selector(|| "chat-reply-terminal".into())
-                        .flex()
-                        .items_center()
-                        .gap(px(6.))
-                        .px(px(12.))
-                        .py(px(8.))
-                        .rounded(px(corners::CONTROL))
-                        .border_1()
-                        .border_color(rgb(theme.active))
-                        .bg(rgb(theme.surface))
-                        .text_color(rgb(super::text_ink(theme.foreground, theme.surface)))
-                        .font_weight(FontWeight::MEDIUM)
-                        .cursor_pointer()
-                        .hover(|button| button.border_color(rgb(theme.primary())))
-                        .child(svg().path("icons/terminal.svg").size(px(13.)))
-                        .child(fl!("chat-reply-in-terminal"))
-                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-                        .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
-                            cx.stop_propagation();
-                            this.set_chat_raw(&pane_id, true, window, cx);
-                        })),
-                );
+            return self.chat_read_only_composer(chat, cx);
         }
         let problem = chat.error.clone().or_else(|| {
             chat.session
                 .rejection()
                 .map(|rejection| rejection.localize())
         });
+        let parts = self.chat_composer_parts(chat, transcript, cx);
+        let card = layout_for(self.config.chat.layout).composer(parts, &self.chat_look());
+        div()
+            .relative()
+            .flex_none()
+            .flex()
+            .flex_col()
+            .gap(px(6.))
+            .px(px(12.))
+            .pt(px(8.))
+            .pb(px(16.))
+            .children(problem.map(|problem| {
+                div()
+                    .debug_selector(|| "chat-problem".into())
+                    .text_size(px((self.chat_text_size() - 2.).max(10.)))
+                    .text_color(rgb(Hues::of(theme).red))
+                    .child(problem)
+            }))
+            .child(card)
+            .children(
+                chat.menu()
+                    .map(|menu| self.render_chat_menu(chat, menu, cx)),
+            )
+    }
+
+    /// A session this build cannot type into: the hint, and the button that
+    /// reopens it in a terminal.
+    fn chat_read_only_composer(&self, chat: &ChatPane, cx: &mut Context<Self>) -> Div {
+        let theme = &self.theme;
+        let pane_id = chat.target.pane_id.clone();
+        div()
+            .debug_selector(|| "chat-read-only".into())
+            .flex()
+            .flex_col()
+            .items_start()
+            .gap(px(8.))
+            .p(px(12.))
+            .text_size(self.chat_small_text())
+            .text_color(rgb(theme.subtext()))
+            .child(fl!("chat-read-only-hint"))
+            .child(
+                div()
+                    .id("chat-reply-terminal")
+                    .map(|button| {
+                        super::accessibility::button(theme, fl!("chat-reply-in-terminal"), button)
+                    })
+                    .debug_selector(|| "chat-reply-terminal".into())
+                    .flex()
+                    .items_center()
+                    .gap(px(6.))
+                    .px(px(12.))
+                    .py(px(8.))
+                    .rounded(px(corners::CONTROL))
+                    .border_1()
+                    .border_color(rgb(theme.active))
+                    .bg(rgb(theme.surface))
+                    .text_color(rgb(super::text_ink(theme.foreground, theme.surface)))
+                    .font_weight(FontWeight::MEDIUM)
+                    .cursor_pointer()
+                    .hover(|button| button.border_color(rgb(theme.primary())))
+                    .child(svg().path("icons/terminal.svg").size(px(13.)))
+                    .child(fl!("chat-reply-in-terminal"))
+                    .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                    .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
+                        cx.stop_propagation();
+                        this.set_chat_raw(&pane_id, true, window, cx);
+                    })),
+            )
+    }
+
+    /// The composer's parts, each from the session's prepared transcript, for
+    /// the layout in use to arrange.
+    fn chat_composer_parts(
+        &self,
+        chat: &ChatPane,
+        transcript: &Transcript,
+        cx: &mut Context<Self>,
+    ) -> ComposerParts {
+        let theme = &self.theme;
         let small = px((self.chat_text_size() - 2.).max(10.));
-        let round = |id: &'static str| {
-            div()
-                .id(id)
-                .debug_selector(move || id.into())
-                .flex_none()
-                .size(px(28.))
+        let send = self.chat_send_button(chat, cx);
+        let settings = self
+            .render_chat_settings_buttons(chat, cx)
+            .into_iter()
+            .map(IntoElement::into_any_element)
+            .chain(
+                (!super::settings::agent_bypasses(transcript))
+                    .then(|| self.render_chat_auto_accept(chat, cx).into_any_element()),
+            )
+            .collect();
+        ComposerParts {
+            chips: self.chat_attachment_chips(chat, small, cx),
+            draft: div()
+                .debug_selector(|| "chat-composer".into())
+                .min_h(px(self.chat_text_size() * 1.6))
                 .flex()
                 .items_center()
-                .justify_center()
-                .rounded_full()
-                .cursor_pointer()
-                .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
-        };
-        let attach = {
-            let pane_id = pane_id.clone();
-            round("chat-attach")
-                .map(|button| super::accessibility::button(theme, fl!("chat-attach-files"), button))
-                .hover(|button| button.bg(rgb(theme.active)))
-                .child(
-                    svg()
-                        .path("icons/plus.svg")
-                        .size(px(13.))
-                        .text_color(rgb(theme.subtext())),
-                )
-                .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
-                    cx.stop_propagation();
-                    this.browse_chat_files(&pane_id, window, cx);
-                }))
-        };
-        let copying = (chat.uploading() > 0).then(|| {
-            // On this machine only a pasted picture is ever pending.
-            let label = match &chat.target.route {
-                super::super::Route::Ssh(host) => {
-                    let host = safe_text(host, 80);
-                    fl!("chat-copying-files", count = chat.uploading(), host = host)
-                }
-                super::super::Route::Local => {
-                    fl!("chat-preparing-pictures", count = chat.uploading())
-                }
-            };
-            div()
-                .debug_selector(|| "chat-uploading".into())
-                .flex()
-                .items_center()
-                .px(px(8.))
-                .h(px(24.))
-                .rounded(px(corners::CONTROL))
-                .bg(rgb(theme.active))
-                .text_size(small)
-                .text_color(rgb(theme.subtext()))
-                .child(label)
-        });
-        let chips = (!chat.attachments.is_empty() || copying.is_some()).then(|| {
+                .children(chat.composer.clone()),
+            attach: self.chat_attach_button(chat, cx),
+            settings,
+            usage: self.render_chat_usage(chat),
+            send,
+            place: transcript
+                .session
+                .as_ref()
+                .and_then(|session| session.cwd.as_deref())
+                .map(|cwd| safe_text(cwd, 300)),
+            commands: self
+                .keymap()
+                .shortcuts(sheprd_commands::Command::Palette)
+                .next()
+                .map(|shortcut| {
+                    div()
+                        .flex()
+                        .gap(px(5.))
+                        .child(
+                            div()
+                                .text_color(rgb(theme.foreground))
+                                .child(shortcut.to_owned()),
+                        )
+                        .child(fl!("chat-status-commands"))
+                }),
+        }
+    }
+
+    /// The round button a press on the composer starts from.
+    fn chat_round_button(id: &'static str) -> Stateful<Div> {
+        div()
+            .id(id)
+            .debug_selector(move || id.into())
+            .flex_none()
+            .size(px(28.))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded_full()
+            .cursor_pointer()
+            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+    }
+
+    fn chat_attach_button(&self, chat: &ChatPane, cx: &mut Context<Self>) -> Stateful<Div> {
+        let theme = &self.theme;
+        let pane_id = chat.target.pane_id.clone();
+        Self::chat_round_button("chat-attach")
+            .map(|button| super::accessibility::button(theme, fl!("chat-attach-files"), button))
+            .hover(|button| button.bg(rgb(theme.active)))
+            .child(
+                svg()
+                    .path("icons/plus.svg")
+                    .size(px(13.))
+                    .text_color(rgb(theme.subtext())),
+            )
+            .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
+                cx.stop_propagation();
+                this.browse_chat_files(&pane_id, window, cx);
+            }))
+    }
+
+    /// Files the next prompt carries, and the copy of any picture still
+    /// moving onto the agent's machine.
+    fn chat_attachment_chips(
+        &self,
+        chat: &ChatPane,
+        small: Pixels,
+        cx: &mut Context<Self>,
+    ) -> Option<Div> {
+        let theme = &self.theme;
+        let copying = self.chat_uploading_chip(chat, small);
+        (!chat.attachments.is_empty() || copying.is_some()).then(|| {
+            let pane_id = chat.target.pane_id.clone();
             div()
                 .debug_selector(|| "chat-attachments".into())
                 .flex()
@@ -199,14 +272,46 @@ impl SheprdWindow {
                                 })),
                         )
                 }))
-        });
-        // As in the phone app: Stop while the agent works and nothing is
-        // written, Send once something is, and Send greyed out otherwise.
-        let send = match chat.send {
+        })
+    }
+
+    /// What a picture still being written says, while one is.
+    fn chat_uploading_chip(&self, chat: &ChatPane, small: Pixels) -> Option<Div> {
+        let theme = &self.theme;
+        (chat.uploading() > 0).then(|| {
+            // On this machine only a pasted picture is ever pending.
+            let label = match &chat.target.route {
+                super::super::Route::Ssh(host) => {
+                    let host = safe_text(host, 80);
+                    fl!("chat-copying-files", count = chat.uploading(), host = host)
+                }
+                super::super::Route::Local => {
+                    fl!("chat-preparing-pictures", count = chat.uploading())
+                }
+            };
+            div()
+                .debug_selector(|| "chat-uploading".into())
+                .flex()
+                .items_center()
+                .px(px(8.))
+                .h(px(24.))
+                .rounded(px(corners::CONTROL))
+                .bg(rgb(theme.active))
+                .text_size(small)
+                .text_color(rgb(theme.subtext()))
+                .child(label)
+        })
+    }
+
+    /// As in the phone app: Stop while the agent works and nothing is
+    /// written, Send once something is, and Send greyed out otherwise.
+    fn chat_send_button(&self, chat: &ChatPane, cx: &mut Context<Self>) -> Stateful<Div> {
+        let theme = &self.theme;
+        let pane_id = chat.target.pane_id.clone();
+        match chat.send {
             SendButton::Stop => {
-                let pane_id = pane_id.clone();
-                let fill = hues.red;
-                round("chat-stop")
+                let fill = Hues::of(theme).red;
+                Self::chat_round_button("chat-stop")
                     .map(|button| {
                         super::accessibility::button(theme, fl!("chat-stop-turn"), button)
                     })
@@ -225,9 +330,8 @@ impl SheprdWindow {
             }
             SendButton::Send | SendButton::Off => {
                 let on = chat.send == SendButton::Send;
-                let pane_id = pane_id.clone();
                 let fill = if on { theme.primary() } else { theme.active };
-                round("chat-send")
+                Self::chat_round_button("chat-send")
                     .map(|button| {
                         super::accessibility::button(theme, fl!("chat-send-message"), button)
                     })
@@ -249,71 +353,6 @@ impl SheprdWindow {
                         }
                     }))
             }
-        };
-        let draft = div()
-            .debug_selector(|| "chat-composer".into())
-            .min_h(px(self.chat_text_size() * 1.6))
-            .flex()
-            .items_center()
-            .children(chat.composer.clone());
-        let settings = self
-            .render_chat_settings_buttons(chat, cx)
-            .into_iter()
-            .map(IntoElement::into_any_element)
-            .chain(
-                (!super::settings::agent_bypasses(transcript))
-                    .then(|| self.render_chat_auto_accept(chat, cx).into_any_element()),
-            )
-            .collect();
-        let parts = ComposerParts {
-            chips,
-            draft,
-            attach,
-            settings,
-            usage: self.render_chat_usage(chat),
-            send,
-            place: transcript
-                .session
-                .as_ref()
-                .and_then(|session| session.cwd.as_deref())
-                .map(|cwd| safe_text(cwd, 300)),
-            commands: self
-                .keymap()
-                .shortcuts(sheprd_commands::Command::Palette)
-                .next()
-                .map(|shortcut| {
-                    div()
-                        .flex()
-                        .gap(px(5.))
-                        .child(
-                            div()
-                                .text_color(rgb(theme.foreground))
-                                .child(shortcut.to_owned()),
-                        )
-                        .child(fl!("chat-status-commands"))
-                }),
-        };
-        let card = layout_for(self.config.chat.layout).composer(parts, &self.chat_look());
-        div()
-            .relative()
-            .flex_none()
-            .flex()
-            .flex_col()
-            .gap(px(6.))
-            .px(px(12.))
-            .pt(px(8.))
-            .pb(px(16.))
-            .children(problem.map(|problem| {
-                div()
-                    .debug_selector(|| "chat-problem".into())
-                    .text_size(small)
-                    .text_color(rgb(hues.red))
-                    .child(problem)
-            }))
-            .child(card)
-            .children(
-                chat.menu()
-                    .map(|menu| self.render_chat_menu(chat, menu, cx)),
-            )
+        }
     }
 }

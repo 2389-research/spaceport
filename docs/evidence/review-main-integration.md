@@ -616,3 +616,42 @@ Log: `/tmp/spaceport-9s44-review-p2-main-consumers.log`.
 Root reviews the complete main delta and the merged settings/localization producers.
 Full platform CI and the real Windows image rerun remain pending for this combined source.
 The previous four lint results apply to `f3dda69b2`; they are not combined-source CI results.
+
+## Render-helper integration, November 20
+
+Main `eba200955f38c8b688849d027196dfda9249774b` merges PR 140's render helpers.
+The normal topic merge resolves eight conflicts without replacing the reviewed behavior.
+Composer, rail, tab-strip, polling, constructor, command, and window-frame helpers follow main's structure.
+The prepared popup renderer and shortcut-page renderer remain unchanged from the review branch.
+Those boundaries retain inert departure controls and frozen page ownership.
+The sidebar toggle stays local; Core-only fallback refuses absent Herdr TUI endpoints.
+Root image batches retain paired assets through cached cell replay.
+One flash element follows its terminal or window owner, preserving warning and clipboard feedback.
+
+Two compile errors exposed incorrect private flash argument types during integration.
+The arguments now match the existing `Option<Div>` result without converting or copying state.
+The focused consumer run passes 717 cases with none ignored.
+The boundary run passes 745 cases; four opt-in or private-producer fixtures remain ignored.
+The explicit offscreen Metal run passes all three image-fragment, blending, and focus-ring cases.
+Those Metal checks open no desktop window.
+
+Commands use `cargo test --locked -p sheprd-gpui --all-features --bin spaceport` with these filters:
+
+- `-- chat::tests:: menu::tests:: window::tests:: sidebar::rail::tests:: sidebar::tests::snapshot_index custom_shortcuts`
+- `-- menu:: endpoint:: window::regions:: window::flash:: window::tab_strip:: terminal_painter::tests::images`
+- `-- --ignored window::regions::tests::images::metal_raster:: tab_layout::tests::focus_raster::`
+
+Package Clippy passes all targets with all features and without default features.
+Both configurations also pass against `x86_64-pc-windows-gnu`.
+Each command uses `--locked -p sheprd-gpui --all-targets` and `-- -D warnings`.
+The inherited external `block` future-compatibility notice remains unchanged on macOS.
+Canonical format, file-size, sorting, operations, i18n, commit-subject, and diff checks pass.
+Logs are `/tmp/spaceport-9s44-render-integration-{consumers,boundaries,metal,host-all,host-minimal,windows-all,windows-minimal,static}.log`.
+Independent review inspects the actual merge, callers, ownership, and focused test evidence without material findings.
+Root's final diff review finds no additional issue or added credential pattern.
+
+Full workspace suites, Linux-specific compilation, and fresh Windows native qualification defer to CI.
+The bounded keyboard-profile parser and chat diagnostic-walk correction still need their actual Windows reruns.
+Doctor Biz keeps Mac foreground checks pending; this integration opens no Mac fixture.
+Kata remains 49 closed and four open; Crew separately remains 50 done and three doing.
+No native-pending finding closes, and no merge or release follows from this checkpoint.
