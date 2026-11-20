@@ -495,3 +495,16 @@ Independent read-only review finds no material lifecycle, isolation, targeting, 
 CI runs this namespace separately, after staging Core, even if another UIA case fails.
 Actual Windows execution remains pending.
 This first case does not qualify Core close, splits, observing-pane input refusal, resize, speech, or macOS Cmd-W.
+
+### First Core execution on `daab7134e`
+
+The [x64 native job](https://github.com/2389-research/spaceport/actions/runs/44649782332/job/136001693950) stages and starts the actual pinned Core runtime.
+Connection, strict pipe ownership, generation 1, and the initially empty runtime assertions pass before the next failure.
+The fixture then places `--json` before `run`, which the documented launch parser refuses.
+No Core terminal is created, and native Core text remains unqualified.
+
+All three fixture calls now put the command family before `--json`, as `docs/cli.md` requires.
+The existing control-command parser scope passes all 12 cases.
+Log: `/tmp/spaceport-9s44-core-cli-contract.log`.
+Independent review confirms that only CLI argument order changes.
+Native execution of the corrected fixture remains pending.

@@ -158,14 +158,14 @@ impl Fixture {
 
     fn open_terminal(&mut self) -> String {
         self.running
-            .control(&["--json", "run", "new_core_terminal"]);
+            .control(&["run", "--json", "new_core_terminal"]);
         let deadline = Instant::now() + Duration::from_secs(15);
         loop {
             let terminals = self.api().list(false).unwrap().terminals;
             if let [terminal] = terminals.as_slice() {
                 let address = terminal.address.clone();
                 let tabs: serde_json::Value =
-                    serde_json::from_str(&self.running.control_output(&["--json", "tab", "list"]))
+                    serde_json::from_str(&self.running.control_output(&["tab", "--json", "list"]))
                         .unwrap();
                 if let Some(tab) = tabs["tabs"]
                     .as_array()
@@ -174,7 +174,7 @@ impl Fixture {
                     .find(|tab| tab["kind"] == "core_terminal" && tab["location"] == address)
                 {
                     let tab = tab["id"].as_u64().unwrap().to_string();
-                    self.running.control(&["--json", "tab", "focus", &tab]);
+                    self.running.control(&["tab", "--json", "focus", &tab]);
                     return address;
                 }
             }
