@@ -3,7 +3,9 @@
 Scope: Kata `9s44`, all 53 review findings.
 Status: the current candidate integrates the reviewed Linux and Windows native fixtures and exact GPUI 0.3.11 pins.
 Linux source `16a928826` passes all forty-six native cases, including Cycle Windows and cleanup.
-Windows source `7e2459d67` corrects PowerShell case selection; its native outcomes remain pending.
+Windows source `7e2459d67` passes twenty-eight native cases but fails console preparation and Palette query setup.
+Shared candidate `3a603345a` repairs native preparation and SearchInput's assistive SetValue contract.
+Its Linux and Windows probes remain pending on the same GPUI 0.3.11 source.
 The shared framework update still needs configured platform CI on the combined source.
 Prior application source `d747cdbdb` passes all eighteen configured CI jobs and its x64 native Core cases.
 Those 0.3.10 results do not qualify the new framework version.
@@ -52,9 +54,21 @@ Source `c9a585ae5` passes compilation, Clippy, four Rust contracts, extended Pol
 Its PowerShell preflight catches aggregate case-table selection before input; the console step skips.
 Four expanded native tests stop at the same boundary.
 Source `7e2459d67` corrects both actual JSON consumers and adds exact scalar-ID guards.
-Its [native probe](https://github.com/2389-research/spaceport/actions/runs/44716174820) remains pending.
+Its [native probe](https://github.com/2389-research/spaceport/actions/runs/44716174820) passes three matrix tests and twenty-eight native cases.
+The [partial receipt](review-squad/windows-native/qualification-7e2459d67.json) records the console read-only error and unchanged Palette query.
 That separate Windows probe still uses GPUI 0.3.10.
 Combined-source Windows CI must qualify those fixtures with 0.3.11.
+
+The first combined-source CI on `bd7ff6d26` exposes two shared-test unwrap lint failures and those same native preparation failures.
+The test correction removes both unwraps without widening allowances.
+SearchInput now applies assistive SetValue through its existing normalized setter and Changed notifications.
+It registers no listener for masked fields and refuses stale masked-field actions too.
+Terminal preparation uses tracked native Unicode input because Windows exposes its transcript value as read-only.
+Its owned helper receives the exact disposable-runner marker and waits for command echo before Enter.
+Independent review verifies these changes and the helper's existing cleanup ownership.
+Shared candidate `3a603345a` includes both corrections and three new search editing unit cases.
+The [Windows probe](https://github.com/2389-research/spaceport/actions/runs/44719150181) and [Linux probe](https://github.com/2389-research/spaceport/actions/runs/44719193679) now use that same source.
+No corrected unit or native outcome is claimed before those runs finish.
 
 Canonical quick checks, workflow lint, offline workflow security checks, receipt parsing, and whitespace checks pass.
 Locked workspace metadata resolves without compilation.
