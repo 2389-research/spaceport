@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "scope": "Failed GTK focus prerequisite; no Spaceport qualification",
+  "source": "942a5f061e847eeada44b6ee5fc4079ac0cc9aa4",
+  "run": {
+    "id": 44688872570,
+    "url": "https://github.com/2389-research/spaceport/actions/runs/44688872570",
+    "status": "completed",
+    "conclusion": "failure",
+    "job_id": 136129618533
+  },
+  "log_wrapping": "GNOME_INPUT lines are input.log contents emitted with the GNOME_LOG prefix.",
+  "failure": {
+    "utc": "2026-11-20T06:36:48.4212191Z",
+    "receipt": "GNOME_INPUT failed: GTK input deadline: active=false text=\"\"",
+    "boundary": "The Boolean API correction executes. The window remains inactive through the original deadline; no remote session or evdev sequence starts.",
+    "cause_limit": "The log does not establish why the compositor leaves this window inactive. Gtk.Window.present does not guarantee keyboard focus."
+  },
+  "observed": [
+    {
+      "utc": "2026-11-20T06:36:28.3001972Z",
+      "receipt": "GNOME_PROBE startup=true private_wayland=true private_bus_owner=true spaceport_started=false keyboard_input=false"
+    },
+    {
+      "utc": "2026-11-20T06:36:48.4208070Z",
+      "receipt": "GNOME_PROBE input_driver_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:36:48.4212926Z",
+      "receipt": "GNOME_INPUT gtk_native=false transport=evdev sequence_sent=false polish=\"\" keys_released=true session_closed=false layout_restored=true spaceport_started=false"
+    },
+    {
+      "utc": "2026-11-20T06:36:48.4335534Z",
+      "receipt": "GNOME_PROBE shell_reaped=true"
+    },
+    {
+      "utc": "2026-11-20T06:36:48.4393341Z",
+      "receipt": "GNOME_PROBE bus_reaped=true"
+    }
+  ],
+  "next": "After the owned GTK window maps, request GNOME's native Alt-Tab activation once. Retain the active-window requirement before typing.",
+  "not_qualified": [
+    "GTK non-US input",
+    "Spaceport shortcut delivery",
+    "GNOME interception of Spaceport shortcuts"
+  ]
+}

@@ -86,16 +86,29 @@ try {
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
         try {
             if (GLib.get_monotonic_time() >= deadline)
-                throw new Error(`GTK input deadline: active=${window.is_active} text=${JSON.stringify(entry.get_text())}`);
+                throw new Error(`GTK input deadline: mapped=${window.get_mapped()} active=${window.is_active} text=${JSON.stringify(entry.get_text())}`);
             if (typeof window.is_active !== 'boolean')
                 throw new Error('GTK active-window property is not Boolean');
+            if (!window.get_mapped())
+                return GLib.SOURCE_CONTINUE;
+            if (session === null) {
+                session = call(managerPath, manager, 'CreateSession').deep_unpack()[0];
+                call(session, sessionInterface, 'Start');
+                if (!window.is_active) {
+                    // GNOME's default Alt-Tab activates the only owned app.
+                    key(56, true);
+                    key(15, true);
+                    key(15, false);
+                    key(56, false);
+                    print('GNOME_INPUT activation_requested=true route=alt-tab private_display=true');
+                }
+                return GLib.SOURCE_CONTINUE;
+            }
             if (!window.is_active)
                 return GLib.SOURCE_CONTINUE;
             if (!sent) {
                 if (!entry.grab_focus())
                     throw new Error('owned GTK field refused focus');
-                session = call(managerPath, manager, 'CreateSession').deep_unpack()[0];
-                call(session, sessionInterface, 'Start');
                 // Linux evdev codes: Right Alt, L, Left Shift, and N.
                 key(100, true);
                 key(38, true);

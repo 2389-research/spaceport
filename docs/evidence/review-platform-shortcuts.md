@@ -402,5 +402,9 @@ GJS exposes `Gtk.Window:is-active` as a Boolean property; the probe incorrectly 
 The [failed-attempt receipt](review-squad/linux-native/gtk-input-c3f01ab84.json) retains the exact boundary and cleanup observations.
 The private layout restores, and the input driver, Shell, and bus all reap.
 The correction reads the property and reports the selected transport separately from actual sequence delivery.
-Its actual GTK rerun remains pending; no Spaceport keyboard qualification follows from this failure.
+The [actual rerun on `942a5f061`](review-squad/linux-native/gtk-focus-942a5f061.json) passes that API boundary but times out with an inactive window.
+GTK's [`present` contract](https://docs.gtk.org/gtk4/method.Window.present.html) does not guarantee compositor keyboard focus.
+The next attempt requests native Alt-Tab activation after the owned window maps.
+It retains the active-window guard, exact text requirement, original deadline, and cleanup checks.
+No Spaceport keyboard qualification follows from either failed attempt.
 Mutter-only or nested startup cannot substitute for those checks.
